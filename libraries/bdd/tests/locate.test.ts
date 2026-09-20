@@ -42,7 +42,8 @@ const PAGE = `
   </div>
   <button>OK</button><button>CANCEL</button>
 </div>
-<div class="d4-toolbox">
+<div class="d4-toolbox"><div class="grok-toolbox-header">Pin toolbox</div></div>
+<div class="d4-toolbox" caption=" ">
   <div name="div-section--Viewers">
     <div name="icon-scatter-plot"></div><div name="icon-bar-chart"></div>
   </div>
@@ -59,6 +60,16 @@ const PAGE = `
   </div>
 </div>
 <div data-u2="menu" data-u2-owner="scope"><div class="u2-menu-item" role="menuitem"><span class="u2-menu-label">Everything</span></div></div>
+<div class="panel-base">
+  <div class="panel-titlebar">
+    <div class="panel-titlebar-text">Filters</div>
+    <i class="grok-icon grok-font-icon-help" name="icon-font-icon-help">titlebar</i>
+    <i class="grok-icon grok-font-icon-settings" name="icon-font-icon-settings"></i>
+  </div>
+  <div name="viewer-Filters">
+    <div class="d4-filter-group-header"><i class="grok-icon fal fa-question" name="icon-question">group</i></div>
+  </div>
+</div>
 `;
 
 let browser: Browser | undefined;
@@ -144,15 +155,21 @@ scenario('a target that renders late in a whole scope, and in an ordinal one, is
     assert.equal(await page!.locator('#late-host [name="pane-Grants"]').nth(1).locator('button').count(), 1);
   }));
 
-scenario('ordinals, and the visible matches a gesture acts on', async () => {
+scenario('ordinals count the visible matches, as a gesture does', async () => {
   assert.equal(await text('second item in results list'), 'beta');
-  assert.equal(await text('last item in results list'), 'gamma');
+  assert.equal(await text('last item in results list'), 'beta');
   assert.equal(await (await locateActionable(page!, el('item in results list'))).count(), 2);
 });
 
 scenario('a menu item matches its own label, not its children', async () => {
   assert.equal(await count('"As CSV" menu item in context menu'), 1);
   assert.equal(await (await locate(page!, el('Export menu item in context menu'))).getAttribute('name'), 'div-Export');
+});
+
+scenario('the help icon is the one of the title bar around the viewer, not a "?" inside it', async () => {
+  assert.equal(await count('help icon of filter panel'), 1);
+  assert.equal(await text('help icon of filter panel'), 'titlebar');
+  assert.equal(await text('help icon of Filters viewer'), 'titlebar');
 });
 
 scenario('a popup portaled out of its owner is found through the owner edge', async () => {

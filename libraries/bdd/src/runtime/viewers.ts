@@ -201,6 +201,27 @@ export async function expectRememberedReading(page: Page, target: ElementRef, na
   }
 }
 
+/** A numeric reading against the one remembered: strictly higher or strictly lower — for a change
+ * that has a direction, which "not as remembered" does not state. */
+export async function expectRememberedDirection(page: Page, target: ElementRef, name: string, direction: 'higher' | 'lower'): Promise<void> {
+  let last: Reading = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await onViewer(page, target, (el, n) => (window as any).__bdd.rememberedValue(el, n), name);
+    if (last.before === undefined)
+      return `"${name}" was not remembered`;
+    if (typeof last.now !== 'number' || typeof last.before !== 'number')
+      return `"${name}" is not a number`;
+    return direction === 'higher' ? last.now > last.before : last.now < last.before;
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not ${direction} than the remembered ${String(last.before)}` +
+      (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  }
+}
+
 /** The area's rectangle against the snapshot's: taller or wider than before. */
 export async function expectAreaGrew(page: Page, target: ElementRef, area: string, dimension: 'taller' | 'wider' | 'shorter' | 'narrower'): Promise<void> {
   let last: {before?: Box; now?: Box; has: string[]} = {has: []};
@@ -283,6 +304,19 @@ export function loadLayout(page: Page): Promise<void> {
 
 export {withKeys};
 
+/** Wheel notches over the centre of an area, with keys held (Control zooms where a plain wheel
+ * scrolls). */
+export async function wheelOverArea(page: Page, target: ElementRef, area: string, direction: string, times = 1, keys: string[] = []): Promise<void> {
+  if (direction !== 'up' && direction !== 'down')
+    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
+  const c = centerOf(await hitArea(page, target, area, true));
+  await page.mouse.move(c.x, c.y);
+  await withKeys(page, keys, async () => {
+    for (let i = 0; i < times; i++)
+      await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
+  });
+}
+
 /** A plain drag from the centre of one hit area to the centre of another (a column header to a
  * new place, a range handle to a bin), with keys held; the baseline is taken before the drag. */
 export async function dragArea(page: Page, target: ElementRef, from: string, to: string, keys: string[] = []): Promise<void> {
@@ -296,19 +330,27 @@ export async function dragArea(page: Page, target: ElementRef, from: string, to:
   });
 }
 
-/** A drag of the area's centre by a distance in a direction (a resizer, a splitter). */
-export async function dragAreaBy(page: Page, target: ElementRef, area: string, px: number, direction: string): Promise<void> {
+/** The pointer offset of a drag by a distance in a direction. */
+export function dragDelta(px: number, direction: string): {dx: number; dy: number} {
   const d = direction.toLowerCase();
   if (!['left', 'right', 'up', 'down'].includes(d))
     throw new Error(`a drag goes left, right, up or down, not "${direction}"`);
-  const c = centerOf(await hitArea(page, target, area, true));
-  const dx = d === 'left' ? -px : d === 'right' ? px : 0;
-  const dy = d === 'up' ? -px : d === 'down' ? px : 0;
-  await page.mouse.move(c.x, c.y);
+  return {dx: d === 'left' ? -px : d === 'right' ? px : 0, dy: d === 'up' ? -px : d === 'down' ? px : 0};
+}
+
+/** The mouse pressed at a point and moved by the offset in two steps. */
+export async function dragFrom(page: Page, at: {x: number; y: number}, delta: {dx: number; dy: number}): Promise<void> {
+  await page.mouse.move(at.x, at.y);
   await page.mouse.down();
-  await page.mouse.move(c.x + dx / 2, c.y + dy / 2);
-  await page.mouse.move(c.x + dx, c.y + dy);
+  await page.mouse.move(at.x + delta.dx / 2, at.y + delta.dy / 2);
+  await page.mouse.move(at.x + delta.dx, at.y + delta.dy);
   await page.mouse.up();
+}
+
+/** A drag of the area's centre by a distance in a direction (a resizer, a splitter). */
+export async function dragAreaBy(page: Page, target: ElementRef, area: string, px: number, direction: string): Promise<void> {
+  const delta = dragDelta(px, direction);
+  await dragFrom(page, centerOf(await hitArea(page, target, area, true)), delta);
 }
 
 /** A drag across the inner 80% of an area with keys held: Shift selects, Control+Shift removes

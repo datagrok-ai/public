@@ -91,19 +91,20 @@ scoped('VirtualList contextActions: right-click selects the row and opens the fu
   list.dispose();
 });
 
-scoped('timestamp: short visual, full title, year only when not current, empty when invalid', () => {
+scoped('timestamp: the year always, the time when the value carries one, empty when invalid', () => {
   const now = new Date();
   const thisYear = new Date(now.getFullYear(), 7, 11, 14, 30);
+  const full = {month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'};
   const el = timestamp(thisYear);
   assert.equal(el.className, 'u2-timestamp');
-  assert.equal(el.textContent,
-    thisYear.toLocaleDateString(undefined, {month: 'short', day: 'numeric'}));
-  assert.equal(el.title, thisYear.toLocaleString(undefined,
-    {month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'}));
+  assert.equal(el.textContent, thisYear.toLocaleString(undefined, full),
+    'the year is never dropped — a grid cell shows it too');
+  assert.equal(el.title, thisYear.toLocaleString(undefined, full));
 
   const old = new Date(2019, 2, 5);
   assert.equal(timestamp(old).textContent,
-    old.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}));
+    old.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}),
+    'a date without a time of day stays a date');
 
   assert.equal(timestamp({toDate: () => thisYear}).textContent, el.textContent,
     'anything with toDate() — dayjs included — is accepted');

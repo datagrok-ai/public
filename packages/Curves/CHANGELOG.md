@@ -1,6 +1,6 @@
 # Curves changelog
 
-## v.next
+## 1.13.1 (2026-09-08)
 
 * Curves: A zero dose on a logarithmic x axis is placed one dose step below the smallest tested dose. Operator precedence bound the division to one term, so the substitute landed inside the tested range (10^-6.5 for a 1e-9..1e-4 series, where 10^-10 was meant) and every curve, dropline and extracted statistic fitted through that point was wrong; the distinct-dose count no longer includes the zero it is named for, a single tested dose no longer divides by zero, and a series whose x values are all zero is left alone
 * Curves: Data to Curves excludes outliers from **Max Percent Inhibition** again. `&&` binds tighter than `||`, so the outlier test was dead and an excluded well could set the maximum; an empty well no longer reports the null sentinel 2.7e-34 as a response

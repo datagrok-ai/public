@@ -26,7 +26,7 @@
     "exceljs": "catalog:",
     "fflate": "^0.8.2",
     "rxjs": "catalog:",
-    "vue": "^3.5.13",
+    "vue": "catalog:",
     "vue-json-pretty": "^2.4.0",
     "wu": "catalog:"
   },
@@ -46,8 +46,7 @@
   "scripts": {
     "build": "grok tsc -p tsconfig.detectors.json && node -e \"require('fs').renameSync('detectors-src.js','detectors.js')\" && grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "lint": "eslint --ext .ts,.tsx src"
   },
   "properties": [
     {

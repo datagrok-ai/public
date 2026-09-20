@@ -180,13 +180,14 @@ export const dragBoxHolding = When('user drags a box over the {string} area of {
 export const enterIntoArea = When('user enters {string} into the {string} area of {widget}', (page: Page, text: string, area: string, target: ElementRef) =>
   v.typeIntoArea(page, target, area, text), {tier: 'ui', description: 'a hit area that holds an editor (a range input, a form field): a click on it, select all, the text, Enter'});
 
-export const wheelOverArea = When('user scrolls the mouse wheel {word} over the {string} area of {widget}', async (page: Page, direction: string, area: string, target: ElementRef) => {
-  if (direction !== 'up' && direction !== 'down')
-    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
-  const c = v.centerOf(await v.hitArea(page, target, area, true));
-  await page.mouse.move(c.x, c.y);
-  await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
-}, {tier: 'ui', description: 'up or down, a few notches, with the pointer at the centre of the area'});
+export const wheelOverArea = When('user scrolls the mouse wheel {word} over the {string} area of {widget}', (page: Page, direction: string, area: string, target: ElementRef) =>
+  v.wheelOverArea(page, target, area, direction), {tier: 'ui', description: 'up or down, a few notches, with the pointer at the centre of the area'});
+
+export const wheelOverAreaHolding = When('user scrolls the mouse wheel {word} over the {string} area of {widget} holding {key}', (page: Page, direction: string, area: string, target: ElementRef, key: string) =>
+  v.wheelOverArea(page, target, area, direction, 1, keysOf(key)), {tier: 'ui', description: 'the same notches with a modifier held — Control zooms where a plain wheel scrolls'});
+
+export const wheelOverAreaTimesHolding = When('user scrolls the mouse wheel {word} {int} times over the {string} area of {widget} holding {key}', (page: Page, direction: string, times: number, area: string, target: ElementRef, key: string) =>
+  v.wheelOverArea(page, target, area, direction, times, keysOf(key)), {tier: 'ui', description: 'a run of wheel events with a modifier held — enough of them to reach a limit'});
 
 export const pointerAway = When('user moves the pointer away from {element}', async (page: Page, target: ElementRef) => {
   const box = await (await v.viewerLocator(page, target)).boundingBox();
@@ -373,6 +374,12 @@ export const readingAsRemembered = Then('the {string} reading of {widget} should
 export const readingNotAsRemembered = Then('the {string} reading of {widget} should not be as remembered', (page: Page, name: string, target: ElementRef) =>
   v.expectRememberedReading(page, target, name, true), {description: 'the change the step in between was supposed to make actually reached the reading'});
 
+export const readingHigherThanRemembered = Then('the {string} reading of {widget} should be higher than remembered', (page: Page, name: string, target: ElementRef) =>
+  v.expectRememberedDirection(page, target, name, 'higher'), {description: 'a numeric reading strictly above the one remembered — a change with a direction'});
+
+export const readingLowerThanRemembered = Then('the {string} reading of {widget} should be lower than remembered', (page: Page, name: string, target: ElementRef) =>
+  v.expectRememberedDirection(page, target, name, 'lower'), {description: 'a numeric reading strictly below the one remembered'});
+
 // --- the legend ------------------------------------------------------------------------------------
 
 export const legendSide = Then('the legend of {widget} should be on the {word}', (page: Page, target: ElementRef, side: string) =>
@@ -389,6 +396,35 @@ export const legendSameItems = Then('the legend of {widget} should list the same
 
 export const legendDocked = Then('the legend of {widget} should be docked', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'docked'),
   {description: 'the mode the legend publishes: docked at a side (in a corner over the plot, collapsed to the mini icon and shown in the tooltip are the other modes)'});
+
+export const legendInCorner = Then('the legend of {widget} should be in a corner', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'corner'),
+  {description: 'the mode the legend publishes: laid over the plot in one of its four corners ("in the {string} slot" names which)'});
+
+export const legendMiniIcon = Then('the legend of {widget} should be collapsed to the mini icon', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'mini icon'),
+  {description: 'the mode the legend publishes: folded into the small legend icon (a viewer too small under Visibility Auto, or a corner legend closed by its chevron); hovering the icon shows it in the tooltip'});
+
+export const legendPlacedNowhere = Then('the legend of {widget} should be placed nowhere', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'hidden'),
+  {description: 'the mode the legend publishes: no place at all — Visibility Never, nothing to list, or a viewer too small even for the mini icon; unlike "legend of … should be hidden" it reads the decision, not the DOM'});
+
+export const dragLegendSplitter = When('user drags the legend splitter of {widget} by {int} pixels to the {word}',
+  (page: Page, target: ElementRef, px: number, direction: string) => v.dragLegendSplitter(page, target, px, direction),
+  {tier: 'ui', description: 'left, right, up or down — the bar between a docked legend and the plot; the baseline is taken before the drag'});
+
+export const legendWider = Then('the legend of {widget} should be wider than before', (page: Page, target: ElementRef) => v.expectLegendSize(page, target, 'wider'),
+  {description: 'the legend\'s own box against the snapshot before the last change, read once the viewer is quiet'});
+
+export const legendNarrower = Then('the legend of {widget} should be narrower than before', (page: Page, target: ElementRef) => v.expectLegendSize(page, target, 'narrower'));
+
+export const legendTaller = Then('the legend of {widget} should be taller than before', (page: Page, target: ElementRef) => v.expectLegendSize(page, target, 'taller'));
+
+export const legendShorter = Then('the legend of {widget} should be shorter than before', (page: Page, target: ElementRef) => v.expectLegendSize(page, target, 'shorter'));
+
+export const legendItemsAsStructures = Then('every item in the legend of {widget} should be drawn as a structure', (page: Page, target: ElementRef) =>
+  v.expectLegendItemsDrawnAs(page, target, 'structure'),
+  {description: 'every item — each section scrolled through, the list is virtualised — draws its category through the column\'s renderer: a canvas whose paint spans a figure, not a line of text (only the empty category\'s may stay blank)'});
+
+export const legendItemsAsText = Then('every item in the legend of {widget} should be drawn as text', (page: Page, target: ElementRef) =>
+  v.expectLegendItemsDrawnAs(page, target, 'text'), {description: 'every item, each section scrolled through, is a text label with no renderer canvas'});
 
 export const legendSlot = Then('the legend of {widget} should be in the {string} slot', (page: Page, target: ElementRef, slot: string) =>
   v.expectLegendSlot(page, target, slot), {description: 'left, right, top, bottom, leftTop, leftBottom, rightTop, rightBottom'});

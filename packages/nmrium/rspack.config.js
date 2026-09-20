@@ -5,6 +5,8 @@ module.exports = bundler({
   jsx: 'react',
   resolve: {
     alias: {
+      'react$': require.resolve('react'),
+      'react/jsx-runtime': require.resolve('react/jsx-runtime'),
       'openchemlib/full$': 'openchemlib/full.js',
       './lib/components/StructureEditor': './lib/components/StructureEditor.js',
       './lib/components/SmilesSvgRenderer': './lib/components/SmilesSvgRenderer.js',

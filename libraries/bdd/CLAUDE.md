@@ -38,7 +38,9 @@ a signal or a name is missing in the core, and the fix goes there** (`d4` viewer
 js-api) — never a `waitForTimeout` in a step. What was added that way: `viewer.immediateRendering`
 and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/values/parts`,
 `aria-disabled` on menu items, property rows and dialog buttons, `Func.topMenu`,
-`d4-balloon-shown`, `grok.shell.autostartsCompleted`, `Resizer.isResizePending`, `data-legend-*`.
+`d4-balloon-shown`, `grok.shell.autostartsCompleted`, `Resizer.isResizePending`, `data-legend-*`,
+`DG.Widget.addStatusProvider` (a package's own areas and readings on a native widget, e.g. the
+WebLogo glyphs Peptides draws in grid headers).
 
 ## Invariants — what must not regress
 
@@ -110,7 +112,9 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
   names a part) → registered element, else kind by every matching suffix, longest first. Kinds
   try their `match` strategies in order; a scope that is not on the page is not waited for.
 - **Gestures act on the visible match** (`locateActionable`); `enabled`/`disabled` read every
-  match and prefer the visible ones; `visible`/`hidden` over several matches = any/none.
+  match and prefer the visible ones; `visible`/`hidden` over several matches = any/none. An
+  ordinal counts the visible matches: the Home page keeps its own viewers in the DOM, hidden,
+  under a table view, so "first line chart viewer" must not land on one of them.
 - **Labels are found first, items second** (`byLabel`, `:scope >` labels); menu items match
   their own label, not their children's.
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**

@@ -125,7 +125,8 @@ time — a fuzzy gallery search that brings up the fixtures other features creat
 
 **`@known-failure`** on a scenario says the product has the defect it describes: its failure does
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
-to stay green.
+to stay green. Outside a journey the tag works on a scenario and on an outline's `Examples` block:
+the Background runs plainly, and only the scenario's own steps are the expected failure.
 
 The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
 removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
@@ -227,7 +228,8 @@ list is the reference; this is the map:
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
 - **Package functions and their results** (`platform/functions.ts`), **custom platform events**
-  (`platform/events.ts`), the clipboard and a file chooser (`common/steps.ts`).
+  and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
+  (`common/steps.ts`).
 - **The `viewers` tier** (below).
 
 A step definition is an exported `const`; the generated spec imports it by name:
@@ -278,7 +280,9 @@ The `viewers` tier drives viewers the way the platform sees them:
   area's own ink and repaint, colours in an area (by hue, a shade of anti-aliasing allowed), two
   areas alike or different, the selection highlight (with a margin the selection warrants), the
   value range and the colour scale against before.
-- **The legend** (read from its `data-legend-*` attributes), the row tooltip, viewer events,
+- **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
+  collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
+  against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
   logged`, `no error or warning balloon should have been shown`.
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
@@ -301,6 +305,25 @@ check. A served core must include the tracked grid tooltip debounce for these ab
 A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWidgetStatus()`
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get
 isRenderPending()` true from the render request to the paint; and an `onRendered` observable.
+
+A package that customizes an existing widget can contribute its own live areas and readings
+through `DG.Widget.addStatusProvider(name, provider)`. For example, Peptides adds the glyphs it
+draws in the native grid's headers:
+
+```ts
+grid.addStatusProvider('peptides-weblogo', () => ({
+  hitAreas: currentGlyphBounds,
+  values: {'highlighted rows': highlightedRowCount},
+}));
+grid.removeStatusProvider('peptides-weblogo');
+```
+
+Names identify the contributing component. Registering the same name replaces that provider in
+place; later providers override earlier entries. Providers run on each status read and contribute
+`parts`, `hitAreas`, and `values`; a JS viewer that overrides `getWidgetStatus()` composes with
+`super.getWidgetStatus()`. Geometry uses the widget's coordinate system and must exclude anything
+no longer drawn. Detach removes providers; a viewer reattached to a different table needs its
+table-specific providers registered again.
 
 ## Generated specs
 

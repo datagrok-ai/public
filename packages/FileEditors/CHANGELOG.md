@@ -1,6 +1,6 @@
 # File Editors changelog
 
-## v.next
+## 1.3.2 (2026-07-12)
 
 * GROK-18695: Dependency security updates — upgraded pdfjs-dist 2.16 → 4.10 (fixes arbitrary JavaScript execution upon opening a malicious PDF)
 

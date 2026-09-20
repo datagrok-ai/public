@@ -14,7 +14,6 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/domain-ui": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "cash-dom": "catalog:",
@@ -28,10 +27,11 @@
     "@types/yargs": "^17.0.34",
     "root-require": "^0.3.1",
     "tsconfig-paths": "^4.2.0",
-    "tsconfig-paths-webpack-plugin": "^4.2.0"
+    "tsconfig-paths-webpack-plugin": "^4.2.0",
+    "tsx": "^4.20.6"
   },
   "scripts": {
-    "build": "grok build",
+    "build": "grok api && grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test",
@@ -72,5 +72,10 @@
   ],
   "optionalDependencies": {
     "yargs": "^18.0.0"
+  },
+  "grok": {
+    "testDependencies": [
+      "@datagrok/dbtests"
+    ]
   }
 }

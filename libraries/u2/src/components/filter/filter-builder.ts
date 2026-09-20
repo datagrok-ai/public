@@ -264,7 +264,8 @@ export class FilterBuilder extends Input<FilterGroup, FilterBuilderOptions> {
   }
 
   private _operators(prop: FilterProperty) {
-    const ops = Filters.operators.for(prop);
+    const offered = Filters.operators.for(prop);
+    const ops = this.options.schema.operators?.(prop, offered) ?? offered;
     const allowed = this.options.template?.allowedOperators?.[prop.name];
     return allowed ? ops.filter((o) => allowed.includes(o.id)) : ops;
   }

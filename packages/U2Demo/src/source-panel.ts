@@ -1,5 +1,5 @@
 /* The current sub-demo's source in the context panel — a `DemoPage` holder pushed through the
-   current-object channel (the PropRowHandler shape), the text bundled into this build by webpack
+   current-object channel (the PropRowHandler shape), the text bundled into this build by rspack
    (`?raw` → `asset/source`) and sliced to the page factory. So the panel shows the source that is
    actually running, and GitHub stays a link rather than the transport. Plain text for now; a code
    editor comes later. */
@@ -7,7 +7,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {divV, link, span} from '@datagrok-libraries/u2';
 import type {DemoLeaf} from './nav';
-import {SRC_ROOT, setPageShownHook} from './nav';
+import {setPageShownHook} from './nav';
+import {SRC_ROOT} from './const';
 import convergenceSource from './convergence?raw';
 import funcConvergenceSource from './func-convergence?raw';
 import funcsSource from './funcs?raw';

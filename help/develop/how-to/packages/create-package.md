@@ -30,7 +30,8 @@ created package, you have to install the dependencies. Run this from the `TextSt
 npm install
 ```
 
-(Inside the public repository skip this step: `pnpm install` at the repository root covers every package.)
+Inside the public repository, skip this step. One install at the repository root covers every package.
+See [Build system](../../dev-process/build-system.md).
 
 :::note
 
@@ -66,8 +67,9 @@ producing a `widget`, taking a `string` as an input.
 
 ## 3. Build
 
-Build from the TextStats folder (inside the public repository, `grok build` does the same and also builds
-the libraries the package depends on):
+Build from the TextStats folder. Inside the public repository, use
+[`grok build`](../../dev-process/build-system.md#build) instead, which also builds the libraries the package
+depends on:
 
 ```shell
 npm run build

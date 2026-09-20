@@ -1,10 +1,10 @@
 {
-  "name": "scaffold",
+  "name": "@datagrok/scaffold",
   "friendlyName": "Scaffold",
   "version": "0.0.1",
   "description": "A customizable DMTA workflow skeleton with embedded AIDD — built on Datagrok.",
   "author": {
-    "name": "Alex Skalkin",
+    "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
   },
   "dependencies": {
@@ -16,8 +16,7 @@
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "lint": "eslint --ext .ts,.tsx src"
   },
   "canEdit": [
     "Developers"

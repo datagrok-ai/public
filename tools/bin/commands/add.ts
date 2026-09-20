@@ -3,10 +3,20 @@ import path from 'path';
 import {help} from '../utils/ent-helpers';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
-import {generateDomainClients} from './api';
+import {generateDomainClients, tableProp} from './api';
 
-/** The domain-ui library version a scaffolded domain app depends on. */
-const domainUiDependency = '^0.1.0';
+/** What a u2 consumer package carries beside the imports (the Grit reference package is the
+ * answer key): u2 is not on npm, so the dependency is the workspace link, and `u2core` is the one
+ * external `@datagrok/build-config` does not know about. The css imports and the tsconfig need
+ * nothing — the shared bundler config carries the loaders and the tsconfig extends the base. */
+const u2Dependency = 'workspace:^';
+const u2DgModule = '@datagrok-libraries/u2/src/dg/index.js';
+const u2RspackExternal = `'datagrok-api/u2core': 'DG.U2'`;
+const u2RspackConfig = [
+  `const {bundler} = require('@datagrok/build-config');`,
+  '',
+  `module.exports = bundler({externals: {${u2RspackExternal}}});`,
+  ''].join('\n');
 
 export function add(args: { _: string[], domain?: string | boolean }) {
   // `--domain` is the only option any `add` entity takes (`grok add app --domain`).
@@ -24,6 +34,7 @@ export function add(args: { _: string[], domain?: string | boolean }) {
   const tsPath = path.join(srcDir, 'package.ts');
   const detectorsPath = path.join(curDir, 'detectors.js');
   const webpackConfigPath = path.join(curDir, 'webpack.config.js');
+  const rspackConfigPath = path.join(curDir, 'rspack.config.js');
   const scriptsDir = path.join(curDir, 'scripts');
   const queryDir = path.join(curDir, 'queries');
   const queryPath = path.join(queryDir, 'queries.sql');
@@ -99,23 +110,58 @@ export function add(args: { _: string[], domain?: string | boolean }) {
     return [manifest.name, Object.keys(manifest.tables)];
   }
 
-  /** Adds `import {domains} from '@datagrok-libraries/domain-ui';` to the package
-   * entry file, after its existing imports (which webpack's externals depend on). */
-  function addDomainUiImport() {
+  /** Adds the u2 import and the stylesheet imports to the package entry file, after its
+   * existing imports (which webpack's externals depend on). */
+  function addU2Imports() {
     const contents = fs.readFileSync(packageEntry, 'utf8');
-    if (contents.includes('@datagrok-libraries/domain-ui')) return;
+    if (contents.includes(u2DgModule)) return;
     const eol = contents.includes('\r\n') ? '\r\n' : '\n';
-    const line = `import {domains} from '@datagrok-libraries/domain-ui';`;
+    const imports = fs.readFileSync(path.join(templateDir, 'entity-template', 'domain-app-imports.js'), 'utf8')
+      .trimEnd().split(/\r?\n/);
     const lines = contents.split(/\r?\n/);
     let last = -1;
     for (let i = 0; i < lines.length; i++)
       if (/^(import .*|export .* from .*);\s*$/.test(lines[i])) last = i;
-    lines.splice(last + 1, 0, line);
+    lines.splice(last + 1, 0, ...imports);
     fs.writeFileSync(packageEntry, lines.join(eol), 'utf8');
   }
 
+  /** The u2 wiring of the build: the workspace dependency in package.json and the `u2core`
+   * external in rspack.config.js. Each edit is skipped where the file already carries it. */
+  function addU2Wiring() {
+    const packageObj = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+    packageObj.dependencies = packageObj.dependencies ?? {};
+    packageObj.dependencies['@datagrok-libraries/u2'] ??= u2Dependency;
+    fs.writeFileSync(packagePath, JSON.stringify(packageObj, null, 2), 'utf8');
+
+    if (!fs.existsSync(rspackConfigPath))
+      fs.writeFileSync(rspackConfigPath, u2RspackConfig, 'utf8');
+    else if (!fs.readFileSync(rspackConfigPath, 'utf8').includes('datagrok-api/u2core'))
+      color.warn(`rspack.config.js is already there — add \`externals: {${u2RspackExternal}}\` to it by hand`);
+  }
+
+  /** Declares a one-table starter schema in `databases/<schema>/schema.json` — the fresh-package
+   * case, where the schema is the app's own. */
+  function writeStarterManifest(schema: string, table: string): void {
+    const target = path.join(curDir, 'databases', schema, 'schema.json');
+    const template = fs.readFileSync(path.join(templateDir, 'entity-template', 'domain-schema.json'), 'utf8');
+    fs.mkdirSync(path.dirname(target), {recursive: true});
+    fs.writeFileSync(target, template.replace(/#{SCHEMA}/g, schema).replace(/#{TABLE}/g, table), 'utf8');
+    console.log(`Declared a starter schema in databases/${schema}/schema.json — ` +
+      `delete it if \`${schema}\` is deployed by another package`);
+  }
+
+  /** The same app as a `dg-ui/1` spec the designer edits, over the first table; kept once written. */
+  function writeAppSpec(schema: string, table: string): void {
+    const target = path.join(srcDir, 'app.spec.json');
+    if (fs.existsSync(target)) return;
+    const template = fs.readFileSync(path.join(templateDir, 'entity-template', 'domain-app.spec.json'), 'utf8');
+    fs.writeFileSync(target, utils.replacers['DOMAIN_TABLE'](template, `${schema}.${table}`)
+      .replace(/#{SOURCE}/g, tableProp(table)), 'utf8');
+  }
+
   /** `grok add app [name] --domain <schema>[.<table>] | <schema.json path>` — a working
-   * browse/CRUD app per table, from the `domain-ui` defaults alone. */
+   * browse/CRUD app per table, from the u2 defaults alone (`domains.table(...).app()`). */
   function addDomainApp(domainArg: string | boolean, appName: string | null): boolean | void {
     if (typeof domainArg !== 'string' || domainArg === '')
       return color.error('`--domain` needs `<schema>` or `<schema>.<table>`, ' +
@@ -133,9 +179,11 @@ export function add(args: { _: string[], domain?: string | boolean }) {
           'Use `<schema>`, `<schema>.<table>`, or a path to a schema.json manifest');
       const dot = domainArg.indexOf('.');
       schema = dot === -1 ? domainArg : domainArg.slice(0, dot);
-      if (dot !== -1)
+      if (dot !== -1) {
         tables = [domainArg.slice(dot + 1)];
-      else {
+        if (!fs.existsSync(path.join(curDir, 'databases', schema, 'schema.json')))
+          writeStarterManifest(schema, tables[0]);
+      } else {
         // Table names of a whole schema are only known offline from its manifest.
         const manifest = readManifest(path.join(curDir, 'databases', schema, 'schema.json'));
         if (manifest == null)
@@ -170,18 +218,12 @@ export function add(args: { _: string[], domain?: string | boolean }) {
     }
     if (added.length === 0) return true;
 
-    addDomainUiImport();
+    addU2Imports();
+    addU2Wiring();
+    writeAppSpec(schema, tables[0]);
 
-    const packageObj = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-    packageObj.dependencies = packageObj.dependencies ?? {};
-    if (packageObj.dependencies['@datagrok-libraries/domain-ui'] === undefined) {
-      packageObj.dependencies['@datagrok-libraries/domain-ui'] = domainUiDependency;
-      fs.writeFileSync(packagePath, JSON.stringify(packageObj, null, 2), 'utf8');
-    }
-
-    // Manifests in the package get typed clients AND the typed UI wrappers the app
-    // code can switch to; a schema deployed by another package has none, and the
-    // reflective app above needs none.
+    // Manifests in the package get typed clients AND the typed u2 handles the app code can
+    // switch to; the reflective app above needs neither.
     if (!generateDomainClients(curDir, {ui: true})) return false;
 
     console.log(help.domainApp(added, addedTables));

@@ -311,6 +311,7 @@ export class PackageFunctions {
     const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
 
     const viewerRoot = ((await df.plot.fromType('PhylocanvasGL', {})) as DG.JsViewer).root;
+    viewerRoot.setAttribute('name', 'viewer-PhylocanvasGL');
     viewerRoot.style.setProperty('width', '100%', 'important');
     viewerRoot.style.setProperty('height', '100%', 'important');
 

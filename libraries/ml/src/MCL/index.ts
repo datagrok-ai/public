@@ -1,5 +1,6 @@
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {KnownMetrics} from '../typed-metrics';
+import {MCLComputationInfo} from './types';
 
 export * from './markov-cluster';
 export * from './types';
@@ -14,7 +15,7 @@ export function createMCLWorker(data: any[][], threshold: number,
   let resolveF: Function;
   const promise = new Promise<{
     clusters: number[], embedX: Float32Array, embedY: Float32Array,
-     is: Uint32Array, js: Uint32Array
+     is: Uint32Array, js: Uint32Array, computation: MCLComputationInfo
     }>((resolve, reject) => {
       resolveF = resolve;
       worker.onmessage = (event) => {

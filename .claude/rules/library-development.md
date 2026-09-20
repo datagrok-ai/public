@@ -5,21 +5,15 @@ paths:
 
 ## Library Development
 
-Libraries are published under `@datagrok-libraries` scope. Each library has its own `package.json` and builds independently:
+Libraries are published under `@datagrok-libraries` scope. Each library has its own `package.json` and is a member of
+the `public/` pnpm workspace (see `packages/BUILD.MD`). Never run `npm install` or `grok link` inside one.
 
 ```bash
+grok setup                 # Once per checkout, at the repository root
 cd libraries/<lib-name>
-npm install
-npm run build              # Build the library
-npm run lint               # ESLint check
-npm run lint-fix           # ESLint auto-fix
-npm run build-all          # Build this library and all its dependencies in order
-npm run link-all           # Link local datagrok-api and other @datagrok-libraries/*
+grok build                 # Build the library and what it depends on (tsc emit to dist/ with declarations)
+pnpm run lint              # ESLint check
 ```
 
-Libraries are consumed by packages. When modifying a library, rebuild it and re-link dependent packages:
-
-```bash
-grok link              # From within the package directory
-grok link --unlink     # Revert to npm versioned dependencies
-```
+Libraries are consumed by packages through `workspace:^`. After modifying a library, run `grok build` in the
+dependent package; Turborepo rebuilds the library first. Nothing to link.

@@ -179,6 +179,15 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
   atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = true; }));
 }, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
 
+export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: Page) => {
+  await page.evaluate(() => {
+    grok.shell.windows.simpleMode = false;
+    grok.shell.windows.showToolbox = true;
+  });
+  await expect(page.locator('.d4-toolbox[caption]').first(), 'the toolbox pane').toBeVisible({timeout: 15000});
+  atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.showToolbox = false; grok.shell.windows.simpleMode = true; }));
+}, {tier: 'api', description: 'idempotent: leaves simple mode and shows the toolbox pane (off by default for a user, and hidden at startup while empty); puts both back at feature end'});
+
 /* --- the context panel -------------------------------------------------------------------------
    The panel renders the current object (`grok.shell.o`) and nothing else: a click that did not
    change it — the setter drops a change to the object already current, one within 2 s of a

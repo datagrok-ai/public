@@ -8,6 +8,10 @@
 * GROK-20649: Scripts: Ribbon panel disappears when switching between tabs (Layout, Debug)
 * GROK-20650: Scripts: Parameters: Incorrect style applied to the question mark on the Context Panel
 
+## 1.7.2 (2026-07-12)
+
+* GROK-18695: Updated npm dependencies to clear reported vulnerabilities
+
 ## 1.6.4 (2025-10-16)
 
 * Core: Projects: Fixed data-sync projects from scripts fail

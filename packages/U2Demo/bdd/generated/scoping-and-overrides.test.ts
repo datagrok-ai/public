@@ -14,6 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {openWorkbench} from '../bindings/steps.js';
 import {clickOn, close, shouldBe, shouldContainText, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Scoping and overrides", () => {
@@ -65,9 +66,10 @@ test.describe("Scoping and overrides", () => {
     const page = await session.page(browser);
     await session.step(9, "Given user opens the MSA workbench", () => openWorkbench(page));
     enter(page, "MSA workbench");
-    await session.step(40, "Then toolbar should be visible", () => shouldBe(page, el("toolbar"), "visible"));
-    await session.step(41, "And MSA workbench should be visible", () => shouldBe(page, el("MSA workbench"), "visible"));
-    await session.step(42, "And toolbox should be visible", () => shouldBe(page, el("toolbox"), "visible"));
-    await session.step(43, "And browse tab should be visible", () => shouldBe(page, el("browse tab"), "visible"));
+    await session.step(40, "Given the toolbox pane is shown", () => toolboxPaneShown(page));
+    await session.step(41, "Then toolbar should be visible", () => shouldBe(page, el("toolbar"), "visible"));
+    await session.step(42, "And MSA workbench should be visible", () => shouldBe(page, el("MSA workbench"), "visible"));
+    await session.step(43, "And toolbox should be visible", () => shouldBe(page, el("toolbox"), "visible"));
+    await session.step(44, "And browse tab should be visible", () => shouldBe(page, el("browse tab"), "visible"));
   });
 });
