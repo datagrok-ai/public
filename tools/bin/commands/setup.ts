@@ -42,8 +42,12 @@ export async function setup(args: SetupArgs): Promise<boolean> {
   if (pnpmVersion !== pinnedPnpm) {
     color.warn(`pnpm ${pnpmVersion || 'not found'}; the workspace pins ${pinnedPnpm}.`);
     if (!check) {
+      if (run('corepack', ['--version']) === null) {
+        color.warn('corepack not found (Node 25 no longer bundles it): installing');
+        spawnSync('npm', ['install', '-g', 'corepack'], {stdio: 'inherit', shell: true});
+      }
       if (run('corepack', ['--version']) === null)
-        color.warn('corepack not found: `npm install -g corepack`, then rerun `grok setup`.');
+        color.warn('could not install corepack: `npm install -g corepack` by hand, then rerun `grok setup`.');
       else {
         spawnSync('corepack', ['enable'], {stdio: 'inherit', shell: true});
         spawnSync('corepack', ['prepare', `pnpm@${pinnedPnpm}`, '--activate'], {stdio: 'inherit', shell: true});
@@ -59,8 +63,8 @@ export async function setup(args: SetupArgs): Promise<boolean> {
   // 2. leftovers from the npm era
   const projectDirs = ['js-api', 'tools', 'build-config'].map((d) => path.join(root, d));
   for (const group of ['packages', 'libraries'])
-    for (const d of fs.readdirSync(path.join(root, group)))
-      projectDirs.push(path.join(root, group, d));
+    for (const d of fs.readdirSync(path.join(root, group), {withFileTypes: true}).filter((e) => e.isDirectory()))
+      projectDirs.push(path.join(root, group, d.name));
   const staleModules = projectDirs.filter((d) => isLegacyNodeModules(path.join(d, 'node_modules')));
   const staleLocks = projectDirs.map((d) => path.join(d, 'package-lock.json')).filter((f) => fs.existsSync(f));
   const staleEmits = projectDirs.filter((d) => d === path.join(root, 'js-api') || path.dirname(d) === path.join(root, 'libraries')).flatMap(inPlaceEmits);
