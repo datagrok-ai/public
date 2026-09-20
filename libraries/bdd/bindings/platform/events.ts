@@ -2,7 +2,7 @@
    finished off-screen — Bio's `bio-monomer-lib-loaded` after the monomer libraries reload. A
    scenario listens by id, acts, and claims the event fired (or did not). */
 import {Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then} from '../../src/registry.js';
 import {expectCustomEvent, listenCustomEvent} from '../../src/runtime/events.js';
 
@@ -29,6 +29,15 @@ export const watchTaskBar = Given('user watches the task bar', (page: Page) => p
   observer.observe(document.body, {childList: true, subtree: true});
   w.__bddTaskBar = {observer, record};
 }), {tier: 'ui', description: 'records the text of every task bar entry added from now until the page resets'});
+
+export const taskBarFinished = Then('the task bar should have finished {string}', async (page: Page, text: string) => {
+  await expect.poll(() => page.evaluate((t) => {
+    const w = window as any;
+    const shown = ((w.__bddTaskBar?.record ?? []) as string[]).some((s) => s.includes(t));
+    const busy = Array.from(document.querySelectorAll('.d4-task-bar-entry')).some((e) => (e.textContent ?? '').includes(t));
+    return !shown ? 'never shown' : busy ? 'still shown' : 'done';
+  }, text), {message: `the task bar entry "${text}" since "user watches the task bar"`, timeout: pollMs(120000)}).toBe('done');
+}, {description: 'an entry containing the text was shown since the watch began and is gone now: the job it stood for (a clustering, a computation) has ended, on a 120 s budget'});
 
 export const taskBarShown = Then('the task bar should have shown {string}', async (page: Page, text: string) => {
   await expect.poll(() => page.evaluate(() => (window as any).__bddTaskBar?.record ?? null), {message: `task bar entries since "user watches the task bar"`})

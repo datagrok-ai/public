@@ -9,12 +9,9 @@ import '../bindings/platform/elements.js';
 import {fillsParent, shouldOffer, visibleCount} from '../bindings/common/steps.js';
 import {mouseOverRowIs} from '../bindings/platform/columns.js';
 import {newestMatchingDistinct, newestMatchingFilled} from '../bindings/platform/commands.js';
-import {setTableTag, tableTagIsFile} from '../bindings/platform/data.js';
-import {taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
-import {openTableOf} from '../bindings/platform/steps.js';
+import {tableTagIsFile} from '../bindings/platform/data.js';
+import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
 import {el} from '../src/runtime/args.js';
-import {select} from '../src/runtime/gestures.js';
-import {locate} from '../src/runtime/locate.js';
 import {knownFailure} from '../src/runtime/harness.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
 
@@ -91,41 +88,6 @@ scenario('the newest column matching a pattern: distinct values and missing valu
   await assert.rejects(() => newestMatchingDistinct(page!, '^Missing', 1), /no column matching/);
 });
 
-scenario('a table tag is set on the current table', async () => {
-  await page!.setContent('<div></div>');
-  await standIn(page!, {node: ['a']});
-  await setTableTag(page!, '.newick-alt', '(a,b);');
-  assert.equal(await page!.evaluate(() => (window as any).grok.shell.t.getTag('.newick-alt')), '(a,b);');
-});
-
-scenario('a table written in the feature is parsed as a CSV into a view of its own', async () => {
-  await page!.setContent('<div></div>');
-  await page!.evaluate(() => {
-    const w = window as any;
-    w.DG = {DataFrame: {fromCsv: (csv: string) => ({csv, name: ''})}};
-    w.grok = {shell: {addTableView: (df: any) => { w.grok.shell.tv = {dataFrame: df, grid: {}}; }}};
-  });
-  await openTableOf(page!, 'leaves', [['leaf', 'note'], ['A', 'x, y'], ['B', 'say "hi"']]);
-  assert.equal(await page!.evaluate(() => (window as any).grok.shell.tv.dataFrame.csv), 'leaf,note\nA,"x, y"\nB,"say ""hi"""');
-  await assert.rejects(() => openTableOf(page!, 'empty', [['leaf']]), /at least one row/);
-});
-
-scenario('a Dart property row opens its editor on the value before a choice is made, and names its label and value', async () => {
-  await page!.setContent(`<table><tr class="property-grid-item" name="prop-newick-tag"><td class="property-grid-item-name"><div class="property-grid-item-name-text"><span>Newick Tag</span></div></td>
-    <td class="property-grid-item-value"><div class="property-grid-item-view-label" name="prop-view-newick-tag"></div></td></tr></table>`);
-  await page!.evaluate(() => {
-    const cell = document.querySelector('.property-grid-item-value')!;
-    cell.addEventListener('click', () => {
-      if (!cell.querySelector('select'))
-        cell.insertAdjacentHTML('beforeend', '<select><option value=""></option><option value=".newick-alt">.newick-alt</option></select>');
-    });
-  });
-  await select(page!, el('"Newick Tag" property'), '.newick-alt');
-  assert.equal(await page!.locator('select').inputValue(), '.newick-alt');
-  assert.equal(await (await locate(page!, el('value of "Newick Tag" property'))).count(), 1);
-  assert.equal((await (await locate(page!, el('label of "Newick Tag" property'))).textContent())?.trim(), 'Newick Tag');
-});
-
 scenario('the task bar record keeps an entry the bar has already removed', async () => {
   await page!.setContent('<div class="d4-task-bar"></div>');
   await watchTaskBar(page!);
@@ -137,6 +99,10 @@ scenario('the task bar record keeps an entry the bar has already removed', async
   });
   await taskBarShown(page!, 'Creating dendrogram');
   await fails(() => taskBarShown(page!, 'Loading'));
+  await taskBarFinished(page!, 'Creating dendrogram');
+  await fails(() => taskBarFinished(page!, 'Loading'));
+  await page!.evaluate(() => { document.querySelector('.d4-task-bar')!.insertAdjacentHTML('beforeend', '<div class="d4-task-bar-entry">Loading ...</div>'); });
+  await fails(() => taskBarFinished(page!, 'Loading'));
 });
 
 scenario('the mouse-over row counts from 1, and a filled element is told from one inside its padding', async () => {

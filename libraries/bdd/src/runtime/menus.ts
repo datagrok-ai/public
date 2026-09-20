@@ -19,11 +19,12 @@ export function menuNames(path: string): {segments: string[]; names: string[]} {
   return {segments, names};
 }
 
-/** A pointer move within the item opens a vertical group. */
+/** A pointer move within the item opens a vertical group. The bar rebuilds when a package's
+ * entries arrive, which can detach the item between its visibility and its box: the box is
+ * awaited. */
 async function enterGroup(item: Locator): Promise<void> {
-  const box = await item.boundingBox();
-  if (!box)
-    throw new Error('the menu item has no box');
+  await expect.poll(() => item.boundingBox(), {timeout: 5000, message: 'the box of the menu item'}).not.toBeNull();
+  const box = (await item.boundingBox())!;
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   await item.page().mouse.move(cx + 1, cy);
@@ -43,7 +44,21 @@ export async function openTopMenu(page: Page, path: string, pick: boolean): Prom
   if (segments.length === 0)
     throw new Error('an empty menu path');
   // a package's group shows once the table has a column it applies to, a moment after the
-  // detection the open step waited for: the bar rebuilds on its own schedule
+  // detection the open step waited for, and the bar rebuilds on its own schedule: a walk the
+  // rebuild cut short (its group gone, its items unseen) is made once more from the bar
+  try {
+    await walkTopMenu(page, segments, names, pick);
+  }
+  catch (e) {
+    if (!/^no "|has no box|the box of the menu item/.test(String((e as Error).message)))
+      throw e;
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(500);
+    await walkTopMenu(page, segments, names, pick);
+  }
+}
+
+async function walkTopMenu(page: Page, segments: string[], names: string[], pick: boolean): Promise<void> {
   const top = page.locator(`.d4-menu-item-horz[name="${names[0]}"]`).filter({visible: true});
   await top.first().waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
   if (await top.count() > 0) {

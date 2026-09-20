@@ -32,8 +32,9 @@ Feature: Hierarchical clustering from the Bio menu
     When user picks "Bio > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on OK button in "Hierarchical Clustering" dialog
     Then "Hierarchical Clustering" dialog should be hidden
-    And the "tree leaves" reading of grid should be 99
     And the task bar should have shown "Creating dendrogram"
+    And the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 99
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
@@ -56,7 +57,8 @@ Feature: Hierarchical clustering from the Bio menu
     Then Distance input in "Hierarchical Clustering" dialog should have value "manhattan"
     And Linkage input in "Hierarchical Clustering" dialog should have value "complete"
     When user clicks on OK button in "Hierarchical Clustering" dialog
-    Then the "tree leaves" reading of grid should be 99
+    Then the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 99
     And the "tree height" reading of grid should not be as remembered
     And no error or warning balloon should have been shown
     And no errors should have been logged
@@ -65,7 +67,8 @@ Feature: Hierarchical clustering from the Bio menu
     When user clicks on "Remove Dendrogram" icon
     And user picks "Bio > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on OK button in "Hierarchical Clustering" dialog
-    Then the "tree leaves" reading of grid should be 99
+    Then the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 99
     When user clicks on "Assign Clusters" icon
     Then "Assign Clusters" dialog should be visible
     When user enters "5" into Clusters input in "Assign Clusters" dialog

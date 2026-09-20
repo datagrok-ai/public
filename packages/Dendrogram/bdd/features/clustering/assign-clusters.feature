@@ -20,7 +20,8 @@ Feature: Assigning clusters from the tree next to the grid
     And user watches the task bar
     When user picks "Chem > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on OK button in "Hierarchical Clustering" dialog
-    Then the "tree leaves" reading of grid should be 1000
+    Then the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 1000
 
   Scenario: The grid draws structures and the clustering shows its progress
     Then the "cell type of molecule" reading of grid should be "Molecule"
@@ -140,6 +141,7 @@ Feature: Assigning clusters from the tree next to the grid
     When user picks "Chem > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on OK button in "Hierarchical Clustering" dialog
     Then a warning balloon containing "Closing existing dendrogram" should have been shown
+    And the task bar should have finished "Creating dendrogram"
     And the "tree leaves" reading of grid should be 1000
     And there should be 1 visible "Assign Clusters" icon
     And there should be 1 visible "Remove Dendrogram" icon

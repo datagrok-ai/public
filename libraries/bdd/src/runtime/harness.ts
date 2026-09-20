@@ -64,7 +64,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
         return;
       }
       if (options?.knownFailure)
-        failed.push({name, error: new Error('tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go')});
+        failed.push({name, error: new Error(KNOWN_FAILURE_PASSED)});
     },
     finish(): void {
       if (failed.length > 0)
@@ -72,6 +72,8 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
     },
   };
 }
+
+const KNOWN_FAILURE_PASSED = 'tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go';
 
 /** A `@known-failure` scenario outside a journey: its steps failing is the defect it describes and
  * passes the test; its steps passing fails it — the bug is fixed and the tag has to go. */
@@ -82,7 +84,7 @@ export async function knownFailure(body: () => Promise<void>): Promise<void> {
   catch {
     return;
   }
-  throw new Error('tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go');
+  throw new Error(KNOWN_FAILURE_PASSED);
 }
 
 /** `<root>/generated/x/y.test.ts` + `features/x/y.feature` → the feature file (the layout
