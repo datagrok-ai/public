@@ -17,8 +17,8 @@ Feature: Working with the nodes of the Browse tree
   about the drop, the second needs the second account.
 
   A node below the top level is named by its full tree path ("Files---Demo"), which is what the
-  platform writes into its own `name` attribute. Several sections carry a node called Demo, My
-  files or App Data, and a bare name matches whichever of them another feature happened to leave
+  platform writes into its own `name` attribute. Several sections carry a node called Demo, Files
+  or App Data, and a bare name matches whichever of them another feature happened to leave
   open: the tree remembers its expanded set per user, across features and across runs.
 
   Background:
@@ -33,7 +33,6 @@ Feature: Working with the nodes of the Browse tree
     When user expands Files tree node inside browse tree
     Then Files---Demo tree node inside browse tree should be visible
     And Files---App-Data tree node inside browse tree should be visible
-    And Files---My-files tree node inside browse tree should be visible
     When user collapses Files tree node inside browse tree
     Then Files---Demo tree node inside browse tree should be hidden
     And Files---App-Data tree node inside browse tree should be hidden
@@ -52,11 +51,12 @@ Feature: Working with the nodes of the Browse tree
     And Files tree node inside browse tree should not be selected
     When user presses ArrowUp
     Then Files tree node inside browse tree should be selected
-    # Right opens the group and descends into it, so the first Left climbs back to the
-    # group and only the second one closes it (tree_view.dart, the root key handler).
+    # Right opens the group and descends into its first child (whichever share the stand lists
+    # first), so the first Left climbs back to the group and only the second one closes it
+    # (tree_view.dart, the root key handler).
     When user presses ArrowRight
     Then Files---Demo tree node inside browse tree should be visible
-    And Files---My-files tree node inside browse tree should be selected
+    And Files tree node inside browse tree should not be selected
     When user presses ArrowLeft
     Then Files tree node inside browse tree should be selected
     And Files---Demo tree node inside browse tree should be visible

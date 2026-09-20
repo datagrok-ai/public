@@ -13,12 +13,9 @@ const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
 // a dock manager's tab and a gallery's view-mode icon say which is shown with a class of their own;
-// d4-current elsewhere in a gallery marks the current card, not a selection. A Dart tree node marks
-// its selection the same way (tree_view.dart, `selected`, whose own TODO is to publish it as
-// aria-selected — this entry goes when that lands)
+// d4-current elsewhere in a gallery marks the current card, not a selection
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected, .grok-gallery-search-bar .d4-current, ' +
-  '.d4-tree-view-node-selected';
+  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected, .grok-gallery-search-bar .d4-current';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?

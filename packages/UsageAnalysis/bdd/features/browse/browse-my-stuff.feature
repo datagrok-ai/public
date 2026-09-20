@@ -11,9 +11,15 @@ Feature: The My stuff section of the Browse tree
   deleted it — and is simply not written yet. -04 depends on what others have shared with this
   account.
 
+  Recent, Favorites and Shared with me are the section's own nodes. The rest are the buckets of
+  the user's personal project (project_meta.dart bucketOf: Connections, Files, Dashboards,
+  Scripts, Tables, Flows, Spaces), and a bucket is there only while the account owns something
+  of that kind, so only the three fixed nodes are claimed. A bucket carries the same name as the
+  section elsewhere in the tree; the full path tells them apart.
+
   A node below the top level is named by its full tree path ("Files---Demo"), which is what the
-  platform writes into its own `name` attribute. Several sections carry a node called Demo, My
-  files or App Data, and a bare name matches whichever of them another feature happened to leave
+  platform writes into its own `name` attribute. Several sections carry a node called Demo, Files
+  or App Data, and a bare name matches whichever of them another feature happened to leave
   open: the tree remembers its expanded set per user, across features and across runs.
 
   Background:
@@ -26,12 +32,6 @@ Feature: The My stuff section of the Browse tree
       | My-stuff---Recent tree node inside browse tree          |
       | My-stuff---Favorites tree node inside browse tree       |
       | My-stuff---Shared-with-me tree node inside browse tree  |
-      | My-stuff---My-connections tree node inside browse tree  |
-      | My-stuff---My-dashboards tree node inside browse tree   |
-      | My-stuff---My-scripts tree node inside browse tree      |
-      | My-stuff---My-spaces tree node inside browse tree       |
-      | My-stuff---My-tables tree node inside browse tree       |
-      | My-stuff---My-files tree node inside browse tree        |
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

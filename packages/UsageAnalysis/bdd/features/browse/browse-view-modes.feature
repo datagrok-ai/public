@@ -42,10 +42,7 @@ Feature: Browsing mode and persistent views
     And no error or warning balloon should have been shown
 
   Scenario: A new browsing session does not unpin what is already persistent
-    # The third node is a folder rather than another top-level group: a group that has been
-    # expanded far enough to paginate grows a "Show more" item that carries the group's own
-    # name (tree_view.dart addMoreLink calls addItem('')), so "Databases tree node" matches
-    # two elements once another feature has opened it.
+    # the third node is a folder rather than another top-level group, so a nested node is covered too
     Given Files tree node inside browse tree is expanded
     When user double-clicks on Tutorials tree node inside browse tree
     Then Tutorials view should be visible

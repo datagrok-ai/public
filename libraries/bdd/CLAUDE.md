@@ -159,8 +159,8 @@ WebLogo glyphs Peptides draws in grid headers).
   so recreating the same name otherwise targets a stale node or resolves to two nodes.
 - **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
   is also swept by family — the same name with any run suffix, older than an hour — whenever a
-  `no … named` or `a … named` step runs (`isStaleFixture`, platform/steps.ts). Fixed names (the
-  spaces) are swept by their exact name already.
+  `no … named` or `a … named` step runs, and by the project save (`isStaleFixture`,
+  platform/steps.ts). Fixed names (the spaces, most projects) are swept by their exact name.
 - **Groups and roles are cleaned like spaces** (the complete listing, never a name or ID filter —
   `grok.dapi.groups.filter('name = …')` missed a group that existed). Their global permissions are
   revoked before `grok.dapi.groups.delete`, which refuses a role that holds one (GROK-20904). Never

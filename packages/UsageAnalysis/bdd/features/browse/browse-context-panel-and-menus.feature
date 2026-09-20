@@ -12,8 +12,8 @@ Feature: The context panel and the context menus of the Browse tree
   offers everything to everyone.
 
   A node below the top level is named by its full tree path ("Files---Demo"), which is what the
-  platform writes into its own `name` attribute. Several sections carry a node called Demo, My
-  files or App Data, and a bare name matches whichever of them another feature happened to leave
+  platform writes into its own `name` attribute. Several sections carry a node called Demo, Files
+  or App Data, and a bare name matches whichever of them another feature happened to leave
   open: the tree remembers its expanded set per user, across features and across runs.
 
   Browse-CtxPanel-04 (Collapse all / Expand all panes) is not translated: the old spec asserted

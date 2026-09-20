@@ -16,8 +16,8 @@ Feature: The Platform and Databases sections of the Browse tree
   pane; Browse-DB-06 never clicked Browse > Summary at all, so it did not test GROK-16857.
 
   A node below the top level is named by its full tree path ("Files---Demo"), which is what the
-  platform writes into its own `name` attribute. Several sections carry a node called Demo, My
-  files or App Data, and a bare name matches whichever of them another feature happened to leave
+  platform writes into its own `name` attribute. Several sections carry a node called Demo, Files
+  or App Data, and a bare name matches whichever of them another feature happened to leave
   open: the tree remembers its expanded set per user, across features and across runs.
 
   Background:

@@ -14,9 +14,13 @@ Feature: The Files section of the Browse tree
   shared with this account. Browse-Files-06 (download) is writable — the old spec used a plain
   download event and needed no configured path — and is simply not written yet.
 
+  The shares claimed are the two every stand is provisioned with, App Data and Demo. The user's
+  own home share is named by the stand ("My files" on dev) and a stand whose users have no home
+  storage lists none, so it is not claimed.
+
   A node below the top level is named by its full tree path ("Files---Demo"), which is what the
-  platform writes into its own `name` attribute. Several sections carry a node called Demo, My
-  files or App Data, and a bare name matches whichever of them another feature happened to leave
+  platform writes into its own `name` attribute. Several sections carry a node called Demo, Files
+  or App Data, and a bare name matches whichever of them another feature happened to leave
   open: the tree remembers its expanded set per user, across features and across runs.
 
   Background:
@@ -26,7 +30,6 @@ Feature: The Files section of the Browse tree
 
   Scenario: The Files section lists its file shares
     Then the following elements should be visible:
-      | Files---My-files tree node inside browse tree |
       | Files---App-Data tree node inside browse tree |
       | Files---Demo tree node inside browse tree     |
     And no errors should have been logged
