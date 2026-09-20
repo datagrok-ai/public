@@ -89,18 +89,8 @@ export const clipboardHas = Then('the clipboard should have (the )text {string}'
   await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toBe(text);
 }, {description: 'exactly, whitespace included'});
 
-/** A paste, not a typing: the text goes to the page's clipboard and Control+V puts it into the
- * editor over whatever it held, so an editor that reads a pasted value differently from typed keys
- * (a list rewritten on paste) sees the paste. `\n` in the feature is a line break. */
-export const pasteInto = When('user pastes {string} into {element}', async (page: Page, text: string, target: ElementRef) => {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.evaluate((t) => navigator.clipboard.writeText(t), text.replace(/\\n/g, '\n'));
-  const editor = await g.editorOf(page, target);
-  if (!await g.hasFocus(editor))
-    await editor.click();
-  await editor.press('Control+A');
-  await editor.press('Control+V');
-}, {tier: 'ui', description: 'through the clipboard and Control+V over what the editor held; "\\n" is a line break'});
+export const pasteInto = When('user pastes {string} into {element}', async (page: Page, text: string, target: ElementRef) =>
+  g.paste(page, await g.editorOf(page, target), text), {tier: 'ui', description: 'through the clipboard and the paste key over what the editor held; "\\n" is a line break'});
 
 /** The state a scenario needs, rather than a gesture: `setExpanded` reads where the element is
  * first, so a group that is already open stays open — "user expands" on it would close it. */

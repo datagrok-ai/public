@@ -130,7 +130,8 @@ Feature: Filter panel core ladder
     And counter of filter panel should have text "1"
     When user hovers over "RACE" filter card
     Then checkbox of "RACE" filter card should be unchecked
-    When user switches the "RACE" filter card back on
+    When user hovers over "RACE" filter card
+    And user checks checkbox of "RACE" filter card
     Then 19 rows should pass the filter
     And "RACE" filter card should be enabled
     And the "selected categories of RACE" reading of filter panel should be "Black"

@@ -44,10 +44,10 @@ Feature: Expression and text filter cards
     And user types "160" into Value input in "Expression" filter card
     And user clicks on "Add filter" button in "Expression" filter card
     Then the "categories of Expression" reading of filter panel should be "${AGE} > 50, ${HEIGHT} < 160"
-    And the AND-OR switch of the "Expression" filter card should read "OR"
+    And mode of "Expression" filter card should have text "OR"
     And 446 rows should pass the filter
-    When user clicks on the AND-OR switch of the "Expression" filter card
-    Then the AND-OR switch of the "Expression" filter card should read "AND"
+    When user clicks on mode of "Expression" filter card
+    Then mode of "Expression" filter card should have text "AND"
     And 88 rows should pass the filter
     And no errors should have been logged
 
@@ -143,10 +143,10 @@ Feature: Expression and text filter cards
     When user types "hop" into the search of the "Aroma" filter card
     And user presses Enter
     Then the "categories of Aroma" reading of filter panel should be "malt, hop"
-    And the AND-OR switch of the "Aroma" filter card should read "OR"
+    And mode of "Aroma" filter card should have text "OR"
     And 106 rows should pass the filter
-    When user clicks on the AND-OR switch of the "Aroma" filter card
-    Then the AND-OR switch of the "Aroma" filter card should read "AND"
+    When user clicks on mode of "Aroma" filter card
+    Then mode of "Aroma" filter card should have text "AND"
     And 88 rows should pass the filter
     And no errors should have been logged
 

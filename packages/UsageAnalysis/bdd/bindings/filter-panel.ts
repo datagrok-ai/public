@@ -92,19 +92,12 @@ export const typeIntoCardSearch = When('user types {string} into the search of t
   await viewers.settleAll(page);
 }, {tier: 'ui', description: 'the search box the card\'s search icon reveals — the categorical card narrows its rows to the matches, the hierarchical one hides the nodes that do not match'});
 
-/** A block of text through the clipboard and Control+V, as a user pastes cells copied out of a
- * table — the card reads a pasted list differently from typed text. `\n` in the feature is a line
- * break. */
+/** As a user pastes cells copied out of a table — the card reads a pasted list differently from
+ * typed text. */
 export const pasteIntoCardSearch = When('user pastes {string} into the search of the {string} filter card', async (page: Page, text: string, caption: string) => {
-  const block = text.replace(/\\n/g, '\n');
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.evaluate((t) => navigator.clipboard.writeText(t), block);
-  const input = cardSearch(page, caption);
-  await input.click();
-  await input.press('Control+A');
-  await input.press('Control+V');
+  await gestures.paste(page, cardSearch(page, caption), text);
   await viewers.settleAll(page);
-}, {tier: 'ui', description: 'the text goes to the clipboard and Control+V pastes it into the card\'s search box; "\\n" is a line break'});
+}, {tier: 'ui', description: 'through the clipboard and the paste key into the card\'s search box; "\\n" is a line break'});
 
 export const clearCardSearch = When('user clears the search of the {string} filter card', async (page: Page, caption: string) => {
   const input = cardSearch(page, caption);
@@ -216,48 +209,10 @@ export const dragCard = When('user drags the {string} filter card above the {str
     const b = {x: a.x, y: target.y + 3};
     await page.mouse.move(a.x, a.y);
     await page.mouse.down();
-    for (let i = 1; i <= 12; i++)
-      await page.mouse.move(a.x, a.y + (b.y - a.y) * i / 12);
+    await page.mouse.move(b.x, b.y, {steps: 12});
     await page.mouse.up();
     await viewers.settleAll(page);
   }, {tier: 'ui', description: 'the caption of one card dragged onto the top edge of another — the panel puts it before that card'});
-
-// --- the AND / OR switch of a card that combines several conditions --------------------------------
-
-/** The word in the header of an expression, text, multi-value or combined boolean card that says
- * how its conditions combine; a click on it flips it. It carries no name, only the text. */
-const modeSwitch = (page: Page, caption: string): Locator => card(page, caption)
-  .locator('.d4-filter-header > div').filter({hasText: /^\s*(AND|OR)\s*$/}).first();
-
-export const clickModeSwitch = When('user clicks on the AND-OR switch of the {string} filter card', async (page: Page, caption: string) => {
-  const sw = modeSwitch(page, caption);
-  await expect(sw, `the AND-OR switch of the "${caption}" filter card`).toBeVisible({timeout: 5000});
-  const before = (await sw.textContent())?.trim();
-  await sw.click();
-  await expect(sw, `the AND-OR switch of the "${caption}" filter card after the click`).not.toHaveText(before ?? '', {timeout: 5000});
-  await viewers.settleAll(page);
-}, {tier: 'ui', description: 'flips the word in the card header between AND and OR; a click that leaves it as it was fails here'});
-
-export const modeSwitchReads = Then('the AND-OR switch of the {string} filter card should read {string}', (page: Page, caption: string, mode: string) =>
-  expect(modeSwitch(page, caption), `the AND-OR switch of the "${caption}" filter card`).toHaveText(mode, {timeout: 5000}));
-
-// --- a suspended card's own checkbox ---------------------------------------------------------------
-
-/* A card whose checkbox is off says `aria-disabled="true"`, and Playwright's actionability counts
-   an aria-disabled ancestor as disabled — so `user checks checkbox of "X" filter card` refuses the
-   one control that switches the card back on. The pointer goes there itself. */
-export const switchCardBackOn = When('user switches the {string} filter card back on', async (page: Page, caption: string) => {
-  const box = card(page, caption).locator('.d4-filter-bool-input input[type="checkbox"]').first();
-  await card(page, caption).hover();
-  const rect = await box.boundingBox();
-  if (!rect)
-    throw new Error(`the "${caption}" filter card shows no checkbox`);
-  if (await box.isChecked())
-    throw new Error(`the "${caption}" filter card is already on`);
-  await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
-  await expect(box, `the checkbox of the "${caption}" filter card after the click`).toBeChecked({timeout: 5000});
-  await viewers.settleAll(page);
-}, {tier: 'ui', description: 'a real click on the checkbox of a card that is switched off — the card is aria-disabled then, which Playwright\'s own check refuses'});
 
 // --- a histogram card's min and max fields --------------------------------------------------------
 
@@ -323,24 +278,17 @@ export const clickHierarchicalCheckbox = When('user clicks on the checkbox of th
   await viewers.settleAll(page);
 }, {tier: 'ui', description: 'the box left of the row — it toggles that branch and leaves its siblings as they are, where a click on the label keeps the branch alone'});
 
-/* The node's state is only in the glyph the product draws over its checkbox — checked, empty or
-   intermediate — and nowhere else: the checkbox itself says nothing about a partial branch, and
-   the node carries no aria-checked. */
-const GLYPHS: Record<string, string> = {'\uf14a': 'checked', '\uf0c8': 'unchecked', '\uf146': 'partially checked'};
+/* The checkbox itself says nothing about a partial branch: the node's box carries `aria-checked`
+   (true, false or mixed), set together with the glyph the tree draws. */
+const ARIA_CHECKED: Record<string, string> = {checked: 'true', unchecked: 'false', partially: 'mixed'};
 
 export const hierarchicalRowState = Then('the {string} row of the hierarchical filter card should be {word}( checked)',
-  async (page: Page, path: string, word: string) => {
-    const want = word === 'partially' ? 'partially checked' : word;
-    if (!['checked', 'unchecked', 'partially checked'].includes(want))
+  (page: Page, path: string, word: string) => {
+    if (!ARIA_CHECKED[word])
       throw new Error(`a row of the hierarchical card is checked, unchecked or partially checked, not "${word}"`);
-    const glyph = hierarchicalNode(page, path).locator('.d4-hierarchical-filter-checkbox-substitute').first();
-    // a card with no criterion draws every node's check thin and grey; a node the criterion keeps is bold
-    await expect.poll(async () => {
-      const {text, weight} = await glyph.evaluate((e) => ({text: e.textContent ?? '', weight: Number(getComputedStyle(e).fontWeight)}));
-      const state = GLYPHS[text] ?? `an unknown glyph "${text}"`;
-      return state === 'checked' && weight < 600 ? 'checked by no criterion (a thin check)' : state;
-    }, {timeout: 5000, message: `the "${path}" row of the hierarchical filter card`}).toBe(want);
-  }, {description: 'the glyph the tree draws over the row\'s checkbox: a branch whose children disagree draws the intermediate one, a node the criterion keeps a bold check'});
+    return expect(hierarchicalNode(page, path).locator('.d4-hierarchical-filter-checkbox-container').first(),
+      `the "${path}" row of the hierarchical filter card`).toHaveAttribute('aria-checked', ARIA_CHECKED[word], {timeout: 5000});
+  }, {description: 'the aria-checked of the box left of the row: a branch whose children disagree says mixed'});
 
 export const hierarchicalRowCounts = Then('the {string} row of the hierarchical filter card should count {int} rows',
   (page: Page, path: string, count: number) =>

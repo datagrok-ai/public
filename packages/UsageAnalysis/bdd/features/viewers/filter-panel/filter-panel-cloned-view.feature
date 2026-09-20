@@ -66,7 +66,8 @@ Feature: Filter panel of a cloned view
     And the "enabled of SEX" reading of filter panel should be "false"
     And "RACE" filter card should be enabled
     When user switches to the "demog-1000" view
-    And user switches the "SEX" filter card back on
+    And user hovers over "SEX" filter card
+    And user checks checkbox of "SEX" filter card
     Then 18 rows should pass the filter
     When user switches to the "demog-1000 copy" view
     Then "SEX" filter card should be enabled
@@ -114,7 +115,8 @@ Feature: Filter panel of a cloned view
     When user remembers the "rows shown" reading of filter panel
     And user remembers the "cards" reading of filter panel
     And user saves the layout of the current table view to the server
-    And user switches the "RACE" filter card back on
+    And user hovers over "RACE" filter card
+    And user checks checkbox of "RACE" filter card
     Then the "rows shown" reading of filter panel should not be as remembered
     When user clicks on close icon of filters viewer
     Then filter panel should be hidden

@@ -113,7 +113,8 @@ Feature: Filter panel entry points
     And the "filtering of DIS_POP" reading of filter panel should be "false"
     And the "filters" reading of filter panel should be 1
     And counter of filter panel should have text "1"
-    When user switches the "DIS_POP" filter card back on
+    When user hovers over "DIS_POP" filter card
+    And user checks checkbox of "DIS_POP" filter card
     Then 299 rows should pass the filter
     And the "selected categories of DIS_POP" reading of filter panel should be "RA"
     And the "filters" reading of filter panel should be 2

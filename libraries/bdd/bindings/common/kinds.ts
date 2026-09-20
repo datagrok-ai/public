@@ -314,7 +314,7 @@ kind('legend item', {
   parts: {label: '.d4-legend-value', cross: '.d4-legend-cross', thumbnail: 'canvas.d4-legend-value', marker: '[name="legend-item-marker"]'},
 });
 // a card of the filter panel by its caption: "RACE" filter card, checkbox of "RACE" filter card;
-// aria-disabled while suspended, its own counter as the indicator part
+// aria-disabled on its body while suspended (the header, its checkbox and the mode word stay operable), its own counter as the indicator part
 kind('filter card', {
   selector: '.d4-filter',
   match: ['label', 'dart'],
