@@ -20,9 +20,9 @@ Feature: Legends follow the rows that are left
   clears them; the WEIGHT range goes in through the filter group's API — the state a handle drag
   leaves. A range card draws a histogram of its own, earlier in the page than the histogram viewer,
   so the scenarios name that one "last histogram viewer".
-  The layout scenarios come last and close the histogram viewer first: with the immediate rendering
-  the harness puts every viewer in, a layout that holds a histogram viewer comes back with an empty
-  filter panel, so the claims are made on the other six viewers.
+  The layout scenarios come last: two with the histogram viewer closed, the last one with a histogram
+  viewer added back (a layout that held one came back with an empty filter panel under the harness's
+  immediate rendering, until the core fix of 2026-09-15).
   On Click = Filter comes with Row Source = All, and that is the core's own doing, confirmed by the
   operator: `viewer_base.dart`'s On Click menu sets the two together, and the trellis plot couples
   them in `onLookChanged` as well. A viewer that filters on a click therefore keeps drawing every
@@ -46,16 +46,6 @@ Feature: Legends follow the rows that are left
   Name) is a count of USUBJID stacked by a calculated DIS_POP that is empty for RACE Other —
   demog-1000 has no empty category of its own, and Include Nulls has nothing to take away without
   one.
-  Known failure: applying a layout that holds a histogram viewer races the filter panel the layout
-  re-creates. The new panel builds its cards from the layout on a 10 ms timer (`filters_core.dart`),
-  while the histogram's filter request makes the panel save its state, and the save rewrites the
-  panel's filters from the cards it already has, which before the first build is none. The save
-  normally waits 50 ms and lands after the build; under `immediateRendering`, which
-  `libraries/bdd/src/runtime/viewer-runtime.ts`'s `arm` sets on every viewer, it lands first, and the
-  layout comes back with an empty filter panel and every row passing. The saved layout is the same
-  with the flag and without it. A layout holding no histogram viewer, or one whose Filtering Enabled
-  is off, restores the panel, so the round-trips before the last scenario are made with the
-  histogram closed. Take the mark off once the save no longer runs before the panel's first build.
 
   Background:
     Given user is logged in
@@ -379,7 +369,7 @@ Feature: Legends follow the rows that are left
     And 12 rows should pass the filter
     And no errors should have been logged
 
-  Scenario: A histogram viewer joins the view and a layout is saved with it
+  Scenario: A histogram viewer joins the view and the layout that holds it brings the panel's filter back
     When user adds a histogram viewer
     And user sets properties of last histogram viewer:
       | valueColumnName   | AGE    |
@@ -391,9 +381,7 @@ Feature: Legends follow the rows that are left
     And user hovers over filter panel
     And user clicks on reset icon of filter panel
     Then all rows should pass the filter
-    And no errors should have been logged
-
-  @known-failure
-  Scenario: The layout that holds the histogram viewer brings the panel's filter back
     When user loads the saved layout
     Then 12 rows should pass the filter
+    And the legend of last histogram viewer should list 2 items
+    And no errors should have been logged

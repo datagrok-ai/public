@@ -396,8 +396,8 @@ export const legendSameItems = Then('the legend of {widget} should list the same
 export const legendDocked = Then('the legend of {widget} should be docked', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'docked'),
   {description: 'the mode the legend publishes: docked at a side (in a corner over the plot, collapsed to the mini icon and shown in the tooltip are the other modes)'});
 
-export const legendInCorner = Then('the legend of {widget} should be in a corner', (page: Page, target: ElementRef) => v.expectLegendInCorner(page, target),
-  {description: 'in a corner by the mode the legend publishes, and put there: laid over the viewer and anchored by the two edges its slot names ("in the {string} slot" names which)'});
+export const legendInCorner = Then('the legend of {widget} should be in a corner', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'corner'),
+  {description: 'the mode the legend publishes: laid over the plot in one of its four corners ("in the {string} slot" names which)'});
 
 export const legendMiniIcon = Then('the legend of {widget} should be collapsed to the mini icon', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'mini icon'),
   {description: 'the mode the legend publishes: folded into the small legend icon (a viewer too small under Visibility Auto, or a corner legend closed by its chevron); hovering the icon shows it in the tooltip'});

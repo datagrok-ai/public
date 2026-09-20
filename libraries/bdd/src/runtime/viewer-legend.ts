@@ -8,7 +8,7 @@ import {withKeys} from './gestures.js';
 import {exactText} from './locate.js';
 import {LegendState} from './viewer-runtime.js';
 import {near, parseHex} from './viewer-pixels.js';
-import {onViewer, settle, snapshot, viewerLocator} from './viewers.js';
+import {centerOf, dragDelta, dragFrom, onViewer, settle, snapshot, viewerLocator} from './viewers.js';
 
 const TOOLTIP_ROWS = '.d4-tooltip:visible table.d4-row-tooltip-table tr';
 const TOOLTIP_COLUMNS = TOOLTIP_ROWS + ' td:first-child';
@@ -90,38 +90,6 @@ export async function expectLegendMode(page: Page, target: ElementRef, mode: str
   }
 }
 
-/** In a corner by the mode it publishes, and put there: the legend is laid over the viewer
- * (absolutely positioned inside its root) and anchored by the two edges its corner slot names and
- * by no other, so a slot the placement decided but did not apply fails. The anchor, not the box's
- * geometry: a viewer insets a corner legend past its axes and strips, which can put a
- * bottom-anchored legend above the middle. */
-export async function expectLegendInCorner(page: Page, target: ElementRef): Promise<void> {
-  await expectLegendMode(page, target, 'corner');
-  let last = '';
-  const holds = async (): Promise<boolean> => {
-    const r: {slot: string; position: string; inRoot: boolean; top: string; bottom: string; left: string; right: string} | undefined =
-      await onViewer(page, target, (el) => {
-        const b = (window as any).__bdd;
-        const v = b.viewerOf(el);
-        const l: HTMLElement | null = v.root.querySelector('[name="legend"]');
-        return l ? {slot: l.dataset.legendSlot ?? '', position: l.style.position, inRoot: l.parentElement === v.root,
-          top: l.style.top, bottom: l.style.bottom, left: l.style.left, right: l.style.right} : undefined;
-      }, undefined);
-    if (!r)
-      return false;
-    const anchored = (['top', 'bottom', 'left', 'right'] as const).filter((e) => r[e] !== '');
-    last = `slot ${r.slot}, ${r.position || 'static'}${r.inRoot ? ' over the viewer' : ' inside a layout part'}, anchored at ${anchored.join(' and ') || 'no edge'}`;
-    const want = {leftTop: 'top,left', leftBottom: 'bottom,left', rightTop: 'top,right', rightBottom: 'bottom,right'}[r.slot];
-    return r.position === 'absolute' && r.inRoot && want !== undefined && [...anchored].sort().join(',') === want.split(',').sort().join(',');
-  };
-  try {
-    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
-  }
-  catch {
-    throw new Error(`the legend of ${target.phrase} is not put in the corner it names (${last || 'no legend'})`);
-  }
-}
-
 export async function expectLegendSlot(page: Page, target: ElementRef, slot: string): Promise<void> {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
   let last: LegendState | undefined;
@@ -150,9 +118,7 @@ export async function expectLegendPlacedAsBefore(page: Page, target: ElementRef)
 /** Drags the splitter between a docked legend and the plot: the baseline is taken first, so "wider
  * / narrower / taller / shorter than before" compare with the legend as it was before the drag. */
 export async function dragLegendSplitter(page: Page, target: ElementRef, px: number, direction: string): Promise<void> {
-  const d = direction.toLowerCase();
-  if (!['left', 'right', 'up', 'down'].includes(d))
-    throw new Error(`a splitter is dragged left, right, up or down, not "${direction}"`);
+  const delta = dragDelta(px, direction);
   await settle(page, target);
   await snapshot(page, target);
   const splitter = (await viewerLocator(page, target)).locator('[name="legend-splitter"]').filter({visible: true}).first();
@@ -162,15 +128,7 @@ export async function dragLegendSplitter(page: Page, target: ElementRef, px: num
   const box = await splitter.boundingBox();
   if (!box)
     throw new Error(`the legend splitter of ${target.phrase} has no box`);
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2;
-  const dx = d === 'left' ? -px : d === 'right' ? px : 0;
-  const dy = d === 'up' ? -px : d === 'down' ? px : 0;
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x + dx / 2, y + dy / 2);
-  await page.mouse.move(x + dx, y + dy);
-  await page.mouse.up();
+  await dragFrom(page, centerOf(box), delta);
   await settle(page, target);
 }
 
