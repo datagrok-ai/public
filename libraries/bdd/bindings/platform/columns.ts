@@ -200,3 +200,12 @@ export const joinedValues = Then('every value of {string} column should be {stri
   }, [column, a, b, sep] as [string, string, string, string]);
   expect(bad, `rows of "${column}" that are not "${a}${sep}${b}"`).toEqual([]);
 }, {description: 'a pairing column: each cell is the two source cells of its row with the separator between'});
+
+export const setColumnSemType = When('user sets the semantic type of {string} column to {string}', async (page: Page, column: string, semType: string) => {
+  await page.evaluate(([c, s]) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}; it has: ${grok.shell.t.columns.names().join(', ')}`);
+    col.semType = s;
+  }, [column, semType] as [string, string]);
+}, {tier: 'api', description: 'the column\'s semantic type written directly — a type the detectors would not give the column, for a claim that something keeps it'});

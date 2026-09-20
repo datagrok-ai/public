@@ -367,7 +367,8 @@ Usage: grok setup [--check] [--global]
 
 Gets a public/ checkout (or a fresh worktree) ready to build, and keeps it that way after a pull:
   1. Node 20+ (22 recommended); pnpm through corepack, at the version the workspace pins
-  2. removes per-package node_modules left by the npm era and stray package-lock.json files
+  2. removes per-package node_modules left by the npm era, stray package-lock.json files and the .js/.d.ts
+     files the npm-era tsc emitted beside js-api and library sources
   3. pnpm install at the workspace root
   4. reports a global grok older than the workspace one
 

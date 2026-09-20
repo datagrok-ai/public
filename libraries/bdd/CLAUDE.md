@@ -111,7 +111,9 @@ WebLogo glyphs Peptides draws in grid headers).
   names a part) → registered element, else kind by every matching suffix, longest first. Kinds
   try their `match` strategies in order; a scope that is not on the page is not waited for.
 - **Gestures act on the visible match** (`locateActionable`); `enabled`/`disabled` read every
-  match and prefer the visible ones; `visible`/`hidden` over several matches = any/none.
+  match and prefer the visible ones; `visible`/`hidden` over several matches = any/none. An
+  ordinal counts the visible matches: the Home page keeps its own viewers in the DOM, hidden,
+  under a table view, so "first line chart viewer" must not land on one of them.
 - **Labels are found first, items second** (`byLabel`, `:scope >` labels); menu items match
   their own label, not their children's.
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**

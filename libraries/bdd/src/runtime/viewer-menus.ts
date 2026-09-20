@@ -44,39 +44,49 @@ export async function openContextMenuOf(page: Page, target: ElementRef, area?: s
   return rightClickArmed(page, x, y, token);
 }
 
+/** A group item holds its children under its own label: the labels inside it are the children's. */
+const CHILDREN = '.d4-menu-item-container';
+
 /** Every label of the open menus reading exactly that — a viewer menu can hold two groups of the
- * same name (the axis "Annotations" and the viewer's own). */
-export function menuLabelsMatching(page: Page, label: string): Locator {
-  return page.locator(POPUP).locator('.d4-menu-item-label', {hasText: exactText(label)});
+ * same name (the axis "Annotations" and the viewer's own) — or, inside a group, of its children. */
+export function menuLabelsMatching(page: Page, label: string, within?: Locator): Locator {
+  return (within ? within.locator(CHILDREN) : page.locator(POPUP)).locator('.d4-menu-item-label', {hasText: exactText(label)});
 }
 
-export function menuItems(page: Page, label: string): Locator {
-  return menuLabelsMatching(page, label).locator(MENU_ITEM);
+export function menuItems(page: Page, label: string, within?: Locator): Locator {
+  return menuLabelsMatching(page, label, within).locator(MENU_ITEM);
 }
 
-async function menuShows(page: Page, label: string): Promise<boolean> {
-  return (await menuLabelsMatching(page, label).filter({visible: true}).count()) > 0;
+async function menuShows(page: Page, label: string, within?: Locator): Promise<boolean> {
+  return (await menuLabelsMatching(page, label, within).filter({visible: true}).count()) > 0;
 }
 
 export function menuItem(page: Page, label: string): Locator {
   return menuItems(page, label).first();
 }
 
-async function visibleMenuLabels(page: Page): Promise<string> {
-  const labels = await page.locator(POPUP).locator('.d4-menu-item-label').filter({visible: true}).allTextContents();
+/** What the open menus show, by item: its label, or the caption of an element item (a property
+ * editor the menu embeds — the PC plot's column picker under "Columns" — carries it as `data-source`). */
+async function visibleMenuLabels(page: Page, within?: Locator): Promise<string> {
+  const items = (within ? within.locator(CHILDREN) : page.locator(POPUP)).locator('.d4-menu-item').filter({visible: true});
+  const labels = await items.evaluateAll((els) => els.map((e) => e.querySelector(':scope > .d4-menu-item-label')?.textContent ?? e.getAttribute('data-source') ?? ''));
   return labels.map((t) => t.trim()).filter(Boolean).join(' | ');
 }
 
 /** A group item opens on a pointer move over it: the move enters from the left, since a pointer
  * already resting on the item (a hover before the menu was reopened) would move nowhere. When
- * several items share the label, each is tried until [wanted] shows up. */
-async function openGroup(page: Page, label: string, wanted?: string): Promise<void> {
-  // a group already open, or one the menu renders inline, needs no hover
-  if (wanted !== undefined && await menuShows(page, wanted))
-    return;
-  const candidates = menuItems(page, label);
+ * several items share the label, each is tried until [wanted] shows up among its children — so
+ * "HEIGHT > Chart type" is the series' group, not the chart-wide "Chart Type" beside it. Returns
+ * the group item, the scope of the next segment. */
+async function openGroup(page: Page, label: string, wanted: string | undefined, within?: Locator): Promise<Locator> {
+  const candidates = menuItems(page, label, within);
   await candidates.filter({visible: true}).first().waitFor({state: 'visible', timeout: 5000});
   const count = await candidates.count();
+  // a group already open, or one the menu renders inline, needs no hover
+  for (let i = 0; wanted !== undefined && i < count; i++) {
+    if (await menuShows(page, wanted, candidates.nth(i)))
+      return candidates.nth(i);
+  }
   for (let i = 0; i < count; i++) {
     const item = candidates.nth(i);
     if (!(await item.isVisible()))
@@ -86,51 +96,57 @@ async function openGroup(page: Page, label: string, wanted?: string): Promise<vo
       continue;
     const cy = box.y + box.height / 2;
     await page.mouse.move(Math.max(0, box.x - 8), cy);
+    await page.mouse.move(box.x + box.width * 0.75, cy);
+    // a move back to the left is what the menu takes as leaving a sibling's open submenu (a move
+    // to the right stays inside the triangle that keeps it open), and the same move opens this one
     await page.mouse.move(box.x + box.width / 2, cy);
     if (wanted === undefined)
-      return;
-    const opened = await expect.poll(() => menuShows(page, wanted), {timeout: pollMs(2000)}).toBe(true).then(() => true, () => false);
+      return item;
+    const opened = await expect.poll(() => menuShows(page, wanted, item), {timeout: pollMs(2000)}).toBe(true).then(() => true, () => false);
     if (opened) {
       // step into the flyout along the group's own row: the menu hides a submenu when the pointer
       // leaves the group item at a steep angle, which would take the item away mid-click
-      const target = await menuLabelsMatching(page, wanted).filter({visible: true}).first().boundingBox();
+      const target = await menuLabelsMatching(page, wanted, item).filter({visible: true}).first().boundingBox();
       if (target != null) {
         await page.mouse.move(target.x + 4, cy);
         await page.mouse.move(target.x + 4, target.y + target.height / 2);
       }
-      return;
+      return item;
     }
   }
-  throw new Error(`the "${label}" group did not show "${wanted}"; the menu shows: ${await visibleMenuLabels(page)}`);
+  throw new Error(`the "${label}" group did not show "${wanted}"; the menu shows: ${await visibleMenuLabels(page, within)}`);
 }
 
-/** `Misc > Show Inside Values`: hovers the groups, clicks the leaf. The item ancestor is the usual
- * click target, but an inline group lays the box out on the label itself — decided before the
- * click, and clicked once: a click whose handler rebuilds the viewer synchronously can outlast a
- * short cap with its work done, and a second click would undo a toggle. */
+/** `Misc > Show Inside Values`: hovers the groups, each found inside the one before, clicks the
+ * leaf. The item ancestor is the usual click target, but an inline group lays the box out on the
+ * label itself — decided before the click, and clicked once: a click whose handler rebuilds the
+ * viewer synchronously can outlast a short cap with its work done, and a second click would undo
+ * a toggle. */
 export async function pickMenuPath(page: Page, path: string): Promise<void> {
   const segments = path.split(SEP).filter((s) => s.length > 0);
+  let group: Locator | undefined;
   for (let i = 0; i < segments.length; i++) {
     const last = i === segments.length - 1;
     if (!last) {
-      await openGroup(page, segments[i], segments[i + 1]).catch(async () => {
-        throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page)}`);
+      group = await openGroup(page, segments[i], segments[i + 1], group).catch(async () => {
+        throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}`);
       });
       continue;
     }
-    const label = menuLabelsMatching(page, segments[i]).filter({visible: true}).first();
+    const label = menuLabelsMatching(page, segments[i], group).filter({visible: true}).first();
     await label.waitFor({state: 'visible', timeout: 3000}).catch(async () => {
-      throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page)}`);
+      throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}`);
     });
     const item = label.locator(MENU_ITEM);
     await (await item.count() > 0 ? item : label).click();
   }
 }
 
-/** The labels of the open menu, opening every group of [path] first ("" reads the top level). */
+/** The labels under [path], opening every group of it first ("" reads the top level). */
 export async function menuLabels(page: Page, path: string): Promise<string[]> {
   const segments = path.split(SEP).filter((s) => s.length > 0);
+  let group: Locator | undefined;
   for (let i = 0; i < segments.length; i++)
-    await openGroup(page, segments[i], segments[i + 1]);
-  return (await visibleMenuLabels(page)).split(' | ').filter(Boolean);
+    group = await openGroup(page, segments[i], segments[i + 1], group);
+  return (await visibleMenuLabels(page, group)).split(' | ').filter(Boolean);
 }
