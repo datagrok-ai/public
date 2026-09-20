@@ -12,7 +12,8 @@ function ids(prop) {
 
 test('for(prop): the core operators of each kind', () => {
   assert.deepEqual(ids({name: 's', type: TYPE.STRING}),
-    ['=', '!=', 'in', 'not in', 'like', '!like', 'starts', 'ends', 'matches', '!matches', 'fuzzy', 'is null', 'is not null']);
+    ['=', '!=', 'in', 'not in', 'under', 'like', '!like', 'starts', 'ends', 'matches', '!matches', 'fuzzy',
+      'is null', 'is not null']);
   assert.deepEqual(ids({name: 'i', type: TYPE.INT}),
     ['=', '!=', '>', '>=', '<', '<=', 'between', 'in', 'not in', 'is null', 'is not null']);
   assert.deepEqual(ids({name: 'f', type: TYPE.FLOAT}), ids({name: 'i', type: TYPE.INT}));
@@ -21,7 +22,8 @@ test('for(prop): the core operators of each kind', () => {
     ['=', '!=', '>', '>=', '<', '<=', 'between', 'is null', 'is not null']);
   assert.deepEqual(ids({name: 'b', type: TYPE.BOOL}), ['=', '!=', 'is null', 'is not null']);
   assert.deepEqual(ids({name: 'l', type: TYPE.LIST}), ['like', '!like', 'is null', 'is not null']);
-  assert.deepEqual(ids({name: 'r', type: TYPE.STRING, ref: 'Core.users'}), ['=', '!=', 'in', 'not in', 'is null', 'is not null']);
+  assert.deepEqual(ids({name: 'r', type: TYPE.STRING, ref: 'Core.users'}),
+    ['=', '!=', 'in', 'not in', 'under', 'is null', 'is not null']);
 });
 
 test('semType set wins over core for that semType, and only there', () => {
@@ -129,10 +131,35 @@ test('domain: values leave as the wire carries them', () => {
   assert.deepEqual(dom(c('is not null')), {property: 'p', operator: '!=', value: null});
 });
 
-test('the core table: every entry has a domain form and, except fuzzy, a mask', () => {
+test('under: a ref-and-id operator with a domain form and no DataFrame form', () => {
+  const ref = {name: 'location_id', type: TYPE.STRING, ref: 'stockroom.location'};
+  const id = {name: 'id', type: TYPE.STRING};
+  const under = Filters.operators.get('under', ref);
+  assert.equal(under.arity, 1);
+  assert.deepEqual(under.kinds, [KIND.REF, KIND.STRING]);
+  assert.equal(Filters.operators.get('under', id), under, 'the id column of a hierarchy table too');
+  assert.equal(Filters.operators.get('under', {name: 'n', type: TYPE.INT}), undefined, 'not on a number');
+  assert.deepEqual(under.domain(Filters.cond('location_id', 'under', {type: 'stockroom.location', id: 'L1'}), ref, ctx),
+    {property: 'location_id', operator: 'under', value: 'L1'});
+  assert.deepEqual(under.domain(Filters.cond('location_id', 'under', {param: 'root'}), ref, ctx),
+    {property: 'location_id', operator: 'under', value: {$param: 'root'}});
+  // No mask and no bitset: the subtree walk is the server's, so a DataFrame
+  // target reports it as not expressible instead of answering wrongly.
+  assert.equal(under.mask, undefined);
+  assert.equal(under.bitset, undefined);
+  const schema = Filters.schema([ref]);
+  const root = Filters.group('and', [Filters.cond('location_id', 'under', 'L1')]);
+  assert.deepEqual(Filters.validate(root, schema, 'domain'), []);
+  assert.equal(Filters.validate(root, schema, 'dataframe')[0].code, 'not-expressible');
+});
+
+test('the core table: every entry has a domain form and, except the server-only ones, a mask', () => {
+  // fuzzy (trigram similarity) and under (a recursive subtree walk) are the two
+  // the server alone can answer — they carry a domain form and no mask.
+  const serverOnly = ['fuzzy', 'under'];
   for (const op of CORE_OPERATORS) {
     assert.equal(typeof op.domain, 'function', op.id);
-    assert.equal(typeof op.mask, op.id === 'fuzzy' ? 'undefined' : 'function', op.id);
+    assert.equal(typeof op.mask, serverOnly.includes(op.id) ? 'undefined' : 'function', op.id);
     assert.equal(op.bitset, undefined, op.id);
     assert.equal(op.semType, undefined, op.id);
   }

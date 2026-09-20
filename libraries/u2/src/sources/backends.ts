@@ -4,6 +4,7 @@ import type {IProperty} from '../core/property-like.js';
 import type {NamedProperty, ObservableLike} from '../core/widget-like.js';
 import type {DapiPagerSourceLike} from '../dg/entities/dapi-source.js';
 import type {DataFrameLike} from './df-bindings.js';
+import type {DomainBackend} from './domain-backend.js';
 
 export interface FuncDescriptorLike {
   name: string;
@@ -40,6 +41,8 @@ export interface SourceBackends {
   workspace?: WorkspaceLike;
   /** Sample rows → a DataFrameLike (DG.DataFrame.fromObjects in the platform). */
   tableFromRows?: (rows: object[]) => DataFrameLike;
+  /** Domain tables — `grok.dapi.domains` in the platform, `MemoryDomainBackend` without one. */
+  domain?: DomainBackend;
 }
 
 export const backends: SourceBackends = {};

@@ -154,8 +154,10 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(opened.found).toBe(true);
       expect(opened.pg).toBe(true);
       // Property row sits in a collapsed accordion — wait for 'attached', not 'visible'.
+      // The grid renders its rows in a second pass, which a two-core CI agent does not
+      // finish within 10 s even though the pane itself is already up.
       await page.locator('tr[name="prop-show-position-labels"]').waitFor({
-        state: 'attached', timeout: 10_000});
+        state: 'attached', timeout: 60_000});
     });
     await softStep(`[${ds.name}] Scenario 3 Step 5 — Edit ≥1 Context Pane property (SR-01: edit-acceptance only)`, async () => {
       const result: {changedShow: boolean, changedSkip: boolean} = await page.evaluate(async () => {

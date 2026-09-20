@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "Patinae molecular viewer (WebAssembly + WebGPU): previews for PyMOL .pse, .prs and .pml files",
   "author": {
-    "name": "Alex Skalkin",
+    "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
   },
   "dependencies": {

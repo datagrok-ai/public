@@ -16,7 +16,7 @@
     "@datagrok-libraries/compute-api": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
-    "codemirror": "^5.65.15",
+    "codemirror": "catalog:",
     "datagrok-api": "workspace:^",
     "rxjs": "catalog:"
   },

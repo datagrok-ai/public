@@ -24,7 +24,7 @@ test.describe("Pivot table — the filter and the selection a click sends back",
   const session = feature(test, "features/viewers/pivot-table/pivot-table-links.feature", import.meta.url);
   test("Pivot table — the filter and the selection a click sends back", {tag: ["@journey", "@viewers", "@realizes:viewers.pivot-table"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 7, page);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(16, "And user adds a pivot table viewer", () => addViewer(page, "pivot table"));
@@ -110,6 +110,24 @@ test.describe("Pivot table — the filter and the selection a click sends back",
       await session.step(97, "Then all rows should pass the filter", () => filterPassesAll(page));
       await session.step(98, "When user sets \"Row Source\" property of pivot table viewer to \"All\"", () => setProperty(page, "Row Source", el("pivot table viewer"), "All"));
       await session.step(99, "Then no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("At Row Source Filtered a selected row still selects the group's source rows", async () => {
+      await session.step(102, "When user sets \"Row Source\" property of pivot table viewer to \"Filtered\"", () => setProperty(page, "Row Source", el("pivot table viewer"), "Filtered"));
+      await session.step(103, "Then no rows should be selected", () => noneSelected(page));
+      await session.step(104, "When user clicks on the \"grid row header 5\" area of pivot table viewer holding Control", () => clickAreaHolding(page, "grid row header 5", el("pivot table viewer"), "Control"));
+      await session.step(105, "Then 434 rows should be selected", () => selectedRowCount(page, 434));
+      await session.step(106, "And only rows where \"DIS_POP\" is \"RA\" should be selected", () => onlyOfSelected(page, "DIS_POP", "RA"));
+      await session.step(107, "And all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(108, "When user clicks on the \"grid row header 4\" area of pivot table viewer holding Control", () => clickAreaHolding(page, "grid row header 4", el("pivot table viewer"), "Control"));
+      await session.step(109, "Then 638 rows should be selected", () => selectedRowCount(page, 638));
+      await session.step(110, "And all rows where \"DIS_POP\" is \"RA\" should be selected", () => allOfSelected(page, "DIS_POP", "RA"));
+      await session.step(111, "And all rows where \"DIS_POP\" is \"Psoriasis\" should be selected", () => allOfSelected(page, "DIS_POP", "Psoriasis"));
+      await session.step(112, "And no rows where \"DIS_POP\" is \"UC\" should be selected", () => noneOfSelected(page, "DIS_POP", "UC"));
+      await session.step(113, "When user clicks on the \"grid row header 4\" area of pivot table viewer holding Control", () => clickAreaHolding(page, "grid row header 4", el("pivot table viewer"), "Control"));
+      await session.step(114, "And user clicks on the \"grid row header 5\" area of pivot table viewer holding Control", () => clickAreaHolding(page, "grid row header 5", el("pivot table viewer"), "Control"));
+      await session.step(115, "Then no rows should be selected", () => noneSelected(page));
+      await session.step(116, "When user sets \"Row Source\" property of pivot table viewer to \"All\"", () => setProperty(page, "Row Source", el("pivot table viewer"), "All"));
+      await session.step(117, "Then no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

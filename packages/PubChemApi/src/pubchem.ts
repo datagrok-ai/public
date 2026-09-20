@@ -12,6 +12,8 @@ const SEARCH_ENDPOINTS: {[K in pubChemSearchType]: string} = {
   substructure: 'fastsubstructure',
 };
 
+let lastRequest = 0;
+
 // PC_Compound shape returned by fast* endpoints → flat widget shape ({CID, CanonicalSMILES})
 // widget.ts reads CanonicalSMILES first, falls back to ConnectivitySMILES
 function flattenPcCompound(compound: anyObject): anyObject {
@@ -26,6 +28,21 @@ function flattenPcCompound(compound: anyObject): anyObject {
   };
 }
 
+export async function fetchJson(url: string): Promise<anyObject> {
+  let response: Response;
+  for (let attempt = 1; ; attempt++) {
+    await DG.delay(Math.max(0, lastRequest + 200 - Date.now()));
+    lastRequest = Date.now();
+    response = await grok.dapi.fetchProxy(url);
+    if (response.status !== 503 || attempt === 3)
+      break;
+    await DG.delay(1000 * attempt);
+  }
+  if (response.status === 503)
+    throw new Error(`PubChem is busy (503): ${url}`);
+  return await response.json();
+}
+
 export async function search(
   searchType: pubChemSearchType, idType: string, id: pubChemIdType,
   params?: paramsType): Promise<anyObject[] | null> {
@@ -33,8 +50,7 @@ export async function search(
   const endpoint = SEARCH_ENDPOINTS[searchType];
   const url =
     `${pubChemPug}/compound/${endpoint}/${idType}/${encodeURIComponent(id)}/JSON?${urlParamsFromObject(params)}`;
-  const response = await grok.dapi.fetchProxy(url);
-  const json: anyObject = await response.json();
+  const json: anyObject = await fetchJson(url);
 
   // fast* endpoints may respond as: Waiting.ListKey (async), {PC_Compounds: [...]}
   // (fastsimilarity_2d), or a bare PC_Compound[] array (fastidentity).
@@ -90,9 +106,7 @@ export async function getBy(
   params ??= {};
   const url =
     `${pubChemPug}/compound/${idType}/${encodeURIComponent(id)}/${idTypeReturn}/JSON?${urlParamsFromObject(params)}`;
-  const response = await grok.dapi.fetchProxy(url);
-  const json = await response.json();
-  return json;
+  return await fetchJson(url);
 }
 
 const LIST_POLL_MAX_REQUESTS = 30;
@@ -109,8 +123,7 @@ async function getListById(
   do {
     await DG.delay(LIST_POLL_DELAY_MS);
     maxRequests--;
-    const response = await grok.dapi.fetchProxy(url);
-    json = await response.json();
+    json = await fetchJson(url);
   } while ('Waiting' in json && maxRequests > 0);
 
   return json.PropertyTable?.Properties ?? json.PC_Compounds ?? null;
@@ -118,6 +131,5 @@ async function getListById(
 
 export async function getCompoundInfo(id: pubChemIdType): Promise<anyObject> {
   const url = `${pubChemRest}/pug_view/data/compound/${id}/JSON`;
-  const response = await grok.dapi.fetchProxy(url);
-  return await response.json();
+  return await fetchJson(url);
 }

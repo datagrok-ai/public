@@ -2,7 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 import {runDiffStudioModel} from './ivp-runtime';
 
-//meta.role: Init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -41,7 +41,7 @@ export function diffStudioFacetViewer() : any {
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //output: view result
-//meta.role: App
+//meta.role: app
 //meta.browsePath: Compute
 export async function runDiffStudio() : Promise<any> {
   return await PackageFunctions.runDiffStudio();
@@ -56,7 +56,7 @@ export async function runDiffStudioDemo() : Promise<void> {
 }
 
 //input: string content 
-//meta.role: FileHandler
+//meta.role: fileHandler
 //meta.ext: ipv
 export async function ivpFileHandler(content: string) : Promise<void> {
   await PackageFunctions.ivpFileHandler(content);
@@ -64,7 +64,7 @@ export async function ivpFileHandler(content: string) : Promise<void> {
 
 //input: file file 
 //output: view result
-//meta.role: FileViewer
+//meta.role: fileViewer
 //meta.fileViewer: ivp
 export async function previewIvp(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewIvp(file);
@@ -84,7 +84,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid() }
-//meta.role: Model
+//meta.role: model
 //editor: Compute2:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true

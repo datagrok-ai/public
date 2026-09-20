@@ -178,3 +178,71 @@ scoped('tree: selectedNodes projects the set in selection order, and clearSelect
   assert.equal(tree.selectedNode.value, null);
   tree.dispose();
 });
+
+scoped('setItems resets the anchor, so a later Shift+click never ranges from a row that is gone', () => {
+  const l = list();
+  click(l, 8);
+  assert.deepEqual(selected(l), [8]);
+  // the anchor sat at 8; the shorter list has no such row
+  l.setItems(['item0', 'item1', 'item2', 'item3']);
+  assert.equal(l.selectedIndex.value, -1, 'the lead left with its row');
+  assert.deepEqual(selected(l), []);
+  click(l, 1);
+  fire(row(l, 3), 'click', {shiftKey: true});
+  assert.deepEqual(selected(l), [1, 2, 3], 'the range runs from the new anchor');
+
+  // and an anchor kept past a shrink is clamped rather than counting off the end
+  click(l, 3);
+  l.setItems(['item0', 'item1']);
+  click(l, 0);
+  fire(row(l, 1), 'click', {shiftKey: true});
+  assert.deepEqual(selected(l), [0, 1]);
+  l.dispose();
+});
+
+scoped('a swap measured at zero height renders the whole window one frame later, not the overscan', async () => {
+  const l = list();
+  await flush();
+  const rendered = () => l.root.querySelectorAll('.u2-list-row').length;
+  assert.equal(rendered(), 10, 'every row of the ten, in a 220px viewport');
+
+  // the in-place swap: the rows are replaced while the layout has not settled, so the scroller
+  // measures 0 — committing that window would leave three rows under a status line saying forty
+  l.root.clientHeight = 0;
+  l.setItems(Array.from({length: 40}, (_, i) => `next${i}`));
+  l.root.clientHeight = 220;
+  await flush();
+  assert.equal(rendered(), 14, 'the frame after the swap renders the window the height allows');
+  assert.equal(row(l, 13) !== null, true, 'down to the last row of it');
+  assert.equal(row(l, 14), null, 'and no further');
+
+  // a list that is genuinely off screen settles instead of asking for frames for ever
+  l.root.clientHeight = 0;
+  l.setItems(Array.from({length: 40}, (_, i) => `hidden${i}`));
+  await flush();
+  await flush();
+  assert.equal(rendered(), 3, 'the overscan alone, and no further frames requested');
+  l.dispose();
+});
+
+scoped('selectKeys carries a selection across a collection read again; a miss selects nothing', async () => {
+  const l = list({keyOf: (item) => item});
+  await flush();
+  click(l, 1);
+  click(l, 3, {ctrlKey: true});
+  assert.deepEqual(selected(l), [1, 3]);
+  assert.deepEqual(l.selectedKeys(), ['item1', 'item3']);
+
+  l.setItems(['item3', 'item1', 'item9']);
+  await flush();
+  l.selectKeys(['item1', 'item3']);
+  assert.deepEqual(l.selectedKeys().sort(), ['item1', 'item3'], 'by KEY, whatever the indices became');
+  assert.equal(l.selectedIndex.value >= 0, true, 'and one of them leads');
+
+  l.setItems(['other']);
+  await flush();
+  l.selectKeys(['item1', 'item3']);
+  assert.deepEqual(l.selectedKeys(), [], 'a collection holding none of them selects none');
+  assert.equal(l.selectedIndex.value, -1);
+  l.dispose();
+});

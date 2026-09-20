@@ -11,8 +11,6 @@ dataset('filter_MSA', {path: 'System:AppData/Bio/tests/filter_MSA.csv', aliases:
   description: 'columns "MSA" (aligned, separator "/", multichar monomers, width 17) and "Activity"'});
 dataset('antibodies', {path: 'System:AppData/Bio/samples/antibodies.csv',
   description: '493 antibodies: AntibodyHC and AntibodyLC (fasta peptides ~130–215 aa), Antigen, Y'});
-dataset('FASTA_PT_activity', {path: 'System:AppData/Bio/samples/FASTA_PT_activity.csv', aliases: ['fasta-pt-activity', 'peptides with activity'],
-  description: '99 peptides: cluster, sequence_id, sequence (16-mers), activity, is_cliff'});
 dataset('helm_cyclic_cliffs', {path: 'System:AppData/Bio/tests/helm_cyclic_cliffs.csv', aliases: ['helm-cyclic-cliffs']});
 dataset('FASTA_sample', {path: 'System:AppData/Bio/samples/FASTA.csv', aliases: ['fasta-sample'],
   description: '64 UniProt peptides: Entry, Length, UniProtKB, Sequence (fasta), Activity, Cluster'});

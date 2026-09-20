@@ -12,11 +12,13 @@ export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
-// a dock manager's tab says which of its handles is shown with a class of its own, and nothing
-// else; a Dart tree node marks its selection the same way (tree_view.dart, `selected`, whose own
-// TODO is to publish it as aria-selected — this entry goes when that lands)
+// a dock manager's tab and a gallery's view-mode icon say which is shown with a class of their own;
+// d4-current elsewhere in a gallery marks the current card, not a selection. A Dart tree node marks
+// its selection the same way (tree_view.dart, `selected`, whose own TODO is to publish it as
+// aria-selected — this entry goes when that lands)
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected, .d4-tree-view-node-selected';
+  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected, .grok-gallery-search-bar .d4-current, ' +
+  '.d4-tree-view-node-selected';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
@@ -91,7 +93,7 @@ async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
     if (els.length === 0)
       return undefined;
     const marked = (e: Element) => e.getAttribute('aria-disabled') === 'true' ||
-      ['u2-input-disabled', 'd4-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
+      ['u2-input-disabled', 'd4-disabled', 'd4-filter-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
     return els.every((el) => {
       for (let e: Element | null = el; e; e = e.parentElement) {
         if (marked(e))
@@ -187,6 +189,19 @@ export async function expectValue(page: Page, target: ElementRef, value: string,
   }
   await expect.poll(() => readValue(page, target), {message: `${message} (something that can hold one)`}).not.toBe(undefined);
   await expect.poll(() => readValue(page, target), {message}).not.toBe(value);
+}
+
+/** The choices a dropdown offers, in order: a native `<select>`'s options, else the element's own
+ * option rows. */
+export async function expectOptions(page: Page, target: ElementRef, list: string): Promise<void> {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  const loc = await locate(page, target);
+  const read = () => loc.first().evaluate((e) => {
+    const select = e.tagName === 'SELECT' ? e as HTMLSelectElement : e.querySelector('select');
+    const items = select ? Array.from(select.options) : Array.from(e.querySelectorAll('[role="option"]'));
+    return items.map((o) => (o.textContent ?? '').trim());
+  }).catch(() => [] as string[]);
+  await expect.poll(read, {message: `the choices ${target.phrase} offers`}).toEqual(want);
 }
 
 /** Rows of a collection: the first row vocabulary that has any is the one counted. */

@@ -75,6 +75,46 @@ export const newColumnMatching = Then('a new column matching {string} should hav
   expectAdded(page, (added) => added.some((n) => new RegExp(pattern).test(n)) ? null : 'missing', `a new column matching /${pattern}/`),
   {description: 'a regular expression over the names added — for a name the platform suffixes (getUnusedName)'});
 
+export const newColumnsMatching = Then('{int} new columns matching {string} should have been added', (page: Page, count: number, pattern: string) =>
+  expectAdded(page, (added) => {
+    const n = added.filter((name) => new RegExp(pattern).test(name)).length;
+    return n === count ? null : `${n} matching`;
+  }, `${count} new columns matching /${pattern}/`),
+{description: 'counted among the columns added since the last menu command — a second run of a command that suffixes its column name'});
+
+/** The last column of the current table whose name matches: its name, distinct values and missing count. */
+async function newestMatching(page: Page, pattern: string): Promise<{name: string; distinct: number; missing: number}> {
+  const facts = await page.evaluate((p) => {
+    const t = (window as any).grok.shell.t;
+    const names: string[] = t ? t.columns.names().filter((n: string) => new RegExp(p).test(n)) : [];
+    if (names.length === 0)
+      return {name: '', distinct: -1, missing: 0};
+    const col = t.col(names[names.length - 1]);
+    const values = new Set<string>();
+    let missing = 0;
+    for (let i = 0; i < t.rowCount; i++) {
+      if (col.isNone(i))
+        missing++;
+      else
+        values.add(String(col.get(i)));
+    }
+    return {name: col.name as string, distinct: values.size, missing};
+  }, pattern);
+  if (facts.distinct < 0)
+    throw new Error(`the current table has no column matching /${pattern}/`);
+  return facts;
+}
+
+export const newestMatchingDistinct = Then('the newest column matching {string} should have {int} distinct values', async (page: Page, pattern: string, count: number) => {
+  const facts = await newestMatching(page, pattern);
+  expect(facts.distinct, `distinct values of "${facts.name}" (${facts.missing} missing)`).toBe(count);
+}, {description: 'the last column of the current table whose name matches the regular expression; missing values are not a value'});
+
+export const newestMatchingFilled = Then('the newest column matching {string} should have no missing values', async (page: Page, pattern: string) => {
+  const facts = await newestMatching(page, pattern);
+  expect(facts.missing, `missing values in "${facts.name}"`).toBe(0);
+});
+
 export const noNewColumn = Then('no new column should have been added', async (page: Page) => {
   const c = await columnsSince(page);
   if (c.before === null)

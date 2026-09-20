@@ -256,9 +256,19 @@ This synchronization lets you explore the dataset visually and instantly find pa
 
 To filter, you have these options:
 
-* Use the designated filters viewer
-* Use other viewers as filters
+* Use the designated [filters viewer](#filters-viewer)
+* Use other [viewers as filters](#viewers-as-filters)
 * Filter matching rows using a [free text search](#search)
+
+:::note
+
+The **Status Bar** at the bottom of the **Table View** shows the number of
+**Selected** and **Filtered** rows. Click either counter to open a menu with
+actions for the corresponding rows. Use it to quickly extract selected or
+filtered rows into a new table (**Extract Rows**) or reset all filters
+(**Filtered** > **Reset Filter**).
+
+:::
 
 #### Filters viewer
 

@@ -77,7 +77,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   const diag = (line: number, level: DiagnosticLevel, message: string) =>
     diagnostics.push({file: relPath, line, level, message});
   const emitText = (value: unknown): string => Array.isArray(value) ? `[${value.map(emitText).join(',')}]` :
-    typeof value === 'string' && value.includes('{run}') ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
+    typeof value === 'string' && /\{(run|time)\}/.test(value) ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {
@@ -168,7 +168,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
 
   const body: string[] = feature.tags.includes(JOURNEY_TAG) ?
     emitJourney(feature, uniqueTitle, emitStep, helpers) :
-    feature.scenarios.flatMap((scenario) => emitScenario(scenario, feature, uniqueTitle, emitStep));
+    feature.scenarios.flatMap((scenario) => emitScenario(scenario, feature, uniqueTitle, emitStep, helpers));
 
   const lines: string[] = [];
   const realizes = [...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)]
@@ -204,13 +204,26 @@ function tagOptions(tags: string[]): string {
   return unique.length > 0 ? `, {tag: [${unique.map((t) => JSON.stringify(t)).join(', ')}]}` : '';
 }
 
-function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep): string[] {
+/** One test for the scenario. A `@known-failure` scenario (an outline's tagged Examples rows too)
+ * runs its own steps as the expected failure; the Background before them fails the test as usual. */
+function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep, helpers: Set<string>): string[] {
   const out: string[] = [];
   const state: ScenarioState = {};
   out.push(`  test(${JSON.stringify(uniqueTitle(scenario.name))}${tagOptions([...feature.tags, ...scenario.tags])}, async ({browser}) => {`);
   out.push('    const page = await session.page(browser);');
-  for (const step of [...feature.background, ...scenario.steps])
+  for (const step of feature.background)
     out.push(...emitStep(step, '    ', state));
+  if (!scenario.tags.includes('@known-failure')) {
+    for (const step of scenario.steps)
+      out.push(...emitStep(step, '    ', state));
+  }
+  else {
+    helpers.add('knownFailure');
+    out.push('    await knownFailure(async () => {');
+    for (const step of scenario.steps)
+      out.push(...emitStep(step, '      ', state));
+    out.push('    });');
+  }
   out.push('  });');
   return out;
 }
