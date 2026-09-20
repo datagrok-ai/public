@@ -185,13 +185,16 @@ export class ErrorsView extends UaView {
       const rowSignatures = await Promise.all(rows);
       matches = (i) => rowSignatures[i] === key;
     }
-    t.filter.init(matches);
-    if (!t.filter.anyTrue) {
+    const mask = DG.BitSet.create(t.rowCount, matches);
+    if (!mask.anyTrue) {
       grok.shell.info(`No stored occurrences of error ${key} in the selected period. ` +
         'Widen the date filter; an error logged outside a user session may not be stored at all.');
       return;
     }
-    t.currentRowIdx = t.filter.findNext(-1, true);
+    // Re-applied on every filter pass (the filters panel resets the filter when it attaches).
+    t.onRowsFiltering.subscribe(() => t.filter.and(mask));
+    t.rows.requestFilter();
+    t.currentRowIdx = mask.findNext(-1, true);
   }
 
   static async collectorSignature(text: string): Promise<string> {
