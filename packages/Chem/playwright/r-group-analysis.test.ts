@@ -30,11 +30,15 @@ async function openRGroupsDialog(page: any) {
   }
 }
 
-// Click MCS, then poll until the sketcher's update-indicator (`.d4-update-shadow`,
-// added synchronously on click, removed when getMCS resolves) clears — the real
-// "scaffold computed into sketcher" gate, not a blind 8s wait.
+// The dialog clears its update indicator before the core reaches the sketcher
+// (r-group-analysis.ts calls setUpdateIndicator(false) ahead of setMolFile), so a cleared
+// shadow only means getMCS resolved. The core is in the sketcher once the dialog canvas holds
+// ink and stops changing — build 404 clicked OK in that gap and got "No core was provided".
 async function clickMCS(page: any) {
   await page.evaluate(() => {
+    const w = window as any;
+    w.__mcsHash = null;
+    w.__mcsStable = 0;
     const mcs = Array.from(document.querySelectorAll('.d4-dialog button'))
       .find(b => b.textContent!.trim() === 'MCS') as HTMLElement;
     mcs?.click();
@@ -42,6 +46,24 @@ async function clickMCS(page: any) {
   await page.waitForFunction(
     () => document.querySelector('.d4-dialog .d4-update-shadow') == null,
     null, {timeout: 60_000});
+  await page.waitForFunction(() => {
+    const w = window as any;
+    let h = 0;
+    let ink = 0;
+    for (const cv of Array.from(document.querySelectorAll('.d4-dialog canvas')) as HTMLCanvasElement[]) {
+      if (!cv.width || !cv.height) continue;
+      const d = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      for (let i = 0; i < d.length; i += 401) {
+        h = (h * 31 + d[i]) | 0;
+        if (d[i + 3] > 0 && d[i] < 200) ink++;
+      }
+    }
+    if (ink > 0 && h === w.__mcsHash)
+      return ++w.__mcsStable >= 3;
+    w.__mcsHash = h;
+    w.__mcsStable = 0;
+    return false;
+  }, null, {timeout: 60_000, polling: 150});
 }
 
 test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest matrix)', async ({page}) => {

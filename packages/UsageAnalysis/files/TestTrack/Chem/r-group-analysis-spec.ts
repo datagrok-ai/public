@@ -12,38 +12,40 @@ async function openRGroupsDialog(page: any) {
   await page.locator('.d4-dialog').waitFor({timeout: 10000});
 }
 
+// The dialog clears its update indicator before the core reaches the sketcher
+// (r-group-analysis.ts calls setUpdateIndicator(false) ahead of setMolFile), so a cleared
+// shadow only means getMCS resolved. The core is in the sketcher once the dialog canvas holds
+// ink and stops changing — build 404 clicked OK in that gap and got "No core was provided".
 async function clickMCS(page: any) {
-  await page.evaluate(async () => {
-    // MCS is done when the dialog's sketcher has painted the core it computed. Hash the dialog
-    // canvases and wait for a non-blank result to hold, capped at the 8 s the flat sleep spent;
-    // a computation that never lands still spends the cap, as it did before.
-    const hash = () => {
-      let h = 0;
-      let ink = 0;
-      for (const cv of Array.from(document.querySelectorAll('.d4-dialog canvas')) as HTMLCanvasElement[]) {
-        if (!cv.width || !cv.height) continue;
-        const d = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
-        for (let i = 0; i < d.length; i += 401) {
-          h = (h * 31 + d[i]) | 0;
-          if (d[i + 3] > 0 && d[i] < 200) ink++;
-        }
-      }
-      return {h, ink};
-    };
+  await page.evaluate(() => {
+    const w = window as any;
+    w.__mcsHash = null;
+    w.__mcsStable = 0;
     const mcs = Array.from(document.querySelectorAll('.d4-dialog button'))
       .find(b => b.textContent!.trim() === 'MCS') as HTMLElement;
     mcs?.click();
-    const deadline = Date.now() + 8000;
-    let last = 0;
-    let stable = 0;
-    while (Date.now() < deadline) {
-      const {h, ink} = hash();
-      if (ink > 0 && h === last) { if (++stable >= 3) return; }
-      else stable = 0;
-      last = h;
-      await new Promise(r => setTimeout(r, 150));
-    }
   });
+  await page.waitForFunction(
+    () => document.querySelector('.d4-dialog .d4-update-shadow') == null,
+    null, {timeout: 60_000});
+  await page.waitForFunction(() => {
+    const w = window as any;
+    let h = 0;
+    let ink = 0;
+    for (const cv of Array.from(document.querySelectorAll('.d4-dialog canvas')) as HTMLCanvasElement[]) {
+      if (!cv.width || !cv.height) continue;
+      const d = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      for (let i = 0; i < d.length; i += 401) {
+        h = (h * 31 + d[i]) | 0;
+        if (d[i + 3] > 0 && d[i] < 200) ink++;
+      }
+    }
+    if (ink > 0 && h === w.__mcsHash)
+      return ++w.__mcsStable >= 3;
+    w.__mcsHash = h;
+    w.__mcsStable = 0;
+    return false;
+  }, null, {timeout: 60_000, polling: 150});
 }
 
 test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest matrix)', async ({page}) => {
