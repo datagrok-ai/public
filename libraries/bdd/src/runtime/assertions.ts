@@ -89,7 +89,7 @@ async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
     if (els.length === 0)
       return undefined;
     const marked = (e: Element) => e.getAttribute('aria-disabled') === 'true' ||
-      ['u2-input-disabled', 'd4-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
+      ['u2-input-disabled', 'd4-disabled', 'd4-filter-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
     return els.every((el) => {
       for (let e: Element | null = el; e; e = e.parentElement) {
         if (marked(e))

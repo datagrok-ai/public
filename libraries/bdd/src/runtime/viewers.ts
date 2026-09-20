@@ -201,6 +201,27 @@ export async function expectRememberedReading(page: Page, target: ElementRef, na
   }
 }
 
+/** A numeric reading against the one remembered: strictly higher or strictly lower — for a change
+ * that has a direction, which "not as remembered" does not state. */
+export async function expectRememberedDirection(page: Page, target: ElementRef, name: string, direction: 'higher' | 'lower'): Promise<void> {
+  let last: Reading = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await onViewer(page, target, (el, n) => (window as any).__bdd.rememberedValue(el, n), name);
+    if (last.before === undefined)
+      return `"${name}" was not remembered`;
+    if (typeof last.now !== 'number' || typeof last.before !== 'number')
+      return `"${name}" is not a number`;
+    return direction === 'higher' ? last.now > last.before : last.now < last.before;
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not ${direction} than the remembered ${String(last.before)}` +
+      (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  }
+}
+
 /** The area's rectangle against the snapshot's: taller or wider than before. */
 export async function expectAreaGrew(page: Page, target: ElementRef, area: string, dimension: 'taller' | 'wider' | 'shorter' | 'narrower'): Promise<void> {
   let last: {before?: Box; now?: Box; has: string[]} = {has: []};
