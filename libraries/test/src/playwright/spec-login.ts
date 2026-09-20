@@ -2,7 +2,7 @@ import {test, Page} from '@playwright/test';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import {secureOriginLaunchOptions} from './base-config';
+import {clipboardLaunchOptions, secureOriginLaunchOptions} from './base-config';
 
 export const baseUrl = process.env.DATAGROK_URL ?? 'http://localhost:8888';
 
@@ -31,6 +31,13 @@ export const specTestOptions = {
   // page.waitForEvent('download') depend on it, and Playwright's default is not
   // part of any contract this section controls.
   acceptDownloads: true,
+};
+
+/** For specs that read or write `navigator.clipboard`: on the http stand the API only exists
+ * in the full Chrome build (see clipboardLaunchOptions). */
+export const clipboardTestOptions = {
+  ...specTestOptions,
+  launchOptions: {...clipboardLaunchOptions, args: specTestOptions.launchOptions.args},
 };
 
 /** A hosted GitHub Actions runner has 2-4 vCPU, so a CPU-bound analysis that a dev stand

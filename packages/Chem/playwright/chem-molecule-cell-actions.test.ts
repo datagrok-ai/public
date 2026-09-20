@@ -3,7 +3,7 @@ realizes: [chem.cp.molecule-cell-actions]
 --- */
 import {expect, Page} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, clipboardTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {settleGridPaint} from './chem-fast-helpers';
 import {armBalloonRecorder, readRecordedBalloons} from '@datagrok-libraries/test/src/playwright/balloons';
@@ -261,7 +261,7 @@ async function canonicalize(page: Page, smiles: string): Promise<string> {
   }, smiles);
 }
 
-test.use(specTestOptions);
+test.use(clipboardTestOptions);
 
 test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async ({page, context}) => {
   test.setTimeout(300_000);

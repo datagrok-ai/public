@@ -1,10 +1,10 @@
 import {expect} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, clipboardTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {waitForChemMenuRoot} from './chem-fast-helpers';
 
-test.use(specTestOptions);
+test.use(clipboardTestOptions);
 
 test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-trip', async ({page}) => {
   test.setTimeout(120_000);
