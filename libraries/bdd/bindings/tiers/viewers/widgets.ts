@@ -690,9 +690,7 @@ export const notShowsText = Then('{element} should not show the text {string}', 
 /* Dragging a viewer by its title bar shows dock-spawn's wheels: a compass of `.dock-wheel-left|right|
    top|down|fill` items over the panel under the pointer, and a second `.dock-wheel-base` with one item
    at each edge of the view. Both carry the same side classes; only the compass holds the fill item.
-   The tab strip's invisible drop zones lie over part of an edge item (the bottom one sits on the tab
-   strip of a group docked at the bottom), and a drop there makes a tab, so the pointer goes to a point
-   where the item itself is on top, and the drop waits for dock-spawn's hover class on that item. */
+   dock-spawn marks the item under the pointer on mouseover, and the drop waits for that mark. */
 const DOCK_SIDES: Record<string, string> = {left: 'left', right: 'right', top: 'top', bottom: 'down'};
 type Rect = {x: number; y: number; width: number; height: number};
 const centreOf = (r: Rect) => ({x: r.x + r.width / 2, y: r.y + r.height / 2});
@@ -721,44 +719,23 @@ async function dockViewer(page: Page, target: ElementRef, side: string, over: El
   await page.mouse.move(aim.x, aim.y, {steps: 8});
   const wheel = over ? '.dock-wheel-base:has(.dock-wheel-fill)' : '.dock-wheel-base:not(:has(.dock-wheel-fill))';
   const item = page.locator(`${wheel} .dock-wheel-item.dock-wheel-${wheelSide}`).filter({visible: true}).first();
-  await item.waitFor({timeout: pollMs(5000)}).catch(async () => {
-    await page.mouse.up();
-    throw new Error(`dragging ${target.phrase} showed no ${what}`);
-  });
-  const hoverClass = `dock-wheel-${wheelSide}-icon-hover`;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const drop = await item.evaluate((e) => {
-      const b = e.getBoundingClientRect();
-      const onTop = (x: number, y: number) => document.elementFromPoint(x, y) === e;
-      if (onTop(b.x + b.width / 2, b.y + b.height / 2))
-        return {x: b.x + b.width / 2, y: b.y + b.height / 2, w: b.width};
-      for (let dy = 2; dy < b.height - 1; dy += 2) {
-        for (let dx = 2; dx < b.width - 1; dx += 2) {
-          if (onTop(b.x + dx, b.y + dy))
-            return {x: b.x + dx, y: b.y + dy, w: b.width};
-        }
-      }
-      return null;
+  try {
+    await item.waitFor({timeout: pollMs(5000)}).catch(() => {
+      throw new Error(`dragging ${target.phrase} showed no ${what}`);
     });
-    if (!drop)
-      break;
-    // dock-spawn marks an item under the pointer only on mouseover: leave it and come back when it missed that
-    if (attempt > 0)
-      await page.mouse.move(drop.x - drop.w, drop.y);
-    await page.mouse.move(drop.x, drop.y, {steps: attempt ? 2 : 6});
-    if (await item.evaluate((e, c) => e.classList.contains(c), hoverClass)) {
-      await page.mouse.up();
-      await v.settleAll(page);
-      return;
-    }
+    const box = await item.boundingBox();
+    if (!box)
+      throw new Error(`${what} has no box`);
+    const p = centreOf(box);
+    await page.mouse.move(p.x, p.y, {steps: 6});
+    await expect(item, `${what} under the pointer`).toHaveClass(new RegExp(`dock-wheel-${wheelSide}-icon-hover`), {timeout: pollMs(3000)});
   }
-  const onTop = await item.evaluate((e) => {
-    const b = e.getBoundingClientRect();
-    const top = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
-    return top ? `${top.tagName.toLowerCase()}.${[...top.classList].join('.')}` : 'nothing';
-  });
+  catch (e) {
+    await page.mouse.up();
+    throw e;
+  }
   await page.mouse.up();
-  throw new Error(`${what} never took the pointer's hover, so a drop there would dock elsewhere (on top of its centre: ${onTop})`);
+  await v.settleAll(page);
 }
 
 export const dockToViewEdge = When('user docks {widget} to the {word} edge of the view', (page: Page, target: ElementRef, side: string) =>
@@ -862,36 +839,6 @@ export const dockedBeside = Then('{widget} should be docked {word} {widget}', (p
 export const notDockedBeside = Then('{widget} should not be docked {word} {widget}', (page: Page, target: ElementRef, where: string, other: ElementRef) =>
   expectDocked(page, () => besides(page, target, where, other), true),
 {description: 'the state before a drag'});
-
-// --- a menu item by its Dart name path -------------------------------------------------------------
-
-/* A viewer's context menu can carry two groups whose labels differ only in case (the line chart's
-   "Chart Type" and each series' "HEIGHT > Chart type"): the label path then lands on the wrong one.
-   Every Dart menu item is named after its path (`div-HEIGHT---Chart-type---Area-Chart`), so this
-   step walks the groups by those names, hovering each one on the way, and clicks the leaf. */
-export const pickMenuItemByName = When('user picks the item named {string} from the context menu of the {string} area of {widget}',
-  async (page: Page, path: string, area: string, target: ElementRef) => {
-    await v.snapshot(page, target);
-    await v.openContextMenuOf(page, target, area);
-    const parts = path.split(/\s*>\s*/).map((p) => p.replace(/\s+/g, '-'));
-    for (let i = 0; i < parts.length; i++) {
-      const name = `div-${parts.slice(0, i + 1).join('---')}`;
-      const item = page.locator(`.d4-menu-popup [name="${name}"]`).filter({visible: true}).first();
-      await item.waitFor({timeout: pollMs(5000)}).catch(() => {
-        throw new Error(`no menu item named "${name}" is on screen`);
-      });
-      const b = await item.boundingBox();
-      if (!b)
-        throw new Error(`the menu item "${name}" has no box`);
-      if (i < parts.length - 1) {
-        await page.mouse.move(b.x + 4, b.y + b.height / 2);
-        await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, {steps: 3});
-      }
-      else
-        await item.click();
-    }
-    await settle(page, target);
-  }, {tier: 'ui', description: 'the path of captions joined with " > ", matched on the items\' Dart names (`div-A---B---C`), each group hovered open on the way'});
 
 export const openViewerHelp = When('user opens the help of {widget}', async (page: Page, target: ElementRef) => {
   const icon = (await panelOf(page, target)).locator('.panel-titlebar [name="icon-font-icon-help"]').first();

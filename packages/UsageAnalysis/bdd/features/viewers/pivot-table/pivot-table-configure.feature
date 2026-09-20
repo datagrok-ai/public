@@ -13,11 +13,8 @@ Feature: Pivot table — configuring the tag rows
   and claims the chips and the numbers the viewer rebuilt from them (unchecking the only aggregate
   first, as the md does, drops the pivot column the way removing the last aggregate chip does); the lists it starts from are set
   as properties, which is setup, not the claim.
-  Known failure, GROK-20900: Escape, the md's other way to dismiss the picker, adds the first column
-  of the list (USUBJID) to Group by instead — measured with the pointer resting on the list and with
-  it moved away, while a click outside takes nothing. The operator reproduced it by hand and filed
-  the ticket; the last scenario states the md's expectation, so it fails while the product takes the
-  column. Take the mark off when the ticket is closed.
+  Escape, the md's other way to dismiss the picker, used to add the first column of the list to Group
+  by instead (GROK-20900, fixed in the core on 2026-09-15); the last scenario states the md's expectation.
 
   Background:
     Given user is logged in
@@ -178,7 +175,6 @@ Feature: Pivot table — configuring the tag rows
     And the aggregated values of pivot table viewer should match "avg(WEIGHT)" grouped by "SEX"
     And no errors should have been logged
 
-  @known-failure
   Scenario: Escape closes the + picker of the Group by row without taking a column (GROK-20900)
     Given the "group by" reading of pivot table viewer should be "SEX"
     When user clicks on the "add group by" area of pivot table viewer

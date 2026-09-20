@@ -117,9 +117,9 @@ scenario('the Dart name conventions and the platform names', async () => {
   assert.equal(await count('Caption input'), 1);
 });
 
-scenario('ordinals, and the visible matches a gesture acts on', async () => {
+scenario('ordinals count the visible matches, as a gesture does', async () => {
   assert.equal(await text('second item in results list'), 'beta');
-  assert.equal(await text('last item in results list'), 'gamma');
+  assert.equal(await text('last item in results list'), 'beta');
   assert.equal(await (await locateActionable(page!, el('item in results list'))).count(), 2);
 });
 

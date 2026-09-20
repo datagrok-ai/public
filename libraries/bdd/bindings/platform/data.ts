@@ -585,11 +585,10 @@ type NamedChange = {op: 'select', column: string, values: string[]} | {op: 'unse
   {op: 'range', column: string, min: number, max: number};
 
 /** A change to an open table that is not the current view's — the one a viewer rebound to it
- * draws — made without switching views: the other table's own view stays hidden, and a hidden
- * view's viewers do not paint, so only the viewers on screen are waited on. */
+ * draws — made without switching views; every viewer of every view is then waited on. */
 async function changeNamedTable(page: Page, name: string, change: NamedChange): Promise<void> {
   await baselineAll(page);
-  await evaluate(page, async ([n, ch]) => {
+  await evaluate(page, ([n, ch]) => {
     const b = (window as any).__bdd;
     const t = b.tableNamed(n);
     if (ch.op === 'select') {
@@ -616,13 +615,8 @@ async function changeNamedTable(page: Page, name: string, change: NamedChange): 
         throw new Error(`${t.name} has no table view to hold a filter panel`);
       view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({type: 'histogram', column: ch.column, min: ch.min, max: ch.max}, true);
     }
-    for (const view of Array.from(grok.shell.tableViews ?? []) as any[]) {
-      for (const v of Array.from(view.viewers ?? []) as any[]) {
-        if (v.root?.isConnected && v.root.offsetParent !== null)
-          await b.quiet(v);
-      }
-    }
   }, [name, change] as [string, NamedChange]);
+  await settleAll(page);
 }
 
 export const selectInTableOneOf = When('user selects rows of table {string} where {string} is one of {string}',
@@ -649,7 +643,6 @@ export const currentRowOfTableValue = Then('{string} of the current row of table
     const t = b.tableNamed(n);
     return t.currentRowIdx < 0 ? '(no current row)' : String(b.col(c, t).get(t.currentRowIdx) ?? '');
   }, [name, column] as [string, string]), {message: `"${column}" of the current row of "${name}"`}).toBe(value));
-
 
 export const colorLinearThrough = When('user colors {string} column linearly through {string}', (page: Page, column: string, stops: string) =>
   color(page, column, 'linear', {scheme: list(stops).map(argb)}),

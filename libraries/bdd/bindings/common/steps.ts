@@ -1,11 +1,15 @@
 /* The generic step vocabulary: gestures (When) and outcomes (Then) over any element phrase.
    Expressions are cucumber expressions: `(on )` optional text, `in(to)` optional suffix, `be/become`
    alternation. Every definition is an exported const — the compiler imports it by name. */
+import {readFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {el} from '../../src/runtime/args.js';
+import {locate} from '../../src/runtime/locate.js';
 import {expectCount, expectState, expectSwitched, expectText, expectValue, expectValueBetween, State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
 
@@ -103,9 +107,13 @@ export const isExpanded = Given('{element} is expanded', (page: Page, target: El
    per worker: the next download replaces it. */
 let downloaded: string | undefined;
 
+function downloadedFile(): string {
+  if (!downloaded)
+    throw new Error('no file has been downloaded in this worker');
+  return downloaded;
+}
+
 export const downloadThrough = When('user downloads a file through {element}', async (page: Page, target: ElementRef) => {
-  const {tmpdir} = await import('node:os');
-  const {join} = await import('node:path');
   const download = page.waitForEvent('download', {timeout: 10000});
   await g.click(page, target);
   const file = await download;
@@ -114,33 +122,18 @@ export const downloadThrough = When('user downloads a file through {element}', a
 }, {tier: 'ui', description: 'clicks the element and keeps the file the browser downloads, for "uploads the downloaded file"'});
 
 export const downloadedContains = Then('the downloaded file should contain {string}', async (page: Page, text: string) => {
-  if (!downloaded)
-    throw new Error('no file has been downloaded in this worker');
-  const {readFileSync} = await import('node:fs');
-  expect(readFileSync(downloaded, 'utf8'), `the downloaded file ${downloaded}`).toContain(text);
+  expect(readFileSync(downloadedFile(), 'utf8'), `the downloaded file ${downloaded}`).toContain(text);
 });
 
 export const downloadedNotContains = Then('the downloaded file should not contain {string}', async (page: Page, text: string) => {
-  if (!downloaded)
-    throw new Error('no file has been downloaded in this worker');
-  const {readFileSync} = await import('node:fs');
-  expect(readFileSync(downloaded, 'utf8'), `the downloaded file ${downloaded}`).not.toContain(text);
+  expect(readFileSync(downloadedFile(), 'utf8'), `the downloaded file ${downloaded}`).not.toContain(text);
 });
 
-export const uploadDownloaded = When('user uploads the downloaded file through {element}', (page: Page, target: ElementRef) => {
-  if (!downloaded)
-    throw new Error('no file has been downloaded in this worker');
-  return g.chooseFile(page, target, downloaded);
-}, {tier: 'ui', description: 'answers the file chooser the element opens with the file the last "downloads a file" kept'});
+export const uploadDownloaded = When('user uploads the downloaded file through {element}', (page: Page, target: ElementRef) =>
+  g.chooseFile(page, target, downloadedFile()), {tier: 'ui', description: 'answers the file chooser the element opens with the file the last "downloads a file" kept'});
 
 export const computedStyleContains = Then('the {string} style of {element} should contain {string}', async (page: Page, property: string, target: ElementRef, text: string) => {
-  const {locate} = await import('../../src/runtime/locate.js');
   const loc = (await locate(page, target)).filter({visible: true}).first();
-  let last = '';
-  try {
-    await expect.poll(async () => (last = await loc.evaluate((e, p) => getComputedStyle(e).getPropertyValue(p as string), property)).includes(text)).toBe(true);
-  }
-  catch {
-    throw new Error(`"${property}" of ${target.phrase} is "${last}", not containing "${text}"`);
-  }
+  await expect.poll(() => loc.evaluate((e, p) => getComputedStyle(e).getPropertyValue(p), property),
+    {message: `the "${property}" style of ${target.phrase}`}).toContain(text);
 }, {description: 'the computed CSS value the browser rendered the element with (font-family, font-size, …), by substring'});

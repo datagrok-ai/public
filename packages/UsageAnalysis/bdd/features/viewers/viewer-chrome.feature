@@ -10,9 +10,7 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
   chart, which aggregates its points) and CANCEL changes nothing; the context menu carries the General and Tooltip groups, and General's Clone and Close act; the viewer
   added to the right of the grid, docks along the left edge of the view by its title bar, and its "?"
   icon opens its help page (the page's title is searched in the help panel).
-  Not translated: Pick Up / Apply between two line charts — in a full run a line chart closed by an
-  earlier feature stays in the page, hidden, and "first line chart viewer" (ordinals count hidden
-  elements) addresses it instead of the one this scenario added; the General items that leave the page (Save to Gallery, Save as PNG, Embed...)
+  Not translated: the General items that leave the page (Save to Gallery, Save as PNG, Embed...)
   beyond being offered, editing the tooltip's columns inside the dialog, and undocking the viewer
   into a floating window.
 
@@ -73,6 +71,7 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
       | scatter plot | Color       | RACE      | SEX       |
       | box plot     | Category 1  | RACE      | DIS_POP   |
       | trellis plot | Viewer Type | Bar chart | Histogram |
+      | line chart   | lineWidth   | 3         | 5         |
 
   Scenario Outline: Tooltip > Edit... opens the tooltip editor of the <viewer>, and CANCEL leaves the tooltip alone
     Given user adds a <viewer> viewer

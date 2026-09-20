@@ -10,8 +10,6 @@ Feature: Line chart axis types, label orientation, line styling and a chart type
   The pictures are not judged: a logarithmic axis and a colouring type are claimed by the repaint and
   the viewer's own readings, a vertical label strip by the X axis box growing taller, a line width by
   the ink it adds.
-  The series' own "Chart type" is picked by the items' Dart names: its caption differs only in case
-  from the chart-wide "Chart Type" group, which a caption path lands on instead.
 
   Background:
     Given user is logged in
@@ -60,7 +58,7 @@ Feature: Line chart axis types, label orientation, line styling and a chart type
       | multiAxis    | true                |
     Then the "charts" reading of line chart viewer should be 1
     And "chartTypes" property of line chart viewer should be "Line Chart, Line Chart, Line Chart"
-    When user picks the item named "HEIGHT > Chart type > Area Chart" from the context menu of the "plot" area of line chart viewer
+    When user picks "HEIGHT > Chart type > Area Chart" from the context menu of the "plot" area of line chart viewer
     Then "chartTypes" property of line chart viewer should be "Line Chart, Area Chart, Line Chart"
     And line chart viewer should have repainted
     When user sets properties of line chart viewer:

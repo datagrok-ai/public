@@ -13,8 +13,7 @@ Feature: Docking viewers by their title bars
   its top side instead. Every drop is preceded by the claim that the viewer is not yet where the drop
   puts it. The arrangement comes back from a layout applied to demog-1000 opened anew.
   The drop targets are the wheel items dock-spawn draws, the edge ones told from the compass ones by
-  the compass's centre item; the tab strip's invisible drop zones cover part of the bottom edge item,
-  so the drop goes where the item itself is on top and waits for the item's hover. The claims are the
+  the compass's centre item, and the drop waits for the item's hover mark. The claims are the
   panels' boxes after the drop, against each other and against the area the docked panels cover.
   Not translated: the splitter drag between two docked viewers and "no rendering artifacts" (a
   judgement of the eye), and the md's downloaded `.layout` file dropped onto the view — a file
