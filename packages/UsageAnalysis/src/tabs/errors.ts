@@ -36,6 +36,8 @@ function createCountBarChart(t: DG.DataFrame, splitColumnName: string, title: st
 }
 
 export class ErrorsView extends UaView {
+  errorKey?: string;
+
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Errors';
@@ -43,6 +45,7 @@ export class ErrorsView extends UaView {
 
   async initViewers(path?: string): Promise<void> {
     const users = await loadUsers();
+    const errorKey = this.errorKey;
 
     const filters = ui.box();
     filters.classList.add('ua-filters');
@@ -83,6 +86,8 @@ export class ErrorsView extends UaView {
           }
         });
         setupUserIconRenderer(viewer, users, ['user']);
+        if (errorKey)
+          this.focusError(t, errorKey);
 
         return viewer;
       },
@@ -155,6 +160,46 @@ export class ErrorsView extends UaView {
         errorViewer.root
       ])
     ]));
+  }
+
+  /** Narrows the grid to one error group and selects its latest occurrence, so a link such as
+   * `/apps/usage/errors?error=<key>` (monitoring alerts carry one; the app's `error` parameter) opens the
+   * error with its context. The key is `event_types.error_stack_trace_hash`; a 12-hex key is the OTLP
+   * collector's own signature (sha256 of the digit-stripped stack trace) from a server that does not send
+   * the hash yet. */
+  async focusError(t: DG.DataFrame, key: string): Promise<void> {
+    this.uaToolbox.viewHandler.setUrlParam('error', key, true);
+    const hashes = t.getCol('error_stack_trace_hash');
+    let matches = (i: number) => hashes.get(i) === key;
+    if (key.length === 12) {
+      const stacks = t.getCol('error_stack_trace');
+      const messages = t.getCol('error_message');
+      const signatures = new Map<string, Promise<string>>();
+      const rows: Promise<string>[] = [];
+      for (let i = 0; i < t.rowCount; i++) {
+        const text = stacks.get(i) || messages.get(i) || '';
+        if (!signatures.has(text))
+          signatures.set(text, ErrorsView.collectorSignature(text));
+        rows.push(signatures.get(text)!);
+      }
+      const rowSignatures = await Promise.all(rows);
+      matches = (i) => rowSignatures[i] === key;
+    }
+    const mask = DG.BitSet.create(t.rowCount, matches);
+    if (!mask.anyTrue) {
+      grok.shell.info(`No stored occurrences of error ${key} in the selected period. ` +
+        'Widen the date filter; an error logged outside a user session may not be stored at all.');
+      return;
+    }
+    // Re-applied on every filter pass (the filters panel resets the filter when it attaches).
+    t.onRowsFiltering.subscribe(() => t.filter.and(mask));
+    t.rows.requestFilter();
+    t.currentRowIdx = mask.findNext(-1, true);
+  }
+
+  static async collectorSignature(text: string): Promise<string> {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text.replace(/\d+/g, '')));
+    return Array.from(new Uint8Array(digest, 0, 6), (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   showErrorContextPanel(table: DG.DataFrame): void {

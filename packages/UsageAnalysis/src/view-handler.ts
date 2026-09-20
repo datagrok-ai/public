@@ -28,7 +28,7 @@ export class ViewHandler {
     this.view.box = true;
   }
 
-  async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
+  async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string, error?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
       SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
@@ -43,6 +43,10 @@ export class ViewHandler {
     }
 
     let urlTab = 'Overview';
+    if (error) {
+      (views.find((v) => v instanceof ErrorsView) as ErrorsView).errorKey = error;
+      urlTab = 'Errors';
+    }
 
     if (path != undefined && path.length > 1) {
       const segments = path.split('/').filter((s) => s != '');

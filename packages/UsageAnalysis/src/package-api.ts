@@ -576,8 +576,8 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:TestAnalysisReportForCurrentDay', { date });
   }
 
-  export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string ): Promise<DG.View> {
-    return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects });
+  export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string , error?: string ): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects, error });
   }
 
   export async function releaseDashboardApp(path?: string ): Promise<DG.View> {

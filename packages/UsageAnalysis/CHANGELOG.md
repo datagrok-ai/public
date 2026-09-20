@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Errors: The app takes an `error` parameter: `/apps/usage/errors?error=<hash>` (the event type's stack-trace hash, or the OTLP collector's 12-character signature from an older server) opens the Errors tab narrowed to that error with its latest occurrence selected, so a monitoring alert can link straight to the error, its stack trace, users and reports
 * GROK-20891: Reports widget: Fixed the Home page widget failing with `Cannot read properties of undefined (reading 'renderIcon')` when a report has no reporter
 * BDD: Corrected the line-chart lasso test to close its checkbox menu before dragging and removed its stale known-failure tag. Fixed Spaces fixture cleanup and stale Browse nodes; file operations now require the test space to be current. Box-plot shortcut checks target the viewer explicitly. Rechecked and documented the remaining viewer failures
 * GROK-20874: System Activity: Added a tab listing the platform-level audit records datlas now writes — logins, logouts, failed logins, impersonation, admin session start/end, developer-key generation, settings and log-settings changes, and server starts — as a filterable grid with a per-type timeline (`SystemActivity` / `SystemActivitySummary` queries); a row's parameters open on the context panel. Tabs whose names contain spaces now route by their space-free lowercase name
