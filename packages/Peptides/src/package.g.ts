@@ -2,7 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //tags: init
-//meta.role: Init
+//meta.role: init
 export async function initPeptides() : Promise<void> {
   await PackageFunctions.initPeptides();
 }
@@ -27,7 +27,7 @@ export async function testInitFunctionPeptides(v: any) : Promise<void> {
 //tags: widgets, panel
 //input: column col { semType: Macromolecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function peptidesPanel(col: DG.Column) : Promise<any> {
   return await PackageFunctions.peptidesPanel(col);
 }
@@ -102,7 +102,7 @@ export function peptideGeneration() : any {
 //tags: widgets, panel
 //input: string _monomer { semType: Monomer }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export function manualAlignment(_monomer: string) : any {
   return PackageFunctions.manualAlignment(_monomer);
 }

@@ -9,6 +9,7 @@ import {Scope} from '../src/core/scope.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {propertyForm, objectForm, inputForProperty, PlatformInputs} from '../src/dg/forms/object-form.js';
 import {QNum} from '../src/core/qnum.js';
+import {Access} from '../src/core/access.js';
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
 function form(name, body) {
@@ -529,4 +530,92 @@ form('a list property that hands over its items as text is read all the same', (
   const empty = mount(propertyForm([prop('labels', 'list'), prop('meta', 'map')], {}));
   assert.deepEqual(empty.getValues(), {labels: [], meta: {}});
   empty.dispose();
+});
+
+/* WO-6 — access-aware forms: a hidden field is absent, a readonly one is caption + value text
+   (never an input, so neither `getValues()` nor the validity see it), the default `Access.full`
+   changes nothing, and the widget status says which level each field got. */
+
+const ACCESS = Access.from({can: {view: true, edit: true},
+  fields: {name: 'editable', count: 'readonly', active: 'editable', series: 'readonly'}});
+
+form('access: hidden fields are absent, readonly ones are text outside getValues and the validity', () => {
+  const source = sample();
+  const f = mount(propertyForm(PROPS, source, {access: ACCESS}));
+  assert.deepEqual(f.properties.map((p) => p.name), ['name', 'count', 'active', 'series'],
+    'weight and payload are hidden: not rendered at all');
+  assert.deepEqual(kinds(f), ['text-input', 'bool-input'], 'the readonly fields are not inputs');
+  assert.equal(f.input('count'), undefined);
+  assert.deepEqual(f.getValues(), {name: 'Aspirin', active: true});
+
+  const rows = [...f.root.querySelector('.u2-form-rows').children].map((el) => el.dataset.u2);
+  assert.deepEqual(rows, ['text-input', 'readonly-field', 'bool-input', 'readonly-field'], 'in layout order');
+  const count = f.root.querySelector('[data-u2-name="count"]');
+  assert.equal(count.querySelector('.u2-input-label').textContent, 'count');
+  assert.equal(count.querySelector('[data-u2-part="readonly-value"]').textContent, '3');
+  assert.equal(count.querySelector('input'), null, 'text, not a dead input');
+  assert.equal(f.root.querySelector('[data-u2-name="series"] [data-u2-part="readonly-value"]').textContent, 'b');
+
+  source.count = 7;
+  f.refresh();
+  assert.equal(count.querySelector('[data-u2-part="readonly-value"]').textContent, '7');
+  f.dispose();
+});
+
+form('access: a required readonly field never invalidates the form; include and exclude still apply', () => {
+  const props = [prop('name', 'string', {nullable: false}), prop('code', 'string', {nullable: false})];
+  const f = mount(propertyForm(props, {name: 'x', code: ''},
+    {access: Access.from({can: {}, fields: {name: 'editable', code: 'readonly'}})}));
+  assert.equal(f.validity.value, null, 'the empty readonly value is the server\'s business');
+  assert.equal(f.validate(), true);
+  f.dispose();
+
+  const narrowed = mount(propertyForm(PROPS, sample(), {access: ACCESS, include: ['series', 'weight', 'name'],
+    exclude: ['name']}));
+  assert.deepEqual(narrowed.properties.map((p) => p.name), ['series'], 'include order, exclude and hidden combined');
+  narrowed.dispose();
+});
+
+form('access: the default is Access.full — nothing changes for a form that names none', () => {
+  const plain = mount(propertyForm(PROPS, sample()));
+  const explicit = mount(propertyForm(PROPS, sample(), {access: Access.full}));
+  assert.deepEqual(kinds(explicit), kinds(plain));
+  assert.deepEqual(explicit.getValues(), plain.getValues());
+  assert.deepEqual(kinds(plain), ['text-input', 'number-input', 'number-input', 'bool-input',
+    'choice-input', 'text-input'], 'the snapshot the first test pins');
+  assert.equal(plain.root.querySelector('[data-u2="readonly-field"]'), null);
+  assert.deepEqual(plain.getWidgetStatus().inputs.map((i) => i.access), Array(6).fill('editable'));
+  plain.dispose();
+  explicit.dispose();
+});
+
+form('access: getWidgetStatus().inputs reports the level applied to every rendered field', () => {
+  const f = mount(propertyForm(PROPS, sample(), {access: ACCESS}));
+  const status = f.getWidgetStatus();
+  assert.deepEqual(status.inputs.map((i) => [i.name, i.access, i.value]),
+    [['name', 'editable', 'Aspirin'], ['count', 'readonly', '3'], ['active', 'editable', true],
+      ['series', 'readonly', 'b']]);
+  const count = status.inputs[1];
+  assert.equal(count.caption, 'count');
+  assert.equal(count.type, 'int');
+  assert.equal(count.required, false);
+  assert.equal(count.valid, true);
+  assert.equal(status.inputs[0].caption, 'Compound');
+  assert.equal(status.inputs[0].description, 'Registered name');
+  assert.deepEqual(status.inputs[3].choices, ['a', 'b', 'c']);
+  assert.equal(status.inputs.some((i) => i.name === 'weight'), false, 'hidden: no status either');
+  f.dispose();
+});
+
+form('a column named description is a textarea unless an editor hint says otherwise', async () => {
+  const target = {description: 'long', note: 'short', other: 'x'};
+  const f = propertyForm([
+    prop('description', 'string'),
+    prop('note', 'string'),
+    {...prop('other', 'string'), name: 'description', editor: 'password'},
+  ], target);
+  assert.equal(f.inputs[0].root.dataset.u2, 'text-area');
+  assert.equal(f.inputs[1].root.dataset.u2, 'text-input');
+  assert.equal(f.inputs[2].root.dataset.u2, 'text-input', 'the hint wins');
+  f.dispose();
 });

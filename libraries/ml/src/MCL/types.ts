@@ -9,6 +9,9 @@ export type MCLOptions = {
     pruneValue: number,
 }
 
+/** Parameters used by a worker that successfully produced an MCL result. */
+export type MCLComputationInfo = {threshold: number; inflation: number};
+
 export type SparseMatrixObject = {[_: number]: {[_: number]: number}};
 
 export const MCLMethodName = 'MCL';

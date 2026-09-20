@@ -100,7 +100,6 @@ Feature: PC plot transformations
     Then the "axis order" reading of pc plot viewer should be as remembered
     And no errors should have been logged
 
-  @known-failure
   Scenario: With a transformation, Reset filters restores the rows but drops the selection (GROK-17306)
     Given user opens demog-1000 dataset
     And user adds a pc plot viewer with:

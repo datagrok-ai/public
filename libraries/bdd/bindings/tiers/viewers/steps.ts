@@ -373,6 +373,12 @@ export const readingAsRemembered = Then('the {string} reading of {widget} should
 export const readingNotAsRemembered = Then('the {string} reading of {widget} should not be as remembered', (page: Page, name: string, target: ElementRef) =>
   v.expectRememberedReading(page, target, name, true), {description: 'the change the step in between was supposed to make actually reached the reading'});
 
+export const readingHigherThanRemembered = Then('the {string} reading of {widget} should be higher than remembered', (page: Page, name: string, target: ElementRef) =>
+  v.expectRememberedDirection(page, target, name, 'higher'), {description: 'a numeric reading strictly above the one remembered — a change with a direction'});
+
+export const readingLowerThanRemembered = Then('the {string} reading of {widget} should be lower than remembered', (page: Page, name: string, target: ElementRef) =>
+  v.expectRememberedDirection(page, target, name, 'lower'), {description: 'a numeric reading strictly below the one remembered'});
+
 // --- the legend ------------------------------------------------------------------------------------
 
 export const legendSide = Then('the legend of {widget} should be on the {word}', (page: Page, target: ElementRef, side: string) =>

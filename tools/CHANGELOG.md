@@ -1,12 +1,39 @@
 # Datagrok-tools changelog
 
-## 6.7.0 (WIP)
+## v.next
+
+* `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step
+* `grok setup` also removes the `.js`/`.d.ts` files the npm-era tsc emitted beside js-api and library sources: the workspace emits into `dist/`, and a leftover `js-api/grok.js` shadowed the `grok` command in cmd.exe
+* GROK-20753: `domain-schema.schema.json` accepts the `hierarchy` table key (the table is a tree: exactly one ref column targeting itself) — without it `grok api` / `grok check` refused a manifest the server accepts
+* GROK-20753: `grok api --ui` emits typed u2 handles instead of the retired `@datagrok-libraries/domain-ui` sugar: `src/generated/db-ui.ts` is now `get<Schema>Db(): Promise<<Schema>Db>` → `{schema, data: <schema>Db, tables: {<plural>: DomainTable<Row>, ...}}`, every table opened in parallel behind one await and cached per page (presence-persisted as before). `grok add app --domain <schema>.<table>` scaffolds the u2 zero-code tier the way the Stockroom package is built: a three-line `//tags: app` function over `domains.table(...).app()`, `src/app.spec.json` (the same app as a designer-editable `dg-ui/1` spec), a one-table starter `databases/<schema>/schema.json` when the package declares none, the `@datagrok-libraries/u2` workspace dependency and an `rspack.config.js` carrying the `u2core` external (everything else — the css loaders, the tsconfig — comes from `@datagrok/build-config`)
+* GROK-20298: `grok s domains access <schema.table>` replaces `capabilities` — the server's `{can, fields, ...}` access shape
+
+## 6.7.5 (2026-09-17)
+
+* `grok create` works outside the pnpm workspace and new packages use `@datagrok/build-config` 1.x
+
+## 6.7.4 (2026-09-17)
+
+* `grok create`, `grok publish`, `grok test` and `grok run` work inside the pnpm workspace
+
+## 6.7.3 (2026-09-17)
+
+* The function-metadata plugin emits decorator roles in camel case again (`fileHandler`, `app`, `viewer`, ...); since 6.7.1 it capitalised them, which broke JS code comparing `options.role` with `DG.FUNC_TYPES`.
+* `grok check` accepts `## v.next` as the top changelog heading, the section the repository keeps unreleased changes in.
+
+## 6.7.2 (2026-09-16)
+
+* `grok publish` marks a bundled package for servers older than 1.28.0, which detect one only by a `webpack.config.js` in the archive; the marker is generated at publish time and never written to the package folder.
+
+## 6.7.1 (2026-09-15)
 
 * `grok login <server>` — keypair authentication, the replacement for the developer key. Generates an EC P-256 key, registers only its public half (in the browser, or with a one-shot `--code` from Profile > Public keys...), and keeps the private half in `~/.grok/keys/<alias>.json`. Logging in signs a server-issued nonce, so nothing reusable crosses the wire; keys can carry an expiry (`--expires`) and are revoked one at a time. `grok publish`, `grok test`, `grok stresstest` and `grok s` use it automatically whenever one is configured for the server, and fall back to the developer key otherwise. For CI, `GROK_PRIVATE_KEY` holds the private JWK (raw or base64) instead of a config file. Needs a server from 1.28 on; see https://datagrok.ai/help/govern/access-control/keypair-authentication
 * `grok s token` — prints a session token for the configured server, so shell scripts stop curling `/users/login/dev` with a long-lived key.
 * `grok config add` — `--key` is now optional: a server reached with a keypair has no developer key to record.
 * Against a server older than 1.28 — which has no keypair endpoints and refuses their paths before routing — the CLI names the version needed instead of reporting a bare 401, and falls back to the developer key when one is still configured for that server.
 * `grok login` reports its progress step by step (spinner on a terminal, one line per step in a log), including while it waits for the browser approval.
+* `grok check` — warns when a package pins its own version of a platform-served library (`build-config/platform-deps.json`) instead of `catalog:`; the `common/*.js` shared-library map is read from the same manifest.
+* `grok s push/migrate` — a migrated entity is stamped in its `metaParams` with `migrated_from` (the source stand URL) and `migrated_on`, so on the target it is clear the entity came from another stand. Written wherever the entity already carries `metaParams` (as `sync_id` is) and stripped before the idempotency comparison, so a re-push of an unchanged entity still reads as identical.
 
 ## 6.6.0 (2026-09-13)
 

@@ -16,7 +16,7 @@
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
     "rxjs": "catalog:",
-    "vue": "^3.4.38",
+    "vue": "catalog:",
     "wu": "catalog:"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getBy, smilesToPubChem} from './pubchem';
+import {fetchJson, getBy, smilesToPubChem} from './pubchem';
 import {buildInfoPanel, getSearchWidget} from './widget';
 import {COLUMN_NAMES, pubChemPug} from './constants';
 export * from './package.g';
@@ -67,8 +67,7 @@ export class PackageFunctions {
     id: string): Promise<string> {
     const pubChemId = id.substring(id.indexOf(':') + 1).trim();
     const url = `${pubChemPug}/compound/cid/${pubChemId}/property/CanonicalSMILES/JSON`;
-    const response = await grok.dapi.fetchProxy(url);
-    const json = await response.json();
+    const json = await fetchJson(url);
     return json['PropertyTable']['Properties'][0][COLUMN_NAMES.CANONICAL_SMILES] ??
       json['PropertyTable']['Properties'][0][COLUMN_NAMES.CONNECTIVITY_SMILES];
   }
@@ -97,8 +96,7 @@ export class PackageFunctions {
   static async GetIupacName(
     smiles: string): Promise<string> {
     const url = `${pubChemPug}/compound/smiles/${encodeURIComponent(smiles)}/property/IUPACName/JSON`;
-    const response = await grok.dapi.fetchProxy(url);
-    const responseJson = await response.json();
+    const responseJson = await fetchJson(url);
     const result = responseJson.PropertyTable?.Properties;
     return (result && result[0]?.IUPACName != null) ? result[0].IUPACName : 'Not found in PubChem';
   }

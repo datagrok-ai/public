@@ -50,7 +50,8 @@
   "grok": {
     "testDependencies": [
       "@datagrok/bio",
-      "@datagrok/chem"
+      "@datagrok/chem",
+      "@datagrok/phylo-tree-viewer"
     ]
   }
 }

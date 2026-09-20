@@ -20,6 +20,17 @@ The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the 
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
 
+`features/viewers/filter-panel/` stands in for the TestTrack scenarios of
+`files/TestTrack/Viewers/FilterPanel/` — `panel-core-ladder.md`, `add-remove-entry-points.md`,
+`filter-type-selection-modes.md`, `hierarchical-and-combined-boolean.md`,
+`compose-viewer-filtering.md`, `expression-text-filters.md`, `cloned-view-sync.md`,
+`collaborative-filtering-for-linked-tables.md`, `save-and-reapply-state.md` and
+`filter-summary-ui.md` (not `bio-filters.md`, which belongs to Bio) — plus Scenario 4 of
+`PieChart/piechart-onclick-select-filter.md` and Scenario 1 of
+`TrellisPlot/trellis-plot-click-to-filter.md` in the click-filter outline of
+`compose-with-viewers.feature`. Each feature says in its description what of its md it does not
+translate, and why.
+
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` (another one:
 `DATAGROK_URL=https://… npx grok-bdd run`):
 

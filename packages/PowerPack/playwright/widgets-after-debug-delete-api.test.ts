@@ -71,6 +71,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-
 test.use(specTestOptions);
 
 test('PowerPack — widget registration after debug-version package delete (GROK-16915 regression)', async ({page}) => {
+  test.skip(true, 'destructive: the .X-<hash> match selects the package under test and deletes it mid-run');
   test.setTimeout(300_000);
   stepErrors.length = 0;
 

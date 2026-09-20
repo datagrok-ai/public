@@ -3,7 +3,7 @@ export type {ReadonlySignal} from './core/signals.js';
 export {Scope} from './core/scope.js';
 export {Component, Control} from './core/component.js';
 export type {IProperty, IPropertyMeta} from './core/property-like.js';
-export type {FuncLike, ObservableLike, IWidgetStatus, IInputStatus, IEventType,
+export type {FuncLike, ObservableLike, IWidgetStatus, IInputStatus, IFieldStatus, IEventType,
   IRectBounds, NamedProperty, ComponentMetaBase} from './core/widget-like.js';
 export {bindText, bindValue} from './core/bind.js';
 export {AsyncSource} from './core/async-source.js';
@@ -16,11 +16,15 @@ export {VirtualList} from './components/collections/list.js';
 export type {VirtualListOptions} from './components/collections/list.js';
 export {VirtualGrid} from './components/collections/grid.js';
 export type {VirtualGridOptions} from './components/collections/grid.js';
-export {rowActions, actionsMenu} from './components/actions/actions.js';
+export {DataTable} from './components/collections/data-table.js';
+export type {DataTableOptions, DataTableColumn, CellStateLike} from './components/collections/data-table.js';
+export {rowActions, actionsMenu, allowedActions} from './components/actions/actions.js';
 export type {Action} from './components/actions/actions.js';
 export {Combobox} from './components/inputs/combobox.js';
 export type {ComboboxOptions} from './components/inputs/combobox.js';
 export * from './core/elements.js';
+export {Dates} from './core/dates.js';
+export type {UtcParts} from './core/dates.js';
 export {Input} from './core/input-base.js';
 export type {InputOptions} from './core/input-base.js';
 export {Tooltip} from './core/tooltip.js';
@@ -137,6 +141,24 @@ export type {TableSourceOptions} from './sources/table-source.js';
 export {EntityRef} from './sources/entity-ref.js';
 export type {EntityRefOptions} from './sources/entity-ref.js';
 export {registerDataSources, COLLECTIONS} from './sources/registrations.js';
+export {Access} from './core/access.js';
+export type {AccessData, FieldAccess, Capability} from './core/access.js';
+export type {ActionsOptions, ActionGroup, ActionsMenuOptions} from './components/actions/actions.js';
+export {arrayRows, Rows} from './sources/rows-like.js';
+export type {ColumnOf, DomainRowLike, RowsLike, RowValues, RowView} from './sources/rows-like.js';
+export {DomainBackendError} from './sources/domain-backend.js';
+export type {DomainBackend, DomainTableLike, DomainTableInfoLike, DomainFrameLike, DomainQueryLike,
+  DomainReadScope, DomainSupportLike, DomainTransactionOpLike, DomainTransactionResultLike, AuditEntryLike,
+  DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike, DomainDeletedMode,
+  DomainProbeLike} from './sources/domain-backend.js';
+export {MemoryDomainBackend} from './sources/memory-domain.js';
+export type {MemorySchemaJson, MemoryTableJson, MemoryColumnJson, MemoryDomainOptions}
+  from './sources/memory-domain.js';
+export type {EditState, EditSaved, RowState} from './sources/edit-state.js';
+export {DomainSource} from './sources/domain-source.js';
+export type {DomainSourceOptions, DomainSourceState, DomainSchema} from './sources/domain-source.js';
+export {SharedSession, confirmDiscard} from './sources/session.js';
+export type {DomainSession} from './sources/session.js';
 export {SuggestInput} from './components/inputs/suggest-input.js';
 export type {SuggestInputOptions} from './components/inputs/suggest-input.js';
 export {Card} from './components/containers/card.js';
@@ -150,7 +172,8 @@ export type {MessageInputOptions, MentionProvider} from './components/inputs/mes
 export {FunctionsBrowser, filterFuncItems, tagCounts} from './components/collections/functions-browser.js';
 export type {FuncItem, FunctionsBrowserOptions} from './components/collections/functions-browser.js';
 export {Filters, FilterError, KIND, OperatorRegistry, CORE_OPERATORS, ColumnEvaluator} from './core/filter/index.js';
-export type {FilterKind, Lock, FilterRef, FilterSpan, FilterScalar, FilterValue, FilterCondition, FilterGroup,
+export type {FilterKind, Lock, FilterRef, FilterSpan, FilterColumnRef, FilterParam, FilterScalar, FilterValue,
+  FilterCondition, FilterGroup,
   FilterNode, FilterJsonGroup, FilterJsonCondition, FilterJsonNode, FilterProblem, DomainCondition,
   DomainConditionNode, DomainConditionTree, FilterOperator, FilterOperatorSet,
   FilterProperty, FilterValueItem, FilterSchema, FilterTemplate, FilterDiff, FilterValueEditorFactory,

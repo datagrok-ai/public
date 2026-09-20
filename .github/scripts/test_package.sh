@@ -25,12 +25,15 @@ if [ -d "${DIR}/dockerfiles" ]; then
     done
 fi
 
-if [ -d "${DIR}/connections" ] || [[ -n $(find ${DIR}/node_modules/@datagrok -type d -name connections) ]] || \
-   [ -d "${DIR}/queries" ] || [[ -n $(find ${DIR}/node_modules/@datagrok -type d -name queries) ]]; then
+grok_deps="$(jq -r '.grok.testDependencies // [] | .[]' ${DIR}/package.json)"
+connect_dirs="${DIR}"
+for dep in $grok_deps; do
+  connect_dirs+=" $(pnpm --filter "$dep" exec pwd)"
+done
+if [[ -n $(find $connect_dirs -maxdepth 1 -type d \( -name connections -o -name queries \)) ]]; then
 profiles+=' --profile grok_connect'
 fi
 
-grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' ${DIR}/package.json)"
 if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "simpkpd" ]] || \
    [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "dendrogram" ]] || \
@@ -46,7 +49,7 @@ profiles+=' --profile scripting'
 fi
 
 dependencies="$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
-unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
+unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("^(workspace:|\\.\\./)")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
 if [[ "${unpublished_deps}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" != *"tests"* ]]; then
     DATAGROK_VERSION='latest'
 else
@@ -105,13 +108,14 @@ git stash save -u "${alias}"
 echo 'Removing...'
 git clean -ndX
 git clean -fdX
-npm install
-if [[ "${unpublished_deps}" != "" ]]; then
-    grok link
-fi
-npm run build -- --mode=production || exit 1
-
 cd ${crnt} || exit 1
+
+pnpm install --frozen-lockfile || exit 1
+filters="--filter={./packages/${PACKAGE}}..."
+for dep in $(jq -r '.grok.testDependencies // [] | .[]' "${DIR}/package.json"); do
+  filters+=" --filter=${dep}..."
+done
+pnpm turbo run build $filters --concurrency=4 || exit 1
 
 until .github/scripts/check-output.sh "curl -s ${apiUrl}/info/server" '"Http Server"'
 do
@@ -139,11 +143,11 @@ key='admin'
 grok config add --default --alias ${alias} --server "${apiUrl}" --key "$key" || exit 1
 
 cd ${DIR} || exit 1
-grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
+grok_deps="$(jq -r '.grok.testDependencies // [] | .[]' package.json)"
 if [ -n "$grok_deps" ]; then
 for dep in $grok_deps; do
   current_dir=$(pwd)
-  cd $(echo "node_modules/$dep" | tr -d '\r') || exit 1
+  cd "$(pnpm --filter "$dep" exec pwd)" || exit 1
   count=0
   retries=5
   echo "Publishing $dep to ${alias}..."

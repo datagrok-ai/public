@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 //input: string smiles { semType: Molecule; description: Target molecule to plan a synthesis route for }
 //output: widget result
 //meta.allowAddAsColumn: false
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 //meta.domain: chem
 //condition: true
 export function retroSynthesisPath(molecule: string) : any {

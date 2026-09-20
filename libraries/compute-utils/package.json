@@ -17,7 +17,7 @@
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
-    "diff-grok": "^1.3.1",
+    "diff-grok": "^1.4.0",
     "ebnf": "^1.9.1",
     "exceljs": "catalog:",
     "fast-equals": "^5.2.2",

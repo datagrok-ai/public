@@ -28,16 +28,13 @@ map to exactly one workflow. It already does:
 | `misc/<project>/`     | `@datagrok-misc/<project>`    | `misc.yaml`      |
 | `packages/<Package>/` | `@datagrok/<package>`         | `packages.yaml`  |
 
-The `libraries` and `packages` jobs in `js-api.yml` only bump the `datagrok-api`
-dependency and commit — they never publish, so they need no configuration.
-
 ## What the workflows do
 
 Each publishing job carries:
 
 ```yaml
     permissions:
-      contents: write     # the job pushes the refreshed package-lock.json
+      contents: read
       id-token: write     # lets the runner mint the OIDC token
 ```
 

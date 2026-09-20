@@ -293,6 +293,25 @@ A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWi
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get
 isRenderPending()` true from the render request to the paint; and an `onRendered` observable.
 
+A package that customizes an existing widget can contribute its own live areas and readings
+through `DG.Widget.addStatusProvider(name, provider)`. For example, Peptides adds the glyphs it
+draws in the native grid's headers:
+
+```ts
+grid.addStatusProvider('peptides-weblogo', () => ({
+  hitAreas: currentGlyphBounds,
+  values: {'highlighted rows': highlightedRowCount},
+}));
+grid.removeStatusProvider('peptides-weblogo');
+```
+
+Names identify the contributing component. Registering the same name replaces that provider in
+place; later providers override earlier entries. Providers run on each status read and contribute
+`parts`, `hitAreas`, and `values`; a JS viewer that overrides `getWidgetStatus()` composes with
+`super.getWidgetStatus()`. Geometry uses the widget's coordinate system and must exclude anything
+no longer drawn. Detach removes providers; a viewer reattached to a different table needs its
+table-specific providers registered again.
+
 ## Generated specs
 
 One `test()` per scenario and per outline row, one `test.step` per Gherkin step located at the

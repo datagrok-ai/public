@@ -1,0 +1,6 @@
+{
+  "extends": "@datagrok/build-config/tsconfig.base.json",
+  "include": [
+    "src"
+  ]
+}

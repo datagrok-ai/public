@@ -174,6 +174,18 @@ export async function typeInto(page: Page, target: ElementRef, text: string, com
     await editor.press('Tab');
 }
 
+/** A paste, not a typing: the text goes to the page's clipboard and the platform's paste key puts
+ * it into the editor over whatever it held — an editor that reads a pasted value differently from
+ * typed keys (a list rewritten on paste) sees the paste. `\n` in the text is a line break. */
+export async function paste(page: Page, editor: Locator, text: string): Promise<void> {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.evaluate((t) => navigator.clipboard.writeText(t), text.replace(/\\n/g, '\n'));
+  if (!await hasFocus(editor))
+    await editor.click();
+  await editor.press('ControlOrMeta+A');
+  await editor.press('ControlOrMeta+V');
+}
+
 export async function clear(page: Page, target: ElementRef): Promise<void> {
   const editor = await editorOf(page, target);
   await editor.click();

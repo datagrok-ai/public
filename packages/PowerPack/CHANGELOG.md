@@ -2,13 +2,20 @@
 
 ## v.next
 
+* GROK-20753: Added `domainRouteView` (`tags: domainRoutes`) — the platform's `/domains/<schema>/<table>[/<keyOrId>]` addresses resolve to the u2 domain app through it
+* GROK-17068: Formula Lines: The formula editor now accepts the axis tokens `X`/`Y` on the left side of a line (`Y = X + 25`) or a band (`X in(160, 190)`), not only a `${column}` reference, and no longer rewrites a token into a concrete column when the item is selected or the preview's axis changes
+* GROK-20909: Open the playlist when the Learn > VIDEO play icon is clicked
+* GROK-20899: Spotlight: Workspace no longer lists favorites that cannot be pinned there (saved layouts, saved views, tables, function calls), and the "Group favorites" context menu is offered only for entities Workspace can host — favorites written elsewhere (the platform's star icon, the context menu) bypassed the drop-target filter
 * GROK-20488: Home: Optimized the "Most Recent Entities" query — parameters and entity types are filtered through id sets instead of per-row joins (dev: 1.1 s → 0.5 s warm, 3.3 s → 0.5 s cold)
 * GROK-20753: Added the columnless "Filter Builder" filter (`PowerPack:filterBuilder`); the saved state is `{model, query}`; the status line is off by default (`showStatus`)
 * GROK-20753: Semantic-type operators are discovered from `meta.role: filterOperators` package functions; `@datagrok-libraries/u2` and `datagrok-api` are referenced in-repo by relative path
 * Search: Apps and functions are now matched ignoring case and spaces, so "modelhub" finds "Model Hub" — previously only the exact spelling with the space worked, because a package function's name is its JS export symbol and the `//name:` annotation lands in friendlyName. `meta.keywords` is searched too, and an app no longer appears under both Apps and Functions (the exclusion checked tags only, missing apps declared via `meta.role`)
 * Add New Column: Fixed a formula edit being lost when the project reopens. A table that persists as a creation script is rebuilt from it, and the edit was applied straight to the column without being recorded, so the replay brought back the original formula (and the context panel's Apply recorded a plain `AddNewColumn`, which spawned a duplicate column on every open). Edits now run through the new `EditColumnFormula` transform, and renaming a column in the same dialog goes through `RenameColumn` instead of the name setter
-* 2297: Route every current-user-group lookup through getCurrentUserGroup() and handle an unavailable group instead of dereferencing it
+* GROK-20771: Route every current-user-group lookup through getCurrentUserGroup() and handle an unavailable group instead of dereferencing it
 * GROK-20631: Fire one open per Workspace row double-click and await the in-flight project preview before opening
+
+## 1.8.3 (2026-08-18)
+
 * Add New Column: Fixed "No such column: name" when picking a column in the columns list — the ColumnGrid internal name column is now `__name`, so read it through `ColumnGrid.nameCol` instead of by hardcoded name
 * 23226: Use hasOwnProperty for function-name map lookups in getFunctionNameAtPosition to ignore inherited Object.prototype keys
 * Add New Column: Added an expression-only widget mode (`aux.expressionEditorOnly`) that edits a formula as a value — no Apply button, no preview, and the debounced text published back onto the call so a host can read it through `call.inputParams['expression'].onChanged`
