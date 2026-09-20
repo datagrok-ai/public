@@ -180,13 +180,14 @@ export const dragBoxHolding = When('user drags a box over the {string} area of {
 export const enterIntoArea = When('user enters {string} into the {string} area of {widget}', (page: Page, text: string, area: string, target: ElementRef) =>
   v.typeIntoArea(page, target, area, text), {tier: 'ui', description: 'a hit area that holds an editor (a range input, a form field): a click on it, select all, the text, Enter'});
 
-export const wheelOverArea = When('user scrolls the mouse wheel {word} over the {string} area of {widget}', async (page: Page, direction: string, area: string, target: ElementRef) => {
-  if (direction !== 'up' && direction !== 'down')
-    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
-  const c = v.centerOf(await v.hitArea(page, target, area, true));
-  await page.mouse.move(c.x, c.y);
-  await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
-}, {tier: 'ui', description: 'up or down, a few notches, with the pointer at the centre of the area'});
+export const wheelOverArea = When('user scrolls the mouse wheel {word} over the {string} area of {widget}', (page: Page, direction: string, area: string, target: ElementRef) =>
+  v.wheelOverArea(page, target, area, direction), {tier: 'ui', description: 'up or down, a few notches, with the pointer at the centre of the area'});
+
+export const wheelOverAreaHolding = When('user scrolls the mouse wheel {word} over the {string} area of {widget} holding {key}', (page: Page, direction: string, area: string, target: ElementRef, key: string) =>
+  v.wheelOverArea(page, target, area, direction, 1, keysOf(key)), {tier: 'ui', description: 'the same notches with a modifier held — Control zooms where a plain wheel scrolls'});
+
+export const wheelOverAreaTimesHolding = When('user scrolls the mouse wheel {word} {int} times over the {string} area of {widget} holding {key}', (page: Page, direction: string, times: number, area: string, target: ElementRef, key: string) =>
+  v.wheelOverArea(page, target, area, direction, times, keysOf(key)), {tier: 'ui', description: 'a run of wheel events with a modifier held — enough of them to reach a limit'});
 
 export const pointerAway = When('user moves the pointer away from {element}', async (page: Page, target: ElementRef) => {
   const box = await (await v.viewerLocator(page, target)).boundingBox();

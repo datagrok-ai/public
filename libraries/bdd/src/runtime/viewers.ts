@@ -304,6 +304,19 @@ export function loadLayout(page: Page): Promise<void> {
 
 export {withKeys};
 
+/** Wheel notches over the centre of an area, with keys held (Control zooms where a plain wheel
+ * scrolls). */
+export async function wheelOverArea(page: Page, target: ElementRef, area: string, direction: string, times = 1, keys: string[] = []): Promise<void> {
+  if (direction !== 'up' && direction !== 'down')
+    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
+  const c = centerOf(await hitArea(page, target, area, true));
+  await page.mouse.move(c.x, c.y);
+  await withKeys(page, keys, async () => {
+    for (let i = 0; i < times; i++)
+      await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
+  });
+}
+
 /** A plain drag from the centre of one hit area to the centre of another (a column header to a
  * new place, a range handle to a bin), with keys held; the baseline is taken before the drag. */
 export async function dragArea(page: Page, target: ElementRef, from: string, to: string, keys: string[] = []): Promise<void> {

@@ -119,7 +119,8 @@ its error and balloon floors. `-g` selects the whole journey.
 
 **`@known-failure`** on a scenario says the product has the defect it describes: its failure does
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
-to stay green.
+to stay green. Outside a journey the tag works on a scenario and on an outline's `Examples` block:
+the Background runs plainly, and only the scenario's own steps are the expected failure.
 
 The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
 removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
@@ -216,7 +217,8 @@ list is the reference; this is the map:
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
 - **Package functions and their results** (`platform/functions.ts`), **custom platform events**
-  (`platform/events.ts`), the clipboard and a file chooser (`common/steps.ts`).
+  and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
+  (`common/steps.ts`).
 - **The `viewers` tier** (below).
 
 A step definition is an exported `const`; the generated spec imports it by name:
