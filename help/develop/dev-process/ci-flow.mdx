@@ -29,6 +29,15 @@ specific topics: [release flow](#release-cicd-flow), [public repository flow](#p
 
 ## Public repository CI/CD flows
 
+The public repository is one pnpm workspace, so every JavaScript job starts the same way. It installs
+dependencies once at the repository root with `pnpm install --frozen-lockfile`. Then it builds the changed
+project and everything that project depends on with Turborepo. The "install" and "build" steps in the
+diagrams below refer to these two commands. To reproduce them locally, see [Build system](build-system.md).
+
+Jobs use the `grok` from the workspace, not a globally installed one. If the tests of a package need another
+package on the test stand, the package lists it in
+[`grok.testDependencies`](build-system.md#test-dependencies).
+
 ```mdx-code-block
 <Tabs>
 <TabItem value="packages" label="Packages" default>

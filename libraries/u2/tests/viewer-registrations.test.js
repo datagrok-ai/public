@@ -155,8 +155,9 @@ scoped('every descriptor becomes a u2-viewer-* tag with table, look and its user
   assert.equal(reg.get('u2-viewer-filters').designerActions[0].icon, 'filter');
   assert.equal(reg.get('u2-viewer-form').props.length, 2);
 
+  const tags = reg.metas().map((m) => m.tag);
   registerPlatformViewers(reg);
-  assert.equal(reg.metas().length, 5, 'a second call is a no-op');
+  assert.deepEqual(reg.metas().map((m) => m.tag), tags, 'a second call is a no-op');
   const manifest = JSON.stringify(reg.manifest());
   assert.ok(manifest.includes('u2-viewer-grid') && manifest.includes('"label":"Scatter plot"') && !manifest.includes('"icon"'),
     'the label is plain JSON and stays; the icon closure is stripped');
@@ -177,8 +178,10 @@ scoped('a taken tag is skipped with one warning', () => {
   try {
     const reg = new Registry();
     registerPlatformViewers(reg);
-    assert.equal(reg.metas().length, 5);
-    assert.deepEqual(warnings, ['u2 spec: u2-viewer-scatter-plot: "Scatter Plot" skipped — the tag is taken by "Scatter plot"',
+    assert.deepEqual(reg.metas().map((m) => m.tag),
+      ['u2-viewer-grid', 'u2-viewer-filters', 'u2-viewer-form', 'u2-viewer-scatter-plot', 'u2-viewer-3d-scatter-plot'],
+      'the duplicate added no tag');
+    assert.deepEqual(warnings,['u2 spec: u2-viewer-scatter-plot: "Scatter Plot" skipped — the tag is taken by "Scatter plot"',
       'u2 spec: u2-viewer-scatter-plot: "Scatter plot" is already registered']);
   } finally {
     console.warn = warn;
@@ -188,11 +191,19 @@ scoped('a taken tag is skipped with one warning', () => {
 scoped('registerPlatformComponents is the core registry plus the viewers; the core registry alone has none', () => {
   const reg = new Registry();
   registerPlatformComponents(reg);
-  const core = reg.metas().filter((m) => !m.tag.startsWith('u2-viewer-'));
-  assert.equal(core.length, 42);
-  assert.equal(reg.metas().length, 47);
+  const tags = reg.metas().map((m) => m.tag);
+  const core = new Registry();
+  registerAll(core);
+  assert.deepEqual(core.metas().map((m) => m.tag).filter((tag) => !tags.includes(tag)), [],
+    'the whole core registry is in');
+  const required = ['u2-domain-form', 'u2-domain-list', 'u2-domain-pick', 'u2-domain-grid', 'u2-domain-data-table',
+    'u2-domain-tree', 'u2-domain-history', 'u2-domain-children', 'u2-domain-search', 'u2-domain-filters',
+    'u2-functions-browser', 'u2-function-input', 'u2-func-call-history-browser', 'u2-func-call-input', 'u2-func-form',
+    'u2-viewer-grid', 'u2-viewer-scatter-plot'];
+  assert.deepEqual(required.filter((tag) => !tags.includes(tag)), [],
+    'the dg entity controls, the ten domain tags and the viewers on top');
   registerPlatformComponents(reg);
-  assert.equal(reg.metas().length, 47);
+  assert.deepEqual(reg.metas().map((m) => m.tag), tags, 'a second call leaves the registry as it was');
 
   const fch = reg.get('u2-func-call-history-browser');
   assert.equal(fch.props.find((p) => p.name === 'functionName').bindable, true);

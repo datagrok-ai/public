@@ -12,14 +12,26 @@ export namespace funcs {
     return await grok.functions.call('OligoBatchCalculator:GetUnits', {});
   }
 
+  /**
+   * @param {string} outputUnits
+   *   choices: OligoBatchCalculator:getUnits
+   */
   export async function opticalDensity(sequence: string , amount: number , outputUnits: string , extCoefsObj: any ): Promise<number> {
     return await grok.functions.call('OligoBatchCalculator:OpticalDensity', { sequence, amount, outputUnits, extCoefsObj });
   }
 
+  /**
+   * @param {string} outputUnits
+   *   choices: OligoBatchCalculator:getUnits
+   */
   export async function nMole(sequence: string , amount: number , outputUnits: string , extinctionCoefficientsObj: any , weightsObj: any ): Promise<number> {
     return await grok.functions.call('OligoBatchCalculator:NMole', { sequence, amount, outputUnits, extinctionCoefficientsObj, weightsObj });
   }
 
+  /**
+   * @param {string} outputUnits
+   *   choices: OligoBatchCalculator:getUnits
+   */
   export async function molecularMass(sequence: string , amount: number , outputUnits: string ): Promise<number> {
     return await grok.functions.call('OligoBatchCalculator:MolecularMass', { sequence, amount, outputUnits });
   }

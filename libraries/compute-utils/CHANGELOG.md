@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Old views: Removed `testFunctionView`/`testPipeline` and the Test runner ribbon group; their module-level import of the view classes formed a cycle that threw `Cannot access 'FunctionView' before initialization` in consumers
+* RTD: Added `getMatchedPositions`/`getBasePosition` controller methods exposing matched node positions to link handlers
 * HistoricalRunsDelete.awaitDelete: dialog helper resolving null on dismissal (mirrors awaitMetadata)
 * Excel export detaches the render viewer (and its cloned dataframe) after the screenshot
 * RTD: Fixed a link handler error leaving the link permanently running and deadlocking all tree mutations

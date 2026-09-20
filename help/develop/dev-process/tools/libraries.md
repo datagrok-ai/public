@@ -4,7 +4,7 @@ description: A tour of common libraries used to develop Datagrok applications, i
 keywords:
   - datagrok-tools
   - datagrok-api
-  - webpack
+  - rspack
   - TypeScript
   - d3
   - three.js
@@ -32,32 +32,30 @@ _Links:_
 
 ## Bundlers
 
-Package templates come with a configuration for the `Webpack` bundler. In
-`package.json`, `webpack` and `webpack-cli` are added as default development dependencies to build your package. When
-working with various file extensions, you may have to include special modules
-called [loaders](https://webpack.js.org/concepts/loaders). For better development experience, you can also
-install `webpack-dev-server`.
+Packages are bundled by [rspack](https://rspack.rs) with swc, through the single `@datagrok/build-config`
+development dependency: the configuration is shared by every Datagrok package, and a package adds an
+`rspack.config.js` only for what differs (extra externals, WebAssembly, JSX). CSS, images and `.wasm` files
+are handled out of the box; see the
+[@datagrok/build-config README](https://github.com/datagrok-ai/public/blob/master/build-config/README.md).
 
 _Links:_
 
-- [webpack](https://www.npmjs.com/package/webpack)
-- [webpack-cli](https://www.npmjs.com/package/webpack-cli)
-- [webpack-dev-server](https://www.npmjs.com/package/webpack-dev-server)
+- [@datagrok/build-config](https://www.npmjs.com/package/@datagrok/build-config)
+- [rspack](https://www.npmjs.com/package/@rspack/core)
 
 ## TypeScript
 
 As we recommend [TypeScript](https://www.typescriptlang.org/) as a language for package development, there's an option
 to [create a package](../../onboarding/getting-started.md)
-with a `--ts` flag. Among other things, it adds two new dependencies: `typescript` (provides the language support)
-and `ts-loader` (a file loader for `webpack`). Likely, these are not the only libraries you will use when writing in
-TypeScript. For example, if one of the libraries you want to work with has not been typed yet, check out the
+with a `--ts` flag. TypeScript itself comes with `@datagrok/build-config`: swc transpiles the sources when
+bundling, and `npm run typecheck` runs the TypeScript compiler (`tsc --noEmit`) separately. If one of the
+libraries you want to work with has not been typed yet, check out the
 [Definitely Typed](https://github.com/DefinitelyTyped/DefinitelyTyped) resource, which provides type definitions for
 popular packages.
 
 _Links:_
 
 - [TypeScript](https://www.npmjs.com/package/typescript)
-- [ts-loader](https://www.npmjs.com/package/ts-loader)
 
 ## Visualization
 

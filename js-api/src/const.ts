@@ -986,7 +986,7 @@ type CSSProperties = Partial<Record<keyof CSSStyleDeclaration, string>>;
 
 /** A handler the platform invokes with no arguments; a parameter, if declared, stays undefined.
  * `Function` is accepted so handlers kept in `Function`-typed fields still pass. */
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 export type Callback = ((...ignored: never[]) => void) | Function;
 
 export type ElementOptions = {

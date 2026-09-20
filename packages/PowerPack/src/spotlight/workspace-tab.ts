@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import {getMyGroupFavorites, getAdminGroups, getMyPersonalFavorites, sortGroupsByFriendlyName, pinEntityToGroup}
   from './group-favorites';
 import {showManageFavoritesDialog} from './manage-favorites-dialog';
-import {SpotlightWidget} from './spotlight-widget';
+import type {SpotlightWidget} from './spotlight-widget';
+import {isApp, isModel, isRunnable, isSpotlightEntity} from './entity-kinds';
 import {
   clearWorkspacePreview, getWorkspacePreviewHost, showWorkspacePreview,
 } from './preview-host';
@@ -16,20 +17,6 @@ import type {GroupFavorites} from './group-favorites';
 /** Returns the platform icon for an entity via its registered EntityMeta handler. */
 export function entityIcon(entity: DG.Entity): HTMLElement {
   return DG.ObjectHandler.forEntity(entity)?.renderIcon(entity) ?? ui.iconFA('file');
-}
-
-export function isApp(entity: DG.Entity): entity is DG.Func {
-  return entity instanceof DG.Func && entity.options['role'] === DG.FUNC_TYPES.APP;
-}
-
-/** A model — a Func with the `model` role/tag. Launched via `prepare().edit()`, not run directly. */
-export function isModel(entity: DG.Entity): entity is DG.Func {
-  return entity instanceof DG.Func &&
-    ((((entity.options['role'] as string) ?? '').split(',').includes('model')) || entity.hasTag('model'));
-}
-
-function isRunnable(entity: DG.Entity): entity is DG.Func {
-  return entity instanceof DG.Func && !isApp(entity) && !isModel(entity);
 }
 
 /** Launches an app — apps return their View, which must be added to the shell to become visible. */
@@ -782,7 +769,7 @@ export class WorkspaceTab {
     ui.makeDroppable(root, {
       acceptDrag: (args) => {
         const o = args.dragObject;
-        if (o instanceof DG.Entity && SpotlightWidget.isSpotlightEntity(o))
+        if (o instanceof DG.Entity && isSpotlightEntity(o))
           this.showOverlay();
         return false;
       },
@@ -802,7 +789,7 @@ export class WorkspaceTab {
       ], 'pp-workspace-drop-zone');
       ui.makeDroppable(zone, {
         acceptDrop: (o) =>
-          o instanceof DG.Entity && SpotlightWidget.isSpotlightEntity(o),
+          o instanceof DG.Entity && isSpotlightEntity(o),
         doDrop: async (args) => {
           const entity = args.dragObject;
           if (!(entity instanceof DG.Entity))

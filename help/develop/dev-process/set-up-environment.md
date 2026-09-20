@@ -1,14 +1,14 @@
 ---
 title: "Environment setup"
 sidebar_position: 0
-description: How to install Node.js, npm, webpack, and datagrok-tools, and configure your developer key for package development.
+description: How to install Node.js, npm, pnpm, and datagrok-tools, and configure your developer key for package development.
 keywords:
   - developer key
   - grok config
   - datagrok-tools
   - Node.js
   - npm
-  - webpack
+  - pnpm
   - local development setup
 ---
 
@@ -24,10 +24,13 @@ the [instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and
 _NOTE_: On macOS and Unix systems, you may also need to use `sudo` at the beginning of the installation command and
 enter the root password if prompted.
 
-1. Install [Node.js](https://nodejs.org/en/)
-2. Install [npm](https://www.npmjs.com/get-npm)
-3. Install [webpack](https://webpack.js.org/guides/installation/)
-4. Install [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
+1. Install [Node.js](https://nodejs.org/en/) 22 or later (npm comes with it)
+2. Install [datagrok-tools](https://www.npmjs.com/package/datagrok-tools): `npm install -g datagrok-tools`
+3. If you work inside the [public repository](https://github.com/datagrok-ai/public), run `grok setup`
+   once at the repository root. It enables [pnpm](https://pnpm.io) and installs dependencies for every
+   package. See [Build system](build-system.md). A standalone package created with `grok create` uses
+   `npm install` and needs nothing else. The bundler and TypeScript come with the package's
+   `@datagrok/build-config` dependency.
 
 _NOTE_: The `Node.js` version from [Snap](https://snapcraft.io/)
 can produce issues with the datagrok tools installation.

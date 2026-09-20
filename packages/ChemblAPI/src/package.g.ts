@@ -2,6 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Databases | ChEMBL | Substructure Search API
+//description: Finds ChEMBL molecules that contain the query structure as a substructure.
 //input: string mol { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -10,6 +11,7 @@ export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> 
 }
 
 //name: Databases | ChEMBL | Similarity Search API
+//description: Finds ChEMBL molecules most similar to the query structure.
 //input: string mol { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -25,7 +27,8 @@ export async function getCompoundsIds(inchiKey: string) : Promise<any> {
 }
 
 //name: Chembl Get by Id
-//input: string id 
+//description: Fetches a molecule record from ChEMBL by its ChEMBL ID.
+//input: string id { description: ChEMBL ID (e.g. CHEMBL25) a bare number is prefixed with CHEMBL }
 //output: dataframe result
 export async function getById(id: string) : Promise<any> {
   return await PackageFunctions.getById(id);

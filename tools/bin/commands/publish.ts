@@ -15,7 +15,8 @@ import * as color from '../utils/color-utils';
 import {check} from './check';
 import {generateCeleryArtifacts} from '../utils/python-celery-gen';
 import {generateQueueArtifacts} from '../utils/queue-worker-gen';
-import {devKeyFetch} from '../utils/dev-key';
+import {devKeyFetch, keypairToken} from '../utils/dev-key';
+import * as keypair from '../utils/keypair';
 
 const {exec, execSync} = require('child_process');
 
@@ -133,8 +134,7 @@ function imageExistsInRegistry(ref: string): boolean {
   try {
     execSync(`docker manifest inspect ${ref}`, {stdio: ['pipe', 'pipe', 'pipe']});
     return true;
-  }
-  catch {
+  } catch {
     return false;
   }
 }
@@ -194,8 +194,7 @@ function dockerRemove(imageName: string): boolean {
   try {
     dockerCommand(`rmi ${imageName}`);
     return true;
-  }
-  catch {
+  } catch {
     return false;
   }
 }
@@ -223,8 +222,7 @@ function calculateFolderHash(dirPath: string): string {
     if (entry.isDir) {
       color.log(`  Hash entry: dir:${entry.relPath}:`);
       hash.update(`dir:${entry.relPath}:`);
-    }
-    else {
+    } else {
       // Normalize CRLF to LF to match server-side storage
       const raw = fs.readFileSync(entry.fullPath);
       const content = raw.includes(0x0d) && !raw.includes(0x00)
@@ -249,25 +247,28 @@ function listRecursive(basePath: string, rel: string): {relPath: string, fullPat
     if (entry.isDirectory()) {
       results.push({relPath, fullPath, isDir: true});
       results.push(...listRecursive(basePath, relPath));
-    }
-    else
+    } else
       results.push({relPath, fullPath, isDir: false});
   }
   return results;
 }
 
 async function getUserLogin(host: string, devKey: string): Promise<{login: string, token: string} | null> {
-  let loginResp;
+  let token: string | null;
   try {
-    loginResp = await devKeyFetch(`${host}/users/login/dev`, `${host}/users/login/dev/${devKey}`, devKey, {method: 'POST'});
+    token = await keypairToken(host, devKey);
+    if (token == null) {
+      const loginResp = await devKeyFetch(`${host}/users/login/dev`, `${host}/users/login/dev/${devKey}`, devKey, {method: 'POST'});
+      if (loginResp.status !== 200)
+        return null;
+      token = (await loginResp.json()).token;
+    }
   } catch (e: any) {
     color.warn(`Cannot reach server ${host}: ${e.message || e}`);
     return null;
   }
-  if (loginResp.status !== 200)
+  if (token == null)
     return null;
-  const loginData = await loginResp.json();
-  const token = loginData.token;
   try {
     const userResp = await fetch(`${host}/users/current`, {headers: {'Authorization': token}});
     if (userResp.status !== 200)
@@ -353,8 +354,7 @@ async function processDockerImages(
         if (registry) {
           const remoteTag = `${registry}/datagrok/${remoteFullName}`;
           dockerTag(img.fullLocalName, remoteTag);
-        }
-        else
+        } else
           dockerTag(img.fullLocalName, `datagrok/${remoteFullName}`);
         color.success(`Built and tagged ${img.fullLocalName}`);
         return pushImage(img.imageName, registryTag, registry);
@@ -368,16 +368,14 @@ async function processDockerImages(
       if (registry)
         dockerRemove(`${registry}/datagrok/${remoteFullName}`);
       result = buildAndPush() ?? await fallbackImage(img, host, devKey, registry, version, contentHash);
-    }
-    else if (generatedDirs.includes(img.dirName)) {
+    } else if (generatedDirs.includes(img.dirName)) {
       // Generated worker dirs are just FROM the stock base: a cached local tag
       // pins whatever base the daemon had when it was first built (CI served a
       // day-old worker this way). Always run docker build — the layer cache
       // makes an unchanged rebuild near-instant, and a refreshed base lands.
       color.log(`Rebuilding generated image ${img.fullLocalName} against the current base...`);
       result = buildAndPush() ?? await fallbackImage(img, host, devKey, registry, version, contentHash);
-    }
-    else {
+    } else {
       // Look for registry-qualified image first, then unqualified
       let foundLocalName: string | null = null;
       if (registry) {
@@ -394,8 +392,7 @@ async function processDockerImages(
           const remoteTag = `${registry}/datagrok/${remoteFullName}`;
           if (foundLocalName !== remoteTag)
             dockerTag(foundLocalName, remoteTag);
-        }
-        else {
+        } else {
           const canonicalTag = `datagrok/${remoteFullName}`;
           dockerTag(foundLocalName, canonicalTag);
           color.log(`  Tagged as ${canonicalTag}`);
@@ -405,33 +402,29 @@ async function processDockerImages(
           const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
           if (fallback.serverError)
             color.error(`Cannot resolve fallback: ${fallback.serverError}`);
-          else if (fallback.image)
+          else if (fallback.image) {
             color.warn(`Falling back to ${fallback.image}` +
               `${fallback.hashMatch === false ? ' (hash mismatch — container will run older code)' : ''}`);
-          else
+          } else
             color.error(`No published image available for ${img.imageName}. No container will be available.`);
           result = fallback;
         }
-      }
-      else {
+      } else {
         color.warn(`Local image not found. Expected: ${img.fullLocalName}`);
         color.log(`  Build it with: docker build -t ${img.fullLocalName} -f ${dockerfilePath} ${dockerfileDir}`);
         const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
         if (fallback.serverError) {
           color.error(`Cannot resolve fallback: ${fallback.serverError}`);
           result = {image: null, fallback: true, requestedVersion: registryTag};
-        }
-        else if (fallback.image && fallback.hashMatch === true) {
+        } else if (fallback.image && fallback.hashMatch === true) {
           result = fallback;
           color.success(`Falling back to ${fallback.image} (dockerfile unchanged)`);
-        }
-        else if (fallback.image && fallback.hashMatch === false && !skipDockerRebuild) {
+        } else if (fallback.image && fallback.hashMatch === false && !skipDockerRebuild) {
           color.warn(`Dockerfile folder has changed. Rebuilding image...`);
           result = buildAndPush() ?? {image: fallback.image, fallback: true, requestedVersion: registryTag};
           if (!result || result.fallback)
             color.warn(`Could not publish a new image. Falling back to ${fallback.image} (hash mismatch)`);
-        }
-        else {
+        } else {
           // The server has no compatible record, but the image may already be
           // published in the configured registry / Docker Hub (e.g. pushed by an
           // earlier CI run). Use it directly rather than failing or rebuilding.
@@ -439,12 +432,10 @@ async function processDockerImages(
           if (registryImage) {
             result = {image: registryImage, fallback: true, requestedVersion: registryTag};
             color.success(`Falling back to registry image ${registryImage}`);
-          }
-          else if (skipDockerRebuild) {
+          } else if (skipDockerRebuild) {
             color.warn(`No fallback available. Skipping docker build (--skip-docker-rebuild).`);
             result = {image: null, fallback: true, requestedVersion: registryTag};
-          }
-          else {
+          } else {
             // No fallback and no local image — must build
             color.warn(`No fallback available. Building ${img.fullLocalName}...`);
             const built = buildAndPush();
@@ -506,13 +497,33 @@ async function fallbackImage(
   return {image: null, fallback: true, requestedVersion: img.imageTag};
 }
 
+export const BUNDLE_MARKER_NAME = 'webpack.config.js';
+export const BUNDLE_MARKER = '// Generated by `grok publish` for servers before 1.28.0, which detect a ' +
+  'bundled\n// package by this file. The bundle itself is built by @datagrok/build-config.\nmodule.exports = {};\n';
+
+export function predatesBundleDetection(version: string): boolean {
+  const [major, minor, patch] = (version ?? '').split('.').map(Number);
+  if ([major, minor, patch].some(isNaN))
+    return true;
+  return major < 1 || (major === 1 && minor < 28);
+}
+
+async function serverPredatesBundleDetection(host: string): Promise<boolean> {
+  try {
+    const resp = await fetch(`${host}/info/server`);
+    return predatesBundleDetection(((await resp.json()) as any)?.Version);
+  } catch {
+    return true;
+  }
+}
+
 export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean, skipDockerRebuild?: boolean) {
   // Validate server connectivity and dev key
   let timestamps: Indexable = {};
   const url = `${host}/packages/dev/${packageName}`;
   const legacyUrl = `${host}/packages/dev/${devKey}/${packageName}`;
   try {
-    const checkResp = await devKeyFetch(`${url}/timestamps`, `${legacyUrl}/timestamps`, devKey);
+    const checkResp = await devKeyFetch(`${url}/timestamps`, `${legacyUrl}/timestamps`, devKey, {}, host);
     const checkData = await checkResp.json();
     if (checkData['#type'] === 'ApiError') {
       color.error(checkData.message);
@@ -548,7 +559,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     follow: true,
   });
 
-  const isWebpack = fs.existsSync('webpack.config.js');
+  // A bundled package ships dist/package.js: built by webpack (legacy) or by `grok build`
+  // (rspack via @datagrok/build-config, which needs no config file at all).
+  const isWebpack = fs.existsSync('webpack.config.js') || fs.existsSync('rspack.config.js') ||
+    fs.existsSync('dist/package.js') || fs.existsSync(path.join(curDir, 'src', 'package.ts'));
   if (!rebuild && isWebpack) {
     if (fs.existsSync('dist/package.js')) {
       const distFiles = await walk({
@@ -573,11 +587,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
   const packageFilePath = path.join(curDir, 'package.json');
   const json = JSON.parse(fs.readFileSync(packageFilePath, {encoding: 'utf-8'}));
-
-  if (isWebpack) {
-    const webpackConfigPath = path.join(curDir, 'webpack.config.js');
-    const content = fs.readFileSync(webpackConfigPath, {encoding: 'utf-8'});
-  }
 
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
   color.log(`Checks finished in ${Date.now() - checkStart} ms`);
@@ -642,6 +651,12 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   }
   await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false, generatedDockerDirs);
 
+  const bundledWithoutMarker = !rebuild && fs.existsSync('dist/package.js') && !fs.existsSync(BUNDLE_MARKER_NAME);
+  if (bundledWithoutMarker && await serverPredatesBundleDetection(host)) {
+    zip.append(BUNDLE_MARKER, {name: BUNDLE_MARKER_NAME});
+    localTimestamps[BUNDLE_MARKER_NAME] = new Date().toUTCString();
+  }
+
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
   // Upload
@@ -655,7 +670,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     const body = await devKeyFetch(url + query, legacyUrl + query, devKey, {
       method: 'POST',
       body: zipBuffer,
-    });
+    }, host);
     const log = JSON.parse(await body.text());
 
     if (log != undefined) {
@@ -714,29 +729,32 @@ export async function publish(args: PublishArgs) {
     }
     color.log('Loading packages:');
     await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
-  } else {
-    if (args.link) {
-      color.log('Linking');
-
-      await utils.runScript(`npm install`, curDir);
-      await utils.runScript(`grok link`, curDir);
-      await utils.runScript(`npm run build`, curDir);
-    }
+  } else
     return await publishPackage(args);
-  }
   return true;
+}
+
+// --link means nothing inside the pnpm workspace: the root install already linked every in-repo dependency
+async function buildPackage(args: PublishArgs) {
+  const workspace = utils.isPnpmWorkspace(curDir);
+  const link = args.link && !workspace;
+  if (!link && (args['skip-build'] || args.rebuild || !fs.existsSync(path.join(curDir, 'src'))))
+    return;
+  color.log(link ? 'Linking and building' : 'Building');
+  if (link || (!workspace && !fs.existsSync(path.join(curDir, 'node_modules'))))
+    await utils.runScript('npm install', curDir);
+  if (link)
+    await utils.runScript(`${utils.grokCommand} link`, curDir);
+  await utils.runScript(workspace ? 'pnpm run build' : 'npm run build', curDir);
 }
 
 async function publishPackage(args: PublishArgs) {
   const nArgs = args['_'].length;
 
-  if (!args.link) {
-    if (args.build || args.rebuild) {
-      color.log('Building');
-      await utils.runScript('npm install', curDir, false);
-      await utils.runScript('npm run build', curDir, false);
-    }
-  }
+  await buildPackage(args);
+  if (args['skip-build'] && !args.rebuild && fs.existsSync(path.join(curDir, 'src')) &&
+    !fs.existsSync(path.join(curDir, 'dist', 'package.js')))
+    return color.error('dist/package.js not found: build the package first, or run without --skip-build');
 
   if (args.debug && args.release) {
     color.error('Incompatible options: --debug and --release');
@@ -773,7 +791,10 @@ async function publishPackage(args: PublishArgs) {
 
   // Update the developer key
   if (args.key) key = args.key;
-  if (key === '') return color.warn('Please provide the key with `--key` option or add it by running `grok config`');
+  if (!key && !keypair.keypairFor(url)) {
+    return color.warn(`No credentials for ${url}. Run \`grok login ${host}\`, ` +
+      'or pass a developer key with `--key` (deprecated).');
+  }
 
   // Get the package name
   if (!fs.existsSync(packDir)) return color.error('`package.json` doesn\'t exist');
@@ -815,6 +836,7 @@ interface PublishArgs {
   _: string[],
   build?: boolean,
   ['skip-check']?: boolean,
+  ['skip-build']?: boolean,
   rebuild?: boolean,
   ['rebuild-docker']?: boolean,
   ['skip-docker-rebuild']?: boolean,

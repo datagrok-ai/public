@@ -5,12 +5,13 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {flush, resetDom} from './dom-shim.js';
+import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {Form} from '../src/components/forms/form.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {fromDartInput, PlatformInput} from '../src/dg/inputs/from-dart-input.js';
 import {propertyForm} from '../src/dg/forms/object-form.js';
+import {Editors} from '../src/dg/forms/editors.js';
 
 /** Every test runs against a clean document, without leftover globals, and must leave the
  * live-scope count where it was. */
@@ -291,4 +292,59 @@ bridge('the default stays generated even for a real property', () => {
   const form = mount(propertyForm([prop('smiles', {dart: {}})], {smiles: 'CCO'}));
   assert.deepEqual(form.inputs.map((i) => i.root.dataset.u2), ['text-input']);
   form.dispose();
+});
+
+/* The path `moleculeInput` takes (a semType rule returning a bridged platform editor): the form
+   owns the value and has to push it into the Dart input, at construction and whenever the row
+   under the form moves. */
+bridge('a semType editor bridging a platform input is handed the value, at construction and on a row change', () => {
+  const made = [];
+  const off = Editors.register({
+    match: (p) => p.semType === 'Molecule',
+    create: (p, options) => {
+      const dg = dartInput({caption: 'Structure'});
+      made.push(dg);
+      return fromDartInput(dg, options.name);
+    },
+  });
+  try {
+    const target = {smiles: 'CCO'};
+    const form = mount(propertyForm([prop('smiles', {semType: 'Molecule'})], target));
+    assert.deepEqual(form.inputs.map((i) => i.root.dataset.u2), ['dart-input']);
+    assert.equal(made.length, 1);
+    assert.equal(made[0].value, 'CCO', 'the row value reaches the platform input at construction');
+
+    target.smiles = 'CC(C)O';
+    form.refresh();
+    assert.equal(made[0].value, 'CC(C)O', 'and again when the form re-reads the row');
+
+    made[0].value = 'CCCC';
+    assert.equal(target.smiles, 'CCCC', 'a sketcher edit writes back through the property');
+    form.dispose();
+  } finally {
+    off();
+  }
+});
+
+bridge('an editor the platform paints itself takes the tab stop, and Enter opens it as a click does', async () => {
+  const canvas = dartInput();
+  canvas.root.querySelector('.ui-input-editor').remove();
+  const editor = document.createElement('canvas');
+  editor.className = 'ui-input-editor d4-input-molecule-canvas';
+  let clicks = 0;
+  editor.click = () => clicks++;
+  canvas.root.append(editor);
+  const input = new PlatformInput(canvas);
+  assert.equal(editor.tabIndex, 0, 'Tab lands on the molecule field instead of skipping it');
+  fire(editor, 'keydown', {key: 'Enter'});
+  fire(editor, 'keydown', {key: ' '});
+  assert.equal(clicks, 2, 'Enter and Space open the sketcher');
+  fire(editor, 'keydown', {key: 'a'});
+  assert.equal(clicks, 2);
+  input.dispose();
+
+  const plain = dartInput();
+  new PlatformInput(plain).dispose();
+  assert.equal(plain.root.querySelector('.ui-input-editor').tabIndex, 0,
+    'a real <input> is focusable already and is left alone');
 });

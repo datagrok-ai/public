@@ -11,6 +11,8 @@ export interface AppViewOptions {
   name: string;
   /** The view content — disposed through the platform kill channel when the view closes. */
   content: Control;
+  /** What else the view owns — the sources behind its controls — disposed with the content. */
+  own?: {dispose(): void}[];
   /** Ribbon panel groups → `view.setRibbonPanels`. Main view controls (filter, refresh, mode
    * switches, menu bar) belong here, not inside the content area. */
   ribbon?: ChromeItem[][];
@@ -68,6 +70,9 @@ export function appView(options: AppViewOptions): DG.ViewBase {
     const items = (Array.isArray(status) ? status : [status]) as ChromeItem[];
     view.statusBarPanels = items.map(panel);
   }
+  // after the chrome: disposal runs in reverse, so the sources outlive the controls reading them
+  for (const owned of options.own ?? [])
+    content.own(() => owned.dispose());
   const path = options.path;
   if (typeof path === 'string')
     (view as DG.View).path = path;

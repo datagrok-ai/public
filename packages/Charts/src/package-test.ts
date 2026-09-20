@@ -5,6 +5,7 @@ import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagr
 import './tests/timelines-viewer-test';
 import './tests/tree-viewer-test';
 import './tests/radar-viewer-test';
+import './tests/word-cloud-viewer-test';
 import './tests/viewers';
 
 export const _package = new DG.Package();

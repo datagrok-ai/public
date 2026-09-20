@@ -268,14 +268,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:LogEventParameters', { eventId });
   }
 
-  export async function systemActivity(date: string , groups: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:SystemActivity', { date, groups });
-  }
-
-  export async function systemActivitySummary(date: string , groups: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:SystemActivitySummary', { date, groups });
-  }
-
   export async function metricsResetPgStatStatements(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements', {});
   }
@@ -418,6 +410,14 @@ export namespace queries {
 
   export async function reportDataMigration(report_id: string , id: string , screenshot: string | null, details: string | null, client_settings: string | null, server_settings: string | null, errors: string | null, client_log: string | null, server_log: string | null, console: string | null, queries_log: string | null, containers_log: string | null, images_log: string | null, services: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ReportDataMigration', { report_id, id, screenshot, details, client_settings, server_settings, errors, client_log, server_log, console, queries_log, containers_log, images_log, services });
+  }
+
+  export async function systemActivity(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:SystemActivity', { date, groups });
+  }
+
+  export async function systemActivitySummary(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:SystemActivitySummary', { date, groups });
   }
 
   export async function getSystemTableSizes(): Promise<DG.DataFrame> {
@@ -614,6 +614,10 @@ export namespace funcs {
 
   export async function serviceLogsApp(path?: string , params?: any , limit?: number ): Promise<DG.View> {
     return await grok.functions.call('UsageAnalysis:ServiceLogsApp', { path, params, limit });
+  }
+
+  export async function cloudLogsApp(): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:CloudLogsApp', {});
   }
 
   export async function serviceLogsAppTreeBrowser(treeNode: any ): Promise<void> {

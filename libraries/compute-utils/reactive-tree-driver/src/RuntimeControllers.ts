@@ -1,12 +1,27 @@
 import {PipelineInstanceConfigInput, PipelineOutline} from './config/PipelineInstance';
 import {RestrictionType, StepHandle, ValidationResult} from './data/common-types';
+import {NodePath} from './data/BaseTree';
 import * as DG from 'datagrok-api/dg';
+
+export type MatchedNodeInfo = {
+  /** Node path relative to the node the link is defined on. */
+  path: Readonly<NodePath>;
+  /** Index of the matched node among its parent's children,
+   *  -1 when the match is the node the link is defined on. */
+  position: number;
+  ioName?: string;
+};
 
 export interface IControllerBase {
   getAll<T = any>(name: string): T[] | undefined;
   getFirst<T = any>(name: string): T | undefined;
   getMatchedInputs(): Readonly<Set<string>>;
   getMatchedOutputs(): Readonly<Set<string>>;
+  /** Positions of the matched nodes for a `from`/`to` query name,
+   *  in the same order as `getAll` values. */
+  getMatchedPositions(name: string): MatchedNodeInfo[];
+  /** Position of the base node for base-instantiated links. */
+  getBasePosition(): MatchedNodeInfo | undefined;
   getAdditionalParam(name: string): any | undefined;
   hasCall(name: string): boolean;
 }

@@ -6,10 +6,10 @@
  * a browser evaluates it. An import cycle that leaves a base class in the temporal dead
  * zone is enough: `class FormViewer extends Viewer` in a module emitted before viewer.ts
  * throws "Cannot access 'wi' before initialization" at init, window.grok is never
- * defined, and every user gets a stuck login screen. webpack does not warn about it,
+ * defined, and every user gets a stuck login screen. the bundler does not warn about it,
  * tsc cannot see it, and HTTP health checks stay green because the asset itself is fine.
  *
- * Which side of a cycle webpack emits first is not stable — it shifts when unrelated
+ * Which side of a cycle the bundler emits first is not stable — it shifts when unrelated
  * imports change — so this is not a one-off. The only reliable gate is to evaluate the
  * real bundle and require that it finishes and exports its core classes.
  *

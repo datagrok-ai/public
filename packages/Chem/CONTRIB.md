@@ -27,56 +27,10 @@ Make sure to follow our common contributor's guide:
 
 ### Preparing working environment
 
-Don't just do `npm install & webpack` at the start. This may fail, as explained below.
-This is how to build Chem locally, if that works for you skip this section:
-
-```
-packages/libraries-link-local.cmd
-chem/npm run link-all
-chem/npm run build-chem-local
-```
-
-The `Chem` library depends on common
-Datarok libraries located at `public/js-api`, `public/libraries/utils`, and `public/libraries/ml`.
-They have corresponding npm packages at
-[`@datagrok-libraries/utils`](https://www.npmjs.com/package/@datagrok-libraries/utils),
-[`@datagrok-libraries/ml`](https://www.npmjs.com/package/@datagrok-libraries/ml),
-and
-['js-api`](<https://www.npmjs.com/package/datagrok-api>).
-Often you will be editing both the Chem package and some corresponding functionality in the
-mentioned libraries. Publishing these libraries to npm after changing them to let Chem`npm install`
-fetch the changes isn't a feasible approach either, as the changes in these packages often
-batch together.
-
-The solution is to use `npm` linking of local folders as installable npm packages.
-
-To set up  fully local working environment, you need to link the three packages above to `Chem`.
-The script `setup.cmd` does it for you. Call it before starting to work with the `Chem` code
-locally, say, on a freshly checked out `public` code.
-
-The script `setup.cmd` must be run with the current directory set to `public/packages/Chem`.
-
-**IMPORTANT:** If you are maintaining two or more copies of a `public` repo on your machine,
-remember calling `setup.cmd` when switching with working between them. If you don't, it may happen
-that you are using Datagrok libraries from one such folder, linked with `npm`, through another such
-folder, thus possibly mixing some parallel implementations.
-
-If you are still experiencing errors on `Chem` when running `webpack`, even if you've already
-used `setup.cmd`, here are some hints for troubleshooting:
-
-1. Manually delete `npm_modules` from your `public/libraries/utils`, `public/libraries/ml`,
-and `public/js-api` locations, then repeat running `setup.cmd` from inside the `Chem` folder
-
-2. Make sure no specific library from the three above is installed globally in `npm`: `npm list -g`
-
-3. Clean npm cache: `npm cache clean --force`, check `%AppData%/npm-cache` is actually empty
-
-### npm-based setup for the Chem development environment
-
-The npm scripts from `package.json` called `build-chem-local`, `link-all`, and their combination,
-are meant to replace the current `setup.cmd` script. In particular, these npm scripts are involved
-in CI pipelines in Datagrok. We need to check the status of these scripts for local development
-environment use case, and deprecate `setup.cmd` in their favor, when possible.
+`public/` is one pnpm workspace. Run `grok setup` once at the repository root, then `grok build` in
+`packages/Chem`. The build compiles `js-api`, `libraries/utils`, `libraries/ml`, and the other libraries
+Chem depends on first, so your edits in them are picked up without linking. See
+[Build system](https://datagrok.ai/help/develop/dev-process/build-system).
 
 ## API design
 

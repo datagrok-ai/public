@@ -20,14 +20,28 @@ export namespace funcs {
     return await grok.functions.call('Boltz1:RunBoltz', { config, msa });
   }
 
+  /**
+   * @param {DG.Column} sequences
+   *   semType: Macromolecule
+   */
   export async function folding(table: DG.DataFrame , sequences: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Boltz1:Folding', { table, sequences });
   }
 
+  /**
+   * @param {DG.Column} ligands
+   *   semType: Molecule
+   * @param {string} config - 'Folder with config files for docking'
+   *   choices: Boltz1:getBoltzConfigFolders
+   */
   export async function docking(table: DG.DataFrame , ligands: DG.Column , config: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Boltz1:Docking', { table, ligands, config });
   }
 
+  /**
+   * @param {any} molecule
+   *   semType: Molecule3D
+   */
   export async function boltzWidget(molecule: any ): Promise<any> {
     return await grok.functions.call('Boltz1:BoltzWidget', { molecule });
   }
@@ -41,8 +55,8 @@ export namespace funcs {
   }
 
   /**
-  WDR5 protein-ligand complexes with Boltz-predicted affinity
-  */
+   * WDR5 protein-ligand complexes with Boltz-predicted affinity
+   */
   export async function demoBoltz(): Promise<void> {
     return await grok.functions.call('Boltz1:DemoBoltz', {});
   }
@@ -67,26 +81,56 @@ export namespace funcs {
     return await grok.functions.call('Boltz1:GetBoltzProteinScreenConfigs', {});
   }
 
+  /**
+   * @param {DG.Column} ligands
+   *   semType: Molecule
+   * @param {string} config
+   *   choices: Boltz1:getBoltzStructureBindingConfigs
+   */
   export async function boltzStructureAndBinding(table: DG.DataFrame , ligands: DG.Column , config: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Boltz1:BoltzStructureAndBinding', { table, ligands, config });
   }
 
+  /**
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
   export async function boltzAdme(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Boltz1:BoltzAdme', { table, molecules });
   }
 
+  /**
+   * @param {string} config
+   *   choices: Boltz1:getBoltzSmDesignConfigs
+   */
   export async function boltzDesignSmallMolecules(config: string , numMolecules: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Boltz1:BoltzDesignSmallMolecules', { config, numMolecules });
   }
 
+  /**
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   * @param {string} config
+   *   choices: Boltz1:getBoltzSmScreenConfigs
+   */
   export async function boltzScreenSmallMolecules(table: DG.DataFrame , molecules: DG.Column , config: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Boltz1:BoltzScreenSmallMolecules', { table, molecules, config });
   }
 
+  /**
+   * @param {string} config
+   *   choices: Boltz1:getBoltzProteinDesignConfigs
+   */
   export async function boltzDesignProteins(config: string , numProteins: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Boltz1:BoltzDesignProteins', { config, numProteins });
   }
 
+  /**
+   * @param {DG.Column} proteins
+   *   semType: Macromolecule
+   * @param {string} config
+   *   choices: Boltz1:getBoltzProteinScreenConfigs
+   */
   export async function boltzScreenProteins(table: DG.DataFrame , proteins: DG.Column , config: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Boltz1:BoltzScreenProteins', { table, proteins, config });
   }

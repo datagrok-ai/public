@@ -10,6 +10,7 @@ export async function pubChemPanel(molString: string) : Promise<any> {
 }
 
 //name: Databases | PubChem | Substructure Search
+//description: Finds PubChem compounds that contain the query structure as a substructure.
 //input: string molString { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -18,6 +19,7 @@ export async function pubChemSubstructureSearchPanel(molString: string) : Promis
 }
 
 //name: Databases | PubChem | Similarity Search
+//description: Finds PubChem compounds most similar to the query structure.
 //input: string molString { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
@@ -26,6 +28,7 @@ export async function pubChemSimilaritySearchPanel(molString: string) : Promise<
 }
 
 //name: Databases | PubChem | Identity Search
+//description: Finds the PubChem compound identical to the query structure.
 //input: string molString { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel

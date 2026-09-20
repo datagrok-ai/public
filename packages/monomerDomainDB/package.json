@@ -8,35 +8,18 @@
     "email": "drizhinashvili@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^6.0.3",
-    "@datagrok-libraries/test": "^1.1.0",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
-    "dayjs": "^1.11.13",
-    "rxjs": "^6.5.5"
-  },
-  "devDependencies": {
-    "@types/node": "^25.5.0",
-    "@typescript-eslint/eslint-plugin": "^8.39.0",
-    "@typescript-eslint/parser": "^8.39.0",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "datagrok-tools": "^5.1.5",
-    "ts-loader": "^9.5.4",
-    "typescript": "^5.9.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "@datagrok-libraries/bio": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:"
   },
   "scripts": {
-    "link-all": "grok link",
-    "lint": "eslint \"src/**/*.ts\"",
-    "lint-fix": "eslint \"src/**/*.ts\" --fix",
-    "build": "grok api && grok check --soft && webpack",
-    "test": "grok test",
-    "debug-monomerdomaindb": "webpack && grok publish",
-    "release-monomerdomaindb": "webpack && grok publish --release",
-    "debug-monomerdomaindb-localhost": "webpack && grok publish localhost",
-    "release-monomerdomaindb-localhost": "webpack && grok publish localhost --release"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Developers"
@@ -48,8 +31,5 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/monomerDomainDB"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
   }
 }

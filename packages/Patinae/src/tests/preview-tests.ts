@@ -1,7 +1,10 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {openPymol} from '../patinae-view';
 import {_package} from '../package-test';
+
+const ciSkip = DG.Test.isCiCd ? 'renders with PyMOL on a GPU, which the CI runner does not have' : undefined;
 
 category('Patinae: preview', () => {
   for (const fn of ['1crn.prs', '1crn.pse', 'demo.pml', 'hiv-protease-tour.pml', 'trp-cage-ensemble.pml',
@@ -17,6 +20,6 @@ category('Patinae: preview', () => {
       } finally {
         view.close();
       }
-    }, 'gpu' in navigator ? {} : {skipReason: 'requires WebGPU'});
+    }, {skipReason: ciSkip ?? ('gpu' in navigator ? undefined : 'requires WebGPU')});
   }
 });

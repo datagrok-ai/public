@@ -37,6 +37,7 @@ import './tests/compute-utils/reactive-tree-driver/buffer-keys-during-lock';
 import './tests/compute-utils/reactive-tree-driver/links-template-expand';
 import './tests/compute-utils/reactive-tree-driver/links-on-steps';
 import './tests/compute-utils/reactive-tree-driver/driver-command-acks';
+import './tests/compute-utils/reactive-tree-driver/links-matched-positions';
 import './tests/compute-utils/fitting/nm-pure-math';
 import './tests/compute-utils/fitting/nm-sync-vs-async';
 import './tests/compute-utils/fitting/worker-dg-shim';
