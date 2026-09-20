@@ -112,10 +112,11 @@ export class PackageFunctions {
     @grok.decorators.param({'options': {'optional': true}}) packages?: string,
     @grok.decorators.param({'options': {'optional': true}}) tags?: string,
     @grok.decorators.param({'options': {'optional': true}}) categories?: string,
-    @grok.decorators.param({'options': {'optional': true}}) projects?: string): DG.ViewBase | null {
+    @grok.decorators.param({'options': {'optional': true}}) projects?: string,
+    @grok.decorators.param({'options': {'optional': true}}) error?: string): DG.ViewBase | null {
     const handler = new ViewHandler();
     handler.view.parentCall = grok.functions.getCurrentCall();
-    handler.init(date, groups, packages, tags, categories, projects, path);
+    handler.init(date, groups, packages, tags, categories, projects, path, error);
     return handler.view;
   }
 
