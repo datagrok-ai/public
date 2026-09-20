@@ -107,8 +107,9 @@ with its own trace; a `Background` runs before every scenario, as Gherkin says.
 Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{run}`. The suffix is
 unique per feature instance (including each worker and repeat) and stays the same across its
 scenarios. `{time}` is the feature instance's start in epoch milliseconds, for a name a login must
-accept (`[a-z0-9._-]`) and a reader can sort: a user can never be deleted, so a feature that needs
-one makes `opavlenko{time}` and leaves it. String arguments, element phrases, data tables and doc strings resolve it at runtime;
+accept (`[a-z0-9._-]`) and a reader can sort: the users a creation feature makes cannot be deleted,
+so they are named by it. String arguments, element phrases, data tables and doc strings resolve both
+at runtime;
 generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
 and fails the run if any callback fails.
 
@@ -217,8 +218,9 @@ list is the reference; this is the map:
 - **The shell** (`bindings/platform/steps.ts`): `user is logged in`, `user opens {dataset}
   dataset` (also `keeping the first N rows [as "name"]`), switching views and table views,
   projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts; the
-  server's spaces, models, groups and roles by name (deleted at feature end), a new user, its status
-  and who is a (plain or admin) member of a group or holds a role; the gallery's render mode and
+  server's spaces, models, groups and roles by name (deleted at feature end), a fixture user (made
+  once per stand: users cannot be deleted), its status and who is a (plain or admin) member of a
+  group or holds a role; the gallery's render mode and
   its counter against a remembered one (lower, not lower, higher — search, then clear). The membership editor behind Groups..., Roles..., Members
   and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
   `remove button` and `checkbox` parts, typed into through `membership search`.

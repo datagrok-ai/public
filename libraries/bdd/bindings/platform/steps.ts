@@ -313,19 +313,21 @@ async function serverRequests(page: Page) {
   const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
     token: String(grok.dapi.token)}));
   const headers = {Authorization: token};
+  const checked = async (method: string, path: string, response: Promise<{ok(): boolean; text(): Promise<string>}>) => {
+    const done = await response;
+    const body = await done.text();
+    if (!done.ok() || body.includes('ApiError'))
+      throw new Error(`${method} ${path}: ${body.slice(0, 200)}`);
+  };
   return {
-    async list<T>(path: string): Promise<T[]> {
-      const listed = await page.request.get(`${root}${path}`, {headers});
-      if (!listed.ok())
-        throw new Error(`GET ${path} failed: HTTP ${listed.status()}`);
-      return listed.json();
+    async get<T>(path: string): Promise<T> {
+      const got = await page.request.get(`${root}${path}`, {headers});
+      if (!got.ok())
+        throw new Error(`GET ${path} failed: HTTP ${got.status()}`);
+      return got.json();
     },
-    async remove(path: string): Promise<void> {
-      const deleted = await page.request.delete(`${root}${path}`, {headers});
-      const body = await deleted.text();
-      if (!deleted.ok() || body.includes('ApiError'))
-        throw new Error(`DELETE ${path}: ${body.slice(0, 200)}`);
-    },
+    post: (path: string, data: unknown) => checked('POST', path, page.request.post(`${root}${path}`, {headers, data})),
+    remove: (path: string) => checked('DELETE', path, page.request.delete(`${root}${path}`, {headers})),
   };
 }
 
@@ -333,14 +335,14 @@ async function serverRequests(page: Page) {
    a chat that throws in every profile's chat listing (forum.dart), so the chat goes first. */
 async function deleteChatsOf(page: Page, entity: ServerEntity): Promise<void> {
   const api = await serverRequests(page);
-  for (const chat of await api.list<{id: string}>(`/chats/with_groups?ids=${entity.id}`))
+  for (const chat of await api.get<{id: string}[]>(`/chats/with_groups?ids=${entity.id}`))
     await api.remove(`/chats/${chat.id}`);
 }
 
 /* groups.delete refuses a group holding a global permission, and an entity delete orphans the grant. */
 async function deleteGlobalGrantsOf(page: Page, entity: ServerEntity): Promise<void> {
   const api = await serverRequests(page);
-  for (const grant of await api.list<{id: string; userGroup?: {id: string}}>(`/privileges/permissions/?groupId=${entity.id}&global=true`))
+  for (const grant of await api.get<{id: string; userGroup?: {id: string}}[]>(`/privileges/permissions/?groupId=${entity.id}&global=true`))
     if (grant.userGroup?.id === entity.id)
       await api.remove(`/privileges/permissions/${grant.id}`);
 }
@@ -510,26 +512,17 @@ export const modelsOnServer = Then('{int} predictive model(s) named {string} sho
 
 /* --- users, groups and roles ----------------------------------------------------------------------
    A role is a group on the server (the Roles view lists the groups flagged as roles), so the group
-   steps serve both, under either word. A user can never be deleted: a feature that needs one makes a
-   new one, named by {time}, and leaves it — what it changed on it goes with it. */
+   steps serve both, under either word. A user can never be deleted: a feature that needs one shares
+   a fixture user made once per stand, and only users-create, which tests the creation, adds any. */
 
-export const noGroupOnServer = Given('no group named {string} is on the server', async (page: Page, name: string) => {
-  const cleanup = namedCleanup(page, 'groups', 'groups', namesOf(name));
+export const noGroupOnServer = Given('no group/role named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'groups', 'groups or roles', namesOf(name));
   atFeatureEnd(page, cleanup);
   await cleanup();
-}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), and deletes them again at feature end'});
+}, {tier: 'api', description: 'a role is a group on the server: deletes earlier fixtures by name (comma-separated), and deletes them again at feature end'});
 
-export const noRoleOnServer = Given('no role named {string} is on the server', async (page: Page, name: string) => {
-  const cleanup = namedCleanup(page, 'groups', 'roles', namesOf(name));
-  atFeatureEnd(page, cleanup);
-  await cleanup();
-}, {tier: 'api', description: 'a role is a group on the server: deletes earlier fixtures by name, and again at feature end'});
-
-export const groupsOnServer = Then('{int} group(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
-  expectNamedCount(page, 'groups', 'groups', name, count), {tier: 'api'});
-
-export const rolesOnServer = Then('{int} role(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
-  expectNamedCount(page, 'groups', 'roles', name, count), {tier: 'api'});
+export const groupsOnServer = Then('{int} group(s)/role(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'groups', 'groups or roles', name, count), {tier: 'api', description: 'a role is a group on the server'});
 
 /** The friendly name is set with the name: the server derives it by splitting camel case otherwise,
  * and "BDD-Group" would be listed as "BD D-Group". */
@@ -545,35 +538,36 @@ export const groupOnServer = Given('a group named {string} is on the server', as
   await expectNamedCount(page, 'groups', 'groups', name, 1);
 }, {tier: 'api', description: 'a new group under that name, deleted at feature end'});
 
-async function serverUsers(page: Page, login: string): Promise<{id: string; status: string}[]> {
-  return page.evaluate(async (l) => {
-    const found: {id: string; status: string}[] = [];
-    for (let pageNumber = 1; ; pageNumber++) {
-      const users = await grok.dapi.users.order('id').list({pageSize: 1000, pageNumber});
-      for (const user of users)
-        if (user.login === l)
-          found.push({id: user.id, status: (await grok.dapi.users.find(user.id)).status});
-      if (users.length < 1000)
-        return found;
-    }
-  }, login);
-}
+const serverUsers = (page: Page, login: string): Promise<{id: string; status: string}[]> =>
+  page.evaluate(async (l) => (await grok.dapi.users.filter(`login = "${l}"`).list()).map((u: any) => ({id: u.id, status: u.status})), login);
 
-export const newUserOnServer = Given('a new user {string} with email {string} is on the server', async (page: Page, login: string, email: string) => {
-  if ((await serverUsers(page, login)).length > 0)
-    throw new Error(`a user "${login}" is already on the server; a fixture user is new, name it with {time}`);
-  await page.evaluate(async ([l, e]) => {
-    const user = DG.User.create();
-    user.login = l;
-    user.email = e;
-    user.firstName = l;
-    user.lastName = '';
-    user.status = 'active';
-    await grok.dapi.users.save(user);
-  }, [login, email]);
-  await expect.poll(() => page.evaluate(async (l) => (await grok.dapi.users.filter(l).list()).some((u: any) => u.login === l), login),
-    {message: `"${login}" found by the users search`, timeout: pollMs(60000)}).toBe(true);
-}, {tier: 'api', description: 'an active user named after its login, done when the users search finds it; users cannot be deleted, so it stays'});
+/** Like the global setup's bddsecond: the login is the name the gallery shows, and `<login>@datagrok.ai`
+ * the mail. The favorites are the running account's; a run that died between Add and Remove left one. */
+export const userOnServer = Given('a user {string} is on the server', async (page: Page, login: string) => {
+  const status = await page.evaluate(async (l) => {
+    const user = await grok.dapi.users.filter(`login = "${l}"`).first();
+    if (!user) {
+      const made = DG.User.create();
+      made.login = l;
+      made.email = `${l}@datagrok.ai`;
+      made.firstName = l;
+      made.lastName = '';
+      made.status = 'active';
+      await grok.dapi.users.save(made);
+      return 'active';
+    }
+    for (const favorite of await grok.dapi.entities.getFavorites())
+      if (favorite.id === user.id)
+        await (window as any).grok_Favorites_Remove(favorite.dart, null);
+    return user.status;
+  }, login);
+  if (status !== 'active') {
+    const api = await serverRequests(page);
+    await api.post('/public/v1/users/unblock', await api.get(`/public/v1/users/${login}`));
+  }
+  await expect.poll(() => serverUsers(page, login).then((users) => users.map((u) => u.status).join(', ') || 'no such user'),
+    {message: `the user "${login}"`, timeout: pollMs(30000)}).toBe('active');
+}, {tier: 'api', description: 'a fixture user made once per stand, since users cannot be deleted: found by login or created; put back to active and out of the favorites'});
 
 export const usersOnServer = Then('{int} user(s) with login {string} should be on the server', async (page: Page, count: number, login: string) => {
   await expect.poll(() => serverUsers(page, login).then((users) => users.length), {message: `users with login "${login}"`, timeout: pollMs(60000)})
@@ -615,8 +609,8 @@ async function membership(page: Page, member: string, group: string): Promise<st
       if (!target)
         return `no group or role "${g}"`;
       const ids = new Set<string>(groups.filter((x) => x.friendlyName === m || x.name === m).map((x) => x.id));
-      for (const user of await all(grok.dapi.users.include('group')))
-        if (user.login === m && user.group)
+      for (const user of await grok.dapi.users.include('group').filter(`login = "${m}"`).list())
+        if (user.group)
           ids.add(user.group.id);
       if (ids.size === 0)
         return `no user or group "${m}"`;

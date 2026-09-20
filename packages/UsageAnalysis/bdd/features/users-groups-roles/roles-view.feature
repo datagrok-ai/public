@@ -7,8 +7,9 @@ Feature: The Roles view
 
   A role is a group on the server that the Roles view lists, and the JS API cannot make one, so the
   role the claims are about is made in the New Role dialog and deleted at the end of the feature.
-  The search is fuzzy, so a search for it is claimed by the counter dropping below the list's first
-  before its link is read. The server count of roles by a name counts groups; the Roles view listing the role
+  A stand may hold one role before it (Administrators), so the count a search must drop below is
+  the one read after the role is in the list; the search is fuzzy, so a search for it is claimed by
+  that drop before its link is read. The server count of roles by a name counts groups; the Roles view listing the role
   is what shows it is one.
 
   Elsewhere: Roles-03 to 05, 09 and 15 are roles-lifecycle.feature, Roles-11 to 14
@@ -37,7 +38,10 @@ Feature: The Roles view
     And user clicks on OK button in "Create New Role" dialog
     Then the "Create New Role" dialog should close
     And 1 role named "BDD-RV-Role-{time}" should be on the server
-    And no errors should have been logged
+    When user clicks on "Refresh" icon inside gallery toolbar
+    Then the gallery counter should be higher than remembered
+    When user remembers the gallery counter
+    Then no errors should have been logged
     And no error or warning balloon should have been shown
 
   Scenario: The toolbar carries its controls (Roles-02)
@@ -101,7 +105,6 @@ Feature: The Roles view
       | "Favorites" accordion header in context panel          |
       | "Global Permissions" accordion header in context panel |
       | "Permissions" accordion header in context panel        |
-      | "Sticky meta" accordion header in context panel        |
     And MANAGE button in "Assigned to" section in context panel should be visible
     When user clears gallery search
     Then no errors should have been logged

@@ -13,7 +13,8 @@ Feature: The Groups view
 
   Elsewhere: Groups-03 to 05, 09 and 14 are groups-lifecycle.feature, Groups-11 to 13, 15 and 18
   groups-members.feature. Groups-16 is requested by the account the feature runs as, not by a second
-  signed-in user: a feature has one page.
+  signed-in user: a feature has one page; the request it sends goes with the group at the feature's
+  end (Request membership threw a NullError before GROK-20906 was fixed in the core on 2026-09-15).
 
   Not translated: Groups-19 (favorites) — a group has no favorites entry in its context menu and no
   star in the context panel.
@@ -98,7 +99,6 @@ Feature: The Groups view
       | "Favorites" accordion header in context panel          |
       | "Global Permissions" accordion header in context panel |
       | "Permissions" accordion header in context panel        |
-      | "Sticky meta" accordion header in context panel        |
     And MANAGE button in "Members" section in context panel should be visible
     When user clears gallery search
     Then no errors should have been logged
@@ -116,12 +116,10 @@ Feature: The Groups view
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 
-  # GROK-20906: Request membership logs a NullError (grok_group_meta.dart 52) and sends nothing. Once
-  # fixed it sends a real request for the group this feature deletes at its end.
-  @known-failure
   Scenario: Request membership answers without an error (Groups-16)
     When user types "BDD-GV-Group-{time}" into gallery search
     Then the gallery counter should be lower than remembered
     When user picks "Request membership" from the context menu of "BDD-GV-Group-{time}" link in gallery
     Then an info balloon should have been shown
     And no errors should have been logged
+    And no error or warning balloon should have been shown

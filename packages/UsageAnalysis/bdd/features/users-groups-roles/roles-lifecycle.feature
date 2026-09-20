@@ -5,8 +5,9 @@ Feature: A role from creation to deletion
   playwright-public/user groups/roles.test.ts.
 
   Every change is claimed on the server as well as in the list, and the list through a search for
-  its name, whose counter must drop below the list's first before the link is read (the search is
-  fuzzy, and a card can be on the page before the result lands). The roles are removed at the
+  its name, whose counter must drop below the count read once the role is in the list before the
+  link is read (the search is fuzzy, a card can be on the page before the result lands, and a stand
+  may hold one role before the feature). The roles are removed at the
   feature's end whatever it got to.
 
   The Name field of the New Role dialog starts as "New Role"; Roles-05 is claimed on the field
@@ -54,7 +55,10 @@ Feature: A role from creation to deletion
     Then the "Create New Role" dialog should close
     And 1 role named "BDD-RL-Role-{time}" should be on the server
     And 0 roles named "BDD-RL-Cancelled-{time}" should be on the server
-    When user types "BDD-RL-Role-{time}" into gallery search
+    When user clicks on "Refresh" icon inside gallery toolbar
+    Then the gallery counter should be higher than remembered
+    When user remembers the gallery counter
+    And user types "BDD-RL-Role-{time}" into gallery search
     Then the gallery counter should be lower than remembered
     And "BDD-RL-Role-{time}" link in gallery should be visible
     And no errors should have been logged

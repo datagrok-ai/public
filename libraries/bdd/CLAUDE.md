@@ -215,7 +215,10 @@ WebLogo glyphs Peptides draws in grid headers).
   (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
   Invariants (`AppEvents.propertyEdited`) reaches across features: a settings click on a new viewer
   right after another feature edited a property leaves the panel on the old one.
-- Users, groups, roles: a login takes `[a-z0-9._-]` only (`grok_user.dart` `validateLogin`); a group
+- Users, groups, roles: a login takes `[a-z0-9._-]` only (`grok_user.dart` `validateLogin`). A user
+  cannot be deleted: a feature takes the `bddviewed` fixture user to look at, or `bddmanaged` to
+  join, disable and favorite (the `@serial` features, never at the same time), both made once per
+  stand as `bddsecond` is; only users-create adds users, the two it tests. A group
   saved through the JS API without a friendly name is listed by `camelCaseToWords(name)`
   ("BDD-probe" shows as "BD D-probe"), so `a group named` sets both. A role is a group the JS API
   cannot flag, so a feature makes one in the New Role dialog. The users search is fuzzy (a login

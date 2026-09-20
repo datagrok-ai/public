@@ -6,7 +6,7 @@ Feature: Who holds a role, and what it grants
   playwright-public/user groups/roles.test.ts.
 
   The role is made in the New Role dialog (the JS API cannot make a role) and deleted at the end of
-  the feature; the user assigned is made by the feature and stays, since users cannot be deleted.
+  the feature; the user assigned is the bddmanaged fixture user, whose assignment goes with the role.
   An assignment is claimed on the server, and an addition also in the pane; a removal on the server
   only, since the pane empties while it reloads. A global permission has no reading in the JS API,
   so it is claimed in the MANAGE dialog, reopened after SAVE: the pane cannot tell the role's own
@@ -15,7 +15,7 @@ Feature: Who holds a role, and what it grants
 
   Background:
     Given user is logged in
-    And a new user "opavlenko{time}r" with email "opavlenko+{time}r@datagrok.ai" is on the server
+    And a user "bddmanaged" is on the server
     And no role named "BDD-RA-Role-{time}" is on the server
     And the browse panel is open
     And the context panel is open
@@ -30,7 +30,10 @@ Feature: Who holds a role, and what it grants
     And user clicks on OK button in "Create New Role" dialog
     Then the "Create New Role" dialog should close
     And 1 role named "BDD-RA-Role-{time}" should be on the server
-    When user types "BDD-RA-Role-{time}" into gallery search
+    When user clicks on "Refresh" icon inside gallery toolbar
+    Then the gallery counter should be higher than remembered
+    When user remembers the gallery counter
+    And user types "BDD-RA-Role-{time}" into gallery search
     Then the gallery counter should be lower than remembered
     When user clicks on "BDD-RA-Role-{time}" link in gallery
     Then the context panel should show "BDD-RA-Role-{time}"
@@ -40,26 +43,26 @@ Feature: Who holds a role, and what it grants
   Scenario: MANAGE assigns the role to a user (Roles-11)
     When user clicks on MANAGE button in "Assigned to" section in context panel
     Then "BDD-RA-Role-{time} members" dialog should be visible
-    When user types "opavlenko{time}r" into membership search
-    And user clicks on add button of "opavlenko{time}r" membership candidate
-    Then "opavlenko{time}r" membership row should be visible
-    And checkbox label of "opavlenko{time}r" membership row should have text "Can assign"
+    When user types "bddmanaged" into membership search
+    And user clicks on add button of "bddmanaged" membership candidate
+    Then "bddmanaged" membership row should be visible
+    And checkbox label of "bddmanaged" membership row should have text "Can assign"
     When user clicks on SAVE button in "BDD-RA-Role-{time} members" dialog
     Then the "BDD-RA-Role-{time} members" dialog should close
-    And "opavlenko{time}r" should be a plain member of "BDD-RA-Role-{time}" on the server
-    And "Assigned to" section in context panel should contain text "opavlenko{time}r"
+    And "bddmanaged" should be a plain member of "BDD-RA-Role-{time}" on the server
+    And "Assigned to" section in context panel should contain text "bddmanaged"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
   Scenario: Can assign is saved for the assignee (Roles-13)
     When user clicks on MANAGE button in "Assigned to" section in context panel
-    Then checkbox of "opavlenko{time}r" membership row should be unchecked
-    When user checks checkbox of "opavlenko{time}r" membership row
+    Then checkbox of "bddmanaged" membership row should be unchecked
+    When user checks checkbox of "bddmanaged" membership row
     And user clicks on SAVE button in "BDD-RA-Role-{time} members" dialog
     Then the "BDD-RA-Role-{time} members" dialog should close
-    And "opavlenko{time}r" should be an admin member of "BDD-RA-Role-{time}" on the server
+    And "bddmanaged" should be an admin member of "BDD-RA-Role-{time}" on the server
     When user clicks on MANAGE button in "Assigned to" section in context panel
-    Then checkbox of "opavlenko{time}r" membership row should be checked
+    Then checkbox of "bddmanaged" membership row should be checked
     When user clicks on CANCEL button in "BDD-RA-Role-{time} members" dialog
     Then the "BDD-RA-Role-{time} members" dialog should close
     And no errors should have been logged
@@ -67,12 +70,12 @@ Feature: Who holds a role, and what it grants
 
   Scenario: Removing the assignment takes the role away (Roles-12)
     When user clicks on MANAGE button in "Assigned to" section in context panel
-    Then "opavlenko{time}r" membership row should be visible
-    When user clicks on remove button of "opavlenko{time}r" membership row
-    Then "opavlenko{time}r" membership row should be absent
+    Then "bddmanaged" membership row should be visible
+    When user clicks on remove button of "bddmanaged" membership row
+    Then "bddmanaged" membership row should be absent
     When user clicks on SAVE button in "BDD-RA-Role-{time} members" dialog
     Then the "BDD-RA-Role-{time} members" dialog should close
-    And "opavlenko{time}r" should not be a member of "BDD-RA-Role-{time}" on the server
+    And "bddmanaged" should not be a member of "BDD-RA-Role-{time}" on the server
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

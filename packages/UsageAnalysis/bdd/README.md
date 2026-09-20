@@ -12,8 +12,9 @@ it; the section's scatter plot and line chart cases went into those viewers' leg
 one shares with `DATAGROK_SHARING_LOGIN`, or with the `bddsecond` user the library's setup
 creates when the variable is unset); `features/users-groups-roles/` Browse > Platform > Users,
 Groups and Roles (the views, the New dialogs, memberships, disabling, favorites, global
-permissions). Those features make a new user on every run, named `opavlenko<time>`, and a user
-can never be deleted: on a shared stand they add up, on a fresh CI database they go with it. The
+permissions). A user can never be deleted, so the features share two fixture users made once per
+stand (`bddviewed`, `bddmanaged`), and only users-create adds users: the two it makes per run,
+`bdd<time>` and `bdd-svc<time>`, add up on a shared stand and go with a fresh CI database. The
 group and role features, and users-manage, which makes groups and roles too, are `@serial`: their
 gallery searches are fuzzy and bring up each other's fixtures, so they take turns while the rest runs
 in parallel. Every TestTrack case there is

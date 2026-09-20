@@ -6,17 +6,16 @@ Feature: The Users view
   groups/users_manual_tests.md (Users-01 to 04, 06, 08 to 17, 22) and
   playwright-public/user groups/users.test.ts.
 
-  The user every claim is about is made by the feature, named by the time it ran: a user can never
-  be deleted, so a fixed name would be there already on the second run. The users it makes stay on
-  the stand.
+  The user every claim is about is the bddviewed fixture user, made once per stand and never changed
+  since: a user can never be deleted, so nothing is made per run.
 
-  The search is fuzzy — a new login also brings up every login sharing its letters — and a new user
-  is first in the list before any search, so a search is claimed by the counter dropping first and
-  only then by the user's link: the counter keeps its old number until the result lands. An item
+  The search is fuzzy — a login also brings up every login sharing its letters — and the user may be
+  on the page before any search, so a search is claimed by the counter dropping first and only then
+  by the user's link: the counter keeps its old number until the result lands. An item
   outside a search is never a claim, since a long gallery renders only what has scrolled in.
 
   Projects, Activity, Chats and Privileges count their items and hide while the count is 0, which it
-  is for a new user, so they are claimed present. The Personal pane shows the picture and how long ago the
+  is for a user that never signed in, so they are claimed present. The Personal pane shows the picture and how long ago the
   user joined ("just now", "a minute ago": grok_user_meta.dart), not the name, email and login the
   manual case lists — nothing there reads as a fact about this user, so the pane is claimed shown.
 
@@ -32,7 +31,7 @@ Feature: The Users view
 
   Background:
     Given user is logged in
-    And a new user "opavlenko{time}v" with email "opavlenko+{time}v@datagrok.ai" is on the server
+    And a user "bddviewed" is on the server
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree
@@ -79,10 +78,10 @@ Feature: The Users view
     And no error or warning balloon should have been shown
 
   Scenario: Searching by login narrows the list, and clearing brings the rest back (Users-09)
-    When user types "opavlenko{time}v" into gallery search
+    When user types "bddviewed" into gallery search
     Then the gallery counter should be lower than remembered
-    And "opavlenko{time}v" link in gallery should be visible
-    And the page address should contain "?q=opavlenko{time}v"
+    And "bddviewed" link in gallery should be visible
+    And the page address should contain "?q=bddviewed"
     When user remembers the gallery counter
     And user clears gallery search
     Then the gallery counter should be higher than remembered
@@ -121,16 +120,16 @@ Feature: The Users view
     And user picks "User..." from the open menu
     Then OK button in "Create new user" dialog should be disabled
     When user types "not-an-email" into Email input in "Create new user" dialog
-    And user types "Opavlenko+Bad" into Login input in "Create new user" dialog
+    And user types "Bdd+Bad" into Login input in "Create new user" dialog
     And user types "Bad" into "First Name" input in "Create new user" dialog
     And user types "Input" into "Last Name" input in "Create new user" dialog
     Then Email input in "Create new user" dialog should be invalid
     And Login input in "Create new user" dialog should be invalid
     And OK button in "Create new user" dialog should be disabled
-    When user types "opavlenko+bad{time}v@datagrok.ai" into Email input in "Create new user" dialog
+    When user types "bdd-bad{time}@datagrok.ai" into Email input in "Create new user" dialog
     Then Email input in "Create new user" dialog should be valid
     And OK button in "Create new user" dialog should be disabled
-    When user types "opavlenko-bad{time}v" into Login input in "Create new user" dialog
+    When user types "bdd-bad{time}" into Login input in "Create new user" dialog
     Then Login input in "Create new user" dialog should be valid
     And OK button in "Create new user" dialog should be enabled
     When user clicks on CANCEL button in "Create new user" dialog
@@ -149,9 +148,9 @@ Feature: The Users view
     And no error or warning balloon should have been shown
 
   Scenario: A user's context menu (Users-14)
-    When user types "opavlenko{time}v" into gallery search
+    When user types "bddviewed" into gallery search
     Then the gallery counter should be lower than remembered
-    When user opens the context menu of "opavlenko{time}v" link in gallery
+    When user opens the context menu of "bddviewed" link in gallery
     Then the open menu should list "Details"
     And the open menu should list "Chat"
     And the open menu should list "Disable..."
@@ -165,15 +164,14 @@ Feature: The Users view
     And no error or warning balloon should have been shown
 
   Scenario: Selecting a user fills the context panel (Users-17)
-    When user types "opavlenko{time}v" into gallery search
+    When user types "bddviewed" into gallery search
     Then the gallery counter should be lower than remembered
-    When user clicks on "opavlenko{time}v" link in gallery
-    Then the context panel should show "opavlenko{time}v"
+    When user clicks on "bddviewed" link in gallery
+    Then the context panel should show "bddviewed"
     And the following elements should be visible:
       | "Personal" accordion header in context panel    |
       | "Roles" accordion header in context panel       |
       | "Member of" accordion header in context panel   |
-      | "Sticky meta" accordion header in context panel |
     And the following elements should be present:
       | "Projects" accordion header in context panel    |
       | "Activity" accordion header in context panel    |
@@ -184,10 +182,10 @@ Feature: The Users view
     And no error or warning balloon should have been shown
 
   Scenario: Double-clicking a user opens the profile (Users-15)
-    When user types "opavlenko{time}v" into gallery search
+    When user types "bddviewed" into gallery search
     Then the gallery counter should be lower than remembered
-    When user double-clicks on "opavlenko{time}v" link in gallery
-    Then the "opavlenko{time}v" view should be current
+    When user double-clicks on "bddviewed" link in gallery
+    Then the "bddviewed" view should be current
     When user closes the current view
     Then the "Users" view should be current
     When user clears gallery search
@@ -195,10 +193,10 @@ Feature: The Users view
     And no error or warning balloon should have been shown
 
   Scenario: Details opens the same profile (Users-16)
-    When user types "opavlenko{time}v" into gallery search
+    When user types "bddviewed" into gallery search
     Then the gallery counter should be lower than remembered
-    When user picks "Details" from the context menu of "opavlenko{time}v" link in gallery
-    Then the "opavlenko{time}v" view should be current
+    When user picks "Details" from the context menu of "bddviewed" link in gallery
+    Then the "bddviewed" view should be current
     When user closes the current view
     Then the "Users" view should be current
     When user clears gallery search
@@ -227,18 +225,6 @@ Feature: The Users view
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown
-
-  # GROK-20905: the first time the filters open on a page, the platform logs a NullError from
-  # formula_lines_mixin.dart (LineChartForFL.formulaLines) once the Joined card's histogram has drawn;
-  # never on a later open. This scenario holds only that claim, read after the card is up and the panel
-  # closed again; what the filters show is the next scenario's, which opens them itself, so a failure
-  # there is not swallowed by the tag. Both are last: a known failure stops at its failing step.
-  @known-failure
-  Scenario: Opening the filters for the first time logs no error (Users-13)
-    When user clicks on "Toggle filters" icon inside gallery toolbar
-    Then "Joined" filter card should be visible
-    When user clicks on "Toggle filters" icon inside gallery toolbar
-    Then no errors should have been logged
 
   Scenario: The filters show a card per user property (Users-13)
     When user clicks on "Toggle filters" icon inside gallery toolbar

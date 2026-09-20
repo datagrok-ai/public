@@ -5,8 +5,8 @@ Feature: A group from creation to deletion
   playwright-public/user groups/groups.test.ts.
 
   Every step that changes a group is claimed on the server as well as in the list, and the list
-  through a search for its name, whose counter must drop below the list's first before the link is
-  read (the search is fuzzy, and a card can be on the page before the result lands). The groups are removed at the feature's end whatever it got to.
+  through a search for its name, whose counter must drop below the count read once the group is in the list before
+  the link is read (the search is fuzzy, and a card can be on the page before the result lands). The groups are removed at the feature's end whatever it got to.
 
   Groups-05 in the manual case says the dialog has no name validation. It has: the Name field starts
   as "New Group", and cleared it is marked invalid and OK is disabled (grok_group_meta.dart
@@ -54,7 +54,10 @@ Feature: A group from creation to deletion
     Then the "Create New Group" dialog should close
     And 1 group named "BDD-GL-Group-{time}" should be on the server
     And 0 groups named "BDD-GL-Cancelled-{time}" should be on the server
-    When user types "BDD-GL-Group-{time}" into gallery search
+    When user clicks on "Refresh" icon inside gallery toolbar
+    Then the gallery counter should be higher than remembered
+    When user remembers the gallery counter
+    And user types "BDD-GL-Group-{time}" into gallery search
     Then the gallery counter should be lower than remembered
     And "BDD-GL-Group-{time}" link in gallery should be visible
     And no errors should have been logged
