@@ -43,9 +43,23 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
   const productErrors = (from: number): string[] => consoleErrors.slice(from).filter((t) => !AMBIENT.test(t));
 
   const openEditForm = async (): Promise<void> => {
-    await page.locator(`${ROOT} .d4-tile-viewer-form .d4-sketch`).first().focus();
-    await page.keyboard.press('ContextMenu');
-    await page.locator('.d4-menu-popup[name="viewer"] .d4-menu-item[name="div-Edit-Form..."]').click();
+    // the ContextMenu key reaches the tile only while it holds focus, and a tile that the lane
+    // rebuilt under the cursor swallows the first press
+    const item = page.locator('.d4-menu-popup[name="viewer"] .d4-menu-item[name="div-Edit-Form..."]');
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await page.locator(`${ROOT} .d4-tile-viewer-form .d4-sketch`).first().focus();
+      await page.keyboard.press('ContextMenu');
+      try {
+        await item.waitFor({timeout: 5000});
+        break;
+      }
+      catch (e) {
+        if (attempt === 2) throw e;
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(500);
+      }
+    }
+    await item.click();
     await page.locator('.grok-view-sketch').waitFor({timeout: 15000});
     await page.waitForFunction(() =>
       document.querySelectorAll('.grok-view-sketch .d4-host[name^="div-"]').length > 0,
