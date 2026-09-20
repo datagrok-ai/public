@@ -10,7 +10,15 @@ features: the data and the viewer opened once, the scenarios in order as soft st
 it; the section's scatter plot and line chart cases went into those viewers' legend features);
 `features/spaces/` the Spaces features (the browse tree, the space view, sharing — the sharing
 one shares with `DATAGROK_SHARING_LOGIN`, or with the `bddsecond` user the library's setup
-creates when the variable is unset). `bindings/` keeps the steps only one
+creates when the variable is unset); `features/users-groups-roles/` Browse > Platform > Users,
+Groups and Roles (the views, the New dialogs, memberships, disabling, favorites, global
+permissions). A user can never be deleted, so the features share two fixture users made once per
+stand (`bddviewed`, `bddmanaged`), and only users-create adds users: the two it makes per run,
+`bdd<time>` and `bdd-svc<time>`, add up on a shared stand and go with a fresh CI database. The
+group and role features, and users-manage, which makes groups and roles too, are `@serial`: their
+gallery searches are fuzzy and bring up each other's fixtures, so they take turns while the rest runs
+in parallel. Every TestTrack case there is
+translated but Groups-19 (a group cannot be added to favorites). `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the

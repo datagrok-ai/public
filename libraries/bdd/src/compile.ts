@@ -77,7 +77,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   const diag = (line: number, level: DiagnosticLevel, message: string) =>
     diagnostics.push({file: relPath, line, level, message});
   const emitText = (value: unknown): string => Array.isArray(value) ? `[${value.map(emitText).join(',')}]` :
-    typeof value === 'string' && value.includes('{run}') ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
+    typeof value === 'string' && /\{(run|time)\}/.test(value) ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {
