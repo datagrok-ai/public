@@ -6,6 +6,8 @@ import {openDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {deleteEntities, layoutRoundTrip, projectRoundTrip} from './persistence';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 // The server lane of the line-chart legend scenario: Sc3 steps 3-5 and Sc4 steps 4-7, the multi-axis
 // split and the replaced Y column surviving layout and project round-trips. The viewer steps that
 // build that state are in line-chart-spec.ts on the local lane; here it is set through the API.
@@ -26,7 +28,7 @@ test('Line chart legend — layout and project persistence', async ({page}) => {
   test.setTimeout(900_000);
 
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Setup: Line chart, Split=Series, Multi Axis on', async () => {

@@ -6,6 +6,8 @@ import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/te
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {addLegendViewers} from './legend-setup';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 test.use(specTestOptions);
 
 test.describe.configure({retries: 1});
@@ -14,7 +16,7 @@ test('Legend structure rendering', async ({page}) => {
   test.setTimeout(900_000);
 
   await loginToDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Add 7 viewers, set legend column to Core, Always visible', async () => {

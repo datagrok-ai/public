@@ -8,6 +8,8 @@ import {addLegendViewers} from './legend-setup';
 import {clickCanvasFilter} from './canvas-filter';
 import {deleteEntities} from './persistence';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 // The server lane of the filtering scenario: the Chem substructure filter (a package) and the
 // two layout round-trips. The filter gestures themselves are in filtering-spec.ts on the local lane.
 test.use(specTestOptions);
@@ -17,7 +19,7 @@ test('Legend filtering — substructure filter and layout round-trips', async ({
 
   await openDatagrok(page);
   await v.installEventWaits(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await addLegendViewers(page, {column: 'Stereo Category', viewers: ['Scatter plot', 'Bar chart'], capMs: 500});
 
   await softStep('Structure filter on Core — platform API available (env-dependent)', async () => {

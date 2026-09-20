@@ -8,6 +8,8 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {addLegendViewers} from './legend-setup';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 test.use(specTestOptions);
 
 test('GROK-17438: legend stays visible across shared-legend viewers after color change', async ({page}) => {
@@ -15,7 +17,7 @@ test('GROK-17438: legend stays visible across shared-legend viewers after color 
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Histogram', 'Scatter plot', 'Bar chart'],

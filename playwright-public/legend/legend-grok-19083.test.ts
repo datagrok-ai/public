@@ -7,6 +7,8 @@ import {localTest as test, expect} from '@datagrok-libraries/test/src/playwright
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 test.use(specTestOptions);
 
 test('GROK-19083: legend marker entries sync with markersColumnName deselect', async ({page}) => {
@@ -14,7 +16,7 @@ test('GROK-19083: legend marker entries sync with markersColumnName deselect', a
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Steps 2-4: Color=Series + Marker=Series → combined legend with markers', async () => {

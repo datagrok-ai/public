@@ -6,6 +6,8 @@ import {openDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {addLegendViewers, holdFilterCount} from './legend-setup';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 // The layout and project round-trips (Sc7, Sc8 5-6, Sc10 7-8, Sc11) live in
 // visibility-and-positioning-server-spec.ts.
 test.use(specTestOptions);
@@ -14,7 +16,7 @@ test('Legend visibility and positioning', async ({page}) => {
   test.setTimeout(900_000);
 
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Setup steps 2-4: 7 viewers + Stereo Category legend on each', async () => {
