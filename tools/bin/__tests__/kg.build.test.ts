@@ -383,6 +383,7 @@ describe('homes extractor (build-plan.md WO-2)', () => {
       {feature: 'visualize/viewers/scatter-plot', file: 'core/client/d4/lib/scatter.dart', line: 12, props: {role: 'ui'}, rung: 2, source: 'home', root: expect.any(String)},
       {feature: 'visualize/viewers/scatter-plot', file: 'public/js-api/src/viewer.ts', line: 12, props: {}, rung: 2, source: 'home', root: expect.any(String)},
     ]);
+    // core/client/d4/lib/img/scatter.png sits under the expanded root: a media file is never a source-file nor a claim
     expect(rows('nodes/source-file')).toEqual([
       expect.objectContaining({id: 'file:core/client/d4/lib/scatter.dart', name: 'scatter.dart', path: 'core/client/d4/lib/scatter.dart', language: 'dart', loc: 1, provenance: 'filesystem', source_layer: 'core', visibility: 'dev'}),
       expect.objectContaining({id: 'file:public/js-api/src/viewer.ts', language: 'ts', source_layer: 'public', visibility: 'public'}),
@@ -393,6 +394,7 @@ describe('homes extractor (build-plan.md WO-2)', () => {
 
   it('claims a cited implementation file at rung 3 unless a code: root already covers it, and takes a cited help page as documentation', async () => {
     const {rows} = await build();
+    // the scatter-plot home also shows img/scatter-plot.png; a media file drawn on a page is no claim on it
     expect(rows('reports/claims.jsonl')).toEqual([
       {feature: 'visualize/viewers', file: 'core/client/d4/lib', line: 10, props: {}, rung: 3, source: 'home'},
       expect.objectContaining({feature: 'visualize/viewers/scatter-plot', file: 'core/client/d4/lib/scatter.dart', rung: 2}),

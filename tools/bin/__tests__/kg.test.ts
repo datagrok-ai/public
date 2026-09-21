@@ -272,7 +272,8 @@ describe('kg home documents (conventions.md §5, §10)', () => {
     expect(report.stubs).toEqual(['platform']);
     expect(report.warnings.map((w) => w.message)).toEqual([expect.stringMatching(/no home for ~platform \(parent of ~platform\/caching\)/)]);
     expect(report.codes).toEqual({stub: 1});
-    expect(report.citations).toEqual({doc: 1, code: 3});
+    // the scatter-plot page shows img/scatter-plot.png: a media citation, counted apart, never a claim
+    expect(report.citations).toEqual({doc: 1, code: 3, media: 1});
   });
 
   it('takes the name from title:, name: or the first heading', () => {
@@ -521,7 +522,7 @@ describe('kg gen (conventions.md §11.2)', () => {
   });
 
   it('writes a note instead of a tree when there are no homes', () => {
-    const md = generateFeatures(system, {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: 0, annotatedPages: 0, citations: {doc: 0, code: 0}, index: {byId: new Map(), byAlias: new Map()}});
+    const md = generateFeatures(system, {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: 0, annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, index: {byId: new Map(), byAlias: new Map()}});
     expect(md).toContain('No home documents yet');
   });
 
@@ -712,6 +713,7 @@ describe('citations as records (review 2 #4)', () => {
       '```',
       '````',
       '[out](../../../../../etc/passwd)',
+      '![Zoom](img/zoom.gif "Zooming") and [![Watch](../../uploads/youtube/intro.PNG)](https://www.youtube.com/watch?v=x)',
     ].join('\n');
     const cites = extractCitations('public/help/visualize/viewers/scatter-plot.md', body, 10);
     expect(cites.map((c) => [c.kind, c.resolved, c.anchor ?? '', c.target, c.line])).toEqual([
@@ -722,18 +724,21 @@ describe('citations as records (review 2 #4)', () => {
       ['link', 'public/help/visualize/viewers/scatter-plot.md', 'usage', 'doc', 11],
       ['reference-link', 'core/docs/SPEC.md', '', 'doc', 13],
       ['link', null, '', 'code', 20],
+      ['link', 'public/help/visualize/viewers/img/zoom.gif', '', 'media', 21],
+      ['link', 'public/help/uploads/youtube/intro.PNG', '', 'media', 21],
     ]);
     expect(proseLines('````\n```\ninside\n```\n````\nout').map((l) => l.text)).toEqual(['out']);
   });
 
   it('reports doc links, code citations, anchors and repository escapes separately', () => {
-    const errors = homeErrors('core/docs/broken.md', `${PERMISSIONS}---\n# P\n\n[a](../nope.md) [b](viewers/README.md#no-such) \`core/nope.dart\` [c](../../../x.md) [d](#missing)\n`);
+    const errors = homeErrors('core/docs/broken.md', `${PERMISSIONS}---\n# P\n\n[a](../nope.md) [b](viewers/README.md#no-such) \`core/nope.dart\` [c](../../../x.md) [d](#missing) ![e](img/gone.png)\n`);
     expect(errors).toEqual([
       "missing-cited-path core/docs/broken.md:7: cited path 'core/nope.dart' does not exist",
       "missing-doc-link core/docs/broken.md:7: linked document '../nope.md' does not exist (resolved to core/nope.md)",
       "bad-anchor core/docs/broken.md:7: link 'viewers/README.md#no-such': no heading '#no-such' in core/docs/viewers/README.md",
       "citation-escape core/docs/broken.md:7: link '../../../x.md' escapes the repository",
       "bad-anchor core/docs/broken.md:7: link '#missing': no heading '#missing' in core/docs/broken.md",
+      "missing-cited-path core/docs/broken.md:7: cited path 'core/docs/img/gone.png' does not exist",
     ]);
   });
 

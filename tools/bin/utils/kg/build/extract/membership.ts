@@ -8,6 +8,7 @@ import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../context';
 import {REPO_PREFIX, GLOB_MAGIC} from '../../homes';
 import {fileId, posix, docId, CODE_ROOTS, countLines, sourceFileRow, unitOf} from '../../ids';
+import {isMedia} from '../../media';
 import {homesOf} from './markers';
 
 /** Claim properties an ownership edge carries; anything else the `code:` item said stays in the claim. */
@@ -108,7 +109,7 @@ class Membership {
   /** The node a claimed path needs when no extractor emitted one; a cited folder gets none. */
   private fileNode(file: string): Row | undefined {
     const full = path.join(this.ctx.repoRoot, file);
-    if (!fs.existsSync(full) || !fs.statSync(full).isFile()) return undefined;
+    if (isMedia(file) || !fs.existsSync(full) || !fs.statSync(full).isFile()) return undefined;
     const row = sourceFileRow(file, {loc: countLines(fs.readFileSync(full))});
     return this.emitter.node(row).accepted ? row : undefined;
   }

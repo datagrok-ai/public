@@ -14,6 +14,8 @@ code:
   - {path: core/client/d4/lib/**/*.dart, role: ui}
 ---
 
+![Scatter plot](img/scatter-plot.png)
+
 A scatter plot shows every row as a point. See [the source](core/client/d4/lib/scatter.dart)
 and `public/js-api/src/viewer.ts#ScatterPlotViewer`.
 

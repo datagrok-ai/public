@@ -2,6 +2,7 @@
 /// Extracted once into records so `check` (stale citations) and `build` (participation edges)
 /// read the same evidence (conventions.md §5.4).
 import * as path from 'path';
+import {isMedia} from './media';
 
 export interface Citation {
   /** The citing document, posix path relative to the monorepo root. */
@@ -12,8 +13,8 @@ export interface Citation {
   /** Repo-relative posix path, or null when the target escapes the repository. */
   resolved: string | null;
   anchor?: string;
-  /** A link to documentation (`*.md`, `*.mdx`) or a citation of an implementation file. */
-  target: 'doc' | 'code';
+  /** A link to documentation (`*.md`, `*.mdx`), a media file the page shows (media.ts), or a citation of an implementation file. */
+  target: 'doc' | 'code' | 'media';
 }
 
 export interface ProseLine {
@@ -113,5 +114,6 @@ function splitAnchor(token: string): {target: string, anchor?: string} {
 }
 
 function citation(file: string, line: number, kind: Citation['kind'], raw: string, resolved: string | null, anchor?: string): Citation {
-  return {file, line, kind, raw, resolved, anchor, target: resolved !== null && /\.mdx?$/i.test(resolved) ? 'doc' : 'code'};
+  const target = resolved === null ? 'code' : /\.mdx?$/i.test(resolved) ? 'doc' : isMedia(resolved) ? 'media' : 'code';
+  return {file, line, kind, raw, resolved, anchor, target};
 }

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* grok kg: a media file a page shows (png, gif, svg, mp4, ... per `bin/utils/kg/media.ts`) is no longer a code citation: a feature home that embeds an image mints no source-file node and makes no ownership claim, a code: root that expands over one skips it, and check counts media files apart while still reporting a missing one as missing-cited-path
+
 * grok kg: membership gives a file two unrelated code: roots claim to the more specific root (exact path over folder, deeper folder over shallower), instead of leaving it an orphan
 * grok kg: tests-for sends what a hub helper reaches (a test-folder file most of the unit's test files import) to the reachable tier
 * grok kg: tests-for tiers a test by the units its file stands for (ApiTests for the JS API, a client regTest file for the library its category leads with, datlas tests for grok_shared too), so those suites are immediate for the code they exercise

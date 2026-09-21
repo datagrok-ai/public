@@ -99,7 +99,7 @@ export interface HomeSet {
   scanned: number;
   /** Pages that are not homes but carry an edge key such as `documents:`. */
   annotatedPages: number;
-  citations: {doc: number, code: number};
+  citations: {doc: number, code: number, media: number};
   /** The homes by id and by alias, built once here and shared by every reader. */
   index: HomeIndex;
 }
@@ -114,7 +114,7 @@ export interface CheckReport {
   scanned: number;
   homes: Record<string, number>;
   annotatedPages: number;
-  citations: {doc: number, code: number};
+  citations: {doc: number, code: number, media: number};
   unresolvedExternal: UnresolvedRef[];
   stubs: string[];
   stale?: string[];
@@ -127,7 +127,7 @@ export function discoverHomeFiles(repoRoot: string): string[] {
 
 export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] = discoverHomeFiles(repoRoot)): HomeSet {
   const set: HomeSet = {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: files.length,
-    annotatedPages: 0, citations: {doc: 0, code: 0}, index: {byId: new Map(), byAlias: new Map()}};
+    annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, index: {byId: new Map(), byAlias: new Map()}};
   for (const file of files) {
     let text: string;
     try {
@@ -699,7 +699,7 @@ export function makeReport(system: TypeSystem, homes: HomeSet | null): CheckRepo
     scanned: homes?.scanned ?? 0,
     homes: byType,
     annotatedPages: homes?.annotatedPages ?? 0,
-    citations: homes?.citations ?? {doc: 0, code: 0},
+    citations: homes?.citations ?? {doc: 0, code: 0, media: 0},
     unresolvedExternal: homes?.unresolvedExternal ?? [],
     stubs: (homes?.stubs ?? []).map((s) => s.id),
   };

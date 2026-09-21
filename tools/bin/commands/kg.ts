@@ -464,7 +464,7 @@ function print(report: CheckReport, output: string, quiet: boolean): void {
   console.log(`${report.types.nodes} node types, ${report.types.edges} edge types, ${report.types.prefixes} prefixes; ` +
     `${report.scanned} files scanned, ${total} home${total === 1 ? '' : 's'}${homes ? ` (${homes})` : ''}, ` +
     `${report.annotatedPages} annotated page${report.annotatedPages === 1 ? '' : 's'}; ` +
-    `${report.citations.doc} doc links and ${report.citations.code} code citations checked; ` +
+    `${report.citations.doc} doc links, ${report.citations.code} code citations and ${report.citations.media} media files checked; ` +
     `${report.unresolvedExternal.length} unresolved external reference${report.unresolvedExternal.length === 1 ? '' : 's'}; ` +
     `${report.stubs.length} stub${report.stubs.length === 1 ? '' : 's'} needed; ` +
     `${report.errors.length} error${report.errors.length === 1 ? '' : 's'}, ${report.warnings.length} warning${report.warnings.length === 1 ? '' : 's'}`);

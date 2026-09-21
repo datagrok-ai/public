@@ -7,6 +7,7 @@ import {globSync} from 'glob';
 import {TypeSystem, EdgeType, Member, NodeType, isSubtype, concreteAuthored} from '../../types';
 import {lookupHome, Home, HomeSet, AnnotatedPage, HOME_IGNORE, GLOB_MAGIC, REPO_PREFIX, isHomeFileMember, splitRefAnchor} from '../../homes';
 import {extractCitations, proseLines, Citation} from '../../citations';
+import {isMedia} from '../../media';
 import {keyLine, Frontmatter} from '../../frontmatter';
 import {Emitter} from '../emitter';
 import {Row} from '../../normalize';
@@ -120,7 +121,7 @@ class HomeLayer {
     }
     const line = keyLine(subject.fm, 'code');
     for (const p of this.expandRoot(file)) {
-      if (!this.emitter.node(sourceFileRow(p, {loc: countLines(fs.readFileSync(path.join(this.repoRoot, p)))})).accepted) continue;
+      if (isMedia(p) || !this.emitter.node(sourceFileRow(p, {loc: countLines(fs.readFileSync(path.join(this.repoRoot, p)))})).accepted) continue;
       this.emitter.claim({file: p, feature: subject.id, rung: 2, source: 'home', props, line, root: file});
       claimed.add(p);
     }
@@ -147,13 +148,13 @@ class HomeLayer {
   }
 
   /** Body citations: implementation files become claims (rung 3), a help page documents the feature, any other
-   * document becomes a mention of a `doc:` stub. */
+   * document becomes a mention of a `doc:` stub; a media file is what the page shows, an embed, never a claim. */
   private emitCitations(subject: Subject, body: string, claimed: Set<string>): void {
     const isFeature = subject.type.root === 'feature';
     const mentions = this.system.edges.get('mentions');
     const documents = this.system.edges.get('documents');
     for (const c of extractCitations(subject.file, body, subject.fm.bodyLine)) {
-      if (c.resolved === null || c.resolved === subject.file) continue;
+      if (c.resolved === null || c.resolved === subject.file || c.target === 'media') continue;
       const resolved = this.resolveDocLink(c);
       if (!fs.existsSync(path.join(this.repoRoot, resolved))) continue;
       if (/\.mdx?$/i.test(resolved)) {
