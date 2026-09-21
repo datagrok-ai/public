@@ -211,8 +211,10 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
 - An area phrase can name a part of a hit area: `left edge of x axis` (a 16 px strip along that
   edge — the axis away from the column selector in its middle), `top left corner of region Older`
   (a 16 px square), `overlap of region Tall and region Heavy` (the rectangle two areas share), and
-  they nest (`left edge of overlap of …`). Resolved in-page by `findArea`, so every gesture step,
-  `should have a … area`, the size checks and the menu steps take them; the ink readings do not.
+  they nest (`left edge of overlap of …`). Resolved in-page by `edgeOf`, through `findArea` and
+  `quietAreaRects`, so every gesture step, `should have a … area`, the menu steps and the checks
+  that compare areas with each other or with a remembered place take them; the ink readings and
+  `taller/wider than before` (`areaRectChange`) do not.
 - A marker under the pointer takes precedence over an annotation region: the scatter plot hit-tests
   its regions only while no marker is hovered (`navigation.dart`), so a region gesture aims at a
   marker-free point (half-integer AGE on demog, small `markerDefaultSize`) and a title click is

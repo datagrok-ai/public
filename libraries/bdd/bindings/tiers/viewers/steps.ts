@@ -554,11 +554,7 @@ export const areasSameSize = Then('the {string} and {string} areas of {widget} s
   async (page: Page, a: string, b: string, target: ElementRef, dimension: string) => {
     if (dimension !== 'height' && dimension !== 'width')
       throw new Error(`two areas are the same height or the same width, not the same "${dimension}"`);
-    const {boxes, has} = await v.areaRects(page, target, [a, b]);
-    const missing = [a, b].find((_, i) => boxes[i] === undefined);
-    if (missing !== undefined)
-      throw new Error(`${target.phrase} has no "${missing}" area; it has: ${has.join(', ') || 'none'}`);
-    const [x, y] = boxes.map((box) => dimension === 'height' ? box!.height : box!.width);
+    const [x, y] = (await v.areaRects(page, target, [a, b])).map((box) => dimension === 'height' ? box.height : box.width);
     expect(Math.abs(x - y), `the "${a}" area is ${Math.round(x)} and "${b}" is ${Math.round(y)}`).toBeLessThanOrEqual(1);
   }, {description: 'the two rectangles agree within a pixel — a size scale flattened, two bars of equal length'});
 

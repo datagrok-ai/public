@@ -856,12 +856,7 @@ const placeKey = (target: ElementRef, area: string): string => `${target.phrase}
 const fmtBox = (b: v.Box | undefined): string => b ? `${Math.round(b.x)},${Math.round(b.y)} ${Math.round(b.width)}x${Math.round(b.height)}` : 'none';
 const sameBox = (a: v.Box, b: v.Box): boolean => [a.x - b.x, a.y - b.y, a.width - b.width, a.height - b.height].every((d) => Math.abs(d) <= 1);
 
-async function areaRect(page: Page, target: ElementRef, area: string): Promise<v.Box> {
-  const {boxes, has} = await v.areaRects(page, target, [area]);
-  if (boxes[0] === undefined)
-    throw new Error(`${target.phrase} has no "${area}" area; it has: ${has.join(', ') || 'none'}`);
-  return boxes[0];
-}
+const areaRect = async (page: Page, target: ElementRef, area: string): Promise<v.Box> => (await v.areaRects(page, target, [area]))[0];
 
 export const rememberAreaPlace = When('user remembers the place of the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
   if (!areaPlaces.has(page))
@@ -890,9 +885,7 @@ const RELATION: Record<Relation, (a: v.Box, b: v.Box) => boolean> = {
 async function expectAreaRelation(page: Page, target: ElementRef, a: string, relation: string, b: string): Promise<void> {
   if (!(relation in RELATION))
     throw new Error(`an area lies inside, outside, above or below another, or to the left or right of it — not "${relation}"`);
-  const {boxes: [ra, rb], has} = await v.areaRects(page, target, [a, b]);
-  if (!ra || !rb)
-    throw new Error(`${target.phrase} has no "${ra ? b : a}" area; it has: ${has.join(', ') || 'none'}`);
+  const [ra, rb] = await v.areaRects(page, target, [a, b]);
   const where = relation === 'left' || relation === 'right' ? `to the ${relation} of` : relation;
   expect(RELATION[relation as Relation](ra, rb), `the "${a}" area of ${target.phrase} is at ${fmtBox(ra)} and does not lie ${where} ` +
     `the "${b}" area at ${fmtBox(rb)}`).toBe(true);
