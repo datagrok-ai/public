@@ -6,7 +6,7 @@ import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
 import {click, editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
-import {shellSimpleMode} from '../../src/runtime/guide.js';
+import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
 
 declare const grok: any;
@@ -142,6 +142,17 @@ async function saveProject(page: Page, name: string, everyView: boolean): Promis
     }
   }, ids));
 }
+
+export const noProjectOnServer = Given('no project named {string} is on the server', async (page: Page, name: string) => {
+  silent(page);
+  const cleanup = () => deleteLeftoverProjects(page, name);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes the project an earlier run left under that name (with its table and view), and again when the feature ends — for a save made through the Save dialog'});
+
+export const projectsOnServer = Then('{int} project(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'projects', 'projects', name, count),
+{tier: 'api', description: 'what the server holds, not what the dialog said'});
 
 export const saveAsProject = When('user saves the current view as project {string}', (page: Page, name: string) =>
   saveProject(page, name, false),
@@ -531,7 +542,7 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
   };
 }
 
-async function expectNamedCount(page: Page, source: NamedSource, what: string, name: string, count: number): Promise<void> {
+async function expectNamedCount(page: Page, source: CleanupSource, what: string, name: string, count: number): Promise<void> {
   await expect.poll(async () => {
     try {
       return (await serverEntities(page, source)).filter((entity) => entity.friendlyName === name || entity.name === name).length;

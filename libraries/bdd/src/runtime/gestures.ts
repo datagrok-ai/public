@@ -283,7 +283,14 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
     return;
   }
   const editor = await editorOf(page, target);
-  await editor.click();
+  // the Dart property grid puts its <select> into the value cell only once that cell is clicked
+  const cell = loc.locator('.property-grid-item-value').first();
+  await (await cell.count() > 0 ? cell : editor).click();
+  const shown = loc.locator('select').first();
+  if (await shown.count() > 0) {
+    await shown.selectOption({label: option});
+    return;
+  }
   let options = optionsNamed(page, option);
   await options.first().waitFor({timeout: 1500}).catch(() => undefined);
   // comboboxes and typeaheads open on a keystroke, not on the click

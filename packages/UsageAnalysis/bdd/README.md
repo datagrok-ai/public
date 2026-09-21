@@ -54,10 +54,10 @@ From a fresh checkout of `public`, against a local stand on `http://localhost:88
 `DATAGROK_URL=https://… npx grok-bdd run`):
 
 ```bash
-cd public/libraries/bdd && npm ci && npm run build   # the library (a path dependency of this package; dist/ is not committed)
-npx playwright install chromium                      # its browser, once per machine (here, not in the package)
-cd ../../packages/UsageAnalysis && npm ci            # the package; npm links the library in and puts grok-bdd in .bin
-npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
+cd public && grok setup                              # once per checkout: the pnpm workspace (needs `npm i -g datagrok-tools`)
+cd libraries/bdd && npm run build                    # the library (a workspace dependency of this package; dist/ is not committed)
+npx playwright install chromium                      # its browser, once per machine
+cd ../../packages/UsageAnalysis/bdd                  # this bdd project; the workspace already links the library, no `grok-bdd link`
 npx grok-bdd run --reporter=list                     # compile --check, then Playwright on 4 workers
 PLAYWRIGHT_WORKERS=2 npx grok-bdd run                # a stand whose pub serve or datlas falls behind at 4 (bundle loads past 30 s, 502s)
 npx grok-bdd run --workers 2 generated/viewers/box-plot   # any Playwright flag or path passes through

@@ -30,12 +30,15 @@ when it runs from a checkout — and npm links the directory into `node_modules`
 of `public`, against a local stand on `http://localhost:8888`:
 
 ```bash
-cd public/libraries/bdd && npm ci && npm run build   # the library; dist/ is not committed
-npx playwright install chromium                      # its browser, once per machine (here, not in the package)
-cd ../../packages/<Package> && npm ci                # the package: the library among its dev dependencies
-npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
+cd public && grok setup                              # once per checkout: the pnpm workspace (needs `npm i -g datagrok-tools`)
+cd libraries/bdd && npm run build                    # the library; dist/ is not committed (2 s)
+npx playwright install chromium                      # its browser, once per machine
+cd ../../packages/<Package>/bdd                      # the package's bdd project; the workspace already links the library
 npx grok-bdd run --reporter=list                     # compile --check, then Playwright (4 workers; --workers N, or any Playwright flag)
 ```
+
+Under the pnpm workspace the package and the library resolve to one `@playwright/test`, so
+`grok-bdd link` is only for a package installed outside the workspace with npm.
 
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
