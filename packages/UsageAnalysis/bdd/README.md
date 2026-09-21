@@ -24,7 +24,12 @@ stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and t
 error matrix), translated from the manual cases, each feature naming what it left out and why.
 Two of its scenarios are `@full-stand` (they name the providers and the Platform sections a full
 stand carries) and one is `@compute` (the Model Hub needs the Compute package): a smaller stand
-runs with `grok-bdd run --grep-invert "@full-stand|@compute"`. `bindings/` keeps the steps only one
+runs with `grok-bdd run --grep-invert "@full-stand|@compute"`. `features/guides/` holds the
+answers to "how do I …" questions as scenarios: `grok-bdd guide features/guides/<name>.feature`
+films one into `guides/<feature>/<scenario>/guide.mp4` with the numbered steps and pictures beside
+it (`steps.md`), `--help-pages` re-films every `@help:`-tagged one into the help tree; `INDEX.md`
+there lists the questions answered. They run with the suite, so an answer that stops being true
+fails. `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the

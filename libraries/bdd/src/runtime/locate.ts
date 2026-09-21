@@ -8,6 +8,7 @@ import type {Locator, Page} from '@playwright/test';
 import {contextFirst, describeNoun, NounRef, parseNoun} from '../nouns.js';
 import type {KindEntry} from '../registry.js';
 import {contextOf, ElementRef} from './args.js';
+import * as guide from './guide.js';
 
 export {describeNoun, parseNoun};
 
@@ -76,8 +77,9 @@ export function currentObject(page: Page): Promise<string> {
 
 export async function locate(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
   const ref = refOf(page, target);
-  const loc = await locateRef(page, ref, within);
-  return loc.describe(describeNoun(ref));
+  const loc = (await locateRef(page, ref, within)).describe(describeNoun(ref));
+  await guide.located(page, loc);
+  return loc;
 }
 
 /** The element a gesture or a state check acts on: the visible matches of the phrase (a Dart menu
@@ -87,7 +89,9 @@ export async function locate(page: Page, target: ElementRef | string, within?: L
 export async function locateActionable(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
   const ref = refOf(page, target);
   const loc = await locateRef(page, ref, within);
-  return (ref.ordinal === undefined ? loc.filter({visible: true}) : loc).describe(describeNoun(ref));
+  const actionable = (ref.ordinal === undefined ? loc.filter({visible: true}) : loc).describe(describeNoun(ref));
+  await guide.located(page, actionable);
+  return actionable;
 }
 
 export async function locateRef(page: Page, ref: NounRef, within?: Locator): Promise<Locator> {

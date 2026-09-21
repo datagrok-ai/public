@@ -12,6 +12,7 @@ import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, Playwrigh
   TestType} from '@playwright/test';
 import {leave} from './args.js';
 import {failure, isWaitFailure, journeyFailure} from './failure.js';
+import * as guide from './guide.js';
 import {explain} from './locate.js';
 import {whileExpectedToFail} from './patience.js';
 import {takeBalloons} from './viewers.js';
@@ -210,6 +211,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
           shared = await shared.context().newPage();
         shared ??= await (await browser.newContext()).newPage();
         watchErrors(shared);
+        guide.attach(shared);
         page = shared;
       }
       return page;
@@ -217,12 +219,16 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     async step(line: number, title: string, body: () => Promise<unknown>): Promise<void> {
       title = text(title);
       await test.step(title, async () => {
+        await guide.begin(page, test.info(), line, title);
         try {
           await body();
         }
         catch (e) {
           const shown = isWaitFailure(e) && page && !page.isClosed() ? await explain(page).catch(() => '') : '';
           throw failure(`${path || 'feature'}:${line}`, title, e, shown, file ? `${file}:${line}:1` : '');
+        }
+        finally {
+          await guide.end(page);
         }
       }, {location: file ? {file, line, column: 1} : undefined});
     },

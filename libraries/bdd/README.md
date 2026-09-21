@@ -329,6 +329,36 @@ place; later providers override earlier entries. Providers run on each status re
 no longer drawn. Detach removes providers; a viewer reattached to a different table needs its
 table-specific providers registered again.
 
+## Guides: a scenario as a how-to video
+
+A scenario that answers "how do I …" is also its own demonstration. `grok-bdd guide
+features/guides/<name>.feature` compiles it, runs it on one worker in guide mode and renders each
+scenario into `guides/<feature slug>/<scenario slug>/`:
+
+- `guide.mp4` — the pointer travels to every element a step acts on, the element is lit (the rest
+  of the page dimmed), a small target is zoomed into in place while the click lands, the page
+  after the step is revealed, and a caption reads the step as an instruction ("Click on Open local
+  file icon in browse toolbar"); a `Then` step shows what it checked with a check mark;
+- `step-NN.png` — the lit picture of every step, and `steps.md` — the numbered steps with those
+  pictures, ready to paste into a reply;
+- with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair.
+
+Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
+it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
+element the step located, and where the page's own mouse went. Tests know nothing of it: without
+the variable no line of it runs. The viewport is a laptop's (1600×900; `BDD_GUIDE_VIEWPORT=<w>x<h>`
+for another) so the video reads without zooming every step. `Given` steps that touched nothing
+(the login) are left out of the video. Rendering is `tool/guide-render.py` (Pillow + ffmpeg: `py -m
+pip install pillow imageio-ffmpeg`, or `FFMPEG=<path>`); `--fps`, `--hold`, `--travel`, `--zoom`
+tune the pace when run by hand on a `steps.json` directory.
+
+A feature tagged `@help:<page dir>` (`@help:access/files`) illustrates a help page:
+`grok-bdd guide --help-pages` films every such feature and copies each scenario's GIF and thumb
+into `<public>/help/<page dir>/img/<scenario slug>.gif` (`BDD_HELP_ROOT` names another tree), so
+the walkthroughs on the docs site are regenerated from features rather than recorded by hand.
+Guides live under `features/guides/` and run with the rest of the suite: an answer that stops
+being true fails a test.
+
 ## Generated specs
 
 One `test()` per scenario and per outline row, one `test.step` per Gherkin step located at the
@@ -352,6 +382,13 @@ are not inherited. With the core repository open, use `public/packages/*/bdd/fea
 for features, and `public/libraries/bdd/bindings/**/*.ts` plus
 `public/packages/*/bdd/bindings/**/*.ts` for glue in the root `.vscode/settings.json`.
 Include the same `state` parameter type there. With `public/` open, omit the `public/` prefix.
+
+Every settings file that names Cucumber globs also carries `"search.followSymlinks": false`
+(`grok-bdd init` writes it). The extension re-scans its globs on every file change through VS
+Code's file search, which follows symlinks by default: the pnpm `node_modules` forests and the
+junctions `grok-bdd link` makes are circular, so a scan never ends, and they pile up by the dozen
+(64 `rg.exe` at three quarters of a 32-core machine, found 2026-09-21). The setting takes effect
+on Reload Window; `taskkill /F /IM rg.exe` (or `pkill rg`) clears the ones already running.
 
 ## Developing the library
 

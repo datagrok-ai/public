@@ -20,10 +20,12 @@ src/nouns.ts            phrase (+ context) → NounRef (pure; shared by compiler
 src/match.ts            cucumber-expressions matching + specificity
 src/compile.ts          FeatureModel → *.test.ts (feature(test) session, test() per scenario, @journey = one test)
 src/states.ts           the {state} list, shared by the assertions, the parameter type and init's VS Code settings
-src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [playwright args] | link
+src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [playwright args] | guide <features> | link
 src/runtime/            args, locate, gestures, assertions, harness (session, journey, resetShell, error floor),
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
-                        viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure
+                        viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
+                        guide (BDD_GUIDE: per-step screenshots, located element, pointer path → steps.json)
+tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
 bindings/platform/      the shell: elements, datasets, steps, data, columns, commands, functions, events — always loaded
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, events, floor), widgets (shared per-viewer steps)

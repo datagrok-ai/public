@@ -98,6 +98,9 @@ const TSCONFIG = `{
 `;
 
 const VSCODE = {
+  // the Cucumber extension re-scans its globs on every file change; following symlinks walks the
+  // pnpm node_modules and the bdd link junctions in circles, and the scans pile up until the CPU is gone
+  'search.followSymlinks': false,
   'cucumber.features': ['bdd/features/**/*.feature'],
   'cucumber.glue': ['bdd/bindings/**/*.ts', `node_modules/${PACKAGE_NAME}/bindings/**/*.ts`],
   'cucumber.parameterTypes': [{name: 'state', regexp: STATES}],
