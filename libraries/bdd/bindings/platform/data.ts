@@ -251,6 +251,14 @@ export const noRowsWhere = Then('the table should have no rows where {string} is
   }, [column, value] as [string, string]), {message: `rows where ${column} is ${value}`}).toBe(0);
 });
 
+// --- table tags --------------------------------------------------------------------------------------
+
+export const tableTagIsFile = Then('the table should have tag {string} equal to the text of {string} file', async (page: Page, tag: string, path: string) => {
+  const [actual, file] = await page.evaluate(async ([t, p]) => [grok.shell.t.getTag(t) as string | null, await grok.dapi.files.readAsText(p) as string], [tag, path]);
+  expect(file.length, `the length of ${path}`).toBeGreaterThan(0);
+  expect(actual, `tag "${tag}" of the table against ${path}`).toBe(file);
+}, {tier: 'api', description: 'byte for byte, line breaks included — what a file handler put on the table it opened'});
+
 // --- columns -----------------------------------------------------------------------------------------
 
 export const setCell = When('user sets {string} column in row {int} to {string}', (page: Page, column: string, row: number, value: string) =>

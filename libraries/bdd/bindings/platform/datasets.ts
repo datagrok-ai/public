@@ -3,6 +3,10 @@ import {dataset} from '../../src/registry.js';
 
 dataset('spgi', {path: 'System:AppData/Chem/tests/spgi-100.csv', aliases: ['spgi-100'],
   description: 'SMILES + numeric activity, 100 rows'});
+dataset('mol1K', {path: 'System:AppData/Chem/mol1K.csv', aliases: ['mol1k'],
+  description: '1000 molecules with pIC50_HIV_Integrase and Q (comes with the published Chem package)'});
+dataset('FASTA_PT_activity', {path: 'System:AppData/Bio/samples/FASTA_PT_activity.csv', aliases: ['fasta-pt-activity', 'peptides with activity'],
+  description: '99 peptides: cluster, sequence_id, sequence (16-mers), activity, is_cliff (comes with the published Bio package)'});
 dataset('demog', {path: 'System:DemoFiles/demog.csv', description: 'the demographics demo table'});
 dataset('demog-1000', {path: 'System:DemoFiles/demog-1000.csv',
   description: 'a stratified 1000-row subset of demog (same SEX / RACE / DIS_POP proportions) — the table for viewer features: every paint costs one marker per row'});

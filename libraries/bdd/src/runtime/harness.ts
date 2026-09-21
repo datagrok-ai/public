@@ -19,7 +19,7 @@ import {takeBalloons} from './viewers.js';
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
 export interface FeatureSession {
-  /** Resolves {run} to this feature instance's unique suffix. */
+  /** Resolves {run} to this feature instance's unique suffix and {time} to its start in epoch ms. */
   text(value: string): string;
   /** The feature's page — opened on first use, shared by the scenarios that follow. */
   page(browser: Browser): Promise<Page>;
@@ -64,13 +64,27 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
         return;
       }
       if (options?.knownFailure)
-        failed.push({name, error: new Error('tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go')});
+        failed.push({name, error: new Error(KNOWN_FAILURE_PASSED)});
     },
     finish(): void {
       if (failed.length > 0)
         throw journeyFailure(failed, scenarios);
     },
   };
+}
+
+const KNOWN_FAILURE_PASSED = 'tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go';
+
+/** A `@known-failure` scenario outside a journey: its steps failing is the defect it describes and
+ * passes the test; its steps passing fails it — the bug is fixed and the tag has to go. */
+export async function knownFailure(body: () => Promise<void>): Promise<void> {
+  try {
+    await whileExpectedToFail(body);
+  }
+  catch {
+    return;
+  }
+  throw new Error(KNOWN_FAILURE_PASSED);
 }
 
 /** `<root>/generated/x/y.test.ts` + `features/x/y.feature` → the feature file (the layout
@@ -98,17 +112,41 @@ export function atFeatureEnd(page: Page, cleanup: () => Promise<void>): void {
   list.push(cleanup);
 }
 
+/** The two console errors the browser raises about something that is not the platform's code.
+ * Both are matched on the message AND on where it came from — a broad pattern here is how a
+ * suite ends up silencing the failures it exists to catch. */
+function ignoredError(text: string, url: string): boolean {
+  // a resource the stand does not serve (a help page), logged by the browser rather than raised
+  if (text.startsWith('Failed to load resource'))
+    return true;
+  // an embedded third-party player refusing a feature policy of the page it is framed in:
+  // a card of the Projects gallery carries a YouTube iframe, and its complaint is not ours
+  return text.startsWith('Permissions policy violation') && /^https:\/\/(www\.)?youtube\.com\//.test(url);
+}
+
 /** Starts collecting the page's console errors and uncaught exceptions. */
 export function watchErrors(page: Page): void {
   if (errors.has(page))
     return;
   const list: string[] = [];
   errors.set(page, list);
+  // "Stack trace X" arrives seconds after its "Look below, ID = X" error: joined while unreported, else dropped
+  const announced = new Set<string>();
   page.on('console', (m) => {
-    // a resource the stand does not serve (a help page) is logged as a console error by the
-    // browser, not raised by the platform's code — not part of the error floor
-    if (m.type() === 'error' && !m.text().startsWith('Failed to load resource'))
-      list.push(m.location().url ? `${m.text()} (${m.location().url})` : m.text());
+    const text = m.text();
+    if (m.type() !== 'error' || ignoredError(text, m.location().url))
+      return;
+    const continuation = /^Stack trace (\S+)/.exec(text);
+    if (continuation && announced.has(continuation[1])) {
+      const parent = list.findIndex((e) => new RegExp(`Look below, ID = ${continuation[1]}(\\s|$)`).test(e));
+      if (parent >= 0)
+        list[parent] += `\n${text}`;
+      return;
+    }
+    const id = /Look below, ID = (\S+)/.exec(text);
+    if (id)
+      announced.add(id[1]);
+    list.push(m.location().url ? `${text} (${m.location().url})` : text);
   });
   page.on('pageerror', (e) => list.push(String(e)));
 }
@@ -127,11 +165,15 @@ export function takeErrors(page: Page): string[] {
  * the worker) is replaced in the same context, which keeps the storage state and the HTTP cache.
  * The browser fixture closes the context with the worker. */
 let shared: Page | undefined;
+let lastTime = 0;
 
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
   const runId = randomUUID();
-  const text = (value: string): string => value.replaceAll('{run}', runId);
+  // a login takes only [a-z0-9._-], and a user can never be deleted, so a fixture user is named by
+  // when it was made; two features of one worker never start in the same millisecond
+  const time = String(lastTime = Math.max(Date.now(), lastTime + 1));
+  const text = (value: string): string => value.replaceAll('{run}', runId).replaceAll('{time}', time);
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
   test.afterEach(async () => {
     if (page && !page.isClosed()) {

@@ -37,6 +37,7 @@ Feature: Scoping and overrides
     And theme input in settings panel should have value "light"
 
   Scenario: Platform names keep their platform meaning inside the workbench
+    Given the toolbox pane is shown
     Then toolbar should be visible
     And MSA workbench should be visible
     And toolbox should be visible

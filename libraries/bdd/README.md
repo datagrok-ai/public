@@ -106,9 +106,14 @@ with its own trace; a `Background` runs before every scenario, as Gherkin says.
 
 Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{run}`. The suffix is
 unique per feature instance (including each worker and repeat) and stays the same across its
-scenarios. String arguments, element phrases, data tables and doc strings resolve it at runtime;
+scenarios. `{time}` is the feature instance's start in epoch milliseconds, for a name a login must
+accept (`[a-z0-9._-]`) and a reader can sort: the users a creation feature makes cannot be deleted,
+so they are named by it. String arguments, element phrases, data tables and doc strings resolve both
+at runtime;
 generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
-and fails the run if any callback fails.
+and fails the run if any callback fails; a run that was killed never gets there, so the server
+steps that make or clear a `{run}`- or `{time}`-named fixture, the project save included, also
+delete the ones of the same family left by any run older than an hour.
 
 **`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
 the scenarios run in order on the same shell state, each a soft step — a failing scenario is
@@ -117,9 +122,14 @@ property surface walked section by section, where re-opening the data and the vi
 scenario would cost more than the checks. Each scenario then puts back what it changed, and owns
 its error and balloon floors. `-g` selects the whole journey.
 
+**`@serial`** on the feature runs it one at a time with every other `@serial` feature, while the
+rest of the run stays parallel. Use it where features read what other features change at the same
+time — a fuzzy gallery search that brings up the fixtures other features create and delete.
+
 **`@known-failure`** on a scenario says the product has the defect it describes: its failure does
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
-to stay green.
+to stay green. Outside a journey the tag works on a scenario and on an outline's `Examples` block:
+the Background runs plainly, and only the scenario's own steps are the expected failure.
 
 The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
 removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
@@ -153,7 +163,7 @@ A phrase resolves, in this order, at every level:
 |--------------------------------------------|------------------------------------------------------------------|
 | `results`, `browse tab`                    | a registered element (or alias): the whole phrase wins over everything below |
 | `second item …`, `last row …`, `3rd input` | an ordinal among the matches                                     |
-| `save button in toolbar`                   | composition: `X in|inside|within|on|under Y` — X resolved inside Y (recursively) |
+| `save button in toolbar`                   | composition: `X in\|inside\|within\|on\|under Y` — X resolved inside Y (recursively) |
 | `label of name input`, `viewers section of toolbox` | `of` names a *part* — of a registered element, or of every element of a kind |
 | `sequence column input`                    | a generic **kind** by its longest suffix, qualified by the rest  |
 | `"Run MSA" button`, `"First name" input`   | a quoted qualifier: scope words inside it are kept, and a leading "first"/"last" is not read as an ordinal |
@@ -209,14 +219,21 @@ list is the reference; this is the map:
   markup never counts as a completed result.
 - **The shell** (`bindings/platform/steps.ts`): `user is logged in`, `user opens {dataset}
   dataset` (also `keeping the first N rows [as "name"]`), switching views and table views,
-  projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts.
+  projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts; the
+  server's spaces, models, groups and roles by name (deleted at feature end), a fixture user (made
+  once per stand: users cannot be deleted), its status and who is a (plain or admin) member of a
+  group or holds a role; the gallery's render mode and
+  its counter against a remembered one (lower, not lower, higher — search, then clear). The membership editor behind Groups..., Roles..., Members
+  and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
+  `remove button` and `checkbox` parts, typed into through `membership search`.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
   filter set and checked row by row, cells, calculated and renamed columns, colour coding,
   other open tables, links between tables, the filter panel's cards through its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
 - **Package functions and their results** (`platform/functions.ts`), **custom platform events**
-  (`platform/events.ts`), the clipboard and a file chooser (`common/steps.ts`).
+  and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
+  (`common/steps.ts`).
 - **The `viewers` tier** (below).
 
 A step definition is an exported `const`; the generated spec imports it by name:
@@ -267,7 +284,9 @@ The `viewers` tier drives viewers the way the platform sees them:
   area's own ink and repaint, colours in an area (by hue, a shade of anti-aliasing allowed), two
   areas alike or different, the selection highlight (with a margin the selection warrants), the
   value range and the colour scale against before.
-- **The legend** (read from its `data-legend-*` attributes), the row tooltip, viewer events,
+- **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
+  collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
+  against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
   logged`, `no error or warning balloon should have been shown`.
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's

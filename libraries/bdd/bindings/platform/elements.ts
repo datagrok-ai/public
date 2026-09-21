@@ -23,8 +23,20 @@ element('status bar', {selector: '.layout-status-bar', aliases: ['statusbar'],
 element('open tableview', {selector: '.d4-table-view, .grok-table-view', aliases: ['current table view', 'table view']});
 element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestures: {click: 'mouse'}});
 element('gallery', {selector: '.grok-gallery-grid', aliases: ['item gallery'],
-  description: 'the card gallery of the platform — the contents of a Files folder, a space, the Apps list'});
+  parts: {card: '.grok-gallery-grid-item-wrapper'},
+  description: 'the card gallery of the platform — the contents of a Files folder, a space, the Apps list; '
+    + 'the grid itself is built with the view and says nothing about what loaded, so claim a card. '
+    + 'The part names the wrapper rather than the card inside it, so a count is one per card; a '
+    + 'gallery that renders bare .grok-gallery-grid-item (predictive models) reports none'});
 element('gallery search', {selector: '.grok-gallery-search-bar .ui-input-type-ahead'});
+element('gallery toolbar', {selector: '.grok-gallery-search-bar',
+  description: 'the bar above a gallery: New, Refresh, the search, the view modes and the counter — the scope for its icons, which the Browse toolbar repeats'});
+element('gallery counter', {selector: '.grok-items-view-counts',
+  description: 'how many items the gallery lists: "N", "shown / total" under a filter, "N of M" while only the first N are rendered'});
+element('chat header', {selector: '.grok-chat-header',
+  description: 'the title line of the open chat thread: "Chats > <thread>"'});
+element('membership search', {selector: '.d4-user-selector-input', aliases: ['membership search input'],
+  description: 'the search-to-add box of the membership editor; its matches are membership candidates'});
 element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source editor'],
   description: 'the CodeMirror the platform embeds wherever code or a formula is edited — version 6 ' +
     'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});

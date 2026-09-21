@@ -5,9 +5,26 @@ into the Playwright specs under `generated/` — committed, never edited by hand
 holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
 `viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
+(seven viewers sharing one legend column, the legend under filters, its placement, molecules in
+it; the section's scatter plot and line chart cases went into those viewers' legend features);
 `features/spaces/` the Spaces features (the browse tree, the space view, sharing — the sharing
 one shares with `DATAGROK_SHARING_LOGIN`, or with the `bddsecond` user the library's setup
-creates when the variable is unset). `bindings/` keeps the steps only one
+creates when the variable is unset); `features/users-groups-roles/` Browse > Platform > Users,
+Groups and Roles (the views, the New dialogs, memberships, disabling, favorites, global
+permissions). A user can never be deleted, so the features share two fixture users made once per
+stand (`bddviewed`, `bddmanaged`), and only users-create adds users: the two it makes per run,
+`bdd<time>` and `bdd-svc<time>`, add up on a shared stand and go with a fresh CI database. The
+group and role features, and users-manage, which makes groups and roles too, are `@serial`: their
+gallery searches are fuzzy and bring up each other's fixtures, so they take turns while the rest runs
+in parallel. Every TestTrack case there is
+translated but Groups-19 (a group cannot be added to favorites); `features/browse/` the Browse
+panel itself (its toolbar, the tree and its keyboard, browsing versus persistent views, Files, My
+stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and the per-section
+error matrix), translated from the manual cases, each feature naming what it left out and why.
+Two of its scenarios are `@full-stand` (they name the providers and the Platform sections a full
+stand carries) and one is `@compute` (the Model Hub needs the Compute package): a smaller stand
+runs with `grok-bdd run --grep-invert "@full-stand|@compute"`. `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the

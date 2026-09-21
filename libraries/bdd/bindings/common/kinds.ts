@@ -324,6 +324,22 @@ kind('filter card', {
     mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
     close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
 });
+// the membership editor (membership_editor.dart): a member already in is a row, a search match a candidate
+const MEMBERSHIP_PARTS = {checkbox: '.membership-row-admin input', 'checkbox label': '.membership-row-admin'};
+kind('membership row', {
+  aliases: ['member row'],
+  selector: '.membership-row',
+  match: ['label'],
+  labelSelector: '.d4-user-selector-user-name',
+  parts: {...MEMBERSHIP_PARTS, 'remove button': '[name="button-Remove"]'},
+});
+kind('membership candidate', {
+  aliases: ['member candidate'],
+  selector: '.membership-add-row',
+  match: ['label'],
+  labelSelector: '.d4-user-selector-user-name',
+  parts: {...MEMBERSHIP_PARTS, 'add button': '[name="button-Add"]'},
+});
 kind('view', {
   selector: '.d4-view-handle, [name^="view-handle: "]',
   match: ['dart', 'text'],
