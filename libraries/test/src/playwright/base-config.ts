@@ -18,19 +18,27 @@ const DATAGROK_URL = (process.env.DATAGROK_URL ?? 'http://localhost:8888').repla
 // whole secure-context surface is missing. Measured on Chrome-for-Testing 153 (playwright
 // chromium v1243): the default `chromium-headless-shell` IGNORES
 // --unsafely-treat-insecure-origin-as-secure (isSecureContext stays false), while the full
-// Chrome build honours it headless. Every spec takes that build: handing the shell to the
-// specs that looked like they only needed painting cost the Chem substructure query and the
-// sketcher paste, which both sit on that surface.
+// Chrome build honours it headless.
+//
+// Which build a suite takes is not a free choice, and both answers have been measured on the
+// CI stand:
+//   - package suites need the full build. In the shell the Chem top-menu substructure query
+//     never filters at all (builds 423, 425, 427) and the sketcher paste never arrives.
+//   - the core suites are written against the shell, which is what master runs them in. The
+//     full build paints a pie differently, and legend-sizing-and-chrome reads that as a
+//     misplaced mini icon (builds 405, 410, 413, 428 against 415, 420 in the shell).
+// The runner spawns Playwright with cwd = the run dir, so the suite names itself.
 const INSECURE_TARGET = DATAGROK_URL.startsWith('http://');
+const PACKAGE_SUITE = /[\\/]packages[\\/][^\\/]+[\\/]playwright$/.test(process.cwd());
 
 // `test.use({launchOptions})` REPLACES this block rather than merging into it, so every
 // consumer that sets launch options of its own (specTestOptions) must spread this in.
 export const secureOriginLaunchOptions = {
-  ...(INSECURE_TARGET ? {channel: 'chromium'} : {}),
+  ...(INSECURE_TARGET && PACKAGE_SUITE ? {channel: 'chromium'} : {}),
   args: [`--unsafely-treat-insecure-origin-as-secure=${DATAGROK_URL}`],
 };
 
-/** Kept as the name the clipboard specs opt into; the build is the same one everything takes. */
+/** Kept as the name the clipboard specs name; a package suite already takes the full build. */
 export const clipboardLaunchOptions = secureOriginLaunchOptions;
 
 export const baseConfig = defineConfig({
