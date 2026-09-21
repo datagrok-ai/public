@@ -196,6 +196,13 @@ async function injectToken(page: Page, token: string, opts: {hideTooltips?: bool
     (opts.hideTooltips === false ? '' : ' .d4-tooltip { display: none !important; }');
   await page.addStyleTag({content: css}).catch(() => {});
   await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
+  // Which browser build actually launched, and whether the origin flag took: a spec that finds
+  // navigator.clipboard undefined otherwise reports it as its own failure two hundred lines later.
+  const env = await page.evaluate(() => ({
+    secure: window.isSecureContext, clipboard: typeof navigator.clipboard,
+    ua: navigator.userAgent.includes('HeadlessChrome') ? 'headless' : 'full', origin: location.origin,
+  }));
+  console.log(`[env] secureContext=${env.secure} clipboard=${env.clipboard} ua=${env.ua} origin=${env.origin}`);
 }
 
 // Local mode (`?mode=local`, core/docs/features/ui2/LOCAL_MODE.md): the client boots with no
