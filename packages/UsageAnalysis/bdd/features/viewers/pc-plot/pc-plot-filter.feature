@@ -4,7 +4,8 @@ Feature: PC plot in-chart range filter
   table filter: dragging a handle narrows that axis's range and drops the rows outside it, Reset
   View gives them back and fires `d4-pc-plot-reset-view`, and a filter-panel card and the sliders
   compose with AND — the panel's own Reset filters clears both, Reset View only the plot's half.
-  Show Filtered Out Lines then draws the rows the filter dropped, and closing the viewer releases
+  Show Filtered Out Lines then draws the rows the filter dropped, a second plot's slider filters the
+  table the first plot draws too (the md's Pick Up / Apply step 9), and closing the viewer releases
   its contribution.
   The sliders are revealed on `mouseenter`, so every drag step puts the pointer over the plot first
   and takes the handle's rectangle from the `range max handle <col>` area the plot then reports —
@@ -112,6 +113,24 @@ Feature: PC plot in-chart range filter
     Then histogram viewer should be absent
     When user picks "Reset View" from the context menu of pc plot viewer
     Then all rows should pass the filter
+    And no errors should have been logged
+
+  Scenario: The slider of a second plot filters the table both plots draw
+    Given user adds a pc plot viewer
+    When user sets "Column Names" property of second pc plot viewer to "AGE, HEIGHT, WEIGHT"
+    Then the open tableview should have 2 pc plot viewers
+    And all rows should pass the filter
+    When user hovers over second pc plot viewer
+    And user drags the max handle of the "AGE" range slider of second pc plot viewer by 120 pixels
+    Then fewer than 1000 rows should pass the filter
+    And the "filtering" reading of second pc plot viewer should be "true"
+    And the "filtering" reading of first pc plot viewer should be "false"
+    And the "rows shown" and "lines drawn" readings of first pc plot viewer should be the same
+    And the "rows shown" reading of first pc plot viewer should be between 1 and 999
+    When user clicks on close icon of second pc plot viewer
+    Then the open tableview should have 1 pc plot viewer
+    And all rows should pass the filter
+    And pc plot viewer should show 1000 rows
     And no errors should have been logged
 
   Scenario: Closing the plot releases the filter it contributed

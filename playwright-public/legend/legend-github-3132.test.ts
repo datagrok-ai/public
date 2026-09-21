@@ -1,11 +1,14 @@
 /* ---
-sub_features_covered: [legend.allow-item-coloring, legend.item.color-picker]
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
 --- */
 // github-3132: each legend color change persists independently; changing B must not reset A.
 
-import {test, expect} from '@playwright/test';
+import {localTest as test, expect} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
+import {addLegendViewers} from './legend-setup';
+
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
 
 test.use(specTestOptions);
 
@@ -14,8 +17,8 @@ test('github-3132: sequential legend color changes persist independently', async
   stepErrors.length = 0;
 
   await loginToDatagrok(page);
-  await v.openTable(page);
-  await v.addLegendViewers(page, {column: 'Stereo Category', viewers: ['Histogram', 'Scatter plot']});
+  await v.openTable(page, {path: SPGI_100});
+  await addLegendViewers(page, {column: 'Stereo Category', viewers: ['Histogram', 'Scatter plot']});
 
   await softStep('Step 3: change R_ONE to red via legend picker', async () => {
     await v.changeLegendItemColor(page, {

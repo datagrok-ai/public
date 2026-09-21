@@ -98,15 +98,22 @@ jobs:
             docusaurus
             help
             packages
+            libraries
             js-api
+            tools
+            build-config
             python-api
+            pnpm-workspace.yaml
+            pnpm-lock.yaml
+            package.json
+            turbo.json
+            .npmrc
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            docusaurus/package-lock.json
-            js-api/package-lock.json
+          cache-dependency-path: docusaurus/package-lock.json
       - name: Cache Docusaurus
         uses: actions/cache@v4
         if: github.ref == 'refs/heads/master'
@@ -123,9 +130,12 @@ jobs:
         run: npm install
         working-directory: ./docusaurus
       - name: Install js-api dependencies
-        run: npm install
-        working-directory: ./js-api
-      - run: npm run lint > help/_lint-check-report.md 2>&1
+        env:
+          SHARP_IGNORE_GLOBAL_LIBVIPS: 1
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm turbo run build --filter='datagrok-api^...'
+      - run: docusaurus/node_modules/.bin/markdownlint-cli2 "help/**/*.md" "help/**/*.mdx" > help/_lint-check-report.md 2>&1
         continue-on-error: true
         if: inputs.force == 'no' && needs.lint.outputs.result != 'success'
       - name: Build Docusaurus website

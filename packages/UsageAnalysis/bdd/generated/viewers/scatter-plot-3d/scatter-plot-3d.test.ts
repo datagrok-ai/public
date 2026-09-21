@@ -34,15 +34,15 @@ test.describe("3D scatter plot", () => {
       await session.step(19, "Then X column input in 3d scatter plot viewer should contain text \"AGE\"", () => shouldContainText(page, el("X column input in 3d scatter plot viewer"), "AGE"));
       await session.step(20, "And Y column input in 3d scatter plot viewer should contain text \"HEIGHT\"", () => shouldContainText(page, el("Y column input in 3d scatter plot viewer"), "HEIGHT"));
       await session.step(21, "And Z column input in 3d scatter plot viewer should contain text \"WEIGHT\"", () => shouldContainText(page, el("Z column input in 3d scatter plot viewer"), "WEIGHT"));
-      await session.step(22, "And properties of 3d scatter plot viewer should be:", () => propertiesShouldBe(page, el("3d scatter plot viewer"), [["X","AGE"],["Y","HEIGHT"],["Z","WEIGHT"]]));
+      await session.step(22, "And properties of 3d scatter plot viewer should be:", () => propertiesShouldBe(page, el("3d scatter plot viewer"), [["X","AGE"],["Y","HEIGHT"],["Z","WEIGHT"]]), [["X","AGE"],["Y","HEIGHT"],["Z","WEIGHT"]]);
       await session.step(26, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Reassigning X and Z moves the selectors and redraws the scene", async () => {
-      await session.step(29, "When user sets properties of 3d scatter plot viewer:", () => setProperties(page, el("3d scatter plot viewer"), [["X","WEIGHT"],["Z","AGE"]]));
+      await session.step(29, "When user sets properties of 3d scatter plot viewer:", () => setProperties(page, el("3d scatter plot viewer"), [["X","WEIGHT"],["Z","AGE"]]), [["X","WEIGHT"],["Z","AGE"]]);
       await session.step(32, "Then X column input in 3d scatter plot viewer should contain text \"WEIGHT\"", () => shouldContainText(page, el("X column input in 3d scatter plot viewer"), "WEIGHT"));
       await session.step(33, "And Z column input in 3d scatter plot viewer should contain text \"AGE\"", () => shouldContainText(page, el("Z column input in 3d scatter plot viewer"), "AGE"));
       await session.step(34, "And the \"scene signature\" reading of 3d scatter plot viewer should differ from before", () => readingDiffers(page, "scene signature", el("3d scatter plot viewer")));
-      await session.step(35, "When user sets properties of 3d scatter plot viewer:", () => setProperties(page, el("3d scatter plot viewer"), [["X","AGE"],["Z","WEIGHT"]]));
+      await session.step(35, "When user sets properties of 3d scatter plot viewer:", () => setProperties(page, el("3d scatter plot viewer"), [["X","AGE"],["Z","WEIGHT"]]), [["X","AGE"],["Z","WEIGHT"]]);
       await session.step(38, "Then the \"scene signature\" reading of 3d scatter plot viewer should differ from before", () => readingDiffers(page, "scene signature", el("3d scatter plot viewer")));
       await session.step(39, "And no errors should have been logged", () => noErrors(page));
     });
@@ -137,7 +137,7 @@ test.describe("3D scatter plot", () => {
       await session.step(129, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A hover on a bar chart highlights the matching points", async () => {
-      await session.step(132, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","SEX"]]));
+      await session.step(132, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","SEX"]]), [["Split","SEX"]]);
       await session.step(134, "Then bar chart viewer should have a \"bar F\" area", () => hasArea(page, el("bar chart viewer"), "bar F"));
       await session.step(135, "And \"Show Mouse Over Row Group\" property of 3d scatter plot viewer should be \"true\"", () => propertyShouldBe(page, "Show Mouse Over Row Group", el("3d scatter plot viewer"), "true"));
       await session.step(136, "And the \"highlighted rows\" reading of 3d scatter plot viewer should be 0", () => readingIs(page, "highlighted rows", el("3d scatter plot viewer"), 0));
@@ -156,13 +156,13 @@ test.describe("3D scatter plot", () => {
       await session.step(149, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Legend Position docks the legend on the side it names", async () => {
-      await session.step(152, "When user sets properties of 3d scatter plot viewer:", () => setProperties(page, el("3d scatter plot viewer"), [["Color","SEX"],["Legend Visibility","Always"]]));
+      await session.step(152, "When user sets properties of 3d scatter plot viewer:", () => setProperties(page, el("3d scatter plot viewer"), [["Color","SEX"],["Legend Visibility","Always"]]), [["Color","SEX"],["Legend Visibility","Always"]]);
       await session.step(155, "Then legend of 3d scatter plot viewer should have 2 items", () => shouldHaveItems(page, el("legend of 3d scatter plot viewer"), 2));
       await session.step(156, "When user sets \"Legend Position\" property of 3d scatter plot viewer to \"Left\"", () => setProperty(page, "Legend Position", el("3d scatter plot viewer"), "Left"));
       await session.step(157, "Then the legend of 3d scatter plot viewer should be on the left", () => legendSide(page, el("3d scatter plot viewer"), "left"));
       await session.step(158, "When user sets \"Legend Position\" property of 3d scatter plot viewer to \"Right\"", () => setProperty(page, "Legend Position", el("3d scatter plot viewer"), "Right"));
       await session.step(159, "Then the legend of 3d scatter plot viewer should be on the right", () => legendSide(page, el("3d scatter plot viewer"), "right"));
-      await session.step(160, "When user sets properties of 3d scatter plot viewer:", () => setProperties(page, el("3d scatter plot viewer"), [["Legend Position","Auto"],["Legend Visibility","Auto"],["Color",""]]));
+      await session.step(160, "When user sets properties of 3d scatter plot viewer:", () => setProperties(page, el("3d scatter plot viewer"), [["Legend Position","Auto"],["Legend Visibility","Auto"],["Color",""]]), [["Legend Position","Auto"],["Legend Visibility","Auto"],["Color",""]]);
       await session.step(164, "Then legend of 3d scatter plot viewer should be hidden", () => shouldBe(page, el("legend of 3d scatter plot viewer"), "hidden"));
       await session.step(165, "And no errors should have been logged", () => noErrors(page));
     });

@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.detector, bio.rendering, bio.search.diversity, bio.search.diversity.top-menu, bio.viewers.diversity-search]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -145,7 +143,6 @@ test('Bio Diversity Search docks viewer + re-runs diversity selection on fresh d
       (window as any).__scenario1DfName = d.dfName;
     }, {indices: dockProbe.subsetIndices, dfId: dockProbe.dfId, dfName: dockProbe.dfName});
   });
-  // Scenario 2 — Reopening with a fresh dataset re-runs diversity selection.
   await softStep('Scenario 2.1: close the Diversity Search viewer', async () => {
     await page.evaluate(() => {
       const viewers = Array.from((grok.shell.tv as any).viewers) as any[];

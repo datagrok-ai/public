@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.transform.helm-to-mol, bio.transform.molecules-to-helm, bio.transform.to-atomic-level, bio.transform.to-atomic-level.action, bio.transform.to-atomic-level.api, bio.transform.to-atomic-level.single]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -9,7 +7,7 @@ const datasets = [
   {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv', units: 'helm'},
   {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv', units: 'fasta'},
 ];
-// GROK-15176: scan V3000 atom lines for heavy atoms illegally flagged MASS=1.
+
 function heavyAtomIsotopeFlags(mol: string): string[] {
   if (!mol) return [];
   return mol.split(/\r?\n/)
@@ -53,7 +51,7 @@ for (const ds of datasets) {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (let i = 0; i < 15; i++) {
         for (const fn of probes) {
-          try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+          try { await (grok as any).functions.call(fn, {}); return; } catch {  }
         }
         await new Promise((r) => setTimeout(r, 200));
       }
@@ -111,7 +109,6 @@ for (const ds of datasets) {
         () => document.querySelectorAll('[name="dialog-To-Atomic-Level"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-    // Scenario 2 — Column context-panel "To Atomic Level" action runs the same conversion.
     await softStep(`${ds.name}: Context Panel column-action "To Atomic Level" produces a molblock column`, async () => {
       const beforeMolCount: number = await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;
@@ -243,7 +240,7 @@ for (const ds of datasets) {
         () => document.querySelectorAll('[name="dialog-Molecules-to-HELM"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
-    // Scenario 5 — GROK-15176: to-atomic-level must not flag heavy atoms with MASS=1 (breaks PubChem standardization).
+
     await softStep(`${ds.name}: API wrappers seq2atomic + toAtomicLevelSingleSeq produce V3K molfiles (GROK-15176 isotope guard)`, async () => {
       const out: {molLinear: string | null, molNonLinear: string | null, linearErr: string | null, nonLinearErr: string | null} =
         await page.evaluate(async () => {
@@ -273,7 +270,7 @@ for (const ds of datasets) {
       expect(out.molNonLinear!).toMatch(/V3000/);
       expect(out.molLinear!).toMatch(/M\s+V30\s+BEGIN\s+CTAB/);
       expect(out.molNonLinear!).toMatch(/M\s+V30\s+BEGIN\s+CTAB/);
-      // GROK-15176 invariant: no heavy atom carries MASS=1.
+
       const offendersLinear = heavyAtomIsotopeFlags(out.molLinear!);
       const offendersNonLinear = heavyAtomIsotopeFlags(out.molNonLinear!);
       expect(offendersLinear, `GROK-15176 regression on linear wrapper: ${offendersLinear.length} heavy-atom MASS=1 flag(s). Offending atom lines:\n${offendersLinear.join('\n')}`).toEqual([]);

@@ -1,9 +1,11 @@
 @journey @viewers @realizes:viewers.box-plot
 Feature: Box plot property surface
   The box plot's property surface: context menus as paths to properties, the statistics and
-  group-comparison hit regions, auto layout and resize stability, the Show Markers gate, whisker
+  group-comparison hit regions, auto layout and resize stability (shrunk under Auto Layout the viewer
+  drops the Marker Color selector, both axes and the statistics strip, and gets them back), the Show Markers gate, whisker
   and control-band style, controls visibility, axis font, date category mapping, the custom row
-  tooltip, table switching, coloring, and the double-click view reset (the title and the
+  tooltip (hidden from the context menu's Tooltip group, and an edited one through a layout applied
+  after the viewer was closed), table switching, coloring, and the double-click view reset (the title and the
   description are every viewer's, in viewer-chrome.feature).
   Selection, persistence, filtering, statistics and group comparison have features of their own.
   One journey: demog-1000 (a stratified 1000-row demog: one marker per row per paint) with a box
@@ -65,11 +67,20 @@ Feature: Box plot property surface
     Given user sets "Auto Layout" property of box plot viewer to "true"
     When user hovers over box plot viewer
     Then "Marker Color" column input in box plot viewer should be visible
+    And box plot viewer should have a "x axis" area
+    And box plot viewer should have a "y axis" area
+    And box plot viewer should have a "stats" area
     When user resizes box plot viewer to 170 by 150
     Then "Marker Color" column input in box plot viewer should be hidden
+    And box plot viewer should not have a "x axis" area
+    And box plot viewer should not have a "y axis" area
+    And box plot viewer should not have a "stats" area
     When user restores the size of box plot viewer
     And user hovers over box plot viewer
     Then "Marker Color" column input in box plot viewer should be visible
+    And box plot viewer should have a "x axis" area
+    And box plot viewer should have a "y axis" area
+    And box plot viewer should have a "stats" area
     When user sets "Marker Color Column" property of box plot viewer to "SEX"
     And user resizes box plot viewer to 120 wide
     And user restores the size of box plot viewer
@@ -178,6 +189,45 @@ Feature: Box plot property surface
     And the tooltip should show some columns
     And the tooltip should not show columns "AGE, SEX, WEIGHT"
     When user moves the pointer away from box plot viewer
+
+  Scenario: The Tooltip menu hides the tooltip, and an edited tooltip comes back from a layout
+    When user hovers over the "marker" area of box plot viewer
+    Then tooltip should be visible
+    When user moves the pointer away from box plot viewer
+    And user picks "Tooltip > Hide" from the context menu of box plot viewer
+    And user opens the viewer menu of box plot viewer
+    Then the open menu should list "Tooltip > Show Custom"
+    And the open menu should not list "Tooltip > Hide"
+    When user closes the context menu
+    And user hovers over the "marker" area of box plot viewer
+    Then tooltip should be hidden
+    When user moves the pointer away from box plot viewer
+    And user picks "Tooltip > Show Custom" from the context menu of box plot viewer
+    And user hovers over the "marker" area of box plot viewer
+    Then tooltip should be visible
+    When user moves the pointer away from box plot viewer
+    And user sets properties of box plot viewer:
+      | Row Tooltip  | AGE\nSEX            |
+      | Show Tooltip | show custom tooltip |
+      | showLabels   | Always              |
+    And user saves the layout of the current table view to the server
+    And user clicks on close icon of box plot viewer
+    Then box plot viewer should be absent
+    When user loads the saved layout
+    Then box plot viewer should be visible
+    And properties of box plot viewer should be:
+      | Row Tooltip  | AGE\nSEX            |
+      | Show Tooltip | show custom tooltip |
+      | showLabels   | Always              |
+    When user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns "AGE, SEX"
+    And the tooltip should not show columns "WEIGHT"
+    When user moves the pointer away from box plot viewer
+    And user sets properties of box plot viewer:
+      | Show Tooltip | inherit from table |
+      | Row Tooltip  |                    |
+      | showLabels   | Auto               |
+    Then no errors should have been logged
 
   Scenario: Table switching resets Category 2
     Given user opens spgi dataset

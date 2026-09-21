@@ -8,6 +8,7 @@ import type {Locator, Page} from '@playwright/test';
 import {contextFirst, describeNoun, NounRef, parseNoun} from '../nouns.js';
 import type {KindEntry} from '../registry.js';
 import {contextOf, ElementRef} from './args.js';
+import * as guide from './guide.js';
 
 export {describeNoun, parseNoun};
 
@@ -76,18 +77,21 @@ export function currentObject(page: Page): Promise<string> {
 
 export async function locate(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
   const ref = refOf(page, target);
-  const loc = await locateRef(page, ref, within);
-  return loc.describe(describeNoun(ref));
+  const loc = (await locateRef(page, ref, within)).describe(describeNoun(ref));
+  await guide.located(page, loc);
+  return loc;
 }
 
 /** The element a gesture or a state check acts on: the visible matches of the phrase (a Dart menu
  * keeps a zero-size mirror of every item under "Properties..."; a closed view leaves its viewers
  * behind). Several visible matches stay ambiguous — Playwright's strict mode reports them; an
- * ordinal names its element as counted, visible or not. No roundtrip of its own. */
+ * ordinal counts the visible ones too. No roundtrip of its own. */
 export async function locateActionable(page: Page, target: ElementRef | string, within?: Locator): Promise<Locator> {
   const ref = refOf(page, target);
   const loc = await locateRef(page, ref, within);
-  return (ref.ordinal === undefined ? loc.filter({visible: true}) : loc).describe(describeNoun(ref));
+  const actionable = (ref.ordinal === undefined ? loc.filter({visible: true}) : loc).describe(describeNoun(ref));
+  await guide.located(page, actionable);
+  return actionable;
 }
 
 export async function locateRef(page: Page, ref: NounRef, within?: Locator): Promise<Locator> {
@@ -105,6 +109,12 @@ export async function locateRef(page: Page, ref: NounRef, within?: Locator): Pro
       return pick(inRoot, ref);
   }
   let loc = await inBase(page, base, ref);
+  // a scope read while its container rebuilds can resolve to its label (a section's header before
+  // its pane is back): the target is then looked for in every candidate the scope has
+  if (scope && ref.scope!.ordinal === undefined && await loc.count() === 0 && await isKindLabel(scope, ref.scope!)) {
+    scope = (await candidates(page, await scopeBase(page, ref.scope!, within), ref.scope!)).reduce((a, b) => a.or(b));
+    loc = await inBase(page, scope, ref);
+  }
   // a scope that is not on the page has no owner edge to try — and `getAttribute` on it would
   // wait the whole action timeout for it to appear
   if (scope && await loc.count() === 0 && await scope.count() > 0) {
@@ -118,10 +128,13 @@ export async function locateRef(page: Page, ref: NounRef, within?: Locator): Pro
   return pick(loc, ref);
 }
 
+/** An ordinal counts the visible matches: the Home page keeps viewers of its own in the page,
+ * hidden, under a table view. */
 function pick(loc: Locator, ref: NounRef): Locator {
-  if (ref.ordinal === 'last')
-    return loc.last();
-  return ref.ordinal === undefined ? loc : loc.nth(ref.ordinal);
+  if (ref.ordinal === undefined)
+    return loc;
+  const shown = loc.filter({visible: true});
+  return ref.ordinal === 'last' ? shown.last() : shown.nth(ref.ordinal);
 }
 
 async function inBase(page: Page, base: Base, ref: NounRef): Promise<Locator> {
@@ -132,14 +145,41 @@ async function inBase(page: Page, base: Base, ref: NounRef): Promise<Locator> {
   }
   if (plan.type === 'part')
     return base.locator(plan.selector);
-  const candidates: Locator[] = [];
-  for (const split of [plan, ...plan.alternatives])
-    candidates.push(...(split.qualifier ? strategies(page, base, split.kind, split.qualifier) : [base.locator(split.kind.selector)]));
-  for (const c of candidates) {
+  const all = await candidates(page, base, ref);
+  for (const c of all) {
     if (await c.count() > 0)
       return c;
   }
-  return candidates.reduce((a, b) => a.or(b));
+  return all.reduce((a, b) => a.or(b));
+}
+
+async function candidates(page: Page, base: Base, ref: NounRef): Promise<Locator[]> {
+  const plan = ref.plan;
+  if (plan.type !== 'kind')
+    return [await inBase(page, base, ref)];
+  const out: Locator[] = [];
+  for (const split of [plan, ...plan.alternatives])
+    out.push(...(split.qualifier ? strategies(page, base, split.kind, split.qualifier) : [base.locator(split.kind.selector)]));
+  return out;
+}
+
+async function scopeBase(page: Page, scopeRef: NounRef, within?: Locator): Promise<Base> {
+  if (scopeRef.scope)
+    return locateRef(page, scopeRef.scope, within);
+  if (!within && contextFirst(scopeRef)) {
+    const root = page.locator(scopeRef.context!.selector);
+    if (await root.count() > 0)
+      return root;
+  }
+  return within ?? page;
+}
+
+async function isKindLabel(scope: Locator, scopeRef: NounRef): Promise<boolean> {
+  const label = scopeRef.plan.type === 'kind' ? scopeRef.plan.kind.labelSelector : undefined;
+  if (!label || await scope.count() === 0)
+    return false;
+  const selector = label.split(',').map((s) => s.trim().replace(/^:scope\s*>\s*/, '')).join(', ');
+  return scope.first().evaluate((e, s) => e.matches(s), selector).catch(() => false);
 }
 
 /** The element's whole text is the qualifier, allowing decoration around it (an icon glyph, a

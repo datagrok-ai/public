@@ -30,6 +30,9 @@ created package, you have to install the dependencies. Run this from the `TextSt
 npm install
 ```
 
+Inside the public repository, skip this step. One install at the repository root covers every package.
+See [Build system](../../dev-process/build-system.md).
+
 :::note
 
 The internal name of the package should follow **PascalCase** (e.g., `TextStats`), while the friendly name should use **Title Case** (e.g., `Text Stats`). Additionally, all publicly available plugins must have custom icons without exception.
@@ -64,14 +67,16 @@ producing a `widget`, taking a `string` as an input.
 
 ## 3. Build
 
-Run webpack from the TextStats folder:
+Build from the TextStats folder. Inside the public repository, use
+[`grok build`](../../dev-process/build-system.md#build) instead, which also builds the libraries the package
+depends on:
 
 ```shell
 npm run build
 ```
 
-Note. The `build` script in `package.json` includes commands to process your package, e.g., `webpack`. You are not
-supposed to modify this script.
+Note. The `build` script in `package.json` is `grok build`: it bundles the package with rspack,
+generates the function metadata files and runs `grok check`. You are not supposed to modify this script.
 
 ## 4. Publish
 

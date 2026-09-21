@@ -26,6 +26,7 @@
     "bin",
     "dist",
     "bindings",
+    "tool",
     "README.md",
     "KNOWN_FAILURES.md"
   ],
@@ -37,12 +38,12 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "grok tsc -p tsconfig.build.json",
+    "lint": "eslint --ext .ts,.tsx src",
     "compile": "tsx src/cli.ts compile",
     "check": "tsx src/cli.ts compile --check",
-    "lint": "tsx src/cli.ts lint",
     "list-steps": "tsx src/cli.ts list-steps",
-    "typecheck": "tsc --noEmit -p .",
+    "typecheck": "grok tsc --noEmit -p .",
     "test:unit": "tsx --test tests/*.test.ts",
     "test": "npm run build && npm run check && npm run test:unit",
     "test:suite": "npm run build && node bin/grok-bdd.js run",
@@ -52,15 +53,13 @@
     "@cucumber/cucumber-expressions": "^18.0.1",
     "@cucumber/gherkin": "^42.0.1",
     "@cucumber/messages": "^34.2.1",
-    "@datagrok-libraries/test": "^1.4.0",
+    "@datagrok-libraries/test": "workspace:^",
     "tsx": "^4.19.0"
   },
   "peerDependencies": {
     "@playwright/test": ">=1.45.0"
   },
   "devDependencies": {
-    "@playwright/test": "~1.61.0",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.5.4"
+    "@playwright/test": "^1.62.1"
   }
 }

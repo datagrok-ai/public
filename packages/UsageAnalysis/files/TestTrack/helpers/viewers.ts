@@ -17,8 +17,13 @@ export interface OpenTableOptions {
   semTypeTimeoutMs?: number;
 }
 
+// The default stays the full SPGI the legend specs were written against: they call openTable(page)
+// with no path and assert on its category counts, so a smaller default silently rewrites them.
+// Specs that only need a few rows ask for spgi-100.csv themselves.
+const DEFAULT_TABLE = 'System:DemoFiles/chem/SPGI.csv';
+
 export function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
-  return phase('openTable ' + (options?.path ?? 'spgi-100'), () => openTableImpl(page, options));
+  return phase('openTable ' + (options?.path ?? DEFAULT_TABLE), () => openTableImpl(page, options));
 }
 
 async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<void> {
@@ -27,7 +32,7 @@ async function openTableImpl(page: Page, options?: OpenTableOptions): Promise<vo
   // which is what this helper always did.
   await installCsvBridge(page);
   await installEventWaits(page);
-  const p = options?.path ?? 'System:AppData/Chem/tests/spgi-100.csv';
+  const p = options?.path ?? DEFAULT_TABLE;
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
   // demog has no column any detector types, so the detected event never fires and every
   // cap set for it (3-5s in most specs) is paid in full: 151 opens, 94s in the final Viewers run
@@ -1375,13 +1380,17 @@ export async function setViewerProps(
     const immediate = h.immediateRendering === true;
     const out: any[] = [];
     for (var step of steps) {
-
-      const settled = new Promise<void>((resolve) => {
-        let sub: any = null;
-        try { sub = h.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); }
-        catch (_) {  }
-        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, step.wait ?? delayMs);
-      });
+      // A step that names its own wait gets all of it: the first repaint is not the end of the
+      // change — a pie re-decides its Auto legend a beat after it — and cutting the wait short at
+      // that event read the stale placement. Only the default wait ends at the render event.
+      const settled = step.wait !== undefined ?
+        new Promise<void>((resolve) => setTimeout(resolve, step.wait as number)) :
+        new Promise<void>((resolve) => {
+          let sub: any = null;
+          try { sub = h.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); }
+          catch (_) {  }
+          setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, delayMs);
+        });
       for (var k of Object.keys(step.set)) h.props[k] = step.set[k];
       // an immediately-rendering viewer repaints on a zero-delay timer armed during the set, so one
       // macrotask later the render event above has already resolved `settled`

@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import * as rxjs from 'rxjs';
+import {debounce as debounceEvent, tap} from 'rxjs/operators';
 import * as C from '../utils/constants';
 import {COLUMN_NAME} from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
@@ -28,7 +29,6 @@ import {
   debounce,
   extractColInfo,
   getTotalAggColumns,
-  highlightMonomerPosition,
   initSelection,
   isApplicableDataframe,
   isSelectionEmpty,
@@ -45,6 +45,7 @@ import {PeptideUtils} from '../peptideUtils';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {getSeparator} from '../utils/misc';
+import {sarViewerStatus} from './sar-viewer-status';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -103,6 +104,7 @@ export interface ISARViewer {
 /** Abstract class for MonomerPosition and MostPotentResidues viewers. */
 
 export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
+  abstract get name(): string;
   keyPressed: boolean = false;
   sequenceColumnName: string;
   activityColumnName: string;
@@ -158,7 +160,12 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
     this.mutationCliffsDebouncer = debounce(
       async (activityArray: type.RawData, monomerInfoArray: type.RawColumn[], options?: MutationCliffsOptions) => {
-        return await findMutations(activityArray, monomerInfoArray, options);
+        this._cliffsRunning++;
+        try {
+          return await findMutations(activityArray, monomerInfoArray, options);
+        } finally {
+          this._cliffsRunning--;
+        }
       });
 
     // this.targetCategoryInput = ui.input.choice('Category', {value: null, items: [], nullable: true,
@@ -184,13 +191,72 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   }
 
   _viewerGrid: DG.Grid | null = null;
+  private _gridSubscriptions: rxjs.Subscription[] = [];
+  protected _onRendered = new rxjs.Subject<void>();
+  private _cliffsGeneration = 0;
+  private _cliffsPending = false;
+  private _cliffsRunning = 0;
+  private _filterPending = false;
+  private _cellPending = false;
+  private _repaintTimer: ReturnType<typeof setTimeout> | null = null;
+
+  get onRendered(): rxjs.Observable<void> { return this._onRendered; }
+
+  get isRenderPending(): boolean {
+    return this._cliffsPending || this._cliffsRunning > 0 || this._filterPending || this._cellPending || this._repaintTimer !== null ||
+      (this._viewerGrid?.isRenderPending ?? false);
+  }
+
+  get immediateRendering(): boolean { return super.immediateRendering; }
+
+  set immediateRendering(value: boolean) {
+    super.immediateRendering = value;
+    if (this._viewerGrid)
+      this._viewerGrid.immediateRendering = value;
+  }
+
+  getWidgetStatus(): DG.IWidgetStatus { return sarViewerStatus(this); }
+
+  protected onCurrentGridCellChanged(grid: DG.Grid, action: (cell: DG.GridCell) => void): void {
+    this._gridSubscriptions.push(grid.onCurrentCellChanged.pipe(
+      tap(() => this._cellPending = true),
+      debounceEvent(() => rxjs.timer(this.immediateRendering ? 0 : 500)),
+    ).subscribe((cell) => {
+      try {
+        action(cell);
+      } finally {
+        this._cellPending = false;
+      }
+    }));
+  }
+
+  protected repaintGridLater(grid: DG.Grid): void {
+    if (this._repaintTimer !== null)
+      clearTimeout(this._repaintTimer);
+    this._repaintTimer = setTimeout(() => {
+      this._repaintTimer = null;
+      grid.invalidate();
+    }, this.immediateRendering ? 0 : 300);
+  }
 
   /**
    * Returns SARViewer grid. Creates a new one if it is null.
    * @return - SARViewer grid.
    */
   get viewerGrid(): DG.Grid {
-    this._viewerGrid ??= this.createViewerGrid();
+    if (!this._viewerGrid) {
+      for (const sub of this._gridSubscriptions)
+        sub.unsubscribe();
+      this._gridSubscriptions = [];
+      this._cellPending = false;
+      if (this._repaintTimer !== null)
+        clearTimeout(this._repaintTimer);
+      this._repaintTimer = null;
+      this._viewerGrid = this.createViewerGrid();
+      this._viewerGrid.root.setAttribute('name', `${this.name.replace(/ /g, '-')}-grid`);
+      this._viewerGrid.immediateRendering = this.immediateRendering;
+      this._gridSubscriptions.push(this._viewerGrid.onAfterDrawContent.subscribe(() => this._onRendered.next()));
+    }
     return this._viewerGrid;
   }
 
@@ -350,7 +416,8 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    */
   set mutationCliffs(mc: type.MutationCliffs) {
     this._mutationCliffs = mc;
-    this.viewerGrid.invalidate();
+    if (!this.isDetached)
+      this.viewerGrid.invalidate();
   }
 
   get cliffStats(): type.MutationCliffStats | null {
@@ -364,7 +431,8 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   }
   set cliffStats(stats: type.MutationCliffStats | null) {
     this._mutationCliffStats = stats;
-    this.viewerGrid.invalidate();
+    if (!this.isDetached)
+      this.viewerGrid.invalidate();
   }
 
   _mutationCliffsSelection: type.Selection | null = null;
@@ -652,9 +720,11 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     diffCol.setTag(DG.TAGS.CELL_RENDERER, 'MacromoleculeDifference');
     diffCol.temp[SeqTemps.notationProvider] = alignedSeqCol.temp[SeqTemps.notationProvider];
 
-    const act1Col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `Seq 1 ${this.activityColumnName}`, act1Array);
-    const act2Col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `Seq 2 ${this.activityColumnName}`, act2Array);
-    const deltaCol = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Delta', deltaArray);
+    // fromList stores floats in Float32Array by default, rounding the original IC50 values.
+    const doubles = (values: (number | null)[]): Float64Array => Float64Array.from(values, (value) => value ?? DG.FLOAT_NULL);
+    const act1Col = DG.Column.fromFloat64Array(`Seq 1 ${this.activityColumnName}`, doubles(act1Array));
+    const act2Col = DG.Column.fromFloat64Array(`Seq 2 ${this.activityColumnName}`, doubles(act2Array));
+    const deltaCol = DG.Column.fromFloat64Array('Delta', doubles(deltaArray));
 
     const columns: DG.Column[] = [seq1Col, seq2Col, diffCol, act1Col, act2Col, deltaCol];
 
@@ -706,6 +776,12 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   /** Removes all the active subscriptions. */
   detach(): void {
     this.subs.forEach((sub) => sub.unsubscribe());
+    for (const sub of this._gridSubscriptions)
+      sub.unsubscribe();
+    if (this._repaintTimer !== null)
+      clearTimeout(this._repaintTimer);
+    this._onRendered.complete();
+    super.detach();
   }
 
   protected _monomerMetaColumns: Set<string> = new Set();
@@ -748,7 +824,11 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
           }, {isChecked: (meta) => this._monomerMetaColumns.has(meta)});
         });
       }));
-      this.subs.push(DG.debounce(this.dataFrame.onFilterChanged, 300).subscribe(() => {
+      this.subs.push(this.dataFrame.onFilterChanged.pipe(
+        tap(() => this._filterPending = true),
+        debounceEvent(() => rxjs.timer(this.immediateRendering ? 0 : 300)),
+      ).subscribe(() => {
+        this._filterPending = false;
         if (this.dataSource === 'Filtered') {
           // this._monomerPositionStats = null;
           // this._invariantMapSelection = null;
@@ -797,20 +877,28 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    * @return - mutation cliffs.
    */
   async calculateMutationCliffs(): Promise<{cliffs: MutationCliffs, cliffStats: type.MutationCliffStats}> {
-    const scaledActivityCol: DG.Column<number> = this.dataFrame.getCol(this.activityColumnName);
-    //TODO: set categories ordering the same to share compare indexes instead of strings
-    const monomerCols: type.RawColumn[] = this.positionColumns.map(extractColInfo);
-    const filter = (this.dataSource === 'Filtered' && this.dataFrame.filter.anyFalse) ?
-      this.dataFrame.filter : null;
+    const generation = ++this._cliffsGeneration;
+    this._cliffsPending = true;
+    try {
+      const scaledActivityCol: DG.Column<number> = this.dataFrame.getCol(this.activityColumnName);
+      //TODO: set categories ordering the same to share compare indexes instead of strings
+      const monomerCols: type.RawColumn[] = this.positionColumns.map(extractColInfo);
+      const filter = (this.dataSource === 'Filtered' && this.dataFrame.filter.anyFalse) ?
+        this.dataFrame.filter : null;
 
-    const options: MutationCliffsOptions = {
-      maxMutations: this.maxMutations, minActivityDelta: this.minActivityDelta, filter: (filter?.getBuffer() as unknown as Uint32Array) ?? undefined,
-    };
-    const activityRawData = scaledActivityCol.getRawData();
+      const options: MutationCliffsOptions = {
+        maxMutations: this.maxMutations, minActivityDelta: this.minActivityDelta, filter: (filter?.getBuffer() as unknown as Uint32Array) ?? undefined,
+      };
+      const activityRawData = scaledActivityCol.getRawData();
 
-    const mutRes = await this.mutationCliffsDebouncer(activityRawData, monomerCols, options);
-    const mutStatistics = calculateCliffsStatistics(mutRes, activityRawData);
-    return {cliffs: mutRes, cliffStats: mutStatistics};
+      const mutRes = await this.mutationCliffsDebouncer(activityRawData, monomerCols, options);
+      const mutStatistics = calculateCliffsStatistics(mutRes, activityRawData);
+      return {cliffs: mutRes, cliffStats: mutStatistics};
+    } finally {
+      // A superseded debounce never resolves, so only the newest request owns this flag.
+      if (generation === this._cliffsGeneration)
+        this._cliffsPending = false;
+    }
   }
 }
 
@@ -1097,8 +1185,7 @@ export class MonomerPosition extends SARViewer {
         return true;
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
-      highlightMonomerPosition(monomerPosition, this.dataFrame, this.monomerPositionStats);
-      this.model.isHighlighting = true;
+      this.model.highlight(monomerPosition, this.monomerPositionStats);
       const columnEntries = this.getTotalViewerAggColumns();
       const postfixes: StringDictionary = {};
       const additionalStats: StringDictionary = {};
@@ -1128,7 +1215,7 @@ export class MonomerPosition extends SARViewer {
       });
     });
     grid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
-    DG.debounce(grid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
+    this.onCurrentGridCellChanged(grid, (gridCell: DG.GridCell) => {
       try {
         if (!gridCell || !gridCell.dart || !gridCell?.cell?.column?.name || this._monomerMetaColumns.has(gridCell.cell.column.name) || gridCell.cell.column.name == C.COLUMNS_NAMES.TOTAL_COUNT ||!gridCell.isTableCell)
           return;
@@ -1177,7 +1264,7 @@ export class MonomerPosition extends SARViewer {
         }
 
         grid.invalidate();
-        setTimeout(() => grid?.invalidate(), 300);
+        this.repaintGridLater(grid);
       } catch (e) {
         console.error(e);
       } finally {
@@ -1195,12 +1282,12 @@ export class MonomerPosition extends SARViewer {
         return;
 
 
-      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.ctrlKey && ev.shiftKey)) {
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && (ev.ctrlKey || ev.metaKey) && ev.shiftKey)) {
         if (this.mode === SELECTION_MODE.INVARIANT_MAP)
           this._invariantMapSelection = initSelection(this.positionColumns);
         else
           this._mutationCliffsSelection = initSelection(this.positionColumns);
-      } else if (ev.code === 'KeyA' && ev.ctrlKey) {
+      } else if (ev.code === 'KeyA' && (ev.ctrlKey || ev.metaKey)) {
         const positions = Object.keys(this.monomerPositionStats).filter((pos) => pos !== 'general');
         for (const position of positions) {
           const monomers = Object.keys(this.monomerPositionStats[position]!)
@@ -1234,7 +1321,7 @@ export class MonomerPosition extends SARViewer {
 
       const monomerPosition = this.getMonomerPosition(gridCell);
       if (this.mode === SELECTION_MODE.INVARIANT_MAP) {
-        this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+        this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: (ev.ctrlKey || ev.metaKey)});
         if (isSelectionEmpty(this.invariantMapSelection))
           monomerPositionDf.currentRowIdx = -1;
       } else {
@@ -1242,7 +1329,7 @@ export class MonomerPosition extends SARViewer {
           ?.get(monomerPosition.positionOrClusterType)?.size;
         if (hasMutationCliffs) {
           this.modifyMutationCliffsSelection(monomerPosition,
-            {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+            {shiftPressed: ev.shiftKey, ctrlPressed: (ev.ctrlKey || ev.metaKey)});
         }
       }
       grid.invalidate();
@@ -1287,6 +1374,7 @@ export class MonomerPosition extends SARViewer {
     $(this.root).empty();
     if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName) {
       this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
+      this._onRendered.next();
       return;
     }
     // Backward compatability with 1.16.0
@@ -1523,8 +1611,7 @@ export class MostPotentResidues extends SARViewer {
         return true;
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
-      highlightMonomerPosition(monomerPosition, this.dataFrame, this.monomerPositionStats);
-      this.model.isHighlighting = true;
+      this.model.highlight(monomerPosition, this.monomerPositionStats);
 
       if (gridCell.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
         monomerPosition.positionOrClusterType = C.COLUMNS_NAMES.MONOMER;
@@ -1541,7 +1628,7 @@ export class MostPotentResidues extends SARViewer {
           aggrColValues: aggrValues,
         });
     });
-    DG.debounce(grid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
+    this.onCurrentGridCellChanged(grid, (gridCell: DG.GridCell) => {
       try {
         if (gridCell.gridRow === -1) {
           this._mutationCliffsSelection = initSelection(this.positionColumns);
@@ -1581,9 +1668,9 @@ export class MostPotentResidues extends SARViewer {
         return;
 
 
-      if (ev.key === 'Escape' || (ev.code === 'KeyA' && ev.ctrlKey && ev.shiftKey))
+      if (ev.key === 'Escape' || (ev.code === 'KeyA' && (ev.ctrlKey || ev.metaKey) && ev.shiftKey))
         this._mutationCliffsSelection = initSelection(this.positionColumns);
-      else if (ev.code === 'KeyA' && ev.ctrlKey) {
+      else if (ev.code === 'KeyA' && (ev.ctrlKey || ev.metaKey)) {
         for (let rowIdx = 0; rowIdx < mprDf.rowCount; ++rowIdx) {
           const monomerPosition = this.getMonomerPosition(grid.cell('Diff', rowIdx));
           this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, false);
@@ -1609,7 +1696,7 @@ export class MostPotentResidues extends SARViewer {
         return;
 
 
-      this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+      this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: (ev.ctrlKey || ev.metaKey)});
       grid.invalidate();
     });
 
@@ -1648,6 +1735,7 @@ export class MostPotentResidues extends SARViewer {
     $(this.root).empty();
     if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName) {
       this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
+      this._onRendered.next();
       return;
     }
 

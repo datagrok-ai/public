@@ -1,0 +1,179 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "stockroom",
+  "version": "1.1.0",
+  "tables": {
+    "hazard_class": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Hazard Classes",
+      "description": "GHS hazard classes (Rev.10): the chapter number and name of each physical, health and environmental hazard class",
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "description": "GHS chapter, e.g. 2.6"},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "hazard_group": {"type": "string", "required": true, "choices": ["physical", "health", "environmental"], "friendlyName": "Group"}
+      }
+    },
+    "h_statement": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Hazard Statements",
+      "description": "GHS hazard statements (H2xx physical, H3xx health, H4xx environmental)",
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "isName": true, "searchable": true},
+        "text": {"type": "string", "required": true, "searchable": true},
+        "hazard_class_id": {"type": "ref", "ref": "hazard_class", "onDelete": "restrict", "friendlyName": "Hazard Class"},
+        "pictogram": {"type": "string", "choices": ["GHS01", "GHS02", "GHS03", "GHS04", "GHS05", "GHS06", "GHS07", "GHS08", "GHS09"], "description": "GHS pictogram the statement carries, when it carries one"}
+      },
+      "filters": [
+        {"column": "hazard_class_id.hazard_group", "label": "Group"},
+        {"column": "hazard_class_id.name", "label": "Hazard Class"},
+        {"column": "pictogram"}
+      ]
+    },
+    "p_statement": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Precautionary Statements",
+      "description": "GHS precautionary statements (P1xx general, P2xx prevention, P3xx response, P4xx storage, P5xx disposal)",
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "isName": true, "searchable": true},
+        "text": {"type": "string", "required": true, "searchable": true},
+        "kind": {"type": "string", "required": true, "choices": ["general", "prevention", "response", "storage", "disposal"]}
+      },
+      "filters": [{"column": "kind"}]
+    },
+    "substance": {
+      "securityMode": "table",
+      "businessKey": ["cas"],
+      "friendlyName": "Substances",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true, "isName": true, "searchable": true},
+        "cas": {"type": "string", "required": true, "unique": true, "searchable": true, "friendlyName": "CAS", "description": "CAS Registry Number"},
+        "smiles": {"type": "string", "semType": "Molecule", "friendlyName": "Structure"},
+        "molecular_formula": {"type": "string"},
+        "notes": {"type": "string", "editor": "textarea"}
+      },
+      "relations": {
+        "hazards": {"via": "substance_hazard", "target": "h_statement"}
+      },
+      "filters": [
+        {"column": "hazards.code", "label": "Hazard"},
+        {"column": "hazards.pictogram", "label": "Pictogram"}
+      ]
+    },
+    "substance_hazard": {
+      "securityMode": "master",
+      "delegate": "substance_id",
+      "businessKey": ["substance_id", "h_statement_id"],
+      "audit": false,
+      "columns": {
+        "substance_id": {"type": "ref", "ref": "substance", "onDelete": "cascade", "required": true},
+        "h_statement_id": {"type": "ref", "ref": "h_statement", "onDelete": "restrict", "required": true}
+      }
+    },
+    "location": {
+      "securityMode": "table",
+      "businessKey": ["site", "name"],
+      "friendlyName": "Locations",
+      "hierarchy": true,
+      "columns": {
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "kind": {"type": "string", "required": true, "choices": ["site", "building", "room", "cabinet"]},
+        "parent_id": {"type": "ref", "ref": "location", "onDelete": "setnull", "friendlyName": "Parent"},
+        "site": {"type": "string", "required": true, "description": "The site this location belongs to; what a container's location picker is narrowed by"}
+      },
+      "filters": [{"column": "site"}, {"column": "kind"}]
+    },
+    "vendor": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Vendors",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true, "isName": true, "searchable": true},
+        "website": {"type": "string"},
+        "contact_email": {"type": "string"},
+        "phone": {"type": "string"}
+      }
+    },
+    "container": {
+      "securityMode": "table",
+      "businessKey": ["label"],
+      "friendlyName": "Containers",
+      "columns": {
+        "label": {"type": "int", "autoNumber": {"start": 1000}, "description": "Barcode label; assigned by the engine"},
+        "substance_id": {"type": "ref", "ref": "substance", "onDelete": "restrict", "required": true, "friendlyName": "Substance"},
+        "lot": {"type": "string", "searchable": true},
+        "quantity": {"type": "float", "min": 0, "required": true},
+        "initial_quantity": {"type": "float", "min": 0, "required": true},
+        "unit": {"type": "string", "required": true, "choices": ["g", "kg", "mL", "L"]},
+        "received": {"type": "datetime"},
+        "expires": {"type": "datetime"},
+        "owner": {"type": "user"},
+        "site": {"type": "string", "required": true, "description": "Narrows the location picker to this site"},
+        "location_id": {"type": "ref", "ref": "location", "onDelete": "setnull", "filter": "site = $site", "friendlyName": "Location"}
+      },
+      "constraints": {
+        "dates": {"expr": "expires >= received", "message": "Expiry date is before the receipt date"},
+        "quantity": {"expr": "quantity <= initial_quantity", "message": "Quantity exceeds the initial quantity"}
+      },
+      "filters": [
+        {"column": "substance_id.name", "label": "Substance"},
+        {"column": "site"},
+        {"column": "location_id.name", "label": "Location"},
+        {"column": "unit"},
+        {"column": "owner"},
+        {"column": "expires", "type": "range"}
+      ]
+    },
+    "purchase_order": {
+      "securityMode": "table",
+      "businessKey": ["number"],
+      "friendlyName": "Purchase Orders",
+      "permissions": {"approve": {"description": "Approve a purchase order"}},
+      "columns": {
+        "number": {"type": "int", "autoNumber": true, "description": "Order number; assigned by the engine"},
+        "vendor_id": {"type": "ref", "ref": "vendor", "onDelete": "restrict", "required": true, "friendlyName": "Vendor"},
+        "status": {"type": "string", "required": true, "default": "draft", "choices": ["draft", "submitted", "approved", "received", "cancelled"]},
+        "ordered_on": {"type": "datetime"},
+        "notes": {"type": "string", "editor": "textarea"}
+      },
+      "filters": [{"column": "status"}, {"column": "vendor_id.name", "label": "Vendor"}]
+    },
+    "order_line": {
+      "securityMode": "master",
+      "delegate": "purchase_order_id",
+      "friendlyName": "Order Lines",
+      "columns": {
+        "purchase_order_id": {"type": "ref", "ref": "purchase_order", "onDelete": "cascade", "required": true, "friendlyName": "Order"},
+        "substance_id": {"type": "ref", "ref": "substance", "onDelete": "restrict", "required": true, "friendlyName": "Substance"},
+        "quantity": {"type": "float", "min": 0, "required": true},
+        "unit": {"type": "string", "required": true, "choices": ["g", "kg", "mL", "L"]},
+        "unit_price": {"type": "float", "min": 0}
+      }
+    },
+    "sds_document": {
+      "securityMode": "master",
+      "delegate": "substance_id",
+      "friendlyName": "Safety Data Sheets",
+      "columns": {
+        "substance_id": {"type": "ref", "ref": "substance", "onDelete": "cascade", "required": true, "friendlyName": "Substance"},
+        "file": {"type": "file", "friendlyName": "Document"},
+        "revision": {"type": "string", "required": true, "description": "The SDS revision as printed on the sheet"},
+        "language": {"type": "string", "required": true, "default": "en", "choices": ["en", "de", "fr", "es", "it", "ja", "zh"]}
+      }
+    },
+    "disposal": {
+      "securityMode": "table",
+      "friendlyName": "Disposals",
+      "permissions": {"approve": {"description": "Approve a disposal"}},
+      "columns": {
+        "container_id": {"type": "ref", "ref": "container", "onDelete": "restrict", "required": true, "friendlyName": "Container"},
+        "reason": {"type": "string", "required": true, "editor": "textarea"},
+        "approved_by": {"type": "user"},
+        "disposed_on": {"type": "datetime"}
+      },
+      "filters": [{"column": "approved_by"}, {"column": "disposed_on", "type": "range"}]
+    }
+  }
+}

@@ -12,10 +12,18 @@ export namespace funcs {
     return await grok.functions.call('DrugBank:InitDrugBank', {});
   }
 
+  /**
+   * @param {string} mol
+   *   semType: Molecule
+   */
   export async function drugBankSubstructureSearchPanel(mol: string ): Promise<any> {
     return await grok.functions.call('DrugBank:DrugBankSubstructureSearchPanel', { mol });
   }
 
+  /**
+   * @param {string} mol
+   *   semType: Molecule
+   */
   export async function drugBankSimilaritySearchPanel(mol: string ): Promise<any> {
     return await grok.functions.call('DrugBank:DrugBankSimilaritySearchPanel', { mol });
   }

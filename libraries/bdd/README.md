@@ -106,9 +106,14 @@ with its own trace; a `Background` runs before every scenario, as Gherkin says.
 
 Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{run}`. The suffix is
 unique per feature instance (including each worker and repeat) and stays the same across its
-scenarios. String arguments, element phrases, data tables and doc strings resolve it at runtime;
+scenarios. `{time}` is the feature instance's start in epoch milliseconds, for a name a login must
+accept (`[a-z0-9._-]`) and a reader can sort: the users a creation feature makes cannot be deleted,
+so they are named by it. String arguments, element phrases, data tables and doc strings resolve both
+at runtime;
 generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
-and fails the run if any callback fails.
+and fails the run if any callback fails; a run that was killed never gets there, so the server
+steps that make or clear a `{run}`- or `{time}`-named fixture, the project save included, also
+delete the ones of the same family left by any run older than an hour.
 
 **`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
 the scenarios run in order on the same shell state, each a soft step — a failing scenario is
@@ -117,9 +122,14 @@ property surface walked section by section, where re-opening the data and the vi
 scenario would cost more than the checks. Each scenario then puts back what it changed, and owns
 its error and balloon floors. `-g` selects the whole journey.
 
+**`@serial`** on the feature runs it one at a time with every other `@serial` feature, while the
+rest of the run stays parallel. Use it where features read what other features change at the same
+time — a fuzzy gallery search that brings up the fixtures other features create and delete.
+
 **`@known-failure`** on a scenario says the product has the defect it describes: its failure does
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
-to stay green.
+to stay green. Outside a journey the tag works on a scenario and on an outline's `Examples` block:
+the Background runs plainly, and only the scenario's own steps are the expected failure.
 
 The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
 removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
@@ -153,7 +163,7 @@ A phrase resolves, in this order, at every level:
 |--------------------------------------------|------------------------------------------------------------------|
 | `results`, `browse tab`                    | a registered element (or alias): the whole phrase wins over everything below |
 | `second item …`, `last row …`, `3rd input` | an ordinal among the matches                                     |
-| `save button in toolbar`                   | composition: `X in|inside|within|on|under Y` — X resolved inside Y (recursively) |
+| `save button in toolbar`                   | composition: `X in\|inside\|within\|on\|under Y` — X resolved inside Y (recursively) |
 | `label of name input`, `viewers section of toolbox` | `of` names a *part* — of a registered element, or of every element of a kind |
 | `sequence column input`                    | a generic **kind** by its longest suffix, qualified by the rest  |
 | `"Run MSA" button`, `"First name" input`   | a quoted qualifier: scope words inside it are kept, and a leading "first"/"last" is not read as an ordinal |
@@ -209,14 +219,21 @@ list is the reference; this is the map:
   markup never counts as a completed result.
 - **The shell** (`bindings/platform/steps.ts`): `user is logged in`, `user opens {dataset}
   dataset` (also `keeping the first N rows [as "name"]`), switching views and table views,
-  projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts.
+  projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts; the
+  server's spaces, models, groups and roles by name (deleted at feature end), a fixture user (made
+  once per stand: users cannot be deleted), its status and who is a (plain or admin) member of a
+  group or holds a role; the gallery's render mode and
+  its counter against a remembered one (lower, not lower, higher — search, then clear). The membership editor behind Groups..., Roles..., Members
+  and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
+  `remove button` and `checkbox` parts, typed into through `membership search`.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
   filter set and checked row by row, cells, calculated and renamed columns, colour coding,
   other open tables, links between tables, the filter panel's cards through its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
 - **Package functions and their results** (`platform/functions.ts`), **custom platform events**
-  (`platform/events.ts`), the clipboard and a file chooser (`common/steps.ts`).
+  and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
+  (`common/steps.ts`).
 - **The `viewers` tier** (below).
 
 A step definition is an exported `const`; the generated spec imports it by name:
@@ -267,7 +284,9 @@ The `viewers` tier drives viewers the way the platform sees them:
   area's own ink and repaint, colours in an area (by hue, a shade of anti-aliasing allowed), two
   areas alike or different, the selection highlight (with a margin the selection warrants), the
   value range and the colour scale against before.
-- **The legend** (read from its `data-legend-*` attributes), the row tooltip, viewer events,
+- **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
+  collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
+  against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
   logged`, `no error or warning balloon should have been shown`.
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
@@ -290,6 +309,62 @@ check. A served core must include the tracked grid tooltip debounce for these ab
 A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWidgetStatus()`
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get
 isRenderPending()` true from the render request to the paint; and an `onRendered` observable.
+
+A package that customizes an existing widget can contribute its own live areas and readings
+through `DG.Widget.addStatusProvider(name, provider)`. For example, Peptides adds the glyphs it
+draws in the native grid's headers:
+
+```ts
+grid.addStatusProvider('peptides-weblogo', () => ({
+  hitAreas: currentGlyphBounds,
+  values: {'highlighted rows': highlightedRowCount},
+}));
+grid.removeStatusProvider('peptides-weblogo');
+```
+
+Names identify the contributing component. Registering the same name replaces that provider in
+place; later providers override earlier entries. Providers run on each status read and contribute
+`parts`, `hitAreas`, and `values`; a JS viewer that overrides `getWidgetStatus()` composes with
+`super.getWidgetStatus()`. Geometry uses the widget's coordinate system and must exclude anything
+no longer drawn. Detach removes providers; a viewer reattached to a different table needs its
+table-specific providers registered again.
+
+## Guides: a scenario as a how-to video
+
+A scenario that answers "how do I …" is also its own demonstration. `grok-bdd guide
+features/guides/<name>.feature` compiles it, runs it on one worker in guide mode and renders each
+scenario into `guides/<feature slug>/<scenario slug>/`:
+
+- `guide.mp4` — the pointer travels to every element a step acts on, the element is lit (the rest
+  of the page dimmed), a small target is zoomed into in place while the click lands, the page
+  after the step is revealed, and a caption reads the step as an instruction ("Click on Open local
+  file icon in browse toolbar"); a `Then` step shows what it checked with a check mark;
+- `step-NN.png` — the lit picture of every step, and `steps.md` — the numbered steps with those
+  pictures, ready to paste into a reply;
+- with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair.
+
+Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
+it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
+element the step located, and where the page's own mouse went. Tests know nothing of it: without
+the variable no line of it runs. The viewport is a laptop's (1600×900; `BDD_GUIDE_VIEWPORT=<w>x<h>`
+for another) so the video reads without zooming every step, and the shell is the full one (simple
+mode off, which the login step and the panel steps read from `shellSimpleMode()`), as a person
+has it. Every step is in the video except the login (`guide.silent`) and a step that neither
+acted nor changed the page (its before and after pictures are the same file): a table opened
+through the API is shown under its caption. A path walked inside a step — the top menu's group,
+then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as it was
+then, the element's box), and the pointer travels to each with the stop lit; a runtime path that
+does not report its stops jumps from the closed menu to the result, so a new menu walk calls
+`hop` where `pickTopMenu` and `pickMenuPath` do. Rendering is `tool/guide-render.py` (Pillow + ffmpeg: `py -m
+pip install pillow imageio-ffmpeg`, or `FFMPEG=<path>`); `--fps`, `--hold`, `--travel`, `--zoom`
+tune the pace when run by hand on a `steps.json` directory.
+
+A feature tagged `@help:<page dir>` (`@help:access/files`) illustrates a help page:
+`grok-bdd guide --help-pages` films every such feature and copies each scenario's GIF and thumb
+into `<public>/help/<page dir>/img/<scenario slug>.gif` (`BDD_HELP_ROOT` names another tree), so
+the walkthroughs on the docs site are regenerated from features rather than recorded by hand.
+Guides live under `features/guides/` and run with the rest of the suite: an answer that stops
+being true fails a test.
 
 ## Generated specs
 
@@ -314,6 +389,13 @@ are not inherited. With the core repository open, use `public/packages/*/bdd/fea
 for features, and `public/libraries/bdd/bindings/**/*.ts` plus
 `public/packages/*/bdd/bindings/**/*.ts` for glue in the root `.vscode/settings.json`.
 Include the same `state` parameter type there. With `public/` open, omit the `public/` prefix.
+
+Every settings file that names Cucumber globs also carries `"search.followSymlinks": false`
+(`grok-bdd init` writes it). The extension re-scans its globs on every file change through VS
+Code's file search, which follows symlinks by default: the pnpm `node_modules` forests and the
+junctions `grok-bdd link` makes are circular, so a scan never ends, and they pile up by the dozen
+(64 `rg.exe` at three quarters of a 32-core machine, found 2026-09-21). The setting takes effect
+on Reload Window; `taskkill /F /IM rg.exe` (or `pkill rg`) clears the ones already running.
 
 ## Developing the library
 

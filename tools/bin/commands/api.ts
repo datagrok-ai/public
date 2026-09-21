@@ -15,18 +15,12 @@ const packageFuncDirs = ['package.ts', 'package.g.ts'];
 const apiFile = 'package-api.ts';
 const dbFile = 'db.ts';
 const dbUiFile = 'db-ui.ts';
-/** What `db-ui.ts` imports from `@datagrok-libraries/domain-ui`. */
-const domainUiImports = ['domainHandler', 'domains', 'DomainAppView', 'DomainAppViewOptions',
-  'DomainDb', 'DomainDialogOptions', 'DomainEntityAppView', 'DomainEntityAppViewOptions', 'DomainForm',
-  'DomainFormOptions', 'DomainGrid', 'DomainGridOptions', 'DomainTable', 'EntityListOptions',
-  'EntityListWidget'];
-/** {@link DomainDb} members a table's camelCase property name must not shadow. */
-const domainDbReservedProps = ['name', 'tables', 'table', 'acquire'];
+/** Where `db-ui.ts` takes the u2 domain stack from — the same specifier Grit and Stockroom use
+ * (u2 is a relative-path dependency without a `dg` subpath export). */
+const u2DgModule = '@datagrok-libraries/u2/src/dg/index.js';
 
 /** Naive English plural of a (snake_case) table name — `issue` → `issues`, `box` →
- * `boxes`, `category` → `categories`. MUST match domain-ui's `pluralizeTableName`:
- * the runtime `DomainDb` assigns its per-table properties with the same rule, so the
- * generated typed interfaces bind to it. */
+ * `boxes`, `category` → `categories`. */
 function pluralizeTableName(name: string): string {
   if (/(s|x|z|ch|sh)$/.test(name))
     return name + 'es';
@@ -35,9 +29,9 @@ function pluralizeTableName(name: string): string {
   return name + 's';
 }
 
-/** The camelCase plural property name a table gets on the schema client and the
- * schema UI handle (`issue_label` → `issueLabels`). */
-function tableProp(tableName: string): string {
+/** The camelCase plural property name a table gets on the schema client and under the
+ * schema handle's `tables` (`issue_label` → `issueLabels`). */
+export function tableProp(tableName: string): string {
   return utils.snakeToCamelCase(pluralizeTableName(tableName), false);
 }
 const domainSchemaPath = path.join(path.dirname(path.dirname(__dirname)), 'domain-schema.schema.json');
@@ -236,8 +230,8 @@ function checkNameColision(name: string) {
 
 /** Generates `src/generated/db.ts` with typed clients for the package's domain schemas
  * (`databases/<schema>/schema.json` manifests), and — with [options].ui, or whenever the
- * file is already there — `src/generated/db-ui.ts` with the typed UI sugar over
- * `@datagrok-libraries/domain-ui`. No-op for packages without manifests. */
+ * file is already there — `src/generated/db-ui.ts` with the typed u2 handles
+ * (`get<Schema>Db()` → one `DomainTable<Row>` per table). No-op for packages without manifests. */
 export function generateDomainClients(packageDir: string = curDir, options?: {ui?: boolean}): boolean {
   const databasesDir = path.join(packageDir, 'databases');
   if (!fs.existsSync(databasesDir))
@@ -289,8 +283,7 @@ export function generateDomainClients(packageDir: string = curDir, options?: {ui
 
   if (ui) {
     const uiContent = annotationForDbUiFile +
-      `import * as DG from 'datagrok-api/dg';${sep}` +
-      wrapTokens(`import {`, domainUiImports, ', ', `} from '@datagrok-libraries/domain-ui';`) + sep +
+      `import {domains, DomainTable} from '${u2DgModule}';${sep}` +
       wrapTokens(`import {`, dbImports, ', ', `} from './${dbFile.replace(/\.ts$/, '')}';`) + sep +
       sep + uiParts.join(sep);
     fs.writeFileSync(path.join(genDir, dbUiFile), normEol(uiContent).replace(/\n/g, '\r\n'), 'utf8');
@@ -592,7 +585,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
          `export type ${typeName}Expand = {`, ...expandEntries, '};'].join(sep));
 
     txArms.push(
-      `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>} |`,
+      `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>; ` +
+        `onDuplicate?: 'error'} |`,
       `  {op: 'update'; table: '${tableName}'; id: string; ` +
         `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
         `expectedVersion?: number} |`,
@@ -627,162 +621,47 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   return decls.join(sep.repeat(2)) + sep;
 }
 
-/** Emits the typed UI sugar of one manifest: per-table option types and a `<table>Ui`
- * wrapper over the reflective `@datagrok-libraries/domain-ui` components, so app code gets
- * this table's columns and row type checked. Collects the names it needs from `db.ts` into
- * [dbImports]. Nothing here is imported by `db.ts` — data-only consumers gain no UI
- * dependency. */
+/** Emits the typed u2 handles of one manifest: a `<Schema>Db` interface — the schema name, the
+ * typed data clients of `db.ts` and one `DomainTable<Row>` per table — and `get<Schema>Db()`,
+ * which opens every table in parallel behind ONE await and caches the promise per page.
+ * Collects the names it needs from `db.ts` into [dbImports]. Nothing here is imported by
+ * `db.ts` — data-only consumers gain no UI dependency. */
 function generateDomainUiCode(manifest: any, dbImports: string[]): string {
-  const decls: string[] = [];
-  const schemaClient = `${utils.snakeToCamelCase(manifest.name, false)}Db`;
-  dbImports.push(schemaClient);
-  for (const tableName of Object.keys(manifest.tables)) {
-    const type = utils.snakeToCamelCase(tableName);
-    const address = `${manifest.name}.${tableName}`;
-    // The generics of the client and the handle, in DomainTableClient's order. The
-    // fifth — the update payload — exists only for a relation-bearing table, whose
-    // update() also takes the link sets; without relations the `Partial<Row>`
-    // default is it. Emitting four there would make `update(id, {labels: [...]})`
-    // an excess-property error against a payload that has no `labels`.
-    const hasRelations = Object.keys(manifest.tables[tableName].relations ?? {}).length > 0;
-    const generics = `${type}Row, ${type}Insert, ${type}Column, ${type}Expand` +
-      (hasRelations ? `, ${type}Update` : '');
-    const handle = `DomainTable<${generics}>`;
-    dbImports.push(`${type}Column`, `${type}Expand`, `${type}Insert`, `${type}Row`);
-    if (hasRelations)
-      dbImports.push(`${type}Update`);
-    decls.push(
-      [`/** Query spec of \`${address}\` — columns and expand keys are compile-checked. */`,
-        `export type ${type}QuerySpec = DG.DomainQuerySpec<${type}Column, keyof ${type}Expand & string>;`].join(sep),
-      [`/** {@link DG.DomainQuery} parameters of \`${address}\` (schema and table are implied). */`,
-        `export interface ${type}QueryParams extends`,
-        `    Omit<DG.DomainQueryParams, 'schema' | 'table' | 'columns'> {`,
-        `  columns?: ${type}Column[];`, '}'].join(sep),
-      [`/** Options of {@link ${type}Ui.form} / {@link ${type}Ui.formDialog}. */`,
-        `export interface ${type}FormOptions extends Omit<DomainFormOptions, 'values'> {`,
-        `  values?: Partial<${type}Insert>;`, '}'].join(sep),
-      [`/** Options of {@link ${type}Ui.grid}. */`,
-        `export interface ${type}GridOptions extends Omit<DomainGridOptions, 'query' | 'defaults'> {`,
-        `  query?: ${type}QuerySpec;`, `  defaults?: Partial<${type}Insert>;`, '}'].join(sep),
-      [`/** Options of {@link ${type}Ui.list}. */`,
-        `export interface ${type}ListOptions extends Omit<EntityListOptions, 'query'> {`,
-        `  query?: ${type}QuerySpec;`, '}'].join(sep),
-      [`/** Options of {@link ${type}Ui.listView} / {@link ${type}Ui.app}. */`,
-        `export interface ${type}AppViewOptions extends Omit<DomainAppViewOptions, 'query'> {`,
-        `  query?: ${type}QuerySpec;`, '}'].join(sep),
-      ['/**',
-        ` * Typed UI over \`${address}\`: the reflective components of`,
-        ' * `@datagrok-libraries/domain-ui`, with this table\'s columns and row type checked at',
-        ` * compile time. Reach it through {@link ${utils.snakeToCamelCase(tableName, false)}Ui}.`,
-        ' */',
-        `export class ${type}Ui {`,
-        `  /** The table address, \`'<schema>.<table>'\`. */`,
-        `  readonly address: string = '${address}';`,
-        '',
-        `  /** The typed client — the same one \`${schemaClient}.${tableProp(tableName)}\` returns. */`,
-        `  get client(): DG.DomainTableClient<${generics}> {`,
-        `    return ${schemaClient}.${tableProp(tableName)};`,
-        '  }',
-        '',
-        `  /** The prefetched handle on \`${address}\` — THE async boundary, typed. Every`,
-        '   * widget factory on it is synchronous, so acquire it ONCE when a page builds',
-        '   * more than one widget; the shortcuts below acquire one of their own. */',
-        `  table(): Promise<${handle}> {`,
-        `    return domains.table<${generics}>(this.client);`,
-        '  }',
-        '',
-        '  /** The handler registered for the table (the reflective default when none is). */',
-        '  handler(): DG.DomainObjectHandler {',
-        '    return domainHandler(this.address);',
-        '  }',
-        '',
-        '  /** The property form of ONE row — a new one by default, an existing one with',
-        '   * `{row}` or `{id}`; the values are this table\'s. */',
-        `  async form(options?: ${type}FormOptions): Promise<DomainForm> {`,
-        '    return (await this.table()).form(options);',
-        '  }',
-        '',
-        '  /** {@link form} in a dialog; resolves to whether a row was saved. */',
-        `  async formDialog(options?: ${type}FormOptions & DomainDialogOptions): Promise<boolean> {`,
-        '    return (await this.table()).formDialog(options);',
-        '  }',
-        '',
-        '  /** The browse/CRUD page: list, search, New, and a deep-linkable query. */',
-        `  async listView(options?: ${type}AppViewOptions): Promise<DomainAppView> {`,
-        '    return (await this.table()).listView(options);',
-        '  }',
-        '',
-        '  /** THE app — {@link listView} under the name that says what it is. */',
-        `  app(options?: ${type}AppViewOptions): Promise<DomainAppView> {`,
-        '    return this.listView(options);',
-        '  }',
-        '',
-        '  /** The row page: form, detail tabs, history. Takes the row or its id. */',
-        '  async entityView(row: string | DG.DomainRow,',
-        '    options?: DomainEntityAppViewOptions): Promise<DomainEntityAppView> {',
-        '    return (await this.table()).entityView(row, options);',
-        '  }',
-        '',
-        '  /** An editable grid: batch editing, one-transaction save. */',
-        `  async grid(options?: ${type}GridOptions): Promise<DomainGrid> {`,
-        '    return (await this.table()).grid(options);',
-        '  }',
-        '',
-        '  /** A list of rows (cards / brief / grid). */',
-        `  async list(options?: ${type}ListOptions): Promise<EntityListWidget> {`,
-        '    return (await this.table()).list(options);',
-        '  }',
-        '',
-        '  /** Opens the platform\'s create dialog, or the edit dialog for [row]. */',
-        '  edit(row?: DG.DomainRow): Promise<boolean> {',
-        '    return this.handler().editRow(row);',
-        '  }',
-        '',
-        '  /** Opens the platform\'s row picker. */',
-        '  pick(): Promise<DG.DomainRow | null> {',
-        '    return this.handler().pickRow();',
-        '  }',
-        '',
-        '  /** Wraps one `query()` row as a {@link DG.DomainRow} — locally, no round trip. */',
-        `  row(values: Partial<${type}Row> | null): DG.DomainRow {`,
-        '    return this.handler().rowFrom(values);',
-        '  }',
-        '',
-        '  /** A serializable query over the table: deep links, saved filters, Open in Table View. */',
-        `  query(params?: ${type}QueryParams): DG.DomainQuery {`,
-        `    return new DG.DomainQuery({...params, schema: '${manifest.name}', table: '${tableName}'});`,
-        '  }',
-        '}'].join(sep),
-      [`/** Typed UI over \`${address}\` (see {@link ${type}Ui}). */`,
-        `export const ${utils.snakeToCamelCase(tableName, false)}Ui = new ${type}Ui();`].join(sep));
-  }
-
-  // The schema-level handle: every table's DomainTable under ONE await, typed
-  // (`const db = await <schema>UiDb(); db.<plural>.form(...)`).
   const schemaType = utils.snakeToCamelCase(manifest.name);
-  const tableProps = Object.keys(manifest.tables)
-    .filter((t) => !domainDbReservedProps.includes(tableProp(t)));
-  decls.push(
+  const schemaClient = `${utils.snakeToCamelCase(manifest.name, false)}Db`;
+  const getter = `get${schemaType}Db`;
+  const cache = `_${utils.snakeToCamelCase(manifest.name, false)}Db`;
+  const tables: string[] = Object.keys(manifest.tables);
+  dbImports.push(schemaClient, ...tables.map((t) => `${utils.snakeToCamelCase(t)}Row`));
+  return [
     ['/**',
-      ` * The typed schema handle over \`${manifest.name}\`: one prefetched {@link DomainTable}`,
-      ' * per table, resolved together by {@link ' + utils.snakeToCamelCase(manifest.name, false) + 'UiDb} —',
-      ' * the schema-level async boundary (see `domains.db`).',
+      ` * The typed u2 handles over \`${manifest.name}\`: one {@link DomainTable} per table, opened together by`,
+      ` * {@link ${getter}}, beside the typed data clients (\`${schemaClient}\`) — every action, validator,`,
+      ' * renderer and source an app declares on a table is checked against its row type.',
       ' */',
-      `export interface ${schemaType}UiDb extends DomainDb {`,
-      ...tableProps.map((t) => {
-        const type = utils.snakeToCamelCase(t);
-        const update = Object.keys(manifest.tables[t].relations ?? {}).length > 0
-          ? `, ${type}Update` : '';
-        return `  readonly ${tableProp(t)}: ` +
-          `DomainTable<${type}Row, ${type}Insert, ${type}Column, ${type}Expand${update}>;`;
-      }),
+      `export interface ${schemaType}Db {`,
+      `  readonly schema: '${manifest.name}';`,
+      `  readonly data: typeof ${schemaClient};`,
+      '  readonly tables: {',
+      ...tables.map((t) => `    readonly ${tableProp(t)}: DomainTable<${utils.snakeToCamelCase(t)}Row>;`),
+      '  };',
       '}'].join(sep),
-    [`/** Acquires the {@link ${schemaType}UiDb} handle — every table of`,
-      ` * \`${manifest.name}\`, prefetched together (see \`domains.db\`). */`,
-      `export function ${utils.snakeToCamelCase(manifest.name, false)}UiDb(): Promise<${schemaType}UiDb> {`,
-      `  return domains.db('${manifest.name}') as Promise<${schemaType}UiDb>;`,
-      '}'].join(sep));
-  return decls.join(sep.repeat(2)) + sep;
+    `let ${cache}: Promise<${schemaType}Db> | undefined;`,
+    [`/** Opens every table of \`${manifest.name}\` in parallel — the one await of an app over it; the`,
+      ' * result is cached per page, so every caller shares the same handles (and their registries). */',
+      `export function ${getter}(): Promise<${schemaType}Db> {`,
+      `  return ${cache} ??= Promise.all([`,
+      ...tables.map((t) => `    domains.table<${utils.snakeToCamelCase(t)}Row>('${manifest.name}.${t}'),`),
+      wrapTokens('  ]).then(([', tables.map(tableProp), ', ', `]): ${schemaType}Db => ({`, '    '),
+      `    schema: '${manifest.name}',`,
+      `    data: ${schemaClient},`,
+      wrapTokens('    tables: {', tables.map(tableProp), ', ', '},', '      '),
+      '  })).catch((e) => {',
+      `    ${cache} = undefined;`,
+      '    throw e;',
+      '  });',
+      '}'].join(sep),
+  ].join(sep.repeat(2)) + sep;
 }
 
 /** Joins [tokens] into `<prefix>t1<sepToken>t2...<suffix>` lines wrapped at the 120-char

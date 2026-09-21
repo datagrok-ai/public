@@ -29,7 +29,7 @@ test.describe("Histogram bin selection, row markers and mouse-over", () => {
     const run = journey(test, 9, page);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(13, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"]]));
+    await session.step(13, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"]]), [["Value","AGE"]]);
     await session.step(15, "And user resizes histogram viewer to 500 by 400", () => resizeTo(page, el("histogram viewer"), 500, 400));
     await session.step(16, "Then histogram viewer should show 1000 rows", () => showsRows(page, el("histogram viewer"), 1000));
     await session.step(17, "And histogram viewer should have a \"bin 8\" area", () => hasArea(page, el("histogram viewer"), "bin 8"));
@@ -126,7 +126,7 @@ test.describe("Histogram bin selection, row markers and mouse-over", () => {
       await session.step(109, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A mouse-over row group in another viewer repaints the bins", async () => {
-      await session.step(112, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"]]));
+      await session.step(112, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"]]), [["Split","RACE"]]);
       await session.step(114, "And user takes a snapshot of histogram viewer", () => takeSnapshot(page, el("histogram viewer")));
       await session.step(115, "And user hovers over the \"bar Asian\" area of bar chart viewer", () => hoverArea(page, "bar Asian", el("bar chart viewer")));
       await session.step(116, "Then histogram viewer should have repainted by at least 500 pixels", () => repaintedBy(page, el("histogram viewer"), 500));

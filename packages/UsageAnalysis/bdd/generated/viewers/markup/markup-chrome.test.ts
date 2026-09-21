@@ -28,7 +28,7 @@ test.describe("Markup chrome — Edit content, the title bar and the strip under
     const run = journey(test, 5, page);
     await session.step(27, "Given user is logged in", () => loggedIn(page));
     await session.step(28, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(29, "And user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","editable probe"]]));
+    await session.step(29, "And user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","editable probe"]]), [["content","editable probe"]]);
     await session.step(31, "Then the \"text\" reading of markup viewer should be \"editable probe\"", () => readingReads(page, "text", el("markup viewer"), "editable probe"));
     await session.step(32, "And markup viewer should report no error", () => reportsNoError(page, el("markup viewer")));
     await run.scenario("Edit content... is on the viewer's menu and opens on what is on screen", async () => {
@@ -71,7 +71,7 @@ test.describe("Markup chrome — Edit content, the title bar and the strip under
       await session.step(71, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The viewer's own menu opens anywhere on it, and the content fills it", async () => {
-      await session.step(74, "Given user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","one line"]]));
+      await session.step(74, "Given user adds a markup viewer with:", () => addViewerWith(page, "markup", [["content","one line"]]), [["content","one line"]]);
       await session.step(76, "Then markup viewer should have a \"content\" area", () => hasArea(page, el("markup viewer"), "content"));
       await session.step(77, "And markup viewer should not have an \"empty space\" area", () => hasNoArea(page, el("markup viewer"), "empty space"));
       await session.step(78, "When user opens the viewer menu of markup viewer", () => openViewerMenu(page, el("markup viewer")));

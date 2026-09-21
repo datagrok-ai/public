@@ -13,43 +13,26 @@
     "directory": "packages/Proteomics"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.61.3",
-    "@datagrok-libraries/math": "^1.2.6",
-    "@datagrok-libraries/ml": "^6.10.7",
-    "@datagrok-libraries/statistics": "^1.2.12",
-    "@datagrok-libraries/test": "^1.1.0",
-    "@datagrok-libraries/utils": "^4.6.9",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.25.0",
-    "rxjs": "^6.5.5",
-    "wu": "^2.1.0"
+    "@datagrok-libraries/bio": "workspace:^",
+    "@datagrok-libraries/math": "workspace:^",
+    "@datagrok-libraries/ml": "workspace:^",
+    "@datagrok-libraries/statistics": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "rxjs": "catalog:",
+    "wu": "catalog:",
+    "dayjs": "catalog:"
   },
   "devDependencies": {
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "css-loader": "^7.1.2",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "@types/wu": "catalog:"
   },
   "scripts": {
-    "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/math @datagrok-libraries/ml @datagrok-libraries/bio @datagrok-libraries/statistics",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-proteomics": "grok publish",
-    "release-proteomics": "grok publish --release",
-    "debug-proteomics-local": "grok publish local",
-    "release-proteomics-local": "grok publish local --release",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "grok test",
-    "test-local": "grok test --host localhost",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/math run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/statistics run build && npm run build"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -94,9 +77,5 @@
       "defaultValue": "",
       "nullable": true
     }
-  ],
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "uuid": "^11.1.1"
-  }
+  ]
 }

@@ -27,7 +27,7 @@ test.describe("Line chart statistical process control, zoom and Reset View", () 
     const run = journey(test, 6, page);
     await session.step(20, "Given user is logged in", () => loggedIn(page));
     await session.step(21, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await session.step(22, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]));
+    await session.step(22, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
     await session.step(25, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
     await session.step(26, "And \"showStatisticalProcessControl\" property of line chart viewer should be \"false\"", () => propertyShouldBe(page, "showStatisticalProcessControl", el("line chart viewer"), "false"));
     await session.step(27, "And line chart viewer should not have a \"control limits\" area", () => hasNoArea(page, el("line chart viewer"), "control limits"));
@@ -65,7 +65,7 @@ test.describe("Line chart statistical process control, zoom and Reset View", () 
       await session.step(60, "Then line chart viewer should have a \"control limits\" area", () => hasArea(page, el("line chart viewer"), "control limits"));
       await session.step(61, "When user sets \"multiAxis\" property of line chart viewer to \"true\"", () => setProperty(page, "multiAxis", el("line chart viewer"), "true"));
       await session.step(62, "Then line chart viewer should not have a \"control limits\" area", () => hasNoArea(page, el("line chart viewer"), "control limits"));
-      await session.step(63, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["multiAxis","false"],["showStatisticalProcessControl","false"]]));
+      await session.step(63, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["multiAxis","false"],["showStatisticalProcessControl","false"]]), [["multiAxis","false"],["showStatisticalProcessControl","false"]]);
       await session.step(66, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The bands can be hidden one at a time and the limits stay reported", async () => {
@@ -83,7 +83,7 @@ test.describe("Line chart statistical process control, zoom and Reset View", () 
       await session.step(80, "When user sets \"showControlLimits\" property of line chart viewer to \"false\"", () => setProperty(page, "showControlLimits", el("line chart viewer"), "false"));
       await session.step(81, "Then line chart viewer should not have a \"control limits\" area", () => hasNoArea(page, el("line chart viewer"), "control limits"));
       await session.step(82, "And the 'y axis max of \"Chemical Space X\"' reading of line chart viewer should be lower than before", () => readingLower(page, "y axis max of \"Chemical Space X\"", el("line chart viewer")));
-      await session.step(83, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showSigma1","true"],["showSigma2","true"],["showAverage","true"],["showControlLimits","true"]]));
+      await session.step(83, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showSigma1","true"],["showSigma2","true"],["showAverage","true"],["showControlLimits","true"]]), [["showSigma1","true"],["showSigma2","true"],["showAverage","true"],["showControlLimits","true"]]);
       await session.step(88, "Then line chart viewer should have a \"control limits\" area", () => hasArea(page, el("line chart viewer"), "control limits"));
       await session.step(89, "And the 'y axis max of \"Chemical Space X\"' reading of line chart viewer should be higher than before", () => readingHigher(page, "y axis max of \"Chemical Space X\"", el("line chart viewer")));
       await session.step(90, "And the \"control limits\" area of line chart viewer should be painted", () => areaPainted(page, "control limits", el("line chart viewer")));
@@ -91,21 +91,21 @@ test.describe("Line chart statistical process control, zoom and Reset View", () 
       await session.step(92, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The Western Electric rules flag points, and hand-set limits flag far more of them", async () => {
-      await session.step(95, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showStatisticalProcessControl","true"],["showBias","true"],["showConsistentTrend","true"],["showOscillation","true"],["showMediumShift","true"],["showSustainedShift","true"],["showSuppressedVariation","true"]]));
+      await session.step(95, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showStatisticalProcessControl","true"],["showBias","true"],["showConsistentTrend","true"],["showOscillation","true"],["showMediumShift","true"],["showSustainedShift","true"],["showSuppressedVariation","true"]]), [["showStatisticalProcessControl","true"],["showBias","true"],["showConsistentTrend","true"],["showOscillation","true"],["showMediumShift","true"],["showSustainedShift","true"],["showSuppressedVariation","true"]]);
       await session.step(103, "Then the \"violations\" reading of line chart viewer should be 33", () => readingIs(page, "violations", el("line chart viewer"), 33));
       await session.step(104, "And line chart viewer should have a \"violation 2\" area", () => hasArea(page, el("line chart viewer"), "violation 2"));
       await session.step(105, "And line chart viewer should have a \"violation 6\" area", () => hasArea(page, el("line chart viewer"), "violation 6"));
       await session.step(106, "And line chart viewer should not have a \"violation 1\" area", () => hasNoArea(page, el("line chart viewer"), "violation 1"));
-      await session.step(107, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lowerControlLimit","0"],["upperControlLimit","5"]]));
+      await session.step(107, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lowerControlLimit","0"],["upperControlLimit","5"]]), [["lowerControlLimit","0"],["upperControlLimit","5"]]);
       await session.step(110, "Then the \"upper control limit\" reading of line chart viewer should be 5", () => readingIs(page, "upper control limit", el("line chart viewer"), 5));
       await session.step(111, "And the \"lower control limit\" reading of line chart viewer should be 0", () => readingIs(page, "lower control limit", el("line chart viewer"), 0));
       await session.step(112, "And the \"violations\" reading of line chart viewer should be 89", () => readingIs(page, "violations", el("line chart viewer"), 89));
       await session.step(113, "And line chart viewer should have a \"violation 1\" area", () => hasArea(page, el("line chart viewer"), "violation 1"));
       await session.step(114, "And the \"control limits\" area of line chart viewer should be shorter than before", () => areaShorter(page, "control limits", el("line chart viewer")));
-      await session.step(115, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lowerControlLimit",""],["upperControlLimit",""]]));
+      await session.step(115, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lowerControlLimit",""],["upperControlLimit",""]]), [["lowerControlLimit",""],["upperControlLimit",""]]);
       await session.step(118, "Then the \"upper control limit\" reading of line chart viewer should be between 21 and 22", () => readingBetween(page, "upper control limit", el("line chart viewer"), 21, 22));
       await session.step(119, "And the \"violations\" reading of line chart viewer should be 33", () => readingIs(page, "violations", el("line chart viewer"), 33));
-      await session.step(120, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showBias","false"],["showConsistentTrend","false"],["showOscillation","false"],["showMediumShift","false"],["showSustainedShift","false"],["showSuppressedVariation","false"],["showStatisticalProcessControl","false"]]));
+      await session.step(120, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showBias","false"],["showConsistentTrend","false"],["showOscillation","false"],["showMediumShift","false"],["showSustainedShift","false"],["showSuppressedVariation","false"],["showStatisticalProcessControl","false"]]), [["showBias","false"],["showConsistentTrend","false"],["showOscillation","false"],["showMediumShift","false"],["showSustainedShift","false"],["showSuppressedVariation","false"],["showStatisticalProcessControl","false"]]);
       await session.step(128, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The wheel zooms the X axis and Reset View puts it back", async () => {
@@ -121,7 +121,7 @@ test.describe("Line chart statistical process control, zoom and Reset View", () 
       await session.step(140, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("X Min and X Max pin the window, and Reset View returns to them rather than to the column", async () => {
-      await session.step(143, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xMin","634800"],["xMax","634850"]]));
+      await session.step(143, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xMin","634800"],["xMax","634850"]]), [["xMin","634800"],["xMax","634850"]]);
       await session.step(146, "Then the \"x axis min\" reading of line chart viewer should be 634800", () => readingIs(page, "x axis min", el("line chart viewer"), 634800));
       await session.step(147, "And the \"x axis max\" reading of line chart viewer should be 634850", () => readingIs(page, "x axis max", el("line chart viewer"), 634850));
       await session.step(148, "And the \"x axis span\" reading of line chart viewer should be 50", () => readingIs(page, "x axis span", el("line chart viewer"), 50));
@@ -132,7 +132,7 @@ test.describe("Line chart statistical process control, zoom and Reset View", () 
       await session.step(153, "Then \"xMin\" property of line chart viewer should be \"634800\"", () => propertyShouldBe(page, "xMin", el("line chart viewer"), "634800"));
       await session.step(154, "And \"xMax\" property of line chart viewer should be \"634850\"", () => propertyShouldBe(page, "xMax", el("line chart viewer"), "634850"));
       await session.step(155, "And the \"x axis span\" reading of line chart viewer should be 50", () => readingIs(page, "x axis span", el("line chart viewer"), 50));
-      await session.step(156, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xMin",""],["xMax",""]]));
+      await session.step(156, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xMin",""],["xMax",""]]), [["xMin",""],["xMax",""]]);
       await session.step(159, "Then the \"x axis span\" reading of line chart viewer should be between 106 and 107", () => readingBetween(page, "x axis span", el("line chart viewer"), 106, 107));
       await session.step(160, "And no errors should have been logged", () => noErrors(page));
     });

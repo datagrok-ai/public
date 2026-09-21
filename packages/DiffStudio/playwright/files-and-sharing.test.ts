@@ -27,7 +27,8 @@ test('DiffStudio Files & Sharing — pk.ivp preview, modify Step/Count, URL shar
       // The filesystem-side folder is `DiffStudio` (capital D) — DG does not lowercase it.
       await page.goto(`${BASE}/files/system.appdata/DiffStudio/library`);
       await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
-      await page.waitForTimeout(2500);
+      await page.waitForFunction(() => Array.from(document.querySelectorAll('*'))
+        .some(el => el.children.length === 0 && el.textContent?.trim() === 'pk.ivp'), null, { timeout: 60_000 });
 
       // The directory grid renders each file as a row containing the filename as text.
       // Find a clickable element whose text is exactly "pk.ivp" and click it.
@@ -61,9 +62,9 @@ test('DiffStudio Files & Sharing — pk.ivp preview, modify Step/Count, URL shar
       const chartBefore = await canvasHash(page, '.d4-viewer');
 
       // Real slider drag — `<input type="range">` lives inside the Step input host alongside
-      // the text editor. Per MD: "Set Step to 0.1 using the slider". pk.ivp Step has min=0.01,
-      // max=0.1 — drag the thumb to the right-most position.
-      const stepSlider = page.locator(`${inputHost('step')} input[type="range"]`).first();
+      // the text editor when the model declares min/max for Step; otherwise the value is typed.
+      // Hosts and URL keys are named by input caption (`Step`, `Count`).
+      const stepSlider = page.locator(`${inputHost('Step')} input[type="range"]`).first();
       if (await stepSlider.count() > 0) {
         const box = await stepSlider.boundingBox();
         if (box) {
@@ -79,21 +80,21 @@ test('DiffStudio Files & Sharing — pk.ivp preview, modify Step/Count, URL shar
         }
       } else {
         // Slider not present in this build — fall back to typed value
-        await setInputValue(page, 'step', '0.1');
+        await setInputValue(page, 'Step', '0.1');
       }
 
       // pk.ivp default Count is 1 — three clicks of "+" → 4
-      await clickerIncrement(page, 'count', 3);
+      await clickerIncrement(page, 'Count', 3);
       await page.waitForTimeout(2000);
 
-      const stepVal = await page.locator(inputEditor('step')).inputValue();
-      const countVal = await page.locator(inputEditor('count')).inputValue();
+      const stepVal = await page.locator(inputEditor('Step')).inputValue();
+      const countVal = await page.locator(inputEditor('Count')).inputValue();
       expect(parseFloat(stepVal)).toBeCloseTo(0.1, 1);  // 0.1 ± 0.1 — slider granularity
       expect(countVal).toBe('4');
 
       const url = page.url();
-      expect(url).toMatch(/step=0\.1/);
-      expect(url).toContain('count=4');
+      expect(url).toMatch(/Step=0\.1/);
+      expect(url).toContain('Count=4');
 
       const chartAfter = await canvasHash(page, '.d4-viewer');
       expect(chartAfter).not.toBe(chartBefore);
@@ -105,10 +106,10 @@ test('DiffStudio Files & Sharing — pk.ivp preview, modify Step/Count, URL shar
       const newTab = await context.newPage();
       await newTab.goto(url);
       await newTab.waitForSelector('.d4-ribbon', { timeout: 60_000 });
-      await newTab.locator(`${inputHost('step')} input.ui-input-editor`).waitFor({ timeout: 30_000 });
+      await newTab.locator(`${inputHost('Step')} input.ui-input-editor`).waitFor({ timeout: 30_000 });
       await newTab.waitForTimeout(2000);
-      const stepVal = await newTab.locator(`${inputHost('step')} input.ui-input-editor`).inputValue();
-      const countVal = await newTab.locator(`${inputHost('count')} input.ui-input-editor`).inputValue();
+      const stepVal = await newTab.locator(`${inputHost('Step')} input.ui-input-editor`).inputValue();
+      const countVal = await newTab.locator(`${inputHost('Count')} input.ui-input-editor`).inputValue();
       expect(parseFloat(stepVal)).toBeCloseTo(0.1);
       expect(countVal).toBe('4');
       await newTab.close();
@@ -121,7 +122,7 @@ test('DiffStudio Files & Sharing — pk.ivp preview, modify Step/Count, URL shar
       });
       // Already at count=4 → Multiaxis/Facet expected. Drop back to 1 via the "-" clicker
       // (the count input has `.ui-input-options` overlaying the editor, blocking typing).
-      await clickerDecrement(page, 'count', 3);
+      await clickerDecrement(page, 'Count', 3);
       await page.waitForTimeout(1500);
       const tabsAt1 = await listTabs(page);
       expect(tabsAt1).not.toContain('Multiaxis');

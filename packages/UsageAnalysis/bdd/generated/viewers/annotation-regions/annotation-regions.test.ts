@@ -27,7 +27,7 @@ test.describe("Annotation regions", () => {
     const run = journey(test, 6, page);
     await session.step(23, "Given user is logged in", () => loggedIn(page));
     await session.step(24, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(25, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"],["lassoTool","false"]]));
+    await session.step(25, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"],["lassoTool","false"]]), [["xColumnName","AGE"],["yColumnName","WEIGHT"],["lassoTool","false"]]);
     await session.step(29, "Then the \"viewer regions\" reading of scatter plot viewer should be 0", () => readingIs(page, "viewer regions", el("scatter plot viewer"), 0));
     await session.step(30, "And the \"regions shown\" reading of scatter plot viewer should be 0", () => readingIs(page, "regions shown", el("scatter plot viewer"), 0));
     await session.step(31, "And scatter plot viewer should not have a \"region 1\" area", () => hasNoArea(page, el("scatter plot viewer"), "region 1"));
@@ -70,7 +70,7 @@ test.describe("Annotation regions", () => {
       await session.step(69, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A histogram locks the categorical axis and stores the band as a formula region", async () => {
-      await session.step(72, "Given user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["valueColumnName","AGE"]]));
+      await session.step(72, "Given user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["valueColumnName","AGE"]]), [["valueColumnName","AGE"]]);
       await session.step(74, "Then the \"viewer regions\" reading of histogram viewer should be 0", () => readingIs(page, "viewer regions", el("histogram viewer"), 0));
       await session.step(75, "When user picks \"Tools > Draw Annotation Region\" from the context menu of histogram viewer", () => pickFromContextMenu(page, "Tools > Draw Annotation Region", el("histogram viewer")));
       await session.step(76, "And user drags across the \"view\" area of histogram viewer", () => dragAcrossArea(page, "view", el("histogram viewer")));
@@ -91,7 +91,7 @@ test.describe("Annotation regions", () => {
       await session.step(91, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A multi-axis line chart offers no Draw Annotation Region", async () => {
-      await session.step(94, "Given user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT, HEIGHT"],["multiAxis","false"]]));
+      await session.step(94, "Given user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT, HEIGHT"],["multiAxis","false"]]), [["xColumnName","AGE"],["yColumnNames","WEIGHT, HEIGHT"],["multiAxis","false"]]);
       await session.step(98, "When user opens the context menu of line chart viewer", () => openContextMenu(page, el("line chart viewer")));
       await session.step(99, "Then the open menu should list \"Tools > Draw Annotation Region\"", () => menuLists(page, "Tools > Draw Annotation Region"));
       await session.step(100, "When user closes the context menu", () => closeContextMenu(page));

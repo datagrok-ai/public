@@ -1,5 +1,4 @@
 **/*.js
-!webpack.config*.js
 **/*.d.ts
 **/*.d.ts.map
 src/**/*.js
@@ -10,3 +9,4 @@ help/
 test-console-output.log
 src/datagrok/build/web/**
 !grok_shared.dart.js
+!rspack.config.js

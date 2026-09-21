@@ -99,11 +99,11 @@ test('Network diagram', async ({page}) => {
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
 
     await v.pickColumnViaSelectorTrusted(page, {
-      role: 'node1--color', columnName: 'SEX', viewerType: VIEWER_TYPE,
+      role: 'node1-color', columnName: 'SEX', viewerType: VIEWER_TYPE,
       propName: 'node1ColorColumnName', scopeSelector: '.property-grid',
     });
     await v.pickColumnViaSelectorTrusted(page, {
-      role: 'node1--size', columnName: 'AGE', viewerType: VIEWER_TYPE,
+      role: 'node1-size', columnName: 'AGE', viewerType: VIEWER_TYPE,
       propName: 'node1SizeColumnName', scopeSelector: '.property-grid',
     });
 
@@ -116,7 +116,7 @@ test('Network diagram', async ({page}) => {
     await category(page, 'data', 'edge-color');
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
     await v.pickColumnViaSelectorTrusted(page, {
-      role: 'edge--color', columnName: 'AGE', viewerType: VIEWER_TYPE,
+      role: 'edge-color', columnName: 'AGE', viewerType: VIEWER_TYPE,
       propName: 'edgeColorColumnName', scopeSelector: '.property-grid',
     });
     expect(await shownValue(page, 'edge-color')).toBe('AGE');

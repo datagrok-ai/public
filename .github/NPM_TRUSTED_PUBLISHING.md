@@ -28,16 +28,13 @@ map to exactly one workflow. It already does:
 | `misc/<project>/`     | `@datagrok-misc/<project>`    | `misc.yaml`      |
 | `packages/<Package>/` | `@datagrok/<package>`         | `packages.yaml`  |
 
-The `libraries` and `packages` jobs in `js-api.yml` only bump the `datagrok-api`
-dependency and commit — they never publish, so they need no configuration.
-
 ## What the workflows do
 
 Each publishing job carries:
 
 ```yaml
     permissions:
-      contents: write     # the job pushes the refreshed package-lock.json
+      contents: read
       id-token: write     # lets the runner mint the OIDC token
 ```
 
@@ -94,11 +91,11 @@ Set the version to `1.0.0` — `packages.yaml` refuses to publish anything below
 `1.0.0`, so a package left at `0.x` never publishes from CI.
 
 ```bash
+pnpm install                                   # at the root of public/ (the workspace)
 cd packages/<Package>
-npm install
-npm run build
-npm login                # account with write access to the scope, 2FA on
-npm publish --access public
+pnpm run build
+npm login                                      # account with write access to the scope, 2FA on
+npm publish "$(pnpm pack | tail -1)" --access public   # pnpm pack rewrites workspace:/catalog: specifiers
 ```
 
 This one publish has no provenance attached; every later version does.

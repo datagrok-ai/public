@@ -5,17 +5,16 @@ paths:
 
 ## Package Build & Test Commands
 
-Run from within a package directory:
+`public/` is one pnpm workspace built with Turborepo (see `packages/BUILD.MD`). Never run `npm install`
+or `grok link` inside a package: `workspace:^` and `catalog:` specifiers are pnpm-only.
 
 ```bash
-npm install                # Install dependencies
-npm run build              # Full build: grok api && grok check --soft && webpack
-npm run build-all          # Build js-api → libraries → package in dependency order
-npm run lint               # ESLint check
-npm run lint-fix           # ESLint auto-fix
-npm run test               # Run tests: grok test (requires running Datagrok instance)
-npm run test-dev           # Run tests against dev server
-npm run link-all           # Link local datagrok-api and @datagrok-libraries/*
+grok setup                 # Once per checkout, at the repository root: pnpm via corepack + pnpm install
+grok build                 # From a package directory: the package and everything it depends on, in order, cached
+grok build --typecheck     # Build and type-check
+pnpm run lint              # ESLint check
+grok test                  # Run tests (requires a running Datagrok instance)
+pnpm add <name>            # Add a dependency
 ```
 
 Publishing: `grok publish` (debug) or `grok publish --release` (public).
@@ -90,8 +89,6 @@ Anti-patterns: Never `fetch('/api/...')`, never `fetch('https://external.com/...
 
 ## Linking for Local Development
 
-```bash
-grok link              # Auto-discovers and links all local dependencies
-grok link --unlink     # Revert to npm versioned dependencies
-npm run link-all       # Links specific dependencies listed in package.json
-```
+Nothing to link: `datagrok-api` and `@datagrok-libraries/*` are `workspace:^` dependencies, so a package
+always uses the copies in the checkout. After editing a library or js-api, run `grok build` in the package
+that uses it; Turborepo rebuilds the library first.

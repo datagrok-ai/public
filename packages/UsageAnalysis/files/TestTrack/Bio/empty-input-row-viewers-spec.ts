@@ -2,18 +2,23 @@ import {expect} from '@playwright/test';
 import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {knownOpenBug} from '../helpers/known-open-bug';
 test.use(specTestOptions);
 type ViewerCase = {
   label: string;
+  dataset: string;
   groupSelector: string;
   leafSelector: string;
   hasEditorDialog: boolean;
   viewerSelector: string | null;
   subFeatures: string[];
 };
+// Activity Cliffs needs an activity column, and filter_FASTA.csv carries only the sequence
+// column, so on it the analysis cannot start at all — it gets samples/FASTA.csv instead.
 const viewerCases: ViewerCase[] = [
   {
     label: 'Sequence Similarity Search',
+    dataset: 'System:AppData/Bio/tests/filter_FASTA.csv',
     groupSelector: '[name="div-Bio---Search"]',
     leafSelector: '[name="div-Bio---Search---Similarity-Search"]',
     hasEditorDialog: false,
@@ -26,6 +31,7 @@ const viewerCases: ViewerCase[] = [
   },
   {
     label: 'Sequence Diversity Search',
+    dataset: 'System:AppData/Bio/tests/filter_FASTA.csv',
     groupSelector: '[name="div-Bio---Search"]',
     leafSelector: '[name="div-Bio---Search---Diversity-Search"]',
     hasEditorDialog: false,
@@ -38,6 +44,7 @@ const viewerCases: ViewerCase[] = [
   },
   {
     label: 'Activity Cliffs',
+    dataset: 'System:AppData/Bio/samples/FASTA.csv',
     groupSelector: '[name="div-Bio---Analyze"]',
     leafSelector: '[name="div-Bio---Analyze---Activity-Cliffs..."]',
     hasEditorDialog: true,
@@ -53,12 +60,12 @@ for (const vc of viewerCases) {
     test.setTimeout(600_000);
     stepErrors.length = 0;
     await loginToDatagrok(page);
-    await page.evaluate(async () => {
+    await page.evaluate(async (dataset) => {
       document.body.classList.add('selenium');
       grok.shell.settings.showFiltersIconsConstantly = true;
       grok.shell.windows.simpleMode = true;
       grok.shell.closeAll();
-      const df = await grok.dapi.files.readCsv('System:AppData/Bio/tests/filter_FASTA.csv');
+      const df = await grok.dapi.files.readCsv(dataset);
       grok.shell.addTableView(df);
       await new Promise<void>((resolve) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
@@ -73,7 +80,7 @@ for (const vc of viewerCases) {
         }
         await new Promise((r) => setTimeout(r, 5000));
       }
-    });
+    }, vc.dataset);
     await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
     await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
     await page.evaluate(async () => {
@@ -83,13 +90,13 @@ for (const vc of viewerCases) {
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
-    await softStep('Setup: open filter_FASTA, empty row 0, hook balloon, set current row', async () => {
-      const setup = await page.evaluate(() => {
+    await softStep(`Setup: open ${vc.dataset}, empty row 0, hook balloon, set current row`, async () => {
+      const setup = await page.evaluate((dataset) => {
         const df = grok.shell.tv.dataFrame;
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         const macro = cols.find((c: any) => c.semType === 'Macromolecule') as any;
-        if (!macro) throw new Error('No Macromolecule column detected on filter_FASTA.csv');
-        if (df.rowCount < 2) throw new Error(`filter_FASTA.csv must have >=2 rows; got ${df.rowCount}`);
+        if (!macro) throw new Error(`No Macromolecule column detected on ${dataset}`);
+        if (df.rowCount < 2) throw new Error(`${dataset} must have >=2 rows; got ${df.rowCount}`);
         macro.set(0, '');
         df.currentRowIdx = 0;
         (window as any).__balloonCalls = [];
@@ -110,7 +117,7 @@ for (const vc of viewerCases) {
           row0empty: macro.get(0) === '' || macro.get(0) == null,
           currentRowIdx: df.currentRowIdx,
         };
-      });
+      }, vc.dataset);
       expect(setup.rowCount).toBeGreaterThanOrEqual(2);
       expect(setup.macroName).not.toBeNull();
       expect(setup.row0empty).toBe(true);
@@ -156,12 +163,13 @@ for (const vc of viewerCases) {
           docked,
         };
       }, vc.viewerSelector);
-
-      if (!(probe.balloonCount > 0)) {
-
-        console.warn(`[SR-01 known platform gap] GROK-16111: ${vc.label} did NOT surface a rejection balloon on empty current-row input (balloonCount=${probe.balloonCount}). Captured balloons: ${JSON.stringify(probe.balloonMsgs)}. Active viewer types: ${JSON.stringify(probe.viewerTypes)}. Revert SR-01 + restore the hard expect(probe.balloonCount).toBeGreaterThan(0) when GROK-16111 is fixed.`);
-      }
-      expect(probe.rowCount).toBe(baseRowCount);
+      expect(probe.rowCount, `${vc.label}: source table must not be silently rewritten on empty input`).toBe(baseRowCount);
+      expect(probe.docked || probe.balloonCount > 0, `${vc.label}: viewer must react on empty input (dock or reject), not silently no-op`).toBe(true);
+      await knownOpenBug('GROK-16111', () => {
+        expect(probe.balloonCount,
+          `GROK-16111: empty current-row input must surface a rejection balloon. probe=${JSON.stringify(probe)}`)
+          .toBeGreaterThan(0);
+      });
     });
     finishSpec();
   });

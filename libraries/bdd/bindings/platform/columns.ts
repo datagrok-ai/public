@@ -181,8 +181,12 @@ export const makeRowCurrent = When('user makes row {int} current', (page: Page, 
 export const makeLastRowCurrent = When('user makes the last row current', (page: Page) => makeCurrent(page, 'last'), {tier: 'api'});
 
 export const currentRowIs = Then('row {int} should be current', async (page: Page, row: number) => {
-  expect(await page.evaluate(() => grok.shell.t.currentRowIdx + 1), 'the current row').toBe(row);
+  await expect.poll(() => page.evaluate(() => grok.shell.t.currentRowIdx + 1), {message: 'the current row'}).toBe(row);
 });
+
+export const mouseOverRowIs = Then('row {int} should be under the mouse', async (page: Page, row: number) => {
+  await expect.poll(() => page.evaluate(() => grok.shell.t.mouseOverRowIdx + 1), {message: 'the row under the mouse'}).toBe(row);
+}, {description: 'rows count from 1 — the table\'s mouse-over row, which every viewer of the table highlights'});
 
 export const joinedValues = Then('every value of {string} column should be {string} and {string} of the same row joined by {string}', async (page: Page, column: string, a: string, b: string, sep: string) => {
   const bad: string[] = await page.evaluate(([c, x, y, s]) => {
@@ -200,3 +204,12 @@ export const joinedValues = Then('every value of {string} column should be {stri
   }, [column, a, b, sep] as [string, string, string, string]);
   expect(bad, `rows of "${column}" that are not "${a}${sep}${b}"`).toEqual([]);
 }, {description: 'a pairing column: each cell is the two source cells of its row with the separator between'});
+
+export const setColumnSemType = When('user sets the semantic type of {string} column to {string}', async (page: Page, column: string, semType: string) => {
+  await page.evaluate(([c, s]) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}; it has: ${grok.shell.t.columns.names().join(', ')}`);
+    col.semType = s;
+  }, [column, semType] as [string, string]);
+}, {tier: 'api', description: 'the column\'s semantic type written directly — a type the detectors would not give the column, for a claim that something keeps it'});

@@ -91,7 +91,7 @@ test.describe("Forms viewer renderers, renderer size and the twenty-field cap", 
     await run.scenario("A fit column promotes Renderer Size to normal without anyone setting it", async () => {
       await session.step(86, "Given user closes all views", () => closeAllViews(page));
       await session.step(87, "And user opens curves dataset", () => openDataset(page, ds("curves")));
-      await session.step(88, "And user adds a forms viewer with:", () => addViewerWith(page, "forms", [["fieldsColumnNames","smiles, multiple prefit"]]));
+      await session.step(88, "And user adds a forms viewer with:", () => addViewerWith(page, "forms", [["fieldsColumnNames","smiles, multiple prefit"]]), [["fieldsColumnNames","smiles, multiple prefit"]]);
       await session.step(90, "And user makes row 1 current", () => makeRowCurrent(page, 1));
       await session.step(91, "Then forms viewer should be visible", () => shouldBe(page, el("forms viewer"), "visible"));
       await session.step(92, "And \"multiple prefit\" column should have semantic type \"fit\"", () => columnSemType(page, "multiple prefit", "fit"));

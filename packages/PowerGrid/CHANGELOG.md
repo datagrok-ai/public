@@ -3,8 +3,12 @@
 ## v.next
 
 * Tests: Added `bdd/features/grid/summary-columns.feature` (13 tests), translating the summary-column scenarios of the TestTrack grid specs: every renderer item of Add > Summary Columns with its renderer read from the grid, the top-panel remove icon (GROK-18256), a Tags column whose source column is removed (GROK-19942), a renamed source column, and the columns across a layout and a project; and `bdd/features/grid/summary-columns-tags.feature`, which claims what a Tags column draws and carries `@known-failure` for GROK-20888
+* GROK-20888: Fixed the Tags and Bar summary columns painting the whole grid body in the chip color (a canvas path leak: `roundRect` without `beginPath`)
 * Tests: Added the `bdd` project with five Forms viewer features (30 scenarios) on the `viewers` tier, and gave the viewer its automation surface (`isRenderPending`, `onRendered`, `getWidgetStatus` with cards, fields, labels and sort indicators as hit areas)
 * GROK-20380: Fixed the Forms viewer ordering its cards by the spreadsheet's sort with Use Grid Sort off
+
+## 1.8.4 (2026-09-03)
+
 * [#3765](https://github.com/datagrok-ai/public/issues/3765): Forms viewer: Added the ability to pin rows via the context menu; pinned forms stay in place when scrolling
 * Vlaaivis manager: Fixed the `mpo-line-editor` import path, which broke the build after the editor moved into `mpo/editors/`
 * Vlaaivis: Fixed the build against the MPO desirability union — `Subsector` is an intersection now (an interface cannot extend a union), and `VlaaivisColumnMetadata` is typed on the numerical member it has always been

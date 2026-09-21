@@ -17,10 +17,18 @@ const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
 const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
+
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
 const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, {encoding: 'utf-8'}));
 
 const dependencies: string[] = [];
+
+function apiVersion(): string {
+  let dir = path.dirname(require.resolve('datagrok-api/dg'));
+  while (!fs.existsSync(path.join(dir, 'package.json')))
+    dir = path.dirname(dir);
+  return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).version;
+}
 
 function createDirectoryContents(name: string, friendlyName: string, config: utils.Config, templateDir: string,
   packageDir: string, ide: string = '', ts: boolean = true, eslint: boolean = false, test: boolean = false) {
@@ -36,8 +44,7 @@ function createDirectoryContents(name: string, friendlyName: string, config: uti
         fs.writeFileSync(copyFilePath, fs.readFileSync(origFilePath, 'base64'), 'base64');
         return false;
       }
-      let contents = fs.readFileSync((file === 'webpack.config.js' && ts) ?
-        path.join(templateDir, 'ts.webpack.config.js') : origFilePath, 'utf8');
+      let contents = fs.readFileSync(origFilePath, 'utf8');
       contents = contents.replace(/#{PACKAGE_FRIENDLY_NAME}/g, friendlyName);
       contents = contents.replace(/#{PACKAGE_NAME}/g, name);
       contents = contents.replace(/#{PACKAGE_DETECTORS_NAME}/g, utils.kebabToCamelCase(name));
@@ -50,18 +57,32 @@ function createDirectoryContents(name: string, friendlyName: string, config: uti
       contents = contents.replace(/#{GROK_HOST}/g, /localhost|127\.0\.0\.1/.test(config['servers'][config.default]['url']) ?
         'http://localhost:63343/login.html' : (new URL(config['servers'][config.default]['url'])).origin);
       if (file === 'package.json') {
-        // Generate scripts for non-default servers from `config.yaml`
-        const _package = JSON.parse(contents); 
-        _package['scripts'] = _package['scripts']  ?? {};
-        for (const server in config.servers) {
-          if (server === config.default) continue;
-          _package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server}`;
-          _package['scripts'][`release-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server} --release`;
-        }
-        
-        if (ts) {
-          _package.devDependencies = _package.devDependencies?? {};
-          Object.assign(_package.devDependencies, {'ts-loader': 'latest', 'typescript': 'latest'});
+        // The toolchain (bundler, TypeScript, eslint) comes from the workspace root; a package
+        // declares only what it imports. Deploy with `grok publish <alias>`, no per-server scripts.
+        const _package = JSON.parse(contents);
+        _package['scripts'] = _package['scripts'] ?? {};
+        _package.devDependencies = _package.devDependencies ?? {};
+        // Outside the public/ pnpm workspace the template's workspace:/catalog: specifiers mean
+        // nothing to npm: pin published ranges and bring the toolchain in as a devDependency.
+        if (!utils.isPnpmWorkspace(packageDir)) {
+          const published: Record<string, string> = {
+            'datagrok-api': `^${apiVersion()}`,
+            '@datagrok-libraries/test': '^1.4.0',
+            'rxjs': '^6.5.5', 'cash-dom': '^8.1.5', 'dayjs': '^1.11.13', 'wu': '^2.1.0', 'typescript': '^7.0.2',
+          };
+          for (const sect of ['dependencies', 'devDependencies']) {
+            for (const [dep, spec] of Object.entries(_package[sect] ?? {})) {
+              if (spec === 'workspace:^' || spec === 'catalog:')
+                _package[sect][dep] = published[dep] ?? 'latest';
+            }
+          }
+          Object.assign(_package.devDependencies, {
+            '@datagrok/build-config': '^1.0.0',
+            'eslint': '^8.57.1', '@typescript-eslint/parser': '^8.39.0', '@typescript-eslint/eslint-plugin': '^8.39.0',
+            'eslint-config-google': '^0.14.0', 'typescript': '^5.9.3',
+          });
+          fs.writeFileSync(path.join(packageDir, '.eslintrc.json'),
+            JSON.stringify({root: true, extends: './node_modules/@datagrok/build-config/eslintrc.json'}, null, 2) + '\n');
         }
 
         if (eslint) {
@@ -198,8 +219,9 @@ export function create(args: CreateArgs) {
     color.success('Successfully created package ' + name);
     console.log(help.package(ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
-    console.log('Running `npm install` to get the required dependencies...\n');
-    exec('npm install', {cwd: packageDir}, (err, stdout, stderr) => {
+    const install = utils.isPnpmWorkspace(packageDir) ? 'pnpm install' : 'npm install';
+    console.log(`Running \`${install}\` to get the required dependencies...\n`);
+    exec(install, {cwd: packageDir}, (err, stdout, stderr) => {
       if (err) throw err;
       else console.log(stderr, stdout);
     });

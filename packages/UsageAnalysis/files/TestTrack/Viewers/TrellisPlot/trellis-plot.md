@@ -405,8 +405,10 @@ the viewer does, so the overflow below is structural rather than a matter of scr
 2. Set **Legend Visibility** to **Always**
 3. Set **Legend Position** to Left, Right, Top, Bottom
 4. Set **Legend Visibility** to **Never**
-5. Switch the inner viewer to **Box plot** (X = SEX, Y = RACE) and set **Legend
-   Visibility** back to **Always**, so the inner viewer's colour legend is on screen
+5. Switch the inner viewer to **Box plot** (X = SEX, Y = RACE), set its **Category 2** to
+   CONTROL (**Show All Categories** is enabled only when both Category 1 and Category 2 are
+   set) and set **Legend Visibility** back to **Always**, so the inner viewer's colour legend
+   is on screen
 6. Click the gear icon in the trellis title bar and open the **Box plot** tab of the
    Context Panel, then expand its collapsed **Style** section
 7. Set **Show All Categories** to its non-default value (the default is off -- switch
@@ -415,20 +417,22 @@ the viewer does, so the overflow below is structural rather than a matter of scr
    the inner Box plot and depends on the configuration -- do not assume a fixed list).
    There have to be at least three of them, because step 11 needs a third entry that is
    on screen and gets switched off by a click aimed at another one. To begin with every
-   entry is at full brightness and none of them carries the "current" highlight: that
-   highlight marks membership of a chosen subset of categories, and no subset has been
-   chosen yet. Click the **x** cross on the first entry -- that entry dims, and every
-   entry still on screen picks the highlight up
+   entry is at full brightness, none of them carries the "current" highlight, and no entry
+   shows a cross: the highlight marks membership of a chosen subset of categories, the
+   cross belongs to a chosen entry only, and no subset has been chosen yet. Click the
+   **value label** of the first entry -- that entry becomes current at full brightness,
+   every other entry dims, and the cross appears on the chosen one
 9. Re-read **Show All Categories** in the Box plot tab -- it still holds the value set
    at step 7, it did not fall back to the default
-10. Uncheck a second legend category with its **x** cross, without re-opening the
-    property tab -- the second entry dims too while the first one stays dimmed,
-    **Show All Categories** is still unchanged and no new console error appears
-11. Click the **value label** of the first category. The label is not the opposite of
-    the cross: it means "show only this one", so that entry comes back to full
-    brightness while every other entry goes dim -- including one that was still on
-    screen and was never clicked. Then click the **x** cross on that single remaining
-    entry: instead of hiding the last series, the legend returns to how it started,
+10. Control+click the **value label** of a second entry, without re-opening the property
+    tab -- it joins the subset, so both entries are at full brightness while the rest stay
+    dim. Then click the **x** cross on the first entry -- it leaves the subset and dims,
+    the second entry stays current, **Show All Categories** is still unchanged and no new
+    console error appears
+11. Click the **value label** of a third entry. A plain label click means "show only this
+    one", so that entry comes to full brightness while every other entry goes dim --
+    including the second one, which was current. Then click the **x** cross on that single
+    remaining entry: instead of hiding the last series, the legend returns to how it started,
     every entry at full brightness with no highlight anywhere. **Show All Categories**
     is unchanged through both clicks and the console stays clean
 12. Restore the starting state: **Legend Visibility** back to **Never** and the

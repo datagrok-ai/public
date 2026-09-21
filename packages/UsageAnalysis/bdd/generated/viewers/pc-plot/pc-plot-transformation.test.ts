@@ -24,7 +24,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("PC plot transformations", () => {
   const session = feature(test, "features/viewers/pc-plot/pc-plot-transformation.feature", import.meta.url);
-  test("PC plot transformations", {tag: ["@journey", "@viewers", "@realizes:viewers.pc-plot", "@known-failure"]}, async ({browser}) => {
+  test("PC plot transformations", {tag: ["@journey", "@viewers", "@realizes:viewers.pc-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 6, page);
     await session.step(27, "Given user is logged in", () => loggedIn(page));
@@ -103,21 +103,21 @@ test.describe("PC plot transformations", () => {
       await session.step(101, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("With a transformation, Reset filters restores the rows but drops the selection (GROK-17306)", async () => {
-      await session.step(105, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(106, "And user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["Column Names","AGE, HEIGHT, WEIGHT"]]));
-      await session.step(108, "Then pc plot viewer should show 1000 rows", () => showsRows(page, el("pc plot viewer"), 1000));
-      await session.step(109, "When user sets \"Transformation\" property of pc plot viewer to '[{\"#type\":\"GroupAggregation\",\"aggType\":\"key\",\"colName\":\"SEX\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"pivot\",\"colName\":\"DIS_POP\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"avg\",\"colName\":\"WEIGHT\"}]'", () => setProperty(page, "Transformation", el("pc plot viewer"), "[{\"#type\":\"GroupAggregation\",\"aggType\":\"key\",\"colName\":\"SEX\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"pivot\",\"colName\":\"DIS_POP\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"avg\",\"colName\":\"WEIGHT\"}]"));
-      await session.step(110, "Then the \"transformed\" reading of pc plot viewer should be \"true\"", () => readingReads(page, "transformed", el("pc plot viewer"), "true"));
-      await session.step(111, "When user opens the filter panel", () => openFilterPanel(page));
-      await session.step(112, "And user adds a range filter on \"AGE\" from 30 to 50", () => addRangeFilter(page, "AGE", 30, 50));
-      await session.step(113, "Then 494 rows should pass the filter", () => filterPasses(page, 494));
-      await session.step(114, "When user selects the first 10 rows", () => selectFirstRows(page, 10));
-      await session.step(115, "Then 10 rows should be selected", () => selectedRowCount(page, 10));
-      await session.step(116, "When user hovers over filter panel", () => hoverOver(page, el("filter panel")));
-      await session.step(117, "And user clicks on reset icon of filter panel", () => clickOn(page, el("reset icon of filter panel")));
-      await session.step(118, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(119, "And 10 rows should be selected", () => selectedRowCount(page, 10));
-    }, {knownFailure: true});
+      await session.step(104, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+      await session.step(105, "And user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["Column Names","AGE, HEIGHT, WEIGHT"]]), [["Column Names","AGE, HEIGHT, WEIGHT"]]);
+      await session.step(107, "Then pc plot viewer should show 1000 rows", () => showsRows(page, el("pc plot viewer"), 1000));
+      await session.step(108, "When user sets \"Transformation\" property of pc plot viewer to '[{\"#type\":\"GroupAggregation\",\"aggType\":\"key\",\"colName\":\"SEX\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"pivot\",\"colName\":\"DIS_POP\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"avg\",\"colName\":\"WEIGHT\"}]'", () => setProperty(page, "Transformation", el("pc plot viewer"), "[{\"#type\":\"GroupAggregation\",\"aggType\":\"key\",\"colName\":\"SEX\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"pivot\",\"colName\":\"DIS_POP\"},{\"#type\":\"GroupAggregation\",\"aggType\":\"avg\",\"colName\":\"WEIGHT\"}]"));
+      await session.step(109, "Then the \"transformed\" reading of pc plot viewer should be \"true\"", () => readingReads(page, "transformed", el("pc plot viewer"), "true"));
+      await session.step(110, "When user opens the filter panel", () => openFilterPanel(page));
+      await session.step(111, "And user adds a range filter on \"AGE\" from 30 to 50", () => addRangeFilter(page, "AGE", 30, 50));
+      await session.step(112, "Then 494 rows should pass the filter", () => filterPasses(page, 494));
+      await session.step(113, "When user selects the first 10 rows", () => selectFirstRows(page, 10));
+      await session.step(114, "Then 10 rows should be selected", () => selectedRowCount(page, 10));
+      await session.step(115, "When user hovers over filter panel", () => hoverOver(page, el("filter panel")));
+      await session.step(116, "And user clicks on reset icon of filter panel", () => clickOn(page, el("reset icon of filter panel")));
+      await session.step(117, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(118, "And 10 rows should be selected", () => selectedRowCount(page, 10));
+    });
     run.finish();
   });
 });

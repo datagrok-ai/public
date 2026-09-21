@@ -80,7 +80,11 @@ async function settledCanvasDiff(page: Page, key: string, expectChange = false):
   return delta;
 }
 
+// A marker color seen for the first time is drawn directly and stamped from the sprite cache on
+// every later repaint (Marker.draw), ~99k pixels apart on demog; a baseline is taken from a repaint.
 async function captureBaseline(page: Page, key: string): Promise<void> {
+  await page.evaluate(() => grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot').invalidateCanvas());
+  await v.waitForViewerRendered(page, sp.SP_TYPE, 1500);
   await sp.parkPointer(page);
   await v.waitForViewerQuiet(page, sp.SP_TYPE, {gapMs: 250, capMs: 1500});
   expect(await captureCanvas(page, key)).toBe(true);
@@ -140,9 +144,10 @@ test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page})
     await sp.setNumericProp(page, 'prop-histogram-bins', 'x-axis', HISTOGRAM_BINS);
     expect(await settledCanvasDiff(page, 'hist-xy', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
+    // Histogram Bins greys out (aria-disabled) once both histograms are off, so it is restored first
+    await sp.setNumericProp(page, 'prop-histogram-bins', 'x-axis', DEFAULT_HISTOGRAM_BINS);
     await sp.setCheckboxProp(page, 'prop-show-x-histogram', 'x-axis', false);
     await sp.setCheckboxProp(page, 'prop-show-y-histogram', 'x-axis', false);
-    await sp.setNumericProp(page, 'prop-histogram-bins', 'x-axis', DEFAULT_HISTOGRAM_BINS);
     expect(await settledCanvasDiff(page, 'hist-base')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
     expect(errCount()).toBe(errBefore);
@@ -201,17 +206,17 @@ test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page})
     const errBefore = errCount();
     await captureBaseline(page, 'whisker-base');
 
-    await sp.pickPanelColumn(page, 'prop-x-whisker-min', 'div-column-combobox-x--whisker--min', 'x', WHISKER_X_MIN);
-    await sp.pickPanelColumn(page, 'prop-x-whisker-max', 'div-column-combobox-x--whisker--max', 'x', WHISKER_X_MAX);
-    await sp.pickPanelColumn(page, 'prop-y-whisker-min', 'div-column-combobox-y--whisker--min', 'y', WHISKER_Y_MIN);
-    await sp.pickPanelColumn(page, 'prop-y-whisker-max', 'div-column-combobox-y--whisker--max', 'y', WHISKER_Y_MAX);
+    await sp.pickPanelColumn(page, 'prop-x-whisker-min', 'div-column-combobox-x-whisker-min', 'x', WHISKER_X_MIN);
+    await sp.pickPanelColumn(page, 'prop-x-whisker-max', 'div-column-combobox-x-whisker-max', 'x', WHISKER_X_MAX);
+    await sp.pickPanelColumn(page, 'prop-y-whisker-min', 'div-column-combobox-y-whisker-min', 'y', WHISKER_Y_MIN);
+    await sp.pickPanelColumn(page, 'prop-y-whisker-max', 'div-column-combobox-y-whisker-max', 'y', WHISKER_Y_MAX);
     expect(await settledCanvasDiff(page, 'whisker-base', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
     expect(errCount()).toBe(errBefore);
 
-    await sp.clearPanelColumn(page, 'prop-x-whisker-min', 'div-column-combobox-x--whisker--min', 'x');
-    await sp.clearPanelColumn(page, 'prop-x-whisker-max', 'div-column-combobox-x--whisker--max', 'x');
-    await sp.clearPanelColumn(page, 'prop-y-whisker-min', 'div-column-combobox-y--whisker--min', 'y');
-    await sp.clearPanelColumn(page, 'prop-y-whisker-max', 'div-column-combobox-y--whisker--max', 'y');
+    await sp.clearPanelColumn(page, 'prop-x-whisker-min', 'div-column-combobox-x-whisker-min', 'x');
+    await sp.clearPanelColumn(page, 'prop-x-whisker-max', 'div-column-combobox-x-whisker-max', 'x');
+    await sp.clearPanelColumn(page, 'prop-y-whisker-min', 'div-column-combobox-y-whisker-min', 'y');
+    await sp.clearPanelColumn(page, 'prop-y-whisker-max', 'div-column-combobox-y-whisker-max', 'y');
     expect(await settledCanvasDiff(page, 'whisker-base')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
     expect(errCount()).toBe(errBefore);
@@ -285,22 +290,22 @@ test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page})
     await settledCanvasDiff(page, 'lines-base', true);
     expect(await captureCanvas(page, 'lines-nolines')).toBe(true);
 
-    await sp.pickPanelColumn(page, 'prop-lines-order', 'div-column-combobox-lines--order', 'data', LINES_ORDER_COLUMN);
+    await sp.pickPanelColumn(page, 'prop-lines-order', 'div-column-combobox-lines-order', 'data', LINES_ORDER_COLUMN);
     expect(await v.pollValue(() => sp.rowOpacity(page, 'prop-lines-by'), (o) => o === '1', 2000, 50)).toBe('1');
     expect(await settledCanvasDiff(page, 'lines-nolines', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
     expect(await captureCanvas(page, 'lines-color-split')).toBe(true);
 
-    await sp.pickPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines--by', 'data', COLOR_COLUMN);
+    await sp.pickPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines-by', 'data', COLOR_COLUMN);
     expect(await settledCanvasDiff(page, 'lines-color-split')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
-    await sp.pickPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines--by', 'data', LINES_BY_COLUMN);
+    await sp.pickPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines-by', 'data', LINES_BY_COLUMN);
     expect(await settledCanvasDiff(page, 'lines-color-split', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
-    await sp.clearPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines--by', 'data');
+    await sp.clearPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines-by', 'data');
     expect(await settledCanvasDiff(page, 'lines-color-split')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
-    await sp.clearPanelColumn(page, 'prop-lines-order', 'div-column-combobox-lines--order', 'data');
+    await sp.clearPanelColumn(page, 'prop-lines-order', 'div-column-combobox-lines-order', 'data');
     await sp.clearPanelColumn(page, 'prop-color', 'div-column-combobox-color', 'color');
     expect(await settledCanvasDiff(page, 'lines-base')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 

@@ -12,6 +12,10 @@ on:
     paths:
       - 'js-api/**'
 
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  TURBO_UI: 0
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release/') }}
@@ -33,20 +37,13 @@ jobs:
       current_version: ${{ steps.check-version.outputs.current_version }}
       name: ${{ steps.check-version.outputs.name }}
       job_name: ${{ steps.check-version.outputs.job_name }}
-      packages_matrix: ${{ steps.packages.outputs.matrix }}
-      libraries_matrix: ${{ steps.libraries.outputs.matrix }}
       release_tag: ${{ steps.check-version.outputs.release_tag }}
-      replace_pack_dep: ${{ steps.packages.outputs.replace_pack_dep }}
-      replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
-      replace_version: ${{ steps.replace_ver.outputs.replace_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
             ./js-api
-            ./packages
-            ./libraries
       - name: Check version was changed
         id: check-version
         working-directory: ./js-api
@@ -81,9 +78,6 @@ jobs:
                 else
                   echo "release_tag=latest" >> $GITHUB_OUTPUT
                 fi
-                if [[ "$(awk -F. '{print $2}' <<<$latest_pushed)" -lt "$(awk -F. '{print $2}' <<<$current_version)" ]] || [[ "$(awk -F. '{print $1}' <<<$latest_pushed)" -lt "$(awk -F. '{print $1}' <<<$current_version)" ]]; then
-                  echo "replace_dep=true" >> $GITHUB_OUTPUT
-                fi
               else
                 if [ -n "$prerelease_tag" ]; then
                   echo "release_tag=$prerelease_tag" >> $GITHUB_OUTPUT
@@ -101,87 +95,12 @@ jobs:
           echo "current_version=${current_version}" >> $GITHUB_OUTPUT
           echo "name=${name}" >> $GITHUB_OUTPUT
 
-      - name: Check dependent packages
-        id: packages
-        if: steps.check-version.outputs.replace_dep == 'true'
-        run: |
-          MATRIX_JSON="["
-          for PACKAGE in $(grep -lr "${{ steps.check-version.outputs.name }}" packages/*/package.json | awk -F'/' '{print $2}' | sort -u); do
-            DIR="packages/${PACKAGE}"
-            if [ -f "${DIR}/package.json" ]; then
-              dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
-              unpublished_dep="$(jq -cr '. | to_entries | map(select(.value | match("\\.\\./js-api")).key)[]' <<<$dependencies)"
-              if [[ $unpublished_dep == "datagrok-api" ]]; then
-                echo "replace_pack_dep=true" >> $GITHUB_OUTPUT
-                MATRIX_JSON+="{\"package\": \"${PACKAGE}\""
-                scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
-                if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                  MATRIX_JSON+=", \"build\": \"true\""
-                fi
-                MATRIX_JSON+=", \"unpublished_dep\": \"true\""
-                MATRIX_JSON+=", \"dep\": \"$unpublished_dep\""
-                MATRIX_JSON+=", \"author\": \"$(jq -r '.author.email // "monitoring@datagrok.ai"' "${DIR}/package.json")\""
-                MATRIX_JSON+="}"
-              fi
-            fi
-          done
-
-          MATRIX_JSON="${MATRIX_JSON//\}\{/\}, \{}"
-          MATRIX_JSON+="]"
-          JSON="{\"include\": ${MATRIX_JSON}}"
-          echo "matrix=${JSON}" >> $GITHUB_OUTPUT
-
-      - name: Check dependent libraries
-        if: steps.check-version.outputs.replace_dep == 'true'
-        id: libraries
-        run: |
-          MATRIX_JSON="["
-          for LIB in $(echo -e "utils\ngridext\n$(grep -lr "${{ steps.check-version.outputs.name }}" libraries/*/package.json | awk -F'/' '{print $2}' | sort)" | awk '!x[$0]++'); do
-            DIR="libraries/${LIB}"
-            if [ -f "${DIR}/package.json" ]; then
-              dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
-              unpublished_dep="$(jq -cr '. | to_entries | map(select(.value | match("\\.\\./js-api")).key)[]' <<<$dependencies)"
-              if [[ $unpublished_dep == "datagrok-api" ]]; then
-                echo "replace_lib_dep=true" >> $GITHUB_OUTPUT
-                MATRIX_JSON+="{\"library\": \"${LIB}\""
-                scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
-                if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                  MATRIX_JSON+=", \"build\": \"true\""
-                fi
-                MATRIX_JSON+=", \"unpublished_dep\": \"true\""
-                MATRIX_JSON+=", \"dep\": \"$unpublished_dep\""
-                MATRIX_JSON+=", \"author\": \"$(jq -r '.author.email // "monitoring@datagrok.ai"' "${DIR}/package.json")\""
-                MATRIX_JSON+="}"
-              fi
-            fi
-          done
-
-          MATRIX_JSON="${MATRIX_JSON//\}\{/\}, \{}"
-          MATRIX_JSON+="]"
-          JSON="{\"include\": ${MATRIX_JSON}}"
-          echo "matrix=${JSON}" >> $GITHUB_OUTPUT
-
-      - name: Set version for dependencies
-        if: steps.check-version.outputs.replace_dep == 'true'
-        id: replace_ver
-        run: |
-          if [[ "${{ steps.check-version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ steps.check-version.outputs.release_tag }}" == 'latest' ]]; then
-            replace_version=${{ steps.check-version.outputs.current_version }}
-          else
-            replace_version=$(echo "${{ steps.check-version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+)(-master|rc).*/\1\2/')
-          fi
-          echo "replace_version=$replace_version" >> $GITHUB_OUTPUT
-
       - name: Output
         run: |
           echo -e "changed_version: ${{ steps.check-version.outputs.changed_version }}"
           echo -e "current_version: ${{ steps.check-version.outputs.current_version }}"
           echo -e "name: ${{ steps.check-version.outputs.name }}"
-          echo -e "packages_matrix: ${{ steps.packages.outputs.matrix }}"
-          echo -e "libraries_matrix: ${{ steps.libraries.outputs.matrix }}"
           echo -e "release_tag: ${{ steps.check-version.outputs.release_tag }}"
-          echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
-          echo -e "replace_version: ${{ steps.replace_version.outputs.replace_version }}"
 
   build:
     name: ${{ needs.version.outputs.job_name || 'Deploy' }}
@@ -197,38 +116,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
-          sparse-checkout: |
-            ./js-api
-            ./.github
-            ./docker
-            ./packages/ApiTests
-            ./packages/ApiSamples
-            ./libraries
-            ./docusaurus
-            ./help/develop
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-          cache-dependency-path: |
-            docusaurus/package-lock.json
-            js-api/package-lock.json
-      - run: npm install -g npm@x
-      - run: npm version
-      - run: npm install
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=datagrok-api
+      - run: pnpm run check-links
         working-directory: ./js-api
-      - run: npm run build
+      - run: pnpm run inventory
         working-directory: ./js-api
-      - run: npm run build-ts
+      - run: pnpm run lint
         working-directory: ./js-api
-      - run: npm run check-links
-        working-directory: ./js-api
-      - run: npm run inventory
-        working-directory: ./js-api
-      - run: npm run lint
-        working-directory: ./js-api
-      - run: npm test
+      - run: pnpm test
         working-directory: ./js-api
       # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
       # toolchain only for the publish step so the build keeps its pinned Node.
@@ -243,6 +145,8 @@ jobs:
         run: npm install -g npm@latest
       - name: npm publish
         id: publish
+        if: needs.version.outputs.changed_version == 'true'
+        working-directory: ./js-api
         run: |
           tag=""
           if [[ "${{ needs.version.outputs.release_tag }}" == 'patch' ]]; then
@@ -252,25 +156,31 @@ jobs:
           elif [[ "${{ needs.version.outputs.release_tag }}" == *'rc'* ]]; then
             tag="--tag release-candidate"
           fi
-          npm publish ${tag}
-          echo "tag=${tag}" >> $GITHUB_OUTPUT
-        working-directory: ./js-api
-        if: needs.version.outputs.changed_version == 'true'
+          tgz="$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)"
+          for dep in $(tar xzf "$tgz" -O package/package.json | jq -r '(.dependencies // {}) + (.peerDependencies // {}) | to_entries[] | select(.key | test("^(datagrok-api|datagrok-tools|@datagrok-libraries/)")) | "\(.key)@\(.value | ltrimstr("^"))"'); do
+            if [ "$(npm view "$dep" version 2>/dev/null)" != "${dep##*@}" ]; then
+              echo "::error title=datagrok-api::depends on $dep, which is not on npm yet; publish it first"
+              exit 1
+            fi
+          done
+          npm publish ${tag} "$tgz"
+          echo "tag=${tag#--tag }" >> $GITHUB_OUTPUT
       - name: Restore Node for the compatibility tool
         uses: actions/setup-node@v4
         if: needs.version.outputs.changed_version == 'true'
         with:
-          node-version: '18.x'
+          node-version: 22
 
       - name: Get actors slack
         id: actor
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           email-mapping: ${{ secrets.EMAIL_SLACK_ID }}
       - name: Prepare Slack Message
         id: slack-prepare
-        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
+        if: ${{ steps.publish.outcome == 'success' }}
         shell: bash
         run: |
           mentions=$(echo -e "${{ steps.actor.outputs.user-ids }}" | sort -u)
@@ -317,208 +227,3 @@ jobs:
               fi
             done
           fi
-
-      - name: Commit package-lock.json
-        continue-on-error: true
-        if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
-        run: |
-          if [ -n "$(git status -s js-api/package-lock.json)" ]; then
-            git config --global user.name 'github-actions[bot]'
-            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-            git pull
-            git add js-api/package-lock.json
-            git commit -m 'GitHub Actions: Update js-api/package-lock.json [skip ci]
-
-            Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-            count=0
-            until git push; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "10" ]; then
-                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-                exit $exit
-              fi
-            done
-          fi
-
-  libraries:
-    name: Check libraries
-    runs-on: ubuntu-22.04
-    if: needs.version.outputs.replace_lib_dep == 'true' && needs.common-check.outputs.continue == 'true'
-    needs:
-      - build
-      - version
-      - common-check
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.version.outputs.libraries_matrix) }}
-      max-parallel: 1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.WRITE_TOKEN || github.token }}
-          sparse-checkout: |
-            ./js-api
-            ./.github
-            ./libraries/${{ matrix.library }}
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-          cache-dependency-path: |
-            js-api/package-lock.json
-            libraries/${{ matrix.library }}/package-lock.json
-      - name: Upgrade npm
-        run: npm install -g npm@x
-      - name: npm version
-        run: npm version
-      - name: Replace unpublished deps
-        id: deps
-        if: ${{ matrix.unpublished_dep == 'true' }}
-        run: |
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.replace_version }}"#g' package.json
-        working-directory: libraries/${{ matrix.library }}
-      - name: npm install
-        run: rm -rf package-lock.json && npm install
-        working-directory: libraries/${{ matrix.library }}
-      - name: Commit package.json
-        if: needs.version.outputs.changed_version == 'true'
-        id: commit
-        run: |
-          if [ -n "$(git status -s libraries/${{ matrix.library }}/package.json)" ]; then
-            git config --global user.name 'github-actions[bot]'
-            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-            git pull
-            git add libraries/${{ matrix.library }}/package.json
-            git add libraries/${{ matrix.library }}/package-lock.json
-            git commit -m 'GitHub Actions: Update library ${{ matrix.library }} js-api dependency
-
-            Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-            count=0
-            until git push; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "10" ]; then
-              echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-                exit $exit
-              fi
-            done
-          fi
-
-      - name: Send mail
-        if: always() && steps.commit.outcome == 'failure'
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.mailgun.org
-          server_port: 587
-          secure: true
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "Github Actions: Failed update for library ${{ matrix.library }}"
-          to: ${{ matrix.author }}
-          from: monitoring@grok.datagrok.ai
-          body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          reply_to: monitoring@datagrok.ai
-
-  packages:
-    name: Check packages
-    runs-on: ubuntu-22.04
-    if: needs.version.outputs.replace_pack_dep == 'true' && needs.common-check.outputs.continue == 'true'
-    needs:
-      - build
-      - version
-      - common-check
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.version.outputs.packages_matrix) }}
-      max-parallel: 1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.WRITE_TOKEN || github.token }}
-          sparse-checkout: |
-            ./js-api
-            ./.github
-            ./libraries
-            ./packages/${{ matrix.package }}
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-          cache-dependency-path: |
-            js-api/package-lock.json
-            packages/${{ matrix.package }}/package-lock.json
-      - name: Upgrade npm
-        run: npm install -g npm@x
-      - name: npm version
-        run: npm version
-      - name: Replace unpublished deps
-        id: deps
-        if: ${{ matrix.unpublished_dep == 'true' }}
-        run: |
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.replace_version }}"#g' package.json
-        working-directory: packages/${{ matrix.package }}
-      - name: npm install
-        run: rm -rf package-lock.json && npm install
-        working-directory: packages/${{ matrix.package }}
-      - name: Commit package.json
-        if: needs.version.outputs.changed_version == 'true'
-        id: commit
-        run: |
-          if [ -n "$(git status -s packages/${{ matrix.package }}/package.json)" ]; then
-            git config --global user.name 'github-actions[bot]'
-            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-            git pull
-            git add packages/${{ matrix.package }}/package.json
-            git add packages/${{ matrix.package }}/package-lock.json
-            git commit -m 'GitHub Actions: Update package ${{ matrix.package }} js-api dependency
-
-            Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-            count=0
-            until git push; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "10" ]; then
-              echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-                exit $exit
-              fi
-            done
-          fi
-      - name: Send mail
-        if: always() && steps.commit.outcome == 'failure'
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.mailgun.org
-          server_port: 587
-          secure: true
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "Github Actions: Failed update for package ${{ matrix.package }}"
-          to: ${{ matrix.author }}
-          from: monitoring@grok.datagrok.ai
-          body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          reply_to: monitoring@datagrok.ai

@@ -5,9 +5,31 @@ into the Playwright specs under `generated/` — committed, never edited by hand
 holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
 `viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
+(seven viewers sharing one legend column, the legend under filters, its placement, molecules in
+it; the section's scatter plot and line chart cases went into those viewers' legend features);
 `features/spaces/` the Spaces features (the browse tree, the space view, sharing — the sharing
 one shares with `DATAGROK_SHARING_LOGIN`, or with the `bddsecond` user the library's setup
-creates when the variable is unset). `bindings/` keeps the steps only one
+creates when the variable is unset); `features/users-groups-roles/` Browse > Platform > Users,
+Groups and Roles (the views, the New dialogs, memberships, disabling, favorites, global
+permissions). A user can never be deleted, so the features share two fixture users made once per
+stand (`bddviewed`, `bddmanaged`), and only users-create adds users: the two it makes per run,
+`bdd<time>` and `bdd-svc<time>`, add up on a shared stand and go with a fresh CI database. The
+group and role features, and users-manage, which makes groups and roles too, are `@serial`: their
+gallery searches are fuzzy and bring up each other's fixtures, so they take turns while the rest runs
+in parallel. Every TestTrack case there is
+translated but Groups-19 (a group cannot be added to favorites); `features/browse/` the Browse
+panel itself (its toolbar, the tree and its keyboard, browsing versus persistent views, Files, My
+stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and the per-section
+error matrix), translated from the manual cases, each feature naming what it left out and why.
+Two of its scenarios are `@full-stand` (they name the providers and the Platform sections a full
+stand carries) and one is `@compute` (the Model Hub needs the Compute package): a smaller stand
+runs with `grok-bdd run --grep-invert "@full-stand|@compute"`. `features/guides/` holds the
+answers to "how do I …" questions as scenarios: `grok-bdd guide features/guides/<name>.feature`
+films one into `guides/<feature>/<scenario>/guide.mp4` with the numbered steps and pictures beside
+it (`steps.md`), `--help-pages` re-films every `@help:`-tagged one into the help tree; `INDEX.md`
+there lists the questions answered. They run with the suite, so an answer that stops being true
+fails. `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the
@@ -36,6 +58,16 @@ PowerGrid and are claimed in `packages/PowerGrid/bdd/features/grid/summary-colum
 | `grid-column-groups` | Group columns... from the Context Panel, the band (`group <name>`) in the group's colour, clicks on it (GROK-17505, GROK-17442, GROK-18213), the groups with their colours after a layout saved to the server and the groups after a project (GROK-17441, the project without their colours), regrouping and ungrouping |
 | `grid-persistence` | four colour codings, row height, missing-value colour, min/max stats rows, a moved, a hidden, a widened and a pinned column, two pinned rows and a sort, all back from a layout loaded over a fresh view and from a project |
 | `grid-forms-column` | Design a Form... (the designer view, Close and Apply, Edit), Default HTML Form, Custom HTML Form... |
+`features/viewers/filter-panel/` stands in for the TestTrack scenarios of
+`files/TestTrack/Viewers/FilterPanel/` — `panel-core-ladder.md`, `add-remove-entry-points.md`,
+`filter-type-selection-modes.md`, `hierarchical-and-combined-boolean.md`,
+`compose-viewer-filtering.md`, `expression-text-filters.md`, `cloned-view-sync.md`,
+`collaborative-filtering-for-linked-tables.md`, `save-and-reapply-state.md` and
+`filter-summary-ui.md` (not `bio-filters.md`, which belongs to Bio) — plus Scenario 4 of
+`PieChart/piechart-onclick-select-filter.md` and Scenario 1 of
+`TrellisPlot/trellis-plot-click-to-filter.md` in the click-filter outline of
+`compose-with-viewers.feature`. Each feature says in its description what of its md it does not
+translate, and why.
 
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` (another one:
 `DATAGROK_URL=https://… npx grok-bdd run`):

@@ -28,7 +28,7 @@ test.describe("Box plot group comparison", () => {
     const run = journey(test, 8, page);
     await session.step(10, "Given user is logged in", () => loggedIn(page));
     await session.step(11, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(12, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["Value","AGE"],["Category 1","SEX"]]));
+    await session.step(12, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["Value","AGE"],["Category 1","SEX"]]), [["Value","AGE"],["Category 1","SEX"]]);
     await run.scenario("The bare p-value and its reveal icon", async () => {
       await session.step(17, "Then \"Show P Value\" property of box plot viewer should be \"true\"", () => propertyShouldBe(page, "Show P Value", el("box plot viewer"), "true"));
       await session.step(18, "And \"Show Group Comparison\" property of box plot viewer should be \"false\"", () => propertyShouldBe(page, "Show Group Comparison", el("box plot viewer"), "false"));
@@ -76,7 +76,7 @@ test.describe("Box plot group comparison", () => {
       await session.step(60, "And Statistics section in context panel should contain text \"Asian\"", () => shouldContainText(page, el("Statistics section in context panel"), "Asian"));
     });
     await run.scenario("Two-way ANOVA", async () => {
-      await session.step(63, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Control Comparisons","false"],["Control Group",""],["Category 2","SEX"]]));
+      await session.step(63, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Control Comparisons","false"],["Control Group",""],["Category 2","SEX"]]), [["Control Comparisons","false"],["Control Group",""],["Category 2","SEX"]]);
       await session.step(67, "And user hovers over box plot viewer", () => hoverOver(page, el("box plot viewer")));
       await session.step(68, "Then baseline choice input in box plot viewer should be visible", () => shouldBe(page, el("baseline choice input in box plot viewer"), "visible"));
       await session.step(69, "And box plot viewer should have a \"RACE effect\" area", () => hasArea(page, el("box plot viewer"), "RACE effect"));
@@ -97,7 +97,7 @@ test.describe("Box plot group comparison", () => {
       await session.step(84, "And box plot viewer should have a \"p value\" area", () => hasArea(page, el("box plot viewer"), "p value"));
     });
     await run.scenario("A covariate adjusts the value axis", async () => {
-      await session.step(87, "Given user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Category 2",""],["Control Comparisons","false"],["Control Group",""],["Category 1","SEX"],["Value","WEIGHT"],["Show Group Comparison","true"]]));
+      await session.step(87, "Given user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Category 2",""],["Control Comparisons","false"],["Control Group",""],["Category 1","SEX"],["Value","WEIGHT"],["Show Group Comparison","true"]]), [["Category 2",""],["Control Comparisons","false"],["Control Group",""],["Category 1","SEX"],["Value","WEIGHT"],["Show Group Comparison","true"]]);
       await session.step(94, "When user sets \"Adjust By\" property of box plot viewer to \"HEIGHT\"", () => setProperty(page, "Adjust By", el("box plot viewer"), "HEIGHT"));
       await session.step(95, "Then \"Adjustment\" property of box plot viewer should be \"regressOut\"", () => propertyShouldBe(page, "Adjustment", el("box plot viewer"), "regressOut"));
       await session.step(96, "When user hovers over box plot viewer", () => hoverOver(page, el("box plot viewer")));
@@ -136,14 +136,14 @@ test.describe("Box plot group comparison", () => {
       await session.step(129, "And box plot viewer should not have a \"control band\" area", () => hasNoArea(page, el("box plot viewer"), "control band"));
       await session.step(130, "When user adds a calculated column \"SIMPSON_STRAT\" with formula \"if(Mod(Round(${HEIGHT} * 1000), 2) == 0, \\\"A\\\", \\\"B\\\")\"", () => addCalculated(page, "SIMPSON_STRAT", "if(Mod(Round(${HEIGHT} * 1000), 2) == 0, \"A\", \"B\")"));
       await session.step(131, "And user adds a calculated column \"SIMPSON_VAL\" with formula \"if(${SEX} == \\\"M\\\", 0, if(Mod(Round(${HEIGHT} * 1000), 2) == 0, 2.5, -2.5)) + (Mod(Round(${WEIGHT} * 137), 600) / 30)\"", () => addCalculated(page, "SIMPSON_VAL", "if(${SEX} == \"M\", 0, if(Mod(Round(${HEIGHT} * 1000), 2) == 0, 2.5, -2.5)) + (Mod(Round(${WEIGHT} * 137), 600) / 30)"));
-      await session.step(132, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Category 1","SEX"],["Category 2","SIMPSON_STRAT"],["Value","SIMPSON_VAL"]]));
+      await session.step(132, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Category 1","SEX"],["Category 2","SIMPSON_STRAT"],["Value","SIMPSON_VAL"]]), [["Category 1","SEX"],["Category 2","SIMPSON_STRAT"],["Value","SIMPSON_VAL"]]);
       await session.step(136, "And user hovers over box plot viewer", () => hoverOver(page, el("box plot viewer")));
       await session.step(137, "And user selects \"M\" in control-group choice input in box plot viewer", () => selectIn(page, "M", el("control-group choice input in box plot viewer")));
       await session.step(138, "Then box plot viewer should have a \"control band A\" area", () => hasArea(page, el("box plot viewer"), "control band A"));
       await session.step(139, "And simpson-warning icon in box plot viewer should be visible", () => shouldBe(page, el("simpson-warning icon in box plot viewer"), "visible"));
       await session.step(140, "When user hovers over simpson-warning icon in box plot viewer", () => hoverOver(page, el("simpson-warning icon in box plot viewer")));
       await session.step(141, "Then tooltip should contain text \"Pooling cancels opposite within-stratum trends\"", () => shouldContainText(page, el("tooltip"), "Pooling cancels opposite within-stratum trends"));
-      await session.step(142, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","RACE"],["Category 2","SEX"]]));
+      await session.step(142, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","RACE"],["Category 2","SEX"]]), [["Value","WEIGHT"],["Category 1","RACE"],["Category 2","SEX"]]);
       await session.step(146, "And user removes \"SIMPSON_STRAT\" column", () => removeColumn(page, "SIMPSON_STRAT"));
       await session.step(147, "And user removes \"SIMPSON_VAL\" column", () => removeColumn(page, "SIMPSON_VAL"));
       await session.step(148, "And user sets \"Adjust By\" property of box plot viewer to \"\"", () => setProperty(page, "Adjust By", el("box plot viewer"), ""));

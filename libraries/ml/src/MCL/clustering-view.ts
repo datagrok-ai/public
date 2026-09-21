@@ -9,6 +9,7 @@ import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-reduction-editor';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import * as rxjs from 'rxjs';
+import {MCLComputationInfo} from './types';
 
 
 export type MCLClusterViewerResult = {
@@ -20,6 +21,7 @@ export type MCLClusterViewerResult = {
   connectivityCol: DG.Column;
   i: ArrayLike<number>;
   j: ArrayLike<number>;
+  computation: MCLComputationInfo;
 }
 
 export async function markovCluster(
@@ -173,7 +175,8 @@ export async function markovCluster(
   // const scLinesViewer = new ScatterPlotWithLines(sc, res.is, res.js, emberdXColName, emberdYColName);
   // tv.addViewer(scLinesViewer);
 
-  return {sc, embedXCol, embedYCol, clusterCol, clusterCounterCol, connectivityCol, i: filteredIs, j: filteredJs};
+  return {sc, embedXCol, embedYCol, clusterCol, clusterCounterCol, connectivityCol,
+    i: filteredIs, j: filteredJs, computation: res.computation};
 }
 
 
@@ -183,6 +186,7 @@ export class SCLinesRenderer {
   private stabilizeTimeout: ReturnType<typeof setTimeout> | null = null;
   private afterDrawSub: rxjs.Subscription;
   private beforeDrawSub: rxjs.Subscription;
+  get isRenderPending(): boolean { return this.stabilizeTimeout !== null || this.selfDraw; }
   constructor(public sc: DG.ScatterPlotViewer, public from: ArrayLike<number>,
     public to: ArrayLike<number>, public shortLineThreshold: number, public width: number, public color: string) {
     this.beforeDrawSub = sc.onBeforeDrawScene.subscribe(() => {
@@ -203,7 +207,7 @@ export class SCLinesRenderer {
         this.idle = true;
         this.selfDraw = true;
         this.sc.invalidateCanvas();
-      }, 200);
+      }, this.sc.immediateRendering ? 0 : 200);
     });
 
     sc.subs.push(this.beforeDrawSub, this.afterDrawSub);
@@ -248,5 +252,7 @@ export class SCLinesRenderer {
     this.afterDrawSub.unsubscribe();
     if (this.stabilizeTimeout)
       clearTimeout(this.stabilizeTimeout);
+    this.stabilizeTimeout = null;
+    this.selfDraw = false;
   }
 }

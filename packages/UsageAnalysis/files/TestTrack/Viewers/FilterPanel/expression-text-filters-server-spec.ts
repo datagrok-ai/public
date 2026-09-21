@@ -19,6 +19,9 @@ const fullCount_beer = 118;
 
 async function resetToAromaTextFilter(page: Page): Promise<void> {
   await removeAllCards(page);
+  // the picker adds a Text filter only once detection has tagged Aroma, else a categorical card
+  await page.waitForFunction(() => grok.shell.tv.dataFrame.col('Aroma')?.semType === 'Text', null,
+    {timeout: 30_000, polling: 50});
   await addCardViaPicker(page, 'Aroma');
   await page.waitForFunction(() => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
@@ -46,22 +49,24 @@ async function addAromaTerm(page: Page, term: string): Promise<number> {
   }, term);
 }
 
-async function setAromaFuzziness(page: Page, value: number): Promise<number> {
-  return page.evaluate(async (val) => {
+async function setAromaFuzziness(page: Page, value: number, capMs = 1800): Promise<number> {
+  return page.evaluate(async ({val, capMs}) => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent || '').trim() === 'Aroma') as HTMLElement;
     const range = card.querySelector('input[type="range"]') as HTMLInputElement;
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
-    // The text filter matches asynchronously, so a settle that gives up as soon as the frame has
-    // raised no filter pass reads the pre-slider count: the whole budget is the wait here.
-    const before = grok.shell.tv.dataFrame.filter.trueCount;
+    const w = window as any;
+    const count = () => grok.shell.tv.dataFrame.filter.trueCount;
+    const before = count();
     range.focus();
     setInp.call(range, String(val));
-    return (window as any).__filtered(() => {
-      range.dispatchEvent(new Event('input', {bubbles: true}));
-      range.dispatchEvent(new Event('change', {bubbles: true}));
-    }, 1800, before);
-  }, value);
+    range.dispatchEvent(new Event('input', {bubbles: true}));
+    range.dispatchEvent(new Event('change', {bubbles: true}));
+    // The slider refilters at once off the term's cached bitset and only recomputes the fuzzy match
+    // after its 400ms debounce, so the quiet window must outlast the debounce or it reads that pass.
+    await w.__poll(count, (n: number) => n !== before, capMs, 25);
+    return w.__settledFor(count, 600, capMs, 25);
+  }, {val: value, capMs});
 }
 
 test('Filter Panel — Text filter driven through its own UI', async ({page}) => {
@@ -120,8 +125,8 @@ test('Filter Panel — Text filter driven through its own UI', async ({page}) =>
     expect(atReset, 'pinning fuzziness to 0 filters nothing on its own').toBe(fullCount_beer);
     const atZero = await addAromaTerm(page, 'maltx');
     expect(atZero, 'at fuzziness 0 a non-matching near-miss term yields zero matches').toBe(0);
-    const atMid = await setAromaFuzziness(page, 0.5);
-    const atHigh = await setAromaFuzziness(page, 0.8);
+    const atMid = await setAromaFuzziness(page, 0.5, 10_000);
+    const atHigh = await setAromaFuzziness(page, 0.8, 10_000);
     expect(atMid, 'raising fuzziness recovers matches — the count rises above 0').toBeGreaterThan(0);
     expect(atHigh, 'raising fuzziness further grows the matched set').toBeGreaterThan(atMid);
     expect(atHigh).toBeLessThanOrEqual(fullCount_beer);
