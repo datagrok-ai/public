@@ -94,8 +94,11 @@ grok-bdd run [--headed] [-g "name"] [--reporter=list] [generated/<folder>]
 Every command runs from the package directory (or from `bdd/`). A feature change needs
 `grok-bdd compile` before `grok-bdd run`: the run starts with the drift check and stops on a stale
 spec. Results land in `bdd/test-results/` (a trace and a screenshot on failure; `--trace on`
-records DOM snapshots too, `--video on` a video); `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json` adds a
-JSON report with a duration per step.
+records DOM snapshots too, `--video on` a video); `PLAYWRIGHT_JSON_OUTPUT_NAME=<absolute path>.json` adds a
+JSON report with a duration per step (a relative name lands in this library's `dist/`, the Playwright
+config directory); `node tool/step-times.cjs <bdd project dir> run1.json [run2.json ...]` aggregates
+the reports by step phrase and binding — count, total, mean, p90, per run — into `step-times.md`
+beside them.
 
 ## How a feature runs
 
