@@ -8,6 +8,8 @@ import {TypeSystem, isSubtype} from '../types';
 import {Graph} from './emitter';
 import {Row, isOrdered, compare} from '../normalize';
 import {Manifest, dataDir, manifestFile} from '../generation';
+import {isRecordFile} from '../homes';
+import {isMedia} from '../media';
 
 export interface BuildInfo {
   mode: string;
@@ -17,8 +19,8 @@ export interface BuildInfo {
   revisions: Record<string, string>;
 }
 
-/** Node types the public snapshot carries (Decisions "Public mode"); a doc-page only when it is a help page. */
-const PUBLIC_TYPES = ['feature', 'concept', 'package', 'library', 'doc-page', 'doc-anchor', 'sample', 'scenario'];
+/** Node types the public snapshot carries (Decisions "Public mode"); a doc-page only when it is a help or marketing page. */
+const PUBLIC_TYPES = ['feature', 'concept', 'package', 'library', 'doc-page', 'doc-anchor', 'sample', 'scenario', 'media'];
 const HEAD_KEYS = ['id', 'type', 'name', 'from', 'to'];
 const INVALID_CAP = 500;
 
@@ -100,7 +102,7 @@ function dirtyDigest(repoRoot: string, outRoot?: string): string {
       const renamed = (status.startsWith('R') || status.startsWith('C')) ? entries[++i] ?? '' : '';
       if (out !== undefined && inside(out, file)) continue;
       hash.update(`${entry}\n${renamed}`);
-      if (status !== '??') hash.update(digestOf(file));
+      if (status !== '??' || isRecordFile(file) || isMedia(file) && fs.statSync(file).isFile()) hash.update(digestOf(file));
     }
   }
   return hash.digest('hex');
@@ -151,7 +153,7 @@ export function projectPublic(graph: Graph, system: TypeSystem): Graph {
   const keep = (row: Row): boolean => {
     const type = String(row.type);
     if (row.visibility !== 'public' || !PUBLIC_TYPES.some((t) => isSubtype(system, type, t))) return false;
-    if (isSubtype(system, type, 'doc-page')) return row.kind === 'help';
+    if (isSubtype(system, type, 'doc-page')) return row.kind === 'help' || row.kind === 'marketing';
     if (!isSubtype(system, type, 'doc-anchor')) return true;
     const page = pages.get(String(row.page));
     return page !== undefined && keep(page);

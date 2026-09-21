@@ -7,6 +7,7 @@ import {globSync} from 'glob';
 import {discoverHomeFiles, firstHeading, HomeSet} from '../../homes';
 import {splitFrontmatter, Frontmatter} from '../../frontmatter';
 import {proseLines, headings, extractCitations} from '../../citations';
+import {extractEmbeds} from '../../embeds';
 import {Emitter} from '../emitter';
 import {Row} from '../../normalize';
 import {BuildContext, Extractor} from '../context';
@@ -59,9 +60,11 @@ class DocLayer {
       visibility, provenance: Object.keys(data).length ? 'annotation' : 'filesystem', source_layer: sourceLayerOf(file)});
     if (!admitted.accepted) return;
     const prose = proseLines(fm.body);
-    for (const h of headings(fm.body).filter((h) => h.depth <= MAX_ANCHOR_DEPTH))
+    const heads = headings(fm.body);
+    for (const h of heads.filter((h) => h.depth <= MAX_ANCHOR_DEPTH))
       this.emitter.node({type: 'doc-anchor', id: docId(file, h.slug), name: h.text, path: file, page: id, slug: h.slug, depth: h.depth,
         visibility, provenance: 'annotation', source_layer: sourceLayerOf(file)});
+    for (const e of extractEmbeds(file, fm.body, fm.bodyLine, heads)) this.emitter.embed(file, e);
     this.unresolved += emitMentions(this.emitter, id, prose.map((l) => l.text).join('\n'), file, this.homes).unresolved.length;
     for (const c of extractCitations(file, fm.body, fm.bodyLine))
       if (c.target === 'code' && c.resolved) this.emitter.citation(file, c.resolved);

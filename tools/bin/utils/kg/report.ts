@@ -15,13 +15,14 @@ import {Section, coverageNote} from './answer';
 import {KuzuConnection, run, quote} from './kuzu';
 import {resolveTargets, linkedTests} from './ops';
 
-export type ReportName = 'orphans' | 'stale' | 'coverage' | 'proposed' | 'diff' | 'replay';
+export type ReportName = 'orphans' | 'stale' | 'coverage' | 'proposed' | 'media' | 'diff' | 'replay';
 export type ReportFormat = 'table' | 'json' | 'md';
 export type Repo = 'core' | 'public' | 'both';
 
-export const REPORT_NAMES: ReportName[] = ['orphans', 'stale', 'coverage', 'proposed', 'diff', 'replay'];
-/** The four `build` writes; `diff` needs a base revision and `replay` the index, so only the verb can produce them. */
-export const BUILD_REPORTS: ReportName[] = ['orphans', 'stale', 'coverage', 'proposed'];
+export const REPORT_NAMES: ReportName[] = ['orphans', 'stale', 'coverage', 'proposed', 'media', 'diff', 'replay'];
+/** The five `build` writes; `diff` needs a base revision and `replay` the index, so only the verb can produce them. */
+export const BUILD_REPORTS: ReportName[] = ['orphans', 'stale', 'coverage', 'proposed', 'media'];
+const MEDIA_ROWS = 50;
 export const REPOS: Repo[] = ['core', 'public', 'both'];
 
 /** Where a folder earns a feature of its own, and the id shape that would be proposed for it. */
@@ -94,6 +95,8 @@ function needs(name: ReportName, system: TypeSystem): {nodes: string[], edges: s
       return {nodes: [...features, 'test'], edges: ['tests', 'covers', 'automates', 'documents', 'owner', 'part-of']};
     case 'proposed':
       return {nodes: ['source-file'], edges: ['is-implemented-in']};
+    case 'media':
+      return {nodes: ['media'], edges: ['embeds', 'thumbnail', 'illustrates']};
     default:
       return {nodes: [...features, 'test'], edges: ['is-implemented-in', 'participates-in', 'documents', 'tests', 'covers', 'automates', 'owner']};
   }
@@ -136,7 +139,7 @@ export function fromGraph(graph: Graph, repoRoot: string, sources: Record<string
 
 export function makeReport(name: ReportName, data: GraphData, options: ReportOptions): Report {
   const report = name === 'orphans' ? orphans(data) : name === 'stale' ? stale(data, options)
-    : name === 'coverage' ? coverage(data, options) : name === 'proposed' ? proposed(data) : diff(data, options);
+    : name === 'coverage' ? coverage(data, options) : name === 'proposed' ? proposed(data) : name === 'media' ? media(data) : diff(data, options);
   const note = coverageNote(data.sources);
   if (note) report.notes.unshift(note);
   return report;
@@ -205,6 +208,67 @@ function orphans(data: GraphData): Report {
       'the inventory covers the files the extractors observed, not every file in the repositories',
     ],
     sections: [{title: 'groups', rows: rows.slice(0, ORPHAN_GROUPS)}],
+  };
+}
+
+/**
+ * The media backlog (conventions.md §5.7): what pages show that nothing describes, descriptions the file has outgrown,
+ * proposals a person has not reviewed, files no page shows, embeds of files that are gone, embeds with no alt text,
+ * one file committed under several paths, the largest files, and what is rated unfit and still shown.
+ */
+function media(data: GraphData): Report {
+  const items = (data.byType.get('media') ?? []).filter((m) => m.status !== 'proposed');
+  const shown = new Map<string, Row[]>();
+  for (const e of data.edges.get('embeds') ?? []) {
+    const list = shown.get(String(e.to));
+    if (list) list.push(e);
+    else shown.set(String(e.to), [e]);
+  }
+  const thumbnails = new Set((data.edges.get('thumbnail') ?? []).map((e) => String(e.to)));
+  const pages = (m: Row) => new Set((shown.get(String(m.id)) ?? []).map((e) => String(e.from))).size;
+  const bytes = (m: Row) => Number(m.bytes ?? 0);
+  const file = (m: Row) => ({id: m.id, format: m.format, bytes: bytes(m), pages: pages(m)});
+  const byPages = (a: Row, b: Row) => pages(b) - pages(a) || bytes(b) - bytes(a) || compare(String(a.id), String(b.id));
+  const byBytes = (a: Row, b: Row) => bytes(b) - bytes(a) || compare(String(a.id), String(b.id));
+  const undescribed = items.filter((m) => m.description === undefined && shown.has(String(m.id))).sort(byPages);
+  const stale = items.filter((m) => typeof m.described_blob === 'string' && m.blob !== undefined && m.described_blob !== m.blob).sort(byPages);
+  const proposals = items.filter((m) => m.description !== undefined && m.reviewed !== true).sort(byPages);
+  const unreferenced = items.filter((m) => m.path !== undefined && !shown.has(String(m.id)) && !thumbnails.has(String(m.id))).sort(byBytes);
+  const noAlt = [...shown.values()].flat().filter((e) => e.form === 'image' && !e.alt).map((e) => ({page: e.from, line: e.line, media: e.to}))
+    .sort((a, b) => compare(String(a.page), String(b.page)) || Number(a.line) - Number(b.line));
+  const blobs = new Map<string, Row[]>();
+  for (const m of items)
+    if (typeof m.blob === 'string') {
+      const list = blobs.get(m.blob);
+      if (list) list.push(m);
+      else blobs.set(m.blob, [m]);
+    }
+  const duplicates = [...blobs.values()].filter((l) => l.length > 1).map((l) => ({blob: l[0].blob, bytes: bytes(l[0]), copies: l.length,
+    paths: l.map((m) => String(m.path)).sort(compare).join(', ')})).sort((a, b) => b.bytes * b.copies - a.bytes * a.copies || compare(String(a.blob), String(b.blob)));
+  const unfit = items.filter((m) => m.quality === 'unfit' && shown.has(String(m.id))).sort(byPages);
+  const total = items.reduce((sum, m) => sum + bytes(m), 0);
+  const section = (title: string, rows: Record<string, unknown>[]) => ({title, rows: rows.slice(0, MEDIA_ROWS), total: rows.length});
+  return {
+    name: 'media', title: 'Media backlog',
+    summary: `${items.length} media (${Math.round(total / 1048576)} MB): ${undescribed.length} shown but undescribed, ${stale.length} described before the file changed, ` +
+      `${proposals.length} awaiting review, ${unreferenced.length} shown nowhere, ${(data.problems.broken_embeds ?? []).length} broken embeds, ${noAlt.length} images without alt text, ` +
+      `${duplicates.length} files committed more than once, ${unfit.length} rated unfit and still shown.`,
+    notes: [
+      ...((data.problems.untracked_media ?? []).length ? [`${data.problems.untracked_media.length} media files under the roots are not tracked by git; they are listed, not indexed`] : []),
+      'a record beside the file (media.yaml) carries the description; grok kg enrich media proposes one for what is undescribed or stale',
+    ],
+    sections: [
+      section('undescribed', undescribed.map(file)),
+      section('stale', stale.map((m) => ({...file(m), described_blob: String(m.described_blob).slice(0, 12), blob: String(m.blob).slice(0, 12)}))),
+      section('awaiting review', proposals.map((m) => ({...file(m), described_by: m.described_by, quality: m.quality}))),
+      section('unreferenced', unreferenced.map((m) => ({id: m.id, format: m.format, bytes: bytes(m), path: m.path}))),
+      section('broken embeds', (data.problems.broken_embeds ?? []).map((line) => ({embed: line}))),
+      section('images without alt text', noAlt),
+      section('duplicates', duplicates),
+      section('largest', [...items].sort(byBytes).slice(0, MEDIA_ROWS).map(file)),
+      section('unfit but shown', unfit.map((m) => ({...file(m), quality_notes: m.quality_notes}))),
+      section('untracked', (data.problems.untracked_media ?? []).map((path) => ({path}))),
+    ],
   };
 }
 

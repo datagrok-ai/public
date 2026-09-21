@@ -280,6 +280,7 @@ export function docKind(file: string): string {
   const p = posix(file);
   const base = path.posix.basename(p);
   if (p.startsWith('public/help/')) return 'help';
+  if (p.startsWith('public/docusaurus/src/docs/') || p.startsWith('landing:')) return 'marketing';
   if (p.startsWith('core/docs/design/')) return 'design';
   if (p.startsWith('core/docs/runbooks/')) return 'runbook';
   if (p.startsWith('core/docs/reviews/')) return 'review';

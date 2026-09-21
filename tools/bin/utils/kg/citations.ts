@@ -60,20 +60,22 @@ export interface Heading {
   text: string;
   /** The anchor the heading answers to: its explicit `{#id}`, else its slug, numbered `-1`, `-2` per duplicate. */
   slug: string;
+  /** 0-based offset of the heading line from the start of the body. */
+  line?: number;
 }
 
 /** The headings of a markdown body, in order, with the anchor each one answers to (GitHub's rule, all six levels). */
 export function headings(body: string): Heading[] {
   const out: Heading[] = [];
   const seen = new Map<string, number>();
-  for (const {text} of proseLines(body)) {
+  for (const {text, offset} of proseLines(body)) {
     const m = /^(#{1,6})\s+(.+?)\s*(?:\{#([^}]+)\})?\s*#*\s*$/.exec(text);
     if (!m) continue;
     const base = m[3] ?? slugify(m[2]);
     if (!base) continue; // a heading of non-Latin words slugifies to nothing, so nothing can link to it
     const n = seen.get(base) ?? 0;
     seen.set(base, n + 1);
-    out.push({depth: m[1].length, text: m[2], slug: n ? `${base}-${n}` : base});
+    out.push({depth: m[1].length, text: m[2], slug: n ? `${base}-${n}` : base, line: offset});
   }
   return out;
 }

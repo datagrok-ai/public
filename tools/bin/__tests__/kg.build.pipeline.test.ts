@@ -82,15 +82,15 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     const {manifest} = await graph;
     expect(manifest.mode).toBe('full');
     expect(manifest.sources).toEqual({
-      backlog: 'ok@2026-01-12T07:00:00Z', dart: 'ok', docs: 'partial', git: 'ok', homes: 'ok', membership: 'ok',
+      backlog: 'ok@2026-01-12T07:00:00Z', dart: 'ok', docs: 'partial', git: 'ok', homes: 'ok', media: 'partial', membership: 'ok',
       people: 'partial', process: 'ok', releases: 'ok', 'ts-changelog': 'partial', 'ts-declarations': 'ok',
       'ts-functions': 'partial(2 rejected)', 'ts-imports': 'ok', 'ts-markers': 'ok', 'ts-node-tests': 'ok', 'ts-packages': 'ok', 'ts-samples': 'partial',
       'ts-tests': 'ok', 'ts-uses': 'ok',
     });
     expect(manifest.counts.nodes).toEqual({
       app: 2, 'cell-renderer': 1, 'changelog-entry': 5, commit: 2, connection: 2, container: 3, customer: 2,
-      declaration: 61, 'doc-anchor': 21, 'doc-page': 14, editor: 1, feature: 9, 'file-handler': 1,
-      'file-viewer': 1, filter: 1, function: 13, library: 3, 'lifecycle-hook': 2, package: 7, panel: 2, person: 3,
+      declaration: 61, 'doc-anchor': 22, 'doc-page': 14, editor: 1, feature: 9, 'file-handler': 1,
+      'file-viewer': 1, filter: 1, function: 13, library: 3, 'lifecycle-hook': 2, media: 5, package: 7, panel: 2, person: 3,
       query: 3, release: 2, sample: 4, scenario: 7, script: 3, 'script-environment': 1, 'script-handler': 1,
       'sem-type-detector': 6, 'semantic-type': 7, 'source-file': 52, test: 22, 'test-suite': 9, ticket: 13, tutorial: 1, viewer: 2,
     });
@@ -99,15 +99,17 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     // scatter plot by folder name (+2 tests)
     expect(manifest.counts.edges).toEqual({
       affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, covers: 1,
-      declares: 199, demonstrates: 1, 'depends-on': 7, documents: 5, environment: 1, extends: 4,
-      implements: 1, imports: 36, includes: 2, 'is-implemented-in': 20, mentions: 19, mirrors: 2, owner: 9,
-      package: 75, page: 21, 'part-of': 11, 'participates-in': 5, reporter: 4, 'requested-by': 2, resolves: 1,
-      suite: 22, 'targets-release': 5, 'targets-semtype': 13, tests: 15, 'tracked-in': 2, user_help: 1, uses: 19,
+      declares: 199, demonstrates: 1, 'depends-on': 7, documents: 5, embeds: 5, environment: 1, extends: 4,
+      illustrates: 3, implements: 1, imports: 36, includes: 2, 'is-implemented-in': 20, mentions: 19, mirrors: 2, owner: 9,
+      package: 75, page: 22, 'part-of': 11, 'participates-in': 5, reporter: 4, 'requested-by': 2, resolves: 1,
+      suite: 22, 'targets-release': 5, 'targets-semtype': 13, tests: 15, thumbnail: 2, 'tracked-in': 2, user_help: 1, uses: 19,
     });
     // and for the +13 declares (5 unit -> file, 2 file -> type, 6 file -> test), +5 imports, +6 suite, +1 depends-on (tools -> js-api),
     // +1 uses (the CLI command reads DG.SEMTYPE); the 2 mirrors are legend_test.dart -> legend.dart and ids.test.ts -> utils/ids.ts (change-tests work order E)
     // legend_cache.dart is no longer ambiguous: the exact-path root of CACHING.md wins over the viewers glob (conventions.md §8)
-    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 0, orphans: 35, partial_stubs: 23});
+    // media: the four files under help/visualize/viewers/img and the hosted video of videos.yaml (+5 media, +1 doc-anchor for the Bins heading),
+    // five embeds of histogram.md, three illustrates from the records, two thumbnail refs; img/gone.png is the one broken embed (media partial)
+    expect(manifest.problems).toMatchObject({dangling_edges: 0, ambiguous_owners: 0, orphans: 35, partial_stubs: 23, broken_embeds: 1});
   });
 
   it('writes the same bytes twice, with the same content-addressed batch and a later built_at', async () => {
@@ -139,7 +141,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     const {manifest, rows, out} = await build(makeRepo(), {public: true});
     expect(manifest.mode).toBe('public');
     expect(Object.keys(manifest.revisions)).toEqual(['public']);
-    expect(Object.keys(manifest.counts.nodes).sort()).toEqual(['doc-anchor', 'doc-page', 'feature', 'library', 'package', 'sample', 'scenario']);
+    expect(Object.keys(manifest.counts.nodes).sort()).toEqual(['doc-anchor', 'doc-page', 'feature', 'library', 'media', 'package', 'sample', 'scenario']);
     const features = rows('nodes/feature');
     expect(features).toHaveLength(9);
     expect(features.every((f) => f.visibility === 'public' && f.home === undefined && f.owner === undefined)).toBe(true);

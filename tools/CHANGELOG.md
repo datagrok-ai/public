@@ -2,6 +2,8 @@
 
 ## v.next
 
+* grok kg: media in the graph: every image, animation and clip under help, the Docusaurus static folder and core/docs, and every hosted YouTube video a page shows, is a `media` node (blob, bytes, delivery url, thumbnail, the record fields); one `embeds` edge per occurrence (markdown images, JSX img tags, video sources, YouTube iframes and timestamped links, marketing slides) with position, form, nearest heading and alt; `illustrates` from the records (annotation when reviewed, an llm proposal at 0.6 otherwise); `report media` (undescribed, stale, awaiting review, unreferenced, broken, no alt, duplicates, largest, unfit); questions media-for-feature, features-without-media, undescribed-media, unreferenced-media, media-by-text
+
 * grok kg: media records: a `media.yaml` beside media files and a `videos.yaml` of hosted videos (keys, illustrates, described_blob) are read with the homes; check validates them (unknown-media, unknown-key, unresolved-ref, stale-description) and counts them; media.ts finds git blob ids without reading the files
 
 * grok kg: a media file a page shows (png, gif, svg, mp4, ... per `bin/utils/kg/media.ts`) is no longer a code citation: a feature home that embeds an image mints no source-file node and makes no ownership claim, a code: root that expands over one skips it, and check counts media files apart while still reporting a missing one as missing-cited-path

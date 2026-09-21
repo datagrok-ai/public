@@ -534,7 +534,10 @@ Verbs:
                 dynamic tests, the tests it inherits from the features under it,
                 scenarios and their automations, documents, description, and whether it
                 is a stub), proposed (folders ranked by the code in them no feature owns,
-                with the id they would take) and diff (the features a branch touches and
+                with the id they would take), media (the media backlog: shown but undescribed,
+                described before the file changed, awaiting review, shown nowhere, broken
+                embeds, images without alt text, duplicates, the largest, unfit but shown,
+                untracked) and diff (the features a branch touches and
                 the tests that cover them, \`--diff <ref>\`; the public baseline is the
                 gitlink that revision recorded, deleted files keep the owner the graph
                 still has, and a graph built from other commits than the working tree

@@ -5,6 +5,7 @@
 import {TypeSystem, NodeType, isSubtype, concreteAuthored} from '../types';
 import {normalizeRow, normalizeEdgeRow, isOrdered, compare, Row, RowProblem} from '../normalize';
 import {PREFIXED_ID, SCHEMED_ID, SCHEME_TYPES, JIRA_KEY, parseId, stubName, titleCase, locationVisibility, sourceLayerOf} from '../ids';
+import type {Embed} from '../embeds';
 
 export interface Claim {
   /** Posix path relative to the monorepo root. */
@@ -74,6 +75,7 @@ export class Emitter {
   private claims: Claim[] = [];
   private helpPages: {file: string, page: string}[] = [];
   private cited: {page: string, file: string}[] = [];
+  private shown: {page: string, embed: Embed}[] = [];
   private problems: Record<string, number> = Object.fromEntries(PROBLEM_KINDS.map((k) => [k, 0]));
   private details: Record<string, string[]> = {};
   private invalid: Row[] = [];
@@ -179,6 +181,15 @@ export class Emitter {
 
   get citations(): {page: string, file: string}[] {
     return this.cited;
+  }
+
+  /** A media file or hosted video a page shows: the media extractor makes the node and the `embeds` edge. */
+  embed(page: string, embed: Embed): void {
+    this.shown.push({page, embed});
+  }
+
+  get embeds(): {page: string, embed: Embed}[] {
+    return this.shown;
   }
 
   has(id: string): boolean {
