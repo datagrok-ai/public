@@ -80,6 +80,15 @@ describe('media records (conventions.md §5.7)', () => {
     ]);
   });
 
+  it('stores the canonical id an illustrates alias resolves to, and refuses a hosted title that is no string', () => {
+    const repo = copyFixture('good');
+    write(repo, RECORD, 'scatter-plot.png:\n  caption: by alias\n  illustrates: [~visualize/scatterplot]\n');
+    write(repo, 'public/help/videos.yaml', 'youtube:abcdefghijk:\n  title: 123\n  caption: A lesson\n');
+    const {homes} = load(repo);
+    expect(homes.media.get(`media:${PNG}`)!.illustrates).toEqual(['visualize/viewers/scatter-plot']);
+    expect(issues(repo)).toEqual(["bad-value public/help/videos.yaml:1: 'youtube:abcdefghijk': title: expected a string, got 123"]);
+  });
+
   it('resolves a landing: path in a home against the site checkout when check has one, and reads the records there', () => {
     const repo = copyFixture('good');
     const landing = path.join(FIXTURES, 'landing');
@@ -99,7 +108,7 @@ describe('media records (conventions.md §5.7)', () => {
     git(repo, 'add', '.');
     git(repo, 'commit', '-q', '-m', 'fixture');
     const blob = git(repo, 'hash-object', PNG);
-    expect(blobIds({repoRoot: repo}).get(PNG)).toBe(blob);
+    expect(blobIds({repoRoot: repo}).files.get(PNG)).toEqual({blob, bytes: 70});
     expect(hashBlob(fs.readFileSync(path.join(repo, PNG)))).toBe(blob);
     const record = fs.readFileSync(path.join(repo, RECORD), 'utf8');
     write(repo, RECORD, `${record}  described_blob: ${blob}\n`);
@@ -107,9 +116,9 @@ describe('media records (conventions.md §5.7)', () => {
     // the working tree changed the file: the blob is what git would hash now, and the description is stale
     fs.appendFileSync(path.join(repo, PNG), 'x');
     const changed = git(repo, 'hash-object', PNG);
-    expect(blobIds({repoRoot: repo}).get(PNG)).toBe(changed);
+    expect(blobIds({repoRoot: repo}).files.get(PNG)).toEqual({blob: changed, bytes: 71});
     expect(issues(repo)).toEqual([`stale-description ${RECORD}:1: 'scatter-plot.png': described at blob ${blob.slice(0, 12)}, the file is now ${changed.slice(0, 12)}; run grok kg enrich media --stale`]);
     // a tree that is no repository: nothing from git, the raw hash stands in
-    expect(blobIds({repoRoot: copyFixture("good")}).size).toBe(0);
+    expect(blobIds({repoRoot: copyFixture("good")}).files.size).toBe(0);
   });
 });

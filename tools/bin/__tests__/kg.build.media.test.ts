@@ -59,10 +59,10 @@ describe('media extractor (notation.md §3.7)', () => {
 
   it('asserts illustrates from the records only: annotation 1.0 when reviewed, an llm proposal at 0.6 otherwise', async () => {
     const {rows} = await graph;
-    expect(rows('edges/illustrates').map((e) => [e.from, e.to, e.derived_by, e.confidence, e.evidence])).toEqual([
-      [`media:${IMG}/bins.png`, 'visualize/viewers/histogram', 'llm', 0.6, [`${IMG}/media.yaml`]],
-      [GIF, 'visualize/viewers/histogram', 'annotation', 1, [`${IMG}/media.yaml`]],
-      [VIDEO, 'visualize/viewers/histogram', 'annotation', 1, ['public/help/videos.yaml']],
+    expect(rows('edges/illustrates').map((e) => [e.from, e.to, e.derived_by, e.confidence, e.proposed, e.evidence])).toEqual([
+      [`media:${IMG}/bins.png`, 'visualize/viewers/histogram', 'llm', 0.6, true, [`${IMG}/media.yaml`]],
+      [GIF, 'visualize/viewers/histogram', 'annotation', 1, undefined, [`${IMG}/media.yaml`]],
+      [VIDEO, 'visualize/viewers/histogram', 'annotation', 1, undefined, ['public/help/videos.yaml']],
     ]);
   });
 
@@ -83,10 +83,25 @@ describe('media extractor (notation.md §3.7)', () => {
     // described by a record, so it is indexed with the hash git would give it; the report still names it
     expect(rows('nodes/media').find((m) => m.path === 'public/help/domains/bio/img/new.png')).toMatchObject({caption: 'a local addition', blob: git(repo, 'hash-object', 'public/help/domains/bio/img/new.png')});
     expect(problems.untracked_media).toEqual(['public/help/domains/bio/img/new.png']);
+    // a second edit of the still-untracked record, inside its still-untracked folder, moves the batch again
+    write(repo, 'public/help/domains/bio/img/media.yaml', 'new.png:\n  caption: a local addition, edited\n');
+    const edited = await buildFixture(repo, ONLY);
+    expect(edited.manifest.batch).not.toBe(manifest.batch);
+    expect(edited.rows('nodes/media').find((m) => m.path === 'public/help/domains/bio/img/new.png').caption).toBe('a local addition, edited');
     fs.rmSync(path.join(repo, 'public/help/domains/bio/img/media.yaml'));
     const again = await buildFixture(repo, ONLY);
     expect(again.rows('nodes/media').some((m) => m.path === 'public/help/domains/bio/img/new.png')).toBe(false);
     expect(again.problems.untracked_media).toEqual(['public/help/domains/bio/img/new.png']);
+  });
+
+  it('keeps what an internal record says about a hosted video out of the public projection', async () => {
+    const repo = makeRepo();
+    write(repo, 'core/docs/videos.yaml', 'youtube:zzzzzzzzzzz:\n  title: An internal lesson\n  caption: internal only\n');
+    const full = await buildFixture(repo, ONLY);
+    expect(full.rows('nodes/media').find((m) => m.id === 'video:youtube:zzzzzzzzzzz')).toMatchObject({name: 'An internal lesson', visibility: 'dev'});
+    const pub = await buildFixture(repo, ONLY, {public: true});
+    expect(pub.rows('nodes/media').some((m) => m.id === 'video:youtube:zzzzzzzzzzz')).toBe(false);
+    expect(pub.rows('nodes/media').some((m) => m.id === VIDEO)).toBe(true);
   });
 
   it('keeps media in the public projection with their thumbnails and illustrates, and drops the record evidence paths that are not public', async () => {
@@ -224,6 +239,25 @@ describe('embeds of a page (embeds.ts)', () => {
       [14, 20, 'slide', 'public/docusaurus/static/docusaurus_img/slides/access.png', 'deep', '', 'Forty connectors', '', ''],
     ]);
     expect(resolveTarget('../../core/docs/x.png', 'public/help')).toEqual({kind: 'file', path: 'core/docs/x.png'});
+    expect(resolveTarget('landing:../etc/x.png', 'public/help')).toBeNull();
+  });
+
+  it('reads an import inside a Docusaurus mdx-code-block fence, ignores a commented-out image, and a slide split by a // comment', () => {
+    const body = [
+      '```mdx-code-block',
+      "import Find from './img/find.png';",
+      '```',
+      '',
+      '<img src={Find} width="235"/>',
+      '<!-- ![Old](img/old.png) -->',
+      '{text: "Pivot", // the slide',
+      '  image: "/docusaurus_img/slides/pivot.png"}',
+    ].join('\n');
+    const embeds = extractEmbeds('public/help/transform/page.md', body, 1, []);
+    expect(embeds.map((e) => [e.line, e.form, e.target.kind === 'file' ? e.target.path : ''])).toEqual([
+      [5, 'tag', 'public/help/transform/img/find.png'],
+      [7, 'slide', 'public/docusaurus/static/docusaurus_img/slides/pivot.png'],
+    ]);
     expect(resolveTarget('../../../etc/x.png', 'public/help')).toBeNull();
     expect(resolveTarget('notes.md', 'public/help')).toBeNull();
     expect(resolveTarget('https://www.youtube.com/watch?v=abc123def45&t=1048s', 'public/help')).toEqual({kind: 'hosted', provider: 'youtube', id: 'abc123def45'});

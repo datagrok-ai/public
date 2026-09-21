@@ -10,7 +10,7 @@ import {extractCitations, headings, proseLines, Citation} from './citations';
 import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel, concreteAuthored} from './types';
 import {normalizeRow} from './normalize';
 import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID, PAGE_PATH, docCandidates} from './ids';
-import {loadMediaRecords, MediaRecord, RECORD_FILES} from './media';
+import {loadMediaRecords, MediaRecord, MediaInventory, RECORD_FILES} from './media';
 import {Roots, LANDING_PREFIX} from './roots';
 
 /** Where homes may live, relative to the monorepo root: any markdown document in the repos, and
@@ -105,6 +105,8 @@ export interface HomeSet {
   citations: {doc: number, code: number, media: number};
   /** The media records (media.yaml, videos.yaml) by media id, validated; empty when the type system has no media type. */
   media: Map<string, MediaRecord>;
+  /** What git knows of the media files, read once for the records and reused by the media extractor. */
+  mediaInventory: MediaInventory;
   /** The homes by id and by alias, built once here and shared by every reader. */
   index: HomeIndex;
 }
@@ -138,7 +140,7 @@ export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] 
     files = [...files, ...globSync(`web/**/{${RECORD_FILES.join(',')}}`, {cwd: landingDir, ignore: HOME_IGNORE, nodir: true, posix: true}).sort().map((f) => `${LANDING_PREFIX}${f}`)];
   const roots: Roots = {repoRoot, landingDir};
   const set: HomeSet = {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: files.length,
-    annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, media: new Map(), index: {byId: new Map(), byAlias: new Map()}};
+    annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, media: new Map(), mediaInventory: {files: new Map(), ok: true, conflicted: new Set()}, index: {byId: new Map(), byAlias: new Map()}};
   for (const file of files) {
     if (isRecordFile(file)) continue;
     let text: string;
@@ -173,7 +175,11 @@ export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] 
   for (const page of set.pages)
     checker.checkPage(page.file, page.fm);
   checker.checkCycles();
-  const media = loadMediaRecords(system, roots, files.filter(isRecordFile), (v, expected, ctx) => checker.resolveRef(v, expected, ctx).problem);
+  const media = loadMediaRecords(system, roots, files.filter(isRecordFile), (v, expected, ctx) => {
+    const {home, problem} = checker.resolveRef(v, expected, ctx);
+    return {problem, id: home?.id};
+  });
+  set.mediaInventory = media.inventory;
   set.media = media.records;
   set.errors.push(...media.errors);
   set.warnings.push(...media.warnings);

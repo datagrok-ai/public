@@ -28,16 +28,17 @@ const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 const INLINE_LINK = /!?\[[^\]]*\]\((?:<([^>]+)>|([^)\s]+))(?:\s+"[^"]*")?\)/g;
 const REFERENCE_DEFINITION = /^ {0,3}\[([^\]]+)\]:\s*(?:<([^>]+)>|(\S+))/;
 
-/** Body lines outside fenced code blocks. A fence closes only on the same character with at least the opening length. */
+/** Body lines outside fenced code blocks. A fence closes only on the same character with at least the opening length;
+ * a Docusaurus `mdx-code-block` fence is rendered content, not code, so its lines stay prose. */
 export function proseLines(body: string): ProseLine[] {
   const out: ProseLine[] = [];
-  let fence: {char: string, length: number} | null = null;
+  let fence: {char: string, length: number, prose: boolean} | null = null;
   body.split('\n').forEach((text, offset) => {
-    const m = /^\s{0,3}(`{3,}|~{3,})/.exec(text);
+    const m = /^\s{0,3}(`{3,}|~{3,})\s*(\S*)/.exec(text);
     if (m) {
       const run = m[1];
       if (fence === null) {
-        fence = {char: run[0], length: run.length};
+        fence = {char: run[0], length: run.length, prose: m[2] === 'mdx-code-block'};
         return;
       }
       if (run[0] === fence.char && run.length >= fence.length) {
@@ -45,7 +46,7 @@ export function proseLines(body: string): ProseLine[] {
         return;
       }
     }
-    if (fence === null) out.push({text, offset});
+    if (fence === null || fence.prose) out.push({text, offset});
   });
   return out;
 }

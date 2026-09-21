@@ -96,7 +96,7 @@ function needs(name: ReportName, system: TypeSystem): {nodes: string[], edges: s
     case 'proposed':
       return {nodes: ['source-file'], edges: ['is-implemented-in']};
     case 'media':
-      return {nodes: ['media'], edges: ['embeds', 'thumbnail', 'illustrates']};
+      return {nodes: ['media'], edges: ['embeds', 'thumbnail']};
     default:
       return {nodes: [...features, 'test'], edges: ['is-implemented-in', 'participates-in', 'documents', 'tests', 'covers', 'automates', 'owner']};
   }

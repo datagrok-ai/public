@@ -2,6 +2,8 @@
 
 ## v.next
 
+* grok kg: media, after the second review: a hosted video is as visible as its record's folder (an internal videos.yaml no longer reaches the public snapshot); an untracked media.yaml edited twice moves the batch; sizes come from the git blob so LF and CRLF checkouts agree; conflicted files are set aside; illustrates keeps the canonical id an alias resolves to and carries proposed: true when unreviewed; a Docusaurus mdx-code-block fence, an HTML comment and a slide split by a comment are read as rendered; the feature questions require a current description
+
 * grok kg: the marketing site as an external root: `--landing <dir>` (else <repo>/../landing, else C:/dg/landing; `--landing false` for none) makes every web/*.html a web-page node with the address nginx gives it, its headings as anchors and its img, video, YouTube and background-image embeds; the site's media files, records and revision join the graph and the batch; landing: paths resolve there in check, the extractors and the browser's editor links
 
 * grok kg: media in the graph: every image, animation and clip under help, the Docusaurus static folder and core/docs, and every hosted YouTube video a page shows, is a `media` node (blob, bytes, delivery url, thumbnail, the record fields); one `embeds` edge per occurrence (markdown images, JSX img tags, video sources, YouTube iframes and timestamped links, marketing slides) with position, form, nearest heading and alt; `illustrates` from the records (annotation when reviewed, an llm proposal at 0.6 otherwise); `report media` (undescribed, stale, awaiting review, unreferenced, broken, no alt, duplicates, largest, unfit); questions media-for-feature, features-without-media, undescribed-media, unreferenced-media, media-by-text

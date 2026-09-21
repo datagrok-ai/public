@@ -29,7 +29,7 @@ export const RECORD_KEYS = ['kind', 'animated', 'width', 'height', 'seconds', 'c
 /** A hosted video has no file name to take its name from, so its record may carry a title. */
 const HOSTED_KEYS = [...RECORD_KEYS, 'title'];
 const HOSTED_KEY = /^(youtube):([\w-]{11})$/;
-export const ILLUSTRATES_TARGETS = ['feature', 'concept'];
+
 
 export function isMedia(file: string): boolean {
   return path.posix.extname(file).toLowerCase() in FORMATS;
@@ -57,9 +57,21 @@ export interface MediaRecords {
   records: Map<string, MediaRecord>;
   errors: Issue[];
   warnings: Issue[];
+  /** The git inventory of media files, read once here for the freshness check and reused by the media extractor. */
+  inventory: MediaInventory;
 }
 
-export type ResolveRef = (value: string, expected: string[], ctx: {source: string, key: string}) => string | undefined;
+/** What git knows of the media files: blob id and size per tracked path, whether every repository answered. */
+export interface MediaInventory {
+  files: Map<string, {blob: string, bytes: number}>;
+  /** False when a repository could not be read: the inventory is then incomplete, not empty. */
+  ok: boolean;
+  /** Paths in a merge conflict: never usable material. */
+  conflicted: Set<string>;
+}
+
+/** The homes' reference resolver: a problem, or the canonical id of the home the reference names (an alias resolved). */
+export type ResolveRef = (value: string, expected: string[], ctx: {source: string, key: string}) => {problem?: string, id?: string};
 
 /**
  * Reads the record files: a key is a file beside the record (`media.yaml`) or `youtube:<id>` (`videos.yaml`); the
@@ -67,9 +79,10 @@ export type ResolveRef = (value: string, expected: string[], ctx: {source: strin
  * the reference resolver of the homes; a `described_blob` that is not the file's current blob is a stale description.
  */
 export function loadMediaRecords(system: TypeSystem, roots: Roots, files: string[], resolve: ResolveRef): MediaRecords {
-  const out: MediaRecords = {records: new Map(), errors: [], warnings: []};
+  const out: MediaRecords = {records: new Map(), errors: [], warnings: [], inventory: {files: new Map(), ok: true, conflicted: new Set()}};
   if (!system.nodes.has('media')) return out;
-  let blobs: Map<string, string> | undefined;
+  out.inventory = blobIds(roots);
+  const targets = system.edges.get('illustrates')?.to.filter((t) => system.nodes.has(t)) ?? [];
   for (const file of files) {
     const hosted = path.posix.basename(file) === 'videos.yaml';
     const dir = path.posix.dirname(file);
@@ -120,23 +133,29 @@ export function loadMediaRecords(system: TypeSystem, roots: Roots, files: string
           bad = true;
         }
       const {illustrates, title, ...members} = data;
-      const targets: string[] = [];
+      const shows: string[] = [];
       if (illustrates !== undefined) {
         if (!Array.isArray(illustrates) || !illustrates.every((t) => typeof t === 'string' && t.trim())) {
           error('bad-edge', `'${key}': illustrates must be a list of feature or concept ids`, key);
           bad = true;
         } else {
           illustrates.forEach((t: string, i: number) => {
-            const problem = resolve(t, ILLUSTRATES_TARGETS.filter((x) => system.nodes.has(x)), {source: file, key: `${key}.illustrates[${i}]`});
+            const {problem, id} = resolve(t, targets, {source: file, key: `${key}.illustrates[${i}]`});
             if (problem) {
               error('unresolved-ref', `'${key}': illustrates[${i}]: ${problem}`, key);
               bad = true;
-            } else targets.push(t.trim().replace(/^~/, ''));
+            } else shows.push(id ?? t.trim().replace(/^~/, ''));
           });
         }
       }
       const row: Row = {type: 'media', id: entry.id, format: entry.path ? formatOf(entry.path) : 'youtube', ...members};
-      if (typeof title === 'string') row.name = title;
+      if (title !== undefined) {
+        if (typeof title === 'string' && title.trim()) row.name = title.trim();
+        else {
+          error('bad-value', `'${key}': title: expected a string, got ${JSON.stringify(title)}`, key);
+          bad = true;
+        }
+      }
       const normalized = normalizeRow(system, row, {defaults: false});
       for (const p of normalized.problems)
         if (!bad || p.code !== 'unknown-key') {
@@ -146,10 +165,9 @@ export function loadMediaRecords(system: TypeSystem, roots: Roots, files: string
       if (bad) continue;
       const {type, id, format, ...rest} = normalized.row;
       entry.data = rest;
-      entry.illustrates = targets;
+      entry.illustrates = shows;
       if (entry.path && typeof rest.described_blob === 'string') {
-        blobs ??= blobIds(roots);
-        const blob = blobs.get(entry.path) ?? hashBlob(fs.readFileSync(localPath(roots, entry.path)!));
+        const blob = out.inventory.files.get(entry.path)?.blob ?? hashBlob(fs.readFileSync(localPath(roots, entry.path)!));
         if (blob !== rest.described_blob)
           out.warnings.push({file, line, code: 'stale-description', message: `'${key}': described at blob ${String(rest.described_blob).slice(0, 12)}, the file is now ${blob.slice(0, 12)}; run grok kg enrich media --stale`, target: entry.path});
       }
@@ -166,12 +184,14 @@ export function hashBlob(content: Buffer): string {
 }
 
 /**
- * Blob ids of every tracked media file, from the index of the monorepo, of the `public/` submodule and of the site
- * when the build has one (each keyed by the prefix its paths carry), without reading the files; a file the working
- * tree has changed is hashed the way git would. A tree that is no repository yields nothing.
+ * Blob id and size of every tracked media file, from the index of the monorepo, of the `public/` submodule and of the
+ * site when the build has one (each keyed by the prefix its paths carry), without reading the files: the size is the
+ * blob's, so two clean checkouts with different line endings agree. A file the working tree has changed is hashed the
+ * way git would; a file in a merge conflict is set aside; a repository git cannot read leaves the inventory not ok.
+ * A folder that is no repository of its own (a fixture inside another one) contributes nothing.
  */
-export function blobIds(roots: Roots): Map<string, string> {
-  const out = new Map<string, string>();
+export function blobIds(roots: Roots): MediaInventory {
+  const out: MediaInventory = {files: new Map(), ok: true, conflicted: new Set()};
   const seen = new Set<string>();
   for (const {dir, prefix} of gitRoots(roots)) {
     const top = spawnSync('git', ['rev-parse', '--show-toplevel'], {cwd: dir, encoding: 'utf8'});
@@ -180,18 +200,22 @@ export function blobIds(roots: Roots): Map<string, string> {
     if (seen.has(cwd) || path.resolve(dir) !== cwd) continue;
     seen.add(cwd);
     const ls = spawnSync('git', ['ls-files', '-s', '-z'], {cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024});
-    if (ls.status !== 0) continue;
+    const status = spawnSync('git', ['status', '--porcelain', '-z', '--untracked-files=no'], {cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024});
+    if (ls.status !== 0 || status.status !== 0) {
+      out.ok = false;
+      continue;
+    }
+    const blobs = new Map<string, string>();
     for (const entry of ls.stdout.split('\0')) {
       // <mode> <blob> <stage>\t<path>
       const tab = entry.indexOf('\t');
       if (tab < 0) continue;
       const [, blob, stage] = entry.slice(0, tab).split(' ');
       const file = entry.slice(tab + 1);
-      if (stage !== '0' || !isMedia(file)) continue;
-      out.set(prefix + file, blob);
+      if (!isMedia(file)) continue;
+      if (stage !== '0') out.conflicted.add(prefix + file);
+      else blobs.set(file, blob);
     }
-    const status = spawnSync('git', ['status', '--porcelain', '-z', '--untracked-files=no'], {cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024});
-    if (status.status !== 0) continue;
     const changed: string[] = [];
     const entries = status.stdout.split('\0');
     for (let i = 0; i < entries.length; i++) {
@@ -200,13 +224,29 @@ export function blobIds(roots: Roots): Map<string, string> {
       const code = entry.slice(0, 2);
       const file = entry.slice(3);
       if (code.startsWith('R') || code.startsWith('C')) i++;
-      if (code.includes('D')) out.delete(prefix + file);
-      else if (isMedia(file) && fs.existsSync(path.join(cwd, file))) changed.push(file);
+      if (!isMedia(file)) continue;
+      if (code.includes('U') || code === 'AA' || code === 'DD') out.conflicted.add(prefix + posix(file));
+      else if (code.includes('D')) blobs.delete(file);
+      else if (fs.existsSync(path.join(cwd, file))) changed.push(file);
+    }
+    for (const file of out.conflicted) blobs.delete(file.slice(prefix.length));
+    const sizes = new Map<string, number>();
+    if (blobs.size) {
+      const sized = spawnSync('git', ['cat-file', '--batch-check=%(objectname) %(objectsize)'], {cwd, encoding: 'utf8', input: [...new Set(blobs.values())].join('\n'), maxBuffer: 64 * 1024 * 1024});
+      if (sized.status === 0)
+        for (const line of sized.stdout.split('\n')) {
+          const [blob, size] = line.trim().split(' ');
+          if (blob && size !== undefined && /^\d+$/.test(size)) sizes.set(blob, Number(size));
+        }
+    }
+    for (const [file, blob] of blobs) {
+      const size = sizes.get(blob);
+      if (size !== undefined) out.files.set(prefix + file, {blob, bytes: size});
     }
     if (!changed.length) continue;
     const hashed = spawnSync('git', ['hash-object', '--', ...changed], {cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024});
     if (hashed.status !== 0) continue;
-    hashed.stdout.trim().split('\n').forEach((blob, i) => out.set(prefix + posix(changed[i]), blob.trim()));
+    hashed.stdout.trim().split('\n').forEach((blob, i) => out.files.set(prefix + posix(changed[i]), {blob: blob.trim(), bytes: fs.statSync(path.join(cwd, changed[i])).size}));
   }
   return out;
 }

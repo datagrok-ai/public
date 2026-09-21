@@ -11,6 +11,7 @@ import {Manifest, dataDir, manifestFile} from '../generation';
 import {isRecordFile} from '../homes';
 import {isMedia} from '../media';
 import {gitRoots, isPublicPath as publicPath} from '../roots';
+import {posix} from '../ids';
 
 export interface BuildInfo {
   mode: string;
@@ -98,7 +99,8 @@ function dirtyDigest(repoRoot: string, outRoot?: string, landingDir?: string): s
     const cwd = path.resolve(top.stdout.trim());
     if (seen.has(cwd)) continue;
     seen.add(cwd);
-    const r = spawnSync('git', ['status', '--porcelain', '-z'], {cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024});
+    // every untracked file by name: a folder that is new as a whole would otherwise hide the records and media inside it
+    const r = spawnSync('git', ['status', '--porcelain', '-z', '--untracked-files=all'], {cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024});
     if (r.status !== 0) {
       hash.update(`${cwd}: unknown\n`);
       continue;
@@ -112,7 +114,7 @@ function dirtyDigest(repoRoot: string, outRoot?: string, landingDir?: string): s
       const renamed = (status.startsWith('R') || status.startsWith('C')) ? entries[++i] ?? '' : '';
       if (out !== undefined && inside(out, file)) continue;
       hash.update(`${entry}\n${renamed}`);
-      if (status !== '??' || isRecordFile(file) || isMedia(file) && fs.statSync(file).isFile()) hash.update(digestOf(file));
+      if (status !== '??' || (isRecordFile(posix(file)) || isMedia(posix(file))) && fs.statSync(file).isFile()) hash.update(digestOf(file));
     }
   }
   return hash.digest('hex');

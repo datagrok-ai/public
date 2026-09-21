@@ -49,13 +49,15 @@ const SOURCE = /<source\b([^>]*?)\/?>/g;
 const ATTRIBUTE = /([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g;
 const IMPORT = /^\s*import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/;
 const REQUIRE = /require\(\s*['"]([^'"]+)['"]\s*\)/;
-const SLIDE = /\{\s*text:\s*(['"`])((?:\\.|(?!\1).)*)\1\s*,\s*image:\s*(['"`])((?:\\.|(?!\3).)*)\3\s*\}/g;
+const SLIDE = /\{\s*text:\s*(['"`])((?:\\.|(?!\1).)*)\1\s*,(?:\s*\/\/[^\n]*)*\s*image:\s*(['"`])((?:\\.|(?!\3).)*)\3\s*\}/g;
+const HTML_COMMENT = /<!--[\s\S]*?-->/g;
 const MAX_ANCHOR_DEPTH = 4;
 
 export function extractEmbeds(file: string, body: string, bodyLine: number, heads: Heading[]): Embed[] {
   const dir = path.posix.dirname(file);
   const lines = proseLines(body);
-  const text = lines.map((l) => l.text).join('\n');
+  // a commented-out image is not shown; blanking keeps every offset where it was
+  const text = lines.map((l) => l.text).join('\n').replace(HTML_COMMENT, (c) => c.replace(/[^\n]/g, ' '));
   const offsetOf = lineIndex(lines);
   const definitions = new Map<string, {target: string, title?: string}>();
   const imports = new Map<string, string>();
@@ -149,7 +151,10 @@ export function resolveTarget(raw: string, dir: string): EmbedTarget | null {
       break;
     }
   const prefixed = /^landing:(.+)$/.exec(target);
-  if (prefixed) return isMedia(prefixed[1]) ? {kind: 'file', path: `landing:${path.posix.normalize(prefixed[1])}`} : null;
+  if (prefixed) {
+    const inside = path.posix.normalize(prefixed[1]);
+    return isMedia(inside) && !inside.startsWith('..') && !path.posix.isAbsolute(inside) ? {kind: 'file', path: `landing:${inside}`} : null;
+  }
   const resolved = target.startsWith('/') ? path.posix.normalize(target.slice(1)) :
     /^(core|public|infra)\//.test(target) ? path.posix.normalize(target) : path.posix.normalize(path.posix.join(dir, target));
   if (resolved.startsWith('..') || path.posix.isAbsolute(resolved) || !isMedia(resolved)) return null;

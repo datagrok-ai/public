@@ -9,9 +9,9 @@ import {Emitter} from '../emitter';
 import {Row, compare} from '../../normalize';
 import {BuildContext, Extractor} from '../context';
 import {HOME_IGNORE, HomeSet} from '../../homes';
-import {isMedia, formatOf, blobIds, hashBlob, MediaRecord} from '../../media';
+import {isMedia, formatOf, hashBlob, MediaRecord} from '../../media';
 import {Embed, targetKey} from '../../embeds';
-import {mediaId, hostedMediaId, docId, sourceLayerOf} from '../../ids';
+import {mediaId, hostedMediaId, docId, sourceLayerOf, locationVisibility} from '../../ids';
 import {Roots, LANDING_PREFIX, localPath, existsAt, deliveryUrl} from '../../roots';
 import {homesOf} from './markers';
 
@@ -68,23 +68,27 @@ class MediaLayer {
       }
       shown.push({page, embed});
     }
-    const blobs = blobIds(this.roots);
+    const inventory = this.homes.mediaInventory;
+    if (!inventory.ok) this.emitter.problem('media_git', 'a repository could not be read: which media files are tracked is unknown');
     const embedded = new Set(shown.filter((s) => s.embed.target.kind === 'file').map((s) => targetKey(s.embed.target)));
     const admitted = new Set<string>();
     for (const file of [...files].sort(compare)) {
       const id = mediaId(file);
       const record = records.get(id);
-      let blob = blobs.get(file);
+      if (inventory.conflicted.has(file)) {
+        this.emitter.problem('conflicted_media', file);
+        continue;
+      }
+      const known = inventory.files.get(file);
       // a git tree lists what it tracks; a local addition no page shows is reported, not indexed (a tree with no git tracks nothing)
-      if (blob === undefined && blobs.size) {
+      if (known === undefined && inventory.files.size) {
         this.emitter.problem('untracked_media', file);
         if (!embedded.has(file) && !record) continue;
       }
       const local = localPath(this.roots, file)!;
-      blob ??= hashBlob(fs.readFileSync(local));
       const thumb = /\.gif$/i.test(file) ? `${file.slice(0, -4)}-thumb.png` : undefined;
-      const row: Row = {type: 'media', id, name: path.posix.basename(file), path: file, format: formatOf(file), blob,
-        bytes: fs.statSync(local).size, url: deliveryUrl(file), thumbnail: thumb && files.has(thumb) ? mediaId(thumb) : undefined,
+      const row: Row = {type: 'media', id, name: path.posix.basename(file), path: file, format: formatOf(file), blob: known?.blob ?? hashBlob(fs.readFileSync(local)),
+        bytes: known?.bytes ?? fs.statSync(local).size, url: deliveryUrl(file), thumbnail: thumb && files.has(thumb) ? mediaId(thumb) : undefined,
         provenance: record ? 'annotation' : 'filesystem', source_layer: sourceLayerOf(file), ...record?.data};
       if (!this.emitter.node(row).accepted) continue;
       admitted.add(id);
@@ -99,9 +103,10 @@ class MediaLayer {
       const record = records.get(id);
       const {name, ...data} = record?.data ?? {};
       const poster = posters.get(`${provider}:${externalId}`);
+      // a hosted video has no path to take its visibility from: what its record says is as visible as the record's folder
       const row: Row = {type: 'media', id, name: name ?? `${provider} ${externalId}`, url: `https://www.youtube.com/watch?v=${externalId}`, format: 'youtube',
         provider, external_id: externalId, thumbnail: poster && files.has(poster) ? mediaId(poster) : undefined,
-        provenance: record ? 'annotation' : 'ast', source_layer: 'public', ...data};
+        provenance: record ? 'annotation' : 'ast', source_layer: 'public', visibility: record ? locationVisibility(record.file) : undefined, ...data};
       if (!this.emitter.node(row).accepted) continue;
       admitted.add(id);
       if (record) this.illustrates(record);
@@ -112,17 +117,16 @@ class MediaLayer {
       this.emitter.edge({type: 'embeds', from: docId(page), to, derived_by: 'ast', confidence: 1, evidence: [page], position: embed.position, line: embed.line,
         form: embed.form, anchor: embed.anchor, alt: embed.alt, title: embed.title, caption: embed.caption, start_seconds: embed.start_seconds});
     }
-    this.emitter.source('media', this.broken ? 'partial' : 'ok');
+    this.emitter.source('media', this.broken || !inventory.ok ? 'partial' : 'ok');
   }
 
-  /** What the record asserts: a reviewed record is authored fact, an unreviewed one a proposal below the review line (conventions.md §8). */
+  /** What the record asserts (its targets already canonical): a reviewed record is authored fact, an unreviewed one a
+   * proposal below the review line, marked as such (conventions.md §8). */
   private illustrates(record: MediaRecord): void {
     const reviewed = record.data.reviewed === true;
-    for (const target of record.illustrates) {
-      const home = this.homes.index.byId.get(target) ?? this.homes.index.byAlias.get(target);
-      this.emitter.edge({type: 'illustrates', from: record.id, to: home?.id ?? target, derived_by: reviewed ? 'annotation' : 'llm',
-        confidence: reviewed ? 1 : PROPOSAL_CONFIDENCE, evidence: [record.file]});
-    }
+    for (const target of record.illustrates)
+      this.emitter.edge({type: 'illustrates', from: record.id, to: target, derived_by: reviewed ? 'annotation' : 'llm',
+        confidence: reviewed ? 1 : PROPOSAL_CONFIDENCE, proposed: reviewed ? undefined : true, evidence: [record.file]});
   }
 
   private exists(file: string): boolean {
