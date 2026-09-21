@@ -337,7 +337,8 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
         for (const entity of entities)
           result.push({id: entity.id, name: entity.name, friendlyName: entity.friendlyName,
             createdOn: entity.createdOn?.valueOf() ?? 0,
-            children: src === 'projects' ? entity.children.map((child: any) => child.id) : undefined});
+            // a project can hold a child whose entity is gone: one of those must not fail the listing
+            children: src === 'projects' ? entity.children.filter(Boolean).map((child: any) => child.id) : undefined});
         if (entities.length < 1000)
           return result;
       }
