@@ -10,6 +10,7 @@ import {extractCitations, headings, proseLines, Citation} from './citations';
 import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pascal, kebabOfLabel, concreteAuthored} from './types';
 import {normalizeRow} from './normalize';
 import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID, PAGE_PATH, docCandidates} from './ids';
+import {loadMediaRecords, MediaRecord, RECORD_FILES} from './media';
 
 /** Where homes may live, relative to the monorepo root: any markdown document in the repos, and
  * the YAML records (concepts, people, teams, customers) inside the knowledge-graph folder. */
@@ -19,6 +20,7 @@ export const HOME_ROOTS = [
   'infra/**/*.{md,mdx}',
   'landing/**/*.{md,mdx}',
   'core/docs/knowledge-graph/**/*.yaml',
+  '{core,public,infra,landing}/**/{media,videos}.yaml',
 ];
 
 export const HOME_IGNORE = [
@@ -100,6 +102,8 @@ export interface HomeSet {
   /** Pages that are not homes but carry an edge key such as `documents:`. */
   annotatedPages: number;
   citations: {doc: number, code: number, media: number};
+  /** The media records (media.yaml, videos.yaml) by media id, validated; empty when the type system has no media type. */
+  media: Map<string, MediaRecord>;
   /** The homes by id and by alias, built once here and shared by every reader. */
   index: HomeIndex;
 }
@@ -115,6 +119,8 @@ export interface CheckReport {
   homes: Record<string, number>;
   annotatedPages: number;
   citations: {doc: number, code: number, media: number};
+  /** Media records read (media.yaml, videos.yaml entries). */
+  media: number;
   unresolvedExternal: UnresolvedRef[];
   stubs: string[];
   stale?: string[];
@@ -127,8 +133,9 @@ export function discoverHomeFiles(repoRoot: string): string[] {
 
 export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] = discoverHomeFiles(repoRoot)): HomeSet {
   const set: HomeSet = {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: files.length,
-    annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, index: {byId: new Map(), byAlias: new Map()}};
+    annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, media: new Map(), index: {byId: new Map(), byAlias: new Map()}};
   for (const file of files) {
+    if (isRecordFile(file)) continue;
     let text: string;
     try {
       text = fs.readFileSync(path.join(repoRoot, file), 'utf8');
@@ -161,7 +168,16 @@ export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] 
   for (const page of set.pages)
     checker.checkPage(page.file, page.fm);
   checker.checkCycles();
+  const media = loadMediaRecords(system, repoRoot, files.filter(isRecordFile), (v, expected, ctx) => checker.resolveRef(v, expected, ctx).problem);
+  set.media = media.records;
+  set.errors.push(...media.errors);
+  set.warnings.push(...media.warnings);
   return set;
+}
+
+/** A media record file (media.yaml, videos.yaml): walked with the homes, read by media.ts, never a home. */
+export function isRecordFile(file: string): boolean {
+  return RECORD_FILES.includes(path.posix.basename(file));
 }
 
 function readHome(system: TypeSystem, file: string, fm: Frontmatter, isYaml: boolean, errors: Issue[]): Home | null {
@@ -700,6 +716,7 @@ export function makeReport(system: TypeSystem, homes: HomeSet | null): CheckRepo
     homes: byType,
     annotatedPages: homes?.annotatedPages ?? 0,
     citations: homes?.citations ?? {doc: 0, code: 0, media: 0},
+    media: homes?.media.size ?? 0,
     unresolvedExternal: homes?.unresolvedExternal ?? [],
     stubs: (homes?.stubs ?? []).map((s) => s.id),
   };

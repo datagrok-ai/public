@@ -522,7 +522,7 @@ describe('kg gen (conventions.md §11.2)', () => {
   });
 
   it('writes a note instead of a tree when there are no homes', () => {
-    const md = generateFeatures(system, {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: 0, annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, index: {byId: new Map(), byAlias: new Map()}});
+    const md = generateFeatures(system, {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: 0, annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, media: new Map(), index: {byId: new Map(), byAlias: new Map()}});
     expect(md).toContain('No home documents yet');
   });
 

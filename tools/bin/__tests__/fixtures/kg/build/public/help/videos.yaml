@@ -1,0 +1,10 @@
+youtube:abc123def45:
+  title: Histograms in five minutes
+  caption: A walkthrough of the histogram viewer
+  description: Opening a histogram, choosing the column, changing bins and colouring by a category.
+  actions: [opens a histogram, picks the column, changes the bins, colours by category]
+  illustrates: [visualize/viewers/histogram]
+  quality: marketing
+  reviewed: true
+  described_by: person
+  seconds: 300

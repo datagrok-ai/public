@@ -2,6 +2,8 @@
 
 ## v.next
 
+* grok kg: media records: a `media.yaml` beside media files and a `videos.yaml` of hosted videos (keys, illustrates, described_blob) are read with the homes; check validates them (unknown-media, unknown-key, unresolved-ref, stale-description) and counts them; media.ts finds git blob ids without reading the files
+
 * grok kg: a media file a page shows (png, gif, svg, mp4, ... per `bin/utils/kg/media.ts`) is no longer a code citation: a feature home that embeds an image mints no source-file node and makes no ownership claim, a code: root that expands over one skips it, and check counts media files apart while still reporting a missing one as missing-cited-path
 
 * grok kg: membership gives a file two unrelated code: roots claim to the more specific root (exact path over folder, deeper folder over shallower), instead of leaving it an orphan

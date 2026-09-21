@@ -1,0 +1,26 @@
+histogram.gif:
+  kind: animation
+  caption: Changing the bin count
+  description: >
+    The user opens a histogram on the age column, drags the Bins slider in the context panel
+    from 20 to 5 and back; the bars merge and split as the slider moves.
+  actions: [opens the histogram, drags the Bins slider left, drags it back]
+  ui_text: [Bins, Bins, Context Panel]
+  illustrates: [visualize/viewers/histogram]
+  quality: answer
+  reviewed: true
+  described_by: person
+  described_blob: 35d42e808f0a8017b8d52a06be2f8fec0b466a66
+  width: 800
+  height: 500
+  seconds: 6
+bins.png:
+  kind: screenshot
+  caption: The Bins slider
+  description: The context panel of a histogram with the Bins slider at 12.
+  ui_text: [Bins]
+  illustrates: [visualize/viewers/histogram]
+  quality: docs
+  reviewed: false
+  described_by: claude-sonnet-5
+  described_blob: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef

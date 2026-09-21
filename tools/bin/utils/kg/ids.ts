@@ -11,7 +11,7 @@ export const SCHEME_TYPES: Record<string, string[]> = {
   ep: ['endpoint'], table: ['db-table'], semtype: ['semantic-type'], doc: ['doc-page'], test: ['test'],
   suite: ['test-suite'], sample: ['sample'], pr: ['pull-request'], gh: ['ticket'], commit: ['commit'],
   report: ['report'], img: ['image'], chg: ['changelog-entry'], conn: ['connection'], env: ['script-environment'],
-  container: ['container'], mig: ['migration'], tutorial: ['tutorial'], query: ['query'], script: ['script'],
+  container: ['container'], mig: ['migration'], tutorial: ['tutorial'], query: ['query'], script: ['script'], media: ['media'], video: ['media'],
 };
 export const PREFIXED_ID = /^([A-Z][A-Za-z]{0,5}):(.+)$/;
 export const SCHEMED_ID = /^([a-z][a-z0-9-]*):(.+)$/;
@@ -39,7 +39,7 @@ export const CLIENT_TEST_LIBS = ['d4', 'ddt', 'dml', 'xamgle'];
 const API_TESTS_DIR = 'public/packages/ApiTests/';
 const DATLAS_TEST_DIR = 'core/server/datlas/test/';
 export const GITHUB_KEY = /^gh:public#\d+$/;
-const PATH_SCHEMES = ['file', 'decl', 'doc', 'mig', 'sample'];
+const PATH_SCHEMES = ['file', 'decl', 'doc', 'mig', 'sample', 'media'];
 const LANGUAGES: Record<string, string> = {
   '.dart': 'dart', '.ts': 'ts', '.tsx': 'ts', '.js': 'js', '.mjs': 'js', '.cjs': 'js', '.jsx': 'js', '.java': 'java',
   '.py': 'python', '.r': 'r', '.sql': 'sql', '.jl': 'julia', '.m': 'octave', '.grok': 'grok',
@@ -109,6 +109,16 @@ export function chgId(pkg: string, version: string, n: number): string {
 
 export function docId(file: string, slug?: string): string {
   return `doc:${posix(file)}${slug ? `#${slug}` : ''}`;
+}
+
+/** A media file committed in a repository (`landing:` prefixed paths included). */
+export function mediaId(file: string): string {
+  return `media:${posix(file)}`;
+}
+
+/** A hosted video, by provider and its id there: `video:youtube:dKrCk38A1m8`. */
+export function hostedMediaId(provider: string, id: string): string {
+  return `video:${provider}:${id}`;
 }
 
 export function prId(repo: 'reddata' | 'public', n: number): string {
