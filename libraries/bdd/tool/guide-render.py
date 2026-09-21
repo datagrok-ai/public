@@ -236,7 +236,14 @@ class Renderer:
             for _ in range(int(self.hold * fps)):
                 yield still
             return
-        self.compose(lit, dest, caption=caption).save(os.path.join(self.folder, f'step-{index:02d}.png'))
+        # the pages pictured while a button was held: a drag's still shows what it drew, at its end
+        drags = [p for p in pointer if p.get('shot')]
+        if drags:
+            drawn = self._image(drags[-1]['shot'])
+            still = self.compose(self.spotlight(drawn, target) if target else drawn, (drags[-1]['x'], drags[-1]['y']), caption=caption)
+        else:
+            still = self.compose(lit, dest, caption=caption)
+        still.save(os.path.join(self.folder, f'step-{index:02d}.png'))
         small = target is not None and target['width'] * target['height'] < SMALL_TARGET * self.w * self.h
         zoom = self.zoom if small and self.zoom > 1 else 1.0
         yield from self.travel_frames(before, lit, dest, caption)
@@ -253,6 +260,23 @@ class Renderer:
             n = int(0.4 * fps)
             for i in range(n):
                 yield self.compose(lit, dest, ripple=(i + 1) / n, zoom=zoom, anchor=dest, caption=caption)
+        # the drag: the pointer travels to each pictured point over the page as it was, the next
+        # picture fading in as it arrives, so the box grows under the pointer; the step then ends
+        # from the last picture, the pointer where the button was released
+        for p in drags:
+            drawn = self.spotlight(self._image(p['shot']), target) if target else self._image(p['shot'])
+            to = (p['x'], p['y'])
+            n = max(1, int(0.3 * fps))
+            for i in range(n):
+                t = ease((i + 1) / n)
+                pos = (dest[0] + (to[0] - dest[0]) * t, dest[1] + (to[1] - dest[1]) * t)
+                mix = max(0.0, (t - 0.6) / 0.4)
+                yield self.compose(Image.blend(lit, drawn, mix) if mix > 0 else lit, pos, zoom=zoom, anchor=dest, caption=caption)
+            lit, dest = drawn, to
+        if drags:
+            rest = self.compose(lit, dest, zoom=zoom, anchor=dest, caption=caption)
+            for _ in range(int(0.5 * fps)):
+                yield rest
         n = int((self.zoom_time if zoom > 1 else 0.35) * fps)
         for i in range(n):
             t = ease((i + 1) / n)
@@ -326,10 +350,14 @@ def selftest(folder):
     os.makedirs(folder, exist_ok=True)
     w, h = 640, 400
     for name, color in [('01-before.png', (240, 243, 247)), ('01-after.png', (224, 236, 250)),
-                        ('02-before.png', (224, 236, 250)), ('02-after.png', (224, 236, 250))]:
+                        ('02-before.png', (224, 236, 250)), ('02-after.png', (224, 236, 250)),
+                        ('03-before.png', (224, 236, 250)), ('03-drag1.png', (224, 236, 250)),
+                        ('03-drag2.png', (224, 236, 250)), ('03-after.png', (224, 236, 250))]:
         img = Image.new('RGB', (w, h), color)
         d = ImageDraw.Draw(img)
         d.rectangle((40, 40, 120, 64), fill=(32, 131, 213))
+        if name.startswith('03-drag'):
+            d.rectangle((200, 100, 200 + 60 * int(name[7]), 100 + 40 * int(name[7])), fill=(180, 180, 180))
         d.text((300, 200), name, fill=(40, 40, 40))
         img.save(os.path.join(folder, name))
     manifest = {'feature': 'Self test', 'scenario': 'Two synthetic steps', 'description': '', 'tags': [],
@@ -340,7 +368,12 @@ def selftest(folder):
                      'clicks': [{'x': 80, 'y': 52, 'button': 'left'}], 'keys': [], 'typed': '', 'ms': 10},
                     {'index': 2, 'line': 2, 'keyword': 'Then', 'text': 'the page should be blue', 'caption': 'The page is blue',
                      'kind': 'check', 'before': '02-before.png', 'after': '02-after.png', 'pointer': [], 'clicks': [],
-                     'keys': ['Enter'], 'typed': '', 'ms': 5}]}
+                     'keys': ['Enter'], 'typed': '', 'ms': 5},
+                    {'index': 3, 'line': 3, 'keyword': 'When', 'text': 'user drags across the page', 'caption': 'Drag across the page',
+                     'kind': 'action', 'before': '03-before.png', 'after': '03-after.png',
+                     'target': {'x': 180, 'y': 80, 'width': 300, 'height': 200},
+                     'pointer': [{'x': 200, 'y': 100}, {'x': 260, 'y': 140, 'shot': '03-drag1.png'}, {'x': 320, 'y': 180, 'shot': '03-drag2.png'}],
+                     'clicks': [{'x': 200, 'y': 100, 'button': 'left'}], 'keys': [], 'typed': '', 'ms': 10}]}
     with open(os.path.join(folder, 'steps.json'), 'w', encoding='utf-8') as f:
         json.dump(manifest, f)
 

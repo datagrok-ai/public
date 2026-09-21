@@ -16,9 +16,13 @@ export interface GuideBox {
 export interface GuidePoint {
   x: number;
   y: number;
+  /** The page as it was when the pointer got here with a button held — what a drag draws. */
+  shot?: string;
 }
 
 export type GuideStepKind = 'action' | 'check' | 'setup';
+
+const DRAG_SHOTS = 8;
 
 /** A stop on a path the step walks (a menu group, then its item): the page as the pointer set
  * off for it, and where it went. */
@@ -191,12 +195,33 @@ export function attach(page: Page): void {
   const click = mouse.click.bind(mouse);
   const dblclick = mouse.dblclick.bind(mouse);
   const down = mouse.down.bind(mouse);
+  const up = mouse.up.bind(mouse);
   let at: GuidePoint = {x: 0, y: 0};
+  let held = false;
   const rec = (): Recording | undefined => recordings.get(page);
+  // a move with a button held is a drag: the page is pictured along the way (at most DRAG_SHOTS
+  // per step), so the video shows what the drag draws — a selection box, an annotation region
   mouse.move = async (x: number, y: number, options?: unknown) => {
+    const r = rec();
+    if (held && r?.open && r.pointer.filter((p) => p.shot).length < DRAG_SHOTS) {
+      const from = at;
+      const legs = Math.min(3, Math.max(1, Math.round(Math.hypot(x - from.x, y - from.y) / 120)));
+      for (let i = 1; i <= legs; i++) {
+        at = {x: from.x + (x - from.x) * i / legs, y: from.y + (y - from.y) * i / legs};
+        await move(at.x, at.y, {steps: 4});
+        const n = r.pointer.filter((p) => p.shot).length + 1;
+        at.shot = await shot(page, r.dir, `${String(r.open.index).padStart(2, '0')}-drag${n}.png`);
+        r.pointer.push(at);
+      }
+      return;
+    }
     at = {x, y};
-    rec()?.pointer.push(at);
+    r?.pointer.push(at);
     return move(x, y, options);
+  };
+  mouse.up = async (options?: unknown) => {
+    held = false;
+    return up(options);
   };
   mouse.click = async (x: number, y: number, options?: {button?: string}) => {
     at = {x, y};
@@ -212,6 +237,7 @@ export function attach(page: Page): void {
   };
   mouse.down = async (options?: {button?: string}) => {
     rec()?.clicks.push({x: at.x, y: at.y, button: options?.button ?? 'left'});
+    held = true;
     return down(options);
   };
   const keyboard = page.keyboard as any;
