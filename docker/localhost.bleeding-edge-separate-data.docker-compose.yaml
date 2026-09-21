@@ -1,19 +1,15 @@
-# Datagrok local stack tracking unreleased images, built to run NEXT TO another stack.
+# Datagrok local stack tracking unreleased images, with data volumes detached.
 #
-# Generated from `localhost.docker-compose.yaml`: same body, same `bleeding-edge` train, with
-# three changes so it can share a host with the default stack (or `localhost.docker-compose-old.yaml`)
-# without touching it:
-#   * its own project name, `datagrok_dev`, so Compose never mistakes the other stack's
-#     containers for this one's (Compose also feeds it to GROK_SPAWNER_ENVIRONMENT);
-#   * every container, network and volume carries a `_dev` suffix;
-#   * every default host port is the base stack's plus 10 -- Datagrok on 8090, Postgres on
-#     5442, and so on. The *_PORT variables override them as usual.
+# Generated from `localhost.docker-compose.yaml`: same body, same `bleeding-edge` train, same
+# container names, network and host ports. The only difference is that every named volume
+# carries a `_dev` prefix, so this stack keeps its own database, data and config and never
+# touches the volumes of the default stack (or `localhost.docker-compose-old.yaml`). Both
+# bind the same host ports, so run one at a time.
 # Do not edit the services here -- change the canonical file and regenerate this one. See
 # `localhost.docker-compose.yaml` for the release-binding rationale.
 x-datagrok-release: bleeding-edge
-name: datagrok_dev
 
-# Shared by every jkg_* gateway below. They differ only in image, container name and alias.
+# Shared by every jkg_* gateway below. They differ only in image and network alias.
 x-jkg: &jkg
   platform: linux/amd64
   environment:
@@ -37,15 +33,15 @@ services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
     platform: linux/amd64
-    container_name: rabbitmq_dev
+    container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "${RABBITMQ_PORT:-5682}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15682}:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - rabbitmq
     restart: unless-stopped
@@ -54,13 +50,13 @@ services:
   grok_pipe:
     image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-bleeding-edge}
     platform: linux/amd64
-    container_name: grok_pipe_dev
+    container_name: grok_pipe
     ports:
-      - "${GROK_PIPE_PORT:-3010}:3000"
+      - "${GROK_PIPE_PORT:-3000}:3000"
     environment:
       API_KEY: test-key
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - grok_pipe
     restart: unless-stopped
@@ -69,7 +65,6 @@ services:
   datagrok:
     privileged: true
     image: datagrok/datagrok:${DATAGROK_VERSION:-bleeding-edge}
-    container_name: datagrok_dev
     platform: linux/amd64
     environment:
       GROK_PARAMETERS: |
@@ -111,9 +106,9 @@ services:
             }
           }
     ports:
-      - "${DATAGROK_PORT:-8090}:8080/tcp"
+      - "${DATAGROK_PORT:-8080}:8080/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - datagrok
     depends_on:
@@ -128,7 +123,6 @@ services:
 
   grok_spawner:
     image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-bleeding-edge}
-    container_name: grok_spawner_dev
     platform: linux/amd64
     user: root
     environment:
@@ -136,9 +130,9 @@ services:
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
       GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-false}
     ports:
-      - "${GROK_SPAWNER_PORT:-8010}:8000/tcp"
+      - "${GROK_SPAWNER_PORT:-8000}:8000/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - grok_spawner
     volumes:
@@ -148,34 +142,32 @@ services:
 
   grok_connect:
     image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-bleeding-edge}
-    container_name: grok_connect_dev
     platform: linux/amd64
     environment:
       CONNECTION_POOL_MAXIMUM_SIZE: 50
       CONNECTION_POOL_IDLE_TIMEOUT: 300000
       GROK_CONNECT_PORT: 1234
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - grok_connect
     ports:
-      - "${GROK_CONNECT_PORT:-1244}:1234/tcp"
+      - "${GROK_CONNECT_PORT:-1234}:1234/tcp"
     restart: unless-stopped
     profiles: [ "all", "grok_connect" ]
 
   grok_connect_adbc:
     image: datagrok/grok_connect_adbc:${GROK_CONNECT_ADBC_VERSION:-bleeding-edge}
-    container_name: grok_connect_adbc_dev
     platform: linux/amd64
     environment:
       GROK_CONNECT_PORT: 1235
       RUST_LOG: grok_connect_adbc=info
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - grok_connect_adbc
     ports:
-      - "${GROK_CONNECT_ADBC_PORT:-1245}:1235/tcp"
+      - "${GROK_CONNECT_ADBC_PORT:-1235}:1235/tcp"
     restart: unless-stopped
     profiles: [ "all", "grok_connect_adbc" ]
 
@@ -187,9 +179,8 @@ services:
   jkg_python:
     <<: *jkg
     image: datagrok/jkg_python:${JKG_PYTHON_VERSION:-bleeding-edge}
-    container_name: jkg_python_dev
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - jkg_python
     profiles: [ "all", "cvm", "scripting", "jkg", "jkg_python" ]
@@ -197,9 +188,8 @@ services:
   jkg_r:
     <<: *jkg
     image: datagrok/jkg_r:${JKG_R_VERSION:-bleeding-edge}
-    container_name: jkg_r_dev
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - jkg_r
     profiles: [ "all", "cvm", "scripting", "jkg", "jkg_r" ]
@@ -207,9 +197,8 @@ services:
   jkg_octave:
     <<: *jkg
     image: datagrok/jkg_octave:${JKG_OCTAVE_VERSION:-bleeding-edge}
-    container_name: jkg_octave_dev
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - jkg_octave
     profiles: [ "all", "cvm", "scripting", "jkg", "jkg_octave" ]
@@ -217,9 +206,8 @@ services:
   jkg_julia:
     <<: *jkg
     image: datagrok/jkg_julia:${JKG_JULIA_VERSION:-bleeding-edge}
-    container_name: jkg_julia_dev
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - jkg_julia
     profiles: [ "all", "cvm", "scripting", "jkg", "jkg_julia" ]
@@ -227,25 +215,23 @@ services:
   jkg_nodejs:
     <<: *jkg
     image: datagrok/jkg_nodejs:${JKG_NODEJS_VERSION:-bleeding-edge}
-    container_name: jkg_nodejs_dev
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - jkg_nodejs
     profiles: [ "all", "cvm", "scripting", "jkg", "jkg_nodejs" ]
 
   db:
     image: pgvector/pgvector:pg17
-    container_name: db_dev
     platform: linux/amd64
     shm_size: 2gb
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "${DATAGROK_DB_PORT:-5442}:5432/tcp"
+      - "${DATAGROK_DB_PORT:-5432}:5432/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - database
     volumes:
@@ -261,14 +247,13 @@ services:
 
   pg_rdkit:
     image: mcs07/postgres-rdkit
-    container_name: pg_rdkit_dev
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "${DATAGROK_DB_RDKIT_PORT:-54339}:5432/tcp"
+      - "${DATAGROK_DB_RDKIT_PORT:-54329}:5432/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - pgsql_rdkit
     volumes:
@@ -279,13 +264,12 @@ services:
 
   northwind:
     image: datagrok/demo_db_postgres:12-1.1.0
-    container_name: northwind_dev
     environment:
       POSTGRES_DB: northwind
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_NORTHWIND_PORT:-5443}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_NORTHWIND_PORT:-5433}:5432/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - northwind
     volumes:
@@ -295,13 +279,12 @@ services:
 
   chembl:
     image: datagrok/demo_db_chembl:12.9-rdkit2022032-32
-    container_name: chembl_dev
     environment:
       POSTGRES_DB: chembl
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_CHEMBL_PORT:-5444}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_CHEMBL_PORT:-5434}:5432/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - chembl
     volumes:
@@ -311,13 +294,12 @@ services:
 
   unichem:
     image: datagrok/demo_db_postgres:12-1.1.0
-    container_name: unichem_dev
     environment:
       POSTGRES_DB: unichem
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_UNICHEM_PORT:-5445}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_UNICHEM_PORT:-5435}:5432/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - unichem
     volumes:
@@ -327,13 +309,12 @@ services:
 
   starbucks:
     image: datagrok/demo_db_postgres:latest-1.1.0
-    container_name: starbucks_dev
     environment:
       POSTGRES_DB: starbucks
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_STARBUCKS_PORT:-5446}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_STARBUCKS_PORT:-5436}:5432/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - starbucks
     volumes:
@@ -343,13 +324,12 @@ services:
 
   world:
     image: datagrok/demo_db_postgres:12-1.1.0
-    container_name: world_dev
     environment:
       POSTGRES_DB: world
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_WORLD_PORT:-5447}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_WORLD_PORT:-5437}:5432/tcp"
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - world
     volumes:
@@ -359,7 +339,6 @@ services:
 
   mlflow:
     image: datagrok/mlflow:2.9.2
-    container_name: mlflow_dev
     command: >-
       mlflow server
         --backend-store-uri file:/data/mlruns
@@ -373,14 +352,14 @@ services:
       - datagrok_dev_mlflow_backend:/data/mlruns
       - datagrok_dev_mlflow_prom:/data/mlflow_metrics
     ports:
-      - "${DATAGROK_MLFLOW_PORT:-5565}:5000/tcp"
+      - "${DATAGROK_MLFLOW_PORT:-5555}:5000/tcp"
     #    --backend-store-uri postgresql://postgres:postgres@database:5432/mlflow
     #    depends_on:
     #      db:
     #        condition: service_healthy
     #        restart: false
     networks:
-      datagrok_dev:
+      datagrok:
         aliases:
           - mlflow
     restart: on-failure
@@ -402,4 +381,4 @@ volumes:
   datagrok_dev_mlflow_prom:
 
 networks:
-  datagrok_dev:
+  datagrok:
