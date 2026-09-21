@@ -36,6 +36,19 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
   the way, then the leaf; the same for a context menu. A walk that lights only the bar means a
   runtime path did not report its stops: it calls `guide.hop` for each, as `pickTopMenu` and
   `pickMenuPath` do — fix the runtime, not the feature.
+- **A choice is shown being made**: a native select opens its list, the option is typed so the
+  list highlights it, Enter takes it; a column selector opens its picker, the name is typed into
+  its search short of its last letter (a complete unique name is taken on the spot) and the row
+  it leaves is clicked. Tests take the same steps through `selectOption` and Enter; only a guide
+  walks the list (`selectNative`, `typeInColumnGrid` in `src/runtime/gestures.ts`).
+- **The pointer rests on the lit element before every click**; only an icon-sized target (28 px
+  or less each way) is zoomed into. The caption sits above the page, clear of a player's timeline.
+- **Only what a person would look for is in the video.** A `Then` shows when it names something
+  on the page — a dialog, a column, a row count, a value, a legend item's color. The checks a
+  test needs and a person does not are filmed out by the `HIDDEN_CHECKS` patterns in
+  `src/runtime/guide.ts`: error and balloon floors, server state, viewer readings and pixels,
+  "than before" claims, property bags, widget counts, task-bar and command bookkeeping. Keep
+  them in the feature (they are the test); a new kind of bookkeeping check goes into that list.
 
 ## 1. Find or write the scenario
 

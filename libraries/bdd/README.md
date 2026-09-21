@@ -342,9 +342,18 @@ features/guides/<name>.feature` compiles it, runs it on one worker in guide mode
 scenario into `guides/<feature slug>/<scenario slug>/`:
 
 - `guide.mp4` — the pointer travels to every element a step acts on, the element is lit (the rest
-  of the page dimmed), a small target is zoomed into in place while the click lands, the page
-  after the step is revealed, and a caption reads the step as an instruction ("Click on Open local
-  file icon in browse toolbar"); a `Then` step shows what it checked with a check mark;
+  of the page dimmed) and rests under the pointer before the click lands; an icon-sized target
+  (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
+  where it is; the page after the step is revealed, and a caption above the page (clear of a
+  player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
+  toolbar"). A choice is shown being made: a native `<select>` opens its list, the option is typed
+  so the list highlights it, Enter takes it; a column selector opens its picker, the name is typed
+  into the search short of its last letter (a complete unique name is taken on the spot) and the
+  row it leaves is clicked. A `Then` step shows what it checked with a check mark —
+  when a person could see it (a dialog, a column, a row count, a value, a legend item's color);
+  the checks a test needs and a person does not (error and balloon floors, server state, viewer
+  readings and pixels, "than before" claims, property bags, widget counts, task-bar and command
+  bookkeeping) are left out, by the `HIDDEN_CHECKS` patterns in `src/runtime/guide.ts`;
 - `step-NN.png` — the lit picture of every step, and `steps.md` — the numbered steps with those
   pictures, ready to paste into a reply;
 - with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair.

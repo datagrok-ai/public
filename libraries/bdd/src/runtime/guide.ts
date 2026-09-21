@@ -97,6 +97,31 @@ function settleMs(): number {
   return Number(process.env.BDD_GUIDE_SETTLE ?? 500);
 }
 
+/** Checks a viewer of the video has no use for — what a test needs to know, not what a person
+ * sees: error and balloon floors, server state, the readings and pixels a viewer reports, claims
+ * against a snapshot ("than before"), property bags, widget counts, task-bar and command
+ * bookkeeping. A check that names what is on the page (a dialog, a column, a row count, a value,
+ * a legend item's color) stays. Matched against the lowercased text of a `Then` (an `And` after
+ * one included) — never an action: "drags across the "view" area of …" is a step to show. */
+const HIDDEN_CHECKS: RegExp[] = [
+  /^no errors should have been logged$/, /^no error or warning balloon should have been shown$/,
+  / on the server$/,
+  /^the top menu command should have completed$/, /^the package autostarts have completed$/, /\btask bar\b/,
+  /\breadings? of\b/, /\bas remembered\b/, /^user remembers /, /\blistens for\b/, /\bshould have fired\b/,
+  /\brepainted\b/, /\bpainted\b/, /\bink than before\b/, /\bcontain the color\b/, /\bthan before$/, /\bthan the ".*" area$/,
+  /\bpixels tall$/, /\bareas? of\b/, /\bshould (not )?have an? ".*" area$/, /\bproperty of\b/, /^properties of /,
+  /\bvalue range of\b/, /\bcolor scale of\b/, /\bcells of\b.*\bwide\b/, /\bshould show (fewer|more) rows\b/,
+  /^the (open tableview|current view) should (have|hold)/, /\bshould be added to the open tableview$/,
+  /^the .* view should be current$/, /\bnever increase$/,
+  /^the legend of .* should (be (wider|narrower|taller|shorter|placed|docked|in a corner|in the|collapsed|on the)|list (fewer|the same))/,
+  /^every item in the legend of/,
+];
+
+export function hiddenInGuide(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  return HIDDEN_CHECKS.some((re) => re.test(t));
+}
+
 export function slugOf(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'untitled';
 }
@@ -277,11 +302,17 @@ export async function located(page: Page, loc: Locator): Promise<void> {
  * and the element's place on it; the guide moves the pointer stop by stop and lights each. An
  * element located before the first stop becomes the first, on the "before" picture. */
 export async function hop(page: Page, loc: Locator): Promise<void> {
-  const r = recordings.get(page);
-  if (!r || !r.open)
+  if (!recordings.get(page)?.open)
     return;
   const box = await loc.first().boundingBox({timeout: 200}).catch(() => null);
-  if (!box)
+  if (box)
+    await hopAt(page, box);
+}
+
+/** The same stop for a place that is no element of its own — a row of a canvas grid. */
+export async function hopAt(page: Page, box: GuideBox): Promise<void> {
+  const r = recordings.get(page);
+  if (!r || !r.open)
     return;
   if (r.hops.length === 0 && r.target)
     r.hops.push({shot: r.open.before, target: r.target});
@@ -370,9 +401,11 @@ export async function end(page: Page | undefined): Promise<void> {
   r.lastType = type;
   const acted = !!target || r.pointer.length > 0 || r.clicks.length > 0 || r.keys.length > 0 || r.typed.length > 0;
   // every step a reader would take is in the guide, a table opened through the API included (the
-  // page after it is the point); left out are the login and a step that changed nothing on the page
-  const kind: GuideStepKind = type === 'Then' ? 'check' :
-    r.silent || !(acted || !sameFile(r.dir, open.before, after)) ? 'setup' : 'action';
+  // page after it is the point); left out are the login, a step that changed nothing on the page,
+  // and a check a person has no use for
+  const hidden = r.silent || (type === 'Then' && hiddenInGuide(open.text));
+  const kind: GuideStepKind = hidden ? 'setup' : type === 'Then' ? 'check' :
+    acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
   if (!target && r.clicks.length > 0) {
     const last = r.clicks[r.clicks.length - 1];
     target = {x: last.x - 12, y: last.y - 12, width: 24, height: 24};
