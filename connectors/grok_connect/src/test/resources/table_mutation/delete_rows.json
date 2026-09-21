@@ -14,5 +14,6 @@
     }
   ],
   "whereOp": "or",
-  "allowFullTable": false
+  "allowFullTable": false,
+  "expectAffected": 2
 }

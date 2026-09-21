@@ -75,7 +75,7 @@ class PostgresMutationTest extends ContainerizedProviderBaseTest {
 
     @AfterAll
     public void dropScratchTables() throws SQLException {
-        for (String table : new String[] {"mut_ins", "mut_upd", "mut_del", "mut_batch", "mut_full", "mut_probe", "mut_inj", "mut_upsert"})
+        for (String table : new String[] {"mut_ins", "mut_upd", "mut_del", "mut_batch", "mut_full", "mut_probe", "mut_inj", "mut_upsert", "mut_expect"})
             execDirect("DROP TABLE IF EXISTS " + table);
     }
 
@@ -249,6 +249,101 @@ class PostgresMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertEquals(1, result.errorCount);
         Assertions.assertEquals(2, result.errors.get(0).index); // failing statement index
         Assertions.assertEquals(0, countDirect("mut_batch")); // ops 1-2 rolled back
+    }
+
+    @DisplayName("Batch: an expectAffected mismatch rolls back the earlier ops before commit and names the statement")
+    @Test
+    public void batch_expectAffectedMismatchRollsBack() throws Exception {
+        runDdl("CREATE TABLE IF NOT EXISTS mut_expect (id int PRIMARY KEY, qty int)");
+        execDirect("DELETE FROM mut_expect");
+        execDirect("INSERT INTO mut_expect VALUES (1, 1)");
+        InsertRows insert = insertRows("mut_expect",
+                Arrays.asList("id", "qty"), Arrays.asList("int", "int"),
+                Arrays.asList(Arrays.asList((Object) 20.0d, 1.0d)));
+        UpdateRows missing = new UpdateRows(); // keyed UPDATE matching nothing: no SQL error on its own
+        missing.tableName = "mut_expect";
+        missing.setColumns = Arrays.asList("qty");
+        missing.setValues = Arrays.asList((Object) 2.0d);
+        missing.setTypes = Arrays.asList("int");
+        missing.whereClauses = new ArrayList<>();
+        missing.whereClauses.add(predicate("id", "int", "999", "=", 999));
+        missing.expectAffected = 1;
+        MutationBatch batch = new MutationBatch();
+        batch.tableName = "mut_expect";
+        batch.operations = Arrays.asList(insert, missing);
+        MutationResult result = runMutation(batch);
+        Assertions.assertEquals("Expected 1 affected row(s), got 0", result.errorMessage);
+        Assertions.assertEquals(1, result.errorCount);
+        Assertions.assertEquals(1, result.errors.get(0).index);
+        Assertions.assertEquals("affected", result.errors.get(0).code);
+        Assertions.assertEquals(Integer.valueOf(0), result.errors.get(0).affected);
+        Assertions.assertEquals(0, result.affectedRows);
+        Assertions.assertNull(result.perStatement);
+        Assertions.assertEquals(1, countDirect("mut_expect")); // the insert rolled back
+
+        // A same-value UPDATE counts as matched on Postgres; a DELETE of a missing row without the check is a silent 0.
+        UpdateRows sameValue = new UpdateRows();
+        sameValue.tableName = "mut_expect";
+        sameValue.setColumns = Arrays.asList("qty");
+        sameValue.setValues = Arrays.asList((Object) 1.0d);
+        sameValue.setTypes = Arrays.asList("int");
+        sameValue.whereClauses = new ArrayList<>();
+        sameValue.whereClauses.add(predicate("id", "int", "1", "=", 1));
+        sameValue.expectAffected = 1;
+        Assertions.assertNull(runMutation(sameValue).errorMessage);
+        DeleteRows gone = new DeleteRows();
+        gone.tableName = "mut_expect";
+        gone.whereClauses = new ArrayList<>();
+        gone.whereClauses.add(predicate("id", "int", "999", "=", 999));
+        Assertions.assertEquals(0, runMutation(gone).affectedRows);
+        gone.expectAffected = 1;
+        MutationResult refused = runMutation(gone);
+        Assertions.assertEquals("affected", refused.errors.get(0).code);
+        Assertions.assertEquals(0, refused.errors.get(0).index);
+        Assertions.assertEquals(1, countDirect("mut_expect"));
+    }
+
+    @DisplayName("Batch: an UPDATE or DELETE matching two rows under expectAffected = 1 rolls back and reports affected = 2")
+    @Test
+    public void batch_expectAffectedOvermatchRollsBack() throws Exception {
+        runDdl("CREATE TABLE IF NOT EXISTS mut_expect (id int PRIMARY KEY, qty int)");
+        execDirect("DELETE FROM mut_expect");
+        execDirect("INSERT INTO mut_expect VALUES (1, 7), (2, 7)");
+        InsertRows insert = insertRows("mut_expect",
+                Arrays.asList("id", "qty"), Arrays.asList("int", "int"),
+                Arrays.asList(Arrays.asList((Object) 30.0d, 1.0d)));
+        UpdateRows two = new UpdateRows();
+        two.tableName = "mut_expect";
+        two.setColumns = Arrays.asList("qty");
+        two.setValues = Arrays.asList((Object) 8.0d);
+        two.setTypes = Arrays.asList("int");
+        two.whereClauses = new ArrayList<>();
+        two.whereClauses.add(predicate("qty", "int", "7", "=", 7));
+        two.expectAffected = 1;
+        MutationBatch batch = new MutationBatch();
+        batch.tableName = "mut_expect";
+        batch.operations = Arrays.asList(insert, two);
+        MutationResult result = runMutation(batch);
+        Assertions.assertEquals("Expected 1 affected row(s), got 2", result.errorMessage);
+        Assertions.assertEquals(1, result.errors.get(0).index);
+        Assertions.assertEquals("affected", result.errors.get(0).code);
+        Assertions.assertEquals(Integer.valueOf(2), result.errors.get(0).affected);
+        Assertions.assertEquals(0, result.affectedRows);
+        Assertions.assertNull(result.perStatement);
+        Assertions.assertEquals(2, countDirect("mut_expect"));
+        Assertions.assertEquals(0, countDirect("mut_expect WHERE qty = 8"));
+
+        DeleteRows twoGone = new DeleteRows();
+        twoGone.tableName = "mut_expect";
+        twoGone.whereClauses = new ArrayList<>();
+        twoGone.whereClauses.add(predicate("qty", "int", "7", "=", 7));
+        twoGone.expectAffected = 1;
+        batch.operations = Arrays.asList(insert, twoGone);
+        result = runMutation(batch);
+        Assertions.assertEquals(Integer.valueOf(2), result.errors.get(0).affected);
+        Assertions.assertEquals(0, result.affectedRows);
+        Assertions.assertNull(result.perStatement);
+        Assertions.assertEquals(2, countDirect("mut_expect"));
     }
 
     @DisplayName("Delete: empty WHERE refused without allowFullTable, wipes the table with it")

@@ -26,6 +26,9 @@ public class DataSource
     // Write capability flags (connector-writes WO-4); default false, set centrally in ProviderManager
     // (supportsWrite) and per-provider (upsert/bulk/ddl/generatedKeys). Consulted by /mutate and Datlas/UI.
     public boolean supportsWrite = false;
+    // The runner honours UpdateRows/DeleteRows.expectAffected (rollback before commit on a mismatch);
+    // a runner feature, set with supportsWrite — Datlas refuses guards and transactional update/delete without it.
+    public boolean supportsExpectAffected = false;
     public boolean supportsUpsert = false;
     public boolean supportsBulkInsert = false;
     public boolean supportsDdl = false;

@@ -8,6 +8,7 @@ public class DeleteRows extends TableMutation {
     public List<FieldPredicate> whereClauses;
     public String whereOp = "and";
     public boolean allowFullTable = false; // empty WHERE without this flag is a structured error
+    public Integer expectAffected; // null = no check; a mismatch rolls the transaction back
 
     public DeleteRows() {
         type = "DeleteRows";

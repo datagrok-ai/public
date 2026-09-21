@@ -16,5 +16,6 @@
       "matcher": {"expression": ">3", "op": ">", "values": ["3"]}
     }
   ],
-  "whereOp": "and"
+  "whereOp": "and",
+  "expectAffected": 1
 }

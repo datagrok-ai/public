@@ -11,6 +11,7 @@ public class UpdateRows extends TableMutation {
     public List<String> setTypes; // dg types
     public List<FieldPredicate> whereClauses;
     public String whereOp = "and";
+    public Integer expectAffected; // null = no check; a mismatch rolls the transaction back
 
     public UpdateRows() {
         type = "UpdateRows";

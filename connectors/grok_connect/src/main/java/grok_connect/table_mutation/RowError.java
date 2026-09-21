@@ -6,4 +6,5 @@ public class RowError {
     public String column;
     public String code;
     public String message;
+    public Integer affected; // rows the statement did affect on an `affected` (expectAffected) mismatch
 }

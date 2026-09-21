@@ -8,7 +8,8 @@ import grok_connect.providers.JdbcDataProvider;
 /**
  * Maps a JDBC {@link SQLException}'s SQLState to the structured per-row error {@code code}
  * used by the domain-schemas batch contract (connector-writes WO-6): {@code unique}, {@code fk},
- * {@code notnull}, {@code check}, {@code value}, {@code conflict}, else {@code db-error}. The
+ * {@code notnull}, {@code check}, {@code value}, {@code conflict}, {@code affected} (the runner's own
+ * {@link AffectedRowsMismatchException}), else {@code db-error}. The
  * provider supplies driver-specific column/constraint extraction via {@link JdbcDataProvider}
  * hooks (Postgres reads {@code getServerErrorMessage()}); other drivers get code + message only.
  */
@@ -28,6 +29,7 @@ public class SqlStateMapper {
             case "23514": return "check";
             case "40001":
             case "40P01": return "conflict";
+            case AffectedRowsMismatchException.SQL_STATE: return "affected";
             default: break;
         }
         if (sqlState.startsWith("22"))
@@ -43,6 +45,8 @@ public class SqlStateMapper {
         error.code = code(cause.getSQLState());
         error.column = provider.mutationErrorColumn(cause);
         error.message = provider.mutationErrorMessage(cause);
+        if (cause instanceof AffectedRowsMismatchException)
+            error.affected = ((AffectedRowsMismatchException) cause).actual;
         return error;
     }
 

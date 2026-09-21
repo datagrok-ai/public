@@ -20,6 +20,23 @@ class SqlStateMapperTest {
         Assertions.assertEquals("check", SqlStateMapper.code("23514"));
         Assertions.assertEquals("conflict", SqlStateMapper.code("40001"));
         Assertions.assertEquals("conflict", SqlStateMapper.code("40P01"));
+        Assertions.assertEquals("affected", SqlStateMapper.code(AffectedRowsMismatchException.SQL_STATE));
+        Assertions.assertEquals("affected", SqlStateMapper.code(new AffectedRowsMismatchException(1, 0).getSQLState()));
+        Assertions.assertEquals("Expected 1 affected row(s), got 0", new AffectedRowsMismatchException(1, 0).getMessage());
+    }
+
+    @DisplayName("An expectAffected mismatch carries the actual count; other errors leave it null")
+    @Test
+    public void affectedCount() {
+        RowError twoRows = SqlStateMapper.toRowError(new grok_connect.providers.PostgresDataProvider(), 3,
+                new AffectedRowsMismatchException(1, 2));
+        Assertions.assertEquals("affected", twoRows.code);
+        Assertions.assertEquals(3, twoRows.index);
+        Assertions.assertEquals(Integer.valueOf(2), twoRows.affected);
+        Assertions.assertNull(twoRows.column);
+        RowError unique = SqlStateMapper.toRowError(new grok_connect.providers.PostgresDataProvider(), 0,
+                new SQLException("duplicate key", "23505"));
+        Assertions.assertNull(unique.affected);
     }
 
     @DisplayName("The 22xxx data-exception class maps to 'value'")

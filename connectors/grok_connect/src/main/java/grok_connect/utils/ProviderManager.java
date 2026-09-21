@@ -91,6 +91,7 @@ public class ProviderManager {
             DataSource descriptor = provider.descriptor;
             if (!descriptor.supportsWrite)
                 descriptor.supportsWrite = provider.autoInterpolation() && !WRITE_DENYLIST.contains(descriptor.type);
+            descriptor.supportsExpectAffected = descriptor.supportsWrite;
             // bulk insert rides the same prepared-statement batching as writes (default loader);
             // providers with a native fast path (Postgres COPY) still advertise it here (connector-writes WO-5).
             if (!descriptor.supportsBulkInsert)

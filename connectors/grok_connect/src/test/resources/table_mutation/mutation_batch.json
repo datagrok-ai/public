@@ -34,10 +34,11 @@
           "field": "id",
           "pattern": "3",
           "dataType": "int",
-          "matcher": {"expression": "3", "op": "equals", "values": ["3"]}
+          "matcher": {"expression": "3", "op": "=", "values": ["3"]}
         }
       ],
-      "whereOp": "and"
+      "whereOp": "and",
+      "expectAffected": 1
     },
     {
       "#type": "DeleteRows",
@@ -50,7 +51,7 @@
           "field": "order_id",
           "pattern": "3",
           "dataType": "int",
-          "matcher": {"expression": "3", "op": "equals", "values": ["3"]}
+          "matcher": {"expression": "3", "op": "=", "values": ["3"]}
         }
       ],
       "whereOp": "and",

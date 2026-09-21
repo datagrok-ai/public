@@ -146,6 +146,10 @@ public class UpsertSqlTest {
         Assertions.assertFalse(pm.getByName("BigQuery").descriptor.supportsWrite);
         Assertions.assertFalse(pm.getByName("Impala").descriptor.supportsWrite);
         Assertions.assertFalse(pm.getByName("PI").descriptor.supportsWrite);
+        // supportsExpectAffected is the runner's, so it rides supportsWrite
+        Assertions.assertTrue(pm.getByName("Postgres").descriptor.supportsExpectAffected);
+        Assertions.assertTrue(pm.getByName("MariaDB").descriptor.supportsExpectAffected);
+        Assertions.assertFalse(pm.getByName("Athena").descriptor.supportsExpectAffected);
         // supportsUpsert: set per dialect (MariaDB inherits from MySQL's shared descriptor)
         for (String type : new String[] {"Postgres", "MySQL", "MariaDB", "MS SQL", "Oracle", "Snowflake"})
             Assertions.assertTrue(pm.getByName(type).descriptor.supportsUpsert, type + " should support upsert");

@@ -127,6 +127,8 @@ public class MutationModelTest {
         Assertions.assertEquals(update.setColumns.size(), update.setValues.size());
         Assertions.assertEquals(update.setColumns.size(), update.setTypes.size());
         Assertions.assertEquals("and", update.whereOp);
+        Assertions.assertEquals(Integer.valueOf(1), update.expectAffected);
+        Assertions.assertNull(new UpdateRows().expectAffected);
         FieldPredicate predicate = update.whereClauses.get(0);
         Assertions.assertEquals("id", predicate.field);
         Assertions.assertEquals("int", predicate.dataType);
@@ -143,6 +145,8 @@ public class MutationModelTest {
         Assertions.assertEquals("DeleteRows", delete.type);
         Assertions.assertEquals("or", delete.whereOp);
         Assertions.assertFalse(delete.allowFullTable);
+        Assertions.assertEquals(Integer.valueOf(2), delete.expectAffected);
+        Assertions.assertNull(new DeleteRows().expectAffected);
         FieldPredicate predicate = delete.whereClauses.get(0);
         Assertions.assertEquals("status", predicate.field);
         Assertions.assertEquals("equals", predicate.matcher.op);
@@ -162,6 +166,11 @@ public class MutationModelTest {
         Assertions.assertEquals(MutationBatch.class, batch.operations.get(3).getClass());
         InsertRows insert = (InsertRows) batch.operations.get(0);
         Assertions.assertEquals("9007199254740997", insert.rows.get(0).get(1));
+        UpdateRows update = (UpdateRows) batch.operations.get(1);
+        Assertions.assertEquals(Integer.valueOf(1), update.expectAffected);
+        // an int equality carries the "=" op numericPatternConverter inlines verbatim
+        Assertions.assertEquals("=", update.whereClauses.get(0).matcher.op);
+        Assertions.assertNull(((DeleteRows) batch.operations.get(2)).expectAffected);
         MutationBatch nested = (MutationBatch) batch.operations.get(3);
         Assertions.assertEquals(UpsertRows.class, nested.operations.get(0).getClass());
         Assertions.assertEquals(Collections.singletonList("id"), ((UpsertRows) nested.operations.get(0)).matchKeys);

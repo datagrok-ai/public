@@ -94,7 +94,12 @@ public class MutationRunner {
             provider.rollbackQuietly(connection);
             if (QueryMonitor.getInstance().checkCancelledId(mainCallId))
                 throw new QueryCancelledByUser();
-            LOGGER.info("Mutation failed and was rolled back", e);
+            if (e instanceof AffectedRowsMismatchException) // an optimistic-concurrency miss, not a failure worth a stack
+                LOGGER.info("Mutation rolled back: {}", e.getMessage());
+            else
+                LOGGER.info("Mutation failed and was rolled back", e);
+            result.affectedRows = 0;
+            result.perStatement = null;
             result.errorMessage = e.getMessage();
             result.errors = Collections.singletonList(SqlStateMapper.toRowError(provider, currentStatement, e));
             result.errorCount = 1;
@@ -127,10 +132,17 @@ public class MutationRunner {
         if (m instanceof InsertRows)
             return executeInsert(provider, connection, (InsertRows) m, mainCallId);
         if (m instanceof UpdateRows)
-            return executeUpdate(provider, connection, (UpdateRows) m, mainCallId);
+            return checkAffected(((UpdateRows) m).expectAffected, executeUpdate(provider, connection, (UpdateRows) m, mainCallId));
         if (m instanceof DeleteRows)
-            return executeDelete(provider, connection, (DeleteRows) m, mainCallId);
+            return checkAffected(((DeleteRows) m).expectAffected, executeDelete(provider, connection, (DeleteRows) m, mainCallId));
         throw new MutationValidationException("Unsupported mutation type: " + m.type);
+    }
+
+    /** Negative counts ({@code SUCCESS_NO_INFO}) are not checked — the driver did not count. */
+    private static int checkAffected(Integer expected, int affected) throws AffectedRowsMismatchException {
+        if (expected != null && affected >= 0 && affected != expected)
+            throw new AffectedRowsMismatchException(expected, affected);
+        return affected;
     }
 
     /**
