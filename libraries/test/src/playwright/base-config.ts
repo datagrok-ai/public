@@ -27,9 +27,10 @@ const DATAGROK_URL = (process.env.DATAGROK_URL ?? 'http://localhost:8888').repla
 //   - the core suites are written against the shell, which is what master runs them in. The
 //     full build paints a pie differently, and legend-sizing-and-chrome reads that as a
 //     misplaced mini icon (builds 405, 410, 413, 428 against 415, 420 in the shell).
-// The runner spawns Playwright with cwd = the run dir, so the suite names itself.
+// The runner spawns Playwright with cwd = the package dir (packages/Chem), not the spec dir
+// under it, so the suite names itself by that path.
 const INSECURE_TARGET = DATAGROK_URL.startsWith('http://');
-const PACKAGE_SUITE = /[\\/]packages[\\/][^\\/]+[\\/]playwright$/.test(process.cwd());
+const PACKAGE_SUITE = /[\\/]packages[\\/]/.test(process.cwd());
 
 // `test.use({launchOptions})` REPLACES this block rather than merging into it, so every
 // consumer that sets launch options of its own (specTestOptions) must spread this in.
