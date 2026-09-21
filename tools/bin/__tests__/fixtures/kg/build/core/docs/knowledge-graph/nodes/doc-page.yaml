@@ -2,11 +2,12 @@ type: doc-page
 extends: artifact
 description: >
   A markdown document: a help page, a core/docs file, a README or CLAUDE.md, a design
-  doc, a runbook, a review, a feature record. Its headings are doc-anchor nodes. Any
-  doc page can be a home document. Id doc:<path>.
+  doc, a runbook, a review, a feature record, a marketing page of the Docusaurus site; through
+  web-page, an HTML page of the landing site. Its headings are doc-anchor nodes, the media it
+  shows hang off embeds edges. Any doc page can be a home document. Id doc:<path>.
 properties:
   path:          Path
-  kind:          "'help' | 'core-doc' | 'readme' | 'agent' | 'design' | 'runbook' | 'review' | 'record' | 'plan' | 'other'"
+  kind:          "'help' | 'core-doc' | 'readme' | 'agent' | 'design' | 'runbook' | 'review' | 'record' | 'plan' | 'marketing' | 'other'"
   mdx?:          boolean = false
   unlisted?:     boolean = false
   keywords?:     string[]

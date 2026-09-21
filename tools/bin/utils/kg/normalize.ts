@@ -26,7 +26,7 @@ export const EDGE_ROW_KEYS = ['type', 'from', 'to', 'name'];
 
 /** List members whose order and repetitions are the fact, not a set: a signature has four `list<string>` inputs and
  * says so four times, a route's parameters come in the order the template spells them. Every other list is a set. */
-const ORDERED_MEMBERS = ['input_types', 'output_types', 'path_params', 'query_params'];
+const ORDERED_MEMBERS = ['input_types', 'output_types', 'path_params', 'query_params', 'actions'];
 
 export function isOrdered(member: string): boolean {
   return ORDERED_MEMBERS.includes(member);

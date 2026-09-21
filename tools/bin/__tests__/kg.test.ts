@@ -131,7 +131,7 @@ describe('kg type files (conventions.md §7.3, §7.4, schema.yaml constraints)',
     expect(system.edges.get('covers')!.name).toBe('covers');
     expect(graphLabel(system.edges.get('covers')!.name)).toBe('COVERS');
     // and the glossary order follows schema.yaml edge_groups, not the alphabet
-    expect(edgeOrder(system).map((e) => e.group)).toEqual(['tree', 'tree', 'tree', 'tree', 'ownership', 'evidence', 'evidence', 'evidence', 'work', '']);
+    expect(edgeOrder(system).map((e) => e.group)).toEqual(['tree', 'tree', 'tree', 'tree', 'ownership', 'evidence', 'evidence', 'evidence', 'evidence', 'evidence', 'work', '']);
   });
 
   it('accepts a group folder nested more than one level deep', () => {
@@ -448,12 +448,12 @@ describe('kg gen (conventions.md §11.2)', () => {
     expect(dts).toContain('export interface CoversEdge {\n  from: Ref<Scenario>;\n  to: Ref<Feature>;\n  derived_by: Provenance;\n  confidence: number;\n  evidence?: Path[];\n  batch: string;\n  level?: \'exercised\' | \'asserted\';\n}');
     expect(dts).not.toContain('interface EvidencesEdge');
     expect(dts).toContain("export interface EdgeGroups {\n  'defines-concept': 'tree';\n  'part-of': 'tree';\n  'supersedes': 'tree';\n  'uses-concept': 'tree';\n  " +
-      "'is-implemented-in': 'ownership';\n  'covers': 'evidence';\n  'documents': 'evidence';\n  'mentions': 'evidence';\n  'tracked-in': 'work';\n}");
+      "'is-implemented-in': 'ownership';\n  'covers': 'evidence';\n  'documents': 'evidence';\n  'embeds': 'evidence';\n  'illustrates': 'evidence';\n  'mentions': 'evidence';\n  'tracked-in': 'work';\n}");
     expect(dts).toContain("export type NodeTypeName = 'actor' | 'artifact'");
     expect(dts).toContain('/** The hierarchy edge, derived from the id path and never authored. */\nexport interface PartOfEdge {');
     expect(dts).toContain('export interface UsesConceptEdge {');
-    expect(dts).toContain("export type EdgeTypeName = 'covers' | 'defines-concept' | 'documents' | 'is-implemented-in' | 'mentions' | 'part-of' | 'supersedes' | 'tracked-in' | 'uses-concept';");
-    expect(dts).toContain("export type RefPredicate = 'areas' | 'company' | 'developer_help' | 'lead' | 'owner' | 'user_help';");
+    expect(dts).toContain("export type EdgeTypeName = 'covers' | 'defines-concept' | 'documents' | 'embeds' | 'illustrates' | 'is-implemented-in' | 'mentions' | 'part-of' | 'supersedes' | 'tracked-in' | 'uses-concept';");
+    expect(dts).toContain("export type RefPredicate = 'areas' | 'company' | 'developer_help' | 'lead' | 'owner' | 'thumbnail' | 'user_help';");
     expect(dts).toContain('  aliases?: string[];\n  source_layer: \'public\' | \'core\' | \'infra\' | \'process\' | \'synthetic\';\n  home?: Path;\n  provenance: Provenance;\n  batch: string;\n}');
     expect(dts).toContain('  to: Ref<Feature>;\n  derived_by: Provenance;\n  confidence: number;\n  evidence?: Path[];\n  batch: string;\n');
     expect(generateDts(system)).toBe(dts);
@@ -566,7 +566,7 @@ describe('grok kg command', () => {
     expect(out).toHaveLength(1);
     const report = JSON.parse(out[0]);
     expect(report.errors).toEqual([]);
-    expect(report.types).toEqual({nodes: 19, edges: 10, prefixes: 6});
+    expect(report.types).toEqual({nodes: 20, edges: 12, prefixes: 6});
     expect(report.homes).toMatchObject({feature: 6, scenario: 1});
     expect(report.annotatedPages).toBe(1);
     expect(Array.isArray(report.unresolvedExternal)).toBe(true);

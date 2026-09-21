@@ -1,8 +1,8 @@
 type: documents
-from: DocPage | DocAnchor | Video
+from: DocPage | DocAnchor
 to: Feature
 key: documents
 derived_by: [annotation, ast]
-description: A page, heading or video describes a feature; a page declares it with `documents:`, or the build infers it from a help page a home document's body cites and from the `HelpUrl` references of the code the feature owns.
+description: A page or heading describes a feature; a page declares it with `documents:`, or the build infers it from a help page a home document's body cites and from the `HelpUrl` references of the code the feature owns. A media file reaches a feature through `illustrates`.
 properties:
   audience?:     "'user' | 'developer' | 'operator'"

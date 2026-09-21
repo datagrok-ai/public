@@ -41,6 +41,18 @@ describe('the index DDL (build-plan.md WO-7)', () => {
     expect(table('Work')).toContain('`key` STRING');
   });
 
+  it('holds media beside the other artifacts: its ordered actions list next to the scenario step count, embeds and illustrates as rel tables, thumbnail as a reference', () => {
+    const artifact = table('Artifact');
+    expect(artifact).toContain('`actions` STRING[]');
+    expect(artifact).toContain('`steps` DOUBLE');
+    expect(artifact).toContain('`quality` STRING');
+    expect(artifact).toContain('`blob` STRING');
+    expect(table('EMBEDS')).toBe('CREATE REL TABLE `EMBEDS`(FROM `Artifact` TO `Artifact`, `derived_by` STRING, `confidence` DOUBLE, `evidence` STRING[], ' +
+      '`batch` STRING, `position` DOUBLE, `line` DOUBLE, `form` STRING, `anchor` STRING, `alt` STRING, `title` STRING, `caption` STRING, `start_seconds` DOUBLE)');
+    expect(table('ILLUSTRATES')).toContain('FROM `Artifact` TO `Feature`, FROM `Artifact` TO `Concept`');
+    expect(table('thumbnail')).toContain('FROM `Artifact` TO `Artifact`');
+  });
+
   it('gives every concrete edge type a rel table named by its graph label, over every admissible root pair', () => {
     expect(table('COVERS')).toBe('CREATE REL TABLE `COVERS`(FROM `Artifact` TO `Feature`, `derived_by` STRING, `confidence` DOUBLE, ' +
       '`evidence` STRING[], `batch` STRING, `level` STRING)');

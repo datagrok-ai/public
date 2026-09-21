@@ -6,7 +6,7 @@ export const PRESETS = {
   code: {label: 'Code', types: ['feature', 'package', 'library', 'source-file', 'declaration', 'function', 'app', 'cell-renderer', 'editor',
     'file-handler', 'file-viewer', 'filter', 'lifecycle-hook', 'panel', 'query', 'script', 'script-handler', 'sem-type-detector', 'viewer',
     'semantic-type', 'connection', 'container', 'script-environment', 'endpoint', 'db-table', 'migration']},
-  docs: {label: 'Docs', types: ['feature', 'concept', 'doc-page', 'doc-anchor', 'sample', 'tutorial', 'video']},
+  docs: {label: 'Docs', types: ['feature', 'concept', 'doc-page', 'web-page', 'doc-anchor', 'media', 'sample', 'tutorial']},
   tests: {label: 'Tests', types: ['feature', 'scenario', 'test', 'test-suite', 'sample']},
   work: {label: 'Work', types: ['feature', 'initiative', 'ticket', 'pull-request', 'commit', 'release', 'report', 'person', 'customer']},
   everything: {label: 'Everything', types: null, confirm: 60000},
