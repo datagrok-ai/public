@@ -4,7 +4,6 @@ import {
   TREE_EXPAND_ARROW,
   TREE_EXPAND_ARROW_EXPANDED,
   contextMenuItem,
-  treeGroupByName,
   treeNodeByPath,
 } from './selectors';
 import {
@@ -16,7 +15,8 @@ import {
   expandTreeGroup,
 } from './helpers';
 
-const MH_PATH = ['Apps', 'Compute', 'Model-Hub'];
+const COMPUTE_PATH = ['Apps', 'Compute'];
+const MH_PATH = [...COMPUTE_PATH, 'Model-Hub'];
 const UNCAT_PATH = [...MH_PATH, 'Uncategorized'];
 
 test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
@@ -27,7 +27,8 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
     // Model Hub ships in the Compute plugin, which isn't built on the minimal CI stack
     // (and Compute currently fails to build there). Skip when Apps > Compute is absent.
     await expandTreeGroup(page, 'Apps').catch(() => undefined);
-    const hasCompute = await treeGroupByName(page, 'Compute').isVisible().catch(() => false);
+    const hasCompute = await treeNodeByPath(page, COMPUTE_PATH)
+      .waitFor({ state: 'visible', timeout: 5_000 }).then(() => true, () => false);
     test.skip(!hasCompute, 'Apps > Compute (Model Hub) not deployed on this stack');
   });
 
@@ -35,7 +36,7 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
     const sink = watchErrors(page);
 
     await expandTreeGroup(page, 'Apps');
-    await expandTreeGroup(page, 'Compute');
+    await expandTreeGroup(page, COMPUTE_PATH);
     const mh = treeNodeByPath(page, MH_PATH);
     await expect(mh, 'Model Hub node must be present').toBeVisible({ timeout: 10_000 });
     // Click expands it.
@@ -52,7 +53,7 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
     const sink = watchErrors(page);
 
     await expandTreeGroup(page, 'Apps');
-    await expandTreeGroup(page, 'Compute');
+    await expandTreeGroup(page, COMPUTE_PATH);
     await expandTreeGroup(page, 'Model Hub');
     await expandTreeGroup(page, 'Uncategorized');
 
@@ -73,7 +74,7 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
     const sink = watchErrors(page);
 
     await expandTreeGroup(page, 'Apps');
-    await expandTreeGroup(page, 'Compute');
+    await expandTreeGroup(page, COMPUTE_PATH);
     await expandTreeGroup(page, 'Model Hub');
     await expandTreeGroup(page, 'Uncategorized');
 
@@ -83,6 +84,8 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
     await page.waitForTimeout(2000);
     await expectNoErrors(page, sink);
 
+    // Opening the model swaps the left pane from Browse to Toolbox.
+    await ensureBrowsePanelOpen(page);
     const label = model.locator('.d4-tree-view-item-label, .d4-tree-view-group-label').first();
     await label.click({ button: 'right' });
     await expect(page.locator(CONTEXT_MENU)).toBeVisible({ timeout: 5_000 });
@@ -98,7 +101,7 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
     const sink = watchErrors(page);
 
     await expandTreeGroup(page, 'Apps');
-    await expandTreeGroup(page, 'Compute');
+    await expandTreeGroup(page, COMPUTE_PATH);
     await expandTreeGroup(page, 'Model Hub');
 
     const uncat = treeNodeByPath(page, UNCAT_PATH);
