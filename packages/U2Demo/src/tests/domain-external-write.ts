@@ -20,6 +20,7 @@ category('U2: domain external write', () => {
   const tid = 720000 + (Date.now() % 90000);
   const id = `${tid}`;
   let skip: string | null = null;
+  let seeded = false;
   let table: DomainTable;
   let app: DomainApp;
 
@@ -73,6 +74,7 @@ category('U2: domain external write', () => {
       return;
     }
     await things().insert({tid, note: `u2 write ${tid}`, n: 1});
+    seeded = true;
     table = await domains.table(THINGS);
     app = domains.app({table, base: BASE, children: false});
     document.body.append(app.root);
@@ -83,11 +85,12 @@ category('U2: domain external write', () => {
     app?.session.discard();
     app?.dispose();
     app?.root.remove();
+    if (!seeded)
+      return;
     try {
       await things().delete(id);
     } catch (e) {
-      if (!(e instanceof DG.DomainNotFoundError))
-        throw e;
+      console.warn(`${THINGS} cleanup: ${e}`);
     }
   });
 

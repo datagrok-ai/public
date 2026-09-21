@@ -86,9 +86,7 @@ class ImportFlow {
   /** Bumped by every edit the gates read — the source, the mapping and the mode. */
   private readonly _recheck = signal(0);
   private readonly _report = div([], 'u2-domain-import-report');
-  /** Absent where the storage refuses the option (`support.batch.upsert` / `.partial` /
-   * `.skipDuplicates`): an import there is insert-only, all-or-nothing, and a duplicate always
-   * an error. */
+  /** Absent where `support.batch` refuses the option. */
   private _mode?: ChoiceInput;
   private _allOrNothing?: BoolInput;
   private _errorOnDuplicate?: BoolInput;
@@ -319,8 +317,7 @@ class ImportFlow {
     return rows;
   }
 
-  /** Only the options the form offers: an absent one is left to the server's default, which is
-   * the fixed value the storage takes (all-or-nothing on, duplicates refused). */
+  /** Only the options the form offers; an absent one is left to the server's default. */
   private _batchOptions(): DomainBatchOptionsLike {
     const mode = this._mode?.value.peek() === 'upsert' ? 'upsert' : 'insert';
     const options: DomainBatchOptionsLike = {mode};
@@ -461,10 +458,12 @@ class ImportFlow {
 
   private _render(report: DomainBatchReportLike): void {
     const failed = report.error !== undefined;
+    // a warehouse refusal carries the failing rows and no totals
+    const errorCount = report.errorCount ?? report.rows.filter((row) => row.errors?.length).length;
     this._report.replaceChildren(span(failed ?
-      `Import aborted — ${plural(report.errorCount, 'row has errors', 'rows have errors')}; ` +
+      `Import aborted — ${plural(errorCount, 'row has errors', 'rows have errors')}; ` +
       'nothing was committed.' :
-      `${ImportFlow._landed(report)}, ${report.skipped} skipped, ${report.errorCount} failed.`,
+      `${ImportFlow._landed(report)}, ${report.skipped ?? 0} skipped, ${errorCount} failed.`,
     failed ? 'u2-domain-import-problem' : 'u2-domain-import-summary'));
     const issues: Issue[] = [];
     let total = 0;
@@ -484,30 +483,29 @@ class ImportFlow {
     if (issues.length > 0)
       this._report.append(ImportFlow._issues(this._wizard, issues, total));
     if (failed) {
-      this._report.append(...this._wayBack(report));
+      this._report.append(...this._wayBack(errorCount));
       notify.error('Import failed — nothing was committed. See the report.');
     }
     else
       notify.info(`Imported: ${ImportFlow._landed(report)}`);
   }
 
-  /** What landed: `merged` stands in for `updated` where the storage could not tell the two
-   * apart; a platform table reads as it always did. */
+  /** What landed; `merged` stands in for `updated` where the storage cannot tell the two apart. */
   private static _landed(report: DomainBatchReportLike): string {
     const merged = report.merged ?? 0;
-    const counts = [`${report.inserted} inserted`];
-    if (merged === 0 || report.updated > 0)
-      counts.push(`${report.updated} updated`);
+    const updated = report.updated ?? 0;
+    const counts = [`${report.inserted ?? 0} inserted`];
+    if (merged === 0 || updated > 0)
+      counts.push(`${updated} updated`);
     if (merged > 0)
       counts.push(`${merged} merged`);
     return counts.join(', ');
   }
 
   /** The way out of an aborted all-or-nothing run: what to change, and the BACK the report step
-   * has none of — the mapping and the source stand, so only the flag has to be turned off
-   * (where the storage offers it at all). */
-  private _wayBack(report: DomainBatchReportLike): HTMLElement[] {
-    const valid = (this._frame.peek()?.rowCount ?? 0) - report.errorCount;
+   * has none of — the mapping and the source stand, so only the flag has to be turned off. */
+  private _wayBack(errorCount: number): HTMLElement[] {
+    const valid = (this._frame.peek()?.rowCount ?? 0) - errorCount;
     const out: HTMLElement[] = [];
     if (this._allOrNothing?.value.peek() && valid > 0) {
       out.push(span(`Uncheck "All or nothing" to import the ${plural(valid, 'valid row', 'valid rows')} ` +

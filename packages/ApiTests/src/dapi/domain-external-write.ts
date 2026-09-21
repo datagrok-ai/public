@@ -125,18 +125,31 @@ category('Dapi: domain external write', () => {
     }
   });
 
+  const conflictDialog = (): HTMLElement | undefined => Array.from(document.querySelectorAll<HTMLElement>('.d4-dialog'))
+    .find((d) => d.textContent?.includes('changed since you read it'));
+  const dialogButton = (dialog: HTMLElement | undefined, text: string): HTMLButtonElement | undefined =>
+    Array.from(dialog?.querySelectorAll('button') ?? []).find((b) => b.textContent?.trim() === text);
+
   /** Waits for the editor's `expected` conflict dialog and clicks its [button]. */
   async function answerConflict(button: string): Promise<void> {
     let dialog: HTMLElement | undefined;
     for (let i = 0; i < 100 && dialog == null; i++) {
       await DG.delay(50);
-      dialog = Array.from(document.querySelectorAll<HTMLElement>('.d4-dialog'))
-        .find((d) => d.textContent?.includes('changed since you read it'));
+      dialog = conflictDialog();
     }
     expect(dialog != null, true, 'the conflict dialog did not open');
-    const target = Array.from(dialog!.querySelectorAll('button')).find((b) => b.textContent?.trim() === button);
+    const target = dialogButton(dialog, button);
     expect(target != null, true, `the conflict dialog has no ${button} button`);
     target!.click();
+  }
+
+  /** What a failed wait must not leave behind: an open conflict dialog, a save in flight, a
+   * bound editor. */
+  async function release(editor: _DG.DomainFrameEditor | undefined, saving: Promise<boolean> | undefined):
+      Promise<void> {
+    dialogButton(conflictDialog(), 'CANCEL')?.click();
+    await saving?.catch(() => false);
+    editor?.detach();
   }
 
   test('editor: buildOps guards the changed columns by declared type, with the $$ escape', async () => {
@@ -144,8 +157,9 @@ category('Dapi: domain external write', () => {
       return;
     const tid = 700000 + (Date.now() % 90000);
     const [ins] = await things().insert({tid, note: `$guard ${tid}`, n: 1, price: 1.5});
+    let editor: _DG.DomainFrameEditor | undefined;
     try {
-      const editor = await DomainFrameEditor.create(things() as any,
+      editor = await DomainFrameEditor.create(things() as any,
         {query: {filter: {property: 'tid', operator: '=', value: tid}}});
       expect(editor.access.support.concurrency, 'expected', 'the fixture declares the old-value guard');
       editor.setValue(0, 'n', 2);
@@ -176,8 +190,32 @@ category('Dapi: domain external write', () => {
       expect(editor.isDirty, false);
       expect((await things().get(ins.id)).n, 2);
       expect(editor.dataFrame.get('descr', 0), 'behind', 'the per-id re-read did not land');
-      editor.detach();
     } finally {
+      editor?.detach();
+      await things().delete(ins.id);
+    }
+  });
+
+  test('editor: a guard is a literal — a draft-looking original goes out as it is, a uuid-shaped one does not guard', async () => {
+    if (skipped())
+      return;
+    const tid = 730000 + (Date.now() % 90000);
+    const uuid = '0f1e2d3c-4b5a-4978-8f6e-5d4c3b2a1900';
+    const [ins] = await things().insert({tid, note: '~new:plain', descr: uuid, n: 1});
+    let editor: _DG.DomainFrameEditor | undefined;
+    try {
+      editor = await DomainFrameEditor.create(things() as any,
+        {query: {filter: {property: 'tid', operator: '=', value: tid}}});
+      editor.setValue(0, 'note', `plain ${tid}`);
+      let ops = editor.buildOps().map((p) => p.op);
+      expect(JSON.stringify(ops[0].expected), '{"note":"~new:plain"}', 'the original is not a reference');
+      editor.revertCell(0, 'note');
+
+      editor.setValue(0, 'descr', `text ${tid}`);
+      ops = editor.buildOps().map((p) => p.op);
+      expect('expected' in ops[0], false, 'a uuid-shaped original cannot guard');
+    } finally {
+      editor?.detach();
       await things().delete(ins.id);
     }
   });
@@ -187,8 +225,10 @@ category('Dapi: domain external write', () => {
       return;
     const tid = 710000 + (Date.now() % 90000);
     const [ins] = await things().insert({tid, note: `conflict ${tid}`, n: 1});
+    let editor: _DG.DomainFrameEditor | undefined;
+    let saving: Promise<boolean> | undefined;
     try {
-      const editor = await DomainFrameEditor.create(things() as any,
+      editor = await DomainFrameEditor.create(things() as any,
         {query: {filter: {property: 'tid', operator: '=', value: tid}}});
       const conflicts: _DG.DomainVersionConflictError[] = [];
       editor.onConflict.subscribe((e) => conflicts.push(e));
@@ -196,7 +236,7 @@ category('Dapi: domain external write', () => {
       // OVERWRITE: the stale guard is refused, the row's changed values go out again unguarded.
       editor.setValue(0, 'n', 5);
       await things().update(ins.id, {n: 99});
-      let saving = editor.save();
+      saving = editor.save();
       await answerConflict('OVERWRITE');
       expect(await saving, true, 'the overwrite path did not finish the save');
       expect(conflicts.length, 1, 'the conflict did not reach onConflict');
@@ -229,8 +269,8 @@ category('Dapi: domain external write', () => {
       expect(await saving, false, 'a dismissed conflict reported success');
       expect(editor.errorOf(0, 'n')?.kind, 'conflict', 'the dismissed conflict left no marker');
       expect((await things().get(ins.id)).n, 100, 'a dismissed conflict wrote anyway');
-      editor.detach();
     } finally {
+      await release(editor, saving);
       await things().delete(ins.id);
     }
   });

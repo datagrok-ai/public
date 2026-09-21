@@ -180,12 +180,14 @@ export interface DomainBatchOptionsLike {
 /** What a bulk upload answers (js-api `DomainBatchReport`): the counts, one line per row, and
  * `error` where the upload failed but a per-row report survived it. A storage that cannot tell
  * an insert from an update answers an upsert as `merged` (per row `status: 'merged'`). */
+/** The totals are absent on a warehouse refusal (a constraint the connector reports), which
+ * carries `error` and the failing rows alone. */
 export interface DomainBatchReportLike {
-  inserted: number;
-  updated: number;
+  inserted?: number;
+  updated?: number;
   merged?: number;
-  skipped: number;
-  errorCount: number;
+  skipped?: number;
+  errorCount?: number;
   rows: {index: number, id: string | null, status: string, existingId?: string,
     errors?: {column?: string, code?: string, message: string}[]}[];
   error?: string;

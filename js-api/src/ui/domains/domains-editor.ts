@@ -884,8 +884,9 @@ export class DomainFrameEditor implements IFrameEditor {
    * A value equal to a draft id — this editor's or another's — goes out as the
    * `'$<draftId>'` reference the server resolves; a literal leading `$` is
    * escaped as `$$`. An empty cell of a NEW row is LEFT OUT of the insert rather
-   * than sent as an explicit null, so the column takes its server-side default; a
-   * column with no default and no value is rejected by the server's own
+   * than sent as an explicit null, so the column takes its server-side default (a
+   * bool cell has no empty state and is always sent, so a NOT NULL bool default is
+   * not preserved); a column with no default and no value is rejected by the server's own
    * nullability check (and by {@link validate} before that). Clearing a cell of a
    * MODIFIED row does send null — that is an edit, not an omission.
    *
@@ -947,11 +948,17 @@ export class DomainFrameEditor implements IFrameEditor {
     return pending;
   }
 
+  /** A uuid-shaped string original does not guard: the connector binds such a literal as a uuid,
+   * so the server refuses it (`unsupported('literal')`). */
+  private static readonly UUID_SHAPED = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
+
   /** The `expected` guard of an update of [row]: the ORIGINAL value of every column in [values]
-   * whose DECLARED type the server admits — an int kind holding an integral number, a non-empty
-   * string (a ref excluded: its target's key type is not known here), a bool the property
-   * declares NOT NULL — with the same `$$` escape as the values. A missing original (a first
-   * touch the grid could not snapshot), a float, a datetime, null or `''` contribute nothing. */
+   * whose DECLARED type the server admits — an int holding an integral number, a non-empty string
+   * that is not uuid-shaped (a ref excluded: its target's key type is not known here), a bool the
+   * property declares NOT NULL. A guard is a literal, never a reference: only a leading `$` is
+   * escaped (`$$`), and an original that looks like a draft id goes out as it is. A missing
+   * original (a first touch the grid could not snapshot), a float, a datetime, null or `''`
+   * contribute nothing. */
   private _guardOf(row: number, values: {[column: string]: any}): {[column: string]: any} {
     const changes = this.changesOf(row);
     const guard: {[column: string]: any} = {};
@@ -962,11 +969,11 @@ export class DomainFrameEditor implements IFrameEditor {
           DomainFrameEditor.isReferenceProperty(p))
         continue;
       const t = p.propertyType;
-      const admitted = t === TYPE.INT || t === TYPE.BIG_INT ? Number.isInteger(original)
-        : t === TYPE.STRING ? typeof original === 'string'
+      const admitted = t === TYPE.INT ? Number.isInteger(original)
+        : t === TYPE.STRING ? typeof original === 'string' && !DomainFrameEditor.UUID_SHAPED.test(original)
         : t === TYPE.BOOL ? p.nullable === false && typeof original === 'boolean' : false;
       if (admitted)
-        guard[column] = DomainFrameEditor._refValue(original);
+        guard[column] = typeof original === 'string' && original.startsWith('$') ? '$' + original : original;
     }
     return guard;
   }
@@ -1201,24 +1208,31 @@ export class DomainFrameEditor implements IFrameEditor {
     const decision = guarded ? await this._expectedConflictDialog(e, row, subject)
       : await DomainObjectHandler.showConflictDialog(subject);
     if (decision === 'reload') {
+      // a gone row resolves null and is reported; a read that FAILED keeps the edit, as Cancel does
       let fresh: any = null;
+      let read = true;
       try {
         fresh = await this.client.get(id);
-      } catch (_) { /* gone or invisible — reported below */ }
-      if (fresh == null)
-        balloon.error(`${subject} no longer exists.`);
-      else
-        this._write(() => {
-          for (const name of Object.keys(fresh))
-            if (this._df.columns.contains(name))
-              this._df.set(name, row, fresh[name]);
-        });
-      this._clearRowState(row);
-      // The pre-reload values are gone: a snapshot of them would make the next
-      // in-grid edit record an "original" the cell never held.
-      this._snapshots.delete(row);
-      this._fire();
-      return true;
+      } catch (x: any) {
+        balloon.error(`${subject} could not be reloaded: ${x?.message ?? x}`);
+        read = false;
+      }
+      if (read) {
+        if (fresh == null)
+          balloon.error(`${subject} no longer exists.`);
+        else
+          this._write(() => {
+            for (const name of Object.keys(fresh))
+              if (this._df.columns.contains(name))
+                this._df.set(name, row, fresh[name]);
+          });
+        this._clearRowState(row);
+        // The pre-reload values are gone: a snapshot of them would make the next
+        // in-grid edit record an "original" the cell never held.
+        this._snapshots.delete(row);
+        this._fire();
+        return true;
+      }
     }
     if (decision === 'overwrite') {
       if (guarded)

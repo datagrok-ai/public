@@ -502,3 +502,23 @@ scoped('an upsert on a storage that cannot tell insert from update reports merge
   assert.equal(report.merged, 2);
   assert.deepEqual(report.rows.map((r) => r.status), ['merged', 'merged']);
 });
+
+scoped('a warehouse refusal — the failing rows and no totals — still renders the report and the way back', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.batch = async () => ({error: 'validation', rows: [{index: 1, id: null, status: 'error',
+    errors: [{column: 'title', code: 'unique', message: 'duplicate key value violates unique constraint'}]}]});
+  const {running} = await opened(memory,
+    frame(['project_id', 'title'], [{project_id: 'p1', title: 'One'}, {project_id: 'p1', title: 'One'}]));
+  await toMapping();
+  await toPreview();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  assert.match(shown, /Import aborted — 1 row has errors; nothing was committed\./);
+  assert.match(shown, /duplicate key value violates unique constraint/, 'the row error is listed');
+  assert.notEqual([...document.body.querySelectorAll('.u2-domain-import-report button')]
+    .find((b) => b.textContent === 'BACK'), undefined, 'the way back stands');
+  fire(buttonNamed('CLOSE'), 'click');
+  assert.equal((await running).error, 'validation');
+});
