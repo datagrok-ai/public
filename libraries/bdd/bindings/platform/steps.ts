@@ -106,36 +106,50 @@ async function deleteLeftoverProjects(page: Page, name: string): Promise<void> {
     }, leftover.id);
 }
 
-/** The project's table is uploaded and the view saved with its layout, as the ribbon's Save
+/** The project's tables are uploaded and every view saved with its layout, as the ribbon's Save
  * dialog does it; a plain view info would drop the viewport. Deleted when the feature ends, and
  * whatever an earlier run left under the name goes first. */
-export const saveAsProject = When('user saves the current view as project {string}', async (page: Page, name: string) => {
+async function saveProject(page: Page, name: string, everyView: boolean): Promise<void> {
   await deleteLeftoverProjects(page, name);
-  const ids: {project: string; table: string; view: string} = await page.evaluate(async (n) => {
-    const tv = grok.shell.tv;
+  const ids: {project: string; tables: string[]; views: string[]} = await page.evaluate(async ([n, every]) => {
     const project = DG.Project.create();
     project.name = n;
-    const tableInfo = tv.dataFrame.getTableInfo();
-    const layout = tv.saveLayout({saveWithData: true});
-    const viewInfo = DG.ViewInfo.fromJson(layout.toJson());
-    project.addChild(tableInfo);
-    project.addChild(viewInfo);
-    await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
-    await grok.dapi.tables.save(tableInfo);
-    await grok.dapi.views.save(viewInfo);
+    const tables: string[] = [];
+    const views: string[] = [];
+    for (const tv of every ? Array.from(grok.shell.tableViews) as any[] : [grok.shell.tv]) {
+      const tableInfo = tv.dataFrame.getTableInfo();
+      const viewInfo = DG.ViewInfo.fromJson(tv.saveLayout({saveWithData: true}).toJson());
+      project.addChild(tableInfo);
+      project.addChild(viewInfo);
+      await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
+      await grok.dapi.tables.save(tableInfo);
+      await grok.dapi.views.save(viewInfo);
+      tables.push(String(tableInfo.id));
+      views.push(String(viewInfo.id));
+    }
     await grok.dapi.projects.save(project);
     const w = window as any;
     w.__bddProjects = {...(w.__bddProjects ?? {}), [n]: String(project.id)};
-    return {project: String(project.id), table: String(tableInfo.id), view: String(viewInfo.id)};
-  }, name);
+    return {project: String(project.id), tables, views};
+  }, [name, everyView] as [string, boolean]);
   atFeatureEnd(page, () => page.evaluate(async (i) => {
-    for (const [source, id] of [[grok.dapi.projects, i.project], [grok.dapi.views, i.view], [grok.dapi.tables, i.table]]) {
-      const e = await source.find(id).catch(() => null);
-      if (e)
-        await source.delete(e);
+    for (const [source, entityIds] of [[grok.dapi.projects, [i.project]], [grok.dapi.views, i.views], [grok.dapi.tables, i.tables]] as [any, string[]][]) {
+      for (const id of entityIds) {
+        const e = await source.find(id).catch(() => null);
+        if (e)
+          await source.delete(e);
+      }
     }
   }, ids));
-}, {tier: 'api', description: 'the current table view as a project on the server, removed again when the feature ends'});
+}
+
+export const saveAsProject = When('user saves the current view as project {string}', (page: Page, name: string) =>
+  saveProject(page, name, false),
+{tier: 'api', description: 'the current table view as a project on the server, removed again when the feature ends'});
+
+export const saveAllAsProject = When('user saves all open table views as project {string}', (page: Page, name: string) =>
+  saveProject(page, name, true),
+{tier: 'api', description: 'every open table view in one project, as the ribbon\'s Save does — for a project that has to hold more than the current table'});
 
 export const openProject = When('user opens the {string} project', async (page: Page, name: string) => {
   await page.evaluate(async (n) => {
