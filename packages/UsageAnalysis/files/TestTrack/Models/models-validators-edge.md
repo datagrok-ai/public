@@ -3,11 +3,23 @@ feature: models
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes_atlas: [train-classification-end-to-end, train-regression-end-to-end]
+realizes_atlas: [models.cp.train-classification-end-to-end, models.cp.train-regression-end-to-end]
 realizes: [ml.menu.models.train-model]
 realized_as:
   - models-validators-edge-spec.ts
 related_bugs: []
+gate_verdicts:
+  b:
+    verdict: PASS
+    cycle_id: direct-gate-b-2026-08-23-models-validators-edge-helper
+    timestamp: 2026-08-23T20:12:00Z
+    spec_runs:
+      - spec: models-validators-edge-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 90
+        failure_keys: []
+        run_mode: headless-cold
 ---
 
 # Models — Validator-pane edge coverage (class-imbalance, string-features, too-many-unique-categories, highly-correlated)

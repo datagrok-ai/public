@@ -6,6 +6,7 @@ import './tests/dialogs';
 import './tests/add-new-column';
 import './tests/utils';
 import './tests/excel';
+import './tests/filter';
 
 export const _package = new DG.Package();
 export {tests};

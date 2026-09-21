@@ -6,4 +6,7 @@ dist/
 src/**/*.js
 test-report.html
 test-console-output.log
+test-report.csv
+test-playwright-report.json
+test-report-playwright.csv
 

@@ -1,5 +1,5 @@
-// GROK-14028: substructure-filter Clear must clear all 3 layers — L1 BitSet, L2 sketcher UI/summary, L3 leaked tags.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
@@ -38,7 +38,13 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
   });
 
   await softStep('Wait 20s for Chem autostart cascade (semType + chem-filter widget registration)', async () => {
-    await page.waitForTimeout(20000);
+    // the cascade is observable: the step below reads the Molecule semType and the grid canvas
+    await page.waitForFunction(() => {
+      const t = grok.shell.t;
+      const sem = t && Array.from({length: t.columns.length}, (_, i) => t.columns.byIndex(i))
+        .some((c: any) => c.semType === 'Molecule');
+      return sem && !!document.querySelector('[name="viewer-Grid"] canvas');
+    }, undefined, {timeout: 20000}).catch(() => {});
   });
 
   await softStep('Verify Molecule semType detected + Grid renders', async () => {
@@ -56,7 +62,10 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
   await softStep('Open Filter Panel and wait for Structure filter sketch-link', async () => {
     await page.evaluate(async () => {
       grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 5000));
+      // The next line waits on the first filter card; wait for the same thing here.
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline && !document.querySelector('[name="viewer-Filters"] .d4-filter'))
+        await new Promise(r => setTimeout(r, 100));
     });
     await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30000});
     const probeResult = await page.evaluate(async () => {
@@ -101,7 +110,7 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
           break;
         }
       }
-      // Sketcher dialog is position:fixed (offsetParent null but visible) — detect via getBoundingClientRect.
+
       for (let i = 0; i < 25; i++) {
         await new Promise(r => setTimeout(r, 400));
         const dlg = document.querySelector('.d4-dialog') as HTMLElement | null;
@@ -114,7 +123,6 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     });
     expect(sketcherOpened, 'Sketcher dialog did not open via Structure filter sketch-link').toBe(true);
 
-    // Fill SMILES input via DOM event sequence — native fill() may not reach Dart-side state.
     await page.evaluate(async () => {
       const smilesInput = Array.from(document.querySelectorAll('.d4-dialog input'))
         .find((i: any) => /smiles/i.test(i.placeholder || '')) as HTMLInputElement | undefined;
@@ -124,10 +132,19 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       smilesInput.dispatchEvent(new Event('input', {bubbles: true}));
       smilesInput.dispatchEvent(new Event('change', {bubbles: true}));
       smilesInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
-      await new Promise(r => setTimeout(r, 2500));
+      // Wait for the typed SMILES to be committed to the field, then for the filter the
+      // assertions below read; each capped at the sleep it replaces.
+      const commitDeadline = Date.now() + 2500;
+      while (Date.now() < commitDeadline && smilesInput.value.trim() !== 'c1ccccc1')
+        await new Promise(r => setTimeout(r, 50));
       const okBtn = document.querySelector('.d4-dialog [name="button-OK"]') as HTMLElement | null;
       if (okBtn) okBtn.click();
-      await new Promise(r => setTimeout(r, 4000));
+      const total = grok.shell.t.rowCount;
+      const filterDeadline = Date.now() + 4000;
+      while (Date.now() < filterDeadline &&
+             !(grok.shell.t.filter.trueCount < total && grok.shell.t.filter.trueCount > 0 &&
+               document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button')))
+        await new Promise(r => setTimeout(r, 100));
     });
     const filterApplied = await page.evaluate(() => ({
       filtered: grok.shell.t.filter.trueCount,
@@ -145,24 +162,26 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     await page.evaluate(async () => {
       const clearBtn = document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button') as HTMLElement | null;
       if (!clearBtn) throw new Error('Clear button not found — filter may not have been applied successfully');
+      const total = grok.shell.t.rowCount;
       clearBtn.click();
-      await new Promise(r => setTimeout(r, 2000));
+      // Clearing restores every row; wait for that, capped at the sleep replaced.
+      const deadline = Date.now() + 2000;
+      while (Date.now() < deadline && grok.shell.t.filter.trueCount !== total)
+        await new Promise(r => setTimeout(r, 100));
     });
   });
 
   await softStep('Assert 3-layer cleanup invariant (L1 BitSet + L2 Sketcher UI + L3 No leaked tags)', async () => {
     const result = await page.evaluate(() => {
       const df = grok.shell.t;
-      // L1: BitSet all-true (no filter applied)
+
       const L1_bitsetCleared = df.filter.trueCount === df.rowCount;
-      // L2: sketcher UI cleared — per chem.md regression-lock invariant:
-      //   .chem-clear-sketcher-button absent from DOM AND
-      //   .d4-filter-summary contains no SMARTS/SMILES pattern
+
       const clearBtnGone = !document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button');
       const summary = document.querySelector('[name="viewer-Filters"] .d4-filter .d4-filter-summary')?.textContent?.trim() ?? '';
       const summaryEmptyOfSmiles = !/\[#\d+\]|c1[a-zA-Z0-9]/.test(summary);
       const L2_sketcherCleared = clearBtnGone && summaryEmptyOfSmiles;
-      // L3: no leaked virtual / tag columns
+
       const cols = df.columns.names();
       const leakedTags = cols.filter((n: string) => /^~.*(substructure|highlight)/i.test(n));
       const L3_noLeakedTags = leakedTags.length === 0;

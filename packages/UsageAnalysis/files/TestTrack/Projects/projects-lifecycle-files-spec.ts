@@ -1,5 +1,5 @@
-// File-source lifecycle: open, save with provenance, reopen-verify, share, rename, delete.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -9,12 +9,8 @@ import {
   resetShell,
   PROVENANCE_PATTERNS,
 } from '../helpers/openers';
-import {
-  saveProjectWithProvenance,
-  reopenAndAssertProvenance,
-  deleteProjectWithCleanup,
-  shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance, reopenAndAssertProvenance, shareWithSecondUserAndVerify} from './projects-shared';
 
 test.use(projectsTestOptions);
 
@@ -36,7 +32,7 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       expect(opened.rowCount).toBeGreaterThan(0);
       await assertProvenanceScript(page, 'files', opened.script);
-      // Accept colon-form and dot-form — openTableFromFile normalizes `:` → `.` (bug 2a workaround).
+
       expect(opened.script).toMatch(/OpenFile\("System[:.]DemoFiles\/demog\.csv"\)/);
     });
 
@@ -70,7 +66,6 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
       expect(r.persistedName).toBe(renamed);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 5: share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: renamed}, {full: true});

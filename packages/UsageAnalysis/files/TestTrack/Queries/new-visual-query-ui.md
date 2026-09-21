@@ -1,23 +1,20 @@
 ---
 feature: queries
-target_layer: playwright
-coverage_type: edge
-priority: p2
 realizes: [views.queries]
-realized_as: []
+priority: p2
+target_layer: manual-only
+coverage_type: edge
+manual_only_reason: |
+  The Visual Query builder's column selectors and pointer-drag interactions
+  must be driven by hand.
 related_bugs: []
 ---
 
 # New Visual Query — manual UI checks
 
 This is the **manual companion** to `new-visual-query.md`. It covers the parts that the
-autotest `visual-query-and-params.test.ts` cannot exercise
-because the Visual Query builder fields rely on canvas-rendered column selectors and
-Dart-side pointer-drag handlers that don't respond to JS-synthesised drag/mouse events.
-
-The autotest covers: opening a Visual Query from a table, saving with a custom name,
-reopening via Edit, and the parameter-input + REFRESH round-trip on a *pre-existing*
-parameterised query.
+autotest cannot exercise — the Visual Query builder's column selectors and
+pointer-drag interactions must be driven by hand.
 
 The manual steps below build a *new* parameterised visual query end-to-end and verify
 the Debug tab, multi-section builder behaviour, and the post-save runtime.
@@ -64,3 +61,15 @@ the Debug tab, multi-section builder behaviour, and the post-save runtime.
   as a plain SQL query) with all builder fields preserved.
 * The exposed parameter from the Where clause is what drives the runtime parameter
   input, and REFRESH re-runs against the new value.
+
+## Cleanup
+
+* Delete the visual query saved in step 14: right-click it under
+  **Browse > Databases > Postgres > NorthwindTest** → **Delete...** → confirm.
+* Close All.
+
+---
+{
+  "order": 11,
+  "datasets": []
+}

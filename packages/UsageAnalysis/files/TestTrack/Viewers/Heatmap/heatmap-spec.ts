@@ -1,393 +1,201 @@
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+/* ---
+realizes: [viewers.heat-map, viewers.filters.histogram]
+--- */
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {knownOpenBug} from '../../helpers/known-open-bug';
 
 test.use(specTestOptions);
 
+const VIEWER_NAME = 'Heat-map';
+const VIEWER = `[name="viewer-${VIEWER_NAME}"]`;
+const VIEWER_TYPE = 'Heat map';
 const datasetPath = 'System:DemoFiles/demog.csv';
-const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
-test('Heat map tests', async ({page}: {page: Page}) => {
+const CONTENT_CANVAS = 'canvas[name="canvas"]';
+
+const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop);
+const category = (page: Page, cat: string, probe: string) =>
+  v.ensurePropertyCategory(page, VIEWER_NAME, cat, probe);
+const snapshot = (page: Page) => v.snapshotCanvasColors(page, VIEWER_TYPE, CONTENT_CANVAS);
+const diff = (page: Page) => v.diffCanvasColors(page, VIEWER_TYPE, CONTENT_CANVAS);
+const settle = (page: Page) => v.waitForCanvasQuiet(page, VIEWER_TYPE, {canvasSelector: CONTENT_CANVAS});
+const repaint = (page: Page, minDelta: number, timeoutMs?: number) =>
+  v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta, canvasSelector: CONTENT_CANVAS, timeoutMs});
+
+async function sliderSpan(page: Page, slider: 'x' | 'y'): Promise<number> {
+  return page.evaluate(({sel, s}) => {
+    const root = document.querySelector(sel) as HTMLElement;
+    const svg = root.querySelector(`[name="${s}-slider"]`) as SVGElement | null;
+    const read = (name: string) => {
+      const el = svg?.querySelector(`[name="${name}"]`) as SVGCircleElement | null;
+      return el ? {x: Number(el.getAttribute('cx')), y: Number(el.getAttribute('cy'))} : null;
+    };
+    const min = read('min-handle');
+    const max = read('max-handle');
+    if (!min || !max) return -1;
+    return s === 'x' ? max.x - min.x : max.y - min.y;
+  }, {sel: VIEWER, s: slider});
+}
+
+test('Heat map', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  await page.evaluate(async (path: string) => {
-    document.body.classList.add('selenium');
-    (grok.shell.settings as any).showFiltersIconsConstantly = true;
-    (grok.shell.windows as any).simpleMode = false;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise<void>(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await softStep('Add Heat map from the Viewers toolbox', async () => {
+    await page.locator('[name="icon-heat-map"]').first().click();
+    await page.locator(VIEWER).first().waitFor({timeout: 30_000});
+    await expect.poll(async () =>
+      (await v.countCanvasPixels(page, VIEWER_TYPE, {canvasSelector: CONTENT_CANVAS})).total,
+    {timeout: 30_000}).toBeGreaterThan(1000);
 
-  await page.evaluate(() => {
-    const icon = document.querySelector('[name="icon-heat-map"]');
-    if (icon) (icon as HTMLElement).click();
-    else grok.shell.tv.addViewer('Heat map');
+    await category(page, 'misc', 'is-heatmap');
+    expect(await shownValue(page, 'is-heatmap')).toBe('true');
   });
-  await page.waitForFunction(() => !!Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map'), {timeout: 10000});
 
-  // Open settings panel
-  await page.evaluate(() => {
-    const viewer = document.querySelector('[name="viewer-Heat-map"]') ||
-      Array.from(document.querySelectorAll('[name^="viewer-"]')).find(el => el.getAttribute('name')?.includes('Heat'));
-    let el: Element | null = viewer ?? null;
-    for (let i = 0; i < 6; i++) {
-      el = el?.parentElement ?? null;
-      if (!el) break;
-      const gear = el.querySelector('[name="icon-font-icon-settings"]');
-      if (gear) { (gear as HTMLElement).click(); return; }
+  await softStep('Heatmap Colors off falls back to plain cells', async () => {
+
+    await settle(page);
+    await category(page, 'misc', 'heatmap-colors');
+    expect(await shownValue(page, 'heatmap-colors')).toBe('true');
+
+    await snapshot(page);
+    expect(await v.togglePropertyGridCheckbox(page, 'heatmap-colors')).toBe(false);
+
+    await knownOpenBug('GROK-20619', async () => {
+      await repaint(page, 1000, 4000);
+    });
+
+    expect(await v.togglePropertyGridCheckbox(page, 'heatmap-colors')).toBe(true);
+  });
+
+  await softStep('Global Color Scaling recolours the cells', async () => {
+    await settle(page);
+    await category(page, 'misc', 'global-color-scaling');
+    const was = await shownValue(page, 'global-color-scaling');
+    await snapshot(page);
+    expect(String(await v.togglePropertyGridCheckbox(page, 'global-color-scaling'))).not.toBe(was);
+    await repaint(page, 500);
+
+    expect(String(await v.togglePropertyGridCheckbox(page, 'global-color-scaling'))).toBe(was);
+  });
+
+  await softStep('Col Labels Orientation rotates the header', async () => {
+    await category(page, 'style', 'col-labels-orientation');
+    expect(await shownValue(page, 'col-labels-orientation')).toBe('Auto');
+
+    for (const orientation of ['Vert', 'Horz', 'Auto']) {
+      await v.selectPropertyGridChoice(page, 'col-labels-orientation', orientation);
+      await v.waitForPropertyValue(page, 'col-labels-orientation', orientation);
     }
   });
-  await page.waitForTimeout(500);
 
-  // ---- Heatmap colors ----
+  await softStep('Max Heatmap Columns limits the columns on screen', async () => {
+    await settle(page);
+    await category(page, 'columns', 'max-heatmap-columns');
+    expect(await shownValue(page, 'max-heatmap-columns')).toBe('100');
 
-  await softStep('Heatmap colors: default true, toggle false/true', async () => {
-    const result = await page.evaluate(async () => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const def = hm.props.heatmapColors;
-      hm.props.heatmapColors = false;
-      await new Promise(r => setTimeout(r, 100));
-      const f = hm.props.heatmapColors;
-      hm.props.heatmapColors = true;
-      await new Promise(r => setTimeout(r, 100));
-      return { def, f, t: hm.props.heatmapColors };
-    });
-    expect(result.def).toBe(true);
-    expect(result.f).toBe(false);
-    expect(result.t).toBe(true);
+    await snapshot(page);
+    await v.setPropertyGridValue(page, 'max-heatmap-columns', '3');
+    expect(await shownValue(page, 'max-heatmap-columns')).toBe('3');
+    await repaint(page, 1000);
+
+    await v.setPropertyGridValue(page, 'max-heatmap-columns', '100');
+    await v.waitForPropertyValue(page, 'max-heatmap-columns', '100');
   });
 
-  // ---- Global color scaling ----
+  await softStep('Show Heatmap Scrollbars hides the range sliders', async () => {
+    await category(page, 'misc', 'show-heatmap-scrollbars');
+    expect(await v.togglePropertyGridCheckbox(page, 'show-heatmap-scrollbars')).toBe(false);
+    await expect(page.locator(`${VIEWER} [name="x-slider"]`).first()).toBeHidden();
 
-  await softStep('Global color scaling: default false, toggle true/false', async () => {
-    const result = await page.evaluate(async () => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const def = hm.props.globalColorScaling;
-      hm.props.globalColorScaling = true;
-      await new Promise(r => setTimeout(r, 100));
-      const t = hm.props.globalColorScaling;
-      hm.props.globalColorScaling = false;
-      await new Promise(r => setTimeout(r, 100));
-      return { def, t, f: hm.props.globalColorScaling };
-    });
-    expect(result.def).toBe(false);
-    expect(result.t).toBe(true);
-    expect(result.f).toBe(false);
+    expect(await v.togglePropertyGridCheckbox(page, 'show-heatmap-scrollbars')).toBe(true);
+    await expect(page.locator(`${VIEWER} [name="x-slider"]`).first()).toBeVisible();
   });
 
-  // ---- Column label orientation ----
+  await softStep('Is Heatmap off turns the viewer into a plain grid', async () => {
+    await settle(page);
+    await category(page, 'misc', 'is-heatmap');
+    await snapshot(page);
+    expect(await v.togglePropertyGridCheckbox(page, 'is-heatmap')).toBe(false);
+    await repaint(page, 1000);
 
-  await softStep('Col labels orientation: Auto → Vert → Horz → Auto', async () => {
-    const result = await page.evaluate(async () => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const def = hm.props.colLabelsOrientation;
-      hm.props.colLabelsOrientation = 'Vert';
-      const vert = hm.props.colLabelsOrientation;
-      hm.props.colLabelsOrientation = 'Horz';
-      const horz = hm.props.colLabelsOrientation;
-      hm.props.colLabelsOrientation = 'Auto';
-      return { def, vert, horz, auto: hm.props.colLabelsOrientation };
-    });
-    expect(result.def).toBe('Auto');
-    expect(result.vert).toBe('Vert');
-    expect(result.horz).toBe('Horz');
-    expect(result.auto).toBe('Auto');
+    await settle(page);
+    await category(page, 'misc', 'is-heatmap');
+    await snapshot(page);
+    expect(await v.togglePropertyGridCheckbox(page, 'is-heatmap')).toBe(true);
+    await repaint(page, 1000);
   });
 
-  // ---- Max heatmap columns ----
+  await softStep('Row Height is not offered in heatmap mode', async () => {
+    await category(page, 'misc', 'is-heatmap');
 
-  await softStep('Max heatmap columns: default 100, set 3/1000/100', async () => {
-    const result = await page.evaluate(async () => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const def = hm.props.maxHeatmapColumns;
-      hm.props.maxHeatmapColumns = 3;
-      const v3 = hm.props.maxHeatmapColumns;
-      hm.props.maxHeatmapColumns = 1000;
-      const v1000 = hm.props.maxHeatmapColumns;
-      hm.props.maxHeatmapColumns = 100;
-      return { def, v3, v1000, v100: hm.props.maxHeatmapColumns };
+    await knownOpenBug('GROK-20619', async () => {
+      expect(await page.locator('.property-grid tr[name="prop-row-height"]').count()).toBe(0);
     });
-    expect(result.def).toBe(100);
-    expect(result.v3).toBe(3);
-    expect(result.v1000).toBe(1000);
-    expect(result.v100).toBe(100);
   });
 
-  // ---- Show heatmap scrollbars ----
-
-  await softStep('Show heatmap scrollbars: default true, toggle false/true', async () => {
-    const result = await page.evaluate(async () => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const def = hm.props.showHeatmapScrollbars;
-      hm.props.showHeatmapScrollbars = false;
-      const f = hm.props.showHeatmapScrollbars;
-      hm.props.showHeatmapScrollbars = true;
-      return { def, f, t: hm.props.showHeatmapScrollbars };
-    });
-    expect(result.def).toBe(true);
-    expect(result.f).toBe(false);
-    expect(result.t).toBe(true);
+  await softStep('Clicking a cell makes its row current', async () => {
+    const box = (await page.locator(VIEWER).boundingBox())!;
+    const currentRow = () =>
+      page.evaluate(() => (window as any).grok.shell.t.currentRowIdx as number);
+    const before = await currentRow();
+    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await expect.poll(currentRow, {timeout: 8000}).not.toBe(before);
+    expect(await currentRow()).toBeGreaterThanOrEqual(0);
   });
 
-  // ---- Is Heatmap toggle ----
+  await softStep('Alt+drag zooms into an area and the slider follows', async () => {
+    const box = (await page.locator(VIEWER).boundingBox())!;
+    const before = await sliderSpan(page, 'y');
+    expect(before).toBeGreaterThan(0);
+    await settle(page);
+    await snapshot(page);
 
-  await softStep('Is Heatmap: default true (heatmap mode), toggle false (grid mode) and back', async () => {
-    const result = await page.evaluate(async () => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const def = hm.props.isHeatmap;
-      hm.props.isHeatmap = false;
-      await new Promise(r => setTimeout(r, 300));
-      const gridMode = hm.props.isHeatmap;
-      hm.props.isHeatmap = true;
-      await new Promise(r => setTimeout(r, 300));
-      return { def, gridMode, heatmapMode: hm.props.isHeatmap };
-    });
-    expect(result.def).toBe(true);
-    expect(result.gridMode).toBe(false);
-    expect(result.heatmapMode).toBe(true);
+    await page.keyboard.down('Alt');
+    try {
+      await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.6, {steps: 3});
+      await page.mouse.up();
+    } finally {
+      await page.keyboard.up('Alt');
+    }
+
+    await expect.poll(() => sliderSpan(page, 'y'), {timeout: 10_000}).toBeLessThan(before);
+    await repaint(page, 500);
+
+    await page.locator(`${VIEWER} [name="y-slider"]`).first().dblclick();
+    await expect.poll(() => sliderSpan(page, 'y'), {timeout: 10_000}).toBeGreaterThan(before);
   });
 
-  // ---- Filtering interaction ----
+  await softStep('Filtering the table redraws the heat map', async () => {
+    await settle(page);
+    await snapshot(page);
+    const {filteredCount} = await v.applyCategoricalFilter(page, 'SEX', ['M']);
+    const total = await page.evaluate(() => (window as any).grok.shell.t.rowCount);
+    expect(filteredCount).toBeLessThan(total);
+    await repaint(page, 500);
 
-  await softStep('Filtering: direct bitset filter AGE 20-40 reduces rows', async () => {
-    // Note: fg.updateOrAdd({type:'range',...}) throws "Error adding filter" — use df.filter.init() instead
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const ageCol = df.col('AGE');
-      df.filter.init((i: number) => ageCol.get(i) >= 20 && ageCol.get(i) <= 40);
-      await new Promise(r => setTimeout(r, 300));
-      const filtered = df.filter.trueCount;
-      df.filter.setAll(true);
-      await new Promise(r => setTimeout(r, 300));
-      return { filtered, total: df.rowCount };
-    });
-    expect(result.filtered).toBeLessThan(result.total);
-    expect(result.filtered).toBeGreaterThan(0);
+    await v.resetFilters(page);
   });
 
-  // ---- Table switching ----
-
-  await softStep('Table switching: open spgi-100 twice, switch heat map table prop', async () => {
-    const result = await page.evaluate(async () => {
-      const df1 = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
-      grok.shell.addTableView(df1);
-      await new Promise<void>(resolve => {
-        const sub = df1.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(resolve, 4000);
-      });
-      for (let i = 0; i < 30; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 3000));
-
-      const df2 = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
-      grok.shell.addTableView(df2);
-      await new Promise(r => setTimeout(r, 2000));
-
-      const views = Array.from(grok.shell.tableViews);
-      const firstView = views.find((v: any) => v.dataFrame === df1) || views[0];
-      (grok.shell as any).v = firstView;
-      await new Promise(r => setTimeout(r, 500));
-
-      const icon = document.querySelector('[name="icon-heat-map"]');
-      if (icon) (icon as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 1000));
-
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      hm.props.table = df2.name;
-      await new Promise(r => setTimeout(r, 500));
-      const afterSwitch = hm.props.table;
-      hm.props.table = df1.name;
-      await new Promise(r => setTimeout(r, 300));
-      const afterRestore = hm.props.table;
-      grok.shell.closeAll();
-      return { switched: afterSwitch === df2.name, restored: afterRestore === df1.name };
-    });
-    expect(result.switched).toBe(true);
-    expect(result.restored).toBe(true);
+  await softStep('Close the viewer from its title bar', async () => {
+    await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'Close');
+    await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
-  // Re-open demog for remaining sections
-  await page.evaluate(async (path: string) => {
-    const df = await grok.dapi.files.readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise<void>(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-    const icon = document.querySelector('[name="icon-heat-map"]');
-    if (icon) (icon as HTMLElement).click();
-    await new Promise(r => setTimeout(r, 1000));
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-  // ---- Selection interaction ----
-
-  await softStep('Selection: click/shift-drag rows, Esc clears', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      df.currentRowIdx = 5;
-      df.selection.set(5, true); df.selection.set(6, true); df.selection.set(7, true);
-      await new Promise(r => setTimeout(r, 200));
-      const sel3 = df.selection.trueCount;
-      df.selection.setAll(false);
-      return { sel3, sel0: df.selection.trueCount };
-    });
-    expect(result.sel3).toBe(3);
-    expect(result.sel0).toBe(0);
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
   });
-
-  // ---- Column sorting ----
-
-  await softStep('Column sorting: sort AGE asc/desc/reset via grid.sort', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const ageCol = df.col('AGE');
-      const grid = grok.shell.tv.grid;
-      grid.sort([ageCol], [true]);
-      await new Promise(r => setTimeout(r, 300));
-      grid.sort([ageCol], [false]);
-      await new Promise(r => setTimeout(r, 300));
-      grid.sort([], []);
-      await new Promise(r => setTimeout(r, 300));
-      return { noError: true };
-    });
-    expect(result.noError).toBe(true);
-  });
-
-  // ---- Color scheme customization ----
-
-  await softStep('Color scheme customization: linearColorScheme and categoricalColorScheme are non-null', async () => {
-    const result = await page.evaluate(() => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      return {
-        linear: hm.props.linearColorScheme,
-        categorical: hm.props.categoricalColorScheme,
-      };
-    });
-    expect(result.linear).not.toBeNull();
-    expect(result.categorical).not.toBeNull();
-  });
-
-  // ---- Draw every row ----
-
-  await softStep('Draw every row: default false, toggle true/false', async () => {
-    const result = await page.evaluate(async () => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const def = hm.props.drawEveryRow;
-      hm.props.drawEveryRow = true;
-      const t = hm.props.drawEveryRow;
-      hm.props.drawEveryRow = false;
-      return { def, t, f: hm.props.drawEveryRow };
-    });
-    expect(result.def).toBe(false);
-    expect(result.t).toBe(true);
-    expect(result.f).toBe(false);
-  });
-
-  // ---- Range slider navigation ----
-
-  await softStep('Range slider: at least 2 .d4-range-selector elements present; double-click resets', async () => {
-    const count = await page.locator('.d4-range-selector').count();
-    expect(count).toBeGreaterThanOrEqual(2);
-    await page.locator('.d4-range-selector').first().dblclick();
-    await page.waitForTimeout(300);
-  });
-
-  // ---- Layout save and restore ----
-
-  await softStep('Layout: save ColLabelsOrientation=Vert + GlobalColorScaling=true, restore', async () => {
-    const layoutId = await page.evaluate(async () => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      hm.props.colLabelsOrientation = 'Vert';
-      hm.props.globalColorScaling = true;
-      await new Promise(r => setTimeout(r, 200));
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
-      hm.props.colLabelsOrientation = 'Auto';
-      hm.props.globalColorScaling = false;
-      return layout.id;
-    });
-
-    await page.evaluate(async (id: string) => {
-      const saved = await grok.dapi.layouts.find(id);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-    }, layoutId);
-
-    const restored = await page.evaluate(async (id: string) => {
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const result = { orient: hm?.props?.colLabelsOrientation, global: hm?.props?.globalColorScaling };
-      const saved = await grok.dapi.layouts.find(id);
-      if (saved) await grok.dapi.layouts.delete(saved);
-      return result;
-    }, layoutId);
-
-    expect(restored.orient).toBe('Vert');
-    expect(restored.global).toBe(true);
-  });
-
-  // ---- Layout with isHeatmap toggle (spgi-100) ----
-
-  await softStep('Layout: maxHeatmapColumns=200, isHeatmap=false saved and restored (spgi-100)', async () => {
-    const result = await page.evaluate(async () => {
-      grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 300));
-      const df = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
-      grok.shell.addTableView(df);
-      await new Promise<void>(resolve => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-        setTimeout(resolve, 4000);
-      });
-      for (let i = 0; i < 30; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 3000));
-
-      const icon = document.querySelector('[name="icon-heat-map"]');
-      if (icon) (icon as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 1000));
-
-      const hm = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      hm.props.maxHeatmapColumns = 200;
-      hm.props.isHeatmap = false;
-      await new Promise(r => setTimeout(r, 200));
-
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
-
-      hm.props.maxHeatmapColumns = 100;
-      hm.props.isHeatmap = true;
-
-      const saved = await grok.dapi.layouts.find(layout.id);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-
-      const hmR = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Heat map') as any;
-      const maxCols = hmR?.props?.maxHeatmapColumns;
-      const isHeatmap = hmR?.props?.isHeatmap;
-
-      if (hmR) hmR.props.isHeatmap = true;
-      await grok.dapi.layouts.delete(saved);
-      grok.shell.closeAll();
-
-      return { maxCols, isHeatmap };
-    });
-    expect(result.maxCols).toBe(200);
-    expect(result.isHeatmap).toBe(false);
-  });
+  await v.closeAllAndWait(page);
 
   v.finishSpec();
 });

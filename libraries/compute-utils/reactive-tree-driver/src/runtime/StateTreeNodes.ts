@@ -1,6 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, combineLatest, merge, Observable, Subject, of} from 'rxjs';
 import dayjs from 'dayjs';
 import {v4 as uuidv4} from 'uuid';

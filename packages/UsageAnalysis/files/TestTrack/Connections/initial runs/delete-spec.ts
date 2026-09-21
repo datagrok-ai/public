@@ -1,4 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
+import {expect, Page} from '@playwright/test';
+import {test} from '../../shared-page';
 import {
   baseUrl,
   loginToDatagrok,
@@ -8,9 +9,6 @@ import {
 } from "../../spec-login";
 
 test.use(specTestOptions);
-
-// Self-contained: creates `new_test_postgres` and `test_postgres_2` via JS API if missing,
-// then deletes them through the UI to exercise the right-click → Delete… → confirm flow.
 
 const ensureConnection = async (
   page: Page,
@@ -94,7 +92,6 @@ test("Connections / Delete", async ({ page }) => {
 
   await loginToDatagrok(page);
 
-  // Setup: ensure both targets exist
   const ntpNq = await ensureConnection(
     page,
     "new_test_postgres",

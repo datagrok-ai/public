@@ -86,6 +86,10 @@ export async function hierarchicalClusteringUI(
   neighborWidth: number = 300,
   options?: {tableView?: DG.TableView}
 ): Promise<void> {
+  if (!df) {
+    grok.shell.warning('Please open a table for hierarchical clustering.');
+    return;
+  }
   const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
 
   const colNameSet: Set<string> = new Set(colNameList);
@@ -93,7 +97,7 @@ export async function hierarchicalClusteringUI(
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
   const th: ITreeHelper = new TreeHelper();
 
-  let tv: DG.TableView = options ? options.tableView ?? grok.shell.getTableView(df.name) : grok.shell.getTableView(df.name);
+  let tv: DG.TableView = options ? options.tableView ?? grok.shell.tableView(df.name) : grok.shell.tableView(df.name);
   if (filteredDf.rowCount != df.rowCount) {
     grok.shell.warning('Hierarchical clustering analysis on data filtered out for nulls.');
     tv = grok.shell.addTableView(filteredDf);

@@ -29,9 +29,17 @@ import {Splitter} from '../components/containers/splitter.js';
 import {Accordion} from '../components/containers/accordion.js';
 import {Card} from '../components/containers/card.js';
 import {StatCard} from '../components/display/stat-card.js';
+import {DataTable} from '../components/collections/data-table.js';
+import type {DataTableColumn} from '../components/collections/data-table.js';
 import {TabStrip, TabStripOptions} from '../components/containers/tabs.js';
 import {PropertyGrid, PropDescriptor} from '../components/forms/property-grid.js';
 import {Breadcrumbs} from '../components/navigation/breadcrumbs.js';
+import {FilterBuilder} from '../components/filter/filter-builder.js';
+import type {FilterMode} from '../components/filter/filter-builder.js';
+import {FilterQueryInput} from '../components/filter/filter-query-input.js';
+import {Filters} from '../core/filter/index.js';
+import type {FilterGroup, FilterSchema, FilterScalar, FilterTarget, FilterTemplate} from '../core/filter/index.js';
+import type {IProperty} from '../core/property-like.js';
 import {StateSource} from '../sources/state.js';
 import {registerDataSources} from '../sources/registrations.js';
 import {ComponentMeta, SpecPropMeta, Registry, registry as globalRegistry} from './registry.js';
@@ -65,6 +73,14 @@ function boundItems(input: Control & {setItems(items: string[]): void}, items: u
     input.effect(() => input.setItems(items.value as string[] ?? []));
 }
 
+/** `['name', 'cas:CAS number']` — the property, and after a colon the header it gets. */
+function dataTableColumns(spec: unknown): DataTableColumn<Record<string, unknown>>[] {
+  return itemList(spec).map((entry) => {
+    const at = entry.indexOf(':');
+    return at < 0 ? {name: entry} : {name: entry.slice(0, at), header: entry.slice(at + 1)};
+  });
+}
+
 function itemList(items: unknown): string[] {
   return (items instanceof Signal ? items.peek() : items) as string[] ?? [];
 }
@@ -83,6 +99,27 @@ function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
       description: 'false grays the input out and blocks edits.'},
     ...extra,
   ];
+}
+
+/** A spec's `schema` is either a literal `{properties, values?}` or a bound `FilterSchema` (its
+ * `values` is a function); the literal goes through `Filters.schema`. */
+function filterSchema(x: unknown): FilterSchema {
+  const raw = (x instanceof Signal ? x.peek() : x) as
+    {properties?: IProperty[], values?: unknown} | undefined;
+  if (!raw || !Array.isArray(raw.properties))
+    return Filters.schema([]);
+  return typeof raw.values === 'function' ? raw as FilterSchema :
+    Filters.schema(raw.properties, raw.values as Record<string, FilterScalar[]> | undefined);
+}
+
+/** A spec's `template` is a literal whose `root` carries no node ids; the builder gets one with
+ * them, so the value it seeds can be followed by `Filters.diff`. */
+function filterTemplate(x: unknown): FilterTemplate | undefined {
+  const t = x as FilterTemplate | undefined;
+  if (!t?.root)
+    return undefined;
+  const root = FilterBuilder.withIds(t.root);
+  return root === t.root ? t : {...t, root};
 }
 
 function element(child: Child): HTMLElement {
@@ -716,6 +753,122 @@ const METAS: ComponentMeta[] = [
     ],
     defaults: {label: 'Metric', value: '0'},
     example: {tag: 'u2-stat-card', props: {label: 'Revenue', value: '1.2M', delta: 0.12, icon: 'chart-line'}},
+  },
+  {
+    tag: 'u2-data-table',
+    category: 'Display',
+    create: (props) => {
+      const table = new DataTable<Record<string, unknown>>({
+        columns: dataTableColumns(props.columns),
+        rowHeight: props.rowHeight as number | undefined,
+      });
+      const items = props.items;
+      if (items instanceof Signal || Array.isArray(items))
+        table.setItems(items as Signal<Record<string, unknown>[]> | Record<string, unknown>[]);
+      return table;
+    },
+    description: 'Virtualized table: pooled rows under a sticky header, one column per named ' +
+      'property, only the visible window in the DOM.',
+    usage: 'For a list of records with several columns — bind `items` to a source\'s rows ' +
+      '(`$.orders.rows`). Prefer `u2-domain-grid` for editing a domain table, and `u2-domain-list` ' +
+      'for one line or a card per row; a handful of rows with rich cells belongs in a plain table.',
+    props: [
+      {name: 'columns', type: 'string_list',
+        description: 'The item properties to show, in order; `name:Header` gives a column its own header.'},
+      {name: 'items', type: 'object', bindable: true,
+        description: 'The records to show — bind a source\'s rows (`$.substances.rows`).'},
+      {name: 'rowHeight', type: 'int', description: 'Row and header height in pixels (default 24).'},
+    ],
+    defaults: {columns: ['name', 'value']},
+    example: {tag: 'u2-data-table', props: {columns: ['name', 'cas:CAS number'],
+      items: [{name: 'Aspirin', cas: '50-78-2'}, {name: 'Caffeine', cas: '58-08-2'}]}},
+  },
+  {
+    tag: 'u2-filter-builder',
+    category: 'Inputs',
+    create: (props) => {
+      const options = inputOptions<FilterGroup>(props);
+      const template = filterTemplate(props.template);
+      if (template && options.value === undefined && options.bind === undefined)
+        options.value = Filters.applyTemplate(template);
+      return new FilterBuilder({
+        ...options,
+        schema: filterSchema(props.schema),
+        mode: props.mode as FilterMode | Signal<FilterMode> | undefined,
+        orientation: props.orientation === 'horizontal' ? 'horizontal' : 'vertical',
+        template,
+        showQuery: props.showQuery as boolean | undefined,
+        target: props.target as FilterTarget | undefined,
+      });
+    },
+    description: 'Schema-driven query builder: condition rows (property, operator, value) joined by ' +
+      'one and/or toggle, "+" adds and "−" removes; the value is a filter tree, `query` its string.',
+    usage: 'Use for a user-editable condition over a schema (columns, entity properties, a domain ' +
+      'table). Emit the filter as `value` (`{op: "and", nodes: [{property, operator, value}]}`) or ' +
+      'read `query`, the canonical string. Grammar: `prop op value` joined by `and`/`or`, parentheses ' +
+      'and `not (…)` for groups; ops `= != > >= < <= like !like starts ends matches in not in between`, ' +
+      '`= null` / `!= null` for empty; values: numbers, "strings", true/false/null, ISO dates, relative ' +
+      'spans `-1w 2d now`. Examples: `age > 30 and sex = "F"`; `created > -1w and (status in ("Open", ' +
+      '"Blocked") or owner = @current)`; `mw between 200 and 500`. Prefer `u2-filter-query-input` for a ' +
+      'one-line search box; this control for visible criteria rows.',
+    props: inputProps('object',
+      {name: 'schema', type: 'object',
+        description: '`{properties: IProperty[], values?: {<name>: scalar[]}}` — what can be filtered on.'},
+      {name: 'mode', type: 'string', choices: ['simple', 'advanced'], bindable: true, twoWay: true,
+        description: 'simple: one flat and/or group; advanced: nested groups, not, drag handles.'},
+      {name: 'orientation', type: 'string', choices: ['vertical', 'horizontal'],
+        description: 'horizontal lays the rows out inline with a connector chip between them.'},
+      {name: 'template', type: 'object',
+        description: '`{root, allowedProperties?, allowedOperators?, allowAdvanced?, allowAdd?}` — locks ' +
+          'and limits: `allowAdvanced: false` keeps the builder simple, `allowAdd: false` fixes the rows.'},
+      {name: 'showQuery', type: 'bool', description: 'Footer line with the canonical query string; off by default.'},
+      {name: 'target', type: 'string', choices: ['domain', 'dataframe'],
+        description: 'What the tree must be expressible for; validation only.'},
+      {name: 'query', type: 'string', bindable: true, description: 'The canonical query string (read-only).'}),
+    events: ['change'],
+    example: {tag: 'u2-filter-builder', props: {
+      label: 'Criteria',
+      schema: {properties: [{name: 'name', type: 'string'}, {name: 'age', type: 'int', min: 0, max: 120},
+        {name: 'sex', type: 'string', choices: ['F', 'M']}]},
+      value: {op: 'and', nodes: [{property: 'age', operator: '>', value: 30}]},
+      showQuery: true,
+    }},
+  },
+  {
+    tag: 'u2-filter-query-input',
+    category: 'Inputs',
+    create: (props) => new FilterQueryInput({
+      ...inputOptions<FilterGroup>(props),
+      schema: filterSchema(props.schema),
+      placeholder: props.placeholder as string | undefined,
+      target: props.target as FilterTarget | undefined,
+    }),
+    description: 'One-line query box over a schema with completion at the caret (properties, operators, ' +
+      'values, and/or); Enter or blur parses the text into the filter tree, `query` is the text.',
+    usage: 'Use for a compact search box over a schema (columns, entity properties, a domain table) ' +
+      'where the user types the condition. Emit the filter as `value` (`{op: "and", nodes: [{property, ' +
+      'operator, value}]}`) or read `query`, the text. Grammar: `prop op value` joined by `and`/`or`, ' +
+      'parentheses and `not (…)` for groups; ops `= != > >= < <= like !like starts ends matches in not in ' +
+      'between`, `= null` / `!= null` for empty; values: numbers, "strings", true/false/null, ISO dates, ' +
+      'relative spans `-1w 2d now`. Examples: `age > 30 and sex = "F"`; `created > -1w and (status in ' +
+      '("Open", "Blocked") or owner = @current)`; `mw between 200 and 500`. Prefer `u2-filter-builder` ' +
+      'for visible criteria rows; this control for a one-line search box.',
+    props: inputProps('object',
+      {name: 'schema', type: 'object',
+        description: '`{properties: IProperty[], values?: {<name>: scalar[]}}` — what can be filtered on.'},
+      {name: 'placeholder', type: 'string'},
+      {name: 'target', type: 'string', choices: ['domain', 'dataframe'],
+        description: 'What the tree must be expressible for; validation only.'},
+      {name: 'query', type: 'string', bindable: true,
+        description: 'The draft text (per keystroke, may be unparsable; read-only).'}),
+    events: ['change'],
+    example: {tag: 'u2-filter-query-input', props: {
+      label: 'Search',
+      schema: {properties: [{name: 'name', type: 'string'}, {name: 'age', type: 'int', min: 0, max: 120},
+        {name: 'sex', type: 'string', choices: ['F', 'M']}]},
+      value: {op: 'and', nodes: [{property: 'age', operator: '>', value: 30}]},
+      placeholder: 'age > 30 and sex = "F"',
+    }},
   },
   {
     tag: 'u2-state',

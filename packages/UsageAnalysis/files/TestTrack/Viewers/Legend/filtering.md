@@ -4,7 +4,9 @@ realizes_atlas: []
 realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot, viewers.filters.histogram, viewers.filters.categorical, chem.filter.substructure-filter]
 realized_as:
   - filtering-spec.ts
+  - filtering-server-spec.ts
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 priority: p1
 pyramid_layer: integration

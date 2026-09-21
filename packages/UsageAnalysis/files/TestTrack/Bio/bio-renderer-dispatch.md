@@ -27,13 +27,14 @@ gate_verdicts:
     failure_keys: []
   b:
     verdict: PASS
-    cycle_id: 2026-06-01-bio-migrate-02
-    timestamp: 2026-06-02T07:15:19Z
+    cycle_id: direct-gate-b-2026-08-23-bio-renderer-dispatch-proved
+    timestamp: 2026-08-23T20:38:00Z
     spec_runs:
       - spec: bio-renderer-dispatch-spec.ts
         result: passed
         attempts: 3
-        duration_seconds: 191
+        duration_seconds: 78
+        run_mode: headless-cold
         failure_keys: []
   a:
     verdict: PASS

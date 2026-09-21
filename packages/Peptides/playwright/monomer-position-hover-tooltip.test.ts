@@ -7,7 +7,7 @@ sub_features_covered: [peptides.rendering.draw-logo-in-bounds, peptides.renderin
 // synthetic dispatchEvent does NOT fire the Dart hit-test. Canvas picks largest-by-area
 // (a small row-marker canvas is first). 100-row Extract subset makes MCL/LST attach in ~4s.
 
-import {test, expect} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
@@ -18,6 +18,143 @@ const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 // GROK-15934 null-receiver bug class (e.g. "Cannot read properties of null (reading 'getTag')").
 const NULL_RECEIVER_PATTERN =
   /(?:Cannot read .* of (?:null|undefined).*(?:getTag|tag|column))|(?:getTag.*on (?:null|undefined))/i;
+
+interface SvmTarget {
+  found: boolean;
+  svmFound: boolean;
+  populatedFound?: boolean;
+  canvasFound?: boolean;
+  cellResolved?: boolean;
+  monomer?: string;
+  position?: string;
+  count?: number;
+  source?: string;
+  cellRow?: number;
+  viewportX?: number;
+  viewportY?: number;
+  canvasX?: number;
+  canvasY?: number;
+  canvasW?: number;
+  candidates?: number;
+  visible?: number;
+}
+
+// The SVM keeps re-docking while MCL and sequence space attach, so its width can halve between
+// reading a cell and moving the mouse. Wait for the width to hold before measuring anything.
+async function settleSvmWidth(page: Page, timeoutMs = 20_000): Promise<number> {
+  const readWidth = (): Promise<number> => page.evaluate(() => {
+    const svm = document.querySelector('[name="viewer-Sequence-Variability-Map"]');
+    return svm ? Math.round(svm.getBoundingClientRect().width) : -1;
+  });
+  const deadline = Date.now() + timeoutMs;
+  let last = await readWidth();
+  let stable = 0;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(500);
+    const w = await readWidth();
+    if (w > 0 && w === last) {
+      if (++stable >= 2)
+        return w;
+    }
+    else {
+      stable = 0;
+      last = w;
+    }
+  }
+  return last;
+}
+
+// The viewerGrid is wider than the canvas clipping it, so a highest-count cell is often scrolled
+// out of view — hovering its point then lands outside the canvas and hits nothing. Take the
+// highest-count cell whose bounds actually lie inside the canvas. `rank` picks the Nth such cell,
+// so a step that must hover a DIFFERENT cell asks for rank 1.
+async function resolveSvmTarget(
+  page: Page, opts: {source?: 'stats' | 'cliffs'; rank?: number} = {}): Promise<SvmTarget> {
+  await settleSvmWidth(page);
+  return await page.evaluate(({source, rank}) => {
+    const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
+    const model = (tv as any).dataFrame.temp['peptidesModel'];
+    const svmViewer: any = model?.findViewer('Sequence Variability Map');
+    if (!svmViewer)
+      return {found: false, svmFound: false};
+    const vg: any = svmViewer.viewerGrid;
+
+    const pairs: Array<{position: string; monomer: string; count: number; source: string}> = [];
+    if (source === 'cliffs' && svmViewer.mutationCliffs?.forEach) {
+      svmViewer.mutationCliffs.forEach((posMap: any, monomer: string) => {
+        posMap?.forEach?.((indexMap: any, position: string) =>
+          pairs.push({position, monomer, count: indexMap?.size ?? 0, source: 'cliffs'}));
+      });
+    }
+    if (!pairs.length) {
+      const stats: any = svmViewer.monomerPositionStats || {};
+      for (const position of Object.keys(stats)) {
+        for (const monomer of Object.keys(stats[position] || {}))
+          pairs.push({position, monomer, count: stats[position][monomer]?.count || 0, source: 'inv-map'});
+      }
+    }
+    const ranked = pairs.filter((p) => p.count > 0).sort((a, b) => b.count - a.count);
+    if (!ranked.length)
+      return {found: false, svmFound: true, populatedFound: false};
+
+    let canvas: HTMLCanvasElement | null = null;
+    let maxArea = 0;
+    for (const c of Array.from(svmViewer.root.querySelectorAll('canvas')) as HTMLCanvasElement[]) {
+      if (getComputedStyle(c).pointerEvents === 'none') continue;
+      const r = c.getBoundingClientRect();
+      if (r.width * r.height > maxArea) { maxArea = r.width * r.height; canvas = c; }
+    }
+    if (!canvas)
+      return {found: false, svmFound: true, populatedFound: true, canvasFound: false};
+    const cv = canvas.getBoundingClientRect();
+
+    const wanted = rank ?? 0;
+    const visible: Array<{position: string; monomer: string; count: number; source: string;
+      cellRow: number; bounds: any}> = [];
+    for (const p of ranked) {
+      let bounds: any = null;
+      let cellRow = -1;
+      // viewerGrid is sorted by monomer, so DF row != grid row; match via getMonomerPosition.
+      for (let r = 0; r < vg.dataFrame.rowCount; r++) {
+        const probeCell: any = vg.cell(p.position, r);
+        if (!probeCell) continue;
+        if (svmViewer.getMonomerPosition(probeCell)?.monomerOrCluster === p.monomer) {
+          bounds = probeCell.bounds;
+          cellRow = r;
+          break;
+        }
+      }
+      if (!bounds) continue;
+      if (bounds.x < 0 || bounds.y < 0) continue;
+      if (bounds.x + bounds.width > cv.width || bounds.y + bounds.height > cv.height) continue;
+      visible.push({...p, cellRow, bounds});
+      if (visible.length > wanted) break;
+    }
+    if (!visible.length) {
+      return {found: false, svmFound: true, populatedFound: true, canvasFound: true, cellResolved: false,
+        candidates: ranked.length, visible: 0, canvasW: cv.width};
+    }
+
+    const pick = visible[Math.min(wanted, visible.length - 1)];
+    return {
+      found: true, svmFound: true, populatedFound: true, canvasFound: true, cellResolved: true,
+      monomer: pick.monomer, position: pick.position, count: pick.count, source: pick.source,
+      cellRow: pick.cellRow,
+      viewportX: cv.x + pick.bounds.x + pick.bounds.width / 2,
+      viewportY: cv.y + pick.bounds.y + pick.bounds.height / 2,
+      canvasX: cv.x, canvasY: cv.y, canvasW: cv.width,
+      candidates: ranked.length, visible: visible.length,
+    };
+  }, {source: opts.source ?? 'stats', rank: opts.rank ?? 0});
+}
+
+// Playwright collapses same-point moves, so move far away first for a fresh enter.
+async function hoverSvmTarget(page: Page, target: SvmTarget): Promise<void> {
+  await page.mouse.move(target.canvasX! - 50, target.canvasY! - 50);
+  await page.waitForTimeout(200);
+  await page.mouse.move(target.viewportX!, target.viewportY!, {steps: 6});
+  await page.waitForTimeout(1500);
+}
 
 test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver on hover across state mutations)', async ({page}) => {
   test.setTimeout(120_000);
@@ -173,76 +310,17 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
 
   await softStep('Scenario 1 (step 3): hover SVM Invariant-Map cell, verify tooltip appears', async () => {
     // Resolve a populated SVM cell (matrix is sparse; showTooltipAt returns null on count=0).
-    const target = await page.evaluate(() => {
-      const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
-      const model = (tv as any).dataFrame.temp['peptidesModel'];
-      const svmViewer: any = model.findViewer('Sequence Variability Map');
-      if (!svmViewer) return {svmFound: false};
-      const vg: any = svmViewer.viewerGrid;
-      const stats: any = svmViewer.monomerPositionStats;
-      // Find a populated (position, monomer) with non-trivial count.
-      let bestPos: string | null = null;
-      let bestMonomer: string | null = null;
-      let bestCount = 0;
-      for (const pos of Object.keys(stats || {})) {
-        const monomersForPos = stats[pos];
-        if (!monomersForPos) continue;
-        for (const m of Object.keys(monomersForPos)) {
-          const c = monomersForPos[m]?.count || 0;
-          if (c > bestCount) { bestCount = c; bestPos = pos; bestMonomer = m; }
-        }
-      }
-      if (!bestPos || !bestMonomer) return {svmFound: true, populatedFound: false};
-      // viewerGrid is sorted by monomer, so DF row != grid row; match via getMonomerPosition.
-      let cellRow = -1;
-      let bounds: any = null;
-      for (let r = 0; r < vg.dataFrame.rowCount; r++) {
-        const probeCell: any = vg.cell(bestPos, r);
-        if (!probeCell) continue;
-        const mp = svmViewer.getMonomerPosition(probeCell);
-        if (mp?.monomerOrCluster === bestMonomer) {
-          cellRow = r;
-          bounds = probeCell.bounds;
-          break;
-        }
-      }
-      if (cellRow < 0 || !bounds) return {svmFound: true, populatedFound: true, cellResolved: false};
-      // Pick the largest canvas (NOT pointer-events:none row-marker) for viewport offset.
-      const svmRoot: Element = svmViewer.root;
-      const canvases = Array.from(svmRoot.querySelectorAll('canvas')) as HTMLCanvasElement[];
-      let canvas: HTMLCanvasElement | null = null;
-      let maxArea = 0;
-      for (const c of canvases) {
-        if (getComputedStyle(c).pointerEvents === 'none') continue;
-        const r = c.getBoundingClientRect();
-        if (r.width * r.height > maxArea) { maxArea = r.width * r.height; canvas = c; }
-      }
-      if (!canvas) return {svmFound: true, populatedFound: true, cellResolved: true, canvasFound: false};
-      const cv = canvas.getBoundingClientRect();
-      return {
-        svmFound: true, populatedFound: true, cellResolved: true, canvasFound: true,
-        monomer: bestMonomer, position: bestPos, count: bestCount,
-        cellRow,
-        viewportX: cv.x + bounds.x + bounds.width / 2,
-        viewportY: cv.y + bounds.y + bounds.height / 2,
-        canvasX: cv.x, canvasY: cv.y, canvasW: cv.width, canvasH: cv.height,
-      };
-    });
+    const target = await resolveSvmTarget(page);
     expect(target.svmFound, '[name="viewer-Sequence-Variability-Map"] not found').toBe(true);
-    expect((target as any).populatedFound,
+    expect(target.populatedFound,
       'No populated (monomer, position) cells found in svmViewer.monomerPositionStats').toBe(true);
-    expect((target as any).cellResolved,
-      'Failed to resolve the populated cell to the matching grid row in the sorted viewerGrid').toBe(true);
-    expect((target as any).canvasFound,
+    expect(target.canvasFound,
       'No pointer-events-enabled canvas found inside the SVM container').toBe(true);
+    expect(target.cellResolved,
+      `No populated cell lies inside the ${target.canvasW}px SVM canvas ` +
+      `(${target.candidates} populated candidates, none visible)`).toBe(true);
 
-    // Away-then-back: Playwright collapses same-point moves, so move far first for a fresh enter.
-    const tx = (target as any).viewportX as number;
-    const ty = (target as any).viewportY as number;
-    await page.mouse.move((target as any).canvasX - 50, (target as any).canvasY - 50);
-    await page.waitForTimeout(200);
-    await page.mouse.move(tx, ty, {steps: 6});
-    await page.waitForTimeout(1500);
+    await hoverSvmTarget(page, target);
 
     const tooltipState = await page.evaluate(() => {
       const tt = (ui as any).tooltip;
@@ -259,73 +337,18 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       };
     });
     expect(tooltipState.ttFound, 'ui.tooltip.root singleton not found').toBe(true);
-    // Tolerant content record: the GROK-15934 contract is no-crash, asserted at the mutation steps.
-    if (tooltipState.innerLen === 0)
-      console.log(`[note] Invariant-Map cell hover (monomer="${(target as any).monomer}", ` +
-        `position="${(target as any).position}", count=${(target as any).count}) produced no tooltip content ` +
-        `(display="${tooltipState.visible}") — tolerant per the GROK-15934 no-crash contract`);
+    expect(tooltipState.innerLen,
+      `Invariant-Map cell hover (monomer="${target.monomer}", position="${target.position}", ` +
+      `count=${target.count}) produced no tooltip content`).toBeGreaterThan(0);
   });
 
   // Step 4: Move cursor to a different populated cell, verify tooltip re-renders.
   await softStep('Scenario 1 (step 4): move to a different SVM cell, verify tooltip re-renders', async () => {
-    // Resolve a second populated cell (second-highest count) different from step 3.
-    const target = await page.evaluate(() => {
-      const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
-      const model = (tv as any).dataFrame.temp['peptidesModel'];
-      const svmViewer: any = model.findViewer('Sequence Variability Map');
-      const vg: any = svmViewer.viewerGrid;
-      const stats: any = svmViewer.monomerPositionStats;
-      // Collect populated (position, monomer) pairs sorted descending by count.
-      const pairs: Array<{pos: string; monomer: string; count: number}> = [];
-      for (const pos of Object.keys(stats || {})) {
-        const monomersForPos = stats[pos];
-        if (!monomersForPos) continue;
-        for (const m of Object.keys(monomersForPos)) {
-          const c = monomersForPos[m]?.count || 0;
-          if (c > 0) pairs.push({pos, monomer: m, count: c});
-        }
-      }
-      pairs.sort((a, b) => b.count - a.count);
-      // Pick index 1 (second-most-populated) so we hover a DIFFERENT cell than step 3.
-      const pick = pairs[1] || pairs[0];
-      if (!pick) return {found: false};
-      let bounds: any = null;
-      for (let r = 0; r < vg.dataFrame.rowCount; r++) {
-        const probeCell: any = vg.cell(pick.pos, r);
-        if (!probeCell) continue;
-        const mp = svmViewer.getMonomerPosition(probeCell);
-        if (mp?.monomerOrCluster === pick.monomer) {
-          bounds = probeCell.bounds;
-          break;
-        }
-      }
-      const svmRoot: Element = svmViewer.root;
-      const canvases = Array.from(svmRoot.querySelectorAll('canvas')) as HTMLCanvasElement[];
-      let canvas: HTMLCanvasElement | null = null;
-      let maxArea = 0;
-      for (const c of canvases) {
-        if (getComputedStyle(c).pointerEvents === 'none') continue;
-        const r = c.getBoundingClientRect();
-        if (r.width * r.height > maxArea) { maxArea = r.width * r.height; canvas = c; }
-      }
-      if (!canvas || !bounds) return {found: false};
-      const cv = canvas.getBoundingClientRect();
-      return {
-        found: true,
-        monomer: pick.monomer, position: pick.pos, count: pick.count,
-        viewportX: cv.x + bounds.x + bounds.width / 2,
-        viewportY: cv.y + bounds.y + bounds.height / 2,
-        canvasX: cv.x, canvasY: cv.y,
-      };
-    });
-    expect((target as any).found, 'Failed to resolve a second populated SVM cell').toBe(true);
+    // rank 1 = the second visible populated cell, so we hover a DIFFERENT cell than step 3.
+    const target = await resolveSvmTarget(page, {rank: 1});
+    expect(target.found, 'Failed to resolve a second populated SVM cell inside the canvas').toBe(true);
 
-    const tx = (target as any).viewportX as number;
-    const ty = (target as any).viewportY as number;
-    await page.mouse.move((target as any).canvasX - 50, (target as any).canvasY - 50);
-    await page.waitForTimeout(200);
-    await page.mouse.move(tx, ty, {steps: 6});
-    await page.waitForTimeout(1500);
+    await hoverSvmTarget(page, target);
 
     const tooltipState = await page.evaluate(() => {
       const tt = (ui as any).tooltip;
@@ -333,11 +356,9 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       const innerLen = root?.innerHTML?.length || 0;
       return {innerLen};
     });
-    // Tolerant content record (no-crash is the GROK-15934 contract).
-    if (tooltipState.innerLen === 0)
-      console.log(`[note] Inter-cell hover transition (monomer="${(target as any).monomer}", ` +
-        `position="${(target as any).position}", count=${(target as any).count}) maintained no tooltip content ` +
-        `— tolerant per the GROK-15934 no-crash contract`);
+    expect(tooltipState.innerLen,
+      `Inter-cell hover transition (monomer="${target.monomer}", position="${target.position}", ` +
+      `count=${target.count}) maintained no tooltip content`).toBeGreaterThan(0);
   });
 
   await softStep('Scenario 1 (step 5-6): switch to Mutation Cliffs mode, hover, verify tooltip + no regression', async () => {
@@ -350,82 +371,15 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       }
     });
 
-    // Prefer a cliff-bearing cell; cliffs are async so fall back to a populated Invariant-Map cell.
-    const target = await page.evaluate(() => {
-      const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
-      const model = (tv as any).dataFrame.temp['peptidesModel'];
-      const svmViewer: any = model.findViewer('Sequence Variability Map');
-      const vg: any = svmViewer.viewerGrid;
-      const cliffs: any = svmViewer.mutationCliffs;
-      const stats: any = svmViewer.monomerPositionStats;
-      // Prefer a cliff-bearing cell.
-      let bestPos: string | null = null;
-      let bestMonomer: string | null = null;
-      let bestCount = 0;
-      let source: 'cliffs' | 'inv-map' = 'cliffs';
-      if (cliffs && typeof cliffs.forEach === 'function') {
-        cliffs.forEach((posMap: any, monomer: string) => {
-          if (posMap && typeof posMap.forEach === 'function') {
-            posMap.forEach((indexMap: any, pos: string) => {
-              const cnt = indexMap?.size ?? 0;
-              if (cnt > bestCount) { bestCount = cnt; bestPos = pos; bestMonomer = monomer; }
-            });
-          }
-        });
-      }
-      if (!bestPos || !bestMonomer) {
-        source = 'inv-map';
-        for (const pos of Object.keys(stats || {})) {
-          const monomersForPos = stats[pos];
-          if (!monomersForPos) continue;
-          for (const m of Object.keys(monomersForPos)) {
-            const c = monomersForPos[m]?.count || 0;
-            if (c > bestCount) { bestCount = c; bestPos = pos; bestMonomer = m; }
-          }
-        }
-      }
-      if (!bestPos || !bestMonomer) return {found: false};
-      let bounds: any = null;
-      for (let r = 0; r < vg.dataFrame.rowCount; r++) {
-        const probeCell: any = vg.cell(bestPos, r);
-        if (!probeCell) continue;
-        const mp = svmViewer.getMonomerPosition(probeCell);
-        if (mp?.monomerOrCluster === bestMonomer) {
-          bounds = probeCell.bounds;
-          break;
-        }
-      }
-      const svmRoot: Element = svmViewer.root;
-      const canvases = Array.from(svmRoot.querySelectorAll('canvas')) as HTMLCanvasElement[];
-      let canvas: HTMLCanvasElement | null = null;
-      let maxArea = 0;
-      for (const c of canvases) {
-        if (getComputedStyle(c).pointerEvents === 'none') continue;
-        const r = c.getBoundingClientRect();
-        if (r.width * r.height > maxArea) { maxArea = r.width * r.height; canvas = c; }
-      }
-      if (!canvas || !bounds) return {found: false};
-      const cv = canvas.getBoundingClientRect();
-      return {
-        found: true, source,
-        monomer: bestMonomer, position: bestPos, count: bestCount,
-        viewportX: cv.x + bounds.x + bounds.width / 2,
-        viewportY: cv.y + bounds.y + bounds.height / 2,
-        canvasX: cv.x, canvasY: cv.y,
-      };
-    });
+    // Prefer a cliff-bearing cell; cliffs are async so the resolver falls back to Invariant-Map stats.
+    const target = await resolveSvmTarget(page, {source: 'cliffs'});
 
-    if (!(target as any).found) {
+    if (!target.found) {
       console.log('[note] Scenario 1 step 5-6: no populated MutationCliffs OR InvariantMap cell resolved — ' +
         'recording informationally; the GROK-15934 invariant check below still stands');
-    } else {
-      const tx = (target as any).viewportX as number;
-      const ty = (target as any).viewportY as number;
-      await page.mouse.move((target as any).canvasX - 50, (target as any).canvasY - 50);
-      await page.waitForTimeout(200);
-      await page.mouse.move(tx, ty, {steps: 6});
-      await page.waitForTimeout(1500);
     }
+    else
+      await hoverSvmTarget(page, target);
 
     const state = await page.evaluate(() => {
       const tt = (ui as any).tooltip;
@@ -436,11 +390,10 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       return {innerLen, mcChecked, lastError};
     });
     expect(state.mcChecked, 'SVM did not switch back to Mutation Cliffs mode').toBe(true);
-    // Tolerant on innerLen (depends on cell cliff data); no-crash is the GROK-15934 contract.
-    if ((target as any).found) {
+    if (target.found) {
       expect(state.innerLen,
-        `Mutation-Cliffs mode hover (monomer="${(target as any).monomer}", position="${(target as any).position}", ` +
-        `count=${(target as any).count}, source=${(target as any).source}) did not produce tooltip content`)
+        `Mutation-Cliffs mode hover (monomer="${target.monomer}", position="${target.position}", ` +
+        `count=${target.count}, source=${target.source}) did not produce tooltip content`)
         .toBeGreaterThan(0);
     }
     // GROK-15934 invariant: no null-receiver crash across the mode-switch mutation.
@@ -602,64 +555,11 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
     await page.waitForTimeout(2000);
 
     // Post-settings re-hover on a populated cell.
-    const target = await page.evaluate(() => {
-      const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
-      const model = (tv as any).dataFrame.temp['peptidesModel'];
-      const svmViewer: any = model.findViewer('Sequence Variability Map');
-      if (!svmViewer) return {svmFound: false};
-      const vg: any = svmViewer.viewerGrid;
-      const stats: any = svmViewer.monomerPositionStats;
-      let bestPos: string | null = null;
-      let bestMonomer: string | null = null;
-      let bestCount = 0;
-      for (const pos of Object.keys(stats || {})) {
-        const monomersForPos = stats[pos];
-        if (!monomersForPos) continue;
-        for (const m of Object.keys(monomersForPos)) {
-          const c = monomersForPos[m]?.count || 0;
-          if (c > bestCount) { bestCount = c; bestPos = pos; bestMonomer = m; }
-        }
-      }
-      if (!bestPos || !bestMonomer) return {svmFound: true, populatedFound: false};
-      let bounds: any = null;
-      for (let r = 0; r < vg.dataFrame.rowCount; r++) {
-        const probeCell: any = vg.cell(bestPos, r);
-        if (!probeCell) continue;
-        const mp = svmViewer.getMonomerPosition(probeCell);
-        if (mp?.monomerOrCluster === bestMonomer) {
-          bounds = probeCell.bounds;
-          break;
-        }
-      }
-      const svmRoot: Element = svmViewer.root;
-      const canvases = Array.from(svmRoot.querySelectorAll('canvas')) as HTMLCanvasElement[];
-      let canvas: HTMLCanvasElement | null = null;
-      let maxArea = 0;
-      for (const c of canvases) {
-        if (getComputedStyle(c).pointerEvents === 'none') continue;
-        const r = c.getBoundingClientRect();
-        if (r.width * r.height > maxArea) { maxArea = r.width * r.height; canvas = c; }
-      }
-      if (!canvas || !bounds) return {svmFound: true, populatedFound: true, cellResolved: false};
-      const cv = canvas.getBoundingClientRect();
-      return {
-        svmFound: true, populatedFound: true, cellResolved: true,
-        monomer: bestMonomer, position: bestPos, count: bestCount,
-        viewportX: cv.x + bounds.x + bounds.width / 2,
-        viewportY: cv.y + bounds.y + bounds.height / 2,
-        canvasX: cv.x, canvasY: cv.y,
-      };
-    });
-    expect((target as any).svmFound, 'SVM viewer missing after Settings round-trip (SVM should persist)').toBe(true);
+    const target = await resolveSvmTarget(page);
+    expect(target.svmFound, 'SVM viewer missing after Settings round-trip (SVM should persist)').toBe(true);
 
-    if ((target as any).cellResolved) {
-      const tx = (target as any).viewportX as number;
-      const ty = (target as any).viewportY as number;
-      await page.mouse.move((target as any).canvasX - 50, (target as any).canvasY - 50);
-      await page.waitForTimeout(200);
-      await page.mouse.move(tx, ty, {steps: 6});
-      await page.waitForTimeout(1500);
-    }
+    if (target.found)
+      await hoverSvmTarget(page, target);
 
     const finalState = await page.evaluate(() => {
       const tt = (ui as any).tooltip;

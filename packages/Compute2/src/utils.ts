@@ -200,6 +200,14 @@ export const hasSubtreeAnyInconsistencies = (
   );
 };
 
+// export-time viewers are created ad hoc and never mounted; detach releases their dart side
+export function disposeViewers(mapping: {[key: string]: (DG.Viewer | undefined)[]} | undefined) {
+  for (const viewers of Object.values(mapping ?? {})) {
+    for (const viewer of viewers)
+      viewer?.detach();
+  }
+}
+
 export async function getViewers(call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) {
   const mappings = await dfToViewerMapping(call);
   if (viewersHook) {
@@ -265,7 +273,7 @@ export async function reportTree(
         viewers,
         validation,
         consistency,
-      );
+      ).finally(() => disposeViewers(viewers));
 
       const rawFileName = getExportName(state, isOutputOutdated, description?.title as string, getStartedOrNull(funcCall), runError);
       const fileName = `${String(idx + 1).padStart(3, '0')}_${replaceForWindowsPath(rawFileName)}.xlsx`;
@@ -386,3 +394,7 @@ export function pinView(view?: DG.ViewBase): void {
   else if (typeof (view as any).pin === 'function')
     (view as any).pin();
 }
+
+// shared inline-style colors; tailwind arbitrary-value classes stay literal (the JIT needs them static)
+export const STICKY_BAR_BACKGROUND = 'rgba(255, 255, 255, 0.75)';
+export const SELECTED_STEP_BACKGROUND = '#f2f2f5';

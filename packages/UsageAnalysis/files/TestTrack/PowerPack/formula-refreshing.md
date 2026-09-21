@@ -3,7 +3,7 @@ feature: powerpack
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: [powerpack.cp.add-new-column-persists, add-new-column-datasync-roundtrip, formula-info-panel-reedit]
+realizes_atlas: [powerpack.cp.add-new-column-persists, powerpack.int.add-new-column-datasync-roundtrip, powerpack.int.formula-info-panel-reedit]
 realizes: [powerpack.dialogs.add-new-column, powerpack.panel.formula, views.projects]
 pyramid_layer: bug-focused
 ui_coverage_responsibility:
@@ -40,13 +40,14 @@ gate_verdicts:
     failure_keys: []
   b:
     verdict: PASS
-    cycle_id: 2026-05-28-powerpack-automate-02
-    timestamp: 2026-05-28T11:13:49Z
+    cycle_id: direct-gate-b-2026-08-23-formula-refreshing-classfix
+    timestamp: 2026-08-23T21:04:00Z
     spec_runs:
       - spec: formula-refreshing-spec.ts
         result: passed
         attempts: 3
-        duration_seconds: 46
+        duration_seconds: 48
+        run_mode: headless-cold
         failure_keys: []
   d:
     verdict: PASS

@@ -1,15 +1,6 @@
 import { test, expect } from '@playwright/test';
 import * as H from './helpers';
 
-// Sticky metadata is bound to the object, not the in-memory dataframe: it must survive clone, new
-// view, save-as-project, move-to-space, binary export/import, page refresh, and relogin; clearing
-// values removes it.
-//
-// SCOPE NOTE: this scenario tests *server-side persistence mechanics*. Those operations (clone,
-// uploadDataFrame, project/space save, d42 export) have no meaningful pure-UI gesture to assert
-// against, so they are driven through the JS API; the relogin is performed through the real UI
-// login form, and the metadata clear uses the API. Tag-based matching (`source=<tag>` on the Id
-// column) is used because it is the reliable keying mechanism for API reads/writes.
 test.describe.configure({ mode: 'serial' });
 
 const LOGIN = process.env.DATAGROK_LOGIN!;
@@ -28,7 +19,6 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
     await H.setupEnv(page);
     await H.apiDeleteAllTestSchemas(page);
 
-    // Setup: schema (tag-matched), open SPGI, seed rating/notes on the first three rows.
     const setup = await page.evaluate(async ({ schemaName, tag }) => {
       const g = (window as any).grok;
       const DG = (window as any).DG;
@@ -61,7 +51,7 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
       { rating: 4, notes: 'good' },
       { rating: 3, notes: 'average' },
     ]);
-    // State for evaluates that run after a page.reload() (window globals are wiped on reload).
+
     const st = { schemaName, tag, ids: setup.ids };
 
     const readFirst = async () => page.evaluate(async () => {
@@ -73,7 +63,6 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
       return { rating: read.col('rating').get(0), notes: read.col('notes').get(0) };
     });
 
-    // ---- 3.1 Clone and new view ----
     const cloneRes = await page.evaluate(async () => {
       const g = (window as any).grok; const DG = (window as any).DG; const st = (window as any)._sm;
       const cloned = g.shell.t.clone();
@@ -90,7 +79,6 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
     expect(cloneRes.tagPreserved).toBe(tag);
     expect({ rating: cloneRes.rating, notes: cloneRes.notes }).toEqual({ rating: 5, notes: 'excellent' });
 
-    // ---- 3.2 Save as project and reopen ----
     await page.evaluate(() => {
       const g = (window as any).grok; const DG = (window as any).DG; const st = (window as any)._sm;
       const projName = 'PW_SM_Proj_' + st.tag;
@@ -121,7 +109,7 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
     });
     await page.waitForFunction(() => (window as any)._saveStatus === 'done' || String((window as any)._saveStatus).startsWith('err'), { timeout: 40_000 });
     expect(await page.evaluate(() => (window as any)._saveStatus)).toBe('done');
-    projId = await page.evaluate(() => (window as any)._projId); // capture before any reload wipes window
+    projId = await page.evaluate(() => (window as any)._projId); 
 
     const projRes = await page.evaluate(async () => {
       const g = (window as any).grok; const DG = (window as any).DG; const st = (window as any)._sm;
@@ -140,7 +128,6 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
     expect(projRes.tagPreserved).toBe(tag);
     expect({ rating: projRes.rating, notes: projRes.notes }).toEqual({ rating: 5, notes: 'excellent' });
 
-    // ---- 3.3 Export/import (d42 binary) ----
     const ioRes = await page.evaluate(async () => {
       const g = (window as any).grok; const DG = (window as any).DG; const st = (window as any)._sm;
       const df = g.shell.t;
@@ -160,13 +147,12 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
     expect(ioRes.tagPreserved).toBe(tag);
     expect({ rating: ioRes.rating, notes: ioRes.notes }).toEqual({ rating: 5, notes: 'excellent' });
 
-    // ---- 3.4 Delete (clear) values and verify removal ----
     const cleared = await page.evaluate(async () => {
       const g = (window as any).grok; const DG = (window as any).DG; const st = (window as any)._sm;
       const schema = (await g.dapi.stickyMeta.getSchemas()).find((s: any) => s.name === st.schemaName);
       const keyCol = DG.Column.fromList('string', 'Id', [st.ids[0]]);
       keyCol.setTag('source', st.tag);
-      // int cannot be set to null via the API (no-op) — use 0 as the cleared sentinel; string clears to ''.
+
       const values = DG.DataFrame.fromColumns([
         DG.Column.fromList('int', 'rating', [0]),
         DG.Column.fromList('string', 'notes', ['']),
@@ -178,7 +164,6 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
     });
     expect(cleared).toEqual({ rating: 0, notes: '' });
 
-    // ---- 3.3b Persistence across page refresh ----
     await page.evaluate(async () => {
       const g = (window as any).grok; const DG = (window as any).DG; const st = (window as any)._sm;
       const schema = (await g.dapi.stickyMeta.getSchemas()).find((s: any) => s.name === st.schemaName);
@@ -203,7 +188,6 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
     }, st);
     expect(afterRefresh).toEqual({ rating: 2, notes: 'refresh-test' });
 
-    // ---- 3.3c Persistence across logout + login (real UI login) ----
     expect(await page.evaluate(async () => (await fetch('/api/users/logout', { method: 'POST', credentials: 'include' })).status)).toBe(200);
     await page.reload({ waitUntil: 'domcontentloaded' });
     const loginInput = page.getByPlaceholder('Login or Email').and(page.locator(':visible'));
@@ -229,10 +213,10 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
       { rating: 3, notes: 'average' },
     ]);
   } finally {
-    // Cleanup: project, then schema.
+
     if (projId) await page.evaluate(async (id) => {
       const g = (window as any).grok;
-      try { const p = await g.dapi.projects.find(id); if (p) await g.dapi.projects.delete(p); } catch { /* ignore */ }
+      try { const p = await g.dapi.projects.find(id); if (p) await g.dapi.projects.delete(p); } catch {  }
     }, projId).catch(() => {});
     await H.apiDeleteSchema(page, schemaName).catch(() => {});
     await page.evaluate(() => (window as any).grok.shell.closeAll()).catch(() => {});

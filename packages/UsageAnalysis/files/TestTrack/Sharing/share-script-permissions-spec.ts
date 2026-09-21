@@ -1,8 +1,7 @@
-import {test, expect, Page} from '@playwright/test';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors, baseUrl,
-} from '../spec-login';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -98,16 +97,12 @@ async function expandSharingPaneAndWaitShare(page: Page) {
 }
 
 test('Sharing & Permissions — Script', async ({page}) => {
-  // UI lifecycle + two-user login switches + permission round-trips; 240s covers the
-  // two re-auths (each waits on dapi-ready) plus the UI pane/dialog/PermissionsView steps.
+
   test.setTimeout(240_000);
 
-  
   await loginToDatagrok(page);
   await waitForDapiReady(page); 
-  
-  
-  
+
   const ownerLogin = await page.evaluate(async () => (await grok.dapi.users.current()).login as string);
 
   await page.evaluate(() => {
@@ -121,11 +116,13 @@ test('Sharing & Permissions — Script', async ({page}) => {
     grok.shell.windows.simpleMode = true;
   });
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
+  await waitForDapiReady(rp);
+  await waitForIdentity(rp, recipientLogin);
   const scriptId = await createScript(page, SCRIPT_SRC, SCRIPT_NAME);
   await setCurrentObjectToScript(page, SCRIPT_NAME);
 
-  
   await softStep('Block A.1: Expand Sharing pane; owner grant + SHARE... button', async () => {
     await expandSharingPaneAndWaitShare(page);
     const shareBtn = page.locator('[name="button-Share..."]');
@@ -145,25 +142,23 @@ test('Sharing & Permissions — Script', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
+    // GROK-20322 removed the Share dialog's "Advanced editor..." link
+    // (core/client/xamgle/lib/src/commands/file/share_dataset.dart); the grant list the
+    // PermissionsEditor renders is what the dialog must show now.
+    await expect(page.locator('.d4-dialog .grok-permissions')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
-    
+
     const selText = await page.locator('[name="div-share-selector"]').textContent();
     expect((selText ?? '').replace(/\s+/g, ' ')).toContain('View and use');
   });
 
-  
   await softStep('Block B.1: Type recipient into autocomplete; suggestion list appears', async () => {
     const input = page.locator('input[placeholder="User, group, or email"]');
     await input.click();
     await input.fill('');
     await page.keyboard.type(recipientLogin.slice(0, Math.max(3, recipientLogin.length - 2)));
-    
-    
-    
-    
-    
-    
+
     const dropSel = '.d4-tags-selector-drop-down.d4-user-selector-drop-down';
     await expect.poll(async () => page.evaluate((sel) => {
       const e = document.querySelector(sel) as HTMLElement | null;
@@ -174,12 +169,7 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block B.2: Notification controls present; NO cascade notice for a script', async () => {
-    
-    
-    
-    
-    
-    
+
     await expect(page.locator('textarea[placeholder="Type in message here"]')).toBeAttached();
     const sendNotifPresent = await page.locator(
       '[name="input-Send-notifications"], .grok-permission-notifications input[type="checkbox"]').count();
@@ -195,7 +185,7 @@ test('Sharing & Permissions — Script', async ({page}) => {
   await softStep('Block B.3: CANCEL closes dialog; no grant changed (owner-only)', async () => {
     await page.locator('[name="button-CANCEL"]').click();
     await expect(page.locator('.d4-dialog')).toHaveCount(0, {timeout: 10_000});
-    
+
     const state = await page.evaluate(async (sName) => {
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();
       if (!s) return {exists: false, viewGroups: [] as string[]};
@@ -206,41 +196,23 @@ test('Sharing & Permissions — Script', async ({page}) => {
     expect(state.viewGroups.join(' ').toLowerCase()).not.toContain(recipientLogin.toLowerCase());
   });
 
-  
   await softStep('Block C.1: Open Advanced editor; PermissionsView matrix opens at /permissions/<id>', async () => {
-    
-    
+
     await expandSharingPaneAndWaitShare(page);
     await page.locator('[name="button-Share..."]').click();
     await expect(page.locator('.d4-dialog')).toBeVisible({timeout: 15_000});
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     await page.goto(`${baseUrl}/permissions/${scriptId}`);
     await page.waitForTimeout(2500);
     await expect(page.locator('.grok-permissions-self, [class*="grok-permissions"]').first())
       .toBeVisible({timeout: 15_000});
     await expect(page.locator('.d4-grid').first()).toBeVisible({timeout: 15_000});
     await expect(page.locator('[name="button-Save"]')).toBeVisible({timeout: 10_000});
-    // The Calculate-resulting-permissions button is not present for every entity type / permission
-    // state, so record its presence as a remark — the PermissionsView render is already hard-asserted
-    // above via .grok-permissions-self + .d4-grid + the Save button.
+
     const calcPresent = await page.locator(
       '[name="button-Calculate-resulting-permissions-for-this-entity"]').count();
     test.info().annotations.push({type: 'remark',
       description: `Calculate-resulting-permissions button present: ${calcPresent > 0}`});
-
 
     test.info().annotations.push({type: 'remark',
       description: 'Script Advanced editor opens the PermissionsView at /permissions/<id> ' +
@@ -250,22 +222,15 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block C.2: Add-user row present in the PermissionsView; close without saving', async () => {
-    
-    
+
     await expect(
       page.locator('input[placeholder="Type in user, role or group to add..."]')).toBeVisible();
     await page.evaluate(() => grok.shell.closeAll());
     await page.waitForTimeout(1500);
   });
 
-  
   await softStep('Block D.1: Owner shares "View and use" with recipient via JS API grant', async () => {
-    
-    
-    
-    
-    
-    
+
     const granted = await page.evaluate(async (args) => {
       const {sName, login} = args;
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();
@@ -273,10 +238,7 @@ test('Sharing & Permissions — Script', async ({page}) => {
       if (!s || !grp) return {ok: false, reason: !s ? 'no-script' : 'no-recipient-group'};
       await grok.dapi.permissions.grant(s, grp, false); 
       const p = await grok.dapi.permissions.get(s);
-      
-      
-      
-      
+
       const grantedToRecipient = (p?.view ?? []).some((g: any) => g.id === grp.id);
       return {ok: true, grantedToRecipient,
         viewGroups: (p?.view ?? []).map((g: any) => g.friendlyName || g.name)};
@@ -286,22 +248,10 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block D.2: Recipient sees the shared script under Shared with me', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, recipientLogin); 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    await page.locator('[name="tree-My-stuff---Shared-with-me"]').click({timeout: 8_000}).catch(() => {});
-    await page.waitForTimeout(1500);
-    const reachable = await page.evaluate(async (sName) => {
+    await waitForIdentity(rp, recipientLogin);
+
+    await rp.locator('[name="tree-My-stuff---Shared-with-me"]').click({timeout: 8_000}).catch(() => {});
+    const reachable = await rp.evaluate(async (sName) => {
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();
       return {found: !!s};
     }, SCRIPT_NAME);
@@ -309,29 +259,20 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block D.3: Recipient has View (and Execute) on the shared script', async () => {
-    
-    
-    
-    const canView = await pollPermission(page, SCRIPT_NAME, 'View', true);
+
+    const canView = await pollPermission(rp, SCRIPT_NAME, 'View', true);
     expect(canView).toBe(true); 
-    
-    
-    
-    
-    
-    
+
     test.info().annotations.push({type: 'remark',
       description: 'Script "View and use" grants the recipient View + Execute. The script-specific ' +
         'Execute permission is not checkable via grok.dapi.permissions.check (generic API accepts ' +
         'only View/Edit/Delete/Share); recipient run capability verified via reachability + View.'});
   });
 
-  
   await softStep('Block E: Recipient lacks Edit / Delete / Share on the shared script', async () => {
-    
-    
-    const viewReady = await pollPermission(page, SCRIPT_NAME, 'View', true);
-    const checks = await page.evaluate(async (sName) => {
+
+    const viewReady = await pollPermission(rp, SCRIPT_NAME, 'View', true);
+    const checks = await rp.evaluate(async (sName) => {
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();
       if (!s) return {found: false};
       const canEdit = await grok.dapi.permissions.check(s, 'Edit');
@@ -346,11 +287,8 @@ test('Sharing & Permissions — Script', async ({page}) => {
     expect(checks.canShare).toBe(false);  
   });
 
-  
   await softStep('Block F.1-2: Owner revokes recipient grant; pane shows owner-only', async () => {
-    await loginToDatagrok(page); 
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, ownerLogin); 
+    await waitForIdentity(page, ownerLogin);
     const revoked = await page.evaluate(async (args) => {
       const {sName, login} = args;
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();
@@ -358,8 +296,7 @@ test('Sharing & Permissions — Script', async ({page}) => {
       if (!s || !grp) return {ok: false};
       await grok.dapi.permissions.revoke(grp, s); 
       const p = await grok.dapi.permissions.get(s);
-      
-      
+
       const stillGranted = (p?.view ?? []).some((g: any) => g.id === grp.id);
       return {ok: true, stillGranted};
     }, {sName: SCRIPT_NAME, login: recipientLogin});
@@ -368,21 +305,13 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block F.3-4: Recipient can no longer view/run the script (access revoked)', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, recipientLogin); 
-    
-    
-    
-    
-    const canView = await pollPermission(page, SCRIPT_NAME, 'View', false);
+    await waitForIdentity(rp, recipientLogin);
+
+    const canView = await pollPermission(rp, SCRIPT_NAME, 'View', false);
     expect(canView).toBe(false);
   });
 
-  
-  await loginToDatagrok(page);
-  await waitForDapiReady(page); 
-  await waitForIdentity(page, ownerLogin); 
+  await waitForIdentity(page, ownerLogin);
   await page.evaluate(async (sName) => {
     try {
       const s = await grok.dapi.scripts.filter(`name = "${sName}"`).first();

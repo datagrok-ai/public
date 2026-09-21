@@ -89,8 +89,7 @@ export abstract class Filter extends Widget {
   }
 
   /** Gets called when a data frame is attached.
-   * Make sure to call super.attach(dataFrame) when overriding.
-   * @param {DataFrame} dataFrame*/
+   * Make sure to call super.attach(dataFrame) when overriding. */
   attach(dataFrame: DataFrame): void {
     this.dataFrame = dataFrame;
     this.subs.push(this.dataFrame.onRowsFiltering

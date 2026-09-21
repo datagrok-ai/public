@@ -1,9 +1,10 @@
 /* The U2Demo nav shell (packages/U2Demo/src/demo.ts + nav.ts): the left VirtualTree over the
    2-level registry, per-page scope disposal on navigation, the shell status bar text and the
-   demo ribbon commands. The headline count is 7 groups / 27 leaves — the ask-A table, the Display
+   demo ribbon commands. The headline count is 8 groups / 29 leaves — the ask-A table, the Display
    group the UX audit's M8 asked for, the Start group holding the Overview front door, the two
    value editors (Range slider, Multi-select) the acceptance pass moved out of Display, and the
-   Run history leaf (FuncCallHistoryBrowser). */
+   Run history leaf (FuncCallHistoryBrowser), the Filters leaf (FilterBuilder) and the Automation group
+   (MSA workbench). */
 import {consoleErrors, ok, pageErrors, shot} from '../local.mjs';
 import {openDemoPage} from '../lib.mjs';
 
@@ -20,7 +21,8 @@ const LABELS = [
   'Collections', 'Lists', 'Trees',
   'Display', 'Cards', 'Feedback', 'Tables', 'Sections & wizard', 'Message input',
   'Forms', 'Form', 'Property grid', 'Object form', 'Functions', 'FuncCalls', 'Run history',
-  'Platform', 'Dataframes', 'Files', 'Entities', 'Spaces', 'Molecules', 'Bridge',
+  'Platform', 'Dataframes', 'Files', 'Entities', 'Spaces', 'Molecules', 'Bridge', 'Filters',
+  'Automation', 'MSA workbench',
 ];
 
 /** The Display group's leaves — the home the orphaned display controls got. */
@@ -70,8 +72,8 @@ async function checkTree(page) {
   }, NAV);
   const wide = counts.labels.filter((_, i) => counts.widths[i] + TWISTIE > PANE);
   await shot(page, 'u2demo-nav-1-tree');
-  ok('u2demo-nav/1a the tree shows the 7 expanded groups and their 27 leaves',
-    counts.groups === 7 && counts.claimed === LABELS.length && counts.total === LABELS.length,
+  ok('u2demo-nav/1a the tree shows the 8 expanded groups and their 29 leaves',
+    counts.groups === 8 && counts.claimed === LABELS.length && counts.total === LABELS.length,
     `groups=${counts.groups} rows=${counts.total} claimed=${counts.claimed} ` +
     `first=${JSON.stringify(counts.labels.slice(0, 6))}`);
   ok('u2demo-nav/1b every label is its id\'s noun and fits the nav pane without truncating',
@@ -142,7 +144,7 @@ async function checkDisplayLeaves(page) {
 }
 
 /** The front door: Overview is the first leaf of the first group and the app's default, it names
- * the six content areas, and its "start here" pointers navigate. */
+ * the seven content areas, and its "start here" pointers navigate. */
 async function checkOverview(page) {
   await goTo(page, 'Overview');
   const state = await page.evaluate((content) => {
@@ -158,7 +160,7 @@ async function checkOverview(page) {
   const landed = await page.evaluate(() => grok.shell.v?.path ?? '');
   await shot(page, 'u2demo-nav-9-overview');
   ok('u2demo-nav/9 Overview names every area and its start-here pointers navigate',
-    state.areas.length === 6 && !state.areas.includes('Start') && state.links.length === 3 &&
+    state.areas.length === 7 && !state.areas.includes('Start') && state.links.length === 3 &&
     clicked && landed.endsWith('/inputs/all-inputs'),
     `areas=${JSON.stringify(state.areas)} links=${JSON.stringify(state.links)} path="${landed}"`);
 }

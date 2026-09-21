@@ -288,7 +288,7 @@ export class DataPanel {
     this.stepTabsHost.innerHTML = '';
     this.stepDots.length = 0;
     this.paneHosts = [];
-    const tc = ui.tabControl(null, false);
+    const tc = ui.tabControl(null, {vertical: false});
     tc.root.style.width = '100%';
     tc.root.style.flex = '1 1 0';
     tc.root.style.minHeight = '0';

@@ -1,488 +1,324 @@
-import { test } from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+/* ---
+realizes: [pivottable.cp.chrome-history-and-drag-config, pivottable.int.history-menu-requires-existing-columns, pivottable.int.default-aggr-type-remembered]
+--- */
+import {expect} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {PIVOT, openPivot, rowChips, addColumnViaPlus, openChipMenu, pickAggregation, removeChip, ensurePivotPlusClickable} from './pivot-helpers';
+
+declare const grok: any;
 
 test.use(specTestOptions);
 
-test('Pivot table tests', async ({ page }) => {
+const HISTORY_KEY = 'grok-aggregation-history';
+const isIgnorable = (m: string) => m.includes('cloned iframe') || isLocalBootNoise(m);
+
+const pivotChips = (page: any) => Promise.all([rowChips(page, 'Group by'), rowChips(page, 'Aggregate'), rowChips(page, 'Pivot')])
+  .then(([groupBy, agg, pivot]) => ({groupBy, agg, pivot}));
+
+test('Pivot table chrome, history and drag-driven configuration', async ({page}) => {
   test.setTimeout(300_000);
+  const pageErrors: string[] = [];
+  const onPageError = (e: Error) => { if (!isIgnorable(e.message)) pageErrors.push(e.message); };
+  page.on('pageerror', onPageError);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
+  await page.evaluate((k) => window.localStorage.removeItem(k), HISTORY_KEY);
+  await openPivot(page);
 
-  // Setup
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-    const icon = document.querySelector('[name="icon-pivot-table"]') as HTMLElement;
-    if (icon) icon.click();
-    await new Promise(r => setTimeout(r, 1000));
-  });
-  await page.locator('[name="viewer-Pivot-table"]').waitFor({ timeout: 15000 });
+  const hasPivot = () => page.evaluate(() => Array.from(grok.shell.tv.viewers).some((x: any) => x.type === 'Pivot table'));
 
-  // Default auto-configuration
-  await softStep('Default auto-configuration: DIS_POP group, SEVERITY pivot, avg(AGE) agg', async () => {
-    const result = await page.evaluate(() => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      if (!pv) throw new Error('Pivot table not found');
+  await softStep('Scenario 1 Step 2: auto-config is DIS_POP / SEVERITY / avg(AGE), counts visible', async () => {
+    const r = await page.evaluate(() => {
+      const root = document.querySelector('[name="viewer-Pivot-table"]')!;
+      const pv = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pivot table') as any;
+      const counts = root.querySelector('.grok-pivot-counts') as HTMLElement | null;
       return {
-        groupBy: pv.props.groupByColumnNames,
-        pivot: pv.props.pivotColumnNames,
-        agg: pv.props.aggregateColumnNames,
-        aggTypes: pv.props.aggregateAggTypes,
-        showHeader: pv.props.showHeader,
-        showCommandBar: pv.props.showCommandBar
+        groupBy: pv.props.groupByColumnNames, pivot: pv.props.pivotColumnNames,
+        agg: pv.props.aggregateColumnNames, aggTypes: pv.props.aggregateAggTypes,
+        countsVisible: !!counts && !!counts.offsetParent,
       };
     });
-    if (!result.groupBy.includes('DIS_POP')) throw new Error('Group by should include DIS_POP');
-    if (!result.pivot.includes('SEVERITY')) throw new Error('Pivot should include SEVERITY');
-    if (!result.agg.includes('AGE')) throw new Error('Aggregate should include AGE');
-    if (!result.aggTypes.includes('avg')) throw new Error('Agg type should be avg');
-    if (!result.showHeader) throw new Error('Header should be visible by default');
-    if (!result.showCommandBar) throw new Error('Command bar should be visible by default');
+    const chips = await pivotChips(page);
+
+    expect(chips.groupBy).toEqual(['DIS_POP']);
+    expect(chips.agg).toEqual(['avg(AGE)']);
+    expect(chips.pivot).toEqual(['SEVERITY']);
+
+    expect(r.groupBy).toContain('DIS_POP');
+    expect(r.pivot).toContain('SEVERITY');
+    expect(r.agg).toContain('AGE');
+    expect(r.aggTypes).toContain('avg');
+    expect(r.countsVisible).toBe(true);
   });
 
-  // Add and remove viewer
-  await softStep('Add and remove viewer: close via JS, re-add, defaults preserved', async () => {
-    const result = await page.evaluate(async () => {
-      const tv = grok.shell.tv;
-      const pv = Array.from(tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.close();
-      await new Promise(r => setTimeout(r, 600));
-      const icon = document.querySelector('[name="icon-pivot-table"]') as HTMLElement;
-      if (icon) icon.click();
-      await new Promise(r => setTimeout(r, 1000));
-      const pv2 = Array.from(tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
+  await softStep('Scenario 2 Step 3: close via cross icon → viewer gone, no console-error delta (GROK-17122)', async () => {
+    const errorsBefore = pageErrors.length;
+    await page.evaluate(() => {
+      const panel = document.querySelector('[name="viewer-Pivot-table"]')!.closest('.panel-base')!;
+      (panel.querySelector('.panel-titlebar [name="Close"]') as HTMLElement)?.click();
+    });
+    const gone = !await v.pollValue(hasPivot, (has) => !has, 3000, 50);
+    expect(gone).toBe(true);
+
+    await v.addViewerByIcon(page, 'pivot-table', 'Pivot-table', 15000);
+    const r = await page.evaluate(() => {
+      const pv2 = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pivot table') as any;
+      return {reAdded: !!pv2, groupBy: pv2?.props.groupByColumnNames, pivot: pv2?.props.pivotColumnNames};
+    });
+    expect(pageErrors.length).toBe(errorsBefore);
+    expect(r.reAdded).toBe(true);
+    expect(r.groupBy).toContain('DIS_POP');
+    expect(r.pivot).toContain('SEVERITY');
+  });
+
+  const probeChrome = async () => page.evaluate(() => {
+    const root = document.querySelector('[name="viewer-Pivot-table"]')!;
+    const vis = (el: Element | null) => !!el && !!(el as HTMLElement).offsetParent && getComputedStyle(el as HTMLElement).display !== 'none';
+    const rowByTitle = (title: string) => [...root.querySelectorAll('.grok-pivot-column-panel')]
+      .find((p) => p.querySelector(`.grok-pivot-column-tags-title[d4-name="${title}"]`)) ?? null;
+    return {
+      data: vis(rowByTitle('Data')), groupBy: vis(rowByTitle('Group by')),
+      agg: vis(rowByTitle('Aggregate')), pivot: vis(rowByTitle('Pivot')),
+      counts: vis(root.querySelector('.grok-pivot-counts')),
+      cmdBar: vis(root.querySelector('.d4-command-bar')),
+      history: vis(root.querySelector('.d4-command-bar [name="icon-history"]')),
+    };
+  });
+  const setChromeProp = async (prop: string, value: boolean) =>
+    v.setViewerProps(page, 'Pivot table', [{set: {[prop]: value}, wait: 450}]);
+
+  await softStep('Scenario 3 Step 3: Show Header=false hides the Data row, tag rows and counts; they return on true', async () => {
+    await setChromeProp('showHeader', false);
+    const headerOff = await probeChrome();
+    await setChromeProp('showHeader', true);
+    const headerOn = await probeChrome();
+    expect(headerOff.data).toBe(false);
+    expect(headerOff.groupBy).toBe(false);
+    expect(headerOff.agg).toBe(false);
+    expect(headerOff.pivot).toBe(false);
+    expect(headerOff.counts).toBe(false);
+    expect(headerOn.groupBy).toBe(true);
+    expect(headerOn.counts).toBe(true);
+  });
+
+  await softStep('Scenario 3 Step 6: Show Command Bar=false hides the command bar with history/refresh icons; it returns on true', async () => {
+    await setChromeProp('showCommandBar', false);
+    const cmdOff = await probeChrome();
+    await setChromeProp('showCommandBar', true);
+    const cmdOn = await probeChrome();
+    expect(cmdOff.cmdBar).toBe(false);
+    expect(cmdOff.history).toBe(false);
+    expect(cmdOn.cmdBar).toBe(true);
+    expect(cmdOn.history).toBe(true);
+  });
+
+  await softStep('Scenario 4 Step 4: title in the header, description Top visible, Never hides it', async () => {
+    await v.setViewerProps(page, 'Pivot table', [{set: {
+      showTitle: true, title: 'My Pivot', description: 'Summary stats', descriptionPosition: 'Top',
+    }, wait: 500}]);
+    const top = await page.evaluate(() => {
+      const root = document.querySelector('[name="viewer-Pivot-table"]')!;
+      const panel = root.closest('.panel-base') ?? root;
+      const titleText = [...document.querySelectorAll('.panel-titlebar-tabhost .panel-titlebar-text')]
+        .map((e) => e.textContent!.trim()).filter(Boolean);
+      const descTop = [...panel.querySelectorAll('.d4-viewer-description')]
+        .map((e) => ({txt: e.textContent!.trim(), vis: !!(e as HTMLElement).offsetParent}));
+      return {titleShown: titleText.includes('My Pivot'), descTopVisible: descTop.some((d) => d.txt.includes('Summary stats') && d.vis)};
+    });
+    await v.setViewerProps(page, 'Pivot table', [{set: {descriptionVisibilityMode: 'Never'}, wait: 500}]);
+    const descNeverCount = await page.evaluate(() => {
+      const root = document.querySelector('[name="viewer-Pivot-table"]')!;
+      const panel = root.closest('.panel-base') ?? root;
+      return [...panel.querySelectorAll('.d4-viewer-description')]
+        .filter((e) => !!(e as HTMLElement).offsetParent && e.textContent!.includes('Summary stats')).length;
+    });
+
+    await page.evaluate(() => {
+      const pv = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pivot table') as any;
+      pv.props.showTitle = false; pv.props.title = ''; pv.props.description = ''; pv.props.descriptionVisibilityMode = 'Auto';
+    });
+    expect(top.titleShown).toBe(true);
+    expect(top.descTopVisible).toBe(true);
+    expect(descNeverCount).toBe(0);
+  });
+
+  const openHistoryMenu = async () => {
+    await page.evaluate(() =>
+      (document.querySelector('[name="viewer-Pivot-table"] .d4-command-bar [name="icon-history"]') as HTMLElement).click());
+    await page.locator('.d4-menu-popup .d4-menu-item-label').first().waitFor({timeout: 5000});
+  };
+
+  await softStep('Scenario 5 Step 4: Save parameters writes localStorage history for RACE / avg(WEIGHT)', async () => {
+    await v.setViewerProps(page, 'Pivot table', [{set: {
+      groupByColumnNames: ['RACE'], aggregateColumnNames: ['WEIGHT'], aggregateAggTypes: ['avg'], pivotColumnNames: [],
+    }, wait: 600}]);
+    await openHistoryMenu();
+    await page.evaluate(() => {
+      const saveItem = [...document.querySelectorAll('.d4-menu-item')]
+        .find((i) => i.querySelector('.d4-menu-item-label')?.textContent?.trim() === 'Save parameters') as HTMLElement | null;
+      saveItem?.click();
+    });
+    const r = await v.pollValue(() => page.evaluate((k) => {
+      const raw = window.localStorage.getItem(k);
+      let parsed: any = null;
+      try { parsed = JSON.parse(raw ?? ''); } catch (_) { parsed = null; }
+      const flat = Array.isArray(parsed) ? parsed.flat(2).map((a: any) => a.colName) : [];
+      return {isArray: Array.isArray(parsed), len: Array.isArray(parsed) ? parsed.length : -1, names: flat};
+    }, HISTORY_KEY), (x) => x.len > 0, 3000, 50);
+    expect(r.isArray).toBe(true);
+    expect(r.len).toBeGreaterThan(0);
+    expect(r.names).toContain('RACE');
+    expect(r.names).toContain('WEIGHT');
+  });
+
+  await softStep('Scenario 5 Step 6: picking the saved entry restores Group by / Aggregate (tag captions)', async () => {
+    await v.setViewerProps(page, 'Pivot table', [{set: {
+      groupByColumnNames: ['SEX'], aggregateColumnNames: ['AGE'], aggregateAggTypes: ['avg'],
+    }, wait: 500}]);
+    await openHistoryMenu();
+    await page.locator('.d4-menu-popup [name="div-key(RACE),avg(WEIGHT)"]').click();
+    const tags = await v.pollValue(() => pivotChips(page), (t) => t.groupBy.includes('RACE'), 3000, 50);
+    expect(tags.groupBy).toEqual(['RACE']);
+    expect(tags.agg).toEqual(['avg(WEIGHT)']);
+  });
+
+  await softStep('Scenario 5 Step 8: after WEIGHT is removed the history menu drops the WEIGHT entry (I8)', async () => {
+    await page.evaluate(() => {
+      grok.shell.tv.dataFrame.columns.remove('WEIGHT');
+      (Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pivot table') as any).close();
+    });
+    expect(await v.pollValue(hasPivot, (has) => !has, 3000, 50)).toBe(false);
+    await v.addViewerByIcon(page, 'pivot-table', 'Pivot-table', 15000);
+    await page.locator(`${PIVOT} .grok-pivot-column-tags-title[d4-name="Group by"]`).waitFor({timeout: 15000});
+    await openHistoryMenu();
+    const labels = await page.evaluate(() => {
+      const menu = [...document.querySelectorAll('.d4-menu-popup')].pop()!;
+      const out = [...menu.querySelectorAll('.d4-menu-item-label')].map((e) => e.textContent!.trim());
+      document.body.click();
+      return out;
+    });
+    expect(labels.some((l) => l.includes('WEIGHT'))).toBe(false);
+  });
+
+  await softStep('Scenario 5 Step 9: Refresh (icon-redo) clears Group by / Pivot and re-seeds the default aggregates', async () => {
+    await v.setViewerProps(page, 'Pivot table', [{set: {
+      groupByColumnNames: ['RACE'], aggregateColumnNames: ['AGE'], aggregateAggTypes: ['sum'], pivotColumnNames: ['SEX'],
+    }, wait: 600}]);
+    await page.locator(`${PIVOT} .d4-command-bar [name="icon-redo"]`).click();
+    const tags = await v.pollValue(() => pivotChips(page), (t) => t.groupBy.length === 0 && t.agg.length === 2, 3000, 50);
+    expect(tags.groupBy).toEqual([]);
+    expect(tags.pivot).toEqual([]);
+    expect(tags.agg).toEqual(['avg(AGE)', 'avg(HEIGHT)']);
+  });
+
+  await page.evaluate((k) => window.localStorage.removeItem(k), HISTORY_KEY);
+  await openPivot(page);
+
+  await softStep('Scenario 6 Steps 1-2: add HEIGHT, choose sum → sum(HEIGHT) tag, then remove it', async () => {
+    await addColumnViaPlus(page, 'div-add-Aggregate', 'HEIGHT');
+    let aggChips = await v.pollValue(() => rowChips(page, 'Aggregate'), (c) => c.some((x) => x.includes('HEIGHT')), 3000, 50);
+    expect(aggChips.some((c) => c.includes('HEIGHT'))).toBe(true);
+
+    await openChipMenu(page, 'Aggregate', 'HEIGHT');
+    await pickAggregation(page, 'sum');
+    await page.keyboard.press('Escape');
+    aggChips = await v.pollValue(() => rowChips(page, 'Aggregate'), (c) => c.some((x) => x.includes('sum(HEIGHT)')), 3000, 50);
+    expect(aggChips.some((c) => c.includes('sum(HEIGHT)'))).toBe(true);
+
+    await removeChip(page, 'Aggregate', 'HEIGHT');
+    aggChips = await v.pollValue(() => rowChips(page, 'Aggregate'), (c) => !c.some((x) => x.includes('HEIGHT')), 3000, 50);
+    expect(aggChips.some((c) => c.includes('HEIGHT'))).toBe(false);
+  });
+
+  await softStep('Scenario 6 Step 3: the Aggregate + popup pre-offers the remembered aggregation type (I9)', async () => {
+    await ensurePivotPlusClickable(page, 'div-add-Aggregate');
+    await page.locator(`${PIVOT} [name="div-add-Aggregate"]`).click();
+    const backdrop = page.locator('.d4-column-selector-backdrop');
+    await backdrop.waitFor({timeout: 6000});
+    expect(await backdrop.count()).toBeGreaterThan(0);
+
+    await page.keyboard.press('Escape');
+    await v.pollValue(() => backdrop.count(), (n) => n === 0, 400, 50);
+    const aggChips = await rowChips(page, 'Aggregate');
+    expect(aggChips.some((c) => c.includes('AGE'))).toBe(true);
+    expect(aggChips.some((c) => c.includes('HEIGHT'))).toBe(false);
+  });
+
+  await softStep('Scenario 8 Step 2: grouping by USUBJID makes one row per identifier, no console error (GROK-16201)', async () => {
+    const errorsBefore = pageErrors.length;
+    await v.setViewerProps(page, 'Pivot table', [{set: {
+      groupByColumnNames: ['USUBJID'], aggregateColumnNames: ['AGE'], aggregateAggTypes: ['avg'], pivotColumnNames: [],
+    }, wait: 800}]);
+    const r = await v.pollValue(() => page.evaluate(() => {
+      const counts = document.querySelector('[name="viewer-Pivot-table"] .grok-pivot-counts')!.textContent!.replace(/\s+/g, ' ').trim();
+      const distinct = grok.shell.tv.dataFrame.col('USUBJID').categories.length;
+      return {distinct, counts, rowsMatch: counts.startsWith(`${distinct} rows`)};
+    }), (x) => x.rowsMatch, 3000, 50);
+    expect(r.rowsMatch).toBe(true);
+    expect(pageErrors.length).toBe(errorsBefore);
+  });
+
+  await softStep('Scenario 8 Step 5: ADD opens the aggregated result; key column keeps its type (GROK-16074)', async () => {
+    await v.setViewerProps(page, 'Pivot table', [{set: {
+      groupByColumnNames: ['DIS_POP'], aggregateColumnNames: ['AGE'], aggregateAggTypes: ['avg'], pivotColumnNames: [],
+    }, wait: 600}]);
+    const aggViewOpen = () => page.evaluate(() =>
+      Array.from(grok.shell.views).some((vw: any) => vw.name === 'Table aggregation'));
+    await page.locator(`${PIVOT} .grok-pivot-counts [name="button-ADD"]`).click();
+    expect(await v.pollValue(aggViewOpen, (open) => open, 5000, 50)).toBe(true);
+    const r = await page.evaluate(() => {
+      const srcCol = grok.shell.tables.find((t: any) => t.rowCount === 5850).col('DIS_POP');
+      const aggView = Array.from(grok.shell.views).find((vw: any) => vw.name === 'Table aggregation') as any;
+      const keyCol = aggView?.dataFrame?.col('DIS_POP');
+      const out = {
+        opened: !!keyCol,
+        keyType: keyCol?.type, srcType: srcCol.type,
+        keySemType: keyCol?.semType ?? null, srcSemType: srcCol.semType ?? null,
+      };
+      aggView?.close();
+      return out;
+    });
+    await v.pollValue(aggViewOpen, (open) => !open, 2000, 50);
+    expect(r.opened).toBe(true);
+    expect(r.keyType).toBe(r.srcType);
+    expect(r.keySemType).toBe(r.srcSemType);
+  });
+
+  await softStep('Scenario 8 Step 7: switching the Data-row Table property back and forth duplicates no Data entry / header (github-3414, GROK-14995)', async () => {
+    const counts = () => page.evaluate(() => {
+      const root = document.querySelector('[name="viewer-Pivot-table"]')!;
+      const dataRow = [...root.querySelectorAll('.grok-pivot-column-panel')]
+        .find((p) => p.querySelector('.grok-pivot-column-tags-title[d4-name="Data"]'));
       return {
-        reAdded: !!pv2,
-        groupBy: pv2?.props.groupByColumnNames,
-        pivot: pv2?.props.pivotColumnNames,
-        agg: pv2?.props.aggregateColumnNames
+        dataEntries: dataRow ? dataRow.querySelectorAll('.d4-tag').length : 0,
+        headers: root.querySelectorAll('.grok-pivot-column-tags-title[d4-name="Data"]').length,
       };
     });
-    if (!result.reAdded) throw new Error('Pivot table not re-added');
-    if (!result.groupBy?.includes('DIS_POP')) throw new Error('Defaults not preserved: group by');
-  });
+    const before = await counts();
 
-  // Group by configuration
-  await softStep('Group by: add SEX, remove DIS_POP, add RACE, remove all', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.groupByColumnNames = ['DIS_POP', 'SEX'];
-      await new Promise(r => setTimeout(r, 300));
-      const step2 = pv.props.groupByColumnNames.slice();
-      pv.props.groupByColumnNames = ['SEX'];
-      await new Promise(r => setTimeout(r, 300));
-      const step4 = pv.props.groupByColumnNames.slice();
-      pv.props.groupByColumnNames = ['SEX', 'RACE'];
-      await new Promise(r => setTimeout(r, 300));
-      const step6 = pv.props.groupByColumnNames.slice();
-      pv.props.groupByColumnNames = ['SEX'];
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.groupByColumnNames = [];
-      await new Promise(r => setTimeout(r, 300));
-      const step8 = pv.props.groupByColumnNames.slice();
-      return { step2, step4, step6, step8 };
+    const tagBox = await page.evaluate(() => {
+      const root = document.querySelector('[name="viewer-Pivot-table"]')!;
+      const dataRow = [...root.querySelectorAll('.grok-pivot-column-panel')]
+        .find((p) => p.querySelector('.grok-pivot-column-tags-title[d4-name="Data"]'))!;
+      const r = (dataRow.querySelector('.d4-tag') as HTMLElement).getBoundingClientRect();
+      return {x: r.x + r.width / 2, y: r.y + r.height / 2};
     });
-    if (!result.step2.includes('SEX') || !result.step2.includes('DIS_POP')) throw new Error('Step 2 failed');
-    if (result.step4.length !== 1 || result.step4[0] !== 'SEX') throw new Error('Step 4 failed');
-    if (!result.step6.includes('SEX') || !result.step6.includes('RACE')) throw new Error('Step 6 failed');
-    if (result.step8.length !== 0) throw new Error('Step 8: group by not empty');
+    await page.mouse.click(tagBox.x, tagBox.y);
+    const dlg = page.locator('.d4-dialog').last();
+    await dlg.waitFor({timeout: 8000});
+
+    await dlg.locator('[name="button-OK"]').click();
+    await dlg.waitFor({state: 'detached', timeout: 5000}).catch(() => {});
+    // the duplication would land within the old 700ms hold; the poll gives up at the same cap
+    const after = await v.pollValue(counts, (c) => c.dataEntries !== before.dataEntries || c.headers !== 1, 700, 50);
+    expect(after.dataEntries).toBe(before.dataEntries);
+    expect(after.headers).toBe(1);
   });
 
-  // Pivot column configuration
-  await softStep('Pivot: clear, add SEX, add RACE, remove RACE, clear', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.groupByColumnNames = ['DIS_POP'];
-      pv.props.pivotColumnNames = [];
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.pivotColumnNames = ['SEX'];
-      await new Promise(r => setTimeout(r, 300));
-      const step3 = pv.props.pivotColumnNames.slice();
-      pv.props.pivotColumnNames = ['SEX', 'RACE'];
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.pivotColumnNames = ['SEX'];
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.pivotColumnNames = [];
-      await new Promise(r => setTimeout(r, 300));
-      return { step3, finalEmpty: pv.props.pivotColumnNames.length === 0 };
-    });
-    if (!result.step3.includes('SEX')) throw new Error('SEX not added to pivot');
-    if (!result.finalEmpty) throw new Error('Pivot not cleared');
-  });
-
-  // Aggregate configuration
-  await softStep('Aggregate: add WEIGHT/HEIGHT, remove AGE, clear, re-add AGE', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.aggregateColumnNames = ['AGE'];
-      pv.props.aggregateAggTypes = ['avg'];
-      pv.props.pivotColumnNames = ['SEVERITY'];
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.aggregateColumnNames = ['AGE', 'WEIGHT'];
-      pv.props.aggregateAggTypes = ['avg', 'avg'];
-      await new Promise(r => setTimeout(r, 300));
-      const step2 = pv.props.aggregateColumnNames.slice();
-      pv.props.aggregateColumnNames = ['WEIGHT', 'HEIGHT'];
-      pv.props.aggregateAggTypes = ['avg', 'avg'];
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.aggregateColumnNames = [];
-      pv.props.aggregateAggTypes = [];
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.aggregateColumnNames = ['AGE'];
-      pv.props.aggregateAggTypes = ['avg'];
-      await new Promise(r => setTimeout(r, 400));
-      return { step2, finalAgg: pv.props.aggregateColumnNames.slice() };
-    });
-    if (!result.step2.includes('AGE') || !result.step2.includes('WEIGHT')) throw new Error('Step 2 failed');
-    if (!result.finalAgg.includes('AGE')) throw new Error('AGE not re-added');
-  });
-
-  // Show header and command bar
-  await softStep('Show header/command bar: hide then restore', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.showHeader = false;
-      await new Promise(r => setTimeout(r, 400));
-      const headerEl = document.querySelector('[name="viewer-Pivot-table"] .grok-pivot-top');
-      const headerHidden = !headerEl || getComputedStyle(headerEl).display === 'none' || !headerEl.offsetParent;
-      pv.props.showHeader = true;
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.showCommandBar = false;
-      await new Promise(r => setTimeout(r, 300));
-      const cmdOff = pv.props.showCommandBar;
-      pv.props.showCommandBar = true;
-      await new Promise(r => setTimeout(r, 300));
-      return { headerHidden, headerRestored: pv.props.showHeader, cmdOff, cmdOn: pv.props.showCommandBar };
-    });
-    if (!result.headerHidden) throw new Error('Header not hidden');
-    if (!result.headerRestored) throw new Error('Header not restored');
-    if (result.cmdOff !== false) throw new Error('Command bar not hidden');
-    if (!result.cmdOn) throw new Error('Command bar not restored');
-  });
-
-  // Row source
-  await softStep('Row source cycle: All → Filtered → Selected → Filtered', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.rowSource = 'All';
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.rowSource = 'Filtered';
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.rowSource = 'Selected';
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.rowSource = 'Filtered';
-      await new Promise(r => setTimeout(r, 300));
-      return { rowSource: pv.props.rowSource };
-    });
-    if (result.rowSource !== 'Filtered') throw new Error('Row source not restored to Filtered');
-  });
-
-  // Filtering Enabled
-  await softStep('Filtering Enabled: toggle off then back on', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      const feDefault = pv.props.filteringEnabled;
-      pv.props.filteringEnabled = false;
-      await new Promise(r => setTimeout(r, 300));
-      const feOff = pv.props.filteringEnabled;
-      pv.props.filteringEnabled = true;
-      await new Promise(r => setTimeout(r, 300));
-      return { feDefault, feOff, feRestored: pv.props.filteringEnabled };
-    });
-    if (!result.feDefault) throw new Error('filteringEnabled not true by default');
-    if (result.feOff !== false) throw new Error('filteringEnabled not set to false');
-    if (!result.feRestored) throw new Error('filteringEnabled not restored');
-  });
-
-  // Property panel sync with viewer
-  await softStep('Property panel sync: props reflect viewer state bidirectionally', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      // Set via props → verify reflected
-      pv.props.groupByColumnNames = ['DIS_POP', 'SEX'];
-      await new Promise(r => setTimeout(r, 300));
-      const afterAdd = pv.props.groupByColumnNames.slice();
-      // Remove via props → verify reflected
-      pv.props.groupByColumnNames = ['DIS_POP'];
-      await new Promise(r => setTimeout(r, 300));
-      const afterRemove = pv.props.groupByColumnNames.slice();
-      // Set aggregate via props → verify
-      pv.props.aggregateColumnNames = ['HEIGHT'];
-      pv.props.aggregateAggTypes = ['avg'];
-      await new Promise(r => setTimeout(r, 300));
-      const aggAfterSet = pv.props.aggregateColumnNames.slice();
-      // Restore
-      pv.props.aggregateColumnNames = ['AGE'];
-      pv.props.aggregateAggTypes = ['avg'];
-      pv.props.groupByColumnNames = ['DIS_POP'];
-      await new Promise(r => setTimeout(r, 300));
-      return { afterAdd, afterRemove, aggAfterSet };
-    });
-    if (!result.afterAdd.includes('SEX')) throw new Error('SEX not added to group by');
-    if (result.afterRemove.includes('SEX')) throw new Error('SEX not removed from group by');
-    if (!result.aggAfterSet.includes('HEIGHT')) throw new Error('HEIGHT not set as aggregate');
-  });
-
-  // Open aggregated data in workspace
-  await softStep('Open aggregated data in workspace (ADD button)', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.groupByColumnNames = ['RACE'];
-      pv.props.aggregateColumnNames = ['AGE'];
-      pv.props.aggregateAggTypes = ['avg'];
-      pv.props.pivotColumnNames = ['SEX'];
-      await new Promise(r => setTimeout(r, 600));
-      const viewsBefore = Array.from(grok.shell.views).length;
-      const addBtn = document.querySelector('[name="viewer-Pivot-table"] [name="button-ADD"]') as HTMLElement;
-      if (!addBtn) throw new Error('ADD button not found');
-      addBtn.click();
-      await new Promise(r => setTimeout(r, 800));
-      const views = Array.from(grok.shell.views);
-      const newDf = views[views.length - 1]?.dataFrame;
-      const cols = newDf ? Array.from({ length: newDf.columns.length }, (_: any, i: number) => newDf.columns.byIndex(i).name) : [];
-      // Cleanup: switch back
-      const demogView = views.find((v: any) => v.dataFrame?.rowCount === 5850);
-      if (demogView) grok.shell.v = demogView;
-      await new Promise(r => setTimeout(r, 300));
-      return { viewsAdded: Array.from(grok.shell.views).length > viewsBefore || views.length > viewsBefore, cols };
-    });
-    if (!result.cols.includes('RACE')) throw new Error('RACE column not in aggregated table');
-    if (!result.cols.some((c: string) => c.includes('AGE'))) throw new Error('AGE aggregate column not found');
-  });
-
-  // Tag context menu: Remove others
-  await softStep('Tag context menu: right-click measure tag → Remove others', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.aggregateColumnNames = ['AGE', 'WEIGHT', 'HEIGHT'];
-      pv.props.aggregateAggTypes = ['avg', 'avg', 'avg'];
-      await new Promise(r => setTimeout(r, 400));
-      const panels = document.querySelectorAll('.grok-pivot-column-panel');
-      let weightTag: Element | null = null;
-      for (const panel of panels) {
-        if (panel.querySelector('.grok-pivot-column-tags-title')?.textContent?.trim() === 'Aggregate') {
-          weightTag = Array.from(panel.querySelectorAll('.d4-tag')).find((t: any) => t.textContent.trim().includes('WEIGHT')) || null;
-          break;
-        }
-      }
-      if (!weightTag) return { error: 'WEIGHT tag not found' };
-      weightTag.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 }));
-      await new Promise(r => setTimeout(r, 400));
-      const removeOthers = Array.from(document.querySelectorAll('.d4-menu-item-label')).find((i: any) => i.textContent.trim() === 'Remove others') as HTMLElement | null;
-      if (removeOthers) removeOthers.closest('.d4-menu-item')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      await new Promise(r => setTimeout(r, 400));
-      return { aggCols: pv.props.aggregateColumnNames.slice() };
-    });
-    if (result.error) throw new Error(result.error);
-    if (result.aggCols?.length !== 1 || result.aggCols[0] !== 'WEIGHT')
-      throw new Error(`Expected [WEIGHT], got ${JSON.stringify(result.aggCols)}`);
-  });
-
-  // Row source with filter and selection
-  await softStep('Row source with filter (AGE 20-40) and selection (100 rows)', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      const df = grok.shell.tv.dataFrame;
-      pv.props.groupByColumnNames = ['RACE'];
-      pv.props.aggregateColumnNames = ['AGE'];
-      pv.props.aggregateAggTypes = ['avg'];
-      pv.props.pivotColumnNames = [];
-      await new Promise(r => setTimeout(r, 300));
-      pv.props.rowSource = 'Filtered';
-      const fg = grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 500));
-      fg.updateOrAdd({ type: 'histogram', column: 'AGE', min: 20, max: 40 });
-      await new Promise(r => setTimeout(r, 500));
-      const filtered = df.filter.trueCount;
-      pv.props.rowSource = 'Selected';
-      for (let i = 0; i < 100; i++) df.selection.set(i, true);
-      await new Promise(r => setTimeout(r, 400));
-      const selected = df.selection.trueCount;
-      pv.props.rowSource = 'All';
-      await new Promise(r => setTimeout(r, 300));
-      const ageMin = df.col('AGE').min;
-      const ageMax = df.col('AGE').max;
-      fg.updateOrAdd({ type: 'histogram', column: 'AGE', min: ageMin, max: ageMax });
-      df.selection.setAll(false);
-      await new Promise(r => setTimeout(r, 300));
-      return { filtered, selected, restoredFilter: df.filter.trueCount };
-    });
-    if (result.filtered >= 5850) throw new Error('Filter did not reduce count');
-    if (result.selected !== 100) throw new Error(`Expected 100 selected, got ${result.selected}`);
-    if (result.restoredFilter !== 5850) throw new Error('Filter not restored');
-  });
-
-  // Command bar: history and refresh
-  await softStep('Command bar: history save params then refresh resets to defaults', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.groupByColumnNames = ['RACE'];
-      pv.props.aggregateColumnNames = ['AGE'];
-      pv.props.aggregateAggTypes = ['avg'];
-      pv.props.pivotColumnNames = ['SEX'];
-      await new Promise(r => setTimeout(r, 500));
-      // Find history button in pivot command bar
-      const pvEl = document.querySelector('[name="viewer-Pivot-table"]') as HTMLElement;
-      const histBtn = pvEl?.querySelector('[name="icon-history"]') as HTMLElement
-        ?? pvEl?.querySelector('.grok-icon.fa-history') as HTMLElement
-        ?? pvEl?.querySelector('[title*="istory"]') as HTMLElement;
-      if (!histBtn) return { error: 'history button not found' };
-      histBtn.click();
-      await new Promise(r => setTimeout(r, 500));
-      // Click Save parameters
-      const saveItem = [...document.querySelectorAll('[role="menuitem"]')]
-        .find(el => el.textContent?.toLowerCase().includes('save')) as HTMLElement | null;
-      if (saveItem) {
-        saveItem.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 400));
-      }
-      const savedGroup = pv.props.groupByColumnNames.slice();
-      // Change config
-      pv.props.groupByColumnNames = ['RACE'];
-      await new Promise(r => setTimeout(r, 300));
-      // Click refresh
-      const refreshBtn = pvEl?.querySelector('[name="icon-refresh"]') as HTMLElement
-        ?? pvEl?.querySelector('.grok-icon.fa-refresh') as HTMLElement
-        ?? pvEl?.querySelector('[title*="efresh"]') as HTMLElement;
-      if (refreshBtn) {
-        refreshBtn.click();
-        await new Promise(r => setTimeout(r, 600));
-      }
-      // Close any open menu
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      return { savedGroup, histBtnFound: true, refreshBtnFound: !!refreshBtn };
-    });
-    if (result.error) throw new Error(result.error);
-    if (!result.histBtnFound) throw new Error('History button not found');
-  });
-
-  // Coloring preservation across row source changes
-  await softStep('Coloring preservation: column color survives row source change', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.groupByColumnNames = ['RACE'];
-      pv.props.aggregateColumnNames = ['AGE'];
-      pv.props.aggregateAggTypes = ['avg'];
-      pv.props.pivotColumnNames = ['SEX'];
-      pv.props.rowSource = 'Filtered';
-      await new Promise(r => setTimeout(r, 500));
-      // Apply backColor to inner grid column if accessible
-      let colorApplied = false;
-      try {
-        const innerGrid = (pv as any).grid ?? (pv as any).innerGrid ?? null;
-        if (innerGrid) {
-          const aggCol = innerGrid.columns.byIndex(1) ?? innerGrid.columns.byIndex(0);
-          if (aggCol) { aggCol.backColor = 0xFFADD8E6; colorApplied = true; }
-        }
-      } catch (_) {}
-      await new Promise(r => setTimeout(r, 300));
-      // Change row source and back
-      pv.props.rowSource = 'Selected';
-      await new Promise(r => setTimeout(r, 400));
-      pv.props.rowSource = 'Filtered';
-      await new Promise(r => setTimeout(r, 400));
-      return { rowSource: pv.props.rowSource, colorApplied };
-    });
-    if (result.rowSource !== 'Filtered') throw new Error('Row source not restored');
-    // colorApplied may be false if inner grid API differs — AMBIGUOUS is acceptable
-  });
-
-  // Layout save and restore
-  await softStep('Layout save and restore: RACE/sum(HEIGHT)/SEX/Pivot Test', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      const tv = grok.shell.tv;
-      pv.props.groupByColumnNames = ['RACE'];
-      pv.props.aggregateColumnNames = ['HEIGHT'];
-      pv.props.aggregateAggTypes = ['sum'];
-      pv.props.pivotColumnNames = ['SEX'];
-      pv.props.showTitle = true;
-      pv.props.title = 'Pivot Test';
-      await new Promise(r => setTimeout(r, 500));
-      const layout = tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
-      await new Promise(r => setTimeout(r, 1000));
-      pv.props.groupByColumnNames = ['DIS_POP'];
-      pv.props.pivotColumnNames = [];
-      await new Promise(r => setTimeout(r, 300));
-      const saved = await grok.dapi.layouts.find(layoutId);
-      tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-      const pv2 = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      const restored = {
-        groupBy: pv2?.props.groupByColumnNames,
-        agg: pv2?.props.aggregateColumnNames,
-        pivot: pv2?.props.pivotColumnNames,
-        title: pv2?.props.title
-      };
-      await grok.dapi.layouts.delete(saved);
-      if (pv2) { pv2.props.showTitle = false; pv2.props.title = ''; }
-      return { layoutId, restored };
-    });
-    if (!result.restored.groupBy?.includes('RACE')) throw new Error('Group by not restored');
-    if (!result.restored.agg?.includes('HEIGHT')) throw new Error('Aggregate not restored');
-    if (!result.restored.pivot?.includes('SEX')) throw new Error('Pivot not restored');
-    if (result.restored.title !== 'Pivot Test') throw new Error('Title not restored');
-  });
-
-  // Title and description
-  await softStep('Title and description: set, position, visibility mode', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.showTitle = true;
-      pv.props.title = 'My Pivot';
-      pv.props.description = 'Summary stats';
-      pv.props.descriptionPosition = 'Top';
-      await new Promise(r => setTimeout(r, 400));
-      pv.props.descriptionVisibilityMode = 'Never';
-      await new Promise(r => setTimeout(r, 300));
-      const r = { title: pv.props.title, description: pv.props.description, descVis: pv.props.descriptionVisibilityMode };
-      pv.props.showTitle = false;
-      pv.props.title = '';
-      return r;
-    });
-    if (result.title !== 'My Pivot') throw new Error('Title not set');
-    if (result.description !== 'Summary stats') throw new Error('Description not set');
-    if (result.descVis !== 'Never') throw new Error('Description visibility mode not set');
-  });
-
-  // Title inline edit
-  await softStep('Title inline edit: contenteditable title', async () => {
-    const result = await page.evaluate(async () => {
-      const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
-      pv.props.showTitle = true;
-      pv.props.title = 'Initial Title';
-      await new Promise(r => setTimeout(r, 400));
-      const editables = document.querySelectorAll('[contenteditable]');
-      const titleEditable = Array.from(editables).find((e: any) => e.textContent.trim() === 'Initial Title') as HTMLElement | null;
-      let inlineEditWorked = false;
-      if (titleEditable) {
-        titleEditable.focus();
-        titleEditable.textContent = 'Inline Title';
-        titleEditable.dispatchEvent(new Event('input', { bubbles: true }));
-        titleEditable.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        await new Promise(r => setTimeout(r, 400));
-        inlineEditWorked = pv.props.title === 'Inline Title';
-      }
-      if (!inlineEditWorked) pv.props.title = 'Inline Title';
-      await new Promise(r => setTimeout(r, 300));
-      const finalTitle = pv.props.title;
-      pv.props.showTitle = false;
-      pv.props.title = '';
-      return { inlineEditWorked, finalTitle };
-    });
-    if (result.finalTitle !== 'Inline Title') throw new Error('Inline title not set');
-  });
-
+  await page.evaluate((k) => window.localStorage.removeItem(k), HISTORY_KEY);
+  page.off('pageerror', onPageError);
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

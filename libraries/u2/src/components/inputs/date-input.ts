@@ -3,10 +3,12 @@
    `DateTimeInput` are thin subclasses that differ only in `withTime`, so the field, the popup,
    the grid and the keyboard model are never forked. */
 import {signal, Signal, ReadonlySignal} from '../../core/signals.js';
+import {Dates} from '../../core/dates.js';
 import {Input, InputOptions, labelText} from '../../core/input-base.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../../core/overlay.js';
 import {button} from '../../core/elements.js';
 import {iconButton} from '../actions/buttons.js';
+import {isSpanText, markSpan, resolveSpan, spanOf} from '../../core/span.js';
 
 export interface DateInputOptions extends InputOptions<Date | null> {
   /** Inclusive: days outside are disabled in the calendar, typed values clamp on commit. */
@@ -14,6 +16,12 @@ export interface DateInputOptions extends InputOptions<Date | null> {
   max?: Date;
   /** 0 Sunday, 1 Monday (the default). */
   firstDayOfWeek?: 0 | 1;
+  /** The box also takes a span relative to now (`-1w`, `2d`, `now`); the value is the resolved `Date`
+   * tagged with its text (`spanOf`), shown as typed. A picked calendar day is a plain date. */
+  relative?: boolean;
+  /** The value is a UTC instant, not a local moment: the field shows, parses and commits its UTC
+   * calendar day — what a domain `datetime` carrying a date is. */
+  utcDates?: boolean;
 }
 
 export type DateState = 'idle' | 'focused' | 'open';
@@ -32,10 +40,21 @@ function pad2(value: number): string {
   return value < 10 ? `0${value}` : String(value);
 }
 
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+/** The calendar day a date stands for: its UTC parts under `utcDates`, its local ones otherwise. */
+function dayParts(date: Date, utc: boolean): {year: number, month: number, day: number} {
+  return utc ? Dates.utcParts(date) :
+    {year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate()};
 }
 
+/** The day `date` stands for, as the local date the calendar grid works in. */
+function startOfDay(date: Date, utc = false): Date {
+  const parts = dayParts(date, utc);
+  return new Date(parts.year, parts.month - 1, parts.day);
+}
+
+// `startOfMonth`, `addDays` and `addMonths` drive the CALENDAR GRID, which is a local-calendar
+// widget whatever the value is — they take no `utc` flag, and the value is converted at the
+// boundary (`_openPopup` in, `_combine` out) instead
 function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
@@ -50,8 +69,9 @@ function addMonths(date: Date, months: number): Date {
   return new Date(target.getFullYear(), target.getMonth(), Math.min(date.getDate(), last));
 }
 
-function isoDay(date: Date): string {
-  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+function isoDay(date: Date, utc = false): string {
+  const parts = dayParts(date, utc);
+  return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
 }
 
 function fromIsoDay(iso: string): Date {
@@ -162,7 +182,12 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   }
 
   private get _pattern(): string {
-    return this.withTime ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd';
+    const pattern = this.withTime ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd';
+    return this.options.relative ? `${pattern} or -1w` : pattern;
+  }
+
+  private get _utc(): boolean {
+    return this.options.utcDates === true;
   }
 
   private get _firstDay(): number {
@@ -270,10 +295,12 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     if (this._open.peek())
       return;
     const value = this.value.peek();
-    const base = value ?? this._defaultDay();
-    this._month.value = startOfMonth(base);
-    this._active.value = startOfDay(base);
-    this._time.value = value === null ? 0 : value.getHours() * 60 + value.getMinutes();
+    const day = value === null ? this._defaultDay() : startOfDay(value, this._utc);
+    this._month.value = startOfMonth(day);
+    this._active.value = day;
+    const time = value === null ? {hours: 0, minutes: 0} : this._utc ? Dates.utcParts(value) :
+      {hours: value.getHours(), minutes: value.getMinutes()};
+    this._time.value = time.hours * 60 + time.minutes;
     this._machine.value = 'open';
     this._closeOverlay = Overlay.show(this._field, this._popup, this.scope);
     this._open.value = true;
@@ -297,10 +324,10 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   private _defaultDay(): Date {
     const today = startOfDay(new Date());
     const {min, max} = this.options;
-    if (min !== undefined && today < startOfDay(min))
-      return startOfDay(min);
-    if (max !== undefined && today > startOfDay(max))
-      return startOfDay(max);
+    if (min !== undefined && today < startOfDay(min, this._utc))
+      return startOfDay(min, this._utc);
+    if (max !== undefined && today > startOfDay(max, this._utc))
+      return startOfDay(max, this._utc);
     return today;
   }
 
@@ -332,12 +359,19 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     this._dismiss(true);
   }
 
+  /** `day` is a local calendar marker — what the grid holds; the value it becomes is a UTC instant
+   * under `utcDates` and a local moment otherwise. */
   private _combine(day: Date): Date {
+    const time = this.withTime ? this._time.peek() : 0;
+    const hours = Math.floor(time / 60);
+    const minutes = time % 60;
+    if (this._utc) {
+      return Dates.fromUtcParts({year: day.getFullYear(), month: day.getMonth() + 1, day: day.getDate(),
+        hours, minutes});
+    }
     if (!this.withTime)
       return startOfDay(day);
-    const time = this._time.peek();
-    return new Date(day.getFullYear(), day.getMonth(), day.getDate(),
-      Math.floor(time / 60), time % 60);
+    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), hours, minutes);
   }
 
   private _focusActive(): void {
@@ -440,7 +474,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     this._time.value = hours * 60 + minutes;
     const value = this.value.peek();
     if (value !== null)
-      this._set(this._combine(value));
+      this._set(this._combine(startOfDay(value, this._utc)));
   }
 
   private _syncTime(): void {
@@ -502,7 +536,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
 
   private _applyDays(): void {
     const value = this.value.value;
-    const selected = value === null ? null : isoDay(value);
+    const selected = value === null ? null : isoDay(value, this._utc);
     const active = isoDay(this._active.value);
     for (const el of this._dayEls.value) {
       const on = el.dataset.date === selected;
@@ -527,8 +561,8 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   private _disabled(date: Date): boolean {
     const {min, max} = this.options;
     const day = startOfDay(date).getTime();
-    return (min !== undefined && day < startOfDay(min).getTime()) ||
-      (max !== undefined && day > startOfDay(max).getTime());
+    return (min !== undefined && day < startOfDay(min, this._utc).getTime()) ||
+      (max !== undefined && day > startOfDay(max, this._utc).getTime());
   }
 
   private _clamp(value: Date): Date {
@@ -541,6 +575,11 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   }
 
   private _normalize(date: Date): Date {
+    if (this._utc) {
+      const parts = Dates.utcParts(date);
+      return this.withTime ? Dates.fromUtcParts(parts) :
+        Dates.fromUtcParts({year: parts.year, month: parts.month, day: parts.day});
+    }
     if (!this.withTime)
       return startOfDay(date);
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(),
@@ -550,14 +589,23 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
   private _format(value: Date | null): string {
     if (value === null)
       return '';
-    const day = isoDay(value);
-    return this.withTime ? `${day} ${pad2(value.getHours())}:${pad2(value.getMinutes())}` : day;
+    const span = spanOf(value);
+    if (span !== undefined)
+      return span;
+    const day = isoDay(value, this._utc);
+    if (!this.withTime)
+      return day;
+    const {hours, minutes} = this._utc ? Dates.utcParts(value) :
+      {hours: value.getHours(), minutes: value.getMinutes()};
+    return `${day} ${pad2(hours)}:${pad2(minutes)}`;
   }
 
   private _parse(text: string): Date | null | undefined {
     const trimmed = text.trim();
     if (!trimmed)
       return null;
+    if (this.options.relative && isSpanText(trimmed))
+      return markSpan(resolveSpan(trimmed, new Date()), trimmed);
     const match = (this.withTime ? DATE_TIME : DATE).exec(trimmed);
     if (!match)
       return undefined;
@@ -567,8 +615,11 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     const minutes = match[5] === undefined ? 0 : Number(match[5]);
     if (month < 1 || month > 12 || day < 1 || hours > 23 || minutes > 59)
       return undefined;
-    const date = new Date(Number(match[1]), month - 1, day, hours, minutes);
-    return date.getMonth() === month - 1 && date.getDate() === day ? date : undefined;
+    const year = Number(match[1]);
+    const date = this._utc ? Dates.fromUtcParts({year, month, day, hours, minutes}) :
+      new Date(year, month - 1, day, hours, minutes);
+    const parts = dayParts(date, this._utc);
+    return parts.month === month && parts.day === day ? date : undefined;
   }
 
   private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {

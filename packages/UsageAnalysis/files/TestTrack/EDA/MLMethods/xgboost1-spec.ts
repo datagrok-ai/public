@@ -1,12 +1,13 @@
-import {test, expect} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors, loginToDatagrok} from '../../spec-login';
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 
 test.use(specTestOptions);
 
 test('XGBoost 1: Classification on iris.csv', async ({page}) => {
+  test.setTimeout(300_000);
   await loginToDatagrok(page);
 
-  // Step 1: Open iris.csv
   await softStep('Open iris.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
@@ -19,14 +20,16 @@ test('XGBoost 1: Classification on iris.csv', async ({page}) => {
       grok.shell.windows.simpleMode = false;
       const df = await grok.dapi.files.readCsv('System:DemoFiles/iris.csv');
       grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1000));
+      for (let i = 0; i < 20; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
       return {rows: df.rowCount, cols: df.columns.length};
     });
     expect(result.rows).toBe(150);
     expect(result.cols).toBe(6);
   });
 
-  // Step 2: Train XGBoost Classification (JS API fallback)
   await softStep('Train XGBoost Classification (JS API fallback)', async () => {
     const result = await page!.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;

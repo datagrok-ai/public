@@ -18,7 +18,7 @@ category('MapViewer', async () => {
 
     // await grok.functions.call('');
     // await delay(9000);
-    // const v = grok.shell.getTableView('');
+    // const v = grok.shell.tableView('');
   });
 
   test('Map', async () => {
@@ -31,7 +31,7 @@ category('MapViewer', async () => {
     // temporarily, because ids are undefined
     // expect(mapViewer.table.id, testDF.id);
 
-    // const v = grok.shell.getTableView('Map');
+    // const v = grok.shell.tableView('Map');
     // expect(v.name === 'Map', true);
     // expect(allViews.every(item => grok.shell.view(item) !== undefined), true);
     // expect(allTableViews.every(item => grok.shell.view(item) !== undefined), true);

@@ -39,7 +39,8 @@ function openBrowser(url: string): void {
 const MISSING_MODULE_PATTERNS = ['cannot find module', 'module not found', 'can\'t resolve'];
 
 async function buildPackage(dir: string): Promise<boolean> {
-  const buildCmd = 'npm run build -- --env incremental';
+  const workspace = utils.isPnpmWorkspace(dir);
+  const buildCmd = workspace ? 'pnpm run build' : 'npm run build -- --env incremental';
   const packageJson = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
   const name = packageJson.friendlyName || packageJson.name;
   console.log(`Building ${name}...`);
@@ -47,18 +48,17 @@ async function buildPackage(dir: string): Promise<boolean> {
     await utils.runScript(buildCmd, dir, color.isVerbose());
     color.success(`Successfully built ${name}`);
     return true;
-  }
-  catch (error: any) {
+  } catch (error: any) {
     const msg: string = (error?.message ?? '').toLowerCase();
     if (MISSING_MODULE_PATTERNS.some((p) => msg.includes(p))) {
-      color.warn('Missing modules detected, running npm install...');
+      const install = workspace ? 'pnpm install --frozen-lockfile' : 'npm install';
+      color.warn(`Missing modules detected, running ${install}...`);
       try {
-        await utils.runScript('npm install', dir, color.isVerbose());
+        await utils.runScript(install, dir, color.isVerbose());
         await utils.runScript(buildCmd, dir, color.isVerbose());
         color.success(`Successfully built ${name}`);
         return true;
-      }
-      catch (retryError: any) {
+      } catch (retryError: any) {
         color.error(`Failed to build ${name}`);
         if (retryError.message)
           color.error(retryError.message);
@@ -75,7 +75,7 @@ async function buildPackage(dir: string): Promise<boolean> {
 export async function run(args: RunArgs): Promise<boolean> {
   color.setVerbose(args.verbose || false);
 
-  // Step 1: Build (skip npm install to preserve npm link; retry with npm install only if needed)
+  // Step 1: Build (skip the install to preserve npm link; retry with an install only if needed)
   const built = await buildPackage(process.cwd());
   if (!built)
     return false;
@@ -103,8 +103,7 @@ export async function run(args: RunArgs): Promise<boolean> {
       key = config['servers'][alias]['key'];
       registry = config['servers'][alias]['registry'];
     }
-  }
-  catch (error) {
+  } catch (error) {
     if (!(host in config.servers)) {
       color.error(`Unknown server alias. Please add it to ${confPath}`);
       return false;

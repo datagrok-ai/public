@@ -50,7 +50,7 @@ export class DiffDockModel {
     const posesColumn = this.createColumn(DG.TYPE.STRING, CONSTANTS.POSES_COLUMN_NAME, this.ligands.length);
     const confidenceColumn = this.createColumn(DG.TYPE.FLOAT, CONSTANTS.CONFIDENCE_COLUMN_NAME, this.ligands.length);
     const virtualPosesColumn = this.createColumn(DG.TYPE.STRING, `${CONSTANTS.VIRTUAL_POSES_COLUMN_NAME}_${this.targetName}_${this.poses}`, this.ligands.length);
-    const grid = grok.shell.getTableView(this.df.name).grid;
+    const grid = grok.shell.tableView(this.df.name).grid;
 
     for (let i = 0; i < posesColumn.length; ++i) {
       const posesJson = await this.getPosesJson(this.ligands.get(i), this.ligands.getTag(DG.TAGS.UNITS));
@@ -175,7 +175,7 @@ export class DiffDockModel {
       const { bestId, bestPose, confidence } = this.findBestPose(poses);
       const combinedControl = await this.createCombinedControl(poses, bestPose, bestId);
 
-      const view = grok.shell.getTableView(this.df.name);
+      const view = grok.shell.tableView(this.df.name);
       if (this.currentViewer)
         view.dockManager.close(this.currentViewer);
 

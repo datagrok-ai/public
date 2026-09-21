@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import type * as DG from 'datagrok-api/dg';
 import {Fingerprint} from './utils/chem-common';
 
 export const V2000_ATOM_NAME_POS = 30;
@@ -77,6 +78,22 @@ export enum SubstructureSearchType {
   IS_SIMILAR = 'Similar',
   NOT_CONTAINS = 'Not contains',
   NOT_INCLUDED_IN = 'Not included in'
+}
+
+/** What a `meta.role: filterOperators` function returns — the u2 filter builder's operator-set contract,
+ * kept as plain data so Chem does not depend on u2. */
+export interface FilterOperatorSet {
+  semType: string;
+  exclusive?: boolean;
+  operators: {
+    id: string;
+    label: string;
+    arity: 0 | 1 | 2 | 'n';
+    kinds?: string[];
+    editor?: 'default' | 'range' | 'list' | 'none';
+    bitset(col: DG.Column, cond: {property: string, operator: string, value?: unknown, options?: Record<string, unknown>},
+      signal: AbortSignal): Promise<{bits: Uint32Array, length: number}>;
+  }[];
 }
 export const FILTER_TYPE_TAG = '.filter-type';
 export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,

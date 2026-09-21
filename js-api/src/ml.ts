@@ -8,15 +8,23 @@ import {IDartApi} from "./api/grok_api.g";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
+/** Options of {@link ml.pca}. */
+export interface PcaOptions {
+  /** Number of principal components to add. */
+  components: number;
+  /** Center the features first. */
+  center?: boolean;
+  /** Scale the features first. */
+  scale?: boolean;
+}
+
 export namespace ml {
   /** Applies predictive model to the specified table.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/data-science/predictive-model}
-   * @async
-   * @param {string} name - Model namespace path.
-   * @param {DataFrame} table - Data table.
-   * @param {object} columnNamesMap - Columns map.
-   * @param {boolean} showProgress - Maximum number of results to return.
-   * */
+   * @param name - Model namespace path.
+   * @param table - Data table.
+   * @param columnNamesMap - Columns map.
+   * @param showProgress - Whether to show a progress indicator. */
   export async function applyModel(name: string, table: DataFrame, columnNamesMap: object = {}, showProgress: boolean = true): Promise<DataFrame> {
     await api.grok_ML_ApplyModel(name, table.dart, columnNamesMap, showProgress);
     return table;
@@ -24,12 +32,10 @@ export namespace ml {
 
   /** Imputes missing values.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation}
-   * @async
-   * @param {DataFrame} table - Data table.
-   * @param {string[]} impute - List of column names to impute missing values.
-   * @param {string[]} data - List of column names containing data.
-   * @param {number} nearestNeighbours - Number of nearest neighbours.
-   * */
+   * @param table - Data table.
+   * @param impute - List of column names to impute missing values.
+   * @param data - List of column names containing data.
+   * @param nearestNeighbours - Number of nearest neighbours. */
   export async function missingValuesImputation(table: DataFrame, impute: string[], data: string[], nearestNeighbours: number): Promise<DataFrame> {
     await api.grok_ML_MissingValuesImputation(table.dart, impute, data, nearestNeighbours);
     return table;
@@ -37,11 +43,9 @@ export namespace ml {
 
   /** Clusters data.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/data-science/cluster}
-   * @async
-   * @param {DataFrame} table - Data table.
-   * @param {string[]} features - List of column names containing features.
-   * @param {number} clusters - Number of clusters.
-   * */
+   * @param table - Data table.
+   * @param features - List of column names containing features.
+   * @param clusters - Number of clusters. */
   export async function cluster(table: DataFrame, features: string[], clusters: number): Promise<DataFrame> {
     await api.grok_ML_Cluster(table.dart, features, clusters);
     return table;
@@ -49,29 +53,26 @@ export namespace ml {
 
   /** Principal component analysis.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/data-science/pca}
-   * @async
-   * @param {DataFrame} table - Data table.
-   * @param {string[]} features - List of column names containing features.
-   * @param {number} components - Number of clusters.
-   * @param {boolean} center - Center features data before PCA.
-   * @param {boolean} scale - Scale features data before PCA.
-   * @returns {Promise<DataFrame>}
-   * */
-  export async function pca(table: DataFrame, features: string[], components: number, center: boolean, scale: boolean): Promise<DataFrame> {
-    await api.grok_ML_PCA(table.dart, features, components, center, scale);
+   * @param table - Data table.
+   * @param features - List of column names containing features.
+   * @param components - Number of components.
+   * @param center - Center features data before PCA.
+   * @param scale - Scale features data before PCA. */
+  export async function pca(table: DataFrame, features: string[], options: PcaOptions): Promise<DataFrame>;
+  export async function pca(table: DataFrame, features: string[], components: number, center: boolean, scale: boolean): Promise<DataFrame>;
+  export async function pca(table: DataFrame, features: string[], components: number | PcaOptions, center: boolean = false, scale: boolean = false): Promise<DataFrame> {
+    const o: PcaOptions = typeof components === 'number' ? {components, center, scale} : components;
+    await api.grok_ML_PCA(table.dart, features, o.components, o.center ?? false, o.scale ?? false);
     return table;
   }
 
   /** Creates a table with random values from the specified distribution.
    * Documentation: {@link https://datagrok.ai/help/transform/random-data}
    * See example: {@link https://public.datagrok.ai/js/samples/domains/data-science/random-data}
-   * @async
-   * @param {DataFrame} table - Data table.
-   * @param {string} distribution - Distribution name.
-   * @param {object} params - Distribution parameters.
-   * @param {number} seed - Initial seed.
-   * @returns {Promise<DataFrame>}
-   * */
+   * @param table - Data table.
+   * @param distribution - Distribution name.
+   * @param params - Distribution parameters.
+   * @param seed - Initial seed. */
   export async function randomData(table: DataFrame, distribution: string, params: object, seed: number): Promise<DataFrame> {
     await api.grok_ML_RandomData(table.dart, distribution, params, seed);
     return table;

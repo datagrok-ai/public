@@ -563,7 +563,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
     curve.x.push(concentration);
     curve.y.push(readout);
     curve.outliers.push(outlier);
-    if (!outlier && readout != null || readout != DG.FLOAT_NULL && readout != DG.INT_NULL)
+    if (!outlier && readout != null && readout != DG.FLOAT_NULL && readout != DG.INT_NULL)
       curve.info['Max Percent Inhibition'] = Math.max(curve.info['Max Percent Inhibition'] ?? -Infinity, readout);
   }
 

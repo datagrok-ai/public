@@ -1,0 +1,327 @@
+/* ---
+realizes: [pcplot.cp.setup-columns-color-filter, pcplot.cp.layout-project-persistence, pcplot.int.color-column-legend-coding, pcplot.int.range-filter-cross-viewer]
+--- */
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
+import * as v from '../../helpers/viewers';
+
+declare const grok: any;
+declare const DG: any;
+
+test.use(specTestOptions);
+
+const datasetPath = 'System:DemoFiles/demog.csv';
+
+test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Scale', async ({page}) => {
+  test.setTimeout(300_000);
+
+  const pageErrors: string[] = [];
+  page.on('pageerror', (e) => pageErrors.push(String(e)));
+  const consoleErrors: string[] = [];
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isLocalBootNoise(m.text()))
+      consoleErrors.push(m.text());
+  });
+
+  await openDatagrok(page);
+
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
+
+  await v.addViewerByIcon(page, 'pc-plot', 'PC-Plot', 15000);
+  await v.waitForViewerRendered(page, 'PC Plot', 50);
+
+  await v.installEventWaits(page);
+
+  const axisNames = (): Promise<string[]> => page.evaluate(() =>
+    Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] [name^="axis-slider-"]'))
+      .map((e) => e.getAttribute('name')!.replace('axis-slider-', '')));
+  // a hidden legend keeps its element in the DOM with display:none (LegendHost.apply,
+  // legend_host.dart) — count only VISIBLE ones, or "removed" can never be observed
+  const legendCount = (): Promise<number> => page.evaluate(() =>
+    Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] .d4-legend'))
+      .filter((el) => getComputedStyle(el as HTMLElement).display !== 'none').length);
+  const legendLabels = (): Promise<string[] | null> => page.evaluate(() => {
+    const el = Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] .d4-legend'))
+      .find((e) => getComputedStyle(e as HTMLElement).display !== 'none');
+    return el
+      ? Array.from(el.querySelectorAll('.d4-legend-value')).map((e) => (e.textContent ?? '').trim())
+      : null;
+  });
+
+  await softStep('Column setup — select AGE, HEIGHT, WEIGHT (axis count = 3)', async () => {
+
+    await v.setViewerProps(page, 'PC Plot', [{set: {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}, wait: 900}]);
+
+    const axes = await v.pollValue(axisNames, (a) => a.length === 3, 3000, 150);
+    expect(axes).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
+  });
+
+  await softStep('In-chart range-filter drop + Reset View restore (PRIMARY SIGNAL)', async () => {
+    const filterCount = (): Promise<number> =>
+      page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    await page.evaluate(() => {
+      const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
+      const rect = viewer.getBoundingClientRect();
+
+      viewer.dispatchEvent(new MouseEvent('mousemove', {
+        bubbles: true, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
+      }));
+    });
+
+    await v.pollValue(() => page.evaluate(() => {
+      const h = document.querySelector('[name="axis-slider-AGE"] [name="max-handle"]');
+      if (!h) return 0;
+      const r = h.getBoundingClientRect();
+      return Math.min(r.width, r.height);
+    }), (size) => size > 0, 400, 100);
+    const fullCount = await filterCount();
+
+    await page.evaluate(async () => {
+      const w = window as any;
+
+      const svg = document.querySelector('[name="axis-slider-AGE"]')!;
+      const maxHandle = svg.querySelector('[name="max-handle"]')!;
+      const hr = maxHandle.getBoundingClientRect();
+      const cx = hr.x + hr.width / 2;
+      const cy = hr.y + hr.height / 2;
+      const mk = (x: number, y: number) =>
+        ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
+      maxHandle.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
+      await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 300},
+        {steps: 3, stepMs: 20, holdMs: 50});
+    });
+    const filteredCount = await v.pollValue(filterCount, (n) => n < fullCount, 600, 100);
+
+    await v.driveContextMenuLeaf(page, 'PC-Plot', null, 'Reset View',
+      {canvasSelector: 'canvas[name="canvas"]'});
+    const restoredCount = await v.pollValue(filterCount, (n) => n === fullCount, 600, 100);
+
+    expect(filteredCount).toBeLessThan(fullCount);
+    expect(restoredCount).toBe(fullCount);
+  });
+
+  await softStep('GROK-18000 — add then remove a column, axes update immediately (DOM axis-slider count 3 → 4 → 3)', async () => {
+
+    const errBefore = pageErrors.length + consoleErrors.length;
+    const base: string[] = await page.evaluate(() => {
+      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
+      return pc.props.columnNames.slice();
+    });
+    await v.setViewerProps(page, 'PC Plot', [{set: {columnNames: [...base, 'STARTED']}, wait: 500}]);
+    const afterAdd = await v.pollValue(axisNames, (a) => a.length === base.length + 1, 3000, 150);
+    await v.setViewerProps(page, 'PC Plot', [{set: {columnNames: base}, wait: 500}]);
+    const afterRemove = await v.pollValue(axisNames, (a) => a.length === base.length, 3000, 150);
+    expect(afterAdd.length).toBe(base.length + 1);
+    expect(afterAdd).toContain('STARTED');
+    expect(afterRemove.length).toBe(base.length);
+    expect(afterRemove).not.toContain('STARTED');
+    expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
+  });
+
+  await softStep('GROK-17754 — color by HEIGHT, switch coloring type, no error (no-error floor)', async () => {
+    const errBefore = pageErrors.length + consoleErrors.length;
+    await v.setViewerProps(page, 'PC Plot', [{set: {colorColumnName: 'HEIGHT'}, wait: 400}]);
+    await page.evaluate(() => { grok.shell.tv.dataFrame.col('HEIGHT').meta.colors.setCategorical(); });
+    await v.waitForViewerRendered(page, 'PC Plot', 400);
+    await page.evaluate(() => { grok.shell.tv.dataFrame.col('HEIGHT').meta.colors.setLinear(); });
+    await v.waitForViewerRendered(page, 'PC Plot', 400);
+    await v.setViewerProps(page, 'PC Plot', [{set: {colorColumnName: ''}, wait: 400}]);
+    expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
+  });
+
+  await softStep('Show Filtered Out Lines toggle, no error (no-error floor)', async () => {
+    const errBefore = pageErrors.length + consoleErrors.length;
+    await v.setViewerProps(page, 'PC Plot', [
+      {set: {showFilteredOutLines: true}, wait: 400},
+      {set: {showFilteredOutLines: false}, wait: 300},
+    ]);
+    expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
+  });
+
+  await softStep('Per-column logarithmic scale for AGE, no error (no-error floor)', async () => {
+    const errBefore = pageErrors.length + consoleErrors.length;
+    await v.setViewerProps(page, 'PC Plot', [
+      {set: {logColumnsColumnNames: ['AGE']}, wait: 400},
+      {set: {logColumnsColumnNames: []}, wait: 300},
+    ]);
+    expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
+  });
+
+  await softStep('Categorical coloring renders a legend listing RACE categories', async () => {
+    const raceCats: string[] = await page.evaluate(() => grok.shell.tv.dataFrame.col('RACE').categories.slice());
+    await v.setViewerProps(page, 'PC Plot', [{set: {colorColumnName: ''}, wait: 400}]);
+    const legendBefore = await v.pollValue(legendCount, (n) => n === 0, 3000, 150);
+    await v.setViewerProps(page, 'PC Plot', [{set: {colorColumnName: 'RACE'}, wait: 800}]);
+
+    const shown = await v.pollValue(() => page.evaluate(() => {
+      const legends = Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] .d4-legend'))
+        .filter((el) => getComputedStyle(el as HTMLElement).display !== 'none');
+      return {
+        legendAfterCount: legends.length,
+        legendText: legends.length ? legends[0].textContent : '',
+        legendValues: legends.length
+          ? Array.from(legends[0].querySelectorAll('.d4-legend-value')).map((e) => (e.textContent ?? '').trim())
+          : [],
+      };
+    }), (s) => s.legendValues.length === raceCats.length, 3000, 150);
+    await v.setViewerProps(page, 'PC Plot', [{set: {colorColumnName: ''}, wait: 800}]);
+    const legendAfterClear = await v.pollValue(legendCount, (n) => n === 0, 3000, 150);
+
+    expect(legendBefore).toBe(0);
+    expect(shown.legendAfterCount).toBeGreaterThan(0);
+    for (const cat of raceCats)
+      expect(shown.legendText).toContain(cat);
+
+    expect([...shown.legendValues].sort()).toEqual([...raceCats].sort());
+    expect(legendAfterClear).toBe(0);
+  });
+
+  await softStep('Numeric coloring gradient drive — invert via the context menu, log axis, min/max clamp', async () => {
+
+    const errBefore = pageErrors.length + consoleErrors.length;
+    const menu = await page.evaluate(async () => {
+      const w = window as any;
+      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
+
+      const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
+      const canvas = viewer.querySelector('canvas[name="canvas"]')!;
+      const rect = canvas.getBoundingClientRect();
+      const findColorGroup = () => {
+        for (const lbl of Array.from(document.querySelectorAll('.d4-menu-item-label'))) {
+          if (lbl.textContent!.trim() !== 'Color Scheme') continue;
+          const item = lbl.closest('.d4-menu-item')!;
+          if (item.classList.contains('d4-menu-group')) return item;
+        }
+        return null;
+      };
+      const menuOpen = () => document.querySelectorAll('.d4-menu-popup').length > 0;
+      const openMenu = async () => {
+        canvas.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true, button: 2,
+          clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2}));
+        return w.__poll(findColorGroup, (g: Element | null) => g !== null, 500, 25);
+      };
+      const closeMenu = async () => {
+        document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+        await w.__poll(menuOpen, (open: boolean) => !open, 300, 25);
+      };
+      const clickColorSub = async (child: string, landed: () => boolean) => {
+        const group: Element | null = await openMenu();
+        if (!group) { await closeMenu(); return false; }
+        group.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
+        group.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+        const c = await w.__poll(() => Array.from(group.querySelectorAll('.d4-menu-item-label'))
+          .find((el) => el.textContent!.trim() === child) ?? null, (el: Element | null) => el !== null, 350, 25);
+        if (c) { (c.closest('.d4-menu-item') as HTMLElement).click(); await w.__poll(landed, (ok: boolean) => ok, 400, 25); }
+        else await closeMenu();
+        return !!c;
+      };
+      const rendered = (act: () => void, capMs: number) => w.__settled('viewer:PC Plot.onViewerRendered', act, capMs);
+      await rendered(() => { pc.props.colorColumnName = 'AGE'; }, 600);
+      const invertBefore = pc.props.invertColorScheme;
+      const invClicked1 = await clickColorSub('Invert Color Scheme', () => pc.props.invertColorScheme !== invertBefore);
+      const invertToggled = pc.props.invertColorScheme;
+      const invClicked2 = await clickColorSub('Invert Color Scheme', () => pc.props.invertColorScheme === invertBefore);
+      const invertRestored = pc.props.invertColorScheme;
+      const editClicked = await clickColorSub('Edit...', () => !!document.querySelector('.d4-dialog'));
+      const dlg = await w.__poll(() => document.querySelector('.d4-dialog'), (d: Element | null) => !!d, 500, 25);
+      const dialogHeader = dlg ? ((dlg.querySelector('.d4-dialog-header') as HTMLElement)?.innerText ?? '').trim() : '';
+      const closeBtn = dlg?.querySelector('button[name="button-CLOSE"]') as HTMLElement | null;
+      if (closeBtn)
+        closeBtn.click();
+      const dialogClosed = await w.__poll(() => !document.querySelector('.d4-dialog'), (gone: boolean) => gone, 500, 25);
+
+      await rendered(() => { pc.props.colorAxisType = 'logarithmic'; }, 300);
+      await rendered(() => { pc.props.colorMin = 30; pc.props.colorMax = 60; }, 300);
+      await rendered(() => {
+        pc.props.colorMin = null; pc.props.colorMax = null;
+        pc.props.colorAxisType = 'linear';
+        pc.props.colorColumnName = '';
+      }, 300);
+      return {invertBefore, invClicked1, invertToggled, invClicked2, invertRestored,
+        editClicked, dialogHeader, dialogClosed};
+    });
+
+    expect(menu.invClicked1).toBe(true);
+    expect(menu.invClicked2).toBe(true);
+    expect(menu.invertToggled).toBe(!menu.invertBefore);
+    expect(menu.invertRestored).toBe(menu.invertBefore);
+
+    expect(menu.editClicked).toBe(true);
+    expect(menu.dialogHeader).toContain('Color-coding: AGE');
+    expect(menu.dialogClosed).toBe(true);
+    expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
+  });
+
+  await softStep('Legend position cycle and visibility round-trip — Never removes the legend, Auto restores the same labels', async () => {
+    const labelled = (l: string[] | null) => l !== null && l.length > 0;
+    await v.setViewerProps(page, 'PC Plot', [{set: {colorColumnName: 'RACE'}, wait: 800}]);
+    const initial = await v.pollValue(legendLabels, labelled, 3000, 150);
+    await v.setViewerProps(page, 'PC Plot', [
+      {set: {legendPosition: 'Left'}, wait: 300},
+      {set: {legendPosition: 'Right'}, wait: 0},
+      {set: {legendPosition: 'Top'}, wait: 0},
+      {set: {legendPosition: 'Bottom'}, wait: 300},
+    ]);
+    const afterCycle = await v.pollValue(legendLabels, labelled, 3000, 150);
+    await v.setViewerProps(page, 'PC Plot', [{set: {legendVisibility: 'Never'}, wait: 600}]);
+    const hiddenCount = await v.pollValue(legendCount, (n) => n === 0, 3000, 150);
+    await v.setViewerProps(page, 'PC Plot', [{set: {legendVisibility: 'Auto'}, wait: 600}]);
+    const restored = await v.pollValue(legendLabels, labelled, 3000, 150);
+    await v.setViewerProps(page, 'PC Plot', [{set: {legendPosition: 'Auto', colorColumnName: ''}, wait: 600}]);
+    const clearedCount = await v.pollValue(legendCount, (n) => n === 0, 3000, 150);
+
+    expect(initial).not.toBeNull();
+    expect(initial!.length).toBeGreaterThan(0);
+
+    expect(afterCycle).toEqual(initial);
+
+    expect(hiddenCount).toBe(0);
+    expect(restored).toEqual(initial);
+    expect(clearedCount).toBe(0);
+  });
+
+  await softStep('Grid conditional color coding surfaces its bins in the plot legend; linear drops it', async () => {
+
+    const legend = () => page.evaluate(() => {
+      // a hidden legend stays in the DOM with display:none — presence must check that
+      const el = (Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] .d4-legend'))
+        .find((e) => getComputedStyle(e as HTMLElement).display !== 'none') ?? null) as HTMLElement | null;
+      return {present: !!el, text: el ? (el.innerText || '').replace(/\s+/g, ' ').trim() : ''};
+    });
+    await page.evaluate(() => {
+      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
+      pc.props.colorColumnName = 'HEIGHT';
+      grok.shell.tv.dataFrame.col('HEIGHT').meta.colors
+        .setConditional({'20-150': DG.Color.green, '150-250': DG.Color.orange});
+    });
+    await v.waitForViewerRendered(page, 'PC Plot', 800);
+    const conditional = await v.pollValue(legend, (l) => l.present && l.text.includes('150-250'), 3000, 150);
+    await page.evaluate(() => {
+      grok.shell.tv.dataFrame.col('HEIGHT').meta.colors.setLinear([DG.Color.blue, DG.Color.red]);
+    });
+    await v.waitForViewerRendered(page, 'PC Plot', 800);
+    const linear = await v.pollValue(legend, (l) => !l.present, 3000, 150);
+
+    await page.evaluate(() => { grok.shell.tv.dataFrame.col('HEIGHT').meta.colors.setLinear(); });
+    await v.setViewerProps(page, 'PC Plot', [{set: {colorColumnName: ''}, wait: 400}]);
+    const cleared = await v.pollValue(legend, (l) => !l.present, 3000, 150);
+
+    expect(conditional.present).toBe(true);
+    expect(conditional.text).toContain('20-150');
+    expect(conditional.text).toContain('150-250');
+    expect(linear.present).toBe(false);
+    expect(cleared.present).toBe(false);
+  });
+
+  await page.evaluate(() => {
+    const pc = grok.shell.tv?.viewers?.find((vw: any) => vw.type === 'PC Plot');
+    if (pc) {
+      pc.props.colorColumnName = '';
+      pc.props.title = '';
+    }
+  });
+  await v.waitForViewerRendered(page, 'PC Plot', 300);
+
+  v.finishSpec();
+});

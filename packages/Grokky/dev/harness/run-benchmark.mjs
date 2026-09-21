@@ -160,7 +160,8 @@ async function saveReports(page, names) {
 
 (async () => {
   const {apiUrl, key} = serverConfig(arg('host'));
-  const {token} = await (await fetch(`${apiUrl}/users/login/dev/${key}`, {method: 'POST'})).json();
+  const {token} = await (await fetch(`${apiUrl}/users/login/dev`,
+    {method: 'POST', headers: {Authorization: `Dev ${key}`}})).json();
   if (!token) throw new Error(`dev-key login failed against ${apiUrl}`);
   const webUrl = (await api(apiUrl, '/admin/plugins/admin/settings', token)).settings.webRoot.replace(/\/$/, '');
   console.log(`server ${apiUrl} · client ${webUrl}`);

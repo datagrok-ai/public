@@ -1,8 +1,9 @@
 /* Feature model → one Playwright spec. Deterministic: the output is a pure function of the feature
    text and the loaded bindings; element phrases (`{element}`, `{widget}`) are emitted as `el('…')` and datasets as `ds('…')`
    (names, never selectors), so a registry fix never forces a regeneration. A feature's scenarios
-   share one browser page through `feature(test)` (see runtime/harness.ts): Playwright still runs
-   one test per scenario. A step declared with `enters` switches the vocabulary: the compiler
+   share one browser page through `feature(test, …)` (see runtime/harness.ts): Playwright still runs
+   one test per scenario. Every step is `session.step(line, title, …)` — its feature line is the
+   step's location in reports and traces, and the first line of its failure. A step declared with `enters` switches the vocabulary: the compiler
    validates the following phrases against that context and emits `enter(page, '…')` so the
    runtime resolves them the same way. */
 import {dirname, isAbsolute, join, relative, sep} from 'node:path';
@@ -75,6 +76,8 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   const relPath = posix(relative(ctx.root, feature.path));
   const diag = (line: number, level: DiagnosticLevel, message: string) =>
     diagnostics.push({file: relPath, line, level, message});
+  const emitText = (value: unknown): string => Array.isArray(value) ? `[${value.map(emitText).join(',')}]` :
+    typeof value === 'string' && /\{(run|time)\}/.test(value) ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {
@@ -92,7 +95,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
           else
             throw e;
         }
-        return `el(${JSON.stringify(phrase)})`;
+        return `el(${emitText(phrase)})`;
       }
       case 'dataset': {
         helpers.add('ds');
@@ -106,7 +109,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
       case 'double':
         return String(arg.value);
       default:
-        return JSON.stringify(arg.value);
+        return emitText(arg.value);
     }
   };
 
@@ -116,28 +119,28 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
     if (result.ambiguous) {
       diag(step.line, 'error', `ambiguous step "${step.text}": ` +
         result.ambiguous.map((m) => `"${m.def.expression}"`).join(' | '));
-      return [`${indent}await test.step(${title}, () => { throw new Error('ambiguous step'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('ambiguous step'); });`];
     }
     if (!result.match) {
       const near = ctx.matcher.suggest(step.text).map((d) => `"${d.expression}"`).join(', ');
       diag(step.line, 'error', `no step definition matches "${step.text}"` + (near ? ` — nearest: ${near}` : ''));
-      return [`${indent}await test.step(${title}, () => { throw new Error('no step definition matches this step'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('no step definition matches this step'); });`];
     }
     const {def, args} = result.match;
     const exported = ctx.bindings.exportOf.get(def.fn);
     if (!exported || !IDENT.test(exported.name)) {
       diag(step.line, 'error', `the definition of "${def.expression}" must be an exported const of its module`);
-      return [`${indent}await test.step(${title}, () => { throw new Error('step definition is not exported'); });`];
+      return [`${indent}await session.step(${step.line}, ${title}, () => { throw new Error('step definition is not exported'); });`];
     }
     if (!named.has(exported.module.specifier))
       named.set(exported.module.specifier, new Set());
     named.get(exported.module.specifier)!.add(exported.name);
     const call = [...args.map((a) => emitArg(a, step, state.context))];
     if (step.table)
-      call.push(JSON.stringify(step.table));
+      call.push(emitText(step.table));
     if (step.docString !== undefined)
-      call.push(JSON.stringify(step.docString));
-    const out = [`${indent}await test.step(${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
+      call.push(emitText(step.docString));
+    const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
     if (def.meta.enters !== undefined) {
       const entered = lookupContext(def.meta.enters);
       if (!entered)
@@ -165,7 +168,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
 
   const body: string[] = feature.tags.includes(JOURNEY_TAG) ?
     emitJourney(feature, uniqueTitle, emitStep, helpers) :
-    feature.scenarios.flatMap((scenario) => emitScenario(scenario, feature, uniqueTitle, emitStep));
+    feature.scenarios.flatMap((scenario) => emitScenario(scenario, feature, uniqueTitle, emitStep, helpers));
 
   const lines: string[] = [];
   const realizes = [...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)]
@@ -187,7 +190,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   lines.push(`import {${[...helpers].sort().join(', ')}} from '${RUNTIME_SPECIFIER}';`);
   lines.push('');
   lines.push(`test.describe(${JSON.stringify(feature.name)}, () => {`);
-  lines.push('  const session = feature(test);');
+  lines.push(`  const session = feature(test, ${JSON.stringify(relPath)}, import.meta.url);`);
   lines.push(...body);
   lines.push('});');
   lines.push('');
@@ -201,13 +204,26 @@ function tagOptions(tags: string[]): string {
   return unique.length > 0 ? `, {tag: [${unique.map((t) => JSON.stringify(t)).join(', ')}]}` : '';
 }
 
-function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep): string[] {
+/** One test for the scenario. A `@known-failure` scenario (an outline's tagged Examples rows too)
+ * runs its own steps as the expected failure; the Background before them fails the test as usual. */
+function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep, helpers: Set<string>): string[] {
   const out: string[] = [];
   const state: ScenarioState = {};
   out.push(`  test(${JSON.stringify(uniqueTitle(scenario.name))}${tagOptions([...feature.tags, ...scenario.tags])}, async ({browser}) => {`);
   out.push('    const page = await session.page(browser);');
-  for (const step of [...feature.background, ...scenario.steps])
+  for (const step of feature.background)
     out.push(...emitStep(step, '    ', state));
+  if (!scenario.tags.includes('@known-failure')) {
+    for (const step of scenario.steps)
+      out.push(...emitStep(step, '    ', state));
+  }
+  else {
+    helpers.add('knownFailure');
+    out.push('    await knownFailure(async () => {');
+    for (const step of scenario.steps)
+      out.push(...emitStep(step, '      ', state));
+    out.push('    });');
+  }
   out.push('  });');
   return out;
 }
@@ -219,14 +235,14 @@ function emitJourney(feature: FeatureModel, uniqueTitle: (s: string) => string, 
   const state: ScenarioState = {};
   out.push(`  test(${JSON.stringify(feature.name)}${tagOptions([...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)])}, async ({browser}) => {`);
   out.push('    const page = await session.page(browser);');
-  out.push(`    const run = journey(test, ${feature.scenarios.length});`);
+  out.push(`    const run = journey(test, ${feature.scenarios.length}, page);`);
   for (const step of feature.background)
     out.push(...emitStep(step, '    ', state));
   for (const scenario of feature.scenarios) {
     out.push(`    await run.scenario(${JSON.stringify(uniqueTitle(scenario.name))}, async () => {`);
     for (const step of scenario.steps)
       out.push(...emitStep(step, '      ', state));
-    out.push('    });');
+    out.push(scenario.tags.includes('@known-failure') ? '    }, {knownFailure: true});' : '    });');
   }
   out.push('    run.finish();');
   out.push('  });');

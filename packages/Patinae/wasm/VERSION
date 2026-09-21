@@ -1,0 +1,4 @@
+tag: v0.4.7
+commit: 6dda44ff1b6096d47a566799e8986e7a7857e35d
+patch: 0001-web-load-pse.patch 9e0ab459f98ea90992a27d1a98a7af6739a05d1c1f3705e58589c257b2260f23
+patch: 0002-render-unaligned-object-entry.patch 2a855953dc797c20bec5ada3344bef945d891d5c1751b54b9104d0caccf13fd4

@@ -1,11 +1,13 @@
 /* grok-bdd <command> — run inside a package (features under bdd/features) or inside the library.
      init                  bootstrap bdd/ in the package: config, starter bindings, a smoke feature, manifest entries
-     compile [--check]     features/** → generated/**.test.ts; --check reports drift instead of writing
-     lint                  diagnostics only
+     compile [--check] [--verbose]  features/** → generated/**.test.ts; --check reports drift instead of writing, --verbose prints how every phrase resolves
+     lint                  diagnostics only, notes included
      list-steps            the vocabulary this project sees (base tiers + its tiers + its own bindings)
-     run [playwright args] compile --check, then Playwright over generated/ with the library's config */
+     run [playwright args] compile --check, then Playwright over generated/ with the library's config
+     link [--undo]         wire the package to this checkout of the library (one Playwright per run) */
 import {spawn} from 'node:child_process';
-import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, rmSync, symlinkSync, unlinkSync,
+  writeFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {dirname, join, relative, sep} from 'node:path';
 import {compileFeature, CompiledFeature, Diagnostic} from './compile.js';
@@ -43,19 +45,24 @@ async function compileAll(project: Project): Promise<{compiled: CompiledFeature[
   return {compiled, diagnostics};
 }
 
-function report(diagnostics: Diagnostic[]): number {
-  for (const d of diagnostics)
-    console.log(`${d.file}:${d.line} ${d.level}: ${d.message}`);
+/** Errors and warnings always; the notes (how each phrase resolves) only when asked — they are an
+ * authoring aid, and hundreds of them bury the one line that matters in a run. */
+function report(diagnostics: Diagnostic[], notes: boolean): number {
+  for (const d of diagnostics) {
+    if (notes || d.level !== 'note')
+      console.log(`${d.file}:${d.line} ${d.level}: ${d.message}`);
+  }
   const errors = diagnostics.filter((d) => d.level === 'error').length;
-  console.log(`${errors} error(s), ${diagnostics.length - errors} note(s)`);
+  const noted = diagnostics.length - errors;
+  console.log(`${errors} error(s), ${noted} note(s)${noted > 0 && !notes ? ' (--verbose shows them)' : ''}`);
   return errors;
 }
 
 const eol = (s: string) => s.replace(/\r\n/g, '\n');
 
-async function compile(project: Project, check: boolean): Promise<number> {
+async function compile(project: Project, check: boolean, notes = false): Promise<number> {
   const {compiled, diagnostics} = await compileAll(project);
-  const errors = report(diagnostics);
+  const errors = report(diagnostics, notes);
   const expected = new Set(compiled.map((c) => c.outFile));
   const orphans = listFiles(project.generatedDir, '.test.ts').filter((f) => !expected.has(f));
   let drift = 0;
@@ -156,30 +163,99 @@ async function init(cwd: string): Promise<number> {
   return compile(loadProject(cwd), false);
 }
 
+/** Wires the package in `cwd` to this checkout of the library — `node_modules/@datagrok-libraries/bdd`
+ * to the library, and `node_modules/@playwright/test` to the library's copy, because Playwright
+ * refuses to be loaded twice in one run and the library's runtime resolves it from its own path.
+ * For a library that is linked or not on npm; the package's own copies go to
+ * `node_modules/.bdd-link-backup`, `--undo` (or an `npm ci`) puts them back. */
+function link(cwd: string, undo: boolean): number {
+  const nm = join(cwd, 'node_modules');
+  // a project's bdd/ has a package.json of its own ({"type": "module"}) but no node_modules
+  if (!existsSync(join(cwd, 'package.json')) || !existsSync(nm)) {
+    console.error('grok-bdd link: run it in the package directory (the one with node_modules)');
+    return 2;
+  }
+  const backup = join(nm, '.bdd-link-backup');
+  const same = (a: string, b: string) => {
+    try { return realpathSync(a) === realpathSync(b); }
+    catch { return false; }
+  };
+  const kindOf = (path: string): 'link' | 'dir' | 'none' => {
+    try { return lstatSync(path).isSymbolicLink() ? 'link' : 'dir'; }
+    catch { return 'none'; }
+  };
+  const unlink = (path: string) => {
+    try { rmdirSync(path); }
+    catch { unlinkSync(path); }
+  };
+  const show = (path: string) => relative(cwd, path).split(sep).join('/');
+  const links: [string, string, string][] = [
+    [join(nm, '@datagrok-libraries', 'bdd'), LIB_ROOT, 'bdd'],
+    [join(nm, '@playwright', 'test'), join(LIB_ROOT, 'node_modules', '@playwright', 'test'), 'test'],
+  ];
+  for (const [path, target, name] of links) {
+    const kind = kindOf(path);
+    if (undo) {
+      if (kind === 'link')
+        unlink(path);
+      if (existsSync(join(backup, name))) {
+        renameSync(join(backup, name), path);
+        console.log(`restored ${show(path)}`);
+      }
+      else if (kind === 'link')
+        console.log(`removed ${show(path)} (nothing to restore: npm i puts the package's own copy back)`);
+      continue;
+    }
+    if (!existsSync(target)) {
+      console.log(`skipped ${show(path)}: ${target} is missing — npm ci && npm run build in the library first`);
+      continue;
+    }
+    if (kind === 'link' && same(path, target)) {
+      console.log(`already linked ${show(path)} → ${target}`);
+      continue;
+    }
+    if (kind === 'dir') {
+      mkdirSync(backup, {recursive: true});
+      rmSync(join(backup, name), {recursive: true, force: true});
+      renameSync(path, join(backup, name));
+    }
+    else if (kind === 'link')
+      unlink(path);
+    mkdirSync(dirname(path), {recursive: true});
+    symlinkSync(target, path, 'junction');
+    console.log(`linked ${show(path)} → ${target}`);
+  }
+  if (!undo)
+    console.log(`next: npx playwright install chromium in ${LIB_ROOT} (once per Playwright version), then grok-bdd run`);
+  return 0;
+}
+
 async function main(): Promise<number> {
   const [command = 'compile', ...flags] = process.argv.slice(2);
   if (command === '--help' || command === '-h' || command === 'help') {
-    console.log('grok-bdd init | compile [--check] | lint | list-steps | run [playwright args]');
+    console.log('grok-bdd init | link [--undo] | compile [--check] [--verbose] | lint | list-steps | run [playwright args]');
     return 0;
   }
   if (command === 'init')
     return init(process.cwd());
+  if (command === 'link')
+    return link(process.cwd(), flags.includes('--undo'));
   const project = loadProject(process.cwd());
   console.log(`bdd: ${project.name} at ${project.root}${project.tiers.length > 0 ? ` (tiers: ${project.tiers.join(', ')})` : ''}`);
   switch (command) {
     case 'compile':
-      return compile(project, flags.includes('--check'));
+      return compile(project, flags.includes('--check'), flags.includes('--verbose'));
     case 'check':
-      return compile(project, true);
+      return compile(project, true, flags.includes('--verbose'));
     case 'lint':
-      return report((await compileAll(project)).diagnostics) > 0 ? 1 : 0;
+      return report((await compileAll(project)).diagnostics, true) > 0 ? 1 : 0;
     case 'list-steps':
       await listSteps(project);
       return 0;
     case 'run':
       return run(project, flags);
     default:
-      console.error(`unknown command "${command}" — init | compile [--check] | lint | list-steps | run [playwright args]`);
+      console.error(`unknown command "${command}" — init | link [--undo] | compile [--check] [--verbose] | lint | list-steps | run [playwright args]`);
       return 2;
   }
 }

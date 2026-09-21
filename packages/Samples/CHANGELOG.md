@@ -10,6 +10,10 @@
 * GROK-14286: Demo Notebooks: Open both the wells table and the notebook view by default
 * GROK-8022: Image Classification: Fix weights download 404 by switching to Keras' bundled EfficientNet-B0
 
+## 1.5.0 (2026-05-05)
+
+* Version bump without code changes
+
 ## 1.4.2 (2025-09-22)
 
 * GROK-18923: Northwind: order details by @quantity, @productname, @Country: error

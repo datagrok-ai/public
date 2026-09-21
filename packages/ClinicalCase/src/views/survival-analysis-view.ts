@@ -83,7 +83,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
     const guide = ui.info(SURVIVAL_ANALYSIS_GUIDE, 'Survival Analysis Quick Guide', false);
 
-    this.tabControl = ui.tabControl(null, false);
+    this.tabControl = ui.tabControl(null, {vertical: false});
     this.tabControl.addPane('Dataset', () =>
       ui.splitV([
         ui.splitH([

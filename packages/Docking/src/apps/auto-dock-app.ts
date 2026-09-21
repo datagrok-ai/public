@@ -1,4 +1,3 @@
-import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -22,85 +21,14 @@ export type AutoDockDataType = {
 };
 
 export class AutoDockApp {
-  private readonly appFuncName: string;
   private readonly poseColName: string = 'pose';
-
-  constructor(appFuncName: string = 'autoDockApp') {
-    this.appFuncName = appFuncName;
-  }
-
-  async init(data?: AutoDockDataType): Promise<DG.DataFrame | undefined> {
-    let v = data;
-    if (!v)
-      v = await AutoDockApp.loadData();
-
-    await this.setData(v);
-    if (!!data)
-      return await this.getAutodockResults();
-  }
-
-  static async loadData(): Promise<AutoDockDataType> {
-    let ligandFi!: DG.FileInfo;
-    let targetFi!: DG.FileInfo;
-    await Promise.all([
-      (async () => { ligandFi = (await _package.files.list('samples', false, '1bdq.sdf'))[0]; })(),
-      (async () => { targetFi = (await _package.files.list('samples', false, '1bdq-wo-ligands.pdb'))[0]; })(),
-    ]);
-
-    const ligandSdfA = await _package.files.readAsBytes(ligandFi);
-    const ligandDf: DG.DataFrame = (await grok.functions.call('Chem:importSdf', {bytes: ligandSdfA}))[0];
-    const ligandMolColName = 'molecule'; // importSdf generates
-
-    const receptorData: BiostructureData = {
-      binary: false, ext: targetFi.extension, data: await _package.files.readAsText(targetFi),
-      options: {name: targetFi.name}
-    };
-
-    return {ligandDf, ligandMolColName, receptor: receptorData};
-  }
-
-  // -- Data --
-
   private data!: AutoDockDataType;
 
-  async setData(data: AutoDockDataType): Promise<void> {
+  async init(data: AutoDockDataType): Promise<DG.DataFrame | undefined> {
     this.data = data;
-
-    await this.buildView();
+    return await this.getAutodockResults();
   }
 
-  // -- View --
-
-  private view!: DG.TableView;
-  private posesGrid!: DG.Grid;
-
-  async buildView(): Promise<void> {
-    this.view = grok.shell.tv;
-  }
-
-  private runBtn!: HTMLButtonElement;
-  private downloadPosesBtn!: HTMLButtonElement;
-
-  setRibbonPanels(): void {
-    const runIcon = ui.iconFA('play');
-    runIcon.classList.add('fas');
-    this.runBtn = ui.button(runIcon, this.getAutodockResults.bind(this));
-    ui.tooltip.bind(this.runBtn, 'Run AutoDock');
-
-    const downloadPosesIcon = ui.iconFA('download');
-    this.downloadPosesBtn = ui.button(downloadPosesIcon, this.downloadPosesBtnOnClick.bind(this));
-    this.downloadPosesBtn.disabled = true;
-    ui.tooltip.bind(this.downloadPosesBtn, 'Download poses (*.csv)');
-
-    this.view.setRibbonPanels([
-      [this.runBtn],
-      [this.downloadPosesBtn],
-    ]);
-  }
-
-  // -- Handle controls' events --
-
-  /** Handles {@link runBtn} click */
   async getAutodockResults(): Promise<DG.DataFrame | undefined> {
     const pi = DG.TaskBarProgressIndicator.create('AutoDock running...');
     try {
@@ -125,13 +53,6 @@ export class AutoDockApp {
     } finally {
       pi.close();
     }
-  }
-
-  /** Handles {@link downloadPosesBtn } click */
-  async downloadPosesBtnOnClick(): Promise<void> {
-    const posesCsv = this.posesGrid.dataFrame.toCsv();
-    const posesCsvFn = `${this.data.receptor.options?.name ?? 'receptor'}-poses.csv`;
-    DG.Utils.download(posesCsvFn, posesCsv);
   }
 }
 

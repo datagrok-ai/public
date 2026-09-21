@@ -1,5 +1,8 @@
-﻿import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {armBalloonRecorder, expectNoBalloonSinceArmed, expectNoErrorBalloon, proveBalloonChannel}
+  from '../helpers/balloons';
 
 test.use(specTestOptions);
 
@@ -8,22 +11,18 @@ const MODEL_NAME = `${MODEL_BASE}_${Date.now()}`;
 const NEW_DESCRIPTION = 'CSV-backed lifecycle smoke (round 4)';
 
 test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({page}) => {
-  // Full train→apply→browse→edit→share→delete lifecycle, training one EDA Linear Regression on a CSV
-  // (not chemprop). Several steps each poll a train/save/apply signal up to 180s; 300s covers the
-  // longest realistic chain (train engine-mount + SAVE-enable + apply) with margin.
+
   test.setTimeout(300_000);
 
   await loginToDatagrok(page);
 
-  
   await page.evaluate(async ({prefix}) => {
     const g: any = (window as any).grok;
     const all = await g.dapi.models.list();
     const stale = all.filter((m: any) => (m.friendlyName || m.name || '').startsWith(prefix));
     for (const m of stale)
-      try { await g.dapi.models.delete(m); } catch (_) { /* best-effort */ }
+      try { await g.dapi.models.delete(m); } catch (_) {  }
   }, {prefix: MODEL_BASE});
-
 
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
@@ -51,7 +50,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
     });
     expect(info.rows).toBeGreaterThan(0);
     expect(info.viewType).toBe('TableView');
-    
+
     expect(info.names).toContain('accel_x');
     expect(info.names).toContain('accel_y');
     expect(info.names).toContain('accel_z');
@@ -59,7 +58,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep('1.2 ML > Models > Train Model... — PredictiveModelingView opens', async () => {
-    
+
     await page.locator('[name="div-ML"]').click();
     await page.evaluate(() => {
       const models = document.querySelector('[name="div-ML---Models"]') as HTMLElement | null;
@@ -79,7 +78,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep('1.3 Accept default Predict = accel_x (numerical regression target)', async () => {
-    
+
     await expect.poll(async () => await page.evaluate(() =>
       (window as any).grok.shell.v.root
         .querySelector('[name="input-host-Predict"] .d4-column-selector-column')?.textContent?.trim()),
@@ -87,10 +86,10 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep('1.4 Set Features to accel_y, accel_z, time_offset (3 cols)', async () => {
-    
+
     await page.locator('[name="div-Features"]').click();
     await page.locator('.d4-dialog[name="dialog-Select-columns..."]').waitFor({timeout: 10_000});
-    
+
     await page.waitForTimeout(2_000);
     await page.locator('.d4-dialog [name="label-All"]').click();
     await page.waitForFunction(() => {
@@ -98,7 +97,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
         .find((l) => /checked/.test(l.textContent || ''));
       return lbl?.textContent?.startsWith('4');
     }, null, {timeout: 10_000});
-    
+
     const toggled = await page.evaluate(async () => {
       const dlg = document.querySelector(
         '.d4-dialog[name="dialog-Select-columns..."]')!;
@@ -117,7 +116,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
         .map((l) => l.textContent?.trim() ?? '').find((t) => /checked/.test(t));
       return {counter, x, y};
     });
-    
+
     if (!toggled.counter?.startsWith('3')) {
       await page.mouse.click(toggled.x, toggled.y);
       await page.waitForTimeout(500);
@@ -136,9 +135,9 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep('1.5 Set Model Engine to Eda: Linear Regression', async () => {
-    
+
     try {
-      
+
       await page.waitForFunction(() => {
         const sel = document.querySelector(
           '[name="input-Model-Engine"]') as HTMLSelectElement | null;
@@ -155,9 +154,12 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
           .map((e) => e.getAttribute('name'));
         const noModelsMsg = Array.from(root?.querySelectorAll('span') ?? [])
           .find((s) => /No models reg/i.test(s.textContent || ''))?.textContent ?? null;
-        
-        const warnings = (((window as any).grok.shell.warnings) ?? []).slice(-10)
-          .map((w: any) => typeof w === 'string' ? w.slice(0, 200) : JSON.stringify(w).slice(0, 200));
+
+        // Diagnostic only (this runs while building a failure message). Read the balloons
+        // off the DOM — grok.shell.warnings does not exist (js-api/src/shell.ts:176), so the
+        // previous read always contributed an empty list to the report.
+        const warnings = Array.from(document.querySelectorAll('.d4-balloon'))
+          .slice(-10).map((b) => (b.textContent || '').trim().slice(0, 200));
         return {insights, hosts, noModelsMsg, warnings};
       });
       throw new Error(`Model Engine select did not mount within 180s. ` +
@@ -172,12 +174,12 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
         '[name="input-Model-Engine"]') as HTMLSelectElement;
       sel.focus();
       const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!;
-      
+
       setter.call(sel, 'Eda: Linear Regression');
       sel.dispatchEvent(new Event('input', {bubbles: true}));
       sel.dispatchEvent(new Event('change', {bubbles: true}));
     });
-    
+
     await page.waitForFunction(() => {
       const text = Array.from(document.querySelectorAll(
         'h3, h4, [class*="card-header"], .d4-engine-parameters-header'))
@@ -188,23 +190,23 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep(`1.6 Save model as ${MODEL_NAME} — dapi.ml.save persists`, async () => {
-    
+
     await page.waitForFunction(() => {
       const btn = document.querySelector('[name="button-Save"]') as HTMLElement | null;
       return !!btn && !btn.classList.contains('d4-disabled');
     }, null, {timeout: 180_000});
     await page.locator('[name="button-Save"]').click();
-    
+
     const nameInput = page.locator('.d4-dialog [name="input-host-Name"] input');
     await nameInput.waitFor({timeout: 10_000});
     await nameInput.focus();
     await nameInput.fill(MODEL_NAME);
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    // Wait for the save dialog to close.
+
     await page.waitForFunction(() =>
       !document.querySelector('.d4-dialog [name="input-host-Name"]'),
       null, {timeout: 90_000});
-    
+
     await expect.poll(async () => await page.evaluate(async (name: string) => {
       const list = await (window as any).grok.dapi.models
         .filter(`friendlyName = "${name}"`).list();
@@ -212,9 +214,8 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
     }, MODEL_NAME), {timeout: 60_000}).toBeGreaterThan(0);
   });
 
-  
   await softStep('2.1 Close current table view, re-open accelerometer.csv', async () => {
-    
+
     await page.evaluate(async () => {
       const g: any = (window as any).grok;
       g.shell.closeAll();
@@ -247,7 +248,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
     });
     await page.locator('[name="div-ML---Models---Apply-Model..."]').click();
     await page.locator('[name="dialog-Apply-predictive-model"]').waitFor({timeout: 10_000});
-    
+
     await page.waitForFunction(() => {
       const sel = document.querySelector(
         '[name="dialog-Apply-predictive-model"] [name="input-host-Model"] select') as HTMLSelectElement | null;
@@ -256,7 +257,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep(`2.3 Select ${MODEL_NAME} — inputs auto-map to (3/3)`, async () => {
-    
+
     const pickResult = await page.evaluate(([wantName, wantBase]: string[]) => {
       const sel = document.querySelector(
         '[name="dialog-Apply-predictive-model"] [name="input-host-Model"] select') as HTMLSelectElement | null;
@@ -277,14 +278,14 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
       `Just-saved model "${MODEL_NAME}" must surface in dapi.ml.suggested(tableInfo) ` +
       `for accelerometer.csv. Options seen: ${JSON.stringify(pickResult.opts)}.`)
       .toBe(true);
-    
+
     await expect(page.locator(
       '[name="dialog-Apply-predictive-model"] [name="input-host-Inputs"]'))
       .toContainText('(3/3)', {timeout: 10_000});
   });
 
   await softStep('2.4 OK — engine apply appends prediction column', async () => {
-    
+
     await page.locator('[name="dialog-Apply-predictive-model"] [name="button-OK"]').click();
     await page.locator('[name="dialog-Apply-predictive-model"]')
       .waitFor({state: 'detached', timeout: 30_000});
@@ -299,7 +300,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
       const allNames = Array.from({length: df.columns.length},
         (_: unknown, i: number) => df.columns.byIndex(i).name);
       const newCols = allNames.slice(initial);
-      
+
       const DG: any = (window as any).DG;
       const tagKey = DG?.TAGS?.PREDICTIVE_MODEL ?? '.predictive-model';
       const taggedCount = newCols.filter((n: string) => {
@@ -317,7 +318,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep('3.1 Navigate to /models and select the saved model', async () => {
-    
+
     await page.evaluate(() => {
       const g: any = (window as any).grok;
       g.shell.windows.showBrowse = true;
@@ -358,30 +359,27 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
       if (!perf) throw new Error('Performance pane header not found');
       perf.click();
     });
-    
+
     await page.locator('[name="button-Run-Evaluation"]').waitFor({timeout: 15_000});
     await expect(page.locator('[name="button-Run-Evaluation"]')).toBeVisible();
   });
 
   await softStep('3.3 Click Run Evaluation — re-runs on CSV trainedOn', async () => {
-    
-    const warnBefore = await page.evaluate(() =>
-      ((window as any).grok.shell.warnings ?? []).length);
+
+    // The channel is proved BEFORE the action here, which is the safe order: the click is
+    // inside this step, so the probe cannot wait out a balloon the click itself raises.
+    await proveBalloonChannel(page, 'run-evaluation');
+
     await page.locator('[name="button-Run-Evaluation"]').click();
     await page.waitForTimeout(3_000);
-    const evidence = await page.evaluate((prevCount: number) => {
-      const w: any[] = (window as any).grok.shell.warnings ?? [];
-      const errors = w.slice(prevCount).filter((x) =>
-        /error|fail|exception/i.test(JSON.stringify(x)));
+    await expectNoErrorBalloon(page, 'Run Evaluation must complete without error balloons');
+    const evidence = await page.evaluate(() => {
       const panel = document.querySelector('.grok-prop-panel') ||
         document.querySelector('.d4-accordion');
       const widgetCanvases = panel?.querySelectorAll('canvas').length ?? 0;
       const widgetImgs = panel?.querySelectorAll('img').length ?? 0;
-      return {errors, widgetCanvases, widgetImgs};
-    }, warnBefore);
-    expect(evidence.errors.length,
-      `Run Evaluation must complete without error balloons. Errors seen: ${JSON.stringify(evidence.errors)}`)
-      .toBe(0);
+      return {widgetCanvases, widgetImgs};
+    });
     if (evidence.widgetCanvases === 0 && evidence.widgetImgs === 0) {
       console.warn(`Run Evaluation completed without errors but no canvas/img ` +
         `widget surfaced in the property panel. Stored-metrics-only render is ` +
@@ -390,7 +388,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
     await softStep('4.1 Right-click model card → Edit... — edit dialog opens', async () => {
-    
+
     await page.evaluate((wantName: string) => {
       const label = Array.from(document.querySelectorAll(
         '.grok-gallery-grid-item.grok-predictive-model .grok-gallery-grid-item-title'))
@@ -409,7 +407,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep(`4.2 Change Description and OK — dapi.ml.save persists`, async () => {
-    
+
     const descInput = page.locator(
       '[name="dialog-Predictive-model"] [name="input-host-Description"] input, ' +
       '[name="dialog-Predictive-model"] [name="input-host-Description"] textarea').first();
@@ -419,13 +417,13 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
     await page.locator('[name="dialog-Predictive-model"] [name="button-OK"]').click();
     await page.locator('[name="dialog-Predictive-model"]')
       .waitFor({state: 'detached', timeout: 15_000});
-    // Verify the model still exists (no accidental delete occurred during edit).
+
     await expect.poll(async () => await page.evaluate(async (name: string) => {
       const list = await (window as any).grok.dapi.models
         .filter(`friendlyName = "${name}"`).list();
       return list.length;
     }, MODEL_NAME), {timeout: 15_000}).toBeGreaterThan(0);
-    
+
     await page.evaluate((wantName: string) => {
       const label = Array.from(document.querySelectorAll(
         '.grok-gallery-grid-item.grok-predictive-model .grok-gallery-grid-item-title'))
@@ -449,9 +447,8 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
       .waitFor({state: 'detached', timeout: 10_000});
   });
 
-
   await softStep('5.1 Right-click model card → Share... — share dialog opens', async () => {
-    
+
     await page.evaluate((wantName: string) => {
       const label = Array.from(document.querySelectorAll(
         '.grok-gallery-grid-item.grok-predictive-model .grok-gallery-grid-item-title'))
@@ -464,7 +461,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
     const shareItem = page.locator('.d4-menu-popup .d4-menu-item-label', {hasText: /^Share\.\.\.$/}).first();
     await expect(shareItem).toBeVisible({timeout: 10_000});
     await shareItem.click();
-    
+
     const encodedName = MODEL_NAME.replace(/[:_;*\[\]{}|\s]/g, '-');
     const shareDialog = page.locator(
       `[name="dialog-Share-${encodedName}"], ` +
@@ -473,7 +470,7 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
   });
 
   await softStep('5.2 Cancel share dialog — leaves permissions unchanged', async () => {
-    
+
     const encodedName = MODEL_NAME.replace(/[:_;*\[\]{}|\s]/g, '-');
     const cancelBtn = page.locator(
       `[name="dialog-Share-${encodedName}"] [name="button-CANCEL"], ` +
@@ -481,12 +478,11 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
     await cancelBtn.click();
     await page.locator(`[name="dialog-Share-${encodedName}"]`)
       .waitFor({state: 'detached', timeout: 5_000})
-      .catch(() => { /* generic dialog selector may have closed already */ });
+      .catch(() => {  });
   });
 
-
   await softStep('6.1 Right-click model card → Delete — confirm modal opens', async () => {
-    
+
     await page.evaluate((wantName: string) => {
       const label = Array.from(document.querySelectorAll(
         '.grok-gallery-grid-item.grok-predictive-model .grok-gallery-grid-item-title'))
@@ -499,30 +495,42 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
     const deleteItem = page.locator('.d4-menu-popup .d4-menu-item-label', {hasText: /^Delete$/}).first();
     await expect(deleteItem).toBeVisible({timeout: 10_000});
     await deleteItem.click();
-    
+
     const dlg = page.locator('.d4-dialog').filter({hasText: /delete|are you sure|remove/i }).first();
     await expect(dlg).toBeVisible({timeout: 10_000});
   });
 
   await softStep(`6.2 Confirm delete — ${MODEL_NAME} removed via dapi.ml.delete`, async () => {
     const dlg = page.locator('.d4-dialog').filter({hasText: /delete|are you sure|remove/i }).first();
-    const balloonsBefore = await page.locator('.grok-balloon-error, .d4-balloon-error').count();
+    // The claim covers the whole delete, which outlives the 5 s auto-hide of a plugin-raised
+    // balloon, so the recorder is armed and read back rather than counted at one instant.
+    await armBalloonRecorder(page);
     const ok = dlg.locator('[name="button-OK"]').first();
     if (await ok.count() > 0)
       await ok.click();
     else
       await dlg.locator('button:has-text("DELETE"), button:has-text("Delete"), button:has-text("OK")')
         .first().click();
-    await dlg.waitFor({state: 'detached', timeout: 15_000});
+    try {
+      await dlg.waitFor({state: 'detached', timeout: 15_000});
+    }
+    catch (stuck) {
+      // Modal.confirmDelete closes only after `await action()` returns, and on a throw raises a
+      // Dart-side Balloon.error, which is sticky (dialog.dart:208-223). So a dialog still standing
+      // here has two causes and this read separates them: an error balloon names the exception,
+      // and its absence says the delete future hung rather than threw. Diagnostic only — it runs
+      // on the failing path, costs nothing on a green run, and the failure is rethrown unchanged.
+      const standing = await page.evaluate(() => Array.from(document.querySelectorAll('.d4-balloon.error'))
+        .map((b) => String(b.textContent || '').slice(0, 300)));
+      console.log(`[delete-dialog-stuck] standing error balloons = ${JSON.stringify(standing)}`);
+      throw stuck;
+    }
     await page.waitForTimeout(1_500);
-    const balloonsAfter = await page.locator('.grok-balloon-error, .d4-balloon-error').count();
-    expect(balloonsAfter,
-      `No new error balloon should surface during delete (before=${balloonsBefore}, after=${balloonsAfter}).`)
-      .toBeLessThanOrEqual(balloonsBefore);
+    await expectNoBalloonSinceArmed(page, 'no error balloon may surface while the model is deleted');
   });
 
   await softStep('6.3 Cleanup verification — model absent from dapi.ml + /models', async () => {
-    
+
     await expect.poll(async () => await page.evaluate(async (wantName: string) => {
       const list = await (window as any).grok.dapi.models
         .filter(`friendlyName = "${wantName}"`).list();
@@ -539,13 +547,12 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
       message: `Catalog still shows card(s) titled "${MODEL_NAME}" after delete`}).toBe(0);
   });
 
-  
   await page.evaluate(async ({prefix}) => {
     const g: any = (window as any).grok;
     const all = await g.dapi.models.list();
     const stale = all.filter((m: any) => (m.friendlyName || m.name || '').startsWith(prefix));
     for (const m of stale)
-      try { await g.dapi.models.delete(m); } catch (_) { /* best-effort */ }
+      try { await g.dapi.models.delete(m); } catch (_) {  }
   }, {prefix: MODEL_BASE});
 
   if (stepErrors.length > 0) {

@@ -58,6 +58,14 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     this.initialized = true;
   }
 
+  /** `target row`: the row the neighbours are of; `neighbours`: the rows listed, the target
+   * first; `neighbour set`: those rows as one string, so a stale list after a target change
+   * shows as "the same as before". */
+  protected override readings(): {[name: string]: number | string | boolean} {
+    const idxs = this.idxs ? Array.from(this.idxs.getRawData()).slice(0, this.idxs.length) : [];
+    return {'target row': this.targetMoleculeIdx, 'neighbours': idxs.length, 'neighbour set': idxs.join(',')};
+  }
+
   override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;

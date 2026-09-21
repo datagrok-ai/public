@@ -30,6 +30,19 @@
   text-overflow: ellipsis;
 }
 
+/* a field that must hold a value carries the asterisk on its caption; the caption is a column
+   flex so a bare text node centers vertically — a row does the same and leaves the star beside it */
+.u2-input-required > .u2-input-label {
+  flex-direction: row;
+  align-items: center;
+}
+
+.u2-input-required > .u2-input-label::after {
+  content: '*';
+  margin-left: var(--dg-space-xs);
+  color: var(--dg-error);
+}
+
 .u2-input-editor {
   box-sizing: border-box;
   height: var(--dg-control-height);
@@ -90,6 +103,16 @@ textarea.u2-input-editor {
   border-bottom: var(--dg-border-width) solid var(--dg-error);
 }
 
+/* the bridged molecule editor is a canvas the Dart input measures and repaints itself, at the
+   100×70 chem.css gives it (molecule_input.dart:65-69, 116-124); the editor skin above stretched
+   it to the form's full width at one row's height, where the depiction renders blank */
+.u2-input-root[data-u2='dart-input'] .u2-input-editor.d4-input-molecule-canvas {
+  flex: none;
+  width: 100px;
+  height: 70px;
+  padding: 0;
+}
+
 /* a whole line of its own under the editor, whatever room is left beside it: the editors are as
    wide as the platform pins them, so a message that fit beside a 100px color field but not beside a
    460px one would land off the pane on one row and under the field on the next. Long verdicts
@@ -98,7 +121,6 @@ textarea.u2-input-editor {
 .u2-input-error {
   flex: 1 0 100%;
   min-width: 0;
-  max-width: 260px;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -758,4 +780,59 @@ textarea.u2-list-area {
    visible: expressions and showTableSelectors */
 .u2-input-root[hidden] {
   display: none;
+}
+
+/* shared suggestion popup — core/suggestion-list.ts; controls add per-prefix extras */
+.u2-suggest-popup {
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: var(--dg-space-xs) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-suggest-option {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  cursor: pointer;
+}
+
+.u2-suggest-option:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-suggest-option-active {
+  background: var(--dg-selection-bg);
+}
+
+.u2-suggest-loading,
+.u2-suggest-empty,
+.u2-suggest-error,
+.u2-suggest-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  color: var(--dg-text-color-light);
+}
+
+.u2-suggest-retry {
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color);
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-suggest-retry:hover {
+  background: var(--dg-hover);
 }

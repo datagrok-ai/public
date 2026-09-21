@@ -1,3 +1,4 @@
+import {_RawPNGRenderer} from './package.g';
 import {_MultiChoiceCellRenderer} from './package.g';
 import {_ScatterPlotCellRenderer} from './package.g';
 import {_HtmlTestCellRenderer} from './package.g';
@@ -493,3 +494,4 @@ export {_MultiChoiceCellRenderer};
 export {_StarsCellRenderer};
 export {_ColorCellRenderer};
 export {_SvgCellRenderer};
+export {_RawPNGRenderer};

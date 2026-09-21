@@ -17,21 +17,12 @@ import {
   readConnectionField,
 } from './helpers';
 
-// Manual scenario `adding.md` (order 1):
-//   1. Browse > Databases
-//   2. Right-click Postgres > Add connection
-//   3. Name = test_postgres
-//   4. Server / Port / Db / login / password
-//   5. Click TEST
-//   6. Click OK
-//   7. Repeat for test_postgres_2
-
 const PROVIDER = 'Postgres';
 const NAME_1 = 'test_postgres';
 const NAME_2 = 'test_postgres_2';
 
 test.describe.serial('Connections / Adding (Postgres)', () => {
-  // Guard against leftovers from a previous interrupted run.
+
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
@@ -47,28 +38,22 @@ test.describe.serial('Connections / Adding (Postgres)', () => {
 
     await openAddConnectionDialog(page, PROVIDER);
 
-    // Step 3: Name field
     await fillConnectionField(page, 'Name', NAME_1);
 
-    // Step 4: Server / Port / Db / login / password
     await fillConnectionField(page, 'Server', PG_SERVER);
     await fillConnectionField(page, 'Port', PG_PORT);
     await fillConnectionField(page, 'Db', PG_DB);
     await fillConnectionField(page, 'Login', PG_LOGIN);
     if (PG_PASSWORD) await fillConnectionField(page, 'Password', PG_PASSWORD);
 
-    // Sanity: every field shows what we typed.
     expect(await readConnectionField(page, 'Name')).toBe(NAME_1);
     expect(await readConnectionField(page, 'Server')).toBe(PG_SERVER);
     expect(await readConnectionField(page, 'Port')).toBe(PG_PORT);
     expect(await readConnectionField(page, 'Db')).toBe(PG_DB);
     expect(await readConnectionField(page, 'Login')).toBe(PG_LOGIN);
 
-    // Step 5: TEST — wait for any balloon (PASS or FAIL), the manual checks only that
-    // the test ran. The credentials-failure path is exercised by the Edit scenario.
     await clickConnectionTest(page);
 
-    // Step 6: OK — dialog closes, server has the connection.
     await clickConnectionOk(page);
 
     const saved = await findConnectionByFriendlyName(page, NAME_1);
@@ -97,6 +82,4 @@ test.describe.serial('Connections / Adding (Postgres)', () => {
     expect(saved!.friendlyName).toBe(NAME_2);
   });
 
-  // No `afterAll` cleanup — the rest of the suite (identifiers → edit → browser → delete)
-  // depends on these connections existing across test files.
 });

@@ -1,19 +1,66 @@
 /* The Datagrok shell by name. Loaded for every profile, so these names are reserved: an app
    registering "toolbox" for a bar of its own is refused — it registers "toolbar"-like names on its
    context instead, and "toolbox" keeps meaning the platform's. Selector sources: toolbox.dart
-   (.d4-toolbox), console.dart, the shell's `name=` annotations (Browse, Toolbox), the selectors.ts
+   (.d4-toolbox[caption]), console.dart, the shell's `name=` annotations (Browse, Toolbox), the selectors.ts
    files under playwright-public. */
 import {element} from '../../src/registry.js';
 
-element('toolbox', {selector: '.d4-toolbox', aliases: ['toolbox pane'],
+// simple_mode.dart also uses d4-toolbox on an empty sliding host. Only Toolbox.root has caption.
+element('toolbox', {selector: '.d4-toolbox[caption]', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
+element('browse toolbar', {selector: '.grok-browse-icons',
+  description: 'the Browse header actions, outside the panel body and its tree'});
+element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],
+  description: 'the left panel Browse opens; a bdd page starts in simple mode, where it is not in the DOM at all'});
+element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
+  description: 'the tree inside the browse panel — the scope for a node phrase ("Files tree node inside browse tree")'});
 element('context panel', {selector: '.grok-prop-panel', aliases: ['property panel']});
 element('console', {selector: '.d4-console-wrapper'});
 element('status bar', {selector: '.layout-status-bar', aliases: ['statusbar'],
   parts: {'view panel': '.d4-view-status-panel'}});
 element('open tableview', {selector: '.d4-table-view, .grok-table-view', aliases: ['current table view', 'table view']});
 element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestures: {click: 'mouse'}});
+element('gallery', {selector: '.grok-gallery-grid', aliases: ['item gallery'],
+  parts: {card: '.grok-gallery-grid-item-wrapper'},
+  description: 'the card gallery of the platform — the contents of a Files folder, a space, the Apps list; '
+    + 'the grid itself is built with the view and says nothing about what loaded, so claim a card. '
+    + 'The part names the wrapper rather than the card inside it, so a count is one per card; a '
+    + 'gallery that renders bare .grok-gallery-grid-item (predictive models) reports none'});
+element('gallery search', {selector: '.grok-gallery-search-bar .ui-input-type-ahead'});
+element('gallery toolbar', {selector: '.grok-gallery-search-bar',
+  description: 'the bar above a gallery: New, Refresh, the search, the view modes and the counter — the scope for its icons, which the Browse toolbar repeats'});
+element('gallery counter', {selector: '.grok-items-view-counts',
+  description: 'how many items the gallery lists: "N", "shown / total" under a filter, "N of M" while only the first N are rendered'});
+element('chat header', {selector: '.grok-chat-header',
+  description: 'the title line of the open chat thread: "Chats > <thread>"'});
+element('membership search', {selector: '.d4-user-selector-input', aliases: ['membership search input'],
+  description: 'the search-to-add box of the membership editor; its matches are membership candidates'});
+element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source editor'],
+  description: 'the CodeMirror the platform embeds wherever code or a formula is edited — version 6 ' +
+    'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
+element('share access selector', {selector: '[name="div-share-selector"]',
+  description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
+element('model preview', {selector: '.d4-pm-view-preview',
+  description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
   description: 'the open Dart popup menu (the last one when a submenu is open)'});
+element('cell editor', {selector: '[name="cell-editor"]', aliases: ['grid cell editor'],
+  description: 'the value editor the grid shows over the cell being edited; absent between edits'});
+element('filter panel', {selector: '[name="viewer-Filters"]', aliases: ['filters panel'],
+  description: 'the Filters viewer of the current view (the same element as "filters viewer"); {widget} accepts it, so it has readings and hit areas of its own',
+  parts: {counter: '[name="active-filter-counter"]', master: '[name="filters-master"]', search: '[name="filters-search"]',
+    'add filter selector': '[name="div-column-combobox-add-filter"]', 'reset icon': '[name="icon-arrow-rotate-left"]',
+    'search icon': '.d4-filter-group-header [name="icon-search"]', 'expand icon': '[name="icon-sort"]',
+    // the "?" of the Filters title bar, not of the group header: its tooltip is the panel's summary
+    'help icon': 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " panel-base ")][1]' +
+      '//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-help"]'}});
+element('color picker icon', {selector: '[name="legend-icon-color-picker"]',
+  description: 'the palette icon a hovered legend item shows to its left (the platform appends it to the page body)'});
+element('marker picker icon', {selector: '[name="legend-icon-marker-picker"]',
+  description: 'the shape icon a hovered marker item of a legend shows'});
+element('column picker popup', {selector: '.d4-column-grid', aliases: ['column grid popup'],
+  description: 'the column grid a Dart column selector or a + icon opens (the platform appends it to the page body); absent once a column is taken or the picker is dismissed'});
+element('help panel', {selector: '.grok-help', aliases: ['help pane'],
+  description: 'the help the shell shows for the current object (a viewer\'s "?" icon opens its page)'});

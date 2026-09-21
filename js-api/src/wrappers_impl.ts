@@ -19,8 +19,7 @@ let api: any = (typeof window !== 'undefined' ? window : global.window);
  * Iterates through the array and calls {@link toJs} on non-scalar types.
  *
  * @param params - Array of Dart objects
- * @returns Array of JavaScript objects/wrappers
- */
+ * @returns Array of JavaScript objects/wrappers */
 export function paramsToJs(params: any): any {
   let result = <any>[];
   for (let i = 0; i < params.length; i++) {
@@ -55,8 +54,7 @@ export function paramsToJs(params: any): any {
  * @returns JavaScript wrapper, native JS value, or the original Dart handle
  * @throws Error if `check` is true and type is not supported
  * @see {@link toDart} for the reverse operation
- * @see {@link ./dart-interop.md} for full documentation
- */
+ * @see {@link ./dart-interop.md} for full documentation */
 export function toJs(dart: any, check: boolean = false): any {
   if (dart === null)
     return null;
@@ -117,8 +115,7 @@ function isPlainObject(value: any) {
  * @param x - JavaScript object to convert
  * @returns Dart object handle
  * @see {@link toJs} for the reverse operation
- * @see {@link ./dart-interop.md} for full documentation
- */
+ * @see {@link ./dart-interop.md} for full documentation */
 export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;

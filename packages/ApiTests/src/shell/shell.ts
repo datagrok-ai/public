@@ -21,6 +21,12 @@ category('Shell', () => {
     expect(grok.shell.v != v, true);
   }, {skipReason: nodeSkip});
 
+  test('autostartsCompleted', async () => {
+    const p = grok.shell.autostartsCompleted;
+    expect(p instanceof Promise, true);
+    await p;
+  }, {skipReason: nodeSkip});
+
   test('addView', async () => {
     let view = DG.View.create();
     const v = grok.shell.addView(view);
@@ -51,7 +57,7 @@ category('Shell', () => {
   test('tableByName', async () => {
     grok.shell.closeAll();
     const t = grok.shell.addTableView(demog);
-    expect(grok.shell.tableByName(demog.name), t.dataFrame)
+    expect(grok.shell.table(demog.name), t.dataFrame)
   }, {skipReason: nodeSkip});
 
   test('dockManager', async () => {

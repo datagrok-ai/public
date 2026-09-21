@@ -1,356 +1,21 @@
-/* Viewer runtime: what the `viewers` tier's steps are made of — an in-page helper set installed
-   once per page (`window.__bdd`) and the Playwright-side readers over it.
-   The principle: this is our platform, not a black box. A viewer that waits out a debounce, a menu
-   that builds on a timer, a canvas that paints on the next frame — the platform can tell us when
-   (its events) or stop waiting altogether (`immediateRendering`, armed here on every viewer the
-   page will ever hold), so nothing in this module sleeps. When a signal or a name is missing, it
-   is added to the core, never faked here. */
-import {expect, Locator, Page} from '@playwright/test';
+/* Viewer readers on the Playwright side, over the in-page runtime (`viewer-runtime.ts`): a
+   viewer's element, its hit areas, its properties, its size, its layout and the events it fires.
+   The pixel claims are in `viewer-pixels.ts`, the context menus in `viewer-menus.ts`, the legend
+   and the tooltip in `viewer-legend.ts`; all of them are re-exported here, so `import * as v`
+   reaches everything.
+   Roundtrips are the cost, not the page: a step is locate + one action, and the baseline a
+   "than before" claim compares with is taken inside the same in-page call as the change. */
+import {Locator, Page} from '@playwright/test';
+import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
-import {exactText, locate} from './locate.js';
+import {typeVerified, withKeys} from './gestures.js';
+import {locate} from './locate.js';
+import {Balloon, Box, evaluate, installViewerRuntime, Reading} from './viewer-runtime.js';
 
-declare const grok: any;
-declare const DG: any;
-
-export interface Box {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-/** A viewer's canvas after a change: `delta` is the histogram distance from the snapshot taken
- * before the change, `ink` the painted pixels now, `inkBefore` those of the snapshot. */
-export interface CanvasChange {
-  delta: number;
-  ink: number;
-  inkBefore: number;
-}
-
-const POPUP = '.d4-menu-popup';
-const MENU_ITEM = 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " d4-menu-item ")][1]';
-const TOOLTIP_COLUMNS = '.d4-tooltip table.d4-row-tooltip-table tr td:first-child';
-
-/** Everything the in-page side needs, on `window.__bdd`. Self-contained: it runs in the browser. */
-function install(): void {
-  const w = window as any;
-  if (w.__bdd)
-    return;
-  const renders = new WeakMap<Element, {count: number; last: number; sub?: any}>();
-  const snapshots = new WeakMap<Element, {colors: Map<number, number>; ink: number}>();
-  const sizes = new WeakMap<Element, {width: string; height: string}>();
-  const listeners = new WeakMap<Element, Record<string, {count: number; sub: any}>>();
-  const armed: Record<string, Promise<unknown>> = {};
-  let tokens = 0;
-  const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  const viewers = (): any[] => {
-    const all: any[] = [];
-    for (const view of Array.from(grok.shell.tableViews ?? []) as any[]) {
-      for (const v of Array.from(view.viewers ?? []) as any[])
-        all.push(v);
-    }
-    return all;
-  };
-  const viewerOf = (el: Element): any => {
-    const v = viewers().find((x) => x.root === el || x.root.contains(el) || el.contains(x.root));
-    if (!v)
-      throw new Error('the element is not a viewer of an open table view');
-    return v;
-  };
-  const arm = (v: any): void => {
-    if (!v || renders.has(v.root))
-      return;
-    const stamp: {count: number; last: number; sub?: any} = {count: 0, last: 0};
-    renders.set(v.root, stamp);
-    try {
-      v.immediateRendering = true;
-    } catch { /* a JS viewer without the flag */ }
-    try {
-      stamp.sub = v.onViewerRendered.subscribe(() => {
-        stamp.count++;
-        stamp.last = Date.now();
-      });
-    } catch { /* a viewer without the event */ }
-  };
-  const stampAll = (): void => {
-    for (const v of viewers())
-      arm(v);
-  };
-  const settle = (el: Element, capMs: number): Promise<number> => {
-    const v = viewerOf(el);
-    arm(v);
-    const stamp = renders.get(v.root)!;
-    const before = stamp.count;
-    const t0 = Date.now();
-    return new Promise((resolve) => {
-      const tick = () => {
-        if (stamp.count > before || Date.now() - t0 >= capMs)
-          resolve(stamp.count - before);
-        else
-          setTimeout(tick, 10);
-      };
-      setTimeout(tick, 0);
-    });
-  };
-  const canvasOf = (v: any): HTMLCanvasElement => {
-    const part = v.getWidgetStatus?.()?.parts?.canvas;
-    const cv = part ?? v.root.querySelector('canvas[name="canvas"]') ?? v.root.querySelector('canvas');
-    if (!cv)
-      throw new Error(`${v.type} has no canvas`);
-    return cv;
-  };
-  const histogram = (cv: HTMLCanvasElement) => {
-    const data = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
-    const colors = new Map<number, number>();
-    let ink = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
-      colors.set(key, (colors.get(key) ?? 0) + 1);
-      if (data[i + 3] !== 0 && !(data[i] >= 250 && data[i + 1] >= 250 && data[i + 2] >= 250))
-        ink++;
-    }
-    return {colors, ink};
-  };
-  const property = (v: any, caption: string): any => {
-    const want = norm(caption);
-    const short = norm(caption.replace(/\s+columns?$/i, ''));
-    const friendly = (name: string) => name.replace(/ColumnNames?$/, '');
-    const props: any[] = v.getProperties();
-    // "Marker Size" is the markerSize property; "Marker Size Column" is markerSizeColumnName
-    const p = props.find((x) => norm(x.caption) === want) ?? props.find((x) => norm(x.name) === want) ??
-      props.find((x) => norm(friendly(x.name)) === want) ??
-      props.find((x) => /ColumnNames?$/.test(x.name) && norm(friendly(x.name)) === short);
-    if (!p)
-      throw new Error(`${v.type} has no "${caption}" property; it has: ${props.map((x) => x.caption ?? x.name).join(', ')}`);
-    return p;
-  };
-  const convert = (p: any, text: string): unknown => {
-    const s = text.replace(/\\n/g, '\n');
-    const type = String(p.propertyType ?? '');
-    if (type === 'bool')
-      return /^(true|yes|on|checked|1)$/i.test(s);
-    if (type === 'int' || type === 'double' || type === 'num' || type === 'bigint') {
-      if (s === '')
-        return null;
-      const hex = /^#?([0-9a-f]{6})$/i.exec(s);
-      if (hex && type === 'int')
-        return (0xFF000000 | parseInt(hex[1], 16)) >>> 0;
-      return Number(s);
-    }
-    if (type === 'string_list' || type === 'list' || type === 'column_list')
-      return s === '' ? [] : s.split(/\s*,\s*/);
-    return s;
-  };
-  const readProperty = (el: Element, caption: string): string => {
-    const v = viewerOf(el);
-    const value = v.props[property(v, caption).name];
-    if (value == null)
-      return '';
-    return Array.isArray(value) ? value.join(', ') : String(value);
-  };
-  const snapshot = (el: Element): number => {
-    const v = viewerOf(el);
-    const shot = histogram(canvasOf(v));
-    snapshots.set(v.root, shot);
-    return shot.ink;
-  };
-  // the baseline "should have repainted" compares with: the canvas before the change
-  const baseline = (el: Element): void => {
-    try {
-      snapshot(el);
-    } catch { /* a viewer without a canvas */ }
-  };
-  const writeProperties = async (el: Element, entries: [string, string][], capMs: number): Promise<number> => {
-    const v = viewerOf(el);
-    arm(v);
-    baseline(el);
-    const settled = settle(el, capMs);
-    for (const [caption, text] of entries) {
-      const p = property(v, caption);
-      v.props[p.name] = convert(p, text);
-    }
-    return settled;
-  };
-  /** The named hit area in client coordinates, or the names the viewer reports instead. */
-  const findArea = (el: Element, name: string, beforeChange = false): {box?: Box; has: string[]} => {
-    const v = viewerOf(el);
-    if (beforeChange)
-      baseline(el);
-    const areas: Record<string, Box> = v.getWidgetStatus()?.hitAreas ?? {};
-    const has = Object.keys(areas);
-    const key = has.find((k) => norm(k) === norm(name));
-    if (!key)
-      return {has};
-    const r = areas[key];
-    const cv = canvasOf(v).getBoundingClientRect();
-    return {box: {x: cv.x + r.x, y: cv.y + r.y, width: r.width, height: r.height}, has};
-  };
-  const hitArea = (el: Element, name: string, beforeChange = false): Box => {
-    const found = findArea(el, name, beforeChange);
-    if (!found.box)
-      throw new Error(`${viewerOf(el).type} has no "${name}" area right now; it has: ${found.has.join(', ') || 'none'}`);
-    return found.box;
-  };
-  const change = (el: Element): CanvasChange => {
-    const v = viewerOf(el);
-    const now = histogram(canvasOf(v));
-    const before = snapshots.get(v.root);
-    if (!before)
-      throw new Error(`${v.type}: no snapshot to compare with`);
-    let delta = 0;
-    for (const [c, n] of now.colors)
-      delta += Math.abs(n - (before.colors.get(c) ?? 0));
-    for (const [c, n] of before.colors) {
-      if (!now.colors.has(c))
-        delta += n;
-    }
-    return {delta, ink: now.ink, inkBefore: before.ink};
-  };
-  /** One subscription per viewer and event, alive from "listens for" until `unlisten` (the
-   * "should have fired" read, or the viewer closing). */
-  const unlisten = (v: any, event?: string): void => {
-    const all = listeners.get(v.root);
-    if (!all)
-      return;
-    for (const e of event === undefined ? Object.keys(all) : [event]) {
-      all[e]?.sub.unsubscribe();
-      delete all[e];
-    }
-  };
-  const listen = (el: Element, event: string): void => {
-    const v = viewerOf(el);
-    unlisten(v, event);
-    const all = listeners.get(v.root) ?? {};
-    listeners.set(v.root, all);
-    const entry = {count: 0, sub: undefined as any};
-    entry.sub = v.onEvent(event).subscribe(() => { entry.count++; });
-    all[event] = entry;
-  };
-  const firedCount = (el: Element, event: string): number => listeners.get(viewerOf(el).root)?.[event]?.count ?? -1;
-  const forget = (v: any): void => {
-    unlisten(v);
-    renders.get(v.root)?.sub?.unsubscribe();
-    renders.delete(v.root);
-  };
-  // the repaint a resize causes lands on the next task, so the settle is armed before the event
-  const resize = (el: Element, width: number | null, height: number | null, capMs: number): Promise<number> => {
-    const root = viewerOf(el).root as HTMLElement;
-    if (!sizes.has(root))
-      sizes.set(root, {width: root.style.width, height: root.style.height});
-    baseline(el);
-    const settled = settle(el, capMs);
-    if (width !== null)
-      root.style.width = `${width}px`;
-    if (height !== null)
-      root.style.height = `${height}px`;
-    window.dispatchEvent(new Event('resize'));
-    return settled;
-  };
-  const restoreSize = (el: Element, capMs: number): Promise<number> => {
-    const root = viewerOf(el).root as HTMLElement;
-    const size = sizes.get(root);
-    if (!size)
-      return Promise.resolve(0);
-    baseline(el);
-    const settled = settle(el, capMs);
-    root.style.width = size.width;
-    root.style.height = size.height;
-    sizes.delete(root);
-    window.dispatchEvent(new Event('resize'));
-    return settled;
-  };
-  /** Subscribes to a `grok.events` stream before a gesture; `waitArmed` collects the outcome after. */
-  const armEvent = (name: string, capMs: number): string => {
-    const token = `t${++tokens}`;
-    armed[token] = new Promise((resolve) => {
-      let sub: any;
-      try {
-        sub = grok.events[name].subscribe((args: unknown) => {
-          sub.unsubscribe();
-          resolve(args ?? true);
-        });
-      } catch {
-        resolve(undefined);
-        return;
-      }
-      setTimeout(() => {
-        try {
-          sub?.unsubscribe();
-        } catch { /* already gone */ }
-        resolve(undefined);
-      }, capMs);
-    });
-    return token;
-  };
-  const waitArmed = async (token: string): Promise<boolean> => {
-    const result = await armed[token];
-    delete armed[token];
-    return result !== undefined;
-  };
-  /** Closes the open popup menu the platform's way (a click outside) and waits for it to be gone. */
-  const closeMenu = async (): Promise<void> => {
-    if (!document.querySelector('.d4-menu-popup'))
-      return;
-    const closed = armEvent('onContextMenuClosed', 1500);
-    document.body.click();
-    await waitArmed(closed);
-  };
-  /** Ready for a right-click: no popup open, `onContextMenuShown` armed (`onContextMenu` fires
-   * before the menu exists). */
-  const openMenu = async (capMs: number): Promise<string> => {
-    await closeMenu();
-    return armEvent('onContextMenuShown', capMs);
-  };
-  /** Where to right-click an element for its context menu — a named hit area, else the viewer's
-   * `view` area, else the element's centre — with the canvas baseline taken and the menu armed. */
-  const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string}> => {
-    let box: Box | undefined;
-    try {
-      box = hitArea(el, area ?? 'view', true);
-    } catch (e) {
-      if (area !== null)
-        throw e;
-    }
-    if (!box) {
-      const r = el.getBoundingClientRect();
-      box = {x: r.x, y: r.y, width: r.width, height: r.height};
-    }
-    return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
-  };
-  const addViewer = (type: string): void => {
-    const types: string[] = DG.Viewer.getViewerTypes();
-    const exact = types.find((t) => norm(t) === norm(type));
-    if (!exact)
-      throw new Error(`no viewer type "${type}"; the platform has: ${types.join(', ')}`);
-    arm(grok.shell.tv.addViewer(exact));
-  };
-
-  w.__bdd = {viewerOf, arm, stampAll, settle, readProperty, writeProperties, findArea, hitArea, snapshot, change,
-    listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, addViewer};
-  stampAll();
-  grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
-  grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
-}
-
-const installed = new WeakSet<Page>();
-const watched = new WeakSet<Page>();
-
-/** Installs the in-page side once the shell is up. Cheap on every step: the page is remembered,
- * and forgotten when its main frame navigates (a reload drops the in-page side). */
-export async function installViewerRuntime(page: Page): Promise<void> {
-  if (installed.has(page))
-    return;
-  await page.evaluate(install);
-  installed.add(page);
-  if (!watched.has(page)) {
-    watched.add(page);
-    page.on('framenavigated', (frame) => {
-      if (frame === page.mainFrame())
-        installed.delete(page);
-    });
-  }
-}
+export * from './viewer-runtime.js';
+export * from './viewer-pixels.js';
+export * from './viewer-menus.js';
+export * from './viewer-legend.js';
 
 /** The single visible element of a viewer phrase (a closed view can leave a zero-size twin). */
 export async function viewerLocator(page: Page, target: ElementRef): Promise<Locator> {
@@ -358,175 +23,385 @@ export async function viewerLocator(page: Page, target: ElementRef): Promise<Loc
   return loc.filter({visible: true}).first();
 }
 
-/** `hitArea` in client coordinates — the rectangle the viewer reports for that named region;
- * `beforeChange` takes the canvas baseline in the same call (a click or a double-click follows).
- * Waits for the area the way a locator waits for its element: a viewer that renders twice on a
- * change (a category switch relays out after its first paint) reports the area after the second. */
-export async function hitArea(page: Page, target: ElementRef, name: string, beforeChange = false): Promise<Box> {
+/** `locator.evaluate` on the viewer's element with the in-page runtime installed — one roundtrip,
+ * and the locator waits for the element itself. */
+export async function onViewer<R>(page: Page, target: ElementRef, fn: (el: Element, arg: any) => R | Promise<R>, arg?: unknown): Promise<R> {
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
-  const find = (): Promise<{box?: Box; has: string[]}> =>
-    loc.evaluate((el, [n, b]) => (window as any).__bdd.findArea(el, n, b), [name, beforeChange] as [string, boolean]);
-  let found = await find();
-  if (!found.box) {
-    await expect.poll(async () => (found = await find()).box !== undefined,
-      {timeout: 5000, message: `${target.phrase} reports no "${name}" area; it has: ${found.has.join(', ') || 'none'}`}).toBe(true);
-  }
-  return found.box!;
+  return loc.evaluate(fn as (el: SVGElement | HTMLElement, arg: unknown) => R, arg);
 }
 
 export function centerOf(box: Box): {x: number; y: number} {
   return {x: box.x + box.width / 2, y: box.y + box.height / 2};
 }
 
+/** Waits for the area the way a locator waits for its element: a viewer that renders twice on a
+ * change (a category switch relays out after its first paint) reports the area after the second. */
+async function awaitArea(page: Page, target: ElementRef, name: string, negate: boolean, beforeChange: boolean): Promise<Box | undefined> {
+  const find = (): Promise<{box?: Box; has: string[]}> =>
+    onViewer(page, target, (el, [n, b]) => (window as any).__bdd.findArea(el, n, b), [name, beforeChange] as [string, boolean]);
+  let found = await find();
+  if ((found.box !== undefined) === !negate)
+    return found.box;
+  const poll = expect.poll(async () => (found = await find()).box !== undefined,
+    {timeout: pollMs(5000), message: `${target.phrase} ${negate ? 'still reports' : 'reports no'} "${name}" area; it has: ${found.has.join(', ') || 'none'}`});
+  await (negate ? poll.not : poll).toBe(true);
+  return found.box;
+}
+
+/** `hitArea` in client coordinates — the rectangle the viewer reports for that named region;
+ * `beforeChange` takes the canvas baseline in the same call (a click or a double-click follows),
+ * after the viewer has finished putting the thing where it is: a network diagram still running
+ * its physics moves the node between the read and the click. */
+export async function hitArea(page: Page, target: ElementRef, name: string, beforeChange = false): Promise<Box> {
+  if (beforeChange)
+    await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
+  return (await awaitArea(page, target, name, false, beforeChange))!;
+}
+
+export async function expectHasArea(page: Page, target: ElementRef, name: string, negate = false): Promise<void> {
+  await awaitArea(page, target, name, negate, false);
+}
+
+/** Every hit area the viewer reports right now, in client coordinates — for a step that reasons
+ * over them together (the order of the bars, a spot no bar covers). */
+export function hitAreas(page: Page, target: ElementRef): Promise<Record<string, Box>> {
+  return onViewer(page, target, (el) => (window as any).__bdd.areas(el), undefined);
+}
+
 export async function addViewer(page: Page, type: string): Promise<void> {
-  await installViewerRuntime(page);
-  await page.evaluate((t) => { (window as any).__bdd.addViewer(t); }, type);
+  await evaluate(page, (t) => { (window as any).__bdd.addViewer(t); }, type);
   await page.locator(`[name="viewer-${type.replace(/\s+/g, '-')}" i]`).filter({visible: true}).first().waitFor();
 }
 
 /** Sets properties by caption in one go: one settle for the group (the sets coalesce into a
- * single repaint under immediate rendering; the cap only matters for a property that paints
- * nothing). The canvas is snapshotted first, so `should have repainted` compares with the state
- * before the change. One roundtrip: `locator.evaluate` waits for the element itself. */
+ * single repaint under immediate rendering; the cap only matters for a viewer without the pending
+ * signal). The canvas is snapshotted first, so `should have repainted` compares with the state
+ * before the change. */
 export async function setProperties(page: Page, target: ElementRef, entries: [string, string][], capMs = 300): Promise<void> {
-  await installViewerRuntime(page);
-  const loc = await viewerLocator(page, target);
-  await loc.evaluate((el, [e, cap]) => (window as any).__bdd.writeProperties(el, e, cap), [entries, capMs] as [[string, string][], number]);
+  await onViewer(page, target, (el, [e, cap]) => (window as any).__bdd.writeProperties(el, e, cap), [entries, capMs] as [[string, string][], number]);
 }
 
-export async function readProperty(page: Page, target: ElementRef, caption: string): Promise<string> {
-  await installViewerRuntime(page);
-  const loc = await viewerLocator(page, target);
-  return loc.evaluate((el, c) => (window as any).__bdd.readProperty(el, c), caption);
+export function readProperty(page: Page, target: ElementRef, caption: string, expected = ''): Promise<string> {
+  return onViewer(page, target, (el, [c, x]) => (window as any).__bdd.readProperty(el, c, x), [caption, expected] as [string, string]);
 }
 
 export async function expectProperty(page: Page, target: ElementRef, caption: string, value: string, negate = false): Promise<void> {
-  const poll = expect.poll(() => readProperty(page, target, caption), {timeout: 5000, message: `"${caption}" of ${target.phrase}`});
+  const poll = expect.poll(() => readProperty(page, target, caption, value), {timeout: pollMs(5000), message: `"${caption}" of ${target.phrase}`});
   await (negate ? poll.not : poll).toBe(value.replace(/\\n/g, '\n'));
 }
 
-export async function snapshot(page: Page, target: ElementRef): Promise<number> {
-  await installViewerRuntime(page);
-  const loc = await viewerLocator(page, target);
-  return loc.evaluate((el) => (window as any).__bdd.snapshot(el));
+export function snapshot(page: Page, target: ElementRef): Promise<void> {
+  return onViewer(page, target, (el) => { (window as any).__bdd.snapshot(el); }, undefined);
 }
 
-export async function canvasChange(page: Page, target: ElementRef): Promise<CanvasChange> {
-  const loc = await viewerLocator(page, target);
-  return loc.evaluate((el) => (window as any).__bdd.change(el));
+/** Every viewer of every open table view gets its baseline — before a change that is not one
+ * viewer's own (a filter, a selection, a column's colors). */
+export function baselineAll(page: Page): Promise<void> {
+  return evaluate(page, () => { (window as any).__bdd.baselineAll(); }, undefined);
 }
 
-/** Waits until the canvas differs from the last snapshot, then makes the new state the snapshot. */
-export async function expectRepainted(page: Page, target: ElementRef): Promise<void> {
-  await expect.poll(async () => (await canvasChange(page, target)).delta, {timeout: 10000, message: `${target.phrase} did not repaint`}).toBeGreaterThan(0);
-  await snapshot(page, target);
+/** Waits until no viewer of any open table view has a refresh or a repaint pending — after a
+ * change that reaches them all, so the next step's baseline is the state after it. */
+export function settleAll(page: Page): Promise<void> {
+  return evaluate(page, async () => {
+    const b = (window as any).__bdd;
+    for (const view of Array.from((window as any).grok.shell.tableViews ?? []) as any[]) {
+      for (const v of Array.from(view.viewers ?? []) as any[])
+        await b.quiet(v);
+    }
+  }, undefined);
 }
 
-export async function expectInk(page: Page, target: ElementRef, compare: 'less' | 'more' | 'some'): Promise<void> {
-  if (compare === 'some') {
-    await expect.poll(() => snapshot(page, target), {timeout: 10000, message: `${target.phrase} is blank`}).toBeGreaterThan(0);
+/** Resolves once the viewer has nothing pending (`capMs` for a viewer without the signal). */
+export function settle(page: Page, target: ElementRef, capMs = 300): Promise<number> {
+  return onViewer(page, target, (el, ms) => (window as any).__bdd.settle(el, ms), capMs);
+}
+
+/** The table the viewer draws (`viewer.dataFrame`), not the property it was asked to bind. */
+export async function expectBoundTable(page: Page, target: ElementRef, name: string): Promise<void> {
+  await expect.poll(() => onViewer(page, target, (el) => (window as any).__bdd.tableOf(el), undefined),
+    {timeout: pollMs(5000), message: `the table ${target.phrase} is bound to`}).toBe(name);
+}
+
+/** A reading of the viewer as it is now; a name the viewer does not report fails naming the
+ * readings it does. */
+export async function readValue(page: Page, target: ElementRef, name: string): Promise<unknown> {
+  const r: Reading = await onViewer(page, target, (el, n) => (window as any).__bdd.valueChange(el, n), name);
+  if (r.now === undefined || r.now === null)
+    throw new Error(`${target.phrase} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`);
+  return r.now;
+}
+
+export type ReadingCompare = 'equal' | 'lower' | 'higher' | 'differ' | 'same';
+
+/** A reading of the viewer (`getWidgetStatus().values`: "rows shown", "bars", "scene signature")
+ * equals a value, is lower/higher than at the snapshot before the last change, differs from it, or
+ * is the same — the negative read once the viewer is quiet, and read once. */
+export async function expectReading(page: Page, target: ElementRef, name: string, compare: ReadingCompare, value?: number): Promise<void> {
+  let last: Reading = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await onViewer(page, target, (el, [n, q]) => {
+      const b = (window as any).__bdd;
+      return q ? b.quietValueChange(el, n) : b.valueChange(el, n);
+    }, [name, compare === 'same'] as [string, boolean]);
+    if (last.now === undefined || last.now === null)
+      return `no "${name}" reading`;
+    if (compare === 'equal')
+      return last.now === value;
+    if (last.before === undefined || last.before === null)
+      return `no "${name}" reading at the snapshot`;
+    if (compare === 'differ' || compare === 'same')
+      return (last.now !== last.before) === (compare === 'differ');
+    if (typeof last.now !== 'number' || typeof last.before !== 'number')
+      return `"${name}" is not a number`;
+    return compare === 'lower' ? last.now < last.before : last.now > last.before;
+  };
+  const what = {equal: `${value}`, lower: 'lower than before', higher: 'higher than before', differ: 'different from before', same: 'the same as before'}[compare];
+  const report = (): never => {
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not ${what}` +
+      (compare === 'equal' ? '' : ` (${String(last.before)})`) +
+      (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  };
+  if (compare === 'same') {
+    if (await holds() !== true)
+      report();
     return;
   }
-  await expect.poll(async () => {
-    const c = await canvasChange(page, target);
-    return compare === 'less' ? c.ink < c.inkBefore : c.ink > c.inkBefore;
-  }, {timeout: 10000, message: `${target.phrase} does not have ${compare} ink than before`}).toBe(true);
-  await snapshot(page, target);
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    report();
+  }
 }
 
-export async function listenFor(page: Page, target: ElementRef, event: string): Promise<void> {
-  await installViewerRuntime(page);
-  const loc = await viewerLocator(page, target);
-  await loc.evaluate((el, e) => (window as any).__bdd.listen(el, e), event);
+export function rememberReading(page: Page, target: ElementRef, name: string): Promise<void> {
+  return onViewer(page, target, (el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
+}
+
+export async function expectRememberedReading(page: Page, target: ElementRef, name: string, not = false): Promise<void> {
+  let last: Reading = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await onViewer(page, target, (el, n) => (window as any).__bdd.rememberedValue(el, n), name);
+    if (last.before === undefined)
+      return `"${name}" was not remembered`;
+    if (last.now === undefined || last.now === null)
+      return `no "${name}" reading`;
+    return last.now === last.before;
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(!not);
+  }
+  catch {
+    if (not)
+      throw new Error(`"${name}" of ${target.phrase} is still the remembered ${String(last.before)}`);
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not the remembered ${String(last.before)}` +
+      (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  }
+}
+
+/** A numeric reading against the one remembered: strictly higher or strictly lower — for a change
+ * that has a direction, which "not as remembered" does not state. */
+export async function expectRememberedDirection(page: Page, target: ElementRef, name: string, direction: 'higher' | 'lower'): Promise<void> {
+  let last: Reading = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await onViewer(page, target, (el, n) => (window as any).__bdd.rememberedValue(el, n), name);
+    if (last.before === undefined)
+      return `"${name}" was not remembered`;
+    if (typeof last.now !== 'number' || typeof last.before !== 'number')
+      return `"${name}" is not a number`;
+    return direction === 'higher' ? last.now > last.before : last.now < last.before;
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`"${name}" of ${target.phrase} is ${String(last.now)}, not ${direction} than the remembered ${String(last.before)}` +
+      (last.now === undefined || last.now === null ? `; the viewer reports: ${last.has.join(', ') || 'no readings'}` : ''));
+  }
+}
+
+/** The area's rectangle against the snapshot's: taller or wider than before. */
+export async function expectAreaGrew(page: Page, target: ElementRef, area: string, dimension: 'taller' | 'wider' | 'shorter' | 'narrower'): Promise<void> {
+  let last: {before?: Box; now?: Box; has: string[]} = {has: []};
+  const holds = async (): Promise<boolean | string> => {
+    last = await onViewer(page, target, (el, a) => (window as any).__bdd.areaRectChange(el, a), area);
+    if (!last.now)
+      return `no "${area}" area now`;
+    if (!last.before)
+      return `no "${area}" area at the snapshot`;
+    const now = dimension === 'taller' || dimension === 'shorter' ? last.now.height : last.now.width;
+    const before = dimension === 'taller' || dimension === 'shorter' ? last.before.height : last.before.width;
+    return dimension === 'taller' || dimension === 'wider' ? now > before + 0.5 : now < before - 0.5;
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${area}" area of ${target.phrase} is not ${dimension} than before (before ${JSON.stringify(last.before)}, now ${JSON.stringify(last.now)}` +
+      (last.now ? ')' : `; it has: ${last.has.join(', ') || 'none'})`));
+  }
+}
+
+export async function expectAreaSize(page: Page, target: ElementRef, area: string, dimension: 'tall' | 'wide', min: number): Promise<void> {
+  const box = await hitArea(page, target, area);
+  const size = dimension === 'tall' ? box.height : box.width;
+  expect(size, `the "${area}" area of ${target.phrase} is ${Math.round(size)} px ${dimension}, not at least ${min}`).toBeGreaterThanOrEqual(min);
+}
+
+// --- events ------------------------------------------------------------------------------------------
+
+export function listenFor(page: Page, target: ElementRef, event: string): Promise<void> {
+  return onViewer(page, target, (el, e) => (window as any).__bdd.listen(el, e), event);
 }
 
 export async function expectFired(page: Page, target: ElementRef, event: string): Promise<void> {
-  await installViewerRuntime(page);
-  const loc = await viewerLocator(page, target);
-  await expect.poll(() => loc.evaluate((el, e) => (window as any).__bdd.firedCount(el, e), event),
-    {timeout: 5000, message: `"${event}" did not fire on ${target.phrase} (listen for it before the gesture)`}).toBeGreaterThan(0);
-  await loc.evaluate((el, e) => { const b = (window as any).__bdd; b.unlisten(b.viewerOf(el), e); }, event);
+  await expect.poll(() => onViewer(page, target, (el, e) => (window as any).__bdd.firedCount(el, e), event),
+    {timeout: pollMs(5000), message: `"${event}" did not fire on ${target.phrase} (listen for it before the gesture)`}).toBeGreaterThan(0);
+  await onViewer(page, target, (el, e) => { const b = (window as any).__bdd; b.unlisten(b.viewerOf(el), e); }, event);
 }
 
+/** Not fired so far; the subscription stays for a later "should have fired". */
+export async function expectNotFired(page: Page, target: ElementRef, event: string): Promise<void> {
+  const count: number = await onViewer(page, target, (el, e) => (window as any).__bdd.firedCount(el, e), event);
+  expect(count, count < 0 ? `"${event}" is not listened for on ${target.phrase}` : `"${event}" fired ${count} time(s) on ${target.phrase}`).toBe(0);
+}
+
+/** The balloons (info, warning, error) shown since the last read; reading clears them. */
+export function takeBalloons(page: Page): Promise<Balloon[]> {
+  return evaluate(page, () => (window as any).__bdd.takeBalloons(), undefined);
+}
+
+// --- size and layout -----------------------------------------------------------------------------------
+
 export async function resize(page: Page, target: ElementRef, width: number | null, height: number | null): Promise<void> {
-  await installViewerRuntime(page);
-  const loc = await viewerLocator(page, target);
-  await loc.evaluate((el, [w, h]) => (window as any).__bdd.resize(el, w, h, 500), [width, height] as [number | null, number | null]);
+  await onViewer(page, target, (el, [w, h]) => (window as any).__bdd.resize(el, w, h, 500), [width, height] as [number | null, number | null]);
 }
 
 export async function restoreSize(page: Page, target: ElementRef): Promise<void> {
-  await installViewerRuntime(page);
+  await onViewer(page, target, (el) => (window as any).__bdd.restoreSize(el, 500), undefined);
+}
+
+export function saveLayout(page: Page): Promise<void> {
+  return evaluate(page, () => { (window as any).__bdd.saveLayout(); }, undefined);
+}
+
+/** Saves the layout through the server and returns its id; the caller registers the deletion. */
+export function saveLayoutToServer(page: Page): Promise<string> {
+  return evaluate(page, () => (window as any).__bdd.saveLayoutToServer(), undefined);
+}
+
+export function deleteLayout(page: Page, id: string): Promise<void> {
+  return page.evaluate((i) => (window as any).__bdd.deleteLayout(i), id);
+}
+
+export function loadLayout(page: Page): Promise<void> {
+  return evaluate(page, () => (window as any).__bdd.loadLayout(), undefined);
+}
+
+// --- area gestures ------------------------------------------------------------------------------------
+
+export {withKeys};
+
+/** Wheel notches over the centre of an area, with keys held (Control zooms where a plain wheel
+ * scrolls). */
+export async function wheelOverArea(page: Page, target: ElementRef, area: string, direction: string, times = 1, keys: string[] = []): Promise<void> {
+  if (direction !== 'up' && direction !== 'down')
+    throw new Error(`the wheel scrolls up or down, not "${direction}"`);
+  const c = centerOf(await hitArea(page, target, area, true));
+  await page.mouse.move(c.x, c.y);
+  await withKeys(page, keys, async () => {
+    for (let i = 0; i < times; i++)
+      await page.mouse.wheel(0, direction === 'up' ? -600 : 600);
+  });
+}
+
+/** A plain drag from the centre of one hit area to the centre of another (a column header to a
+ * new place, a range handle to a bin), with keys held; the baseline is taken before the drag. */
+export async function dragArea(page: Page, target: ElementRef, from: string, to: string, keys: string[] = []): Promise<void> {
+  const a = centerOf(await hitArea(page, target, from, true));
+  const b = centerOf(await hitArea(page, target, to));
+  await withKeys(page, keys, async () => {
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    await page.mouse.move(b.x, b.y, {steps: 3});
+    await page.mouse.up();
+  });
+}
+
+/** The pointer offset of a drag by a distance in a direction. */
+export function dragDelta(px: number, direction: string): {dx: number; dy: number} {
+  const d = direction.toLowerCase();
+  if (!['left', 'right', 'up', 'down'].includes(d))
+    throw new Error(`a drag goes left, right, up or down, not "${direction}"`);
+  return {dx: d === 'left' ? -px : d === 'right' ? px : 0, dy: d === 'up' ? -px : d === 'down' ? px : 0};
+}
+
+/** The mouse pressed at a point and moved by the offset in two steps. */
+export async function dragFrom(page: Page, at: {x: number; y: number}, delta: {dx: number; dy: number}): Promise<void> {
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.down();
+  await page.mouse.move(at.x + delta.dx / 2, at.y + delta.dy / 2);
+  await page.mouse.move(at.x + delta.dx, at.y + delta.dy);
+  await page.mouse.up();
+}
+
+/** A drag of the area's centre by a distance in a direction (a resizer, a splitter). */
+export async function dragAreaBy(page: Page, target: ElementRef, area: string, px: number, direction: string): Promise<void> {
+  const delta = dragDelta(px, direction);
+  await dragFrom(page, centerOf(await hitArea(page, target, area, true)), delta);
+}
+
+/** A drag across the inner 80% of an area with keys held: Shift selects, Control+Shift removes
+ * from the selection, Alt zooms. */
+export async function dragBoxOverArea(page: Page, target: ElementRef, area: string, keys: string[]): Promise<void> {
+  const b = await hitArea(page, target, area, true);
+  await withKeys(page, keys, async () => {
+    await page.mouse.move(b.x + b.width * 0.1, b.y + b.height * 0.1);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width * 0.9, b.y + b.height * 0.9, {steps: 3});
+    await page.mouse.up();
+  });
+}
+
+/** A click on the area, the text typed over what the editor there holds, Enter. The click must have
+ * put the focus into an editor inside the viewer — a histogram's range input took the click and not
+ * the focus once in twenty runs, and the text then opened a cell editor on the grid, unseen — so it
+ * is repeated, at the area's current place, until one did. The editor is pinned by a mark of its
+ * own rather than by `:focus`: the focus can leave it while the text is being read back. */
+export async function typeIntoArea(page: Page, target: ElementRef, area: string, text: string): Promise<void> {
   const loc = await viewerLocator(page, target);
-  await loc.evaluate((el) => (window as any).__bdd.restoreSize(el, 500));
-}
-
-// --- context menus ----------------------------------------------------------------------------------
-
-/** Arms a `grok.events.<name>` subscription before a gesture; the returned function waits for it. */
-export async function armEvent(page: Page, name: string, capMs = 3000): Promise<() => Promise<boolean>> {
-  await installViewerRuntime(page);
-  const token: string = await page.evaluate(([n, cap]) => (window as any).__bdd.armEvent(n, cap), [name, capMs] as [string, number]);
-  return () => page.evaluate((t) => (window as any).__bdd.waitArmed(t), token);
-}
-
-export async function closeContextMenu(page: Page): Promise<void> {
-  await installViewerRuntime(page);
-  await page.evaluate(() => (window as any).__bdd.closeMenu());
-  await expect(page.locator(POPUP)).toHaveCount(0);
-}
-
-/** A real right-click at an armed point; resolves once the platform says the popup is in the DOM
- * (`onContextMenuShown` — `onContextMenu` fires before the menu exists). */
-async function rightClickArmed(page: Page, x: number, y: number, token: string): Promise<Locator> {
-  await page.mouse.click(x, y, {button: 'right'});
-  if (!await page.evaluate((t) => (window as any).__bdd.waitArmed(t), token))
-    throw new Error(`no context menu opened at (${Math.round(x)}, ${Math.round(y)})`);
-  return page.locator(POPUP).last();
-}
-
-export async function openContextMenuAt(page: Page, x: number, y: number): Promise<Locator> {
-  await installViewerRuntime(page);
-  const token: string = await page.evaluate((cap) => (window as any).__bdd.openMenu(cap), 3000);
-  return rightClickArmed(page, x, y, token);
-}
-
-/** The context menu of an element: at a named hit area, else its `view` area when it reports
- * one, else its centre. Three roundtrips: the point and the arming in one, the click, the wait. */
-export async function openContextMenuOf(page: Page, target: ElementRef, area?: string): Promise<Locator> {
-  await installViewerRuntime(page);
-  const loc = await viewerLocator(page, target);
-  const {x, y, token} = await loc.evaluate((el, [a, cap]) => (window as any).__bdd.menuPoint(el, a, cap), [area ?? null, 3000] as [string | null, number]);
-  return rightClickArmed(page, x, y, token);
-}
-
-/** A menu item of the open popup by its own label (a group item also contains its children's). */
-export function menuItem(page: Page, label: string): Locator {
-  return page.locator(POPUP).last().locator('.d4-menu-item-label', {hasText: exactText(label)}).first().locator(MENU_ITEM);
-}
-
-/** `Misc > Show Inside Values`: hovers the groups, clicks the leaf. */
-export async function pickMenuPath(page: Page, path: string): Promise<void> {
-  const segments = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
-  for (let i = 0; i < segments.length; i++) {
-    const item = menuItem(page, segments[i]);
-    const act = i < segments.length - 1 ? item.hover({timeout: 5000}) : item.click({timeout: 5000});
-    await act.catch(async (e: Error) => {
-      const visible = await page.locator(POPUP).last().locator('.d4-menu-item-label').allTextContents();
-      throw new Error(`no "${segments[i]}" in the menu; it shows: ${visible.map((s) => s.trim()).filter(Boolean).join(' | ')}\n${e.message}`);
-    });
+  const mark = `bdd-editor-${Date.now()}`;
+  let where = '';
+  try {
+    await expect.poll(async () => {
+      const c = centerOf(await hitArea(page, target, area, true));
+      await page.mouse.click(c.x, c.y);
+      where = await loc.evaluate((el, m) => {
+        const a = document.activeElement;
+        if (!a)
+          return 'nothing';
+        if (el.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || (a as HTMLElement).isContentEditable)) {
+          a.setAttribute('data-bdd-editor', m);
+          return '';
+        }
+        const name = a.getAttribute('name');
+        const cls = String(a.className ?? '').trim();
+        return a.tagName.toLowerCase() + (name ? `[name="${name}"]` : '') + (cls ? '.' + cls.split(/\s+/).join('.') : '');
+      }, mark);
+      return where === '';
+    }, {timeout: pollMs(5000)}).toBe(true);
   }
-}
-
-// --- tooltips ---------------------------------------------------------------------------------------
-
-export async function tooltipColumns(page: Page): Promise<string[]> {
-  const cells = await page.locator(TOOLTIP_COLUMNS).allTextContents();
-  return [...new Set(cells.map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0))].sort();
-}
-
-export async function expectTooltipColumns(page: Page, list: string, negate = false): Promise<void> {
-  const want = [...new Set(list.split(/\s*,\s*/).map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0))].sort();
-  const poll = expect.poll(() => tooltipColumns(page), {timeout: 5000, message: negate ? 'the tooltip shows exactly these columns' : 'the tooltip does not show these columns'});
-  await (negate ? poll.not : poll).toEqual(want);
+  catch {
+    throw new Error(`a click on the "${area}" area of ${target.phrase} did not focus an editor there; the focus is on ${where}`);
+  }
+  const editor = loc.locator(`[data-bdd-editor="${mark}"]`);
+  try {
+    await typeVerified(editor, text.replace(/\\n/g, '\n'), `the "${area}" area of ${target.phrase}`);
+    await editor.press('Enter');
+  }
+  finally {
+    await editor.evaluate((e) => e.removeAttribute('data-bdd-editor')).catch(() => undefined);
+  }
 }

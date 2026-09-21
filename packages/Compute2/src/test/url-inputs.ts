@@ -50,11 +50,10 @@ category('URL inputs', () => {
     const id = await grok.dapi.tables.uploadDataFrame(df);
     try {
       const call = prepare();
-      const {patch, entityIds, warnings} = await parseUrlInputs(call, new URLSearchParams(`df=${id}`));
+      const {patch, warnings} = await parseUrlInputs(call, new URLSearchParams(`df=${id}`));
       expect(warnings.length, 0, warnings.join('; '));
       expect(patch.get('df') instanceof DG.DataFrame, true);
       expect(patch.get('df').rowCount, 10);
-      expect(entityIds.get('df'), id);
     } finally {
       const tableInfo = await grok.dapi.tables.find(id);
       if (tableInfo)
@@ -83,10 +82,10 @@ category('URL inputs', () => {
     expect(missingMandatoryInputs(call).length, 0);
   });
 
-  test('buildInputsUrl serializes scalars and known entity ids only', async () => {
+  test('buildInputsUrl serializes scalars and current entity ids only', async () => {
     const call = prepare();
     applyUrlInputs(call, new Map<string, any>(Object.entries({a: 5, b: 2.5, flag: false, s: 'txt'})));
-    const {url, skipped} = buildInputsUrl(call, new Map([['df', 'table-id-1']]));
+    const {url, skipped} = buildInputsUrl(call);
     const params = new URL(url).searchParams;
     expect(params.get('a'), '5');
     expect(params.get('b'), '2.5');
@@ -95,10 +94,27 @@ category('URL inputs', () => {
     expect(params.get('df'), null);
     expect(skipped.length, 0);
 
+    // a local dataframe has no entity id and is skipped
     call.inputs['df'] = grok.data.demo.demog(1);
-    const withValueNoId = buildInputsUrl(call, new Map());
-    expect(withValueNoId.skipped.includes('df'), true);
-    const withId = buildInputsUrl(call, new Map([['df', 'table-id-1']]));
-    expect(new URL(withId.url).searchParams.get('df'), 'table-id-1');
+    expect(buildInputsUrl(call).skipped.includes('df'), true);
+  });
+
+  test('buildInputsUrl uses the current entity id of a loaded table', async () => {
+    const id = await grok.dapi.tables.uploadDataFrame(grok.data.demo.demog(5));
+    try {
+      const call = prepare();
+      applyUrlInputs(call, new Map<string, any>(Object.entries(
+        {a: 1, b: 1.5, flag: true, s: 'x', df: await grok.dapi.tables.getTable(id)})));
+      expect(new URL(buildInputsUrl(call).url).searchParams.get('df'), id);
+      // replacing the table drops it from the link instead of reusing a stale id
+      call.inputs['df'] = grok.data.demo.demog(1);
+      const rebuilt = buildInputsUrl(call);
+      expect(new URL(rebuilt.url).searchParams.get('df'), null);
+      expect(rebuilt.skipped.includes('df'), true);
+    } finally {
+      const tableInfo = await grok.dapi.tables.find(id);
+      if (tableInfo)
+        await grok.dapi.tables.delete(tableInfo);
+    }
   });
 });

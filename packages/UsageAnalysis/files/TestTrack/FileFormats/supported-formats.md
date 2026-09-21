@@ -2,14 +2,14 @@
 realizes: [import.csv, import.edf, bio.import.fasta, arrow.import.feather, gis.import.geo-json, gis.preview.geo-json, import.gz, import.h5, import.html, import.ipynb, diffstudio.import.ivp, diffstudio.preview.ivp, import.json, gis.import.kml, gis.import.kmz, gis.preview.kmz-and-kml, import.mat, powerpack.preview.markdown, import.nc, arrow.import.parquet, fileeditors.import.pdf, fileeditors.preview.pdf, import.rda, import.rds, import.sas, chem.import.sdf, sqlite.import.sq-lite, import.tar, powerpack.import.xlsx, import.xml, import.zip]
 ---
 
-Verify that Datagrok previews and opens every file in Browse > Files > My Files > all_formats.
+Verify that Datagrok previews and opens every file in Browse > Files > My Files > all formats.
 
-**Prerequisite**: folder `My Files / all_formats` contains one file per format —
+**Prerequisite**: folder `My Files / all formats` contains one file per format —
 .bmp, .csv, .edf, .fasta, .feather, .geojson, .gz, .h5, .html, .ipynb, .ivp, .json,
 .kml, .kmz, .kxl, .mat, .md, .nc, .parquet, .pdf, .rda, .rds, .sas7bdat, .sdf,
 .sqlite, .tar, .topojson, .xlsx, .xml, .zip
 
-1. Open Browse > Files > My Files > all_formats.
+1. Open Browse > Files > My Files > all formats.
 
 2. For each file in the folder — **single-click** (preview):
    the context panel on the right must show a non-blank preview.

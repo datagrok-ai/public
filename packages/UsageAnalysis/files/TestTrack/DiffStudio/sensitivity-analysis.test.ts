@@ -6,13 +6,6 @@ import {
   ribbonSwitchOn, selectChoice, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
-/**
- * Test Track scenario: DiffStudio/sensitivity-analysis.md
- * 1. Open Diff Studio + Bioreactor; turn Edit toggle OFF (form with inputs opens).
- * 2. Click Sensitivity icon — SA view opens.
- * 3. Modify Process mode — FFox/KKox (and others) cascade-update.
- * 4. Click Run — four viewers open.
- */
 test('DiffStudio Sensitivity Analysis — Bioreactor: open SA view, Process mode cascade, Run produces 4 viewers',
   async ({ page }) => {
     test.setTimeout(300_000);
@@ -27,9 +20,9 @@ test('DiffStudio Sensitivity Analysis — Bioreactor: open SA view, Process mode
     });
 
     await softStep('Step 2: Click Sensitivity icon — SA view opens', async () => {
-      // The Sensitivity ribbon item carries the .diff-studio-ribbon-sa-icon class on its icon.
+
       await page.locator('.diff-studio-ribbon-sa-icon').first().click();
-      // SA view shows its own form built around Process mode + the model inputs
+
       await page.waitForTimeout(2000);
       await expect(page.locator(inputHost('Process-mode'))).toBeVisible({ timeout: 15_000 });
     });
@@ -50,11 +43,7 @@ test('DiffStudio Sensitivity Analysis — Bioreactor: open SA view, Process mode
     });
 
     await softStep('Step 4: Enable switchers and Run — four viewers open with valid data', async () => {
-      // SA per-input switchers are **children** of the input host (inserted before the caption
-      // label via `inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel)` in
-      // sensitivity-analysis-view.ts:178). The `.sa-switch-input` element nests `.ui-input-switch`.
-      // (This is different from the Fitting view, where the switcher is a SIBLING — see
-      // fitting.test.ts Step 4's `enableSwitcher`.)
+
       const enableSwitcher = async (safeName: string): Promise<boolean> => {
         return await page.evaluate((name) => {
           const host = document.querySelector(`[name="input-host-${name}"]`) as HTMLElement | null;
@@ -68,22 +57,18 @@ test('DiffStudio Sensitivity Analysis — Bioreactor: open SA view, Process mode
         }, safeName);
       };
 
-      // Per MD step 3: "parameters (FFox, FKox, FFred) should be selectable". Toggle those.
       await enableSwitcher('FFox');
       await enableSwitcher('FKox');
       await enableSwitcher('FFred');
       await page.waitForTimeout(800);
 
-      // Run (▶) — the play icon on the SA ribbon
       await page.locator('.d4-ribbon-item i.fa-play').first().click();
-      // Allow viewers to materialise
+
       await page.waitForTimeout(15_000);
 
       const viewerCount = await page.locator('.d4-viewer').count();
       expect(viewerCount).toBeGreaterThanOrEqual(4);
 
-      // Introspect each viewer via the platform API — read type, name, and dataframe summary.
-      // The user permitted API fallback when UI assertions can't observe canvas content.
       const viewerInfo = await page.evaluate(() => {
         const win = window as any;
         const view = win.grok?.shell?.v;
@@ -120,12 +105,12 @@ test('DiffStudio Sensitivity Analysis — Bioreactor: open SA view, Process mode
 
       expect(viewerInfo).not.toBeNull();
       expect(viewerInfo!.length).toBeGreaterThanOrEqual(4);
-      // Every viewer should have an attached dataframe and no NaN/Inf cells
+
       const viewersWithData = viewerInfo!.filter(v => v.rowCount > 0 && v.columnCount > 0);
       expect(viewersWithData.length).toBeGreaterThanOrEqual(1);
       for (const v of viewerInfo!) {
         expect(v.nonFiniteCount).toBe(0);
-        // Viewer should not be a default "untitled" placeholder
+
         expect(v.name).not.toMatch(/^untitled$/i);
       }
     });

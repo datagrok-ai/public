@@ -157,6 +157,21 @@ steps from a clean login.
 On any failure: screenshot the page, copy any red `.d4-balloon` text, dump the dev-console
 errors, attach to the ticket. Test ID (e.g. `M-1.5`) goes in the ticket title.
 
+## These three are now automated too (BDD suite, 2026-09-10)
+
+M-1.5, M-1.6 and M-1.7 below are covered by `packages/DiffStudio/bdd/features/scripting.feature`
+and `catalog.feature`. What the three rejected approaches missed is that the chart is a real line
+chart of the platform, docked under a tab of the function view the script runs in: the BDD library
+reaches it as the viewer it is (`DG.Widget.find` on its root), so the redraw is the viewer's own
+`should have repainted`, and the table under the other tab answers with its `rows` reading. The
+canvas that answered `toDataURL` with a blank image and the element the locator would not
+screenshot were the viewers of the tab *not shown* — they stay in the DOM with no rectangle, so a
+claim first names the tab it reads. M-1.6 also needed the script saved and taken back again, which
+is the package's `user saves the script` — it notes the scripts on the stand first and deletes
+exactly the one it added when the feature ends.
+
+The text below is kept as the record of what was tried in the TypeScript suite.
+
 ## Items that remain manual
 
 ### M-1.5. Live chart redraw inside the platform ScriptView

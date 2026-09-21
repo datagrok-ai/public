@@ -51,7 +51,7 @@ inputKind('text area', ['text-area'], '.ui-input-textarea', ['textarea', 'multil
 inputKind('choice input', ['choice-input'], '.ui-input-choice', ['dropdown', 'choice', 'select']);
 inputKind('multi choice input', ['multi-choice-input'], '', ['multi choice']);
 inputKind('number input', ['number-input', 'bigint-input', 'qnum-input'], '.ui-input-int, .ui-input-float', ['numeric input', 'number field']);
-inputKind('checkbox', ['bool-input'], '.ui-input-bool, .u2-multi-choice-item, .u2-columns-option', ['bool input', 'switch', 'toggle'],
+inputKind('checkbox', ['bool-input'], '.ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option', ['bool input', 'switch', 'toggle'],
   {match: [...INPUT_MATCH, 'text']});
 inputKind('date input', ['date-input', 'datetime-input'], '.ui-input-date', ['date field', 'datetime input', 'date picker']);
 inputKind('color input', ['color-input'], '.ui-input-color', ['color picker']);
@@ -63,7 +63,7 @@ inputKind('map input', ['map-input'], '', ['key value input']);
 inputKind('message input', ['message-input'], '', ['prompt input', 'chat input']);
 inputKind('radio input', ['radio-input'], '.ui-input-radio', ['radio group', 'radio']);
 inputKind('slider', ['slider-input'], '.ui-input-slider', ['slider input']);
-inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input']);
+inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input'], {dartNames: ['input-host-{q}', '{q}']});
 kind('slider handle', {
   aliases: ['handle', 'thumb'],
   selector: '[role="slider"], svg[type="range-slider"] [name$="-handle"]',
@@ -122,11 +122,13 @@ kind('property', {
   labelSelector: '.u2-propgrid-name, .property-grid-item-name-text',
   dartNames: ['prop-{q}'],
 });
+// the Dart property grid's category is a row of the grid (prop-category-<name>)
 kind('category', {
   aliases: ['property category'],
-  selector: '.u2-propgrid-category',
-  match: ['text', 'title'],
-  labelSelector: '.u2-propgrid-category-title',
+  selector: '.u2-propgrid-category, tr.property-grid-item[name^="prop-category-"]',
+  match: ['title', 'dart', 'text'],
+  labelSelector: '.u2-propgrid-category-title, .property-grid-item-name-text',
+  dartNames: ['prop-category-{q}'],
 });
 
 // --- collections ----------------------------------------------------------------------------------
@@ -136,16 +138,20 @@ kind('list', {
 });
 kind('item', {
   aliases: ['list item', 'row', 'option', 'entry'],
-  selector: '.u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
+  selector: '[data-u2="item"], .u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
   match: ['text', 'label', 'aria', 'name'],
   labelSelector: PRIMARY_TEXT,
 });
 kind('tree', {selector: u2('tree') + ', [role="tree"], .d4-tree-view', match: ['name', 'aria']});
+// the Dart tree wraps every row in a .d4-tree-view-group[role=treeitem] that carries the row's
+// text too, so the wrapper is excluded and the row — which owns name="tree-My-stuff---Favorites" —
+// is the node
 kind('tree node', {
   aliases: ['node', 'tree item'],
-  selector: '[role="tree"] .u2-list-row, [role="treeitem"], .d4-tree-view-node',
-  match: ['text', 'label', 'name'],
-  labelSelector: '.u2-tree-label, .d4-tree-view-node-label',
+  selector: '[role="tree"] .u2-list-row, [role="treeitem"]:not(.d4-tree-view-group), .d4-tree-view-node',
+  match: ['dart', 'label', 'text', 'name'],
+  labelSelector: '.u2-tree-label, .d4-tree-view-node-label, .d4-tree-view-group-label, .d4-tree-view-item-label',
+  dartNames: ['tree-{q}'],
 });
 kind('table', {selector: u2('table') + ', table', match: ['name', 'aria']});
 kind('table row', {
@@ -208,6 +214,12 @@ kind('menu item', {
   labelSelector: ':scope > .u2-menu-label, :scope > .d4-menu-item-label',
   dartNames: ['div-{q}'],
 });
+// the platform's ribbon holds its commands as plain divs, named by the text or the icon they show
+kind('ribbon item', {
+  aliases: ['ribbon command'],
+  selector: '.d4-ribbon-item',
+  match: ['text', 'name', 'aria'],
+});
 kind('breadcrumbs', {aliases: ['breadcrumb bar'], selector: u2('breadcrumbs'), match: ['name', 'aria']});
 kind('breadcrumb', {
   aliases: ['crumb'],
@@ -225,9 +237,12 @@ kind('dialog', {
     footer: '.u2-dialog-footer, .d4-dialog-footer'},
 });
 kind('tabs', {aliases: ['tab strip', 'tab control'], selector: u2('tabs') + ', .d4-tab-control', match: ['name', 'aria']});
+// .tab-handle is the Dart dock manager's tab, .dockspan-tab-handle the dock-spawn-ts one a function
+// view keeps in its shadow root (which a CSS locator reaches); the label is a child either way
 kind('tab', {
-  selector: '[role="tab"], .d4-tab-header',
-  match: ['name', 'text', 'aria', 'dart'],
+  selector: '[role="tab"], .d4-tab-header, .tab-handle, .dockspan-tab-handle',
+  match: ['name', 'label', 'text', 'aria', 'dart'],
+  labelSelector: '.tab-handle-text, .dockspan-tab-handle-text',
   dartNames: ['{q}', 'tab-{q}'],
 });
 kind('tab panel', {aliases: ['tab page'], selector: '[role="tabpanel"], .d4-tab-content', match: ['name', 'aria']});
@@ -242,7 +257,10 @@ kind('accordion', {selector: u2('accordion') + ', .d4-accordion', match: ['name'
 kind('accordion header', {
   aliases: ['pane header'],
   selector: u2('accordion') + ' [role="button"], .d4-accordion-pane-header',
-  match: ['text', 'aria'],
+  // a Dart pane header carries its own name; its text can hold a count too ("Activity2"), which no
+  // exact-text match would find
+  match: ['dart', 'text', 'aria'],
+  dartNames: ['div-section--{q}'],
 });
 kind('card', {
   selector: u2('card', 'stat-card', 'entity-card') + ', .d4-item-card',
@@ -272,11 +290,55 @@ kind('viewer', {
   parts: {
     title: `${PANEL}//*[contains(@class, "panel-titlebar-text")]`,
     'settings icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-settings"]`,
+    // the "?" of the title bar: its tooltip is the viewer's own summary above "Click for help (F1)"
+    'help icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-help"]`,
     'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
-    'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-close"]`,
+    'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
     description: '.d4-viewer-description',
     canvas: 'canvas[name="canvas"]',
+    legend: '[name="legend"]',
+    'mini legend icon': '[name="mini-legend-icon"]',
+    'legend splitter': '[name="legend-splitter"]',
+    'legend inner splitter': '[name="legend-inner-splitter"]',
+    'legend close chevron': '[name="icon-hide-corner-legend"]',
+    'legend markers selector': '[name="legend-markers-selector"]',
   },
+});
+// an entry of a viewer's legend: "R_ONE" legend item in legend of scatter plot viewer; selected while
+// its category filters the viewer (aria-selected), named by the label it shows (aria-label)
+kind('legend item', {
+  aliases: ['legend entry'],
+  selector: '[name="legend-item"]',
+  match: ['aria', 'label', 'text'],
+  labelSelector: '.d4-legend-value',
+  parts: {label: '.d4-legend-value', cross: '.d4-legend-cross', thumbnail: 'canvas.d4-legend-value', marker: '[name="legend-item-marker"]'},
+});
+// a card of the filter panel by its caption: "RACE" filter card, checkbox of "RACE" filter card;
+// aria-disabled on its body while suspended (the header, its checkbox and the mode word stay operable), its own counter as the indicator part
+kind('filter card', {
+  selector: '.d4-filter',
+  match: ['label', 'dart'],
+  labelSelector: '.d4-filter-column-name',
+  dartNames: ['filter-card-{q}'],
+  parts: {caption: '.d4-filter-column-name', checkbox: '.d4-filter-bool-input', indicator: '.d4-filter-indicator',
+    mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
+    close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
+});
+// the membership editor (membership_editor.dart): a member already in is a row, a search match a candidate
+const MEMBERSHIP_PARTS = {checkbox: '.membership-row-admin input', 'checkbox label': '.membership-row-admin'};
+kind('membership row', {
+  aliases: ['member row'],
+  selector: '.membership-row',
+  match: ['label'],
+  labelSelector: '.d4-user-selector-user-name',
+  parts: {...MEMBERSHIP_PARTS, 'remove button': '[name="button-Remove"]'},
+});
+kind('membership candidate', {
+  aliases: ['member candidate'],
+  selector: '.membership-add-row',
+  match: ['label'],
+  labelSelector: '.d4-user-selector-user-name',
+  parts: {...MEMBERSHIP_PARTS, 'add button': '[name="button-Add"]'},
 });
 kind('view', {
   selector: '.d4-view-handle, [name^="view-handle: "]',

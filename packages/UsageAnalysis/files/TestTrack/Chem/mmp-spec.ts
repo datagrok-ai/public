@@ -1,8 +1,9 @@
-// GROK-18517: MMP generation on mmp_demo.csv with both activities must not fire minified runtime errors.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import * as chem from '../helpers/chem';
+import {openChemMenuItemFast, waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -10,17 +11,14 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
   test.setTimeout(420_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   await softStep('Step 1: Open mmp_demo.csv + verify smiles + 2 numeric activities', async () => {
     await page.evaluate(async () => {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
-      // System:DemoFiles/chem/mmp_demo.csv on dev is a corrupt mixed-delimiter copy
-      // (header "SMILES\tCMPD_CHEMBLID,..."), so no clean SMILES column gets Molecule
-      // semType. Use the canonical demo file shipped by the Chem package — the same
-      // one the platform's own MMP demo (Chem/src/demo/demo.ts) loads.
+
       const df = await grok.dapi.files.readCsv('System:AppData/Chem/demo_files/mmp_demo.csv');
       grok.shell.addTableView(df);
       (window as any).__mmp_errors = [];
@@ -31,12 +29,11 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
       };
     });
     await waitForChemMenu(page);
-    // The Chem Molecule detector runs async AFTER the menu attaches; poll for it
-    // before asserting semType (checking immediately races the detector).
+
     await waitForMolecule(page);
     const cols = await page.evaluate(() =>
       grok.shell.t.columns.toList().map((c: any) => ({name: c.name, semType: c.semType, type: c.type})));
-    // Soft assertions — accept variant col counts as long as required cols present.
+
     const hasMolecule = cols.some(c => c.semType === 'Molecule');
     const numericCount = cols.filter(c => /^(int|double|float|num)/i.test(c.type ?? '')).length;
     expect(hasMolecule, `Expected Molecule semType; got cols=${JSON.stringify(cols.slice(0, 6))}`).toBe(true);
@@ -44,7 +41,7 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
   });
 
   await softStep('Step 2: Chem → Analyze → Matched Molecular Pairs → MMPEditor opens', async () => {
-    await chem.openChemMenuItem(page, 'Matched Molecular Pairs...', {delayMs: 600});
+    await openChemMenuItemFast(page, 'Matched Molecular Pairs...', {delayMs: 600});
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     const title = await page.evaluate(() =>
       document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')?.textContent?.trim() ?? '');
@@ -55,7 +52,10 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
     await page.evaluate(async () => {
       const editor = document.querySelector('[name="input-host-Activities"] .ui-input-editor') as HTMLElement;
       editor.click();
-      await new Promise(r => setTimeout(r, 1000));
+      // The next line waits on the picker dialog; wait for the same thing here.
+      const deadline = Date.now() + 1000;
+      while (Date.now() < deadline && !document.querySelector('[name="dialog-Select-columns..."]'))
+        await new Promise(r => setTimeout(r, 25));
     });
     await page.locator('[name="dialog-Select-columns..."]').waitFor({timeout: 8000});
     await page.evaluate(async () => {
@@ -95,6 +95,20 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
       const viewer: any = Array.from((window as any).grok.shell.tv.viewers)
         .find((v: any) => /Matched Molecular Pairs/i.test(v.type));
       if (!viewer) return {ok: false, reason: 'MMP viewer not found'};
+      // A tab pane fills in asynchronously; hold the viewer's rendered text steady rather than
+      // sleeping, capped at the 2.5 s the sleep spent.
+      const settle = async (v: any) => {
+        const deadline = Date.now() + 2500;
+        let last = -1;
+        let stable = 0;
+        while (Date.now() < deadline) {
+          const n = v.root.textContent?.length ?? 0;
+          if (n > 0 && n === last) { if (++stable >= 3) return; }
+          else stable = 0;
+          last = n;
+          await new Promise(r => setTimeout(r, 100));
+        }
+      };
       const tabCandidates = Array.from(viewer.root.querySelectorAll(
         '.d4-tab-header, .d4-tab-pane-title, .d4-tab-handle, [class*="tab-header"], [class*="tab-handle"], [class*="tab-title"], [role="tab"], [name^="tab-"], [aria-controls]'
       ));
@@ -104,16 +118,16 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
         const all = Array.from(viewer.root.querySelectorAll('*'))
           .filter((el: any) => el.children.length === 0 || el.tagName === 'DIV' || el.tagName === 'SPAN')
           .filter((el: any) => (el.textContent ?? '').trim() === name);
-        if (all.length > 0) { (all[0] as HTMLElement).click(); await new Promise(r => setTimeout(r, 2500)); return {ok: true, via: 'text-fallback'}; }
+        if (all.length > 0) { (all[0] as HTMLElement).click(); await settle(viewer); return {ok: true, via: 'text-fallback'}; }
         return {ok: false, reason: `${name} tab not found`, candidatesCount: tabCandidates.length, sample: tabCandidates.slice(0, 5).map((t: any) => t.textContent?.trim()?.substring(0, 30))};
       }
       tab.click();
-      await new Promise(r => setTimeout(r, 2500));
+      await settle(viewer);
       return {ok: true, contentLen: viewer.root.textContent?.length ?? 0};
     }, tabName);
 
   await softStep('Step 4-7: SR-DEFERRED 4-tab walk — GROK-18517 invariant verified via viewer mount + no minified-runtime error (final assertion)', async () => {
-    // SR-DEFERRED: MMP tab DOM is opaque to DOM selectors; invariant covered by Step 3b mount + final no-error check.
+
   });
 
   await softStep('Final: no minified-runtime errors throughout MMP walk', async () => {

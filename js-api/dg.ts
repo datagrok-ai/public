@@ -12,7 +12,7 @@ export * from './src/dapi';
 export * from './src/domains';
 export * from './src/domains-ui';
 export * from './src/ui/domains/domains-editor';
-export * from './src/ui/domains/domains-grid';
+export * from './src/ui/domains/domains-session';
 export * from './src/dataframe';
 export * from './src/entities';
 export * from './src/api/ddt.api.g';
@@ -32,7 +32,6 @@ export * from './src/viewer';
 export * from './src/docking';
 export * from './src/wrappers_impl';
 export * from './src/ui/wizard';
-export {time, timeAsync, Utils, HtmlUtils, LruCache, Paint} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export * from './src/sticky_meta';
 export * from './src/meta';
@@ -45,12 +44,13 @@ export * from './src/ml';
 export * from './src/utils';
 export * from './src/proxies';
 export * from './src/utils_convert';
-export * from './src/ui/tree-view';
 
 export {AIChat, AIEngine} from './src/ai';
 export type {AIAttachment, AIChatOptions, AIRunOptions, AIResult, AIUsage, AIStream, AITurnEvent} from './src/ai';
 
 export * as U2 from './src/u2core/index.js';
+export {BitArray} from './src/u2core/bit-array.js';
+export type {BitPredicate} from './src/u2core/bit-array.js';
 
 import * as grok from './grok';
 import * as ui from './ui';
@@ -72,9 +72,11 @@ $(function () {
     }
   });
   window.addEventListener("unhandledrejection", function(e) {
+    if ((<any>window).grok_Unhandled_Error == undefined)
+      return;
     e.preventDefault();
     e.stopPropagation();
-    (<any>window).grok_Unhandled_Error(e.reason ?? e, e.reason?.stack ?? (<any>e.reason)['$thrownJsError']?.stack);
+    (<any>window).grok_Unhandled_Error(e.reason ?? e, e.reason?.stack ?? (<any>e.reason)?.['$thrownJsError']?.stack);
   });
 
 });

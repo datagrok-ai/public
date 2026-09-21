@@ -3,13 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import { EChartViewer } from '../echart/echart-viewer';
-import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
+import {EChartViewer} from '../echart/echart-viewer';
+import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import * as echarts from 'echarts';
-import { fromEvent } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
-import _ from 'lodash';
-import { ERROR_CLASS, MessageHandler } from '../../utils/utils';
+import {fromEvent} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
+import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
@@ -42,6 +41,7 @@ export class SunburstViewer extends EChartViewer {
   currentVersion: number | null = null;
   includeNulls: boolean;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
+  private moleculeRenderErrorLogged: boolean = false;
   private latestRenderToken = 0;
   viewerFilter: DG.BitSet | null = null;
   constructor() {
@@ -52,8 +52,8 @@ export class SunburstViewer extends EChartViewer {
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.hierarchyLevel = 3;
-    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter']});
-    this.inheritFromGrid = this.bool('inheritFromGrid', true, { category: 'Color' });
+    this.onClick = <onClickOptions> this.string('onClick', 'Select', {choices: ['Select', 'Filter']});
+    this.inheritFromGrid = this.bool('inheritFromGrid', true, {category: 'Color'});
     this.includeNulls = this.bool('includeNulls', true, {category: 'Value'});
 
     this.option = {
@@ -136,8 +136,8 @@ export class SunburstViewer extends EChartViewer {
     };
 
     const handleChartMouseover = async (params: any) => {
-      const { x, y } = params.event.event;
-      const { name, value, data } = params;
+      const {x, y} = params.event.event;
+      const {name, value, data} = params;
       const displayName = name || 'Nulls';
       const tooltipDiv = ui.div();
 
@@ -160,7 +160,7 @@ export class SunburstViewer extends EChartViewer {
       const canvas = this.chart?.getDom().querySelector('canvas');
       if (!canvas) return;
 
-      const { left, top, width, height } = canvas.getBoundingClientRect();
+      const {left, top, width, height} = canvas.getBoundingClientRect();
       const scaleX = canvas.width / width;
       const scaleY = canvas.height / height;
       const clickX = (event.clientX - left) * scaleX;
@@ -267,12 +267,6 @@ export class SunburstViewer extends EChartViewer {
     this.render();
   }
 
-  _showMessage(msg: string, className: string) {
-    const errorDiv = ui.divText(msg, className);
-    errorDiv.style.textAlign = 'center';
-    this.root.appendChild(errorDiv);
-  }
-
   async getSeriesData(): Promise<TreeDataType[] | undefined> {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
     return await TreeUtils.toForest(this.dataFrame, this.eligibleHierarchyNames, this.filter,
@@ -297,7 +291,12 @@ export class SunburstViewer extends EChartViewer {
   async renderMoleculeQueued(params: any, width: number, height: number): Promise<void> {
     this.moleculeRenderQueue = this.moleculeRenderQueue.then(() =>
       this.renderMolecule(params, width, height),
-    );
+    ).catch((e) => {
+      if (!this.moleculeRenderErrorLogged) {
+        this.moleculeRenderErrorLogged = true;
+        console.error(e);
+      }
+    });
     await this.moleculeRenderQueue;
   }
 
@@ -310,8 +309,8 @@ export class SunburstViewer extends EChartViewer {
         return item;
     });
 
-    const { r, r0, startAngle, endAngle } = ItemLayoutInfo;
-    const { width, height } = this.calculateRingDimensions(r0, r, startAngle, endAngle);
+    const {r, r0, startAngle, endAngle} = ItemLayoutInfo;
+    const {width, height} = this.calculateRingDimensions(r0, r, startAngle, endAngle);
 
     if (params.data.semType === 'Molecule') {
       const minImageWidth = 70;
@@ -387,7 +386,7 @@ export class SunburstViewer extends EChartViewer {
   calculateRingDimensions(innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) {
     const width = outerRadius - innerRadius;
     const height = Math.abs(endAngle - startAngle) * outerRadius;
-    return { height, width };
+    return {height, width};
   }
 
   render(orderedHierarchyNames?: string[]): void {
@@ -424,7 +423,7 @@ export class SunburstViewer extends EChartViewer {
     }
 
     if (!this.eligibleHierarchyNames.length) {
-      this._showMessage('The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
+      MessageHandler._showMessage(this.root, 'The Sunburst viewer requires at least one categorical column with fewer than 500 unique categories', ERROR_CLASS);
       return;
     }
 
@@ -440,13 +439,14 @@ export class SunburstViewer extends EChartViewer {
     if (this.chart) {
       this.chart.clear();
       this.chart.dispose();
-      this.detach();
       this.chart = null;
     }
 
     this.chart = echarts.init(this.root);
-    this.initEventListeners();
-    this.addSubs();
+    this.resubscribe(() => {
+      this.initEventListeners();
+      this.addSubs();
+    });
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
     this.chart.setOption(this.option, false, true);

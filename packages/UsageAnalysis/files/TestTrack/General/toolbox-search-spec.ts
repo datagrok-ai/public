@@ -1,11 +1,11 @@
-import {test, expect, Page, Locator} from '@playwright/test';
+import {expect, Page, Locator} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
 
 const demogPath = 'System:DemoFiles/demog.csv';
 
-// Expands the Toolbox > Search pane (if collapsed) and returns the search <input>.
 async function openSearch(page: Page): Promise<Locator> {
   const input = page.locator('input[placeholder="Search"]');
   if (!(await input.isVisible().catch(() => false)))
@@ -14,13 +14,12 @@ async function openSearch(page: Page): Promise<Locator> {
   return input;
 }
 
-// Resets the filter, types `query` into the Search box via the UI, presses Enter, returns trueCount.
 async function runSearch(page: Page, input: Locator, query: string): Promise<number> {
   await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.filter.setAll(true));
   await input.click();
   await input.fill(query);
   await input.press('Enter');
-  await page.waitForTimeout(300); // let the filter recompute
+  await page.waitForTimeout(300); 
   return page.evaluate(() => (window as any).grok.shell.tv.dataFrame.filter.trueCount as number);
 }
 
@@ -68,7 +67,7 @@ test('Toolbox Search — compound and date-value filtering (GROK-20229)', async 
   });
 
   await softStep('BUG 1a: compound AND filters to intersection, not 0', async () => {
-    // Each condition alone matches; AND should be the intersection (856). Current dev returns 0.
+
     expect(await runSearch(page, input, 'AGE > 50 and SEX = M'), 'AGE > 50 and SEX = M').toBe(856);
   });
 
@@ -90,7 +89,7 @@ test('Toolbox Search — compound and date-value filtering (GROK-20229)', async 
   await softStep('BUG 4: leading/trailing whitespace is trimmed, not treated as a non-match', async () => {
     const trimmed = await runSearch(page, input, 'Asian');
     expect(trimmed, 'Asian (substring, incl. Caucasian)').toBe(5339);
-    // A user who types a stray space around the term should get the same matches, not 0.
+
     expect(await runSearch(page, input, ' Asian'), 'leading space " Asian"').toBe(5339);
     expect(await runSearch(page, input, 'Asian '), 'trailing space "Asian "').toBe(5339);
     expect(await runSearch(page, input, '  Asian  '), 'padded "  Asian  "').toBe(5339);
@@ -99,14 +98,12 @@ test('Toolbox Search — compound and date-value filtering (GROK-20229)', async 
   await softStep('BUG 5: quoted equality value matches the same as the unquoted form', async () => {
     const unquoted = await runSearch(page, input, 'RACE = Asian');
     expect(unquoted, 'RACE = Asian (exact category)').toBe(72);
-    // Quoting a string value must not change the match — quotes should not be taken literally.
+
     expect(await runSearch(page, input, 'RACE = "Asian"'), 'RACE = "Asian" (quoted)').toBe(72);
   });
 
   await softStep('BUG 3 (GROK-20229): date comparison on a datetime column with nulls must not crash', async () => {
-    // Build a synthetic table whose datetime column contains null values. The year is irrelevant —
-    // the nulls are the trigger. A valid date comparison currently throws an uncaught TypeError
-    // ("Cannot read properties of undefined (reading 'a')") and filters to 0.
+
     const errsBefore = consoleErrors.length;
     const total = await page.evaluate(() => {
       const grok = (window as any).grok;
@@ -126,9 +123,9 @@ test('Toolbox Search — compound and date-value filtering (GROK-20229)', async 
     });
     expect(total).toBe(200);
     const synthInput = await openSearch(page);
-    // Sanity: a non-date search on the same table works and filters. NUM is 0..199, so NUM > 50 = 149.
+
     expect(await runSearch(page, synthInput, 'NUM > 50'), 'NUM > 50 (sanity)').toBe(149);
-    // The date comparison must return a sane count (dates are all in 2019) and, above all, not crash.
+
     const dated = await runSearch(page, synthInput, 'EVENT_DATE > 1/1/2019');
     expect(dated, 'EVENT_DATE > 1/1/2019 on a column with nulls').toBeGreaterThan(0);
     const newErrors = consoleErrors.slice(errsBefore);

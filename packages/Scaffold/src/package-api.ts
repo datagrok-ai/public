@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-  A customizable DMTA workflow skeleton with embedded AIDD — built on Datagrok.
-  */
+   * A customizable DMTA workflow skeleton with embedded AIDD — built on Datagrok.
+   */
   export async function scaffoldApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Scaffold:ScaffoldApp', { path });
   }

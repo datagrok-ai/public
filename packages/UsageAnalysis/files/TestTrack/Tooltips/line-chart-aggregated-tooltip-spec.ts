@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
@@ -14,7 +15,7 @@ async function readTooltipAtChartPoint(page: import('@playwright/test').Page,
   await page.evaluate(() => (window as any).ui?.tooltip?.hide?.());
   await page.mouse.move(0, 0);
   await page.waitForTimeout(200);
-  // Move off the chart, then onto the target point.
+
   await page.mouse.move(box.x - 50, box.y + box.height / 2);
   await page.waitForTimeout(150);
   const targetX = box.x + box.width * fracX;
@@ -34,7 +35,6 @@ test('Line chart: aggregated tooltip with split column', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Setup + open SPGI dataset (scenario's "Open SPGI Dataset" step)
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -79,7 +79,7 @@ test('Line chart: aggregated tooltip with split column', async ({page}) => {
   });
 
   await softStep('Open tooltip settings and add aggregated tooltip entries', async () => {
-    // Open Edit Aggregated Tooltip dialog via context menu Tooltip > Edit...
+
     await page.evaluate(async () => {
       const lc = document.querySelector('[name="viewer-Line-chart"]')!;
       const canvas = lc.querySelector('canvas')!;
@@ -96,9 +96,7 @@ test('Line chart: aggregated tooltip with split column', async ({page}) => {
       (edit as HTMLElement)?.click();
     });
     await page.waitForTimeout(600);
-    // Cancel the dialog first — the column-picker inside it isn't reachable through synthetic
-    // events, and leaving the dialog open would commit an empty state on OK. Set the property
-    // directly, then re-open the dialog to verify the value parsed into rows correctly.
+
     await page.evaluate(() => {
       const dialog = Array.from(document.querySelectorAll('.d4-dialog'))
         .find((d: any) => d.offsetWidth > 0 && d.querySelector('.d4-dialog-header')?.textContent.includes('Edit Aggregated Tooltip'));
@@ -110,7 +108,7 @@ test('Line chart: aggregated tooltip with split column', async ({page}) => {
       lc.setOptions({aggTooltipColumns: 'unique(Stereo Category)\nmin(Average Mass)'});
     });
     await page.waitForTimeout(300);
-    // Re-open the dialog and read back the parsed rows.
+
     await page.evaluate(async () => {
       const lc = document.querySelector('[name="viewer-Line-chart"]')!;
       const canvas = lc.querySelector('canvas')!;
@@ -142,7 +140,7 @@ test('Line chart: aggregated tooltip with split column', async ({page}) => {
       {column: 'Stereo Category', aggr: 'unique'},
       {column: 'Average Mass', aggr: 'min'},
     ]);
-    // Close the dialog with CANCEL to avoid OK overwriting state.
+
     await page.evaluate(() => {
       const dialog = Array.from(document.querySelectorAll('.d4-dialog'))
         .find((d: any) => d.offsetWidth > 0 && d.querySelector('.d4-dialog-header')?.textContent.includes('Edit Aggregated Tooltip'));
@@ -165,9 +163,7 @@ test('Line chart: aggregated tooltip with split column', async ({page}) => {
   });
 
   await softStep('Hover over Line Chart points', async () => {
-    // Probe many positions across the chart — different X bins / Y series surface different
-    // tooltip content. Aggregated tooltips with the configured columns only appear when the
-    // hover lands on a specific marker hit-test region.
+
     let anyVisible = false;
     let aggregatedText = '';
     let probesSeen: string[] = [];
@@ -196,7 +192,7 @@ test('Line chart: aggregated tooltip with split column', async ({page}) => {
     }
     expect(aggregatedText).toContain('unique(Stereo Category)');
     expect(aggregatedText).toContain('min(Average Mass)');
-    // No chart-related errors raised via grok.shell.
+
     const warnings = await page.evaluate(() => grok.shell.warnings?.length ?? 0);
     expect(warnings).toBe(0);
   });

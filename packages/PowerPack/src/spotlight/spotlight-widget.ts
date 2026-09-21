@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
 import {LearningWidget} from '../widgets/learning-widget';
-import {WorkspaceTab, isApp} from './workspace-tab';
+import {WorkspaceTab} from './workspace-tab';
+import {isSpotlightEntity} from './entity-kinds';
 import {clearWorkspacePreview} from './preview-host';
 
 
@@ -97,7 +98,7 @@ export class SpotlightWidget extends DG.Widget {
       'Learn': () => new LearningWidget().root,
     };
 
-    this.tabControl = ui.tabControl(tabs, true, 'spotlight-widget');
+    this.tabControl = ui.tabControl(tabs, {vertical: true, key: 'spotlight-widget'});
     this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
       this.cleanLists();
       if (tabPane.name !== 'Workspace')
@@ -304,7 +305,7 @@ export class SpotlightWidget extends DG.Widget {
     const existingIds = new Set(this.sharedWithMe.map((e) => e.id));
     for (const id of sqlOnlyIds) {
       const ent = byIdMap.get(id);
-      if (!ent || existingIds.has(id) || !SpotlightWidget.isSpotlightEntity(ent))
+      if (!ent || existingIds.has(id) || !isSpotlightEntity(ent))
         continue;
       this.sharedWithMe.push(ent);
       this.sharedNotifications.push(null as any);
@@ -339,7 +340,7 @@ export class SpotlightWidget extends DG.Widget {
     this.recentEntities.length = 0;
     this.recentEntityTimes.length = 0;
     for (const ent of entities) {
-      if (!SpotlightWidget.isSpotlightEntity(ent))
+      if (!isSpotlightEntity(ent))
         continue;
       this.recentEntities.push(ent);
       this.recentEntityTimes.push(timestampMap.get(ent.id) ?? null);
@@ -813,21 +814,6 @@ export class SpotlightWidget extends DG.Widget {
         child.querySelector('span.d4-markup')?.appendChild(ui.span([` ${uniqueEvents.get(text)} times`]));
     }
     return list;
-  }
-
-  /** Returns true if the entity is relevant for Spotlight (Recent / Shared with me). */
-  static isSpotlightEntity(ent: DG.Entity): boolean {
-    if (!ent || !ent.friendlyName)
-      return false;
-    if (ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
-      ent instanceof DG.UserReport || ent.entityType === 'UserReport' || ent instanceof DG.TableInfo ||
-      (ent instanceof DG.Func && !(ent instanceof DG.Script || ent instanceof DG.DataQuery || ent instanceof DG.DataJob || isApp(ent))) ||
-      ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection ||
-      (ent instanceof DG.Project && (ent.isPackage || (!ent.isDashboard && !ent.isSpace))) ||
-      //@ts-ignore
-        (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))
-      return false;
-    return true;
   }
 
   removeUnnecessaryEntities(list: Array<DG.LogEvent | DG.UserNotification>): Array<DG.LogEvent | DG.UserNotification> {

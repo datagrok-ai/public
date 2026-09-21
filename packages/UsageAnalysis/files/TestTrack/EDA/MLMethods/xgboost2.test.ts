@@ -7,17 +7,6 @@ import {
   trainEdaModelViaApi,
 } from "./helpers";
 
-// Test Track scenario: EDA/MLMethods/xgboost2.md
-// 1. Open cars.csv from Demo files.
-// 2. Top Menu > ML > Models > Train Model...
-// 3. Predict = price, Features = all except Price and Model, Model Engine = Eda: XGBoost.
-// 4. In the model result, vary Rate/Lambda/Alpha sliders and Iterations/Max depth clickers.
-//
-// UI scope and fallbacks (per xgboost2-run.md): same constraints as xgboost1 — UI covers
-// file open / Train Model view / Predict; training itself goes through the same registered
-// function the UI would call, and the hyperparameter sliders live in a result view that
-// the API path does not open.
-
 test.describe.serial("EDA / MLMethods / XGBoost (regression)", () => {
   test.afterEach(async ({ page }) => {
     await resetShell(page);

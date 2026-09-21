@@ -339,6 +339,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private seqCol: DG.Column<string> | null = null;
   private positions: PositionInfo[] = [];
+  /** A render requested and not yet drawn — what automation settles on (`isRenderPending`). */
+  private _renderPending: boolean = false;
+  /** The positions the last layout placed on the canvas, first and last index. */
+  private _visibleRange: [number, number] | null = null;
 
   private visibleSlider: boolean = false;
   private allowResize: boolean = true;
@@ -996,7 +1000,44 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     _package.logger.debug(`${this.toLog()}` +
       `.render( recalcLevelVal=${renderLevel}, reason='${reason}' )`);
     this.requestedRenderLevel = Math.max(this.requestedRenderLevel, renderLevel);
+    this._renderPending = true;
     this.renderRequest.next(this.requestedRenderLevel);
+  }
+
+  get isRenderPending(): boolean { return this._renderPending; }
+
+  /** What the viewer shows, for automation: the canvas, a hit area per drawn position and per
+   * monomer glyph (`monomer M at position 3`, canvas coordinates in CSS px), and readings. */
+  getWidgetStatus(): any {
+    const base = (Object.getPrototypeOf(WebLogoViewer.prototype) as any).getWidgetStatus?.call(this) ?? {};
+    const dpr = window.devicePixelRatio;
+    const hitAreas: {[name: string]: {x: number, y: number, width: number, height: number}} = {};
+    if (this.canvas)
+      hitAreas['view'] = {x: 0, y: 0, width: this.canvas.width / dpr, height: this.canvas.height / dpr};
+    let positionsShown = 0;
+    if (this._visibleRange) {
+      for (let jPos = this._visibleRange[0]; jPos <= this._visibleRange[1]; jPos++) {
+        const pi = this.positions[jPos];
+        if (!pi) continue;
+        let top = Infinity; let bottom = -Infinity; let left = 0; let width = 0;
+        for (const m of pi.getMonomers()) {
+          const b = pi.getFreq(m).bounds;
+          if (!b || m === GAP_SYMBOL) continue;
+          hitAreas[`monomer ${m} at position ${pi.label}`] = {x: b.left / dpr, y: b.top / dpr, width: b.width / dpr, height: b.height / dpr};
+          top = Math.min(top, b.top); bottom = Math.max(bottom, b.bottom); left = b.left; width = b.width;
+        }
+        if (top < bottom) {
+          hitAreas[`position ${pi.label}`] = {x: left / dpr, y: top / dpr, width: width / dpr, height: (bottom - top) / dpr};
+          positionsShown++;
+        }
+      }
+    }
+    const values: {[name: string]: number | string | boolean} = {
+      'positions shown': positionsShown,
+      'rows shown': this.dataFrame ? this.getFilter().trueCount : 0,
+      'rows selected': this.dataFrame ? this.dataFrame.selection.trueCount : 0,
+    };
+    return {...base, parts: {...(base.parts ?? {}), canvas: this.canvas}, hitAreas, values};
   }
 
   /** Render WebLogo sensitive to changes in params of rendering
@@ -1132,6 +1173,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           jPos, this.slider.min, absoluteMaxHeight, this.positionHeight,
           alphabetSizeLog, this._positionWidthWithMargin, this._positionWidth, dpr, positionLabelsHeight);
       }
+      this._visibleRange = [firstPos, lastPos];
       _package.logger.debug(`${this.toLog()}.render.calculateLayoutInt(), end `);
       this._onLayoutCalculated.next();
     };
@@ -1193,11 +1235,17 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const logPrefix = `${this.toLog()}.renderRequestOnDebounce()`;
     if ($(this.root).offsetParent().get()[0]?.tagName === 'HTML') {
       _package.logger.warning(`${logPrefix}, $(this.root).offsetParent() is the 'HTML' tag.`);
+      this._renderPending = false;
       return;
     }
     this.requestedRenderLevel = WlRenderLevel.None;
     this.viewSyncer.sync(logPrefix, async () => {
-      await this.renderInt(renderLevel);
+      try {
+        await this.renderInt(renderLevel);
+      } finally {
+        this._renderPending = false;
+        this._onRendered.next();
+      }
     });
   }
 

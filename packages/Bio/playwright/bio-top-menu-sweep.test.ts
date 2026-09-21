@@ -43,7 +43,7 @@ const BIO_LEAVES: Leaf[] = [
   {group: 'Annotate', leaf: 'Apply-Numbering-Scheme...', dialog: 'Apply-Antibody-Numbering'},
   {group: 'Annotate', leaf: 'Scan-Liabilities...', dialog: 'Scan-Sequence-Liabilities'},
   {group: 'Annotate', leaf: 'Manage-Annotations...', dialog: 'Manage-Annotations'},
-  {group: 'Manage', leaf: 'Match-with-Monomer-Library...', dialog: 'matchWithMonomerLibrary'},
+  {group: 'Manage', leaf: 'Match-with-Monomer-Library...', dialog: 'Match-with-Monomer-Library'},
   {group: 'Manage', leaf: 'Monomer-Libraries', view: 'Manage Monomer Libraries'},
   {group: 'Manage', leaf: 'Monomers', view: 'Manage Monomers'},
   {group: 'Search', leaf: 'Similarity-Search', viewer: 'Sequence Similarity Search', viewerReady: 'idxs'},

@@ -18,6 +18,9 @@ export abstract class GridTreeRendererBase<TNode extends MarkupNodeType> extends
 
   get leftPadding(): number { return this._leftPadding; }
 
+  /** The threshold an open Assign Clusters dialog draws its cut line at; null while none is open. */
+  cutThreshold: number | null = null;
+
   get rightPadding(): number { return this._rightPadding; }
 
   /** treeRoot can be null in case of the grid.dataFrame.rowCount is zero

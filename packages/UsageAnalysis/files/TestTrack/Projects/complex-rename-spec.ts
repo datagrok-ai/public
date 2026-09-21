@@ -1,6 +1,5 @@
-// GROK-19212: rename a referenced table inside a project, reopen, verify it loads without resolution error.
-// Test 1 = table rename (GROK-19212); Test 2 = query rename (github-3550); Test 3 = script rename (sister).
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {
@@ -14,10 +13,8 @@ import {
   ProvisionedScript,
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
-import {
-  saveProjectWithProvenance,
-  deleteProjectWithCleanup,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance} from './projects-shared';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 
 test.use(projectsTestOptions);
@@ -67,7 +64,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
     });
 
     await softStep('Save baseline project (Data Sync ON), capture project ID', async () => {
-      // Multi-table inline save — all 3 tables must persist so renaming src_a breaks joined's reference.
+
       const saved = await page.evaluate(async (n) => {
         const grok = (window as any).grok;
         const DG = (window as any).DG;
@@ -109,7 +106,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
 
     await softStep('Step 7: rename a referenced table inside the project (the GROK-19212 trigger)', async () => {
       if (!projectId) throw new Error('no projectId captured');
-      // Reopen by id (filter-by-name fails for dashed names).
+
       await closeAll(page);
       await page.evaluate(async (pid) => {
         const grok = (window as any).grok;
@@ -150,7 +147,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
           if (!p) return {ok: false, reason: 'project disappeared after rename+save'};
           await p.open();
           await new Promise((r) => setTimeout(r, 3000));
-          // Use dataFrame.rowCount as load signal (shell.tables.length throws Tn.grok_TableNames in some reopen states).
+
           const rc = grok?.shell?.tv?.dataFrame?.rowCount ?? 0;
           return {ok: true, rowCount: rc};
         } catch (e) {
@@ -158,7 +155,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
         }
       }, projectId);
       expect(result.ok).toBe(true);
-      // rowCount > 0 means at least one source table re-materialized despite the rename.
+
       expect(result.rowCount).toBeGreaterThan(0);
     });
   } finally {
@@ -166,16 +163,12 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
       projectId: projectId ?? undefined,
       tableInfoId: tableInfoId ?? undefined,
     });
-    void layoutId; // layout cleanup deferred; deleteProjectWithCleanup doesn't take layoutId yet
+    void layoutId; 
     await closeAll(page);
   }
 
   finishSpec();
 });
-
-// ---------------------------------------------------------------------------
-// Test 2 — Query rename: github-3550 reproduction via project source
-// ---------------------------------------------------------------------------
 
 test('Projects / Complex rename: rename Query, reopen, verify reference resolution (github-3550)', async ({page}) => {
   test.setTimeout(420_000);
@@ -221,12 +214,12 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
       expect(ok).toBe(true);
     });
 
-    await softStep('github-3550 INVARIANT: reopen project, verify auto-resolve OR explicit error', async () => {
+    await softStep('github-3550 INVARIANT: rename external query, reopen project — source table must still resolve', async () => {
       if (!saved) throw new Error('no saved project');
       const result = await evalJs<{
         loadedOk: boolean;
         errorMessage: string | null;
-        relationsCount: number;
+        rowCount: number;
       }>(page, `(async () => {
         grok.shell.closeAll();
         await new Promise(r => setTimeout(r, 800));
@@ -237,16 +230,17 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
           if (grok.shell.tables.length > 0) break;
           await new Promise(r => setTimeout(r, 500));
         }
-        const fresh = await grok.dapi.projects.find('${saved.projectId}');
         return {
           loadedOk: grok.shell.tables.length > 0,
           errorMessage,
-          relationsCount: fresh.relations ? fresh.relations.length : 0,
+          rowCount: grok.shell.tv?.dataFrame?.rowCount ?? 0,
         };
       })()`);
-      const isHappyPath = result.loadedOk;
-      const isGracefulFailure = !result.loadedOk && result.errorMessage !== null;
-      expect(isHappyPath || isGracefulFailure).toBe(true);
+      expect(result.loadedOk, result.errorMessage
+        ? `project failed to reopen after query rename (github-3550): ${result.errorMessage}`
+        : 'project reopened with zero tables — query reference was invalidated by rename (github-3550)',
+      ).toBe(true);
+      expect(result.rowCount).toBeGreaterThan(0);
     });
   } finally {
     if (saved)
@@ -260,10 +254,6 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
 
   finishSpec();
 });
-
-// ---------------------------------------------------------------------------
-// Test 3 — Script rename: github-3550 sister invariant via project source
-// ---------------------------------------------------------------------------
 
 test('Projects / Complex rename: rename Script, reopen, verify reference resolution', async ({page}) => {
   test.setTimeout(420_000);
@@ -309,11 +299,12 @@ test('Projects / Complex rename: rename Script, reopen, verify reference resolut
       expect(ok).toBe(true);
     });
 
-    await softStep('Sister invariant: reopen project, verify auto-resolve OR explicit error', async () => {
+    await softStep('Sister invariant: rename external script, reopen project — source table must still resolve', async () => {
       if (!saved) throw new Error('no saved project');
       const result = await evalJs<{
         loadedOk: boolean;
         errorMessage: string | null;
+        rowCount: number;
       }>(page, `(async () => {
         grok.shell.closeAll();
         await new Promise(r => setTimeout(r, 800));
@@ -327,11 +318,14 @@ test('Projects / Complex rename: rename Script, reopen, verify reference resolut
         return {
           loadedOk: grok.shell.tables.length > 0,
           errorMessage,
+          rowCount: grok.shell.tv?.dataFrame?.rowCount ?? 0,
         };
       })()`);
-      const isHappyPath = result.loadedOk;
-      const isGracefulFailure = !result.loadedOk && result.errorMessage !== null;
-      expect(isHappyPath || isGracefulFailure).toBe(true);
+      expect(result.loadedOk, result.errorMessage
+        ? `project failed to reopen after script rename: ${result.errorMessage}`
+        : 'project reopened with zero tables — script reference was invalidated by rename',
+      ).toBe(true);
+      expect(result.rowCount).toBeGreaterThan(0);
     });
   } finally {
     if (saved)

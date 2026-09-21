@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {
   baseUrl,
   loginToDatagrok,
@@ -8,9 +9,6 @@ import {
 } from "../../spec-login";
 
 test.use(specTestOptions);
-
-// Prerequisite: a connection named "new_test" must exist (created by the user running the
-// `Adding` scenario, or seeded out-of-band, e.g. via `grok s connections save --json`).
 
 test("Connections / Browser", async ({ page }) => {
   test.setTimeout(600_000);
@@ -51,7 +49,7 @@ test("Connections / Browser", async ({ page }) => {
           .click();
         await page.waitForTimeout(300);
       }
-      // Reset back to All so subsequent search is unfiltered
+
       await page.locator("span.d4-tag", { hasText: /^All$/ }).first().click();
       await page.waitForTimeout(400);
     },
@@ -93,8 +91,7 @@ test("Connections / Browser", async ({ page }) => {
   await softStep(
     "Step 5.2: Share connection with another user (Selenium)",
     async () => {
-      // Try UI: right-click → Share... — synthetic clicks do not commit the autocomplete pick
-      // reliably, so we cancel the dialog and use the JS API fallback.
+
       await page.evaluate(() => {
         const span = document.querySelector('[name="span-new-test"]');
         span?.dispatchEvent(
@@ -125,7 +122,6 @@ test("Connections / Browser", async ({ page }) => {
       });
       expect(result).toBe(true);
 
-      // Re-click connection to refresh the property panel.
       await page
         .locator("label", { hasText: /^New_test$/ })
         .first()

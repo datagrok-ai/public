@@ -16,81 +16,84 @@ migration_date: 2026-05-04
 related_bugs: []
 ---
 
-# Complex — Move project lifecycle
+# Complex — Move a project into a Space
 
-Verifies that a saved project can be moved between namespaces — from
-its default location to a file-share namespace, then to a Space — and
-that it still opens correctly with all its tables and relations
-intact after each move. Uses a single file-share source
-(`demog.csv`).
-
-Neither UI path for moving a project currently works: drag-and-drop
-in the Browse tree can't be driven through Playwright, and the
-right-click "Move to" menu option does not exist in the current UI
-(verified against dev.datagrok.ai). So this scenario drives the move
-through the `grok.dapi.projects` JS API instead. UI coverage for any
-move-related context-menu surface, if and when one is added, is owned
-by `projects-ui-smoke.md`.
+Checks that a saved project can be moved into a Space and, from
+there, into another Space, and that it still opens with its data after
+each move.
 
 ## Setup
 
-1. Authenticate as test user.
-2. Project name: `move-test-${Date.now()}`.
-3. **Environment dependencies:**
-   - File share namespace accessible to test user (e.g.
-     `System:AppData/MyShare/`).
-   - Space accessible to test user (e.g. inline-created via JS
-     API per Spaces prelude pattern).
-4. Cleanup: delete the project; delete the inline-created Space.
+1. Log in as the test user.
+2. Names in this test: project `moveTest`, Spaces `moveA` and
+   `moveB`.
 
-## Scenarios
+## Scenario
 
-### Main flow — move project across namespaces
+1. **Create two Spaces.**
+   - In **Browse**, right-click **Spaces** and choose **Create
+     Space...**.
+   - In the **Create Space** dialog, replace *New Space* with `moveA`.
+   - Click **OK**.
+   - Right-click **Spaces** and choose **Create Space...**.
+   - Replace *New Space* with `moveB`.
+   - Click **OK**.
+   - Expand **Spaces**.
+   - **Verify:** `moveA` and `moveB` are listed.
 
-1. **Open `demog` from File share.** Open
-   `System:DemoFiles/demog.csv`. Verify table loaded.
-2. **Save project with Data Sync ON.** Save Project, name from
-   Setup, Data Sync **ON**, OK. Cancel auto-share. Verify
-   project's initial namespace via
-   `(await grok.dapi.projects.find(<id>)).fullName` — should
-   be in the test user's default namespace.
-3. **Move project to a file-share namespace via JS API.**
-   ```js
-   const fileShareNamespace = '<test-user-namespace>'; // resolve via grok.dapi.namespaces
-   await grok.dapi.projects.move(project, fileShareNamespace);
-   ```
-   - Verify the project's new namespace via
-     `(await grok.dapi.projects.find(<id>)).fullName`.
-   - Verify the project still opens (re-find by id; load tables;
-     no missing-data errors).
-4. **Move project to a Space (inline-created).**
-   ```js
-   const space = await grok.dapi.spaces.createRoot('move-target-${Date.now()}');
-   const spaceNamespace = `Spaces:${space.name}`;
-   await grok.dapi.projects.move(project, spaceNamespace);
-   ```
-   - Verify project's new namespace.
-   - Verify project still opens; tables still loaded; relations
-     preserved.
-5. **Cleanup.** Delete the project. Delete the inline Space.
+2. **Save the project.**
+   - Go to **Browse > Files > Demo**.
+   - Double-click `demog.csv`.
+   - Click **SAVE** on the ribbon.
+   - Enter `moveTest` as the name.
+   - Leave **Data sync** ON.
+   - Click **OK**.
+   - **Verify:** the balloon *Project "moveTest" uploaded.* appears.
+   - In the **Share** dialog, click **CANCEL**.
+   - Right-click the left sidebar and select **Close All**.
 
-### Expected results
+3. **Move it to the first Space.**
+   - Go to **Browse > Dashboards**.
+   - Type `moveTest` into the search box.
+   - Right-click the `moveTest` tile and choose **Move to Space...**.
+   - In the **Move to space** dialog, set **Space** to `moveA`.
+   - Click **OK**.
+   - Click **Spaces > moveA**.
+   - **Verify:** `moveTest` is listed in `moveA`.
 
-- Move via JS API succeeds in both directions (default namespace
-  → file share namespace → Space namespace).
-- Project remains openable post-move.
-- Tables and relations preserved across moves.
+4. **Open it from the Space.**
+   - Double-click `moveTest` in `moveA`.
+   - **Verify:** the `demog` view opens with 5,850 rows.
+   - **Verify:** no error balloon appears.
+   - Right-click the left sidebar and select **Close All**.
 
-## Notes
+5. **Move it to the second Space.**
+   - In `moveA`, right-click `moveTest` and choose **Move to Space...**.
+   - Set **Space** to `moveB`.
+   - Click **OK**.
+   - Click **Spaces > moveB**.
+   - **Verify:** `moveTest` is listed in `moveB`.
+   - Click **Spaces > moveA**.
+   - **Verify:** `moveTest` is not listed in `moveA`.
 
-- **JS API path is primary; UI move is not currently available.**
-  The move-related sub-features are marked UI-only in the feature
-  atlas, but that classification refers to the missing UI surface
-  (no working drag-drop, no "Move to" menu item) — the JS API move
-  contract (`grok.dapi.projects.move(...)`) itself is fully testable
-  and is what this scenario covers. If a right-click "Move to" UI is
-  added in the future, a corresponding step could be added to
-  `projects-ui-smoke.md`.
-- **No related bug.** Move operations have no GROK ticket; this is
-  proactive coverage of the move-namespace path.
-- **Self-cleaning.** Step 5 deletes everything created.
+6. **Open it again.**
+   - Click **Spaces > moveB**.
+   - Double-click `moveTest`.
+   - **Verify:** the `demog` view opens with 5,850 rows.
+   - Right-click the left sidebar and select **Close All**.
+
+7. **Cleanup.**
+   - In `moveB`, right-click `moveTest` and choose **Delete Project**.
+   - Click **DELETE**.
+   - Wait until the dialog closes.
+   - Right-click `moveA` and choose **Delete Space**.
+   - **Verify:** the dialog says *Delete space "moveA"? This will
+     delete space and its related data…*.
+   - Click **DELETE**.
+   - Right-click `moveB` and choose **Delete Space**.
+   - Click **DELETE**.
+
+## Expected results
+
+- A project can be moved into a Space and between Spaces.
+- The project opens with its data after every move.

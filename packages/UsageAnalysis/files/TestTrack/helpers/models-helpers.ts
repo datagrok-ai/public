@@ -1,27 +1,3 @@
-/**
- * Playwright helpers for the PredictiveModelingView column-picker dialog
- * (`[name="dialog-Select-columns..."]`) and the column-selector popup
- * (`.d4-column-selector`).
- *
- * Why this module exists:
- * The picker renders the column list into a canvas (not DOM checkboxes)
- * and the JS-API setter `view.predict = ...` / `view.features = [...]`
- * does NOT visibly update the form — see grok-browser/references/models.md
- * "Features column-picker dialog" gotchas. Driving the canvas through
- * trusted Playwright clicks + search-filter narrowing is the only stable
- * surface; the four Models specs each re-implemented the same recipe.
- *
- * Pattern, distilled from chemprop-spec / models-validators-edge-spec:
- *   1. open the picker (mousedown on `[name="div-Features"]`)
- *   2. clear via `[name="label-None"]`
- *   3. for each column: type its name into the dialog's search input,
- *      then trusted-click the canvas overlay at a derived row coordinate
- *      (right-edge x ≈ checkbox column, swept dy across plausible row
- *      strides until the "N checked" count increments)
- *   4. clear the search filter, click OK
- *   5. as last resort fall back to `[name="label-All"]` if the per-name
- *      sweep failed to toggle (training pipeline tolerates extra cols)
- */
 import {Page, expect} from '@playwright/test';
 
 export async function setPredict(page: Page, columnName: string): Promise<void> {
@@ -71,20 +47,6 @@ async function readCheckedCount(page: Page): Promise<number> {
   });
 }
 
-/**
- * Toggle the given feature columns ON in the Features column-picker.
- * Idempotent re-open safe: clears via label-None first.
- *
- * Recipe (verified 2026-06-09 against dev build; canvas hit-zone is
- * viewport-independent — same coords on 1920×1080 and 1366×768):
- *   - Search-filter REORDERS the canvas (it is a real filter, not a
- *     visual decorator), so after `Search=<name>` row 0 IS the target
- *     column.
- *   - Trusted click at `(box.right - 40, box.top + 36)` toggles row 0.
- *   - One click per column — no (dx, dy) sweep needed.
- * Falls back to label-All if a click does not toggle (build drift / new
- * picker layout).
- */
 export async function selectFeaturesByName(page: Page, columnNames: string[]): Promise<void> {
   await openFeaturesPicker(page);
   const dlg = page.locator('[name="dialog-Select-columns..."]');
@@ -106,9 +68,7 @@ export async function selectFeaturesByName(page: Page, columnNames: string[]): P
     await page.waitForTimeout(300);
     const after = await readCheckedCount(page);
     if (after !== before + 1) {
-      // Build drift: row-0 hit-zone moved. Bail out to label-All —
-      // training pipeline tolerates extra columns; the load-bearing
-      // assertion is "at least the named ones are checked".
+
       await search.fill('');
       await dlg.locator('[name="label-All"]').click();
       await page.waitForTimeout(300);
@@ -122,32 +82,6 @@ export async function selectFeaturesByName(page: Page, columnNames: string[]): P
     null, {timeout: 10_000});
 }
 
-/**
- * Open the Features picker, then uncheck a single already-checked row at
- * a fixed canvas-row geometry. Use case: train-spec Block 2 uncheck-WEIGHT
- * (Block 1 left the picker with HEIGHT and WEIGHT checked; the predict
- * column WEIGHT must be removed from features).
- *
- * Row-geometry per grok-browser/references/models.md "Canvas-overlay
- * click hit-zone (Features picker)" verified 2026-06-09 against dev:
- *   - data row stride = 28 px (build-frozen)
- *   - first data row centre = top + 36
- *   - row N centre = top + 36 + 28 * N
- *   - hit x = right - 40 (checkbox column)
- *
- * Earlier `stride = canvas.height / totalRows` derivation was WRONG —
- * the canvas is 300 px tall regardless of row count, so dividing by
- * row count puts the click target well past the actual row band (for
- * totalRows=2 the formula returned y=448, while the real row-1 centre
- * is y=287 — a 160px miss into the empty space below the last row).
- * The `totalRows` arg is kept for API compatibility but is no longer
- * load-bearing.
- *
- * Re-open invariant (verified 2026-06-09): CHECKED rows float to the
- * top of the picker on re-open, in original-column-index order.
- * Re-open needs ≥1200 ms settle before the first click — at 700 ms the
- * row-0 click misses ~30% of the time.
- */
 export async function uncheckFeatureRowByPosition(
   page: Page, rowIndex: number, _totalRows?: number): Promise<void> {
   await openFeaturesPicker(page);

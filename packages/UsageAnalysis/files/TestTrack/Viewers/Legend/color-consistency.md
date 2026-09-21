@@ -4,7 +4,9 @@ realizes_atlas: []
 realizes: [viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
 realized_as:
   - color-consistency-spec.ts
+  - color-consistency-server-spec.ts
 target_layer: playwright
+boot_lane: mixed
 coverage_type: edge
 priority: p0
 pyramid_layer: integration

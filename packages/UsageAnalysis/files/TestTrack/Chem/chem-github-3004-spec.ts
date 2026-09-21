@@ -1,5 +1,5 @@
-// github-3004: Scaffold Tree from active TableView must bind to the active TableView, not first-opened (fixed 1.21.0).
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 

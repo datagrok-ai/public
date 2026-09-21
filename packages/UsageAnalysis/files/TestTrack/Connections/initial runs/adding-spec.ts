@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {
   baseUrl,
   loginToDatagrok,
@@ -15,7 +16,6 @@ test("Connections / Adding", async ({ page }) => {
 
   await loginToDatagrok(page);
 
-  // Pre-cleanup: delete prior test_postgres / test_postgres_2 so this spec is idempotent.
   await page.evaluate(async () => {
     const g: any = (window as any).grok;
     document.body.classList.add("selenium");
@@ -68,7 +68,7 @@ test("Connections / Adding", async ({ page }) => {
   await softStep(
     "Steps 3-4: Fill Name, Server, Port, Db, Login, Password",
     async () => {
-      // Dart inputs only react to native key events — not .value setters or fill(). Use keyboard.
+
       const fillField = async (name: string, value: string) => {
         const loc = page.locator(`[name="${name}"]`);
         await loc.click();
@@ -112,8 +112,7 @@ test("Connections / Adding", async ({ page }) => {
         btn?.click();
       });
       await page.waitForTimeout(12_000);
-      // The TEST run is async; with a placeholder password the dialog stays open and OK is enabled.
-      // Assert the dialog is still here so we know the click was wired up and the test attempt ran.
+
       await expect(page.locator(".d4-dialog")).toBeVisible();
     },
   );
@@ -153,7 +152,6 @@ test("Connections / Adding", async ({ page }) => {
       await page.waitForTimeout(1500);
       await expect(page.locator(".d4-dialog")).toBeVisible({ timeout: 5000 });
 
-      // Pick Postgres data source
       await page.evaluate(() => {
         const ds = document.querySelector(
           '[name="input-Data-Source"]',

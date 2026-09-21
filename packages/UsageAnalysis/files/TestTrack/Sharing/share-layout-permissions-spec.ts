@@ -1,8 +1,7 @@
-import {test, expect, Page} from '@playwright/test';
-import {
-  loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
-  specTestOptions, softStep, stepErrors, baseUrl,
-} from '../spec-login';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
+import {recipientPage, secondUserLogin} from './_actors';
 
 test.use(specTestOptions);
 
@@ -36,10 +35,7 @@ async function waitForDapiReady(page: Page) {
       return false;
     }
   }, null, {timeout: 90_000});
-  
-  
-  
-  
+
   await page.waitForTimeout(2000);
 }
 
@@ -104,16 +100,12 @@ async function expandSharingPaneAndWaitShare(page: Page) {
 }
 
 test('Sharing & Permissions — Layout', async ({page}) => {
-  // UI lifecycle + two-user login switches + permission round-trips; 240s covers the
-  // two re-auths (each waits on dapi-ready) plus the UI pane/dialog/PermissionsView steps.
+
   test.setTimeout(240_000);
 
-  
   await loginToDatagrok(page);
   await waitForDapiReady(page); 
-  
-  
-  
+
   const ownerLogin = await page.evaluate(async () => (await grok.dapi.users.current()).login as string);
 
   await page.evaluate(() => {
@@ -127,11 +119,13 @@ test('Sharing & Permissions — Layout', async ({page}) => {
     grok.shell.windows.simpleMode = true;
   });
 
-  const recipientLogin = await getSecondUserLogin();
+  const recipientLogin = await secondUserLogin();
+  const rp = await recipientPage(page);
+  await waitForDapiReady(rp);
+  await waitForIdentity(rp, recipientLogin);
   LAYOUT_ID = await createLayout(page, LAYOUT_NAME);
   await setCurrentObjectToLayout(page, LAYOUT_ID);
 
-  
   await softStep('Block A.1: Expand Sharing pane; owner grant + SHARE... button', async () => {
     await expandSharingPaneAndWaitShare(page);
     const shareBtn = page.locator('[name="button-Share..."]');
@@ -148,30 +142,27 @@ test('Sharing & Permissions — Layout', async ({page}) => {
     await page.locator('[name="button-Share..."]').click();
     const dlg = page.locator('.d4-dialog');
     await expect(dlg).toBeVisible({timeout: 15_000});
-    
-    
+
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
+    // GROK-20322 removed the Share dialog's "Advanced editor..." link
+    // (core/client/xamgle/lib/src/commands/file/share_dataset.dart); the grant list the
+    // PermissionsEditor renders is what the dialog must show now.
+    await expect(page.locator('.d4-dialog .grok-permissions')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
-    
+
     const selText = await page.locator('[name="div-share-selector"]').textContent();
     expect((selText ?? '').replace(/\s+/g, ' ')).toContain('View and use');
   });
 
-  
   await softStep('Block B.1: Type recipient into autocomplete; suggestion list appears', async () => {
     const input = page.locator('input[placeholder="User, group, or email"]');
     await input.click();
     await input.fill('');
     await page.keyboard.type(recipientLogin.slice(0, Math.max(3, recipientLogin.length - 2)));
-    
-    
-    
-    
-    
-    
+
     const dropSel = '.d4-tags-selector-drop-down.d4-user-selector-drop-down';
     await expect.poll(async () => page.evaluate((sel) => {
       const e = document.querySelector(sel) as HTMLElement | null;
@@ -182,12 +173,7 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   });
 
   await softStep('Block B.2: Notification controls present; NO cascade notice for a layout', async () => {
-    
-    
-    
-    
-    
-    
+
     await expect(page.locator('textarea[placeholder="Type in message here"]')).toBeAttached();
     const sendNotifPresent = await page.locator(
       '[name="input-Send-notifications"], .grok-permission-notifications input[type="checkbox"]').count();
@@ -203,9 +189,7 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   await softStep('Block B.3: CANCEL closes dialog; no grant changed (owner-only)', async () => {
     await page.locator('[name="button-CANCEL"]').click();
     await expect(page.locator('.d4-dialog')).toHaveCount(0, {timeout: 10_000});
-    
-    
-    
+
     const state = await page.evaluate(async (args) => {
       const {lId, login} = args;
       const l = await grok.dapi.layouts.find(lId);
@@ -219,49 +203,23 @@ test('Sharing & Permissions — Layout', async ({page}) => {
     expect(state.recipientPresent).toBe(false);
   });
 
-  
   await softStep('Block C.1: Open Advanced editor; PermissionsView matrix opens at /permissions/<id>', async () => {
-    
-    
+
     await expandSharingPaneAndWaitShare(page);
     await page.locator('[name="button-Share..."]').click();
     await expect(page.locator('.d4-dialog')).toBeVisible({timeout: 15_000});
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     await page.goto(`${baseUrl}/permissions/${LAYOUT_ID}`);
     await page.waitForTimeout(2500);
     await expect(page.locator('.grok-permissions-self, [class*="grok-permissions"]').first())
       .toBeVisible({timeout: 15_000});
     await expect(page.locator('.d4-grid').first()).toBeVisible({timeout: 15_000});
     await expect(page.locator('[name="button-Save"]')).toBeVisible({timeout: 10_000});
-    // The Calculate-resulting-permissions button is not present for every entity type / permission
-    // state, so record its presence as a remark — the PermissionsView render is already hard-asserted
-    // above via .grok-permissions-self + .d4-grid + the Save button.
+
     const calcPresent = await page.locator(
       '[name="button-Calculate-resulting-permissions-for-this-entity"]').count();
     test.info().annotations.push({type: 'remark',
       description: `Calculate-resulting-permissions button present: ${calcPresent > 0}`});
-
 
     test.info().annotations.push({type: 'remark',
       description: 'Layout Advanced editor opens the PermissionsView at /permissions/<id> ' +
@@ -272,22 +230,15 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   });
 
   await softStep('Block C.2: Add-user row present in the PermissionsView; close without saving', async () => {
-    
-    
+
     await expect(
       page.locator('input[placeholder="Type in user, role or group to add..."]')).toBeVisible();
     await page.evaluate(() => grok.shell.closeAll());
     await page.waitForTimeout(1500);
   });
 
-  
   await softStep('Block D.1: Owner shares "View and use" with recipient via JS API grant', async () => {
-    
-    
-    
-    
-    
-    
+
     const granted = await page.evaluate(async (args) => {
       const {lId, login} = args;
       const l = await grok.dapi.layouts.find(lId); 
@@ -295,8 +246,7 @@ test('Sharing & Permissions — Layout', async ({page}) => {
       if (!l || !grp) return {ok: false, reason: !l ? 'no-layout' : 'no-recipient-group', granted: false};
       await grok.dapi.permissions.grant(l, grp, false); 
       const p = await grok.dapi.permissions.get(l);
-      
-      
+
       const grantedToRecipient = (p?.view ?? []).some((g: any) => g.id === grp.id);
       return {ok: true, granted: grantedToRecipient};
     }, {lId: LAYOUT_ID, login: recipientLogin});
@@ -305,35 +255,19 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   });
 
   await softStep('Block D.2-3: Recipient gains View; shared layout reachable + applicable', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page);                      
-    await waitForIdentity(page, recipientLogin);       
-    
-    
-    
-    const found = await page.evaluate(async (lId) =>
+    await waitForIdentity(rp, recipientLogin);
+
+    const found = await rp.evaluate(async (lId) =>
       !!(await grok.dapi.layouts.find(lId).catch(() => null)), LAYOUT_ID);
-    const canView = await pollPermission(page, LAYOUT_ID, 'View', true);
+    const canView = await pollPermission(rp, LAYOUT_ID, 'View', true);
     expect(found).toBe(true);    
     expect(canView).toBe(true);  
   });
 
-  
   await softStep('Block E: Recipient lacks Edit / Delete / Share on the shared layout', async () => {
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    await waitForIdentity(page, recipientLogin);
-    const checks = await page.evaluate(async (lId) => {
+
+    await waitForIdentity(rp, recipientLogin);
+    const checks = await rp.evaluate(async (lId) => {
       const deadline = Date.now() + 30_000;
       let found = false;
       let canView = false; let canEdit = true; let canDelete = true; let canShare = true;
@@ -345,7 +279,7 @@ test('Sharing & Permissions — Layout', async ({page}) => {
           canEdit = await grok.dapi.permissions.check(l, 'Edit').catch(() => true);
           canDelete = await grok.dapi.permissions.check(l, 'Delete').catch(() => true);
           canShare = await grok.dapi.permissions.check(l, 'Share').catch(() => true);
-          
+
           if (canView && !canEdit && !canDelete && !canShare) break;
         }
         await new Promise((r) => setTimeout(r, 1500));
@@ -359,11 +293,8 @@ test('Sharing & Permissions — Layout', async ({page}) => {
     expect(checks.canShare).toBe(false);  
   });
 
-  
   await softStep('Block F.1-2: Owner revokes recipient grant; pane shows owner-only', async () => {
-    await loginToDatagrok(page); 
-    await waitForDapiReady(page); 
-    await waitForIdentity(page, ownerLogin); 
+    await waitForIdentity(page, ownerLogin);
     const revoked = await page.evaluate(async (args) => {
       const {lId, login} = args;
       const l = await grok.dapi.layouts.find(lId); 
@@ -371,7 +302,7 @@ test('Sharing & Permissions — Layout', async ({page}) => {
       if (!l || !grp) return {ok: false, stillGranted: true};
       await grok.dapi.permissions.revoke(grp, l); 
       const p = await grok.dapi.permissions.get(l);
-      
+
       const stillGranted = (p?.view ?? []).some((g: any) => g.id === grp.id);
       return {ok: true, stillGranted};
     }, {lId: LAYOUT_ID, login: recipientLogin});
@@ -380,21 +311,13 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   });
 
   await softStep('Block F.3-4: Recipient can no longer view/apply the layout (access revoked)', async () => {
-    await loginAsSecondUser(page);
-    await waitForDapiReady(page);                 
-    await waitForIdentity(page, recipientLogin);  
-    
-    
-    
-    
-    const canView = await pollPermission(page, LAYOUT_ID, 'View', false);
+    await waitForIdentity(rp, recipientLogin);
+
+    const canView = await pollPermission(rp, LAYOUT_ID, 'View', false);
     expect(canView).toBe(false);
   });
 
-  
-  await loginToDatagrok(page);
-  await waitForDapiReady(page); 
-  await waitForIdentity(page, ownerLogin); 
+  await waitForIdentity(page, ownerLogin);
   await page.evaluate(async (lId) => {
     try {
       const l = await grok.dapi.layouts.find(lId); 

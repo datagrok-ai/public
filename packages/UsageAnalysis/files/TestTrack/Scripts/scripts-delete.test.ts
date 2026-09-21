@@ -13,7 +13,6 @@ import {
 
 const BASE = process.env.DATAGROK_URL!;
 
-// Test track: Delete.md (order: 5)
 test.describe('Scripts: Delete', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE);
@@ -24,33 +23,27 @@ test.describe('Scripts: Delete', () => {
   });
 
   test.afterEach(async ({ page }) => {
-    // Cleanup in case the test failed before deleting
+
     await apiDeleteScript(page, SCRIPT_NAME);
   });
 
-  // Test track: Delete.md, steps 1–5
   test('Delete testRscript via context menu and confirm it is removed', async ({ page }) => {
-    // Step 1: Go to Browse > Platform > Functions > Scripts
+
     await openScriptsBrowser(page);
 
-    // Step 2: Find testRscript via search
     await searchScript(page, SCRIPT_NAME);
 
-    // Step 3: Right-click → Delete
     await rightClickScript(page, SCRIPT_NAME);
     await clickMenuItem(page, 'Delete');
 
-    // Step 4: Confirm YES in the confirmation dialog
     const dialog = page.locator('.d4-dialog').first();
     await expect(dialog).toBeVisible({ timeout: 8_000 });
 
-    // Click YES / OK to confirm deletion
     const confirmBtn = dialog.locator('button.ui-btn-ok, button:has-text("OK"), button:has-text("Yes")').first();
     await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
     await confirmBtn.click();
     await page.waitForTimeout(2000);
 
-    // Step 5: Verify the script is no longer present in the browser
     const searchInput = page.locator('input[placeholder="Search scripts by name or by #tags"]');
     await searchInput.fill(SCRIPT_NAME);
     await searchInput.press('Enter');
@@ -71,7 +64,6 @@ test.describe('Scripts: Delete', () => {
     await confirmBtn.click();
     await page.waitForTimeout(2000);
 
-    // Verify via UI: search again and confirm the script card is gone
     const searchInput = page.locator('input[placeholder="Search scripts by name or by #tags"]');
     await searchInput.fill(SCRIPT_NAME);
     await searchInput.press('Enter');
@@ -85,10 +77,8 @@ test.describe('Scripts: Delete', () => {
 
     await rightClickScript(page, SCRIPT_NAME);
 
-    // Verify the context menu contains Delete
     await expect(page.locator('.d4-menu-item-label', { hasText: 'Delete' })).toBeVisible({ timeout: 5_000 });
 
-    // Dismiss without deleting
     await page.keyboard.press('Escape');
   });
 });

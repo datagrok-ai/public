@@ -97,7 +97,7 @@ public class QueryManager {
         if (resultSet == null) return;
         ResultSetMetaData metaData = resultSet.getMetaData();
         LOGGER.debug("Initializing ResultSet manager...");
-        resultSetManager.init(metaData, currentFetchSize);
+        resultSetManager.init(metaData, initFetchSize);
         LOGGER.debug("ResultSet manager was initialized");
         columnCount = metaData.getColumnCount();
     }
@@ -132,11 +132,14 @@ public class QueryManager {
                 resultSetManager.detach(currentFetchSize);
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
             df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, dfNumber, false);
-            if (df.rowCount == rowsNumber && supportsFetchSize) {
-                if (dfNumber == 1 && changedFetchSize)
-                    tryFetchSize(currentFetchSize);
-                else if (!changedFetchSize)
-                    changeFetchSize(df, wireBytesPerRow);
+            if (df.rowCount == rowsNumber) {
+                // Fetch size is only a driver hint; rejecting it does not mean EOF.
+                if (supportsFetchSize) {
+                    if (dfNumber == 1 && changedFetchSize)
+                        tryFetchSize(currentFetchSize);
+                    else if (!changedFetchSize)
+                        changeFetchSize(df, wireBytesPerRow);
+                }
             }
             else {
                 isFinished = true;

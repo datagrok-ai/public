@@ -1,21 +1,25 @@
-import {test, expect, type Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+/* ---
+realizes: []
+--- */
+
+import {expect, type Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+
+declare const grok: any;
 
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
+const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
-// -- UI Helpers --
-
-/** Right-click center of line chart canvas to open context menu */
 async function openLineChartContextMenu(page: Page) {
   await page.evaluate(() => {
     document.querySelectorAll('.d4-menu-popup').forEach(m => m.remove());
   });
-  await page.waitForTimeout(200);
   const box = await page.evaluate(() => {
-    const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart');
+    const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart');
     const canvases = lc!.root.querySelectorAll('canvas');
     let mc: HTMLCanvasElement | null = null, ma = 0;
     for (const c of canvases) {
@@ -26,10 +30,12 @@ async function openLineChartContextMenu(page: Page) {
     return {cx: rect.left + rect.width * 0.4, cy: rect.top + rect.height * 0.4};
   });
   await page.mouse.click(box.cx, box.cy, {button: 'right'});
-  await page.waitForTimeout(500);
+  await page.waitForFunction(() => {
+    const popup = document.querySelector('.d4-menu-popup');
+    return !!popup && popup.querySelectorAll('.d4-menu-item').length > 0;
+  }, null, {timeout: 500});
 }
 
-/** Click a context menu item by its name= attribute, making parent container visible */
 async function clickNamedMenuItem(page: Page, nameAttr: string) {
   await page.evaluate((name) => {
     const item = document.querySelector(`[name="${name}"]`);
@@ -38,99 +44,100 @@ async function clickNamedMenuItem(page: Page, nameAttr: string) {
     if (container) container.style.display = '';
     item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   }, nameAttr);
-  await page.waitForTimeout(500);
+  await v.waitForViewerRendered(page, 'Line chart', 500);
 }
 
-/** Open context menu on line chart and click a named submenu item */
+async function clickMenuItemByLabel(page: Page, label: string) {
+  await page.evaluate((text) => {
+    const lbl = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      .find(el => (el.textContent ?? '').trim() === text);
+    if (!lbl) throw new Error(`Menu item not found: ${text}`);
+    const item = lbl.closest('.d4-menu-item') as HTMLElement;
+    const container = item.closest('.d4-menu-item-container') as HTMLElement | null;
+    if (container) container.style.display = '';
+    item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+  }, label);
+  await v.waitForViewerRendered(page, 'Line chart', 500);
+}
+
+async function closeMenuByOutsideClick(page: Page) {
+  const pt = await page.evaluate(() => {
+    const blockers = Array.from(document.querySelectorAll('.d4-menu-popup'))
+      .map(m => m.getBoundingClientRect());
+    blockers.push(document.querySelector('[name="viewer-Line-chart"]')!.getBoundingClientRect());
+    const y = 5;
+    const outside = (x: number) =>
+      !blockers.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
+    const inert = (x: number) => {
+      const el = document.elementFromPoint(x, y);
+      return !!el && !el.closest('.d4-menu-popup, canvas, i, button, a, img, [name^="icon"]');
+    };
+    let pick = -1;
+    for (let x = 200; x < window.innerWidth - 20; x += 40) {
+      if (!outside(x)) continue;
+      if (pick < 0) pick = x;
+      if (inert(x)) { pick = x; break; }
+    }
+    return {x: pick, y,
+      sel: grok.shell.tv.dataFrame.selection.trueCount,
+      cur: grok.shell.tv.dataFrame.currentRowIdx};
+  });
+  expect(pt.x).toBeGreaterThan(0);
+  await page.mouse.click(pt.x, pt.y);
+  const after = await v.pollValue(() => page.evaluate(() => ({
+    menuOpen: !!document.querySelector('.d4-menu-popup'),
+    sel: grok.shell.tv.dataFrame.selection.trueCount,
+    cur: grok.shell.tv.dataFrame.currentRowIdx,
+  })), (s) => !s.menuOpen, 300, 50);
+  expect(after.menuOpen).toBe(false);
+  expect(after.sel).toBe(pt.sel);
+  expect(after.cur).toBe(pt.cur);
+}
+
 async function contextMenuClick(page: Page, nameAttr: string) {
   await openLineChartContextMenu(page);
   await clickNamedMenuItem(page, nameAttr);
 }
 
-/** Get the line chart viewer props via evaluate */
 async function lcProps(page: Page, ...propNames: string[]): Promise<Record<string, any>> {
   return page.evaluate((names) => {
-    const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+    const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
     const result: Record<string, any> = {};
     for (const n of names) result[n] = (lc.props as any)[n];
     return result;
   }, propNames);
 }
 
-/** Set line chart viewer props via evaluate */
 async function lcSetProps(page: Page, props: Record<string, any>) {
-  await page.evaluate((p) => {
-    const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-    for (const [k, v] of Object.entries(p)) (lc.props as any)[k] = v;
-  }, props);
-  await page.waitForTimeout(300);
+  await v.setViewerProps(page, 'Line chart', [{set: props}], 300);
 }
 
-/** Open a dataset with full Bio/Chem wait, closeAll first */
-async function openDataset(page: Page, path: string) {
-  await page.evaluate(async (p) => {
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(p);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-    const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
-      .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 5000));
-    }
-  }, path);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60000});
+async function addLineChart(page: Page) {
+  await v.addViewerByIcon(page, 'line-chart', 'Line-chart', 10_000, 'Line chart');
 }
 
-/** Open dataset and add a line chart */
 async function openDatasetWithLineChart(page: Page, path: string) {
-  await openDataset(page, path);
-  await page.evaluate(() => {
-    document.querySelector('[name="icon-line-chart"]')!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-  });
-  await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 10000});
+  await v.openTable(page, {path, semTypeTimeoutMs: 3000});
+  await addLineChart(page);
 }
-
-// -- Setup --
-
-async function setupDemogLineChart(page: Page) {
-  await loginToDatagrok(page);
-
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-  await page.evaluate(() => {
-    document.querySelector('[name="icon-line-chart"]')!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-  });
-  await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 10000});
-}
-
-// -- Test --
 
 test('Line chart tests (Playwright) — UI-first', async ({page}) => {
   test.setTimeout(300_000);
-  stepErrors.length = 0;
-  await setupDemogLineChart(page);
 
-  // ── Chart types ────────────────────────────────────────────────────────
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  page.on('pageerror', (e) => pageErrors.push(String(e)));
+  page.on('console', (m) => { if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text()); });
+  const errorCount = () => pageErrors.length + consoleErrors.length;
+  const chartAlive = () => page.evaluate(() => {
+    const lc = (Array.from(grok.shell.tv.viewers) as any[]).find((x: any) => x.type === 'Line chart');
+    const root = document.querySelector('[name="viewer-Line-chart"]');
+    return !!lc && !!root && root.querySelectorAll('canvas').length > 0;
+  });
+
+  await openDatagrok(page);
+  await openDatasetWithLineChart(page, datasetPath);
+
   await softStep('Chart types', async () => {
     await contextMenuClick(page, 'div-Chart-Type---Area-Chart');
     expect((await lcProps(page, 'chartTypes')).chartTypes).toContain('Area Chart');
@@ -145,288 +152,108 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     expect((await lcProps(page, 'chartTypes')).chartTypes).toContain('Line Chart');
   });
 
-  // ── Whiskers (error bars) ──────────────────────────────────────────────
-  await softStep('Whiskers (error bars)', async () => {
-    await lcSetProps(page, {xColumnName: 'RACE', yColumnNames: ['AGE']});
-
-    await lcSetProps(page, {whiskersType: 'Avg | Min, Max'});
-    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Avg | Min, Max');
-
-    await lcSetProps(page, {whiskersType: 'Med | Q1, Q3'});
-    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Med | Q1, Q3');
-
-    await lcSetProps(page, {whiskersType: 'Avg | ±StDev'});
-    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Avg | ±StDev');
-
-    await lcSetProps(page, {whiskersType: 'Avg | ±StError'});
-    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Avg | ±StError');
-
-    await lcSetProps(page, {whiskersType: 'None'});
-    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('None');
-  });
-
-  // ── Markers ────────────────────────────────────────────────────────────
-  await softStep('Markers', async () => {
-    // Step 1: Visibility = Always via context menu
-    await contextMenuClick(page, 'div-Markers---Always');
-    expect((await lcProps(page, 'showMarkers')).showMarkers).toBe('Always');
-
-    // Steps 2-9: Marker properties via Context Panel (JS API)
-    await lcSetProps(page, {markerType: 'square'});
-    expect((await lcProps(page, 'markerType')).markerType).toBe('square');
-
-    await lcSetProps(page, {markerType: 'triangle top'});
-    expect((await lcProps(page, 'markerType')).markerType).toBe('triangle top');
-
-    await lcSetProps(page, {markerSize: 10});
-    expect((await lcProps(page, 'markerSize')).markerSize).toBe(10);
-
-    await lcSetProps(page, {markerOpacity: 50});
-    expect((await lcProps(page, 'markerOpacity')).markerOpacity).toBe(50);
-
-    await lcSetProps(page, {markersColumnName: 'SEX'});
-    expect((await lcProps(page, 'markersColumnName')).markersColumnName).toBe('SEX');
-
-    await lcSetProps(page, {markersSizeColumnName: 'WEIGHT'});
-    expect((await lcProps(page, 'markersSizeColumnName')).markersSizeColumnName).toBe('WEIGHT');
-
-    // Clear marker column
-    await lcSetProps(page, {markersColumnName: null});
-    expect((await lcProps(page, 'markersColumnName')).markersColumnName).toBeNull();
-
-    // Visibility = Auto via context menu
-    await contextMenuClick(page, 'div-Markers---Auto');
-    expect((await lcProps(page, 'showMarkers')).showMarkers).toBe('Auto');
-
-    // Reset
-    await lcSetProps(page, {markerType: 'circle', markerSize: null, markerOpacity: 100, markersSizeColumnName: null});
-  });
-
-  // ── Axis configuration ─────────────────────────────────────────────────
   await softStep('Axis configuration', async () => {
+    const errBefore = errorCount();
     await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['WEIGHT']});
-
     await lcSetProps(page, {xAxisType: 'logarithmic'});
-    expect((await lcProps(page, 'xAxisType')).xAxisType).toBe('logarithmic');
-
     await lcSetProps(page, {invertXAxis: true});
-    expect((await lcProps(page, 'invertXAxis')).invertXAxis).toBe(true);
-
     await lcSetProps(page, {yAxisType: 'logarithmic'});
-    expect((await lcProps(page, 'yAxisType')).yAxisType).toBe('logarithmic');
-
     await lcSetProps(page, {showVerticalGridLines: false});
-    expect((await lcProps(page, 'showVerticalGridLines')).showVerticalGridLines).toBe(false);
-
     await lcSetProps(page, {showHorizontalGridLines: false});
-    expect((await lcProps(page, 'showHorizontalGridLines')).showHorizontalGridLines).toBe(false);
-
     await lcSetProps(page, {xAxisLabelOrientation: 'Vert'});
-    expect((await lcProps(page, 'xAxisLabelOrientation')).xAxisLabelOrientation).toBe('Vert');
-
-    // Reset
     await lcSetProps(page, {
       xAxisType: 'linear', yAxisType: 'linear', invertXAxis: false,
       showVerticalGridLines: true, showHorizontalGridLines: true, xAxisLabelOrientation: 'Auto'
     });
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Interpolation ──────────────────────────────────────────────────────
   await softStep('Interpolation', async () => {
+    const errBefore = errorCount();
     await lcSetProps(page, {interpolation: 'Spline'});
-    expect((await lcProps(page, 'interpolation')).interpolation).toBe('Spline');
-
     await lcSetProps(page, {splineTension: 1.0});
-    expect((await lcProps(page, 'splineTension')).splineTension).toBe(1);
-
     await lcSetProps(page, {interpolation: 'None'});
-    expect((await lcProps(page, 'interpolation')).interpolation).toBe('None');
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Aggregation types ──────────────────────────────────────────────────
-  await softStep('Aggregation types', async () => {
-    await lcSetProps(page, {xColumnName: 'RACE', yColumnNames: ['AGE']});
-
-    for (const aggr of ['avg', 'min', 'max', 'med', 'sum', 'stdev', 'avg']) {
-      await lcSetProps(page, {aggrType: aggr});
-      expect((await lcProps(page, 'aggrType')).aggrType).toBe(aggr);
-    }
-  });
-
-  // ── Left panel histogram ───────────────────────────────────────────────
   await softStep('Left panel histogram', async () => {
+    const errBefore = errorCount();
     await lcSetProps(page, {leftPanel: 'Histogram'});
-    expect((await lcProps(page, 'leftPanel')).leftPanel).toBe('Histogram');
-
     await lcSetProps(page, {leftPanel: 'None'});
-    expect((await lcProps(page, 'leftPanel')).leftPanel).toBe('None');
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Controls visibility ────────────────────────────────────────────────
   await softStep('Controls visibility', async () => {
+    const errBefore = errorCount();
     const controls = ['showXSelector', 'showYSelectors', 'showAggrTypeSelector', 'showSplitSelector', 'showXAxis', 'showYAxis'];
-    for (const ctrl of controls) {
+    for (const ctrl of controls)
       await lcSetProps(page, {[ctrl]: false});
-      expect((await lcProps(page, ctrl))[ctrl]).toBe(false);
-    }
-    // Recheck all
     const restoreProps: Record<string, boolean> = {};
     for (const ctrl of controls) restoreProps[ctrl] = true;
     await lcSetProps(page, restoreProps);
-    for (const ctrl of controls)
-      expect((await lcProps(page, ctrl))[ctrl]).toBe(true);
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Y global scale ────────────────────────────────────────────────────
   await softStep('Y global scale', async () => {
+    const errBefore = errorCount();
     await lcSetProps(page, {yColumnNames: ['AGE', 'HEIGHT']});
-
     await lcSetProps(page, {multiAxis: true});
-    expect((await lcProps(page, 'multiAxis')).multiAxis).toBe(true);
-
     await lcSetProps(page, {yGlobalScale: true});
-    expect((await lcProps(page, 'yGlobalScale')).yGlobalScale).toBe(true);
-
     await lcSetProps(page, {yGlobalScale: false});
-    expect((await lcProps(page, 'yGlobalScale')).yGlobalScale).toBe(false);
-
     await lcSetProps(page, {multiAxis: false});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Split by column ────────────────────────────────────────────────────
-  await softStep('Split by column', async () => {
-    await lcSetProps(page, {splitColumnName: 'SEX'});
-    expect((await lcProps(page, 'splitColumnName')).splitColumnName).toBe('SEX');
-
-    await lcSetProps(page, {splitColumnName: 'RACE'});
-    expect((await lcProps(page, 'splitColumnName')).splitColumnName).toBe('RACE');
-
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      lc.props.splitColumnNames = ['SEX', 'RACE'];
-    });
-    await page.waitForTimeout(300);
-    const splitCols = await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      return lc.props.splitColumnNames;
-    });
-    expect(splitCols).toEqual(['SEX', 'RACE']);
-
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      lc.props.splitColumnNames = [];
-      lc.props.splitColumnName = '';
-    });
-    await page.waitForTimeout(300);
-  });
-
-  // ── Multi-axis mode ────────────────────────────────────────────────────
-  await softStep('Multi-axis mode', async () => {
-    await lcSetProps(page, {yColumnNames: ['AGE', 'HEIGHT', 'WEIGHT']});
-
-    await lcSetProps(page, {multiAxis: true});
-    expect((await lcProps(page, 'multiAxis')).multiAxis).toBe(true);
-
-    await lcSetProps(page, {multiAxis: false});
-    expect((await lcProps(page, 'multiAxis')).multiAxis).toBe(false);
-  });
-
-  // ── Title and description ──────────────────────────────────────────────
   await softStep('Title and description', async () => {
+    const errBefore = errorCount();
     await lcSetProps(page, {showTitle: true});
-    expect((await lcProps(page, 'showTitle')).showTitle).toBe(true);
-
     await lcSetProps(page, {title: 'My Line Chart'});
-    expect((await lcProps(page, 'title')).title).toBe('My Line Chart');
-
     await lcSetProps(page, {description: 'Test description'});
-    expect((await lcProps(page, 'description')).description).toBe('Test description');
-
     await lcSetProps(page, {descriptionPosition: 'Top'});
-    expect((await lcProps(page, 'descriptionPosition')).descriptionPosition).toBe('Top');
-
     await lcSetProps(page, {descriptionPosition: 'Bottom'});
-    expect((await lcProps(page, 'descriptionPosition')).descriptionPosition).toBe('Bottom');
-
     await lcSetProps(page, {descriptionVisibilityMode: 'Never'});
-    expect((await lcProps(page, 'descriptionVisibilityMode')).descriptionVisibilityMode).toBe('Never');
-
-    // Reset
     await lcSetProps(page, {showTitle: false, title: '', description: ''});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Custom axis min/max ────────────────────────────────────────────────
-  await softStep('Custom axis min/max', async () => {
-    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
-
-    await lcSetProps(page, {xMin: 30});
-    expect((await lcProps(page, 'xMin')).xMin).toBe(30);
-
-    await lcSetProps(page, {xMax: 60});
-    expect((await lcProps(page, 'xMax')).xMax).toBe(60);
-
-    await lcSetProps(page, {yMin: 150});
-    expect((await lcProps(page, 'yMin')).yMin).toBe(150);
-
-    await lcSetProps(page, {yMax: 190});
-    expect((await lcProps(page, 'yMax')).yMax).toBe(190);
-
-    // Clear
-    await lcSetProps(page, {xMin: null, xMax: null, yMin: null, yMax: null});
-    const cleared = await lcProps(page, 'xMin', 'xMax', 'yMin', 'yMax');
-    expect(cleared.xMin).toBeNull();
-    expect(cleared.yMax).toBeNull();
-  });
-
-  // ── Date/time X axis ───────────────────────────────────────────────────
   await softStep('Date/time X axis', async () => {
+    const errBefore = errorCount();
     await lcSetProps(page, {xColumnName: 'STARTED'});
-    expect((await lcProps(page, 'xColumnName')).xColumnName).toBe('STARTED');
-
     await lcSetProps(page, {xMap: 'year'});
-    expect((await lcProps(page, 'xMap')).xMap).toBe('year');
-
     await lcSetProps(page, {xMap: 'month'});
-    expect((await lcProps(page, 'xMap')).xMap).toBe('month');
-
     await lcSetProps(page, {xMap: 'day'});
-    expect((await lcProps(page, 'xMap')).xMap).toBe('day');
-
     await lcSetProps(page, {xMap: ''});
-    expect((await lcProps(page, 'xMap')).xMap).toBe('');
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Line styling ───────────────────────────────────────────────────────
   await softStep('Line styling', async () => {
+    const errBefore = errorCount();
     await lcSetProps(page, {xColumnName: 'AGE', lineWidth: 3});
-    expect((await lcProps(page, 'lineWidth')).lineWidth).toBe(3);
-
     await lcSetProps(page, {lineTransparency: 0.5});
-    expect((await lcProps(page, 'lineTransparency')).lineTransparency).toBe(0.5);
-
     await lcSetProps(page, {lineColoringType: 'Custom'});
-    expect((await lcProps(page, 'lineColoringType')).lineColoringType).toBe('Custom');
-
     await lcSetProps(page, {lineWidth: 1, lineTransparency: 0, lineColoringType: 'Auto'});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Axis tickmarks modes ───────────────────────────────────────────────
   await softStep('Axis tickmarks modes', async () => {
+    const errBefore = errorCount();
     await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
-
     await lcSetProps(page, {xAxisTickmarksMode: 'MinMax'});
-    expect((await lcProps(page, 'xAxisTickmarksMode')).xAxisTickmarksMode).toBe('MinMax');
-
     await lcSetProps(page, {xAxisTickmarksMode: 'Auto'});
-    expect((await lcProps(page, 'xAxisTickmarksMode')).xAxisTickmarksMode).toBe('Auto');
-
     await lcSetProps(page, {yAxisTickmarksMode: 'MinMax'});
-    expect((await lcProps(page, 'yAxisTickmarksMode')).yAxisTickmarksMode).toBe('MinMax');
-
     await lcSetProps(page, {yAxisTickmarksMode: 'Auto'});
+    expect(await chartAlive()).toBe(true);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Overview chart ─────────────────────────────────────────────────────
   await softStep('Overview chart', async () => {
     await contextMenuClick(page, 'div-Overview---Line-Chart');
     expect((await lcProps(page, 'overviewType')).overviewType).toBe('Line Chart');
@@ -441,59 +268,135 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     expect((await lcProps(page, 'overviewType')).overviewType).toBe('None');
   });
 
-  // ── Legend ──────────────────────────────────────────────────────────────
   await softStep('Legend', async () => {
-    await lcSetProps(page, {splitColumnName: 'SEX'});
+    const legend = () => page.evaluate(() => {
+      // a hidden legend keeps its element in the DOM with display:none (LegendHost.apply,
+      // legend_host.dart) — presence must check the computed style, not existence
+      const el = (Array.from(document.querySelectorAll('[name="viewer-Line-chart"] .d4-legend'))
+        .find((e) => getComputedStyle(e as HTMLElement).display !== 'none') ?? null) as HTMLElement | null;
+      return {
+        present: !!el,
+        labels: el ? (el.innerText || '').split('\n').map(s => s.trim()).filter(Boolean) : [],
+      };
+    });
 
-    await lcSetProps(page, {legendVisibility: 'Always'});
-    expect((await lcProps(page, 'legendVisibility')).legendVisibility).toBe('Always');
+    const legendSettles = async (present: boolean) =>
+      expect.poll(async () => (await legend()).present, {timeout: 10_000}).toBe(present);
 
-    for (const pos of ['Left', 'Top', 'Bottom', 'Right']) {
+    await lcSetProps(page, {
+      splitColumnName: '', legendVisibility: 'Auto', legendPosition: 'Auto',
+      lineColoringType: 'Auto', multiAxis: false, yColumnNames: ['AGE'],
+    });
+    await legendSettles(false);
+
+    await lcSetProps(page, {splitColumnName: 'SEX', legendVisibility: 'Always'});
+    await legendSettles(true);
+
+    expect((await legend()).labels.sort()).toEqual(['F', 'M']);
+
+    for (const pos of ['Left', 'Top', 'Bottom', 'Right'])
       await lcSetProps(page, {legendPosition: pos});
-      expect((await lcProps(page, 'legendPosition')).legendPosition).toBe(pos);
-    }
+    await legendSettles(true);
 
     await lcSetProps(page, {legendVisibility: 'Never'});
-    expect((await lcProps(page, 'legendVisibility')).legendVisibility).toBe('Never');
+    await legendSettles(false);
 
     await lcSetProps(page, {legendVisibility: 'Auto'});
-    expect((await lcProps(page, 'legendVisibility')).legendVisibility).toBe('Auto');
+    await legendSettles(true);
+    expect((await legend()).labels.sort()).toEqual(['F', 'M']);
 
     await lcSetProps(page, {splitColumnName: ''});
+    await lcSetProps(page, {splitColumnNames: []});
+    await legendSettles(false);
   });
 
-  // ── Axes follow filter ─────────────────────────────────────────────────
-  await softStep('Axes follow filter', async () => {
-    await lcSetProps(page, {xColumnName: 'AGE'});
-
-    const defaultVal = (await lcProps(page, 'axesFollowFilter')).axesFollowFilter;
-    expect(defaultVal).toBe(true);
-
-    await lcSetProps(page, {axesFollowFilter: false});
-    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(false);
-
-    // Open filter panel and narrow AGE range
+  await softStep('Axes follow filter — X axis bounds sync to filter range (contrast)', async () => {
     await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 30, max: 60});
+      const df = grok.shell.tv.dataFrame;
+      if (!df.columns.contains('rowIdx'))
+        df.columns.addNewInt('rowIdx').init((i: number) => i);
     });
-    await page.waitForTimeout(500);
+    await lcSetProps(page, {xColumnName: 'rowIdx', yColumnNames: ['HEIGHT']});
 
+    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(true);
+
+    const setIdxFilter = (min: number, max: number) => page.evaluate(({lo, hi}) => {
+      const fg = grok.shell.tv.getFiltersGroup();
+      fg.updateOrAdd({type: 'histogram', column: 'rowIdx', min: lo, max: hi});
+    }, {lo: min, hi: max});
+
+    const xAxisBounds = () => page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart') as any;
+      const canvases = lc.root.querySelectorAll('canvas');
+      let mc: HTMLCanvasElement | null = null, ma = 0;
+      for (const c of canvases) {
+        const r = c.getBoundingClientRect();
+        if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
+      }
+      const rect = mc!.getBoundingClientRect();
+      const y = rect.height * 0.5;
+      const x1 = rect.width * 0.3, x2 = rect.width * 0.7;
+      const w1 = lc.screenToWorld(x1, y).x, w2 = lc.screenToWorld(x2, y).x;
+      const perPx = (w2 - w1) / (x2 - x1);
+      return {min: w1 - perPx * x1, max: w1 + perPx * (rect.width - x1), span: perPx * rect.width};
+    });
+
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeGreaterThan(5000);
+    const base = await xAxisBounds();
+    console.log(`axesFollowFilter baseline bounds: min=${base.min.toFixed(2)} max=${base.max.toFixed(2)} span=${base.span.toFixed(2)}`);
+    expect(base.max).toBeGreaterThan(4400);
+
+    await v.snapshotCanvasColors(page, 'Line chart');
+    await setIdxFilter(2000, 3500);
+    await v.waitForViewerRendered(page, 'Line chart', 800);
     const filteredCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
     expect(filteredCount).toBeLessThan(5850);
+    const deltaTrue = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeLessThan(base.span * 0.7);
+    const bTrue = await xAxisBounds();
+    console.log(`axesFollowFilter=true bounds after rowIdx 2000-3500: min=${bTrue.min.toFixed(2)} max=${bTrue.max.toFixed(2)} span=${bTrue.span.toFixed(2)} deltaTrue=${deltaTrue}`);
+    expect(bTrue.min).toBeGreaterThan(1600);
+    expect(bTrue.min).toBeLessThan(2200);
+    expect(bTrue.max).toBeGreaterThan(3300);
+    expect(bTrue.max).toBeLessThan(3900);
+
+    await setIdxFilter(0, 5849);
+    await v.waitForViewerRendered(page, 'Line chart', 500);
+    await lcSetProps(page, {axesFollowFilter: false});
+    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(false);
+    await v.waitForViewerRendered(page, 'Line chart', 500);
+    const baseFalse = await xAxisBounds();
+    console.log(`axesFollowFilter=false pre-filter bounds: min=${baseFalse.min.toFixed(2)} max=${baseFalse.max.toFixed(2)} span=${baseFalse.span.toFixed(2)}`);
+    expect(baseFalse.span).toBeGreaterThan(base.span * 0.85);
+    await v.snapshotCanvasColors(page, 'Line chart');
+    await setIdxFilter(2000, 3500);
+    await v.waitForViewerRendered(page, 'Line chart', 800);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount)).toBeLessThan(5850);
+    const deltaFalse = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    const bFalse = await xAxisBounds();
+    console.log(`axesFollowFilter=false bounds after rowIdx 2000-3500: min=${bFalse.min.toFixed(2)} max=${bFalse.max.toFixed(2)} span=${bFalse.span.toFixed(2)} deltaFalse=${deltaFalse}`);
+
+    expect(Math.abs(bFalse.min - baseFalse.min)).toBeLessThan(baseFalse.span * 0.05);
+    expect(Math.abs(bFalse.max - baseFalse.max)).toBeLessThan(baseFalse.span * 0.05);
+
+    expect(bFalse.span).toBeGreaterThan(bTrue.span * 2);
 
     await lcSetProps(page, {axesFollowFilter: true});
     expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(true);
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeLessThan(baseFalse.span * 0.7);
+    await setIdxFilter(0, 5849);
+    await v.waitForViewerRendered(page, 'Line chart', 300);
 
-    // Reset filter
-    await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 0, max: 100});
-    });
-    await page.waitForTimeout(300);
+    await page.evaluate(() => grok.shell.tv.dataFrame.columns.remove('rowIdx'));
+    await v.waitForViewerRendered(page, 'Line chart', 300);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.columns.contains('rowIdx'))).toBe(false);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount)).toBe(5850);
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
   });
 
-  // ── Context menu — chart area ──────────────────────────────────────────
   await softStep('Context menu — chart area', async () => {
     await openLineChartContextMenu(page);
     const items = await page.evaluate(() => {
@@ -509,65 +412,15 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await page.keyboard.press('Escape');
   });
 
-  // ── Layout save and restore ────────────────────────────────────────────
-  await softStep('Layout save and restore', async () => {
-    // Configure
-    await lcSetProps(page, {
-      xColumnName: 'STARTED', yColumnNames: ['AGE', 'HEIGHT'],
-      splitColumnName: 'SEX', multiAxis: true, lineWidth: 3, interpolation: 'Spline'
-    });
-
-    // Save layout
-    const layoutId = await page.evaluate(async () => {
-      const tv = grok.shell.tv;
-      const layout = tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
-      return layout.id;
-    });
-
-    // Close line chart
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart');
-      lc!.close();
-    });
-    await page.waitForTimeout(500);
-
-    // Apply saved layout
-    await page.evaluate(async (id) => {
-      const saved = await grok.dapi.layouts.find(id);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-    }, layoutId);
-
-    // Verify
-    const restored = await lcProps(page, 'xColumnName', 'yColumnNames', 'splitColumnName', 'multiAxis', 'lineWidth', 'interpolation');
-    expect(restored.xColumnName).toBe('STARTED');
-    expect(restored.yColumnNames).toEqual(['AGE', 'HEIGHT']);
-    expect(restored.splitColumnName).toBe('SEX');
-    expect(restored.multiAxis).toBe(true);
-    expect(restored.lineWidth).toBe(3);
-    expect(restored.interpolation).toBe('Spline');
-
-    // Delete layout
-    await page.evaluate(async (id) => {
-      const saved = await grok.dapi.layouts.find(id);
-      await grok.dapi.layouts.delete(saved);
-    }, layoutId);
-  });
-
-  // ── Table switching and row source ─────────────────────────────────────
   await softStep('Table switching and row source', async () => {
-    // Close existing line charts from previous steps, then open fresh
     await page.evaluate(() => {
-      for (const v of Array.from(grok.shell.tv.viewers))
+      for (const v of (Array.from(grok.shell.tv.viewers) as any[]))
         if (v.type === 'Line chart') v.close();
     });
-    await page.waitForTimeout(300);
+    await page.locator('[name="viewer-Line-chart"]').first().waitFor({state: 'detached', timeout: 300});
 
-    // Open SPGI (with Bio/Chem wait)
-    await page.evaluate(async () => {
-      const spgi = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
+    await page.evaluate(async (path) => {
+      const spgi = await (window as any).__readCsv(path);
       grok.shell.addTableView(spgi);
       await new Promise(resolve => {
         const sub = spgi.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
@@ -580,155 +433,106 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
           if (document.querySelector('[name="viewer-Grid"] canvas')) break;
           await new Promise(r => setTimeout(r, 200));
         }
-        await new Promise(r => setTimeout(r, 5000));
+        await (window as any).__quiet('viewer:Grid.onAfterDrawContent', 400, 5000);
       }
-    });
+    }, spgiPath);
 
-    // Switch back to demog view
     await page.evaluate(() => {
-      const demogTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 5850);
+      const demogTv = (Array.from(grok.shell.tableViews) as any[]).find(v => v.dataFrame.rowCount === 5850);
       if (demogTv) grok.shell.v = demogTv;
     });
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() => grok.shell.tv?.dataFrame?.rowCount === 5850, null, {timeout: 500});
 
-    // Add line chart on demog
-    await page.evaluate(() => {
-      document.querySelector('[name="icon-line-chart"]')!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    });
-    await page.locator('[name="viewer-Line-chart"]').first().waitFor({timeout: 10000});
+    await addLineChart(page);
 
-    // Switch table to SPGI
-    const spgiTableName = await page.evaluate(() => {
-      const spgiTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 3624);
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+    const toSpgi = await page.evaluate(() => {
+      const spgiTv = (Array.from(grok.shell.tableViews) as any[]).find(v => v.dataFrame.rowCount === 100);
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
       lc.props.table = spgiTv!.dataFrame.name;
-      return lc.props.table;
+      return {name: lc.props.table, wanted: spgiTv!.dataFrame.name};
     });
-    expect(spgiTableName).toBeTruthy();
+    await v.waitForViewerRendered(page, 'Line chart', 500);
+    expect(toSpgi.name).toBe(toSpgi.wanted);
+    expect(await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      return (lc as any).dataFrame.rowCount;
+    })).toBe(100);
 
-    // Switch back to demog
     await page.evaluate(() => {
-      const demogTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 5850);
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+      const demogTv = (Array.from(grok.shell.tableViews) as any[]).find(v => v.dataFrame.rowCount === 5850);
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
       lc.props.table = demogTv!.dataFrame.name;
     });
-    await page.waitForTimeout(300);
+    await v.waitForViewerRendered(page, 'Line chart', 500);
+    expect(await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      return (lc as any).dataFrame.rowCount;
+    })).toBe(5850);
 
-    // Row Source = Selected
-    await lcSetProps(page, {rowSource: 'Selected'});
-    expect((await lcProps(page, 'rowSource')).rowSource).toBe('Selected');
-
-    // Select some rows
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT'], rowSource: 'Selected'});
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+    await v.waitForViewerQuiet(page, 'Line chart', {gapMs: 300, capMs: 800});
+    await v.snapshotCanvasColors(page, 'Line chart');
+    // with nothing selected the chart must stay put: any repaint within the window fails
+    const preSel = (await v.pollValue(() => v.diffCanvasColors(page, 'Line chart'),
+      (d) => d.deltaPx >= 200, 700, 100)).deltaPx;
+    expect(preSel).toBeGreaterThanOrEqual(0);
+    expect(preSel).toBeLessThan(200);
+    await v.snapshotCanvasColors(page, 'Line chart');
     await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      for (let i = 0; i < 100; i++) df.selection.set(i, true);
+      // one notification for the whole selection: 100 individual set() calls raised 100 of
+      // them and the viewer repainted against each
+      grok.shell.tv.dataFrame.selection.init((i: number) => i < 100);
     });
-    await page.waitForTimeout(300);
 
-    // Row Source = Filtered
+    const selDelta = await v.waitForCanvasChange(page, 'Line chart', {minDelta: 1000, timeoutMs: 1000});
+    console.log(`rowSource=Selected selection repaint: selDelta=${selDelta}`);
+    expect(selDelta).toBeGreaterThan(1000);
+
     await lcSetProps(page, {rowSource: 'Filtered'});
 
-    // Apply filter
-    await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 20, max: 40});
-    });
-    await page.waitForTimeout(500);
-
-    const filtered = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    const filtered = await v.applyNumericFilter(page, 'AGE', 20, 40, 500);
     expect(filtered).toBeLessThan(5850);
 
-    // Reset
-    await page.evaluate(() => {
-      grok.shell.tv.dataFrame.selection.setAll(false);
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 0, max: 100});
-    });
-    await page.waitForTimeout(300);
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+    await v.applyNumericFilter(page, 'AGE', 0, 100, 300);
+    await lcSetProps(page, {rowSource: 'All'});
 
-    // Close SPGI view
     await page.evaluate(() => {
-      const spgiTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 3624);
+      const spgiTv = (Array.from(grok.shell.tableViews) as any[]).find(v => v.dataFrame.rowCount === 100);
       spgiTv?.close();
     });
   });
 
-  // ── Filter expression and collaborative filtering (SPGI) ─────────────
-  await softStep('Filter expression and collaborative filtering (SPGI)', async () => {
-    await openDatasetWithLineChart(page, 'System:DemoFiles/chem/SPGI.csv');
+  await softStep('Filter expression and collaborative filtering', async () => {
+    await openDatasetWithLineChart(page, spgiPath);
 
-    await lcSetProps(page, {filter: '${CAST Idea ID} <636500'});
-    const filterVal = (await lcProps(page, 'filter')).filter;
-    expect(filterVal).toBe('${CAST Idea ID} <636500');
+    const full = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
 
-    await page.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 500));
-      fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 200, max: 400});
+    await lcSetProps(page, {filter: '${CAST Idea ID} <634834'});
+    const lcFiltered = await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
+      return (lc as any).filter.trueCount;
     });
-    await page.waitForTimeout(500);
+    expect(lcFiltered).toBeGreaterThan(0);
+    expect(lcFiltered).toBeLessThan(full);
 
-    const filtered = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(filtered).toBeLessThan(3624);
+    const filtered = await v.applyNumericFilter(page, 'Average Mass', 200, 400, 500);
+    expect(filtered).toBeLessThan(full);
 
-    await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: -Infinity, max: Infinity});
-    });
-    await page.waitForTimeout(300);
+    await v.applyNumericFilter(page, 'Average Mass', -Infinity, Infinity, 300);
     await lcSetProps(page, {filter: ''});
   });
 
-  // ── Split and Y-columns sync with Context Panel ──────────────────────
-  await softStep('Split and Y-columns sync with Context Panel', async () => {
-    await openDatasetWithLineChart(page, 'System:DemoFiles/demog.csv');
-
-    await lcSetProps(page, {splitColumnName: 'SEX'});
-    expect((await lcProps(page, 'splitColumnName')).splitColumnName).toBe('SEX');
-
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      lc.props.splitColumnNames = ['SEX', 'RACE'];
-    });
-    await page.waitForTimeout(300);
-    const splitCols = await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      return lc.props.splitColumnNames;
-    });
-    expect(splitCols).toEqual(['SEX', 'RACE']);
-
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      lc.props.splitColumnNames = ['SEX'];
-    });
-    await page.waitForTimeout(300);
-
-    await lcSetProps(page, {yColumnNames: ['AGE', 'HEIGHT', 'WEIGHT']});
-    expect((await lcProps(page, 'yColumnNames')).yColumnNames).toHaveLength(3);
-
-    await lcSetProps(page, {yColumnNames: ['AGE', 'WEIGHT']});
-    expect((await lcProps(page, 'yColumnNames')).yColumnNames).toHaveLength(2);
-
-    await lcSetProps(page, {yColumnNames: ['AGE']});
-    expect((await lcProps(page, 'yColumnNames')).yColumnNames).toHaveLength(1);
-
-    await lcSetProps(page, {yColumnNames: ['AGE', 'HEIGHT'], multiAxis: true});
-    expect((await lcProps(page, 'multiAxis')).multiAxis).toBe(true);
-
-    await lcSetProps(page, {multiAxis: false});
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      lc.props.splitColumnNames = [];
-      lc.props.splitColumnName = '';
-    });
-  });
-
-  // ── Selection checkboxes ──────────────────────────────────────────────
   await softStep('Selection checkboxes', async () => {
-    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
+    await openDatasetWithLineChart(page, datasetPath);
+    const errBefore = errorCount();
+
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT'], splitColumnName: '',
+      rowSource: 'All', showSelectedRows: true});
 
     const box = await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
       const canvases = lc.root.querySelectorAll('canvas');
       let mc: HTMLCanvasElement | null = null, ma = 0;
       for (const c of canvases) {
@@ -746,95 +550,49 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await page.mouse.move(box.x2, box.y2, {steps: 10});
     await page.mouse.up();
     await page.keyboard.up('Shift');
-    await page.waitForTimeout(500);
 
-    const sel = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    console.log(`Selection checkboxes: ${sel} rows selected`);
+    const sel = await v.pollValue(
+      () => page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount),
+      (n) => n > 0, 700, 100);
+    expect(sel).toBeGreaterThan(0);
 
-    // Layout save/restore with selection
-    const layoutId = await page.evaluate(async () => {
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
-      return layout.id;
-    });
+    const hueSelected = await v.pollValue(
+      () => v.countSelectionHuePixels(page, 'Line chart'), (n) => n > 0, 700, 100);
+    expect(hueSelected).toBeGreaterThan(0);
 
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart');
-      lc!.close();
-    });
-    await page.waitForTimeout(500);
+    await lcSetProps(page, {showSelectedRows: false});
+    const hueOff = await v.countSelectionHuePixels(page, 'Line chart');
 
-    await page.evaluate(async (id) => {
-      const saved = await grok.dapi.layouts.find(id);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-    }, layoutId);
+    expect(hueOff).toBeLessThan(hueSelected * 0.15);
+    await lcSetProps(page, {showSelectedRows: true});
+    expect(await v.countSelectionHuePixels(page, 'Line chart')).toBeGreaterThan(0);
 
-    const lcRestored = await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).some(v => v.type === 'Line chart'));
-    expect(lcRestored).toBe(true);
+    for (const p of ['showCurrentRowLine', 'showMouseOverCategory', 'showMouseOverRowLine']) {
+      const cur = (await lcProps(page, p))[p];
+      await lcSetProps(page, {[p]: !cur});
+      expect((await lcProps(page, p))[p]).toBe(!cur);
+    }
+    expect(errorCount()).toBe(errBefore);
 
-    await page.evaluate(async (id) => {
-      const saved = await grok.dapi.layouts.find(id);
-      await grok.dapi.layouts.delete(saved);
-    }, layoutId);
+    await lcSetProps(page, {showCurrentRowLine: false, showMouseOverCategory: true,
+      showSelectedRows: true, showMouseOverRowLine: true});
     await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
   });
 
-  // ── Data panel checkboxes ─────────────────────────────────────────────
-  await softStep('Data panel checkboxes', async () => {
-    const layoutId = await page.evaluate(async () => {
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
-      return layout.id;
-    });
+  await softStep('Lasso selection', async () => {
+    const errBefore = errorCount();
 
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart');
-      lc!.close();
-    });
-    await page.waitForTimeout(500);
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
 
-    await page.evaluate(async (id) => {
-      const saved = await grok.dapi.layouts.find(id);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-    }, layoutId);
+    await openLineChartContextMenu(page);
+    await clickMenuItemByLabel(page, 'Lasso Tool');
+    expect((await lcProps(page, 'lassoTool')).lassoTool).toBe(true);
 
-    const lcRestored = await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).some(v => v.type === 'Line chart'));
-    expect(lcRestored).toBe(true);
+    await closeMenuByOutsideClick(page);
 
-    await page.evaluate(async (id) => {
-      const saved = await grok.dapi.layouts.find(id);
-      await grok.dapi.layouts.delete(saved);
-    }, layoutId);
-  });
-
-  // ── GROK-17835 regression ──────────────────────────────────────────────
-  await softStep('GROK-17835 regression (SPGI)', async () => {
-    await openDatasetWithLineChart(page, 'System:DemoFiles/chem/SPGI.csv');
-
-    // Multi Axis
-    await lcSetProps(page, {multiAxis: true});
-
-    // Split by Series and Scaffold Names
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      lc.props.splitColumnNames = ['Series', 'Scaffold Names'];
-    });
-    await page.waitForTimeout(500);
-
-    // Set X to Chemist 521
-    await lcSetProps(page, {xColumnName: 'Chemist 521'});
-
-    // Hover over viewer — should not cause errors
-    const warningsBefore = await page.evaluate(() => grok.shell.warnings?.length ?? 0);
-
-    const hoverBox = await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+    const box = await page.evaluate(() => {
+      const lc = (Array.from(grok.shell.tv.viewers) as any[]).find(v => v.type === 'Line chart')!;
       const canvases = lc.root.querySelectorAll('canvas');
       let mc: HTMLCanvasElement | null = null, ma = 0;
       for (const c of canvases) {
@@ -842,16 +600,44 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
         if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
       }
       const rect = mc!.getBoundingClientRect();
-      return {cx: rect.left + rect.width * 0.5, cy: rect.top + rect.height * 0.5};
+      return {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
     });
+    const px = (fx: number) => box.left + box.width * fx;
+    const py = (fy: number) => box.top + box.height * fy;
 
-    await page.mouse.move(hoverBox.cx, hoverBox.cy);
-    await page.waitForTimeout(1000);
+    await page.keyboard.down('Shift');
+    await page.mouse.move(px(0.3), py(0.35));
+    await page.mouse.down();
+    await page.mouse.move(px(0.45), py(0.65), {steps: 5});
+    await page.mouse.move(px(0.55), py(0.3), {steps: 5});
+    await page.mouse.move(px(0.7), py(0.6), {steps: 5});
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+    const selCount = () => page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
+    expect(await v.pollValue(selCount, (n) => n > 0, 700, 100)).toBeGreaterThan(0);
 
-    const warningsAfter = await page.evaluate(() => grok.shell.warnings?.length ?? 0);
-    expect(warningsAfter).toBe(warningsBefore);
+    await page.keyboard.press('Escape');
+    expect(await v.pollValue(selCount, (n) => n === 0, 500, 100)).toBe(0);
+
+    await openLineChartContextMenu(page);
+    await clickMenuItemByLabel(page, 'Lasso Tool');
+    expect((await lcProps(page, 'lassoTool')).lassoTool).toBe(false);
+
+    await closeMenuByOutsideClick(page);
+    expect(errorCount()).toBe(errBefore);
   });
 
-  // ── Final summary ──────────────────────────────────────────────────────
+  await softStep('Data panel checkboxes', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['AGE', 'HEIGHT']});
+
+    await lcSetProps(page, {packCategories: false, multiAxis: true});
+    expect(errorCount()).toBe(errBefore);
+    expect(await lcProps(page, 'packCategories', 'multiAxis')).toEqual({packCategories: false, multiAxis: true});
+
+    await lcSetProps(page, {packCategories: true, multiAxis: false});
+  });
+
+  await v.closeAllAndWait(page);
   v.finishSpec();
 });

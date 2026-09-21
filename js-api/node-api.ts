@@ -10,6 +10,8 @@ export * from './src/const';
 export * from './src/events';
 export * from './src/dapi';
 export * from './src/dataframe';
+export {BitArray} from './src/u2core/bit-array.js';
+export type {BitPredicate} from './src/u2core/bit-array.js';
 export * from './src/entities';
 export * from './src/api/ddt.api.g';
 export * from './src/api/grok_shared.api.g';
@@ -30,7 +32,6 @@ export * from './src/ml';
 export * from './src/utils';
 export * from './src/proxies';
 export * from './src/utils_convert';
-export * from './src/ui/tree-view';
 
 export * as grok from './grok';
 export {wu};

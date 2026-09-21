@@ -206,6 +206,8 @@ export class MonomerCollectionsView {
 
     const card = ui.div([headerEl, bodyEl, actionsEl], {classes: 'monomer-collection-card'}) as HTMLDivElement;
     card.dataset.collectionName = collectionName;
+    card.dataset.u2 = 'card';
+    card.dataset.u2Name = displayName.replace(/\s+/g, '-');
 
     // Apply selected state if already selected
     if (this.selectedCollections.has(collectionName))
@@ -340,10 +342,9 @@ export class MonomerCollectionsView {
   /** Update card CSS classes to reflect current selection. */
   private updateCardSelectionStyles(): void {
     for (const [name, card] of this.cardElements) {
-      if (this.selectedCollections.has(name))
-        card.classList.add('monomer-collection-card-selected');
-      else
-        card.classList.remove('monomer-collection-card-selected');
+      const selected = this.selectedCollections.has(name);
+      card.classList.toggle('monomer-collection-card-selected', selected);
+      card.setAttribute('aria-selected', String(selected));
     }
   }
 
@@ -418,6 +419,8 @@ export class MonomerCollectionsView {
 
     const content = ui.div([icon, label], {classes: 'monomer-collection-add-card-content'});
     const card = ui.div([content], {classes: 'monomer-collection-add-card'}) as HTMLDivElement;
+    card.dataset.u2 = 'card';
+    card.dataset.u2Name = 'New-Collection';
     card.addEventListener('click', () => this.showAddCollectionDialog());
     return card;
   }

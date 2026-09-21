@@ -13,8 +13,8 @@ export namespace funcs {
   }
 
   /**
-  Opens SQLite files
-  */
+   * Opens SQLite files
+   */
   export async function importSQLite(bytes: any ): Promise<any> {
     return await grok.functions.call('SQLite:ImportSQLite', { bytes });
   }

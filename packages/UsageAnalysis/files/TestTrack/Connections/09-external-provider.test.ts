@@ -20,13 +20,6 @@ import {
   rightClickTreeNode,
 } from './helpers';
 
-// Manual scenario `external-provider.md` (order 9).
-//
-// 1. Browse > Databases > Postgres → Add connection
-// 2. Fill PostgreSQLDBTests2 form (server db.datagrok.ai, port 54327, db test, user superuser)
-// 3. Add and run four queries in sequence (CREATE TABLE / INSERT / UPDATE / DROP)
-// 4. Delete the connection
-
 const PROVIDER = 'Postgres';
 const CONNECTION = 'PostgreSQLDBTests2';
 
@@ -97,18 +90,15 @@ test.describe.serial('Connections / External Provider (PostgreSQLDBTests2)', () 
       await applyAutomationSetup(page);
       await expandDbProvider(page, PROVIDER);
 
-      // Right-click connection → New Query...
       await rightClickTreeNode(page, connectionNodeName(PROVIDER, CONNECTION));
       await clickMenuItemExact(page, 'New Query...');
 
       await page.waitForSelector('[name="input-Name"]', { timeout: 15_000 });
 
-      // Real-keyboard typing for the query name (Datagrok input host caption: `Name`).
       const nameInput = page.locator('[name="input-Name"]');
       await nameInput.click({ clickCount: 3 });
       await page.keyboard.type(q.name);
 
-      // SQL body — CodeMirror surface; real keyboard typing.
       await page.waitForSelector('.CodeMirror', { state: 'visible', timeout: 20_000 });
       await page.waitForFunction(() => {
         const el = document.querySelector('.CodeMirror') as unknown as { CodeMirror?: unknown } | null;
@@ -120,7 +110,6 @@ test.describe.serial('Connections / External Provider (PostgreSQLDBTests2)', () 
       await page.keyboard.press('Delete');
       await page.keyboard.type(q.sql, { delay: 10 });
 
-      // Save first so the run binds to a saved query (Datagrok requires save before run on some queries).
       await page.locator('[name="button-Save"]').first().click();
       await expect.poll(async () => page.evaluate(async (name) => {
         const g = (window as unknown as { grok: any }).grok;
@@ -128,13 +117,8 @@ test.describe.serial('Connections / External Provider (PostgreSQLDBTests2)', () 
         return qs.length;
       }, q.name), { timeout: 30_000 }).toBeGreaterThanOrEqual(1);
 
-      // Click Play.
       await page.locator('[name="icon-play"]').first().click();
 
-      // The CRUD-style queries don't return a result grid (no SELECT). The
-      // platform reports completion via a green balloon or by clearing the
-      // running indicator. Wait for either: a balloon appears, or the play
-      // icon's spinner stops. We assert no error balloons remain.
       await page.waitForFunction(() =>
         !!document.querySelector('.grok-balloon, .d4-balloon')
         || !!document.querySelector('[name="viewer-Grid"] canvas'),

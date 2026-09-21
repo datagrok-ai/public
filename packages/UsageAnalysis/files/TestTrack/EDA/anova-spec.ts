@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
@@ -46,7 +47,6 @@ test('ANOVA scenario', async ({page}) => {
       const el = document.querySelector('[name="div-ML---Analyze---ANOVA..."]') as HTMLElement | null;
       if (el) el.click();
     });
-    await page.waitForTimeout(1200);
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     await expect(page.locator('.d4-dialog')).toContainText('ANOVA');
     await expect(page.locator('[name="input-host-Category"]')).toBeVisible();
@@ -55,10 +55,9 @@ test('ANOVA scenario', async ({page}) => {
   });
 
   await softStep('Step 3 — Click Run; expect Box plot + Analysis + F-test tabs', async () => {
-    // Dialog button is named "Run" (mixed case) — NOT "button-RUN" or "button-OK".
+
     await page.locator('.d4-dialog [name="button-Run"]').last().click();
 
-    // Poll up to 30s for the Box plot viewer + tab host with Analysis/F-test tabs.
     const deadline = Date.now() + 30_000;
     let hasBoxPlot = false;
     let hasAnalysisTab = false;
@@ -97,7 +96,6 @@ test('ANOVA scenario', async ({page}) => {
     expect(hasAnalysisTab).toBe(true);
     expect(hasFTestTab).toBe(true);
 
-    // Final assertion via Playwright locator too.
     await expect(page.locator('[name="viewer-Box-plot"]')).toBeVisible({timeout: 5000});
   });
 

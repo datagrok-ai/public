@@ -2,7 +2,8 @@
    active-row machine (arrows/Home/End, ARIA and the highlight on the row, never on the rendered
    content) and the standard hint/loading/empty/error-with-retry rows of an `AsyncSource`. The
    owning control keeps everything that differs — what it offers, what a pick means, and the ARIA
-   on its own box — and styles the rows through its own class prefix. */
+   on its own box. Every element carries a shared `u2-suggest-*` class (the one skin, css/inputs.css)
+   beside the owner's prefixed one (automation hooks and the owner's per-control extras). */
 import {signal, ReadonlySignal} from './signals.js';
 import {Scope} from './scope.js';
 import {AsyncState} from './async-source.js';
@@ -23,14 +24,19 @@ export interface SuggestionListOptions<T> {
   minChars: number;
   render: (item: T) => HTMLElement;
   /** Highlights the first row as soon as a non-empty query has matches, so plain Enter accepts it
-   * (VS Code convention). Off for owners whose box holds text of its own worth. */
-  autoHighlight?: boolean;
+   * (VS Code convention); `'always'` does so for the empty query too — a look-up opened on focus.
+   * Off for owners whose box holds text of its own worth. */
+  autoHighlight?: boolean | 'always';
   /** A row was clicked — index into {@link items}. */
   onPick: (index: number) => void;
   /** The overlay closed on its own (outside pointerdown, Esc, anchor detached): the owner runs
    * its own dismissal path, which ends in {@link dismiss}. */
   onDismiss: () => void;
   onRetry: () => void;
+  /** What the empty row says, per query; "No matches" by default. */
+  emptyText?: string | ((query: string) => string);
+  /** A ceiling on the popup's height, under the room the overlay gives it. */
+  maxHeight?: number | string;
 }
 
 export class SuggestionList<T> {
@@ -54,7 +60,7 @@ export class SuggestionList<T> {
     this.activeIndex = this._active;
     this._id = `${options.prefix}-${++SuggestionList._seq}`;
 
-    this.popup.className = `${options.prefix}-popup`;
+    this.popup.className = `u2-suggest-popup ${options.prefix}-popup`;
     this.popup.id = `${this._id}-listbox`;
     this.popup.setAttribute('role', 'listbox');
     options.anchor.setAttribute('aria-controls', this.popup.id);
@@ -74,7 +80,8 @@ export class SuggestionList<T> {
     if (this._open.peek())
       return;
     this._open.value = true;
-    this._closeOverlay = Overlay.show(this._options.anchor, this.popup, this._options.scope);
+    this._closeOverlay = Overlay.show(this._options.anchor, this.popup, this._options.scope,
+      {maxHeight: this._options.maxHeight});
   }
 
   dismiss(): void {
@@ -110,6 +117,10 @@ export class SuggestionList<T> {
     return el;
   }
 
+  private _row(kind: string, text: string): HTMLElement {
+    return SuggestionList.row(`u2-suggest-${kind} ${this._options.prefix}-${kind}`, text);
+  }
+
   // pointerdown, not click: preventDefault keeps focus (and aria-activedescendant) on the box.
   private _onPointerDown(e: Event): void {
     const target = e.target as HTMLElement;
@@ -126,7 +137,6 @@ export class SuggestionList<T> {
   }
 
   private _renderRows(): void {
-    const prefix = this._options.prefix;
     const popup = this.popup;
     if (!this._open.value) {
       this._rows.value = [];
@@ -144,30 +154,32 @@ export class SuggestionList<T> {
       popup.append(...els);
       this._rows.value = els;
       if (this._options.autoHighlight)
-        this._active.value = this._options.text.value.length > 0 ? 0 : -1;
+        this._active.value = this._options.autoHighlight === 'always' || this._options.text.value.length > 0 ? 0 : -1;
       return;
     }
     this._rows.value = [];
-    if (short) {
-      popup.append(SuggestionList.row(`${prefix}-hint`,
-        `Type ${this._options.minChars} or more characters`));
-    } else if (state.kind === 'error') {
-      const row = SuggestionList.row(`${prefix}-error`, state.message);
+    if (short)
+      popup.append(this._row('hint', `Type ${this._options.minChars} or more characters`));
+    else if (state.kind === 'error') {
+      const row = this._row('error', state.message);
       const retry = document.createElement('button');
-      retry.className = `${prefix}-retry`;
+      retry.className = `u2-suggest-retry ${this._options.prefix}-retry`;
       retry.type = 'button';
       retry.textContent = 'Retry';
       row.append(retry);
       popup.append(row);
     } else if (state.kind === 'loading' || state.kind === 'idle')
-      popup.append(SuggestionList.row(`${prefix}-loading`, 'Loading…'));
-    else
-      popup.append(SuggestionList.row(`${prefix}-empty`, 'No matches'));
+      popup.append(this._row('loading', 'Loading…'));
+    else {
+      const empty = this._options.emptyText;
+      popup.append(this._row('empty',
+        typeof empty === 'function' ? empty(this._options.text.peek()) : empty ?? 'No matches'));
+    }
   }
 
   private _option(item: T, i: number): HTMLElement {
     const el = document.createElement('div');
-    el.className = `${this._options.prefix}-option`;
+    el.className = `u2-suggest-option ${this._options.prefix}-option`;
     el.id = `${this._id}-opt-${i}`;
     el.dataset.index = String(i);
     el.setAttribute('role', 'option');
@@ -181,6 +193,7 @@ export class SuggestionList<T> {
     const els = this._rows.value;
     const active = this._active.value;
     for (let i = 0; i < els.length; i++) {
+      els[i].classList.toggle('u2-suggest-option-active', i === active);
       els[i].classList.toggle(`${this._options.prefix}-option-active`, i === active);
       els[i].setAttribute('aria-selected', i === active ? 'true' : 'false');
     }

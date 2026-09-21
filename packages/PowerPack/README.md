@@ -77,3 +77,7 @@ functions registry on the right or use *plus* icon. You can combine functions wr
 # Windows Manager
 
 Use icons on the right of the status bar to control visibility of tool windows.
+
+# Development
+
+The filter builder depends on the in-repo `@datagrok-libraries/u2` and `datagrok-api`, referenced by relative path (`../../libraries/u2`, `../../js-api`) like the other monorepo packages; build both once (`npm run build` in each), then `npm install --install-links=false` here so `node_modules` links to them.

@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.analyze.activity-cliffs, bio.analyze.activity-cliffs.editor, bio.analyze.activity-cliffs.top-menu, bio.analyze.composition, bio.analyze.sequence-space, bio.analyze.sequence-space.editor, bio.analyze.sequence-space.top-menu]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import * as bio from '@datagrok-libraries/test/src/playwright/bio';
@@ -43,7 +41,7 @@ for (const ds of datasets) {
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
       }
       throw new Error('Bio package did not warm up: no probe function callable');
     });
@@ -57,7 +55,7 @@ for (const ds of datasets) {
         for (const n of names) {
           try {
             if ((grok as any).functions.find && (grok as any).functions.find(n)) return true;
-          } catch { /* try next */ }
+          } catch {  }
         }
         return false;
       };
@@ -95,8 +93,7 @@ for (const ds of datasets) {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Activity-Cliffs...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
-      // Product renamed the dialog to "Sequence Activity Cliffs"; tolerate either form.
-      expect(title?.trim()).toContain('Activity Cliffs');
+      expect(title?.trim()).toBe('Sequence Activity Cliffs');
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       const baseScatter: number = await page.evaluate(() =>
         Array.from((grok.shell.tv as any).viewers).filter((v: any) => v.type === 'Scatter plot').length);
@@ -114,7 +111,7 @@ for (const ds of datasets) {
         if ((v as any).type !== 'Grid') (v as any).close();
     });
     await softStep(`${ds.name}: Bio > Analyze > Composition — WebLogo docks (no dialog)`, async () => {
-      // Composition has no "..." suffix — opens directly with no dialog; docks a WebLogo viewer.
+
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Composition');
       await page.waitForFunction(
         () => Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'WebLogo'),
@@ -123,23 +120,16 @@ for (const ds of datasets) {
         Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'WebLogo'));
       expect(hasWebLogo).toBe(true);
     });
-    // Scenario 3 — Composition Gear → Context Panel wiring (FASTA only).
+
     if (ds.name === 'FASTA') {
       await softStep(`${ds.name}: Composition Gear → Context Panel binds WebLogo property surface`, async () => {
-        // WebLogo title bar surfaces no Gear under body.selenium; grok.shell.o opens the same Context Panel.
-        // The property grid mounts asynchronously after the object is selected, so poll for it instead
-        // of a single fixed-delay read (an 800ms snapshot races the panel build under load).
         const result: {hasPropPanel: boolean, hasPropertyGrid: boolean, selectedIsWebLogo: boolean, panelText: string} =
           await page.evaluate(async () => {
-          // Force the Context Panel open — under simpleMode it can stay collapsed,
-          // so selecting the object alone would not mount the property grid.
           try { (grok.shell as any).windows.showContextPanel = true; } catch (e) {}
           let propPanel: Element | null = null;
           let propertyGrid: Element | null = null;
           let panelText = '';
           for (let i = 0; i < 40; i++) {
-            // Re-select each round: the WebLogo viewer ref and the panel build can
-            // race, and re-assigning grok.shell.o re-triggers the property surface.
             const wl = (grok.shell.tv as any).viewers.find((v: any) => v.type === 'WebLogo');
             if (wl) (grok as any).shell.o = wl;
             await new Promise((r) => setTimeout(r, 500));

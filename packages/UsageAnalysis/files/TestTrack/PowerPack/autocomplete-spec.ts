@@ -1,26 +1,13 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {finishSpec, openTable} from '../helpers/viewers';
 test.use(specTestOptions);
 test('PowerPack: Add new column autocomplete (demog — type, Ctrl+Space, $)', async ({page}) => {
   test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  await page.evaluate(async () => {
-    const grok = (window as any).grok;
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    try { grok.shell.closeAll(); } catch (_) {}
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    grok.shell.addTableView(df);
-    await new Promise<void>((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
-  await page.waitForTimeout(1000);
+  await openTable(page, {path: 'System:DemoFiles/demog.csv'});
   const cols = await page.evaluate(() => {
     const df = (window as any).grok.shell.tv?.dataFrame;
     return df ? df.columns.names() : [];
@@ -109,8 +96,17 @@ test('PowerPack: Add new column autocomplete (demog — type, Ctrl+Space, $)', a
     expect(hasFnStartingWithA).toBe(true);
   });
   await softStep('Scenario 1 Step 4a: select function from list via Enter on highlighted entry', async () => {
+    await page.locator('.cm-tooltip-autocomplete').first().waitFor({timeout: 5_000, state: 'visible'});
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(300);
+    await page.evaluate(async () => {
+      const doc = () => {
+        const c = document.querySelector('.d4-dialog .add-new-column-dialog-cm-div .cm-content');
+        return (c?.textContent ?? '').replace(/\u200b/g, '').trim();
+      };
+      const t0 = Date.now();
+      while (!/^[Aa][A-Za-z0-9_]*\(/.test(doc()) && Date.now() - t0 < 300)
+        await new Promise((r) => setTimeout(r, 25));
+    });
   });
   await softStep('Scenario 1 Step 5 (via Enter): verify function inserted as Name(params)', async () => {
     const doc = await readDoc();
@@ -143,7 +139,15 @@ test('PowerPack: Add new column autocomplete (demog — type, Ctrl+Space, $)', a
       return true;
     });
     expect(clicked).toBe(true);
-    await page.waitForTimeout(300);
+    await page.evaluate(async () => {
+      const doc = () => {
+        const c = document.querySelector('.d4-dialog .add-new-column-dialog-cm-div .cm-content');
+        return (c?.textContent ?? '').replace(/\u200b/g, '').trim();
+      };
+      const t0 = Date.now();
+      while (!/^[Aa][A-Za-z0-9_]*\(/.test(doc()) && Date.now() - t0 < 300)
+        await new Promise((r) => setTimeout(r, 25));
+    });
   });
   await softStep('Scenario 1 Step 5 (via mouse click): verify function inserted as Name(params)', async () => {
     const doc = await readDoc();

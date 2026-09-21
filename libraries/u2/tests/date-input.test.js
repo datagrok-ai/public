@@ -1,11 +1,15 @@
 /* DateInput / DateTimeInput: the text contract (parse, format, validity, clamping), the popup
    machine, and the calendar grid — one calendar shared by both, so the grid tests run on either. */
 
+// the zone the utcDates titles name, set here so those cases bite wherever the suite is run
+process.env.TZ = 'America/New_York';
+
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
 import {DateInput, DateTimeInput} from '../src/components/inputs/date-input.js';
+import {markSpan, spanOf} from '../src/core/span.js';
 
 function smoke(name, body) {
   test(name, async () => {
@@ -99,6 +103,32 @@ smoke('parse and format round-trip, single-digit month and day, empty is null', 
   dt.dispose();
 });
 
+smoke('relative: a typed span resolves against now, shows as typed and survives a commit', async () => {
+  const input = mount(new DateTimeInput({label: 'Since', relative: true}));
+  assert.equal(editor(input).placeholder, 'yyyy-MM-dd HH:mm or -1w');
+  type(input, '-1w');
+  fire(editor(input), 'blur');
+  const value = input.value.value;
+  assert.equal(spanOf(value), '-1w');
+  assert.ok(Math.abs(value.getTime() - (Date.now() - 7 * 86400e3)) < 5000, 'now minus seven days');
+  assert.equal(editor(input).value, '-1w', 'the box keeps the span text');
+  assert.equal(input.validity.value, null);
+
+  type(input, 'now');
+  assert.equal(spanOf(input.value.value), 'now');
+  type(input, '2026-08-15 10:00');
+  assert.equal(spanOf(input.value.value), undefined, 'a typed date is a plain date');
+  input.value.value = markSpan(new Date(), '2d');
+  assert.equal(editor(input).value, '2d', 'a marked date set from outside shows as its span');
+
+  const plain = mount(new DateInput({label: 'Date'}));
+  type(plain, '-1w');
+  assert.equal(plain.validity.value, 'Not a date', 'without `relative` a span is rejected');
+  assert.equal(plain.value.value, null);
+  input.dispose();
+  plain.dispose();
+});
+
 smoke('unparseable text stays on screen, marks invalid and never writes the value', async () => {
   const input = mount(new DateInput({label: 'Date', value: new Date(2026, 7, 15)}));
   const good = input.value.value;
@@ -186,8 +216,17 @@ smoke('machine: toggle and ArrowDown open, Esc closes and refocuses the editor',
   input.dispose();
 });
 
+function iso(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function current() {
+  return days().filter((d) => d.getAttribute('aria-current') === 'date').map((d) => d.dataset.date);
+}
+
 smoke('the grid marks today, the selection, adjacent months and out-of-range days', async () => {
-  const today = new Date();
+  const today = iso(new Date());
   const input = mount(new DateInput({
     label: 'Date',
     value: new Date(2026, 7, 15),
@@ -211,9 +250,8 @@ smoke('the grid marks today, the selection, adjacent months and out-of-range day
   assert.equal(day('2026-08-21').getAttribute('aria-disabled'), 'true');
   assert.equal(day('2026-08-10').hasAttribute('aria-disabled'), false);
 
-  const current = days().filter((d) => d.getAttribute('aria-current') === 'date');
-  const inMonth = today.getFullYear() === 2026 && today.getMonth() === 7;
-  assert.equal(current.length, inMonth ? 1 : 0);
+  assert.deepEqual(current(), day(today) ? [today] : [],
+    'today is marked exactly when the six-week grid (adjacent days included) shows it');
 
   fire(day('2026-08-09'), 'click');
   assert.equal(input.value.value.getDate(), 15, 'a disabled day is not selectable');
@@ -228,6 +266,12 @@ smoke('the grid marks today, the selection, adjacent months and out-of-range day
   assert.equal(popup().querySelector('.u2-date-title').textContent, 'August 2026',
     'the visible month follows the value on reopen');
   input.dispose();
+
+  const now = mount(new DateInput({label: 'Date', value: new Date()}));
+  await open(now);
+  assert.deepEqual(current(), [today], 'the month of today marks exactly one cell');
+  assert.equal(day(today).classList.contains('u2-date-today'), true);
+  now.dispose();
 });
 
 smoke('grid keyboard: arrows, Home/End, PageUp/PageDown, Shift+Page, Enter selects', async () => {
@@ -364,4 +408,36 @@ smoke('two inputs on one signal stay in step; dispose closes the popup and kills
     await flush();
     assert.equal(popup(), null, 'listeners died with the scope');
     shared.dispose();
+  });
+
+smoke('utcDates: the field shows, parses and commits the UTC calendar day (TZ=America/New_York)',
+  async () => {
+    const stamped = new Date('2026-10-02T00:00:00Z');
+    const input = mount(new DateInput({label: 'Due', utcDates: true, value: stamped}));
+    assert.equal(editor(input).value, '2026-10-02', 'a UTC midnight is its own day, not the one before');
+
+    const plain = mount(new DateInput({label: 'Due', value: stamped}));
+    assert.equal(editor(plain).value, iso(stamped), 'without the flag the same instant is a local moment');
+    plain.dispose();
+
+    type(input, '2026-10-03');
+    fire(editor(input), 'blur');
+    assert.equal(input.value.value.toISOString(), '2026-10-03T00:00:00.000Z', 'typing commits UTC midnight');
+    assert.equal(editor(input).value, '2026-10-03');
+
+    await open(input);
+    assert.equal(popup().querySelector('.u2-date-title').textContent, 'October 2026');
+    assert.equal(day('2026-10-03').getAttribute('aria-selected'), 'true', 'the marked day is the UTC one');
+    fire(day('2026-10-05'), 'click');
+    assert.equal(input.value.value.toISOString(), '2026-10-05T00:00:00.000Z', 'a picked day commits UTC midnight');
+    assert.equal(editor(input).value, '2026-10-05');
+    input.dispose();
+
+    const dt = mount(new DateTimeInput({label: 'When', utcDates: true,
+      value: new Date('2026-10-02T13:45:00Z')}));
+    assert.equal(editor(dt).value, '2026-10-02 13:45', 'the time of day is the UTC one too');
+    type(dt, '2026-10-02 07:05');
+    fire(editor(dt), 'blur');
+    assert.equal(dt.value.value.toISOString(), '2026-10-02T07:05:00.000Z');
+    dt.dispose();
   });

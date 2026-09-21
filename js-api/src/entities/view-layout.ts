@@ -14,7 +14,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 export class ViewLayout extends Entity {
 
-  /** @constructs ViewLayout */
+
   constructor(dart: any) {
     super(dart);
   }
@@ -55,7 +55,7 @@ export class ViewLayout extends Entity {
 
 export class ViewInfo extends Entity {
 
-  /** @constructs ViewInfo */
+
   constructor(dart: any) {
     super(dart);
   }

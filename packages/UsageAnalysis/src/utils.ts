@@ -23,6 +23,29 @@ export async function loadUsers(): Promise<{ [name: string]: DG.User }> {
   return usersCache;
 }
 
+export function showEventDetails(table: DG.DataFrame): void {
+  const rowIdx = table.currentRowIdx;
+  if (rowIdx < 0)
+    return;
+  const eventId = table.getCol('id').get(rowIdx);
+  if (!eventId)
+    return;
+  const accordion = DG.Accordion.create();
+  accordion.addPane('Details', () => ui.wait(async () => {
+    const t: DG.DataFrame = await grok.functions.call('UsageAnalysis:LogEventParameters', {eventId});
+    if (t.rowCount === 0)
+      return ui.divText('No details available');
+    const names = t.getCol('param_name').toList();
+    const values = t.getCol('value').toList();
+    const map: {[key: string]: string} = {};
+    for (let i = 0; i < names.length; i++)
+      map[names[i]] = values[i];
+    return ui.tableFromMap(map);
+  }), true);
+
+  grok.shell.o = accordion.root;
+}
+
 export function setupUserIconRenderer(grid: DG.Grid, users: { [name: string]: DG.User }, columnNames: string[]): void {
   for (const name of columnNames) {
     const col = grid.col(name);

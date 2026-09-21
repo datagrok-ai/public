@@ -1,30 +1,11 @@
 ---
 feature: powerpack
 target_layer: manual-only
-pyramid_layer: ui-smoke
-ui_companion_of: functions-sorting.md
-companion_steps: [3, 4]
-ui_coverage_responsibility:
-  - add-new-column-functions-sort-by-type
-manual_execution_notes: |
-  The functions-panel sort-BY-TYPE flow (clicking a column in the Add New
-  Column dialog's columns list so functions whose first input parameter
-  matches the selected column's type rise to the top) is NOT automatable
-  from a Playwright spec. The columns list is a canvas-based popup-mode
-  DG.ColumnGrid (PowerPack/src/dialogs/add-new-column.ts:1079,
-  widgetMode: true) with ZERO DOM-addressable per-row elements, and the
-  Dart-side hit-test pipeline for this widget does NOT respond to
-  synthetic DOM pointer/mouse events dispatched from a Playwright spec.
-  Live MCP recon (dev.datagrok.ai, 2026-05-28) confirmed across four
-  trigger approaches — synthetic MouseEvent triple-sequence, full
-  pointer+mouse event chain, JS-API DG.Grid.fromRoot().dataFrame (null),
-  and search-input filter + keyboard selection — that NONE cause the
-  functions list to re-sort. A real user's OS-level mouse click DOES
-  trigger the re-sort (the feature works for humans), but that path is
-  unreachable from headless automation. These two steps are therefore
-  carved out for manual visual verification; the canonical
-  functions-sorting.md / functions-sorting-spec.ts retains the
-  automatable flows (dialog open, sort-by-name, alphabetical ordering).
+coverage_type: regression
+manual_only_reason: |
+  The dialog's columns list is a canvas-based grid with no addressable rows —
+  a script cannot click a specific column, so these steps are verified by
+  hand.
 ---
 
 # Add New Column dialog — functions-panel sort-BY-TYPE (manual)
@@ -73,15 +54,9 @@ top (for example, `Abs(x)`, `Acos(x)`, `Asin(x)`, `Atan(x)`,
 any other column type as available and verify the matching-parameter
 family is on top in each case.
 
-## Notes
 
-- **Why manual.** The dialog's columns list is a canvas-based grid
-  with no addressable rows, so a script cannot reliably click a
-  specific column in it; a real user's mouse click works fine. This
-  step is therefore verified by hand.
-- **Automated sibling.** `functions-sorting.md` covers the dialog-open
-  flow and the sort-icon → "By name" → alphabetical-ordering flow,
-  both of which are reliably scriptable. The sticky-sort check (once
-  "By name" is active, clicking columns must not change the order) is
-  verified manually here as a companion check to the two manual steps
-  above.
+---
+{
+  "order": 5,
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
+}

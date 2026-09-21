@@ -73,7 +73,7 @@ category('Core', () => {
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol,
       C.SCALING_METHODS.MINUS_LG);
 
-    let v = grok.shell.getTableView('Peptides analysis');
+    let v = grok.shell.tableView('Peptides analysis');
 
     const d = v.dataFrame;
     const layout = v.saveLayout();
@@ -93,7 +93,7 @@ category('Core', () => {
       'Table never closed', 3000);
 
     await sp.open();
-    v = grok.shell.getTableView('Peptides analysis');
+    v = grok.shell.tableView('Peptides analysis');
 
     await grok.dapi.layouts.delete(sl);
     await grok.dapi.tables.delete(sti);

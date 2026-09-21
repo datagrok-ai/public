@@ -6,8 +6,14 @@ import {useDebounceFn} from '@vueuse/core';
 
 const LOADER_DEBOUNCE_TIME = 150;
 
+type OverlappingState = {
+  debouncedFn: (isOverlapping: boolean) => void,
+  loader: HTMLElement,
+  disposed: boolean,
+};
+
 export const ifOverlapping = {
-  updateFnMapping: new Map<HTMLElement, Function>(),
+  stateMapping: new Map<HTMLElement, OverlappingState>(),
 
   mounted: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {
     const customText = binding.arg;
@@ -18,33 +24,33 @@ export const ifOverlapping = {
     ], 'd4-update-shadow');
     loader.style.zIndex = '3000';
 
-    const updateFn = (isOverlapping: boolean) => {
-      if (isOverlapping && loader) {
-        el.append(loader);
-      }
-      if (!isOverlapping && loader) {
-        loader.remove();
-      }
+    const state: OverlappingState = {
+      loader,
+      disposed: false,
+      // the disposed check keeps a show scheduled within the debounce window
+      // from appending the loader to an already unmounted element
+      debouncedFn: useDebounceFn((isOverlapping: boolean) => {
+        if (state.disposed)
+          return;
+        if (isOverlapping)
+          el.append(loader);
+        else
+          loader.remove();
+      }, LOADER_DEBOUNCE_TIME),
     };
-
-    ifOverlapping.updateFnMapping.set(
-      el,
-      useDebounceFn(
-        (isOverlapping: boolean) => updateFn(isOverlapping),
-        LOADER_DEBOUNCE_TIME,
-      ),
-    );
+    ifOverlapping.stateMapping.set(el, state);
 
     ifOverlapping.updated(el, binding);
   },
   updated: (el: HTMLElement, binding: Vue.DirectiveBinding<boolean>) => {
-    const isOverlapping = binding.value;
-    const debouncedFn = ifOverlapping.updateFnMapping.get(el)!;
-    debouncedFn(isOverlapping);
+    ifOverlapping.stateMapping.get(el)!.debouncedFn(binding.value);
   },
   beforeUnmount: (el: HTMLElement) => {
-    const debouncedFn = ifOverlapping.updateFnMapping.get(el);
-    if (debouncedFn)
-      ifOverlapping.updateFnMapping.delete(el);
+    const state = ifOverlapping.stateMapping.get(el);
+    if (state) {
+      state.disposed = true;
+      state.loader.remove();
+      ifOverlapping.stateMapping.delete(el);
+    }
   },
 };

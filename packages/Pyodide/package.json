@@ -8,35 +8,20 @@
     "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/test": "^1.1.0",
-    "@datagrok-libraries/utils": "^4.6.5",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.27.0",
-    "dayjs": "^1.11.10",
-    "uuid": "^11.1.1"
-  },
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
     "uuid": "^11.1.1"
   },
   "devDependencies": {
-    "@types/uuid": "^10.0.0",
-    "datagrok-tools": "^5.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "@types/uuid": "^10.0.0"
   },
   "scripts": {
-    "link-all": "grok link",
-    "debug-pyodide": "webpack && grok publish",
-    "release-pyodide": "webpack && grok publish --release",
-    "build-pyodide": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-pyodide-dev": "webpack && grok publish dev",
-    "release-pyodide-dev": "webpack && grok publish dev --release",
-    "debug-pyodide-public": "webpack && grok publish public",
-    "release-pyodide-public": "webpack && grok publish public --release",
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test"
   },
   "canEdit": [

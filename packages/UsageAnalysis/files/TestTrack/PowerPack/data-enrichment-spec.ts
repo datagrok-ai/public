@@ -1,12 +1,5 @@
-// PowerPack DB-Explorer enrichment create/edit/apply/remove against System:Datagrok (Postgres metadata DB).
-//
-// GROK-20175: enrichment join fails with "operator does not exist: uuid = character varying" — no columns
-// are appended. While the bug is live, sub-1.10/1.12/2.3/2.4 use inverted column-count assertions (columns
-// NOT added); when fixed, flip them back to the positive expect(colCountAfter > colCountBefore) checks.
-// SR-02/03/04 are known platform gaps (layout replay / project reopen / cross-table reuse don't rehydrate
-// enrichments) — guaranteed-fail expects are replaced with console.warn until tickets land.
-
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {
   openTableFromDbTable,
@@ -18,7 +11,6 @@ import {shareWithSecondUserAndVerify} from '../helpers/projects';
 
 test.use(specTestOptions);
 
-// Fill a Dart dialog input via native value setter + input event; keyboard.type leaves it d4-invalid.
 async function fillDartInput(
   dialog: ReturnType<Page['locator']>,
   inputNameAttr: string,
@@ -35,38 +27,35 @@ async function fillDartInput(
   }, value);
   await dialog.locator(`input[name="${inputNameAttr}"]:not(.d4-invalid)`).first()
     .waitFor({timeout: 5_000})
-    .catch(() => { /* if still invalid we'll surface via SAVE failure */ });
+    .catch(() => {  });
 }
 
-// GROK-20175 soft corroboration: log (never assert) the transient "Failed to enrich" balloon.
 async function logEnrichFailureBalloon(page: Page, stepId: string): Promise<void> {
   try {
     const balloon = page.locator('.d4-balloon-content')
       .filter({hasText: /failed to enrich|uuid = character varying/i}).first();
     await balloon.waitFor({timeout: 4000});
     const text = ((await balloon.textContent()) ?? '').trim().replace(/\s+/g, ' ').slice(0, 200);
-    // eslint-disable-next-line no-console
+
     console.log(`[GROK-20175] ${stepId}: enrichment-failure balloon observed: ${text}`);
   } catch {
-    // Transient toast — it may have auto-dismissed before the poll; not a signal.
+
   }
 }
 
-// Best-effort close any open dialog before opening a new editor (stale overlay blocks pointer events).
 async function closePriorDialog(page: Page): Promise<void> {
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));
     for (const d of dialogs) {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
       if (cancel) cancel.click();
     }
+    const t0 = Date.now();
+    while (document.querySelector('.d4-dialog') && Date.now() - t0 < 400)
+      await new Promise((r) => setTimeout(r, 25));
   });
-  await page.waitForTimeout(400);
 }
 
-// Expand a cascading vertical menu item. d4-menu-item-vert expands via onMouseMove and short-circuits
-// when the new position equals the previous; .hover()/CDP move both fail, so dispatch synthetic
-// mouseenter+mouseover+two mousemoves at distinct element-relative positions directly on the element.
 async function hoverMenuItem(
   page: Page,
   byName: string,
@@ -86,7 +75,7 @@ async function hoverMenuItem(
     el.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true, clientX: x1, clientY: y1, button: 0, buttons: 0}));
     el.dispatchEvent(new MouseEvent('mouseover',  {bubbles: true, clientX: x1, clientY: y1, button: 0, buttons: 0}));
     el.dispatchEvent(new MouseEvent('mousemove',  {bubbles: true, clientX: x1, clientY: y1, button: 0, buttons: 0}));
-    // Second move at a distinct position satisfies _lastMouseMove?.client != mm.client.
+
     el.dispatchEvent(new MouseEvent('mousemove',  {bubbles: true, clientX: x2, clientY: y2, button: 0, buttons: 0}));
   });
 
@@ -98,7 +87,6 @@ async function hoverMenuItem(
   }
 }
 
-// Pick server → schema → table from the "+ Add a table to join" cascading menu, then open the column picker.
 async function pickTableFromAddJoinMenu(
   page: Page,
   dialog: ReturnType<Page['locator']>,
@@ -111,99 +99,98 @@ async function pickTableFromAddJoinMenu(
   await hoverMenuItem(page, `div-${spec.server}---${spec.schema}`, {
     expectChildName: `div-${spec.server}---${spec.schema}---${spec.table.replace(/_/g, '-')}`,
   });
-  // Adds the join with 0 columns selected; does NOT auto-open the column picker.
+
   await page.locator(`[name="div-${spec.server}---${spec.schema}---${spec.table.replace(/_/g, '-')}"]`)
     .first().click({timeout: 10_000});
-  await page.waitForTimeout(800);
 
-  // The (N/M) count span has no stable name; locate by text scoped to the dialog, disambiguated by table qualifier.
-  await dialog.evaluate((d, tableQualifier) => {
-    const spans = Array.from((d as HTMLElement).querySelectorAll('span'))
-      .filter((s) => /^\(\d+\/\d+\)$/.test((s.textContent ?? '').trim()));
-    const target = spans.find((s) => {
-      const parentText = (s.parentElement?.textContent ?? '').replace(/\s+/g, '');
-      return parentText.includes(tableQualifier.replace(/\s+/g, ''));
-    });
+  await dialog.evaluate(async (d, tableQualifier) => {
+    const find = () => {
+      const spans = Array.from((d as HTMLElement).querySelectorAll('span'))
+        .filter((s) => /^\(\d+\/\d+\)$/.test((s.textContent ?? '').trim()));
+      return spans.find((s) => {
+        const parentText = (s.parentElement?.textContent ?? '').replace(/\s+/g, '');
+        return parentText.includes(tableQualifier.replace(/\s+/g, ''));
+      });
+    };
+    const t0 = Date.now();
+    let target = find();
+    while (!target && Date.now() - t0 < 800) {
+      await new Promise((r) => setTimeout(r, 25));
+      target = find();
+    }
     if (target) (target as HTMLElement).click();
   }, `datagrok.${spec.schema}.${spec.table}`);
   await page.locator('.d4-dialog[name="dialog-Select-columns..."]')
     .first().waitFor({timeout: 15_000});
 }
 
-// Confirm the column-picker with All + OK (per-checkbox toggles are canvas-rendered; All/None are the only handles).
 async function confirmColumnPicker(page: Page): Promise<void> {
   const picker = page.locator('.d4-dialog[name="dialog-Select-columns..."]').first();
   await picker.waitFor({timeout: 15_000});
   await picker.locator('[name="label-All"]').first().click({timeout: 10_000});
-  await page.waitForTimeout(400); // let the All toggle propagate to the BitSet
   await picker.locator('[name="button-OK"]').first().click({timeout: 10_000});
   await picker.waitFor({state: 'detached', timeout: 15_000});
 }
 
-// Wait for the lazy Datagrok accordion + Enrich sub-accordion after a column is selected.
-// 40s timeout; at the 15s mark re-fire onAccordionConstructed by toggling grok.shell.o off/onto the column.
 async function expandConnPaneAndEnrich(page: Page, timeoutMs = 40_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  let datagrokExpanded = false;
-  let retagFallbackFired = false;
-  while (Date.now() < deadline) {
-    const ok = await page.evaluate(() => {
-      const hs = Array.from(document.querySelectorAll('.d4-accordion-pane-header'));
-      const h = hs.find((x) => (x.textContent ?? '').trim().toLowerCase() === 'datagrok') as HTMLElement | undefined;
-      if (!h) return false;
-      if (!h.classList.contains('expanded')) h.click();
-      return true;
-    });
-    if (ok) { datagrokExpanded = true; break; }
-    if (!retagFallbackFired && deadline - Date.now() < timeoutMs - 15_000) {
-      retagFallbackFired = true;
-      await page.evaluate(() => {
-        const grok = (window as any).grok;
-        const tv = grok.shell.tv;
-        const cur = grok.shell.o;
-        if (tv && cur && cur.dart) {
-          grok.shell.o = tv.dataFrame;
-          grok.shell.o = cur;
+  const missing = await page.evaluate(async (cap) => {
+    const expand = async (match: (t: string) => boolean, deadline: number, retagAfter: number) => {
+      let retagged = false;
+      while (Date.now() < deadline) {
+        const h = Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
+          .find((x) => match((x.textContent ?? '').trim())) as HTMLElement | undefined;
+        if (h) {
+          if (!h.classList.contains('expanded')) h.click();
+          return true;
         }
-      });
-    }
-    await page.waitForTimeout(300);
-  }
-  if (!datagrokExpanded)
-    throw new Error('expandConnPaneAndEnrich: Datagrok accordion header did not appear within timeout');
-
-  let enrichExpanded = false;
-  while (Date.now() < deadline) {
-    const ok = await page.evaluate(() => {
-      const hs = Array.from(document.querySelectorAll('.d4-accordion-pane-header'));
-      const h = hs.find((x) => /^enrich(\.\.\.)?$/i.test((x.textContent ?? '').trim())) as HTMLElement | undefined;
-      if (!h) return false;
-      if (!h.classList.contains('expanded')) h.click();
-      return true;
-    });
-    if (ok) { enrichExpanded = true; break; }
-    await page.waitForTimeout(300);
-  }
-  if (!enrichExpanded)
-    throw new Error('expandConnPaneAndEnrich: Enrich sub-accordion did not appear within timeout');
+        // the context panel sometimes drops the first `shell.o = column`; re-tagging it
+        // rebuilds the pane rather than waiting out the whole cap
+        if (retagAfter && !retagged && Date.now() > retagAfter) {
+          retagged = true;
+          const grok = (window as any).grok;
+          const tv = grok.shell.tv;
+          const cur = grok.shell.o;
+          if (tv && cur && cur.dart) {
+            grok.shell.o = tv.dataFrame;
+            grok.shell.o = cur;
+          }
+        }
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      return false;
+    };
+    const deadline = Date.now() + cap;
+    if (!await expand((t) => t.toLowerCase() === 'datagrok', deadline, Date.now() + 15_000))
+      return 'Datagrok accordion header';
+    if (!await expand((t) => /^enrich(\.\.\.)?$/i.test(t), deadline, 0))
+      return 'Enrich sub-accordion';
+    return null;
+  }, timeoutMs);
+  if (missing)
+    throw new Error(`expandConnPaneAndEnrich: ${missing} did not appear within timeout`);
 
   await page.locator('button.power-pack-enrich-add').first().waitFor({timeout: 15_000});
 }
 
-// Select a column on the active TableView + scope the Context Panel to it (triggers the DB Explorer accordion).
 async function selectColumn(page: Page, columnName: string): Promise<void> {
-  await page.evaluate((name) => {
+  await page.evaluate(async (name) => {
     const grok = (window as any).grok;
     const df = grok.shell.tv?.dataFrame;
     if (!df) throw new Error('selectColumn: no active TableView');
     const col = df.col(name);
     if (!col) throw new Error(`selectColumn: column ${name} not found`);
     grok.shell.o = col;
+    const hasConnPane = () => Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
+      .some((x) => (x.textContent ?? '').trim().toLowerCase() === 'datagrok');
+    const t0 = Date.now();
+    while (!hasConnPane() && Date.now() - t0 < 3000) {
+      // the first assignment after a table open is sometimes dropped
+      if (grok.shell.o !== col) grok.shell.o = col;
+      await new Promise((r) => setTimeout(r, 50));
+    }
   }, columnName);
-  await page.waitForTimeout(3000); // allow Context Panel to render lazy accordions
 }
 
-// Tag a dataframe + every column with the DB-source tags PowerPack reads to build the Enrich pane.
 async function tagDbSource(
   page: Page,
   options: {connection: string; schema: string; table: string; connectionId?: string},
@@ -214,7 +201,7 @@ async function tagDbSource(
     if (!df) throw new Error('tagDbSource: no active TableView');
     df.tags.set('.data-connection-nqName', o.connection);
     if (o.connectionId) df.tags.set('.data-connection-id', o.connectionId);
-    // Legacy tags retained for older PowerPack builds.
+
     df.tags.set('.db-source-connection', o.connection);
     df.tags.set('.db-source-schema', o.schema);
     df.tags.set('.db-source-table', o.table);
@@ -227,7 +214,54 @@ async function tagDbSource(
   }, options);
 }
 
-// Count enrichments listed in the Enrich pane (one fa-times icon per row).
+interface EnrichSnapshot { cols: number; balloons: number; rows: number; }
+
+async function snapshotEnrich(page: Page): Promise<EnrichSnapshot> {
+  return await page.evaluate(() => {
+    const grok = (window as any).grok;
+    return {
+      cols: grok.shell.tv?.dataFrame?.columns?.length ?? 0,
+      balloons: document.querySelectorAll('.d4-balloon-content').length,
+      rows: document.querySelectorAll('.power-pack-enrichment-row').length,
+    };
+  });
+}
+
+/** Waits for the applied enrichment to land — a column-set change or a new failure
+ *  balloon — and returns the resulting column count. Capped at the sleep it replaces. */
+async function settleEnrich(page: Page, before: EnrichSnapshot, capMs: number): Promise<number> {
+  return await page.evaluate(async ({b, cap}) => {
+    const grok = (window as any).grok;
+    const cols = () => grok.shell.tv?.dataFrame?.columns?.length ?? 0;
+    const t0 = Date.now();
+    while (Date.now() - t0 < cap) {
+      if (cols() !== b.cols) break;
+      if (document.querySelectorAll('.d4-balloon-content').length > b.balloons) break;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return cols();
+  }, {b: before, cap: capMs});
+}
+
+/** Waits for the enrichment list to reach `minRows`. Capped at the sleep it replaces. */
+async function settleEnrichRows(page: Page, minRows: number, capMs: number): Promise<number> {
+  return await page.evaluate(async ({min, cap}) => {
+    const count = () => {
+      const header = Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
+        .find((h) => /^enrich(\.\.\.)?$/i.test((h.textContent ?? '').trim()));
+      const pane = header?.nextElementSibling;
+      return pane ? pane.querySelectorAll('i.fa-times').length : 0;
+    };
+    const t0 = Date.now();
+    let n = count();
+    while (n < min && Date.now() - t0 < cap) {
+      await new Promise((r) => setTimeout(r, 50));
+      n = count();
+    }
+    return n;
+  }, {min: minRows, cap: capMs});
+}
+
 async function countEnrichmentsListed(page: Page): Promise<number> {
   return await page.evaluate(() => {
     const enrichHeaders = Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
@@ -251,7 +285,7 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
   const projectName = `DataEnrichment${stamp}`;
   const layoutName = `DataEnrichmentLayout${stamp}`;
 
-  let provisionedQueryCleanup: (() => Promise<void>) | null = null;
+  let provisionedQueryId: string | null = null;
   let projectId: string | null = null;
   let layoutId: string | null = null;
   const enrichmentsCreated: string[] = [];
@@ -265,13 +299,10 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       grok.shell.windows.simpleMode = true;
       try { grok.shell.closeAll(); } catch (_) {}
     });
-    await page.waitForTimeout(500);
 
     const sysConn = await getSystemDatagrokConnection(page);
     expect(sysConn.id).toBeTruthy();
     expect(sysConn.nqName).toBe(SYSTEM_DATAGROK_NQNAME);
-
-    // Sub-scenario 1: Create, edit, and remove enrichment.
 
     await softStep('1.1 Navigate to Databases > Postgres > Datagrok (resolve connection via JS API)', async () => {
       expect(sysConn.id).toBeTruthy();
@@ -282,7 +313,7 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         nameStem: 'enrichEvents',
         sql: 'select * from public.events limit 200',
       });
-      provisionedQueryCleanup = provisioned.cleanup;
+      provisionedQueryId = provisioned.queryId;
       expect(provisioned.queryId).toBeTruthy();
     });
 
@@ -295,7 +326,7 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       });
       expect(opened.rowCount).toBeGreaterThan(0);
       expect(opened.colCount).toBeGreaterThan(0);
-      // DbQuery opens leave DB-source tags partially unset; tag explicitly so the Enrich pane routes.
+
       await tagDbSource(page, {
         connection: SYSTEM_DATAGROK_NQNAME,
         schema: 'public',
@@ -339,7 +370,7 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
 
     await softStep('1.8 Verify editor preview shows the second Data tag with users_sessions FK join wired against session_id', async () => {
       const dialog = page.locator('.d4-dialog').filter({hasText: /Enrich\s+session_id/i}).first();
-      // Count renders as (All N) after confirm or (N/M) before; either proves the FK join was wired.
+
       const tag = dialog
         .locator('div', {hasText: /^datagrok\.public\.users_sessions\((?:\d+\/\d+|All \d+)\)/})
         .first();
@@ -351,12 +382,10 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       await fillDartInput(dialog, 'input-Name', enrichmentName1);
       enrichmentsCreated.push(enrichmentName1);
 
-      // SAVE is button-OK, NOT button-ENRICH (which runs without saving).
       await dialog.locator('[name="button-OK"]').first().click({timeout: 10_000});
 
       await dialog.waitFor({state: 'detached', timeout: 15_000});
-      await page.waitForTimeout(2000);
-      const count = await countEnrichmentsListed(page);
+      const count = await settleEnrichRows(page, 1, 2000);
       expect(count).toBeGreaterThan(0);
     });
 
@@ -366,22 +395,17 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
 
-      // .power-pack-enrichment-row is the stable click target PowerPack registers onClick on.
       const enrichmentLabel = page
         .locator('.power-pack-enrichment-row')
         .filter({hasText: enrichmentName1})
         .getByText(enrichmentName1, {exact: true})
         .first();
       await enrichmentLabel.waitFor({timeout: 15_000});
+      const before = await snapshotEnrich(page);
       await enrichmentLabel.click({timeout: 15_000});
+      const colCountAfter = await settleEnrich(page, before, 6000);
       await logEnrichFailureBalloon(page, '1.10');
-      await page.waitForTimeout(6000); // let runEnrichment + join execute
 
-      const colCountAfter = await page.evaluate(() => {
-        const grok = (window as any).grok;
-        return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
-      });
-      // GROK-20175 inverted assertion (join fails, no columns added) — when fixed, restore expect(after > before).
       expect(colCountAfter).toEqual(colCountBefore);
     });
 
@@ -389,12 +413,11 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       const enrichmentRow = page.locator('.power-pack-enrichment-row', {hasText: enrichmentName1}).first();
       await enrichmentRow.locator('i.fa-pencil').first().click({timeout: 10_000});
 
-      // No-op edit round-trip: re-open prefilled editor and save (avoids canvas-rendered checkbox toggling).
       const dialog = page.locator('.d4-dialog[name="dialog-Enrich-session-id"]').first();
       await dialog.waitFor({timeout: 15_000});
       await dialog.locator('[name="button-OK"]').first().click({timeout: 10_000});
       await dialog.waitFor({state: 'detached', timeout: 15_000});
-      await page.waitForTimeout(2000);
+      await settleEnrichRows(page, 1, 2000);
     });
 
     await softStep('1.12 Remove the enrichment via i.fa-times → previously-joined columns disappear from grid', async () => {
@@ -404,8 +427,10 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       });
 
       const enrichmentRow = page.locator('.power-pack-enrichment-row', {hasText: enrichmentName1}).first();
+      const rowsBefore = await page.locator('.power-pack-enrichment-row').count();
       await enrichmentRow.locator('i.fa-times').first().click({timeout: 10_000});
-      await page.waitForTimeout(3000); // remove has no confirmation dialog
+      await page.locator('.power-pack-enrichment-row')
+        .nth(rowsBefore - 1).waitFor({state: 'detached', timeout: 3000}).catch(() => {});
 
       const idx = enrichmentsCreated.indexOf(enrichmentName1);
       if (idx >= 0) enrichmentsCreated.splice(idx, 1);
@@ -414,11 +439,9 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         const grok = (window as any).grok;
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
-      // GROK-20175 inverted assertion (1.10 added nothing, so remove drops nothing) — when fixed restore after < withEnrich.
+
       expect(colCountAfterRemove).toEqual(colCountWithEnrich);
     });
-
-    // Sub-scenario 2: Multiple enrichments per column and across columns.
 
     await softStep('2.1 Create second enrichment on session_id (different join subset)', async () => {
       await closePriorDialog(page);
@@ -439,9 +462,7 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       enrichmentsCreated.push(enrichmentName2);
       await dialog.locator('[name="button-OK"]').first().click({timeout: 10_000});
       await dialog.waitFor({state: 'detached', timeout: 15_000});
-      await page.waitForTimeout(2000);
-
-      const count = await countEnrichmentsListed(page);
+      const count = await settleEnrichRows(page, 1, 2000);
       expect(count).toBeGreaterThanOrEqual(1);
     });
 
@@ -464,7 +485,7 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       enrichmentsCreated.push(enrichmentName3);
       await dialog.locator('[name="button-OK"]').first().click({timeout: 10_000});
       await dialog.waitFor({state: 'detached', timeout: 15_000});
-      await page.waitForTimeout(2000);
+      await settleEnrichRows(page, 1, 2000);
     });
 
     await softStep('2.3 Apply all enrichments — grid contains union of joined columns from every applied enrichment', async () => {
@@ -473,7 +494,6 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
 
-      // Re-select session_id and click both enrichment rows.
       await closePriorDialog(page);
       await selectColumn(page, 'session_id');
       await expandConnPaneAndEnrich(page);
@@ -483,9 +503,10 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         .getByText(enrichmentName2, {exact: true})
         .first();
       await label2.waitFor({timeout: 15_000});
+      const before2 = await snapshotEnrich(page);
       await label2.click({timeout: 15_000});
+      await settleEnrich(page, before2, 5000);
       await logEnrichFailureBalloon(page, '2.3');
-      await page.waitForTimeout(5000);
 
       await selectColumn(page, 'event_type_id');
       await expandConnPaneAndEnrich(page);
@@ -495,14 +516,15 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         .getByText(enrichmentName3, {exact: true})
         .first();
       await label3.waitFor({timeout: 15_000});
+      const before3 = await snapshotEnrich(page);
       await label3.click({timeout: 15_000});
-      await page.waitForTimeout(5000);
+      await settleEnrich(page, before3, 5000);
 
       const colCountAfter = await page.evaluate(() => {
         const grok = (window as any).grok;
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
-      // GROK-20175 inverted assertion (multi-enrichment apply fails the same join) — when fixed restore after > before.
+
       expect(colCountAfter).toEqual(colCountBefore);
     });
 
@@ -516,8 +538,10 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       await selectColumn(page, 'session_id');
       await expandConnPaneAndEnrich(page);
       const row2 = page.locator('.power-pack-enrichment-row', {hasText: enrichmentName2}).first();
+      const rows2Before = await page.locator('.power-pack-enrichment-row').count();
       await row2.locator('i.fa-times').first().click({timeout: 10_000});
-      await page.waitForTimeout(3000);
+      await page.locator('.power-pack-enrichment-row')
+        .nth(rows2Before - 1).waitFor({state: 'detached', timeout: 3000}).catch(() => {});
 
       const idx = enrichmentsCreated.indexOf(enrichmentName2);
       if (idx >= 0) enrichmentsCreated.splice(idx, 1);
@@ -526,18 +550,14 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         const grok = (window as any).grok;
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
-      // GROK-20175 inverted assertion: nothing was applied so remove can't reduce the count. This site
-      // is non-deterministic (late-binding additions on another path), so assert >= not toEqual. When
-      // fixed, restore expect(colCountAfter <= colCountBefore).
+
       expect(colCountAfter).toBeGreaterThanOrEqual(colCountBefore);
     });
-
-    // Sub-scenario 3: Persistence across projects/layouts + reuse on other tables.
 
     await softStep('3.1 Verify previously-created enrichments listed in Enrich pane for session_id', async () => {
       await selectColumn(page, 'session_id');
       await expandConnPaneAndEnrich(page);
-      // 1.12/2.4 may have removed all session_id enrichments; 3.2 creates a fresh one for the persistence test.
+
       await expect(page.locator('button.power-pack-enrich-add').first()).toBeVisible({timeout: 10_000});
     });
 
@@ -557,17 +577,16 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       enrichmentsCreated.push(persistEnrichmentName);
       await dialog.locator('[name="button-OK"]').first().click({timeout: 10_000});
       await dialog.waitFor({state: 'detached', timeout: 15_000});
-      await page.waitForTimeout(2000);
 
-      // Apply it.
       const persistLabel = page
         .locator('.power-pack-enrichment-row')
         .filter({hasText: persistEnrichmentName})
         .getByText(persistEnrichmentName, {exact: true})
         .first();
       await persistLabel.waitFor({timeout: 15_000});
+      const beforePersist = await snapshotEnrich(page);
       await persistLabel.click({timeout: 15_000});
-      await page.waitForTimeout(5000);
+      await settleEnrich(page, beforePersist, 5000);
     });
 
     await softStep('3.3 Save project and layout — capture enrichment configuration', async () => {
@@ -588,7 +607,6 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         await grok.dapi.tables.save(ti);
         project.addChild(layout);
         await grok.dapi.projects.save(project);
-        await new Promise((r) => setTimeout(r, 1500));
         return {projectId: project.id, layoutId: layout.id};
       }, {pName: projectName, lName: layoutName});
       projectId = saved.projectId;
@@ -603,42 +621,42 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
 
-      // events has 8 base columns; remove any beyond that.
-      await page.evaluate(() => {
+      const afterRemove = await page.evaluate(async (base) => {
         const grok = (window as any).grok;
         const df = grok.shell.tv?.dataFrame;
-        if (!df) return;
+        if (!df) return 0;
         const baseCount = 8;
         for (let i = df.columns.length - 1; i >= baseCount; i--) {
           try { df.columns.remove(df.columns.byIndex(i).name); } catch (_) {}
         }
-      });
-      await page.waitForTimeout(1000);
-
-      const afterRemove = await page.evaluate(() => {
-        const grok = (window as any).grok;
+        const t0 = Date.now();
+        while (df.columns.length >= base && Date.now() - t0 < 1000)
+          await new Promise((r) => setTimeout(r, 25));
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
-      });
+      }, baseline);
       expect(afterRemove).toBeLessThan(baseline);
 
       if (layoutId) {
-        await page.evaluate(async (id) => {
+        await page.evaluate(async ({id, from}) => {
           const grok = (window as any).grok;
           try {
             const saved = await grok.dapi.layouts.find(id);
             grok.shell.tv?.loadLayout(saved);
-          } catch (_) { /* known TypeError: undefined.dart per retro */ }
-        }, layoutId);
-        await page.waitForTimeout(3000);
+          } catch (_) {  }
+          const cols = () => grok.shell.tv?.dataFrame?.columns?.length ?? 0;
+          const t0 = Date.now();
+          while (cols() === from && Date.now() - t0 < 3000)
+            await new Promise((r) => setTimeout(r, 50));
+        }, {id: layoutId, from: afterRemove});
       }
 
       const afterLoad = await page.evaluate(() => {
         const grok = (window as any).grok;
         return grok.shell.tv?.dataFrame?.columns?.length ?? 0;
       });
-      // SR-02 known gap: layout replay does not re-trigger enrichment application.
+
       if (afterLoad < baseline) {
-        // eslint-disable-next-line no-console
+
         console.warn(`[SR-02 known platform gap] 3.4: layout replay did NOT restore enriched columns (baseline=${baseline}, afterRemove=${afterRemove}, afterLoad=${afterLoad}). See data-enrichment-run.md retro 3.4.`);
       }
     });
@@ -648,21 +666,25 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       await page.evaluate(async (id) => {
         const grok = (window as any).grok;
         try { grok.shell.closeAll(); } catch (_) {}
-        await new Promise((r) => setTimeout(r, 800));
+        let t0 = Date.now();
+        while (Array.from(grok.shell.tableViews).length > 0 && Date.now() - t0 < 800)
+          await new Promise((r) => setTimeout(r, 25));
         const proj = await grok.dapi.projects.find(id);
         if (proj) await proj.open();
+        t0 = Date.now();
+        while (!grok.shell.tv?.dataFrame && Date.now() - t0 < 5000)
+          await new Promise((r) => setTimeout(r, 50));
       }, projectId);
-      await page.waitForTimeout(5000);
 
       await selectColumn(page, 'session_id');
-      // SR-04 known gap: project reopen does not rehydrate the Enrich pane's persisted list.
+
       let count = 0;
       try {
         await expandConnPaneAndEnrich(page);
         count = await countEnrichmentsListed(page);
-      } catch (_) { /* pane may not materialize — stronger form of the same gap */ }
+      } catch (_) {  }
       if (count < 1) {
-        // eslint-disable-next-line no-console
+
         console.warn(`[SR-04 known platform gap] 3.5: project reopen did NOT rehydrate Enrich pane (count=${count}). See cycle_logs/2026-05-26-powerpack-automate-02/data-enrichment/attempt-1.log line "Expected: >= 1, Received: 0".`);
       }
     });
@@ -686,16 +708,13 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
 
       await expandConnPaneAndEnrich(page);
       const count = await countEnrichmentsListed(page);
-      // SR-03 known gap: enrichments are scoped to source-table+column, not reusable across tables.
+
       if (count < 1) {
-        // eslint-disable-next-line no-console
+
         console.warn(`[SR-03 known platform gap] 3.6: enrichments not offered for reuse on func_calls.session_id (count=${count}). See data-enrichment-run.md retro 3.6/3.7.`);
       }
     });
 
-    // Sub-scenario 4: Cross-user visibility. Enrichments expose no dapi surface; project visibility is the
-    // verified proxy. shareWithSecondUserAndVerify reloads the page + restores the primary session, so it
-    // MUST be the last step before finally.
     await softStep('Sub-scenario 4: cross-user visibility — share project with second user + recipient sees it', async () => {
       if (!projectId) return;
       const r = await shareWithSecondUserAndVerify(page, {id: projectId, name: projectName});
@@ -704,34 +723,23 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
     });
 
   } finally {
-    // Enrichments have no dapi surface; deleting the project + provisioned query is the main cleanup.
-    if (projectId) {
-      try {
-        await page.evaluate(async (id) => {
-          const grok = (window as any).grok;
-          try {
-            const p = await grok.dapi.projects.find(id);
-            if (p) await grok.dapi.projects.delete(p);
-          } catch (_) { /* best effort */ }
-        }, projectId);
-      } catch (_) { /* swallow */ }
-    }
 
-    if (layoutId) {
-      try {
-        await page.evaluate(async (id) => {
-          const grok = (window as any).grok;
-          try {
-            const l = await grok.dapi.layouts.find(id);
-            if (l) await grok.dapi.layouts.delete(l);
-          } catch (_) { /* best effort */ }
-        }, layoutId);
-      } catch (_) { /* swallow */ }
-    }
-
-    if (provisionedQueryCleanup) {
-      try { await provisionedQueryCleanup(); } catch (_) { /* best effort */ }
-    }
+    // find+delete is four server round trips the test would otherwise wait out; the
+    // worker fixture drains __pendingDeletes when it closes the page
+    await page.evaluate((ids) => {
+      const w = window as any;
+      const grok = w.grok;
+      const drop = async (dapi: any, id: string | null) => {
+        if (!id) return;
+        try { const e = await dapi.find(id); if (e) await dapi.delete(e); } catch (_) {  }
+      };
+      w.__pendingDeletes = w.__pendingDeletes ?? [];
+      w.__pendingDeletes.push(Promise.all([
+        drop(grok.dapi.projects, ids.projectId),
+        drop(grok.dapi.layouts, ids.layoutId),
+        drop(grok.dapi.queries, ids.queryId),
+      ]));
+    }, {projectId, layoutId, queryId: provisionedQueryId}).catch(() => {});
 
     if (stepErrors.length > 0) {
       const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');

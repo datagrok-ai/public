@@ -86,8 +86,7 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
   async initLibData(): Promise<void> {
     if (!this.initLibDataPromise) {
       this.initLibDataPromise = (async () => {
-        const packageSettings = await this.getSettings();
-        let monomersPath: string = packageSettings instanceof Map ? packageSettings.get('MonomersPath') : packageSettings['MonomersPath'];
+        let monomersPath: string = this.settings['MonomersPath'];
         if (!monomersPath || !(await grok.dapi.files.exists(monomersPath))) {
           this.logger.warning(`Monomers path '${monomersPath}' not found. ` +
             `Fallback to monomers sample path '${FALLBACK_LIB_PATH}'.`);

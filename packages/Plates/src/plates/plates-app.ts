@@ -13,19 +13,16 @@ import {createPlatesView} from './views/plates-create-view';
 import {AnalysisManager} from '../plate/analyses/analysis-manager';
 import {searchAnalysesView} from './views/analyses-search-view';
 
-export function platesAppView(): DG.View {
-  const dummy = DG.DataFrame.create(5);
-  const view = DG.TableView.create(dummy);
+export function platesAppView(): DG.TableView {
+  const view = DG.TableView.create(DG.DataFrame.fromColumns([DG.Column.string('barcode', 0)]));
   view.name = 'Plates';
-
-
+  ui.setUpdateIndicator(view.root, true);
   crud.queryPlates({plateMatchers: [], wellMatchers: [], analysisMatchers: []}).then((df: DG.DataFrame) => {
     df.col('barcode')!.semType = 'Plate Barcode';
     view.dataFrame = df;
     view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
       .onPrepareValueScript = `return (await plates.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
-  });
-
+  }).finally(() => ui.setUpdateIndicator(view.root, false));
   return view;
 }
 

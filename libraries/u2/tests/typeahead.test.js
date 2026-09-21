@@ -75,6 +75,8 @@ smoke('sync: filters by itemText and renders every option through the callback',
   assert.deepEqual(texts(popup, '.u2-typeahead-option .test-user'),
     ['Ada Almeida <adaalmeida>', 'Bruno Bauer <brunobauer>', 'Chen Costa <chencosta>']);
   assert.equal(popup.querySelector('.u2-typeahead-option').getAttribute('role'), 'option');
+  assert.equal(popup.classList.contains('u2-suggest-popup'), true, 'the shared skin class');
+  assert.equal(popup.querySelector('.u2-suggest-option.u2-typeahead-option') != null, true);
 
   type(input, 'bau');
   await flush();
@@ -84,6 +86,7 @@ smoke('sync: filters by itemText and renders every option through the callback',
   await flush();
   assert.equal(popup.querySelectorAll('.u2-typeahead-option').length, 0);
   assert.equal(popup.querySelector('.u2-typeahead-empty').textContent, 'No matches');
+  assert.equal(popup.querySelector('.u2-suggest-empty.u2-typeahead-empty') != null, true);
   typeahead.dispose();
 });
 
@@ -100,6 +103,7 @@ smoke('keyboard: ArrowDown/Enter picks the active option and fills the input', a
   const active = popup.querySelectorAll('.u2-typeahead-option')[1];
   assert.equal(active.getAttribute('aria-selected'), 'true');
   assert.equal(active.classList.contains('u2-typeahead-option-active'), true);
+  assert.equal(active.classList.contains('u2-suggest-option-active'), true);
   assert.equal(input.getAttribute('aria-activedescendant'), active.id);
 
   fire(input, 'keydown', {key: 'ArrowUp'});

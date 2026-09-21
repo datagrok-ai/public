@@ -79,7 +79,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   const desanitizeValue = (value: any): any => {
     if (value && value._type) {
       if (value._type === 'column' && table) return table.col(value.name);
-      if (value._type === 'dataframe') return grok.shell.tableByName(value.name);
+      if (value._type === 'dataframe') return grok.shell.table(value.name);
     }
     return value;
   };

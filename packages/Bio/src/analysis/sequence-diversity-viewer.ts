@@ -31,6 +31,14 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
     this.diverseColumnLabel = this.string('diverseColumnLabel', null);
   }
 
+  /** `subset size`: the diverse rows picked; `subset`: their indexes as one string;
+   * `distinct sequences`: how many different sequences they hold. */
+  protected override readings(): {[name: string]: number | string | boolean} {
+    const ids = this.renderMolIds ?? [];
+    const seqs = new Set(ids.map((i) => this.targetColumn?.get(i) ?? '').filter((s) => s !== ''));
+    return {'subset size': ids.length, 'subset': ids.join(','), 'distinct sequences': seqs.size};
+  }
+
   override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;

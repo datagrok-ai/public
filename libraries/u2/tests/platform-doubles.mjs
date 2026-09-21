@@ -11,7 +11,11 @@
    as `datagrok-api/dg` and `datagrok-api/grok`; dg-stub also installs the kill-walk globals over
    {@link platform}. */
 
-import {Control, dfBindings, signal} from 'datagrok-api/u2core';
+import {Control, TYPE, dfBindings, signal} from 'datagrok-api/u2core';
+export {TYPE, COLUMN_TYPE, SEMTYPE} from 'datagrok-api/u2core';
+
+/** `DG.TAGS` — the column tags u2 writes; u2core does not re-export them (js-api const.ts:360). */
+export const TAGS = {FRIENDLY_NAME: 'friendlyName', FORMAT: 'format'};
 
 /** Prototype getters over the handle — what every field of a real entity is. */
 function getters(cls, ...keys) {
@@ -369,16 +373,42 @@ export class UnreadableFileInfo extends FileInfo {
 
 export class BitSet {
   constructor(length = 0) { this.dart = {length}; }
+
+  /** The bytes are kept as given — what a test asserts the mask adapter handed over. */
+  static fromBytes(buffer, bitLength) {
+    const bitset = new BitSet(bitLength);
+    bitset.dart.buffer = buffer;
+    return bitset;
+  }
+
+  /** One copy of the words, as the platform's `grok_BitSet_FromBytes` makes. */
+  static fromBitArray(a) {
+    return BitSet.fromBytes(a.getBuffer().slice(0, a.lengthInInts).buffer, a.length);
+  }
+
+  /** A never-written set is all-true, as a fresh frame's filter is. */
+  get(i) {
+    return this.dart.buffer === undefined || (new Uint32Array(this.dart.buffer)[i >>> 5] & (1 << (i & 31))) !== 0;
+  }
 }
 getters(BitSet, 'length');
 
+const INT_NULL = -2147483648;
+const FLOAT_NULL = 2.6789344063684636e-34;
+
 // datetime counts as numerical, as in ddt (date_time_column.dart:16)
-const NUMERICAL = new Set(['int', 'double', 'bigint', 'qnum', 'datetime']);
+const NUMERICAL = new Set([TYPE.INT, TYPE.FLOAT, TYPE.BIG_INT, TYPE.QNUM, TYPE.DATE_TIME]);
 
 export class Column {
-  constructor(name, type = 'string', semType = null) { this.dart = {name, type, semType, frame: null}; }
+  constructor(name, type = TYPE.STRING, semType = null) {
+    this.dart = {name, type, semType, frame: null, tags: {}};
+  }
 
   get name() { return this.dart.name; }
+
+  get tags() { return this.dart.tags; }
+  getTag(tag) { return this.dart.tags[tag] ?? null; }
+  setTag(tag, value) { this.dart.tags[tag] = value; }
 
   /** A rename fires the frame's `onColumnNameChanged` ALONE (`column.dart:68`), names in the args. */
   set name(x) {
@@ -390,12 +420,48 @@ export class Column {
   get isNumerical() { return NUMERICAL.has(this.dart.type); }
 
   // string and bool are the categorical types (ddt string_column.dart / bool_column.dart)
-  get isCategorical() { return this.dart.type === 'string' || this.dart.type === 'bool'; }
+  get isCategorical() { return this.dart.type === TYPE.STRING || this.dart.type === TYPE.BOOL; }
 
   /** Distinct values off the frame rows — read only under a maxCategories cap. */
   get categories() {
     const frame = this.dart.frame;
     return frame == null ? [] : [...new Set(frame.dart.rows.map((r) => r[this.dart.name]))];
+  }
+
+  get length() { return this.dart.frame?.dart.rows.length ?? 0; }
+
+  get(i) { return this.dart.frame.dart.rows[i][this.dart.name] ?? null; }
+
+  get min() { return Math.min(...this._numbers()); }
+  get max() { return Math.max(...this._numbers()); }
+
+  _numbers() { return this.categories.filter((v) => typeof v === 'number'); }
+
+  /** The platform's raw layouts derived from the frame rows: ints and
+   * category indexes as Int32Array, floats as Float32Array, datetimes as Float64Array µs,
+   * bools as an LSB-first Uint32Array. */
+  getRawData() {
+    const values = Array.from({length: this.length}, (_, i) => this.get(i));
+    switch (this.dart.type) {
+      case TYPE.INT:
+        return Int32Array.from(values, (v) => v == null ? INT_NULL : v);
+      case TYPE.FLOAT: case TYPE.QNUM:
+        return Float32Array.from(values, (v) => v == null ? FLOAT_NULL : v);
+      case TYPE.DATE_TIME:
+        return Float64Array.from(values, (v) => v == null ? FLOAT_NULL : v.getTime() * 1000);
+      case TYPE.BOOL: {
+        const bits = new Uint32Array((values.length + 31) >>> 5);
+        values.forEach((v, i) => {
+          if (v)
+            bits[i >>> 5] |= 1 << (i & 31);
+        });
+        return bits;
+      }
+      default: {
+        const categories = this.categories;
+        return Int32Array.from(values, (v) => categories.indexOf(v));
+      }
+    }
   }
 }
 getters(Column, 'type', 'semType');
@@ -433,7 +499,7 @@ class ColumnList {
 }
 
 const EVENTS = ['onCurrentRowChanged', 'onValuesChanged', 'onSelectionChanged', 'onFilterChanged',
-  'onColumnsChanged', 'onColumnNameChanged'];
+  'onColumnsChanged', 'onColumnNameChanged', 'onRowsAdded', 'onRowsRemoved'];
 
 /** As much of a frame as u2 reads: cells, the current row, the column list and the events. The
  * rows are the records given, behind the handle (`dart.rows`); the handle also counts the reads,
@@ -498,8 +564,12 @@ export class Shell {
       get: () => dart.tables.map((table) => table.name),
       set: (names) => dart.tables = dart.tables.filter((table) => names.includes(table.name)),
     });
+    dart.user = {id: 'user-1', login: 'tester', friendlyName: 'Tester'};
     this.dart = dart;
   }
+
+  /** Who is signed in — what `$me` binds to. */
+  get user() { return this.dart.user; }
 
   get o() { return this.dart.o; }
 
@@ -512,7 +582,10 @@ export class Shell {
   warning() {}
   error() {}
 
-  tableByName(name) { return this.dart.tables.find((table) => table.name === name) ?? null; }
+  table(name) { return this.dart.tables.find((table) => table.name === name) ?? null; }
+
+  /** @deprecated the platform's own alias of {@link table} — kept because the double mirrors it. */
+  tableByName(name) { return this.table(name); }
 
   /** The platform never opens two tables under one name; the second becomes `demog (2)`. */
   addTable(table) {
@@ -735,11 +808,13 @@ export class PropertyGrid extends DartWidget {
 
 /** A platform view over a root (js-api view.ts): what `appView` builds on. */
 export class View {
-  constructor(root) { this.dart = {root, name: '', ribbonPanels: [], statusBarPanels: [], toolbox: null}; }
+  constructor(root) { this.dart = {root, name: '', ribbonPanels: [], statusBarPanels: [], toolbox: null, closed: 0}; }
 
   static fromRoot(root) { return new View(root); }
 
   setRibbonPanels(panels) { this.dart.ribbonPanels = panels; }
+
+  close() { this.dart.closed++; }
 }
 getters(View, 'root', 'ribbonPanels');
 fields(View, 'name', 'path', 'toolbox', 'statusBarPanels');
@@ -917,8 +992,61 @@ export class Viewer extends Widget {
   }
 }
 
+/** A grid column over a frame column: the header caption is the column's friendly name, and
+ * hiding one leaves the frame alone. */
+class GridColumn {
+  constructor(column) { this.dart = {column, visible: true, text: {}}; }
+
+  get name() { return this.dart.column.name; }
+  get column() { return this.dart.column; }
+  get caption() { return this.dart.column.getTag(TAGS.FRIENDLY_NAME) ?? this.name; }
+  get visible() { return this.dart.visible; }
+  set visible(x) { this.dart.visible = x; }
+
+  /** What a cell draws: a renderer's `customText` where one was set, the value otherwise. */
+  cellText(row) { return this.dart.text[row] ?? String(this.column.get(row) ?? ''); }
+  setCellText(row, text) { this.dart.text[row] = text; }
+}
+
 export class Grid extends Viewer {
   static create(table) { return Viewer.fromType('Grid', table); }
+
+  /** The grid's own columns, one per frame column and kept across reads, so what a caller hides
+   * or captions sticks; a repoint starts them over. */
+  get columns() {
+    if (this._gridColumnsOf !== this.dataFrame) {
+      this._gridColumnsOf = this.dataFrame;
+      this._gridColumns = new Map();
+    }
+    const held = this._gridColumns;
+    const columns = this.dataFrame?.columns.toList() ?? [];
+    for (const column of columns) {
+      if (!held.has(column.name))
+        held.set(column.name, new GridColumn(column));
+    }
+    return {
+      get length() { return columns.length; },
+      byName: (name) => held.get(name) ?? null,
+      byIndex: (i) => held.get(columns[i]?.name) ?? null,
+      toList: () => columns.map((c) => held.get(c.name)),
+    };
+  }
+
+  /** The editor host hook (grid.ts `attachEditor`): one editor at a time, released on detach. */
+  get editor() { return this._editor ?? null; }
+
+  attachEditor(editor) {
+    this.detachEditor();
+    this._editor = editor;
+    (this.dart.attached ??= []).push(editor);
+  }
+
+  detachEditor() { this._editor = null; }
+
+  detach() {
+    this.detachEditor();
+    super.detach();
+  }
 }
 
 export class FilterGroup extends Viewer {

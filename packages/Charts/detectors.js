@@ -11,10 +11,8 @@ class ChartsPackageDetectors extends DG.Package {
   //output: string semType
   detectMagnitude(col) {
     if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
-      (0 < col.min && col.max < 10) && col.name.toLowerCase() === 'magnitude') {
-      col.semType = 'Magnitude';
-      return col.semType;
-    }
+      (0 < col.min && col.max < 10) && col.name.toLowerCase() === 'magnitude')
+      return 'Magnitude';
     return null;
   }
 }

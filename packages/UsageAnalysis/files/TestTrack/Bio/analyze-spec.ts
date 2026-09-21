@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import * as bio from '../helpers/bio';
@@ -39,7 +40,7 @@ for (const ds of datasets) {
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
@@ -53,7 +54,7 @@ for (const ds of datasets) {
         for (const n of names) {
           try {
             if ((grok as any).functions.find && (grok as any).functions.find(n)) return true;
-          } catch { /* try next */ }
+          } catch {  }
         }
         return false;
       };
@@ -104,7 +105,7 @@ for (const ds of datasets) {
         if ((v as any).type !== 'Grid') (v as any).close();
     });
     await softStep(`${ds.name}: Bio > Analyze > Composition — WebLogo docks (no dialog)`, async () => {
-      // Composition has no "..." suffix — opens directly with no dialog; docks a WebLogo viewer.
+
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Composition');
       await page.waitForFunction(
         () => Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'WebLogo'),
@@ -113,10 +114,10 @@ for (const ds of datasets) {
         Array.from((grok.shell.tv as any).viewers).some((v: any) => v.type === 'WebLogo'));
       expect(hasWebLogo).toBe(true);
     });
-    // Scenario 3 — Composition Gear → Context Panel wiring (FASTA only).
+
     if (ds.name === 'FASTA') {
       await softStep(`${ds.name}: Composition Gear → Context Panel binds WebLogo property surface`, async () => {
-        // WebLogo title bar surfaces no Gear under body.selenium; grok.shell.o opens the same Context Panel.
+
         const result: {hasPropPanel: boolean, hasPropertyGrid: boolean} = await page.evaluate(async () => {
           const wl = (grok.shell.tv as any).viewers.find((v: any) => v.type === 'WebLogo');
           (grok as any).shell.o = wl;

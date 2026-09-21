@@ -236,7 +236,7 @@ static checkFileIsPlate(content: string): boolean {
 }
 
   @grok.decorators.app({name: 'Plates'})
-  static platesApp(): DG.View {
+  static async platesApp(): Promise<DG.View> {
     return platesAppView();
   }
 

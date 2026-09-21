@@ -23,8 +23,8 @@ category('Packages: project isolation', () => {
   });
 
   async function publish(name: string, debug: boolean = false) {
-    const url = `${grok.dapi.root}/packages/dev/${key}/${name}?debug=${debug}&rebuild=false`;
-    const r = await fetch(url, {method: 'POST', body: packageData as BodyInit});
+    const url = `${grok.dapi.root}/packages/dev/${name}?debug=${debug}&rebuild=false`;
+    const r = await fetch(url, {method: 'POST', body: packageData as BodyInit, headers: {Authorization: `Dev ${key}`}});
     if (r.status !== 200) {
       const body = await r.text();
       throw new Error(`Publish ${name} failed with status ${r.status}: ${body.substring(0, 200)}`);
@@ -37,7 +37,7 @@ category('Packages: project isolation', () => {
 
   async function safeDeletePackage(name: string) {
     try {
-      await fetch(`${grok.dapi.root}/packages/dev/${key}/${name}`, {method: 'DELETE'});
+      await fetch(`${grok.dapi.root}/packages/dev/${name}`, {method: 'DELETE', headers: {Authorization: `Dev ${key}`}});
     }
     catch (_) {}
   }

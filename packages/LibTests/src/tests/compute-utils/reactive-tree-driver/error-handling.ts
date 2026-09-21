@@ -92,6 +92,64 @@ const actionConfig: PipelineConfiguration = {
   ],
 };
 
+const throwingWithDynamicConfig: PipelineConfiguration = {
+  id: 'root',
+  type: 'static',
+  steps: [
+    {id: 'step1', nqName: 'LibTests:TestAdd2'},
+    {id: 'step2', nqName: 'LibTests:TestMul2'},
+    {
+      id: 'analyses',
+      type: 'dynamic',
+      stepTypes: [
+        {id: 'stepAdd', nqName: 'LibTests:TestAdd2'},
+      ],
+      initialSteps: [{id: 'stepAdd'}],
+    },
+  ],
+  links: [{
+    id: 'throwing-link',
+    from: 'in1:step1/b',
+    to: 'out1:step2/a',
+    handler({controller}) {
+      const v = controller.getFirst('in1');
+      if (v === 'bad')
+        throw new Error('Handler error: bad value');
+      controller.setAll('out1', v);
+    },
+  }],
+};
+
+const flakyActionConfig: PipelineConfiguration = {
+  id: 'root',
+  type: 'static',
+  steps: [
+    {id: 'step1', nqName: 'LibTests:TestAdd2'},
+    {
+      id: 'analyses',
+      type: 'dynamic',
+      stepTypes: [
+        {id: 'regression', nqName: 'LibTests:TestMul2'},
+      ],
+      initialSteps: [{id: 'regression'}],
+    },
+  ],
+  actions: [
+    {
+      id: 'flaky-action',
+      type: 'pipeline',
+      from: [],
+      to: 'out1:analyses',
+      position: 'none',
+      handler({controller}) {
+        controller.addStep('out1', 'regression');
+        if (controller.getAdditionalParam('fail'))
+          throw new Error('Action failed after mutations');
+      },
+    },
+  ],
+};
+
 // --- Helpers ---
 
 function getAction(tree: StateTree, actionId: string) {
@@ -260,6 +318,87 @@ category('ComputeUtils: Driver error handling: error content', async () => {
       cold('--a').subscribe(() => {
         expectDeepEqual(logger.errors[0].error instanceof Error, true, {prefix: 'Has Error instance'});
         expectDeepEqual(logger.errors[0].error!.message, 'Handler error: bad value', {prefix: 'Error message preserved'});
+      });
+    });
+  });
+});
+
+category('ComputeUtils: Driver error handling: deadlock prevention', async () => {
+  let testScheduler: TestScheduler;
+
+  before(async () => {
+    testScheduler = createTestScheduler();
+  });
+
+  test('Link is not stuck running after handler error', async () => {
+    const pconf = await getProcessedConfig(throwingHandlerConfig);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const link = [...tree.linksState.links.values()].find((l) => l.matchInfo.spec.id === 'throwing-link')!;
+      let isRunning: boolean | undefined;
+      link.isRunning$.subscribe((val) => isRunning = val);
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 'bad');
+      });
+      cold('---a').subscribe(() => {
+        expectDeepEqual(isRunning, false, {prefix: 'Link running state after handler error'});
+      });
+    });
+  });
+
+  test('Tree mutation completes after handler error', async () => {
+    const pconf = await getProcessedConfig(throwingWithDynamicConfig);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const dynNode = tree.nodeTree.getNode([{idx: 2}]);
+      let mutationDone = false;
+      cold('-a').subscribe(() => {
+        inNode.getItem().getStateStore().setState('b', 'bad');
+      });
+      cold('---a').subscribe(() => {
+        tree.addSubTree(dynNode.getItem().uuid, 'stepAdd', 0).subscribe(() => mutationDone = true);
+      });
+      cold('------a').subscribe(() => {
+        expectDeepEqual(mutationDone, true, {prefix: 'Mutation completed after handler error'});
+        expectDeepEqual(dynNode.getChildren().length, 2, {prefix: 'Step count after mutation'});
+      });
+    });
+  });
+
+  test('Pipeline action run completes after handler error', async () => {
+    const pconf = await getProcessedConfig(actionConfig);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      let completed = false;
+      cold('-a').subscribe(() => {
+        tree.runAction(getAction(tree, 'bad-action').uuid).subscribe({complete: () => completed = true});
+      });
+      cold('----a').subscribe(() => {
+        expectDeepEqual(completed, true, {prefix: 'Action run completed after handler error'});
+      });
+    });
+  });
+
+  test('Failed action does not reapply previous mutations', async () => {
+    const pconf = await getProcessedConfig(flakyActionConfig);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const analysesNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('-a').subscribe(() => {
+        tree.runAction(getAction(tree, 'flaky-action').uuid).subscribe();
+      });
+      cold('----a').subscribe(() => {
+        expectDeepEqual(analysesNode.getChildren().length, 2, {prefix: 'First action run added a step'});
+        tree.runAction(getAction(tree, 'flaky-action').uuid, {fail: true}).subscribe();
+      });
+      cold('--------a').subscribe(() => {
+        expectDeepEqual(analysesNode.getChildren().length, 2, {prefix: 'Failed action left the tree unchanged'});
       });
     });
   });

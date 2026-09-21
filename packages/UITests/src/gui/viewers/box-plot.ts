@@ -77,7 +77,7 @@ category('Viewers: Box Plot', () => {
     await uploadProject('Test project with Box Plot', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with Box Plot');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), 'Box plot');
     const boxPlot = findViewer('Box plot', v);
 

@@ -1,3 +1,11 @@
+---
+feature: browse
+realizes_atlas: []   # untyped: environment/deploy smoke, not a product-feature type
+priority: p2
+target_layer: manual-only
+coverage_type: smoke
+---
+
 ### Local deploy
 
 To verify the successful local deployment of the platform, ensuring that resources and packages are detected and installed correctly, and that API Tests can be run manually.
@@ -24,5 +32,6 @@ The platform should deploy locally without errors and be accessible via http://l
 
 ---
 {
-  "order": 6
+  "order": 6,
+  "datasets": []
 }

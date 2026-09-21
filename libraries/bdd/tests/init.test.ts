@@ -25,7 +25,10 @@ function pkg(name: string, manifest: object): string {
 
 test('init scaffolds bdd/, the editor settings, the ignore list and the manifest entries', () => {
   const dir = pkg('demo', {name: '@datagrok/demo', friendlyName: 'Demo App', scripts: {build: 'webpack'}});
+  writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({compilerOptions: {}, exclude: ['node_modules']}, null, 2) + '\n');
   const result = scaffold(dir);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, 'tsconfig.json'), 'utf8')).exclude, ['node_modules', 'bdd'],
+    'the package tsconfig leaves bdd/ to its own tsconfig');
   for (const file of ['bdd/package.json', 'bdd/bdd.config.json', 'bdd/tsconfig.json', 'bdd/bindings/elements.ts',
     'bdd/bindings/steps.ts', 'bdd/features/smoke.feature', '.vscode/settings.json'])
     assert.ok(existsSync(join(dir, file)), `${file} exists`);
@@ -36,7 +39,7 @@ test('init scaffolds bdd/, the editor settings, the ignore list and the manifest
   assert.match(readFileSync(join(dir, 'bdd', 'features', 'smoke.feature'), 'utf8'), /Given user is logged in/);
   assert.match(readFileSync(join(dir, '.gitignore'), 'utf8'), /bdd\/test-results\//);
   const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
-  assert.ok(manifest.devDependencies[PACKAGE_NAME]);
+  assert.match(manifest.devDependencies[PACKAGE_NAME], /^file:/, 'from a checkout of the library, the dependency is its path');
   assert.ok(manifest.devDependencies['@playwright/test']);
   assert.equal(manifest.scripts['test:bdd'], 'grok-bdd run');
   assert.equal(manifest.scripts.build, 'webpack');

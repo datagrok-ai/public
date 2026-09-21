@@ -50,7 +50,10 @@ category('Radar', () => {
       showMin: false,
       showMax: false,
       showValues: false,
+      normalization: 'Column',
       valuesColumnNames: ['AGE', 'COUNTRYID'],
+      minValues: {},
+      maxValues: {},
       legendVisibility: 'Auto',
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
@@ -62,6 +65,7 @@ category('Radar', () => {
       showTooltip: false,
       backgroundMaxColor: 0xFF4F616F,
       showValues: false,
+      normalization: 'Global',
     });
 
     const options = await getOptions(changedViewer);
@@ -69,6 +73,7 @@ category('Radar', () => {
     expect(options.showTooltip, false);
     expect(options.backgroundMaxColor, 0xFF4F616F);
     expect(options.showValues, false);
+    expect(options.normalization, 'Global');
   });
 
   after(async () => {

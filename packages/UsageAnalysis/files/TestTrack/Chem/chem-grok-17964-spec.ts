@@ -1,12 +1,72 @@
-// GROK-17964: Convert Notation column-action must register exactly once across cancel/commit/repeat invocations.
-import {test, expect} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {settleContextPanes, waitQuiet} from './chem-fast-helpers';
+
+declare const grok: any;
+declare const DG: any;
 
 test.use(specTestOptions);
 
+// `grok.shell.o = column` does not stay put: the grid sets its own current cell as it finishes
+// rendering, and the platform then makes THAT the current object — on smiles-50 the molregno
+// cell wins and the panel fills with ChEMBL link panes instead of the column's. So the column is
+// re-asserted until the panel is the column's.
+const ACTION_PANE_CAP = 60_000;
+
+// The link is what every assertion below reads, so when it does not arrive the state that
+// decides it is reported with the failure: what the panel is showing, whether the action
+// function is registered at all, and what the current object actually is.
+async function expectConvertNotationLink(page: Page, where: string): Promise<void> {
+  const present = async () => page.evaluate(() =>
+    Array.from(document.querySelectorAll('label.d4-link-action'))
+      .some((l) => (l.textContent ?? '').trim().startsWith('Convert Notation')));
+  const reassert = async () => page.evaluate(() => {
+    const name = (window as any).__grok17964_origMolCol;
+    const col = name ? grok.shell.t?.col(name) : null;
+    if (col && grok.shell.o !== col) { grok.shell.o = null; grok.shell.o = col; return true; }
+    return false;
+  });
+  const deadline = Date.now() + ACTION_PANE_CAP;
+  let reasserted = 0;
+  while (Date.now() < deadline) {
+    if (await present()) {
+      if (reasserted) console.log(`[17964] ${where}: the column had to be re-asserted ${reasserted}x`);
+      return;
+    }
+    // A re-asserted object rebuilds the accordion collapsed, and a collapsed pane holds no
+    // content, so the panes are re-expanded on every turn of this loop.
+    if (await reassert()) reasserted++;
+    await page.evaluate(async () => {
+      for (const p of Array.from(document.querySelectorAll('.grok-prop-panel .d4-accordion-pane'))) {
+        const h = p.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+        if (h && !h.classList.contains('expanded')) { h.click(); await new Promise((r) => setTimeout(r, 100)); }
+      }
+    });
+    await page.waitForTimeout(500);
+  }
+  const diag = await page.evaluate(() => {
+    const o: any = grok.shell.o;
+    const pane = document.querySelector('.grok-prop-panel .d4-accordion-pane[d4-title="Actions"]');
+    return {
+      currentObject: o ? `${o.constructor?.name} ${o.name ?? ''} semType=${o.semType ?? ''}` : null,
+      contextPanelShown: grok.shell.windows.showContextPanel, simpleMode: grok.shell.windows.simpleMode,
+      panes: Array.from(document.querySelectorAll('.grok-prop-panel .d4-accordion-pane'))
+        .map((x) => x.getAttribute('d4-title')),
+      actionsPaneText: pane ? (pane as HTMLElement).innerText.replace(/\s+/g, ' ').slice(0, 300) : null,
+      linkActions: Array.from(document.querySelectorAll('label.d4-link-action'))
+        .map((l) => (l.textContent ?? '').trim()),
+      actionFuncs: DG.Func.find({meta: {action: 'Convert Notation...'}}).map((f: any) => f.nqName),
+    };
+  });
+  expect(false, `${where}: the Chem "Convert Notation..." column action never rendered on the Context ` +
+    `Panel within ${ACTION_PANE_CAP} ms. state=${JSON.stringify(diag)}`).toBe(true);
+}
+
+
 test('Chem: GROK-17964 Convert Notation column-action registration is exactly-once', async ({page}) => {
-  test.setTimeout(180_000);
+  test.setTimeout(600_000);
 
   await loginToDatagrok(page);
 
@@ -35,6 +95,10 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
 
   await softStep('Find molecule column + focus column on Context Panel + expand panes', async () => {
     const result = await page.evaluate(async () => {
+      // with the context panel hidden `grok.shell.o = column` is ignored and no Actions pane is
+      // built, which is how a neighbour that hides it starves the reads below
+      try { grok.shell.windows.simpleMode = false; } catch (e) {}
+      try { grok.shell.windows.showContextPanel = true; } catch (e) {}
       for (let i = 0; i < 30; i++) {
         const df = grok.shell.t;
         const molColName = df?.columns.toList().find((c: any) => c.semType === 'Molecule')?.name;
@@ -52,8 +116,8 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
     });
     if (!result.ok)
       throw new Error(`Setup failed: no Molecule column detected on smiles-50.csv after 30s poll. cols=${JSON.stringify(result.allCols)}`);
-    await page.waitForTimeout(2000);
-    // Expand all accordion panes — chem action labels render only when the Actions pane is expanded.
+    await settleContextPanes(page, 2000);
+
     await page.evaluate(async () => {
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
       for (const p of panes) {
@@ -64,11 +128,8 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
         }
       }
     });
-    // Poll for the Convert Notation action link to render on the expanded Actions pane instead of a blind sleep.
-    await expect.poll(async () => page.evaluate(() =>
-      Array.from(document.querySelectorAll('label.d4-link-action'))
-        .some(l => (l.textContent ?? '').trim().startsWith('Convert Notation')),
-    ), {timeout: 15_000, intervals: [250, 500, 1000]}).toBe(true);
+
+    await expectConvertNotationLink(page, 'after focusing the molecule column');
   });
 
   await softStep('Baseline: assert exactly 1 Convert Notation entry on the column Actions pane', async () => {
@@ -89,11 +150,13 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
         .find(l => (l.textContent ?? '').trim().startsWith('Convert Notation')) as HTMLElement;
       if (!link) throw new Error('Convert Notation link not found pre-cancel');
       link.click();
-      await new Promise(r => setTimeout(r, 1500));
+      const dlgDeadline = Date.now() + 1500;
+      while (!document.querySelector('.d4-dialog') && Date.now() < dlgDeadline)
+        await new Promise(r => setTimeout(r, 25));
     });
     await page.locator('.d4-dialog').waitFor({timeout: 8000});
     await page.locator('.d4-dialog [name="button-CANCEL"]').click();
-    await page.waitForTimeout(1500);
+    await waitQuiet(page.locator('.d4-dialog').waitFor({state: 'detached', timeout: 1500}));
     const afterCancel = await page.evaluate(() => {
       const molColName = (window as any).__grok17964_origMolCol;
       grok.shell.o = grok.shell.t.col(molColName);
@@ -120,7 +183,9 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
         .find(l => (l.textContent ?? '').trim().startsWith('Convert Notation')) as HTMLElement;
       if (!link) throw new Error('Convert Notation link not found pre-commit');
       link.click();
-      await new Promise(r => setTimeout(r, 1500));
+      const dlgDeadline = Date.now() + 1500;
+      while (!document.querySelector('[name="input-Target-Notation"]') && Date.now() < dlgDeadline)
+        await new Promise(r => setTimeout(r, 25));
       const dlg = document.querySelector('.d4-dialog');
       const targetSelect = dlg?.querySelector('[name="input-Target-Notation"]') as HTMLSelectElement;
       if (targetSelect) {
@@ -128,8 +193,13 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
         targetSelect.dispatchEvent(new Event('change', {bubbles: true}));
       }
     });
+    const colsBeforeCommit = await page.evaluate(() => grok.shell.t.columns.length);
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    await page.waitForTimeout(15_000);
+    // The commit is done when the converted column is in the frame and the dialog is gone; a
+    // conversion that never lands still burns the 15 s cap and fails the count below.
+    await waitQuiet(page.waitForFunction((before: number) =>
+      grok.shell.t.columns.length > before && !document.querySelector('.d4-dialog'),
+    colsBeforeCommit, {timeout: 15_000, polling: 100}));
   });
 
   await softStep('Exactly-once on original column post-commit', async () => {
@@ -170,7 +240,7 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
       });
       await page.locator('.d4-dialog').waitFor({timeout: 8000});
       await page.locator('.d4-dialog [name="button-CANCEL"]').click();
-      await page.waitForTimeout(1500);
+      await waitQuiet(page.locator('.d4-dialog').waitFor({state: 'detached', timeout: 1500}));
     }
     const afterMulti = await page.evaluate(() => {
       const molColName = (window as any).__grok17964_origMolCol;

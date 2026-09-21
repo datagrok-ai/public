@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {ItemId, NqName} from '../data/common-types';
@@ -84,6 +82,7 @@ export interface InitPipeline {
   provider: NqName;
   version?: string;
   instanceConfig?: PipelineInstanceConfig;
+  config?: PipelineConfigurationProcessed;
 }
 
 export interface ResetToConsistent {

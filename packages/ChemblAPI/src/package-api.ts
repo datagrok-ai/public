@@ -8,10 +8,20 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  /**
+   * Finds ChEMBL molecules that contain the query structure as a substructure.
+   * @param {string} mol
+   *   semType: Molecule
+   */
   export async function chemblSubstructureSearchPanel(mol: string ): Promise<any> {
     return await grok.functions.call('ChEMBLAPI:ChemblSubstructureSearchPanel', { mol });
   }
 
+  /**
+   * Finds ChEMBL molecules most similar to the query structure.
+   * @param {string} mol
+   *   semType: Molecule
+   */
   export async function chemblSimilaritySearchPanel(mol: string ): Promise<any> {
     return await grok.functions.call('ChEMBLAPI:ChemblSimilaritySearchPanel', { mol });
   }
@@ -20,6 +30,10 @@ export namespace funcs {
     return await grok.functions.call('ChEMBLAPI:GetCompoundsIds', { inchiKey });
   }
 
+  /**
+   * Fetches a molecule record from ChEMBL by its ChEMBL ID.
+   * @param {string} id - ChEMBL ID (e.g. CHEMBL25) a bare number is prefixed with CHEMBL
+   */
   export async function getById(id: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('ChEMBLAPI:GetById', { id });
   }

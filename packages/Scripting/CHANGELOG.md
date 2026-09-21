@@ -1,5 +1,9 @@
 # Scripting changelog
 
+## 1.1.1 (2026-09-08)
+
+* GROK-20743: Rebuilt jkg_nodejs — 1.1.0 shipped a js-api bundle without the Node runtime ports, so every Node.js script failed at bootstrap with "NoSuchMethodError: method not found: 'call'"; the other kernel images are the 1.1.0 builds under the new tag
+
 ## 1.1.0 (2026-08-12)
 
 * GROK-18695: Rebuilt the jkg_* kernel images with remediated vulnerabilities — 357 findings (16 critical / 153 high) across the six images reduced to 5, none critical

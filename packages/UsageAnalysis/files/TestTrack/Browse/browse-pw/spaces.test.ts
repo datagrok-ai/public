@@ -24,7 +24,6 @@ test.describe('Browse Spaces (Browse-Spaces-*)', () => {
 
     await expandTreeGroup(page, 'Spaces');
 
-    // After expand, the arrow has the expanded class.
     const tri = spaces
       .locator('xpath=ancestor::*[contains(@class,"d4-tree-view-node")][1]')
       .locator(TREE_EXPAND_ARROW)

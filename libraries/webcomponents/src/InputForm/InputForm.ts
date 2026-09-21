@@ -2,27 +2,30 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject} from 'rxjs';
+import {EMPTY, Subject} from 'rxjs';
 import {distinctUntilChanged, map, mapTo, startWith, switchMap, takeUntil} from 'rxjs/operators';
 
 export class InputForm extends HTMLElement {
   private formInst?: DG.InputForm;
   private skipDefaultInit = true;
   skipTableAutoFill = false;
-  private formChanges$ = new Subject<DG.InputForm>();
+  private formChanges$ = new Subject<DG.InputForm | undefined>();
+  private formGeneration = 0;
 
   private destroyed$ = new Subject<boolean>();
 
   constructor() {
     super();
 
+    // a cleared form (funcCall = undefined) must idle the streams, not error them:
+    // a switchMap throw would terminate the subscriptions for the element's lifetime
     this.formChanges$.pipe(
-      switchMap((form) => form.onInputChanged),
+      switchMap((form) => form ? form.onInputChanged : EMPTY),
       takeUntil(this.destroyed$),
     ).subscribe((ev) => this.dispatchEvent(new CustomEvent('input-changed', {detail: ev})));
 
     this.formChanges$.pipe(
-      switchMap((form) => form.onValidationCompleted.pipe(mapTo(form), startWith(form))),
+      switchMap((form) => form ? form.onValidationCompleted.pipe(mapTo(form), startWith(form)) : EMPTY),
       map((form) => form.isValid),
       distinctUntilChanged(),
       takeUntil(this.destroyed$),
@@ -58,13 +61,19 @@ export class InputForm extends HTMLElement {
   }
 
   private async replaceFunc(funcCall?: DG.FuncCall) {
+    // rapid funcCall swaps race: an older form resolving after a newer one must not
+    // land in the DOM or emit events, so only the latest generation proceeds
+    const generation = ++this.formGeneration;
     if (!funcCall)
       this.formInst = undefined;
     else {
-      this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit, skipTableAutoFill: this.skipTableAutoFill} as any);
-      this.formInst.root.style.overflowY = 'hidden';
-      this.formInst.root.style.paddingBottom = '10px';
-      this.appendChild(this.formInst.root);
+      const form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit, skipTableAutoFill: this.skipTableAutoFill} as any);
+      if (generation !== this.formGeneration)
+        return;
+      this.formInst = form;
+      form.root.style.overflowY = 'hidden';
+      form.root.style.paddingBottom = '10px';
+      this.appendChild(form.root);
     }
     this.formChanges$.next(this.formInst);
     this.dispatchEvent(new CustomEvent('form-replaced', {detail: this.formInst}));

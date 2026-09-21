@@ -1,0 +1,37 @@
+{
+  "name": "@datagrok/patinae",
+  "friendlyName": "Patinae",
+  "version": "0.0.1",
+  "description": "Patinae molecular viewer (WebAssembly + WebGPU): previews for PyMOL .pse, .prs and .pml files",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "dependencies": {
+    "datagrok-api": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Bioinformatics",
+  "meta": {
+    "browserFeatures": [
+      "wasm"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Patinae"
+  }
+}

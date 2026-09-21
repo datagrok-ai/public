@@ -5,7 +5,9 @@ const table = 'grit.issue'; // any '<schema>.<table>' registered on this server
 
 const q = new DG.DomainQuery({
   schema: 'grit', table: 'issue',
-  filters: ['status = "open"'],   // smart-filter grammar, or a JSON condition node
+  // 'status' is a ref: address the referenced row's column through the FK path. A grammar
+  // string can't express that, so this is the JSON-condition-node form of a filter element.
+  filters: [JSON.stringify(DG.cond('status_id.name', '=', 'open'))],
   orderBy: ['!created_on'],
   limit: 100,
 });
@@ -30,7 +32,7 @@ grok.shell.info(recorded.tags['.script']);
 
 // The fluent builder exports the same state: each top-level AND conjunct becomes one
 // filter element, as a condition node whose value is bound server-side.
-const builder = grok.dapi.domains.table(table).query().where('status', '=', 'open').top(10);
+const builder = grok.dapi.domains.table(table).query().where('status_id.name', '=', 'open').top(10);
 grok.shell.info(JSON.stringify(DG.DomainQuery.fromBuilder(builder).toParams()));
 
 // And what a Domain View is showing right now IS a DomainQuery.

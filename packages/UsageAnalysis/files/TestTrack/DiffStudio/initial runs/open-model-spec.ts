@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {
   loginToDatagrok,
   specTestOptions,
@@ -102,10 +103,6 @@ test("DiffStudio Open Model: Bioreactor, Multiaxis, Facet, switch at, Process mo
     },
   );
 
-  // Step 4: Facet plot curves are not the same color. Canvas-based; asserting presence of
-  // 12 Facet line-chart regions as a proxy (verified visually during 2b screenshot: each
-  // subplot uses a distinct color — blue, orange, green, red, purple, brown, pink, grey,
-  // yellow, cyan, light-green, pink).
   await softStep(
     "Step 4: Facet plot curves are not the same color (AMBIGUOUS)",
     async () => {

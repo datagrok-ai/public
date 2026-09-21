@@ -1,7 +1,8 @@
 # ml changelog
 
-## v.next
+## 6.10.16 (2026-09-08)
 
+* Distance matrix: Fixed `DistanceMatrixService` spawning a worker per CPU thread before knowing the job's size and terminating the unused ones mid-load — every such worker's chunk import surfaced as an uncaught NetworkError on the page; workers are now spawned for the job
 * Activity cliffs: Fixed the build for consumers on TypeScript 5.x — the MCL worker's Float32Arrays did not unify with `Matrix` coming from utils' emitted `.d.ts`, which is what kept the Bio package from compiling
 
 ## 6.10.14 (2026-06-23)

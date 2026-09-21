@@ -9,8 +9,7 @@ import {UaView} from './ua';
 import {queries} from '../package-api';
 
 type CardColor = 'green' | 'orange' | 'red' | 'info';
-type QueriesMode = 'slowest' | 'most-called' | 'worst-hit';
-type PssMode = 'modern' | 'legacy' | 'unavailable';
+type QueriesMode = 'slowest' | 'mostCalled' | 'worstCacheHit';
 
 const DASHBOARD_LIMIT = 10;
 const FULL_VIEW_LIMIT = 100000;
@@ -43,24 +42,6 @@ interface DiskStat {
 const COLOR_GREEN = DG.Color.success;
 const COLOR_ORANGE = 0xFFFFA24A;
 const COLOR_RED = DG.Color.failure;
-
-const PSS_QUERIES: Record<QueriesMode, {modern: (n: number) => Promise<DG.DataFrame>, legacy: (n: number) => Promise<DG.DataFrame>, fullViewQuery: {modern: string, legacy: string}}> = {
-  'slowest': {
-    modern: queries.metricsTopSlowestQueries,
-    legacy: queries.metricsTopSlowestQueriesPg12,
-    fullViewQuery: {modern: 'MetricsTopSlowestQueries', legacy: 'MetricsTopSlowestQueriesPg12'},
-  },
-  'most-called': {
-    modern: queries.metricsTopMostCalledQueries,
-    legacy: queries.metricsTopMostCalledQueriesPg12,
-    fullViewQuery: {modern: 'MetricsTopMostCalledQueries', legacy: 'MetricsTopMostCalledQueriesPg12'},
-  },
-  'worst-hit': {
-    modern: queries.metricsWorstCacheHitQueries,
-    legacy: queries.metricsWorstCacheHitQueriesPg12,
-    fullViewQuery: {modern: 'MetricsWorstCacheHitQueries', legacy: 'MetricsWorstCacheHitQueriesPg12'},
-  },
-};
 
 function num(df: DG.DataFrame, col: string, row = 0): number {
   return Number(df.get(col, row) ?? 0);
@@ -143,7 +124,7 @@ export class MetricsView extends UaView {
   private tableHealthHost!: HTMLElement;
   private httpRoutesHost!: HTMLElement;
   private refreshing = false;
-  private pssMode: PssMode | null = null;
+  private metrics: DG.ServerMetrics | null = null;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -177,6 +158,7 @@ export class MetricsView extends UaView {
       this.makeCard('tblHealth', 'Table health'),
       this.makeCard('storage', 'Storage'),
       this.makeCard('connections', 'Connections'),
+      this.makeCard('queue', 'Queue'),
       this.makeCard('disk', 'Disk free'),
     ], 'ua-metrics-cards-row');
 
@@ -192,7 +174,8 @@ export class MetricsView extends UaView {
     const tableHealthPanel = MetricsView.buildPanel('Table health', this.tableHealthHost,
       () => this.openFullView(queries.metricsTableHealth, 'MetricsTableHealth', 'Table health'));
     const httpRoutesPanel = MetricsView.buildPanel('HTTP routes', this.httpRoutesHost,
-      () => this.openFullHttpRoutes());
+      () => this.openFullView(async (limit) => MetricsView.routesFrame((await this.fetchMetrics(limit)).http.routes),
+        'getMetrics', 'HTTP routes'));
 
     const tablesRow = ui.divH([largestTablesPanel, tableHealthPanel], 'ua-metrics-tables-row');
 
@@ -253,8 +236,8 @@ export class MetricsView extends UaView {
   private buildQueriesPanel(): HTMLElement {
     const modes: Array<[string, QueriesMode, string]> = [
       ['slowest', 'slowest', 'Highest total execution time — biggest aggregate load.'],
-      ['most called', 'most-called', 'Highest call count — small per-call costs add up.'],
-      ['worst cache hit', 'worst-hit',
+      ['most called', 'mostCalled', 'Highest call count — small per-call costs add up.'],
+      ['worst cache hit', 'worstCacheHit',
         'Lowest cache hit ratio (queries with ≥ 100 calls) — disk reads instead of memory; index or RAM candidates.'],
     ];
     const buttons = modes.map(([label, mode, tooltip]) => {
@@ -272,11 +255,9 @@ export class MetricsView extends UaView {
     const more = ui.iconFA('ellipsis-h', (e: MouseEvent) => {
       e.stopImmediatePropagation();
       const menu = DG.Menu.popup();
-      menu.item('Add to workspace', () => {
-        const q = PSS_QUERIES[this.queriesMode];
-        const name = this.pssMode === 'legacy' ? q.fullViewQuery.legacy : q.fullViewQuery.modern;
-        this.openFullView((limit) => this.pssFn(this.queriesMode, limit), name, 'pg_stat_statements');
-      });
+      menu.item('Add to workspace', () => this.openFullView(
+        async (limit) => MetricsView.statementsFrame((await this.fetchMetrics(limit)).database.statements[this.queriesMode]),
+        'getMetrics', 'pg_stat_statements'));
       menu.item('Reset stats', () => this.confirmResetPgStats());
       menu.show({causedBy: e});
     }, 'More actions');
@@ -298,7 +279,7 @@ export class MetricsView extends UaView {
       try {
         await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements');
         grok.shell.info('pg_stat_statements stats reset.');
-        await this.loadQueries();
+        await this.loadMetrics();
       } catch (e) {
         grok.shell.error(`Failed to reset stats: ${e}`);
       }
@@ -319,10 +300,7 @@ export class MetricsView extends UaView {
     try {
       this.asOfLabel.textContent = `as of ${formatTime(new Date())}`;
       await Promise.all([
-        this.loadDbStats(),
         this.loadTableHealthSummary(),
-        this.loadConnections(),
-        this.loadQueries(),
         this.loadLargestTables(),
         this.loadTableHealth(),
         this.refreshWindowCards(),
@@ -335,7 +313,23 @@ export class MetricsView extends UaView {
   }
 
   private async refreshWindowCards(): Promise<void> {
-    await Promise.all([this.loadErrors(), this.loadSessions(), this.loadLatency(), this.loadHttpRoutes()]);
+    await Promise.all([this.loadErrors(), this.loadSessions(), this.loadMetrics()]);
+  }
+
+  private fetchMetrics(limit: number): Promise<DG.ServerMetrics> {
+    return grok.dapi.admin.getMetrics({date: this.uaToolbox.getFilter().date!, limit});
+  }
+
+  private async loadMetrics(): Promise<void> {
+    MetricsView.resetHost(this.queriesGridHost);
+    MetricsView.resetHost(this.httpRoutesHost);
+    this.metrics = await MetricsView.safeCall(() => this.fetchMetrics(DASHBOARD_LIMIT), 'getMetrics');
+    this.loadLatency();
+    this.loadHttpRoutes();
+    this.loadQueue();
+    this.loadConnections();
+    this.loadQueries();
+    await this.loadDbStats();
   }
 
   private static async safeCall<T>(fn: () => Promise<T>, label: string): Promise<T | null> {
@@ -350,33 +344,37 @@ export class MetricsView extends UaView {
   private async loadDbStats(): Promise<void> {
     const card = this.card('db');
     ui.tooltip.bind(card.root, null);
-    const df = await MetricsView.safeCall(() => queries.metricsDbStats(), 'MetricsDbStats');
-    if (!df || df.rowCount === 0) {
+    const db = this.metrics?.database;
+    if (!db) {
       this.setCard('db', '—', 'unavailable', 'info');
       return;
     }
-    const sizePretty = df.get('db_size_pretty', 0) as string;
-    const hit = num(df, 'cache_hit_pct');
-    this.setCard('db', sizePretty ?? '—', `hit ${hit.toFixed(0)}%`,
+    const hit = db.cacheHitPct;
+    this.setCard('db', formatBytes(db.sizeBytes), `hit ${hit.toFixed(0)}%`,
       thresholdBand(hit, THRESH.cacheHit, true));
-    ui.tooltip.bind(card.root, () => MetricsView.buildDbStatsTooltip(df, hit, sizePretty));
+    const offenders = await MetricsView.safeCall(() => queries.metricsCacheMissTables(), 'MetricsCacheMissTables');
+    ui.tooltip.bind(card.root, () => MetricsView.buildDbStatsTooltip(db, offenders));
   }
 
-  private static buildDbStatsTooltip(df: DG.DataFrame, hit: number, sizePretty: string): HTMLElement {
-    const statsReset = df.get('stats_reset', 0) as dayjs.Dayjs | null;
+  private static buildDbStatsTooltip(db: DG.ServerMetrics['database'], offenders: DG.DataFrame | null): HTMLElement {
     const lines: HTMLElement[] = [];
-    lines.push(ui.divText(`${sizePretty ?? '—'} · cache hit ${hit.toFixed(2)}%`));
+    lines.push(ui.divText(`${formatBytes(db.sizeBytes)} · cache hit ${db.cacheHitPct.toFixed(2)}%`));
     lines.push(ui.divText(
       'Cache hit = share of heap-block reads served from shared_buffers instead of disk. ' +
       '>99% is healthy for OLTP; lower means more disk I/O.',
       'ua-metrics-tt-dim'));
-    if (statsReset)
+    if (db.statsReset) {
+      const statsReset = dayjs(db.statsReset);
       lines.push(ui.divText(`Stats since ${statsReset.format('YYYY-MM-DD HH:mm')} · ${formatAgo(statsReset)}`,
         'ua-metrics-tt-dim'));
+    }
 
-    const hasOffenders = df.rowCount > 0 && df.get('offender_table', 0) != null;
-    if (hasOffenders) {
-      lines.push(ui.div([], {style: {height: '6px'}}));
+    lines.push(ui.div([], {style: {height: '6px'}}));
+    if (!offenders)
+      lines.push(ui.divText('Cache-miss tables unavailable.', 'ua-metrics-tt-dim'));
+    else if (offenders.rowCount === 0)
+      lines.push(ui.divText('No user tables with notable traffic below 95% hit ratio.', 'ua-metrics-tt-dim'));
+    else {
       lines.push(ui.divText('Top tables by cache misses (hit ratio < 95%):'));
       const rows: HTMLElement[] = [
         ui.divH([
@@ -385,23 +383,15 @@ export class MetricsView extends UaView {
           ui.divText('disk reads', 'ua-metrics-tt-col-num ua-metrics-tt-head'),
         ]),
       ];
-      for (let i = 0; i < df.rowCount; i++) {
-        const name = df.get('offender_table', i);
-        if (name == null)
-          continue;
+      for (let i = 0; i < offenders.rowCount; i++) {
         rows.push(ui.divH([
-          ui.divText(name as string, 'ua-metrics-tt-col-prefix'),
-          ui.divText(`${Number(df.get('offender_hit_pct', i) ?? 0).toFixed(1)}%`, 'ua-metrics-tt-col-num'),
-          ui.divText(formatCount(Number(df.get('offender_disk_reads', i) ?? 0)), 'ua-metrics-tt-col-num'),
+          ui.divText(offenders.get('offender_table', i) as string, 'ua-metrics-tt-col-prefix'),
+          ui.divText(`${Number(offenders.get('offender_hit_pct', i) ?? 0).toFixed(1)}%`, 'ua-metrics-tt-col-num'),
+          ui.divText(formatCount(Number(offenders.get('offender_disk_reads', i) ?? 0)), 'ua-metrics-tt-col-num'),
         ]));
       }
       lines.push(ui.div(rows, 'ua-metrics-tt-table'));
       lines.push(ui.divText('Hit % includes heap + index blocks. Filtered to tables with ≥1K disk reads.',
-        'ua-metrics-tt-dim'));
-    }
-    else {
-      lines.push(ui.div([], {style: {height: '6px'}}));
-      lines.push(ui.divText('No user tables with notable traffic below 95% hit ratio.',
         'ua-metrics-tt-dim'));
     }
     return ui.div(lines, 'ua-metrics-tt');
@@ -460,23 +450,21 @@ export class MetricsView extends UaView {
     return ui.div(lines, 'ua-metrics-tt');
   }
 
-  private async loadConnections(): Promise<void> {
+  private loadConnections(): void {
     const card = this.card('connections');
     ui.tooltip.bind(card.root, null);
-    const summary = await MetricsView.safeCall(() => queries.metricsConnections(), 'MetricsConnections');
-    if (!summary || summary.rowCount === 0) {
+    const c = this.metrics?.database.connections;
+    if (!c) {
       this.setCard('connections', '—', 'unavailable', 'info');
       return;
     }
-    const total = num(summary, 'total');
-    const idleX = num(summary, 'idle_in_xact');
-    const oldestSec = num(summary, 'oldest_idle_xact_seconds');
-    this.setCard('connections', `${total}`, idleX > 0 ? `${idleX} idle xact` : 'no idle xact',
-      thresholdBand(oldestSec, THRESH.idleXactSec, false));
+    const idleX = c.idleInTransaction;
+    this.setCard('connections', `${c.total}`, idleX > 0 ? `${idleX} idle xact` : 'no idle xact',
+      thresholdBand(c.oldestIdleTransactionSeconds, THRESH.idleXactSec, false));
 
     let offenders: DG.DataFrame | null = null;
     let pending = true;
-    ui.tooltip.bind(card.root, () => MetricsView.buildConnectionsTooltip(summary, offenders, pending));
+    ui.tooltip.bind(card.root, () => MetricsView.buildConnectionsTooltip(c, offenders, pending));
     setTimeout(async () => {
       offenders = await MetricsView.safeCall(
         () => queries.metricsConnectionsOffenders(DASHBOARD_LIMIT, THRESH.idleXactSec.green, 30),
@@ -486,21 +474,15 @@ export class MetricsView extends UaView {
   }
 
   private static buildConnectionsTooltip(
-    summary: DG.DataFrame, offenders: DG.DataFrame | null, pending: boolean): HTMLElement {
-    const total = num(summary, 'total');
-    const active = num(summary, 'active');
-    const idle = num(summary, 'idle');
-    const idleX = num(summary, 'idle_in_xact');
-    const waiting = num(summary, 'waiting_on_lock');
-    const oldestSec = num(summary, 'oldest_idle_xact_seconds');
-
+    c: DG.ServerMetricsConnections, offenders: DG.DataFrame | null, pending: boolean): HTMLElement {
+    const idleX = c.idleInTransaction;
     const lines: HTMLElement[] = [];
     const headline = idleX > 0
-      ? `${total} connections · ${idleX} idle in transaction · oldest ${DG.Utils.formatDuration(oldestSec)} ago`
-      : `${total} connections`;
+      ? `${c.total} connections · ${idleX} idle in transaction · oldest ${DG.Utils.formatDuration(c.oldestIdleTransactionSeconds)} ago`
+      : `${c.total} connections`;
     lines.push(ui.divText(headline));
     lines.push(ui.divText(
-      `${active} active · ${idle} idle · ${idleX} idle in transaction · ${waiting} waiting on lock`,
+      `${c.active} active · ${c.idle} idle · ${idleX} idle in transaction · ${c.waitingOnLock} waiting on lock`,
       'ua-metrics-tt-dim'));
 
     if (pending) {
@@ -587,6 +569,16 @@ export class MetricsView extends UaView {
       'fix missing COMMIT/ROLLBACK in the app for repeat offenders.',
       'ua-metrics-tt-dim'));
     return ui.div(lines, 'ua-metrics-tt ua-metrics-tt-wide');
+  }
+
+  private loadQueue(): void {
+    const q = this.metrics?.queue;
+    if (!q) {
+      this.setCard('queue', '—', 'unavailable', 'info');
+      return;
+    }
+    this.setCard('queue', `${q.queued + q.running}`, `${q.queued} queued · ${q.running} running`,
+      q.queued === 0 ? 'green' : 'orange');
   }
 
   private async loadErrors(): Promise<void> {
@@ -777,25 +769,24 @@ export class MetricsView extends UaView {
     ], 'ua-metrics-tt');
   }
 
-  private async loadLatency(): Promise<void> {
-    const filter = this.uaToolbox.getFilter();
-    const df = await MetricsView.safeCall(() => grok.data.query('UsageAnalysis:MetricsLatency', {date: filter.date!}),
-      'MetricsLatency');
+  private loadLatency(): void {
     const card = this.card('latency');
     ui.tooltip.bind(card.root, null);
-    if (!df || df.rowCount === 0 || num(df, 'count_now') === 0) {
+    const m = this.metrics;
+    if (!m) {
+      this.setCard('latency', '—', 'unavailable', 'info');
+      return;
+    }
+    const {p50, p95, p99, count: countNow} = m.http.now;
+    if (countNow === 0) {
       this.setCard('latency', '—', 'no traffic', 'info');
       return;
     }
-    const p50 = num(df, 'p50_now');
-    const p95 = num(df, 'p95_now');
-    const p99 = num(df, 'p99_now');
-    const p95Prev = num(df, 'p95_prev');
-    const countNow = num(df, 'count_now');
-    const countPrev = num(df, 'count_prev');
-    const winStart = dts(df, 'window_start');
-    const winEnd = dts(df, 'window_end');
-    const prevStart = dts(df, 'prev_window_start');
+    const p95Prev = m.http.previous.p95;
+    const countPrev = m.http.previous.count;
+    const winStart = dayjs(m.window.start);
+    const winEnd = dayjs(m.window.end);
+    const prevStart = dayjs(m.window.previousStart);
 
     const delta = p95 - p95Prev;
     const color = deltaColor(p95, delta);
@@ -830,53 +821,29 @@ export class MetricsView extends UaView {
     return ui.div(lines, 'ua-metrics-tt');
   }
 
-  private async detectPssMode(): Promise<PssMode> {
-    if (this.pssMode != null)
-      return this.pssMode;
-    const df = await MetricsView.safeCall(() => queries.metricsPgStatStatementsVersion(), 'MetricsPgStatStatementsVersion');
-    if (!df || df.rowCount === 0) {
-      this.pssMode = 'unavailable';
-      return this.pssMode;
-    }
-    const v = String(df.get('extversion', 0) ?? '');
-    const parts = v.split('.');
-    const major = parseInt(parts[0], 10) || 0;
-    const minor = parseInt(parts[1], 10) || 0;
-    this.pssMode = (major > 1 || (major === 1 && minor >= 8)) ? 'modern' : 'legacy';
-    return this.pssMode;
-  }
-
-  private pssFn(mode: QueriesMode, limit: number): Promise<DG.DataFrame> {
-    const q = PSS_QUERIES[mode];
-    return (this.pssMode === 'legacy' ? q.legacy : q.modern)(limit);
-  }
-
   private static resetHost(host: HTMLElement): void {
     host.innerHTML = '';
     host.append(ui.loader());
   }
 
-  private async loadQueries(): Promise<void> {
-    MetricsView.resetHost(this.queriesGridHost);
-    const mode = await this.detectPssMode();
-    if (mode === 'unavailable') {
-      this.queriesGridHost.innerHTML = '';
+  private loadQueries(): void {
+    this.queriesGridHost.innerHTML = '';
+    const statements = this.metrics?.database.statements;
+    if (!statements) {
+      this.queriesGridHost.append(MetricsView.degradedMessage('Query statistics unavailable.'));
+      return;
+    }
+    if (!statements.available) {
       this.queriesGridHost.append(MetricsView.degradedMessage('pg_stat_statements unavailable. ' +
         'Ensure the extension is installed and the System:Datagrok role has pg_read_all_stats.'));
       return;
     }
-    const df = await MetricsView.safeCall(() => this.pssFn(this.queriesMode, DASHBOARD_LIMIT),
-      'pg_stat_statements query');
-    this.queriesGridHost.innerHTML = '';
-    if (!df) {
-      this.queriesGridHost.append(MetricsView.degradedMessage('pg_stat_statements query failed.'));
-      return;
-    }
-    const grid = DG.Viewer.grid(df, MetricsView.gridOptions('13px monospace'));
+    const grid = DG.Viewer.grid(MetricsView.statementsFrame(statements[this.queriesMode]),
+      MetricsView.gridOptions('13px monospace'));
     const queryCol = grid.col('query');
     if (queryCol)
       queryCol.width = 700;
-    MetricsView.formatMsColumns(grid, ['total_ms', 'mean_ms']);
+    MetricsView.formatMsColumns(grid, ['calls', 'total_ms', 'mean_ms']);
     grid.onCellPrepare((gc) => MetricsView.colorQueriesCell(gc));
     MetricsView.fitGrid(grid, this.queriesGridHost);
   }
@@ -915,22 +882,18 @@ export class MetricsView extends UaView {
     MetricsView.fitGrid(grid, this.tableHealthHost);
   }
 
-  private async loadHttpRoutes(): Promise<void> {
-    MetricsView.resetHost(this.httpRoutesHost);
-    const filter = this.uaToolbox.getFilter();
-    const df = await MetricsView.safeCall(
-      () => grok.data.query('UsageAnalysis:MetricsHttpRoutes', {date: filter.date!, limit: DASHBOARD_LIMIT}),
-      'MetricsHttpRoutes');
+  private loadHttpRoutes(): void {
     this.httpRoutesHost.innerHTML = '';
-    if (!df) {
+    const routes = this.metrics?.http.routes;
+    if (!routes) {
       this.httpRoutesHost.append(MetricsView.degradedMessage('HTTP routes unavailable.'));
       return;
     }
-    if (df.rowCount === 0) {
-      this.httpRoutesHost.append(MetricsView.degradedMessage('No http-request events in this window.'));
+    if (routes.length === 0) {
+      this.httpRoutesHost.append(MetricsView.degradedMessage('No requests recorded in this window.'));
       return;
     }
-    const grid = DG.Viewer.grid(df, MetricsView.gridOptions());
+    const grid = DG.Viewer.grid(MetricsView.routesFrame(routes), MetricsView.gridOptions());
     const routeCol = grid.col('route');
     if (routeCol)
       routeCol.width = 360;
@@ -947,22 +910,18 @@ export class MetricsView extends UaView {
     MetricsView.fitGrid(grid, this.httpRoutesHost);
   }
 
-  private async openFullHttpRoutes(): Promise<void> {
-    const filter = this.uaToolbox.getFilter();
-    const progress = DG.TaskBarProgressIndicator.create('Loading HTTP routes...');
-    try {
-      const df = await MetricsView.safeCall(
-        () => grok.data.query('UsageAnalysis:MetricsHttpRoutes', {date: filter.date!, limit: FULL_VIEW_LIMIT}),
-        'MetricsHttpRoutes');
-      if (!df) {
-        grok.shell.warning('HTTP routes unavailable.');
-        return;
-      }
-      df.name = 'HTTP routes';
-      grok.shell.addTableView(df);
-    } finally {
-      progress.close();
-    }
+  private static frame(rows: object[]): DG.DataFrame {
+    return DG.DataFrame.fromObjects(rows) ?? DG.DataFrame.create();
+  }
+
+  private static routesFrame(routes: DG.ServerMetricsRoute[]): DG.DataFrame {
+    return MetricsView.frame(routes.map((r) =>
+      ({route: `${r.method} ${r.route}`, count: r.count, p50: r.p50, p95: r.p95, p99: r.p99, err_pct: r.errPct})));
+  }
+
+  private static statementsFrame(rows: DG.ServerMetricsStatement[]): DG.DataFrame {
+    return MetricsView.frame(rows.map((s) =>
+      ({query: s.query, calls: s.calls, total_ms: s.totalMs, mean_ms: s.meanMs, hit_pct: s.hitPct})));
   }
 
   private static degradedMessage(text: string): HTMLElement {
@@ -1082,33 +1041,20 @@ export class MetricsView extends UaView {
   }
 
   private async collectSnapshotAttachments(): Promise<DG.FileInfo[]> {
-    const filter = this.uaToolbox.getFilter();
-    const date = filter.date!;
-    const pssMode = await this.detectPssMode();
+    const date = this.uaToolbox.getFilter().date!;
+    const m = await MetricsView.safeCall(() => this.fetchMetrics(EMAIL_LIMIT), 'getMetrics');
 
     type Src = {name: string, fn: () => Promise<DG.DataFrame | string | null>};
     const sources: Src[] = [
-      {name: 'db_summary.csv',           fn: () => queries.metricsDbStats()},
-      {name: 'table_health.csv',         fn: () => queries.metricsTableHealth(EMAIL_LIMIT)},
-      {name: 'largest_tables.csv',       fn: () => queries.metricsLargestTables(20)},
-      {name: 'connections.csv',          fn: () => queries.metricsConnections()},
+      {name: 'table_health.csv',          fn: () => queries.metricsTableHealth(EMAIL_LIMIT)},
+      {name: 'largest_tables.csv',        fn: () => queries.metricsLargestTables(20)},
+      {name: 'cache_miss_tables.csv',     fn: () => queries.metricsCacheMissTables()},
       {name: 'connections_offenders.csv', fn: () => queries.metricsConnectionsOffenders(20, 60, 30)},
-      {name: 'http_routes.csv',          fn: () => queries.metricsHttpRoutes(date, EMAIL_LIMIT)},
-      {name: 'errors.csv',               fn: () => queries.metricsErrorsCount(date)},
-      {name: 'latency.csv',              fn: () => queries.metricsLatency(date)},
-      {name: 'sessions.csv',             fn: () => queries.metricsSessionsCount(date)},
+      {name: 'errors.csv',                fn: () => queries.metricsErrorsCount(date)},
+      {name: 'sessions.csv',              fn: () => queries.metricsSessionsCount(date)},
+      {name: 'storage.json',              fn: async () => JSON.stringify(await grok.dapi.info.getStorageStats())},
+      {name: 'disk.json',                 fn: () => grok.functions.call('DiskStats') as Promise<string>},
     ];
-    if (pssMode !== 'unavailable') {
-      sources.push(
-        {name: 'slowest_queries.csv',     fn: () => this.pssFn('slowest', EMAIL_LIMIT)},
-        {name: 'most_called_queries.csv', fn: () => this.pssFn('most-called', EMAIL_LIMIT)},
-        {name: 'worst_cache_hit.csv',     fn: () => this.pssFn('worst-hit', EMAIL_LIMIT)},
-      );
-    }
-    sources.push(
-      {name: 'storage.json',             fn: async () => JSON.stringify(await grok.dapi.info.getStorageStats())},
-      {name: 'disk.json',                fn: () => grok.functions.call('DiskStats') as Promise<string>},
-    );
 
     const results = await Promise.all(sources.map((s) => MetricsView.safeCall(s.fn, s.name)));
 
@@ -1119,6 +1065,24 @@ export class MetricsView extends UaView {
         continue;
       const csv = typeof r === 'string' ? r : (r as DG.DataFrame).toCsv();
       files.push(DG.FileInfo.fromString(sources[i].name, csv));
+    }
+    if (m) {
+      const {window: w, http, queue, database: db} = m;
+      const frames: {[name: string]: DG.DataFrame} = {
+        'db_summary.csv': MetricsView.frame([{size_bytes: db.sizeBytes, cache_hit_pct: db.cacheHitPct, stats_reset: db.statsReset}]),
+        'connections.csv': MetricsView.frame([db.connections]),
+        'queue.csv': MetricsView.frame([queue]),
+        'http_routes.csv': MetricsView.routesFrame(http.routes),
+        'latency.csv': MetricsView.frame([{...http.now, p95_prev: http.previous.p95, count_prev: http.previous.count,
+          window_start: w.start, window_end: w.end, prev_window_start: w.previousStart}]),
+      };
+      if (db.statements.available) {
+        frames['slowest_queries.csv'] = MetricsView.statementsFrame(db.statements.slowest);
+        frames['most_called_queries.csv'] = MetricsView.statementsFrame(db.statements.mostCalled);
+        frames['worst_cache_hit.csv'] = MetricsView.statementsFrame(db.statements.worstCacheHit);
+      }
+      for (const name of Object.keys(frames))
+        files.push(DG.FileInfo.fromString(name, frames[name].toCsv()));
     }
     return files;
   }

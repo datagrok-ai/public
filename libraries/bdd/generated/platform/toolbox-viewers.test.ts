@@ -1,3 +1,6 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
 /* ---
 generated: features/platform/toolbox-viewers.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
@@ -15,29 +18,29 @@ import {openToolbox, viewerAdded} from '@datagrok-libraries/bdd/bindings/tiers/v
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Adding viewers from the toolbox", () => {
-  const session = feature(test);
+  const session = feature(test, "features/platform/toolbox-viewers.feature", import.meta.url);
   test("Scatter plot from the toolbox icon", {tag: ["@platform", "@viewers", "@realizes:viewers.scatter-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await test.step("Given user is logged in", () => loggedIn(page));
-    await test.step("And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await test.step("When user opens toolbox", () => openToolbox(page));
-    await test.step("And user clicks on scatter plot icon on toolbox", () => clickOn(page, el("scatter plot icon on toolbox")));
-    await test.step("Then scatter plot viewer should be added to the open tableview", () => viewerAdded(page, "scatter plot"));
+    await session.step(7, "Given user is logged in", () => loggedIn(page));
+    await session.step(8, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
+    await session.step(11, "When user opens toolbox", () => openToolbox(page));
+    await session.step(12, "And user clicks on scatter plot icon on toolbox", () => clickOn(page, el("scatter plot icon on toolbox")));
+    await session.step(13, "Then scatter plot viewer should be added to the open tableview", () => viewerAdded(page, "scatter plot"));
   });
   test("Other viewers the same way [viewer=histogram]", {tag: ["@platform", "@viewers", "@realizes:viewers.scatter-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await test.step("Given user is logged in", () => loggedIn(page));
-    await test.step("And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await test.step("When user opens toolbox", () => openToolbox(page));
-    await test.step("And user clicks on histogram icon on toolbox", () => clickOn(page, el("histogram icon on toolbox")));
-    await test.step("Then histogram viewer should be added to the open tableview", () => viewerAdded(page, "histogram"));
+    await session.step(7, "Given user is logged in", () => loggedIn(page));
+    await session.step(8, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
+    await session.step(16, "When user opens toolbox", () => openToolbox(page));
+    await session.step(17, "And user clicks on histogram icon on toolbox", () => clickOn(page, el("histogram icon on toolbox")));
+    await session.step(18, "Then histogram viewer should be added to the open tableview", () => viewerAdded(page, "histogram"));
   });
   test("Other viewers the same way [viewer=bar chart]", {tag: ["@platform", "@viewers", "@realizes:viewers.scatter-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await test.step("Given user is logged in", () => loggedIn(page));
-    await test.step("And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await test.step("When user opens toolbox", () => openToolbox(page));
-    await test.step("And user clicks on bar chart icon on toolbox", () => clickOn(page, el("bar chart icon on toolbox")));
-    await test.step("Then bar chart viewer should be added to the open tableview", () => viewerAdded(page, "bar chart"));
+    await session.step(7, "Given user is logged in", () => loggedIn(page));
+    await session.step(8, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
+    await session.step(16, "When user opens toolbox", () => openToolbox(page));
+    await session.step(17, "And user clicks on bar chart icon on toolbox", () => clickOn(page, el("bar chart icon on toolbox")));
+    await session.step(18, "Then bar chart viewer should be added to the open tableview", () => viewerAdded(page, "bar chart"));
   });
 });

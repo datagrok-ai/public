@@ -10,6 +10,8 @@ import puppeteer from 'puppeteer';
 import {Browser, Page} from 'puppeteer';
 import * as color from '../utils/color-utils';
 import Papa from 'papaparse';
+import {devKeyFetch} from './dev-key';
+import * as keypair from './keypair';
 
 const fetch = require('node-fetch');
 
@@ -37,10 +39,27 @@ export async function getToken(url: string, key: string) {
   // auth failure (valid JSON with isSuccess=false) is returned immediately, no retry.
   const maxAttempts = 15;
   const delayMs = 3000;
+  // Keypair login is the supported path; the developer key remains as a fallback
+  // for stands and CI secrets that have not been migrated yet — including when a key is
+  // configured but that stand does not know it, which must not take the run down while a
+  // working dev key is right there.
+  let privateKey = keypair.keypairFor(url, key);
   let lastError: any;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+      if (privateKey) {
+        try {
+          return await keypair.keyLogin(url, privateKey);
+        } catch (error: any) {
+          const refused = error?.name === 'ServerTooOldError' ||
+            error?.message?.startsWith('Key login failed');
+          if (!key || !refused)
+            throw error;
+          color.warn(`${url}: ${error.message} Falling back to the developer key.`);
+          privateKey = undefined;
+        }
+      }
+      const response = await devKeyFetch(`${url}/users/login/dev`, `${url}/users/login/dev/${key}`, key, {method: 'POST'});
       const text = await response.text();
       let json: any;
       try {
@@ -62,6 +81,9 @@ export async function getToken(url: string, key: string) {
     } catch (error: any) {
       if (error?.message === 'Unable to login to server. Check your dev key')
         throw error;
+      // A rejected signature is a credential problem, not a readiness one.
+      if (error?.message?.startsWith('Key login failed'))
+        throw error;
       lastError = error;
       if (utils.isConnectivityError(error))
         color.warn(`Playwright: server not reachable yet (attempt ${attempt}/${maxAttempts}): ${url}`);
@@ -69,7 +91,7 @@ export async function getToken(url: string, key: string) {
         await new Promise((r) => setTimeout(r, delayMs));
     }
   }
-  throw lastError ?? new Error(`Unable to exchange dev key for token at ${url}`);
+  throw lastError ?? new Error(`Unable to obtain a token from ${url}`);
 }
 
 export async function isPackageOnServer(hostKey: string, packageName: string): Promise<boolean> {
@@ -219,12 +241,8 @@ export async function loadPackage(
   if (skipPublish != true) {
     process.stdout.write(`Building and publishing ${dirName}...`);
     try {
-      await utils.runScript(`npm install`, packageDir);
-      if (linkPackage)
-        await utils.runScript(`grok link`, packageDir);
-      if (skipBuild != true)
-        await utils.runScript(`npm run build`, packageDir);
-      await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
+      const flags = `${release ? ' --release' : ''}${linkPackage ? ' --link' : ''}${skipBuild ? ' --skip-build' : ''}`;
+      await utils.runScript(`${utils.grokCommand} publish ${hostString}${flags}`, packageDir);
     }
     catch (e: any) {
       process.stdout.write(' FAILED\n');

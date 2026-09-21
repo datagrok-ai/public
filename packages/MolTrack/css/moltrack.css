@@ -316,3 +316,19 @@
   pointer-events: none;
   cursor: not-allowed;
 }
+
+.moltrack-history-date {
+  color: var(--steel-4);
+}
+
+.moltrack-status-valid {
+  color: var(--green-2);
+}
+
+.moltrack-status-error {
+  color: var(--red-3);
+}
+
+.moltrack-status-warning {
+  color: var(--orange-2);
+}

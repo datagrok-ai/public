@@ -3,8 +3,8 @@
    plugin imports carry no extension), and the platform base classes call into dart in their
    constructors.
 
-   The stub is the platform's own contract, nothing more: the `DG.TYPE` strings copied from
-   js-api's `const.ts`, the `JsInputBase` surface `DartInput` uses (root, caption, addValidator,
+   The stub is the platform's own contract, nothing more: the real `DG.TYPE` / `DG.SEMTYPE` constants
+   (through `datagrok-api/u2core`), the `JsInputBase` surface `DartInput` uses (root, caption, addValidator,
    fireInput/fireChanged, and `property`, which throws off a dart handle when nothing is bound),
    the base classes u2 subclasses, and the `grok.dapi.files` / `grok.shell` calls the inputs make.
    The entities, the widgets, the viewers and the shell are the getter-backed doubles of
@@ -21,7 +21,7 @@
 const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
 /** The real compiled implementation (a dependency-free js-api module), so the auto-pick pins
  * compute the SAME distances the platform does — requires a built datagrok-api. */
-const DISTANCES = new URL('../node_modules/datagrok-api/src/utils/string-distances.js',
+const DISTANCES = new URL('../node_modules/datagrok-api/dist/src/utils/string-distances.js',
   import.meta.url).href;
 
 const STUB = `
@@ -39,17 +39,7 @@ export class StringUtils {
   static jaroWinklerDistance = jaroWinklerDistance;
 }
 
-export const TYPE = {
-  STRING: 'string', INT: 'int', FLOAT: 'double', NUM: 'num', BOOL: 'bool', DATE_TIME: 'datetime',
-  BIG_INT: 'bigint', QNUM: 'qnum', OBJECT: 'object', FILE: 'file', DATA_FRAME: 'dataframe',
-};
-
-/** What the column renderer the dg pickers share reads at import (column-renderer.ts:13). */
-export const COLUMN_TYPE = {
-  STRING: 'string', INT: 'int', FLOAT: 'double', BOOL: 'bool', BYTE_ARRAY: 'byte_array',
-  DATE_TIME: 'datetime', BIG_INT: 'bigint', QNUM: 'qnum', DATA_FRAME: 'dataframe',
-  OBJECT: 'object',
-};
+export {TYPE, COLUMN_TYPE, SEMTYPE, TAGS} from '${DOUBLES}';
 
 /** A 2-role sample of js-api's \`functionRoles\` (const.ts:456) — what the functions browser's
  * roles pane is fed. */
@@ -115,6 +105,62 @@ export class ObjectHandler {
   static forEntity(x) { return ObjectHandler.registered.find((h) => h.isApplicable(x)) ?? null; }
 }
 
+/** The js-api domain handler's slice the domain handle uses (domains-ui.ts): rows built locally
+ * off a values map, the entity view opened by row. Never registered by itself — a test that wants
+ * handler-backed rendering registers one. */
+export class DomainObjectHandler extends ObjectHandler {
+  static opened = [];
+  /** Every \`decorateGrid\` call — what a grid was decorated for, over which frame, and whether the
+   * grid HELD that frame at the time (the platform decorates what the grid holds). */
+  static decorated = [];
+  /** The names the platform's DomainNameCache would have resolved: '<schema>.<table>|<id>' → name. */
+  static names = {};
+
+  /** The platform's ref-cell decoration (DomainRefCellRenderer): a column whose semType is a
+   * '<schema>.<table>' row type draws the target row's name instead of its id, an id with no name
+   * keeps the id. The platform resolves those renderers against the frame the GRID HOLDS, so a
+   * frame decorated before the grid points at it is left alone. */
+  static decorateGrid(grid, table, dataFrame) {
+    const df = dataFrame ?? grid.dataFrame;
+    const held = df != null && grid.dataFrame?.dart === df.dart;
+    DomainObjectHandler.decorated.push({grid, table, dataFrame: df, held});
+    if (!held)
+      return;
+    for (const column of df.columns.toList()) {
+      if (column.semType == null || !column.semType.includes('.'))
+        continue;
+      const gc = grid.columns.byName(column.name);
+      for (let row = 0; row < column.length; row++) {
+        const name = DomainObjectHandler.names[column.semType + '|' + column.get(row)];
+        if (name != null)
+          gc.setCellText(row, name);
+      }
+    }
+  }
+
+  constructor(table) {
+    super();
+    this.table = table;
+  }
+
+  get type() { return this.table; }
+
+  isApplicable(x) { return x?.typeName === this.table; }
+
+  rowFrom(values) { return {typeName: this.table, values: values ?? {}, id: values?.id ?? null}; }
+
+  openRow(row) { DomainObjectHandler.opened.push(row); }
+
+  getCaption(x) { return String(x.values?.name ?? x.values?.title ?? x.id ?? ''); }
+
+  renderListItem(x) {
+    const el = document.createElement('span');
+    el.className = 'test-handler-item';
+    el.textContent = this.getCaption(x);
+    return el;
+  }
+}
+
 export class JsInputBase {
   constructor() {
     this.root = document.createElement('div');
@@ -149,7 +195,7 @@ export function _installColumnGrid(cls) { ColumnGrid = cls; }
 `;
 
 const GROK_STUB = `
-import {DataFrame, Func, Shell} from '${DOUBLES}';
+import {DataFrame, Func, Shell, Stream} from '${DOUBLES}';
 
 export const dapi = {
   files: {
@@ -157,12 +203,20 @@ export const dapi = {
     list: async () => [],
     readAsText: async () => '',
   },
+  /** What the domain error mapping and the user/group pickers reach; a test replaces the fields. */
+  domains: {
+    invalidated: 0,
+    invalidateUiCaches() { dapi.domains.invalidated++; },
+  },
+  users: {find: async () => null},
+  groups: {find: async () => null},
 };
 
 export const shell = new Shell();
 
 /** What pickers.tableInput's follow and import action read (the platform-stub shapes). */
-export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved};
+export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved,
+  onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream()};
 
 export const data = {parseCsv: () => new DataFrame()};
 
@@ -184,6 +238,40 @@ export const drops = [];
 export function makeDroppable(element, options) {
   drops.push({element, ...options});
 }
+
+/** The platform inputs u2 bridges through \`fromDartInput\`, as much of \`DG.InputBase\` as the
+ * bridge reads: a root carrying the platform editor, a value that notifies, and no dart handle
+ * (so the bridge skips the Dart-side validation hookup). A test picks by writing \`value\`. */
+export const input = {
+  table(name) {
+    const root = document.createElement('div');
+    root.className = 'ui-input-root ui-input-table';
+    const editor = document.createElement('select');
+    editor.className = 'ui-input-editor';
+    root.append(editor);
+    const listeners = [];
+    let held = null;
+    return {
+      root, caption: name, dart: null,
+      get value() { return held; },
+      set value(x) {
+        held = x;
+        for (const fn of listeners.slice())
+          fn(x);
+      },
+      onChanged: {
+        subscribe(fn) {
+          listeners.push(fn);
+          return {unsubscribe() {
+            const at = listeners.indexOf(fn);
+            if (at >= 0)
+              listeners.splice(at, 1);
+          }};
+        },
+      },
+    };
+  },
+};
 `;
 
 const URLS = {
@@ -197,6 +285,9 @@ export async function resolve(specifier, context, next) {
   const stub = URLS[specifier];
   if (stub)
     return {url: stub[0], format: 'module', shortCircuit: true};
+  // js-api's compiled ESM sits under a typeless package.json — a node without syntax detection reads it as CommonJS
+  if (specifier === DISTANCES)
+    return {url: DISTANCES, format: 'module', shortCircuit: true};
   return next(specifier, context);
 }
 

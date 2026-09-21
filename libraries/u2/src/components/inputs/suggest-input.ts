@@ -15,6 +15,9 @@ export interface SuggestInputOptions extends InputOptions<string> {
   /** Below it the popup shows a hint row and the source is never queried. */
   minChars?: number;
   debounceMs?: number;
+  /** Focus, a click and Space in an empty box open the whole list — a picker over a known set of
+   * values; meant with `minChars` 0. */
+  openOnFocus?: boolean;
 }
 
 export class SuggestInput extends Input<string, SuggestInputOptions> {
@@ -82,6 +85,10 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
     });
     this._listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
     this._listen(input, 'blur', () => this._list.dismiss());
+    if (this.options.openOnFocus) {
+      this._listen(input, 'focus', () => this._showAll());
+      this._listen(input, 'click', () => this._showAll());
+    }
     this.effect(() => input.setAttribute('aria-expanded', String(this._list.isOpen.value)));
     return input;
   }
@@ -90,6 +97,15 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
     this._typing = false;
     this._list.clearActive();
     this._refresh();
+    this._list.open();
+  }
+
+  /** The unfiltered list, whatever the box holds. */
+  private _showAll(): void {
+    if (this._list.isOpen.peek())
+      return;
+    this._list.clearActive();
+    this._source.query('');
     this._list.open();
   }
 
@@ -140,6 +156,12 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
           e.stopPropagation();
           if (!this._accept(this._list.activeIndex.peek()))
             this._list.dismiss();
+        }
+        break;
+      case ' ':
+        if (this.options.openOnFocus && this.value.peek() === '') {
+          e.preventDefault();
+          this._showAll();
         }
         break;
       case 'Escape':

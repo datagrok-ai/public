@@ -1,5 +1,5 @@
-// Multi-source integration: file + ad-hoc DB table + saved query + dataframe-output script in one project.
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -18,9 +18,9 @@ import {
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
-import {saveAllTablesWithProvenance, deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+import {deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+import {saveAllTablesWithProvenance} from './projects-shared';
 
-// OpenFile with colon-form fullPath — dot-form .script provenance makes JS-API Save mis-attribute children.
 async function openFileColonForm(page: Page, fullPath: string): Promise<{rowCount: number; script: string}> {
   return await page.evaluate(async (p) => {
     const grok = (window as any).grok;
@@ -90,7 +90,7 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
             await assertProvenanceScript(page, 'files', r.script);
             opened++;
           }
-        } catch (_) { /* defensive */ }
+        } catch (_) {  }
       }
       expect(opened).toBeGreaterThanOrEqual(1);
     });
@@ -132,7 +132,7 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
 
     await softStep('Step 3: verify project children server-side', async () => {
       if (!saved) throw new Error('no saved project');
-      // Project exposes .children (Entity[]) — there is no .relations getter on the JS API.
+
       const r = await evalJs<{children: number; ok: boolean}>(page, `(async () => {
         try {
           const fetched = await grok.dapi.projects.find('${saved.projectId}');

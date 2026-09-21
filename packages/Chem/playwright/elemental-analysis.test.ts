@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [chem.analyze.elemental, chem.analyze.elemental.run, chem.analyze.elemental.top-menu]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
@@ -94,7 +92,7 @@ test('Chem: Elemental Analysis multi-format walk (smiles / molV2000 / molV3000)'
     await softStep(`${v.id}: click OK and verify per-element atom-count columns appended`, async () => {
       const preCount = await page.evaluate(() => (window as any).__ea_preCount as number);
       await page.locator('.d4-dialog [name="button-OK"]').click();
-      // Poll only for column append; read any balloon purely to enrich the failure message.
+
       const outcome = await page.waitForFunction((preCount: number) => {
         const df = (window as any).__ea_df;
         if (df.columns.length > preCount) return {appended: df.columns.length - preCount, balloon: null};

@@ -1,12 +1,10 @@
 ---
 feature: general
+realizes_atlas: []
+realizes: []
+priority: p2
 target_layer: manual-only
 coverage_type: regression
-produced_from: split
-original_path: public/packages/UsageAnalysis/files/TestTrack/General/profile-settings.md
-split_date: 2026-06-16
-realizes: []
-related_bugs: []
 manual_only_reason: |
   Profile-photo upload goes through the Dart-only path user.setPicture() (image
   decode + resize in Dart) with no public JS API, and the "Change password..."
@@ -14,13 +12,14 @@ manual_only_reason: |
   both are fragile to drive and not exposed to the JS API used by Playwright
   specs. The name-edit (which calls dapi.users.save) is automated in
   profile-settings-spec.ts; the photo and password paths remain manual.
+related_bugs: []
 ---
 
 # Profile Settings — photo & password (manual)
 
 Manual companion to `profile-settings.md`. The profile **name edit** and its
-persistence are automated by `profile-settings-spec.ts`. This file covers the
-photo-upload and password-validation paths, which are Dart/UI-only.
+persistence are covered by the automated companion. This file covers the
+photo-upload and password-validation paths.
 
 ## Preconditions
 
@@ -31,7 +30,7 @@ photo-upload and password-validation paths, which are Dart/UI-only.
 
 ## Steps
 
-### A. Profile photo
+### Profile photo
 
 1. Click the profile picture area to change it; upload a valid image (positive
    scenario). Repeat with different popular image formats — each is accepted and
@@ -39,7 +38,7 @@ photo-upload and password-validation paths, which are Dart/UI-only.
 2. Attempt to upload a file with an **incorrect / non-image format**. The photo
    should **not** change (no broken avatar; the invalid file is rejected).
 
-### B. Change password (negative validation only)
+### Change password (negative validation only)
 
 1. Open **Change password...**.
 2. Enter a **new password** and a **non-matching** confirmation → on OK, a
@@ -53,7 +52,16 @@ photo-upload and password-validation paths, which are Dart/UI-only.
 > account — it would lock out other automated tests that authenticate as that
 > user.
 
+## Cleanup
+
+- Restore the original avatar: re-upload the profile photo the account had
+  before step A1 (the negative A2 upload leaves it unchanged).
+- The password needs no revert — both B scenarios are negative cases and must
+  leave it unchanged; if a change slipped through by mistake, change it back
+  to the original immediately.
+
 ---
 {
-  "order": 7
+  "order": 7,
+  "datasets": []
 }

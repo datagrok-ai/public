@@ -1,35 +1,27 @@
 ---
 feature: connections
-target_layer: playwright
-coverage_type: edge
-priority: p2
 realizes: [views.connections]
-realized_as: []
+priority: p2
+target_layer: manual-only
+coverage_type: edge
+manual_only_reason: |
+  Covers the "Show more" footer discoverability path: on dev that footer
+  behavior is brittle, and the TEST button is also absent on the Sparql dialog
+  on dev.
 related_bugs: []
 ---
 
 # SPARQL — manual UI checks
 
-This is the **manual companion** to `sparql.md`. The autotest
-(`sparql.test.ts`) covers most of the scenario end-to-end via the global
-**New Connection** button (which surfaces a Data Source dropdown that lists
-every provider, including Sparql). The carve-out is the bit the autotest
-deliberately skips — the manual scenario calls for clicking the `...` ("Show
+This is the **manual companion** to `sparql.md`. The automated companion
+covers most of the scenario end-to-end via the global **New Connection**
+button (which surfaces a Data Source dropdown that lists every provider,
+including Sparql). The carve-out covered here: clicking the `...` ("Show
 more") footer under Browse > Databases to surface the Sparql provider as a
 right-clickable tree node, and then choosing **Add new connection** from its
-context menu. On dev that footer behavior is brittle and the dialog the
-button surfaces is identical to the New Connection one, so the autotest
-takes the New-Connection path. The Test button is also absent on the Sparql
-dialog on dev — the autotest goes straight to OK.
+context menu. On dev that footer behavior is brittle; the Test button is
+also absent on the Sparql dialog on dev.
 
-The autotest covers:
-
-- Open the New Connection dialog, switch Data Source to **Sparql**,
-  fill **Name** = `test_sparql`, **Endpoint**, **Requires Server** = true,
-  leave Prefixes empty
-- Click **OK** → connection saved with `dataSource = "Sparql"`
-- Right-click `test_sparql` in the Browse tree → **Delete...** → DELETE
-- Server-side `dapi.connections.filter(...)` returns nothing afterwards
 
 ## Pre-conditions
 
@@ -60,3 +52,15 @@ If the Sparql dialog has a **TEST** button on your env (it doesn't on dev):
 - Sparql provider's right-click menu has **Add new connection / Add connection...**
 - Sparql Add-Connection dialog carries Endpoint / Requires Server / Prefixes inputs
 - After OK, the new connection's tree node appears under Sparql immediately
+
+## Cleanup
+
+- If the Add-Connection dialog is still open, close it with CANCEL.
+- If a `test_sparql` connection was created (the dialog was confirmed with OK),
+  right-click it under **Browse > Databases > Sparql** → **Delete...** → DELETE.
+
+---
+{
+  "order": 7,
+  "datasets": []
+}

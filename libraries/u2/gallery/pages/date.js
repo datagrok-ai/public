@@ -1,6 +1,7 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {DateInput, DateTimeInput} from '../../src/components/inputs/date-input.js';
+import {markSpan, spanOf} from '../../src/core/span.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -93,6 +94,19 @@ export async function render(main) {
       span('The footer row edits HH:mm — ArrowUp/ArrowDown step and wrap, two digits advance ' +
         'to the minutes, Enter commits date and time together. Picking another day keeps the ' +
         'time of day.', 'u2-gallery-status'),
+    ];
+  });
+
+  const since = signal(markSpan(new Date(now.getTime() - 7 * 86400e3), '-1w'));
+  section('Relative (relative: true)', () => {
+    const input = new DateTimeInput({label: 'Since', bind: since, relative: true});
+    return [
+      input,
+      readout('since', computed(() => since.value === null ? 'null' :
+        `${spanOf(since.value) ?? 'absolute'} → ${iso(since.value)}`)),
+      span('The same box also takes a span relative to now — -1w, 2d, now — resolved on the spot ' +
+        'and kept as the value\'s spanOf tag, so it shows as typed; a picked calendar day is a plain ' +
+        'date again.', 'u2-gallery-status'),
     ];
   });
 

@@ -94,6 +94,8 @@ export const richFunctionViewReport = async (
         const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
 
         viewerBox.remove();
+        // removing the DOM node does not release the dart viewer or its cloned dataframe
+        newViewer.detach();
 
         const imageId = exportWorkbook.addImage({
           base64: imageDataUrl,

@@ -1,12 +1,10 @@
 ---
 feature: chem
+realizes_atlas: [chem.cp.calculate-descriptors-docker]
+priority: p0
+realizes: [chem.menu.calculate.descriptors, chem.menu.calculate.chemical-properties, chem.menu.calculate.toxicity-risks, chem.menu.calculate.mpo-score, chem.menu.calculate.bitbirch-clustering, chem.menu.calculate.cluster-mcs, chem.menu.calculate.map-identifiers, chem.menu.calculate.to-inchi, chem.menu.calculate.to-inchi-keys, chem.menu.calculate.biochemical-properties, chem.import.sdf]
 target_layer: manual-only
 coverage_type: regression
-produced_from: migrated
-original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/calculate.md
-migration_date: 2026-05-11
-related_bugs: []
-realizes: [chem.menu.calculate.descriptors, chem.menu.calculate.chemical-properties, chem.menu.calculate.toxicity-risks, chem.menu.calculate.mpo-score, chem.menu.calculate.bitbirch-clustering, chem.menu.calculate.cluster-mcs, chem.menu.calculate.map-identifiers, chem.menu.calculate.to-inchi, chem.menu.calculate.to-inchi-keys, chem.menu.calculate.biochemical-properties, chem.import.sdf]
 manual_only_reason: |
   Chem | Calculate menu walk (Descriptors / Properties / Toxicity Risks /
   MPO / BitBIRCH / Cluster MCS / Map Identifiers / InChI / InChI Keys /
@@ -19,6 +17,7 @@ manual_only_reason: |
   the B2 batch modernization attempt surfaced the Docker dependency.
   Renamed calculate.md → calculate-ui.md per filename-convention rule
   (-ui.md suffix encodes manual-only).
+related_bugs: []
 ---
 
 # Chem | Calculate menu walk
@@ -129,4 +128,9 @@ Implicit cross-cell invariants:
   functions tagged `function_family: biochem-calculator`, which other packages may register. On
   environments with none registered, the dialog may show an empty / informational state — assert
   per-cell that either columns are appended or a clear message is shown, never silent.
-- **No sibling spec.** There is no automated spec covering this Calculate menu walk yet.
+
+---
+{
+  "order": 1,
+  "datasets": ["System:DemoFiles/chem/smiles.csv", "System:AppData/Chem/mol1K.sdf", "System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf", "System:AppData/Chem/tests/smiles_2_columns.csv"]
+}

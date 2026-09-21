@@ -32,8 +32,8 @@ server code, domain tables get the full platform treatment out of the box:
   import/export, sharing, watching, and history work automatically — see
   [Domains](../../../govern/catalog/domains.md).
 * **Typed API**: a generic JS client (`grok.dapi.domains`), generated TypeScript
-  interfaces per table, and a reflective UI library —
-  [domain-ui](#building-app-ui-the-domain-ui-library).
+  interfaces per table, and the u2 domain controls —
+  [Building app UI: u2](#building-app-ui-u2).
 
 You declare tables once in a JSON manifest; Datagrok creates the database objects on package
 deployment and upgrades them when the manifest changes.
@@ -90,15 +90,17 @@ Every table automatically gets the system columns `id` (UUID, also the row's ent
 |------------------------|-----------|-------------------------------------------------------------------------------------------------|
 | `securityMode`         | `table`   | `table`, `master`, or `row` — see [security modes](#security-modes)                              |
 | `delegate`             | —         | Master mode: the `ref` column whose target row's security applies                                |
-| `promotion`            | `lazy`    | Row mode: when the row becomes an individually sharable entity (`lazy` = on first share, `eager` = on insert) |
-| `defaultRowVisibility` | `table`   | Row/master modes: whether table-level View shows unshared rows (`none` hides them)               |
+| `promotion`            | `lazy`    | Row mode: when the row becomes an individually sharable entity (`lazy` = on first share, `eager` = on insert, with the author granted View/Edit/Delete/Share) |
+| `defaultRowVisibility` | `table`   | Row/master modes: whether table-level View shows unshared rows (`none` hides them from everyone but their author) |
 | `businessKey`          | —         | Natural-key column list: powers deduplication on insert, upsert matching, and search handles     |
 | `audit`                | `true`    | In-transaction audit trail with before/after diffs; also enables row history and row-level watch |
+| `hierarchy`            | `false`   | The table is a tree: it must declare exactly one `ref` column targeting itself, which becomes its parent column. Enables a row's ancestor path and the `under` subtree filter term (`location_id under "<id>"`), and lets `domains.tree` walk it |
 | `softDelete`           | `true`    | Deletes mark `is_deleted` instead of removing rows                                               |
 | `idempotency`          | `false`   | Adds the `idempotency_key` column for replay-safe creates                                        |
 | `extensible`           | `false`   | Lets users add [their own columns](#extending-a-plugin-schema) to this table                     |
 | `schemas`              | —         | [Property schemas](#property-schemas-and-column-security) contributing dynamic columns          |
 | `filters`              | —         | [Default filters](#default-filters) shown on the table's filter panel                            |
+| `permissions`          | —         | Custom permissions an app gates its actions on (`["approve"]` or `{"approve": {"description": "..."}}`): grantable on the table like View/Edit, answered as `access.can.approve` and the per-row `~can_approve` column; `grants` may name them |
 | `friendlyName`, `description` | — | Display metadata                                                                                |
 
 ### Column options
@@ -133,10 +135,26 @@ the row and column security of the column that carries it.
 | `autoNumber`   | `true` or `{"scope": "<ref column>", "start": N}`: the engine numbers new rows from a counter (`int` only, see [Auto-numbering](#auto-numbering)) |
 | `isName`       | Marks the primary display-name column (one per table, `string` only); its value titles cards, tooltips, and entity views. Without it, a string column literally named `name` is used by convention |
 | `semType`, `friendlyName`, `description`, `format` | Display and semantic metadata                     |
+| `editor`       | Input editor hint for forms: `textarea`, `switch`, `slider`, `color`, `tags`, or `markdown` (reaches `Property.inputType`; `markdown` renders as a text area for now) |
+| `searchable`   | The query `search` key (`{search: "alp"}`) matches this `string` column, case-insensitively; a table declaring none searches its name column |
+| `filter`       | `ref` columns: a filter expression over the target table narrowing the picker's candidates; `$name` binds to the owning row's column of that name — `"country_id = $country_id"` makes a dependent picker |
 
 Validation runs twice with the same code: client-side in dialogs (instant feedback) and
 server-side on every write (authoritative). Integrity constraints (`unique`, foreign keys,
 `required`) are additionally enforced by the database.
+
+Table-level rules go in `constraints`, keyed by name. A `check` is raw SQL over the
+table's relational columns (whitelisted tokens only). An `expr` is the platform's filter
+grammar — literals, lists, `null`, and a bare column name on the right of a comparison —
+compiled to the same database CHECK and, unlike `check`, validated by forms before the
+write, with `message` shown on violation:
+
+```json
+"constraints": {
+  "dates_ordered": {"expr": "end_date >= start_date", "message": "End before start"},
+  "positive":      {"check": "weight IS NULL OR weight > 0"}
+}
+```
 
 ### Auto-numbering
 
@@ -307,7 +325,8 @@ one above — a `master`-mode junction delegating to the owner, so Edit on an is
 on its links (and unlinking needs no separate Delete grant). A relation whose junction or
 target table you cannot View is invisible everywhere, exactly like a name nobody declared.
 Do not set `defaultRowVisibility: "none"` on a junction or a relation target — rows
-created there could never be linked, and the manifest is rejected.
+created there would reach only their own author, nobody else could link them, and the
+manifest is rejected.
 
 ### Default filters
 
@@ -352,7 +371,7 @@ Each table declares how its rows are protected:
 |----------|------------------------------------------|-------------------------------------------------------------------------------------------------|
 | `table`  | Lookup and reference tables (default)    | One permission check against the table itself: a View grant shows all rows, Edit allows writes  |
 | `master` | Detail tables (issue → project, well → plate) | Each row inherits the security of the row it references through the `delegate` column; chains up to two hops deep |
-| `row`    | Registration masters (studies, plates)   | Individual rows can be shared with users and groups; unshared rows follow the table-level grant (or stay hidden with `defaultRowVisibility: "none"`) |
+| `row`    | Registration masters (studies, plates), user-owned records (models, files) | Individual rows can be shared with users and groups; a row's author always sees, edits, deletes and shares it; unshared rows otherwise follow the table-level grant, or stay hidden from everyone else with `defaultRowVisibility: "none"` (private to the author, shareable by them) |
 
 Grants use the standard permissions (View, Edit, Delete, Share) on the schema, table, and
 property-schema entities. Grant them from the UI (the table's **Sharing** pane) or
@@ -480,6 +499,18 @@ await issues.update(r.id, {status: 'resolved'}, {version: issue.version});
 // Soft delete (declared referential actions are enforced)
 await issues.delete(r.id);
 
+// The trash: a deleted row is still addressable, and Delete is also the grant that restores it
+const trashed = await issues.query({filter: `id = "${r.id}"`, deleted: 'only'});   // carries ~is_deleted
+await issues.restore(r.id);                                                        // audit op 'undelete'
+
+// One value into many rows, one transaction (per-row validation, version and audit line);
+// the filter is required, and the caller's Edit permission narrows the selection silently
+const {updated, hasMore} = await issues.updateWhere(
+  `id in ("${a}", "${b}")`, {status_id: closedId}, {limit: 1000});
+
+// On a table declaring `"hierarchy": true`: the row's ancestors, root first, row excluded
+const path = await grok.dapi.domains.table('stockroom.location').pathTo(shelfId);
+
 // Aggregate over the rows and columns the caller can see
 const counts = await issues.aggregate({
   groupBy: ['status'],
@@ -539,15 +570,23 @@ ones are reported per row.
 
 ### Transactions
 
-Multiple operations — including across tables of one schema — commit or roll back atomically.
-An op can name its new row's id with `ref` for later ops to reference:
+Multiple operations — across tables, and across schemas when `table` is qualified as
+`<schema>.<table>` — commit or roll back atomically. An op can name its new row's id with
+`ref` for other ops to reference, in any order: the server runs the ops in dependency order
+(an op using `$p` after the op declaring `p`; a delete of a child table before a delete of
+its parent, so `onDelete: restrict` never vetoes what the same request removes) while the
+results array and the error's `opIndex` keep the request order:
 
 ```ts
 await grok.dapi.domains.transaction('grit', [
-  {op: 'insert', table: 'project', ref: 'p', values: {key: 'GRIT', name: 'Grit'}},
   {op: 'insert', table: 'issue', values: {project_id: '$p', number: 1, title: 'First issue'}},
+  {op: 'insert', table: 'project', ref: 'p', values: {key: 'GRIT', name: 'Grit'}},
+  {op: 'insert', table: 'audit.event', values: {kind: 'project-created', subject: '$p'}},
 ]);
 ```
+
+Add `onDuplicate: 'error'` to an insert op to fail the whole transaction (409) when the row's
+business key already exists, instead of merging it into the existing row.
 
 ### Expansions
 
@@ -744,6 +783,9 @@ Runnable in the platform's samples gallery:
 [filters](https://public.datagrok.ai/js/samples/dapi/domains/filters),
 [dataframe](https://public.datagrok.ai/js/samples/dapi/domains/dataframe),
 [idempotency](https://public.datagrok.ai/js/samples/dapi/domains/idempotency),
+[trash](https://public.datagrok.ai/js/samples/dapi/domains/trash),
+[bulk-edit](https://public.datagrok.ai/js/samples/dapi/domains/bulk-edit),
+[hierarchy](https://public.datagrok.ai/js/samples/dapi/domains/hierarchy),
 [schema](https://public.datagrok.ai/js/samples/dapi/domains/schema),
 [platform-grid](https://public.datagrok.ai/js/samples/dapi/domains/platform-grid).
 
@@ -770,6 +812,31 @@ grok s domains create inventory && grok s domains apply inventory --json schema.
 Validation errors are printed per row, a schema `apply` shows its change plan with `--dry-run`
 and refuses destructive changes until `--confirm-destructive`, and `--output json` makes every
 command scriptable.
+
+## The table UI, and its addresses
+
+Every registered table has a UI with no code, at stable addresses:
+
+| Address | Opens |
+|---|---|
+| `/domains/<schema>/<table>` | the table — list, search, filters, ribbon |
+| `/domains/<schema>/<table>/<keyOrId>` | one row's page — its fields, its child rows, its history (the business key where it is unambiguous, the id otherwise) |
+| `/domains` and `/domains/<schema>` | the domain gallery and the schema diagram |
+| **Browse** > **Platform** > **Domains** > `<schema>` > `<table>` | the same table view as the first row |
+
+The table and row addresses open the **u2 domain app** (`@datagrok-libraries/u2`), which is what
+`domains.table(address).app()` gives a plugin — the same view, the same ribbon, the same gates,
+whether it is reached through `/domains/...`, through Browse, or mounted by a package at
+`/apps/<Package>/<App>`. Resolution goes through a `//tags: domainRoutes` package function
+(`PowerPack:domainRouteView`), so the platform loads it on demand and a stand without that package
+falls back to the built-in Dart view. **Settings** > **Beta** > **Dart domain UI** brings the
+frozen Dart domain UI routes back for a stand that needs them; the domain gallery and the schema
+diagram are Dart in either case.
+
+What the app gives on top of browsing — trash and restore, bulk edit, a CSV/frame import wizard,
+a tree over a self-referencing table — is described in
+`libraries/u2/docs/recipes/crud-app.md` and `hierarchies.md`, and is the same surface a plugin
+composes from (see [Building app UI: u2](#building-app-ui-u2) below).
 
 ## Customizing the UI
 
@@ -799,42 +866,54 @@ the semantic type `<schema>.<table>`:
 * **Search patterns**: claim [identifier patterns](register-identifiers.md) (like
   `GRIT-123`) in the handler, and they resolve from global search.
 
-### Building app UI: the domain-ui library
+### Building app UI: u2
 
-To build your own UI over domain tables — forms, editable grids, list pages, whole
-browse/CRUD apps — use
-[`@datagrok-libraries/domain-ui`](https://github.com/datagrok-ai/public/tree/master/libraries/domain-ui).
-Everything in it is reflective: components take columns, labels, choices, validation
-rules, and permissions from the runtime registry, so common operations are one or two
-lines:
+To build your own UI over domain tables — forms, lists, editable grids, whole browse/CRUD
+apps — use the domain controls of `@datagrok-libraries/u2` (a relative-path dependency,
+`"@datagrok-libraries/u2": "../../libraries/u2"`, wired the way the
+[Stockroom](https://github.com/datagrok-ai/public/tree/master/packages/Stockroom) package is).
+Everything in it is reflective: the controls take columns, labels, choices, validation rules
+and permissions from the runtime registry, so an app is one await and one line:
 
 ```ts
-import {domains} from '@datagrok-libraries/domain-ui';
+import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
 
-const issues = await domains.table('grit.issue');     // the one await
-grok.shell.addView(issues.app());                     // the whole browse/CRUD app
-const saved = await issues.formDialog({values: {project_id: project.id}});
+const issues = await domains.table('grit.issue');        // schema + capabilities, one round-trip
+grok.shell.addView(issues.app());                         // list ⇄ entity page, URL, ribbon, gate
 ```
 
-The library's README documents the full surface: the `domains` facade and its widget
-factories (`form`, `grid`, `list`, `listView`, `app`), schema-level handles
-(`domains.db`), composed pages and dialogs, customization points, and the widget-status
-machine surface for tests and AI assistants. The
-[Grit](https://github.com/datagrok-ai/public/tree/master/packages/Grit) package is the
-reference app built on it.
+Three tiers, each a package in this repository:
+
+* **Zero code** — `t.app()` from `schema.json` alone: Stockroom. `grok add app --domain
+  <schema>.<table>` scaffolds it.
+* **Configuration** — the same app as a `dg-ui/1` spec with the `u2-domain-*` tags, edited in
+  the designer: `Stockroom/src/app.spec.json`.
+* **Code** — `grok api --ui` generates typed handles (`getGritDb()` → a `DomainTable<IssueRow>`
+  per table, one await) on which the app declares actions, validators, a card renderer and a
+  `DomainApp` subclass with presets and shortcuts:
+  [Grit](https://github.com/datagrok-ai/public/tree/master/packages/Grit).
+
+The recipes in `libraries/u2/docs/recipes/` walk through the surface: `crud-app.md` (what the
+schema declares, what `app()` gives, and the ⋯ menu — import, bulk edit, trash/restore),
+`spec-app.md`, `custom-app.md`, and `hierarchies.md` (a self-referencing table as a tree, the
+`under` subtree filter). What every backend behind these controls must agree on is
+`libraries/u2/docs/domain-backend-contract.md`.
 
 ### Platform building blocks
 
 The lower-level blocks behind the standard UI ship in `datagrok-api` itself:
 
-* `DG.DomainView.create({schema: 'grit', table: 'issue'})` opens the full table view
-  (search, filters, render modes, editing) programmatically — the same view the
-  `/domains/...` routes open.
-* `DG.DomainGrid.create(...)` hosts the editable domain grid inside your own view:
-  platform rendering, batch editing with unsaved-change markers, one-transaction save
-  with the conflict flows, and permission gating down to per-column writability.
+* `DG.DomainView.create({schema: 'grit', table: 'issue'})` opens the Dart table view
+  (search, filters, render modes, editing) programmatically — the view the `/domains/...`
+  routes open with **Settings** > **Beta** > **Dart domain UI** on. To open what those
+  addresses normally open, use the u2 app: `(await domains.table('grit.issue')).app()`.
+* `grid.attachEditor(editor)` hosts the domain editing state in any `DG.Grid` you own —
+  dirty / invalid / conflict cell markers and per-column writability — and
+  `DG.DomainObjectHandler.decorateGrid(grid, table)` applies the table's rendering to it.
 * `DG.DomainFrameEditor.attachTo(df, schema, table)` attaches the same editing state
-  machine to a DataFrame you render yourself — for fully custom hosts.
+  machine to a DataFrame you render yourself — for fully custom hosts; several editors save
+  as ONE transaction through `new DG.DomainSession(editors).save()`, which owns the conflict
+  and validation flows.
 
 See the
 [platform-grid](https://public.datagrok.ai/js/samples/dapi/domains/platform-grid) sample.
@@ -842,7 +921,7 @@ See the
 See also:
 
 * [Domains](../../../govern/catalog/domains.md) — the user-facing guide
-* [`@datagrok-libraries/domain-ui`](https://github.com/datagrok-ai/public/tree/master/libraries/domain-ui) —
-  reflective forms, grids, and app pages over domain tables
+* [`@datagrok-libraries/u2`](https://github.com/datagrok-ai/public/tree/master/libraries/u2) —
+  the domain controls: sources, forms, lists, grids, search, filters, children, history, the app
 * [Plugin Postgres databases](db-in-plugin.md) — raw SQL storage without entity mapping
 * [Access data](access-data.md) — connections and queries

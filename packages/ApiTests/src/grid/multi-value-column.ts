@@ -16,7 +16,7 @@ category('Grid: MultiValuesColumn', () => {
 
   test('grid.multiValuesColumn', async () => {
     grok.shell.addTableView(table);
-    const languageTags: string[] = Array.from(table.col('Languages')!.tags);
+    const languageTags = Array.from(table.col('Languages')!.tags);
 
     if (languageTags[0][0] != DG.TAGS.MULTI_VALUE_SEPARATOR)
       throw new Error('multi-value-separator not assigned to column');
