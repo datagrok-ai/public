@@ -180,10 +180,19 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
 
   await softStep('Step 8b: Paste the copied SMILES restores it into the molecular input', async () => {
     if (!clipboardOk) { console.warn('[SKIP] Step 8b — navigator.clipboard unavailable (insecure origin)'); return; }
+    const molblock = await clipboard();
     await typeSmiles(ETHANOL);
     await smilesInput.click();
     await page.keyboard.press('Control+A');
-    await page.keyboard.press('Control+V');
+    // Ctrl+V reads the OS clipboard, which headless Chrome does not reliably share with
+    // navigator.clipboard: builds 423-427 pasted nothing at all. The sketcher's own handler
+    // reads e.clipboardData (js-api chem.ts), so hand it the copied molblock as a real paste.
+    await smilesInput.evaluate((el, text) => {
+      const dt = new DataTransfer();
+      dt.setData('text/plain', text);
+      (el as HTMLInputElement).focus();
+      el.dispatchEvent(new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: dt}));
+    }, molblock);
     await smilesInput.press('Enter');
     await expect.poll(() => smilesInput.inputValue(), {timeout: 10_000}).toBe(CYCLOHEXANE);
   });
@@ -199,10 +208,19 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
 
   await softStep('Step 9b: Paste the copied MOLBLOCK restores the pre-edit molecule', async () => {
     if (!clipboardOk) { console.warn('[SKIP] Step 9b — navigator.clipboard unavailable (insecure origin)'); return; }
+    const molblock = await clipboard();
     await typeSmiles(ETHANOL);
     await smilesInput.click();
     await page.keyboard.press('Control+A');
-    await page.keyboard.press('Control+V');
+    // Ctrl+V reads the OS clipboard, which headless Chrome does not reliably share with
+    // navigator.clipboard: builds 423-427 pasted nothing at all. The sketcher's own handler
+    // reads e.clipboardData (js-api chem.ts), so hand it the copied molblock as a real paste.
+    await smilesInput.evaluate((el, text) => {
+      const dt = new DataTransfer();
+      dt.setData('text/plain', text);
+      (el as HTMLInputElement).focus();
+      el.dispatchEvent(new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: dt}));
+    }, molblock);
     // MOLBLOCK paste is applied to the sketch canvas (input is not echoed) — verify via a
     // Copy-as-SMILES read-back. The sketcher parses the pasted molblock asynchronously, so a
     // single copy can run before it lands and leave the old molecule on the clipboard for good:
