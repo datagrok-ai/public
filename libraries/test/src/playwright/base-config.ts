@@ -14,25 +14,24 @@ import * as path from 'path';
 // do all of that against dev while the output still looked like a normal run. `grok test`
 // always sets it; anything else should say where it is pointing.
 const DATAGROK_URL = (process.env.DATAGROK_URL ?? 'http://localhost:8888').replace(/\/$/, '');
+// The CI stack is plain HTTP, so an insecure origin has to be allow-listed as secure or the
+// whole secure-context surface is missing. Measured on Chrome-for-Testing 153 (playwright
+// chromium v1243): the default `chromium-headless-shell` IGNORES
+// --unsafely-treat-insecure-origin-as-secure (isSecureContext stays false), while the full
+// Chrome build honours it headless. Every spec takes that build: handing the shell to the
+// specs that looked like they only needed painting cost the Chem substructure query and the
+// sketcher paste, which both sit on that surface.
 const INSECURE_TARGET = DATAGROK_URL.startsWith('http://');
 
 // `test.use({launchOptions})` REPLACES this block rather than merging into it, so every
 // consumer that sets launch options of its own (specTestOptions) must spread this in.
 export const secureOriginLaunchOptions = {
+  ...(INSECURE_TARGET ? {channel: 'chromium'} : {}),
   args: [`--unsafely-treat-insecure-origin-as-secure=${DATAGROK_URL}`],
 };
 
-// The CI stack is plain HTTP, so `navigator.clipboard` only exists if the origin is
-// allow-listed as secure. Measured on Chrome-for-Testing 153 (playwright chromium v1243):
-// the default `chromium-headless-shell` IGNORES
-// --unsafely-treat-insecure-origin-as-secure (isSecureContext stays false and
-// navigator.clipboard stays undefined), while the full Chrome build honours it headless.
-// Only the specs that touch the clipboard take that build: it paints differently from the
-// shell, and legend geometry specs written against the shell read the difference as a bug.
-export const clipboardLaunchOptions = {
-  ...(INSECURE_TARGET ? {channel: 'chromium'} : {}),
-  args: secureOriginLaunchOptions.args,
-};
+/** Kept as the name the clipboard specs opt into; the build is the same one everything takes. */
+export const clipboardLaunchOptions = secureOriginLaunchOptions;
 
 export const baseConfig = defineConfig({
   testMatch: '**/*.test.ts',
