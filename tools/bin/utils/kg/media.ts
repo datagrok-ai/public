@@ -11,6 +11,7 @@ import {Issue, TypeSystem} from './types';
 import {normalizeRow, Row} from './normalize';
 import {parseYamlDocument, keyLine} from './frontmatter';
 import {mediaId, hostedMediaId, posix} from './ids';
+import {Roots, localPath, existsAt, gitRoots} from './roots';
 
 export type MediaFormat = 'png' | 'jpg' | 'gif' | 'svg' | 'webp' | 'mp4' | 'webm' | 'pdf' | 'youtube' | 'other';
 
@@ -65,7 +66,7 @@ export type ResolveRef = (value: string, expected: string[], ctx: {source: strin
  * entry's keys are the authorable members plus `illustrates`, checked against the media type through [system] and
  * the reference resolver of the homes; a `described_blob` that is not the file's current blob is a stale description.
  */
-export function loadMediaRecords(system: TypeSystem, repoRoot: string, files: string[], resolve: ResolveRef): MediaRecords {
+export function loadMediaRecords(system: TypeSystem, roots: Roots, files: string[], resolve: ResolveRef): MediaRecords {
   const out: MediaRecords = {records: new Map(), errors: [], warnings: []};
   if (!system.nodes.has('media')) return out;
   let blobs: Map<string, string> | undefined;
@@ -74,7 +75,7 @@ export function loadMediaRecords(system: TypeSystem, repoRoot: string, files: st
     const dir = path.posix.dirname(file);
     let fm;
     try {
-      fm = parseYamlDocument(fs.readFileSync(path.join(repoRoot, file), 'utf8'));
+      fm = parseYamlDocument(fs.readFileSync(localPath(roots, file)!, 'utf8'));
     } catch (e: any) {
       out.errors.push({file, code: 'unreadable', message: `cannot read: ${e.message}`});
       continue;
@@ -98,7 +99,7 @@ export function loadMediaRecords(system: TypeSystem, repoRoot: string, files: st
         entry.id = hostedMediaId(m[1], m[2]);
       } else {
         const target = path.posix.normalize(path.posix.join(dir, key));
-        const exists = !key.startsWith('/') && !target.startsWith('..') && fs.existsSync(path.join(repoRoot, target)) && fs.statSync(path.join(repoRoot, target)).isFile();
+        const exists = !key.startsWith('/') && !target.startsWith('..') && existsAt(roots, target);
         if (!exists || !isMedia(target)) {
           error('unknown-media', `'${key}' names no media file beside ${file}`, target);
           continue;
@@ -147,8 +148,8 @@ export function loadMediaRecords(system: TypeSystem, repoRoot: string, files: st
       entry.data = rest;
       entry.illustrates = targets;
       if (entry.path && typeof rest.described_blob === 'string') {
-        blobs ??= blobIds(repoRoot);
-        const blob = blobs.get(entry.path) ?? hashBlob(fs.readFileSync(path.join(repoRoot, entry.path)));
+        blobs ??= blobIds(roots);
+        const blob = blobs.get(entry.path) ?? hashBlob(fs.readFileSync(localPath(roots, entry.path)!));
         if (blob !== rest.described_blob)
           out.warnings.push({file, line, code: 'stale-description', message: `'${key}': described at blob ${String(rest.described_blob).slice(0, 12)}, the file is now ${blob.slice(0, 12)}; run grok kg enrich media --stale`, target: entry.path});
       }
@@ -165,14 +166,14 @@ export function hashBlob(content: Buffer): string {
 }
 
 /**
- * Blob ids of every tracked media file under [repoRoot], from the index of the monorepo and of the `public/`
- * submodule (and of any extra git root, keyed by the prefix its paths carry), without reading the files; a file
- * the working tree has changed is hashed the way git would. A tree that is no repository yields nothing.
+ * Blob ids of every tracked media file, from the index of the monorepo, of the `public/` submodule and of the site
+ * when the build has one (each keyed by the prefix its paths carry), without reading the files; a file the working
+ * tree has changed is hashed the way git would. A tree that is no repository yields nothing.
  */
-export function blobIds(repoRoot: string, roots: {dir: string, prefix: string}[] = [{dir: repoRoot, prefix: ''}, {dir: path.join(repoRoot, 'public'), prefix: 'public/'}]): Map<string, string> {
+export function blobIds(roots: Roots): Map<string, string> {
   const out = new Map<string, string>();
   const seen = new Set<string>();
-  for (const {dir, prefix} of roots) {
+  for (const {dir, prefix} of gitRoots(roots)) {
     const top = spawnSync('git', ['rev-parse', '--show-toplevel'], {cwd: dir, encoding: 'utf8'});
     if (top.status !== 0) continue;
     const cwd = path.resolve(top.stdout.trim());

@@ -94,9 +94,11 @@ export class Panel {
     return text;
   }
 
-  /** A repo path opens in the editor; the text stays the path so it can be copied. */
+  /** A repo path opens in the editor (a `landing:` path in the site's checkout); the text stays the path so it can be copied. */
   link(p, label) {
-    const href = `vscode://file/${this.ctx.repoRoot}/${p}`;
+    const site = p.startsWith('landing:');
+    if (site && !this.ctx.landingRoot) return label ?? p;
+    const href = `vscode://file/${site ? this.ctx.landingRoot : this.ctx.repoRoot}/${site ? p.slice('landing:'.length) : p}`;
     return el('a', {href, title: `Open ${p}`}, label ?? p);
   }
 

@@ -14,6 +14,8 @@ export interface BuildContext {
   repoRoot: string;
   mode: Mode;
   backlogDir?: string;
+  /** The marketing site's checkout (`--landing`), whose paths carry the `landing:` prefix; absent, the site is a missing source. */
+  landingDir?: string;
   /** The home documents: the caller's, when check already loaded them, else loaded once per build by whichever
    * extractor asks first (`homesOf`). */
   homes?: HomeSet;

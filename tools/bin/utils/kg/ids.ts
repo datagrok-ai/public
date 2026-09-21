@@ -268,11 +268,11 @@ export function sourceLayerOf(file: string): string {
   return p.startsWith('core/') ? 'core' : p.startsWith('infra/') ? 'infra' : 'public';
 }
 
-/** Visibility of a source or evidence path: public/ -> public, core/ -> dev, the internal folder -> internal. */
+/** Visibility of a source or evidence path: public/ and the site (`landing:`) -> public, core/ -> dev, the internal folder -> internal. */
 export function locationVisibility(file: string): string {
   const p = posix(file);
   if (p.startsWith('core/docs/knowledge-graph/internal/')) return 'internal';
-  return p.startsWith('public/') || p.startsWith('landing/') ? 'public' : 'dev';
+  return p.startsWith('public/') || p.startsWith('landing/') || p.startsWith('landing:') ? 'public' : 'dev';
 }
 
 /** `doc-page.kind` by folder (build-plan.md WO-3c). */

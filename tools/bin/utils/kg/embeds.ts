@@ -40,7 +40,9 @@ const REFERENCE_IMAGE = /!\[([^\]]*)\](?:\[([^\]]*)\])?(?!\()/g;
 const REFERENCE_DEFINITION = /^ {0,3}\[([^\]]+)\]:\s*(?:<([^>]+)>|(\S+))(?:\s+"([^"]*)")?/;
 const LINK_AROUND_IMAGE = /\[(!\[[^\]]*\]\([^)]*\))\]\(([^)\s]+)\)/g;
 const LINK = /(?<!!)\[([^\]]*)\]\(([^)\s]+)\)/g;
-const BARE_URL = /(?<![("'<\]])https?:\/\/[^\s<>"')\]]+/g;
+const BARE_URL = /(?<![("'<\]=])https?:\/\/[^\s<>"')\]]+/g;
+const A_HREF = /<a\b[^>]*\bhref\s*=\s*"([^"]*)"/g;
+const BACKGROUND = /background(?:-image)?\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/g;
 const TAG = /<(img|source|iframe|Image|Iframe)\b([^>]*?)\/?>/g;
 const VIDEO = /<video\b([^>]*)>([\s\S]*?)<\/video>/g;
 const SOURCE = /<source\b([^>]*?)\/?>/g;
@@ -106,6 +108,10 @@ export function extractEmbeds(file: string, body: string, bodyLine: number, head
   for (const m of text.matchAll(LINK))
     if (YOUTUBE.test(m[2]) && !linked.has(m.index!) && !text.slice(m.index! - 1, m.index!).startsWith('!'))
       add(m.index!, 'link', m[0], m[2], {title: m[1] || undefined, start_seconds: startOf(m[2])});
+  for (const m of text.matchAll(A_HREF))
+    if (YOUTUBE.test(m[1])) add(m.index!, 'link', m[0], m[1], {start_seconds: startOf(m[1])});
+  for (const m of text.matchAll(BACKGROUND))
+    add(m.index!, 'tag', m[0], m[1]);
   for (const m of text.matchAll(BARE_URL))
     if (YOUTUBE.test(m[0])) add(m.index!, 'link', m[0], m[0], {start_seconds: startOf(m[0])});
   for (const m of text.matchAll(SLIDE))
@@ -147,7 +153,6 @@ export function resolveTarget(raw: string, dir: string): EmbedTarget | null {
   const resolved = target.startsWith('/') ? path.posix.normalize(target.slice(1)) :
     /^(core|public|infra)\//.test(target) ? path.posix.normalize(target) : path.posix.normalize(path.posix.join(dir, target));
   if (resolved.startsWith('..') || path.posix.isAbsolute(resolved) || !isMedia(resolved)) return null;
-  if (dir.startsWith('landing:') && !resolved.startsWith('landing:')) return {kind: 'file', path: `landing:${resolved.replace(/^landing:/, '')}`};
   return {kind: 'file', path: resolved};
 }
 

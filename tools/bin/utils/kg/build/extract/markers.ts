@@ -24,7 +24,7 @@ export interface Resolved {
 
 /** The home documents, loaded once per build and shared by every extractor that runs after the first to ask. */
 export function homesOf(ctx: BuildContext): HomeSet {
-  return ctx.homes ??= loadHomes(ctx.system, ctx.repoRoot);
+  return ctx.homes ??= loadHomes(ctx.system, ctx.repoRoot, undefined, ctx.landingDir);
 }
 
 /** The home a `~id` an artifact names resolves to, by id or alias, the anchor dropped; an unresolved token is counted

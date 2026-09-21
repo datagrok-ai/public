@@ -560,7 +560,7 @@ describe('grok kg command', () => {
 
   it('check --output json prints the report and nothing else', async () => {
     const repo = makeRepo();
-    const {ok, out, exitCode} = await runKg({_: ['kg', 'check'], kg: path.join(repo, KG_DIR), output: 'json'});
+    const {ok, out, exitCode} = await runKg({_: ['kg', 'check'], kg: path.join(repo, KG_DIR), output: 'json', landing: false});
     expect(ok).toBe(true);
     expect(exitCode).toBeUndefined();
     expect(out).toHaveLength(1);
@@ -576,7 +576,7 @@ describe('grok kg command', () => {
 
   it('--types-only skips the home documents', async () => {
     const repo = makeRepo();
-    const {out} = await runKg({_: ['kg', 'check'], kg: path.join(repo, KG_DIR), output: 'json', 'types-only': true});
+    const {out} = await runKg({_: ['kg', 'check'], kg: path.join(repo, KG_DIR), output: 'json', 'types-only': true, landing: false});
     expect(JSON.parse(out[0]).homes).toEqual({});
   });
 

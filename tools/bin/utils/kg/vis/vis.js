@@ -53,7 +53,7 @@ async function main() {
   });
 
   const panel = new Panel($('pane'), $('pane-empty'), {
-    api, index, repoRoot: data.manifest.repo_root,
+    api, index, repoRoot: data.manifest.repo_root, landingRoot: data.manifest.landing_root,
     badge: (type) => badge(type, style),
     isVisible: (i) => graph.isVisible(i),
     select: (i, id) => {

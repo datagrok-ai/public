@@ -98,7 +98,8 @@ export interface Built {
  * a build that prints an error or sets an exit code fails the test here. */
 export async function buildFixture(repo: string, only?: string, extra: Record<string, unknown> = {}): Promise<Built> {
   const backlog = path.join(repo, 'backlog');
-  const argv: Record<string, unknown> = {_: ['kg', 'build'], kg: kgRoot(repo), db: false, output: 'json', ...extra};
+  // no site unless the test names one: the dev-box clone the build would otherwise find is not part of any fixture
+  const argv: Record<string, unknown> = {_: ['kg', 'build'], kg: kgRoot(repo), db: false, output: 'json', landing: false, ...extra};
   if (only !== undefined) argv.only = only;
   if (fs.existsSync(backlog) && argv.backlog === undefined) argv.backlog = backlog;
   const result = await runKg(argv);

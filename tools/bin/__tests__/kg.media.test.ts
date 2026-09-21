@@ -6,7 +6,7 @@ import path from 'path';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
 import {loadHomes, makeReport, HomeSet} from '../utils/kg/homes';
 import {blobIds, hashBlob, RECORD_KEYS} from '../utils/kg/media';
-import {copyFixture, git, write, runKg, kgRoot, KG_DIR} from './kg-fixture';
+import {copyFixture, git, write, runKg, kgRoot, KG_DIR, FIXTURES} from './kg-fixture';
 
 const DIR = 'public/help/visualize/viewers/img';
 const RECORD = `${DIR}/media.yaml`;
@@ -33,7 +33,7 @@ describe('media records (conventions.md §5.7)', () => {
       data: {kind: 'screenshot', caption: 'A scatter plot of two columns', description: 'Points of the demo table plotted by age and weight, coloured by sex.',
         quality: 'answer', reviewed: true, described_by: 'person'}});
     expect(makeReport(system, homes).media).toBe(1);
-    const run = await runKg({_: ['kg', 'check'], kg: kgRoot(repo)});
+    const run = await runKg({_: ['kg', 'check'], kg: kgRoot(repo), landing: false});
     expect(run.ok).toBe(true);
     expect(run.out.join('\n')).toMatch(/1 media files checked, 1 media record;/);
   });
@@ -80,13 +80,26 @@ describe('media records (conventions.md §5.7)', () => {
     ]);
   });
 
+  it('resolves a landing: path in a home against the site checkout when check has one, and reads the records there', () => {
+    const repo = copyFixture('good');
+    const landing = path.join(FIXTURES, 'landing');
+    write(repo, 'core/docs/site.md', '---\nfeature: visualize/site\nowner: askalkin\ncode: [landing:web/img/**]\n---\n# Site\n\nSee [the hero](landing:web/img/hero.png).\n');
+    const system = loadTypeSystem(path.join(repo, KG_DIR));
+    const without = loadHomes(system, repo);
+    expect(without.errors.map((e) => e.code)).toEqual(['missing-path']);
+    const withSite = loadHomes(system, repo, undefined, landing);
+    expect(withSite.errors).toEqual([]);
+    expect([...withSite.media.keys()]).toEqual([`media:${PNG}`, 'media:landing:web/img/slides/aggregate.gif']);
+    expect(withSite.media.get('media:landing:web/img/slides/aggregate.gif')).toMatchObject({path: 'landing:web/img/slides/aggregate.gif', file: 'landing:web/img/slides/media.yaml', illustrates: ['visualize/viewers']});
+  });
+
   it('warns when the file changed since it was described, keyed by the git blob of the file', () => {
     const repo = copyFixture('good');
     git(repo, 'init', '-q');
     git(repo, 'add', '.');
     git(repo, 'commit', '-q', '-m', 'fixture');
     const blob = git(repo, 'hash-object', PNG);
-    expect(blobIds(repo).get(PNG)).toBe(blob);
+    expect(blobIds({repoRoot: repo}).get(PNG)).toBe(blob);
     expect(hashBlob(fs.readFileSync(path.join(repo, PNG)))).toBe(blob);
     const record = fs.readFileSync(path.join(repo, RECORD), 'utf8');
     write(repo, RECORD, `${record}  described_blob: ${blob}\n`);
@@ -94,9 +107,9 @@ describe('media records (conventions.md §5.7)', () => {
     // the working tree changed the file: the blob is what git would hash now, and the description is stale
     fs.appendFileSync(path.join(repo, PNG), 'x');
     const changed = git(repo, 'hash-object', PNG);
-    expect(blobIds(repo).get(PNG)).toBe(changed);
+    expect(blobIds({repoRoot: repo}).get(PNG)).toBe(changed);
     expect(issues(repo)).toEqual([`stale-description ${RECORD}:1: 'scatter-plot.png': described at blob ${blob.slice(0, 12)}, the file is now ${changed.slice(0, 12)}; run grok kg enrich media --stale`]);
     // a tree that is no repository: nothing from git, the raw hash stands in
-    expect(blobIds(copyFixture('good')).size).toBe(0);
+    expect(blobIds({repoRoot: copyFixture("good")}).size).toBe(0);
   });
 });

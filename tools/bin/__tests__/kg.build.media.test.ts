@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import {extractEmbeds, resolveTarget} from '../utils/kg/embeds';
 import {headings} from '../utils/kg/citations';
-import {copyFixture, git, write, buildFixture, Built} from './kg-fixture';
+import {copyFixture, git, write, buildFixture, Built, FIXTURES} from './kg-fixture';
 
 const PAGE = 'public/help/visualize/viewers/histogram.md';
 const IMG = 'public/help/visualize/viewers/img';
@@ -21,7 +21,7 @@ function makeRepo(): string {
   return repo;
 }
 
-const ONLY = 'homes,docs,media';
+const ONLY = 'homes,docs,landing,media';
 const graph: Promise<Built> = buildFixture(makeRepo(), ONLY);
 
 describe('media extractor (notation.md §3.7)', () => {
@@ -97,6 +97,67 @@ describe('media extractor (notation.md §3.7)', () => {
     expect(Object.keys(gif)).not.toContain('home');
     expect(rows('edges/illustrates').map((e) => e.from)).toEqual([`media:${IMG}/bins.png`, GIF, VIDEO]);
     expect(rows('edges/embeds')).toHaveLength(5);
+  });
+});
+
+describe('the marketing site as an external root (--landing)', () => {
+  const LANDING = path.join(FIXTURES, 'landing');
+  const INDEX = 'doc:landing:web/index.html';
+  const site: Promise<Built> = buildFixture(makeRepo(), ONLY, {landing: LANDING});
+
+  it('makes a web-page per html file with the address nginx gives it, the h1 as its name when the title is generic, and its headings as anchors', async () => {
+    const {rows, manifest} = await site;
+    expect(manifest.sources.landing).toBe('ok');
+    expect(manifest.revisions.landing).toBe('unknown');
+    expect(rows('nodes/web-page').map((p) => [p.id, p.name, p.url, p.kind, p.description ?? ''])).toEqual([
+      [INDEX, 'Grok your data', 'https://datagrok.ai/', 'marketing', 'A platform for data science.'],
+      ['doc:landing:web/login.html', 'Sign in', 'https://datagrok.ai/login.html', 'marketing', ''],
+      ['doc:landing:web/solutions/peptides.html', 'Peptide SAR', 'https://datagrok.ai/solutions/peptides', 'marketing', ''],
+    ]);
+    expect(rows('nodes/web-page').every((p) => p.visibility === 'public' && p.source_layer === 'public' && p.path.startsWith('landing:'))).toBe(true);
+    expect(rows('nodes/doc-anchor').filter((a) => a.page === INDEX).map((a) => [a.slug, a.depth])).toEqual([['access', 2], ['access-1', 3], ['grok-your-data', 1], ['visualize', 2]]);
+  });
+
+  it('reads the site tags as embeds: img, a video source, a YouTube link and iframe, a hot-linked help image shared with the docs, a CSS background', async () => {
+    const {rows, problems} = await site;
+    const embeds = rows('edges/embeds').filter((e) => e.from === INDEX).sort((a, b) => a.position - b.position);
+    expect(embeds.map((e) => [e.position, e.line, e.form, e.to, e.anchor ?? '', e.alt ?? ''])).toEqual([
+      [1, 9, 'tag', 'media:landing:web/img/slides/aggregate.gif', 'grok-your-data', 'Aggregation'],
+      [2, 11, 'tag', 'media:landing:web/img/slides/access.mp4', 'access', ''],
+      [3, 14, 'link', VIDEO, 'access', ''],
+      [4, 15, 'iframe', VIDEO, 'access', ''],
+      [5, 17, 'tag', `media:${IMG}/bins.png`, 'visualize', 'Bins'],
+      [6, 18, 'tag', 'media:landing:web/img/hero.png', 'visualize', ''],
+    ]);
+    expect(problems.broken_embeds).toEqual([`${PAGE}:20: ![gone](img/gone.png)`, 'landing:web/solutions/peptides.html:2: <img src="../img/gone.png">']);
+  });
+
+  it('indexes the site files with a delivery url at the site root and the record beside them, and keeps them public', async () => {
+    const {rows} = await site;
+    const gif = rows('nodes/media').find((m) => m.id === 'media:landing:web/img/slides/aggregate.gif');
+    expect(gif).toMatchObject({path: 'landing:web/img/slides/aggregate.gif', url: 'https://datagrok.ai/img/slides/aggregate.gif', format: 'gif', bytes: 43,
+      caption: 'Aggregating a table', quality: 'marketing', reviewed: true, provenance: 'annotation', source_layer: 'public', visibility: 'public'});
+    expect(rows('edges/illustrates').find((e) => e.from === gif.id)).toMatchObject({to: 'visualize/viewers', derived_by: 'annotation', confidence: 1, evidence: ['landing:web/img/slides/media.yaml']});
+    // the fixture site is no repository of its own, so its files count as untracked: indexed when shown or described, reported otherwise
+    expect(rows('nodes/media').filter((m) => m.path?.startsWith('landing:')).map((m) => m.id)).toEqual([
+      'media:landing:web/img/hero.png', 'media:landing:web/img/slides/access.mp4', 'media:landing:web/img/slides/aggregate.gif']);
+    expect((await site).problems.untracked_media).toContain('landing:web/help/uploads/copy.png');
+    const {rows: pub, manifest} = await buildFixture(makeRepo(), ONLY, {landing: LANDING, public: true});
+    expect(manifest.counts.nodes['web-page']).toBe(3);
+    expect(Object.keys(manifest.revisions).sort()).toEqual(['landing', 'public']);
+    expect(pub('nodes/media').some((m) => m.id === gif.id)).toBe(true);
+    expect(pub('edges/embeds').filter((e) => e.from === INDEX)).toHaveLength(6);
+  });
+
+  it('without the site: the source is missing, no page or site file exists, a site path a page names is neither shown nor broken, and the batch differs', async () => {
+    const {manifest, rows, problems} = await graph;
+    const withSite = await site;
+    expect(manifest.sources.landing).toBe('missing');
+    expect(manifest.revisions.landing).toBeUndefined();
+    expect(rows('nodes/web-page')).toEqual([]);
+    expect(rows('nodes/media').some((m) => m.path?.startsWith('landing:'))).toBe(false);
+    expect(problems.broken_embeds).toHaveLength(1);
+    expect(manifest.batch).not.toBe(withSite.manifest.batch);
   });
 });
 

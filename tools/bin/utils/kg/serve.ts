@@ -24,6 +24,8 @@ export interface ServeOptions {
   genDir: string;
   /** Absolute, forward-slashed: the page builds editor links from it. */
   repoRoot: string;
+  /** The site's checkout, for the editor links of `landing:` paths. */
+  landingDir?: string;
   manifest: Manifest;
   questions: Question[];
   system: TypeSystem;
@@ -79,7 +81,8 @@ async function handle(o: ServeOptions, queue: Queue, req: http.IncomingMessage):
   const route = url.pathname;
   if (!route.startsWith('/api/')) return page(route);
   if (route === '/api/manifest')
-    return json({...o.manifest, notes: caveatNotes(o.manifest), gen: path.basename(o.genDir), repo_root: o.repoRoot.replace(/\\/g, '/')});
+    return json({...o.manifest, notes: caveatNotes(o.manifest), gen: path.basename(o.genDir), repo_root: o.repoRoot.replace(/\\/g, '/'),
+      landing_root: o.landingDir?.replace(/\\/g, '/')});
   if (route === '/api/schema' || route === '/api/index' || route === '/api/graph.bin')
     return file(path.join(visDir(o.genDir), route === '/api/schema' ? SCHEMA : route === '/api/index' ? INDEX : BLOB));
   if (route === '/api/node') return queue.add(() => node(o, required(url, 'id')));
@@ -145,7 +148,9 @@ async function edge(conn: KuzuConnection, from: string, to: string, kind: string
   const {rows} = await run(conn, `MATCH (a)-[e]->(b) WHERE a.${quote('id')} = $from AND b.${quote('id')} = $to AND label(e) = $kind RETURN e`,
     {from, to, kind});
   if (!rows.length) throw new HttpError(404, `no ${kind} edge from ${from} to ${to}`);
-  return json({edge: rows[0].e, from, to, kind});
+  // an edge type with identity properties (embeds by position) may hold several occurrences between one pair: the first in page order, and how many more
+  const sorted = [...rows].sort((a, b) => Number(a.e.position ?? 0) - Number(b.e.position ?? 0));
+  return json({edge: sorted[0].e, from, to, kind, more: rows.length - 1});
 }
 
 /** A page never receives more than [limit] rows, whatever LIMIT the statement carries; one row more is asked for, so

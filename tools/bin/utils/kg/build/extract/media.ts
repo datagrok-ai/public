@@ -11,13 +11,14 @@ import {BuildContext, Extractor} from '../context';
 import {HOME_IGNORE, HomeSet} from '../../homes';
 import {isMedia, formatOf, blobIds, hashBlob, MediaRecord} from '../../media';
 import {Embed, targetKey} from '../../embeds';
-import {mediaId, hostedMediaId, docId, sourceLayerOf, HELP_DIR} from '../../ids';
+import {mediaId, hostedMediaId, docId, sourceLayerOf} from '../../ids';
+import {Roots, LANDING_PREFIX, localPath, existsAt, deliveryUrl} from '../../roots';
 import {homesOf} from './markers';
 
 /** Where every media file is a node, embedded or not; a file elsewhere is one only when a page embeds or a record describes it. */
 export const MEDIA_ROOTS = ['public/help', 'public/docusaurus/static', 'core/docs'];
-const SITE = 'https://datagrok.ai';
-const DOCUSAURUS_STATIC = 'public/docusaurus/static/';
+/** The same, in the site's checkout. */
+const LANDING_ROOT = 'web';
 const PROPOSAL_CONFIDENCE = 0.6;
 
 export const mediaExtractor: Extractor = {
@@ -29,17 +30,13 @@ export const mediaExtractor: Extractor = {
   },
 };
 
-/** Where a reader sees a committed file: the docs site serves help and its static folder under /help. */
-export function deliveryUrl(file: string): string | undefined {
-  if (file.startsWith(`${HELP_DIR}/`)) return `${SITE}/help/${file.slice(HELP_DIR.length + 1)}`;
-  if (file.startsWith(DOCUSAURUS_STATIC)) return `${SITE}/help/${file.slice(DOCUSAURUS_STATIC.length)}`;
-  return undefined;
-}
-
 class MediaLayer {
   private broken = 0;
+  private roots: Roots;
 
-  constructor(private ctx: BuildContext, private emitter: Emitter, private homes: HomeSet) {}
+  constructor(private ctx: BuildContext, private emitter: Emitter, private homes: HomeSet) {
+    this.roots = {repoRoot: ctx.repoRoot, landingDir: ctx.landingDir};
+  }
 
   run(): void {
     const records = this.homes.media;
@@ -47,13 +44,17 @@ class MediaLayer {
     for (const root of MEDIA_ROOTS)
       for (const f of globSync(`${root}/**/*`, {cwd: this.ctx.repoRoot, ignore: HOME_IGNORE, nodir: true, posix: true}))
         if (isMedia(f)) files.add(f);
+    if (this.ctx.landingDir !== undefined)
+      for (const f of globSync(`${LANDING_ROOT}/**/*`, {cwd: this.ctx.landingDir, ignore: HOME_IGNORE, nodir: true, posix: true}))
+        if (isMedia(f)) files.add(`${LANDING_PREFIX}${f}`);
     for (const r of records.values())
       if (r.path) files.add(r.path);
     const shown: {page: string, embed: Embed}[] = [];
     const posters = new Map<string, string>();
     for (const {page, embed} of this.emitter.embeds) {
       if (embed.target.kind === 'file') {
-        if (embed.target.path.startsWith('landing:')) continue;
+        // a site path with no site given is neither shown nor broken: the source is missing
+        if (embed.target.path.startsWith(LANDING_PREFIX) && this.ctx.landingDir === undefined) continue;
         if (!this.exists(embed.target.path)) {
           this.broken++;
           this.emitter.problem('broken_embeds', `${page}:${embed.line}: ${embed.raw}`);
@@ -67,7 +68,7 @@ class MediaLayer {
       }
       shown.push({page, embed});
     }
-    const blobs = blobIds(this.ctx.repoRoot);
+    const blobs = blobIds(this.roots);
     const embedded = new Set(shown.filter((s) => s.embed.target.kind === 'file').map((s) => targetKey(s.embed.target)));
     const admitted = new Set<string>();
     for (const file of [...files].sort(compare)) {
@@ -79,10 +80,11 @@ class MediaLayer {
         this.emitter.problem('untracked_media', file);
         if (!embedded.has(file) && !record) continue;
       }
-      blob ??= hashBlob(fs.readFileSync(path.join(this.ctx.repoRoot, file)));
+      const local = localPath(this.roots, file)!;
+      blob ??= hashBlob(fs.readFileSync(local));
       const thumb = /\.gif$/i.test(file) ? `${file.slice(0, -4)}-thumb.png` : undefined;
       const row: Row = {type: 'media', id, name: path.posix.basename(file), path: file, format: formatOf(file), blob,
-        bytes: fs.statSync(path.join(this.ctx.repoRoot, file)).size, url: deliveryUrl(file), thumbnail: thumb && files.has(thumb) ? mediaId(thumb) : undefined,
+        bytes: fs.statSync(local).size, url: deliveryUrl(file), thumbnail: thumb && files.has(thumb) ? mediaId(thumb) : undefined,
         provenance: record ? 'annotation' : 'filesystem', source_layer: sourceLayerOf(file), ...record?.data};
       if (!this.emitter.node(row).accepted) continue;
       admitted.add(id);
@@ -124,7 +126,6 @@ class MediaLayer {
   }
 
   private exists(file: string): boolean {
-    const full = path.join(this.ctx.repoRoot, file);
-    return fs.existsSync(full) && fs.statSync(full).isFile();
+    return existsAt(this.roots, file);
   }
 }

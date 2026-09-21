@@ -2,6 +2,8 @@
 
 ## v.next
 
+* grok kg: the marketing site as an external root: `--landing <dir>` (else <repo>/../landing, else C:/dg/landing; `--landing false` for none) makes every web/*.html a web-page node with the address nginx gives it, its headings as anchors and its img, video, YouTube and background-image embeds; the site's media files, records and revision join the graph and the batch; landing: paths resolve there in check, the extractors and the browser's editor links
+
 * grok kg: media in the graph: every image, animation and clip under help, the Docusaurus static folder and core/docs, and every hosted YouTube video a page shows, is a `media` node (blob, bytes, delivery url, thumbnail, the record fields); one `embeds` edge per occurrence (markdown images, JSX img tags, video sources, YouTube iframes and timestamped links, marketing slides) with position, form, nearest heading and alt; `illustrates` from the records (annotation when reviewed, an llm proposal at 0.6 otherwise); `report media` (undescribed, stale, awaiting review, unreferenced, broken, no alt, duplicates, largest, unfit); questions media-for-feature, features-without-media, undescribed-media, unreferenced-media, media-by-text
 
 * grok kg: media records: a `media.yaml` beside media files and a `videos.yaml` of hosted videos (keys, illustrates, described_blob) are read with the homes; check validates them (unknown-media, unknown-key, unresolved-ref, stale-description) and counts them; media.ts finds git blob ids without reading the files

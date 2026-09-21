@@ -11,6 +11,7 @@ import {TypeSystem, NodeType, EdgeType, Member, Issue, checkValue, isSubtype, pa
 import {normalizeRow} from './normalize';
 import {SCHEME_TYPES, PREFIXED_ID, SCHEMED_ID, PAGE_PATH, docCandidates} from './ids';
 import {loadMediaRecords, MediaRecord, RECORD_FILES} from './media';
+import {Roots, LANDING_PREFIX} from './roots';
 
 /** Where homes may live, relative to the monorepo root: any markdown document in the repos, and
  * the YAML records (concepts, people, teams, customers) inside the knowledge-graph folder. */
@@ -131,7 +132,11 @@ export function discoverHomeFiles(repoRoot: string): string[] {
   return globSync(HOME_ROOTS, {cwd: repoRoot, ignore: HOME_IGNORE, nodir: true, posix: true}).sort();
 }
 
-export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] = discoverHomeFiles(repoRoot)): HomeSet {
+/** [landingDir] is the site's checkout (`--landing`): its record files join the walk and its paths (`landing:`) resolve there. */
+export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] = discoverHomeFiles(repoRoot), landingDir?: string): HomeSet {
+  if (landingDir !== undefined)
+    files = [...files, ...globSync(`web/**/{${RECORD_FILES.join(',')}}`, {cwd: landingDir, ignore: HOME_IGNORE, nodir: true, posix: true}).sort().map((f) => `${LANDING_PREFIX}${f}`)];
+  const roots: Roots = {repoRoot, landingDir};
   const set: HomeSet = {homes: [], pages: [], stubs: [], errors: [], warnings: [], unresolvedExternal: [], scanned: files.length,
     annotatedPages: 0, citations: {doc: 0, code: 0, media: 0}, media: new Map(), index: {byId: new Map(), byAlias: new Map()}};
   for (const file of files) {
@@ -162,13 +167,13 @@ export function loadHomes(system: TypeSystem, repoRoot: string, files: string[] 
     if (home) set.homes.push(home);
   }
   set.index = indexHomes(set.homes, set.errors);
-  const checker = new HomeChecker(system, repoRoot, set.index, set);
+  const checker = new HomeChecker(system, roots, set.index, set);
   for (const home of set.homes)
     checker.check(home, home.fm);
   for (const page of set.pages)
     checker.checkPage(page.file, page.fm);
   checker.checkCycles();
-  const media = loadMediaRecords(system, repoRoot, files.filter(isRecordFile), (v, expected, ctx) => checker.resolveRef(v, expected, ctx).problem);
+  const media = loadMediaRecords(system, roots, files.filter(isRecordFile), (v, expected, ctx) => checker.resolveRef(v, expected, ctx).problem);
   set.media = media.records;
   set.errors.push(...media.errors);
   set.warnings.push(...media.warnings);
@@ -310,7 +315,11 @@ class HomeChecker {
   /** Instances of `acyclic` edges among homes, edge -> from id -> to ids. */
   private instances = new Map<string, Map<string, Set<string>>>();
 
-  constructor(private system: TypeSystem, private repoRoot: string, private index: HomeIndex, private set: HomeSet) {}
+  private repoRoot: string;
+
+  constructor(private system: TypeSystem, private roots: Roots, private index: HomeIndex, private set: HomeSet) {
+    this.repoRoot = roots.repoRoot;
+  }
 
   check(home: Home, fm: Frontmatter): void {
     const error: ErrorFn = (code, message, key, target) => this.set.errors.push({file: home.file, line: key ? keyLine(fm, key) ?? home.line : home.line, code, message, target});
@@ -576,14 +585,19 @@ class HomeChecker {
     if (cached !== undefined) return cached;
     if (value.includes('\\')) return `path '${value}' contains a backslash; use forward slashes`;
     let p = value.split('#')[0].trim();
+    let cwd = this.repoRoot;
     const repo = REPO_PREFIX.exec(p);
-    if (repo) p = `${repo[1]}/${repo[2]}`;
+    // the site is its own checkout when the build has one; without it the old in-tree folder still answers
+    if (repo && repo[1] === 'landing' && this.roots.landingDir !== undefined) {
+      p = repo[2];
+      cwd = this.roots.landingDir;
+    } else if (repo) p = `${repo[1]}/${repo[2]}`;
     p = p.replace(/\/+$/, '');
     let problem: string | null;
     if (GLOB_MAGIC.test(p))
-      problem = globSync(p, {cwd: this.repoRoot, ignore: HOME_IGNORE, posix: true, windowsPathsNoEscape: true}).length ? null : `no file matches '${value}'`;
+      problem = globSync(p, {cwd, ignore: HOME_IGNORE, posix: true, windowsPathsNoEscape: true}).length ? null : `no file matches '${value}'`;
     else
-      problem = fs.existsSync(path.join(this.repoRoot, p)) ? null : `path '${value}' does not exist`;
+      problem = fs.existsSync(path.join(cwd, p)) ? null : `path '${value}' does not exist`;
     this.pathCache.set(value, problem);
     return problem;
   }

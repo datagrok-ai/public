@@ -10,6 +10,7 @@ import {Row, isOrdered, compare} from '../normalize';
 import {Manifest, dataDir, manifestFile} from '../generation';
 import {isRecordFile} from '../homes';
 import {isMedia} from '../media';
+import {gitRoots, isPublicPath as publicPath} from '../roots';
 
 export interface BuildInfo {
   mode: string;
@@ -28,13 +29,19 @@ export function toolsVersion(): string {
   return JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', '..', 'package.json'), 'utf8')).version;
 }
 
-/** HEAD of the monorepo, HEAD of the public checkout and the submodule pin; `unknown` where git cannot answer. */
-export function gitRevisions(repoRoot: string): Record<string, string> {
+/** HEAD of the monorepo, HEAD of the public checkout and the submodule pin, HEAD of the site when the build has one; `unknown` where git cannot answer. */
+export function gitRevisions(repoRoot: string, landingDir?: string): Record<string, string> {
   const sha = (cwd: string, ref: string) => {
     const r = spawnSync('git', ['rev-parse', '--verify', ref], {cwd, encoding: 'utf8'});
     return r.status === 0 ? r.stdout.trim() : 'unknown';
   };
-  return {reddata: sha(repoRoot, 'HEAD'), public: sha(path.join(repoRoot, 'public'), 'HEAD'), public_pin: sha(repoRoot, 'HEAD:public')};
+  const out: Record<string, string> = {reddata: sha(repoRoot, 'HEAD'), public: sha(path.join(repoRoot, 'public'), 'HEAD'), public_pin: sha(repoRoot, 'HEAD:public')};
+  if (landingDir !== undefined) {
+    // the site is a repository of its own; a folder inside another repository (a fixture) has no revision
+    const top = spawnSync('git', ['rev-parse', '--show-toplevel'], {cwd: landingDir, encoding: 'utf8'});
+    out.landing = top.status === 0 && path.resolve(top.stdout.trim()) === path.resolve(landingDir) ? sha(landingDir, 'HEAD') : 'unknown';
+  }
+  return out;
 }
 
 /** What a build actually reads, so that two graphs cannot share a batch (kg-codex-review-3 #12). */
@@ -47,17 +54,20 @@ export interface BuildInputs {
   /** The extractors this build runs; order does not matter. */
   extractors: string[];
   backlogDir?: string;
+  /** The site's checkout; its revision and dirtiness are inputs too, its absence is one. */
+  landingDir?: string;
   /** Where this build writes: its own output is not one of its inputs. */
   outRoot?: string;
 }
 
-/** Content-addressed: the revisions, the dirty tree of both repositories, the schema and builder versions, the
+/** Content-addressed: the revisions, the dirty tree of every repository read, the schema and builder versions, the
  * mode, the extractor selection and the backlog snapshot. */
 export function buildInputs(inputs: BuildInputs): Record<string, string> {
   return {
     reddata: inputs.revisions.reddata,
     public: inputs.revisions.public,
-    dirty: dirtyDigest(inputs.repoRoot, inputs.outRoot),
+    landing: inputs.revisions.landing ?? 'missing',
+    dirty: dirtyDigest(inputs.repoRoot, inputs.outRoot, inputs.landingDir),
     schema_version: String(inputs.schemaVersion),
     builder: inputs.builder,
     mode: inputs.mode,
@@ -74,11 +84,11 @@ export function batchId(inputs: Record<string, string>): string {
 /** `git status --porcelain` of the monorepo and of the public checkout, with the content of every modified
  * tracked file: an uncommitted edit changes the graph, so it changes the batch. What the build itself writes
  * under [outRoot] is left out — its own output is not an input, gitignored or not. */
-function dirtyDigest(repoRoot: string, outRoot?: string): string {
+function dirtyDigest(repoRoot: string, outRoot?: string, landingDir?: string): string {
   const hash = createHash('sha1');
   const out = outRoot === undefined ? undefined : path.resolve(outRoot);
   const seen = new Set<string>();
-  for (const dir of [repoRoot, path.join(repoRoot, 'public')]) {
+  for (const dir of gitRoots({repoRoot, landingDir}).map((r) => r.dir)) {
     // porcelain paths are relative to the repository root, and `public/` is one only when it is the submodule
     const top = spawnSync('git', ['rev-parse', '--show-toplevel'], {cwd: dir, encoding: 'utf8'});
     if (top.status !== 0) {
@@ -160,7 +170,7 @@ export function projectPublic(graph: Graph, system: TypeSystem): Graph {
   };
   const nodes = graph.nodes.filter(keep);
   const ids = new Set(nodes.map((n) => n.id as string));
-  const isPublicPath = (p: unknown) => typeof p === 'string' && (p.startsWith('public/') || p.startsWith('landing/'));
+  const isPublicPath = (p: unknown) => typeof p === 'string' && publicPath(p);
   const projected = nodes.map((row) => {
     const out: Row = {};
     const members = system.nodes.get(row.type as string)!.members;
@@ -248,7 +258,7 @@ export function writeBuild(graph: Graph, genDir: string, info: BuildInfo): Manif
     builder: info.builder,
     batch: info.batch,
     mode: info.mode,
-    revisions: isPublic ? {public: info.revisions.public} : info.revisions,
+    revisions: isPublic ? Object.fromEntries(Object.entries(info.revisions).filter(([k]) => k === 'public' || k === 'landing')) : info.revisions,
     sources: sortKeys(graph.sources),
     counts: {nodes: sortKeys(counts.nodes), edges: sortKeys(counts.edges)},
     problems: sortKeys(graph.problems),

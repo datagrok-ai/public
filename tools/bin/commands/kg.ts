@@ -10,6 +10,7 @@ import {Emitter} from '../utils/kg/build/emitter';
 import {selectExtractors, runExtractors, provides, EXTRACTORS} from '../utils/kg/build/registry';
 import {Mode} from '../utils/kg/build/context';
 import {writeBuild, writeManifest, projectPublic, gitRevisions, buildInputs, batchId, toolsVersion} from '../utils/kg/build/write';
+import {landingRoot} from '../utils/kg/roots';
 import {readManifest, generationDir, newGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/generation';
 import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_MEMORY_MB, LoadResult, TableRows} from '../utils/kg/kuzu';
 import {impact, testsFor, explain, find, resolveTarget, resolveTargets, parseTiers, DEFAULT_LIMIT, TIER_CHOICES, Change} from '../utils/kg/ops';
@@ -69,7 +70,7 @@ export async function kg(argv: any): Promise<boolean> {
   if (verb === 'ask') return askVerb(argv, kgRoot, repoRoot, args[1], output as OutputFormat);
 
   const system = loadTypeSystem(kgRoot);
-  const homes = typesOnly ? null : loadHomes(system, repoRoot);
+  const homes = typesOnly ? null : loadHomes(system, repoRoot, undefined, landingRoot(repoRoot, argv.landing));
   const report = makeReport(system, homes);
   if (verb === 'gen') {
     const generated = generate(system, kgRoot, repoRoot, homes);
@@ -105,13 +106,14 @@ async function build(argv: any, kgRoot: string, repoRoot: string, output: string
     return fail(`${system.errors.length} type-system error${system.errors.length === 1 ? '' : 's'}; nothing built (run grok kg check)`);
   }
   const builder = toolsVersion();
-  const revisions = gitRevisions(repoRoot);
+  const landingDir = landingRoot(repoRoot, argv.landing);
+  const revisions = gitRevisions(repoRoot, landingDir);
   const backlogDir = backlogRoot(repoRoot, argv.backlog);
   const root = argv.out === undefined ? path.join(repoRoot, ...(mode === 'public' ? ['public', '.kg'] : ['.kg'])) : path.resolve(String(argv.out));
   const batch = batchId(buildInputs({repoRoot, mode, schemaVersion: system.schemaVersion, builder, revisions,
-    extractors: selected.map((e) => e.name), backlogDir, outRoot: root}));
+    extractors: selected.map((e) => e.name), backlogDir, landingDir, outRoot: root}));
   const emitter = new Emitter(system, batch);
-  await runExtractors(selected, {system, kgRoot, repoRoot, mode, backlogDir}, emitter);
+  await runExtractors(selected, {system, kgRoot, repoRoot, mode, backlogDir, landingDir}, emitter);
   let graph = emitter.finalize();
   if (mode === 'public') graph = projectPublic(graph, system);
   Object.assign(graph.manifest, {edge_groups: edgeGroups(system), provides: provides(selected)});
@@ -325,7 +327,7 @@ async function serve(argv: any, kgRoot: string, repoRoot: string): Promise<boole
   }
   const port = argv.port === undefined ? SERVE_PORT : Number(argv.port);
   if (!Number.isInteger(port) || port < 0 || port > 65535) return fail(`--port must be a port number, got '${argv.port}'`);
-  const served = await listen({genDir: dir, repoRoot, manifest, system, questions: loaded.questions, db: opened.db, conn: opened.conn, port});
+  const served = await listen({genDir: dir, repoRoot, landingDir: landingRoot(repoRoot, argv.landing), manifest, system, questions: loaded.questions, db: opened.db, conn: opened.conn, port});
   console.log(`grok kg serve: ${served.url} over ${rel(dir, repoRoot)} (batch ${manifest.batch}); Ctrl-C stops it`);
   if (argv.open === true) openBrowser(served.url);
   await new Promise<void>((resolve) => {

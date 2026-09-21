@@ -82,7 +82,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     const {manifest} = await graph;
     expect(manifest.mode).toBe('full');
     expect(manifest.sources).toEqual({
-      backlog: 'ok@2026-01-12T07:00:00Z', dart: 'ok', docs: 'partial', git: 'ok', homes: 'ok', media: 'partial', membership: 'ok',
+      backlog: 'ok@2026-01-12T07:00:00Z', dart: 'ok', docs: 'partial', git: 'ok', homes: 'ok', landing: 'missing', media: 'partial', membership: 'ok',
       people: 'partial', process: 'ok', releases: 'ok', 'ts-changelog': 'partial', 'ts-declarations': 'ok',
       'ts-functions': 'partial(2 rejected)', 'ts-imports': 'ok', 'ts-markers': 'ok', 'ts-node-tests': 'ok', 'ts-packages': 'ok', 'ts-samples': 'partial',
       'ts-tests': 'ok', 'ts-uses': 'ok',
