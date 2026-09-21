@@ -250,6 +250,13 @@ export async function expectAreaGrew(page: Page, target: ElementRef, area: strin
   }
 }
 
+/** The rectangles of several areas of one viewer, from one layout and once it is quiet — in the
+ * viewer's own coordinates, so they compare with each other and with a remembered one whatever the
+ * page did around the viewer. */
+export function areaRects(page: Page, target: ElementRef, names: string[]): Promise<{boxes: (Box | undefined)[]; has: string[]}> {
+  return onViewer(page, target, (el, n) => (window as any).__bdd.quietAreaRects(el, n), names);
+}
+
 export async function expectAreaSize(page: Page, target: ElementRef, area: string, dimension: 'tall' | 'wide', min: number): Promise<void> {
   const box = await hitArea(page, target, area);
   const size = dimension === 'tall' ? box.height : box.width;

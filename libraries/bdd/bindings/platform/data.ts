@@ -287,12 +287,15 @@ export const addCalculated = When('user adds a calculated column {string} with f
   await expect.poll(() => page.evaluate((n) => grok.shell.t.columns.names().includes(n), name), {message: `"${name}" in the table's columns`}).toBe(true);
 }, {tier: 'api', description: 'a formula in the platform\'s syntax: ${HEIGHT} * 2'});
 
+const writeTableTag = (page: Page, tag: string, value: string): Promise<void> =>
+  changeTable(page, ([t, x]: [string, string]) => { grok.shell.t.setTag(t, x); }, [tag, value]);
+
 export const setTableTag = When('user sets the {string} tag of the table to {string}', (page: Page, tag: string, value: string) =>
-  changeTable(page, ([t, x]: [string, string]) => { grok.shell.t.setTag(t, x); }, [tag, value]),
+  writeTableTag(page, tag, value),
 {tier: 'api', description: 'a table tag through the JS API ("" empties it) — ".annotation-regions" holds the dataframe\'s annotation regions, which every viewer of the table reads on the change'});
 
 export const setTableTagText = When('user sets the {string} tag of the table to:', (page: Page, tag: string, value: string) =>
-  changeTable(page, ([t, x]: [string, string]) => { grok.shell.t.setTag(t, x); }, [tag, value]),
+  writeTableTag(page, tag, value),
 {tier: 'api', description: 'the same with the value as a doc string — JSON without escaped quotes'});
 
 export const removeColumn = When('user removes {string} column', (page: Page, name: string) =>

@@ -757,6 +757,14 @@ function install(): void {
     const cv = canvasBox(v);
     return {box: {x: cv.x + r.x, y: cv.y + r.y, width: r.width, height: r.height}, has};
   };
+  /** The named areas from one layout, once the viewer is quiet, in its own coordinates: two areas
+   * compared with each other, or one with where it was, must not straddle a relayout. */
+  const quietAreaRects = async (el: Element, names: string[]): Promise<{boxes: (Box | undefined)[]; has: string[]}> => {
+    const v = viewerOf(el);
+    await quiet(v);
+    const areas = areasOf(v);
+    return {boxes: names.map((n) => edgeOf(areas, n)), has: Object.keys(areas)};
+  };
   const hitArea = (el: Element, name: string, beforeChange = false): Box => {
     const found = findArea(el, name, beforeChange);
     if (!found.box)
@@ -1168,7 +1176,7 @@ function install(): void {
   };
 
   w.__bdd = {table, tableNamed, col, rowFacts, setRows,
-    viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaDelta, areaColors,
+    viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, quietAreaRects, areaInk, areaChange, areaDelta, areaColors,
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,

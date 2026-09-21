@@ -853,49 +853,29 @@ export const openViewerHelp = When('user opens the help of {widget}', async (pag
    viewer put it when the title is clicked, when the plot style changes, when the viewer regrows. */
 const areaPlaces = new WeakMap<Page, Map<string, v.Box>>();
 const placeKey = (target: ElementRef, area: string): string => `${target.phrase}|${area.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-const fmtBox = (b: v.Box | undefined): string => b ? `${Math.round(b.x)},${Math.round(b.y)} ${Math.round(b.width)}×${Math.round(b.height)}` : 'none';
+const fmtBox = (b: v.Box | undefined): string => b ? `${Math.round(b.x)},${Math.round(b.y)} ${Math.round(b.width)}x${Math.round(b.height)}` : 'none';
 const sameBox = (a: v.Box, b: v.Box): boolean => [a.x - b.x, a.y - b.y, a.width - b.width, a.height - b.height].every((d) => Math.abs(d) <= 1);
-const areaNow = (page: Page, target: ElementRef, area: string): Promise<{before?: v.Box; now?: v.Box; has: string[]}> =>
-  v.onViewer(page, target, (el, a) => (window as any).__bdd.areaRectChange(el, a), area);
+
+async function areaRect(page: Page, target: ElementRef, area: string): Promise<v.Box> {
+  const {boxes, has} = await v.areaRects(page, target, [area]);
+  if (boxes[0] === undefined)
+    throw new Error(`${target.phrase} has no "${area}" area; it has: ${has.join(', ') || 'none'}`);
+  return boxes[0];
+}
 
 export const rememberAreaPlace = When('user remembers the place of the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
-  await v.hitArea(page, target, area);
-  const r = await areaNow(page, target, area);
-  if (!r.now)
-    throw new Error(`${target.phrase} has no "${area}" area; it has: ${r.has.join(', ') || 'none'}`);
   if (!areaPlaces.has(page))
     areaPlaces.set(page, new Map());
-  areaPlaces.get(page)!.set(placeKey(target, area), r.now);
+  areaPlaces.get(page)!.set(placeKey(target, area), await areaRect(page, target, area));
 }, {tier: 'api', description: 'the rectangle the viewer reports for the area now, kept for "placed as remembered" after any number of changes'});
 
 export const areaPlacedAsRemembered = Then('the {string} area of {widget} should be placed as remembered', async (page: Page, area: string, target: ElementRef) => {
   const remembered = areaPlaces.get(page)?.get(placeKey(target, area));
   if (remembered === undefined)
     throw new Error(`no place was remembered for the "${area}" area of ${target.phrase} — "user remembers the place of the <area> area of <widget>" comes first`);
-  let last: {now?: v.Box; has: string[]} = {has: []};
-  try {
-    await expect.poll(async () => sameBox(remembered, (last = await areaNow(page, target, area)).now ?? {x: NaN, y: NaN, width: NaN, height: NaN}),
-      {timeout: pollMs(5000)}).toBe(true);
-  }
-  catch {
-    throw new Error(`the "${area}" area of ${target.phrase} is not where it was remembered (${fmtBox(remembered)}); now ${fmtBox(last.now)}` +
-      (last.now ? '' : `; it has: ${last.has.join(', ') || 'none'}`));
-  }
-}, {description: 'the same rectangle within a pixel — a region title that a click or a resize-and-restore must not move'});
-
-export const areaPlacedAsBefore = Then('the {string} area of {widget} should be placed as before', async (page: Page, area: string, target: ElementRef) => {
-  let last: {before?: v.Box; now?: v.Box; has: string[]} = {has: []};
-  try {
-    await expect.poll(async () => {
-      last = await areaNow(page, target, area);
-      return last.before !== undefined && last.now !== undefined && sameBox(last.before, last.now);
-    }, {timeout: pollMs(5000)}).toBe(true);
-  }
-  catch {
-    throw new Error(`the "${area}" area of ${target.phrase} is not placed as before (before ${fmtBox(last.before)}, now ${fmtBox(last.now)}` +
-      (last.now && last.before ? ')' : `; it has: ${last.has.join(', ') || 'none'})`));
-  }
-}, {description: 'against the rectangle at the snapshot before the last change, within a pixel'});
+  const now = await areaRect(page, target, area);
+  expect(sameBox(remembered, now), `the "${area}" area of ${target.phrase} was remembered at ${fmtBox(remembered)} and is now at ${fmtBox(now)}`).toBe(true);
+}, {description: 'the same rectangle within a pixel, read once the viewer is quiet — a region title that a click or a resize-and-restore must not move'});
 
 type Relation = 'inside' | 'outside' | 'above' | 'below' | 'left' | 'right';
 const RELATION: Record<Relation, (a: v.Box, b: v.Box) => boolean> = {
@@ -910,22 +890,12 @@ const RELATION: Record<Relation, (a: v.Box, b: v.Box) => boolean> = {
 async function expectAreaRelation(page: Page, target: ElementRef, a: string, relation: string, b: string): Promise<void> {
   if (!(relation in RELATION))
     throw new Error(`an area lies inside, outside, above or below another, or to the left or right of it — not "${relation}"`);
-  const holds = RELATION[relation as Relation];
-  let shown = '';
-  try {
-    await expect.poll(async () => {
-      const [ra, rb] = await Promise.all([areaNow(page, target, a), areaNow(page, target, b)]);
-      if (!ra.now || !rb.now) {
-        shown = `${target.phrase} has no "${ra.now ? b : a}" area; it has: ${ra.has.join(', ') || 'none'}`;
-        return false;
-      }
-      shown = `"${a}" is at ${fmtBox(ra.now)}, "${b}" at ${fmtBox(rb.now)}`;
-      return holds(ra.now, rb.now);
-    }, {timeout: pollMs(5000)}).toBe(true);
-  }
-  catch {
-    throw new Error(`the "${a}" area of ${target.phrase} does not lie ${relation === 'left' || relation === 'right' ? `to the ${relation} of` : relation} the "${b}" area: ${shown}`);
-  }
+  const {boxes: [ra, rb], has} = await v.areaRects(page, target, [a, b]);
+  if (!ra || !rb)
+    throw new Error(`${target.phrase} has no "${ra ? b : a}" area; it has: ${has.join(', ') || 'none'}`);
+  const where = relation === 'left' || relation === 'right' ? `to the ${relation} of` : relation;
+  expect(RELATION[relation as Relation](ra, rb), `the "${a}" area of ${target.phrase} is at ${fmtBox(ra)} and does not lie ${where} ` +
+    `the "${b}" area at ${fmtBox(rb)}`).toBe(true);
 }
 
 export const areaLies = Then('the {string} area of {widget} should lie {word} the {string} area',

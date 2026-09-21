@@ -212,7 +212,7 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   edge — the axis away from the column selector in its middle), `top left corner of region Older`
   (a 16 px square), `overlap of region Tall and region Heavy` (the rectangle two areas share), and
   they nest (`left edge of overlap of …`). Resolved in-page by `findArea`, so every gesture step,
-  `should have a … area` and the menu steps take them; ink and size readings do not.
+  `should have a … area`, the size checks and the menu steps take them; the ink readings do not.
 - A marker under the pointer takes precedence over an annotation region: the scatter plot hit-tests
   its regions only while no marker is hovered (`navigation.dart`), so a region gesture aims at a
   marker-free point (half-integer AGE on demog, small `markerDefaultSize`) and a title click is
