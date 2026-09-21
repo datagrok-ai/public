@@ -65,6 +65,13 @@ Feature: Annotation regions
     And the "regions shown" reading of scatter plot viewer should be 0
     When user picks "Tools > Show Annotation Regions" from the context menu of the "empty space" area of scatter plot viewer
     Then "showViewerAnnotationRegions" property of scatter plot viewer should be "true"
+    And "showDataframeAnnotationRegions" property of scatter plot viewer should be "true"
+    And the "regions shown" reading of scatter plot viewer should be 1
+    When user picks "Tools > Show Annotation Regions" from the context menu of the "empty space" area of scatter plot viewer
+    Then "showViewerAnnotationRegions" property of scatter plot viewer should be "false"
+    And the "regions shown" reading of scatter plot viewer should be 0
+    When user picks "Tools > Show Annotation Regions" from the context menu of the "empty space" area of scatter plot viewer
+    Then "showViewerAnnotationRegions" property of scatter plot viewer should be "true"
     And the "regions shown" reading of scatter plot viewer should be 1
     And no errors should have been logged
 

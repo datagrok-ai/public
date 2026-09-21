@@ -42,7 +42,9 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
 `aria-disabled` on menu items, property rows and dialog buttons, `Func.topMenu`,
 `d4-balloon-shown`, `grok.shell.autostartsCompleted`, `Resizer.isResizePending`, `data-legend-*`,
 `DG.Widget.addStatusProvider` (a package's own areas and readings on a native widget, e.g. the
-WebLogo glyphs Peptides draws in grid headers).
+WebLogo glyphs Peptides draws in grid headers), the annotation regions' `region "<title>" title`
+hit areas and `title strip top` / `title strip right` / `region titles shown` readings
+(`AnnotationRegionsMixin.addStatus`).
 
 ## Invariants — what must not regress
 
@@ -206,6 +208,23 @@ WebLogo glyphs Peptides draws in grid headers).
 - `painted in at least N colors` groups by hue: a linear scale is one colour. `repainted`
   measures the whole canvas; `the "x" area … should have repainted` one area. A hover highlight
   can be gone by the time a later step reads it: repaint checks right after the gesture.
+- An area phrase can name a part of a hit area: `left edge of x axis` (a 16 px strip along that
+  edge — the axis away from the column selector in its middle), `top left corner of region Older`
+  (a 16 px square), `overlap of region Tall and region Heavy` (the rectangle two areas share), and
+  they nest (`left edge of overlap of …`). Resolved in-page by `findArea`, so every gesture step,
+  `should have a … area` and the menu steps take them; ink and size readings do not.
+- A marker under the pointer takes precedence over an annotation region: the scatter plot hit-tests
+  its regions only while no marker is hovered (`navigation.dart`), so a region gesture aims at a
+  marker-free point (half-integer AGE on demog, small `markerDefaultSize`) and a title click is
+  preceded by a hover. A right-click over a region opens the region's own menu (Edit… | Show
+  Annotation Regions | Title Font), not the viewer's; `mouseOverRegions` is not cleared by hiding
+  the regions, only by the pointer leaving the viewer. The histogram hit-tests a region only where
+  no bin is under the pointer and its bins slider sits at the top centre of the plot; the scatter
+  plot's Color and Size selectors cover the top-right corner; the bar chart hit-tests between the
+  bars, and a band on its aggregated axis selects the rows of the bars whose value lies in the band,
+  not rows by their own value. A line chart binds a region to its aggregated caption
+  (`y: "avg(WEIGHT)"`). An empty `.formula-lines` table tag makes every viewer log a
+  FormatException — empty it to `[]`.
 - A JS viewer joins by `getWidgetStatus()` (canvas under `parts`, `hitAreas` in CSS px,
   `values`), `get isRenderPending()` and `onRendered`; a package viewer's surface reaches the
   stand only when the package is republished, and a library viewer only when the package's

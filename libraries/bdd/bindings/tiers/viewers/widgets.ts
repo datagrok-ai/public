@@ -845,3 +845,93 @@ export const openViewerHelp = When('user opens the help of {widget}', async (pag
   await (await panelOf(page, target)).locator('.panel-titlebar').first().hover();
   await icon.click();
 }, {tier: 'ui', description: 'the "?" icon of the viewer\'s title bar (shown on hover)'});
+// --- where an area sits -------------------------------------------------------------------------------
+
+/* Hit areas are read in the viewer's own canvas coordinates here, so a rectangle remembered before
+   a gesture, a property change or a resize-and-restore compares with the one read after it whatever
+   the page did around the viewer. An annotation region's title is the case: it must stay where the
+   viewer put it when the title is clicked, when the plot style changes, when the viewer regrows. */
+const areaPlaces = new WeakMap<Page, Map<string, v.Box>>();
+const placeKey = (target: ElementRef, area: string): string => `${target.phrase}|${area.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+const fmtBox = (b: v.Box | undefined): string => b ? `${Math.round(b.x)},${Math.round(b.y)} ${Math.round(b.width)}×${Math.round(b.height)}` : 'none';
+const sameBox = (a: v.Box, b: v.Box): boolean => [a.x - b.x, a.y - b.y, a.width - b.width, a.height - b.height].every((d) => Math.abs(d) <= 1);
+const areaNow = (page: Page, target: ElementRef, area: string): Promise<{before?: v.Box; now?: v.Box; has: string[]}> =>
+  v.onViewer(page, target, (el, a) => (window as any).__bdd.areaRectChange(el, a), area);
+
+export const rememberAreaPlace = When('user remembers the place of the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
+  await v.hitArea(page, target, area);
+  const r = await areaNow(page, target, area);
+  if (!r.now)
+    throw new Error(`${target.phrase} has no "${area}" area; it has: ${r.has.join(', ') || 'none'}`);
+  if (!areaPlaces.has(page))
+    areaPlaces.set(page, new Map());
+  areaPlaces.get(page)!.set(placeKey(target, area), r.now);
+}, {tier: 'api', description: 'the rectangle the viewer reports for the area now, kept for "placed as remembered" after any number of changes'});
+
+export const areaPlacedAsRemembered = Then('the {string} area of {widget} should be placed as remembered', async (page: Page, area: string, target: ElementRef) => {
+  const remembered = areaPlaces.get(page)?.get(placeKey(target, area));
+  if (remembered === undefined)
+    throw new Error(`no place was remembered for the "${area}" area of ${target.phrase} — "user remembers the place of the <area> area of <widget>" comes first`);
+  let last: {now?: v.Box; has: string[]} = {has: []};
+  try {
+    await expect.poll(async () => sameBox(remembered, (last = await areaNow(page, target, area)).now ?? {x: NaN, y: NaN, width: NaN, height: NaN}),
+      {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${area}" area of ${target.phrase} is not where it was remembered (${fmtBox(remembered)}); now ${fmtBox(last.now)}` +
+      (last.now ? '' : `; it has: ${last.has.join(', ') || 'none'}`));
+  }
+}, {description: 'the same rectangle within a pixel — a region title that a click or a resize-and-restore must not move'});
+
+export const areaPlacedAsBefore = Then('the {string} area of {widget} should be placed as before', async (page: Page, area: string, target: ElementRef) => {
+  let last: {before?: v.Box; now?: v.Box; has: string[]} = {has: []};
+  try {
+    await expect.poll(async () => {
+      last = await areaNow(page, target, area);
+      return last.before !== undefined && last.now !== undefined && sameBox(last.before, last.now);
+    }, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${area}" area of ${target.phrase} is not placed as before (before ${fmtBox(last.before)}, now ${fmtBox(last.now)}` +
+      (last.now && last.before ? ')' : `; it has: ${last.has.join(', ') || 'none'})`));
+  }
+}, {description: 'against the rectangle at the snapshot before the last change, within a pixel'});
+
+type Relation = 'inside' | 'outside' | 'above' | 'below' | 'left' | 'right';
+const RELATION: Record<Relation, (a: v.Box, b: v.Box) => boolean> = {
+  inside: (a, b) => a.x >= b.x - 1 && a.y >= b.y - 1 && a.x + a.width <= b.x + b.width + 1 && a.y + a.height <= b.y + b.height + 1,
+  outside: (a, b) => a.x + a.width <= b.x + 1 || b.x + b.width <= a.x + 1 || a.y + a.height <= b.y + 1 || b.y + b.height <= a.y + 1,
+  above: (a, b) => a.y + a.height <= b.y + 1,
+  below: (a, b) => a.y >= b.y + b.height - 1,
+  left: (a, b) => a.x + a.width <= b.x + 1,
+  right: (a, b) => a.x >= b.x + b.width - 1,
+};
+
+async function expectAreaRelation(page: Page, target: ElementRef, a: string, relation: string, b: string): Promise<void> {
+  if (!(relation in RELATION))
+    throw new Error(`an area lies inside, outside, above or below another, or to the left or right of it — not "${relation}"`);
+  const holds = RELATION[relation as Relation];
+  let shown = '';
+  try {
+    await expect.poll(async () => {
+      const [ra, rb] = await Promise.all([areaNow(page, target, a), areaNow(page, target, b)]);
+      if (!ra.now || !rb.now) {
+        shown = `${target.phrase} has no "${ra.now ? b : a}" area; it has: ${ra.has.join(', ') || 'none'}`;
+        return false;
+      }
+      shown = `"${a}" is at ${fmtBox(ra.now)}, "${b}" at ${fmtBox(rb.now)}`;
+      return holds(ra.now, rb.now);
+    }, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${a}" area of ${target.phrase} does not lie ${relation === 'left' || relation === 'right' ? `to the ${relation} of` : relation} the "${b}" area: ${shown}`);
+  }
+}
+
+export const areaLies = Then('the {string} area of {widget} should lie {word} the {string} area',
+  (page: Page, a: string, target: ElementRef, relation: string, b: string) => expectAreaRelation(page, target, a, relation, b),
+  {description: 'inside, outside, above or below — a region title drawn in its region, or in the strip the layout reserved above the plot'});
+
+export const areaLiesBeside = Then('the {string} area of {widget} should lie to the {word} of the {string} area',
+  (page: Page, a: string, target: ElementRef, side: string, b: string) => expectAreaRelation(page, target, a, side, b),
+  {description: 'left or right — a vertical band title in the strip the layout reserved to the right of the plot'});

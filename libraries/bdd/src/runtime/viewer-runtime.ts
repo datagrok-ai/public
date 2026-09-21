@@ -708,6 +708,41 @@ function install(): void {
     const r = anchorOf(v).getBoundingClientRect();
     return {x: r.x, y: r.y, width: r.width, height: r.height};
   };
+  /** "<top|bottom|left|right> edge of <area>": the 16 px strip of the area along that edge, and
+   * "<top|bottom> <left|right> corner of <area>": its 16 px square in that corner — so a gesture
+   * lands next to the edge instead of at the centre: an axis away from the column selector in its
+   * middle, a region above the bars that cover its centre, the overlap two bands share. */
+  const EDGE = /^(?:(top|bottom|left|right) edge|(top|bottom) (left|right) corner) of (.+)$/i;
+  const OVERLAP = /^overlap of (.+) and (.+)$/i;
+  /** A named area, "overlap of <A> and <B>" (the rectangle two bands share), or an edge or
+   * corner of either — the phrases nest, so "left edge of overlap of …" is a strip of the overlap. */
+  const edgeOf = (areas: Record<string, Box>, name: string): Box | undefined => {
+    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    if (key !== undefined)
+      return areas[key];
+    const o = OVERLAP.exec(name.trim());
+    if (o) {
+      const [a, b] = [edgeOf(areas, o[1]), edgeOf(areas, o[2])];
+      if (!a || !b)
+        return undefined;
+      const x = Math.max(a.x, b.x), y = Math.max(a.y, b.y);
+      const width = Math.min(a.x + a.width, b.x + b.width) - x, height = Math.min(a.y + a.height, b.y + b.height) - y;
+      return width > 0 && height > 0 ? {x, y, width, height} : undefined;
+    }
+    const m = EDGE.exec(name.trim());
+    if (!m)
+      return undefined;
+    const r = edgeOf(areas, m[4]);
+    if (!r)
+      return undefined;
+    const t = Math.min(16, r.width, r.height);
+    const edge = (m[1] ?? '').toLowerCase();
+    const x = edge === 'right' || m[3]?.toLowerCase() === 'right' ? r.x + r.width - t : r.x;
+    const y = edge === 'bottom' || m[2]?.toLowerCase() === 'bottom' ? r.y + r.height - t : r.y;
+    if (m[1] === undefined)
+      return {x, y, width: t, height: t};
+    return edge === 'top' || edge === 'bottom' ? {x: r.x, y, width: r.width, height: t} : {x, y: r.y, width: t, height: r.height};
+  };
   /** The named hit area in client coordinates, or the names the viewer reports instead. */
   const findArea = (el: Element, name: string, beforeChange = false): {box?: Box; has: string[]} => {
     const v = viewerOf(el);
@@ -716,9 +751,9 @@ function install(): void {
     const areas: Record<string, Box> = v.getWidgetStatus()?.hitAreas ?? {};
     const has = Object.keys(areas);
     const key = has.find((k) => norm(k) === norm(name));
-    if (!key)
+    const r = key ? areas[key] : edgeOf(areas, name);
+    if (!r)
       return {has};
-    const r = areas[key];
     const cv = canvasBox(v);
     return {box: {x: cv.x + r.x, y: cv.y + r.y, width: r.width, height: r.height}, has};
   };
