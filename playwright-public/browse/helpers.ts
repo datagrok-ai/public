@@ -11,6 +11,7 @@ import {
   SIDEBAR_BROWSE_ICON,
   TREE_EXPAND_ARROW,
   TREE_EXPAND_ARROW_EXPANDED,
+  TREE_NODE_GROUP_LABEL,
   VIEW_TAB_SELECTED,
   treeGroupByName,
   treeNodeByPath,
@@ -161,9 +162,14 @@ export async function clickCollapseAll(page: Page): Promise<void> {
   await page.waitForTimeout(400);
 }
 
-/** Expand a tree node (group) by name if not already expanded. Returns the label locator. */
-export async function expandTreeGroup(page: Page, name: string): Promise<Locator> {
-  const label = treeGroupByName(page, name);
+/**
+ * Expand a tree node (group) if not already expanded. Returns the label locator.
+ * Pass a path when the name repeats in the tree: Apps > Demo > Compute shadows Apps > Compute.
+ */
+export async function expandTreeGroup(page: Page, name: string | string[]): Promise<Locator> {
+  const label = typeof name === 'string'
+    ? treeGroupByName(page, name)
+    : treeNodeByPath(page, name).locator(TREE_NODE_GROUP_LABEL).first();
   await label.waitFor({ state: 'visible', timeout: 10_000 });
   await label.scrollIntoViewIfNeeded();
   // Click the arrow if collapsed; click the label as a fallback.
