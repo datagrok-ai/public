@@ -5,7 +5,7 @@
  */
 
 import {Page, expect} from '@playwright/test';
-import {loginToDatagrok, loginAsSecondUser, getSecondUserLogin} from './spec-login';
+import {loginToDatagrok, loginAsSecondUser, getSecondUserLogin, hasLane} from './spec-login';
 
 export interface ShareSecondUserResult {
   /** Whether the share grant was attempted and succeeded server-side. */
@@ -1080,6 +1080,104 @@ export async function reopenAndAssertProvenance(
   return result;
 }
 
+/**
+ * Saves the active TableView as a project entirely through the JS API — no ribbon click,
+ * no Save/Share dialogs, no polling. `tv.getInfo()` captures the view state (viewer configs
+ * included) the same way the ribbon Save does internally; `await`ing `dapi.projects.save()`
+ * IS the completion signal, so there is nothing left to poll for afterwards.
+ */
+export async function saveProjectViaApi(
+  page: Page,
+  name: string,
+  opts: {saveWithData?: boolean} = {},
+): Promise<{projectId: string; resolvedName: string}> {
+  const result = await page.evaluate(async ({n, withData}) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    const errAt = (step: string, e: any) =>
+      `at ${step}: ${e?.message ?? e?.toString?.() ?? e} | stack=${String(e?.stack ?? '').slice(0, 300)}`;
+    // a dev stall must fail by name instead of holding the spec: one save was seen at 330s
+    const bounded = <T,>(p: Promise<T>, what: string) => Promise.race([p,
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error(what + ' timed out after 30s')), 30_000))]);
+    const tv = grok.shell.tv;
+    if (!tv?.dataFrame)
+      return {error: 'no active TableView'};
+    const df = tv.dataFrame;
+    let project: any, tableInfo: any, viewInfo: any;
+    try { project = DG.Project.create(); project.name = n; }
+    catch (e) { return {error: errAt('Project.create', e)}; }
+    try { tableInfo = df.getTableInfo(); }
+    catch (e) { return {error: errAt('df.getTableInfo', e)}; }
+    try { viewInfo = tv.getInfo(); }
+    catch (e) { return {error: errAt('tv.getInfo', e)}; }
+    // tv.getInfo() drops state excluded from layouts (a box plot viewport) unless the view is
+    // flagged as in a project; saveLayout with data keeps it
+    if (withData)
+      try { viewInfo.viewState = tv.saveLayout({saveWithData: true}).viewState; }
+      catch (e) { return {error: errAt('saveLayout(saveWithData)', e)}; }
+    try { project.addChild(tableInfo); }
+    catch (e) { return {error: errAt('addChild(tableInfo)', e)}; }
+    try { project.addChild(viewInfo); }
+    catch (e) { return {error: errAt('addChild(viewInfo)', e)}; }
+    try { await bounded(grok.dapi.tables.uploadDataFrame(df), 'tables.uploadDataFrame'); }
+    catch (e) { return {error: errAt('tables.uploadDataFrame', e)}; }
+    try { await bounded(grok.dapi.tables.save(tableInfo), 'tables.save'); }
+    catch (e) { return {error: errAt('tables.save', e)}; }
+    // a project relation must point at an entity that already exists server-side —
+    // the ViewInfo needs its own save, the same way a linked ViewLayout does; and the view row
+    // references the table row (views_table_id_fkey), so this cannot overlap tables.save
+    try { await bounded(grok.dapi.views.save(viewInfo), 'views.save'); }
+    catch (e) { return {error: errAt('views.save', e)}; }
+    try { await bounded(grok.dapi.projects.save(project), 'projects.save'); }
+    catch (e) { return {error: errAt('projects.save', e)}; }
+    return {projectId: String(project.id), resolvedName: String(project.name)};
+  }, {n: name, withData: opts.saveWithData ?? false});
+  if ('error' in result)
+    throw new Error(`saveProjectViaApi failed ${result.error}`);
+  return result;
+}
+
+export async function saveProjectViaUI(
+  page: Page,
+  name: string,
+): Promise<{projectId: string; resolvedName: string}> {
+  await page.locator('[name="button-Save"]:visible').first().click();
+  await page.locator('.d4-dialog input[type="text"]').first().waitFor({timeout: 8000});
+  await page.locator('.d4-dialog input[type="text"]').first().fill(name);
+  await page.locator('.d4-dialog .ui-btn-ok, .d4-dialog-footer button').filter({hasText: /^OK$/i}).first().click({force: true});
+  // the save dialog closes when the save is accepted; the follow-up share dialog (if any) appears
+  // right after. Both are observable, so neither needs a fixed sleep — this cost 3.8s per call.
+  await page.locator('.d4-dialog').first().waitFor({state: 'detached', timeout: 3000}).catch(() => {});
+
+  const cancel = page.locator('.d4-dialog .ui-btn, .d4-dialog button').filter({hasText: /^CANCEL$/i}).first();
+  if (await cancel.count() > 0) {
+    await cancel.click({force: true});
+    await page.locator('.d4-dialog').first().waitFor({state: 'detached', timeout: 800}).catch(() => {});
+  }
+
+  const found = await page.evaluate(async (n) => {
+    const grok = (window as any).grok;
+    for (let a = 0; a < 25; a++) {
+      try {
+        const p = await grok.dapi.projects.filter(`name = "${n}"`).first();
+        if (p) return {id: String(p.id), name: String(p.name)};
+      } catch (_) {  }
+      try {
+
+        const recent = await grok.dapi.projects.list({pageSize: 50});
+        const hit = (recent || []).find((p: any) =>
+          p && (p.friendlyName === n || p.name === n));
+        if (hit) return {id: String(hit.id), name: String(hit.name)};
+      } catch (_) {  }
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+    return null;
+  }, name);
+  if (!found)
+    throw new Error(`saveProjectViaUI: project "${name}" not visible server-side after ribbon save (polled filter()-by-name + list() scan for ~30s)`);
+  return {projectId: found.id, resolvedName: found.name};
+}
+
 // ---------------------------------------------------------------------------
 // 13. deleteProjectWithCleanup — drop project + tableInfo + (optional) script.
 // ---------------------------------------------------------------------------
@@ -1101,25 +1199,33 @@ export async function deleteProjectWithCleanup(
   page: Page,
   ids: {projectId?: string; tableInfoId?: string; scriptId?: string},
 ): Promise<void> {
-  await page.evaluate(async (i) => {
-    const grok = (window as any).grok;
-    if (i.projectId) {
+  // the deletes run detached on the page: the test does not wait 5s on dev for a find+delete
+  // of something it will never read again; the worker fixture drains them before it closes
+  await page.evaluate((i) => {
+    const w = window as any;
+    const grok = w.grok;
+    const drop = async (ds: any, id?: string) => {
+      if (!id) return;
       try {
-        const p = await grok.dapi.projects.find(i.projectId);
-        if (p) await grok.dapi.projects.delete(p);
-      } catch (_) { /* best effort */ }
-    }
-    if (i.tableInfoId) {
-      try {
-        const ti = await grok.dapi.tables.find(i.tableInfoId);
-        if (ti) await grok.dapi.tables.delete(ti);
-      } catch (_) { /* best effort */ }
-    }
-    if (i.scriptId) {
-      try {
-        const s = await grok.dapi.scripts.find(i.scriptId);
-        if (s) await grok.dapi.scripts.delete(s);
-      } catch (_) { /* best effort */ }
-    }
+        const e = await ds.find(id);
+        if (e) await ds.delete(e);
+      } catch (_) {  }
+    };
+    w.__pendingDeletes = w.__pendingDeletes ?? [];
+    w.__pendingDeletes.push(Promise.all([
+      drop(grok.dapi.projects, i.projectId), drop(grok.dapi.tables, i.tableInfoId), drop(grok.dapi.scripts, i.scriptId),
+    ]));
   }, ids).catch(() => {});
+  // only a shared-page lane drains the queue when its worker ends; a per-test page closes first
+  if (!hasLane(page))
+    await drainPendingDeletes(page);
+}
+
+export async function drainPendingDeletes(page: Page, capMs = 30_000): Promise<void> {
+  await page.evaluate((cap) => {
+    const w = window as any;
+    const all = Promise.all(w.__pendingDeletes ?? []);
+    w.__pendingDeletes = [];
+    return Promise.race([all, new Promise((r) => setTimeout(r, cap))]);
+  }, capMs).catch(() => {});
 }

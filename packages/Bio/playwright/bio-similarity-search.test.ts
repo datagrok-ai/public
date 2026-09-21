@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.detector, bio.rendering, bio.search.similarity, bio.search.similarity.top-menu, bio.viewers.similarity-search]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -146,7 +144,6 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
       document.querySelectorAll('.d4-balloon-error, .grok-balloon-error')).map((e) => e.textContent ?? ''));
     expect(s1Errors, '.md Scenario 1 Expected: No error balloon appears').toEqual([]);
   });
-  // Scenario 2 — Clicking a different row re-queries the KNN viewer.
   const scenario1Baseline = await page.evaluate(() => {
     const viewers = Array.from((grok.shell.tv as any).viewers) as any[];
     const v = viewers.find((vw) => vw.type === 'Sequence Similarity Search');

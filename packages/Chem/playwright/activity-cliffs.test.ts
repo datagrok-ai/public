@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [chem.analyze.activity-cliffs, chem.analyze.activity-cliffs.editor, chem.analyze.activity-cliffs.init, chem.analyze.activity-cliffs.top-menu, chem.analyze.activity-cliffs.transform]
---- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
@@ -16,7 +14,7 @@ async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetP
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
       for (let i = 0; i < 25; i++) {
-        if (!(grok as any).shell.tv) break;
+        if (Array.from((grok as any).shell.tableViews).length === 0) break;
         await new Promise(r => setTimeout(r, 200));
       }
       if (path === 'inline:v3000') {
@@ -183,7 +181,7 @@ async function runActivityCliffsWalk(page: Page, label: string, datasetPath: str
     await page.evaluate(async () => {
       grok.shell.closeAll();
       for (let i = 0; i < 25; i++) {
-        if (!(grok as any).shell.tv) break;
+        if (Array.from((grok as any).shell.tableViews).length === 0) break;
         await new Promise(r => setTimeout(r, 200));
       }
     });
@@ -191,18 +189,11 @@ async function runActivityCliffsWalk(page: Page, label: string, datasetPath: str
 }
 
 test('Chem: Activity Cliffs multi-format walk (D1-D5)', async ({page}) => {
-  // CI SKIP (approved): heavy UMAP over 5 datasets exceeds the minimal CI stack (ApprovedDrugs2015 >90s,
-  // no scatter) and the "Show only cliffs" / "N cliffs" UI controls aren't reachable there — the .md
-  // forbids JS-API substitution for the toggle. Runs on a full stack. See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B1.
-  test.setTimeout(900_000);
+  test.setTimeout(1_500_000);
 
   await loginToDatagrok(page);
   await page.waitForFunction(() => typeof grok !== 'undefined' && !!(grok as any).shell, undefined, {timeout: 30000});
 
-  // molV3000 coverage used to point at DemoFiles ApprovedDrugs2015.sdf, which has NO numeric column
-  // at all — Activity Cliffs needs an activity column, so its editor opened with empty Column and
-  // Activities inputs and OK silently did nothing. Build a V3000 fixture with an activity column
-  // instead, so the format is actually covered.
   // molV3000 coverage used to point at DemoFiles ApprovedDrugs2015.sdf, which has NO numeric column
   // at all — Activity Cliffs needs an activity column, so its editor opened with empty Column and
   // Activities inputs and OK silently did nothing. Build the frame in memory instead: no file

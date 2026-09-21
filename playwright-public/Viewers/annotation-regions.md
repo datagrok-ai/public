@@ -1,3 +1,16 @@
+---
+feature: annotation-regions
+target_layer: playwright
+boot_lane: server
+coverage_type: regression
+priority: p2
+realizes_atlas: []
+realizes: [viewers.scatter-plot, viewers.line-chart, viewers.density-plot, viewers.box-plot, viewers.histogram, viewers.bar-chart, powerpack.dialogs.formula-lines]
+realized_as:
+  - annotation-regions-spec.ts
+related_bugs: []
+---
+
 # Annotation regions
 
 Visual overlays on Scatter Plot, Line Chart, Density Plot, Box Plot, Histogram, and Bar Chart viewers

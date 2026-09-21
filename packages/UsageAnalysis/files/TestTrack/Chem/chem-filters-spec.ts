@@ -637,7 +637,10 @@ async function setCardEnabled(page: Page, on: boolean): Promise<boolean> {
   await card.hover();
   const cb = card.locator('input[type="checkbox"].ui-input-editor').first();
   await cb.waitFor({state: 'visible', timeout: 15_000});
-  if ((await read()).checked !== on) await cb.click();
+  // GROK-20917: switching a card off puts aria-disabled on the whole card host, the enable
+  // checkbox included, so Playwright refuses to click it back on. A mouse user is unaffected;
+  // force skips the actionability check and still sends a real click.
+  if ((await read()).checked !== on) await cb.click(on ? {force: true} : {});
   for (let i = 0; i < 30; i++) {
     const s = await read();
     if (s.checked === on && s.disabled === !on) break;
@@ -731,13 +734,36 @@ async function setSimilarityCutoff(page: Page, value: number): Promise<boolean> 
   return true;
 }
 
+// A sketcher dialog left standing covers the Filter Panel and intercepts every pointer action
+// aimed at it, so a step that drives the panel takes down a stale one first.
+async function dismissStaleSketcherDialog(page: Page): Promise<void> {
+  const ok = page.locator(`${SKETCHER_DIALOG} [name="button-OK"]`).first();
+  if (await ok.count() === 0) return;
+  await ok.click();
+  await page.locator(SKETCHER_DIALOG).first().waitFor({state: 'detached', timeout: 20_000}).catch(() => undefined);
+}
+
 async function openSketcherDialog(page: Page): Promise<void> {
   const card = page.locator(CHEM_CARD).first();
   const link = card.locator('.sketch-link').first();
   const mini = card.locator('.chem-external-sketcher-canvas').first();
+  // The external sketcher renders its entry point only after the card reaches the DOM (js-api
+  // chem.ts waitForElementInDom): the Sketch link while the card is empty, the mini canvas once it
+  // holds a structure. A freshly added card has neither for the first seconds.
+  await card.locator('.sketch-link, .chem-external-sketcher-canvas').first()
+    .waitFor({state: 'visible', timeout: 30_000});
   if (await link.count() > 0 && await link.isVisible()) await link.click();
   else await mini.evaluate((el) => (el.parentElement as HTMLElement).click());
   await page.locator(SKETCHER_DIALOG).first().waitFor({timeout: 15_000});
+  // The sketcher backend mounts lazily — Ketcher renders its toolbars ~9 s after the dialog is up,
+  // and every keystroke that lands before that is dropped, so OK commits the empty molecule.
+  await page.waitForFunction(() => {
+    const d = [...document.querySelectorAll('.d4-dialog')]
+      .find((x) => !!x.querySelector('input[placeholder*="SMILES"]'));
+    if (!d) return false;
+    return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
+      || !!d.querySelector('canvas');
+  }, null, {timeout: 60_000});
 }
 
 async function enterSmiles(page: Page, smiles: string, dialog = SKETCHER_DIALOG): Promise<void> {
@@ -926,7 +952,7 @@ async function cardOverlayGeometry(page: Page, column: string): Promise<CardGeom
     // fine while every click lands on nothing.
     card.scrollIntoView({block: 'center'});
     await new Promise((r) => setTimeout(r, 400));
-    const overlay = card.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null;
+    const overlay = card.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
     if (!overlay) return null;
     const r = overlay.getBoundingClientRect();
     return {
@@ -955,7 +981,7 @@ async function clickCardRow(page: Page, column: string, row: number): Promise<vo
   await page.evaluate(({col, cx, cy}) => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === col);
-    const overlay = card?.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null;
+    const overlay = card?.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
     if (!overlay) return;
     const r = overlay.getBoundingClientRect();
     const o = {bubbles: true, cancelable: true, view: window, button: 0,
@@ -1237,6 +1263,19 @@ test('Filter panel — Chem package filters', async ({page}) => {
         && document.querySelectorAll('[name="viewer-Filters"] .d4-filter .chem-filter').length === cols.length;
     }, {cols: molColumns, type: SUBSTRUCTURE_FILTER}, {timeout: 60_000, polling: 250})
       .catch(() => undefined);
+    // Every rebuilt card runs applyState twice per mount (Chem/src/widgets/chem-substructure-filter.ts:491)
+    // and the cards mount one after another, so until the whole panel has settled the Structure state
+    // still reads the molblock the removed card held. Hold until it stops changing — a structure that
+    // is genuinely inherited is still there when it settles.
+    await page.evaluate(() => { delete (window as any).__cfPrev; delete (window as any).__cfStable; });
+    await page.waitForFunction(({col, type}) => {
+      const w = window as any;
+      const st = (grok.shell.tv.getFiltersGroup().getStates(col, type) || [])[0];
+      const now = JSON.stringify([st?.molBlock ?? '', st?.searchType ?? '']);
+      w.__cfStable = w.__cfPrev === now ? (w.__cfStable ?? 0) + 1 : 0;
+      w.__cfPrev = now;
+      return w.__cfStable >= 6;
+    }, {col: CHEM_COL, type: SUBSTRUCTURE_FILTER}, {timeout: 45_000, polling: 400});
     const shape = await page.evaluate(({cols, type}) => {
       const fg = grok.shell.tv.getFiltersGroup();
       return {
@@ -1355,6 +1394,20 @@ test('Filter panel — Chem package filters', async ({page}) => {
       {timeout: 30_000, intervals: [200, 300, 500, 1000], message:
         'the clone\'s own Filter Panel must leave the document when the clone view is closed — every card reading ' +
         'below is document-wide, so a lingering second panel would be counted as the original\'s'}).toBe(1);
+
+
+    // Closing the clone re-creates the surviving view's Filter Panel. A Reset driven while its cards
+    // are still being replaced reaches the group — every row comes back — but not the card, whose
+    // molecule and search type then survive; a second, identical click clears them. Hold until the
+    // panel stops swapping its substructure bodies.
+    await page.evaluate(() => { delete (window as any).__cfNode; delete (window as any).__cfNodeStable; });
+    await page.waitForFunction(() => {
+      const w = window as any;
+      const body = document.querySelector('[name="viewer-Filters"] .d4-filter .chem-filter');
+      w.__cfNodeStable = body && w.__cfNode === body ? (w.__cfNodeStable ?? 0) + 1 : 0;
+      w.__cfNode = body;
+      return w.__cfNodeStable >= 10;
+    }, null, {timeout: 60_000, polling: 400});
 
     const beforeReset = await substructureStates(page);
     expect(beforeReset.length, 'a substructure card must be present before the reset').toBeGreaterThan(0);
@@ -1634,12 +1687,7 @@ test('Filter panel — Chem package filters', async ({page}) => {
   });
 
   await softStep('Scenario 1 Step 10: GROK-14952: the panel filter and the column-popup filter on the same column do not diverge', async () => {
-    const staleOk = page.locator(`${SKETCHER_DIALOG} [name="button-OK"]`).first();
-    if (await staleOk.count() > 0) {
-      await staleOk.click();
-      await page.locator(SKETCHER_DIALOG).first().waitFor({state: 'detached', timeout: 20_000}).catch(() => undefined);
-    }
-
+    await dismissStaleSketcherDialog(page);
     await removeSubstructureCards(page, molColumns);
     const cardsBefore = await cardCount(page);
     expect(await sustainedCount(page, 'the baseline before either surface is armed'),
@@ -1705,17 +1753,39 @@ test('Filter panel — Chem package filters', async ({page}) => {
     expect(await page.locator(POPUP_HOST).count(),
       'the column popup must still be up before it is dismissed — a dismissal of nothing is inert by default and ' +
       'proves nothing about the row set').toBeGreaterThan(0);
+    // The dismissal point is CHOSEN, not computed: half the viewport to the right of the popup is
+    // the Filter Panel, and a click anywhere on the armed substructure card's mini-sketcher opens
+    // an untitled ui.dialog() (js-api/src/chem.ts:540 extSketcherDiv.onclick). That dialog then
+    // sits over the panel and intercepts every pointer action of the following steps.
     const away = await page.evaluate((sel) => {
       const r = document.querySelector(sel)!.getBoundingClientRect();
-      const x = r.left > window.innerWidth - r.right ? Math.round(r.left / 2)
-        : Math.round((r.right + window.innerWidth) / 2);
-      return {x, y: Math.round(r.top + r.height / 2)};
+      const grid = document.querySelector('[name="viewer-Grid"]')?.getBoundingClientRect();
+      const candidates: {x: number; y: number}[] = [];
+      if (grid)
+        for (const fx of [0.25, 0.5, 0.75])
+          for (const fy of [0.85, 0.6, 0.35])
+            candidates.push({x: Math.round(grid.left + grid.width * fx), y: Math.round(grid.top + grid.height * fy)});
+      candidates.push({x: Math.round(r.left / 2), y: Math.round(r.top + r.height / 2)});
+      for (const c of candidates) {
+        if (c.x < 1 || c.y < 1 || c.x > window.innerWidth - 1 || c.y > window.innerHeight - 1) continue;
+        const el = document.elementFromPoint(c.x, c.y);
+        if (!el || el.closest(sel)) continue;
+        if (el.closest('[name="viewer-Filters"]') || el.closest('.grok-sketcher, .chem-filter, .d4-dialog')) continue;
+        return {...c, on: `${el.tagName}.${String(el.className).slice(0, 60)}`};
+      }
+      return null;
     }, POPUP_HOST);
-    await page.mouse.click(away.x, away.y);
+    expect(away, 'no point outside the popup, the Filter Panel and the sketcher hosts could be found to dismiss ' +
+      'the column popup with — clicking blind lands on the panel and opens its sketcher dialog').not.toBeNull();
+    console.log(`Step 10: dismissing the column popup at (${away!.x}, ${away!.y}) over ${away!.on}`);
+    await page.mouse.click(away!.x, away!.y);
     await page.locator(POPUP_HOST).first().waitFor({state: 'detached', timeout: 20_000});
     expect(await page.locator(POPUP_HOST).count(),
-      `the neutral click at (${away.x}, ${away.y}) must really dismiss the column popup — on a viewport where the ` +
+      `the neutral click at (${away!.x}, ${away!.y}) must really dismiss the column popup — on a viewport where the ` +
       'click lands on nothing the row-count reading below would hold because nothing happened at all').toBe(0);
+    expect(await page.locator(SKETCHER_DIALOG).count(),
+      'the dismissal click must not have opened the panel card\'s own sketcher dialog — that dialog covers the ' +
+      'Filter Panel and intercepts every pointer action the following steps aim at it').toBe(0);
     expect(await sustainedCount(page, 'the row set after the popup is dismissed'),
       'dismissing the column popup must be inert — it must not move the row set the panel card now owns').toBe(panelCount);
 
@@ -1734,6 +1804,7 @@ test('Filter panel — Chem package filters', async ({page}) => {
 
   await softStep('Scenario 1, Step 11: dragging the molecular column header onto the panel adds an EMPTY card at the TOP',
     async () => {
+      await dismissStaleSketcherDialog(page);
       await removeAllViaHamburger(page);
       await closeFilterPanel(page);
       await reopenFilterPanel(page);

@@ -30,7 +30,8 @@ def generate_conformers(mol, num_conformers=50, optimize=True,
     # Set up conformer generation parameters
     params = rdDistGeom.ETKDGv3()
     params.randomSeed = random_seed
-    params.maxAttempts = max_attempts
+    # ETKDGv3 has no maxAttempts — setting it raises AttributeError and kills the whole run
+    params.maxIterations = max_attempts
     params.pruneRmsThresh = rms_threshold  # CRITICAL: Lower threshold for butane
     params.useExpTorsionAnglePrefs = True
     params.useBasicKnowledge = True

@@ -1,20 +1,24 @@
-/* ---
-sub_features_covered: [chem.analyze.r-groups, chem.analyze.r-groups.decomposition, chem.analyze.r-groups.top-menu, chem.sketcher]
---- */
-// Paired scenario: r-group-analysis.md
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import * as chem from '@datagrok-libraries/test/src/playwright/chem';
+import {openChemMenuItemFast, waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
+
+// The decomposition itself runs in the RDKit web workers, and on the CI node — four Playwright
+// workers deep, no warm client — it has been measured to land well after the 30 s the dev run
+// needs: build 394 reported B4 timed out and then B5 found B4's trellis already there. The cap
+// is the wait, not the assertion: nothing below is relaxed.
+const DECOMPOSITION_CAP = 120_000;
 
 async function openRGroupsDialog(page: any) {
   // Retry the menu-open: on a cold session the first Chem-menu click can be
   // swallowed (semType detection still settling, transient build balloons), so
   // re-dispatch until the dialog actually mounts instead of a single 10s wait.
   for (let attempt = 0; attempt < 4; attempt++) {
-    await chem.openChemMenuItem(page, 'R-Groups Analysis...', {delayMs: 800});
+    await openChemMenuItemFast(page, 'R-Groups Analysis...', {delayMs: 800});
     try {
       await page.locator('.d4-dialog').waitFor({timeout: 8000});
       return;
@@ -26,11 +30,23 @@ async function openRGroupsDialog(page: any) {
   }
 }
 
-// Click MCS, then poll until the sketcher's update-indicator (`.d4-update-shadow`,
-// added synchronously on click, removed when getMCS resolves) clears — the real
-// "scaffold computed into sketcher" gate, not a blind 8s wait.
+// The Ketcher sketcher draws into the SVG under .StructEditor-module_intermediateCanvas, and
+// the dialog clears its update indicator before the core gets there (r-group-analysis.ts calls
+// setUpdateIndicator(false) ahead of setMolFile), so a cleared shadow only means getMCS resolved:
+// build 404 clicked OK in that gap and got "No core was provided". Wait for the drawing to grow
+// past what the empty sketcher holds and settle.
+const MCS_DRAWING = `(() => {
+  const svg = document.querySelector('.d4-dialog [class*="intermediateCanvas"] svg');
+  return svg ? svg.children.length * 1000 + svg.querySelectorAll('text').length : -1;
+})()`;
+
 async function clickMCS(page: any) {
+  await page.waitForFunction(`${MCS_DRAWING} >= 0`, null, {timeout: 10_000}).catch(() => {});
+  const empty = await page.evaluate(MCS_DRAWING);
   await page.evaluate(() => {
+    const w = window as any;
+    w.__mcsDrawing = null;
+    w.__mcsStable = 0;
     const mcs = Array.from(document.querySelectorAll('.d4-dialog button'))
       .find(b => b.textContent!.trim() === 'MCS') as HTMLElement;
     mcs?.click();
@@ -38,17 +54,38 @@ async function clickMCS(page: any) {
   await page.waitForFunction(
     () => document.querySelector('.d4-dialog .d4-update-shadow') == null,
     null, {timeout: 60_000});
+  if (empty < 0)
+    return;
+  try {
+    await page.waitForFunction((base: number) => {
+      const w = window as any;
+      const svg = document.querySelector('.d4-dialog [class*="intermediateCanvas"] svg');
+      if (!svg)
+        return false;
+      const drawing = svg.children.length * 1000 + svg.querySelectorAll('text').length;
+      if (drawing > base && drawing === w.__mcsDrawing)
+        return ++w.__mcsStable >= 3;
+      w.__mcsDrawing = drawing;
+      w.__mcsStable = 0;
+      return false;
+    }, empty, {timeout: 30_000, polling: 250});
+  }
+  catch (e) {
+    // Leaving the dialog open makes every later step in the block fail on a duplicate dialog.
+    await page.evaluate(() =>
+      (document.querySelector('.d4-dialog [name="button-CANCEL"]') as HTMLElement)?.click());
+    throw new Error(`MCS never drew a core into the sketcher (empty drawing was ${empty})`);
+  }
 }
 
 test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest matrix)', async ({page}) => {
-  test.setTimeout(180_000);
+  test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-
-  // ===== Block A — smiles-50.csv empty-result balloon (GROK-16329) =====
+  await waitForChemMenuRoot(page);
 
   await softStep('A1: Open smiles.csv (DIVERSE dataset — required for GROK-16329 empty-MCS trigger)', async () => {
-    // smiles.csv diversity triggers MCS-cannot-decompose → empty result; smiles-50.csv is too uniform.
+
     await page.evaluate(async () => {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
@@ -109,8 +146,6 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
       `GROK-16329: expected "No R-Groups were found" balloon. balloons=${JSON.stringify(result.balloons)}`).toBe(true);
   });
 
-  // ===== Block B — sar_small.csv Replace Latest matrix =====
-
   await softStep('B1: Open sar_small.csv', async () => {
     await page.evaluate(async () => {
       grok.shell.closeAll();
@@ -130,7 +165,7 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
     await expect.poll(async () => page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).some((v: any) => v.type === 'Trellis plot') &&
       grok.shell.t.columns.toList().some((c: any) => /^R[1-4]$/.test(c.name))),
-    {timeout: 30_000, intervals: [250, 500, 1000]}).toBe(true);
+    {timeout: DECOMPOSITION_CAP, intervals: [250, 500, 1000]}).toBe(true);
     const result = await page.evaluate(() => {
       const names = grok.shell.t.columns.toList().map((c: any) => c.name);
       return {
@@ -155,7 +190,7 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
     await page.locator('.d4-dialog [name="button-OK"]').click();
     await expect.poll(async () => page.evaluate(() =>
       Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot').length),
-    {timeout: 30_000, intervals: [250, 500, 1000]}).toBe(2);
+    {timeout: DECOMPOSITION_CAP, intervals: [250, 500, 1000]}).toBe(2);
     const state = await page.evaluate(() => {
       const names = grok.shell.t.columns.toList().map((c: any) => c.name);
       return {
@@ -184,7 +219,7 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
     await expect.poll(async () => page.evaluate(() => {
       const trellis = Array.from(grok.shell.tv.viewers).filter((v: any) => v.type === 'Trellis plot');
       return {total: trellis.length, fresh: trellis.filter((v: any) => !v.root.hasAttribute('data-rg-pre')).length};
-    }), {timeout: 30_000, intervals: [250, 500, 1000]}).toEqual({total: 2, fresh: 1});
+    }), {timeout: DECOMPOSITION_CAP, intervals: [250, 500, 1000]}).toEqual({total: 2, fresh: 1});
     const state = await page.evaluate(() => {
       const names = grok.shell.t.columns.toList().map((c: any) => c.name);
       return {

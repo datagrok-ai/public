@@ -1,6 +1,6 @@
 import {expect} from '@playwright/test';
 import {test} from '../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, skipOnMinimalStack} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 test('Bio PepSeA MSA on HELM', async ({page}) => {
@@ -225,6 +225,9 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
     expect(restored.gapExt).toBeGreaterThan(0);
   });
   await softStep('OK runs PepSeA MSA — verify aligned column, renderer, and per-cluster monomer count', async () => {
+    if (skipOnMinimalStack('the PepSeA MSA run',
+      'the alignment itself runs in the pepsea docker container, which the minimal stand does not start'))
+      return;
     await page.locator('[name="dialog-MSA"] [name="button-OK"]').click();
     await page.waitForTimeout(3000);
     let dialogProducedColumn = false;

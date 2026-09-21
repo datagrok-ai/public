@@ -405,8 +405,10 @@ the viewer does, so the overflow below is structural rather than a matter of scr
 2. Set **Legend Visibility** to **Always**
 3. Set **Legend Position** to Left, Right, Top, Bottom
 4. Set **Legend Visibility** to **Never**
-5. Switch the inner viewer to **Box plot** (X = SEX, Y = RACE) and set **Legend
-   Visibility** back to **Always**, so the inner viewer's colour legend is on screen
+5. Switch the inner viewer to **Box plot** (X = SEX, Y = RACE), set its **Category 2** to
+   CONTROL (**Show All Categories** is enabled only when both Category 1 and Category 2 are
+   set) and set **Legend Visibility** back to **Always**, so the inner viewer's colour legend
+   is on screen
 6. Click the gear icon in the trellis title bar and open the **Box plot** tab of the
    Context Panel, then expand its collapsed **Style** section
 7. Set **Show All Categories** to its non-default value (the default is off -- switch

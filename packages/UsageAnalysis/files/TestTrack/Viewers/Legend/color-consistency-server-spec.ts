@@ -8,6 +8,8 @@ import * as v from '../../helpers/viewers';
 import {addLegendViewers} from './legend-setup';
 import {deleteEntities, layoutRoundTrip, projectRoundTrip} from './persistence';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 // The server lane of the color-consistency scenario: the custom palette surviving a layout and a
 // project round-trip. The grid coding, the picker and its propagation are in color-consistency-spec.ts
 // on the local lane; the picked palette is set here directly.
@@ -36,7 +38,7 @@ test('Legend color consistency — palette persists across layout and project', 
   test.setTimeout(600_000);
 
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await addLegendViewers(page, {column: 'Stereo Category', viewers: ['Histogram', 'Line chart'], capMs: 500});
 
   await softStep('Setup: custom palette R_ONE=blue, S_UNKN=green from the grid coding', async () => {

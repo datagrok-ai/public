@@ -49,7 +49,7 @@ async function openSmilesAndWaitForChem(page: Page) {
 }
 
 async function openDescriptorsDialog(page: Page) {
-  await softStep('Chem > Calculate > Descriptors... opens the Chemical Descriptors dialog', async () => {
+  await softStep('Chem > Calculate > Descriptors (RDKit)... opens the Chemical Descriptors dialog', async () => {
     await page.evaluate(() => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement | null;
       if (!chemMenu) throw new Error('Top-menu Chem entry not found');
@@ -66,11 +66,11 @@ async function openDescriptorsDialog(page: Page) {
       calcItem.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
     });
     await page.waitForFunction(() => Array.from(document.querySelectorAll('.d4-menu-item-label'))
-      .some((m) => m.textContent!.trim() === 'Descriptors...'), null, {timeout: 15000});
+      .some((m) => m.textContent!.trim() === 'Descriptors (RDKit)...'), null, {timeout: 15000});
     await page.evaluate(() => {
       const descr = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find((m) => m.textContent!.trim() === 'Descriptors...') as HTMLElement | undefined;
-      if (!descr) throw new Error('"Descriptors..." leaf not found under Calculate');
+        .find((m) => m.textContent!.trim() === 'Descriptors (RDKit)...') as HTMLElement | undefined;
+      if (!descr) throw new Error('"Descriptors (RDKit)..." leaf not found under Calculate');
       (descr.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
     await page.locator('[name="dialog-Chemical-Descriptors"]').waitFor({timeout: 15000});
@@ -226,9 +226,25 @@ test('Chem: Descriptors via Docker — columns appended (happy path)', async ({p
   const consoleErrors: string[] = [];
   const AMBIENT = [/favicon/i, /ResizeObserver loop/i, /Permissions policy violation/i,
     /Unable to find element in cloned iframe/i];
+  // A 404 is the ANSWER to an existence or capability probe, not a failure, and the browser logs
+  // one for every such request: `grok.dapi.files.exists` HEADs the file share (PowerPack's
+  // db-explorer config is probed on every view change), and the platform asks whether a package
+  // has a compatible docker image. Judged by URL, the way forms.ts judges the help-page 404 —
+  // and the URL is recorded for every error that is NOT ambient, so a real 404 names itself.
+  const AMBIENT_404_URL = [
+    /\/connectors\/connections\/[^?]*\/file\//i,
+    /\/docker\/images\/[^/]+\/latest-compatible/i,
+    /\/help\/.*\.md$/i,
+  ];
   const isAmbient = (text: string) => AMBIENT.some((re) => re.test(text));
+  const isProbe404 = (text: string, url: string) =>
+    /Failed to load resource/i.test(text) && /404/.test(text) && AMBIENT_404_URL.some((re) => re.test(url));
   page.on('pageerror', (e) => { if (!isAmbient(String(e))) consoleErrors.push(String(e)); });
-  page.on('console', (m) => { if (m.type() === 'error' && !isAmbient(m.text())) consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    const url = m.location()?.url ?? '';
+    if (m.type() === 'error' && !isAmbient(m.text()) && !isProbe404(m.text(), url))
+      consoleErrors.push(url ? `${m.text()} [${url}]` : m.text());
+  });
 
   await loginToDatagrok(page);
 
