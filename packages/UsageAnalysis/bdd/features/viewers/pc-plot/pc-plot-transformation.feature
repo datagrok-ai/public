@@ -9,9 +9,9 @@ Feature: PC plot transformations
   values and `Series` five (Triazoles, Diazabicyclooctane, Pyrrolidines, the blank one and
   Aminopiperidines), so keying on the chemist and pivoting on the series gives 13 rows and those
   five axes; keying on the series and averaging two numbers gives 5 rows and two axes.
-  Known open bug: the last scenario is GROK-17306 — with a transformation applied, the filter
-  panel's Reset filters drops the row selection instead of leaving it alone. It is translated as
-  written and is expected to fail; it runs last so nothing after it inherits its state.
+  The last scenario is GROK-17306 — with a transformation applied, the filter panel's Reset filters
+  used to drop the row selection; the core fixed it on 2026-09-16, and the scenario asserts the
+  selection survives. It runs last so nothing after it inherits its state.
   spgi-100 carries a molecule column, so the filter panel builds a substructure filter for it: with
   the package autostarts still pending the platform logs `Cannot execute "Chem:substructureFilter"
   synchronously, either the package is not loaded or the function is not there`. That is the panel's
@@ -100,7 +100,7 @@ Feature: PC plot transformations
     Then the "axis order" reading of pc plot viewer should be as remembered
     And no errors should have been logged
 
-  Scenario: With a transformation, Reset filters restores the rows but drops the selection (GROK-17306)
+  Scenario: With a transformation, Reset filters restores the rows and keeps the selection (GROK-17306)
     Given user opens demog-1000 dataset
     And user adds a pc plot viewer with:
       | Column Names | AGE, HEIGHT, WEIGHT |

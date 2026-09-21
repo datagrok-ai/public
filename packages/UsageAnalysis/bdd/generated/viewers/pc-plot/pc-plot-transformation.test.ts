@@ -102,7 +102,7 @@ test.describe("PC plot transformations", () => {
       await session.step(100, "Then the \"axis order\" reading of pc plot viewer should be as remembered", () => readingAsRemembered(page, "axis order", el("pc plot viewer")));
       await session.step(101, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("With a transformation, Reset filters restores the rows but drops the selection (GROK-17306)", async () => {
+    await run.scenario("With a transformation, Reset filters restores the rows and keeps the selection (GROK-17306)", async () => {
       await session.step(104, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
       await session.step(105, "And user adds a pc plot viewer with:", () => addViewerWith(page, "pc plot", [["Column Names","AGE, HEIGHT, WEIGHT"]]), [["Column Names","AGE, HEIGHT, WEIGHT"]]);
       await session.step(107, "Then pc plot viewer should show 1000 rows", () => showsRows(page, el("pc plot viewer"), 1000));

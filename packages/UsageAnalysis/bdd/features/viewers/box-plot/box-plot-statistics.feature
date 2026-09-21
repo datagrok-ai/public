@@ -52,8 +52,8 @@ Feature: Box plot statistics and coloring
       | Show Q3             | true |
     And no errors should have been logged
     When user sets "Statistics Format" property of box plot viewer to "#,##0.00"
-    Then "Statistics Format" property of box plot viewer should be "#,##0.00"
-    And "Show P Value" property of box plot viewer should be "true"
+    Then the "stats" area of box plot viewer should have repainted
+    And "Statistics Format" property of box plot viewer should be "#,##0.00"
     And no errors should have been logged
     When user sets "Statistics Format" property of box plot viewer to "auto"
     And user picks "Show Total Count" from the context menu of the "stats" area of box plot viewer

@@ -74,7 +74,7 @@ test.describe("Heat map navigation and grid mode", () => {
       await session.step(60, "Then the \"is heatmap\" reading of heat map viewer should be \"true\"", () => readingReads(page, "is heatmap", el("heat map viewer"), "true"));
       await session.step(61, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Is Heatmap on again brings the whole table back on screen (grid_look.dart:435)", async () => {
+    await run.scenario("Is Heatmap on again brings the whole table back on screen (grid_look.dart:437)", async () => {
       await session.step(73, "Given user sets \"isHeatmap\" property of heat map viewer to \"false\"", () => setProperty(page, "isHeatmap", el("heat map viewer"), "false"));
       await session.step(74, "Then the \"row height\" reading of heat map viewer should be between 20 and 40", () => readingBetween(page, "row height", el("heat map viewer"), 20, 40));
       await session.step(75, "When user sets \"isHeatmap\" property of heat map viewer to \"true\"", () => setProperty(page, "isHeatmap", el("heat map viewer"), "true"));

@@ -18,7 +18,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {pressKeyIn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, colorCategorical, colorConditional, colorLinear, colorLinearOver, colorOff, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaColor, areaLessInk, areaMoreInk, areasDiffer, closeContextMenu, dragSelectionOverArea, hasArea, hasNoArea, hoverArea, moreHighlight, noBalloons, noErrors, pickFromAreaContextMenu, pointerAway, propertiesShouldBe, propertyShouldBe, repainted, setProperties, setProperty, someHighlight} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areaColor, areaLessInk, areaMoreInk, areaRepainted, areasDiffer, closeContextMenu, dragSelectionOverArea, hasArea, hasNoArea, hoverArea, moreHighlight, noBalloons, noErrors, pickFromAreaContextMenu, pointerAway, propertiesShouldBe, propertyShouldBe, repainted, setProperties, setProperty, someHighlight} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Box plot statistics and coloring", () => {
@@ -56,8 +56,8 @@ test.describe("Box plot statistics and coloring", () => {
       await session.step(46, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Show Total Count","true"],["Show Inliers Count","true"],["Show Outliers Count","true"],["Show Stdev","true"],["Show Q1","true"],["Show Q3","true"]]), [["Show Total Count","true"],["Show Inliers Count","true"],["Show Outliers Count","true"],["Show Stdev","true"],["Show Q1","true"],["Show Q3","true"]]);
       await session.step(53, "And no errors should have been logged", () => noErrors(page));
       await session.step(54, "When user sets \"Statistics Format\" property of box plot viewer to \"#,##0.00\"", () => setProperty(page, "Statistics Format", el("box plot viewer"), "#,##0.00"));
-      await session.step(55, "Then \"Statistics Format\" property of box plot viewer should be \"#,##0.00\"", () => propertyShouldBe(page, "Statistics Format", el("box plot viewer"), "#,##0.00"));
-      await session.step(56, "And \"Show P Value\" property of box plot viewer should be \"true\"", () => propertyShouldBe(page, "Show P Value", el("box plot viewer"), "true"));
+      await session.step(55, "Then the \"stats\" area of box plot viewer should have repainted", () => areaRepainted(page, "stats", el("box plot viewer")));
+      await session.step(56, "And \"Statistics Format\" property of box plot viewer should be \"#,##0.00\"", () => propertyShouldBe(page, "Statistics Format", el("box plot viewer"), "#,##0.00"));
       await session.step(57, "And no errors should have been logged", () => noErrors(page));
       await session.step(58, "When user sets \"Statistics Format\" property of box plot viewer to \"auto\"", () => setProperty(page, "Statistics Format", el("box plot viewer"), "auto"));
       await session.step(59, "And user picks \"Show Total Count\" from the context menu of the \"stats\" area of box plot viewer", () => pickFromAreaContextMenu(page, "Show Total Count", "stats", el("box plot viewer")));

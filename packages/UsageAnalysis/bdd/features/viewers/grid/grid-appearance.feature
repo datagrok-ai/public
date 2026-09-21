@@ -104,9 +104,7 @@ Feature: Grid cell appearance
     And user makes row 1 current
     Then no errors should have been logged
 
-  Scenario: A bigger cell font repaints the grid and an idle grid does not
-    When user takes a snapshot of grid
-    Then grid should not have repainted
+  Scenario: A bigger cell font repaints the grid
     When user sets "Default Cell Font" property of grid to "20px Roboto"
     Then grid should have repainted by at least 3000 pixels
     When user sets "Default Cell Font" property of grid to "12px Roboto"

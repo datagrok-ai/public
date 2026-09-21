@@ -43,7 +43,7 @@ test.describe("Heat map layout, column labels, column cap and scrollbars", () =>
       await session.step(30, "And heat map viewer should be painted in at least 3 colors", () => paintedInColors(page, el("heat map viewer"), 3));
       await session.step(31, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("In heat map mode the Row Height property row is disabled (property_grid_lib.dart:583-612)", async () => {
+    await run.scenario("In heat map mode the Row Height property row is disabled (property_grid_lib.dart:309-317)", async () => {
       await session.step(43, "When user clicks on settings icon of heat map viewer", () => clickOn(page, el("settings icon of heat map viewer")));
       await session.step(44, "Then \"Row Height\" property in context panel should be present", () => shouldBe(page, el("\"Row Height\" property in context panel"), "present"));
       await session.step(45, "And \"Row Height\" property in context panel should be disabled", () => shouldBe(page, el("\"Row Height\" property in context panel"), "disabled"));
@@ -116,7 +116,7 @@ test.describe("Heat map layout, column labels, column cap and scrollbars", () =>
       await session.step(115, "And the open tableview should have 0 heat map viewers", () => viewerCount(page, 0, "heat map"));
       await session.step(116, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Max Heatmap Columns should apply before opening settings (grid_look.dart:435)", async () => {
+    await run.scenario("Max Heatmap Columns should apply before opening settings (grid_look.dart:437)", async () => {
       await session.step(125, "Given user adds a heat map viewer", () => addViewer(page, "heat map"));
       await session.step(126, "Then the \"max heatmap columns\" reading of heat map viewer should be 100", () => readingIs(page, "max heatmap columns", el("heat map viewer"), 100));
       await session.step(127, "And the \"columns shown\" reading of heat map viewer should be 11", () => readingIs(page, "columns shown", el("heat map viewer"), 11));

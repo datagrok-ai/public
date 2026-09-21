@@ -61,7 +61,7 @@ Feature: Heat map navigation and grid mode
     And no errors should have been logged
 
   @known-failure
-  Scenario: Is Heatmap on again brings the whole table back on screen (grid_look.dart:435)
+  Scenario: Is Heatmap on again brings the whole table back on screen (grid_look.dart:437)
     # `isHeatmap = true` flips the mode flag and `refreshGrid()` rebuilds the columns, but it
     # passes `updateVertScroll: false, keepVisualRange: false`, so the vertical scroll window the
     # grid mode left behind (about 34 rows of 1000) is kept. `_rowHeight` in heat map mode is

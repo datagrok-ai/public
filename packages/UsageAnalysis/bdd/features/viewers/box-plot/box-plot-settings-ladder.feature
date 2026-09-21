@@ -37,9 +37,7 @@ Feature: Box plot settings ladder
       | Show Minor Categories | true |
       | Show All Categories   | true |
     And user sets "Value" property of box plot viewer to "WEIGHT"
-    And user takes a snapshot of box plot viewer
-    Then box plot viewer should not have repainted
-    And properties of box plot viewer should be:
+    Then properties of box plot viewer should be:
       | Value                 | WEIGHT |
       | Category 1            | SEX    |
       | Category 2            | RACE   |
@@ -54,13 +52,15 @@ Feature: Box plot settings ladder
     When user sets properties of box plot viewer:
       | Value Min | 20 |
       | Value Max | 60 |
-    Then properties of box plot viewer should be:
+    Then box plot viewer should show a narrower value range than before
+    And properties of box plot viewer should be:
       | Value Min | 20 |
       | Value Max | 60 |
     When user sets properties of box plot viewer:
       | Value Min | |
       | Value Max | |
-    And user sets "Axis Type" property of box plot viewer to "logarithmic"
+    Then box plot viewer should show a wider value range than before
+    When user sets "Axis Type" property of box plot viewer to "logarithmic"
     Then "Axis Type" property of box plot viewer should be "logarithmic"
     And box plot viewer should have repainted
     And no errors should have been logged

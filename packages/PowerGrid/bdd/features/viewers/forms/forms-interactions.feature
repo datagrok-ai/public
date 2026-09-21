@@ -103,10 +103,15 @@ Feature: Forms viewer interactions and row binding
     Then the "cards" reading of forms viewer should be higher than before
     And no errors should have been logged
 
-  Scenario: Show Current Row off drops the current card
+  # Known failure, the same defect as the UsageAnalysis twin (KNOWN_FAILURES.md): with Show Current
+  # Row off the leading card is the mouse-over card, built for row -1 with nothing hovered — zero
+  # pixels tall — and the virtual view lays out no card at all, the four selected rows' included.
+  # "lower than before" was satisfied by that 0; the claim is what the viewer should do.
+  @known-failure
+  Scenario: Show Current Row off drops the current card and leaves the selected cards where they were
     When user sets "Show Current Row" property of forms viewer to "false"
     Then forms viewer should not have a "current card" area
-    And the "cards" reading of forms viewer should be lower than before
+    And the "cards" reading of forms viewer should be at least 4
     When user sets "Show Current Row" property of forms viewer to "true"
     Then forms viewer should have a "current card" area
     And the "cards" reading of forms viewer should be higher than before

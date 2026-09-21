@@ -110,7 +110,9 @@ Feature: Legend interaction
   Scenario: A numerical color column shows a scale instead of items
     When user sets "Color" property of scatter plot viewer to "AGE"
     Then the legend of scatter plot viewer should list 0 items
+    And scatter plot viewer should have a "color scale" area
     And scatter plot viewer should have repainted
     When user sets "Color" property of scatter plot viewer to "RACE"
     Then the legend of scatter plot viewer should list 4 items
+    And scatter plot viewer should not have a "color scale" area
     And no errors should have been logged

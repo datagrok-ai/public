@@ -117,6 +117,7 @@ Feature: Histogram bin selection, row markers and mouse-over
     When user moves the pointer away from bar chart viewer
     And user moves the pointer away from histogram viewer
     And user sets "Show Mouse Over Row Group" property of histogram viewer to "false"
+    And user takes a snapshot of histogram viewer
     And user hovers over the "bar Black" area of bar chart viewer
     Then histogram viewer should not have repainted
     When user moves the pointer away from bar chart viewer

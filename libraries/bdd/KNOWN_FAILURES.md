@@ -42,6 +42,16 @@ scenario is not evidence for the named bug.
   presses 25 ms apart at the one-second autofocus boundary (`xamgle/lib/src/views/table_view.dart`).
   Targeting the viewer tests its shortcut independently of that global focus change; the core
   autofocus behavior itself is unchanged.
+- [Pivot table links](../../packages/UsageAnalysis/bdd/features/viewers/pivot-table/pivot-table-links.feature)
+  (2026-09-21): a filter `DIS_POP in [AS]` appeared after Control-clicks on the aggregated grid's
+  row headers, by a group no click named. Cause in the core: the grid's key handler
+  (`d4/lib/src/viewers/grid/features/grid_keyboard_navigation.dart`) read `currentPos` on every
+  key, and that getter makes row 0 current when no cell is — so the Control key itself, pressed
+  in a focused grid, made row 0 current, and a pivot with Filtering Enabled filtered its source by
+  the first group. The handler now reads `currentGridCell?.pos`. The grid status
+  (`grid_status.dart`) had the same getter behind its `current row` reading, which reset the
+  current cell on every read and hid the defect; it now reports the table's current row and
+  column, which is what the grid highlights. The scenario is untagged.
 
 ## Retained product defects
 
@@ -60,7 +70,10 @@ Expected values remain unchanged.
 | [Heat-map column cap before settings](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map.feature) | Setting the cap to 3 leaves 11 columns visible. | The API does invoke the Dart setter. `GridLook.refreshGrid` returns because the fresh look has no `viewer` reference; opening settings binds that reference, after which the same API write works. The feature's earlier API-versus-setter explanation was corrected. |
 | [Filtered group comparison — GROK-20795](../../packages/EDA/bdd/features/analyze/filtered-group-comparison.feature) | The first result count is 157 instead of 104; full-table counts are 157/5266/354 instead of filtered 104/2823/279. | [Control comparisons](../../packages/EDA/src/control-comparisons/control-comparisons-ui.ts) passes the original columns to factorization without applying the table's filter. Fixture counts were checked against demog, including missing AGE values and the excluded control group. |
 | [Empty Pareto objective](../../packages/EDA/bdd/features/pareto-front-objectives.feature) | The picker offers 17 columns instead of 16, including the all-null integer column. | [Pareto viewer](../../packages/EDA/src/pareto-optimization/pareto-front-viewer.ts) filters the picker by numerical type only. Its separate initialization check for nonempty columns is not applied to the picker. |
-| [Pivot cell click filters the source — added 2026-09-21](../../packages/UsageAnalysis/bdd/features/viewers/pivot-table/pivot-table-links.feature) | The scenario starts with the filter label `DIS_POP in [AS]` (49 rows passing) instead of none: the Control-clicks on row headers 4 and 5 in the scenario before it left a source filter behind, by a group neither click named. Plain clicks filter by the clicked group correctly. | `d4/lib/src/viewers/pivot_viewer/pivot_viewer_core.dart` requests a source filter on every current-cell change with Filtering Enabled, a Control-click on a row header included; the group it then reads off the aggregated frame's current cell is the first one. Masked until 2026-09-21: `grid_status.dart` read `currentPos`, whose getter makes row 0 current when no cell is, and every status read of the journey reset the current cell. The status now reads `currentGridCell?.pos`, with no side effect. Reproduced with the JS API alone. |
+| [Forms with Show Current Row off, PowerGrid twin — tagged 2026-09-21](../../packages/PowerGrid/bdd/features/viewers/forms/forms-interactions.feature) | 0 cards instead of at least the 4 selected rows'. | The same layout defect as the UsageAnalysis twin above. The PowerGrid copy used to claim `cards … lower than before`, which the 0 satisfied, so it passed through the defect. |
+| [Similarity leaves no cell blank — tagged 2026-09-21](../../packages/Bio/bdd/features/calculate/scoring.feature) | Similarity against the second reference is blank in every row but two. | [calculateScoresWithEmptyValues](../../packages/Bio/src/utils/calculate-scores.ts) nulls only empty sequences; the blanks come from the scoring itself (the package README lists them as an open finding). The journey used to assert the blanks as the expectation. |
+| [Global permissions of a role — GROK-20902](../../packages/UsageAnalysis/bdd/features/users-groups-roles/roles-assignment.feature) | The pane lists grants the role never received. | `xamgle/lib/src/.../grok_group_meta.dart` `renderGlobalPermissionsPane` lists every grant `getPermissions(groupId, global: true)` returns with its `grantedBy`, not the role's own. |
+| [Deleting a role keeps its grants — GROK-20904](../../packages/UsageAnalysis/bdd/features/users-groups-roles/roles-assignment.feature) | Grants survive the role's deletion. | `core/server/datlas/lib/src/services/groups_service.dart` `deleteGroup` deletes with no revocation; the library's cleanup revokes first for that reason. |
 
 The retained defects have implementation causes independent of keyboard differences between
 macOS and Windows. Their tags remain assertions of the desired behavior, not skips.

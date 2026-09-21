@@ -50,12 +50,16 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
       resolve();
     });
   }), [pollMs(60000), dataset.name] as [number, string]);
-  // a second after the grid is created the view makes row 0 current when no row is, and every
-  // viewer repaints its marker mid-feature; done here, the view's timer skips it
+  // a second after the grid is created the view makes row 0 of its first column current when no row
+  // is, and every viewer repaints its marker mid-feature; done here, the same cell, the view's timer
+  // skips it — and a "current column" claim does not depend on which of the two got there first
   await page.evaluate(() => {
-    const df = (window as any).grok.shell.tv?.dataFrame;
-    if (df && df.currentRowIdx === -1 && df.rowCount > 0)
-      df.currentRowIdx = 0;
+    const tv = (window as any).grok.shell.tv;
+    const df = tv?.dataFrame;
+    if (!df || df.currentRowIdx !== -1 || df.rowCount === 0)
+      return;
+    const first = tv.grid?.columns.byIndex(1)?.column ?? df.columns.byIndex(0);
+    df.currentCell = df.cell(0, first.name);
   });
 }
 

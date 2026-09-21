@@ -30,7 +30,7 @@ Feature: Heat map colouring
 
   @known-failure
   Scenario: Heatmap Colors off stops filling the cells with colour (GROK-20619)
-    # The dense heat-map path (row height <= 5) calls `getGridCellAutoColor` directly, bypassing
+    # The dense heat-map path (row height above 1 px, grid_core.dart `_rowHeight > 1`) calls `getGridCellAutoColor` directly, bypassing
     # the `heatmapColors` check in the normal cell renderer. The property write lands but the
     # AGE column's band remains identical: 0 pixels differ. Global Color Scaling above provides
     # a positive repaint check on the same band. The old spec also carried GROK-20619.

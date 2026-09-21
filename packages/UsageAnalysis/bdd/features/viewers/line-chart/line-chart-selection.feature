@@ -68,7 +68,10 @@ Feature: Line chart selection and the row markers
 
   Scenario: A drag that ends where it started selects an empty band
     Given user clears the row selection
-    When user drags a lasso over the "plot" area of line chart viewer
+    When user drags a selection box over the "plot" area of line chart viewer
+    Then the "rows selected" reading of line chart viewer should be 82
+    When user clears the row selection
+    And user drags a lasso over the "plot" area of line chart viewer
     Then the "rows selected" reading of line chart viewer should be 0
     And line chart viewer should show no selection highlight
     And no errors should have been logged

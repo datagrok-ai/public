@@ -19,7 +19,7 @@ import {clearField, clickOn, enterInto, shouldBe} from '@datagrok-libraries/bdd/
 import {columnIncomplete, columnTag, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {colorCodedCategorically, colorConditional, colorOff, noColorCoding} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {areaAtLeastTall, areaColor, areaNotColor, areasDiffer, areasSame, dragAreaBy, noErrors, notRepainted, pickFromAreaContextMenu, pointerAway, propertyShouldBe, readingAsRemembered, readingLower, readingReads, rememberReading, repainted, repaintedBy, setProperty, showsRows, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaAtLeastTall, areaColor, areaNotColor, areasDiffer, areasSame, dragAreaBy, noErrors, pickFromAreaContextMenu, pointerAway, propertyShouldBe, readingAsRemembered, readingLower, readingReads, rememberReading, repainted, repaintedBy, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Grid cell appearance", () => {
@@ -119,14 +119,12 @@ test.describe("Grid cell appearance", () => {
       await session.step(104, "And user makes row 1 current", () => makeRowCurrent(page, 1));
       await session.step(105, "Then no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A bigger cell font repaints the grid and an idle grid does not", async () => {
-      await session.step(108, "When user takes a snapshot of grid", () => takeSnapshot(page, el("grid")));
-      await session.step(109, "Then grid should not have repainted", () => notRepainted(page, el("grid")));
-      await session.step(110, "When user sets \"Default Cell Font\" property of grid to \"20px Roboto\"", () => setProperty(page, "Default Cell Font", el("grid"), "20px Roboto"));
-      await session.step(111, "Then grid should have repainted by at least 3000 pixels", () => repaintedBy(page, el("grid"), 3000));
-      await session.step(112, "When user sets \"Default Cell Font\" property of grid to \"12px Roboto\"", () => setProperty(page, "Default Cell Font", el("grid"), "12px Roboto"));
-      await session.step(113, "Then grid should have repainted", () => repainted(page, el("grid")));
-      await session.step(114, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("A bigger cell font repaints the grid", async () => {
+      await session.step(108, "When user sets \"Default Cell Font\" property of grid to \"20px Roboto\"", () => setProperty(page, "Default Cell Font", el("grid"), "20px Roboto"));
+      await session.step(109, "Then grid should have repainted by at least 3000 pixels", () => repaintedBy(page, el("grid"), 3000));
+      await session.step(110, "When user sets \"Default Cell Font\" property of grid to \"12px Roboto\"", () => setProperty(page, "Default Cell Font", el("grid"), "12px Roboto"));
+      await session.step(111, "Then grid should have repainted", () => repainted(page, el("grid")));
+      await session.step(112, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

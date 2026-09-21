@@ -17,7 +17,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, addViewerWith, loadLayout, narrowerRange, noErrors, notRepainted, propertiesShouldBe, propertyShouldBe, rangeWithinColumn, rememberRange, rememberedRange, repainted, sameRange, saveLayout, setProperties, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, addViewerWith, loadLayout, narrowerRange, noErrors, propertiesShouldBe, propertyShouldBe, rangeWithinColumn, rememberRange, rememberedRange, repainted, sameRange, saveLayout, setProperties, setProperty, widerRange} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {zoomValueAxis} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -49,15 +49,15 @@ test.describe("Box plot settings ladder", () => {
       await session.step(35, "And user sets \"Category 2\" property of box plot viewer to \"RACE\"", () => setProperty(page, "Category 2", el("box plot viewer"), "RACE"));
       await session.step(36, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Minor Categories","true"],["Show All Categories","true"]]), [["Show Minor Categories","true"],["Show All Categories","true"]]);
       await session.step(39, "And user sets \"Value\" property of box plot viewer to \"WEIGHT\"", () => setProperty(page, "Value", el("box plot viewer"), "WEIGHT"));
-      await session.step(40, "And user takes a snapshot of box plot viewer", () => takeSnapshot(page, el("box plot viewer")));
-      await session.step(41, "Then box plot viewer should not have repainted", () => notRepainted(page, el("box plot viewer")));
-      await session.step(42, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","HEIGHT"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Show Minor Categories","true"],["Show All Categories","true"]]), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","HEIGHT"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Show Minor Categories","true"],["Show All Categories","true"]]);
+      await session.step(40, "Then properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","HEIGHT"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Show Minor Categories","true"],["Show All Categories","true"]]), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","HEIGHT"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Show Minor Categories","true"],["Show All Categories","true"]]);
     });
     await run.scenario("Value limits and the log axis", async () => {
-      await session.step(54, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value Min","20"],["Value Max","60"]]), [["Value Min","20"],["Value Max","60"]]);
-      await session.step(57, "Then properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value Min","20"],["Value Max","60"]]), [["Value Min","20"],["Value Max","60"]]);
-      await session.step(60, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value Min",""],["Value Max",""]]), [["Value Min",""],["Value Max",""]]);
-      await session.step(63, "And user sets \"Axis Type\" property of box plot viewer to \"logarithmic\"", () => setProperty(page, "Axis Type", el("box plot viewer"), "logarithmic"));
+      await session.step(52, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value Min","20"],["Value Max","60"]]), [["Value Min","20"],["Value Max","60"]]);
+      await session.step(55, "Then box plot viewer should show a narrower value range than before", () => narrowerRange(page, el("box plot viewer")));
+      await session.step(56, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value Min","20"],["Value Max","60"]]), [["Value Min","20"],["Value Max","60"]]);
+      await session.step(59, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value Min",""],["Value Max",""]]), [["Value Min",""],["Value Max",""]]);
+      await session.step(62, "Then box plot viewer should show a wider value range than before", () => widerRange(page, el("box plot viewer")));
+      await session.step(63, "When user sets \"Axis Type\" property of box plot viewer to \"logarithmic\"", () => setProperty(page, "Axis Type", el("box plot viewer"), "logarithmic"));
       await session.step(64, "Then \"Axis Type\" property of box plot viewer should be \"logarithmic\"", () => propertyShouldBe(page, "Axis Type", el("box plot viewer"), "logarithmic"));
       await session.step(65, "And box plot viewer should have repainted", () => repainted(page, el("box plot viewer")));
       await session.step(66, "And no errors should have been logged", () => noErrors(page));

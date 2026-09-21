@@ -144,6 +144,8 @@ Feature: Line chart legend, category colours and what survives a round-trip
     Then the legend of line chart viewer should list 6 items
     When user sets "multiAxis" property of line chart viewer to "true"
     Then the legend of line chart viewer should list 12 items
+    # 12 legend items, 11 lines: every UC row lacks HEIGHT, so the HEIGHT / UC series is listed but
+    # draws no point, and `lines` counts only the series that drew one
     And the "lines" reading of line chart viewer should be 11
     And the following elements should be visible:
       | "WEIGHT / AS" legend item in legend of line chart viewer |
