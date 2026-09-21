@@ -62,11 +62,11 @@ test.describe("To Atomic Level", () => {
       await session.step(42, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("The single-sequence functions give clean V3000 molfiles", async () => {
-      await session.step(45, "When user calls \"Bio:toAtomicLevelSingleSeq\" function with:", () => callWith(page, "Bio:toAtomicLevelSingleSeq", [["sequence","ACDEFGHIK"]]));
+      await session.step(45, "When user calls \"Bio:toAtomicLevelSingleSeq\" function with:", () => callWith(page, "Bio:toAtomicLevelSingleSeq", [["sequence","ACDEFGHIK"]]), [["sequence","ACDEFGHIK"]]);
       await session.step(47, "Then the result should contain text \"V3000\"", () => resultContains(page, "V3000"));
       await session.step(48, "And the result should contain text \"M  V30 BEGIN CTAB\"", () => resultContains(page, "M  V30 BEGIN CTAB"));
       await session.step(49, "And the result should not carry an isotope flag on a heavy atom", () => noIsotopeFlag(page));
-      await session.step(50, "When user calls \"Bio:seq2atomic\" function with:", () => callWith(page, "Bio:seq2atomic", [["seq","PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0"],["nonlinear","true"]]));
+      await session.step(50, "When user calls \"Bio:seq2atomic\" function with:", () => callWith(page, "Bio:seq2atomic", [["seq","PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0"],["nonlinear","true"]]), [["seq","PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0"],["nonlinear","true"]]);
       await session.step(53, "Then the result should contain text \"V3000\"", () => resultContains(page, "V3000"));
       await session.step(54, "And the result should not carry an isotope flag on a heavy atom", () => noIsotopeFlag(page));
       await session.step(55, "And no errors should have been logged", () => noErrors(page));

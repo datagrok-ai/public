@@ -346,7 +346,7 @@ scenario into `guides/<feature slug>/<scenario slug>/`:
 Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
 it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
 element the step located, and where the page's own mouse went. Tests know nothing of it: without
-the variable no line of it runs. The viewport is a laptop's (1600×900; `BDD_GUIDE_VIEWPORT=<w>x<h>`
+the variable no line of it runs. The viewport is 1080p (1920×1080, so the top menu keeps every group on the bar; `BDD_GUIDE_VIEWPORT=<w>x<h>`
 for another) so the video reads without zooming every step, and the shell is the full one (simple
 mode off, which the login step and the panel steps read from `shellSimpleMode()`), as a person
 has it. Every step is in the video except the login (`guide.silent`) and a step that neither

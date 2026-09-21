@@ -76,9 +76,9 @@ test.describe("Identity and similarity scoring", () => {
       await session.step(54, "Then 2 row should pass the filter", () => filterPasses(page, 2));
     });
     await run.scenario("The scoring functions answer an empty sequence with nothing, not an error", async () => {
-      await session.step(57, "When user calls \"Bio:seqIdentity\" function with:", () => callWith(page, "Bio:seqIdentity", [["seq",""],["ref","PEPTIDE1{D.E.F.G}|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0"]]));
+      await session.step(57, "When user calls \"Bio:seqIdentity\" function with:", () => callWith(page, "Bio:seqIdentity", [["seq",""],["ref","PEPTIDE1{D.E.F.G}|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0"]]), [["seq",""],["ref","PEPTIDE1{D.E.F.G}|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0"]]);
       await session.step(60, "Then the result should be empty", () => resultEmpty(page));
-      await session.step(61, "When user calls \"Bio:sequenceAlignment\" function with:", () => callWith(page, "Bio:sequenceAlignment", [["alignType","Global alignment"],["alignTable","BLOSUM62"],["gap","-10"],["seq1","MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"],["seq2","MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL"]]));
+      await session.step(61, "When user calls \"Bio:sequenceAlignment\" function with:", () => callWith(page, "Bio:sequenceAlignment", [["alignType","Global alignment"],["alignTable","BLOSUM62"],["gap","-10"],["seq1","MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"],["seq2","MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL"]]), [["alignType","Global alignment"],["alignTable","BLOSUM62"],["gap","-10"],["seq1","MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"],["seq2","MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL"]]);
       await session.step(67, "Then the result should be an alignment of at least 37 positions", () => alignmentLength(page, 37));
       await session.step(68, "And no errors should have been logged", () => noErrors(page));
     });
