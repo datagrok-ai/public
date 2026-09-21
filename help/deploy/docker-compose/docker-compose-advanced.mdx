@@ -297,7 +297,8 @@ Several alternative compose files cover specific cases:
 |----------------------------------------------------------|-------------------------------------------------------------------|
 | `docker/localhost.docker-compose.yaml`                   | Default local install                                             |
 | `docker/localhost.bleeding-edge.docker-compose.yaml`     | Track latest unreleased images                                    |
-| `docker/localhost.bleeding-edge-separate-data.docker-compose.yaml` | Bleeding-edge with persistent data volumes detached     |
+| `docker/localhost.bleeding-edge-separate-data.docker-compose.yaml` | Bleeding-edge next to another stack: own project name `datagrok_dev`, `_dev` names, host ports +10 (Datagrok on 8090) |
+| `docker/localhost.docker-compose-old.yaml`               | Last 1.27.x release (`1.27.9`) with the pre-1.28 config body      |
 | `docker/localhost.macos-silicon.docker-compose.yaml`     | Apple Silicon (ARM64); pulls `linux/arm64` image variants         |
 | `docker/localhost.js-api.debug.docker-compose.yaml`      | JS API debugging with source maps — an overlay, see below         |
 
