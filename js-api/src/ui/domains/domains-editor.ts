@@ -408,29 +408,38 @@ export class DomainFrameEditor implements IFrameEditor {
     this._bind(df);
   }
 
-  /** The columns [access] lets the caller write, in the server's (declared) order. */
-  static writableColumns(access: DomainAccess): string[] {
-    return Object.keys(access.fields).filter((c) => access.fields[c] === 'editable');
+  /** The columns [access] lets the caller write, in the server's (declared) order: the
+   * `editable` ones, plus under `options.draft` the `immutable` ones — the key of an external
+   * table, typed once on insert and never patched. */
+  static writableColumns(access: DomainAccess, options?: {draft?: boolean}): string[] {
+    return Object.keys(access.fields).filter((c) => access.fields[c] === 'editable' ||
+      (options?.draft === true && access.fields[c] === 'immutable'));
+  }
+
+  /** {@link writableColumns} as [row] sees them: a draft takes the `immutable` ones too. */
+  private _writableOf(row: number): string[] {
+    return DomainFrameEditor.writableColumns(this.access, {draft: this.stateOf(row) === 'new'});
   }
 
   /** {@link IFrameEditor}: null when NOTHING in the frame can be edited — no
    * table-level `edit` or `insert`, and no per-row `~can_edit` to override them —
-   * otherwise the columns the field rights let anyone write, {@link canEdit}
-   * deciding the ROW dimension per cell. A row-mode frame answers the list while
-   * the table-level `edit` is false, or the whole grid would lock. */
+   * otherwise the columns the field rights let anyone write on SOME row (the
+   * `immutable` ones included where a draft may be added), {@link canEdit} deciding the
+   * ROW dimension per cell. A row-mode frame answers the list while the
+   * table-level `edit` is false, or the whole grid would lock. */
   get writableColumns(): string[] | null {
-    const columns = DomainFrameEditor.writableColumns(this.access);
+    const columns = DomainFrameEditor.writableColumns(this.access, {draft: this.access.can.insert === true});
     if (this.access.can.edit === true || this.access.can.insert === true)
       return columns;
     return this._df.columns.byName(DOMAIN_ACCESS_COLUMNS[0]) != null ? columns : null;
   }
 
   /** {@link IFrameEditor}: whether [column] of [row] may be edited — a writable
-   * column, plus the row's own right: a draft needs `insert`; a persisted row
-   * carries `~can_edit` in row mode (a `withAccess` read), and falls back to the
-   * table-level `edit` where the frame has no such column. */
+   * column (an `immutable` one on a draft only), plus the row's own right: a draft
+   * needs `insert`; a persisted row carries `~can_edit` in row mode (a `withAccess`
+   * read), and falls back to the table-level `edit` where the frame has no such column. */
   canEdit(row: number, column: string): boolean {
-    if (!DomainFrameEditor.writableColumns(this.access).includes(column))
+    if (!this._writableOf(row).includes(column))
       return false;
     // a row appended here has no server answer in `~can_edit` (a bool column has no null slot,
     // so the cell reads false): the right that governs it is `insert`
@@ -441,14 +450,21 @@ export class DomainFrameEditor implements IFrameEditor {
   }
 
   /** {@link IFrameEditor}: why [column] of [row] may not be edited, in the words the table
-   * itself uses — the column's caption where the field is read-only for everyone, the row's
-   * own name where the row is; null when the cell may be edited. */
+   * itself uses — the column's caption where the field is read-only for everyone (or a key that
+   * was typed once), the row's own name where the row is; null when the cell may be edited. */
   refusalOf(row: number, column: string): string | null {
     if (this.canEdit(row, column))
       return null;
-    if (!DomainFrameEditor.writableColumns(this.access).includes(column))
-      return `${this._captionOf(column)} is read-only`;
+    if (!this._writableOf(row).includes(column))
+      return this._fieldRefusal(column);
     return `${this._displayOf(row) ?? `This ${this._info.singularName.toLowerCase()}`} is read-only for you`;
+  }
+
+  /** Why [column] cannot be written on a persisted row, in the table's own vocabulary. */
+  private _fieldRefusal(column: string): string {
+    return this.access.fields[column] === 'immutable'
+      ? `${this._captionOf(column)} cannot change once the row exists`
+      : `${this._captionOf(column)} is read-only`;
   }
 
   /** {@link IFrameEditor}: an edit the HOST refused ({@link refusalOf} said why) — reported on
@@ -850,8 +866,9 @@ export class DomainFrameEditor implements IFrameEditor {
   // ─────────────────────── saving ─────────────────────────
 
   /** The pending batch as transaction ops, in row order: `'new'` rows insert
-   * their writable values (naming their draft id as the op's `ref`), `'modified'`
-   * rows update ONLY their changed columns with the row's `expectedVersion`,
+   * their writable values, `immutable` keys included (naming their draft id as the
+   * op's `ref`), `'modified'` rows update ONLY their changed columns — never an
+   * `immutable` one — with the row's `expectedVersion`,
    * `'deleted'` rows delete, `'restored'` rows carry their id alone and undo a
    * landed soft delete. Exposed so a caller can inspect or extend the
    * payload; a {@link DomainSession} concatenates several editors' into one
@@ -871,6 +888,7 @@ export class DomainFrameEditor implements IFrameEditor {
   buildOps(): DomainPendingOp[] {
     const table = this.client.table;
     const writable = DomainFrameEditor.writableColumns(this.access);
+    const insertable = DomainFrameEditor.writableColumns(this.access, {draft: true});
     const pending: DomainPendingOp[] = [];
     for (let row = 0; row < this._df.rowCount; row++) {
       const state = this.stateOf(row);
@@ -887,7 +905,7 @@ export class DomainFrameEditor implements IFrameEditor {
       }
       else if (state === 'new') {
         const values: {[column: string]: any} = {};
-        for (const name of writable) {
+        for (const name of insertable) {
           const v = this._wire(row, name);
           if (v != null && name !== 'id')
             values[name] = DomainFrameEditor._refValue(v);
@@ -1478,20 +1496,20 @@ export class DomainFrameEditor implements IFrameEditor {
   /**
    * Whether the cell holds a pending value {@link buildOps} would DROP.
    *
-   * It sends writable columns ONLY — for a modified row it drops the change, for
-   * a NEW row it drops the value (a prefilled parent FK on a column the caller
-   * cannot write included, which would insert a child row with a null FK).
-   * Either way the value would vanish without a word, so the cell is marked
-   * instead and the save refuses loudly. Untouched cells are not a problem:
-   * nothing of theirs would be dropped.
+   * It sends writable columns ONLY — for a modified row it drops the change (a
+   * key typed once included), for a NEW row it drops the value (a prefilled
+   * parent FK on a column the caller cannot write included, which would insert a
+   * child row with a null FK). Either way the value would vanish without a word,
+   * so the cell is marked instead and the save refuses loudly. Untouched cells
+   * are not a problem: nothing of theirs would be dropped.
    */
   private _droppedValue(row: number, column: string): string | null {
-    if (DomainFrameEditor.writableColumns(this.access).includes(column))
+    if (this._writableOf(row).includes(column))
       return null;
     const pending = this.stateOf(row) === 'new'
       ? this._wire(row, column) != null && !this._isServiceValue(row, column)
       : column in this.changesOf(row);
-    return pending ? `Column '${column}' is read-only` : null;
+    return pending ? this._fieldRefusal(column) : null;
   }
 
   /** Whether the cell of a NEW row holds a value the EDITOR put there rather than

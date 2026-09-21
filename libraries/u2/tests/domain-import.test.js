@@ -93,6 +93,19 @@ scoped('the mapping is auto-matched by name and caption; a system column is neve
   assert.equal(await running, null);
 });
 
+scoped('an immutable key column is a target, and auto-matched by name: an import inserts', async () => {
+  // mapping only: the memory backend declares no `immutable` field, so the insert itself is not proven here
+  const memory = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
+    fields: {project_id: 'editable', number: 'immutable', title: 'editable', description: 'editable'}}});
+  const {running} = await opened(memory, frame(['number', 'title'], [{number: '7', title: 'Keyed'}]));
+  await toMapping();
+  assert.equal(named('number').value.value, 'number', 'the key typed once on insert is matched by name');
+  const labels = named('title').items.map((x) => typeof x === 'string' ? x : x.label);
+  assert.equal(labels.includes('Number'), true, 'the key is offered as a target');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
 scoped('a frame handed in as an option is mapped while the wizard is still being built', async () => {
   const memory = backend();
   backends.domain = memory;

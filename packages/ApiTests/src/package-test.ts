@@ -46,6 +46,8 @@ import './dapi/domain-hierarchy';
 import './dapi/domain-live';
 import './dapi/domain-search';
 import './dapi/domain-visual-queries';
+import './dapi/domain-external-write';
+import './dapi/domain-external';
 import './dapi/entity-properties';
 import './dapi/connector-writes';
 import './dapi/connector-ddl';

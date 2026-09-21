@@ -91,9 +91,11 @@ export async function withRestrictedUser<T>(prefix: string,
     else {
       const blocked = await fetch(`${grok.dapi.root}/users/block`, {
         method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({'#type': 'User', 'id': user.id, 'login': login}),
+        body: JSON.stringify({user: {'#type': 'User', 'id': user.id, 'login': login}, transfers: {}}),
       });
-      expect(blocked.ok, true, `test user ${login} not blocked: ${blocked.status}`);
+      const outcome = await blocked.json().catch(() => null);
+      expect(blocked.ok && outcome?.['#type'] !== 'ApiError', true,
+        `test user ${login} not blocked: ${blocked.status} ${JSON.stringify(outcome)}`);
     }
   }
 }

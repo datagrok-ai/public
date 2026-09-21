@@ -63,6 +63,7 @@ import '@datagrok-libraries/u2/css/domain.css';
 import '../css/u2demo.css';
 
 import {computed} from '@datagrok-libraries/u2';
+import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
 import {appView, designerView, disposePanel, registerControlInspector, registerPlatformComponents,
   registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DemoShell, buildDemo} from './demo';
@@ -164,6 +165,15 @@ export function u2DesignerApp(): DG.ViewBase {
   registerPlatformComponents();
   registerSpecNodeHandler();
   return designerView(DESIGNER_SPEC, {name: 'U2 Designer', ctx: designerContext()});
+}
+
+//name: Northwind Orders
+//description: The zero-code u2 app over the external `northwind` binding (the fixture package in core/docs/features/ems/external-bindings/fixtures/northwind) — byte-identical to Stockroom's
+//tags: app
+//meta.browsePath: Dev
+//output: view result
+export async function northwindOrdersApp(): Promise<DG.ViewBase> {
+  return (await domains.table('northwind.order')).app();
 }
 
 //name: u2AutoRegisterEditors

@@ -89,7 +89,8 @@ export interface DomainAppOptions {
   /** The form's columns, in this order; every column by default. */
   include?: string[];
   /** The entity page's panes under the form, on by default: the child collections (a tab per
-   * referring table; options narrow them) and the row's history. */
+   * referring table; options narrow them) and the row's history — where the table keeps one
+   * (`support.audit`); a table that keeps none has no pane. */
   children?: boolean | DomainChildrenOptions;
   history?: boolean;
   /** Key → the name of an action in `table.actions`, run over the current row while the app has
@@ -384,9 +385,11 @@ export class DomainApp extends Control {
     return DomainAddress.entityPath(this.base);
   }
 
-  /** {@link DomainAddress.keyOf} over the table's business key. */
+  /** How the row is spelled in a `/domains` path: its id as one opaque segment where the table
+   * addresses rows by id (`info.rowAddress`), else {@link DomainAddress.keyOf} over the business key. */
   keyOf(row: RowView): string {
-    return DomainAddress.keyOf(row, this.table.info.businessKey);
+    const info = this.table.info;
+    return info.rowAddress === 'id' ? row.id : DomainAddress.keyOf(row, info.businessKey);
   }
 
   /** The ribbon `appView` places, in named slots: New, Save, Discard, the ⋯ menu and Refresh in
@@ -427,9 +430,11 @@ export class DomainApp extends Control {
     // questions: a permission hides an action, an undeclared support leaves it out entirely
     const support = this.table.table.support;
     const out: Action[] = [];
-    if (!trash && support.writes) {
+    if (!trash && support.writes && !this.listSource.readOnly.value) {
       out.push({name: 'Import…', icon: 'upload', requires: 'insert', run: () =>
         void domains.import(this.table).then((report) => report === null ? null : this.listSource.refresh())});
+    }
+    if (!trash && support.updateWhere) {
       out.push({name: 'Bulk edit…', icon: 'edit', requires: 'edit',
         run: () => void domains.bulkEdit(this.listSource)});
     }
@@ -743,8 +748,10 @@ export class DomainApp extends Control {
     const segment = DomainAddress.segmentOf(at < 0 ? address : address.slice(0, at), this._bases);
     const entity = segment ?? params.get('entity');
     if (entity !== null && entity !== '') {
-      return this._goTo('entity', entity, segment === null ? null :
-        DomainAddress.keyQuery(segment, this.table.info.businessKey, this.listSource.schema));
+      // a table addressing rows by id never has its segment split: the segment IS the id
+      const info = this.table.info;
+      return this._goTo('entity', entity, segment === null || info.rowAddress === 'id' ? null :
+        DomainAddress.keyQuery(segment, info.businessKey, this.listSource.schema));
     }
     if (!await this._goTo('list', null))
       return false;
@@ -815,7 +822,7 @@ export class DomainApp extends Control {
         empty: `${this.table.info.singularName || 'Row'} "${entity}" was not found.`}));
       this._panes = this.runInScope(() => [
         ...(children === false ? [] : [domains.children(source, children === true ? undefined : children)]),
-        ...(history === false ? [] : [domains.history(source)]),
+        ...(history === false || !this.table.table.support.audit ? [] : [domains.history(source)]),
       ]);
       this._formHost.replaceChildren(form.root);
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));

@@ -991,3 +991,34 @@ source('captions: the FIRST load already asks for them, and only for visible dom
   assert.equal('captions' in specs[0], false, 'a hidden ref column is never asked for');
   hidden.dispose();
 });
+
+source('captions: none are asked of a backend that does not project them (support.captions false)', async () => {
+  const specs = [];
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, captions: false};
+  backends.domain = spying(memory, specs);
+  const src = await issues();
+  assert.equal('captions' in specs[0], false, 'the backend cannot answer them, so the query never asks');
+  assert.equal(src.rows.byKey('i1')[Rows.caption('project_id')], undefined, 'a form resolves the name per row instead');
+  assert.equal(src.rows.byKey('i1').project_id, 'p1', 'the ref id is what the row carries');
+  src.dispose();
+});
+
+source('readOnly: a table `transaction` does not land on is read-only whatever the access grants', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, transaction: false};
+  backends.domain = memory;
+  const src = await issues();
+  assert.equal(src.readOnly.value, true);
+  for (const capability of ['insert', 'edit', 'delete'])
+    assert.equal(src.access.value.can(capability), false, `no ${capability} — the whole write path is gone`);
+  assert.throws(() => src.newRow({title: 'x'}), /does not accept writes/);
+  src.dispose();
+
+  backends.domain = backend();
+  const live = await issues();
+  assert.equal(live.readOnly.value, false, 'a backend that writes keeps its access');
+  live.dispose();
+});

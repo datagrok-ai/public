@@ -9,6 +9,7 @@ import './tests/domain-trash';
 import './tests/domain-bulk';
 import './tests/domain-import';
 import './tests/domain-conformance';
+import './tests/domain-external';
 
 export let _package = new DG.Package();
 export { tests };

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20298: Added dapi/domains/external-binding.js (a domain table bound to an external database: ids are the remote key, the storage switches in `access().support`, refusals by name) and dapi/domains/external-write.js (writing through a binding: a client-supplied key on insert, `update(id, values, {expected})` guarding on the values last read, the `DomainVersionConflictError` naming `expected`/`current`)
+
 * GROK-20753: Added misc/utils/uuid4.js (DG.Utils.uuid4 — a v4 uuid outside a secure context)
 * GROK-20753: Added dapi/domains/captions.js (`captions: ['<ref>']` projecting `~caption_<ref>` — the target's display name, why it is not an expand, null for a target the caller cannot View, and the no-oracle refusals), dapi/domains/import-validate.js (`batch({validateOnly: true})` previewing an import — per-row `predicted` verdicts, no id, nothing written — then committing the same payload) and dapi/domains/live-version.js (`version()` as a live list's poll: one bump per write transaction, re-read only when `seq` moves); access.js gained the `support` block (what the TABLE can do, gated instead of guessed)
 

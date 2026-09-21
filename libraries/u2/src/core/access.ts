@@ -4,7 +4,9 @@
    every non-EMS caller uses one of the two constants. */
 import {Rows} from '../sources/rows-like.js';
 
-export type FieldAccess = 'hidden' | 'readonly' | 'editable';
+/** `immutable` is settable on a draft and read-only on a saved row (the key of an external table);
+ * {@link Access.field} resolves it, so a control never sees it. */
+export type FieldAccess = 'hidden' | 'readonly' | 'editable' | 'immutable';
 /** The five table capabilities, plus whatever custom `permissions` a schema declares. */
 export type Capability = 'view' | 'insert' | 'edit' | 'delete' | 'share' | (string & {});
 
@@ -72,10 +74,12 @@ export class Access {
   }
 
   /** `hidden` where the field is unlisted, `editable` where it is listed so AND the row may be
-   * written, `readonly` otherwise. */
+   * written, `readonly` otherwise; an `immutable` field is `editable` on a draft and `readonly` on
+   * a row before the same fold. */
   field(name: string): FieldAccess {
     const listed = this._fields[name] ?? this._unlistedField;
-    return listed === 'editable' && !this.can(this._writes) ? 'readonly' : listed;
+    const own = listed === 'immutable' ? (this.isDraft ? 'editable' : 'readonly') : listed;
+    return own === 'editable' && !this.can(this._writes) ? 'readonly' : own;
   }
 
   /** Whether {@link field} gates on `insert` — the view of a draft. */

@@ -32,7 +32,7 @@ test('schema: columns become properties, system columns first; info from the dec
   assert.equal(byName.priority.friendlyName, 'Priority');
   assert.equal(byName.id.set, undefined, 'system columns have no setter');
   assert.equal(typeof byName.title.set, 'function');
-  assert.deepEqual(issue.info, {nameColumn: 'title', businessKey: ['project_id', 'number'],
+  assert.deepEqual(issue.info, {nameColumn: 'title', businessKey: ['project_id', 'number'], rowAddress: 'businessKey',
     singularName: 'Issue', pluralName: 'Issues', searchableColumns: ['title', 'description'],
     constraints: [{name: 'weight_positive', expr: 'weight >= 0', message: 'Weight is positive'}], refFilters: {},
     permissions: ['escalate'], childTables: [], hierarchy: false, parentColumn: null});
@@ -477,11 +477,19 @@ test('support: what the memory backend declares, and every optional member insta
   const issue = await backend().table('grit.issue');
   assert.deepEqual(issue.support, {systemColumns: ['id', 'version', 'created_on', 'updated_on', 'author_id'],
     writes: true, deleted: true, restore: true, audit: true, ancestors: false, probe: true, version: true,
-    watch: false});
-  for (const [member, flag] of [['restore', 'restore'], ['ancestors', 'ancestors'], ['updateWhere', 'writes'],
+    watch: false, updateWhere: true, captions: true, transaction: true, concurrency: 'version', filters: 'full',
+    batch: {upsert: true, partial: true, validate: true, skipDuplicates: true}});
+  for (const [member, flag] of [['restore', 'restore'], ['ancestors', 'ancestors'], ['updateWhere', 'updateWhere'],
     ['batch', 'writes'], ['probe', 'probe'], ['audit', 'audit']])
     assert.equal(issue[member] !== undefined, issue.support[flag], `${member} follows support.${flag}`);
+  assert.equal(issue.validate !== undefined, issue.support.batch.validate, 'validate follows support.batch.validate');
   assert.equal(locations().support.ancestors, true, 'a hierarchy table declares the walk it can do');
+  assert.equal(issue.info.rowAddress, 'businessKey', 'a memory row is spelled by its business key in a URL');
+  // truthful, not aspirational: the upsert merge matches on the business key, so a table without
+  // one does not offer it
+  const keyless = new MemoryDomainBackend({name: 's', tables: {t: {columns: {x: {type: 'int'}}}}}).tableSync('s.t');
+  assert.equal(keyless.support.batch.upsert, false);
+  await assert.rejects(() => keyless.batch([{x: 1}], {mode: 'upsert'}), (e) => e.code === 'validation');
 });
 
 test('ancestors: the chain stops at an ancestor out of sight, at a cycle and at the depth cap', async () => {

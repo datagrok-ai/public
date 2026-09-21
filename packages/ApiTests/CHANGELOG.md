@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+Domains: `Dapi: domain access` pins the fifteen `support` keys; new `Dapi: domain external` (read, over the `northwind` binding) and `Dapi: domain external write` (over the `extwlive` scratch binding — `update(id, values, {expected})` 200/409/422, self-skipping when the binding is absent); `Dapi: domain frame editor` covers `'immutable'` keys; `withRestrictedUser` blocks its probe user with the `{user, transfers}` body the route reads
+
 Utils: `AI: Utils: static helpers` gained 2 `uuid4` cases (the version-4 shape, and 1000 calls all distinct)
 Domains: new `Dapi: domain live` (5 cases — the `version()` shape, one bump per write transaction with a 3-op transaction bumping once, a rolled-back and a validate-only write not bumping at all, and one reader seeing another's insert through the token); `Dapi: domain access` gained 3 `support` cases (a plugin table's eight flags and five system columns, a junction, and a read-only `Core` registration with no writes and a system-column subset); `Dapi: domains` gained the read-scope case (`count`/`exists`/`aggregate` over one `{filter, search, deleted}` object, the deprecated positional pair agreeing with it, and a condition object still read as a filter) and 3 caption cases (`captions: ['item_id']` projecting the parent's display name in `query` and `queryDf`, export-tagged and absent from `toCsv()`, independent of `columns`, and the no-oracle refusals); `Dapi: domains batch` gained 2 `validateOnly` cases (the preview's verdicts equal the commit's one-to-one, no row written and no id reported; a malformed request still refused)
 

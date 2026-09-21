@@ -1627,6 +1627,14 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * optimistic concurrency — the update fails with a {@link DomainVersionConflictError} if the
    * row has changed since. Resolves to `{id, version}` (version increments on every update).
    *
+   * `options.expected` is the guard for EXTERNAL tables (`support.concurrency === 'expected'`):
+   * the values of some columns as last read, AND-ed to the row's key. A mismatch rejects with a
+   * {@link DomainVersionConflictError} whose `body.expected` / `body.current` name what moved;
+   * `{}` guards nothing. `version` is for platform-stored tables and `expected` for external
+   * ones — the two never cross storages ({@link DomainValidationError}); a column the warehouse
+   * cannot guard (float, datetime, null or empty text, a key) rejects with a
+   * {@link DomainUnsupportedError} whose `op` is `'expected'`.
+   *
    * `values` may also carry declared many-to-many relations as lists of target row ids, with
    * **SET-REPLACE semantics over the links you can SEE**: the list becomes the visible link
    * set, `[]` clears it, and an ABSENT relation key leaves the relation untouched. Links whose
@@ -1636,8 +1644,8 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * version, so `options.version` covers the links too. `grok api`-generated clients name the
    * relations in their `<Table>Update` type and pass it as the client's fifth generic;
    * untyped callers keep `Partial<TRow>`. */
-  update(id: string, values: TUpdate, options?: {version?: number}): Promise<DomainUpdateResult> {
-    return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version));
+  update(id: string, values: TUpdate, options?: {version?: number; expected?: Partial<TRow>}): Promise<DomainUpdateResult> {
+    return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options));
   }
 
   /** Judges the same payload and writes NOTHING (see {@link DomainBatchOptions.validateOnly}):

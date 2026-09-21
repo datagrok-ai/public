@@ -21,6 +21,13 @@ export type DomainFiltersMode = 'query' | 'builder';
 
 /** The subtree operator, offered only where the hierarchy it walks exists. */
 const UNDER = 'under';
+/** What a `'basic'` backend (`support.filters`) runs on no column at all; the datetime `!=` and
+ * the bool null tests it also lacks go by kind (ARCHITECTURE §5.2 of the external bindings). */
+/** What a `'basic'` backend is not offered: the operators it refuses by name, and the two whose
+ * emitted payload is a nested group it cannot run — `fuzzy` (two clauses under an `or`) and
+ * `between` (a pair under an `and`, on every kind). */
+const NOT_BASIC = new Set([UNDER, 'matches', '!matches', '!like', 'fuzzy', 'between']);
+const NULL_TESTS = new Set(['is null', 'is not null']);
 /** How many rows of the target table an `under` value slot offers at once. */
 const PICK_LIMIT = 50;
 const EMPTY: Promise<FilterValueItem[]> = Promise.resolve([]);
@@ -111,11 +118,14 @@ export class DomainFilters extends Control {
   /** `under` is registered for every ref and string column — the operator registry cannot know
    * which target is a hierarchy, and "is under" on a column the server would refuse is a dead end.
    * Offered here on a ref column whose target IS one, and on `id` when this table is; the value
-   * slot's candidates are the target's rows, which the schema's `values` already answers. */
+   * slot's candidates are the target's rows, which the schema's `values` already answers. A
+   * `'basic'` backend is offered nothing it cannot run ({@link NOT_BASIC}); whatever is typed
+   * regardless is still refused by name in the status line. */
   private async _operators(): Promise<FilterSchema['operators']> {
     const backend = backends.domain;
     const own = this.source.schema;
     const hierarchies = new Set<string>();
+    let basic = false;
     if (backend !== undefined) {
       const refs = new Set(own.properties.map((p) => p.ref).filter((ref): ref is string => ref !== undefined));
       await Promise.all([...refs].map(async (address) => {
@@ -124,10 +134,19 @@ export class DomainFilters extends Control {
         if (target?.info.hierarchy === true)
           hierarchies.add(address);
       }));
+      basic = (await backend.table(this.source.table)).support.filters === 'basic';
     }
     const applies = (prop: FilterProperty) => prop.ref !== undefined ? hierarchies.has(prop.ref) :
       prop.name === 'id' && own.info.hierarchy === true;
-    return (prop, offered) => applies(prop) ? offered : offered.filter((o) => o.id !== UNDER);
+    const runs = (prop: FilterProperty, id: string) => {
+      const kind = Filters.kindOf(prop);
+      return !NOT_BASIC.has(id) && !(kind === Filters.KIND.DATE_TIME && id === '!=') &&
+        !(kind === Filters.KIND.BOOL && NULL_TESTS.has(id));
+    };
+    return (prop, offered) => {
+      const out = applies(prop) ? offered : offered.filter((o) => o.id !== UNDER);
+      return basic ? out.filter((o) => runs(prop, o.id)) : out;
+    };
   }
 
   private _build(schema: FilterSchema): void {

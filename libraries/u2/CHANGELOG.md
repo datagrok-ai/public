@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20298: External bindings: the domain seam declares its storage switches — `support.updateWhere/captions/transaction/concurrency/filters/batch` and `info.rowAddress` — and every control follows them: no `captions` projection unless declared, a table without `transaction` is read-only in u2, Bulk edit needs `updateWhere`, the History pane needs `audit`, rows are addressed by their id where `rowAddress` is `'id'`, and the `basic` filter profile drops the operators a warehouse refuses
+* GROK-20298: `Access.field` knows `'immutable'` (a key column: editable on a draft, read-only on a saved row); an import maps targets by the draft policy
+
 * GROK-20753: The headless test stub loads `string-distances` from the js-api `dist/` emit, the layout the pnpm toolchain produces (the in-place `src/**/*.js` emit is gone)
 * GROK-20753: A live domain source reads the change token only where it answers — `support.version` AND the table-level View grant — and aggregates over what the caller may see otherwise, so a row-grant-only reader's live list no longer dies after three 403s and a platform-written table no longer looks frozen
 * GROK-20753: Fixed a virtualized list rendering three rows after an in-place refresh (a bulk edit, a filter, leaving the trash) while the status bar said fifty: a scroller measured mid-swap answers height 0, the window that yields is the overscan alone, and since the height afterwards is the height it had BEFORE, no resize ever fired to put the rest back — `VirtualRows` now re-renders on the next frame once per zero, so a list that is truly off screen still settles

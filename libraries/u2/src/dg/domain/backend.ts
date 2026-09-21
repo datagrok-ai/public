@@ -78,7 +78,7 @@ export class DgDomainBackend implements DomainBackend {
 
 export class DgDomainTable implements DomainTableLike {
   readonly properties: IProperty[];
-  /** The six optional members, installed only where {@link support} says the table has them:
+  /** The seven optional members, installed only where {@link support} says the table has them:
    * a control checks `=== undefined` and refuses by name, and never has to guess. */
   readonly audit?: DomainTableLike['audit'];
   readonly restore?: DomainTableLike['restore'];
@@ -97,12 +97,15 @@ export class DgDomainTable implements DomainTableLike {
       this.audit = (id) => this._audit(id);
     if (support.restore)
       this.restore = (id) => this._restore(id);
-    if (support.writes) {
+    if (support.updateWhere) {
       this.updateWhere = (filter, values, options) =>
         this.client.updateWhere(filter as DG.DomainFilter, values, options);
+    }
+    if (support.writes) {
       this.batch = (rows, options) => this.client.batch(rows, options as DG.DomainBatchOptions) as
         Promise<DomainBatchReportLike>;
-      // the dry run is the same endpoint, and it is there wherever the commit is
+    }
+    if (support.batch.validate) {
       this.validate = (rows, options) => this.client.batch(rows,
         {...options, validateOnly: true} as DG.DomainBatchOptions & {validateOnly: true});
     }
@@ -115,15 +118,16 @@ export class DgDomainTable implements DomainTableLike {
   /** The handle keeps `support` for its lifetime — one registry generation, exactly as the
    * js-api's access cache is; `can`/`fields` are read fresh at every {@link frame}. A server that
    * does not declare it is one boundary failure, never a permissive default: guessing what a
-   * table can do is what the declaration replaces. */
+   * table can do is what the declaration replaces. One member is checked — `support.batch`, the
+   * newest storage switch — and stands for the whole contract generation. */
   static async load(address: string): Promise<DgDomainTable> {
     const client = grok.dapi.domains.table(address);
     const registry = grok.dapi.domains.registry;
     const [properties, info, access] = await Promise.all([registry.rowProperties(address),
       registry.tableInfo(address), client.access()]);
-    if (access.support == null) {
+    if (access.support?.batch == null) {
       throw new DomainBackendError('unsupported',
-        `${address}: the server did not declare its support — restart Datlas on this branch`);
+        `${address}: the server declares no storage switches (support.batch) — restart Datlas on this branch`);
     }
     // the change token is read behind the table-level View grant: a reader who reaches rows
     // through row grants only polls the aggregate over what it may see
@@ -209,7 +213,7 @@ export class DgDomainTable implements DomainTableLike {
     // A frame over deleted rows is read-only until they are restored — the writer is handed the
     // same upper bound `DomainSource.access` publishes, so it and the controls agree.
     const editor = await DG.DomainFrameEditor.attach(df, this.client,
-      {query, access: DgDomainTable.narrowed(access, spec.deleted), quiet: true});
+      {query, access: DgDomainTable.narrowed(access, spec.deleted, this.support.transaction), quiet: true});
     const edit = new EditorEditState(editor);
     return {
       df: df as unknown as DataFrameLike,
@@ -228,8 +232,16 @@ export class DgDomainTable implements DomainTableLike {
     return spec as DG.DomainQuerySpec;
   }
 
-  /** The access a frame's writer is built under: no edit and no insert over deleted rows. */
-  static narrowed(access: DG.DomainAccess, deleted: DomainDeletedMode | undefined): DG.DomainAccess {
+  /** The access a frame's writer is built under: no edit and no insert over deleted rows, nothing
+   * at all over a table `transaction` does not land on — the bound `DomainSource.access` publishes.
+   * The latter closes every field too: the editor lets a row's own `~can_edit` lift the table-level
+   * `edit`, and no row grant may reopen what the source cannot save. */
+  static narrowed(access: DG.DomainAccess, deleted: DomainDeletedMode | undefined,
+    transaction = true): DG.DomainAccess {
+    if (!transaction) {
+      return {...access, can: {...access.can, edit: false, insert: false, delete: false},
+        fields: Object.fromEntries(Object.keys(access.fields).map((c) => [c, 'readonly' as const]))};
+    }
     return deleted === undefined || deleted === 'exclude' ? access :
       {...access, can: {...access.can, edit: false, insert: false}};
   }

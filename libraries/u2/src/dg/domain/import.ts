@@ -64,7 +64,12 @@ export function openImport(table: DomainTable, options: DomainImportOptions = {}
     notify.error(`${table.address}: the backend does not support batch import`);
     return Promise.resolve(null);
   }
-  const writable = table.access.columnPolicy();
+  if (!table.table.support.transaction) {
+    notify.error(`${table.address}: the table does not accept writes`);
+    return Promise.resolve(null);
+  }
+  // an import inserts: the draft policy, so a key typed once on insert is a target too
+  const writable = table.access.columnPolicy().forDraft();
   const targets = table.properties.filter((p) => writable.field(p.name!) === 'editable');
   if (targets.length === 0) {
     notify.warning(`There is no column of ${table.address} you may write.`);

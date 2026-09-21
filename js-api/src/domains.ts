@@ -171,9 +171,35 @@ export interface DomainGrant {
 }
 
 /** What the caller may do with one field: `readonly` fields render as text, `editable`
- * ones take input. A column the caller may not SEE is absent from
- * {@link DomainAccess.fields} altogether. */
-export type FieldAccess = 'editable' | 'readonly';
+ * ones take input, `immutable` ones take input on a NEW row and are read-only afterwards
+ * (the key columns of an external table — settable on insert, never patched). A column the
+ * caller may not SEE is absent from {@link DomainAccess.fields} altogether. */
+export type FieldAccess = 'editable' | 'readonly' | 'immutable';
+
+/** How concurrent edits are guarded on a table: `'version'` — the platform's row version
+ * (`expectedVersion`); `'expected'` — the old values of the changed columns (`expected`, an
+ * external table); `'none'` — the table takes no guard (a read-only table, or a binding whose
+ * connector cannot compare). */
+export type DomainConcurrency = 'version' | 'expected' | 'none';
+
+/** Which part of the filter grammar a table answers: `'full'` — every operator; `'basic'` — no
+ * `under`, no regex (`matches`/`!matches`), no `!like`, no datetime `!=` and no bool null test
+ * (an external table). */
+export type DomainFilterProfile = 'full' | 'basic';
+
+/** What a table's {@link DomainTableClient.batch} can do beyond a plain insert. */
+export interface DomainBatchSupport {
+  /** `mode: 'upsert'` merges by the business key (a table declaring one, and a warehouse whose
+   * connector upserts). */
+  upsert: boolean;
+  /** `allOrNothing: false` lands the good rows and reports the bad ones. */
+  partial: boolean;
+  /** `validateOnly: true` answers the dry run ({@link DomainTableClient.batch} with `validateOnly`). */
+  validate: boolean;
+  /** Business-key duplicates are skipped and reported (`errorOnDuplicate: false`) rather than
+   * always refused. */
+  skipDuplicates: boolean;
+}
 
 /** What a domain table can do AT ALL, independent of the caller — the server's one answer
  * ({@link DomainAccess.support}) for every optional behaviour a client would otherwise guess
@@ -207,6 +233,20 @@ export interface DomainSupport {
   version: boolean;
   /** {@link DomainTableClient.watch} subscribes to change notifications. */
   watch: boolean;
+  /** {@link DomainTableClient.updateWhere} writes every row a filter matches in one call. */
+  updateWhere: boolean;
+  /** A query's `captions` project `~caption_<column>` with the rows; false where a client
+   * resolves ref captions per row instead ({@link DomainRegistryClient.resolveNames}). */
+  captions: boolean;
+  /** {@link DomainsClient.transaction} — one atomic batch of inserts, updates and deletes — lands on
+   * this table. */
+  transaction: boolean;
+  /** The guard an update carries against a concurrent edit ({@link DomainConcurrency}). */
+  concurrency: DomainConcurrency;
+  /** The filter grammar the table answers ({@link DomainFilterProfile}). */
+  filters: DomainFilterProfile;
+  /** What {@link DomainTableClient.batch} can do beyond a plain insert ({@link DomainBatchSupport}). */
+  batch: DomainBatchSupport;
 }
 
 /** Effective access of the CURRENT user on one domain table
@@ -238,7 +278,10 @@ export interface DomainAccess {
     /** {@link insert} AND at least one column is editable for the caller (the
      * built-in grid-editability rule) AND the table grant actually reaches rows —
      * for non-table security modes that needs the securing table's rows to default
-     * to table visibility, otherwise access is per-row. Same false-negative shape. */
+     * to table visibility, otherwise access is per-row. Same false-negative shape.
+     * Computed before the `immutable` rewrite of {@link FieldAccess}: on an external
+     * table whose only writable columns are its keys it is true although no
+     * saved row has an editable field. */
     edit: boolean;
     /** Delete grant on the securing entity, under the same reaches-rows rule as
      * {@link edit}; same false-negative shape. */
@@ -250,7 +293,8 @@ export interface DomainAccess {
   };
   /** Every column the caller may see (declared and system columns alike), keyed by
    * name; `editable` iff the caller may write it (Edit on an owning property
-   * schema). A restricted column is ABSENT. An `autoNumber` column reads `readonly`
+   * schema); `immutable` for a key column of an external table the caller may write
+   * (settable on insert, never patched). A restricted column is ABSENT. An `autoNumber` column reads `readonly`
    * although the server still accepts a supplied value (imports keep their numbers)
    * — a form never sends one. */
   fields: {[column: string]: FieldAccess};
@@ -287,6 +331,10 @@ export interface DomainTableInfo {
   nameColumn: string | null;
   /** Natural-key columns; empty when the table declares none. */
   businessKey: string[];
+  /** How an app spells a row in a URL: `'businessKey'` — the business-key values (a platform
+   * table); `'id'` — the canonical row id as one opaque segment (an external table, whose key
+   * values may carry any delimiter). */
+  rowAddress: 'id' | 'businessKey';
   /** The DECLARED `friendlyName` (`friendlyName` in schema.json); undefined when
    * the table declares none — unlike {@link singularName}/{@link pluralName},
    * nothing is derived here, so the caller can tell a chosen label apart from
