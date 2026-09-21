@@ -177,6 +177,17 @@ class Renderer:
         for _ in range(int(1.8 * self.fps)):
             yield frame
 
+    def travel_frames(self, base, lit, dest, caption):
+        """The pointer eased from where it rests to dest, the target lighting up over the second half."""
+        start = self.cur
+        n = max(1, int(self.travel * self.fps))
+        for i in range(n):
+            t = ease((i + 1) / n)
+            pos = (start[0] + (dest[0] - start[0]) * t, start[1] + (dest[1] - start[1]) * t)
+            mix = ease((t - 0.5) / 0.5)
+            yield self.compose(Image.blend(base, lit, mix) if mix > 0 else base, pos, caption=caption)
+        self.cur = dest
+
     def step_frames(self, step, index, total):
         fps = self.fps
         before = self._image(step['before'])
@@ -192,6 +203,17 @@ class Renderer:
             for _ in range(int(self.hold * 0.9 * fps)):
                 yield still
             return
+        # a path walked inside the step (a menu: the group, then each item): the pointer travels to
+        # every stop over the page as it was then, the last stop being the step's own target
+        legs = [(self._image(h['shot']), h['target']) for h in step.get('hops', [])] or [(before, target)]
+        for shot, stop in legs[:-1]:
+            dest = (stop['x'] + stop['width'] / 2, stop['y'] + stop['height'] / 2)
+            lit = self.spotlight(shot, stop)
+            yield from self.travel_frames(shot, lit, dest, caption)
+            still = self.compose(lit, dest, caption=caption)
+            for _ in range(int(0.5 * fps)):
+                yield still
+        before, target = legs[-1]
         if target:
             dest = (target['x'] + target['width'] / 2, target['y'] + target['height'] / 2)
         elif clicks:
@@ -206,24 +228,18 @@ class Renderer:
                 dest = (c['x'], c['y'])
         lit = self.spotlight(before, target) if target else before
         lit_after = self.spotlight(after, target) if target else after
-        # a picture of the step for steps.md: the target lit, the pointer on it, no zoom
-        self.compose(lit, dest or self.cur, caption=caption).save(os.path.join(self.folder, f'step-{index:02d}.png'))
+        # a picture of the step for steps.md: the target lit, the pointer on it, no zoom; a step
+        # with nothing to point at (a view switch through the API) shows the page it led to
         if dest is None:
             still = self.compose(after, self.cur, caption=caption)
+            still.save(os.path.join(self.folder, f'step-{index:02d}.png'))
             for _ in range(int(self.hold * fps)):
                 yield still
             return
+        self.compose(lit, dest, caption=caption).save(os.path.join(self.folder, f'step-{index:02d}.png'))
         small = target is not None and target['width'] * target['height'] < SMALL_TARGET * self.w * self.h
         zoom = self.zoom if small and self.zoom > 1 else 1.0
-        start = self.cur
-        n = max(1, int(self.travel * fps))
-        for i in range(n):
-            t = ease((i + 1) / n)
-            pos = (start[0] + (dest[0] - start[0]) * t, start[1] + (dest[1] - start[1]) * t)
-            mix = ease((t - 0.5) / 0.5)
-            base = Image.blend(before, lit, mix) if mix > 0 else before
-            yield self.compose(base, pos, caption=caption)
-        self.cur = dest
+        yield from self.travel_frames(before, lit, dest, caption)
         # the zoom is slow enough to be read as a zoom, and rests before the click lands
         if zoom > 1:
             n = int(self.zoom_time * fps)

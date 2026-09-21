@@ -347,8 +347,15 @@ Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page
 it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
 element the step located, and where the page's own mouse went. Tests know nothing of it: without
 the variable no line of it runs. The viewport is a laptop's (1600×900; `BDD_GUIDE_VIEWPORT=<w>x<h>`
-for another) so the video reads without zooming every step. `Given` steps that touched nothing
-(the login) are left out of the video. Rendering is `tool/guide-render.py` (Pillow + ffmpeg: `py -m
+for another) so the video reads without zooming every step, and the shell is the full one (simple
+mode off, which the login step and the panel steps read from `shellSimpleMode()`), as a person
+has it. Every step is in the video except the login (`guide.silent`) and a step that neither
+acted nor changed the page (its before and after pictures are the same file): a table opened
+through the API is shown under its caption. A path walked inside a step — the top menu's group,
+then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as it was
+then, the element's box), and the pointer travels to each with the stop lit; a runtime path that
+does not report its stops jumps from the closed menu to the result, so a new menu walk calls
+`hop` where `pickTopMenu` and `pickMenuPath` do. Rendering is `tool/guide-render.py` (Pillow + ffmpeg: `py -m
 pip install pillow imageio-ffmpeg`, or `FFMPEG=<path>`); `--fps`, `--hold`, `--travel`, `--zoom`
 tune the pace when run by hand on a `steps.json` directory.
 

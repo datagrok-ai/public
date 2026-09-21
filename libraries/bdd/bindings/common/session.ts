@@ -6,6 +6,7 @@ import type {Page} from '@playwright/test';
 import {Given} from '../../src/registry.js';
 import {takeErrors} from '../../src/runtime/harness.js';
 import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
+import * as guide from '../../src/runtime/guide.js';
 
 declare const grok: any;
 
@@ -29,6 +30,7 @@ async function homeWidgetsSettled(page: Page): Promise<void> {
 }
 
 export const loggedIn = Given('user is logged in', async (page: Page) => {
+  guide.silent(page);
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell) {
     // a dev stand's pub serve can take minutes to hand out the bundle while it recompiles or is
@@ -40,11 +42,11 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
     if (seconds >= 30)
       console.warn(`bdd: the shell took ${seconds} s to load (a dev stand serving a bundle it is recompiling?)`);
   }
-  await page.evaluate(() => {
+  await page.evaluate((simple) => {
     grok.shell.closeAll();
     document.body.classList.add('selenium');
-    grok.shell.windows.simpleMode = true;
-  });
+    grok.shell.windows.simpleMode = simple;
+  }, guide.shellSimpleMode());
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
   await homeWidgetsSettled(page);

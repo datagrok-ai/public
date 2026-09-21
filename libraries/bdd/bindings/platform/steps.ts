@@ -6,6 +6,7 @@ import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
 import {click, editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
+import {shellSimpleMode} from '../../src/runtime/guide.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
 
 declare const grok: any;
@@ -198,7 +199,7 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
     grok.shell.windows.showBrowse = true;
   });
   await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});
-  atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = true; }));
+  atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
 }, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
 
 export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: Page) => {
@@ -210,7 +211,7 @@ export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: 
     grok.shell.windows.showToolbox = true;
   });
   await expect(page.locator('.d4-toolbox[caption]').first(), 'the toolbox pane').toBeVisible({timeout: 15000});
-  atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.showToolbox = false; grok.shell.windows.simpleMode = true; }));
+  atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.showToolbox = false; grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
 }, {tier: 'api', description: 'idempotent: leaves simple mode and docks the toolbox pane afresh (off by default for a user, hidden at startup while empty); puts both back at feature end'});
 
 /* --- the context panel -------------------------------------------------------------------------

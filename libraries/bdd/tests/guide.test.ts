@@ -35,6 +35,18 @@ test('a check reads as the fact it verifies', () => {
   assert.equal(captionOf('the "browse-import" view should be current', 'check'), 'The "browse-import" view is current');
   assert.equal(captionOf('the browse tree should not be visible', 'check'), 'The browse tree is not visible');
   assert.equal(captionOf('the top menu should list:', 'check'), 'The top menu lists:');
+  assert.equal(captionOf('5 rows should be selected', 'check'), '5 rows are selected');
+  assert.equal(captionOf('9 rows of table "SPGI-linked1" should pass the filter', 'check'),
+    '9 rows of table "SPGI-linked1" pass the filter');
+  assert.equal(captionOf('grid should show 9 rows', 'check'), 'Grid shows 9 rows');
+  assert.equal(captionOf('the filter should pass exactly the rows where "SEX" is "F"', 'check'),
+    'The filter passes exactly the rows where "SEX" is "F"');
+  assert.equal(captionOf('the tooltip should not show columns "AGE"', 'check'), 'The tooltip does not show columns "AGE"');
+  assert.equal(captionOf('no rows should be selected', 'check'), 'No rows are selected');
+  assert.equal(captionOf('the status should be "ready"', 'check'), 'The status is "ready"');
+  assert.equal(captionOf('rows 1 to 5 should be selected', 'check'), 'Rows 1 to 5 are selected');
+  assert.equal(captionOf('the value of "AGE" column in row 3 should be "5"', 'check'),
+    'The value of "AGE" column in row 3 is "5"');
 });
 
 test('a scenario name becomes a directory name', () => {

@@ -2,7 +2,7 @@
    the page before and after it, the element the step located, where the pointer went and what
    it clicked — that `tool/guide-render.py` turns into a how-to video. Without the variable
    nothing here runs; a step of a test costs nothing. */
-import {mkdirSync, writeFileSync} from 'node:fs';
+import {mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import type {Locator, Page, TestInfo} from '@playwright/test';
 
@@ -20,6 +20,13 @@ export interface GuidePoint {
 
 export type GuideStepKind = 'action' | 'check' | 'setup';
 
+/** A stop on a path the step walks (a menu group, then its item): the page as the pointer set
+ * off for it, and where it went. */
+export interface GuideHop {
+  shot: string;
+  target: GuideBox;
+}
+
 export interface GuideStep {
   index: number;
   line: number;
@@ -30,8 +37,10 @@ export interface GuideStep {
   kind: GuideStepKind;
   before: string;
   after: string;
-  /** The element the step acted on or checked, in page pixels. */
+  /** The element the step acted on or checked, in page pixels — the last stop when it walked a path. */
   target?: GuideBox;
+  /** The stops of a path walked inside the step, in order; empty for a step with one target. */
+  hops: GuideHop[];
   /** Where the pointer went during the step, in order. */
   pointer: GuidePoint[];
   clicks: {x: number; y: number; button: string}[];
@@ -60,6 +69,8 @@ interface Recording {
   typed: string;
   located?: Locator;
   target?: GuideBox | null;
+  hops: GuideHop[];
+  silent: boolean;
   open?: {index: number; line: number; keyword: string; text: string; started: number; before: string};
 }
 
@@ -68,6 +79,12 @@ const attached = new WeakSet<Page>();
 
 export function guideDir(): string | undefined {
   return process.env.BDD_GUIDE || undefined;
+}
+
+/** A guide films the full shell — the menus, view tabs and panels as a person has them; a test
+ * page runs in simple mode. */
+export function shellSimpleMode(): boolean {
+  return !guideDir();
 }
 
 /** The pause before the "after" screenshot: what the platform animates (a dialog sliding in, a
@@ -118,14 +135,31 @@ function readable(text: string): string {
   return text.replace(/\binside\b/g, 'in').replace(/---/g, ' › ').replace(/\s+/g, ' ').trim();
 }
 
+/** `pass` → `passes`, `show` → `shows`, `fly` → `flies`. */
+function thirdPerson(verb: string): string {
+  if (/(s|sh|ch|x|z)$/.test(verb))
+    return verb + 'es';
+  if (/[^aeiou]y$/.test(verb))
+    return verb.slice(0, -1) + 'ies';
+  return verb + 's';
+}
+
 /** A step as the instruction it gives, or as the fact it checks. `user clicks on browse tab` →
- * `Click on browse tab`; `the table should have 5 rows` → `The table has 5 rows`. */
+ * `Click on browse tab`; `the table should have 5 rows` → `The table has 5 rows`; `5 rows should
+ * pass the filter` → `5 rows pass the filter` (a counted or quantified plural in the subject, or a
+ * plural word right before `should`, decides the number). */
 export function captionOf(text: string, kind: GuideStepKind): string {
   let t = readable(text).replace(/^(the )?user\s+/i, '');
   if (kind === 'check') {
-    t = t.replace(/\bshould not be\b/g, 'is not').replace(/\bshould not have\b/g, 'does not have')
-      .replace(/\bshould be\b/g, 'is').replace(/\bshould have\b/g, 'has')
-      .replace(/\bshould (\w+)/g, (_, v: string) => v + 's').replace(/\bshould\b/g, '');
+    const subject = t.split(/\bshould\b/)[0].trim();
+    const last = subject.split(/\s+/).pop() ?? '';
+    const plural = (/s$/.test(last) && !/(ss|us|is|'s)$/.test(last)) ||
+      /^(the )?(rows|columns)\b/.test(subject) || /\b(\d+|all|no|some|following)\s+[a-z]+s\b/.test(subject);
+    t = t.replace(/\bshould not be\b/g, plural ? 'are not' : 'is not')
+      .replace(/\bshould not have\b/g, plural ? 'do not have' : 'does not have')
+      .replace(/\bshould not (\w+)/g, (_, v: string) => (plural ? 'do not ' : 'does not ') + v)
+      .replace(/\bshould be\b/g, plural ? 'are' : 'is').replace(/\bshould have\b/g, plural ? 'have' : 'has')
+      .replace(/\bshould (\w+)/g, (_, v: string) => plural ? v : thirdPerson(v)).replace(/\bshould\b/g, '');
     return t.charAt(0).toUpperCase() + t.slice(1);
   }
   const m = /^(\S+)(.*)$/s.exec(t);
@@ -210,6 +244,40 @@ export async function located(page: Page, loc: Locator): Promise<void> {
   r.target = await loc.first().boundingBox({timeout: 200}).catch(() => null);
 }
 
+/** A stop on the path the step walks: the page as it is now (a menu opened by the stop before)
+ * and the element's place on it; the guide moves the pointer stop by stop and lights each. An
+ * element located before the first stop becomes the first, on the "before" picture. */
+export async function hop(page: Page, loc: Locator): Promise<void> {
+  const r = recordings.get(page);
+  if (!r || !r.open)
+    return;
+  const box = await loc.first().boundingBox({timeout: 200}).catch(() => null);
+  if (!box)
+    return;
+  if (r.hops.length === 0 && r.target)
+    r.hops.push({shot: r.open.before, target: r.target});
+  const stem = String(r.open.index).padStart(2, '0');
+  r.hops.push({shot: await shot(page, r.dir, `${stem}-hop${r.hops.length + 1}.png`), target: box});
+  r.located = undefined;
+  r.target = box;
+}
+
+/** The open step is session plumbing (the login), never part of a guide. */
+export function silent(page: Page): void {
+  const r = recordings.get(page);
+  if (r?.open)
+    r.silent = true;
+}
+
+function sameFile(dir: string, a: string, b: string): boolean {
+  try {
+    return readFileSync(join(dir, a)).equals(readFileSync(join(dir, b)));
+  }
+  catch {
+    return false;
+  }
+}
+
 function recordingFor(page: Page, info: TestInfo): Recording {
   let r = recordings.get(page);
   const [, featureName = 'feature', scenarioName = 'scenario'] = info.titlePath;
@@ -220,7 +288,7 @@ function recordingFor(page: Page, info: TestInfo): Recording {
   const viewport = page.viewportSize();
   const manifest: GuideManifest =
     {feature: featureName, scenario: scenarioName, description: '', tags: info.tags, viewport, steps: []};
-  r = {dir, manifest, lastType: 'Given', pointer: [], clicks: [], keys: [], typed: ''};
+  r = {dir, manifest, lastType: 'Given', pointer: [], clicks: [], keys: [], typed: '', hops: [], silent: false};
   recordings.set(page, r);
   return r;
 }
@@ -245,6 +313,8 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   r.typed = '';
   r.located = undefined;
   r.target = undefined;
+  r.hops = [];
+  r.silent = false;
   r.open = {index, line, keyword, text, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
 }
 
@@ -270,13 +340,16 @@ export async function end(page: Page | undefined): Promise<void> {
   const type = typeOf(open.keyword, r.lastType);
   r.lastType = type;
   const acted = !!target || r.pointer.length > 0 || r.clicks.length > 0 || r.keys.length > 0 || r.typed.length > 0;
-  const kind: GuideStepKind = type === 'Then' ? 'check' : acted ? 'action' : 'setup';
+  // every step a reader would take is in the guide, a table opened through the API included (the
+  // page after it is the point); left out are the login and a step that changed nothing on the page
+  const kind: GuideStepKind = type === 'Then' ? 'check' :
+    r.silent || !(acted || !sameFile(r.dir, open.before, after)) ? 'setup' : 'action';
   if (!target && r.clicks.length > 0) {
     const last = r.clicks[r.clicks.length - 1];
     target = {x: last.x - 12, y: last.y - 12, width: 24, height: 24};
   }
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,
-    caption: captionOf(open.text, kind), kind, before: open.before, after, target, pointer: r.pointer, clicks: r.clicks,
-    keys: r.keys, typed: r.typed, ms: Date.now() - open.started});
+    caption: captionOf(open.text, kind), kind, before: open.before, after, target, hops: r.hops, pointer: r.pointer,
+    clicks: r.clicks, keys: r.keys, typed: r.typed, ms: Date.now() - open.started});
   writeFileSync(join(r.dir, 'steps.json'), JSON.stringify(r.manifest, null, 2));
 }

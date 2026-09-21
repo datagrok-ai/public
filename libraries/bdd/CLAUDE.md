@@ -24,7 +24,7 @@ src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [play
 src/runtime/            args, locate, gestures, assertions, harness (session, journey, resetShell, error floor),
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
                         viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
-                        guide (BDD_GUIDE: per-step screenshots, located element, pointer path → steps.json)
+                        guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), pointer path → steps.json; full shell)
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
 bindings/platform/      the shell: elements, datasets, steps, data, columns, commands, functions, events — always loaded

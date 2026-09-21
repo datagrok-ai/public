@@ -9,6 +9,7 @@ import type {ElementRef} from './args.js';
 import {exactText} from './locate.js';
 import {evaluate} from './viewer-runtime.js';
 import {onViewer} from './viewers.js';
+import * as guide from './guide.js';
 
 const POPUP = '.d4-menu-popup';
 const SEP = /\s*[>|]\s*/;
@@ -84,8 +85,10 @@ async function openGroup(page: Page, label: string, wanted: string | undefined, 
   const count = await candidates.count();
   // a group already open, or one the menu renders inline, needs no hover
   for (let i = 0; wanted !== undefined && i < count; i++) {
-    if (await menuShows(page, wanted, candidates.nth(i)))
+    if (await menuShows(page, wanted, candidates.nth(i))) {
+      await guide.hop(page, candidates.nth(i));
       return candidates.nth(i);
+    }
   }
   for (let i = 0; i < count; i++) {
     const item = candidates.nth(i);
@@ -94,6 +97,7 @@ async function openGroup(page: Page, label: string, wanted: string | undefined, 
     const box = await item.boundingBox();
     if (!box)
       continue;
+    await guide.hop(page, item);
     const cy = box.y + box.height / 2;
     await page.mouse.move(Math.max(0, box.x - 8), cy);
     await page.mouse.move(box.x + box.width * 0.75, cy);
@@ -138,7 +142,9 @@ export async function pickMenuPath(page: Page, path: string): Promise<void> {
       throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}`);
     });
     const item = label.locator(MENU_ITEM);
-    await (await item.count() > 0 ? item : label).click();
+    const leaf = await item.count() > 0 ? item : label;
+    await guide.hop(page, leaf);
+    await leaf.click();
   }
 }
 

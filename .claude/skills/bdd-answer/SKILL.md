@@ -20,6 +20,21 @@ library lacks is added as a binding or as a name/signal in the core, exactly as 
 customer's file; nothing is committed without the lead's order. A question that needs a feature
 the platform does not have is not a guide: say so, with what the closest scenario shows, and stop.
 
+What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up, nothing to pass):
+
+- **The full shell.** A guide films with simple mode off — the menus, view tabs and panels as a
+  person has them. A test page runs in simple mode; a guide never does.
+- **Every step a person would take is a UI step**, filmed as a gesture: a `When` names the element
+  to click, hover, drag or type into, and the pointer goes there. An API step is only for what
+  the person already has when they ask (the open tables); a view switch is a click on the view's
+  tab (`user clicks on spgi-100 tab`), which the full shell shows. Opening the tables IS in the
+  video: each `Given user opens X dataset` shows the table it opened under its caption. Only the
+  login and a step that changed nothing on the page are left out.
+- **A menu path is shown stop by stop**: the group in the bar lights and opens, then each item on
+  the way, then the leaf; the same for a context menu. A walk that lights only the bar means a
+  runtime path did not report its stops: it calls `guide.hop` for each, as `pickTopMenu` and
+  `pickMenuPath` do — fix the runtime, not the feature.
+
 ## 1. Find or write the scenario
 
 1. Pick the package that owns the area (Browse, spaces, users → `packages/UsageAnalysis/bdd`;
@@ -49,8 +64,13 @@ Watch `guides/<feature slug>/<scenario slug>/guide.mp4` once. What to fix and wh
 - a dialog or balloon is missing from the "after" picture → `--settle 1000`;
 - a step reads badly in the caption → reword the step; a verb the caption leaves in the third
   person goes into the `VERBS` map of `src/runtime/guide.ts`;
-- a setup step shows up that should not (or the reverse) → a `Given` that touches nothing is
-  skipped; make it a `When` to show it.
+- a step is missing from the video → it changed nothing on the page (a listener, a server-side
+  check) and touched nothing; a step that opens a table or a panel is shown by itself;
+- a menu step jumps from the closed menu to the result → the runtime path it went through does
+  not report its stops (`guide.hop`); a step that went through the API where a person clicks
+  → find or add the named element and make it a `When` (a view switch is `user clicks on X tab`).
+- a test feature filmed as a guide fails on a context-panel section or a viewer reading → the
+  full shell is not the simple one the test was written in; film a guide feature instead.
 
 ## 3. Send it, and keep it
 
