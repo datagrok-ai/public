@@ -671,6 +671,13 @@ several ways to favorite an item:
 
 Access favorites from either the **Favorites Panel** (toggle from **Sidebar**), **Context Panel** (click the star icon in the header), or directly from **Browse > My Stuff > Favorites**.
 
+**Group and role favorites.** A group or a role has favorites of its own: entities its admins
+pin for every member, such as the apps and queries a role should have at hand. Open the group in
+the **Context Panel** to see its **Favorites** pane; if you administer the group, drag entities
+into it. Members see them in the **Favorites Panel**, which then becomes a tree: **My favorites**
+first, then a node per role and group. Group admins can drop entities on a group node there too,
+and remove them from the item's context menu.
+
 To remove an item from favorites, click the item, then click the star icon next
 to its name in the **Context Panel**. The star changes from orange to clear,
 indicating the item is no longer favorited.
