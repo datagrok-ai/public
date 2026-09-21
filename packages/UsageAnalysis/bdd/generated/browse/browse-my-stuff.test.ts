@@ -27,7 +27,7 @@ test.describe("The My stuff section of the Browse tree", () => {
     await session.step(26, "Given user is logged in", () => loggedIn(page));
     await session.step(27, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(28, "And My stuff tree node inside browse tree is expanded", () => isExpanded(page, el("My stuff tree node inside browse tree")));
-    await session.step(31, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["My-stuff---Recent tree node inside browse tree"],["My-stuff---Favorites tree node inside browse tree"],["My-stuff---Shared-with-me tree node inside browse tree"]]));
+    await session.step(31, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["My-stuff---Recent tree node inside browse tree"],["My-stuff---Favorites tree node inside browse tree"],["My-stuff---Shared-with-me tree node inside browse tree"]]), [["My-stuff---Recent tree node inside browse tree"],["My-stuff---Favorites tree node inside browse tree"],["My-stuff---Shared-with-me tree node inside browse tree"]]);
     await session.step(35, "And no errors should have been logged", () => noErrors(page));
     await session.step(36, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });

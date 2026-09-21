@@ -142,7 +142,7 @@ test.describe("Pivot table — configuring the tag rows", () => {
       await session.step(133, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The column lists edited in the context panel rebuild the chips", async () => {
-      await session.step(136, "When user sets properties of pivot table viewer:", () => setProperties(page, el("pivot table viewer"), [["Group By Column Names","DIS_POP"],["Aggregate Column Names","AGE"],["Aggregate Agg Types","avg"],["Pivot Column Names","SEVERITY"]]));
+      await session.step(136, "When user sets properties of pivot table viewer:", () => setProperties(page, el("pivot table viewer"), [["Group By Column Names","DIS_POP"],["Aggregate Column Names","AGE"],["Aggregate Agg Types","avg"],["Pivot Column Names","SEVERITY"]]), [["Group By Column Names","DIS_POP"],["Aggregate Column Names","AGE"],["Aggregate Agg Types","avg"],["Pivot Column Names","SEVERITY"]]);
       await session.step(141, "Then the \"aggregate\" reading of pivot table viewer should be \"avg(AGE)\"", () => readingReads(page, "aggregate", el("pivot table viewer"), "avg(AGE)"));
       await session.step(142, "And the \"text of grid cell 5 of None avg(AGE)\" reading of pivot table viewer should be \"52.30\"", () => readingReads(page, "text of grid cell 5 of None avg(AGE)", el("pivot table viewer"), "52.30"));
       await session.step(143, "When user clicks on settings icon of pivot table viewer", () => clickOn(page, el("settings icon of pivot table viewer")));

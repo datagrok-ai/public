@@ -103,10 +103,10 @@ test.describe("Tile viewer property surface", () => {
       await session.step(105, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Title and description", async () => {
-      await session.step(108, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Show Title","true"],["Title","Cards"]]));
+      await session.step(108, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Show Title","true"],["Title","Cards"]]), [["Show Title","true"],["Title","Cards"]]);
       await session.step(111, "Then title of tile viewer should be visible", () => shouldBe(page, el("title of tile viewer"), "visible"));
       await session.step(112, "And title of tile viewer should have text \"Cards\"", () => shouldHaveText(page, el("title of tile viewer"), "Cards"));
-      await session.step(113, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Description","A card per patient"],["Description Visibility Mode","Always"]]));
+      await session.step(113, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Description","A card per patient"],["Description Visibility Mode","Always"]]), [["Description","A card per patient"],["Description Visibility Mode","Always"]]);
       await session.step(116, "Then description of tile viewer should have text \"A card per patient\"", () => shouldHaveText(page, el("description of tile viewer"), "A card per patient"));
       await session.step(117, "And the description of tile viewer should be above its content", () => descriptionAbove(page, el("tile viewer")));
       await session.step(118, "When user sets \"Description Position\" property of tile viewer to \"Bottom\"", () => setProperty(page, "Description Position", el("tile viewer"), "Bottom"));
@@ -118,7 +118,7 @@ test.describe("Tile viewer property surface", () => {
       await session.step(124, "Then description of tile viewer should be absent", () => shouldBe(page, el("description of tile viewer"), "absent"));
       await session.step(125, "When user sets \"Title\" property of tile viewer to \"\"", () => setProperty(page, "Title", el("tile viewer"), ""));
       await session.step(126, "Then title of tile viewer should be hidden", () => shouldBe(page, el("title of tile viewer"), "hidden"));
-      await session.step(127, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Show Title","false"],["Description",""],["Description Visibility Mode","Auto"]]));
+      await session.step(127, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Show Title","false"],["Description",""],["Description Visibility Mode","Auto"]]), [["Show Title","false"],["Description",""],["Description Visibility Mode","Auto"]]);
       await session.step(131, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Row Source picks the rows the cards are built from", async () => {

@@ -13,6 +13,12 @@ test('a step title splits into its keyword and text', () => {
   assert.deepEqual(parseTitle('something without a keyword'), {keyword: '', text: 'something without a keyword'});
 });
 
+test('a data table is told inline after the step, each two-cell row as name = value', () => {
+  assert.equal(captionOf('user adds a scatter plot viewer with:', 'action', [['X', 'AGE'], ['Y', 'HEIGHT']]),
+    'Add a scatter plot viewer with X = AGE, Y = HEIGHT');
+  assert.equal(captionOf('user fills in:', 'action', [['Name', 'x'], ['Type', 'y']]), 'Fill in Name = x, Type = y');
+});
+
 test('an action reads as an instruction: the verb imperative, "inside" as "in", a tree path with separators', () => {
   assert.equal(captionOf('user clicks on "Open local file" icon inside browse toolbar', 'action'),
     'Click on "Open local file" icon in browse toolbar');

@@ -104,7 +104,7 @@ test.describe("Forms viewer field set, row binding, sort mirroring and pinning",
       await session.step(114, "Then the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
       await session.step(115, "And the \"sort direction\" reading of forms viewer should be \"↑\"", () => readingReads(page, "sort direction", el("forms viewer"), "↑"));
       await session.step(116, "And the record cards of forms viewer should show rows \"215, 430, 428, 512, 304\"", () => recordCardRows(page, el("forms viewer"), "215, 430, 428, 512, 304"));
-      await session.step(117, "When user sets properties of forms viewer:", () => setProperties(page, el("forms viewer"), [["sortByColumnName","WEIGHT"],["sortAscending","true"]]));
+      await session.step(117, "When user sets properties of forms viewer:", () => setProperties(page, el("forms viewer"), [["sortByColumnName","WEIGHT"],["sortAscending","true"]]), [["sortByColumnName","WEIGHT"],["sortAscending","true"]]);
       await session.step(120, "Then the \"sort direction\" reading of forms viewer should be \"↑\"", () => readingReads(page, "sort direction", el("forms viewer"), "↑"));
       await session.step(121, "And the record cards of forms viewer should show rows \"215, 430, 512, 428, 304\"", () => recordCardRows(page, el("forms viewer"), "215, 430, 512, 428, 304"));
       await session.step(122, "When user double-clicks on the \"label WEIGHT\" area of forms viewer", () => doubleClickArea(page, "label WEIGHT", el("forms viewer")));
@@ -116,7 +116,7 @@ test.describe("Forms viewer field set, row binding, sort mirroring and pinning",
       await session.step(128, "And the \"sort direction\" reading of forms viewer should be \"↓\"", () => readingReads(page, "sort direction", el("forms viewer"), "↓"));
       await session.step(129, "And forms viewer should have a \"sort indicator USUBJID\" area", () => hasArea(page, el("forms viewer"), "sort indicator USUBJID"));
       await session.step(130, "And the record cards of forms viewer should show rows \"512, 430, 428, 304, 215\"", () => recordCardRows(page, el("forms viewer"), "512, 430, 428, 304, 215"));
-      await session.step(131, "When user sets properties of forms viewer:", () => setProperties(page, el("forms viewer"), [["sortByColumnName",""],["sortAscending","false"]]));
+      await session.step(131, "When user sets properties of forms viewer:", () => setProperties(page, el("forms viewer"), [["sortByColumnName",""],["sortAscending","false"]]), [["sortByColumnName",""],["sortAscending","false"]]);
       await session.step(134, "And user clears the row selection", () => clearSelection(page));
       await session.step(135, "Then the \"sort column\" reading of forms viewer should be \"\"", () => readingReads(page, "sort column", el("forms viewer"), ""));
       await session.step(136, "And no errors should have been logged", () => noErrors(page));

@@ -28,7 +28,7 @@ test.describe("Box plot settings ladder", () => {
     const run = journey(test, 7, page);
     await session.step(10, "Given user is logged in", () => loggedIn(page));
     await session.step(11, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(12, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["Value","AGE"]]));
+    await session.step(12, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["Value","AGE"]]), [["Value","AGE"]]);
     await run.scenario("A datetime value disables Axis Type", async () => {
       await session.step(16, "When user sets \"Value\" property of box plot viewer to \"STARTED\"", () => setProperty(page, "Value", el("box plot viewer"), "STARTED"));
       await session.step(17, "And user clicks on settings icon of box plot viewer", () => clickOn(page, el("settings icon of box plot viewer")));
@@ -45,25 +45,25 @@ test.describe("Box plot settings ladder", () => {
     });
     await run.scenario("An explicit coloring survives a value change", async () => {
       await session.step(30, "When user sets \"Marker Color Column\" property of box plot viewer to \"HEIGHT\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), "HEIGHT"));
-      await session.step(31, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"]]));
+      await session.step(31, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"]]), [["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"]]);
       await session.step(35, "And user sets \"Category 2\" property of box plot viewer to \"RACE\"", () => setProperty(page, "Category 2", el("box plot viewer"), "RACE"));
-      await session.step(36, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Minor Categories","true"],["Show All Categories","true"]]));
+      await session.step(36, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Minor Categories","true"],["Show All Categories","true"]]), [["Show Minor Categories","true"],["Show All Categories","true"]]);
       await session.step(39, "And user sets \"Value\" property of box plot viewer to \"WEIGHT\"", () => setProperty(page, "Value", el("box plot viewer"), "WEIGHT"));
       await session.step(40, "And user takes a snapshot of box plot viewer", () => takeSnapshot(page, el("box plot viewer")));
       await session.step(41, "Then box plot viewer should not have repainted", () => notRepainted(page, el("box plot viewer")));
-      await session.step(42, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","HEIGHT"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Show Minor Categories","true"],["Show All Categories","true"]]));
+      await session.step(42, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","HEIGHT"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Show Minor Categories","true"],["Show All Categories","true"]]), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","HEIGHT"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Show Minor Categories","true"],["Show All Categories","true"]]);
     });
     await run.scenario("Value limits and the log axis", async () => {
-      await session.step(54, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value Min","20"],["Value Max","60"]]));
-      await session.step(57, "Then properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value Min","20"],["Value Max","60"]]));
-      await session.step(60, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value Min",""],["Value Max",""]]));
+      await session.step(54, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value Min","20"],["Value Max","60"]]), [["Value Min","20"],["Value Max","60"]]);
+      await session.step(57, "Then properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value Min","20"],["Value Max","60"]]), [["Value Min","20"],["Value Max","60"]]);
+      await session.step(60, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Value Min",""],["Value Max",""]]), [["Value Min",""],["Value Max",""]]);
       await session.step(63, "And user sets \"Axis Type\" property of box plot viewer to \"logarithmic\"", () => setProperty(page, "Axis Type", el("box plot viewer"), "logarithmic"));
       await session.step(64, "Then \"Axis Type\" property of box plot viewer should be \"logarithmic\"", () => propertyShouldBe(page, "Axis Type", el("box plot viewer"), "logarithmic"));
       await session.step(65, "And box plot viewer should have repainted", () => repainted(page, el("box plot viewer")));
       await session.step(66, "And no errors should have been logged", () => noErrors(page));
       await session.step(67, "And the value range of box plot viewer should lie within \"WEIGHT\" column", () => rangeWithinColumn(page, el("box plot viewer"), "WEIGHT"));
-      await session.step(68, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Invert Y Axis","true"],["Plot Style","violin"]]));
-      await session.step(71, "Then properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Invert Y Axis","true"],["Plot Style","violin"]]));
+      await session.step(68, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Invert Y Axis","true"],["Plot Style","violin"]]), [["Invert Y Axis","true"],["Plot Style","violin"]]);
+      await session.step(71, "Then properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Invert Y Axis","true"],["Plot Style","violin"]]), [["Invert Y Axis","true"],["Plot Style","violin"]]);
       await session.step(74, "And box plot viewer should have repainted", () => repainted(page, el("box plot viewer")));
     });
     await run.scenario("A zoom survives a coloring change", async () => {
@@ -82,7 +82,7 @@ test.describe("Box plot settings ladder", () => {
       await session.step(89, "When user loads the saved layout", () => loadLayout(page));
       await session.step(90, "Then box plot viewer should be visible", () => shouldBe(page, el("box plot viewer"), "visible"));
       await session.step(91, "And scatter plot viewer should be absent", () => shouldBe(page, el("scatter plot viewer"), "absent"));
-      await session.step(92, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Show Minor Categories","true"],["Show All Categories","true"],["Marker Color Column","SEX"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Axis Type","logarithmic"],["Invert Y Axis","true"],["Plot Style","violin"]]));
+      await session.step(92, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Show Minor Categories","true"],["Show All Categories","true"],["Marker Color Column","SEX"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Axis Type","logarithmic"],["Invert Y Axis","true"],["Plot Style","violin"]]), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Show Minor Categories","true"],["Show All Categories","true"],["Marker Color Column","SEX"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Axis Type","logarithmic"],["Invert Y Axis","true"],["Plot Style","violin"]]);
     });
     await run.scenario("The ladder survives a project round-trip", async () => {
       await session.step(107, "When user zooms into the value axis of box plot viewer", () => zoomValueAxis(page, el("box plot viewer")));
@@ -92,7 +92,7 @@ test.describe("Box plot settings ladder", () => {
       await session.step(111, "And user closes all views", () => closeAllViews(page));
       await session.step(112, "And user opens the \"bdd box plot ladder\" project", () => openProject(page, "bdd box plot ladder"));
       await session.step(113, "Then box plot viewer should be visible", () => shouldBe(page, el("box plot viewer"), "visible"));
-      await session.step(114, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","SEX"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Axis Type","logarithmic"],["Invert Y Axis","true"],["Plot Style","violin"]]));
+      await session.step(114, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","SEX"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Axis Type","logarithmic"],["Invert Y Axis","true"],["Plot Style","violin"]]), [["Value","WEIGHT"],["Category 1","SEX"],["Category 2","RACE"],["Marker Color Column","SEX"],["Invert Color Scheme","true"],["Color Min","20"],["Color Max","80"],["Axis Type","logarithmic"],["Invert Y Axis","true"],["Plot Style","violin"]]);
       await session.step(125, "And box plot viewer should show the remembered value range", () => rememberedRange(page, el("box plot viewer")));
     });
     run.finish();

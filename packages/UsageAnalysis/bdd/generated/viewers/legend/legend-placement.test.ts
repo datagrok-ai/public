@@ -28,14 +28,14 @@ test.describe("Where a legend sits, how big it is and when it folds away", () =>
     const run = journey(test, 29, page);
     await session.step(32, "Given user is logged in", () => loggedIn(page));
     await session.step(33, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(34, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["xColumnName","WEIGHT"],["yColumnName","HEIGHT"],["colorColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]));
-    await session.step(40, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["valueColumnName","AGE"],["splitColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]));
-    await session.step(45, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT"],["splitColumnNames","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]));
-    await session.step(51, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["splitColumnName","SEX"],["stackColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]));
-    await session.step(56, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["categoryColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]));
-    await session.step(60, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["xColumnNames","RACE"],["Viewer Type","Scatter plot"],["Legend Visibility","Always"],["Legend Position","Right"]]));
+    await session.step(34, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["xColumnName","WEIGHT"],["yColumnName","HEIGHT"],["colorColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]), [["xColumnName","WEIGHT"],["yColumnName","HEIGHT"],["colorColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]);
+    await session.step(40, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["valueColumnName","AGE"],["splitColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]), [["valueColumnName","AGE"],["splitColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]);
+    await session.step(45, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT"],["splitColumnNames","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]), [["xColumnName","AGE"],["yColumnNames","WEIGHT"],["splitColumnNames","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]);
+    await session.step(51, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["splitColumnName","SEX"],["stackColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]), [["splitColumnName","SEX"],["stackColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]);
+    await session.step(56, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["categoryColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]), [["categoryColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]);
+    await session.step(60, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["xColumnNames","RACE"],["Viewer Type","Scatter plot"],["Legend Visibility","Always"],["Legend Position","Right"]]), [["xColumnNames","RACE"],["Viewer Type","Scatter plot"],["Legend Visibility","Always"],["Legend Position","Right"]]);
     await session.step(65, "And user sets \"colorColumnName\" inner property of trellis plot viewer to \"RACE\"", () => setInnerProperty(page, "colorColumnName", el("trellis plot viewer"), "RACE"));
-    await session.step(66, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["categoryColumnNames","RACE"],["valueColumnName","AGE"],["markerColorColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]));
+    await session.step(66, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["categoryColumnNames","RACE"],["valueColumnName","AGE"],["markerColorColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]), [["categoryColumnNames","RACE"],["valueColumnName","AGE"],["markerColorColumnName","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]);
     await session.step(72, "Then the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));
     await session.step(73, "And the legend of box plot viewer should list 4 items", () => legendLists(page, el("box plot viewer"), 4));
     await run.scenario("The scatter plot legend grows and shrinks with its splitter [viewer=scatter plot]", async () => {
@@ -232,30 +232,30 @@ test.describe("Where a legend sits, how big it is and when it folds away", () =>
     });
     await run.scenario("Visibility Always and Position Auto come back from a saved layout", async () => {
       await session.step(139, "When user saves the layout of the current table view to the server", () => saveLayoutToServer(page));
-      await session.step(140, "And user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]));
-      await session.step(143, "And user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]));
-      await session.step(146, "And user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]));
-      await session.step(149, "And user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]));
-      await session.step(152, "And user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]));
-      await session.step(155, "And user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]));
-      await session.step(158, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]));
+      await session.step(140, "And user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]), [["Legend Visibility","Never"],["Legend Position","Left"]]);
+      await session.step(143, "And user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]), [["Legend Visibility","Never"],["Legend Position","Left"]]);
+      await session.step(146, "And user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]), [["Legend Visibility","Never"],["Legend Position","Left"]]);
+      await session.step(149, "And user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]), [["Legend Visibility","Never"],["Legend Position","Left"]]);
+      await session.step(152, "And user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]), [["Legend Visibility","Never"],["Legend Position","Left"]]);
+      await session.step(155, "And user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]), [["Legend Visibility","Never"],["Legend Position","Left"]]);
+      await session.step(158, "And user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Legend Visibility","Never"],["Legend Position","Left"]]), [["Legend Visibility","Never"],["Legend Position","Left"]]);
       await session.step(161, "Then legend of scatter plot viewer should be hidden", () => shouldBe(page, el("legend of scatter plot viewer"), "hidden"));
       await session.step(162, "And \"Legend Position\" property of box plot viewer should be \"Left\"", () => propertyShouldBe(page, "Legend Position", el("box plot viewer"), "Left"));
       await session.step(163, "When user loads the saved layout", () => loadLayout(page));
-      await session.step(164, "Then properties of scatter plot viewer should be:", () => propertiesShouldBe(page, el("scatter plot viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]));
-      await session.step(167, "And properties of histogram viewer should be:", () => propertiesShouldBe(page, el("histogram viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]));
-      await session.step(170, "And properties of line chart viewer should be:", () => propertiesShouldBe(page, el("line chart viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]));
-      await session.step(173, "And properties of bar chart viewer should be:", () => propertiesShouldBe(page, el("bar chart viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]));
-      await session.step(176, "And properties of pie chart viewer should be:", () => propertiesShouldBe(page, el("pie chart viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]));
-      await session.step(179, "And properties of trellis plot viewer should be:", () => propertiesShouldBe(page, el("trellis plot viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]));
-      await session.step(182, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]));
+      await session.step(164, "Then properties of scatter plot viewer should be:", () => propertiesShouldBe(page, el("scatter plot viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]), [["Legend Visibility","Always"],["Legend Position","Auto"]]);
+      await session.step(167, "And properties of histogram viewer should be:", () => propertiesShouldBe(page, el("histogram viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]), [["Legend Visibility","Always"],["Legend Position","Auto"]]);
+      await session.step(170, "And properties of line chart viewer should be:", () => propertiesShouldBe(page, el("line chart viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]), [["Legend Visibility","Always"],["Legend Position","Auto"]]);
+      await session.step(173, "And properties of bar chart viewer should be:", () => propertiesShouldBe(page, el("bar chart viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]), [["Legend Visibility","Always"],["Legend Position","Auto"]]);
+      await session.step(176, "And properties of pie chart viewer should be:", () => propertiesShouldBe(page, el("pie chart viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]), [["Legend Visibility","Always"],["Legend Position","Auto"]]);
+      await session.step(179, "And properties of trellis plot viewer should be:", () => propertiesShouldBe(page, el("trellis plot viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]), [["Legend Visibility","Always"],["Legend Position","Auto"]]);
+      await session.step(182, "And properties of box plot viewer should be:", () => propertiesShouldBe(page, el("box plot viewer"), [["Legend Visibility","Always"],["Legend Position","Auto"]]), [["Legend Visibility","Always"],["Legend Position","Auto"]]);
       await session.step(185, "And legend of scatter plot viewer should be visible", () => shouldBe(page, el("legend of scatter plot viewer"), "visible"));
       await session.step(186, "And legend of line chart viewer should be visible", () => shouldBe(page, el("legend of line chart viewer"), "visible"));
       await session.step(187, "And the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));
       await session.step(188, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Visibility Auto folds the scatter plot legend into the mini icon on a small viewer and puts it away on a tiny one [viewer=scatter plot]", async () => {
-      await session.step(191, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]));
+      await session.step(191, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]), [["Legend Position","Right"],["Legend Visibility","Auto"]]);
       await session.step(194, "And user resizes scatter plot viewer to 220 by 220", () => resizeTo(page, el("scatter plot viewer"), 220, 220));
       await session.step(195, "Then the legend of scatter plot viewer should be collapsed to the mini icon", () => legendMiniIcon(page, el("scatter plot viewer")));
       await session.step(196, "And mini legend icon of scatter plot viewer should be visible", () => shouldBe(page, el("mini legend icon of scatter plot viewer"), "visible"));
@@ -271,7 +271,7 @@ test.describe("Where a legend sits, how big it is and when it folds away", () =>
       await session.step(206, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Visibility Auto folds the histogram legend into the mini icon on a small viewer and puts it away on a tiny one [viewer=histogram]", async () => {
-      await session.step(191, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]));
+      await session.step(191, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]), [["Legend Position","Right"],["Legend Visibility","Auto"]]);
       await session.step(194, "And user resizes histogram viewer to 220 by 220", () => resizeTo(page, el("histogram viewer"), 220, 220));
       await session.step(195, "Then the legend of histogram viewer should be collapsed to the mini icon", () => legendMiniIcon(page, el("histogram viewer")));
       await session.step(196, "And mini legend icon of histogram viewer should be visible", () => shouldBe(page, el("mini legend icon of histogram viewer"), "visible"));
@@ -287,7 +287,7 @@ test.describe("Where a legend sits, how big it is and when it folds away", () =>
       await session.step(206, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Visibility Auto folds the line chart legend into the mini icon on a small viewer and puts it away on a tiny one [viewer=line chart]", async () => {
-      await session.step(191, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]));
+      await session.step(191, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]), [["Legend Position","Right"],["Legend Visibility","Auto"]]);
       await session.step(194, "And user resizes line chart viewer to 220 by 220", () => resizeTo(page, el("line chart viewer"), 220, 220));
       await session.step(195, "Then the legend of line chart viewer should be collapsed to the mini icon", () => legendMiniIcon(page, el("line chart viewer")));
       await session.step(196, "And mini legend icon of line chart viewer should be visible", () => shouldBe(page, el("mini legend icon of line chart viewer"), "visible"));
@@ -303,7 +303,7 @@ test.describe("Where a legend sits, how big it is and when it folds away", () =>
       await session.step(206, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Visibility Auto folds the bar chart legend into the mini icon on a small viewer and puts it away on a tiny one [viewer=bar chart]", async () => {
-      await session.step(191, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]));
+      await session.step(191, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]), [["Legend Position","Right"],["Legend Visibility","Auto"]]);
       await session.step(194, "And user resizes bar chart viewer to 220 by 220", () => resizeTo(page, el("bar chart viewer"), 220, 220));
       await session.step(195, "Then the legend of bar chart viewer should be collapsed to the mini icon", () => legendMiniIcon(page, el("bar chart viewer")));
       await session.step(196, "And mini legend icon of bar chart viewer should be visible", () => shouldBe(page, el("mini legend icon of bar chart viewer"), "visible"));
@@ -319,7 +319,7 @@ test.describe("Where a legend sits, how big it is and when it folds away", () =>
       await session.step(206, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Visibility Auto folds the trellis plot legend into the mini icon on a small viewer and puts it away on a tiny one [viewer=trellis plot]", async () => {
-      await session.step(191, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]));
+      await session.step(191, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["Legend Position","Right"],["Legend Visibility","Auto"]]), [["Legend Position","Right"],["Legend Visibility","Auto"]]);
       await session.step(194, "And user resizes trellis plot viewer to 220 by 220", () => resizeTo(page, el("trellis plot viewer"), 220, 220));
       await session.step(195, "Then the legend of trellis plot viewer should be collapsed to the mini icon", () => legendMiniIcon(page, el("trellis plot viewer")));
       await session.step(196, "And mini legend icon of trellis plot viewer should be visible", () => shouldBe(page, el("mini legend icon of trellis plot viewer"), "visible"));

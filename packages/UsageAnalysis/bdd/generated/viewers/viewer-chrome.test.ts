@@ -28,9 +28,9 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(22, "Given user adds a bar chart viewer", () => addViewer(page, "bar chart"));
-    await session.step(23, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Show Title","true"],["Title","Demographics"]]));
+    await session.step(23, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Show Title","true"],["Title","Demographics"]]), [["Show Title","true"],["Title","Demographics"]]);
     await session.step(26, "Then title of bar chart viewer should have text \"Demographics\"", () => shouldHaveText(page, el("title of bar chart viewer"), "Demographics"));
-    await session.step(27, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Description","By race"],["Description Visibility Mode","Always"]]));
+    await session.step(27, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Description","By race"],["Description Visibility Mode","Always"]]), [["Description","By race"],["Description Visibility Mode","Always"]]);
     await session.step(30, "Then description of bar chart viewer should have text \"By race\"", () => shouldHaveText(page, el("description of bar chart viewer"), "By race"));
     await session.step(31, "When user sets \"Description Position\" property of bar chart viewer to \"Bottom\"", () => setProperty(page, "Description Position", el("bar chart viewer"), "Bottom"));
     await session.step(32, "Then description of bar chart viewer should be visible", () => shouldBe(page, el("description of bar chart viewer"), "visible"));
@@ -40,7 +40,7 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(36, "Then description of bar chart viewer should be visible", () => shouldBe(page, el("description of bar chart viewer"), "visible"));
     await session.step(37, "When user sets \"Description Visibility Mode\" property of bar chart viewer to \"Never\"", () => setProperty(page, "Description Visibility Mode", el("bar chart viewer"), "Never"));
     await session.step(38, "Then description of bar chart viewer should be absent", () => shouldBe(page, el("description of bar chart viewer"), "absent"));
-    await session.step(39, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]));
+    await session.step(39, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]);
     await session.step(45, "Then description of bar chart viewer should be absent", () => shouldBe(page, el("description of bar chart viewer"), "absent"));
     await session.step(46, "And no errors should have been logged", () => noErrors(page));
   });
@@ -49,9 +49,9 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(22, "Given user adds a box plot viewer", () => addViewer(page, "box plot"));
-    await session.step(23, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Title","true"],["Title","Demographics"]]));
+    await session.step(23, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Title","true"],["Title","Demographics"]]), [["Show Title","true"],["Title","Demographics"]]);
     await session.step(26, "Then title of box plot viewer should have text \"Demographics\"", () => shouldHaveText(page, el("title of box plot viewer"), "Demographics"));
-    await session.step(27, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Description","By race"],["Description Visibility Mode","Always"]]));
+    await session.step(27, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Description","By race"],["Description Visibility Mode","Always"]]), [["Description","By race"],["Description Visibility Mode","Always"]]);
     await session.step(30, "Then description of box plot viewer should have text \"By race\"", () => shouldHaveText(page, el("description of box plot viewer"), "By race"));
     await session.step(31, "When user sets \"Description Position\" property of box plot viewer to \"Bottom\"", () => setProperty(page, "Description Position", el("box plot viewer"), "Bottom"));
     await session.step(32, "Then description of box plot viewer should be visible", () => shouldBe(page, el("description of box plot viewer"), "visible"));
@@ -61,7 +61,7 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(36, "Then description of box plot viewer should be visible", () => shouldBe(page, el("description of box plot viewer"), "visible"));
     await session.step(37, "When user sets \"Description Visibility Mode\" property of box plot viewer to \"Never\"", () => setProperty(page, "Description Visibility Mode", el("box plot viewer"), "Never"));
     await session.step(38, "Then description of box plot viewer should be absent", () => shouldBe(page, el("description of box plot viewer"), "absent"));
-    await session.step(39, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]));
+    await session.step(39, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]);
     await session.step(45, "Then description of box plot viewer should be absent", () => shouldBe(page, el("description of box plot viewer"), "absent"));
     await session.step(46, "And no errors should have been logged", () => noErrors(page));
   });
@@ -70,9 +70,9 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(22, "Given user adds a histogram viewer", () => addViewer(page, "histogram"));
-    await session.step(23, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Title","true"],["Title","Demographics"]]));
+    await session.step(23, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Title","true"],["Title","Demographics"]]), [["Show Title","true"],["Title","Demographics"]]);
     await session.step(26, "Then title of histogram viewer should have text \"Demographics\"", () => shouldHaveText(page, el("title of histogram viewer"), "Demographics"));
-    await session.step(27, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Description","By race"],["Description Visibility Mode","Always"]]));
+    await session.step(27, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Description","By race"],["Description Visibility Mode","Always"]]), [["Description","By race"],["Description Visibility Mode","Always"]]);
     await session.step(30, "Then description of histogram viewer should have text \"By race\"", () => shouldHaveText(page, el("description of histogram viewer"), "By race"));
     await session.step(31, "When user sets \"Description Position\" property of histogram viewer to \"Bottom\"", () => setProperty(page, "Description Position", el("histogram viewer"), "Bottom"));
     await session.step(32, "Then description of histogram viewer should be visible", () => shouldBe(page, el("description of histogram viewer"), "visible"));
@@ -82,7 +82,7 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(36, "Then description of histogram viewer should be visible", () => shouldBe(page, el("description of histogram viewer"), "visible"));
     await session.step(37, "When user sets \"Description Visibility Mode\" property of histogram viewer to \"Never\"", () => setProperty(page, "Description Visibility Mode", el("histogram viewer"), "Never"));
     await session.step(38, "Then description of histogram viewer should be absent", () => shouldBe(page, el("description of histogram viewer"), "absent"));
-    await session.step(39, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]));
+    await session.step(39, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]);
     await session.step(45, "Then description of histogram viewer should be absent", () => shouldBe(page, el("description of histogram viewer"), "absent"));
     await session.step(46, "And no errors should have been logged", () => noErrors(page));
   });
@@ -91,9 +91,9 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(22, "Given user adds a pc plot viewer", () => addViewer(page, "pc plot"));
-    await session.step(23, "When user sets properties of pc plot viewer:", () => setProperties(page, el("pc plot viewer"), [["Show Title","true"],["Title","Demographics"]]));
+    await session.step(23, "When user sets properties of pc plot viewer:", () => setProperties(page, el("pc plot viewer"), [["Show Title","true"],["Title","Demographics"]]), [["Show Title","true"],["Title","Demographics"]]);
     await session.step(26, "Then title of pc plot viewer should have text \"Demographics\"", () => shouldHaveText(page, el("title of pc plot viewer"), "Demographics"));
-    await session.step(27, "When user sets properties of pc plot viewer:", () => setProperties(page, el("pc plot viewer"), [["Description","By race"],["Description Visibility Mode","Always"]]));
+    await session.step(27, "When user sets properties of pc plot viewer:", () => setProperties(page, el("pc plot viewer"), [["Description","By race"],["Description Visibility Mode","Always"]]), [["Description","By race"],["Description Visibility Mode","Always"]]);
     await session.step(30, "Then description of pc plot viewer should have text \"By race\"", () => shouldHaveText(page, el("description of pc plot viewer"), "By race"));
     await session.step(31, "When user sets \"Description Position\" property of pc plot viewer to \"Bottom\"", () => setProperty(page, "Description Position", el("pc plot viewer"), "Bottom"));
     await session.step(32, "Then description of pc plot viewer should be visible", () => shouldBe(page, el("description of pc plot viewer"), "visible"));
@@ -103,7 +103,7 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(36, "Then description of pc plot viewer should be visible", () => shouldBe(page, el("description of pc plot viewer"), "visible"));
     await session.step(37, "When user sets \"Description Visibility Mode\" property of pc plot viewer to \"Never\"", () => setProperty(page, "Description Visibility Mode", el("pc plot viewer"), "Never"));
     await session.step(38, "Then description of pc plot viewer should be absent", () => shouldBe(page, el("description of pc plot viewer"), "absent"));
-    await session.step(39, "When user sets properties of pc plot viewer:", () => setProperties(page, el("pc plot viewer"), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]));
+    await session.step(39, "When user sets properties of pc plot viewer:", () => setProperties(page, el("pc plot viewer"), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]), [["Show Title","false"],["Title",""],["Description",""],["Description Visibility Mode","Auto"],["Description Position","Top"]]);
     await session.step(45, "Then description of pc plot viewer should be absent", () => shouldBe(page, el("description of pc plot viewer"), "absent"));
     await session.step(46, "And no errors should have been logged", () => noErrors(page));
   });

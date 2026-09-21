@@ -28,7 +28,7 @@ test.describe("The Browse panel and the icons of its toolbar", () => {
     const page = await session.page(browser);
     await session.step(27, "Given user is logged in", () => loggedIn(page));
     await session.step(28, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(31, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["My stuff tree node inside browse tree"],["Spaces tree node inside browse tree"],["Apps tree node inside browse tree"],["Files tree node inside browse tree"],["Dashboards tree node inside browse tree"],["Databases tree node inside browse tree"],["Platform tree node inside browse tree"]]));
+    await session.step(31, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["My stuff tree node inside browse tree"],["Spaces tree node inside browse tree"],["Apps tree node inside browse tree"],["Files tree node inside browse tree"],["Dashboards tree node inside browse tree"],["Databases tree node inside browse tree"],["Platform tree node inside browse tree"]]), [["My stuff tree node inside browse tree"],["Spaces tree node inside browse tree"],["Apps tree node inside browse tree"],["Files tree node inside browse tree"],["Dashboards tree node inside browse tree"],["Databases tree node inside browse tree"],["Platform tree node inside browse tree"]]);
     await session.step(39, "And no errors should have been logged", () => noErrors(page));
     await session.step(40, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });

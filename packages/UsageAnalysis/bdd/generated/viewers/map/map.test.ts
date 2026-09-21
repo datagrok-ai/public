@@ -46,13 +46,13 @@ test.describe("Map viewer layers, zoom, selection and the point tooltip", () => 
       await session.step(47, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A colour column and a size column keep every feature on the map", async () => {
-      await session.step(50, "When user sets properties of map viewer:", () => setProperties(page, el("map viewer"), [["colorColumnName","Magnitude"],["sizeColumnName","Depth"]]));
+      await session.step(50, "When user sets properties of map viewer:", () => setProperties(page, el("map viewer"), [["colorColumnName","Magnitude"],["sizeColumnName","Depth"]]), [["colorColumnName","Magnitude"],["sizeColumnName","Depth"]]);
       await session.step(53, "Then \"colorColumnName\" property of map viewer should be \"Magnitude\"", () => propertyShouldBe(page, "colorColumnName", el("map viewer"), "Magnitude"));
       await session.step(54, "And \"sizeColumnName\" property of map viewer should be \"Depth\"", () => propertyShouldBe(page, "sizeColumnName", el("map viewer"), "Depth"));
       await session.step(55, "And the \"markers\" reading of map viewer should be 2426", () => readingIs(page, "markers", el("map viewer"), 2426));
       await session.step(56, "And the \"rows shown\" reading of map viewer should be 2426", () => readingIs(page, "rows shown", el("map viewer"), 2426));
       await session.step(57, "And the \"layer \\\"Markers GL\\\" visible\" reading of map viewer should be \"true\"", () => readingReads(page, "layer \"Markers GL\" visible", el("map viewer"), "true"));
-      await session.step(58, "When user sets properties of map viewer:", () => setProperties(page, el("map viewer"), [["colorColumnName",""],["sizeColumnName",""]]));
+      await session.step(58, "When user sets properties of map viewer:", () => setProperties(page, el("map viewer"), [["colorColumnName",""],["sizeColumnName",""]]), [["colorColumnName",""],["sizeColumnName",""]]);
       await session.step(61, "Then the \"markers\" reading of map viewer should be 2426", () => readingIs(page, "markers", el("map viewer"), 2426));
       await session.step(62, "And no errors should have been logged", () => noErrors(page));
     });

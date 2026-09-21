@@ -71,7 +71,7 @@ interface Recording {
   target?: GuideBox | null;
   hops: GuideHop[];
   silent: boolean;
-  open?: {index: number; line: number; keyword: string; text: string; started: number; before: string};
+  open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; started: number; before: string};
 }
 
 const recordings = new WeakMap<Page, Recording>();
@@ -148,8 +148,11 @@ function thirdPerson(verb: string): string {
  * `Click on browse tab`; `the table should have 5 rows` → `The table has 5 rows`; `5 rows should
  * pass the filter` → `5 rows pass the filter` (a counted or quantified plural in the subject, or a
  * plural word right before `should`, decides the number). */
-export function captionOf(text: string, kind: GuideStepKind): string {
+export function captionOf(text: string, kind: GuideStepKind, table?: string[][]): string {
   let t = readable(text).replace(/^(the )?user\s+/i, '');
+  // a data table is told inline: "adds a scatter plot viewer with:" + | X | AGE | → "… with X = AGE"
+  if (table?.length)
+    t = t.replace(/:\s*$/, '') + ' ' + table.map((row) => row.length === 2 ? `${row[0]} = ${row[1]}` : row.join(' | ')).join(', ');
   if (kind === 'check') {
     const subject = t.split(/\bshould\b/)[0].trim();
     const last = subject.split(/\s+/).pop() ?? '';
@@ -300,7 +303,7 @@ async function shot(page: Page, dir: string, name: string): Promise<string> {
 
 /** Opens a step: the page as it is before the step, for the picture the pointer moves over. A step
  * before the page exists (the login) is recorded without pictures. */
-export async function begin(page: Page | undefined, info: TestInfo, line: number, title: string): Promise<void> {
+export async function begin(page: Page | undefined, info: TestInfo, line: number, title: string, table?: string[][]): Promise<void> {
   if (!guideDir() || !page || page.isClosed())
     return;
   const r = recordingFor(page, info);
@@ -315,7 +318,7 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   r.target = undefined;
   r.hops = [];
   r.silent = false;
-  r.open = {index, line, keyword, text, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
+  r.open = {index, line, keyword, text, table, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
 }
 
 /** Closes the step: waits for the platform to settle, takes the "after" picture, resolves the
@@ -349,7 +352,7 @@ export async function end(page: Page | undefined): Promise<void> {
     target = {x: last.x - 12, y: last.y - 12, width: 24, height: 24};
   }
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,
-    caption: captionOf(open.text, kind), kind, before: open.before, after, target, hops: r.hops, pointer: r.pointer,
+    caption: captionOf(open.text, kind, open.table), kind, before: open.before, after, target, hops: r.hops, pointer: r.pointer,
     clicks: r.clicks, keys: r.keys, typed: r.typed, ms: Date.now() - open.started});
   writeFileSync(join(r.dir, 'steps.json'), JSON.stringify(r.manifest, null, 2));
 }

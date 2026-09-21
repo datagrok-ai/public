@@ -28,7 +28,7 @@ test.describe("Trellis plot click actions", () => {
     const run = journey(test, 14, page);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(16, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"]]));
+    await session.step(16, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"]]), [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"]]);
     await session.step(20, "Then the \"cells\" reading of trellis plot viewer should be 8", () => readingIs(page, "cells", el("trellis plot viewer"), 8));
     await session.step(21, "And \"On Click\" property of trellis plot viewer should be \"None\"", () => propertyShouldBe(page, "On Click", el("trellis plot viewer"), "None"));
     await run.scenario("Switching On Click alone draws nothing new", async () => {
@@ -96,7 +96,7 @@ test.describe("Trellis plot click actions", () => {
       await session.step(85, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Control on an empty cell adds nothing but takes the current cell", async () => {
-      await session.step(88, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Column Names","RACE"],["Y Column Names","SEVERITY"],["Pack Categories","false"]]));
+      await session.step(88, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Column Names","RACE"],["Y Column Names","SEVERITY"],["Pack Categories","false"]]), [["X Column Names","RACE"],["Y Column Names","SEVERITY"],["Pack Categories","false"]]);
       await session.step(92, "Then the \"cells\" reading of trellis plot viewer should be 20", () => readingIs(page, "cells", el("trellis plot viewer"), 20));
       await session.step(93, "And the \"cells drawn\" reading of trellis plot viewer should be 17", () => readingIs(page, "cells drawn", el("trellis plot viewer"), 17));
       await session.step(94, "And trellis plot viewer should have a \"cell Asian | Critical\" area", () => hasArea(page, el("trellis plot viewer"), "cell Asian | Critical"));
@@ -107,7 +107,7 @@ test.describe("Trellis plot click actions", () => {
       await session.step(99, "And the \"current cell\" reading of trellis plot viewer should be \"Asian | Critical\"", () => readingReads(page, "current cell", el("trellis plot viewer"), "Asian | Critical"));
       await session.step(100, "When user presses Escape in trellis plot viewer", () => pressKeyIn(page, "Escape", el("trellis plot viewer")));
       await session.step(101, "Then no rows should be selected", () => noneSelected(page));
-      await session.step(102, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Column Names","SEX"],["Y Column Names","RACE"],["Pack Categories","true"]]));
+      await session.step(102, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Column Names","SEX"],["Y Column Names","RACE"],["Pack Categories","true"]]), [["X Column Names","SEX"],["Y Column Names","RACE"],["Pack Categories","true"]]);
       await session.step(106, "Then the \"cells\" reading of trellis plot viewer should be 8", () => readingIs(page, "cells", el("trellis plot viewer"), 8));
       await session.step(107, "And no errors should have been logged", () => noErrors(page));
     });

@@ -27,7 +27,7 @@ test.describe("The Files section of the Browse tree", () => {
     await session.step(27, "Given user is logged in", () => loggedIn(page));
     await session.step(28, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(29, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
-    await session.step(32, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["Files---App-Data tree node inside browse tree"],["Files---Demo tree node inside browse tree"]]));
+    await session.step(32, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["Files---App-Data tree node inside browse tree"],["Files---Demo tree node inside browse tree"]]), [["Files---App-Data tree node inside browse tree"],["Files---Demo tree node inside browse tree"]]);
     await session.step(35, "And no errors should have been logged", () => noErrors(page));
     await session.step(36, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });

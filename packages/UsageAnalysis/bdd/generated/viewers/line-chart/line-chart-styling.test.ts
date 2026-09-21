@@ -26,7 +26,7 @@ test.describe("Line chart axis types, label orientation, line styling and a char
     const run = journey(test, 4, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(17, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]));
+    await session.step(17, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]), [["xColumnName","AGE"],["yColumnNames","WEIGHT"]]);
     await session.step(20, "Then line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
     await session.step(21, "And the 'y axis max of \"WEIGHT\"' reading of line chart viewer should be a finite number", () => readingFinite(page, "y axis max of \"WEIGHT\"", el("line chart viewer")));
     await run.scenario("A logarithmic Y axis redraws the chart and a linear one draws it back", async () => {
@@ -54,18 +54,18 @@ test.describe("Line chart axis types, label orientation, line styling and a char
       await session.step(45, "When user sets \"lineColoringType\" property of line chart viewer to \"Custom\"", () => setProperty(page, "lineColoringType", el("line chart viewer"), "Custom"));
       await session.step(46, "Then line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
       await session.step(47, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
-      await session.step(48, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lineWidth","1"],["lineTransparency","0"],["lineColoringType","Auto"]]));
+      await session.step(48, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lineWidth","1"],["lineTransparency","0"],["lineColoringType","Auto"]]), [["lineWidth","1"],["lineTransparency","0"],["lineColoringType","Auto"]]);
       await session.step(52, "Then line chart viewer should have less ink than before", () => lessInk(page, el("line chart viewer")));
       await session.step(53, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("In a multi-axis chart one chart's type changes through its own menu and the others keep theirs", async () => {
-      await session.step(56, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["yColumnNames","AGE, HEIGHT, WEIGHT"],["multiAxis","true"]]));
+      await session.step(56, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["yColumnNames","AGE, HEIGHT, WEIGHT"],["multiAxis","true"]]), [["yColumnNames","AGE, HEIGHT, WEIGHT"],["multiAxis","true"]]);
       await session.step(59, "Then the \"charts\" reading of line chart viewer should be 1", () => readingIs(page, "charts", el("line chart viewer"), 1));
       await session.step(60, "And \"chartTypes\" property of line chart viewer should be \"Line Chart, Line Chart, Line Chart\"", () => propertyShouldBe(page, "chartTypes", el("line chart viewer"), "Line Chart, Line Chart, Line Chart"));
       await session.step(61, "When user picks \"HEIGHT > Chart type > Area Chart\" from the context menu of the \"plot\" area of line chart viewer", () => pickFromAreaContextMenu(page, "HEIGHT > Chart type > Area Chart", "plot", el("line chart viewer")));
       await session.step(62, "Then \"chartTypes\" property of line chart viewer should be \"Line Chart, Area Chart, Line Chart\"", () => propertyShouldBe(page, "chartTypes", el("line chart viewer"), "Line Chart, Area Chart, Line Chart"));
       await session.step(63, "And line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
-      await session.step(64, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["multiAxis","false"],["yColumnNames","WEIGHT"]]));
+      await session.step(64, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["multiAxis","false"],["yColumnNames","WEIGHT"]]), [["multiAxis","false"],["yColumnNames","WEIGHT"]]);
       await session.step(67, "Then the \"y columns\" reading of line chart viewer should be \"WEIGHT\"", () => readingReads(page, "y columns", el("line chart viewer"), "WEIGHT"));
       await session.step(68, "And no errors should have been logged", () => noErrors(page));
     });

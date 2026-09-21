@@ -10,3 +10,4 @@ skill is the recipe.
 | Where are the sample datasets, and how do I open one? | open-demo-dataset.feature | 2026-09-21 | access/files |
 | I have two tables; how do I make selecting rows in the first filter the second to the same IDs? | link-tables-selection-to-filter.feature | 2026-09-21 | transform |
 | How do I export a filtered list, without it exporting the unfiltered version? | export-filtered-rows.feature | 2026-09-21 | transform |
+| How do I label scatter plot markers with the structure, the ID and a potency value? | scatter-plot-marker-labels.feature | 2026-09-21 | visualize/viewers |
