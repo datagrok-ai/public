@@ -2,6 +2,7 @@ import {Subscription} from 'rxjs';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {defaultFilterState} from './shared';
 
 // A freshly-mounted Filters viewer asynchronously reapplies a stale per-column selection over the
 // DataFrame's .filter shortly after construction; this is how long to wait past that window.
@@ -94,15 +95,7 @@ export class MountedViewerRegistry {
       // ChemicalReaction has no meaningful substructure-filter semantics for a whole template, and
       // `~`-prefixed columns are internal (e.g. the substructure filter's own fingerprint cache).
       .filter((col) => col.semType !== 'ChemicalReaction' && !col.name.startsWith('~'))
-      .map((col) => ({
-        // A zero-variance numeric column (common right after subsetting) makes the histogram filter
-        // widget clobber the whole frame's .filter to all-false. The categorical filter has no
-        // degenerate-range path, so route those there instead of ever building the histogram.
-        type: col.isNumerical ?
-          (col.stats.min === col.stats.max ? DG.FILTER_TYPE.CATEGORICAL : DG.FILTER_TYPE.HISTOGRAM) :
-          col.semType === DG.SEMTYPE.MOLECULE ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL,
-        column: col.name,
-      }));
+      .map(defaultFilterState);
     const filtersViewer = DG.Viewer.filters(df, {filters: filterStates});
     this.mountedViewers.set(host, [grid, filtersViewer]);
     filtersViewer.root.style.width = '100%';

@@ -26,7 +26,7 @@ function shuffleInPlace<T>(arr: T[]): T[] {
 // Biased 70/30 toward multi-step routes — the more interesting case to eyeball in a quick preview.
 function pickPreviewSamples(rows: OutputRow[], n: number): OutputRow[] {
   if (rows.length <= n) return shuffleInPlace(rows.slice());
-  const stepCount = (r: OutputRow) => r.route ? Math.max(0, r.route.split('>>').length - 1) : 0;
+  const stepCount = (r: OutputRow): number => r.steps.length;
   const multi = shuffleInPlace(rows.filter((r) => stepCount(r) > 1));
   const single = shuffleInPlace(rows.filter((r) => stepCount(r) <= 1));
   const targetMulti = Math.min(multi.length, Math.ceil(n * 0.7));
@@ -89,7 +89,7 @@ export class PreviewPanel {
     };
 
     addRow('Strategy', `${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`);
-    if (rounds > MAX_ROUNDS) addRow('', `Showing the first ${MAX_ROUNDS} rounds — capped at ${MAX_ROUNDS}.`);
+    if (rounds > MAX_ROUNDS) addRow('', `Showing the first ${MAX_ROUNDS} steps — capped at ${MAX_ROUNDS}.`);
 
     // Only rounds with a custom subset get a row; the rest would just repeat the total.
     const overrides = tDf && bDf ? this.deps.buildPerRoundOverrides(this.deps.getConfig()) : undefined;
@@ -101,7 +101,7 @@ export class PreviewPanel {
       addRow(label, `${df.rowCount}`);
       for (let r = 1; r <= displayRounds; r++) {
         const oc = this.deps.overrideCountFor(overrides, mode, r, key);
-        if (oc != null) addRow(`Round ${r}`, `${oc} of ${df.rowCount} (custom subset)`, true);
+        if (oc != null) addRow(`Step ${r}`, `${oc} of ${df.rowCount} (custom subset)`, true);
       }
     };
     addComponentRows('Reactions', tDf, 'templates');
@@ -205,6 +205,6 @@ export class PreviewPanel {
     this.deps.viewerHost.mountDf(this.host, df, false, {rowHeight: 110, extendLastColumn: false});
     this.status.textContent =
       `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} ` +
-      `rounds, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;
+      `steps, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;
   }
 }
