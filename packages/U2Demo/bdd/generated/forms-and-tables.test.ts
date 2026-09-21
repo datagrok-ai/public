@@ -23,13 +23,13 @@ test.describe("Forms, tables and outlines", () => {
     const page = await session.page(browser);
     await session.step(7, "Given user opens the MSA workbench", () => openWorkbench(page));
     enter(page, "MSA workbench");
-    await session.step(10, "When user fills in:", () => fillIn(page, [["name input in alignment panel","Batch 7"],["sequence column input in alignment panel","helm"],["method input in alignment panel","clustal"],["gap penalty input in alignment panel","3"],["keep gaps checkbox in alignment panel","no"]]));
+    await session.step(10, "When user fills in:", () => fillIn(page, [["name input in alignment panel","Batch 7"],["sequence column input in alignment panel","helm"],["method input in alignment panel","clustal"],["gap penalty input in alignment panel","3"],["keep gaps checkbox in alignment panel","no"]]), [["name input in alignment panel","Batch 7"],["sequence column input in alignment panel","helm"],["method input in alignment panel","clustal"],["gap penalty input in alignment panel","3"],["keep gaps checkbox in alignment panel","no"]]);
     await session.step(16, "Then name input in alignment panel should have value \"Batch 7\"", () => shouldHaveValue(page, el("name input in alignment panel"), "Batch 7"));
     await session.step(17, "And method input in alignment panel should have value \"clustal\"", () => shouldHaveValue(page, el("method input in alignment panel"), "clustal"));
     await session.step(18, "And gap penalty input in alignment panel should have value \"3\"", () => shouldHaveValue(page, el("gap penalty input in alignment panel"), "3"));
     await session.step(19, "And keep gaps checkbox in alignment panel should be unchecked", () => shouldBe(page, el("keep gaps checkbox in alignment panel"), "unchecked"));
     await session.step(20, "And label of name input in alignment panel should have text \"Name\"", () => shouldHaveText(page, el("label of name input in alignment panel"), "Name"));
-    await session.step(21, "And the following elements should be visible:", () => followingShouldBe(page, "visible", [["toolbar"],["alignment panel"],["results"]]));
+    await session.step(21, "And the following elements should be visible:", () => followingShouldBe(page, "visible", [["toolbar"],["alignment panel"],["results"]]), [["toolbar"],["alignment panel"],["results"]]);
   });
   test("Every method reports itself [method=kalign]", {tag: ["@demo", "@realizes:u2.form"]}, async ({browser}) => {
     const page = await session.page(browser);

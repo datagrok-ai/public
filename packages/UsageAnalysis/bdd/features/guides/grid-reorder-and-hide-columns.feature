@@ -9,6 +9,7 @@ Feature: Reorder columns by dragging and hide the ones you do not need
 
   Scenario: Drag a column header to a new place, then hide two columns
     Given user is logged in
+    And simple mode is off
     And user opens demog dataset
     When user drags the "header HEIGHT" area of grid to the "header AGE" area
     Then the "column order" reading of grid should include the text "AGE, HEIGHT, SEX"

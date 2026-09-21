@@ -35,10 +35,21 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
     grok.shell.addTableView(df);
   }, [dataset.path, rows ?? null, name ?? null] as [string, number | null, string | null]);
   await page.locator('[name="viewer-Grid"]').first().waitFor();
-  await expect.poll(() => page.evaluate(() => {
+  // resolved the moment the detection event lands, not on the next poll
+  await page.evaluate(([timeout, what]) => new Promise<void>((resolve, reject) => {
     const w = window as any;
-    return w.__bddDetected.includes(w.grok.shell.tv?.dataFrame?.dart) as boolean;
-  }), {timeout: pollMs(60000), message: `${dataset.name}: semantic types were not detected (is auto-detection on?)`}).toBe(true);
+    const dart = w.grok.shell.tv?.dataFrame?.dart;
+    if (w.__bddDetected.includes(dart))
+      return resolve();
+    const timer = setTimeout(() => { sub.unsubscribe(); reject(new Error(`${what}: semantic types were not detected (is auto-detection on?)`)); }, timeout);
+    const sub = w.grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
+      if (a?.args?.dataFrame?.dart !== dart)
+        return;
+      clearTimeout(timer);
+      sub.unsubscribe();
+      resolve();
+    });
+  }), [pollMs(60000), dataset.name] as [number, string]);
   // a second after the grid is created the view makes row 0 current when no row is, and every
   // viewer repaints its marker mid-feature; done here, the view's timer skips it
   await page.evaluate(() => {
@@ -238,6 +249,15 @@ export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: 
   await expect(page.locator('.d4-toolbox[caption]').first(), 'the toolbox pane').toBeVisible({timeout: 15000});
   atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.showToolbox = false; grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
 }, {tier: 'api', description: 'idempotent: leaves simple mode and docks the toolbox pane afresh (off by default for a user, hidden at startup while empty); puts both back at feature end'});
+
+/** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
+ * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */
+export const simpleModeOff = Given('simple mode is off', async (page: Page) => {
+  silent(page);
+  await page.evaluate(() => { grok.shell.windows.simpleMode = false; });
+  await expect(page.locator('.d4-view-handle, [name^="view-handle: "]').first(), 'a view tab').toBeVisible({timeout: 15000});
+  atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
+}, {tier: 'api', description: 'the full shell — view tabs, menu bar, panels — for the feature; not in the video; simple mode is back at feature end'});
 
 /* --- the context panel -------------------------------------------------------------------------
    The panel renders the current object (`grok.shell.o`) and nothing else: a click that did not

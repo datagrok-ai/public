@@ -9,6 +9,7 @@ Feature: Filter one table by the rows selected in another
 
   Scenario: Link two tables so that selecting rows in one filters the other
     Given user is logged in
+    And simple mode is off
     And user opens spgi-100 dataset
     And user opens spgi-linked1 dataset
     When user clicks on spgi-100 tab

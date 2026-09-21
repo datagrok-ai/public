@@ -10,6 +10,7 @@ Feature: Build a dashboard on molecular data
 
   Scenario: Add viewers from the toolbox and set each one up
     Given user is logged in
+    And simple mode is off
     And no project named "Molecular dashboard" is on the server
     And user opens spgi dataset
     When user opens toolbox

@@ -22,8 +22,10 @@ the platform does not have is not a guide: say so, with what the closest scenari
 
 What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up, nothing to pass):
 
-- **The full shell.** A guide films with simple mode off — the menus, view tabs and panels as a
-  person has them. A test page runs in simple mode; a guide never does.
+- **The full shell.** A guide runs with simple mode off — the menus, view tabs and panels as a
+  person has them. A test page runs in simple mode; a guide never does, filmed or in a plain
+  `grok-bdd run`: its second step is `And simple mode is off`, right after `Given user is logged
+  in` (the compiler refuses a `@guide` feature without it). The step is silent, not in the video.
 - **Every step a person would take is a UI step**, filmed as a gesture: a `When` names the element
   to click, hover, drag or type into, and the pointer goes there. An API step is only for what
   the person already has when they ask (the open tables); a view switch is a click on the view's

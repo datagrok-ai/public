@@ -9,6 +9,7 @@ Feature: Draw a custom annotation region on a scatter plot
 
   Scenario: Draw an annotation region on a scatter plot
     Given user is logged in
+    And simple mode is off
     And user opens demog-1000 dataset
     And user adds a scatter plot viewer with:
       | X | AGE    |

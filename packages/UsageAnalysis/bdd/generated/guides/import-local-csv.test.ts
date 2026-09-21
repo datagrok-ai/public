@@ -17,7 +17,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {uploadThrough} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnCount} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, simpleModeOff, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Open a file from your computer", () => {
@@ -25,10 +25,11 @@ test.describe("Open a file from your computer", () => {
   test("Open a local CSV file as a table", {tag: ["@guide", "@help:access/files"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(8, "Given user is logged in", () => loggedIn(page));
-    await session.step(9, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(10, "When user uploads \"fixtures/browse-import.csv\" through \"Open local file\" icon inside browse toolbar", () => uploadThrough(page, "fixtures/browse-import.csv", el("\"Open local file\" icon inside browse toolbar")));
-    await session.step(11, "Then the \"browse-import\" view should be current", () => viewIsCurrent(page, "browse-import"));
-    await session.step(12, "And the table should have 5 rows", () => rowCount(page, 5));
-    await session.step(13, "And the table should have 3 columns", () => columnCount(page, 3));
+    await session.step(9, "And simple mode is off", () => simpleModeOff(page));
+    await session.step(10, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(11, "When user uploads \"fixtures/browse-import.csv\" through \"Open local file\" icon inside browse toolbar", () => uploadThrough(page, "fixtures/browse-import.csv", el("\"Open local file\" icon inside browse toolbar")));
+    await session.step(12, "Then the \"browse-import\" view should be current", () => viewIsCurrent(page, "browse-import"));
+    await session.step(13, "And the table should have 5 rows", () => rowCount(page, 5));
+    await session.step(14, "And the table should have 3 columns", () => columnCount(page, 3));
   });
 });

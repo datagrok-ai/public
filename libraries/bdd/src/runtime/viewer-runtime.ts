@@ -689,6 +689,16 @@ function install(): void {
     for (const v of viewers())
       baseline(v.root);
   };
+  /** Every viewer has drawn a change that reached them all — the waits share one frame. */
+  const settleAll = async (): Promise<void> => {
+    await Promise.all(viewers().map(quiet));
+  };
+  /** A change every viewer answers, in one call: the baselines, the change, the settle. */
+  const changeAll = (body: (arg: unknown) => void, arg: unknown): Promise<void> => {
+    baselineAll();
+    body(arg);
+    return settleAll();
+  };
   const writeProperties = async (el: Element, entries: [string, string][], capMs: number): Promise<number> => {
     const v = viewerOf(el);
     arm(v);
@@ -1135,7 +1145,7 @@ function install(): void {
   w.__bdd = {table, tableNamed, col, rowFacts, setRows,
     viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaDelta, areaColors,
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
-    snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
+    snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
     takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, columnsSince, listenCustom, customFired};
   stampAll();

@@ -10,6 +10,7 @@ Feature: Color a scatter plot by conditions, then change one condition's color
 
   Scenario: Switch the color column to conditional coding and recolor one range from the legend
     Given user is logged in
+    And simple mode is off
     And user opens demog-1000 dataset
     And user adds a scatter plot viewer with:
       | X     | WEIGHT |

@@ -10,6 +10,7 @@ Feature: HELM sequences to structures, then to SMILES
 
   Scenario: Build molecules from the HELM sequences, then write them out as SMILES
     Given user is logged in
+    And simple mode is off
     And user opens filter_HELM dataset
     And the Bio package is initialized
     When user picks "Bio > Transform > To Atomic Level..." from the top menu

@@ -6,6 +6,7 @@ Feature: Open a demo dataset
 
   Scenario: Open demog.csv from the Demo files
     Given user is logged in
+    And simple mode is off
     And the browse panel is open
     When user expands Files tree node inside browse tree
     And user expands Files---Demo tree node inside browse tree

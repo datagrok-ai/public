@@ -357,8 +357,10 @@ shows what the drag draws — a selection box, an annotation region — growing 
 and the step's still shows it complete at the release point. Tests know nothing of it: without
 the variable no line of it runs. The viewport is 1080p (1920×1080, so the top menu keeps every group on the bar; `BDD_GUIDE_VIEWPORT=<w>x<h>`
 for another) so the video reads without zooming every step, and the shell is the full one (simple
-mode off, which the login step and the panel steps read from `shellSimpleMode()`), as a person
-has it. Every step is in the video except the login (`guide.silent`) and a step that neither
+mode off), as a person has it — filmed or in a plain run: every `@guide` scenario carries `And
+simple mode is off` right after the login (the compiler refuses one without it), and the step
+puts simple mode back at feature end. Every step is in the video except the login and that shell
+step (`guide.silent`) and a step that neither
 acted nor changed the page (its before and after pictures are the same file): a table opened
 through the API is shown under its caption. A path walked inside a step — the top menu's group,
 then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as it was
@@ -372,8 +374,8 @@ A feature tagged `@help:<page dir>` (`@help:access/files`) illustrates a help pa
 `grok-bdd guide --help-pages` films every such feature and copies each scenario's GIF and thumb
 into `<public>/help/<page dir>/img/<scenario slug>.gif` (`BDD_HELP_ROOT` names another tree), so
 the walkthroughs on the docs site are regenerated from features rather than recorded by hand.
-Guides live under `features/guides/` and run with the rest of the suite: an answer that stops
-being true fails a test.
+Guides live under `features/guides/` and run with the rest of the suite, in the full shell: an
+answer that stops being true fails a test.
 
 ## Generated specs
 
