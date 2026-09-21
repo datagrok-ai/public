@@ -374,6 +374,9 @@ export class DomainFrameEditor implements IFrameEditor {
   private _suspend = false;
   private _saving = false;
   private _dirty = false;
+  /** Ids of the rows whose NEXT update goes out without an `expected` guard — an Overwrite
+   * answer, scoped to the save it was given in (see {@link resolveConflict}). */
+  private _unguarded = new Set<string>();
   private _query?: DomainQuerySpec;
   /** See {@link DomainFrameEditorOptions.quiet}. */
   readonly quiet: boolean;
@@ -827,6 +830,7 @@ export class DomainFrameEditor implements IFrameEditor {
         this._clearRowState(row);
       }
     });
+    this._unguarded.clear();
     this._resetCaches();
     this._df.rows.requestFilter();
     this._fire();
@@ -868,8 +872,11 @@ export class DomainFrameEditor implements IFrameEditor {
   /** The pending batch as transaction ops, in row order: `'new'` rows insert
    * their writable values, `immutable` keys included (naming their draft id as the
    * op's `ref`), `'modified'` rows update ONLY their changed columns — never an
-   * `immutable` one — with the row's `expectedVersion`,
-   * `'deleted'` rows delete, `'restored'` rows carry their id alone and undo a
+   * `immutable` one — guarded as `access.support.concurrency` says: `'version'` sends
+   * the row's `expectedVersion`, `'expected'` the ORIGINAL values of the changed columns
+   * ({@link _guardOf} — a partial guard: only the columns whose declared type the warehouse can
+   * compare, so an edit touching floats, datetimes, refs or empty originals alone carries none),
+   * `'none'` nothing. `'deleted'` rows delete, `'restored'` rows carry their id alone and undo a
    * landed soft delete. Exposed so a caller can inspect or extend the
    * payload; a {@link DomainSession} concatenates several editors' into one
    * transaction.
@@ -923,13 +930,45 @@ export class DomainFrameEditor implements IFrameEditor {
         if (Object.keys(values).length === 0)
           continue;
         const op: DomainTransactionOp = {op: 'update', table: table, id: `${id}`, values: values};
-        const version = this._wire(row, 'version');
-        if (typeof version === 'number')
-          op.expectedVersion = version;
+        const concurrency = this.access.support.concurrency;
+        if (concurrency === 'expected') {
+          const expected = this._guardOf(row, values);
+          if (Object.keys(expected).length > 0 && !this._unguarded.has(`${id}`))
+            op.expected = expected;
+        }
+        else if (concurrency === 'version') {
+          const version = this._wire(row, 'version');
+          if (typeof version === 'number')
+            op.expectedVersion = version;
+        }
         pending.push({row: row, op: op});
       }
     }
     return pending;
+  }
+
+  /** The `expected` guard of an update of [row]: the ORIGINAL value of every column in [values]
+   * whose DECLARED type the server admits — an int kind holding an integral number, a non-empty
+   * string (a ref excluded: its target's key type is not known here), a bool the property
+   * declares NOT NULL — with the same `$$` escape as the values. A missing original (a first
+   * touch the grid could not snapshot), a float, a datetime, null or `''` contribute nothing. */
+  private _guardOf(row: number, values: {[column: string]: any}): {[column: string]: any} {
+    const changes = this.changesOf(row);
+    const guard: {[column: string]: any} = {};
+    for (const column of Object.keys(values)) {
+      const original = changes[column];
+      const p = this._propByName.get(column);
+      if (original == null || original === '' || _isUnknown(original) || p == null ||
+          DomainFrameEditor.isReferenceProperty(p))
+        continue;
+      const t = p.propertyType;
+      const admitted = t === TYPE.INT || t === TYPE.BIG_INT ? Number.isInteger(original)
+        : t === TYPE.STRING ? typeof original === 'string'
+        : t === TYPE.BOOL ? p.nullable === false && typeof original === 'boolean' : false;
+      if (admitted)
+        guard[column] = DomainFrameEditor._refValue(original);
+    }
+    return guard;
   }
 
   /** [v] as the transaction wire wants it: a draft id becomes a `$ref`, a literal
@@ -1112,9 +1151,14 @@ export class DomainFrameEditor implements IFrameEditor {
     if (ids.length === 0)
       return;
     let rows: any[];
+    const withAccess = this._df.columns.contains(DOMAIN_ACCESS_COLUMNS[0]);
     try {
-      rows = await this.client.query({filter: {property: 'id', operator: '=', value: ids},
-        withAccess: this._df.columns.contains(DOMAIN_ACCESS_COLUMNS[0])});
+      // an external table (rows addressed by their id) refuses `id IN` on a composite key: one
+      // read per row there (a row that fails to read is left as saved), one query elsewhere
+      rows = this._info.rowAddress === 'id'
+        ? (await Promise.all(ids.map((id) => this.client.get(id, {withAccess}).catch(() => null))))
+          .filter((r) => r != null)
+        : await this.client.query({filter: {property: 'id', operator: '=', value: ids}, withAccess});
     } catch (e) {
       log.warning(`${this.table}: post-save re-read failed — ${e}`);
       return;
@@ -1139,17 +1183,23 @@ export class DomainFrameEditor implements IFrameEditor {
     this._fire();
   }
 
-  /** The platform's standard reload/overwrite dialog for a version conflict on
-   * [failing], with the outcome applied: RELOAD takes the server's values for
-   * that ONE row (dropping its edits), OVERWRITE takes the current version.
-   * Resolves to whether the batch should be rebuilt and retried; false when the
+  /** The reload/overwrite dialog for a version conflict on [failing], with the outcome applied:
+   * RELOAD takes the server's values for that ONE row (dropping its edits); OVERWRITE takes the
+   * current version where the guard was one, and where the op carried an `expected` guard (the
+   * external shape — its own dialog, showing what was read, what is there now and what is
+   * pending per guard column) sends this row's changed values UNGUARDED on the retry, and on that
+   * retry only. Resolves to whether the batch should be rebuilt and retried; false when the
    * user dismissed it, in which case the row's changed cells say why. */
   async resolveConflict(e: DomainVersionConflictError, failing: DomainPendingOp): Promise<boolean> {
     this._onConflict.next(e);
     const row = failing.row;
     const id = `${failing.op.id ?? this._wire(row, 'id')}`;
     const subject = `${this._displayOf(row) ?? id}`;
-    const decision = await DomainObjectHandler.showConflictDialog(subject);
+    // The op's guard decides the shape, not the body: a 409 without `current` must still not
+    // reach the version dialog, whose Overwrite would retry the same stale guard.
+    const guarded = failing.op.expected != null;
+    const decision = guarded ? await this._expectedConflictDialog(e, row, subject)
+      : await DomainObjectHandler.showConflictDialog(subject);
     if (decision === 'reload') {
       let fresh: any = null;
       try {
@@ -1171,7 +1221,9 @@ export class DomainFrameEditor implements IFrameEditor {
       return true;
     }
     if (decision === 'overwrite') {
-      if (e.currentVersion != null)
+      if (guarded)
+        this._unguarded.add(id);
+      else if (e.currentVersion != null)
         this._write(() => this._df.set('version', row, e.currentVersion));
       return true;
     }
@@ -1179,6 +1231,35 @@ export class DomainFrameEditor implements IFrameEditor {
       this._setError(row, column, {message: e.message, kind: 'conflict'});
     this._fire();
     return false;
+  }
+
+  /** "<subject> changed since you read it": a Column | You read | Now | Yours table over the guard
+   * columns (Now empty when the body carries no `current`), and the three answers. "Now" is what
+   * the server read AFTER refusing the write. A test answers it by clicking its buttons. */
+  protected _expectedConflictDialog(e: DomainVersionConflictError, row: number, subject: string):
+      Promise<'reload' | 'overwrite' | null> {
+    const text = (v: unknown): string => v == null ? '' : `${v}`;
+    const current = e.current ?? {};
+    const lines = Object.keys(e.expected ?? {}).map((c) =>
+      [this._captionOf(c), text(e.expected![c]), text(current[c]), text(this._wire(row, c))]);
+    return new Promise((resolve) => {
+      const dlg = Dialog.create({title: `${subject} changed since you read it`});
+      const decide = decideOnce<'reload' | 'overwrite' | null>(dlg, resolve, null);
+      dlg.add(ui.table(lines, (line) => line, ['Column', 'You read', 'Now', 'Yours']));
+      dlg.add(ui.divV([
+        ui.p('"Now" was read after your save was refused and may have moved again. Reload takes the'
+          + ' row as it is now and drops your edits; Overwrite saves yours over it.'),
+      ], 'ui-hint-block'));
+      dlg.addButton('RELOAD', () => {
+        decide('reload');
+        dlg.close();
+      }, 0);
+      dlg.addButton('OVERWRITE', () => {
+        decide('overwrite');
+        dlg.close();
+      }, 1);
+      dlg.show();
+    });
   }
 
   /** `rows[0].errors[{column, message}]` of a rejected op onto that row's cells;
@@ -1258,9 +1339,12 @@ export class DomainFrameEditor implements IFrameEditor {
   }
 
   /** Opens/closes the editor around a transaction (see {@link save}); a
-   * {@link DomainSession} sets it on every participant. */
+   * {@link DomainSession} sets it on every participant. Closing is the end of the save, landed or
+   * refused: an Overwrite given during it does not outlive it. */
   setSaving(saving: boolean): void {
     this._saving = saving;
+    if (!saving)
+      this._unguarded.clear();
     this._onSavingChanged.next(saving);
   }
 
@@ -1748,22 +1832,8 @@ export function promptUnsavedChanges(editors: DomainFrameEditor[],
   const subject = options?.subject ?? dirty.map((e) => e.table).join(', ');
   const action = options?.action ?? 'continue';
   return new Promise<UnsavedOutcome>((resolve) => {
-    // Every path goes through one guard: a double-clicked button (or a close
-    // notification arriving after a decision) must repeat the first answer, not
-    // overwrite it.
-    let decided = false;
-    let closed: {unsubscribe(): void} | null = null;
-    const decide = (outcome: UnsavedOutcome) => {
-      // The onClose subscription outlives the dialog otherwise: its subject is
-      // the platform's, not this promise's.
-      closed?.unsubscribe();
-      closed = null;
-      if (!decided) {
-        decided = true;
-        resolve(outcome);
-      }
-    };
     const dlg = Dialog.create({title: 'Unsaved changes'});
+    const decide = decideOnce<UnsavedOutcome>(dlg, resolve, 'cancel');
     dlg.add(ui.divV([
       ui.p(`${changes} unsaved change${changes === 1 ? '' : 's'} in ${subject}.`),
       ui.p(`Save them, discard them, or cancel and do not ${action}.`),
@@ -1778,12 +1848,26 @@ export function promptUnsavedChanges(editors: DomainFrameEditor[],
       decide('discard');
       dlg.close();
     }, 1);
-    dlg.onCancel(() => decide('cancel'));
-    // A dismissal (the X, Esc, a programmatic close) is a cancel — and `onClose`
-    // fires for the decided paths too, where the guard keeps the first answer.
-    closed = dlg.onClose.subscribe(() => decide('cancel'));
     dlg.show();
   });
+}
+
+/** [dlg]'s one answer: every path goes through one guard — a double-clicked button, or the close
+ * notification arriving after a decision, repeats the first answer rather than overwriting it —
+ * and a dismissal (the X, Esc, a programmatic close) answers [dismissed]. The `onClose`
+ * subscription is dropped on the first answer: its subject is the platform's, not this promise's. */
+function decideOnce<T>(dlg: Dialog, resolve: (outcome: T) => void, dismissed: T): (outcome: T) => void {
+  let closed: {unsubscribe(): void} | null = null;
+  const decide = (outcome: T) => {
+    if (closed == null)
+      return;
+    closed.unsubscribe();
+    closed = null;
+    resolve(outcome);
+  };
+  dlg.onCancel(() => decide(dismissed));
+  closed = dlg.onClose.subscribe(() => decide(dismissed));
+  return decide;
 }
 
 /**

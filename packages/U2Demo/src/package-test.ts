@@ -10,6 +10,7 @@ import './tests/domain-bulk';
 import './tests/domain-import';
 import './tests/domain-conformance';
 import './tests/domain-external';
+import './tests/domain-external-write';
 
 export let _package = new DG.Package();
 export { tests };

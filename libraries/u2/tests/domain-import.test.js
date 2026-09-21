@@ -229,17 +229,34 @@ scoped('a dry run that cannot reach the backend shows why and never blocks the i
   assert.equal((await running).inserted, 1);
 });
 
-scoped('a backend with no dry run says so instead of standing one in', async () => {
+scoped('a storage with no dry run previews the mapped rows without verdicts, and the import still posts', async () => {
   const memory = backend();
-  memory.tableSync('grit.issue').validate = undefined;
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, batch: {...issue.support.batch, validate: false}};
+  issue.validate = undefined;
   const {running} = await opened(memory,
-    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Unchecked'}]));
+    frame(['project_id', 'title', 'note'], [{project_id: 'p1', title: 'Unchecked', note: 'x'}]));
   await toMapping();
   await toPreview();
-  assert.match(document.body.querySelector('.u2-domain-import-preview').textContent,
-    /This backend cannot preview an import; the rows are checked on import\./);
-  fire(buttonNamed('CANCEL'), 'click');
-  assert.equal(await running, null);
+  const preview = document.body.querySelector('.u2-domain-import-preview');
+  assert.match(preview.textContent, /Rows are checked when imported\./);
+  const rows = preview.querySelector('.u2-domain-import-rows');
+  rows.clientHeight = 200;
+  fire(rows, 'scroll');
+  await flush();
+  assert.deepEqual([...rows.querySelectorAll('.u2-data-table-head')].map((c) => c.textContent),
+    ['Project id', 'Title'], 'the mapped columns under their captions, no verdict column');
+  assert.deepEqual([...rows.querySelectorAll('.u2-data-table-row')]
+    .map((r) => [...r.children].map((c) => c.textContent).join('|')), ['p1|Unchecked']);
+  assert.equal(reason(), '', 'nothing gates NEXT');
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.match(document.body.querySelector('.u2-domain-import-report').textContent,
+    /1 inserted, 0 updated, 0 skipped, 0 failed/);
+  fire(buttonNamed('CLOSE'), 'click');
+  const report = await running;
+  assert.equal(report.inserted, 1);
+  assert.notEqual(issues(memory).find((r) => r.title === 'Unchecked'), undefined, 'the row landed through batch');
 });
 
 scoped('only the mapped columns are posted, under their target names', async () => {
@@ -413,4 +430,75 @@ scoped('an aborted all-or-nothing run is not a dead end: BACK, the flag off, and
   const report = await running;
   assert.equal(report.inserted, 1);
   assert.equal(report.errorCount, 1);
+});
+
+scoped('the options offered are the ones the storage declares, and an option not offered is not sent', async () => {
+  // an external binding: all-or-nothing is the only way it imports, a duplicate is always an
+  // error, and this one has no upsert either
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support,
+    batch: {...issue.support.batch, upsert: false, partial: false, skipDuplicates: false}};
+  const posts = [];
+  const real = issue.batch.bind(issue);
+  issue.batch = (rows, options) => {
+    posts.push(options);
+    return real(rows, options);
+  };
+  const {running} = await opened(memory,
+    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Declared'}]));
+  assert.equal(document.body.querySelector('[data-u2-name="allOrNothing"]'), null, 'no "All or nothing"');
+  assert.equal(document.body.querySelector('[data-u2-name="errorOnDuplicate"]'), null, 'no "Error on duplicate"');
+  assert.equal(document.body.querySelector('[data-u2-name="mode"]'), null, 'no upsert: no mode to choose');
+  await toMapping();
+  await toPreview();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.deepEqual(posts, [{mode: 'insert'}], 'nothing the storage refuses is on the wire');
+  fire(buttonNamed('CLOSE'), 'click');
+  assert.equal((await running).inserted, 1);
+});
+
+scoped('an aborted run on a storage without partial imports never recommends the flag it has not got', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, batch: {...issue.support.batch, partial: false}};
+  const {running} = await opened(memory,
+    frame(['project_id', 'title'], [{project_id: 'p1', title: 'Fine'}, {project_id: 'p1', title: ''}]));
+  await toMapping();
+  await toPreview();
+  assert.match(document.body.querySelector('.u2-domain-import-preview').textContent,
+    /This import is all or nothing — nothing will be imported\./, 'the fixed flag reads as on, unnamed');
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  assert.match(shown, /Import aborted — 1 row has errors/);
+  assert.doesNotMatch(shown, /Uncheck "All or nothing"/);
+  assert.notEqual([...document.body.querySelectorAll('.u2-domain-import-report button')]
+    .find((b) => b.textContent === 'BACK'), undefined, 'the way back is still the mapping');
+  fire(buttonNamed('CLOSE'), 'click');
+  assert.equal((await running).error, 'validation');
+});
+
+scoped('an upsert on a storage that cannot tell insert from update reports merged rows', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.batch = async (rows) => ({inserted: 0, updated: 0, merged: rows.length, skipped: 0, errorCount: 0,
+    rows: rows.map((_, index) => ({index, id: `k${index}`, status: 'merged'}))});
+  const {running} = await opened(memory,
+    frame(['project_id', 'number', 'title'], [{project_id: 'p1', number: 1, title: 'One'},
+      {project_id: 'p1', number: 2, title: 'Two'}]));
+  await toMapping();
+  named('mode').value.value = 'upsert';
+  await flush();
+  await toPreview();
+  fire(buttonNamed('NEXT'), 'click');
+  await flush();
+  assert.match(document.body.querySelector('.u2-domain-import-report').textContent,
+    /0 inserted, 2 merged, 0 skipped, 0 failed/);
+  assert.match(document.body.querySelector('.u2-notify-info').textContent, /0 inserted, 2 merged/);
+  fire(buttonNamed('CLOSE'), 'click');
+  const report = await running;
+  assert.equal(report.merged, 2);
+  assert.deepEqual(report.rows.map((r) => r.status), ['merged', 'merged']);
 });

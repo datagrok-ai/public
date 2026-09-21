@@ -134,6 +134,18 @@ test('transaction: a version conflict, a missing row or a required column refuse
   assert.equal((await issue.query({filter: 'id = "i1"'}))[0].version, 1);
 });
 
+test('transaction: an `expected` guard writes when the row still reads so, names what moved otherwise', async () => {
+  const issue = await backend().table('grit.issue');
+  const [updated] = await issue.transaction([
+    {op: 'update', table: 'issue', id: 'i1', values: {title: '$$1'}, expected: {title: 'Aspirin'}}]);
+  assert.equal(updated.version, 2);
+  assert.equal((await issue.query({filter: 'id = "i1"'}))[0].title, '$1', 'the value keeps the $$ escape');
+  await assert.rejects(issue.transaction([
+    {op: 'update', table: 'issue', id: 'i1', values: {title: 'x'}, expected: {title: '$$1', project_id: 'p2'}}]),
+    (e) => e.code === 'version-conflict' && /changed since it was read: project_id$/.test(e.message));
+  assert.equal((await issue.query({filter: 'id = "i1"'}))[0].version, 2, 'a stale guard writes nothing');
+});
+
 test('transaction: choices, min and max refuse the batch; author_id and the timestamps are stamped on insert', async () => {
   const issue = await backend({author: 'u7'}).table('grit.issue');
   await assert.rejects(issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', title: 'x', priority: 'medium'}}]),

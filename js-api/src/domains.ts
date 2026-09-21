@@ -371,7 +371,8 @@ export interface DomainTableInfo {
 export interface DomainBatchRowResult {
   index: number;
   id: string | null;
-  status: 'inserted' | 'updated' | 'duplicate' | 'error';
+  /** `'merged'`: an upsert landed on a storage that cannot tell an insert from an update. */
+  status: 'inserted' | 'updated' | 'merged' | 'duplicate' | 'error';
   existingId?: string;
   errors?: DomainColumnError[];
 }
@@ -403,6 +404,12 @@ export class DomainVersionConflictError extends DomainError {     // code 'versi
   get id(): string { return this.body['id']; }
   get currentVersion(): number { return this.body['currentVersion']; }
   get expectedVersion(): number { return this.body['expectedVersion']; }
+  /** The old-value guard the write carried ({@link DomainTransactionOp.expected}), per column;
+   * undefined when the conflict is a version one. */
+  get expected(): {[column: string]: unknown} | undefined { return this.body['expected']; }
+  /** The guard columns as the server read them AFTER refusing the write — a later observation,
+   * they may have moved again. */
+  get current(): {[column: string]: unknown} | undefined { return this.body['current']; }
 }
 export class DomainRestrictError extends DomainError {}           // code 'restrict'
 export class DomainFilterError extends DomainError {}             // code 'filter'
@@ -656,8 +663,15 @@ export interface DomainTransactionOp {
   ref?: string;
   values?: object;
   id?: string;
-  /** Optimistic-concurrency guard for update ops. */
+  /** Optimistic-concurrency guard for update ops on a platform-stored table
+   * (`support.concurrency === 'version'`). */
   expectedVersion?: number;
+  /** Old-value guard for update ops on an external table (`support.concurrency === 'expected'`):
+   * the columns' values as last read, every one AND-ed to the key; a mismatch refuses the whole
+   * transaction with a {@link DomainVersionConflictError} carrying `expected` / `current` and the
+   * `opIndex`. Never together with {@link expectedVersion}; a literal leading `$` is doubled as in
+   * `values`. */
+  expected?: {[column: string]: unknown};
   /** Insert ops only: `'error'` fails the whole transaction on a business-key
    * conflict. Without it the insert merges into the existing row and reports
    * `{created: false, status: 'duplicate', existingId}`. */
@@ -720,6 +734,9 @@ export interface DomainBatchValidation {
 export interface DomainBatchReport {
   inserted: number;
   updated: number;
+  /** Rows an upsert landed on a storage that cannot tell an insert from an update (an external
+   * binding): counted here, not under `inserted`/`updated`. A platform table never reports it. */
+  merged?: number;
   skipped: number;
   errorCount: number;
   /** Per-row outcomes; capped server-side. */

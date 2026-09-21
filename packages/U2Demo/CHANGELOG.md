@@ -3,6 +3,7 @@
 ## v.next
 
 * GROK-20298: Added the `Northwind Orders` app (the zero-code u2 app over the external `northwind` binding) and the `U2: domain external` test category
+* GROK-20298: Added the `U2: domain external write` test category — the app over the writable `extwlive` binding: a new row typed with its key, a guarded edit, the conflict dialog (Overwrite and Reload) when a column moved behind the app, a delete, and an upsert import counting merged rows
 
 * GROK-20298: `U2: domain trash` covers the staged restore — Restore is a pending change until Save (Discard takes it back, and nothing is written meanwhile), and a landed batch carries the row out of the trash; `U2: domain import` asserts the preview's verdicts are the server's dry run and its counts are the commit's
 * GROK-20753: Added the `U2: domain conformance` test category — the u2 backend conformance scenarios run against the platform backend over a throwaway hierarchy schema, the same file the headless suite runs over the memory backend

@@ -23,7 +23,7 @@ try {
   } catch (e) {
     if (!(e instanceof DG.DomainVersionConflictError))
       throw e;
-    grok.shell.info(`conflict: expected ${JSON.stringify(e.body.expected)}, current ${JSON.stringify(e.body.current)}`);
+    grok.shell.info(`conflict: expected ${JSON.stringify(e.expected)}, current ${JSON.stringify(e.current)}`);
   }
 } finally {
   await things.delete(id);

@@ -294,6 +294,12 @@ export class MemoryDomainBackend implements DomainBackend {
           throw new DomainBackendError('version-conflict',
             `Operation ${index}: row "${id}" is at version ${rows[at].version}, expected ${op.expectedVersion}`);
         }
+        const moved = Object.keys(op.expected ?? {})
+          .filter((c) => rows[at][c] !== resolve(op.expected![c], index));
+        if (moved.length > 0) {
+          throw new DomainBackendError('version-conflict',
+            `Operation ${index}: row "${id}" changed since it was read: ${moved.join(', ')}`);
+        }
         const row = table.stamp({...rows[at], ...values}, (rows[at].version as number) + 1);
         table.check(row, index);
         entry(op.op, id!, {...rows[at]}, {...row});

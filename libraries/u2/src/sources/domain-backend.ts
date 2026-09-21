@@ -151,6 +151,9 @@ export interface DomainTransactionOpLike {
   values?: Record<string, unknown>;
   id?: string;
   expectedVersion?: number;
+  /** The old-value guard of an update where `support.concurrency` is `'expected'`: the columns'
+   * values as last read; never together with `expectedVersion`. */
+  expected?: Record<string, unknown>;
 }
 
 export interface DomainTransactionResultLike {
@@ -175,10 +178,12 @@ export interface DomainBatchOptionsLike {
 }
 
 /** What a bulk upload answers (js-api `DomainBatchReport`): the counts, one line per row, and
- * `error` where the upload failed but a per-row report survived it. */
+ * `error` where the upload failed but a per-row report survived it. A storage that cannot tell
+ * an insert from an update answers an upsert as `merged` (per row `status: 'merged'`). */
 export interface DomainBatchReportLike {
   inserted: number;
   updated: number;
+  merged?: number;
   skipped: number;
   errorCount: number;
   rows: {index: number, id: string | null, status: string, existingId?: string,
