@@ -273,7 +273,7 @@ function runBenchmarks(): void {
           Float64Array.from(problem.x0),
           settings as any,
         );
-      } catch (e: any) {
+      } catch {
         rows.push({
           icon: '❌',
           method: cfg.name,

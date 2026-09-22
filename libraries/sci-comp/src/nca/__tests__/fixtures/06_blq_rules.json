@@ -1,0 +1,964 @@
+{
+  "dataset": "06_blq_rules",
+  "pknca_version": "0.12.1",
+  "config": {
+    "auc_method": "lin up/log down",
+    "min_points": 3,
+    "min_r_squared": 0.85,
+    "exclude_cmax": true,
+    "min_span_ratio": 2,
+    "extrap_warn": 20,
+    "extrap_error": 50,
+    "lloq": 0.05,
+    "blq_encoding": "conc = 0 with blq = 1 (PKNCA treats conc == 0 as BLQ)"
+  },
+  "dataset_meta": {
+    "dose": {
+      "po": {
+        "value": 10,
+        "unit": "mg"
+      },
+      "iv_bolus": {
+        "value": 25,
+        "unit": "mg"
+      }
+    },
+    "subjects": {
+      "P1": "PO: leading BLQ at t=0 and 0.5, embedded BLQ at t=6, positive tail (preFirstMeasurable + embedded; EV t=0 on a substituted BLQ)",
+      "P2": "PO: leading (0, BLQ), clean middle, two trailing BLQ at t=12, 24 (afterLast vs consecutiveAfterLast; trailing trim vs set-half-lloq)",
+      "P3": "PO: positive to t=4, then three trailing BLQ, only 2 post-Cmax positives (status 'partial' under set-zero/exclude; under set-half-lloq PKNCA fits the flat LLOQ/2 tail below sci-comp's adj-R^2 floor)",
+      "P4": "PO: clean log-linear decay with ONE trailing BLQ that lands on the line under LLOQ/2 (set-half-lloq: the substitute enters an ACCEPTED lambda_z fit and becomes cLast/tLast — the AUCinf-family divergence from PKNCA's clast.obs extrapolation)",
+      "I1": "IV bolus: indometh subject 1 + a FLAGGED (0, 0, blq=1) pre-dose row (the dose-time gate under every rule)"
+    },
+    "iv_bolus_oracle": "independent VALUE, same TECHNIQUE: c0_pknca is PKNCA's own c0 on the raw profile; the AUC oracle integrates PKNCA over the profile with the flagged row replaced by (0, c0_pknca) - sci-comp's/WinNonlin's C0-in-AUC convention imposed on PKNCA's integrator, so it validates the integration of the augmented profile, NOT the choice of convention (REGEN.md).",
+    "tlag_note": "sci-comp Tlag is mask-based (a BLQ sample before the first measurable is the lag boundary, whatever the rule); PKNCA computes tlag on the CLEANED profile, so the two diverge under exclude / missing / set-half-lloq for a pre-first BLQ. The fixture records PKNCA's value; reference-suite.test.ts asserts sci-comp's documented value and PKNCA parity only where they agree."
+  },
+  "blocks": [
+    {
+      "id": "R-A",
+      "sci_comp_blq": {
+        "preFirstMeasurable": "set-zero",
+        "embedded": "set-zero",
+        "afterLast": "set-zero",
+        "consecutiveAfterLast": "set-zero"
+      },
+      "config": {
+        "conc_blq": {
+          "first": "keep",
+          "middle": "keep",
+          "last": "keep"
+        },
+        "auc_oracle_block": "R-A"
+      },
+      "note": "D1/D2 semantics: the substituted 0 integrates; lambda_z excludes conc <= 0 itself",
+      "profiles": [
+        {
+          "profile_key": {
+            "subject": "P1",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 2,
+            "auclast": 13.472929230573,
+            "aucinf": 13.936678376322,
+            "pct_aucextrap": 3.327544291592,
+            "lambda_z": 0.1293802922335,
+            "half_life": 5.357440214381,
+            "cl": 0.7175310881099,
+            "vz": 5.545907152653,
+            "aumclast": 71.612766001373,
+            "aumcinf_obs": 86.327133335723,
+            "mrt": 6.194240191579,
+            "vss": null,
+            "tlag": 0.5,
+            "pct_aumcextrap": 17.044892799957
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 8,
+            "lambda_z_time_last": 24,
+            "lambda_z_r_squared": 0.9929984341476,
+            "lambda_z_adj_r_squared": 0.9859968682952,
+            "tlast": 24,
+            "clast_obs": 0.06,
+            "span_ratio": 2.986500895904
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P2",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 2.5,
+            "tmax": 1,
+            "auclast": 8.939461058149,
+            "aucinf": 9.884580777491,
+            "pct_aucextrap": 9.561555928544,
+            "lambda_z": 0.3174201044169,
+            "half_life": 2.183690229178,
+            "cl": 1.011676693742,
+            "vz": 3.187185309515,
+            "aumclast": 26.718335757524,
+            "aumcinf_obs": 37.256797791889,
+            "mrt": 3.769183400952,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 28.286011302505
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.99959247512,
+            "lambda_z_adj_r_squared": 0.99918495024,
+            "tlast": 8,
+            "clast_obs": 0.3,
+            "span_ratio": 2.747642463124
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P3",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 1,
+            "auclast": 7.1232746487,
+            "aucinf": null,
+            "pct_aucextrap": null,
+            "lambda_z": null,
+            "half_life": null,
+            "cl": null,
+            "vz": null,
+            "aumclast": 14.038313828066,
+            "aumcinf_obs": null,
+            "mrt": null,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": null
+          },
+          "provenance": {
+            "lambda_z_n_points": null,
+            "lambda_z_time_first": null,
+            "lambda_z_time_last": null,
+            "lambda_z_r_squared": null,
+            "lambda_z_adj_r_squared": null,
+            "tlast": 4,
+            "clast_obs": 1,
+            "span_ratio": null
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P4",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 4,
+            "tmax": 1,
+            "auclast": 18.025396451281,
+            "aucinf": 19.416839176391,
+            "pct_aucextrap": 7.166164958516,
+            "lambda_z": 0.2299771267802,
+            "half_life": 3.013983130689,
+            "cl": 0.5150168834977,
+            "vz": 2.239426549536,
+            "aumclast": 72.407439365431,
+            "aumcinf_obs": 95.155104745691,
+            "mrt": 4.900648549502,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 23.905880237381
+          },
+          "provenance": {
+            "lambda_z_n_points": 4,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 12,
+            "lambda_z_r_squared": 0.9999816695913,
+            "lambda_z_adj_r_squared": 0.9999725043869,
+            "tlast": 12,
+            "clast_obs": 0.32,
+            "span_ratio": 3.317868603237
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "I1",
+            "route": "iv-bolus"
+          },
+          "parameters": {
+            "cmax": 1.5,
+            "tmax": 0.25,
+            "auclast": 2.009898436405,
+            "aucinf": 2.325713542839,
+            "pct_aucextrap": 13.579277955655,
+            "lambda_z": 0.1583204824003,
+            "half_life": 4.378127012065,
+            "cl": 10.749389182935,
+            "vz": 67.896389778272,
+            "aumclast": 3.304796065434,
+            "aumcinf_obs": 7.826100545953,
+            "mrt": 3.365032022129,
+            "vss": 36.172038818902,
+            "tlag": null,
+            "pct_aumcextrap": 57.772123600653
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 5,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.9970667274262,
+            "lambda_z_adj_r_squared": 0.9941334548524,
+            "tlast": 8,
+            "clast_obs": 0.05,
+            "span_ratio": 0.6852245244902,
+            "c0_pknca": 2.393617021277
+          }
+        }
+      ]
+    },
+    {
+      "id": "R-B",
+      "sci_comp_blq": {
+        "preFirstMeasurable": "exclude",
+        "embedded": "exclude",
+        "afterLast": "exclude",
+        "consecutiveAfterLast": "exclude"
+      },
+      "config": {
+        "conc_blq": {
+          "first": "drop",
+          "middle": "drop",
+          "last": "drop"
+        },
+        "auc_oracle_block": "R-D"
+      },
+      "note": "the pre-GROK-20960 numbers (every rule used to integrate as exclude); PKNCA drop leaves AUC NA without a t=0 datum -> AUC oracle = R-D",
+      "profiles": [
+        {
+          "profile_key": {
+            "subject": "P1",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 2,
+            "auclast": null,
+            "aucinf": null,
+            "pct_aucextrap": null,
+            "lambda_z": 0.1293802922335,
+            "half_life": 5.357440214381,
+            "cl": null,
+            "vz": null,
+            "aumclast": null,
+            "aumcinf_obs": null,
+            "mrt": null,
+            "vss": null,
+            "tlag": 0.5,
+            "pct_aumcextrap": null
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 8,
+            "lambda_z_time_last": 24,
+            "lambda_z_r_squared": 0.9929984341476,
+            "lambda_z_adj_r_squared": 0.9859968682952,
+            "tlast": 24,
+            "clast_obs": 0.06,
+            "span_ratio": 2.986500895904
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P2",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 2.5,
+            "tmax": 1,
+            "auclast": null,
+            "aucinf": null,
+            "pct_aucextrap": null,
+            "lambda_z": 0.3174201044169,
+            "half_life": 2.183690229178,
+            "cl": null,
+            "vz": null,
+            "aumclast": null,
+            "aumcinf_obs": null,
+            "mrt": null,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": null
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.99959247512,
+            "lambda_z_adj_r_squared": 0.99918495024,
+            "tlast": 8,
+            "clast_obs": 0.3,
+            "span_ratio": 2.747642463124
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P3",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 1,
+            "auclast": null,
+            "aucinf": null,
+            "pct_aucextrap": null,
+            "lambda_z": null,
+            "half_life": null,
+            "cl": null,
+            "vz": null,
+            "aumclast": null,
+            "aumcinf_obs": null,
+            "mrt": null,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": null
+          },
+          "provenance": {
+            "lambda_z_n_points": null,
+            "lambda_z_time_first": null,
+            "lambda_z_time_last": null,
+            "lambda_z_r_squared": null,
+            "lambda_z_adj_r_squared": null,
+            "tlast": 4,
+            "clast_obs": 1,
+            "span_ratio": null
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P4",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 4,
+            "tmax": 1,
+            "auclast": null,
+            "aucinf": null,
+            "pct_aucextrap": null,
+            "lambda_z": 0.2299771267802,
+            "half_life": 3.013983130689,
+            "cl": null,
+            "vz": null,
+            "aumclast": null,
+            "aumcinf_obs": null,
+            "mrt": null,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": null
+          },
+          "provenance": {
+            "lambda_z_n_points": 4,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 12,
+            "lambda_z_r_squared": 0.9999816695913,
+            "lambda_z_adj_r_squared": 0.9999725043869,
+            "tlast": 12,
+            "clast_obs": 0.32,
+            "span_ratio": 3.317868603237
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "I1",
+            "route": "iv-bolus"
+          },
+          "parameters": {
+            "cmax": 1.5,
+            "tmax": 0.25,
+            "auclast": 2.009898436405,
+            "aucinf": 2.325713542839,
+            "pct_aucextrap": 13.579277955655,
+            "lambda_z": 0.1583204824003,
+            "half_life": 4.378127012065,
+            "cl": 10.749389182935,
+            "vz": 67.896389778272,
+            "aumclast": 3.304796065434,
+            "aumcinf_obs": 7.826100545953,
+            "mrt": 3.365032022129,
+            "vss": 36.172038818902,
+            "tlag": null,
+            "pct_aumcextrap": 57.772123600653
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 5,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.9970667274262,
+            "lambda_z_adj_r_squared": 0.9941334548524,
+            "tlast": 8,
+            "clast_obs": 0.05,
+            "span_ratio": 0.6852245244902,
+            "c0_pknca": 2.393617021277
+          }
+        }
+      ]
+    },
+    {
+      "id": "R-C",
+      "sci_comp_blq": {
+        "preFirstMeasurable": "set-half-lloq",
+        "embedded": "set-half-lloq",
+        "afterLast": "set-half-lloq",
+        "consecutiveAfterLast": "set-half-lloq"
+      },
+      "config": {
+        "conc_blq": {
+          "first": 0.025,
+          "middle": 0.025,
+          "last": 0.025
+        },
+        "auc_oracle_block": "R-C"
+      },
+      "note": "positive substitutes enter lambda_z and move tlast",
+      "profiles": [
+        {
+          "profile_key": {
+            "subject": "P1",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 2,
+            "auclast": 12.418088630677,
+            "aucinf": 12.881837776426,
+            "pct_aucextrap": 3.60002317835,
+            "lambda_z": 0.1293802922335,
+            "half_life": 5.357440214381,
+            "cl": 0.776286751437,
+            "vz": 6.000038630584,
+            "aumclast": 67.763245215252,
+            "aumcinf_obs": 82.477612549602,
+            "mrt": 6.402627791241,
+            "vss": null,
+            "tlag": 0.5,
+            "pct_aumcextrap": 17.840438004314
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 8,
+            "lambda_z_time_last": 24,
+            "lambda_z_r_squared": 0.9929984341476,
+            "lambda_z_adj_r_squared": 0.9859968682952,
+            "tlast": 24,
+            "clast_obs": 0.06,
+            "span_ratio": 2.986500895904
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P2",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 2.5,
+            "tmax": 1,
+            "auclast": 9.688383622969,
+            "aucinf": 11.14220647468,
+            "pct_aucextrap": 13.047890065711,
+            "lambda_z": 0.2063525137516,
+            "half_life": 3.359044035657,
+            "cl": 0.8974883047379,
+            "vz": 4.34929668857,
+            "aumclast": 36.211322614857,
+            "aumcinf_obs": 78.148407336438,
+            "mrt": 7.013728161834,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 53.663390145672
+          },
+          "provenance": {
+            "lambda_z_n_points": 5,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 24,
+            "lambda_z_r_squared": 0.761109014926,
+            "lambda_z_adj_r_squared": 0.681478686568,
+            "tlast": 8,
+            "clast_obs": 0.3,
+            "span_ratio": 6.549482461816
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P3",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 1,
+            "auclast": 7.81439045853,
+            "aucinf": 9.887684725797,
+            "pct_aucextrap": 20.968450398278,
+            "lambda_z": 0.4823242005672,
+            "half_life": 1.437098075827,
+            "cl": 1.011359107548,
+            "vz": 2.096845039828,
+            "aumclast": 17.762268230369,
+            "aumcinf_obs": 46.940348556252,
+            "mrt": 4.747354902385,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 62.159914068207
+          },
+          "provenance": {
+            "lambda_z_n_points": 5,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 12,
+            "lambda_z_r_squared": 0.677861721074,
+            "lambda_z_adj_r_squared": 0.5704822947653,
+            "tlast": 4,
+            "clast_obs": 1,
+            "span_ratio": 6.95846732259
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P4",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 4,
+            "tmax": 1,
+            "auclast": 19.426433863409,
+            "aucinf": 20.91032178412,
+            "pct_aucextrap": 7.096437520335,
+            "lambda_z": 0.2156497101524,
+            "half_life": 3.214227276587,
+            "cl": 0.4782327169921,
+            "vz": 2.217636725105,
+            "aumclast": 94.19353211179,
+            "aumcinf_obs": 136.687852712707,
+            "mrt": 6.536860318262,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 31.08858596984
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 8,
+            "lambda_z_time_last": 24,
+            "lambda_z_r_squared": 0.9997628507073,
+            "lambda_z_adj_r_squared": 0.9995257014146,
+            "tlast": 12,
+            "clast_obs": 0.32,
+            "span_ratio": 4.977868278496
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "I1",
+            "route": "iv-bolus"
+          },
+          "parameters": {
+            "cmax": 1.5,
+            "tmax": 0.25,
+            "auclast": 2.009898436405,
+            "aucinf": 2.325713542839,
+            "pct_aucextrap": 13.579277955655,
+            "lambda_z": 0.1583204824003,
+            "half_life": 4.378127012065,
+            "cl": 10.749389182935,
+            "vz": 67.896389778272,
+            "aumclast": 3.304796065434,
+            "aumcinf_obs": 7.826100545953,
+            "mrt": 3.365032022129,
+            "vss": 36.172038818902,
+            "tlag": null,
+            "pct_aumcextrap": 57.772123600653
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 5,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.9970667274262,
+            "lambda_z_adj_r_squared": 0.9941334548524,
+            "tlast": 8,
+            "clast_obs": 0.05,
+            "span_ratio": 0.6852245244902,
+            "c0_pknca": 2.393617021277
+          }
+        }
+      ]
+    },
+    {
+      "id": "R-D",
+      "sci_comp_blq": {
+        "preFirstMeasurable": "missing",
+        "embedded": "missing",
+        "afterLast": "missing",
+        "consecutiveAfterLast": "missing"
+      },
+      "config": {
+        "conc_blq": "rows-removed",
+        "auc_oracle_block": "R-D"
+      },
+      "note": "BLQ rows physically removed (== PKNCA conc.na = 'drop'); asserted identical to R-B",
+      "profiles": [
+        {
+          "profile_key": {
+            "subject": "P1",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 2,
+            "auclast": 15.80101435324,
+            "aucinf": 16.264763498989,
+            "pct_aucextrap": 2.851250470243,
+            "lambda_z": 0.1293802922335,
+            "half_life": 5.357440214381,
+            "cl": 0.6148260317847,
+            "vz": 4.752084117071,
+            "aumclast": 84.142540214519,
+            "aumcinf_obs": 98.856907548869,
+            "mrt": 6.077980018278,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 14.884511056626
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 8,
+            "lambda_z_time_last": 24,
+            "lambda_z_r_squared": 0.9929984341476,
+            "lambda_z_adj_r_squared": 0.9859968682952,
+            "tlast": 24,
+            "clast_obs": 0.06,
+            "span_ratio": 2.986500895904
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P2",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 2.5,
+            "tmax": 1,
+            "auclast": 8.939461058149,
+            "aucinf": 9.884580777491,
+            "pct_aucextrap": 9.561555928544,
+            "lambda_z": 0.3174201044169,
+            "half_life": 2.183690229178,
+            "cl": 1.011676693742,
+            "vz": 3.187185309515,
+            "aumclast": 26.718335757524,
+            "aumcinf_obs": 37.256797791889,
+            "mrt": 3.769183400952,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 28.286011302505
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.99959247512,
+            "lambda_z_adj_r_squared": 0.99918495024,
+            "tlast": 8,
+            "clast_obs": 0.3,
+            "span_ratio": 2.747642463124
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P3",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 1,
+            "auclast": 7.1232746487,
+            "aucinf": null,
+            "pct_aucextrap": null,
+            "lambda_z": null,
+            "half_life": null,
+            "cl": null,
+            "vz": null,
+            "aumclast": 14.038313828066,
+            "aumcinf_obs": null,
+            "mrt": null,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": null
+          },
+          "provenance": {
+            "lambda_z_n_points": null,
+            "lambda_z_time_first": null,
+            "lambda_z_time_last": null,
+            "lambda_z_r_squared": null,
+            "lambda_z_adj_r_squared": null,
+            "tlast": 4,
+            "clast_obs": 1,
+            "span_ratio": null
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P4",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 4,
+            "tmax": 1,
+            "auclast": 18.025396451281,
+            "aucinf": 19.416839176391,
+            "pct_aucextrap": 7.166164958516,
+            "lambda_z": 0.2299771267802,
+            "half_life": 3.013983130689,
+            "cl": 0.5150168834977,
+            "vz": 2.239426549536,
+            "aumclast": 72.407439365431,
+            "aumcinf_obs": 95.155104745691,
+            "mrt": 4.900648549502,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 23.905880237381
+          },
+          "provenance": {
+            "lambda_z_n_points": 4,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 12,
+            "lambda_z_r_squared": 0.9999816695913,
+            "lambda_z_adj_r_squared": 0.9999725043869,
+            "tlast": 12,
+            "clast_obs": 0.32,
+            "span_ratio": 3.317868603237
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "I1",
+            "route": "iv-bolus"
+          },
+          "parameters": {
+            "cmax": 1.5,
+            "tmax": 0.25,
+            "auclast": 2.009898436405,
+            "aucinf": 2.325713542839,
+            "pct_aucextrap": 13.579277955655,
+            "lambda_z": 0.1583204824003,
+            "half_life": 4.378127012065,
+            "cl": 10.749389182935,
+            "vz": 67.896389778272,
+            "aumclast": 3.304796065434,
+            "aumcinf_obs": 7.826100545953,
+            "mrt": 3.365032022129,
+            "vss": 36.172038818902,
+            "tlag": null,
+            "pct_aumcextrap": 57.772123600653
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 5,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.9970667274262,
+            "lambda_z_adj_r_squared": 0.9941334548524,
+            "tlast": 8,
+            "clast_obs": 0.05,
+            "span_ratio": 0.6852245244902,
+            "c0_pknca": 2.393617021277
+          }
+        }
+      ]
+    },
+    {
+      "id": "R-E",
+      "sci_comp_blq": {
+        "preFirstMeasurable": "set-zero",
+        "embedded": "set-zero",
+        "afterLast": "set-zero",
+        "consecutiveAfterLast": "exclude"
+      },
+      "config": {
+        "conc_blq": {
+          "first": "keep",
+          "middle": "keep",
+          "last": "keep"
+        },
+        "auc_oracle_block": "R-E"
+      },
+      "note": "nca-studio shipped default; expected == R-A on every parameter (GAP-W3)",
+      "profiles": [
+        {
+          "profile_key": {
+            "subject": "P1",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 2,
+            "auclast": 13.472929230573,
+            "aucinf": 13.936678376322,
+            "pct_aucextrap": 3.327544291592,
+            "lambda_z": 0.1293802922335,
+            "half_life": 5.357440214381,
+            "cl": 0.7175310881099,
+            "vz": 5.545907152653,
+            "aumclast": 71.612766001373,
+            "aumcinf_obs": 86.327133335723,
+            "mrt": 6.194240191579,
+            "vss": null,
+            "tlag": 0.5,
+            "pct_aumcextrap": 17.044892799957
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 8,
+            "lambda_z_time_last": 24,
+            "lambda_z_r_squared": 0.9929984341476,
+            "lambda_z_adj_r_squared": 0.9859968682952,
+            "tlast": 24,
+            "clast_obs": 0.06,
+            "span_ratio": 2.986500895904
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P2",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 2.5,
+            "tmax": 1,
+            "auclast": 8.939461058149,
+            "aucinf": 9.884580777491,
+            "pct_aucextrap": 9.561555928544,
+            "lambda_z": 0.3174201044169,
+            "half_life": 2.183690229178,
+            "cl": 1.011676693742,
+            "vz": 3.187185309515,
+            "aumclast": 26.718335757524,
+            "aumcinf_obs": 37.256797791889,
+            "mrt": 3.769183400952,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 28.286011302505
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.99959247512,
+            "lambda_z_adj_r_squared": 0.99918495024,
+            "tlast": 8,
+            "clast_obs": 0.3,
+            "span_ratio": 2.747642463124
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P3",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 3,
+            "tmax": 1,
+            "auclast": 7.1232746487,
+            "aucinf": null,
+            "pct_aucextrap": null,
+            "lambda_z": null,
+            "half_life": null,
+            "cl": null,
+            "vz": null,
+            "aumclast": 14.038313828066,
+            "aumcinf_obs": null,
+            "mrt": null,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": null
+          },
+          "provenance": {
+            "lambda_z_n_points": null,
+            "lambda_z_time_first": null,
+            "lambda_z_time_last": null,
+            "lambda_z_r_squared": null,
+            "lambda_z_adj_r_squared": null,
+            "tlast": 4,
+            "clast_obs": 1,
+            "span_ratio": null
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "P4",
+            "route": "po"
+          },
+          "parameters": {
+            "cmax": 4,
+            "tmax": 1,
+            "auclast": 18.025396451281,
+            "aucinf": 19.416839176391,
+            "pct_aucextrap": 7.166164958516,
+            "lambda_z": 0.2299771267802,
+            "half_life": 3.013983130689,
+            "cl": 0.5150168834977,
+            "vz": 2.239426549536,
+            "aumclast": 72.407439365431,
+            "aumcinf_obs": 95.155104745691,
+            "mrt": 4.900648549502,
+            "vss": null,
+            "tlag": 0,
+            "pct_aumcextrap": 23.905880237381
+          },
+          "provenance": {
+            "lambda_z_n_points": 4,
+            "lambda_z_time_first": 2,
+            "lambda_z_time_last": 12,
+            "lambda_z_r_squared": 0.9999816695913,
+            "lambda_z_adj_r_squared": 0.9999725043869,
+            "tlast": 12,
+            "clast_obs": 0.32,
+            "span_ratio": 3.317868603237
+          }
+        },
+        {
+          "profile_key": {
+            "subject": "I1",
+            "route": "iv-bolus"
+          },
+          "parameters": {
+            "cmax": 1.5,
+            "tmax": 0.25,
+            "auclast": 2.009898436405,
+            "aucinf": 2.325713542839,
+            "pct_aucextrap": 13.579277955655,
+            "lambda_z": 0.1583204824003,
+            "half_life": 4.378127012065,
+            "cl": 10.749389182935,
+            "vz": 67.896389778272,
+            "aumclast": 3.304796065434,
+            "aumcinf_obs": 7.826100545953,
+            "mrt": 3.365032022129,
+            "vss": 36.172038818902,
+            "tlag": null,
+            "pct_aumcextrap": 57.772123600653
+          },
+          "provenance": {
+            "lambda_z_n_points": 3,
+            "lambda_z_time_first": 5,
+            "lambda_z_time_last": 8,
+            "lambda_z_r_squared": 0.9970667274262,
+            "lambda_z_adj_r_squared": 0.9941334548524,
+            "tlast": 8,
+            "clast_obs": 0.05,
+            "span_ratio": 0.6852245244902,
+            "c0_pknca": 2.393617021277
+          }
+        }
+      ]
+    }
+  ]
+}

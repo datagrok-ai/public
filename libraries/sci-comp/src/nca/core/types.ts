@@ -82,11 +82,34 @@ export interface ProfileInputs {
 /** Trapezoidal AUC integration scheme. */
 export type AucMethod = 'linear' | 'log-linear' | 'linear-up-log-down';
 
-/** Action taken on a single BLQ data point during pre-processing. */
+/**
+ * Action taken on a single BLQ data point during pre-processing, and what
+ * each does downstream (the contract `computeNca` implements — see
+ * `augmentProfile`):
+ *
+ * | rule            | AUC / AUMC                     | λz regression                 | Cmax / Tmax | Tlag (EV)   |
+ * |-----------------|--------------------------------|-------------------------------|-------------|-------------|
+ * | `set-zero`      | integrated as 0                | excluded (`conc <= 0` guard)  | skipped     | counts as 0 |
+ * | `set-half-lloq` | integrated as LLOQ/2           | ELIGIBLE (positive)           | skipped     | counts as 0 |
+ * | `exclude`       | point dropped                  | dropped                       | skipped     | counts as 0 |
+ * | `missing`       | point dropped (NaN)            | dropped                       | skipped     | counts as 0 |
+ *
+ * `missing` ≡ `exclude` for every reported parameter. Cmax/Tmax and Tlag are
+ * OBSERVED quantities and read the BLQ mask under every rule — a substituted
+ * sample is not a quantifiable observation (Tlag therefore diverges from
+ * PKNCA's `tlag`, which is computed on the cleaned profile when the BLQ rows
+ * are physically removed). Trailing interaction: `collectMeasurable` trims the
+ * TRAILING run of non-positive values, so trailing `set-zero` substitutes are
+ * trimmed (cLast/tLast = last positive; identical to `exclude`), while
+ * trailing `set-half-lloq` substitutes survive — cLast = LLOQ/2 and tLast
+ * moves to the last sample, and they are λz-eligible. For an IV-bolus
+ * dose-time row a BLQ flag makes the row ABSENT for c0 whatever the rule.
+ */
 export type BlqRule = 'set-zero' | 'set-half-lloq' | 'exclude' | 'missing';
 
 /**
  * BLQ-handling configuration broken out by phase of the concentration profile.
+ * Per-rule effects are on {@link BlqRule}.
  */
 export interface BlqStrategy {
   /** BLQ points before the first measurable observation. */
@@ -209,6 +232,54 @@ export interface BlqProcessingResult {
   readonly excluded: Int32Array;
 }
 
+// c0 — dose-time concentration for IV bolus
+
+/**
+ * c0 estimation strategies (PKNCA `pk.calc.c0` method chain):
+ * `'c0'` an existing positive observation at the dose time; `'logslope'`
+ * log-linear back-extrapolation of the first two post-dose points; `'c1'` the
+ * first post-dose concentration; `'cmin'` the minimum positive concentration;
+ * `'set0'` zero.
+ */
+export type C0Method = 'c0' | 'logslope' | 'c1' | 'cmin' | 'set0';
+
+/**
+ * How the dose-time concentration of an IV-bolus profile was obtained — the
+ * kernel-level record produced by `augmentProfile`.
+ *
+ * `'observed'` means a positive measured dose-time sample was used as-is (no
+ * augmentation); any {@link C0Method} means the chain ran on the post-dose
+ * points and `(timeDose, value)` was inserted. `replacedDoseTimeRow` is true
+ * when the input DID carry a dose-time row but it was BLQ-flagged or
+ * non-positive/non-finite: a pre-dose sample cannot anchor the profile, so the
+ * row was removed and the estimate took its slot. The substitution rules govern
+ * how the profile integrates, never the identity of c0 — PKNCA's own `c0`
+ * ignores a numerically substituted dose-time BLQ, measured 2026-09-22.
+ */
+export interface C0Estimate {
+  readonly value: number;
+  readonly method: C0Method | 'observed';
+  readonly replacedDoseTimeRow: boolean;
+}
+
+/**
+ * c0 provenance as reported by `computeNca` — the {@link C0Estimate} plus the
+ * share of AUC₀–∞ that lies in the unmeasured dose-time → first-observation
+ * segment (Phoenix WinNonlin `AUC_%Back_Ext_obs`).
+ *
+ * `pctAucBackExtrap` is **diagnostic only** — no gate, no threshold (none is
+ * citable; {@link LambdaZResult.spanRatio} is the precedent). It is `0` for
+ * `'observed'` (a measured dose-time value has no extrapolated area), `NaN` on
+ * a `'partial'` profile (no AUC₀–∞ to take a share of), and the segment area
+ * over AUC₀–∞ × 100 otherwise, integrated with the profile's own AUC method
+ * and summation. A technically successful `'logslope'` on two widely spaced
+ * points can put 20 %+ of the exposure into unmeasured territory with no
+ * warning firing — this is the number that says so.
+ */
+export interface C0Provenance extends C0Estimate {
+  readonly pctAucBackExtrap: number;
+}
+
 // Final compute result
 
 /**
@@ -277,8 +348,19 @@ export type ParameterWarningCode =
   | 'LAMBDAZ_FEW_POINTS'
   | 'LAMBDAZ_LOW_SPAN'
   | 'BLQ_HIGH_FRACTION'
-  // eslint-disable-next-line @typescript-eslint/ban-types -- load-bearing: `string & {}`
-  // preserves literal autocomplete that a bare `| string` would collapse.
+  /** IV bolus: the log-slope was not estimable and c0 fell back to `c1` /
+   *  `cmin` / `set0` — the dose-time concentration rests on a plateau
+   *  assumption (severity `'warning'`; see {@link C0Estimate.method}). */
+  | 'C0_FALLBACK'
+  /** The accepted lambda_z window contains one or more BLQ points whose value
+   *  was SUBSTITUTED (`set-half-lloq`) rather than measured: the terminal slope
+   *  — and everything derived from it — is fitted partly through a number
+   *  nobody observed. Adjusted R² cannot detect this (a substitute sitting
+   *  near the trend line scores well precisely because it is near the line),
+   *  so it is reported rather than inferred (severity `'warning'`). */
+  | 'LAMBDAZ_SUBSTITUTED_BLQ'
+  // Load-bearing: `string & {}` preserves literal autocomplete that a bare
+  // `| string` would collapse.
   | (string & {});
 
 /**
@@ -297,10 +379,21 @@ export interface ParameterWarning {
  */
 export interface ProfileProvenance {
   readonly lambdaZ: LambdaZResult | null;
+  /** BLQ pre-processing on the RAW inputs — `excluded` indexes the input
+   *  arrays (not the augmented profile). */
   readonly blqApplied: BlqProcessingResult;
   readonly aucMethod: AucMethod;
   readonly compensated: boolean;
   readonly warnings: ReadonlyArray<ParameterWarning>;
+  /**
+   * Dose-time concentration provenance. `computeNca` always sets it: `null`
+   * for non-IV-bolus routes and on `'failed'` (no measurable point — no chain
+   * ran, nothing to report); populated for every other IV-bolus outcome.
+   * OPTIONAL on the interface so consumers that construct a
+   * `ProfileProvenance` themselves (test doubles, synthetic failed results)
+   * keep compiling — a required field would break them on upgrade.
+   */
+  readonly c0?: C0Provenance | null;
 }
 
 /** Top-level result of {@link computeNca}. */
