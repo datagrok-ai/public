@@ -235,3 +235,53 @@ wizard('a `done` step is terminal: no BACK, no CANCEL, and NEXT reads CLOSE', ()
   assert.deepEqual(outcome, ['finish']);
   scope.dispose();
 });
+
+wizard('a step\'s actions stand before NEXT on that step only, and the footer waits on one', async () => {
+  let release;
+  const ran = [];
+  const w = new Wizard({steps: [
+    {id: 'one', title: 'One', content: content('One', 'free')},
+    {id: 'review', title: 'Review', content: content('Review', 'last'), finishText: 'CREATE',
+      actions: [{text: 'VALIDATE', run: () => { ran.push('validate'); return new Promise((r) => release = r); }}]},
+  ]});
+  document.body.append(w.root);
+  assert.equal(footer(w, 'VALIDATE').style.display, 'none', 'hidden off its step');
+  w.next();
+  assert.equal(footer(w, 'VALIDATE').style.display, '');
+  assert.equal(footer(w, 'CREATE').textContent, 'CREATE', 'the last step reads its own finish text');
+  w.status.textContent = 'Ready';
+  assert.equal(w.root.querySelector('.u2-wizard-status').textContent, 'Ready');
+
+  footer(w, 'VALIDATE').click();
+  assert.deepEqual(ran, ['validate']);
+  assert.equal(footer(w, 'CREATE').disabled, true, 'the footer waits');
+  assert.equal(footer(w, 'VALIDATE').disabled, true);
+  assert.equal(footer(w, 'BACK').disabled, true);
+  release();
+  await flush();
+  assert.equal(footer(w, 'CREATE').disabled, false);
+  assert.equal(footer(w, 'VALIDATE').disabled, false);
+  w.dispose();
+});
+
+wizard('an async finish answering false keeps the dialog open; true closes it', async () => {
+  const scope = new Scope();
+  let answer = false;
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [{id: 'one', title: 'One', content: content('One', 'free')}],
+    onFinish: () => Promise.resolve(answer),
+  }));
+  const dialog = w.openInDialog('Create');
+  footer(w, 'FINISH').click();
+  assert.equal(footer(w, 'FINISH').disabled, true, 'waiting on the finish');
+  await flush();
+  assert.equal(dialog.isOpen.value, true, 'refused: still open');
+  assert.equal(w.completed.value, false);
+  assert.equal(footer(w, 'FINISH').disabled, false);
+  answer = true;
+  footer(w, 'FINISH').click();
+  await flush();
+  assert.equal(w.completed.value, true);
+  assert.equal(dialog.isOpen.value, false);
+  scope.dispose();
+});

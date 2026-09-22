@@ -20,12 +20,24 @@ export interface WizardStep {
    * nothing to go back to and nothing to cancel, so only the closing button stands, reading
    * CLOSE. */
   done?: boolean;
+  /** What the closing button reads on the last step (FINISH by default). */
+  finishText?: string;
+  /** Buttons of this step's own, before NEXT in the footer — a check the user runs before
+   * finishing. While one runs, the footer waits. */
+  actions?: WizardAction[];
   onActivate?: (step: WizardStep) => void;
+}
+
+export interface WizardAction {
+  text: string;
+  run: () => void | Promise<void>;
 }
 
 export interface WizardOptions {
   steps: WizardStep[];
-  onFinish?: () => void;
+  /** Answering `false` keeps the wizard open — a finish the server refused; the footer waits
+   * on a promise. */
+  onFinish?: () => void | boolean | Promise<void | boolean>;
   onCancel?: () => void;
 }
 
@@ -35,6 +47,7 @@ interface Step {
   circle: HTMLElement;
   panel: HTMLElement;
   scope: Scope;
+  actions: HTMLButtonElement[];
   builder?: () => HTMLElement;
 }
 
@@ -43,6 +56,8 @@ let wizardCount = 0;
 export class Wizard extends Control {
   readonly currentStep: ReadonlySignal<string>;
   readonly completed: ReadonlySignal<boolean>;
+  /** The footer's status line, left of the gate's reason — the host writes what it is doing. */
+  readonly status = document.createElement('span');
 
   private readonly _idPrefix = `u2-wizard-${++wizardCount}`;
   private readonly _steps: Step[] = [];
@@ -58,6 +73,7 @@ export class Wizard extends Control {
   private readonly _index = signal(0);
   private readonly _completed = signal(false);
   private readonly _recheck = signal(0);
+  private readonly _busy = signal(false);
   private readonly _blockReason: ReadonlySignal<string | null>;
   private _dialog: Dialog | undefined;
 
@@ -68,7 +84,7 @@ export class Wizard extends Control {
     this.completed = this._completed;
     this._blockReason = computed(() => {
       this._recheck.value;
-      return Wizard._gate(this._steps[this._index.value].options.canProceed);
+      return this._busy.value ? '' : Wizard._gate(this._steps[this._index.value].options.canProceed);
     });
 
     this.root.classList.add('u2-wizard');
@@ -77,10 +93,14 @@ export class Wizard extends Control {
     this._content.className = 'u2-wizard-content';
     this._footer.className = 'u2-wizard-buttons';
     this._reason.className = 'u2-wizard-reason';
+    this.status.className = 'u2-wizard-status';
+    const left = document.createElement('span');
+    left.className = 'u2-wizard-left';
+    left.append(this.status, this._reason);
 
     this._back = this._button('BACK', () => this.back());
     this._next = this._button('NEXT', () => this.next(), true);
-    this._footer.append(this._reason, this._back, this._next);
+    this._footer.append(left, this._back, this._next);
     this.root.append(this._rail, this._content, this._footer);
 
     this._listen(this._rail, 'click', (e) => this._onRailClick(e));
@@ -170,7 +190,22 @@ export class Wizard extends Control {
     const lazy = typeof step.content === 'function' ? step.content : undefined;
     if (!lazy)
       panel.append(step.content as HTMLElement);
-    this._steps.push({options: step, marker, circle, panel, scope, builder: lazy});
+    const actions = (step.actions ?? []).map((action) => {
+      const b = this._button(action.text, () => this._run(action.run()));
+      b.style.display = 'none';
+      this._footer.insertBefore(b, this._next);
+      return b;
+    });
+    this._steps.push({options: step, marker, circle, panel, scope, actions, builder: lazy});
+  }
+
+  /** The footer waits on a pending action or finish: NEXT and the actions are disabled and the
+   * gate says nothing until it settles. */
+  private _run<T>(result: T | Promise<T>): Promise<T> {
+    if (!(result instanceof Promise))
+      return Promise.resolve(result);
+    this._busy.value = true;
+    return result.finally(() => this._busy.value = false);
   }
 
   private _applyStep(): void {
@@ -190,6 +225,8 @@ export class Wizard extends Control {
       step.marker.tabIndex = on ? 0 : -1;
       step.circle.textContent = done ? '✓' : String(i + 1);
       step.panel.style.display = on ? '' : 'none';
+      for (const b of step.actions)
+        b.style.display = on ? '' : 'none';
       if (on)
         step.marker.setAttribute('aria-current', 'step');
       else
@@ -199,7 +236,8 @@ export class Wizard extends Control {
     this._back.style.display = index === 0 || done ? 'none' : '';
     if (this._cancel !== undefined)
       this._cancel.style.display = done ? 'none' : '';
-    this._next.textContent = index < this._steps.length - 1 ? 'NEXT' : done ? 'CLOSE' : 'FINISH';
+    this._next.textContent = index < this._steps.length - 1 ? 'NEXT' : done ? 'CLOSE' :
+      current.options.finishText ?? 'FINISH';
 
     const builder = current.builder;
     if (builder) {
@@ -213,14 +251,24 @@ export class Wizard extends Control {
 
   private _applyGate(): void {
     const reason = this._blockReason.value;
+    const busy = this._busy.value;
     this._next.disabled = reason !== null;
+    this._back.disabled = busy;
+    for (const b of this._steps[this._index.value].actions)
+      b.disabled = busy;
     this._reason.textContent = reason ?? '';
   }
 
   private _finish(): void {
+    const result = this._options.onFinish?.();
+    if (result instanceof Promise)
+      void this._run(result).then((ok) => { if (ok !== false) this._complete(); });
+    else if (result !== false)
+      this._complete();
+  }
+
+  private _complete(): void {
     this._completed.value = true;
-    if (this._options.onFinish)
-      this._options.onFinish();
     if (this._dialog)
       this._dialog.close();
   }

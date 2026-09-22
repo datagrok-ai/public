@@ -11,6 +11,7 @@ import './tests/domain-import';
 import './tests/domain-conformance';
 import './tests/domain-external';
 import './tests/domain-external-write';
+import './tests/domain-authoring';
 
 export let _package = new DG.Package();
 export { tests };

@@ -128,7 +128,7 @@ export class ManifestTree extends Control {
       id: ManifestTree.columnId(t.remote, c.remote), label: c.remote,
       tooltip: ManifestTree._tooltip(c.reason ?? c.relation?.reason ?? c.remote, problems),
       data: {selection, table: t, column: c, problems},
-      checked: c.supported && c.included && t.included,
+      checked: c.supported && t.included && (c.isKey || c.included),
       locked: c.isKey || !c.supported || !t.included || !this._editable,
       disabled: !c.supported,
     };

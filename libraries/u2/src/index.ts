@@ -61,7 +61,7 @@ export {AsyncView, loader, skeleton} from './components/display/async-view.js';
 export {TypeAhead} from './components/inputs/typeahead.js';
 export type {TypeAheadOptions, TypeAheadState} from './components/inputs/typeahead.js';
 export {Wizard} from './components/containers/wizard.js';
-export type {WizardStep, WizardOptions} from './components/containers/wizard.js';
+export type {WizardStep, WizardOptions, WizardAction} from './components/containers/wizard.js';
 export {badge, countBadge, dot, tag} from './components/display/badge.js';
 export type {BadgeVariant} from './components/display/badge.js';
 export {ProgressBar} from './components/display/progress.js';

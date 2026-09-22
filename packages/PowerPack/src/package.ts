@@ -220,6 +220,21 @@ export class PackageFunctions {
     return domains.route(address);
   }
 
+  @grok.decorators.func({
+    name: 'createDomainBinding',
+    description: 'The "Create domain schema" dialog over an external database: Connection › Design › Review (u2)',
+    tags: ['domainAuthoring'],
+    outputs: [{name: 'result', type: 'string'}],
+  })
+  static async createDomainBinding(
+    @grok.decorators.param({options: {optional: true}}) connection?: DG.DataConnection,
+    @grok.decorators.param({options: {optional: true}}) schema?: string,
+    @grok.decorators.param({options: {optional: true}}) table?: string,
+    @grok.decorators.param({options: {optional: true}}) catalog?: string): Promise<string | null> {
+    return domains.authoring.createBinding({connection: connection ?? undefined, schema: schema ?? undefined,
+      table: table ?? undefined, catalog: catalog ?? undefined});
+  }
+
   @grok.decorators.func({})
   static isFormulaColumn(
     col: DG.Column): boolean {

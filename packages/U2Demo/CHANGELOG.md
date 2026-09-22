@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added the `U2: domain authoring` test category — the PowerPack `createDomainBinding` dialog over the Northwind connection: NEXT › a name › NEXT › VALIDATE › CREATE registers a throwaway schema, opens the u2 app over its `orders`, and deletes it afterwards
 * GROK-20298: Added the `Northwind Orders` app (the zero-code u2 app over the external `northwind` binding) and the `U2: domain external` test category
 * GROK-20298: Added the `U2: domain external write` test category — the app over the writable `extwlive` binding: a new row typed with its key, a guarded edit, the conflict dialog (Overwrite and Reload) when a column moved behind the app, a delete, and an upsert import counting merged rows
 

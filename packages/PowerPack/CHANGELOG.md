@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added `createDomainBinding` (`tags: domainAuthoring`) — the u2 "Create domain schema" dialog over an external database (Connection › Design › Review), the function the platform's "Create domain schema..." commands on a database schema or table and "New schema over a connection..." on the Domains node run
 * GROK-20753: Added `domainRouteView` (`tags: domainRoutes`) — the platform's `/domains/<schema>/<table>[/<keyOrId>]` addresses resolve to the u2 domain app through it
 * GROK-17068: Formula Lines: The formula editor now accepts the axis tokens `X`/`Y` on the left side of a line (`Y = X + 25`) or a band (`X in(160, 190)`), not only a `${column}` reference, and no longer rewrites a token into a concrete column when the item is selected or the preview's axis changes
 * GROK-20909: Open the playlist when the Learn > VIDEO play icon is clicked

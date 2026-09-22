@@ -1,0 +1,64 @@
+/* The "Create domain schema" dialog (src/dg/domain/authoring/binding-dialog.ts): the wizard fills
+   the dialog so the Design step's editor has a height, the review is the manifest beside its
+   findings. Tokens only; css/tokens.css, wizard.css, form.css and manifest-editor.css must be
+   loaded alongside. */
+.u2-wizard.u2-binding-dialog {
+  box-sizing: border-box;
+  height: 100%;
+}
+
+.u2-binding-dialog .u2-wizard-panel,
+.u2-binding-design {
+  height: 100%;
+  min-height: 0;
+}
+
+.u2-binding-connection {
+  gap: var(--dg-space-m);
+}
+
+.u2-binding-facts,
+.u2-binding-access {
+  display: block;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-binding-problem {
+  color: var(--dg-error);
+}
+
+.u2-binding-review {
+  display: flex;
+  gap: var(--dg-space-l);
+  height: 100%;
+  min-height: 0;
+}
+
+.u2-binding-json {
+  flex: 1 1 60%;
+  min-width: 0;
+  margin: 0;
+  padding: var(--dg-space-m);
+  overflow: auto;
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-binding-issues {
+  flex: 1 1 40%;
+  min-width: 0;
+  gap: var(--dg-space-s);
+  overflow: auto;
+}
+
+.u2-binding-issues-title {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-issue {
+  color: var(--dg-error);
+}

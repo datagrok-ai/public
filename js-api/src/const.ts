@@ -458,6 +458,14 @@ export const FUNC_TYPES = {
   AI_ENGINE: 'aiEngine',
 
   NOTATION_REFINER: 'notationRefiner',
+
+  /** Resolves a `/domains/<schema>/<table>[/<keyOrId>]` address to a view
+    * Signature: domainRouteView(address: string): View | null */
+  DOMAIN_ROUTES: 'domainRoutes',
+
+  /** Opens the "Create domain schema" dialog over a database connection
+    * Signature: createDomainBinding(connection?: DataConnection, schema?: string, table?: string, catalog?: string): string | null */
+  DOMAIN_AUTHORING: 'domainAuthoring',
 }
 
 
@@ -643,6 +651,16 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.NOTATION_REFINER,
     description: 'Refines the biological sequence notation based on company specific rules',
     signature: 'notationRefiner(column: Column, stats: any, separator: string): bool'
+  },
+  {
+    role: FUNC_TYPES.DOMAIN_ROUTES,
+    description: 'Resolves a /domains/<schema>/<table>[/<keyOrId>] address to a view',
+    signature: 'domainRouteView(address: string): View | null'
+  },
+  {
+    role: FUNC_TYPES.DOMAIN_AUTHORING,
+    description: 'Opens the "Create domain schema" dialog over a database connection; answers the created schema\'s name',
+    signature: 'createDomainBinding(connection?: DataConnection, schema?: string, table?: string, catalog?: string): string | null'
   }
 ]
 

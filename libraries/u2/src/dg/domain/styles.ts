@@ -41,4 +41,6 @@ import '../../../css/chips.css';
 import '../../../css/access-grid.css';
 import '../../../css/splitter.css';
 import '../../../css/manifest-editor.css';
+import '../../../css/wizard.css';
+import '../../../css/binding-dialog.css';
 import '../../../css/domain.css';
