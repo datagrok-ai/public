@@ -16,6 +16,10 @@ dataset('earthquakes', {path: 'System:DemoFiles/geo/earthquakes.csv',
   description: '2426 quakes with Latitude / Longitude / Depth / Magnitude — the geo table the map viewers bind to'});
 dataset('beer', {path: 'System:DemoFiles/beer.csv', description: '118 beers, 33 columns; Aroma is a long-text column, so its default filter is a text filter'});
 dataset('curves', {path: 'System:DemoFiles/curves.csv', description: 'fit curves ("multiple prefit" carries the fit semantic type) next to a smiles column'});
+dataset('smiles', {path: 'System:DemoFiles/chem/smiles.csv',
+  description: '1000 ChEMBL molecules: molregno, canonical_smiles (a Molecule column the Chem package renders and offers its Current Value actions on) and RDKit descriptors'});
+dataset('helm-peptides', {path: 'System:DemoFiles/chem/peptides/HELM.csv', aliases: ['helm'],
+  description: '540 peptides in HELM notation with Activity — a Macromolecule column the Helm package renders and edits'});
 dataset('spgi-linked1', {path: 'System:AppData/ApiTests/datasets/SPGI-linked1.csv',
   description: 'the table linked to spgi-100 by Id / Concept Id (the ApiTests package must be published)'});
 dataset('spgi-linked2', {path: 'System:AppData/ApiTests/datasets/SPGI-linked2.csv',

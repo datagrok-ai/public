@@ -22,7 +22,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Hierarchical clustering from the Chem menu", () => {
   const session = feature(test, "features/clustering/chem-dialog.feature", import.meta.url);
-  test("Hierarchical clustering from the Chem menu", {tag: ["@journey", "@realizes:dendrogram.cp.hier-clustering-chem-dialog-end-to-end", "@known-failure", "@GROK-19595"]}, async ({browser}) => {
+  test("Hierarchical clustering from the Chem menu", {tag: ["@journey", "@realizes:dendrogram.cp.hier-clustering-chem-dialog-end-to-end", "@GROK-19595"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 6, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
@@ -107,7 +107,7 @@ test.describe("Hierarchical clustering from the Chem menu", () => {
     await run.scenario("Numeric columns with centroid linkage attach a tree with a leaf for every row", async () => {
       await session.step(97, "Then the \"tree leaves\" reading of grid should be 1000", () => readingIs(page, "tree leaves", el("grid"), 1000));
       await session.step(98, "And no errors should have been logged", () => noErrors(page));
-    }, {knownFailure: true});
+    });
     run.finish();
   });
 });

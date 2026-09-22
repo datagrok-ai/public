@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.heat-map]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -23,7 +24,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Heat map navigation and grid mode", () => {
   const session = feature(test, "features/viewers/heat-map/heat-map-navigation.feature", import.meta.url);
-  test("Heat map navigation and grid mode", {tag: ["@journey", "@viewers", "@realizes:viewers.heat-map", "@known-failure"]}, async ({browser}) => {
+  test("Heat map navigation and grid mode", {tag: ["@journey", "@viewers", "@realizes:viewers.heat-map"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
@@ -74,15 +75,15 @@ test.describe("Heat map navigation and grid mode", () => {
       await session.step(60, "Then the \"is heatmap\" reading of heat map viewer should be \"true\"", () => readingReads(page, "is heatmap", el("heat map viewer"), "true"));
       await session.step(61, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Is Heatmap on again brings the whole table back on screen (grid_look.dart:437)", async () => {
-      await session.step(73, "Given user sets \"isHeatmap\" property of heat map viewer to \"false\"", () => setProperty(page, "isHeatmap", el("heat map viewer"), "false"));
-      await session.step(74, "Then the \"row height\" reading of heat map viewer should be between 20 and 40", () => readingBetween(page, "row height", el("heat map viewer"), 20, 40));
-      await session.step(75, "When user sets \"isHeatmap\" property of heat map viewer to \"true\"", () => setProperty(page, "isHeatmap", el("heat map viewer"), "true"));
-      await session.step(76, "Then the \"is heatmap\" reading of heat map viewer should be \"true\"", () => readingReads(page, "is heatmap", el("heat map viewer"), "true"));
-      await session.step(77, "And the \"row height\" reading of heat map viewer should be between 0 and 8", () => readingBetween(page, "row height", el("heat map viewer"), 0, 8));
-      await session.step(78, "And the \"y scroll span\" reading of heat map viewer should be 1", () => readingIs(page, "y scroll span", el("heat map viewer"), 1));
-      await session.step(79, "And heat map viewer should have a \"column AGE\" area", () => hasArea(page, el("heat map viewer"), "column AGE"));
-    }, {knownFailure: true});
+    await run.scenario("Is Heatmap on again brings the whole table back on screen", async () => {
+      await session.step(69, "Given user sets \"isHeatmap\" property of heat map viewer to \"false\"", () => setProperty(page, "isHeatmap", el("heat map viewer"), "false"));
+      await session.step(70, "Then the \"row height\" reading of heat map viewer should be between 20 and 40", () => readingBetween(page, "row height", el("heat map viewer"), 20, 40));
+      await session.step(71, "When user sets \"isHeatmap\" property of heat map viewer to \"true\"", () => setProperty(page, "isHeatmap", el("heat map viewer"), "true"));
+      await session.step(72, "Then the \"is heatmap\" reading of heat map viewer should be \"true\"", () => readingReads(page, "is heatmap", el("heat map viewer"), "true"));
+      await session.step(73, "And the \"row height\" reading of heat map viewer should be between 0 and 8", () => readingBetween(page, "row height", el("heat map viewer"), 0, 8));
+      await session.step(74, "And the \"y scroll span\" reading of heat map viewer should be 1", () => readingIs(page, "y scroll span", el("heat map viewer"), 1));
+      await session.step(75, "And heat map viewer should have a \"column AGE\" area", () => hasArea(page, el("heat map viewer"), "column AGE"));
+    });
     run.finish();
   });
 });

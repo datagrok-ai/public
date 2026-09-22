@@ -2,8 +2,7 @@
 Feature: Identity and similarity scoring
   Bio | Calculate | Identity... and Similarity... score every sequence against a reference typed
   into the dialog. With the first row as the reference, identity is exactly 1 there and stays
-  within 0..1; similarity peaks there and is not capped at 1 (the reference scores 1.67 against
-  itself). Neither should leave a cell blank.
+  within 0..1; similarity peaks there. Neither leaves a cell blank, whatever the row's length.
 
   Background:
     Given user is logged in
@@ -64,10 +63,8 @@ Feature: Identity and similarity scoring
     Then the result should be an alignment of at least 37 positions
     And no errors should have been logged
 
-  # Known failure (2026-09-21): the similarity of the second reference is blank in every row but
-  # two. `calculateScoresWithEmptyValues` nulls only empty sequences, so the blanks come from the
-  # scoring itself; the package README calls them an open finding. Until then the journey asserted
-  # the blanks as the expectation. Last, so nothing inherits the filter.
-  @known-failure
+  # Fixed 2026-09-21: the similarity scoring blanked every row whose length differed from the
+  # reference's; it now scores the reference's positions, as identity does. Last, so nothing
+  # inherits the filter.
   Scenario: Similarity leaves no cell blank
     Then "Similarity" column should have no missing values
