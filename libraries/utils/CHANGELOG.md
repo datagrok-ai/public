@@ -1,6 +1,8 @@
 # utils changelog
 
 ## 4.7.10 (WIP)
+
+* `ScatterPlotLinesRenderer`: Added the automation surface — a `lines-on-scatter-plot` status provider on the scatter plot the lines are drawn onto, reporting a `line <i>` / `line <from>-<to>` hit area per line the frame actually stroked plus `lines`, `lines drawn`, `current line` and `hovered line`
 * Forms viewer: Command-click toggles selection on macOS, and Command-Shift-click clears a row range.
 * Forms viewer: `getWidgetStatus` now also reports `record of pinned card <n>`
 * Forms viewer: `getWidgetStatus` now also reports `align of` / `font of <COL> of <label>`, `header labels`, `record of card <n>`, `card kind of card <n>`, `pinned pane shown`, `pinned values` and `pinned by`

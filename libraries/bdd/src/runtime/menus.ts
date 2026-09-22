@@ -12,6 +12,9 @@ import {installViewerRuntime, baselineAll} from './viewers.js';
 import * as guide from './guide.js';
 
 const MORE = '[role="menubar"] .d4-menu-item-more';
+// what a bar rebuild does to a walk in progress: the item lost its box, the group its hover, or the
+// group it was in shows nothing any more (a group that lists other items is a missing item)
+const REBUILT = /has no box|the box of the menu item|locator\.hover: Timeout|it shows: nothing$/;
 
 /** `Bio > Analyze > Sequence Space...` → the segments and the platform names of the path so far. */
 export function menuNames(path: string): {segments: string[]; names: string[]} {
@@ -24,8 +27,9 @@ export function menuNames(path: string): {segments: string[]; names: string[]} {
  * entries arrive, which can detach the item between its visibility and its box: the box is
  * awaited. */
 async function enterGroup(item: Locator): Promise<void> {
-  await expect.poll(() => item.boundingBox(), {timeout: 5000, message: 'the box of the menu item'}).not.toBeNull();
-  const box = (await item.boundingBox())!;
+  const seen: {box: {x: number; y: number; width: number; height: number} | null} = {box: null};
+  await expect.poll(async () => (seen.box = await item.boundingBox()), {timeout: 5000, message: 'the box of the menu item'}).not.toBeNull();
+  const box = seen.box!;
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   await item.page().mouse.move(cx + 1, cy);
@@ -51,10 +55,11 @@ export async function openTopMenu(page: Page, path: string, pick: boolean): Prom
     await walkTopMenu(page, segments, names, pick);
   }
   catch (e) {
-    if (!/^no "|has no box|the box of the menu item/.test(String((e as Error).message)))
+    const message = String((e as Error).message);
+    if (!/^no "/.test(message) && !REBUILT.test(message))
       throw e;
     await page.mouse.move(2, 2);
-    await page.waitForTimeout(500);
+    await expect(page.locator('[role="menubar"] .d4-vert-menu').filter({visible: true}), 'the top menu closed before the walk is made again').toHaveCount(0);
     await walkTopMenu(page, segments, names, pick);
   }
 }
@@ -103,28 +108,36 @@ export async function pickTopMenu(page: Page, path: string): Promise<void> {
   const {segments, names} = menuNames(path);
   if (segments.length < 2)
     throw new Error(`"${path}" names a group, not a command: a command is "Group > Item"`);
-  const leaf = page.locator(`[name="${names[names.length - 1]}"]`).first();
-  const openToLeaf = async () => {
-    await openTopMenu(page, segments.slice(0, -1).join(' > '), false);
-    await leaf.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
-      throw new Error(`no "${segments[segments.length - 1]}" in the ${segments.slice(0, -1).join(' > ')} menu; it shows: ${await visibleLabels(page, names[names.length - 2]) || 'nothing'}`);
-    });
-  };
-  // the bar rebuild that `openTopMenu` walks again can also land after the walk, emptying the
-  // group the leaf is in (a folded bar, a package group arriving): the same one more walk
+  // the bar can rebuild between the walk and the click, collapsing the open group under the leaf:
+  // only that (the item lost its box, the group its hover) makes the pick again from the bar; a
+  // missing, disabled or covered leaf is reported as it is. A core "menu settled" signal would
+  // remove this.
   try {
-    await openToLeaf();
+    await pickLeaf(page, segments, names);
   }
   catch (e) {
-    if (!/^no "/.test(String((e as Error).message)))
+    const message = String((e as Error).message);
+    // a leaf the click waited on because it vanished or kept moving went with its group; one that
+    // is disabled or covered is a state of the product and is reported
+    const leafGone = /locator\.click: Timeout/.test(message) && /not visible|not stable|detached/.test(message) &&
+      !/not enabled|intercepts pointer events/.test(message);
+    if (!REBUILT.test(message) && !leafGone)
       throw e;
     await page.mouse.move(2, 2);
-    await page.waitForTimeout(500);
-    await openToLeaf();
+    await expect(page.locator('[role="menubar"] .d4-vert-menu').filter({visible: true}), 'the top menu closed before the pick is made again').toHaveCount(0);
+    await pickLeaf(page, segments, names);
   }
+}
+
+async function pickLeaf(page: Page, segments: string[], names: string[]): Promise<void> {
+  await openTopMenu(page, segments.slice(0, -1).join(' > '), false);
+  const leaf = page.locator(`[name="${names[names.length - 1]}"]`).first();
+  await leaf.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
+    throw new Error(`no "${segments[segments.length - 1]}" in the ${segments.slice(0, -1).join(' > ')} menu; it shows: ${await visibleLabels(page, names[names.length - 2]) || 'nothing'}`);
+  });
   await page.evaluate((p) => (window as any).__bdd.armCommand(p), segments.join(' | '));
   await guide.hop(page, leaf);
-  await leaf.click();
+  await leaf.click({timeout: 5000});
 }
 
 /** The bar's group closes when the pointer leaves it (Escape is not a key it listens to). */

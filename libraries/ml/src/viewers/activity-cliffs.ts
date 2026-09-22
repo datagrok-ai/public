@@ -170,6 +170,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   const linesRes = createLines(df, cliffsMetrics, seqCol, activities, semType, tags, saliMinMax, saliOpacityCoef);
   linesRes.lines.skipMultiLineCalculation = true;
   linesRes.linesDf.col(LINES_DF_SALI_COL_NAME)!.setTag('description', 'Structure−Activity Landscape Index (activity difference divided by 1 minus similarity)');
+  sp.addStatusProvider('activity cliffs', () => ({values: {'cliffs': linesRes.linesDf.rowCount}}));
   //creating scatter plot lines renderer
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     axesNames[0], axesNames[1], linesRes.lines, ScatterPlotCurrentLineStyle.none);
@@ -425,6 +426,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   const linesRes = createLines(df, cliffsMetrics, seqCol, activities, semType, tags, saliMinMax, saliOpacityCoef);
   linesRes.lines.skipMultiLineCalculation = true;
   linesRes.linesDf.col(LINES_DF_SALI_COL_NAME)!.setTag('description', 'Structure−Activity Landscape Index (activity difference divided by 1 minus similarity)');
+  sp.addStatusProvider('activity cliffs', () => ({values: {'cliffs': linesRes.linesDf.rowCount}}));
   //creating scatter plot lines renderer
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     axesNames[0], axesNames[1], linesRes.lines, ScatterPlotCurrentLineStyle.none);

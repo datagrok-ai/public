@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), and the viewers report the `search-results` status of `@datagrok-libraries/ml` — `card <row>` hit areas plus `cards` / `current card` / `selected cards` readings — instead of being addressed by position; `isRenderPending` / `onRendered` cover a scheduled or running render
 * Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
 * Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura
 * Substructure filter: reports the card's structure, search type, fingerprint, similarity cutoff and whether it is searching to the filter panel

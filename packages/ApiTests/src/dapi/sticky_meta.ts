@@ -74,6 +74,14 @@ category('Dapi: sticky meta', () => {
     expect(df.col(property.name)?.name ?? "", property.name);
     expect(df.col(property.name)?.get(0), value);
   });
+
+  test('list entity types', async () => {
+    const types = await grok.dapi.entityTypes.list();
+    expect(types.length > 0, true);
+    for (const t of types)
+      assure.notNull(t.name, 'entity type name');
+    expect(types.some((t) => t.name.toLowerCase() == entityType.name.toLowerCase()), true);
+  });
 }, {
   owner: 'aparamonov@datagrok.ai'
 });

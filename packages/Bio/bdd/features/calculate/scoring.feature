@@ -2,8 +2,12 @@
 Feature: Identity and similarity scoring
   Bio | Calculate | Identity... and Similarity... score every sequence against a reference typed
   into the dialog. With the first row as the reference, identity is exactly 1 there and stays
-  within 0..1; similarity peaks there and is not capped at 1 (the reference scores 1.67 against
-  itself). Neither should leave a cell blank.
+  within 0..1; similarity peaks there. Neither leaves a cell blank, whatever the row's length. The functions behind them are called directly
+  too: identity of a sequence with itself is 1, a local alignment finds a shared stretch, and
+  Get Region returns the column it names.
+
+  Not translated, and why: nothing of the manual cases is left out; Get Region through its dialog
+  is in transform/convert and transform/other-notations.
 
   Background:
     Given user is logged in
@@ -40,6 +44,14 @@ Feature: Identity and similarity scoring
     And every value of "Similarity" column should lie between 0 and 2
     And no error or warning balloon should have been shown
     And no errors should have been logged
+
+  # GROK-20963 (fixed 2026-09-21): "Maximum in row 1" above skips blanks, so it held while three
+  # of four rows had no score; this claim is what would have caught them.
+  Scenario: Similarity against the first row scores every row
+    Then "Similarity" column should have no missing values
+    And "Similarity" column should have at least 2 distinct values
+
+  Scenario: Similarity against another reference peaks on that row
     When user removes "Similarity" column
     And user picks "Bio > Calculate > Similarity..." from the top menu
     Then Similarity dialog should be visible
@@ -64,10 +76,49 @@ Feature: Identity and similarity scoring
     Then the result should be an alignment of at least 37 positions
     And no errors should have been logged
 
-  # Known failure (2026-09-21): the similarity of the second reference is blank in every row but
-  # two. `calculateScoresWithEmptyValues` nulls only empty sequences, so the blanks come from the
-  # scoring itself; the package README calls them an open finding. Until then the journey asserted
-  # the blanks as the expectation. Last, so nothing inherits the filter.
+  Scenario: The identity function scores a fasta sequence against a reference
+    When user calls "Bio:seqIdentity" function with:
+      | seq | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW |
+      | ref | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW |
+    Then the result should be the number 1
+    When user calls "Bio:seqIdentity" function with:
+      | seq | MDYKETLLMPKTAAAAAAAANKEPQIQEKW  |
+      | ref | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW |
+    Then the result should be a number between 0.1 and 0.99
+    And no errors should have been logged
+
+  # Known failure, GROK-20964: seqIdentity throws
+  # "The column of notation 'helm' must be 'Macromolecule'" for any non-empty HELM sequence
+  # (probed on dev 2026-09-22); the one-cell column it builds is detected but never typed.
   @known-failure
+  Scenario: The identity function scores a HELM sequence against itself
+    When user calls "Bio:seqIdentity" function with:
+      | seq | PEPTIDE1{L.M.P.Q.R.S.T}$$$$ |
+      | ref | PEPTIDE1{L.M.P.Q.R.S.T}$$$$ |
+    Then the result should be the number 1
+
+  Scenario: A local alignment with BLOSUM45 finds the shared stretch
+    When user calls "Bio:sequenceAlignment" function with:
+      | alignType  | Local alignment                        |
+      | alignTable | BLOSUM45                               |
+      | gap        | -10                                    |
+      | seq1       | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW        |
+      | seq2       | AAAAKETLLMPKTDFPAAAA                   |
+    Then the result should be an alignment of at least 12 positions
+    And no errors should have been logged
+
+  Scenario: Get Region called as a function returns the named region column
+    When user calls "Bio:getRegion" function with:
+      | sequence | column:HELM string |
+      | start    | 3                  |
+      | end      | 6                  |
+      | name     | region 3-6         |
+    Then the result should have a "name" of "region 3-6"
+    And row 2 of the result column should be "PEPTIDE1{P.Q.R.S}$$$$"
+    And no errors should have been logged
+
+  # GROK-20963 (fixed 2026-09-21): the similarity scoring blanked every row whose length differed
+  # from the reference's; it now scores the reference's positions, as identity does. Last, so
+  # nothing inherits the filter.
   Scenario: Similarity leaves no cell blank
     Then "Similarity" column should have no missing values

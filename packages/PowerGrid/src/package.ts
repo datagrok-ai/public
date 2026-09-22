@@ -342,21 +342,23 @@ export class PackageFunctions {
     DG.GridCellRenderer.register(new StarsCellRenderer());
 
     // handling column remove/rename in sparkline columns
-    grok.events.onViewerAdded.subscribe((args) => {
-      if (args.args.viewer.type !== DG.VIEWER.GRID)
-        return;
-      const grid = args.args.viewer as DG.Grid;
+    const attachSummaryColumnHandlers = (grid: DG.Grid) => {
       const dataFrame = grid.dataFrame;
       if (!dataFrame)
         return;
-      const getSparklineSettings =
-        (gridCol: DG.GridColumn) => (gridCol.settings ?? {})[gridCol.cellType] as SummarySettingsBase;
+      // the grid reports cell types in lower case; each renderer keeps its settings under its own key
+      const settingsKey = (gridCol: DG.GridColumn) =>
+        [...sparklineTypes, TAGS_CELL_TYPE].find((t) => t.toLowerCase() === gridCol.cellType?.toLowerCase());
+      const getSparklineSettings = (gridCol: DG.GridColumn) => {
+        const key = settingsKey(gridCol);
+        return key === undefined ? undefined : (gridCol.settings ?? {})[key] as SummarySettingsBase;
+      };
       const findSummaryCols = (columns: (string | DG.Column)[]) => {
         const summaryCols: DG.GridColumn[] = [];
         for (let i = 1; i < grid.columns.length; i++) {
           const gridCol = grid.columns.byIndex(i)!;
           const sparklineSettings = getSparklineSettings(gridCol);
-          if ([...sparklineTypes, TAGS_CELL_TYPE].includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
+          if (sparklineSettings?.columnNames?.length > 0 &&
             columns.some((col) => sparklineSettings.columnNames.includes(col instanceof DG.Column ? col.name : col)))
             summaryCols[summaryCols.length] = gridCol;
         }
@@ -386,7 +388,14 @@ export class PackageFunctions {
       grid.sub(colsRemovedSub);
       grid.sub(colsRenamedSub);
       grid.sub(gridDetachedSub);
+    };
+    grok.events.onViewerAdded.subscribe((args) => {
+      if (args.args.viewer.type === DG.VIEWER.GRID)
+        attachSummaryColumnHandlers(args.args.viewer as DG.Grid);
     });
+    // the grids of the tables opened before this autostart landed
+    for (const view of grok.shell.tableViews)
+      attachSummaryColumnHandlers(view.grid);
 
     if (navigator.gpu)
       gpuDevice = await getGPUDevice();

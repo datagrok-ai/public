@@ -6,10 +6,10 @@ Feature: Hierarchical clustering from the Chem menu
   linkage attaches a tree of another height. The task bar shows "Creating dendrogram ..." while the
   tree is built.
 
-  Centroid linkage on the numeric columns attaches no tree: turning the cluster matrix into a tree
-  fails with "Cannot read properties of undefined (reading 'children')" (GROK-19595). The last
-  scenario states the tree it should attach and is a known failure; the tag goes when the tree has
-  a leaf for every row.
+  Centroid linkage on the numeric columns attaches a tree too (GROK-19595, fixed 2026-09-21): the
+  clustering wasm sorted the centroid merges by height while their cluster references kept the
+  merge order, so an inversion pointed at a cluster not built yet; centroid merges now come out in
+  merge order, as median's do.
 
   Background:
     Given user is logged in
@@ -92,7 +92,7 @@ Feature: Hierarchical clustering from the Chem menu
     Then "Hierarchical Clustering" dialog should be hidden
     And the task bar should have finished "Creating dendrogram"
 
-  @known-failure @GROK-19595
+  @GROK-19595
   Scenario: Numeric columns with centroid linkage attach a tree with a leaf for every row
     Then the "tree leaves" reading of grid should be 1000
     And no errors should have been logged

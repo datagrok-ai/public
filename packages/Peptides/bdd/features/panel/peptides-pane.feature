@@ -3,6 +3,9 @@ Feature: Peptide column information and SAR parameters
   The column's context panel explains its sequence metadata, previews the activity scale,
   and selects peptides through the monomer glyphs in its WebLogo.
 
+  Not translated: changing the Activity column — the fixture has one activity (IC50; ID is an
+  identifier), so the preview is rebuilt through the Scaling change instead.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized
@@ -67,5 +70,34 @@ Feature: Peptide column information and SAR parameters
     Then the "rows selected" reading of WebLogo viewer in Peptides pane should be 630
     When user clears the row selection
     Then no rows should be selected
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Choosing a clusters column turns cluster generation off, and back
+    When user clicks on the "header AlignedSequence" area of grid
+    Then the context panel should show "AlignedSequence"
+    # the help panel docks under the context panel and covers its lower half
+    When user collapses Details pane in context panel
+    And user expands Peptides pane in context panel
+    Then "Generate clusters" checkbox in Peptides pane should be checked
+    When user selects "ID" in Clusters input in Peptides pane
+    Then "Generate clusters" checkbox in Peptides pane should be unchecked
+    When user checks "Generate clusters" checkbox in Peptides pane
+    Then "Generate clusters" checkbox in Peptides pane should be checked
+    And editor of Clusters input in Peptides pane should have text ""
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Without an analysis the Manual Alignment pane only says it needs one
+    When user picks "Bio > Transform > Split to Monomers..." from the top menu
+    Then "Split to Monomers" dialog should be visible
+    When user clicks on OK button in "Split to Monomers" dialog
+    Then the top menu command should have completed
+    And "2" column should have semantic type "Monomer"
+    When user clicks on the "cell 2 of 2" area of grid
+    Then "Manual Alignment" pane in context panel should be visible
+    When user expands "Manual Alignment" pane in context panel
+    Then "Manual Alignment" pane in context panel should contain text "Manual alignment works with peptides analysis"
+    And Apply button in "Manual Alignment" pane should be absent
     And no errors should have been logged
     And no error or warning balloon should have been shown

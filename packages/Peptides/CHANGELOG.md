@@ -2,12 +2,14 @@
 
 ## v.next
 
+* Tests: BDD suite closed its gaps against the TestTrack cases and the old Playwright specs: similarity thresholds 10-96, a launch at the default settings, the dock layout, selection after a project reopen, Mutation Cliffs glyphs, statistics after Manual Alignment; every feature states what it does not translate
 * 1930: Recalculate monomer-position stats and scaled-activity caches when rows are added or removed
 * 2304: Guard LogoSummaryTable.onPropertyChanged and render against a null dataFrame on a detached viewer
 * Manual Alignment: Fixed Apply writing the split monomers one position off and leaving the SAR statistics stale
 * Export Mutation Cliffs: Preserved the original double-precision activities and deltas
 * Viewers: Added automation surfaces (`getWidgetStatus`, `isRenderPending`, `onRendered`) and a `peptides-sar-ready` event; Command works as Control for multi-selection on macOS
 * Added BDD feature files translating the Playwright specs (`bdd/`)
+* Settings: Fixed the Sequence space checkbox warning "Embeddings columns are not initialized" instead of adding the viewer; unchecking it now removes the viewer and its columns
 
 ## 1.27.11 (2026-07-12)
 

@@ -1,5 +1,10 @@
 # Helm changelog
 
+## v.next
+
+* Edit Helm...: Fixed the action opening the current cell's peptide instead of the right-clicked one; the current cell stays the fallback for a value that comes without a cell
+* Tests: Added the BDD suite (renderer, HELM editor, notation, palette, Properties pane, service surface) and package tests for getHoveredAtom and the monomer functions override
+
 ## 3.0.6
 
 * HelmInput: Fixed the editor dialog's OK updating only the drawing — the input's value now reflects the sketched HELM and `onChanged` fires, so consumers (e.g. Flow's Helm Input node) read the edited value

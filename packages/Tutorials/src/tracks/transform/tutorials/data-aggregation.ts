@@ -93,24 +93,31 @@ export class AggregationTutorial extends Tutorial {
     const aggRoot = $('.grok-pivot-column-panel').filter((_, el) =>
       el.textContent?.startsWith('Aggregate') === true)[0]!;
 
-    const ageAggr = $(aggRoot).find(colTagSelector).filter((_, el) => $(el).text().includes('AGE')).get(0);
+    // "Remove others" and every column/function change rebuild the tag list, so the hint resolves
+    // the current tag per tick instead of holding the one that was there when the step started
+    const aggrTag = (text?: string) => (): HTMLElement | null => {
+      const tags = $(aggRoot).find(colTagSelector);
+      const match = text == null ? tags.get(0) :
+        tags.filter((_, el) => $(el).text().includes(text)).get(0);
+      return match ?? null;
+    };
     await this.action(
       'Leave only the "avg(AGE)" aggregation',
       findColTag(aggRoot, 'avg(AGE)', () => $(aggRoot).find(colTagSelector).length === 1),
-      ageAggr,
+      aggrTag('AGE'),
       'Initially, the editor shows the average values for the "AGE" and "HEIGHT" columns. To keep ' +
       'only one aggregation, right-click this aggregation and select <b>Remove others</b> in the ' +
       'context menu.'
     );
 
     await this.action('Change a column to "WEIGHT"', findColTag(aggRoot, 'avg(WEIGHT)', () =>
-      $(aggRoot).find(colTagSelector).length === 1), ageAggr, 'In addition, you can change the aggregation column from the context menu too. ' +
+      $(aggRoot).find(colTagSelector).length === 1), aggrTag(), 'In addition, you can change the aggregation column from the context menu too. ' +
       'For example, if you are adding multiple columns using the same aggregation function, you can set it as default by pressing the "+" sign and choosing ' +
       'it under the "Aggregation" submenu. Let\'s calculate the average weight for each patient group instead of age. Right-click the aggregation field and select <b>Column > WEIGHT</b>.'
     );
 
     await this.action('Change the aggregation function to "med"',
-      findColTag(aggRoot, 'med(WEIGHT)', () => $(aggRoot).find(colTagSelector).length === 1), ageAggr,
+      findColTag(aggRoot, 'med(WEIGHT)', () => $(aggRoot).find(colTagSelector).length === 1), aggrTag(),
       'To change the aggregation function, right-click the "avg(WEIGHT), ' +
       'select <b>Aggregation</b> from the context menu, and choose <b>med</b>.'
     );

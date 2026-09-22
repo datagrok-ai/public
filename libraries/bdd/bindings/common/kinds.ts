@@ -124,7 +124,8 @@ kind('property', {
   match: ['label', 'name', 'aria', 'dart'],
   labelSelector: '.u2-propgrid-name, .property-grid-item-name-text',
   dartNames: ['prop-{q}'],
-  parts: {label: '.u2-propgrid-name, .property-grid-item-name', value: '.u2-propgrid-value, .property-grid-item-value'},
+  parts: {label: '.u2-propgrid-name, .property-grid-item-name', value: '.u2-propgrid-value, .property-grid-item-value',
+    editor: '[name^="prop-view-"]'},
 });
 // the Dart property grid's category is a row of the grid (prop-category-<name>)
 kind('category', {

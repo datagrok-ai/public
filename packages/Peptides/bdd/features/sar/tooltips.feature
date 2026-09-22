@@ -3,6 +3,11 @@ Feature: Inspect peptide statistics in tooltips
   Tooltips replace their statistics as the pointer moves between monomer-position cells.
   Header selection and viewer settings changes preserve the hover behavior.
 
+  Not translated: where the tooltip is anchored (a position on screen, not a behavior), and the
+  manual case's "the Logo Summary Table's WebLogo looks the same as the header's" — the table
+  draws its WebLogos with Bio's viewer, not the header renderer, so there is no shared drawing to
+  compare; the cluster row is hovered and its statistics checked against the source instead.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized
@@ -42,6 +47,7 @@ Feature: Inspect peptide statistics in tooltips
     Then the "mode" reading of Sequence Variability Map viewer should be "Mutation Cliffs"
     And Sequence Variability Map viewer should have repainted
     And the "cliffs of cell A at 2" reading of Sequence Variability Map viewer should be 7
+    And the "cell A at 2" area of Sequence Variability Map viewer should be painted in at least 1 colors
     When user hovers over the "cell A at 2" area of Sequence Variability Map viewer
     Then tooltip should be visible
     And "Pairs count" table row in tooltip should have text "Pairs count7"
@@ -89,13 +95,17 @@ Feature: Inspect peptide statistics in tooltips
     And no error or warning balloon should have been shown
 
   Scenario: WebLogo header tooltips replace their statistics and clear the highlight on leaving
-    # the settings round trip re-adds columns at the right edge and the grid follows them; Home
-    # brings the first positions back on screen
+    # the settings round trip may leave the grid scrolled to the columns it re-adds at the right
+    # edge; a Shift-wheel over a row header, on screen either way, brings the first positions back
     When user moves the pointer away from Sequence Variability Map viewer
-    And user presses Home in grid
+    And user scrolls the mouse wheel up 5 times over the "row header 1" area of grid holding Shift
     And user hovers over the "A at 2" area of grid
     Then Count table row in tooltip should contain text "14 (14.000%)"
     And the "highlighted rows" reading of grid should be 14
+    When user hovers over the "H at 2" area of grid
+    Then Count table row in tooltip should contain text "6 (6.000%)"
+    And Count table row in tooltip should not contain text "14 (14.000%)"
+    And the "highlighted rows" reading of grid should be 6
     When user hovers over the "N at 4" area of grid
     Then Count table row in tooltip should contain text "74 (74.000%)"
     And the "highlighted rows" reading of grid should be 74

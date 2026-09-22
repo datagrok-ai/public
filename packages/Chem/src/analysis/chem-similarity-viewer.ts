@@ -271,6 +271,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
               grid.style.backgroundColor = '#d3f8bd';
           }
           $(grid).addClass(divClass);
+          grid.setAttribute('data-row', `${idx}`);
+          grid.setAttribute('name', `card-${idx}`);
           grid.addEventListener('click', (event: MouseEvent) => {
             if (this.dataFrame && this.idxs) {
               if (event.shiftKey || event.altKey)

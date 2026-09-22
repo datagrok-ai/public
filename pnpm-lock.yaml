@@ -181,7 +181,7 @@ importers:
         specifier: workspace:^
         version: link:../gridext
       '@datagrok-libraries/hwe':
-        specifier: ^1.0.0
+        specifier: ^1.0.5
         version: 1.0.5(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/ml':
         specifier: workspace:^
@@ -2390,6 +2390,9 @@ importers:
         specifier: 'catalog:'
         version: 2.1.0
     devDependencies:
+      '@datagrok-libraries/bdd':
+        specifier: workspace:^
+        version: link:../../libraries/bdd
       '@playwright/test':
         specifier: ^1.48.0
         version: 1.63.0

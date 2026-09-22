@@ -4,6 +4,9 @@ Feature: Similarity search
   row: the row itself first, then as many neighbours as the limit allows; another current row is
   another query.
 
+  Not translated: an empty current row (GROK-16111) is claimed with the other search viewers in
+  analyze/empty-current-row; nothing else of the md is left out.
+
   Background:
     Given user is logged in
     And user opens filter_FASTA dataset

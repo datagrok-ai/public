@@ -17,6 +17,7 @@ import {MoleculeImage} from '../../common/view/components/molecule-img';
 import {APP_NAME, DEFAULT_AXOLABS_INPUT} from '../../common/view/const';
 import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
 import {MonomerLibViewer} from '../../common/view/monomer-lib-viewer';
+import {MonomerNotFoundError} from '../../structure/model/monomer-code-parser';
 import {SequenceToMolfileConverter} from '../../structure/model/sequence-to-molfile';
 import {convert, getSupportedTargetFormats, getTranslatedSequences} from '../model/conversion-utils';
 import {ITranslationHelper} from '../../../types';
@@ -303,13 +304,19 @@ class TranslatorAppLayout {
   private getMolfile(): string {
     if (!this.format)
       return '';
-    if (this.format === DEFAULT_FORMATS.HELM) {
-      const axolabs = this.th.createFormatConverter(this.sequence, this.format)
-        .convertTo(DEFAULT_FORMATS.AXOLABS);
-      return (new SequenceToMolfileConverter(axolabs, false, DEFAULT_FORMATS.AXOLABS).convert());
+    try {
+      if (this.format === DEFAULT_FORMATS.HELM) {
+        const axolabs = this.th.createFormatConverter(this.sequence, this.format)
+          .convertTo(DEFAULT_FORMATS.AXOLABS);
+        return (new SequenceToMolfileConverter(axolabs, false, DEFAULT_FORMATS.AXOLABS).convert());
+      }
+      return (new SequenceToMolfileConverter(this.sequence, false, this.format)).convert();
+    } catch (e) {
+      // codes with no monomer (input mid-typing, unmapped HELM monomers) have no structure to draw
+      if (e instanceof MonomerNotFoundError)
+        return '';
+      throw e;
     }
-    const molfile = (new SequenceToMolfileConverter(this.sequence, false, this.format)).convert();
-    return molfile;
   }
 }
 
