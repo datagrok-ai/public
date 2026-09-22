@@ -23,7 +23,7 @@ Feature: The panel's criterion composes with the viewers
   md says it does not) and the PC plot by Reset View; the GROK-16713 redraw is the panel's canvases
   changing across the command after they held still across the moment before it.
 
-  @serial: the "should not have repainted" claims of this journey read the panel while another
+  Tagged serial: the "should not have repainted" claims of this journey read the panel while another
   feature's page is working the same stand; it passes alone and failed twice in a full viewers run.
 
   Background:
