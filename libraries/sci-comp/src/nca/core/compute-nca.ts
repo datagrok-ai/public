@@ -259,8 +259,9 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   }
   // A point that is BLQ-flagged but NOT in the drop set is a SUBSTITUTED value
   // (`set-half-lloq` — `set-zero` substitutes are non-positive and both the λz
-  // filter and the trailing trim drop them). Two DISTINCT harms follow, and the
-  // terminal parameters can carry either one alone:
+  // filter and the trailing trim drop them). AT LEAST three distinct harms
+  // follow; this warning covers the two that the rule choice does NOT already
+  // imply, and the terminal parameters can carry either one alone:
   //
   //   (1) a substitute inside the fitted window — the SLOPE rests on a number
   //       nobody measured, and no fit statistic can say so (a substitute near
@@ -276,6 +277,18 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   // tail anchor. Keying only on fit membership would make the signal vanish
   // exactly when an analyst acts on it — worse than never warning. So the anchor
   // is checked on its own, whatever the mode.
+  //
+  // The THIRD harm is deliberately NOT warned here: an embedded substitute that
+  // is neither in the fit nor `cLast` is still integrated into AUClast/AUMClast
+  // (and so moves AUCinf, CL, Vz, MRT, Vss, %extrap). That one IS implied by the
+  // rule the caller chose — `set-half-lloq` means "treat LLOQ/2 as data", and M3
+  // substitution (Beal 2001) integrates it by definition — so warning on it
+  // would fire on essentially every `set-half-lloq` profile and say only that
+  // the rule did what it says. `provenance.blqApplied` records which points were
+  // substituted; quantifying the share is tracked separately (nca-studio TODO
+  // GAP-BLQ-SUBSTITUTED-AUC-SHARE). The two cases above are different in kind:
+  // nothing in the rule choice tells the analyst that a fabricated value entered
+  // the terminal SLOPE or became its anchor.
   const isSubstituted = (i: number): boolean =>
     i >= 0 && augBlq[i] !== 0 && dropMask[i] === 0;
   if (status === 'ok') {
