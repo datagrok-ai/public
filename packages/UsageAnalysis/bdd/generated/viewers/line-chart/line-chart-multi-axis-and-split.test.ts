@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.line-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -15,7 +16,7 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, shouldBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, isExpanded, shouldBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewerWith, areasSameSize, hasArea, hasNoArea, hoverArea, legendLists, noErrors, painted, pickFromAreaContextMenu, readingBetween, readingHigher, readingIs, readingReads, repainted, reportsNoError, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
@@ -129,8 +130,8 @@ test.describe("Line chart multi-axis layout and splitting into series", () => {
       await session.step(133, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["yColumnNames","Chemical Space X, Chemical Space Y, TPSA"],["multiAxis","true"]]), [["yColumnNames","Chemical Space X, Chemical Space Y, TPSA"],["multiAxis","true"]]);
       await session.step(136, "Then the \"y columns\" reading of line chart viewer should be \"Chemical Space X, Chemical Space Y, TPSA\"", () => readingReads(page, "y columns", el("line chart viewer"), "Chemical Space X, Chemical Space Y, TPSA"));
       await session.step(137, "When user clicks on settings icon of line chart viewer", () => clickOn(page, el("settings icon of line chart viewer")));
-      await session.step(138, "And user clicks on \"Y Axis\" category in context panel", () => clickOn(page, el("\"Y Axis\" category in context panel")));
-      await session.step(139, "And user clicks on \"...\" button in \"Y\" property", () => clickOn(page, el("\"...\" button in \"Y\" property")));
+      await session.step(138, "Given \"Y Axis\" category in context panel is expanded", () => isExpanded(page, el("\"Y Axis\" category in context panel")));
+      await session.step(139, "When user clicks on \"...\" button in \"Y\" property", () => clickOn(page, el("\"...\" button in \"Y\" property")));
       await session.step(140, "Then \"Select columns...\" dialog should be visible", () => shouldBe(page, el("\"Select columns...\" dialog"), "visible"));
       await session.step(141, "And the \"Chemical Space Y\" column should be checked in the column list of \"Select columns...\" dialog", () => checkedInColumnList(page, "Chemical Space Y", el("\"Select columns...\" dialog")));
       await session.step(142, "And \"Search\" input in \"Select columns...\" dialog should lie within \"Select columns...\" dialog", () => liesWithin(page, el("\"Search\" input in \"Select columns...\" dialog"), el("\"Select columns...\" dialog")));

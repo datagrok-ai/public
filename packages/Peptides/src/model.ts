@@ -207,7 +207,7 @@ export class PeptidesModel {
         updateVars.add('clusterMaxActivity');
         break;
       case 'showSequenceSpace':
-        updateVars.add('sequenceSpaceParams');
+        updateVars.add('sequenceSpace');
         break;
       case 'showLogoSummaryTable':
         updateVars.add('logoSummaryTable');
@@ -234,7 +234,10 @@ export class PeptidesModel {
     if (!this.isInitialized)
       return;
 
-    if (updateVars.has('sequenceSpaceParams')) {
+    // showing or hiding the viewer takes the params along; unchanged params of a shown viewer only re-cluster
+    if (updateVars.has('sequenceSpace'))
+      updateVars.delete('sequenceSpaceParams');
+    else if (updateVars.has('sequenceSpaceParams')) {
       const newSeqSpaceOptions = this.settings!.sequenceSpaceParams!;
       if (!Object.entries(newSeqSpaceOptions).some(([key, value]) =>
         oldSeqSpaceOptions[key as keyof type.SequenceSpaceParams] !== value && key !== 'epsilon' &&
@@ -244,8 +247,6 @@ export class PeptidesModel {
           updateVars.add('clusterParams');
       }
     }
-    if (updateVars.has('sequenceSpaceParams'))
-      updateVars.delete('clusterParams');
 
     // Apply new settings
     for (const variable of updateVars) {
@@ -290,6 +291,11 @@ export class PeptidesModel {
         const mpr = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as LogoSummaryTable;
         mpr._viewerGrid = null;
         mpr.render();
+        break;
+      case 'sequenceSpace':
+        this.settings!.showSequenceSpace ?
+          await this.addSequenceSpace({clusterEmbeddings: this.settings!.sequenceSpaceParams?.clusterEmbeddings}) :
+          this.closeSequenceSpace();
         break;
       case 'sequenceSpaceParams':
         if (this.settings!.showSequenceSpace)
@@ -1528,19 +1534,24 @@ export class PeptidesModel {
     }
   }
 
+  closeSequenceSpace(): void {
+    if (this._sequenceSpaceViewer !== null) {
+      try {
+        this._sequenceSpaceViewer.detach();
+        this._sequenceSpaceViewer.close();
+      } catch (_) {}
+      this._sequenceSpaceViewer = null;
+    }
+    for (const col of this._sequenceSpaceCols)
+      this.df.columns.remove(col);
+    this._sequenceSpaceCols = [];
+  }
+
   /**
    * Adds Sequence Space viewer to the analysis view
    */
   async addSequenceSpace(settings: {clusterEmbeddings?: boolean, clusterCol?: DG.Column | null} = {}): Promise<void> {
-    if (this._sequenceSpaceViewer !== null) {
-      try {
-        this._sequenceSpaceViewer?.detach();
-        this._sequenceSpaceViewer?.close();
-      } catch (_) {}
-    }
-    if (this._sequenceSpaceCols.length !== 0)
-      this._sequenceSpaceCols.forEach((col) => this.df.columns.remove(col));
-    this._sequenceSpaceCols = [];
+    this.closeSequenceSpace();
     let seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
     const sh = PeptideUtils.getSeqHelper().getSeqHandler(seqCol);
     const isHelm = sh.isHelm();

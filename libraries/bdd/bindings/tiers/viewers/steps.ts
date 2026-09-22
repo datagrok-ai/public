@@ -186,6 +186,9 @@ export const wheelOverArea = When('user scrolls the mouse wheel {word} over the 
 export const wheelOverAreaHolding = When('user scrolls the mouse wheel {word} over the {string} area of {widget} holding {key}', (page: Page, direction: string, area: string, target: ElementRef, key: string) =>
   v.wheelOverArea(page, target, area, direction, 1, keysOf(key)), {tier: 'ui', description: 'the same notches with a modifier held — Control zooms where a plain wheel scrolls'});
 
+export const wheelOverAreaTimes = When('user scrolls the mouse wheel {word} {int} times over the {string} area of {widget}', (page: Page, direction: string, times: number, area: string, target: ElementRef) =>
+  v.wheelOverArea(page, target, area, direction, times), {tier: 'ui', description: 'a run of wheel events — enough of them to reach the end of a long table'});
+
 export const wheelOverAreaTimesHolding = When('user scrolls the mouse wheel {word} {int} times over the {string} area of {widget} holding {key}', (page: Page, direction: string, times: number, area: string, target: ElementRef, key: string) =>
   v.wheelOverArea(page, target, area, direction, times, keysOf(key)), {tier: 'ui', description: 'a run of wheel events with a modifier held — enough of them to reach a limit'});
 
@@ -343,11 +346,11 @@ export const readingBetween = Then('the {string} reading of {widget} should be b
     }, {message: `"${name}" reading of ${target.phrase} should be between ${lo} and ${hi}`}).toBe(true);
   }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
 
-export const pickColorSwatch = When('user picks the color {string} in the color picker dialog', async (page: Page, hex: string) => {
-  const swatch = page.locator(`.d4-dialog [name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
-  await expect(swatch, `a "${hex}" swatch in the open colour dialog`).toBeVisible();
+export const pickColorSwatch = When('user picks the color {string} in the color picker( dialog)', async (page: Page, hex: string) => {
+  const swatch = page.locator(`[name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
+  await expect(swatch, `a "${hex}" swatch in the open colour picker`).toBeVisible();
   await swatch.click();
-}, {tier: 'ui', description: 'a swatch of the open colour dialog by its #rrggbb — the dialog every categorical legend opens'});
+}, {tier: 'ui', description: 'a swatch of the open colour picker by its #rrggbb — the dialog a categorical legend opens, or the popup the editor of a colour property opens ("user clicks on editor of \\"Back Color\\" property in context panel")'});
 
 export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
   await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);

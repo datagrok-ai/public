@@ -1,5 +1,9 @@
 # Helm changelog
 
+## v.next
+
+* Edit Helm...: Fixed the action opening the current cell's peptide instead of the right-clicked one; the current cell stays the fallback for a value that comes without a cell
+
 ## 3.0.6
 
 * HelmInput: Fixed the editor dialog's OK updating only the drawing — the input's value now reflects the sketched HELM and `onChanged` fires, so consumers (e.g. Flow's Helm Input node) read the edited value

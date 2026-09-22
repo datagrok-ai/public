@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.heat-map]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -21,7 +22,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Heat map colouring", () => {
   const session = feature(test, "features/viewers/heat-map/heat-map-colors.feature", import.meta.url);
-  test("Heat map colouring", {tag: ["@journey", "@viewers", "@realizes:viewers.heat-map", "@known-failure"]}, async ({browser}) => {
+  test("Heat map colouring", {tag: ["@journey", "@viewers", "@realizes:viewers.heat-map"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 2, page);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
@@ -44,11 +45,11 @@ test.describe("Heat map colouring", () => {
       await session.step(29, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Heatmap Colors off stops filling the cells with colour (GROK-20619)", async () => {
-      await session.step(38, "Then the \"heatmap colors\" reading of heat map viewer should be \"true\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "true"));
-      await session.step(39, "When user sets \"heatmapColors\" property of heat map viewer to \"false\"", () => setProperty(page, "heatmapColors", el("heat map viewer"), "false"));
-      await session.step(40, "Then the \"heatmap colors\" reading of heat map viewer should be \"false\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "false"));
-      await session.step(41, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
-    }, {knownFailure: true});
+      await session.step(35, "Then the \"heatmap colors\" reading of heat map viewer should be \"true\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "true"));
+      await session.step(36, "When user sets \"heatmapColors\" property of heat map viewer to \"false\"", () => setProperty(page, "heatmapColors", el("heat map viewer"), "false"));
+      await session.step(37, "Then the \"heatmap colors\" reading of heat map viewer should be \"false\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "false"));
+      await session.step(38, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
+    });
     run.finish();
   });
 });

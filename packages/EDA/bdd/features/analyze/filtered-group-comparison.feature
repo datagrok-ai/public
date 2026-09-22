@@ -5,8 +5,8 @@ Feature: Group comparison of a filtered table
   which asserted the opposite on purpose so that the fix would break it.
 
   demog has 3243 women: 104 Black, 2823 Caucasian and 279 Other, against 157, 5266 and 354 on the
-  whole table. The dialog counts the whole table today, so the scenario is @known-failure; when it
-  passes, GROK-20795 is fixed and the tag goes.
+  whole table. Fixed on 2026-09-21: the dialog clones the category and feature columns through the
+  table's filter before factorization.
 
   Background:
     Given user is logged in
@@ -32,7 +32,6 @@ Feature: Group comparison of a filtered table
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
-  @known-failure
   Scenario: The comparison sizes count only the women
     Then the "text of cell 1 of n" reading of second grid viewer should be "104"
     And the "text of cell 2 of n" reading of second grid viewer should be "2823"

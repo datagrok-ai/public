@@ -605,6 +605,22 @@ export const modelsOnServer = Then('{int} predictive model(s) named {string} sho
   expectNamedCount(page, 'models', 'predictive models', name, count),
 {tier: 'api', description: 'what the server holds, not what the gallery draws'});
 
+/** A login typed as the text of an input — a field that lists users by login, not a typeahead. */
+async function enterLogin(page: Page, target: ElementRef, login: string): Promise<void> {
+  const editor = await editorOf(page, el(target.phrase));
+  await editor.fill(login);
+  await editor.press('Enter');
+  await expect(editor, `${target.phrase} after typing a login`).toHaveValue(login);
+}
+
+export const enterOwnLogin = When('user enters the current user\'s login into {element}', async (page: Page, target: ElementRef) => {
+  const login: string = await page.evaluate(() => String(grok.shell.user.login));
+  await enterLogin(page, target, login);
+}, {tier: 'ui', description: 'the login of the account the run is signed in with, typed and committed with Enter'});
+
+export const enterSharingLogin = When('user enters the sharing user\'s login into {element}', (page: Page, target: ElementRef) =>
+  enterLogin(page, target, sharingLogin()),
+{tier: 'ui', description: 'the login of the second account (DATAGROK_SHARING_LOGIN, else the setup\'s "bddsecond"), typed and committed with Enter'});
 /* --- users, groups and roles ----------------------------------------------------------------------
    A role is a group on the server (the Roles view lists the groups flagged as roles), so the group
    steps serve both, under either word. A user can never be deleted: a feature that needs one shares

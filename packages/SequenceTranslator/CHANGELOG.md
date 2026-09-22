@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20959: Warn on Save SDF when a strand cannot be converted instead of linking an empty sense molfile
+* GROK-20958: Handle MonomerNotFoundError in Oligo Translator getMolfile so unknown-monomer input refreshes the view instead of throwing
 * GROK-20806: Uniquify Bulk Convert output column name via columns.getUnusedName
 * AI: Exposed AI functions and briefings on the HELM Enumerator dialog and the Markush Enumerator dialog/app — state introspection, macromolecule/placeholder/core/R-group editing, options, and running the enumeration.
 
