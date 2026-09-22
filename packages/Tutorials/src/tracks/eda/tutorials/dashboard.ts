@@ -124,6 +124,16 @@ export class DashboardTutorial extends Tutorial {
     const uploadProjectInfo = 'Click on the "Save" button in the scratchpad.';
 
     const projectName = 'Coffee sales dashboard';
+    // every run of this tutorial leaves a dashboard with this name behind, so on a shared server
+    // matching by name alone lets the last steps pick up somebody else's project
+    let savedProjectId = '';
+    const savedProjectSub = grok.events.onProjectUploaded.subscribe((p: DG.Project) => {
+      if (p?.friendlyName === projectName)
+        savedProjectId = p.id;
+    });
+    this.onClose.subscribe(() => savedProjectSub.unsubscribe());
+    const isSavedProject = (p: DG.Project) => savedProjectId ? p.id === savedProjectId : p.friendlyName === projectName;
+
     const projectDlg = await this.openDialog('Save a project', 'Save project', projectPaneHints, uploadProjectInfo);
     await DG.delay(1000);
     const projectNameHint = $(projectDlg.root).find('.ui-input-editor#name')[0];
@@ -143,7 +153,7 @@ export class DashboardTutorial extends Tutorial {
     await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription);
 
     const closeProjectDescription = 'You can close the project by right-clicking on the sidebar and clicking "Close all"';
-    await this.action('Close the project', grok.events.onProjectClosed.pipe(filter((p: DG.Project) => p.friendlyName === projectName)), null, closeProjectDescription);
+    await this.action('Close the project', grok.events.onProjectClosed.pipe(filter(isSavedProject)), null, closeProjectDescription);
 
     await DG.delay(1000);
     const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
@@ -151,7 +161,10 @@ export class DashboardTutorial extends Tutorial {
     await this.action('Open browse and click on Dashboards', elementClick(() => dashboardsLabel), dashboardsLabel);
 
     await this.action('Find and open your project',
-      grok.events.onProjectOpened.pipe(filter((p: DG.Project) => p.friendlyName === projectName)));
+      grok.events.onProjectOpened.pipe(filter(isSavedProject)), null,
+      'If the list holds more than one dashboard with this name, open the one you have just saved — ' +
+      'the others belong to different runs of this tutorial and query connections you might not have access to.');
+    savedProjectSub.unsubscribe();
     this.showToolbox();
     await DG.delay(1000);
 
