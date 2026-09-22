@@ -135,8 +135,8 @@ Feature: Line chart multi-axis layout and splitting into series
       | multiAxis    | true                                     |
     Then the "y columns" reading of line chart viewer should be "Chemical Space X, Chemical Space Y, TPSA"
     When user clicks on settings icon of line chart viewer
-    And user clicks on "Y Axis" category in context panel
-    And user clicks on "..." button in "Y" property
+    Given "Y Axis" category in context panel is expanded
+    When user clicks on "..." button in "Y" property
     Then "Select columns..." dialog should be visible
     And the "Chemical Space Y" column should be checked in the column list of "Select columns..." dialog
     And "Search" input in "Select columns..." dialog should lie within "Select columns..." dialog

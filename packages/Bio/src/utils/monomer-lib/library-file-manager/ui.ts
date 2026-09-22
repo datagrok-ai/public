@@ -245,11 +245,13 @@ export async function deleteMonomerLibraryByName(fileName: string): Promise<void
   const libHelper = await getMonomerLibHelper();
   const progressIndicator = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
   try {
-    await updateLibrarySelectionStatus(false, fileName);
     const provider = await findProviderWithLibraryName(await libHelper.getProviders(), fileName);
     if (!provider)
       throw new Error(`Cannot find provider for library ${fileName}`);
+    // the file goes first: its provider reloads the library and the list drops the row right away,
+    // instead of after the settings round trip and a reload of every library that used to precede it
     await provider.deleteLibrary(fileName);
+    await updateLibrarySelectionStatus(false, fileName);
   } finally {
     progressIndicator.close();
   }

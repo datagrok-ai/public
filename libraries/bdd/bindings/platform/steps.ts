@@ -8,6 +8,7 @@ import {click, editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
+import {armEvent} from '../../src/runtime/viewer-menus.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -590,9 +591,13 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
   atFeatureEnd(page, cleanup);
   await cleanup();
   // API deletion does not invalidate the open tree's cached nodes (including prior teardown).
-  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0)
+  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0) {
+    // the tree rebuilds after Refresh: a node right-clicked mid-rebuild opens no menu
+    const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
     await click(page, el('"Refresh" icon inside browse toolbar'));
-}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree, and deletes them again at feature end'});
+    await refreshed();
+  }
+}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree and waits for it to rebuild, and deletes them again at feature end'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
    18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK
@@ -611,6 +616,22 @@ export const modelsOnServer = Then('{int} predictive model(s) named {string} sho
   expectNamedCount(page, 'models', 'predictive models', name, count),
 {tier: 'api', description: 'what the server holds, not what the gallery draws'});
 
+/** A login typed as the text of an input — a field that lists users by login, not a typeahead. */
+async function enterLogin(page: Page, target: ElementRef, login: string): Promise<void> {
+  const editor = await editorOf(page, el(target.phrase));
+  await editor.fill(login);
+  await editor.press('Enter');
+  await expect(editor, `${target.phrase} after typing a login`).toHaveValue(login);
+}
+
+export const enterOwnLogin = When('user enters the current user\'s login into {element}', async (page: Page, target: ElementRef) => {
+  const login: string = await page.evaluate(() => String(grok.shell.user.login));
+  await enterLogin(page, target, login);
+}, {tier: 'ui', description: 'the login of the account the run is signed in with, typed and committed with Enter'});
+
+export const enterSharingLogin = When('user enters the sharing user\'s login into {element}', (page: Page, target: ElementRef) =>
+  enterLogin(page, target, sharingLogin()),
+{tier: 'ui', description: 'the login of the second account (DATAGROK_SHARING_LOGIN, else the setup\'s "bddsecond"), typed and committed with Enter'});
 /* --- users, groups and roles ----------------------------------------------------------------------
    A role is a group on the server (the Roles view lists the groups flagged as roles), so the group
    steps serve both, under either word. A user can never be deleted: a feature that needs one shares

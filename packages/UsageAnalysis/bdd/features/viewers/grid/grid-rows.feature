@@ -1,11 +1,27 @@
 @journey @viewers @realizes:viewers.grid
 Feature: Grid row selection, navigation and row source
   How the grid picks rows out: a click sets the current row without selecting, a drag down the
-  row-number strip selects a range with Shift, Control+A takes everything and Escape drops rows, columns and
-  the current row together, Control+click on headers selects columns, the arrows and Control+Home /
-  Control+End / PageDown move the current row, Space and Shift+Enter select by value, Allow Row
-  Selection gates all of it, and Row Source decides how many rows the grid shows at all. One journey
-  on demog-1000 (SEX M 447, AGE above 30 844).
+  row-number strip selects a range with Shift, Control+A takes everything and Escape drops rows,
+  columns and the current row together, Control+click on headers selects columns, the arrows and
+  Control+Home / Control+End / PageDown move the current row, Tab and Shift+Tab walk the cells and
+  wrap to the next and the previous row at the edges, Space and Shift+Enter select by value, Allow
+  Row Selection gates all of it (Shift+ArrowDown moves the caret and selects nothing), and Row
+  Source decides how many rows the grid shows at all. Under a filter and a sort the arrows walk the
+  grid's own order and Shift+ArrowDown selects the rows it leaves - the AGE-31 rows come first, in
+  the order 533, 95, 982, 115, 117, 497, 833. Also the mouse gestures of `grid-ui.md`: a Shift+click
+  range on the row strip; a Control+click on a row number inverts that row's selection without
+  making it current, and a plain click moves the current row and leaves the selection as it was; a
+  drag down the strip; Shift+click and Control+click on the headers. The Tab wrap, the plain click
+  that keeps the selection and the Control+click that does not move the current row are the
+  product's behaviour as the operator confirmed it, where `grid-ui.md` and
+  `grid-rows-select-filter-navigate.md` scenario 1 expect otherwise. One journey on demog-1000 (SEX
+  M 447, AGE above 30 844).
+
+  Escape is pressed with the focus given to the grid's overlay canvas and the focus claimed first:
+  the grid clears the current row only for a key that reaches that canvas, and clears the selection
+  alone for one that reaches its root, so without the focus step the claim depended on where the
+  click had left it (measured on dev). Rows pinned under a scroll are `grid-pinning.feature`'s;
+  Control+F and the block drag across the cells are out of scope by operator decision.
 
   Background:
     Given user is logged in
@@ -36,9 +52,12 @@ Feature: Grid row selection, navigation and row source
     And user presses Control+A
     Then all rows should be selected
     And columns "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY" should be selected
+    When user focuses on grid overlay
+    Then grid overlay should be focused
     When user presses Escape
     Then no rows should be selected
     And no columns should be selected
+    And the "current row" reading of grid should be 0
     And no errors should have been logged
 
   Scenario: Six Control+clicks on headers select six columns without an error
@@ -96,6 +115,11 @@ Feature: Grid row selection, navigation and row source
     Then row 5 should be current
     When user presses ArrowDown
     Then row 6 should be current
+    When user presses Shift+ArrowDown
+    And user presses Shift+ArrowDown
+    And user presses Shift+ArrowDown
+    Then row 9 should be current
+    And no rows should be selected
     When user presses Space
     Then no rows should be selected
     When user sets "Allow Row Selection" property of grid to "true"
@@ -133,10 +157,87 @@ Feature: Grid row selection, navigation and row source
     Then the "sort direction" reading of grid should be "ascending"
     And grid should show 844 rows
     And the "row order" reading of grid should differ from before
-    When user picks "Sort > Reset" from the context menu of the "header AGE" area of grid
+    When user presses Control+Home
+    Then the "current row" reading of grid should be 533
+    And "AGE" of the current row should be "31"
+    When user presses ArrowDown
+    Then the "current row" reading of grid should be 95
+    When user presses ArrowDown
+    Then the "current row" reading of grid should be 982
+    When user presses Shift+ArrowDown
+    And user presses Shift+ArrowDown
+    And user presses Shift+ArrowDown
+    And user presses Shift+ArrowDown
+    Then the "current row" reading of grid should be 833
+    And only rows where "USUBJID" is one of "X0273T51060200007, X0273T22000400015, X0273T22000400018, X0273T38000400027" should be selected
+    And every selected row should pass the filter
+    And 844 rows should pass the filter
+    When user clears the row selection
+    And user picks "Sort > Reset" from the context menu of the "header AGE" area of grid
     Then the "row order" reading of grid should be as remembered
     When user sets "Row Source" property of grid to "All"
     And user resets the filter
     Then all rows should pass the filter
     And grid should show 1000 rows
+    And no errors should have been logged
+
+  Scenario: Shift+click, Control+click, a plain click and a drag on the row strip
+    When user clicks on the "row header 5" area of grid
+    And user clicks on the "row header 10" area of grid holding Shift
+    Then rows 5 to 10 should be selected
+    And 6 rows should be selected
+    And the "current row" reading of grid should be 10
+    When user clicks on the "row header 15" area of grid holding Control
+    Then 7 rows should be selected
+    And only rows where "USUBJID" is one of "X0273T21000500006, X0273T21000500008, X0273T21000700006, X0273T21000800002, X0273T21000800004, X0273T21000800006, X0273T21001100003" should be selected
+    And the "current row" reading of grid should be 10
+    When user clicks on the "row header 15" area of grid holding Control
+    Then 6 rows should be selected
+    And rows 5 to 10 should be selected
+    And the "current row" reading of grid should be 10
+    When user clicks on the "row header 15" area of grid holding Control
+    Then 7 rows should be selected
+    When user clicks on the "row header 8" area of grid
+    Then 7 rows should be selected
+    And only rows where "USUBJID" is one of "X0273T21000500006, X0273T21000500008, X0273T21000700006, X0273T21000800002, X0273T21000800004, X0273T21000800006, X0273T21001100003" should be selected
+    And the "current row" reading of grid should be 8
+    When user drags the "row header 12" area of grid to the "row header 16" area
+    Then rows 12 to 16 should be selected
+    And 5 rows should be selected
+    When user clears the row selection
+    Then no rows should be selected
+    And no errors should have been logged
+
+  Scenario: Shift+click adds headers to the selection and Control+click takes one back
+    When user clicks on the "header AGE" area of grid holding Shift
+    And user clicks on the "header HEIGHT" area of grid holding Shift
+    Then columns "AGE, HEIGHT" should be selected
+    When user clicks on the "header AGE" area of grid holding Control
+    Then columns "HEIGHT" should be selected
+    When user presses Escape
+    Then no columns should be selected
+    And no errors should have been logged
+
+  Scenario: Tab and Shift+Tab walk the cells and wrap at the row edges
+    When user clicks on the "cell 3 of AGE" area of grid
+    And user presses Tab
+    Then the "current column" reading of grid should be "SEX"
+    And the "current row" reading of grid should be 3
+    When user presses Shift+Tab
+    Then the "current column" reading of grid should be "AGE"
+    And the "current row" reading of grid should be 3
+    When user clicks on the "cell 3 of SEVERITY" area of grid
+    And user presses Tab
+    Then the "current column" reading of grid should be "USUBJID"
+    And the "current row" reading of grid should be 4
+    When user presses Shift+Tab
+    Then the "current column" reading of grid should be "SEVERITY"
+    And the "current row" reading of grid should be 3
+    When user clicks on the "cell 3 of USUBJID" area of grid
+    And user presses Shift+Tab
+    Then the "current column" reading of grid should be "SEVERITY"
+    And the "current row" reading of grid should be 2
+    When user presses Tab
+    Then the "current column" reading of grid should be "USUBJID"
+    And the "current row" reading of grid should be 3
     And no errors should have been logged

@@ -1,5 +1,10 @@
 # tutorials changelog
 
+## v.next
+
+* GROK-20416: `Tutorial.action` accepts a `HintTarget` — an element or a function that resolves one — so a step can point at a control that is rebuilt while it is up
+* Steps that could not find the control they drive no longer return silently, which skipped the step and shifted every step number after it: `textInpAction`, `buttonClickAction`, `dlgInputAction` and the column inputs now wait for the control and report which one was missing
+
 ## 1.7.9 (2026-09-11)
 
 * Tutorial: A running tutorial keeps a shareable URL, so its link can be copied from the address bar and opened directly

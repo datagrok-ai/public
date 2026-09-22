@@ -125,6 +125,13 @@ export class Events {
   /** Fires after a context menu closes. */
   get onContextMenuClosed(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_CLOSED); }
 
+  /** Fires after the Browse tree finished rebuilding and re-resolving the current path. */
+  get onBrowseTreeRefreshed(): rxjs.Observable<EventData<BrowseTreeRefreshArgs>> { return __obs(EVENT_TYPE.BROWSE_TREE_REFRESHED); }
+
+  /** Fires once every child a tree group's expansion asked for is in the DOM; emits that group.
+   * Reaches this bus from trees whose root routes to it, which includes the Browse tree. */
+  get onTreeNodeChildrenLoaded(): rxjs.Observable<any> { return __obs(EVENT_TYPE.TREE_NODE_CHILDREN_LOADED); }
+
   /** Fires once a context menu popup is in the DOM; {@link onContextMenu} fires before the popup is built. */
   get onContextMenuShown(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_SHOWN); }
 
@@ -448,6 +455,11 @@ export interface ViewArgs {
 export interface ViewChangeArgs {
   previous: View;
   current: View;
+}
+
+export interface BrowseTreeRefreshArgs {
+  /** Which ribbon button ran: `refresh` (Refresh tree) or `find-path` (Locate current object). */
+  reason: 'refresh' | 'find-path';
 }
 
 export interface CellRangeArgs {

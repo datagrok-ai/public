@@ -2,8 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {searchResultsStatus} from '@datagrok-libraries/ml/src/viewers/search-base-viewer';
 import '../../css/chem.css';
-import {Subject, Subscription} from 'rxjs';
+import {Observable, Subject, Subscription} from 'rxjs';
 import {AVAILABLE_FPS} from '../constants';
 import {pickTextColorBasedOnBgColor} from '../utils/ui-utils';
 
@@ -42,6 +43,16 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   isComputing = false;
   rowSource: string;
   error = '';
+  private _renderPending = 0;
+  private _onRendered = new Subject<void>();
+
+  /** Fires when the last scheduled or running render has finished — what automation settles on
+   * with [isRenderPending]. */
+  get onRendered(): Observable<void> {return this._onRendered;}
+
+  /** Whether a scheduled or running render still owes a frame. The cards are rebuilt by an async
+   * compute, so the DOM being populated says nothing about it. */
+  get isRenderPending(): boolean {return this._renderPending > 0;}
 
   /** Upper bound for the `limit` property; subclasses override to widen it. Must stay a getter —
    * it's read in the base constructor, before subclass field initializers would run. */
@@ -98,6 +109,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       this.moleculeColumnName = this.moleculeColumn?.name ?? '';
     }
+    this.addStatusProvider('search-results', () => searchResultsStatus(this.root, this.moleculeColumnName, this.limit));
     await this.render(true);
   }
 
@@ -140,8 +152,12 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   protected async debouncedRender(computeData = true): Promise<void> {
     if (this._debRenderTimeout)
       clearTimeout(this._debRenderTimeout);
+    else
+      this._renderPending++;
     this._debComputeFlag = this._debComputeFlag || computeData;
     this._debRenderTimeout = setTimeout(async () => {
+      this._debRenderTimeout = null;
+      this._renderPending--;
       const flag = this._debComputeFlag;
       this._debComputeFlag = false;
       await this.render(flag);
@@ -149,6 +165,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   }
 
   async render(computeData = true): Promise<void> {
+    this._renderPending++;
     try {
       if (!this.moleculeColumn) {
         ui.empty(this.root);
@@ -162,6 +179,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         this.isComputing = false;
         this.renderCompleted.next();
       }
+      if (--this._renderPending === 0)
+        this._onRendered.next();
     }
   }
 

@@ -109,6 +109,18 @@ export const clipboardHas = Then('the clipboard should have (the )text {string}'
   await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toBe(text);
 }, {description: 'exactly, whitespace included'});
 
+const clipboardLines = async (page: Page): Promise<string[]> =>
+  (await g.readClipboard(page)).split(/\r?\n/).filter((line) => line.length > 0);
+
+export const clipboardLineCount = Then('the clipboard should hold {int} line(s)', async (page: Page, count: number) => {
+  await expect.poll(async () => (await clipboardLines(page)).length, {message: 'the non-empty lines of the clipboard text'}).toBe(count);
+}, {description: 'the non-empty lines of what the page last copied'});
+
+export const clipboardLineValues = Then('line {int} of the clipboard should hold the tab-separated values {string}', async (page: Page, line: number, values: string) => {
+  const want = values.split(/\s*,\s*/);
+  await expect.poll(async () => ((await clipboardLines(page))[line - 1] ?? '').split('\t'),
+    {message: `line ${line} of the clipboard, split at its tabs`}).toEqual(want);
+}, {description: 'the values of one line of the clipboard (counted from 1, empty lines skipped), split at its tabs and compared with the comma-separated list, in order'});
 export const pasteInto = When('user pastes {string} into {element}', async (page: Page, text: string, target: ElementRef) =>
   g.paste(page, await g.editorOf(page, target), text), {tier: 'ui', description: 'through the clipboard and the paste key over what the editor held; "\\n" is a line break'});
 
