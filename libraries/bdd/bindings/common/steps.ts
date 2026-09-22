@@ -1,6 +1,9 @@
 /* The generic step vocabulary: gestures (When) and outcomes (Then) over any element phrase.
    Expressions are cucumber expressions: `(on )` optional text, `in(to)` optional suffix, `be/become`
    alternation. Every definition is an exported const — the compiler imports it by name. */
+import {readFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
@@ -106,6 +109,9 @@ export const clipboardHas = Then('the clipboard should have (the )text {string}'
   await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toBe(text);
 }, {description: 'exactly, whitespace included'});
 
+export const pasteInto = When('user pastes {string} into {element}', async (page: Page, text: string, target: ElementRef) =>
+  g.paste(page, await g.editorOf(page, target), text), {tier: 'ui', description: 'through the clipboard and the paste key over what the editor held; "\n" is a line break'});
+
 const rememberedClips = new WeakMap<Page, string[]>();
 
 export const rememberClipboard = When('user remembers the clipboard text', async (page: Page) => {
@@ -155,7 +161,7 @@ function named(name: string): (file: {name: string}) => boolean {
   return (file) => re.test(file.name);
 }
 
-async function downloaded(page: Page, name: string): Promise<{name: string; text: Promise<string>}> {
+async function downloadedNamed(page: Page, name: string): Promise<{name: string; text: Promise<string>}> {
   let names = '';
   await expect.poll(() => {
     const list = downloads.get(page);
@@ -170,15 +176,15 @@ async function downloaded(page: Page, name: string): Promise<{name: string; text
 }
 
 export const fileDownloaded = Then('a file {string} should have been downloaded', async (page: Page, name: string) => {
-  await downloaded(page, name);
+  await downloadedNamed(page, name);
 });
 
 export const downloadContains = Then('the downloaded file {string} should contain (the )text {string}', async (page: Page, name: string, text: string) => {
-  expect(await (await downloaded(page, name)).text, `the text of "${name}"`).toContain(text);
+  expect(await (await downloadedNamed(page, name)).text, `the text of "${name}"`).toContain(text);
 });
 
 async function occurrences(page: Page, name: string, text: string): Promise<number> {
-  return (await (await downloaded(page, name)).text).split(text).length - 1;
+  return (await (await downloadedNamed(page, name)).text).split(text).length - 1;
 }
 
 export const downloadCount = Then('the downloaded file {string} should contain {int} occurrences of {string}', async (page: Page, name: string, count: number, text: string) => {
@@ -198,3 +204,40 @@ export const showsPicture = Then('{element} should show a picture', async (page:
   await expect.poll(() => loc.locator('img').first().evaluate((img: HTMLImageElement) => img.naturalWidth * img.naturalHeight)
     .catch(() => 0), {message: `the picture ${target.phrase} shows`}).toBeGreaterThan(0);
 }, {description: 'an <img> the element holds, loaded and not empty — what a script panel draws into instead of a canvas'});
+// --- a file the page hands over, and handing it back ---------------------------------------------
+
+/* The page saves a file (a form's "Save to file", an export) through the browser's download; the
+   step keeps it in the temp directory for the file chooser a later step answers with it. One file
+   per worker: the next download replaces it. */
+let downloaded: string | undefined;
+
+function downloadedFile(): string {
+  if (!downloaded)
+    throw new Error('no file has been downloaded in this worker');
+  return downloaded;
+}
+
+export const downloadThrough = When('user downloads a file through {element}', async (page: Page, target: ElementRef) => {
+  const download = page.waitForEvent('download', {timeout: 10000});
+  await g.click(page, target);
+  const file = await download;
+  downloaded = join(tmpdir(), `bdd-${process.pid}-${Date.now()}-${file.suggestedFilename()}`);
+  await file.saveAs(downloaded);
+}, {tier: 'ui', description: 'clicks the element and keeps the file the browser downloads, for "uploads the downloaded file"'});
+
+export const downloadedContains = Then('the downloaded file should contain {string}', async (page: Page, text: string) => {
+  expect(readFileSync(downloadedFile(), 'utf8'), `the downloaded file ${downloaded}`).toContain(text);
+});
+
+export const downloadedNotContains = Then('the downloaded file should not contain {string}', async (page: Page, text: string) => {
+  expect(readFileSync(downloadedFile(), 'utf8'), `the downloaded file ${downloaded}`).not.toContain(text);
+});
+
+export const uploadDownloaded = When('user uploads the downloaded file through {element}', (page: Page, target: ElementRef) =>
+  g.chooseFile(page, target, downloadedFile()), {tier: 'ui', description: 'answers the file chooser the element opens with the file the last "downloads a file" kept'});
+
+export const computedStyleContains = Then('the {string} style of {element} should contain {string}', async (page: Page, property: string, target: ElementRef, text: string) => {
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  await expect.poll(() => loc.evaluate((e, p) => getComputedStyle(e).getPropertyValue(p), property),
+    {message: `the "${property}" style of ${target.phrase}`}).toContain(text);
+}, {description: 'the computed CSS value the browser rendered the element with (font-family, font-size, …), by substring'});

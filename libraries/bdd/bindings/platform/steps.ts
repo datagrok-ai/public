@@ -6,6 +6,7 @@ import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
 import {click, editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
+import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
 
 declare const grok: any;
@@ -52,10 +53,31 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
   }), {timeout: pollMs(60000), message: `${dataset.name}: semantic types were not detected (is auto-detection on?)`}).toBe(true);
   // a second after the grid is created the view makes row 0 current when no row is, and every
   // viewer repaints its marker mid-feature; done here, the view's timer skips it
+  // resolved the moment the detection event lands, not on the next poll
+  await page.evaluate(([timeout, what]) => new Promise<void>((resolve, reject) => {
+    const w = window as any;
+    const dart = w.grok.shell.tv?.dataFrame?.dart;
+    if (w.__bddDetected.includes(dart))
+      return resolve();
+    const timer = setTimeout(() => { sub.unsubscribe(); reject(new Error(`${what}: semantic types were not detected (is auto-detection on?)`)); }, timeout);
+    const sub = w.grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
+      if (a?.args?.dataFrame?.dart !== dart)
+        return;
+      clearTimeout(timer);
+      sub.unsubscribe();
+      resolve();
+    });
+  }), [pollMs(60000), dataset.name] as [number, string]);
+  // a second after the grid is created the view makes row 0 of its first column current when no row
+  // is, and every viewer repaints its marker mid-feature; done here, the same cell, the view's timer
+  // skips it — and a "current column" claim does not depend on which of the two got there first
   await page.evaluate(() => {
-    const df = (window as any).grok.shell.tv?.dataFrame;
-    if (df && df.currentRowIdx === -1 && df.rowCount > 0)
-      df.currentRowIdx = 0;
+    const tv = (window as any).grok.shell.tv;
+    const df = tv?.dataFrame;
+    if (!df || df.currentRowIdx !== -1 || df.rowCount === 0)
+      return;
+    const first = tv.grid?.columns.byIndex(1)?.column ?? df.columns.byIndex(0);
+    df.currentCell = df.cell(0, first.name);
   });
 }
 
@@ -97,34 +119,81 @@ export const closeAllViews = When('user closes all views', async (page: Page) =>
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok');
 }, {tier: 'api', description: 'grok.shell.closeAll — tables, views and viewers gone, the Home view current'});
 
-/** The project's table is uploaded and the view saved with its layout, as the ribbon's Save
- * dialog does it; a plain view info would drop the viewport. Deleted when the feature ends. */
-export const saveAsProject = When('user saves the current view as project {string}', async (page: Page, name: string) => {
-  const ids: {project: string; table: string} = await page.evaluate(async (n) => {
-    const tv = grok.shell.tv;
+/** A project of this name, or of this family and older than an hour, is what a run that never
+ * reached its feature end left behind: it goes, with the table and the view it holds. */
+async function deleteLeftoverProjects(page: Page, name: string): Promise<void> {
+  const families = fixtureFamilies([name]);
+  const leftovers = (await serverEntities(page, 'projects'))
+    .filter((project) => [project.name, project.friendlyName].includes(name) || isStaleFixture(project, families));
+  for (const leftover of leftovers)
+    await page.evaluate(async (id) => {
+      const project = await grok.dapi.projects.filter(`id = "${id}"`).include('children').first();
+      if (!project)
+        return;
+      for (const child of project.children) {
+        const source = child instanceof DG.TableInfo ? grok.dapi.tables : child instanceof DG.ViewInfo ? grok.dapi.views : null;
+        if (source)
+          await source.delete(child);
+      }
+      await grok.dapi.projects.delete(project);
+    }, leftover.id);
+}
+
+/** The project's tables are uploaded and every view saved with its layout, as the ribbon's Save
+ * dialog does it; a plain view info would drop the viewport. Deleted when the feature ends, and
+ * whatever an earlier run left under the name goes first. */
+async function saveProject(page: Page, name: string, everyView: boolean): Promise<void> {
+  await deleteLeftoverProjects(page, name);
+  const ids: {project: string; tables: string[]; views: string[]} = await page.evaluate(async ([n, every]) => {
     const project = DG.Project.create();
     project.name = n;
-    const tableInfo = tv.dataFrame.getTableInfo();
-    const viewInfo = tv.getInfo();
-    viewInfo.viewState = tv.saveLayout({saveWithData: true}).viewState;
-    project.addChild(tableInfo);
-    project.addChild(viewInfo);
-    await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
-    await grok.dapi.tables.save(tableInfo);
-    await grok.dapi.views.save(viewInfo);
+    const tables: string[] = [];
+    const views: string[] = [];
+    for (const tv of every ? Array.from(grok.shell.tableViews) as any[] : [grok.shell.tv]) {
+      const tableInfo = tv.dataFrame.getTableInfo();
+      const viewInfo = DG.ViewInfo.fromJson(tv.saveLayout({saveWithData: true}).toJson());
+      project.addChild(tableInfo);
+      project.addChild(viewInfo);
+      await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
+      await grok.dapi.tables.save(tableInfo);
+      await grok.dapi.views.save(viewInfo);
+      tables.push(String(tableInfo.id));
+      views.push(String(viewInfo.id));
+    }
     await grok.dapi.projects.save(project);
     const w = window as any;
     w.__bddProjects = {...(w.__bddProjects ?? {}), [n]: String(project.id)};
-    return {project: String(project.id), table: String(tableInfo.id)};
-  }, name);
+    return {project: String(project.id), tables, views};
+  }, [name, everyView] as [string, boolean]);
   atFeatureEnd(page, () => page.evaluate(async (i) => {
-    for (const [source, id] of [[grok.dapi.projects, i.project], [grok.dapi.tables, i.table]]) {
-      const e = await source.find(id).catch(() => null);
-      if (e)
-        await source.delete(e);
+    for (const [source, entityIds] of [[grok.dapi.projects, [i.project]], [grok.dapi.views, i.views], [grok.dapi.tables, i.tables]] as [any, string[]][]) {
+      for (const id of entityIds) {
+        const e = await source.find(id).catch(() => null);
+        if (e)
+          await source.delete(e);
+      }
     }
   }, ids));
-}, {tier: 'api', description: 'the current table view as a project on the server, removed again when the feature ends'});
+}
+
+export const noProjectOnServer = Given('no project named {string} is on the server', async (page: Page, name: string) => {
+  silent(page);
+  const cleanup = () => deleteLeftoverProjects(page, name);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes the project an earlier run left under that name (with its table and view), and again when the feature ends — for a save made through the Save dialog'});
+
+export const projectsOnServer = Then('{int} project(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'projects', 'projects', name, count),
+{tier: 'api', description: 'what the server holds, not what the dialog said'});
+
+export const saveAsProject = When('user saves the current view as project {string}', (page: Page, name: string) =>
+  saveProject(page, name, false),
+{tier: 'api', description: 'the current table view as a project on the server, removed again when the feature ends'});
+
+export const saveAllAsProject = When('user saves all open table views as project {string}', (page: Page, name: string) =>
+  saveProject(page, name, true),
+{tier: 'api', description: 'every open table view in one project, as the ribbon\'s Save does — for a project that has to hold more than the current table'});
 
 export const openProject = When('user opens the {string} project', async (page: Page, name: string) => {
   await page.evaluate(async (n) => {
@@ -188,8 +257,29 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
     grok.shell.windows.showBrowse = true;
   });
   await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});
-  atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = true; }));
+  atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
 }, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
+
+export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: Page) => {
+  await page.evaluate(() => {
+    grok.shell.windows.simpleMode = false;
+    // a toolbox restored open by the user's layout and hidden at startup while empty still reads
+    // as shown, and the setter ignores a value it already has: off, then on, docks it again
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showToolbox = true;
+  });
+  await expect(page.locator('.d4-toolbox[caption]').first(), 'the toolbox pane').toBeVisible({timeout: 15000});
+  atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.showToolbox = false; grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
+}, {tier: 'api', description: 'idempotent: leaves simple mode and docks the toolbox pane afresh (off by default for a user, hidden at startup while empty); puts both back at feature end'});
+
+/** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
+ * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */
+export const simpleModeOff = Given('simple mode is off', async (page: Page) => {
+  silent(page);
+  await page.evaluate(() => { grok.shell.windows.simpleMode = false; });
+  await expect(page.locator('.d4-view-handle, [name^="view-handle: "]').first(), 'a view tab').toBeVisible({timeout: 15000});
+  atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
+}, {tier: 'api', description: 'the full shell — view tabs, menu bar, panels — for the feature; not in the video; simple mode is back at feature end'});
 
 /* --- the context panel -------------------------------------------------------------------------
    The panel renders the current object (`grok.shell.o`) and nothing else: a click that did not
@@ -278,10 +368,10 @@ export const sharingPaneListsNot = Then('the sharing pane should not list the sh
   await expect(await sharingPane(page)).not.toContainText(new RegExp(sharingShownName(), 'i'));
 }, {tier: 'ui', description: 'read once the pane has loaded'});
 
-// Space name filters miss existing spaces, so names are matched after reading every page.
-type NamedSource = 'spaces' | 'models';
+// Space and group name filters miss existing entities, so names are matched after reading every page.
+type NamedSource = 'spaces' | 'models' | 'groups';
 type CleanupSource = NamedSource | 'projects' | 'tables';
-type ServerEntity = {id: string; name: string; friendlyName: string; children?: string[]};
+type ServerEntity = {id: string; name: string; friendlyName: string; createdOn: number; children?: string[]};
 type CleanupStage = {source: CleanupSource; ids: string[]};
 
 async function serverEntities(page: Page, source: CleanupSource, filter = ''): Promise<ServerEntity[]> {
@@ -299,7 +389,9 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
         const entities = await data.list({pageSize: 1000, pageNumber});
         for (const entity of entities)
           result.push({id: entity.id, name: entity.name, friendlyName: entity.friendlyName,
-            children: src === 'projects' ? entity.children.map((child: any) => child.id) : undefined});
+            createdOn: entity.createdOn?.valueOf() ?? 0,
+            // a project can hold a child whose entity is gone: one of those must not fail the listing
+            children: src === 'projects' ? entity.children.filter(Boolean).map((child: any) => child.id) : undefined});
         if (entities.length < 1000)
           return result;
       }
@@ -311,7 +403,63 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
   }, [source, filter] as [CleanupSource, string]);
 }
 
+/** Endpoints the JS API does not wrap (chats, global permissions), called with the page's session. */
+async function serverRequests(page: Page) {
+  const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
+    token: String(grok.dapi.token)}));
+  const headers = {Authorization: token};
+  const checked = async (method: string, path: string, response: Promise<{ok(): boolean; text(): Promise<string>}>) => {
+    const done = await response;
+    const body = await done.text();
+    if (!done.ok() || body.includes('ApiError'))
+      throw new Error(`${method} ${path}: ${body.slice(0, 200)}`);
+  };
+  return {
+    async get<T>(path: string): Promise<T> {
+      const got = await page.request.get(`${root}${path}`, {headers});
+      if (!got.ok())
+        throw new Error(`GET ${path} failed: HTTP ${got.status()}`);
+      return got.json();
+    },
+    post: (path: string, data: unknown) => checked('POST', path, page.request.post(`${root}${path}`, {headers, data})),
+    remove: (path: string) => checked('DELETE', path, page.request.delete(`${root}${path}`, {headers})),
+  };
+}
+
+/* A group's chat lives in a hidden group made for it; deleting that group, or the group, first leaves
+   a chat that throws in every profile's chat listing (forum.dart), so the chat goes first. */
+async function deleteChatsOf(page: Page, entity: ServerEntity): Promise<void> {
+  const api = await serverRequests(page);
+  for (const chat of await api.get<{id: string}[]>(`/chats/with_groups?ids=${entity.id}`))
+    await api.remove(`/chats/${chat.id}`);
+}
+
+/* groups.delete refuses a group holding a global permission, and an entity delete orphans the grant. */
+async function deleteGlobalGrantsOf(page: Page, entity: ServerEntity): Promise<void> {
+  const api = await serverRequests(page);
+  for (const grant of await api.get<{id: string; userGroup?: {id: string}}[]>(`/privileges/permissions/?groupId=${entity.id}&global=true`))
+    if (grant.userGroup?.id === entity.id)
+      await api.remove(`/privileges/permissions/${grant.id}`);
+}
+
+/* A fixture name ends in its run's {run} or {time}. A run that was killed never reached its
+   feature-end cleanup, so the fixtures of the same family that are older than any live feature go too. */
+const RUN_SUFFIX = /-(\d{13,}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const STALE_AFTER_MS = 60 * 60 * 1000;
+
+export const fixtureFamilies = (names: string[]): string[] =>
+  names.filter((name) => RUN_SUFFIX.test(name)).map((name) => name.replace(RUN_SUFFIX, ''));
+
+export function isStaleFixture(entity: {name: string; friendlyName: string; createdOn: number}, families: string[],
+  now = Date.now()): boolean {
+  if (entity.createdOn === 0 || now - entity.createdOn < STALE_AFTER_MS)
+    return false;
+  return [entity.friendlyName, entity.name]
+    .some((name) => RUN_SUFFIX.test(name) && families.includes(name.replace(RUN_SUFFIX, '')));
+}
+
 function namedCleanup(page: Page, source: NamedSource, what: string, names: string[]): () => Promise<void> {
+  const families = fixtureFamilies(names);
   let createdAfter: number | undefined;
   let authorId: string;
   const pending = new Map<string, CleanupStage[]>();
@@ -339,7 +487,8 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
           authorId = owner.authorId;
         }
         const named = (await serverEntities(page, source))
-          .filter((entity) => names.includes(entity.friendlyName) || names.includes(entity.name));
+          .filter((entity) => names.includes(entity.friendlyName) || names.includes(entity.name) ||
+            isStaleFixture(entity, families));
         for (const entity of named) {
           if (pending.has(entity.id))
             continue;
@@ -380,8 +529,8 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
         for (const [modelId, stages] of pending) {
           while (stages.length > 0) {
             const stage = stages[0];
-            // Spaces filters also miss IDs; verify deletion against the complete listing.
-            const filter = stage.source === 'spaces' ? '' : stage.ids.map((id) => `id = "${id}"`).join(' or ');
+            // Spaces and groups filters also miss IDs; verify deletion against the complete listing.
+            const filter = stage.source === 'spaces' || stage.source === 'groups' ? '' : stage.ids.map((id) => `id = "${id}"`).join(' or ');
             const entities = stage.ids.length === 0 ? [] : (await serverEntities(page, stage.source, filter))
               .filter((entity) => stage.ids.includes(entity.id));
             if (entities.length === 0) {
@@ -393,6 +542,10 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
                 if (stage.source === 'tables' &&
                   (await serverEntities(page, 'models', `trainedOn.id = "${entity.id}"`)).length > 0)
                   throw new Error(`training table ${entity.id} is still used by another model; it was retained`);
+                if (stage.source === 'groups') {
+                  await deleteChatsOf(page, entity);
+                  await deleteGlobalGrantsOf(page, entity);
+                }
                 await page.evaluate(async ([src, id, ownerId]) => {
                   let operation = 'lookup';
                   try {
@@ -431,7 +584,7 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
   };
 }
 
-async function expectNamedCount(page: Page, source: NamedSource, what: string, name: string, count: number): Promise<void> {
+async function expectNamedCount(page: Page, source: CleanupSource, what: string, name: string, count: number): Promise<void> {
   await expect.poll(async () => {
     try {
       return (await serverEntities(page, source)).filter((entity) => entity.friendlyName === name || entity.name === name).length;
@@ -470,8 +623,228 @@ export const modelsOnServer = Then('{int} predictive model(s) named {string} sho
   expectNamedCount(page, 'models', 'predictive models', name, count),
 {tier: 'api', description: 'what the server holds, not what the gallery draws'});
 
+/* --- users, groups and roles ----------------------------------------------------------------------
+   A role is a group on the server (the Roles view lists the groups flagged as roles), so the group
+   steps serve both, under either word. A user can never be deleted: a feature that needs one shares
+   a fixture user made once per stand, and only users-create, which tests the creation, adds any. */
+
+export const noGroupOnServer = Given('no group/role named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'groups', 'groups or roles', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'a role is a group on the server: deletes earlier fixtures by name (comma-separated), and deletes them again at feature end'});
+
+export const groupsOnServer = Then('{int} group(s)/role(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'groups', 'groups or roles', name, count), {tier: 'api', description: 'a role is a group on the server'});
+
+/** The friendly name is set with the name: the server derives it by splitting camel case otherwise,
+ * and "BDD-Group" would be listed as "BD D-Group". */
+export const groupOnServer = Given('a group named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'groups', 'groups', [name]);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+  await page.evaluate(async (n) => {
+    const group = DG.Group.create(n);
+    group.friendlyName = n;
+    await grok.dapi.groups.save(group);
+  }, name);
+  await expectNamedCount(page, 'groups', 'groups', name, 1);
+}, {tier: 'api', description: 'a new group under that name, deleted at feature end'});
+
+const serverUsers = (page: Page, login: string): Promise<{id: string; status: string}[]> =>
+  page.evaluate(async (l) => (await grok.dapi.users.filter(`login = "${l}"`).list()).map((u: any) => ({id: u.id, status: u.status})), login);
+
+/** Like the global setup's bddsecond: the login is the name the gallery shows, and `<login>@datagrok.ai`
+ * the mail. The favorites are the running account's; a run that died between Add and Remove left one. */
+export const userOnServer = Given('a user {string} is on the server', async (page: Page, login: string) => {
+  const status = await page.evaluate(async (l) => {
+    const user = await grok.dapi.users.filter(`login = "${l}"`).first();
+    if (!user) {
+      const made = DG.User.create();
+      made.login = l;
+      made.email = `${l}@datagrok.ai`;
+      made.firstName = l;
+      made.lastName = '';
+      made.status = 'active';
+      await grok.dapi.users.save(made);
+      return 'active';
+    }
+    for (const favorite of await grok.dapi.entities.getFavorites())
+      if (favorite.id === user.id)
+        await (window as any).grok_Favorites_Remove(favorite.dart, null);
+    return user.status;
+  }, login);
+  if (status !== 'active') {
+    const api = await serverRequests(page);
+    await api.post('/public/v1/users/unblock', await api.get(`/public/v1/users/${login}`));
+  }
+  await expect.poll(() => serverUsers(page, login).then((users) => users.map((u) => u.status).join(', ') || 'no such user'),
+    {message: `the user "${login}"`, timeout: pollMs(30000)}).toBe('active');
+}, {tier: 'api', description: 'a fixture user made once per stand, since users cannot be deleted: found by login or created; put back to active and out of the favorites'});
+
+export const usersOnServer = Then('{int} user(s) with login {string} should be on the server', async (page: Page, count: number, login: string) => {
+  await expect.poll(() => serverUsers(page, login).then((users) => users.length), {message: `users with login "${login}"`, timeout: pollMs(60000)})
+    .toBe(count);
+}, {tier: 'api', description: 'what the server holds, not what the gallery draws'});
+
+export const userStatusOnServer = Then('the user {string} should be {word} on the server', async (page: Page, login: string, status: string) => {
+  const want = status === 'disabled' ? 'blocked' : status;
+  await expect.poll(() => serverUsers(page, login).then((users) => users.map((u) => u.status).join(', ') || 'no such user'),
+    {message: `the status of "${login}"`, timeout: pollMs(30000)}).toBe(want);
+}, {tier: 'api', description: '"active", or "disabled" (the server says blocked)'});
+
+export const personalGroupOnServer = Then('the user {string} should have a personal group on the server', async (page: Page, login: string) => {
+  await expect.poll(() => page.evaluate(async (l) => {
+    const user = await grok.dapi.users.include('group').filter(`login = "${l}"`).first();
+    if (!user?.group)
+      return user ? 'the user has no group yet' : 'no such user';
+    const group = await grok.dapi.groups.find(user.group.id);
+    return group?.personal ? `personal group "${group.friendlyName}"` : `group ${user.group.id} is not personal`;
+  }, login), {message: `the personal group of "${login}"`, timeout: pollMs(30000)}).toBe(`personal group "${login}"`);
+}, {tier: 'api', description: 'the security group every user has, named by the login and flagged personal'});
+
+/** Who belongs to a group or holds a role: the member is a user by login or a group by name, and an
+ * admin member is a group's Admin or a role's Can assign. */
+async function membership(page: Page, member: string, group: string): Promise<string> {
+  return page.evaluate(async ([m, g]) => {
+    try {
+      const all = async (source: any): Promise<any[]> => {
+        const out: any[] = [];
+        for (let pageNumber = 1; ; pageNumber++) {
+          const items = await source.order('id').list({pageSize: 1000, pageNumber});
+          out.push(...items);
+          if (items.length < 1000)
+            return out;
+        }
+      };
+      const groups = await all(grok.dapi.groups);
+      const target = groups.find((x) => x.friendlyName === g || x.name === g);
+      if (!target)
+        return `no group or role "${g}"`;
+      const ids = new Set<string>(groups.filter((x) => x.friendlyName === m || x.name === m).map((x) => x.id));
+      for (const user of await grok.dapi.users.include('group').filter(`login = "${m}"`).list())
+        if (user.group)
+          ids.add(user.group.id);
+      if (ids.size === 0)
+        return `no user or group "${m}"`;
+      const full = await grok.dapi.groups.find(target.id);
+      return full.adminMembers.some((x: any) => ids.has(x.id)) ? 'admin member' :
+        full.members.some((x: any) => ids.has(x.id)) ? 'member' : 'not a member';
+    }
+    catch (error) {
+      return `the lookup failed: ${(error as any)?.message ?? String(error)}`;
+    }
+  }, [member, group]);
+}
+
+const expectMembership = (page: Page, member: string, group: string, want: string[]) =>
+  expect.poll(() => membership(page, member, group), {message: `"${member}" in "${group}"`, timeout: pollMs(30000)})
+    .toMatch(new RegExp(`^(${want.join('|')})$`));
+
+export const memberOnServer = Then('{string} should be a member of {string} on the server', (page: Page, member: string, group: string) =>
+  expectMembership(page, member, group, ['member', 'admin member']), {tier: 'api', description: 'a group\'s members or a role\'s assignees, admins included'});
+
+export const plainMemberOnServer = Then('{string} should be a plain member of {string} on the server', (page: Page, member: string, group: string) =>
+  expectMembership(page, member, group, ['member']), {tier: 'api', description: 'a member without Admin (a role: without Can assign)'});
+
+export const adminMemberOnServer = Then('{string} should be an admin member of {string} on the server', (page: Page, member: string, group: string) =>
+  expectMembership(page, member, group, ['admin member']), {tier: 'api', description: 'Admin of a group, Can assign of a role'});
+
+export const notMemberOnServer = Then('{string} should not be a member of {string} on the server', (page: Page, member: string, group: string) =>
+  expectMembership(page, member, group, ['not a member']), {tier: 'api'});
+
+/* --- the gallery ------------------------------------------------------------------------------------ */
+
+/* The counter reads "N", "N of M" (M is the list) or "shown / total", "..." before it knows. Other
+   features may add items meanwhile, so a comparison with the remembered count is one-sided. */
+const rememberedCounts = new WeakMap<Page, number>();
+
+async function galleryCount(page: Page): Promise<number | string> {
+  const text = ((await (await locate(page, el('gallery counter'))).filter({visible: true}).first().textContent()
+    .catch(() => null)) ?? '').trim();
+  const m = /^(?:\d+\s+of\s+)?(\d+)(?:\s*\/\s*\d+)?$/.exec(text);
+  return m ? Number(m[1]) : `not a count: "${text}"`;
+}
+
+export const rememberGalleryCount = When('user remembers the gallery counter', async (page: Page) => {
+  let count: number | string = '';
+  await expect.poll(async () => String(count = await galleryCount(page)), {message: 'the gallery counter'}).toMatch(/^[0-9]+$/);
+  if (!rememberedCounts.has(page))
+    atFeatureEnd(page, async () => { rememberedCounts.delete(page); });
+  rememberedCounts.set(page, Number(count));
+}, {tier: 'ui', description: 'the number the counter shows once the gallery has loaded, until the feature ends'});
+
+type CountRelation = 'lower' | 'not lower' | 'higher';
+
+async function expectCountVersusRemembered(page: Page, relation: CountRelation): Promise<void> {
+  const remembered = rememberedCounts.get(page);
+  if (remembered === undefined)
+    throw new Error('no gallery counter remembered: "user remembers the gallery counter" first');
+  await expect.poll(async () => {
+    const count = await galleryCount(page);
+    if (typeof count !== 'number')
+      return count;
+    const holds = relation === 'lower' ? count < remembered : relation === 'higher' ? count > remembered : count >= remembered;
+    return `${holds ? '' : 'not '}${relation} (${count} vs ${remembered})`;
+  }, {message: 'the gallery counter against the remembered one'}).toMatch(new RegExp(`^${relation} \\(`));
+}
+
+export const galleryCountLower = Then('the gallery counter should be lower than remembered', (page: Page) =>
+  expectCountVersusRemembered(page, 'lower'));
+
+export const galleryCountNotLower = Then('the gallery counter should not be lower than remembered', (page: Page) =>
+  expectCountVersusRemembered(page, 'not lower'), {description: 'back to at least the remembered count — another feature may have added items meanwhile'});
+
+export const galleryCountHigher = Then('the gallery counter should be higher than remembered', (page: Page) =>
+  expectCountVersusRemembered(page, 'higher'), {description: 'a cleared search against the count it showed: a jump no item or two of another feature can fake'});
+
+/* The first item says a reordering happened; which order the rest is in no reading exposes. */
+const rememberedFirstItems = new WeakMap<Page, string>();
+
+async function firstGalleryItem(page: Page): Promise<string> {
+  if (typeof await galleryCount(page) !== 'number')
+    return '';
+  const gallery = await locate(page, el('gallery'));
+  return ((await gallery.filter({visible: true}).first().locator('.d4-link-label').first().textContent({timeout: 1000})
+    .catch(() => null)) ?? '').trim();
+}
+
+export const rememberFirstGalleryItem = When('user remembers the first item in gallery', async (page: Page) => {
+  let first = '';
+  await expect.poll(async () => first = await firstGalleryItem(page), {message: 'the first item in the gallery'}).not.toBe('');
+  if (!rememberedFirstItems.has(page))
+    atFeatureEnd(page, async () => { rememberedFirstItems.delete(page); });
+  rememberedFirstItems.set(page, first);
+}, {tier: 'ui', description: 'the name of the first item once the gallery has loaded, until the feature ends'});
+
+async function expectFirstVersusRemembered(page: Page, same: boolean): Promise<void> {
+  const remembered = rememberedFirstItems.get(page);
+  if (remembered === undefined)
+    throw new Error('no first item remembered: "user remembers the first item in gallery" first');
+  await expect.poll(async () => {
+    const first = await firstGalleryItem(page);
+    return first === '' ? 'still loading' : first === remembered ? 'the remembered one' : `another one ("${first}")`;
+  }, {message: `the first item in the gallery against "${remembered}"`}).toMatch(same ? /^the remembered one$/ : /^another one/);
+}
+
+export const firstGalleryItemSame = Then('the first item in gallery should be the remembered one', (page: Page) =>
+  expectFirstVersusRemembered(page, true));
+
+export const firstGalleryItemOther = Then('the first item in gallery should not be the remembered one', (page: Page) =>
+  expectFirstVersusRemembered(page, false), {description: 'a reordering: another item leads the list'});
+
+export const galleryMode = Then('the gallery should be in {word} mode', async (page: Page, mode: string) => {
+  const gallery = await locate(page, el('gallery'));
+  await expect.poll(() => gallery.filter({visible: true}).first().getAttribute('mode')
+    .then((m) => (m ?? 'none').toLowerCase()).catch(() => 'no gallery'), {message: 'the render mode of the gallery'}).toBe(mode.toLowerCase());
+}, {description: 'brief, card or grid — what the gallery renders its items as, not which toggle is lit'});
+
 export const urlShouldContain = Then('the page address should contain {string}', async (page: Page, part: string) => {
   await expect.poll(() => page.url(), {message: 'the page address'}).toContain(part);
+});
+
+export const urlShouldNotContain = Then('the page address should not contain {string}', async (page: Page, part: string) => {
+  await expect.poll(() => page.url(), {message: 'the page address'}).not.toContain(part);
 });
 
 /** How many viewers the current view holds — an analysis that is done is one that has put its

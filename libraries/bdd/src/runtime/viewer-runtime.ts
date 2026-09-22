@@ -689,6 +689,16 @@ function install(): void {
     for (const v of viewers())
       baseline(v.root);
   };
+  /** Every viewer has drawn a change that reached them all — the waits share one frame. */
+  const settleAll = async (): Promise<void> => {
+    await Promise.all(viewers().map(quiet));
+  };
+  /** A change every viewer answers, in one call: the baselines, the change, the settle. */
+  const changeAll = (body: (arg: unknown) => void, arg: unknown): Promise<void> => {
+    baselineAll();
+    body(arg);
+    return settleAll();
+  };
   const writeProperties = async (el: Element, entries: [string, string][], capMs: number): Promise<number> => {
     const v = viewerOf(el);
     arm(v);
@@ -999,12 +1009,21 @@ function install(): void {
     }
     return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
   };
+  let added: any;
   const addViewer = (type: string): void => {
     const types: string[] = DG.Viewer.getViewerTypes();
     const exact = types.find((t) => norm(t) === norm(type));
     if (!exact)
       throw new Error(`no viewer type "${type}"; the platform has: ${types.join(', ')}`);
-    arm(grok.shell.tv.addViewer(exact));
+    added = grok.shell.tv.addViewer(exact);
+    arm(added);
+  };
+  /** The properties under the add step belong to the viewer that step created: a second viewer of
+   * a type the view already held would otherwise silently configure the first one. */
+  const writePropertiesOfAdded = (entries: [string, string][], capMs: number): Promise<number> => {
+    if (!added)
+      throw new Error('no viewer added in this scenario');
+    return writeProperties(added.root, entries, capMs);
   };
   /** The balloons shown since the last read, and clears them. */
   const takeBalloons = (): Balloon[] => balloons.splice(0, balloons.length);
@@ -1126,8 +1145,8 @@ function install(): void {
   w.__bdd = {table, tableNamed, col, rowFacts, setRows,
     viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaDelta, areaColors,
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
-    snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
-    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer,
+    snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
+    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
     takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));

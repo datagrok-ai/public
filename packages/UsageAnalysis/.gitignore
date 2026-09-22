@@ -36,5 +36,6 @@ playwright-report/
 
 # bdd (grok-bdd) run artifacts
 bdd/test-results/
+bdd/guides/
 bdd/e2e/
 bdd/.auth.json

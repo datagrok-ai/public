@@ -15,9 +15,9 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {currentRowIs} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {currentRowIs, setColumnSemType} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {commandCompleted, newColumnMatching, newestMatchingFilled, noNewColumn, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
-import {currentColumnIs, filterPassesAll, rowCount, setSemType} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {currentColumnIs, filterPassesAll, rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, dialogCloses, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, errorBalloonText, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -29,8 +29,8 @@ test.describe("R-Groups Analysis and Chemical Space on an all-empty molecule col
     const run = journey(test, 2, page);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(11, "And user opens a table \"empty_mols\" with:", () => openTableOf(page, "empty_mols", [["id","structure"],["1",""],["2",""],["3",""],["4",""],["5",""],["6",""],["7",""],["8",""],["9",""],["10",""]]));
-    await session.step(23, "And user sets the semantic type of \"structure\" column to \"Molecule\"", () => setSemType(page, "structure", "Molecule"));
+    await session.step(11, "And user opens a table \"empty_mols\" with:", () => openTableOf(page, "empty_mols", [["id","structure"],["1",""],["2",""],["3",""],["4",""],["5",""],["6",""],["7",""],["8",""],["9",""],["10",""]]), [["id","structure"],["1",""],["2",""],["3",""],["4",""],["5",""],["6",""],["7",""],["8",""],["9",""],["10",""]]);
+    await session.step(23, "And user sets the semantic type of \"structure\" column to \"Molecule\"", () => setColumnSemType(page, "structure", "Molecule"));
     await run.scenario("R-Groups Analysis with MCS says it has no core and adds nothing", async () => {
       await session.step(26, "When user picks \"Chem > Analyze > R-Groups Analysis...\" from the top menu", () => pickFromTopMenu(page, "Chem > Analyze > R-Groups Analysis..."));
       await session.step(27, "Then \"R-Groups Analysis\" dialog should be visible", () => shouldBe(page, el("\"R-Groups Analysis\" dialog"), "visible"));

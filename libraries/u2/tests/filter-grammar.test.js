@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {Filters} from '../src/core/filter/index.js';
+import {MemoryDomainBackend} from '../src/sources/memory-domain.js';
 import {TYPE} from 'datagrok-api/u2core';
 
 const corpus = JSON.parse(readFileSync(fileURLToPath(new URL('./filter-grammar.corpus.json', import.meta.url)), 'utf8'));
@@ -70,6 +71,44 @@ for (const entry of corpus.entries) {
       assert.equal(Filters.format(Filters.fromDomainTree(tree)), entry.canonical);
       assert.equal(canonicalOf(entry.canonical), entry.canonical, 'the canonical string is a fixed point');
     }
+  });
+}
+
+/* The corpus' second half: every entry carrying `matches` EVALUATED against the fixture, so the
+   grammar's meaning is pinned and not only its shape. The SQL twin is
+   `core/server/datlas/test/services/domain_filter_corpus_test.dart`, which builds the same table
+   from the same block and runs the same entries against Postgres. */
+const fixture = corpus.fixture;
+/** The corpus' column type → the property type a reader must have built it as. */
+const PROPERTY_TYPE = {string: 'string', int: 'int', float: 'double', bool: 'bool',
+  datetime: 'datetime', ref: 'string'};
+const be = new MemoryDomainBackend({name: 'corpus', tables: {[fixture.table]: {
+  hierarchy: fixture.hierarchy === true, businessKey: fixture.businessKey, columns: fixture.columns}}});
+const table = be.tableSync(`corpus.${fixture.table}`);
+/** `code` → the id the row was given; an `under` value naming a code is that row's id. */
+const ids = {};
+for (const {parent, ...values} of fixture.rows) {
+  const [row] = await table.transaction([{op: 'insert', table: fixture.table,
+    values: {...values, ...(parent === undefined ? {} : {parent_id: ids[parent]})}}]);
+  ids[values.code] = row.id;
+}
+
+test('corpus fixture: the table the evaluators build is exactly the corpus\' columns and types', () => {
+  const declared = Object.entries(fixture.columns).map(([name, c]) => `${name}:${PROPERTY_TYPE[c.type]}`);
+  const built = table.properties.filter((p) => fixture.columns[p.name] !== undefined)
+    .map((p) => `${p.name}:${p.propertyType ?? p.type}`);
+  assert.deepEqual(built, declared, 'a fixture change is a red test on both sides, never a silent drift');
+  assert.equal(table.info.hierarchy, fixture.hierarchy === true);
+  assert.deepEqual(table.info.businessKey, fixture.businessKey);
+  assert.ok(corpus.entries.filter((e) => e.matches !== undefined).length >= 25);
+});
+
+for (const entry of corpus.entries.filter((e) => e.matches !== undefined)) {
+  test(`corpus ${entry.id}: selects ${JSON.stringify(entry.matches)}`, async () => {
+    const input = entry.input.replace(/(\bunder\s+)"([^"]*)"/g,
+      (all, head, code) => ids[code] === undefined ? all : `${head}"${ids[code]}"`);
+    const rows = await table.query({filter: input, limit: 1000});
+    assert.deepEqual(rows.map((r) => r.code).sort(), entry.matches);
   });
 }
 
@@ -224,4 +263,42 @@ test('completionContext: connector after a value, a tag or ")"', () => {
   assert.equal(ctx('age > 5 not na|').prefix, 'na');
   assert.equal(ctx('age > 5 not hidden |').expect, 'connector');
   assert.equal(Filters.completionContext('name = 1 not ', 13, schema).expect, 'property');
+});
+
+test('under: the hierarchy subtree term, its refusals and its canonical string', () => {
+  const tree = (text) => Filters.parseTree(text).tree;
+  const root = '9d1c1e8a-0000-4000-8000-000000000001';
+  assert.deepEqual(tree(`location_id under "${root}"`),
+    [{property: 'location_id', operator: 'under', value: root}]);
+  assert.deepEqual(tree('id under $root'), [{property: 'id', operator: 'under', value: {$param: 'root'}}]);
+  assert.deepEqual(tree(`a = 1 and location_id under "${root}"`),
+    [{property: 'a', operator: '=', value: 1}, 'and',
+      {property: 'location_id', operator: 'under', value: root}]);
+  for (const text of ['location_id under parent_id', `location_id under ("${root}")`, 'location_id under'])
+    assert.equal(Filters.parseTree(text).errors.length, 1, text);
+  assert.equal(canonicalOf(`location_id under "${root}"`), `location_id under "${root}"`);
+  assert.equal(ctx('location_id un|').expect, 'operator', 'under completes as an operator');
+  assert.equal(ctx('name under |').expect, 'value');
+});
+
+test('column references and $params: the two phase-2 terms, their refusals and canonical strings', () => {
+  const tree = (text) => Filters.parseTree(text).tree;
+  assert.deepEqual(tree('end_date >= start_date'), [{property: 'end_date', operator: '>=', value: {$column: 'start_date'}}]);
+  assert.deepEqual(tree('a = b'), [{property: 'a', operator: '=', value: {$column: 'b'}}]);
+  assert.deepEqual(tree('country_id = $country_id'), [{property: 'country_id', operator: '=', value: {$param: 'country_id'}}]);
+  assert.deepEqual(tree('x in ($a, 5)'), [{property: 'x', operator: '=', value: [{$param: 'a'}, 5]}]);
+  assert.deepEqual(tree('name like $q'), [{property: 'name', operator: 'like', value: {$param: 'q'}}], 'kept for the binder');
+  assert.deepEqual(tree('name starts $q'), [{property: 'name', operator: 'like', value: {$param: 'q'}}]);
+  assert.deepEqual(tree('x between $lo and $hi'),
+    [[{property: 'x', operator: '>=', value: {$param: 'lo'}}, 'and', {property: 'x', operator: '<=', value: {$param: 'hi'}}]]);
+  assert.deepEqual(tree('a = true'), [{property: 'a', operator: '=', value: true}], 'a literal is never a column');
+  for (const [text, message] of [['a like b', 'Expected a value'], ['a = b.c', 'Expected a value'],
+    ['a = b(', 'Expected a value'], ['x = $', 'Expected a parameter name'], ['x = $1', 'Expected a parameter name']]) {
+    const {errors} = Filters.parseTree(text);
+    assert.equal(errors.length, 1, text);
+    assert.equal(errors[0].message, message, text);
+  }
+  assert.deepEqual(Filters.parseTree('x = $').errors[0].position, {start: 5, end: 5});
+  for (const canonical of ['end_date >= start_date', 'country_id = $country_id', 'x in ($a, 5)', 'name like $q'])
+    assert.equal(canonicalOf(canonical), canonical);
 });

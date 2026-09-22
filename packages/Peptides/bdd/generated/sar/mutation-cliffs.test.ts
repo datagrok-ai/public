@@ -68,7 +68,7 @@ test.describe("Compute and visualize peptide mutation cliffs", () => {
       await session.step(44, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("The position chart draws precisely the peptides participating in position-two cliffs", async () => {
-      await session.step(47, "Given user adds a Sequence Mutation Cliffs viewer with:", () => addViewerWith(page, "Sequence Mutation Cliffs", [["sequenceColumnName","AlignedSequence"],["activityColumnName","IC50"],["position","2"]]));
+      await session.step(47, "Given user adds a Sequence Mutation Cliffs viewer with:", () => addViewerWith(page, "Sequence Mutation Cliffs", [["sequenceColumnName","AlignedSequence"],["activityColumnName","IC50"],["position","2"]]), [["sequenceColumnName","AlignedSequence"],["activityColumnName","IC50"],["position","2"]]);
       await session.step(51, "Then Sequence Mutation Cliffs viewer should be added to the open tableview", () => viewerAdded(page, "Sequence Mutation Cliffs"));
       await session.step(52, "And the \"position\" reading of Sequence Mutation Cliffs viewer should be 2", () => readingIs(page, "position", el("Sequence Mutation Cliffs viewer"), 2));
       await session.step(53, "And the \"cliff rows\" reading of Sequence Mutation Cliffs viewer should be 115", () => readingIs(page, "cliff rows", el("Sequence Mutation Cliffs viewer"), 115));

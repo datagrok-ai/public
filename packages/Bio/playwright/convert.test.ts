@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.calculate.get-region, bio.calculate.get-region.top-menu, bio.detector, bio.transform.convert-notation, bio.transform.convert-notation.top-menu, bio.transform.split-to-monomers, bio.transform.to-atomic-level]
---- */
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -59,7 +57,7 @@ for (const ds of datasets) {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (let i = 0; i < 30; i++) {
         for (const fn of probes) {
-          try { await (grok as any).functions.call(fn, {}); return; } catch { /* not ready yet */ }
+          try { await (grok as any).functions.call(fn, {}); return; } catch {  }
         }
         await new Promise((r) => setTimeout(r, 100));
       }
@@ -77,8 +75,6 @@ for (const ds of datasets) {
     await softStep(`${ds.name}: Calculate > Extract Region adds a Macromolecule sub-region column`, async () => {
       const before: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       await openBioMenuItem(page, 'Calculate', 'Extract-Region...');
-      // Canonical editor: the platform hosts the widget and names the dialog after the function's
-      // friendly name 'Get Sequence Region' (Bio/package.ts:473) -> [name="dialog-Get-Sequence-Region"].
       await page.locator('[name="dialog-Get-Sequence-Region"]').waitFor({timeout: 60_000});
       await page.locator('[name="dialog-Get-Sequence-Region"] [name="button-OK"]').click();
       await page.waitForFunction(

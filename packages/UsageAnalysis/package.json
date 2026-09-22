@@ -12,7 +12,6 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/UsageAnalysis"
   },
-  "playwrightTests": "files/TestTrack",
   "dependencies": {
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",

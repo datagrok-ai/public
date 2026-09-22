@@ -20,10 +20,12 @@ src/nouns.ts            phrase (+ context) → NounRef (pure; shared by compiler
 src/match.ts            cucumber-expressions matching + specificity
 src/compile.ts          FeatureModel → *.test.ts (feature(test) session, test() per scenario, @journey = one test)
 src/states.ts           the {state} list, shared by the assertions, the parameter type and init's VS Code settings
-src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [playwright args] | link
+src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [playwright args] | guide <features> | link
 src/runtime/            args, locate, gestures, assertions, harness (session, journey, resetShell, error floor),
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
-                        viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure
+                        viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
+                        guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), pointer path → steps.json; full shell)
+tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
 bindings/platform/      the shell: elements, datasets, steps, data, columns, commands, functions, events — always loaded
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, events, floor), widgets (shared per-viewer steps)
@@ -54,7 +56,8 @@ WebLogo glyphs Peptides draws in grid headers).
   Datagrok pages in one browser.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
-  runtime. Package autostarts land 3 s after boot; a feature that needs one awaits
+  runtime. It waits for the PowerPack Home widgets to finish loading first, so what a widget logs
+  (GROK-20891) stays out of the scenarios. Package autostarts land 3 s after boot; a feature that needs one awaits
   `the package autostarts have completed`. The first shell load of a page waits 180 s and warns
   past 30 s: a starved `pub serve` hands out the 32 MB bundle in a minute, and that is a delay
   once per page, not the feature's failure.
@@ -111,7 +114,9 @@ WebLogo glyphs Peptides draws in grid headers).
   names a part) → registered element, else kind by every matching suffix, longest first. Kinds
   try their `match` strategies in order; a scope that is not on the page is not waited for.
 - **Gestures act on the visible match** (`locateActionable`); `enabled`/`disabled` read every
-  match and prefer the visible ones; `visible`/`hidden` over several matches = any/none.
+  match and prefer the visible ones; `visible`/`hidden` over several matches = any/none. An
+  ordinal counts the visible matches: the Home page keeps its own viewers in the DOM, hidden,
+  under a table view, so "first line chart viewer" must not land on one of them.
 - **Labels are found first, items second** (`byLabel`, `:scope >` labels); menu items match
   their own label, not their children's.
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**
@@ -145,15 +150,31 @@ WebLogo glyphs Peptides draws in grid headers).
 - **Codegen emits names, never selectors**; `\n` endings, no timestamps; orphans removed on
   compile and reported by `--check`.
 
-- **Server fixture names may include `{run}`**: the compiler resolves strings, element phrases,
-  tables and doc strings through the feature session. One UUID per feature instance keeps workers
-  and repeated runs independent; never generate it at compile time.
+- **Server fixture names may include `{run}` and `{time}`**: the compiler resolves strings, element
+  phrases, tables and doc strings through the feature session. One UUID and one start time per
+  feature instance keep workers and repeated runs independent; never generate either at compile time.
 - **Spaces cleanup verifies IDs against every page of the root listing.** Spaces smart filters
   can return an empty list for an existing ID, so a filtered result cannot prove deletion. Match
   the captured IDs locally, delete by exact ID, and retain unrelated roots. Include a fixture's
   parent root in its cleanup names because the listing does not include child spaces.
   After setup cleanup, refresh an open Browse tree: API deletion leaves cached nodes behind,
   so recreating the same name otherwise targets a stale node or resolves to two nodes.
+- **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
+  is also swept by family — the same name with any run suffix, older than an hour — whenever a
+  `no … named` or `a … named` step runs, and by the project save (`isStaleFixture`,
+  platform/steps.ts). Fixed names (the spaces, most projects) are swept by their exact name.
+- **Groups and roles are cleaned like spaces** (the complete listing, never a name or ID filter —
+  `grok.dapi.groups.filter('name = …')` missed a group that existed). Their global permissions are
+  revoked before `grok.dapi.groups.delete`, which refuses a role that holds one (GROK-20904). Never
+  delete a group as an entity: that leaves its grants behind with no group, and the Global
+  Permissions pane of every role shows "error" (GROK-20901).
+  **A group's chats go first**, found by the group's id (`/api/chats/with_groups?ids=`, as the
+  client's Chat does) and deleted through `DELETE /api/chats/{id}` (the JS API has no chats): Chat on
+  a group makes a private chat in a hidden group. Deleting that hidden group, or the group, first
+  leaves a chat the server can no longer delete and that throws in every user profile's chat
+  listing (`forum.dart` `_refreshChats`) for that account — it happened once on dev.
+- **A translated stack trace is not a second error**: the platform logs "… Look below, ID = X" and,
+  seconds later, "Stack trace X"; the floor joins it to its error, or drops it once reported.
 - **Model cards are not completion signals.** The Train Model preview reports `aria-busy` before
   debounce/queued training and `aria-invalid` for unavailable or failed results. `model preview
   should be ready` requires the latest completed training, predictions, charts and history.
@@ -172,6 +193,11 @@ WebLogo glyphs Peptides draws in grid headers).
   zero-size "Properties..." group, so labels occur twice — `openGroup` waits on the first visible
   candidate and tries every one; the top menu bar folds into a "more" group under 1920 px, its
   vertical groups are entered with two moves inside the item, Escape does not close it.
+- The Dart property grid's choice editor is lazy: its `<select>` enters the value cell only once
+  that cell is clicked (`select` clicks it first). The Save project dialog's name field is a bare
+  `<input>` (aria-label "Name"), which `text input` reaches. Typing into a column picker's search
+  box used to toggle the scatter plot's regression line on every "r" (the R shortcut listened on
+  the plot's root) — fixed 2026-09-21 in `regression_line.dart`.
 - Filters: `user filters rows where …` writes the filter bitset, and anything that calls
   `requestFilter` (a histogram on every menu pick) recomputes it — hold a filter across viewer
   interaction through a filter card. `getFiltersGroup` creates a panel when there is none.
@@ -200,6 +226,22 @@ WebLogo glyphs Peptides draws in grid headers).
   (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
   Invariants (`AppEvents.propertyEdited`) reaches across features: a settings click on a new viewer
   right after another feature edited a property leaves the panel on the old one.
+- Users, groups, roles: a login takes `[a-z0-9._-]` only (`grok_user.dart` `validateLogin`). A user
+  cannot be deleted: a feature takes the `bddviewed` fixture user to look at, or `bddmanaged` to
+  join, disable and favorite (the `@serial` features, never at the same time), both made once per
+  stand as `bddsecond` is; only users-create adds users, the two it tests. A group
+  saved through the JS API without a friendly name is listed by `camelCaseToWords(name)`
+  ("BDD-probe" shows as "BD D-probe"), so `a group named` sets both. A role is a group the JS API
+  cannot flag, so a feature makes one in the New Role dialog. The users search is fuzzy (a login
+  brings up every login sharing its letters), and a gallery counter reads `N`, `N of M` (M is the
+  list, only N rendered) or `shown / total`, with `...` before it knows — an item outside a search
+  is no claim, the counter is. A view-mode icon says it is current with `d4-current`, which
+  `selected` reads inside the gallery toolbar only (elsewhere it marks the current card); the gallery itself carries `mode="Brief|Card|Grid"`.
+  Sort list keeps the chosen order in the browser (`OrderMenu.savePersonal`), so a feature that sorts
+  ends on Default; "Apply for all users" writes the order for everyone — never a step. While the
+  gallery reloads after an order pick the counter reads "..." and the first item is empty, which is
+  not "another item". A user's personal group (friendly name = login) is not listed by the Groups
+  view; `user.tag()` throws on a User, so no feature can tag one.
 - A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
   dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
   its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").

@@ -39,7 +39,7 @@ Datagrok automatically creates implicit space projects for
 ## Creating and managing spaces
 
 [Browse](../../navigation/views/browse.md) organizes spaces in a tree
-that governs their hierarchy. You can create your own hierarchy under **Namespaces**: 
+that governs their hierarchy. You can create your own hierarchy under **Spaces**: 
 
 * **Root spaces**: Right-click **Spaces**, select **Create
 Space...**, and name your space in the dialog that opens.
@@ -68,8 +68,7 @@ When moving entities, you have these options:
    * This action creates a copy of the entity in the new space. The entity in the original space remains unaffected.
 1. **Move**:
    * The entity is moved to the new space, is automatically renamed, and adopts the permissions of the new space.
-   * A view-only copy of the moved entity is created in the original space. This view-only copy is linked to the entity in the new space.
-   * Any changes made to the entity in the new space are automatically reflected in the linked copy.
+   * Nothing stays in the original space. To keep the entity visible there as well, use **Link**.
 1. **Link**:
    * This action creates a view-only copy of the entity in the new space. This copy is linked to the entity in the original space.
    * Any changes made to the entity in the original space are automatically reflected in the linked copy.
@@ -82,13 +81,13 @@ To remove an entity from a space, simply move it to any other space.
 
 :::danger
 
-Don't use the **Delete...** command to remove entities from spaces. If you choose the **Delete...** command, it will permanently delete the entity from the server for all users and projects. This action cannot be undone.
+Don't use the delete commands (**Delete Project**, **Delete Space**, **Delete...**) to remove entities from spaces. If you delete an entity, it will permanently delete the entity from the server for all users and projects. This action cannot be undone.
 
 :::
 
 ## Searching spaces
 
-To find spaces using [smart search](../../navigation/views/browse.md#entity-search), you can use this metadata:
+To find spaces using [smart search](../objects.md#entity-search), you can use this metadata:
 
 | Field       | Description                            |
 |-------------|----------------------------------------|

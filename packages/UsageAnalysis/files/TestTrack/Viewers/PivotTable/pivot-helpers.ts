@@ -2,7 +2,7 @@ import {Page} from '@playwright/test';
 import * as v from '../../helpers/viewers';
 
 export const PIVOT = '[name="viewer-Pivot-table"]';
-export const INNER_CANVAS = `${PIVOT} .grok-pivot-grid [name="viewer-Grid"] canvas[name="canvas"]`;
+export const INNER_CANVAS = `${PIVOT} .grok-pivot-grid [name="pivot-grid"] canvas[name="canvas"]`;
 export const DEMOG = 'System:DemoFiles/demog.csv';
 
 export async function openPivot(page: Page, path = DEMOG): Promise<void> {

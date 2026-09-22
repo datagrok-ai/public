@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/build-config",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Shared build toolchain for Datagrok plugins and libraries: rspack + swc bundling, TypeScript 7 type-checking, package checks.",
   "license": "MIT",
   "repository": {

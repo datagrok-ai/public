@@ -29,7 +29,7 @@ test.describe("Pie chart aggregations, validation and the date category map", ()
     const run = journey(test, 8, page);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(14, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(15, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"]]));
+    await session.step(15, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"]]), [["Category","RACE"]]);
     await session.step(17, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
     await session.step(18, "And \"Segment Angle Column\" property of pie chart viewer should be \"AGE\"", () => propertyShouldBe(page, "Segment Angle Column", el("pie chart viewer"), "AGE"));
     await session.step(19, "And \"Segment Angle Aggr Type\" property of pie chart viewer should be \"count\"", () => propertyShouldBe(page, "Segment Angle Aggr Type", el("pie chart viewer"), "count"));
@@ -90,7 +90,7 @@ test.describe("Pie chart aggregations, validation and the date category map", ()
     });
     await run.scenario("A negative aggregation is refused and says why", async () => {
       await session.step(77, "When user adds a calculated column \"NEG_PROBE\" with formula \"${AGE} - 50\"", () => addCalculated(page, "NEG_PROBE", "${AGE} - 50"));
-      await session.step(78, "And user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Segment Angle Column","NEG_PROBE"],["Segment Angle Aggr Type","min"]]));
+      await session.step(78, "And user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Segment Angle Column","NEG_PROBE"],["Segment Angle Aggr Type","min"]]), [["Segment Angle Column","NEG_PROBE"],["Segment Angle Aggr Type","min"]]);
       await session.step(81, "Then the \"error\" reading of pie chart viewer should be \"min(NEG_PROBE) contains negative values\"", () => readingReads(page, "error", el("pie chart viewer"), "min(NEG_PROBE) contains negative values"));
       await session.step(82, "And the \"slices\" reading of pie chart viewer should be 0", () => readingIs(page, "slices", el("pie chart viewer"), 0));
       await session.step(83, "And pie chart viewer should not have a \"pie\" area", () => hasNoArea(page, el("pie chart viewer"), "pie"));
@@ -99,10 +99,10 @@ test.describe("Pie chart aggregations, validation and the date category map", ()
     });
     await run.scenario("An all-zero aggregation is refused too, and clearing it draws the disc again", async () => {
       await session.step(88, "When user adds a calculated column \"ZERO_PROBE\" with formula \"0\"", () => addCalculated(page, "ZERO_PROBE", "0"));
-      await session.step(89, "And user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Segment Angle Column","ZERO_PROBE"],["Segment Angle Aggr Type","sum"]]));
+      await session.step(89, "And user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Segment Angle Column","ZERO_PROBE"],["Segment Angle Aggr Type","sum"]]), [["Segment Angle Column","ZERO_PROBE"],["Segment Angle Aggr Type","sum"]]);
       await session.step(92, "Then the \"error\" reading of pie chart viewer should be \"sum(ZERO_PROBE): all values are 0\"", () => readingReads(page, "error", el("pie chart viewer"), "sum(ZERO_PROBE): all values are 0"));
       await session.step(93, "And the \"slices\" reading of pie chart viewer should be 0", () => readingIs(page, "slices", el("pie chart viewer"), 0));
-      await session.step(94, "When user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Segment Angle Column","AGE"],["Segment Angle Aggr Type","count"]]));
+      await session.step(94, "When user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Segment Angle Column","AGE"],["Segment Angle Aggr Type","count"]]), [["Segment Angle Column","AGE"],["Segment Angle Aggr Type","count"]]);
       await session.step(97, "Then the \"error\" reading of pie chart viewer should be \"\"", () => readingReads(page, "error", el("pie chart viewer"), ""));
       await session.step(98, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
       await session.step(99, "And pie chart viewer should be painted", () => painted(page, el("pie chart viewer")));
@@ -128,7 +128,7 @@ test.describe("Pie chart aggregations, validation and the date category map", ()
       await session.step(119, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Category Map turns one datetime column into years, months and quarters", async () => {
-      await session.step(122, "When user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Category","STARTED"],["Category Map","year"]]));
+      await session.step(122, "When user sets properties of pie chart viewer:", () => setProperties(page, el("pie chart viewer"), [["Category","STARTED"],["Category Map","year"]]), [["Category","STARTED"],["Category Map","year"]]);
       await session.step(125, "Then the \"slices\" reading of pie chart viewer should be 3", () => readingIs(page, "slices", el("pie chart viewer"), 3));
       await session.step(126, "And pie chart viewer should have a \"slice 1989\" area", () => hasArea(page, el("pie chart viewer"), "slice 1989"));
       await session.step(127, "And pie chart viewer should have a \"slice 1991\" area", () => hasArea(page, el("pie chart viewer"), "slice 1991"));

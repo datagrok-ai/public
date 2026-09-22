@@ -8,7 +8,7 @@
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
-import {baselineAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
+import {baselineAll, changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -20,12 +20,8 @@ const selectedCount = (page: Page): Promise<number> => page.evaluate(() => grok.
 const filteredCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.filter.trueCount as number);
 
 /** A change to the table every viewer answers: baselines first, the change, then every viewer
- * has drawn it. */
-async function changeTable(page: Page, body: (arg: any) => void, arg: unknown): Promise<void> {
-  await baselineAll(page);
-  await page.evaluate(body as (arg: unknown) => void, arg);
-  await settleAll(page);
-}
+ * has drawn it — one round trip. */
+const changeTable = (page: Page, body: (arg: any) => void, arg: unknown): Promise<void> => changeAll(page, body, arg);
 
 /** The selection or the filter becomes exactly the rows a test names. A value the column does
  * not hold (a typo) fails in the page with the values it does hold; an empty result is legal. */
@@ -283,15 +279,6 @@ export const cellIsCurrentObject = Given('the {string} cell of row {int} is the 
   }, [column, row] as [string, number]);
   await expect.poll(() => page.evaluate(() => grok.shell.o != null), {message: 'the current object'}).toBe(true);
 }, {tier: 'api', description: 'what a click on the cell does, for a feature whose subject is the panes the context panel then shows'});
-
-export const setSemType = When('user sets the semantic type of {string} column to {string}', async (page: Page, column: string, semType: string) => {
-  await page.evaluate(([c, s]) => {
-    const col = grok.shell.t.col(c);
-    if (!col)
-      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
-    col.semType = s;
-  }, [column, semType]);
-}, {tier: 'api', description: 'what detection would set on a column whose cells give it nothing to go by (an all-empty molecule column)'});
 
 // --- columns -----------------------------------------------------------------------------------------
 
@@ -620,3 +607,74 @@ export const nestedTableRows = Then('the {string} table should have at least {in
   async (page: Page, inside: string, count: number) => {
     expect((await nestedTable(page, inside)).rows, `rows of the table in "${inside}"`).toBeGreaterThanOrEqual(count);
   }, {tier: 'api', description: 'a dataframe-valued column of the current row'});
+
+// --- another open table, changed from the view that is shown ------------------------------------
+
+type NamedChange = {op: 'select', column: string, values: string[]} | {op: 'unselect'} | {op: 'current', row: number} |
+  {op: 'range', column: string, min: number, max: number};
+
+/** A change to an open table that is not the current view's — the one a viewer rebound to it
+ * draws — made without switching views; every viewer of every view is then waited on. */
+function changeNamedTable(page: Page, name: string, change: NamedChange): Promise<void> {
+  return changeAll(page, ([n, ch]) => {
+    const b = (window as any).__bdd;
+    const t = b.tableNamed(n);
+    if (ch.op === 'select') {
+      const c = b.col(ch.column, t);
+      const have = new Set<string>();
+      for (let i = 0; i < c.length; i++)
+        have.add(String(c.get(i) ?? ''));
+      const missing = ch.values.filter((v: string) => !have.has(v));
+      if (missing.length > 0)
+        throw new Error(`${ch.column} of ${t.name} has no value ${missing.join(', ')}; it has: ${[...have].slice(0, 20).join(', ')}`);
+      t.selection.init((i: number) => ch.values.includes(String(c.get(i) ?? '')));
+    }
+    else if (ch.op === 'unselect')
+      t.selection.setAll(false);
+    else if (ch.op === 'current') {
+      if (ch.row < 1 || ch.row > t.rowCount)
+        throw new Error(`row ${ch.row} is outside the ${t.rowCount} rows of ${t.name}`);
+      t.currentRowIdx = ch.row - 1;
+    }
+    else {
+      b.col(ch.column, t);
+      const view = (Array.from(grok.shell.tableViews ?? []) as any[]).find((v) => v.dataFrame === t);
+      if (!view)
+        throw new Error(`${t.name} has no table view to hold a filter panel`);
+      view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({type: 'histogram', column: ch.column, min: ch.min, max: ch.max}, true);
+    }
+  }, [name, change] as [string, NamedChange]);
+}
+
+export const selectInTableOneOf = When('user selects rows of table {string} where {string} is one of {string}',
+  (page: Page, name: string, column: string, values: string) => changeNamedTable(page, name, {op: 'select', column, values: list(values)}),
+  {tier: 'api', description: 'the selection of that open table, set from the view that is shown; comma-separated categories'});
+
+export const clearSelectionInTable = When('user clears the row selection of table {string}', (page: Page, name: string) =>
+  changeNamedTable(page, name, {op: 'unselect'}), {tier: 'api'});
+
+export const makeRowCurrentInTable = When('user makes row {int} of table {string} current', (page: Page, row: number, name: string) =>
+  changeNamedTable(page, name, {op: 'current', row}), {tier: 'api', description: 'rows count from 1'});
+
+export const addRangeFilterInTable = When('user adds a range filter on {string} of table {string} from {float} to {float}',
+  (page: Page, column: string, name: string, min: number, max: number) => changeNamedTable(page, name, {op: 'range', column, min, max}),
+  {tier: 'api', description: 'a histogram card in the filter panel of that table\'s own view, narrowed to the range, set from the view that is shown'});
+
+export const selectedInTable = Then('{int} row(s) of table {string} should be selected', (page: Page, count: number, name: string) =>
+  expect.poll(() => evaluate(page, (n) => (window as any).__bdd.tableNamed(n).selection.trueCount as number, name),
+    {message: `rows of "${name}" selected`}).toBe(count));
+
+export const currentRowOfTableValue = Then('{string} of the current row of table {string} should be {string}',
+  (page: Page, column: string, name: string, value: string) => expect.poll(() => evaluate(page, ([n, c]) => {
+    const b = (window as any).__bdd;
+    const t = b.tableNamed(n);
+    return t.currentRowIdx < 0 ? '(no current row)' : String(b.col(c, t).get(t.currentRowIdx) ?? '');
+  }, [name, column] as [string, string]), {message: `"${column}" of the current row of "${name}"`}).toBe(value));
+
+export const colorLinearThrough = When('user colors {string} column linearly through {string}', (page: Page, column: string, stops: string) =>
+  color(page, column, 'linear', {scheme: list(stops).map(argb)}),
+{tier: 'api', description: 'a linear scheme of any number of stops, comma-separated #rrggbb colors from the low end to the high one'});
+
+export const mouseOverRowIs = Then('the mouse-over row of the table should be {int}', (page: Page, row: number) =>
+  expect.poll(() => page.evaluate(() => grok.shell.t.mouseOverRowIdx + 1 as number), {message: 'the mouse-over row of the table (from 1, 0 for none)'}).toBe(row),
+{description: 'the row the pointer is over in some viewer, counted from 1; 0 when no row is hovered'});

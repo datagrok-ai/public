@@ -160,6 +160,26 @@ test('unbound steps, unknown elements and unknown datasets are errors with point
   assert.match(code, /throw new Error\('no step definition matches this step'\)/);
 });
 
+test('a @guide scenario without "simple mode is off" is an error at the scenario', () => {
+  fns.simpleModeOff = Given('simple mode is off', async () => undefined);
+  const {diagnostics} = compile(`@guide
+Feature: A
+  Scenario: Shown in the full shell
+    Given user opens spgi dataset
+    And simple mode is off
+    When user clicks on toolbox
+
+  Scenario: Forgot the shell
+    Given user opens spgi dataset
+    When user clicks on toolbox
+`);
+  const errors = diagnostics.filter((d) => d.level === 'error');
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].line, 8);
+  assert.match(errors[0].message, /a @guide scenario runs in the full shell: add "And simple mode is off"/);
+  assert.equal(compile(FEATURE).diagnostics.filter((d) => d.level === 'error').length, 0);
+});
+
 test('ambiguous definitions are reported, not picked', () => {
   fns.clickOn2 = When('user clicks on {element}', async () => undefined);
   const {diagnostics} = compile(`Feature: A

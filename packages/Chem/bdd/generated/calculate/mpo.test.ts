@@ -29,7 +29,7 @@ test.describe("MPO Score over a profile's own properties", () => {
     await session.step(8, "Given user is logged in", () => loggedIn(page));
     await session.step(9, "And the package autostarts have completed", () => autostartsCompleted(page));
     await run.scenario("The dialog opens on the ADME Test profile and its three properties", async () => {
-      await session.step(12, "Given user opens a table \"adme\" with:", () => openTableOf(page, "adme", [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","2","-4"],["CCO","-7","3","-5"],["c1ccncc1","-5","1","-3"],["CC(=O)O","-4","4","-6"]]));
+      await session.step(12, "Given user opens a table \"adme\" with:", () => openTableOf(page, "adme", [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","2","-4"],["CCO","-7","3","-5"],["c1ccncc1","-5","1","-3"],["CC(=O)O","-4","4","-6"]]), [["smiles","Caco2","Lipophilicity","Solubility"],["c1ccccc1","-6","2","-4"],["CCO","-7","3","-5"],["c1ccncc1","-5","1","-3"],["CC(=O)O","-4","4","-6"]]);
       await session.step(18, "When user picks \"Chem > Calculate > MPO Score...\" from the top menu", () => pickFromTopMenu(page, "Chem > Calculate > MPO Score..."));
       await session.step(19, "Then \"MPO Score\" dialog should be visible", () => shouldBe(page, el("\"MPO Score\" dialog"), "visible"));
       await session.step(20, "And Aggregation input in \"MPO Score\" dialog should have value \"Average\"", () => shouldHaveValue(page, el("Aggregation input in \"MPO Score\" dialog"), "Average"));

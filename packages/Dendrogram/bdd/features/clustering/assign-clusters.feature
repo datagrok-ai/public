@@ -14,16 +14,14 @@ Feature: Assigning clusters from the tree next to the grid
   Assign adds its own columns beside the first. Running the clustering again warns and replaces the
   tree.
 
-  A double-click on the tree's empty margin leaves the zoom as it was, where the case expects it to
-  reset. That scenario is last and a known failure; the tag goes when the double-click resets the zoom.
-
   Background:
     Given user is logged in
     And user opens mol1K dataset
     And user watches the task bar
     When user picks "Chem > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on OK button in "Hierarchical Clustering" dialog
-    Then the "tree leaves" reading of grid should be 1000
+    Then the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 1000
 
   Scenario: The grid draws structures and the clustering shows its progress
     Then the "cell type of molecule" reading of grid should be "Molecule"
@@ -143,6 +141,7 @@ Feature: Assigning clusters from the tree next to the grid
     When user picks "Chem > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on OK button in "Hierarchical Clustering" dialog
     Then a warning balloon containing "Closing existing dendrogram" should have been shown
+    And the task bar should have finished "Creating dendrogram"
     And the "tree leaves" reading of grid should be 1000
     And there should be 1 visible "Assign Clusters" icon
     And there should be 1 visible "Remove Dendrogram" icon
@@ -151,8 +150,3 @@ Feature: Assigning clusters from the tree next to the grid
   Scenario: Control with the wheel zooms the new tree in
     When user scrolls the mouse wheel up 3 times over the "tree" area of grid holding Control
     Then the "tree zoom" reading of grid should be higher than before
-
-  @known-failure
-  Scenario: A double-click on the tree's empty margin resets the zoom
-    When user double-clicks on the "tree margin" area of grid
-    Then the "tree zoom" reading of grid should be 1

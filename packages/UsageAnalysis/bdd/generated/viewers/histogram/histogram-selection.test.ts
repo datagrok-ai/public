@@ -29,7 +29,7 @@ test.describe("Histogram bin selection, row markers and mouse-over", () => {
     const run = journey(test, 9, page);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(13, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"]]));
+    await session.step(13, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"]]), [["Value","AGE"]]);
     await session.step(15, "And user resizes histogram viewer to 500 by 400", () => resizeTo(page, el("histogram viewer"), 500, 400));
     await session.step(16, "Then histogram viewer should show 1000 rows", () => showsRows(page, el("histogram viewer"), 1000));
     await session.step(17, "And histogram viewer should have a \"bin 8\" area", () => hasArea(page, el("histogram viewer"), "bin 8"));
@@ -126,20 +126,21 @@ test.describe("Histogram bin selection, row markers and mouse-over", () => {
       await session.step(109, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A mouse-over row group in another viewer repaints the bins", async () => {
-      await session.step(112, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"]]));
+      await session.step(112, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"]]), [["Split","RACE"]]);
       await session.step(114, "And user takes a snapshot of histogram viewer", () => takeSnapshot(page, el("histogram viewer")));
       await session.step(115, "And user hovers over the \"bar Asian\" area of bar chart viewer", () => hoverArea(page, "bar Asian", el("bar chart viewer")));
       await session.step(116, "Then histogram viewer should have repainted by at least 500 pixels", () => repaintedBy(page, el("histogram viewer"), 500));
       await session.step(117, "When user moves the pointer away from bar chart viewer", () => pointerAway(page, el("bar chart viewer")));
       await session.step(118, "And user moves the pointer away from histogram viewer", () => pointerAway(page, el("histogram viewer")));
       await session.step(119, "And user sets \"Show Mouse Over Row Group\" property of histogram viewer to \"false\"", () => setProperty(page, "Show Mouse Over Row Group", el("histogram viewer"), "false"));
-      await session.step(120, "And user hovers over the \"bar Black\" area of bar chart viewer", () => hoverArea(page, "bar Black", el("bar chart viewer")));
-      await session.step(121, "Then histogram viewer should not have repainted", () => notRepainted(page, el("histogram viewer")));
-      await session.step(122, "When user moves the pointer away from bar chart viewer", () => pointerAway(page, el("bar chart viewer")));
-      await session.step(123, "And user sets \"Show Mouse Over Row Group\" property of histogram viewer to \"true\"", () => setProperty(page, "Show Mouse Over Row Group", el("histogram viewer"), "true"));
-      await session.step(124, "And user clicks on close icon of bar chart viewer", () => clickOn(page, el("close icon of bar chart viewer")));
-      await session.step(125, "Then bar chart viewer should be absent", () => shouldBe(page, el("bar chart viewer"), "absent"));
-      await session.step(126, "And no errors should have been logged", () => noErrors(page));
+      await session.step(120, "And user takes a snapshot of histogram viewer", () => takeSnapshot(page, el("histogram viewer")));
+      await session.step(121, "And user hovers over the \"bar Black\" area of bar chart viewer", () => hoverArea(page, "bar Black", el("bar chart viewer")));
+      await session.step(122, "Then histogram viewer should not have repainted", () => notRepainted(page, el("histogram viewer")));
+      await session.step(123, "When user moves the pointer away from bar chart viewer", () => pointerAway(page, el("bar chart viewer")));
+      await session.step(124, "And user sets \"Show Mouse Over Row Group\" property of histogram viewer to \"true\"", () => setProperty(page, "Show Mouse Over Row Group", el("histogram viewer"), "true"));
+      await session.step(125, "And user clicks on close icon of bar chart viewer", () => clickOn(page, el("close icon of bar chart viewer")));
+      await session.step(126, "Then bar chart viewer should be absent", () => shouldBe(page, el("bar chart viewer"), "absent"));
+      await session.step(127, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

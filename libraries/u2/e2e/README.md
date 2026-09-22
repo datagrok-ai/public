@@ -11,7 +11,11 @@ constant token, so there is no login, no publish and no stand. Two commands:
 grok-core local watch U2Demo        # re-stages dist/ on every webpack build (+ `npm run watch` in the package)
 npm run e2e:local                   # from libraries/u2 — Playwright against http://localhost:63343
 npm run e2e:local -- --only editing # one feature (substring of the check-file name); the results file is shared, last run wins
+npm run e2e:local -- --lane domain,session   # exactly these lanes (a lane is a check file — the prefix its PASS/FAIL lines print)
+npm run e2e:local:domain            # the same two lanes, named
 ```
+
+`U2_E2E_LANES=domain,session` does what `--lane` does; an unknown lane exits 2 and lists them all.
 
 `grok-core local up` starts pub serve if nothing is serving yet — **only one pub serve may run**;
 if `http://localhost:63343` already answers, use it, never start a second.
@@ -44,7 +48,7 @@ the app, the `/apps/...` URL route, and the Browse > Dev card. Behaviour checks 
 | `local.mjs` | local-mode boot, app open, console/pageerror capture, screenshots, results |
 | `lib.mjs` | the shared readers and drivers (`panel`, `selectRow`, `waitStatus`, `openSpec`, `newForm`, `dropControl`, the pickers, `platformDrag`, …) and the specs more than one file opens |
 | `checks/<feature>.spec.mjs` | one check file per feature, each exporting `fixture` (its own starting state: `newForm` / `openSpec(sample)` / `reopenApp`) and `checks`; ids are `<feature>/<n> <title>`, numbered per file |
-| `run.mjs` | preconditions + one browser + every check file in a fixed order (`leak` last — it closes every view) → `.artifacts/designer.local.json`, nonzero exit on failure; `--only <substring>` runs the matching files alone |
+| `run.mjs` | preconditions + one browser + every check file in a fixed order (`leak` last — it closes every view) → `.artifacts/designer.local.json`, nonzero exit on failure; `--only <substring>` runs the matching files alone, `--lane <name>[,<name>…]` / `U2_E2E_LANES` exactly the named ones |
 | `stand.mjs` | login and the platform's own routes |
 | `designer.stand.spec.mjs` | the stand-only checks, and their runner |
 
@@ -61,5 +65,5 @@ Plain `.mjs` on purpose: no build step between editing a check and running it.
 - Adding a check never renumbers another file: ids restart per file and screenshots are
   `<feature>-<n>-<what>.png`. A check may rely on the order within its own file, never on another
   file's leftovers — that is what each file's `fixture` is for.
-- Environment overrides: `U2_LOCAL_URL`, `U2_STAND_URL`, `U2_STAND_LOGIN`, `U2_STAND_PASSWORD`,
+- Environment overrides: `U2_LOCAL_URL`, `U2_STAND_URL`, `U2_STAND_LOGIN`, `U2_STAND_PASSWORD`, `U2_E2E_LANES`,
   `U2_HEADED=1` (watch the run in a visible browser).

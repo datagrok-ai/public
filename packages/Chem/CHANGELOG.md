@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
+* Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura
 * Substructure filter: reports the card's structure, search type, fingerprint, similarity cutoff and whether it is searching to the filter panel
 * Similarity and Diversity Search: the viewers report their metric, fingerprint, limit, size, cards and card rows, and announce their renders
 * Scaffold Tree: the viewer reports its nodes, checked and coloured nodes, each node's scaffold, hits and colour, its message and the reason generation is blocked, and marks a blocked icon aria-disabled

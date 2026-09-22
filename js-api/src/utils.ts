@@ -10,6 +10,7 @@ import {Column, DataFrame} from './dataframe';
 import {TableView} from './views/view';
 import wu from 'wu';
 import { MapProxy } from './proxies';
+import {uuid4} from './u2core/uuid.js';
 
 declare let DG: any;
 declare let grok: any;
@@ -188,6 +189,12 @@ export class Utils {
   /** Returns random element from the array. Useful for demo data, tests, etc. */
   static random<T>(items: T[]): T {
     return items[Math.floor(Math.random() * items.length)];
+  }
+
+  /** A random v4 UUID. Unlike `crypto.randomUUID()` this also works outside a secure
+   * context — a stand served over plain HTTP on a hostname has no `randomUUID`. */
+  static uuid4(): string {
+    return uuid4();
   }
 
   static replaceAll(string: string, search: string, replace: string) {

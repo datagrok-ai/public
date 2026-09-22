@@ -9,6 +9,8 @@ import * as v from '../../helpers/viewers';
 import {addLegendViewers} from './legend-setup';
 import {clickCanvasFilter} from './canvas-filter';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 test.use(specTestOptions);
 
 test('GROK-17222: legend reflects filter state across 4 trigger sources', async ({page}) => {
@@ -16,7 +18,7 @@ test('GROK-17222: legend reflects filter state across 4 trigger sources', async 
   stepErrors.length = 0;
 
   await openDatagrok(page);
-  await v.openTable(page, {withFilterPanel: true});
+  await v.openTable(page, {path: SPGI_100, withFilterPanel: true});
   await addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Line chart', 'Scatter plot', 'Pie chart', 'Bar chart'],

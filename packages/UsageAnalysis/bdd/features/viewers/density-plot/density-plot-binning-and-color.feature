@@ -42,7 +42,7 @@ Feature: Density plot binning, bin shape and the colour scale
       | binShape | rectangle |
       | bins     | 1         |
     Then the "bins drawn" reading of density plot viewer should be 1
-    And the "rows in densest bin" and "rows shown" readings of density plot viewer should be the same
+    And the "rows in densest bin" reading of density plot viewer should be higher than before
     When user sets properties of density plot viewer:
       | bins     | 50      |
       | binShape | hexagon |

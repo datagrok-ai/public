@@ -29,7 +29,7 @@ test.describe("Tree map colour, size, selection and filtering", () => {
     const run = journey(test, 4, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(17, "And user adds a tree map viewer with:", () => addViewerWith(page, "tree map", [["splitByColumnNames","RACE"]]));
+    await session.step(17, "And user adds a tree map viewer with:", () => addViewerWith(page, "tree map", [["splitByColumnNames","RACE"]]), [["splitByColumnNames","RACE"]]);
     await session.step(19, "Then the \"split columns\" reading of tree map viewer should be \"RACE\"", () => readingReads(page, "split columns", el("tree map viewer"), "RACE"));
     await session.step(20, "And the \"leaves\" reading of tree map viewer should be 4", () => readingIs(page, "leaves", el("tree map viewer"), 4));
     await session.step(21, "And the \"rows shown\" reading of tree map viewer should be 1000", () => readingIs(page, "rows shown", el("tree map viewer"), 1000));
@@ -50,7 +50,7 @@ test.describe("Tree map colour, size, selection and filtering", () => {
       await session.step(37, "And the \"color of Caucasian\" reading of tree map viewer should be \"#ff0000\"", () => readingReads(page, "color of Caucasian", el("tree map viewer"), "#ff0000"));
       await session.step(38, "And the \"rows of Caucasian\" reading of tree map viewer should be 896", () => readingIs(page, "rows of Caucasian", el("tree map viewer"), 896));
       await session.step(39, "And tree map viewer should have repainted", () => repainted(page, el("tree map viewer")));
-      await session.step(40, "When user sets properties of tree map viewer:", () => setProperties(page, el("tree map viewer"), [["colorColumnName",""],["colorAggrType","avg"]]));
+      await session.step(40, "When user sets properties of tree map viewer:", () => setProperties(page, el("tree map viewer"), [["colorColumnName",""],["colorAggrType","avg"]]), [["colorColumnName",""],["colorAggrType","avg"]]);
       await session.step(43, "Then the \"color column\" reading of tree map viewer should be \"\"", () => readingReads(page, "color column", el("tree map viewer"), ""));
       await session.step(44, "And no errors should have been logged", () => noErrors(page));
     });
@@ -68,7 +68,7 @@ test.describe("Tree map colour, size, selection and filtering", () => {
       await session.step(57, "And the \"area of Asian\" reading of tree map viewer should be between 91.7 and 91.9", () => readingBetween(page, "area of Asian", el("tree map viewer"), 91.7, 91.9));
       await session.step(58, "And the \"rows of Caucasian\" reading of tree map viewer should be 896", () => readingIs(page, "rows of Caucasian", el("tree map viewer"), 896));
       await session.step(59, "And tree map viewer should have repainted", () => repainted(page, el("tree map viewer")));
-      await session.step(60, "When user sets properties of tree map viewer:", () => setProperties(page, el("tree map viewer"), [["sizeColumnName",""],["sizeAggrType","sum"]]));
+      await session.step(60, "When user sets properties of tree map viewer:", () => setProperties(page, el("tree map viewer"), [["sizeColumnName",""],["sizeAggrType","sum"]]), [["sizeColumnName",""],["sizeAggrType","sum"]]);
       await session.step(63, "Then the \"area of Caucasian\" reading of tree map viewer should be 896", () => readingIs(page, "area of Caucasian", el("tree map viewer"), 896));
       await session.step(64, "And no errors should have been logged", () => noErrors(page));
     });

@@ -31,7 +31,7 @@ Feature: Heat map layout, column labels, column cap and scrollbars
     And no errors should have been logged
 
   @known-failure
-  Scenario: In heat map mode the Row Height property row is disabled (property_grid_lib.dart:583-612)
+  Scenario: In heat map mode the Row Height property row is disabled (property_grid_lib.dart:309-317)
     # `$rowHeight` carries `dependsOn: "isGrid = true"` (grid_look.dart:98), so in heat map mode
     # the property row exists and should be gated. It is not: `isGrid` is `@Prop(userEditable:
     # false)` and therefore has no row of its own in the grid, so the dependency is never resolved
@@ -116,7 +116,7 @@ Feature: Heat map layout, column labels, column cap and scrollbars
     And no errors should have been logged
 
   @known-failure
-  Scenario: Max Heatmap Columns should apply before opening settings (grid_look.dart:435)
+  Scenario: Max Heatmap Columns should apply before opening settings (grid_look.dart:437)
     # The API invokes the Dart setter on both paths. On a fresh viewer, `refreshGrid()` returns
     # because `look.viewer` is unset. The ordinary look-change refresh does not rebuild columns,
     # so all eleven stay visible even though the property is now 3. Opening settings binds the

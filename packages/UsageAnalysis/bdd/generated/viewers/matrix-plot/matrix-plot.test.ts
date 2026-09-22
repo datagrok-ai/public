@@ -101,7 +101,7 @@ test.describe("Matrix plot — the cells, the plots inside them and the rows the
       await session.step(89, "When user sets \"yColumnNames\" property of matrix plot viewer to \"AGE, HEIGHT\"", () => setProperty(page, "yColumnNames", el("matrix plot viewer"), "AGE, HEIGHT"));
       await session.step(90, "Then the \"cells\" reading of matrix plot viewer should be 6", () => readingIs(page, "cells", el("matrix plot viewer"), 6));
       await session.step(91, "And the cells of matrix plot viewer should be 3 wide and 2 tall", () => cellsWideTall(page, el("matrix plot viewer"), 3, 2));
-      await session.step(92, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(92, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(95, "Then the \"cells\" reading of matrix plot viewer should be 16", () => readingIs(page, "cells", el("matrix plot viewer"), 16));
       await session.step(96, "And the \"cells drawn\" reading of matrix plot viewer should be 16", () => readingIs(page, "cells drawn", el("matrix plot viewer"), 16));
       await session.step(97, "And the \"blank cells\" reading of matrix plot viewer should be 0", () => readingIs(page, "blank cells", el("matrix plot viewer"), 0));

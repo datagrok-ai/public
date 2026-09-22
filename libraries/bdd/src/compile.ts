@@ -39,6 +39,9 @@ export interface CompiledFeature {
 
 /** A feature whose scenarios run in order on one shell state, the Background once (see `journey`). */
 export const JOURNEY_TAG = '@journey';
+/** A guide runs in the full shell, filmed or not: every scenario carries [FULL_SHELL_STEP]. */
+export const GUIDE_TAG = '@guide';
+export const FULL_SHELL_STEP = 'simple mode is off';
 export const GENERATED_DIR = 'generated';
 export const FEATURES_DIR = 'features';
 export const RUNTIME_SPECIFIER = `${PACKAGE_NAME}/runtime`;
@@ -77,7 +80,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   const diag = (line: number, level: DiagnosticLevel, message: string) =>
     diagnostics.push({file: relPath, line, level, message});
   const emitText = (value: unknown): string => Array.isArray(value) ? `[${value.map(emitText).join(',')}]` :
-    typeof value === 'string' && value.includes('{run}') ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
+    typeof value === 'string' && /\{(run|time)\}/.test(value) ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {
@@ -140,7 +143,8 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
       call.push(emitText(step.table));
     if (step.docString !== undefined)
       call.push(emitText(step.docString));
-    const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
+    const detail = step.table ? `, ${emitText(step.table)}` : '';
+    const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')})${detail});`];
     if (def.meta.enters !== undefined) {
       const entered = lookupContext(def.meta.enters);
       if (!entered)
@@ -165,6 +169,11 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
     seen.set(name, n);
     return n === 1 ? name : `${name} (${n})`;
   };
+
+  for (const scenario of feature.scenarios) {
+    if ([...feature.tags, ...scenario.tags].includes(GUIDE_TAG) && ![...feature.background, ...scenario.steps].some((s) => s.text === FULL_SHELL_STEP))
+      diag(scenario.line, 'error', `a ${GUIDE_TAG} scenario runs in the full shell: add "And ${FULL_SHELL_STEP}" after "Given user is logged in"`);
+  }
 
   const body: string[] = feature.tags.includes(JOURNEY_TAG) ?
     emitJourney(feature, uniqueTitle, emitStep, helpers) :

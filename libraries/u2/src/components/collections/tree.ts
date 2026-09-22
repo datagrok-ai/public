@@ -5,6 +5,7 @@
 import {Control} from '../../core/component.js';
 import {signal, computed, Signal, ReadonlySignal} from '../../core/signals.js';
 import {VirtualList} from './list.js';
+import {icon} from '../display/icon.js';
 import type {Action} from '../actions/actions.js';
 
 export interface TreeNode<T = unknown> {
@@ -18,6 +19,9 @@ export interface TreeNode<T = unknown> {
 
 export interface TreeOptions<T> {
   itemHeight?: number;
+  /** The node's label element; the label text in a `u2-tree-label` span by default. Whatever it
+   * answers carries that class, so the row keeps its ellipsis and its rename handle. */
+  render?: (node: TreeNode<T>) => HTMLElement;
   onRename?: (node: TreeNode<T>, newLabel: string) => void;
   /** The node's full action list: right-click selects the row and opens it as a menu at the cursor. */
   contextActions?: (node: TreeNode<T>) => Action[];
@@ -45,11 +49,13 @@ export class VirtualTree<T = unknown> extends Control {
   private readonly _errors = signal(new Map<string, string>());
   private readonly _pending = new Map<string, Promise<TreeNode<T>[]>>();
   private readonly _rename: ((node: TreeNode<T>, newLabel: string) => void) | undefined;
+  private readonly _render: ((node: TreeNode<T>) => HTMLElement) | undefined;
   private _endRename: (() => void) | undefined;
 
   constructor(options: TreeOptions<T> = {}) {
     super();
     this._rename = options.onRename;
+    this._render = options.render;
     const contextActions = options.contextActions;
     this._list = new VirtualList<FlatRow<T>>({
       itemHeight: options.itemHeight ?? 22,
@@ -208,12 +214,16 @@ export class VirtualTree<T = unknown> extends Control {
         VirtualTree._span(`u2-tree-${row.kind}`, row.kind === 'loading' ? 'Loading…' : row.message ?? ''));
       return el;
     }
-    const branch = VirtualTree._isBranch(row.node);
+    // a branch that has answered with no children is a leaf: its twistie would open nothing
+    const branch = VirtualTree._isBranch(row.node) && this._loaded.peek().get(row.node.id)?.length !== 0;
     const open = branch && this.expanded.peek().has(row.node.id);
     if (branch)
       rowEl.setAttribute('aria-expanded', String(open));
     const twistie = branch ? 'u2-tree-twistie' : 'u2-tree-twistie u2-tree-twistie-hidden';
-    el.append(VirtualTree._span(twistie, open ? '▾' : '▸'), VirtualTree._span('u2-tree-label', row.node.label));
+    const label = this._render === undefined ? VirtualTree._span('u2-tree-label', row.node.label) :
+      this._render(row.node);
+    label.classList.add('u2-tree-label');
+    el.append(VirtualTree._span(twistie, open ? '▾' : '▸'), label);
     el.title = row.node.tooltip ?? row.node.label;
     return el;
   }
@@ -334,6 +344,15 @@ export class VirtualTree<T = unknown> extends Control {
   private static _rowIndex(target: EventTarget | null): number {
     const row = target instanceof Element ? target.closest('.u2-list-row') as HTMLElement | null : null;
     return row ? Number(row.dataset.index) : -1;
+  }
+
+  /** The platform's caret, not a text glyph: it inherits the icon sheet every other twistie in
+   * the app is drawn from, and keeps its box when it is hidden so the rows stay aligned. */
+  private static _twistie(branch: boolean, open: boolean): HTMLElement {
+    const el = icon(open ? 'caret-down' : 'caret-right', {variant: 'solid', cls: 'u2-tree-twistie'});
+    if (!branch)
+      el.classList.add('u2-tree-twistie-hidden');
+    return el;
   }
 
   private static _span(cls: string, text: string): HTMLElement {

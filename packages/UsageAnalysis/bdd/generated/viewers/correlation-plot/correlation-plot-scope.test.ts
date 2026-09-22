@@ -94,10 +94,10 @@ test.describe("Correlation plot — which rows it correlates, which table, and w
       await session.step(82, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A saved layout brings the configured matrix back", async () => {
-      await session.step(85, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Spearman"],["showPearsonR","false"],["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]));
+      await session.step(85, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Spearman"],["showPearsonR","false"],["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]), [["correlationType","Spearman"],["showPearsonR","false"],["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]);
       await session.step(90, "Then the \"cells\" reading of correlation plot viewer should be 6", () => readingIs(page, "cells", el("correlation plot viewer"), 6));
       await session.step(91, "And user saves the layout of the current table view", () => saveLayout(page));
-      await session.step(92, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Pearson"],["showPearsonR","true"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(92, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Pearson"],["showPearsonR","true"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["correlationType","Pearson"],["showPearsonR","true"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(97, "Then the \"cells\" reading of correlation plot viewer should be 16", () => readingIs(page, "cells", el("correlation plot viewer"), 16));
       await session.step(98, "When user loads the saved layout", () => loadLayout(page));
       await session.step(99, "Then correlation plot viewer should be visible", () => shouldBe(page, el("correlation plot viewer"), "visible"));
@@ -107,12 +107,12 @@ test.describe("Correlation plot — which rows it correlates, which table, and w
       await session.step(103, "And the \"x columns\" reading of correlation plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => readingReads(page, "x columns", el("correlation plot viewer"), "AGE, HEIGHT, WEIGHT"));
       await session.step(104, "And the \"y columns\" reading of correlation plot viewer should be \"AGE, HEIGHT\"", () => readingReads(page, "y columns", el("correlation plot viewer"), "AGE, HEIGHT"));
       await session.step(105, "And the correlation of \"WEIGHT\" and \"HEIGHT\" of correlation plot viewer should match the Spearman coefficient of the table", () => correlationMatches(page, "WEIGHT", "HEIGHT", el("correlation plot viewer"), "Spearman"));
-      await session.step(106, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Pearson"],["showPearsonR","true"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(106, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Pearson"],["showPearsonR","true"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["correlationType","Pearson"],["showPearsonR","true"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(111, "Then the \"cells\" reading of correlation plot viewer should be 16", () => readingIs(page, "cells", el("correlation plot viewer"), 16));
       await session.step(112, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A project round-trip brings it back too", async () => {
-      await session.step(115, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Spearman"],["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]));
+      await session.step(115, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Spearman"],["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]), [["correlationType","Spearman"],["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]);
       await session.step(119, "Then the \"cells\" reading of correlation plot viewer should be 6", () => readingIs(page, "cells", el("correlation plot viewer"), 6));
       await session.step(120, "When user saves the current view as project \"bdd correlation matrix\"", () => saveAsProject(page, "bdd correlation matrix"));
       await session.step(121, "And user closes all views", () => closeAllViews(page));
@@ -123,7 +123,7 @@ test.describe("Correlation plot — which rows it correlates, which table, and w
       await session.step(126, "And the \"x columns\" reading of correlation plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => readingReads(page, "x columns", el("correlation plot viewer"), "AGE, HEIGHT, WEIGHT"));
       await session.step(127, "And the \"rows shown\" reading of correlation plot viewer should be 1000", () => readingIs(page, "rows shown", el("correlation plot viewer"), 1000));
       await session.step(128, "And the correlation of \"WEIGHT\" and \"HEIGHT\" of correlation plot viewer should match the Spearman coefficient of the table", () => correlationMatches(page, "WEIGHT", "HEIGHT", el("correlation plot viewer"), "Spearman"));
-      await session.step(129, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Pearson"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(129, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["correlationType","Pearson"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["correlationType","Pearson"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(133, "Then the \"cells\" reading of correlation plot viewer should be 16", () => readingIs(page, "cells", el("correlation plot viewer"), 16));
       await session.step(134, "And no errors should have been logged", () => noErrors(page));
     });

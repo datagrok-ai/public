@@ -1,4 +1,4 @@
-import {FilterError, KIND, cond, group, isGroup, isRef, isSpan} from './model.js';
+import {FilterError, KIND, cond, group, hasPlaceholder, isColumnRef, isGroup, isParam, isRef, isSpan} from './model.js';
 import type {DomainCondition, DomainConditionNode, DomainConditionTree, FilterCondition, FilterGroup, FilterNode,
   FilterProblem, FilterScalar, FilterValue} from './model.js';
 import {property as propertyOf} from './schema.js';
@@ -44,11 +44,23 @@ function unbracket(path: string): string {
       c.length === 5 ? String.fromCharCode(parseInt(c.slice(1), 16)) : NAME_ESCAPES[c] ?? `\\${c}`));
 }
 
+/** The domain tree's `{$column}` / `{$param}` as the model carries them, else undefined. */
+function placeholder(v: unknown): FilterScalar | undefined {
+  const m = v as {$column?: unknown, $param?: unknown} | null;
+  if (typeof m !== 'object' || m === null)
+    return undefined;
+  return typeof m.$column === 'string' ? {column: m.$column} : typeof m.$param === 'string' ? {param: m.$param} :
+    undefined;
+}
+
 function typed(v: unknown, prop: FilterProperty | null): FilterScalar {
   if (v instanceof Date) {
     const span = spanOf(v);
     return span === undefined ? v : {span};
   }
+  const bare = placeholder(v);
+  if (bare !== undefined)
+    return bare;
   if (typeof v !== 'string' || !prop)
     return v as FilterScalar;
   const kind = kindOf(prop);
@@ -75,10 +87,9 @@ function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterConditi
   const value = (v: unknown): FilterValue => Array.isArray(v) ? v.map((x) => typed(x, prop)) : typed(v, prop);
   const op = c.operator;
   const v = c.value;
-  if (op === 'fuzzy') {
-    return cond(property, 'fuzzy', String(v),
-      c.threshold == null ? undefined : {options: {threshold: c.threshold}});
-  }
+  const text = (): FilterValue => placeholder(v) ?? String(v);
+  if (op === 'fuzzy')
+    return cond(property, 'fuzzy', text(), c.threshold == null ? undefined : {options: {threshold: c.threshold}});
   if ((op === '=' || op === '!=') && Array.isArray(v))
     return cond(property, op === '=' ? 'in' : 'not in', value(v));
   if ((op === '=' || op === '!=') && v == null)
@@ -86,7 +97,9 @@ function conditionFrom(c: DomainCondition, schema?: FilterSchema): FilterConditi
   if (op === 'is' || op === 'is not')
     return cond(property, op === 'is' ? 'is null' : 'is not null');
   if (op === '~*' || op === '!~*')
-    return cond(property, op === '~*' ? 'matches' : '!matches', String(v));
+    return cond(property, op === '~*' ? 'matches' : '!matches', text());
+  if ((op === 'like' || op === 'not like') && placeholder(v) !== undefined)
+    return cond(property, op === 'like' ? 'like' : '!like', text());
   if (op === 'like' || op === 'not like') {
     const s = String(v);
     const leading = s.startsWith('%');
@@ -203,8 +216,8 @@ export function formatProperty(path: string): string {
     c === '\\' || c === ']' ? `\\${c}` : `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`)}]`;
 }
 
-/** A value the way `format` spells it: strings quoted, `@current` and spans bare, lists
- * parenthesized, `''` for `undefined`. */
+/** A value the way `format` spells it: strings quoted, `@current`, spans, column names and
+ * `$params` bare, lists parenthesized, `''` for `undefined`. */
 export function formatValue(v: FilterValue | undefined): string {
   if (v === undefined)
     return '';
@@ -218,11 +231,17 @@ export function formatValue(v: FilterValue | undefined): string {
     return v.span;
   if (isRef(v))
     return quote(v.id);
+  if (isColumnRef(v))
+    return formatProperty(v.column);
+  if (isParam(v))
+    return `$${v.param}`;
   return v === '@current' ? v : quote(v);
 }
 
 function formatCondition(c: FilterCondition): string {
   const prop = formatProperty(c.property);
+  if (hasPlaceholder(c.value) && c.operator !== 'between')
+    return `${prop} ${c.operator} ${formatValue(c.value)}`;
   switch (c.operator) {
     case 'is null': return `${prop} = null`;
     case 'is not null': return `${prop} != null`;
@@ -271,6 +290,24 @@ function formatGroup(group: FilterGroup, nested: boolean): string {
  * parenthesized, single-node groups inlined, `''` for an empty tree. */
 export function format(node: FilterNode): string {
   return isGroup(node) ? formatGroup(node, false) : formatCondition(node);
+}
+
+/** A copy of the tree with every `$param` that `values` names replaced by its value, typed
+ * through the property when a schema is given (an id becomes a ref, an ISO string a date; a
+ * `like` value is the text — the domain form wraps it); a name absent from `values` stays a
+ * parameter, so the caller can tell an unbound filter apart. */
+export function bind(root: FilterGroup, values: Record<string, unknown>, schema?: FilterSchema): FilterGroup {
+  const swap = (v: FilterScalar, prop: FilterProperty | null): FilterScalar =>
+    isParam(v) && values[v.param] !== undefined ? typed(values[v.param], prop) : v;
+  const copy = (n: FilterNode): FilterNode => {
+    if (isGroup(n))
+      return {...n, nodes: n.nodes.map(copy)};
+    if (n.value === undefined || !hasPlaceholder(n.value))
+      return n;
+    const prop = schema ? propertyOf(schema, n.property) : null;
+    return {...n, value: Array.isArray(n.value) ? n.value.map((v) => swap(v, prop)) : swap(n.value, prop)};
+  };
+  return copy(root) as FilterGroup;
 }
 
 /** `parseTree` → `fromDomainTree` → `validate` (with a schema); syntax problems come back

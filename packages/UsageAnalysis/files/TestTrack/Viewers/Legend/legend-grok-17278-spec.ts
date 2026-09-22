@@ -8,6 +8,8 @@ import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-lo
 import * as v from '../../helpers/viewers';
 import {deleteEntities} from './persistence';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 test.use(specTestOptions);
 
 test('GROK-17278: line chart legend color persists across layout + project round-trips', async ({page}) => {
@@ -15,7 +17,7 @@ test('GROK-17278: line chart legend color persists across layout + project round
   stepErrors.length = 0;
 
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Steps 2-3: add Line chart, Split = Stereo Category', async () => {

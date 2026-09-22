@@ -3,7 +3,8 @@ Feature: Scatter plot axes, encodings and persistence
   The five column settings — X, Y, Color, Size and Markers — set through the on-viewer selectors
   and read back after an independent action; a logarithmic and an inverted axis, an explicit
   window through xMin / xMax (the captions Min and Max exist on both axes, so the properties are
-  addressed by name), a datetime axis taking the axis type away and giving the time unit instead,
+  addressed by name) and a logarithmic axis switched on over the inverted, reversed window
+  (GROK-13110), a datetime axis taking the axis type away and giving the time unit instead,
   one column serving both axes, and the whole configuration surviving a layout and a project
   round-trip on the server. One journey on demog-1000; every scenario puts back what it changed.
 
@@ -58,10 +59,22 @@ Feature: Scatter plot axes, encodings and persistence
     And scatter plot viewer should be visible
     And scatter plot viewer should be painted
     And no error or warning balloon should have been shown
+    When user sets "X Axis Type" property of scatter plot viewer to "logarithmic"
+    Then properties of scatter plot viewer should be:
+      | X Axis Type   | logarithmic |
+      | Invert X Axis | true        |
+      | xMin          | 60          |
+      | xMax          | 20          |
+    And scatter plot viewer should have repainted
+    And the "x axis min" reading of scatter plot viewer should be a finite number
+    And the "x axis max" reading of scatter plot viewer should be a finite number
+    And no error or warning balloon should have been shown
+    And no errors should have been logged
     When user sets properties of scatter plot viewer:
-      | xMin          |       |
-      | xMax          |       |
-      | Invert X Axis | false |
+      | xMin          |        |
+      | xMax          |        |
+      | Invert X Axis | false  |
+      | X Axis Type   | linear |
     Then properties of scatter plot viewer should be:
       | xMin          |       |
       | xMax          |       |

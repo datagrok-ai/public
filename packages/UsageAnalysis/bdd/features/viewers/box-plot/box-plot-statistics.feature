@@ -1,7 +1,8 @@
 @journey @viewers @realizes:viewers.box-plot
 Feature: Box plot statistics and coloring
   The box coloring baseline and an explicit whisker color, the statistics strip and its ladder,
-  the statistics format, the p-value toggle by key and by menu, the three-group test branch, the
+  the statistics format, the p-value toggle by key and by menu (the p-value area gone while Show P
+  Value is off and back when it is on), the three-group test branch, the
   violin style with its bins and line widths, column color coding driving the marker colors, and
   a datetime value. One journey on demog-1000 with a box plot of AGE by SEX.
 
@@ -51,8 +52,8 @@ Feature: Box plot statistics and coloring
       | Show Q3             | true |
     And no errors should have been logged
     When user sets "Statistics Format" property of box plot viewer to "#,##0.00"
-    Then "Statistics Format" property of box plot viewer should be "#,##0.00"
-    And "Show P Value" property of box plot viewer should be "true"
+    Then the "stats" area of box plot viewer should have repainted
+    And "Statistics Format" property of box plot viewer should be "#,##0.00"
     And no errors should have been logged
     When user sets "Statistics Format" property of box plot viewer to "auto"
     And user picks "Show Total Count" from the context menu of the "stats" area of box plot viewer
@@ -69,11 +70,15 @@ Feature: Box plot statistics and coloring
       | Show Q3             | false |
 
   Scenario: The T key toggles the p-value
+    Then box plot viewer should have a "p value" area
     When user sets "Show P Value" property of box plot viewer to "false"
-    And user presses t in box plot viewer
+    Then box plot viewer should not have a "p value" area
+    When user presses t in box plot viewer
     Then "Show P Value" property of box plot viewer should be "true"
+    And box plot viewer should have a "p value" area
     When user presses t in box plot viewer
     Then "Show P Value" property of box plot viewer should be "false"
+    And box plot viewer should not have a "p value" area
     When user sets "Show P Value" property of box plot viewer to "true"
 
   Scenario: Three groups take the Alexander-Govern branch

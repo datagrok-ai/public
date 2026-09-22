@@ -20,7 +20,7 @@ interface Manifest {
   [key: string]: unknown;
 }
 
-const GITIGNORE = ['bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
+const GITIGNORE = ['bdd/guides/', 'bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
 import {STATES as STATE_LIST} from './states.js';
 
 const STATES = STATE_LIST.join('|');
@@ -98,6 +98,9 @@ const TSCONFIG = `{
 `;
 
 const VSCODE = {
+  // the Cucumber extension re-scans its globs on every file change; following symlinks walks the
+  // pnpm node_modules and the bdd link junctions in circles, and the scans pile up until the CPU is gone
+  'search.followSymlinks': false,
   'cucumber.features': ['bdd/features/**/*.feature'],
   'cucumber.glue': ['bdd/bindings/**/*.ts', `node_modules/${PACKAGE_NAME}/bindings/**/*.ts`],
   'cucumber.parameterTypes': [{name: 'state', regexp: STATES}],

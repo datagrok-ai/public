@@ -29,7 +29,7 @@ test.describe("Trellis plot categories, labels and scrolling", () => {
     const run = journey(test, 9, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(17, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"],["Pack Categories","false"]]));
+    await session.step(17, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"],["Pack Categories","false"]]), [["X Column Names","SEX"],["Y Column Names","RACE"],["Viewer Type","Scatter plot"],["Pack Categories","false"]]);
     await session.step(22, "Then the cells of trellis plot viewer should be 2 wide and 4 tall", () => cellsWideTall(page, el("trellis plot viewer"), 2, 4));
     await run.scenario("A second split column grows the grid to the clamped product", async () => {
       await session.step(25, "Then the \"x categories\" reading of trellis plot viewer should be 2", () => readingIs(page, "x categories", el("trellis plot viewer"), 2));
@@ -55,20 +55,20 @@ test.describe("Trellis plot categories, labels and scrolling", () => {
       await session.step(45, "When user sets \"Show Y Labels\" property of trellis plot viewer to \"false\"", () => setProperty(page, "Show Y Labels", el("trellis plot viewer"), "false"));
       await session.step(46, "Then the \"y labels shown\" reading of trellis plot viewer should be 0", () => readingIs(page, "y labels shown", el("trellis plot viewer"), 0));
       await session.step(47, "And trellis plot viewer should not have a \"y label Caucasian\" area", () => hasNoArea(page, el("trellis plot viewer"), "y label Caucasian"));
-      await session.step(48, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["Show X Labels","true"],["Show Y Labels","true"]]));
+      await session.step(48, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["Show X Labels","true"],["Show Y Labels","true"]]), [["Show X Labels","true"],["Show Y Labels","true"]]);
       await session.step(51, "Then the \"x labels shown\" reading of trellis plot viewer should be 2", () => readingIs(page, "x labels shown", el("trellis plot viewer"), 2));
       await session.step(52, "And the \"y labels shown\" reading of trellis plot viewer should be 4", () => readingIs(page, "y labels shown", el("trellis plot viewer"), 4));
       await session.step(53, "And trellis plot viewer should have an \"x label F\" area", () => hasArea(page, el("trellis plot viewer"), "x label F"));
       await session.step(54, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Label orientation is horizontal, vertical, or one of each", async () => {
-      await session.step(57, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Labels Orientation","Horz"],["Y Labels Orientation","Horz"]]));
+      await session.step(57, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Labels Orientation","Horz"],["Y Labels Orientation","Horz"]]), [["X Labels Orientation","Horz"],["Y Labels Orientation","Horz"]]);
       await session.step(60, "Then the \"x label angle\" reading of trellis plot viewer should be 0", () => readingIs(page, "x label angle", el("trellis plot viewer"), 0));
       await session.step(61, "And the \"y label angle\" reading of trellis plot viewer should be 0", () => readingIs(page, "y label angle", el("trellis plot viewer"), 0));
-      await session.step(62, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Labels Orientation","Vert"],["Y Labels Orientation","Vert"]]));
+      await session.step(62, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Labels Orientation","Vert"],["Y Labels Orientation","Vert"]]), [["X Labels Orientation","Vert"],["Y Labels Orientation","Vert"]]);
       await session.step(65, "Then the \"x label angle\" reading of trellis plot viewer should be -90", () => readingIs(page, "x label angle", el("trellis plot viewer"), -90));
       await session.step(66, "And the \"y label angle\" reading of trellis plot viewer should be -90", () => readingIs(page, "y label angle", el("trellis plot viewer"), -90));
-      await session.step(67, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Labels Orientation","Auto"],["Y Labels Orientation","Auto"]]));
+      await session.step(67, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Labels Orientation","Auto"],["Y Labels Orientation","Auto"]]), [["X Labels Orientation","Auto"],["Y Labels Orientation","Auto"]]);
       await session.step(70, "Then the \"x label angle\" reading of trellis plot viewer should be 0", () => readingIs(page, "x label angle", el("trellis plot viewer"), 0));
       await session.step(71, "And the \"y label angle\" reading of trellis plot viewer should be -90", () => readingIs(page, "y label angle", el("trellis plot viewer"), -90));
       await session.step(72, "And no errors should have been logged", () => noErrors(page));
@@ -132,7 +132,7 @@ test.describe("Trellis plot categories, labels and scrolling", () => {
       await session.step(130, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Packing drops the categories a filter leaves empty", async () => {
-      await session.step(133, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Column Names","RACE"],["Y Column Names","SEX"],["Pack Categories","true"]]));
+      await session.step(133, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Column Names","RACE"],["Y Column Names","SEX"],["Pack Categories","true"]]), [["X Column Names","RACE"],["Y Column Names","SEX"],["Pack Categories","true"]]);
       await session.step(137, "Then the \"x categories packed\" reading of trellis plot viewer should be 4", () => readingIs(page, "x categories packed", el("trellis plot viewer"), 4));
       await session.step(138, "And the cells of trellis plot viewer should be 4 wide and 2 tall", () => cellsWideTall(page, el("trellis plot viewer"), 4, 2));
       await session.step(139, "When user adds a categorical filter on \"RACE\" keeping \"Caucasian\"", () => addCategoricalFilter(page, "RACE", "Caucasian"));
@@ -152,7 +152,7 @@ test.describe("Trellis plot categories, labels and scrolling", () => {
       await session.step(153, "And all rows should pass the filter", () => filterPassesAll(page));
       await session.step(154, "And the cells of trellis plot viewer should be 4 wide and 2 tall", () => cellsWideTall(page, el("trellis plot viewer"), 4, 2));
       await session.step(155, "And no errors should have been logged", () => noErrors(page));
-      await session.step(156, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Column Names","SEX"],["Y Column Names","RACE"],["Pack Categories","false"]]));
+      await session.step(156, "When user sets properties of trellis plot viewer:", () => setProperties(page, el("trellis plot viewer"), [["X Column Names","SEX"],["Y Column Names","RACE"],["Pack Categories","false"]]), [["X Column Names","SEX"],["Y Column Names","RACE"],["Pack Categories","false"]]);
     });
     run.finish();
   });

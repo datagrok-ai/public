@@ -349,11 +349,15 @@ test('Chem: Transform notation roundtrip — Convert Notation, Recalculate Coord
   });
 
   await softStep('Scenario 3 Step 1: open the names_to_smiles fixture, record the blank-name rows, the known-bad name row and the total', async () => {
-    await page.evaluate(async ({file}) => {
+    await page.evaluate(async ({file, badName}) => {
       grok.shell.closeAll();
       const ndf = await grok.dapi.files.readCsv(file);
+      // The shipped fixture carries only resolvable names and blanks; the present-but-unresolvable
+      // claim needs a name no registry can ever resolve, appended here rather than in the package
+      // data so the row exists whatever Chem build the stand serves.
+      ndf.rows.addNew([badName]);
       grok.shell.addTableView(ndf);
-    }, {file: NAMES_FILE});
+    }, {file: NAMES_FILE, badName: UNRESOLVABLE_NAME});
     await page.waitForFunction(() => grok.shell.t?.col('Name') != null, null, {timeout: 30000});
     await waitForChemMenu(page);
     const probe = await page.evaluate(({badName}) => {

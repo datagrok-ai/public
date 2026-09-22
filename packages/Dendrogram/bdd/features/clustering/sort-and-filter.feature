@@ -8,9 +8,11 @@ Feature: The tree next to the grid under a filter and under a sort
   Background:
     Given user is logged in
     And user opens mol1K dataset
+    And user watches the task bar
     When user picks "Chem > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on OK button in "Hierarchical Clustering" dialog
-    Then the "tree leaves" reading of grid should be 1000
+    Then the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 1000
 
   Scenario: A filter keeps the tree in step with the grid and shows no overlay
     When user remembers the "tree leaves" reading of grid

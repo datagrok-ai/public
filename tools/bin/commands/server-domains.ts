@@ -23,7 +23,7 @@ const USAGE = `Usage: grok s domains <verb> [args]
   aggregate <schema.table> --json spec.json
   transaction <schema> --json ops.json
   audit <schema> | <schema.table> [<row-id>] [--limit n]
-  capabilities <schema.table>
+  access <schema.table>
   grants <schema> | <schema.table>
   grant <schema> | <schema.table> <group>[,<group>...] [--access View|Edit|Delete|Share|Extend]
   revoke <schema> | <schema.table> <group>[,<group>...] [--access <permission>]
@@ -148,10 +148,10 @@ export async function handleDomains(dapi: NodeDapi, verb: string | undefined, re
       printOutput(entries, output);
       return true;
     }
-    case 'capabilities': {
-      if (!args[0]) return usage('capabilities <schema.table>');
+    case 'access': {
+      if (!args[0]) return usage('access <schema.table>');
       const a = parseDomainAddress(args[0], {table: true});
-      printOutput(flatten(await domains.capabilities(a.schema, a.table!)), output);
+      printOutput(flatten(await domains.access(a.schema, a.table!)), output);
       return true;
     }
     case 'grants': {
@@ -314,10 +314,19 @@ function grantRow(g: any): Record<string, any> {
   };
 }
 
+/** The access map as one printable row: `can.*` per right, `fields` as editable/readonly name lists. */
 function flatten(o: any): Record<string, any> {
   const out: Record<string, any> = {};
-  for (const [k, v] of Object.entries(o ?? {}))
-    out[k] = Array.isArray(v) ? v.join(',') : v;
+  for (const [k, v] of Object.entries(o ?? {})) {
+    if (k === 'can')
+      for (const [right, allowed] of Object.entries(v as Record<string, boolean>))
+        out[`can.${right}`] = allowed;
+    else if (k === 'fields')
+      for (const level of ['editable', 'readonly'])
+        out[level] = Object.keys(v as Record<string, string>).filter((c) => (v as any)[c] === level).join(',');
+    else
+      out[k] = Array.isArray(v) ? v.join(',') : v;
+  }
   return out;
 }
 

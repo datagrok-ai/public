@@ -41,7 +41,7 @@ test.describe("Molecule, reaction and mixture cells are drawn, in the grid and i
       await session.step(29, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A scatter plot tooltip draws the molecule of the row under the pointer", async () => {
-      await session.step(32, "Given user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["x","NumHAcceptors"],["y","NumHDonors"]]));
+      await session.step(32, "Given user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["x","NumHAcceptors"],["y","NumHDonors"]]), [["x","NumHAcceptors"],["y","NumHDonors"]]);
       await session.step(35, "Then scatter plot viewer should be painted", () => painted(page, el("scatter plot viewer")));
       await session.step(36, "When user hovers over the \"marker of row 1\" area of scatter plot viewer", () => hoverArea(page, "marker of row 1", el("scatter plot viewer")));
       await session.step(37, "Then exactly one tooltip should be shown", () => oneTooltip(page));
@@ -52,7 +52,7 @@ test.describe("Molecule, reaction and mixture cells are drawn, in the grid and i
       await session.step(42, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("A box plot tooltip draws a molecule and the viewer keeps painting", async () => {
-      await session.step(45, "Given user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["value","NumHAcceptors"]]));
+      await session.step(45, "Given user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["value","NumHAcceptors"]]), [["value","NumHAcceptors"]]);
       await session.step(47, "Then box plot viewer should be painted", () => painted(page, el("box plot viewer")));
       await session.step(48, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
       await session.step(49, "Then exactly one tooltip should be shown", () => oneTooltip(page));

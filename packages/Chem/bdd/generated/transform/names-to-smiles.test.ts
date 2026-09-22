@@ -15,9 +15,9 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {columnSemType} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {columnSemType, setColumnSemType} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {commandCompleted, newColumnNamed, newColumnsCount, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
-import {rowCount, setSemType} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openTableOf} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -30,8 +30,8 @@ test.describe("Names To Smiles over a column of compound names", () => {
     await session.step(10, "Given user is logged in", () => loggedIn(page));
     await session.step(11, "And the package autostarts have completed", () => autostartsCompleted(page));
     await run.scenario("The names become molecules in a canonical_smiles column", async () => {
-      await session.step(14, "Given user opens a table \"compound_names\" with:", () => openTableOf(page, "compound_names", [["name","mol"],["aspirin","CCO"],["caffeine","CCC"]]));
-      await session.step(18, "And user sets the semantic type of \"mol\" column to \"Molecule\"", () => setSemType(page, "mol", "Molecule"));
+      await session.step(14, "Given user opens a table \"compound_names\" with:", () => openTableOf(page, "compound_names", [["name","mol"],["aspirin","CCO"],["caffeine","CCC"]]), [["name","mol"],["aspirin","CCO"],["caffeine","CCC"]]);
+      await session.step(18, "And user sets the semantic type of \"mol\" column to \"Molecule\"", () => setColumnSemType(page, "mol", "Molecule"));
       await session.step(19, "When user picks \"Chem > Transform > Names To Smiles...\" from the top menu", () => pickFromTopMenu(page, "Chem > Transform > Names To Smiles..."));
       await session.step(20, "Then \"Names To Smiles\" dialog should be visible", () => shouldBe(page, el("\"Names To Smiles\" dialog"), "visible"));
       await session.step(21, "When user clicks on OK button in \"Names To Smiles\" dialog", () => clickOn(page, el("OK button in \"Names To Smiles\" dialog")));
@@ -42,8 +42,8 @@ test.describe("Names To Smiles over a column of compound names", () => {
       await session.step(26, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The names go into a column of their own beside an existing canonical_smiles", async () => {
-      await session.step(30, "Given user opens a table \"named_molecules\" with:", () => openTableOf(page, "named_molecules", [["name","canonical_smiles"],["aspirin","CCO"],["caffeine","CCC"]]));
-      await session.step(34, "And user sets the semantic type of \"canonical_smiles\" column to \"Molecule\"", () => setSemType(page, "canonical_smiles", "Molecule"));
+      await session.step(30, "Given user opens a table \"named_molecules\" with:", () => openTableOf(page, "named_molecules", [["name","canonical_smiles"],["aspirin","CCO"],["caffeine","CCC"]]), [["name","canonical_smiles"],["aspirin","CCO"],["caffeine","CCC"]]);
+      await session.step(34, "And user sets the semantic type of \"canonical_smiles\" column to \"Molecule\"", () => setColumnSemType(page, "canonical_smiles", "Molecule"));
       await session.step(35, "When user picks \"Chem > Transform > Names To Smiles...\" from the top menu", () => pickFromTopMenu(page, "Chem > Transform > Names To Smiles..."));
       await session.step(36, "And user clicks on OK button in \"Names To Smiles\" dialog", () => clickOn(page, el("OK button in \"Names To Smiles\" dialog")));
       await session.step(37, "Then the top menu command should have completed", () => commandCompleted(page));

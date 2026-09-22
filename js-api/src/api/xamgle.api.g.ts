@@ -70,7 +70,11 @@ export interface SettingsInterface {
   /** Log user clicks */
   logActivity: boolean;
 
+  /** Top-menu groups hidden from the view ribbon, by label (see [View.fillRibbonContextMenu]). */
   hiddenMenus: Array<string>;
+
+  /** Named ribbon panels hidden from the view ribbon. */
+  hiddenRibbonPanels: Array<string>;
 
   showCurrentRowInProperties: boolean;
 
@@ -132,6 +136,8 @@ export interface SettingsInterface {
   viewersToTrellis: boolean;
 
   enableDomainDatabases: boolean;
+
+  domainsDartUi: boolean;
 
   dateFormat: string;
 

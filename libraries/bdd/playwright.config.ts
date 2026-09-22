@@ -10,7 +10,12 @@ import {baseConfig} from '@datagrok-libraries/test/src/playwright/base-config.js
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(process.env.BDD_ROOT ?? (basename(here) === 'dist' ? dirname(here) : here));
 const url = (process.env.DATAGROK_URL ?? 'http://localhost:8888').replace(/\/$/, '');
-const globalSetup = ['global-setup.js', 'global-setup.ts'].map((f) => join(here, 'src', 'runtime', f)).find(existsSync)!;
+function guideViewport(spec = ''): {width: number; height: number} {
+  const m = /^(\d+)x(\d+)$/.exec(spec);
+  return m ? {width: Number(m[1]), height: Number(m[2])} : {width: 1920, height: 1080};
+}
+
+const globalSetup =['global-setup.js', 'global-setup.ts'].map((f) => join(here, 'src', 'runtime', f)).find(existsSync)!;
 
 export default defineConfig({
   ...baseConfig,
@@ -23,6 +28,9 @@ export default defineConfig({
     ...baseConfig.use,
     baseURL: url,
     storageState: join(root, 'e2e', '.auth.json'),
+    // a guide run (`grok-bdd guide`) is filmed at 1080p: below 1920 px the top menu bar folds its
+    // last groups (Chem, Bio) into "more"; BDD_GUIDE_VIEWPORT=<w>x<h> chooses another
+    ...(process.env.BDD_GUIDE ? {viewport: guideViewport(process.env.BDD_GUIDE_VIEWPORT)} : {}),
     // a failed run keeps its trace (actions, console, network) and the failure screenshot, but
     // neither DOM snapshots (serializing the shell's DOM around every action was ~45% of a
     // feature's time) nor a screenshot per action (~12 s over six features, only a filmstrip);
@@ -36,5 +44,7 @@ export default defineConfig({
   // a stand that computes in the browser (chemistry over a thousand molecules) needs longer than the
   // shared 15 s once two workers share it: BDD_EXPECT_TIMEOUT raises what every check waits
   expect: {...baseConfig.expect, timeout: Number(process.env.BDD_EXPECT_TIMEOUT ?? baseConfig.expect?.timeout ?? 15000)},
-  projects: [{name: 'bdd'}],
+  // @serial features share server state another worker would change under them (a fuzzy gallery
+  // search over fixtures the others create and delete): they take turns, beside everything else
+  projects: [{name: 'bdd', grepInvert: /@serial(\s|$)/}, {name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}],
 });

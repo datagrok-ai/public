@@ -1,11 +1,9 @@
-/* ---
-sub_features_covered: [chem.analyze.mmp, chem.analyze.mmp.editor, chem.analyze.mmp.top-menu, chem.analyze.mmp.viewer, chem.demos.mmpa]
---- */
-// GROK-18517: MMP generation on mmp_demo.csv with both activities must not fire minified runtime errors.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import * as chem from '@datagrok-libraries/test/src/playwright/chem';
+import {openChemMenuItemFast, waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -13,16 +11,14 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
   test.setTimeout(210_000);
 
   await loginToDatagrok(page);
+  await waitForChemMenuRoot(page);
 
   await softStep('Step 1: Open mmp_demo.csv + verify smiles + 2 numeric activities', async () => {
     await page.evaluate(async () => {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
-      // System:DemoFiles/chem/mmp_demo.csv on dev is a corrupt mixed-delimiter copy
-      // (header "SMILES\tCMPD_CHEMBLID,..."), so no clean SMILES column gets Molecule
-      // semType. Use the canonical demo file shipped by the Chem package — the same
-      // one the platform's own MMP demo (Chem/src/demo/demo.ts) loads.
+
       const df = await grok.dapi.files.readCsv('System:AppData/Chem/demo_files/mmp_demo.csv');
       grok.shell.addTableView(df);
       (window as any).__mmp_errors = [];
@@ -33,8 +29,7 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
       };
     });
     await waitForChemMenu(page);
-    // The Chem Molecule detector runs async AFTER the menu attaches; poll for it
-    // before asserting semType (checking immediately races the detector).
+
     await waitForMolecule(page);
     const cols = await page.evaluate(() =>
       grok.shell.t.columns.toList().map((c: any) => ({name: c.name, semType: c.semType, type: c.type})));
@@ -49,7 +44,7 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
   });
 
   await softStep('Step 2: Chem → Analyze → Matched Molecular Pairs → MMPEditor opens', async () => {
-    await chem.openChemMenuItem(page, 'Matched Molecular Pairs...', {delayMs: 600});
+    await openChemMenuItemFast(page, 'Matched Molecular Pairs...', {delayMs: 600});
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     const title = await page.evaluate(() =>
       document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')?.textContent?.trim() ?? '');
@@ -60,6 +55,10 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
     await page.evaluate(async () => {
       const editor = document.querySelector('[name="input-host-Activities"] .ui-input-editor') as HTMLElement;
       editor.click();
+      // The next line waits on the picker dialog; wait for the same thing here.
+      const deadline = Date.now() + 1000;
+      while (Date.now() < deadline && !document.querySelector('[name="dialog-Select-columns..."]'))
+        await new Promise(r => setTimeout(r, 25));
     });
     await page.locator('[name="dialog-Select-columns..."]').waitFor({timeout: 8000});
     await page.evaluate(() => {

@@ -46,7 +46,10 @@ kind('input', {
   editorSelector: INPUT_EDITOR,
   parts: INPUT_PARTS,
 });
-inputKind('text input', ['text-input'], '.ui-input-text', ['text field', 'textbox']);
+// a bare <input> outside any input host that names itself (aria-label) is a text input too: the
+// Save project dialog's Name
+inputKind('text input', ['text-input'], '.ui-input-text, input[aria-label]:not(.ui-input-root *)', ['text field', 'textbox'],
+  {match: [...INPUT_MATCH, 'aria']});
 inputKind('text area', ['text-area'], '.ui-input-textarea', ['textarea', 'multiline input']);
 inputKind('choice input', ['choice-input'], '.ui-input-choice', ['dropdown', 'choice', 'select']);
 inputKind('multi choice input', ['multi-choice-input'], '', ['multi choice']);
@@ -299,6 +302,8 @@ kind('viewer', {
   parts: {
     title: `${PANEL}//*[contains(@class, "panel-titlebar-text")]`,
     'settings icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-settings"]`,
+    // the "?" of the title bar: its tooltip is the viewer's own summary above "Click for help (F1)"
+    'help icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-help"]`,
     'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
     'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
     description: '.d4-viewer-description',
@@ -321,7 +326,7 @@ kind('legend item', {
   parts: {label: '.d4-legend-value', cross: '.d4-legend-cross', thumbnail: 'canvas.d4-legend-value', marker: '[name="legend-item-marker"]'},
 });
 // a card of the filter panel by its caption: "RACE" filter card, checkbox of "RACE" filter card;
-// aria-disabled while suspended, its own counter as the indicator part
+// aria-disabled on its body while suspended (the header, its checkbox and the mode word stay operable), its own counter as the indicator part
 kind('filter card', {
   selector: '.d4-filter',
   match: ['label', 'dart'],
@@ -330,6 +335,22 @@ kind('filter card', {
   parts: {caption: '.d4-filter-column-name', checkbox: '.d4-filter-bool-input', indicator: '.d4-filter-indicator',
     mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
     close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
+});
+// the membership editor (membership_editor.dart): a member already in is a row, a search match a candidate
+const MEMBERSHIP_PARTS = {checkbox: '.membership-row-admin input', 'checkbox label': '.membership-row-admin'};
+kind('membership row', {
+  aliases: ['member row'],
+  selector: '.membership-row',
+  match: ['label'],
+  labelSelector: '.d4-user-selector-user-name',
+  parts: {...MEMBERSHIP_PARTS, 'remove button': '[name="button-Remove"]'},
+});
+kind('membership candidate', {
+  aliases: ['member candidate'],
+  selector: '.membership-add-row',
+  match: ['label'],
+  labelSelector: '.d4-user-selector-user-name',
+  parts: {...MEMBERSHIP_PARTS, 'add button': '[name="button-Add"]'},
 });
 kind('view', {
   selector: '.d4-view-handle, [name^="view-handle: "]',

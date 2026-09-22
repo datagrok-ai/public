@@ -12,9 +12,10 @@ export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
-// a dock manager's tab says which of its handles is shown with a class of its own, and nothing else
+// a dock manager's tab and a gallery's view-mode icon say which is shown with a class of their own;
+// d4-current elsewhere in a gallery marks the current card, not a selection
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected';
+  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected, .grok-gallery-search-bar .d4-current';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
@@ -89,7 +90,7 @@ async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
     if (els.length === 0)
       return undefined;
     const marked = (e: Element) => e.getAttribute('aria-disabled') === 'true' ||
-      ['u2-input-disabled', 'd4-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
+      ['u2-input-disabled', 'd4-disabled', 'd4-filter-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
     return els.every((el) => {
       for (let e: Element | null = el; e; e = e.parentElement) {
         if (marked(e))

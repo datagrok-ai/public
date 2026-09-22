@@ -42,6 +42,16 @@ scenario is not evidence for the named bug.
   presses 25 ms apart at the one-second autofocus boundary (`xamgle/lib/src/views/table_view.dart`).
   Targeting the viewer tests its shortcut independently of that global focus change; the core
   autofocus behavior itself is unchanged.
+- [Pivot table links](../../packages/UsageAnalysis/bdd/features/viewers/pivot-table/pivot-table-links.feature)
+  (2026-09-21): a filter `DIS_POP in [AS]` appeared after Control-clicks on the aggregated grid's
+  row headers, by a group no click named. Cause in the core: the grid's key handler
+  (`d4/lib/src/viewers/grid/features/grid_keyboard_navigation.dart`) read `currentPos` on every
+  key, and that getter makes row 0 current when no cell is — so the Control key itself, pressed
+  in a focused grid, made row 0 current, and a pivot with Filtering Enabled filtered its source by
+  the first group. The handler now reads `currentGridCell?.pos`. The grid status
+  (`grid_status.dart`) had the same getter behind its `current row` reading, which reset the
+  current cell on every read and hid the defect; it now reports the table's current row and
+  column, which is what the grid highlights. The scenario is untagged.
 
 ## Retained product defects
 
@@ -58,9 +68,12 @@ Expected values remain unchanged.
 | [Returning to heat-map mode](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map-navigation.feature) | Row height stays near the grid's 28 px instead of fitting the table within 0–8 px. | `GridLook.refreshGrid` and `GridCore.onLookChanged` preserve the grid's vertical viewport instead of restoring the full heat-map range. |
 | [Heat-map Row Height disabled](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map.feature) | The Row Height property exists but is not disabled. | `libs/property_grid/lib/property_grid_lib.dart` skips initial dependency evaluation when the controlling property has no editor. `isGrid` is non-editable, although its value is available on the look. |
 | [Heat-map column cap before settings](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map.feature) | Setting the cap to 3 leaves 11 columns visible. | The API does invoke the Dart setter. `GridLook.refreshGrid` returns because the fresh look has no `viewer` reference; opening settings binds that reference, after which the same API write works. The feature's earlier API-versus-setter explanation was corrected. |
-| [PC plot selection after reset — GROK-17306](../../packages/UsageAnalysis/bdd/features/viewers/pc-plot/pc-plot-transformation.feature) | 0 selected rows instead of the prior 10. | Reset rebuilds the transformation and detaches the old frame link. Link cleanup clears the source selection, and the replacement link does not restore it. The assertion reads the original table. |
 | [Filtered group comparison — GROK-20795](../../packages/EDA/bdd/features/analyze/filtered-group-comparison.feature) | The first result count is 157 instead of 104; full-table counts are 157/5266/354 instead of filtered 104/2823/279. | [Control comparisons](../../packages/EDA/src/control-comparisons/control-comparisons-ui.ts) passes the original columns to factorization without applying the table's filter. Fixture counts were checked against demog, including missing AGE values and the excluded control group. |
 | [Empty Pareto objective](../../packages/EDA/bdd/features/pareto-front-objectives.feature) | The picker offers 17 columns instead of 16, including the all-null integer column. | [Pareto viewer](../../packages/EDA/src/pareto-optimization/pareto-front-viewer.ts) filters the picker by numerical type only. Its separate initialization check for nonempty columns is not applied to the picker. |
+| [Forms with Show Current Row off, PowerGrid twin — tagged 2026-09-21](../../packages/PowerGrid/bdd/features/viewers/forms/forms-interactions.feature) | 0 cards instead of at least the 4 selected rows'. | The same layout defect as the UsageAnalysis twin above. The PowerGrid copy used to claim `cards … lower than before`, which the 0 satisfied, so it passed through the defect. |
+| [Similarity leaves no cell blank — tagged 2026-09-21](../../packages/Bio/bdd/features/calculate/scoring.feature) | Similarity against the second reference is blank in every row but two. | [calculateScoresWithEmptyValues](../../packages/Bio/src/utils/calculate-scores.ts) nulls only empty sequences; the blanks come from the scoring itself (the package README lists them as an open finding). The journey used to assert the blanks as the expectation. |
+| [Global permissions of a role — GROK-20902](../../packages/UsageAnalysis/bdd/features/users-groups-roles/roles-assignment.feature) | The pane lists grants the role never received. | `xamgle/lib/src/.../grok_group_meta.dart` `renderGlobalPermissionsPane` lists every grant `getPermissions(groupId, global: true)` returns with its `grantedBy`, not the role's own. |
+| [Deleting a role keeps its grants — GROK-20904](../../packages/UsageAnalysis/bdd/features/users-groups-roles/roles-assignment.feature) | Grants survive the role's deletion. | `core/server/datlas/lib/src/services/groups_service.dart` `deleteGroup` deletes with no revocation; the library's cleanup revokes first for that reason. |
 
 The retained defects have implementation causes independent of keyboard differences between
 macOS and Windows. Their tags remain assertions of the desired behavior, not skips.

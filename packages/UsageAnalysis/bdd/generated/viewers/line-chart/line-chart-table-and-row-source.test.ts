@@ -28,7 +28,7 @@ test.describe("Line chart table binding, Row Source and the viewer's own filter"
     await session.step(22, "Given user is logged in", () => loggedIn(page));
     await session.step(23, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(24, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await session.step(25, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]));
+    await session.step(25, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
     await session.step(28, "Then line chart viewer should be bound to table \"spgi-100\"", () => boundTable(page, el("line chart viewer"), "spgi-100"));
     await session.step(29, "And the \"rows shown\" reading of line chart viewer should be 100", () => readingIs(page, "rows shown", el("line chart viewer"), 100));
     await session.step(30, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
@@ -108,7 +108,7 @@ test.describe("Line chart table binding, Row Source and the viewer's own filter"
       await session.step(105, "When user sets \"table\" property of line chart viewer to \"spgi-100\"", () => setProperty(page, "table", el("line chart viewer"), "spgi-100"));
       await session.step(106, "Then line chart viewer should be bound to table \"spgi-100\"", () => boundTable(page, el("line chart viewer"), "spgi-100"));
       await session.step(107, "And the \"rows shown\" reading of line chart viewer should be 100", () => readingIs(page, "rows shown", el("line chart viewer"), 100));
-      await session.step(108, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]));
+      await session.step(108, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
       await session.step(111, "Then the \"x column\" reading of line chart viewer should be \"CAST Idea ID\"", () => readingReads(page, "x column", el("line chart viewer"), "CAST Idea ID"));
       await session.step(112, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
       await session.step(113, "And no errors should have been logged", () => noErrors(page));

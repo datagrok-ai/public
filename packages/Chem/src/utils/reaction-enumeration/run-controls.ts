@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {cloneConfig, EnumeratorConfig} from './config';
 import {enumerate, EnumerationProgress, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
-import {buildInputs, buildResultDataFrame} from './shared';
+import {addResultFilters, buildInputs, buildResultDataFrame} from './shared';
 
 export interface RunControlsDeps {
   getConfig: () => EnumeratorConfig;
@@ -121,17 +121,17 @@ export class RunControls {
     const reagentsPart = inputs.reagents.length > 0 ? ` × ${inputs.reagents.length} reagents` : '';
     this.progressLabel.textContent =
       `Running: ${inputs.templates.length} templates × ${inputs.buildingBlocks.length} BBs${reagentsPart} × ` +
-      `${config.enumeration.num_rounds} round(s)`;
+      `${config.enumeration.num_rounds} step(s)`;
     const onProgress = (p: EnumerationProgress): void => {
       const combo = p.combosTotal && p.combosTotal > 0 ?
         `, combos ${p.combosDone}/${p.combosTotal}` : '';
       this.progressLabel.textContent =
-        `Round ${p.round}/${p.numRounds}, template ${p.templateIndex + 1}/${p.numTemplates}${combo}, ` +
+        `Step ${p.round}/${p.numRounds}, template ${p.templateIndex + 1}/${p.numTemplates}${combo}, ` +
         `products: ${p.productsSoFar}`;
     };
 
     const perRoundOverrides = this.deps.buildPerRoundOverrides(config);
-    if (perRoundOverrides) this.progressLabel.textContent += ' · per-round subsets active';
+    if (perRoundOverrides) this.progressLabel.textContent += ' · per-step subsets active';
 
     const start = performance.now();
     const {rows, warnings} = await enumerate({
@@ -151,6 +151,6 @@ export class RunControls {
       const more = warnings.length > 3 ? ` (+${warnings.length - 3} more; see console)` : '';
       grok.shell.warning(`${preview}${more}`);
     }
-    if (rows.length > 0) grok.shell.addTableView(buildResultDataFrame(rows));
+    if (rows.length > 0) addResultFilters(grok.shell.addTableView(buildResultDataFrame(rows)));
   }
 }

@@ -5,6 +5,7 @@ import {test, expect} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
+import {knownOpenBug} from '../../helpers/known-open-bug';
 
 declare const grok: any;
 
@@ -33,16 +34,32 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
 
   const AMBIENT = /Permissions policy violation: compute-pressure/i;
   const consoleErrors: string[] = [];
-  const onConsole = (m: any) => { if (m.type() === 'error') consoleErrors.push(m.text()); };
+  // a stand that ships no help docs 404s on the context help page, which is not the viewer's error
+  const helpDoc404 = (m: any) => /Failed to load resource/.test(m.text()) && /\/help\/.*\.md$/.test(m.location().url);
+  const onConsole = (m: any) => { if (m.type() === 'error' && !helpDoc404(m)) consoleErrors.push(m.text()); };
   const onPageError = (e: any) => { const t = String(e); if (!AMBIENT.test(t)) consoleErrors.push(t); };
   page.on('console', onConsole);
   page.on('pageerror', onPageError);
   const productErrors = (from: number): string[] => consoleErrors.slice(from).filter((t) => !AMBIENT.test(t));
 
   const openEditForm = async (): Promise<void> => {
-    await page.locator(`${ROOT} .d4-tile-viewer-form .d4-sketch`).first().focus();
-    await page.keyboard.press('ContextMenu');
-    await page.locator('.d4-menu-popup[name="viewer"] .d4-menu-item[name="div-Edit-Form..."]').click();
+    // the ContextMenu key reaches the tile only while it holds focus, and a tile that the lane
+    // rebuilt under the cursor swallows the first press
+    const item = page.locator('.d4-menu-popup[name="viewer"] .d4-menu-item[name="div-Edit-Form..."]');
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await page.locator(`${ROOT} .d4-tile-viewer-form .d4-sketch`).first().focus();
+      await page.keyboard.press('ContextMenu');
+      try {
+        await item.waitFor({timeout: 5000});
+        break;
+      }
+      catch (e) {
+        if (attempt === 2) throw e;
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(500);
+      }
+    }
+    await item.click();
     await page.locator('.grok-view-sketch').waitFor({timeout: 15000});
     await page.waitForFunction(() =>
       document.querySelectorAll('.grok-view-sketch .d4-host[name^="div-"]').length > 0,
@@ -60,7 +77,10 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
         const l = document.querySelector('[name="viewer-Tile-Viewer"] .d4-tile-viewer-lane-content') as HTMLElement;
         const first = l?.querySelector('.d4-tile-viewer-form');
         const val = (n: string) => (first?.querySelector(`input[name="input-${n}"]`) as HTMLInputElement)?.value ?? null;
-        return JSON.stringify({scrollTop: l?.scrollTop ?? -1, age: val('AGE'), sex: val('SEX'), weight: val('WEIGHT')});
+        const tops = Array.from(new Set(Array.from(l?.querySelectorAll('.d4-tile-viewer-form') ?? [])
+          .map((f) => (f as HTMLElement).offsetTop))).sort((a, b) => a - b);
+        return JSON.stringify({scrollTop: l?.scrollTop ?? -1, rowPitch: tops.length > 1 ? tops[1] - tops[0] : -1,
+          age: val('AGE'), sex: val('SEX'), weight: val('WEIGHT')});
       };
     });
     const readLane = () => page.evaluate(() => {
@@ -94,41 +114,61 @@ test('Tile Viewer — layout and project persistence', async ({page}) => {
     }
     const before = await readLane();
     // docking the histogram rebuilds the lane at scrollTop 0 and the viewer puts the position
-    // back ~800 ms later, so the wait is for the lane read to return to its pre-dock value
-    await page.evaluate(async (was) => {
-      const w = window as any;
-      await w.__settled('grok.events.onViewerAdded', () => grok.shell.tv.addViewer('Histogram'), 2500);
-      await w.__poll(w.__laneRead, (s: string) => s === was, 2000, 50);
-    }, JSON.stringify(before));
-    const after = await readLane();
-
-    expect(before.scrollTop).toBeGreaterThan(0);
-    expect(before.age).not.toBeNull();
-
-    expect(after.scrollTop).toBeGreaterThan(0);
-    expect(Math.abs(after.scrollTop - before.scrollTop)).toBeLessThanOrEqual(2);
-    expect(after.age).toBe(before.age);
-    expect(after.sex).toBe(before.sex);
-    expect(after.weight).toBe(before.weight);
-
-    await page.evaluate(() => grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram')?.close());
-    await expect.poll(() => page.evaluate(() =>
-      grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length), {timeout: 15_000, ...POLL}).toBe(0);
-    // the resize rebuilds the lane a beat later; the next step focuses a tile, so leave the lane
-    // rebuilt, at the top, and holding still
+    // back ~800 ms later, snapped to the start of the tile row that was on top
+    await v.addViewerByIcon(page, 'histogram', 'Histogram', 10000);
     await page.evaluate(() => {
       const w = window as any;
-      const lane = () => document.querySelector('[name="viewer-Tile-Viewer"] .d4-tile-viewer-lane-content') as HTMLElement | null;
-      const shape = () => {
-        const l = lane();
-        return l ? `${l.querySelectorAll('.d4-tile-viewer-form').length}|${l.scrollHeight}|${l.scrollTop}` : '';
-      };
-      return w.__settledFor(shape, 200, 3000, 25).then(() => {
-        const l = lane();
-        if (l) l.scrollTop = 0;
-        return w.__settledFor(shape, 200, 3000, 25);
-      });
+      return w.__poll(w.__laneRead, (s: string) => JSON.parse(s).scrollTop > 0, 2000, 50);
     });
+    const after = await readLane();
+
+    // cleanup runs even on a failed assertion: the next step opens the editor from the top tile
+    try {
+      expect(before.scrollTop).toBeGreaterThan(0);
+      expect(before.age).not.toBeNull();
+      expect(before.rowPitch).toBeGreaterThan(0);
+
+      expect(after.scrollTop).toBeGreaterThan(0);
+      expect(after.scrollTop).toBeLessThanOrEqual(before.scrollTop);
+      expect(before.scrollTop - after.scrollTop).toBeLessThan(before.rowPitch);
+      expect(after.age).toBe(before.age);
+      expect(after.sex).toBe(before.sex);
+      expect(after.weight).toBe(before.weight);
+
+      const closeBox = await page.evaluate(() => {
+        const b = document.querySelector('[name="viewer-Histogram"]')!.closest('.panel-base')!
+          .querySelector('.panel-titlebar-button-close')!.getBoundingClientRect();
+        return {x: b.x + b.width / 2, y: b.y + b.height / 2};
+      });
+      await page.mouse.click(closeBox.x, closeBox.y);
+      await expect.poll(() => page.evaluate(() =>
+        grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length), {timeout: 15_000, ...POLL}).toBe(0);
+      const afterClose = await readLane();
+      await knownOpenBug('GROK-20912', () => {
+        expect(Math.abs(afterClose.scrollTop - after.scrollTop)).toBeLessThan(after.rowPitch);
+        expect(afterClose.age).toBe(after.age);
+      });
+    }
+    finally {
+      await page.evaluate(() => grok.shell.tv.viewers.find((x: any) => x.type === 'Histogram')?.close());
+      await expect.poll(() => page.evaluate(() =>
+        grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length), {timeout: 15_000, ...POLL}).toBe(0);
+      // the resize rebuilds the lane a beat later; the next step focuses a tile, so leave the lane
+      // rebuilt, at the top, and holding still
+      await page.evaluate(() => {
+        const w = window as any;
+        const lane = () => document.querySelector('[name="viewer-Tile-Viewer"] .d4-tile-viewer-lane-content') as HTMLElement | null;
+        const shape = () => {
+          const l = lane();
+          return l ? `${l.querySelectorAll('.d4-tile-viewer-form').length}|${l.scrollHeight}|${l.scrollTop}` : '';
+        };
+        return w.__settledFor(shape, 200, 3000, 25).then(() => {
+          const l = lane();
+          if (l) l.scrollTop = 0;
+          return w.__settledFor(shape, 200, 3000, 25);
+        });
+      });
+    }
   });
 
   await softStep('Scenario 3 Step 5 (selection-form-editor): designed field set survives a layout save + re-apply', async () => {

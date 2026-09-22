@@ -33,8 +33,9 @@ Feature: Hierarchical clustering from the Chem menu
     When user picks "Chem > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on OK button in "Hierarchical Clustering" dialog
     Then "Hierarchical Clustering" dialog should be hidden
-    And the "tree leaves" reading of grid should be 1000
     And the task bar should have shown "Creating dendrogram"
+    And the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 1000
     And "Assign Clusters" icon should be visible
     And no errors should have been logged
 
@@ -49,7 +50,8 @@ Feature: Hierarchical clustering from the Chem menu
     Then Distance input in "Hierarchical Clustering" dialog should have value "manhattan"
     And Linkage input in "Hierarchical Clustering" dialog should have value "single"
     When user clicks on OK button in "Hierarchical Clustering" dialog
-    Then the "tree leaves" reading of grid should be 1000
+    Then the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 1000
     And the "tree height" reading of grid should not be as remembered
     And no error or warning balloon should have been shown
     And no errors should have been logged
@@ -71,7 +73,8 @@ Feature: Hierarchical clustering from the Chem menu
     When user selects "median" in Linkage input in "Hierarchical Clustering" dialog
     Then Linkage input in "Hierarchical Clustering" dialog should have value "median"
     When user clicks on OK button in "Hierarchical Clustering" dialog
-    Then the "tree leaves" reading of grid should be 1000
+    Then the task bar should have finished "Creating dendrogram"
+    And the "tree leaves" reading of grid should be 1000
     And the "tree height" reading of grid should not be as remembered
     And no errors should have been logged
 
@@ -87,6 +90,7 @@ Feature: Hierarchical clustering from the Chem menu
     Then Linkage input in "Hierarchical Clustering" dialog should have value "centroid"
     When user clicks on OK button in "Hierarchical Clustering" dialog
     Then "Hierarchical Clustering" dialog should be hidden
+    And the task bar should have finished "Creating dendrogram"
 
   @known-failure @GROK-19595
   Scenario: Numeric columns with centroid linkage attach a tree with a leaf for every row
