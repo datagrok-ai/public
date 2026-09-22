@@ -557,13 +557,8 @@ export const areasSameSize = Then('the {string} and {string} areas of {widget} s
   async (page: Page, a: string, b: string, target: ElementRef, dimension: string) => {
     if (dimension !== 'height' && dimension !== 'width')
       throw new Error(`two areas are the same height or the same width, not the same "${dimension}"`);
-    const areas = await v.hitAreas(page, target);
-    for (const name of [a, b])
-      if (areas[name] === undefined)
-        throw new Error(`${target.phrase} has no "${name}" area; it has: ${Object.keys(areas).join(', ')}`);
-    const read = (box: v.Box) => dimension === 'height' ? box.height : box.width;
-    expect(Math.abs(read(areas[a]) - read(areas[b])), `the "${a}" area is ${Math.round(read(areas[a]))} and "${b}" is ${Math.round(read(areas[b]))}`)
-      .toBeLessThanOrEqual(1);
+    const [x, y] = (await v.areaRects(page, target, [a, b])).map((box) => dimension === 'height' ? box.height : box.width);
+    expect(Math.abs(x - y), `the "${a}" area is ${Math.round(x)} and "${b}" is ${Math.round(y)}`).toBeLessThanOrEqual(1);
   }, {description: 'the two rectangles agree within a pixel — a size scale flattened, two bars of equal length'});
 
 export const oneTooltip = Then('exactly one tooltip should be shown', async (page: Page) => {

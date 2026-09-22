@@ -89,6 +89,10 @@ export const onlyOfAnySelected = Then('only rows where {string} is one of {strin
   expectOnlySelected(page, column, {in: list(values)}, `is one of ${values}`),
 {description: 'every row of these categories (comma-separated) and nothing else — a union built with Control clicks'});
 
+export const onlyBetweenSelected = Then('only rows where {string} is between {float} and {float} should be selected', (page: Page, column: string, min: number, max: number) =>
+  expectOnlySelected(page, column, {between: [min, max]}, `is between ${min} and ${max}`),
+{description: 'every row of the numeric range (both ends included) and nothing else — what a click on an annotation region selects'});
+
 export const onlyStartingWithSelected = Then('only rows where {string} starts with {string} should be selected', (page: Page, column: string, prefix: string) =>
   expectOnlySelected(page, column, {startsWith: prefix}, `starts with "${prefix}"`), {description: 'every row whose value starts with the text is selected and no other'});
 
@@ -278,6 +282,17 @@ export const addCalculated = When('user adds a calculated column {string} with f
   await page.evaluate(async ([n, f]) => { await grok.shell.t.columns.addNewCalculated(n, f); }, [name, formula] as [string, string]);
   await expect.poll(() => page.evaluate((n) => grok.shell.t.columns.names().includes(n), name), {message: `"${name}" in the table's columns`}).toBe(true);
 }, {tier: 'api', description: 'a formula in the platform\'s syntax: ${HEIGHT} * 2'});
+
+const writeTableTag = (page: Page, tag: string, value: string): Promise<void> =>
+  changeTable(page, ([t, x]: [string, string]) => { grok.shell.t.setTag(t, x); }, [tag, value]);
+
+export const setTableTag = When('user sets the {string} tag of the table to {string}', (page: Page, tag: string, value: string) =>
+  writeTableTag(page, tag, value),
+{tier: 'api', description: 'a table tag through the JS API ("" empties it) — ".annotation-regions" holds the dataframe\'s annotation regions, which every viewer of the table reads on the change'});
+
+export const setTableTagText = When('user sets the {string} tag of the table to:', (page: Page, tag: string, value: string) =>
+  writeTableTag(page, tag, value),
+{tier: 'api', description: 'the same with the value as a doc string — JSON without escaped quotes'});
 
 export const removeColumn = When('user removes {string} column', (page: Page, name: string) =>
   evaluate(page, (n) => { const b = (window as any).__bdd; b.col(n); b.table().columns.remove(n); }, name), {tier: 'api'});
