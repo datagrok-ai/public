@@ -863,6 +863,53 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   get checkedNodes(): TreeViewNode[] {return this.tree.items.filter((node) => node.checked);}
 
+  /** What the tree holds, node by node, and where its nodes and icons are. A node is numbered by
+   * its place in `tree.items`, the order the tree draws. */
+  getWidgetStatus(): any {
+    const base: any = super.getWidgetStatus();
+    // the orphan folders sit among the items and carry no scaffold; a node number counts scaffolds
+    const nodes = this.tree.items.filter((node) => !(value(node)?.orphans ?? false));
+    const rootBox = this.root.getBoundingClientRect();
+    const hitAreas: {[name: string]: {x: number, y: number, width: number, height: number}} = {...(base.hitAreas ?? {})};
+    const area = (name: string, element?: Element | null) => {
+      if (!element)
+        return;
+      const r = element.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0)
+        hitAreas[name] = {x: r.left - rootBox.left, y: r.top - rootBox.top, width: r.width, height: r.height};
+    };
+    const values: {[name: string]: number | string | boolean} = {
+      'nodes': nodes.length,
+      'root nodes': this.tree.children.length,
+      'checked nodes': this.checkedNodes.length,
+      'colored nodes': this.colorCodedScaffolds.length,
+      'message': this._message?.textContent ?? '',
+      'generate blocked reason': this.generateBlockedReason() ?? '',
+      'molecule column': this.molColumn?.name ?? '',
+      'colors column': this.fragmentsColumn?.name ?? '',
+      'labels column': this.labelsColumn?.name ?? '',
+      'bit operation': this.bitOperation,
+      'rows kept': this.bitset?.trueCount ?? -1,
+    };
+    nodes.forEach((node, i) => {
+      const n = value(node);
+      values[`scaffold of node ${i + 1}`] = n.smiles ?? '';
+      values[`hits of node ${i + 1}`] = n.bitset ? n.bitset.trueCount : -1;
+      values[`color of node ${i + 1}`] = n.colorOn ? (n.chosenColor ?? '') : '';
+      values[`checked of node ${i + 1}`] = node.checked;
+      area(`node ${i + 1}`, node.root);
+      area(`checkbox of node ${i + 1}`, node.root.querySelector('input[type="checkbox"]'));
+      const icons = node.root.querySelector('.chem-mol-box-info-buttons + .chem-mol-box-info-buttons') ?? node.root;
+      area(`add icon of node ${i + 1}`, icons.querySelector('.fa-plus'));
+      area(`remove icon of node ${i + 1}`, icons.querySelector('.fa-trash-alt'));
+      area(`edit icon of node ${i + 1}`, icons.querySelector('.fa-pencil'));
+      area(`color icon of node ${i + 1}`, node.root.querySelector('.chem-mol-box-info-buttons .fa-circle'));
+    });
+    area('generate icon', this._iconGenerate);
+    area('add icon', this._iconAdd);
+    return {...base, hitAreas, values};
+  }
+
   private _aiBriefing: string | null = null;
 
   getFunctions(): DG.Func[] {
@@ -2379,6 +2426,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
 
       icon.classList.toggle('inactive', disabled);
+      icon.setAttribute('aria-disabled', String(disabled));
     };
 
     const molCol = this.molColumn;

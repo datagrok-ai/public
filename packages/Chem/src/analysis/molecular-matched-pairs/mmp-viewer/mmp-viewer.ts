@@ -131,6 +131,23 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   lastOpenedHint: HTMLDivElement | null = null;
   showHints = true;
 
+  /** What the analysis produced, tab by tab: the activities it ran on, the substitutions and the
+   * pairs it found, and the molecules the Generation tab holds. */
+  getWidgetStatus(): any {
+    const base: any = super.getWidgetStatus();
+    const grids = this.pairedGrids;
+    return {...base, values: {...(base.values ?? {}),
+      'activities': (this.activities ?? []).join(', '),
+      'tab': this.tabs?.currentPane?.name ?? this.currentTab,
+      'substitutions': grids?.fpGrid?.dataFrame?.rowCount ?? -1,
+      'pairs': grids?.mmpGridTrans?.dataFrame?.rowCount ?? -1,
+      'fragment columns': Array.from(grids?.fpGrid?.dataFrame?.columns?.names() ?? []).join(', '),
+      'generated': this.generationsGrid?.dataFrame?.rowCount ?? -1,
+      'generation columns': Array.from(this.generationsGrid?.dataFrame?.columns?.names() ?? []).join(', '),
+      'molecules column': this.moleculesColumnName ?? '',
+    }};
+  }
+
   constructor() {
     super();
     this.parentTableView = grok.shell.tv;

@@ -42,6 +42,50 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   isComputing = false;
   rowSource: string;
   error = '';
+  private _rendersPending = 0;
+  private _onRendered = new Subject<void>();
+
+  get onRendered(): Subject<void> { return this._onRendered; }
+
+  get isRenderPending(): boolean { return this._rendersPending > 0 || this._debRenderTimeout !== null; }
+
+  /** The table rows the result cards show, in display order. */
+  protected cardRows(): number[] { return []; }
+
+  /** Readings a subclass adds to the common ones. */
+  protected readings(): {[name: string]: number | string | boolean} { return {}; }
+
+  getWidgetStatus(): any {
+    const base: any = super.getWidgetStatus();
+    const cards = Array.from(this.root.querySelectorAll('.chem-viewer-grid > div, .chem-diversity-search > div')) as HTMLElement[];
+    const rootBox = this.root.getBoundingClientRect();
+    const hitAreas: {[name: string]: {x: number, y: number, width: number, height: number}} = {...(base.hitAreas ?? {})};
+    cards.forEach((card, i) => {
+      const r = card.getBoundingClientRect();
+      if (r.width > 0)
+        hitAreas[`card ${i + 1}`] = {x: r.left - rootBox.left, y: r.top - rootBox.top, width: r.width, height: r.height};
+    });
+    const sizes = new Set(cards.map((card) => {
+      const canvas = card.querySelector('canvas');
+      return canvas ? `${parseInt(canvas.style.width)}x${parseInt(canvas.style.height)}` : '';
+    }).filter((s) => s !== ''));
+    const properties = cards.length === 0 ? '' : Array.from(cards[cards.length - 1].querySelectorAll('.chem-similarity-prop-label'))
+      .map((l) => l.textContent ?? '').filter((l) => l !== '').join(', ');
+    return {...base, hitAreas, values: {...(base.values ?? {}),
+      'molecule column': this.moleculeColumn?.name ?? '',
+      'metric': this.distanceMetric,
+      'fingerprint': this.fingerprint,
+      'limit': this.limit,
+      'size': this.size,
+      'row source': this.rowSource,
+      'header': this.metricsLink?.textContent?.trim() ?? '',
+      'cards': cards.length,
+      'card rows': this.cardRows().map((i) => i + 1).join(', '),
+      'card row set': this.cardRows().map((i) => i + 1).sort((a, b) => a - b).join(', '),
+      'card sizes': Array.from(sizes).join(', '),
+      'card properties': properties,
+      ...this.readings()}};
+  }
 
   /** Upper bound for the `limit` property; subclasses override to widen it. Must stay a getter —
    * it's read in the base constructor, before subclass field initializers would run. */
@@ -142,6 +186,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       clearTimeout(this._debRenderTimeout);
     this._debComputeFlag = this._debComputeFlag || computeData;
     this._debRenderTimeout = setTimeout(async () => {
+      this._debRenderTimeout = null;
       const flag = this._debComputeFlag;
       this._debComputeFlag = false;
       await this.render(flag);
@@ -149,6 +194,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   }
 
   async render(computeData = true): Promise<void> {
+    this._rendersPending++;
     try {
       if (!this.moleculeColumn) {
         ui.empty(this.root);
@@ -162,6 +208,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         this.isComputing = false;
         this.renderCompleted.next();
       }
+      this._rendersPending--;
+      this._onRendered.next();
     }
   }
 

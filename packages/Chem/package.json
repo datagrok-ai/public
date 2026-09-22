@@ -84,7 +84,8 @@
     "@types/js-yaml": "^4.0.9",
     "@types/offscreencanvas": "^2019.7.3",
     "@types/wu": "catalog:",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "@datagrok-libraries/bdd": "workspace:^"
   },
   "browser": {
     "fs": false,

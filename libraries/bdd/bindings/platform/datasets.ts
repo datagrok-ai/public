@@ -5,6 +5,8 @@ dataset('spgi', {path: 'System:AppData/Chem/tests/spgi-100.csv', aliases: ['spgi
   description: 'SMILES + numeric activity, 100 rows'});
 dataset('mol1K', {path: 'System:AppData/Chem/mol1K.csv', aliases: ['mol1k'],
   description: '1000 molecules with pIC50_HIV_Integrase and Q (comes with the published Chem package)'});
+dataset('smiles', {path: 'System:DemoFiles/chem/smiles.csv',
+  description: '1000 drug-like molecules in canonical_smiles'});
 dataset('FASTA_PT_activity', {path: 'System:AppData/Bio/samples/FASTA_PT_activity.csv', aliases: ['fasta-pt-activity', 'peptides with activity'],
   description: '99 peptides: cluster, sequence_id, sequence (16-mers), activity, is_cliff (comes with the published Bio package)'});
 dataset('demog', {path: 'System:DemoFiles/demog.csv', description: 'the demographics demo table'});

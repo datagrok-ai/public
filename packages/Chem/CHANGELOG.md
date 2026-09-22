@@ -2,6 +2,12 @@
 
 ## v.next
 
+* Substructure filter: reports the card's structure, search type, fingerprint, similarity cutoff and whether it is searching to the filter panel
+* Similarity and Diversity Search: the viewers report their metric, fingerprint, limit, size, cards and card rows, and announce their renders
+* Scaffold Tree: the viewer reports its nodes, checked and coloured nodes, each node's scaffold, hits and colour, its message and the reason generation is blocked, and marks a blocked icon aria-disabled
+* Matched Molecular Pairs: the viewer reports its activities, current tab, substitutions, pairs and generated molecules
+* Activity cliffs: the plot reports the cliffs found and whether only cliffs are shown, and the cliff-count button carries a name
+* Added BDD features for the Chem section of TestTrack
 * GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder
 * GROK-20808: MMP: Fixed a crash when no table was selected in the dialog
 * GROK-20829: Guard isBitsetStale against the valueless root tree group

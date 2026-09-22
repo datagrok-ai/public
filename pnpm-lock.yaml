@@ -1470,6 +1470,9 @@ importers:
         specifier: 'catalog:'
         version: 2.1.0
     devDependencies:
+      '@datagrok-libraries/bdd':
+        specifier: workspace:^
+        version: link:../../libraries/bdd
       '@playwright/test':
         specifier: ^1.48.0
         version: 1.63.0

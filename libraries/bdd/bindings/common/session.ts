@@ -10,7 +10,11 @@ import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
 declare const grok: any;
 
 export const loggedIn = Given('user is logged in', async (page: Page) => {
-  const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
+  // a worker runs one spec after another on the same page, so what a feature leaves behind (an open
+  // dialog, a docked panel, a sticky option) reaches the next one; BDD_FRESH_PAGE starts each
+  // feature from a reload, at the cost of a shell load per feature
+  const inShell = process.env.BDD_FRESH_PAGE === undefined &&
+    await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell) {
     // a dev stand's pub serve can take minutes to hand out the bundle while it recompiles or is
     // starved: that is a delay once per page, not a failure of the feature

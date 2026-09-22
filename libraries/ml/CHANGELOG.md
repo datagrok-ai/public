@@ -1,5 +1,9 @@
 # ml changelog
 
+## v.next
+
+* Activity cliffs: the plot reports the cliffs found and whether only cliffs are shown, and the cliff-count button carries a name
+
 ## 6.10.16 (2026-09-08)
 
 * Distance matrix: Fixed `DistanceMatrixService` spawning a worker per CPU thread before knowing the job's size and terminating the unused ones mid-load — every such worker's chunk import surfaced as an uncaught NetworkError on the page; workers are now spawned for the job

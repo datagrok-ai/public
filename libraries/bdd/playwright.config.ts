@@ -33,5 +33,8 @@ export default defineConfig({
     // headless is software-rasterized throughout
     launchOptions: {args: [`--unsafely-treat-insecure-origin-as-secure=${url}`, '--disable-accelerated-2d-canvas']},
   },
+  // a stand that computes in the browser (chemistry over a thousand molecules) needs longer than the
+  // shared 15 s once two workers share it: BDD_EXPECT_TIMEOUT raises what every check waits
+  expect: {...baseConfig.expect, timeout: Number(process.env.BDD_EXPECT_TIMEOUT ?? baseConfig.expect?.timeout ?? 15000)},
   projects: [{name: 'bdd'}],
 });

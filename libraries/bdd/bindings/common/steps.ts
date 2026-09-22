@@ -106,6 +106,95 @@ export const clipboardHas = Then('the clipboard should have (the )text {string}'
   await expect.poll(() => g.readClipboard(page), {message: 'the clipboard text'}).toBe(text);
 }, {description: 'exactly, whitespace included'});
 
+const rememberedClips = new WeakMap<Page, string[]>();
+
+export const rememberClipboard = When('user remembers the clipboard text', async (page: Page) => {
+  const text = await g.readClipboard(page);
+  expect(text, 'the clipboard text to remember').not.toBe('');
+  rememberedClips.set(page, [...(rememberedClips.get(page) ?? []), text]);
+}, {tier: 'api', description: 'kept with every text remembered before it in the scenario'});
+
+export const clipboardDiffers = Then('the clipboard text should differ from every remembered one', async (page: Page) => {
+  const text = await g.readClipboard(page);
+  const kept = rememberedClips.get(page) ?? [];
+  expect(kept.length, 'texts remembered before').toBeGreaterThan(0);
+  expect(kept.filter((k) => k === text).length, 'remembered texts equal to the clipboard').toBe(0);
+});
+
+export const clipboardImage = Then('the clipboard should hold a PNG image of at least {int} bytes', async (page: Page, bytes: number) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await expect.poll(() => page.evaluate(async () => {
+    for (const item of await navigator.clipboard.read())
+      if (item.types.includes('image/png'))
+        return (await item.getType('image/png')).size;
+    return 0;
+  }), {message: 'the size of the PNG image on the clipboard'}).toBeGreaterThanOrEqual(bytes);
+});
+
+const downloads = new WeakMap<Page, {name: string; text: Promise<string>}[]>();
+
+export const watchDownloads = Given('user watches downloads', async (page: Page) => {
+  const list: {name: string; text: Promise<string>}[] = [];
+  // the step starts a fresh list, so a file downloaded earlier in the feature cannot answer for
+  // one this scenario expects; the listener is attached once per page
+  if (downloads.has(page)) {
+    downloads.set(page, list);
+    return;
+  }
+  downloads.set(page, list);
+  page.on('download', (d) => downloads.get(page)!.push({name: d.suggestedFilename(),
+    text: d.path().then((p) => import('fs').then((fs) => fs.readFileSync(p, 'utf8')))}));
+}, {tier: 'api', description: 'records the files the page downloads from then on, forgetting the ones before'});
+
+/** The browser numbers a file it has downloaded before ("smiles (2).sdf"), so the name a feature
+ * gives matches those too. */
+function named(name: string): (file: {name: string}) => boolean {
+  const dot = name.lastIndexOf('.');
+  const [stem, ext] = dot < 0 ? [name, ''] : [name.slice(0, dot), name.slice(dot)];
+  const re = new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( \\(\\d+\\))?${ext.replace(/\./g, '\\.')}$`);
+  return (file) => re.test(file.name);
+}
+
+async function downloaded(page: Page, name: string): Promise<{name: string; text: Promise<string>}> {
+  let names = '';
+  await expect.poll(() => {
+    const list = downloads.get(page);
+    if (!list)
+      throw new Error('"user watches downloads" did not run in this scenario');
+    names = list.map((d) => d.name).join(', ');
+    return list.some(named(name));
+  }, {message: `a download named "${name}"`}).toBe(true).catch(() => {
+    throw new Error(`no download named "${name}"; downloaded: ${names || 'nothing'}`);
+  });
+  return downloads.get(page)!.filter(named(name)).pop()!;
+}
+
+export const fileDownloaded = Then('a file {string} should have been downloaded', async (page: Page, name: string) => {
+  await downloaded(page, name);
+});
+
+export const downloadContains = Then('the downloaded file {string} should contain (the )text {string}', async (page: Page, name: string, text: string) => {
+  expect(await (await downloaded(page, name)).text, `the text of "${name}"`).toContain(text);
+});
+
+async function occurrences(page: Page, name: string, text: string): Promise<number> {
+  return (await (await downloaded(page, name)).text).split(text).length - 1;
+}
+
+export const downloadCount = Then('the downloaded file {string} should contain {int} occurrences of {string}', async (page: Page, name: string, count: number, text: string) => {
+  expect(await occurrences(page, name, text), `occurrences of "${text}" in "${name}"`).toBe(count);
+}, {description: 'how many times the text appears in the file — a record terminator counts the records'});
+
+export const downloadFewer = Then('the downloaded file {string} should contain fewer than {int} occurrences of {string}', async (page: Page, name: string, count: number, text: string) => {
+  expect(await occurrences(page, name, text), `occurrences of "${text}" in "${name}"`).toBeLessThan(count);
+});
+
 /** The state a scenario needs, rather than a gesture: `setExpanded` reads where the element is
  * first, so a group that is already open stays open — "user expands" on it would close it. */
 export const isExpanded = Given('{element} is expanded', (page: Page, target: ElementRef) => g.setExpanded(page, target, true), {tier: 'ui'});
+
+export const showsPicture = Then('{element} should show a picture', async (page: Page, target: ElementRef) => {
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  await expect.poll(() => loc.locator('img').first().evaluate((img: HTMLImageElement) => img.naturalWidth * img.naturalHeight)
+    .catch(() => 0), {message: `the picture ${target.phrase} shows`}).toBeGreaterThan(0);
+}, {description: 'an <img> the element holds, loaded and not empty — what a script panel draws into instead of a canvas'});

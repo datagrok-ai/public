@@ -28,15 +28,27 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
       });
     }
     w.__bddTables ??= {};
-    const src = (w.__bddTables[p] ??= await grok.dapi.files.readCsv(p));
+    // a file that is not a csv goes through the file handler its extension is registered for (sdf → Chem);
+    // a .csv the comma parser reads as one tab-separated column goes through it too
+    const read = async (path: string) => {
+      if (!/\.(csv|tsv|txt)$/i.test(path))
+        return grok.data.files.openTable(path);
+      const df = await grok.dapi.files.readCsv(path);
+      return df.columns.length === 1 && df.columns.names()[0].includes('\t') ? grok.data.files.openTable(path) : df;
+    };
+    const src = (w.__bddTables[p] ??= await read(p));
     const df = r !== null && r < src.rowCount ? src.clone(DG.BitSet.create(src.rowCount, (i: number) => i < r)) : src.clone();
     df.name = n ?? p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
     grok.shell.addTableView(df);
   }, [dataset.path, rows ?? null, name ?? null] as [string, number | null, string | null]);
   await page.locator('[name="viewer-Grid"]').first().waitFor();
+  // a file handler that types its own column (an sdf, a mol) fires no detection event, so a table
+  // that already carries a semantic type is as ready as one detection has run over
   await expect.poll(() => page.evaluate(() => {
     const w = window as any;
-    return w.__bddDetected.includes(w.grok.shell.tv?.dataFrame?.dart) as boolean;
+    const df = w.grok.shell.tv?.dataFrame;
+    return (w.__bddDetected.includes(df?.dart) ||
+      (df?.columns?.toList() ?? []).some((c: any) => c.semType)) as boolean;
   }), {timeout: pollMs(60000), message: `${dataset.name}: semantic types were not detected (is auto-detection on?)`}).toBe(true);
   // a second after the grid is created the view makes row 0 current when no row is, and every
   // viewer repaints its marker mid-feature; done here, the view's timer skips it

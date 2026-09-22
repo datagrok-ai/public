@@ -55,12 +55,14 @@ async function expectAdded(page: Page, predicate: (added: string[]) => string | 
       const added = c.now.filter((n) => !c.before!.includes(n));
       shown = added.length === 0 ? 'no column was added' : `added: ${added.join(', ')}`;
       return predicate(added) ?? 'ok';
-    }, {timeout: 60000}).toBe('ok');
+      // a command that computes in the browser (a descriptor batch, a toxicity run over a
+      // thousand molecules) keeps working well past the shared expect budget
+    }, {timeout: Number(process.env.BDD_COMMAND_TIMEOUT ?? 180000)}).toBe('ok');
   }
   catch (e) {
     if (!shown)
       throw e;
-    throw new Error(`${what} — ${shown} (within 60 s of the command)`);
+    throw new Error(`${what} — ${shown} (within ${Math.round(Number(process.env.BDD_COMMAND_TIMEOUT ?? 180000) / 1000)} s of the command)`);
   }
 }
 
@@ -111,9 +113,15 @@ export const newestMatchingDistinct = Then('the newest column matching {string} 
 }, {description: 'the last column of the current table whose name matches the regular expression; missing values are not a value'});
 
 export const newestMatchingFilled = Then('the newest column matching {string} should have no missing values', async (page: Page, pattern: string) => {
-  const facts = await newestMatching(page, pattern);
-  expect(facts.missing, `missing values in "${facts.name}"`).toBe(0);
-});
+  let seen = '';
+  await expect.poll(async () => {
+    const facts = await newestMatching(page, pattern);
+    seen = `"${facts.name}"`;
+    return facts.missing;
+  }, {message: `missing values in the newest column matching /${pattern}/`}).toBe(0).catch(() => {
+    throw new Error(`missing values in ${seen}`);
+  });
+}, {description: 'polled: a column a command adds is filled a moment after it appears'});
 
 export const noNewColumn = Then('no new column should have been added', async (page: Page) => {
   const c = await columnsSince(page);

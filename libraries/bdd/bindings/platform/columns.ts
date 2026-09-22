@@ -86,6 +86,23 @@ export const everyValueMatches = Then('every value of {string} column should mat
   expect(filled(f).length, `filled values of "${column}"`).toBeGreaterThan(0);
 }, {description: 'a regular expression over every filled cell; a column with no filled cell fails'});
 
+export const fewerDistinctThanRows = Then('{string} column should have fewer distinct values than the table has rows', async (page: Page, column: string) => {
+  const f = await columnFacts(page, column);
+  const distinct = new Set(f.values.filter((_, i) => filled(f).includes(i))).size;
+  expect(distinct, `distinct values of "${column}" against the ${f.values.length} rows`).toBeLessThan(f.values.length);
+}, {description: 'a column that groups the rows rather than naming each of them'});
+
+export const someValueMatches = Then('some value of {string} column should match {string}', async (page: Page, column: string, pattern: string) => {
+  const f = await columnFacts(page, column);
+  const re = new RegExp(pattern);
+  expect(filled(f).filter((i) => re.test(f.values[i])).length, `values of "${column}" matching /${pattern}/`).toBeGreaterThan(0);
+}, {description: 'a regular expression that at least one filled cell matches'});
+
+export const someValueDiffers = Then('some value of {string} column should differ from {string} column in the same row', async (page: Page, x: string, y: string) => {
+  const [a, b] = [await columnFacts(page, x), await columnFacts(page, y)];
+  expect(a.values.filter((v, i) => v !== b.values[i]).length, `rows where "${x}" and "${y}" hold different text`).toBeGreaterThan(0);
+}, {description: 'the cells\' text, row by row'});
+
 export const everyValueContains = Then('every value of {string} column should contain {string}', async (page: Page, column: string, text: string) => {
   const f = await columnFacts(page, column);
   const bad = filled(f).filter((i) => !f.values[i].includes(text));
