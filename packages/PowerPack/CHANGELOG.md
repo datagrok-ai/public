@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Viewer gallery: Named the gallery surfaces — `viewer-card-<name>`, `card-label-<name>`, `viewer-tag-<tag>`, `viewer-gallery-root`, `viewer-gallery-controls`, `viewer-gallery-search`, `viewer-gallery-list`, `viewer-gallery-recent` — with `aria-label`, `role` and `aria-disabled` on the cards
+* Status bar: The window toggles now carry `name`, `aria-label` and `aria-pressed`, so they are addressable by what they do rather than by the FontAwesome class of their icon; the Tabs toggle no longer bypasses the shared state setter
 * GROK-20922: Apply the Learn overflow class to the Spotlight tab pane restored on start
 * GROK-20753: Added `domainRouteView` (`tags: domainRoutes`) — the platform's `/domains/<schema>/<table>[/<keyOrId>]` addresses resolve to the u2 domain app through it
 * GROK-17068: Formula Lines: The formula editor now accepts the axis tokens `X`/`Y` on the left side of a line (`Y = X + 25`) or a band (`X in(160, 190)`), not only a `${column}` reference, and no longer rewrites a token into a concrete column when the item is selected or the preview's axis changes

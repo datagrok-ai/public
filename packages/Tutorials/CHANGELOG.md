@@ -2,6 +2,12 @@
 
 ## v.next
 
+* R-Groups Analysis: The Distributions pane step resolves the pane when it appears instead of when the step is built — it exists only while a RowGroup is the current object
+* GROK-20416: Steps that point at a rebuilt element (the Add viewer ribbon icon, the aggregation tag) now resolve it per tick instead of caching it, so both the click listener and the highlight follow the new node; the icon is found by its `aria-label`, not by its position in the ribbon
+* Sticky Meta: Fixed the tutorial dying at "Save schema" — step 11 looked up the schema section and the property input with strings that disagreed in case with what the steps tell the learner to type, and the miss threw one line later
+* Activity Cliffs: Fixed two steps that could never complete — the scatter plot is added before the step subscribes to `onViewerAdded`, and the tooltip check needed a second mouse move; both now read the state that is already there
+* Compute: Sensitivity Analysis and Parameter Optimization address form inputs by the caption the model declares instead of by child index, and the tour wizard buttons carry `name` / `aria-label` even when the caller passes an empty label
+* Dashboard: Dropped two 1.5 s "UI generation delay" sleeps — the engine now waits for the control it is about to drive
 * Tutorials: Dashboards tutorial follows the dashboard it saved by id — on a shared server its last steps accepted any project named "Coffee sales dashboard", so a project from someone else's run could be opened instead and fail with a connection-permission error
 
 ## 1.11.4 (2026-09-11)

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable, combineLatest, interval} from 'rxjs';
-import $, {Cash} from 'cash-dom';
+import $ from 'cash-dom';
 import { _package } from '../../../package';
 
 
@@ -146,14 +146,27 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     //     $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').length > 0;
     // })), undefined, 'Note changes on the pie charts');
 
-    let pane: Cash;
+    // the pane exists only while a RowGroup is the current object, which the previous step
+    // establishes — so it is resolved per tick, not once when this step is built
+    const distrHeader = (): HTMLElement | null => $('.d4-accordion-pane-header')
+      .filter((_, el) => el.textContent === 'Distributions').get(0) ?? null;
+
     await this.action('On the Context Panel, expand the Distributions pane',
       new Observable((subscriber: any) => {
-        pane = $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions');
-        if (pane.hasClass('expanded'))
+        const header = distrHeader();
+        if (header != null && $(header).hasClass('expanded')) {
           subscriber.next(true);
-        pane.on('click', () => subscriber.next(true));
-      }), $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').get(0));
+          return;
+        }
+        // delegated, so it does not matter whether the pane is in the DOM yet
+        const onClick = (e: Event) => {
+          const el = (e.target as HTMLElement).closest('.d4-accordion-pane-header');
+          if (el != null && el.textContent === 'Distributions')
+            subscriber.next(true);
+        };
+        document.addEventListener('click', onClick, true);
+        return () => document.removeEventListener('click', onClick, true);
+      }), distrHeader);
 
     const getDistrLineChart = () => {
       const distrPane = document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded');

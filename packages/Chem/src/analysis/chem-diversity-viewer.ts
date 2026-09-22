@@ -92,6 +92,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         }
 
         $(grid).addClass(divClass);
+        grid.setAttribute('data-row', `${this.renderMolIds[i]}`);
+        grid.setAttribute('name', `card-${this.renderMolIds[i]}`);
         grid.addEventListener('click', (event: MouseEvent) => {
           if (this.dataFrame) {
             if (event.shiftKey || event.altKey)
