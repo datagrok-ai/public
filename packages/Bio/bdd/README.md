@@ -9,9 +9,9 @@ are from the last full run recorded here; the 2026-09-22 gap round (every TestTr
 spec re-read against the features) added the FASTA file lifecycle, the project round-trips, the
 Monomers view and Match dialog, BILN rendering, the two-column settings of the top menu and the
 server side of library deletion — each feature says in its description what it leaves out and
-why. One claim is an open product finding, not a test gap: the Similarity command through its
-dialog leaves the non-reference rows of `filter_HELM` empty where the same function called
-directly scores them (`calculate/scoring.feature`). The diversity search's worker chunk failures
+why. The Similarity command used to leave the rows of `filter_HELM` whose length differed from
+the reference's empty (GROK-20963, fixed 2026-09-21 in `@datagrok-libraries/bio`;
+`calculate/scoring.feature` asserts no blanks). The diversity search's worker chunk failures
 of the first round were the distance-matrix service terminating workers it had spawned beyond
 the job (fixed in `@datagrok-libraries/ml`).
 

@@ -398,9 +398,12 @@ export function runControlComparisons(): void {
   dlg.addButton('Run', () => {
     dlg.close();
     try {
-      const report = controlComparisons(factor!, feature! as NumCol, codeOf(factor!, control),
-        binCount(factor!), {method: currentMethod, alpha: significance});
-      addVisualization(df, factor!, feature!, report, fullReportInput.value!);
+      const mask = df.filter.anyFalse ? df.filter : undefined;
+      const factorCol = factor!.clone(mask);
+      const featureCol = feature!.clone(mask);
+      const report = controlComparisons(factorCol, featureCol as NumCol, codeOf(factorCol, control),
+        binCount(factorCol), {method: currentMethod, alpha: significance});
+      addVisualization(df, factorCol, featureCol, report, fullReportInput.value!);
     } catch (error) {
       if (error instanceof Error) {
         grok.shell.warning(getWarning(error.message));

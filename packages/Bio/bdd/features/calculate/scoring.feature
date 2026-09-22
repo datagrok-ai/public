@@ -2,8 +2,7 @@
 Feature: Identity and similarity scoring
   Bio | Calculate | Identity... and Similarity... score every sequence against a reference typed
   into the dialog. With the first row as the reference, identity is exactly 1 there and stays
-  within 0..1; similarity peaks there and is not capped at 1 (the reference scores 1.67 against
-  itself). Neither should leave a cell blank. The functions behind them are called directly
+  within 0..1; similarity peaks there. Neither leaves a cell blank, whatever the row's length. The functions behind them are called directly
   too: identity of a sequence with itself is 1, a local alignment finds a shared stretch, and
   Get Region returns the column it names.
 
@@ -46,11 +45,8 @@ Feature: Identity and similarity scoring
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
-  # Known failure, GROK-20963: the same blanks as the
-  # last scenario, with the first row as reference — 1.67 in row 1 and nothing in rows 2-4
-  # (probed on dev 2026-09-22 through Bio:sequenceSimilarityScoring). "Maximum in row 1" above
-  # skips the blanks, so it held while three of four rows had no score.
-  @known-failure
+  # GROK-20963 (fixed 2026-09-21): "Maximum in row 1" above skips blanks, so it held while three
+  # of four rows had no score; this claim is what would have caught them.
   Scenario: Similarity against the first row scores every row
     Then "Similarity" column should have no missing values
     And "Similarity" column should have at least 2 distinct values
@@ -121,10 +117,8 @@ Feature: Identity and similarity scoring
     And row 2 of the result column should be "PEPTIDE1{P.Q.R.S}$$$$"
     And no errors should have been logged
 
-  # Known failure, GROK-20963 (2026-09-21): the similarity of the second reference is blank in every row but
-  # two. `calculateScoresWithEmptyValues` nulls only empty sequences, so the blanks come from the
-  # scoring itself; the package README calls them an open finding. Until then the journey asserted
-  # the blanks as the expectation. Last, so nothing inherits the filter.
-  @known-failure
+  # GROK-20963 (fixed 2026-09-21): the similarity scoring blanked every row whose length differed
+  # from the reference's; it now scores the reference's positions, as identity does. Last, so
+  # nothing inherits the filter.
   Scenario: Similarity leaves no cell blank
     Then "Similarity" column should have no missing values

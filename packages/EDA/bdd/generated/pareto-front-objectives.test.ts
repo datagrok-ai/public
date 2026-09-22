@@ -22,7 +22,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pareto front objectives", () => {
   const session = feature(test, "features/pareto-front-objectives.feature", import.meta.url);
-  test("Pareto front objectives", {tag: ["@journey", "@eda", "@realizes:eda.viewer.pareto-front", "@known-failure"]}, async ({browser}) => {
+  test("Pareto front objectives", {tag: ["@journey", "@eda", "@realizes:eda.viewer.pareto-front"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 6, page);
     await session.step(25, "Given user is logged in", () => loggedIn(page));
@@ -96,13 +96,13 @@ test.describe("Pareto front objectives", () => {
       await session.step(94, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("An empty column is not offered as an objective", async () => {
-      await session.step(98, "Then the \"rows\" reading of grid viewer in \"Select columns...\" dialog should be 16", () => readingIs(page, "rows", el("grid viewer in \"Select columns...\" dialog"), 16));
-    }, {knownFailure: true});
+      await session.step(97, "Then the \"rows\" reading of grid viewer in \"Select columns...\" dialog should be 16", () => readingIs(page, "rows", el("grid viewer in \"Select columns...\" dialog"), 16));
+    });
     await run.scenario("Cancelling the objective picker preserves the viewer's objectives", async () => {
-      await session.step(101, "When user clicks on CANCEL button in \"Select columns...\" dialog", () => clickOn(page, el("CANCEL button in \"Select columns...\" dialog")));
-      await session.step(102, "Then \"Select columns...\" dialog should be absent", () => shouldBe(page, el("\"Select columns...\" dialog"), "absent"));
-      await session.step(103, "And \"Maximize\" property of pareto front viewer should be \"\"", () => propertyShouldBe(page, "Maximize", el("pareto front viewer"), ""));
-      await session.step(104, "And no errors should have been logged", () => noErrors(page));
+      await session.step(100, "When user clicks on CANCEL button in \"Select columns...\" dialog", () => clickOn(page, el("CANCEL button in \"Select columns...\" dialog")));
+      await session.step(101, "Then \"Select columns...\" dialog should be absent", () => shouldBe(page, el("\"Select columns...\" dialog"), "absent"));
+      await session.step(102, "And \"Maximize\" property of pareto front viewer should be \"\"", () => propertyShouldBe(page, "Maximize", el("pareto front viewer"), ""));
+      await session.step(103, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

@@ -14,12 +14,12 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {clusterStatistics, clusterSummaries} from '../../bindings/clusters.js';
 import {peptidesInitialized, sarReady} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {check, clickOn, enterInto, expand, pressKeyIn, shouldBe, shouldContainText, shouldHaveText, shouldNotContainText, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {check, clickOn, enterInto, expand, shouldBe, shouldContainText, shouldHaveText, shouldNotContainText, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {clearSelection, noneSelected, onlyOfSelected, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {listenCustom} from '@datagrok-libraries/bdd/bindings/platform/events';
 import {contextPanelOpen, openDatasetRows} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {areaColors, clickArea, hoverArea, noBalloons, noErrors, pointerAway, readingIs, readingReads, repainted, takeSnapshot, viewerAdded, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaColors, clickArea, hoverArea, noBalloons, noErrors, pointerAway, readingIs, readingReads, repainted, takeSnapshot, viewerAdded, viewerCount, wheelOverAreaTimesHolding} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Inspect peptide statistics in tooltips", () => {
@@ -113,7 +113,7 @@ test.describe("Inspect peptide statistics in tooltips", () => {
     });
     await run.scenario("WebLogo header tooltips replace their statistics and clear the highlight on leaving", async () => {
       await session.step(100, "When user moves the pointer away from Sequence Variability Map viewer", () => pointerAway(page, el("Sequence Variability Map viewer")));
-      await session.step(101, "And user presses Home in grid", () => pressKeyIn(page, "Home", el("grid")));
+      await session.step(101, "And user scrolls the mouse wheel up 5 times over the \"row header 1\" area of grid holding Shift", () => wheelOverAreaTimesHolding(page, "up", 5, "row header 1", el("grid"), "Shift"));
       await session.step(102, "And user hovers over the \"A at 2\" area of grid", () => hoverArea(page, "A at 2", el("grid")));
       await session.step(103, "Then Count table row in tooltip should contain text \"14 (14.000%)\"", () => shouldContainText(page, el("Count table row in tooltip"), "14 (14.000%)"));
       await session.step(104, "And the \"highlighted rows\" reading of grid should be 14", () => readingIs(page, "highlighted rows", el("grid"), 14));

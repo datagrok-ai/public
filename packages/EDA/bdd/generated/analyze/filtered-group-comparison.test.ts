@@ -21,7 +21,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Group comparison of a filtered table", () => {
   const session = feature(test, "features/analyze/filtered-group-comparison.feature", import.meta.url);
-  test("Group comparison of a filtered table", {tag: ["@journey", "@eda", "@realizes:ml.menu.analyze.group-comparison.control-comparisons", "@known-failure"]}, async ({browser}) => {
+  test("Group comparison of a filtered table", {tag: ["@journey", "@eda", "@realizes:ml.menu.analyze.group-comparison.control-comparisons"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 2, page);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
@@ -47,10 +47,10 @@ test.describe("Group comparison of a filtered table", () => {
       await session.step(33, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The comparison sizes count only the women", async () => {
-      await session.step(37, "Then the \"text of cell 1 of n\" reading of second grid viewer should be \"104\"", () => readingReads(page, "text of cell 1 of n", el("second grid viewer"), "104"));
-      await session.step(38, "And the \"text of cell 2 of n\" reading of second grid viewer should be \"2823\"", () => readingReads(page, "text of cell 2 of n", el("second grid viewer"), "2823"));
-      await session.step(39, "And the \"text of cell 3 of n\" reading of second grid viewer should be \"279\"", () => readingReads(page, "text of cell 3 of n", el("second grid viewer"), "279"));
-    }, {knownFailure: true});
+      await session.step(36, "Then the \"text of cell 1 of n\" reading of second grid viewer should be \"104\"", () => readingReads(page, "text of cell 1 of n", el("second grid viewer"), "104"));
+      await session.step(37, "And the \"text of cell 2 of n\" reading of second grid viewer should be \"2823\"", () => readingReads(page, "text of cell 2 of n", el("second grid viewer"), "2823"));
+      await session.step(38, "And the \"text of cell 3 of n\" reading of second grid viewer should be \"279\"", () => readingReads(page, "text of cell 3 of n", el("second grid viewer"), "279"));
+    });
     run.finish();
   });
 });

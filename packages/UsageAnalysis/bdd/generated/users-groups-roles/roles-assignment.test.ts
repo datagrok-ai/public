@@ -22,7 +22,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Who holds a role, and what it grants", () => {
   const session = feature(test, "features/users-groups-roles/roles-assignment.feature", import.meta.url);
-  test("Who holds a role, and what it grants", {tag: ["@journey", "@serial", "@roles", "@realizes:views.roles", "@known-failure"]}, async ({browser}) => {
+  test("Who holds a role, and what it grants", {tag: ["@journey", "@serial", "@roles", "@realizes:views.roles"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 7, page);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
@@ -90,36 +90,36 @@ test.describe("Who holds a role, and what it grants", () => {
       await session.step(80, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("A new role has no global permissions in its pane (Roles-14)", async () => {
-      await session.step(86, "When user expands \"Global Permissions\" section in context panel", () => expand(page, el("\"Global Permissions\" section in context panel")));
-      await session.step(87, "Then \"Global Permissions\" section in context panel should contain text \"No global permissions\"", () => shouldContainText(page, el("\"Global Permissions\" section in context panel"), "No global permissions"));
-    }, {knownFailure: true});
+      await session.step(85, "When user expands \"Global Permissions\" section in context panel", () => expand(page, el("\"Global Permissions\" section in context panel")));
+      await session.step(86, "Then \"Global Permissions\" section in context panel should contain text \"No global permissions\"", () => shouldContainText(page, el("\"Global Permissions\" section in context panel"), "No global permissions"));
+    });
     await run.scenario("Global Permissions grants the role a permission (Roles-14)", async () => {
-      await session.step(90, "When user expands \"Global Permissions\" section in context panel", () => expand(page, el("\"Global Permissions\" section in context panel")));
-      await session.step(91, "And user clicks on MANAGE button in \"Global Permissions\" section in context panel", () => clickOn(page, el("MANAGE button in \"Global Permissions\" section in context panel")));
-      await session.step(92, "Then \"BDD-RA-Role-{time}: Global Permissions\" dialog should be visible", () => shouldBe(page, el(session.text("\"BDD-RA-Role-{time}: Global Permissions\" dialog")), "visible"));
-      await session.step(93, "When user expands \"Browse\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => expand(page, el(session.text("\"Browse\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
-      await session.step(94, "Then \"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog should be unchecked", () => shouldBe(page, el(session.text("\"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog")), "unchecked"));
-      await session.step(95, "When user checks \"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => check(page, el(session.text("\"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
-      await session.step(96, "And user clicks on SAVE button in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => clickOn(page, el(session.text("SAVE button in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
-      await session.step(97, "Then the \"BDD-RA-Role-{time}: Global Permissions\" dialog should close", () => dialogCloses(page, session.text("BDD-RA-Role-{time}: Global Permissions")));
-      await session.step(98, "When user clicks on MANAGE button in \"Global Permissions\" section in context panel", () => clickOn(page, el("MANAGE button in \"Global Permissions\" section in context panel")));
-      await session.step(99, "And user expands \"Browse\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => expand(page, el(session.text("\"Browse\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
-      await session.step(100, "Then \"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog should be checked", () => shouldBe(page, el(session.text("\"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog")), "checked"));
-      await session.step(101, "When user clicks on CANCEL button in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
-      await session.step(102, "Then the \"BDD-RA-Role-{time}: Global Permissions\" dialog should close", () => dialogCloses(page, session.text("BDD-RA-Role-{time}: Global Permissions")));
-      await session.step(103, "And no errors should have been logged", () => noErrors(page));
-      await session.step(104, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(89, "When user expands \"Global Permissions\" section in context panel", () => expand(page, el("\"Global Permissions\" section in context panel")));
+      await session.step(90, "And user clicks on MANAGE button in \"Global Permissions\" section in context panel", () => clickOn(page, el("MANAGE button in \"Global Permissions\" section in context panel")));
+      await session.step(91, "Then \"BDD-RA-Role-{time}: Global Permissions\" dialog should be visible", () => shouldBe(page, el(session.text("\"BDD-RA-Role-{time}: Global Permissions\" dialog")), "visible"));
+      await session.step(92, "When user expands \"Browse\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => expand(page, el(session.text("\"Browse\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
+      await session.step(93, "Then \"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog should be unchecked", () => shouldBe(page, el(session.text("\"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog")), "unchecked"));
+      await session.step(94, "When user checks \"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => check(page, el(session.text("\"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
+      await session.step(95, "And user clicks on SAVE button in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => clickOn(page, el(session.text("SAVE button in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
+      await session.step(96, "Then the \"BDD-RA-Role-{time}: Global Permissions\" dialog should close", () => dialogCloses(page, session.text("BDD-RA-Role-{time}: Global Permissions")));
+      await session.step(97, "When user clicks on MANAGE button in \"Global Permissions\" section in context panel", () => clickOn(page, el("MANAGE button in \"Global Permissions\" section in context panel")));
+      await session.step(98, "And user expands \"Browse\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => expand(page, el(session.text("\"Browse\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
+      await session.step(99, "Then \"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog should be checked", () => shouldBe(page, el(session.text("\"Browse > Browse Apps\" tree node in \"BDD-RA-Role-{time}: Global Permissions\" dialog")), "checked"));
+      await session.step(100, "When user clicks on CANCEL button in \"BDD-RA-Role-{time}: Global Permissions\" dialog", () => clickOn(page, el(session.text("CANCEL button in \"BDD-RA-Role-{time}: Global Permissions\" dialog"))));
+      await session.step(101, "Then the \"BDD-RA-Role-{time}: Global Permissions\" dialog should close", () => dialogCloses(page, session.text("BDD-RA-Role-{time}: Global Permissions")));
+      await session.step(102, "And no errors should have been logged", () => noErrors(page));
+      await session.step(103, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("A role that grants a permission can still be deleted (Roles-14, Roles-15)", async () => {
-      await session.step(113, "When user types \"BDD-RA-Role-{time}\" into gallery search", () => typeInto(page, session.text("BDD-RA-Role-{time}"), el("gallery search")));
-      await session.step(114, "Then the gallery counter should be lower than remembered", () => galleryCountLower(page));
-      await session.step(115, "When user picks \"Delete\" from the context menu of \"BDD-RA-Role-{time}\" link in gallery", () => pickFromContextMenu(page, "Delete", el(session.text("\"BDD-RA-Role-{time}\" link in gallery"))));
-      await session.step(116, "Then \"Are you sure?\" dialog should be visible", () => shouldBe(page, el("\"Are you sure?\" dialog"), "visible"));
-      await session.step(117, "When user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
-      await session.step(118, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
-      await session.step(119, "And 0 roles named \"BDD-RA-Role-{time}\" should be on the server", () => groupsOnServer(page, 0, session.text("BDD-RA-Role-{time}")));
-      await session.step(120, "And no errors should have been logged", () => noErrors(page));
-    }, {knownFailure: true});
+      await session.step(110, "When user types \"BDD-RA-Role-{time}\" into gallery search", () => typeInto(page, session.text("BDD-RA-Role-{time}"), el("gallery search")));
+      await session.step(111, "Then the gallery counter should be lower than remembered", () => galleryCountLower(page));
+      await session.step(112, "When user picks \"Delete\" from the context menu of \"BDD-RA-Role-{time}\" link in gallery", () => pickFromContextMenu(page, "Delete", el(session.text("\"BDD-RA-Role-{time}\" link in gallery"))));
+      await session.step(113, "Then \"Are you sure?\" dialog should be visible", () => shouldBe(page, el("\"Are you sure?\" dialog"), "visible"));
+      await session.step(114, "When user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
+      await session.step(115, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
+      await session.step(116, "And 0 roles named \"BDD-RA-Role-{time}\" should be on the server", () => groupsOnServer(page, 0, session.text("BDD-RA-Role-{time}")));
+      await session.step(117, "And no errors should have been logged", () => noErrors(page));
+    });
     run.finish();
   });
 });
