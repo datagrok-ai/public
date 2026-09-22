@@ -5,8 +5,7 @@ Feature: The Formula Lines dialog and the look it writes
   express directly is written into the look and read back as what the viewer draws — the
   `formula lines` reading counts the active items: two lines sharing a formula over different
   ranges are both drawn, an item unchecked in Show is not, and a dataframe line (the table's
-  `.formula-lines` tag) is drawn by every viewer whose axis carries its column. The tag is emptied
-  to `[]`, not to "": an empty string makes every viewer of the table log a FormatException.
+  `.formula-lines` tag) is drawn by every viewer whose axis carries its column.
   On demog-1000; from `formula-lines-dialog.md`.
 
   Background:
@@ -102,7 +101,7 @@ Feature: The Formula Lines dialog and the look it writes
     And the "formula lines" reading of line chart viewer should be 1
     And line chart viewer should have a "formula line Reference weight" area
     When user sets "xColumnName" property of line chart viewer to "SEX"
-    And user sets the ".formula-lines" tag of the table to "[]"
+    And user sets the ".formula-lines" tag of the table to ""
     Then the "formula lines" reading of scatter plot viewer should be 0
     And the "formula lines" reading of line chart viewer should be 0
     And no errors should have been logged

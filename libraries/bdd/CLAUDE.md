@@ -230,8 +230,7 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   plot's Color and Size selectors cover the top-right corner; the bar chart hit-tests between the
   bars, and a band on its aggregated axis selects the rows of the bars whose value lies in the band,
   not rows by their own value. A line chart binds a region to its aggregated caption
-  (`y: "avg(WEIGHT)"`). An empty `.formula-lines` table tag makes every viewer log a
-  FormatException — empty it to `[]`.
+  (`y: "avg(WEIGHT)"`).
 - A JS viewer joins by `getWidgetStatus()` (canvas under `parts`, `hitAreas` in CSS px,
   `values`), `get isRenderPending()` and `onRendered`; a package viewer's surface reaches the
   stand only when the package is republished, and a library viewer only when the package's

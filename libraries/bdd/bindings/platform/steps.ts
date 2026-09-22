@@ -8,6 +8,7 @@ import {click, editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
+import {armEvent} from '../../src/runtime/viewer-menus.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -584,9 +585,13 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
   atFeatureEnd(page, cleanup);
   await cleanup();
   // API deletion does not invalidate the open tree's cached nodes (including prior teardown).
-  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0)
+  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0) {
+    // the tree rebuilds after Refresh: a node right-clicked mid-rebuild opens no menu
+    const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
     await click(page, el('"Refresh" icon inside browse toolbar'));
-}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree, and deletes them again at feature end'});
+    await refreshed();
+  }
+}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree and waits for it to rebuild, and deletes them again at feature end'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
    18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK

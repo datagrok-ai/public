@@ -3,7 +3,10 @@ Feature: Filter panel entry points
   How cards get into the panel, move in it and get out of it: the header's column picker, the
   panel's own Add Filter menu, a pinned grid header dropped on the panel (GROK-19516) and the Add
   filter link of a column's context panel all insert at the top, and a card from that link is
-  suspended by its own checkbox like any other (GROK-18765); a card dragged by its caption moves
+  suspended by its own checkbox like any other (GROK-18765) — every filter change makes the
+  filtered rows the current object, so the column is clicked again before its Filter section is
+  collapsed, which must happen: a section left expanded keeps a filter of its own on the column
+  and the last scenario's "all rows pass" would then fail; a card dragged by its caption moves
   above another and nothing filters differently; a card's close icon removes it and
   releases whatever it was keeping, "Remove others" drops the cards that restrict nothing while
   "Remove All" empties the panel; a panel that works its cards out again leaves out a column hidden
@@ -119,6 +122,8 @@ Feature: Filter panel entry points
     And the "selected categories of DIS_POP" reading of filter panel should be "RA"
     And the "filters" reading of filter panel should be 2
     And counter of filter panel should have text "2"
+    When user clicks on the "header DIS_POP" area of grid
+    Then the context panel should show "DIS_POP"
     When user collapses "Filter" section in context panel
     Then no errors should have been logged
 

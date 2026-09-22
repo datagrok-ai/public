@@ -16,8 +16,8 @@ Feature: Annotation regions
   before the click lands, so no honest gesture reaches it. The count axis is
   not claimed about: a right-click there carries the viewer's whole menu, where the viewer's own
   "Annotations" property group has the same name, so the difference cannot be stated honestly at
-  the label level. Region hover and click selection are
-  the manual checks of `annotation-regions-ui.md` and stay manual.
+  the label level. Region hover and click selection are covered by
+  `annotation-region-interaction.feature`.
 
   Background:
     Given user is logged in

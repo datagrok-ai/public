@@ -408,9 +408,10 @@ function install(): void {
     return {colors, ink, hue};
   };
   const areasOf = (v: any): Record<string, Box> => v.getWidgetStatus()?.hitAreas ?? {};
+  const keyIn = (areas: Record<string, Box>, name: string): string | undefined => Object.keys(areas).find((k) => norm(k) === norm(name));
   const areaKey = (v: any, name: string): string => {
     const areas = areasOf(v);
-    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    const key = keyIn(areas, name);
     if (!key)
       throw new Error(`${v.type} has no "${name}" area right now; it has: ${Object.keys(areas).join(', ') || 'none'}`);
     return key;
@@ -511,7 +512,7 @@ function install(): void {
   const areaRectChange = (el: Element, name: string): {before?: Box; now?: Box; has: string[]} => {
     const v = viewerOf(el);
     const areas = areasOf(v);
-    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    const key = keyIn(areas, name);
     const before = snapshots.get(v.root)?.rects ?? {};
     return {before: before[norm(name)], now: key === undefined ? undefined : areas[key], has: Object.keys(areas)};
   };
@@ -727,7 +728,7 @@ function install(): void {
   /** A named area, "overlap of <A> and <B>" (the rectangle two bands share), or an edge or
    * corner of either — the phrases nest, so "left edge of overlap of …" is a strip of the overlap. */
   const edgeOf = (areas: Record<string, Box>, name: string): Box | undefined => {
-    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    const key = keyIn(areas, name);
     if (key !== undefined)
       return areas[key];
     const o = OVERLAP.exec(name.trim());
@@ -758,10 +759,9 @@ function install(): void {
     const v = viewerOf(el);
     if (beforeChange)
       baseline(el);
-    const areas: Record<string, Box> = v.getWidgetStatus()?.hitAreas ?? {};
+    const areas = areasOf(v);
     const has = Object.keys(areas);
-    const key = has.find((k) => norm(k) === norm(name));
-    const r = key ? areas[key] : edgeOf(areas, name);
+    const r = edgeOf(areas, name);
     if (!r)
       return {has};
     const cv = canvasBox(v);

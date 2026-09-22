@@ -86,7 +86,21 @@ The `bdd/grid-gaps` branch (2026-09-14) carried two tags for defects that master
 | [Column tooltip set to Columns — GROK-20890](../../packages/UsageAnalysis/bdd/features/viewers/grid/grid-viewer.feature) | `Invalid argument (index): null` from a pointer on the header of the column. | `client/d4/lib/src/viewers/grid/features/grid_tooltip.dart`: the Columns branch is gated on a data cell. |
 | [Tags column — GROK-20888](../../packages/PowerGrid/bdd/features/grid/summary-columns.feature) | The grid body painted over in the chip colour. | [Tags renderer](../../packages/PowerGrid/src/cell-types/tags-cell-renderer.ts): `beginPath` before `roundRect`. The scenario, kept apart for the tag, is now the last one of the summary-columns feature. |
 
-No `@known-failure` tag remains in any project.
+No `@known-failure` tag remained in any project after that date.
+
+## Tags added on 2026-09-21 (`bdd/annotation-regions`)
+
+Three scenarios describe one defect: a const-band region's title is drawn only in the strip the
+layout reserves above or beside the plot; when the strip is not there, the in-data fallback
+`AnnotationRegionsUtils.renderHeader` documents draws nothing, so the `region <name> title` hit
+area and the `region titles shown` count are missing. Checked in the review run of 2026-09-22
+(core master `8d44e62f93`): each scenario stops at the step named here.
+
+| Scenario | Stops at | Was |
+| --- | --- | --- |
+| [A band title that does not fit — GROK-20388](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-region-titles.feature) | `the "region titles shown" reading … should be 1` | 0: the strip is not reserved (`_stripTitleFits` is false) and no title is drawn in the data. |
+| [Auto Layout off](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-region-titles.feature) | `the "region Adults title" area … should lie inside the "view" area` | No such area: `autoLayout=false` gates the reserve off and the title goes with it. |
+| [A resized line chart keeps its band title](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-regions-2d-viewers.feature) | `line chart viewer should have a "region Adults title" area` | No such area after the resize to 800 by 500; the strip is dropped with it. |
 
 ## Validation
 
