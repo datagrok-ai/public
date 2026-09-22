@@ -14,7 +14,6 @@ import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {keysOf, withKeys} from '../../../src/runtime/gestures.js';
 import {atFeatureEnd, takeErrors} from '../../../src/runtime/harness.js';
-import {escapeRegExp} from '../../../src/runtime/locate.js';
 import * as v from '../../../src/runtime/viewers.js';
 
 declare const grok: any;
@@ -347,23 +346,11 @@ export const readingBetween = Then('the {string} reading of {widget} should be b
     }, {message: `"${name}" reading of ${target.phrase} should be between ${lo} and ${hi}`}).toBe(true);
   }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
 
-export const pickColorSwatch = When('user picks the color {string} in the color picker dialog', async (page: Page, hex: string) => {
-  const swatch = page.locator(`.d4-dialog [name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
-  await expect(swatch, `a "${hex}" swatch in the open colour dialog`).toBeVisible();
-  await swatch.click();
-}, {tier: 'ui', description: 'a swatch of the open colour dialog by its #rrggbb — the dialog every categorical legend opens'});
-
-export const pickPropertyColor = When('user picks the color {string} for the {string} property in the context panel', async (page: Page, hex: string, caption: string) => {
-  const row = page.locator('.grok-prop-panel tr.property-grid-item')
-    .filter({has: page.locator('.property-grid-item-name-text', {hasText: new RegExp(`^\\s*${escapeRegExp(caption)}\\s*$`, 'i')})})
-    .filter({visible: true}).first();
-  await expect(row, `a "${caption}" property row in the context panel`).toBeVisible();
-  await row.locator('[name^="prop-view-"]').first().click();
-  // the editor opens as a popup of the page, not inside the panel
+export const pickColorSwatch = When('user picks the color {string} in the color picker( dialog)', async (page: Page, hex: string) => {
   const swatch = page.locator(`[name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
-  await expect(swatch, `a "${hex}" swatch in the colour editor of "${caption}"`).toBeVisible();
+  await expect(swatch, `a "${hex}" swatch in the open colour picker`).toBeVisible();
   await swatch.click();
-}, {tier: 'ui', description: 'opens the colour editor of a property row of the context panel\'s property grid and clicks the swatch of that #rrggbb'});
+}, {tier: 'ui', description: 'a swatch of the open colour picker by its #rrggbb — the dialog a categorical legend opens, or the popup the editor of a colour property opens ("user clicks on editor of \\"Back Color\\" property in context panel")'});
 
 export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
   await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);

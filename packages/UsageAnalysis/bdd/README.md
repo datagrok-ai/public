@@ -43,7 +43,7 @@ The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the 
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
 
-The grid folder, `features/viewers/grid/`, holds nine features on demog-1000. They replace the
+The grid folder, `features/viewers/grid/`, holds ten features on demog-1000. They replace the
 TestTrack grid scenarios `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid.md`,
 `grid-appearance-summary-persist.md`, `grid-cell-appearance.md`, `grid-columns-style-persist.md`,
 `grid-dialogs-groups.md`, `grid-edit-clipboard.md`, `grid-rows-select-filter-navigate.md` and the
@@ -62,6 +62,7 @@ PowerGrid and are claimed in `packages/PowerGrid/bdd/features/grid/summary-colum
 | `grid-column-groups` | Group columns... from the Context Panel, the band (`group <name>`) in the group's colour, clicks on it (GROK-17505, GROK-17442, GROK-18213), the groups with their colours after a layout saved to the server and the groups after a project (GROK-17441, the project without their colours), regrouping and ungrouping |
 | `grid-persistence` | four colour codings, row height, missing-value colour, min/max stats rows, a moved, a hidden, a widened and a pinned column, two pinned rows and a sort, all back from a layout loaded over a fresh view and from a project |
 | `grid-forms-column` | Design a Form... (the designer view, Close and Apply, Edit), Default HTML Form, Custom HTML Form... |
+| `grid-context-menu` | a right click below the current row makes the clicked row current and keeps the scroll; the Current Value actions act on the right-clicked cell — Chem's Copy as SMILES on the `smiles` demo file, Helm's Edit Helm... on the `helm-peptides` one (the stand needs both packages) |
 `features/viewers/filter-panel/` stands in for the TestTrack scenarios of
 `files/TestTrack/Viewers/FilterPanel/` — `panel-core-ladder.md`, `add-remove-entry-points.md`,
 `filter-type-selection-modes.md`, `hierarchical-and-combined-boolean.md`,

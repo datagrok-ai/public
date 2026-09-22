@@ -11,17 +11,13 @@ Feature: A second grid as a viewer, and column tooltips
   its first 100 rows as the second table (`grid.md` uses spgi-100; operator decision D8) - a table
   with the same columns, so the rebind is shown by the row count alone.
 
-  The tooltip scenario carries `@known-failure` for GROK-20890 and fails on its last step, the
-  zero-error floor: with the current column's tooltip set to Columns and a non-empty set of columns
-  chosen in the dialog (the dialog opens with none ticked, and with none the defect stays away), a
-  pointer resting on the header of that same column throws `Invalid argument (index): null`, shows
-  no tooltip at all and raises no balloon. A cell of the column is clean, another column's header is
-  clean, and Default is clean. `grid_tooltip.dart:27-30` takes the Columns branch and builds the row
-  tooltip table from `gcd.tableRow`, which a header has none of, before line 37 asks whether the
-  cell is a column header at all. The scenario walks that path itself - Columns, All, OK, then the
-  AGE header - so the mark guards the defect and not just the feature; take the mark off when the
-  ticket is fixed. The library inverts `@known-failure` only inside a `@journey`, which this feature
-  is.
+  The tooltip scenario walks the path of GROK-20890: with the current column's tooltip set to
+  Columns and a non-empty set of columns chosen in the dialog (the dialog opens with none ticked,
+  and with none the defect stayed away), a pointer resting on the header of that same column threw
+  `Invalid argument (index): null` — `grid_tooltip.dart` took the Columns branch and built the row
+  tooltip from a table row a header has none of. Fixed in the core on 2026-09-15 (the branch is
+  gated on a data cell); the scenario carried `@known-failure` until the fix reached the stand, and
+  its zero-error floor — Columns, All, OK, then the AGE header — now guards the fix.
 
   Not translated, and why: from `grid.md` "Column Tooltip Settings", that None shows no tooltip -
   the tooltip appears on a debounce after the pointer rests, and no signal says a hover has been
@@ -66,7 +62,6 @@ Feature: A second grid as a viewer, and column tooltips
     When user closes all views
     Then no errors should have been logged
 
-  @known-failure
   Scenario: The column tooltip menu marks the setting that is on, and Columns lists the chosen columns (GROK-20890)
     Given user opens demog-1000 dataset
     When user right-clicks on the "header AGE" area of grid

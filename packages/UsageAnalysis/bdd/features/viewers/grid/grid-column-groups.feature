@@ -21,15 +21,15 @@ Feature: Grid column groups
   a click in the middle of that area lands on a column outside the group and selects every
   ungrouped column instead (measured on dev, reported to the operator).
 
-  The first group goes through one layout round-trip before the second group is made. Expanding a
+  The first group goes through one layout round-trip before the second group is made: the
+  round-trip is a layout and not the project, because a project loses the colours (below) and both
+  colours have to be on the grid when the layout of the second round-trip is saved. Expanding a
   pane of the Context Panel stamps `AppEvents.propertyEdited`, and for the next two seconds the
-  platform drops every change of the current object for good (`setCurrentObject`, events.dart): a
-  second selection made in that window leaves the panel on the first one, and its Group columns...
-  groups the columns that are no longer selected (measured on dev: the whole first scenario takes
-  1.3 s; reported to the operator). After the round-trip the panes are already expanded, nothing
-  stamps that time again, and the panel follows the selection. The round-trip is a layout and not
-  the project, because a project loses the colours (below) and both colours have to be on the
-  grid when the layout of the second round-trip is saved.
+  platform dropped every change of the current object (`setCurrentObject`, events.dart), so a
+  header selection made in that window left the panel on the previous object — on a fast worker
+  even on the one the last journey ended with. Fixed in the core on 2026-09-22
+  (`grid_column_selection.dart`: a header click, with a modifier too, clears the stamp as a cell
+  click already did), so the panel follows every header selection here.
 
   The colours are claimed on the layout round-trip, where they survive: a group's colour lives in
   the table tag `.columnGroups`, which the table view keeps in its layout's user data

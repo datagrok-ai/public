@@ -148,7 +148,8 @@ Feature: Grid cell appearance
     Then the context panel should show "SEVERITY"
     Given Style accordion header in context panel is expanded
     And Content accordion header in context panel is expanded
-    When user picks the color "#FFA500" for the "Back Color" property in the context panel
+    When user clicks on editor of "Back Color" property in context panel
+    And user picks the color "#FFA500" in the color picker
     Then the "color of cell 1 of SEVERITY" reading of grid should be "#ffa500"
     And the "color of cell 2 of SEVERITY" reading of grid should be "#ffa500"
     When user picks "Color Coding > Categorical" from the context menu of the "header SEVERITY" area of grid

@@ -29,10 +29,10 @@ Feature: Grid appearance and geometry across a layout and a project
   Missing Value Color are set as grid properties, not in the gear panel; the layout is saved with
   `dapi.layouts.save`, not from the ribbon; the project goes through the API (D1).
 
-  Not translated, and why: whether the min and max stats rows are drawn, and what they show
-  (`grid-ui.md` "Column Stats - Visual Verification") — the grid reports no reading or area for its
-  special rows, so the stats-row scenario claims only that the columns stay as they were and
-  nothing is logged - a floor, not a claim that could fail if the rows were missing. A project holding a table of extracted rows (`grid.md` "Extracted Rows in a
+  Not translated, and why: what the min and max stats rows show (`grid-ui.md` "Column Stats -
+  Visual Verification") — the grid reports which stats rows it draws as `stats rows` (added in the
+  review of 2026-09-22), not their values or areas, so the stats-row scenario claims the two rows,
+  the columns staying as they were and nothing logged. A project holding a table of extracted rows (`grid.md` "Extracted Rows in a
   Saved Project", GROK-19717): the library's project step saves the current view and its table,
   and a project with every open table is deferred by operator decision D2. The column hidden is RACE, not WEIGHT as in
   the TestTrack spec: WEIGHT carries the linked colouring, and a hidden column has no cells whose
@@ -75,9 +75,11 @@ Feature: Grid appearance and geometry across a layout and a project
 
   Scenario: The min and max stats rows leave the columns as they were
     When user remembers the "column order" reading of grid
-    And user picks "Add > Column Stats > min" from the context menu of the "cell 2 of AGE" area of grid
+    Then the "stats rows" reading of grid should be ""
+    When user picks "Add > Column Stats > min" from the context menu of the "cell 2 of AGE" area of grid
     And user picks "Add > Column Stats > max" from the context menu of the "cell 2 of AGE" area of grid
-    Then the "column order" reading of grid should be as remembered
+    Then the "stats rows" reading of grid should be "min, max"
+    And the "column order" reading of grid should be as remembered
     And grid should show 1000 rows
     And no errors should have been logged
 

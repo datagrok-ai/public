@@ -76,6 +76,16 @@ its cause and the scenario that carried the tag passes untagged. Core paths are 
 | [Global permissions of a role — GROK-20902](../../packages/UsageAnalysis/bdd/features/users-groups-roles/roles-assignment.feature) | The pane listed every group's grants. | `server/datlas/lib/src/services/privileges_service.dart`: `getPermissions(groupId, global: true)` returns the group's own grants. |
 | [Deleting a role keeps its grants — GROK-20904](../../packages/UsageAnalysis/bdd/features/users-groups-roles/roles-assignment.feature) | The delete violated `permissions_user_group_id_fkey`. | `server/db/db_up/20260922_0_permissions_group_cascade.sql` (and `init_db.sql`): the key cascades, so a group's grants are deleted with it; a group delete already drops the permission caches. |
 
+## Tags retired on 2026-09-22
+
+The `bdd/grid-gaps` branch (2026-09-14) carried two tags for defects that master fixed on
+2026-09-15, before the branch was merged; both scenarios passed untagged in the review run.
+
+| Scenario | Was | Fix |
+| --- | --- | --- |
+| [Column tooltip set to Columns — GROK-20890](../../packages/UsageAnalysis/bdd/features/viewers/grid/grid-viewer.feature) | `Invalid argument (index): null` from a pointer on the header of the column. | `client/d4/lib/src/viewers/grid/features/grid_tooltip.dart`: the Columns branch is gated on a data cell. |
+| [Tags column — GROK-20888](../../packages/PowerGrid/bdd/features/grid/summary-columns.feature) | The grid body painted over in the chip colour. | [Tags renderer](../../packages/PowerGrid/src/cell-types/tags-cell-renderer.ts): `beginPath` before `roundRect`. The scenario, kept apart for the tag, is now the last one of the summary-columns feature. |
+
 No `@known-failure` tag remains in any project.
 
 ## Validation

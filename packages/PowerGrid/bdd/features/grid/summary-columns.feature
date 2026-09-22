@@ -23,21 +23,24 @@ Feature: Grid summary columns
   summary cell's own content is claimed through the Context Panel, which lists the value of every
   column the summary column draws, and the source column is renamed in its Column Properties dialog.
   The Background waits for the package autostarts: the package subscribes its rename and remove
-  handler to every grid added after its own autostart, which lands seconds after the shell, so a
-  table opened before it gets no handler and a renamed column silently drops out of its summary
-  column (measured on dev as the first scenario of a fresh page; reported to the operator). The
+  handler to every grid added after its own autostart, which lands seconds after the shell; a
+  table opened before it got no handler until the review of 2026-09-22 (the autostart now attaches
+  to the open table views too), and the wait keeps the scenarios independent of that timing. The
   GROK-19942 scenario removes its Tags column before it ends: left on the view whose CONTROL was
   removed, it made the next table opened on the page log "NullError: method not found: 'Q' on null"
   (4 runs of 4 on dev, never without that scenario before; reported to the operator). The package's
-  remove handler does not reach a Tags column at all: it looks for the settings under the grid
-  column's cell type, `tags`, where the Tags renderer keeps them under `Tags`, so the Tags column
-  keeps naming CONTROL after it is gone (read on dev; reported to the operator) and the GROK-19942
-  claim rests on the renderer skipping a missing column. Which rows a Tags column marks is claimed in
-  `summary-columns-tags.feature`, a feature of its own because it carries `@known-failure` for
-  GROK-20888 (a Tags column paints the grid over in one colour instead of drawing a tag in the rows
-  that carry the flag), and the library inverts that tag only inside a `@journey`. The grid
+  rename and remove handler used to skip a Tags column: it looked the settings up under the grid
+  column's cell type, which the grid reports in lower case, where the Tags renderer keeps them under
+  `Tags` — fixed in review on 2026-09-22 (`src/package.ts` resolves the renderer's own key); the
+  settings are not read here, since a Tags cell puts nothing in the Context Panel, so the
+  GROK-19942 claim still rests on the renderer skipping a missing column. Which rows a Tags
+  column marks is the last scenario: it carried `@known-failure` for GROK-20888 (a Tags column
+  painted the grid over in one colour) until the fix of 2026-09-15 reached the stand; the marked
+  cell is claimed as painted — its chip is one hue on white — and the flood is what the white
+  claims on the neighbouring cells would catch. The grid
   reports `cell type of <col>` for the columns it draws, so the round-trip scenario reads the first
-  three summary columns, walks the current cell to the last one, and reads the rest.
+  three summary columns, walks the current cell to the last one so the rest scroll into view, and
+  reads them; the current column is not claimed there, since a virtual column is no table column.
 
   Background:
     Given user is logged in
@@ -148,7 +151,7 @@ Feature: Grid summary columns
     And user presses ArrowRight
     And user presses ArrowRight
     And user presses ArrowRight
-    Then the "current column" reading of grid should be "Confidence Interval"
+    Then grid should have a "header Confidence Interval" area
     And the "cell type of VlaaiVis" reading of grid should be "vlaaivis"
     And the "cell type of Radar" reading of grid should be "radar"
     And the "cell type of Smart Form" reading of grid should be "smartform"
@@ -167,10 +170,24 @@ Feature: Grid summary columns
     And user presses ArrowRight
     And user presses ArrowRight
     And user presses ArrowRight
-    Then the "current column" reading of grid should be "Confidence Interval"
+    Then grid should have a "header Confidence Interval" area
     And the "cell type of VlaaiVis" reading of grid should be "vlaaivis"
     And the "cell type of Radar" reading of grid should be "radar"
     And the "cell type of Smart Form" reading of grid should be "smartform"
     And the "cell type of Tags" reading of grid should be "tags"
     And the "cell type of Confidence Interval" reading of grid should be "confidenceinterval"
+    And no errors should have been logged
+
+  Scenario: A Tags column marks the rows that carry the flag and leaves the rest of the grid alone (GROK-20888)
+    When user picks "Add > Summary Columns > Sparklines" from the context menu of the "cell 2 of USUBJID" area of grid
+    And user picks "Add > Summary Columns > Tags" from the context menu of the "cell 2 of Sparklines" area of grid
+    Then the "cell type of Tags" reading of grid should be "tags"
+    And the "cell 1 of Tags" area of grid should contain the color "#FFFFFF"
+    And the "cell 3 of Tags" area of grid should be painted
+    And the "cell 1 of Tags" and "cell 3 of Tags" areas of grid should be painted in different colors
+    And the "cell 1 of Sparklines" area of grid should contain the color "#FFFFFF"
+    And the "cell 1 of SEVERITY" area of grid should contain the color "#FFFFFF"
+    And the "text of cell 1 of SEVERITY" reading of grid should be "High"
+    And the "text of cell 1 of CONTROL" reading of grid should be "false"
+    And the "text of cell 3 of CONTROL" reading of grid should be "true"
     And no errors should have been logged
