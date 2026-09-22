@@ -136,8 +136,15 @@ export const collectionHolds = Then('the {string} monomer collection should hold
 }, {description: 'the collection file on the server, its symbols in order, comma-separated'});
 
 export const noSuchCollection = Then('there should be no {string} monomer collection on the server', async (page: Page, name: string) => {
-  await expect.poll(() => page.evaluate(async (n) => {
-    const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
-    return (await helper.listMonomerCollections()).map((f: string) => f.replace(/\.json$/i, ''));
-  }, name), {message: 'the collections on the server'}).not.toContain(name.replace(/\.json$/i, ''));
+  // the file itself, not the folder listing: the listing keeps a deleted file for 15 s and more
+  const file = `System:AppData/Bio/monomer-collections/${name.replace(/\.json$/i, '')}.json`;
+  await expect.poll(() => page.evaluate((f) => grok.dapi.files.exists(f), file),
+    {message: `${file} on the server`}).toBe(false);
 });
+
+export const noSuchLibrary = Then('there should be no {string} monomer library on the server', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(async () => {
+    const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+    return (await Promise.all((await helper.getProviders()).map((provider: any) => provider.listLibraries()))).flat();
+  }), {message: 'the libraries every storage lists'}).not.toContain(name);
+}, {description: 'no storage lists the file any more — what Delete promises beyond the checkbox'});

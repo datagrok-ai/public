@@ -234,13 +234,19 @@ export const clickPlainCheckbox = When('user clicks the plain checkbox in the {s
    the shell as it expects it. */
 
 export const browsePanelOpen = Given('the browse panel is open', async (page: Page) => {
-  await page.evaluate(() => {
+  const shown = await page.evaluate(() => {
+    const was = grok.shell.windows.showBrowse;
     grok.shell.windows.simpleMode = false;
     grok.shell.windows.showBrowse = true;
+    return was;
   });
   await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});
-  atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
-}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
+  // showBrowse is a user setting: left on, it opens the panel in every later page of the account
+  atFeatureEnd(page, () => page.evaluate(([simple, browse]) => {
+    grok.shell.windows.showBrowse = browse;
+    grok.shell.windows.simpleMode = simple;
+  }, [shellSimpleMode(), shown] as const));
+}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts the panel and simple mode back at feature end'});
 
 export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: Page) => {
   await page.evaluate(() => {

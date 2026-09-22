@@ -3,6 +3,11 @@ Feature: Select peptides through WebLogo headers
   Header glyphs select the matching peptides and update the selection and distribution panes.
   Shift adds another position and Control toggles it off again.
 
+  Not checked: the grid's own selection highlight (the claims read the selection itself, row by
+  row, which is what the grid draws), and the manual case's "the Sequence Variability Map
+  highlights the picked cell" — the map keeps its own selection and does not mirror WebLogo picks
+  (model.ts), so the feature claims it stays empty.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized
@@ -34,6 +39,7 @@ Feature: Select peptides through WebLogo headers
     And Most Potent Residues viewer should report no error
     When user expands Distribution pane in context panel
     Then Distribution pane in context panel should contain text "Mean difference"
+    And Distribution pane in context panel should contain text "299 ("
     And Distribution pane in context panel should not contain text "No distribution"
     When user expands Selection pane in context panel
     Then grid in Selection pane in context panel should show 299 rows
@@ -49,6 +55,9 @@ Feature: Select peptides through WebLogo headers
     And context panel should contain text "314 selected rows"
     And context panel should contain text "2:A, 4:Q"
     And the "selected monomer-positions" reading of Sequence Variability Map viewer should be ""
+    When user expands Distribution pane in context panel
+    Then Distribution pane in context panel should contain text "Mean difference"
+    And Distribution pane in context panel should contain text "314 ("
     When user expands Selection pane in context panel
     Then grid in Selection pane in context panel should show 314 rows
     When user collapses Selection pane in context panel
@@ -61,6 +70,9 @@ Feature: Select peptides through WebLogo headers
     And only rows where "2" is "A" should be selected
     And context panel should contain text "2:A"
     And context panel should not contain text "4:Q"
+    When user expands Distribution pane in context panel
+    Then Distribution pane in context panel should contain text "299 ("
+    And Distribution pane in context panel should not contain text "314 ("
     When user expands Selection pane in context panel
     Then grid in Selection pane in context panel should show 299 rows
     When user collapses Selection pane in context panel

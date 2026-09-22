@@ -4,6 +4,8 @@ Feature: Comparing, scanning and annotating antibody sequences
   them into a difference column; Scan Liabilities marks the motifs its rules find and reports
   them per row or as a count; Manage Annotations lists what a column carries and drops it.
 
+  Not translated: nothing of the annotate-dialogs spec is left out.
+
   Background:
     Given user is logged in
     And user opens antibodies dataset keeping the first 40 rows as "antibodies"

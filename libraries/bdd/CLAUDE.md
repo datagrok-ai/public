@@ -51,8 +51,10 @@ WebLogo glyphs Peptides draws in grid headers).
   per run: packages depend by path (`file:../../libraries/bdd`) and `grok-bdd link` makes the
   package's Playwright the library's copy (redo after `npm ci`).
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
-  resets the shell (Escape for dialogs and menus, `ui.tooltip.hide`, notices removed, `closeAll`,
-  Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
+  resets the shell (first waiting, up to 60 s, until the task bar has no progress entry — an
+  analysis a scenario left running reopens its closed table and makes it current in the next feature;
+  a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
+  menus, `ui.tooltip.hide`, notices removed, `closeAll`, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
@@ -192,7 +194,10 @@ WebLogo glyphs Peptides draws in grid headers).
 - Menus: a Dart group opens on the first pointer move; the popup mirrors every property under a
   zero-size "Properties..." group, so labels occur twice — `openGroup` waits on the first visible
   candidate and tries every one; the top menu bar folds into a "more" group under 1920 px, its
-  vertical groups are entered with two moves inside the item, Escape does not close it.
+  vertical groups are entered with two moves inside the item, Escape does not close it. The bar
+  rebuilds when a package's entries arrive, with no signal that it is done: a pick can find its
+  leaf and then click a collapsed group, so `pickTopMenu` makes the whole pick once more from the
+  bar (a core "menu settled" signal would remove that).
 - The Dart property grid's choice editor is lazy: its `<select>` enters the value cell only once
   that cell is clicked (`select` clicks it first). The Save project dialog's name field is a bare
   `<input>` (aria-label "Name"), which `text input` reaches. Typing into a column picker's search

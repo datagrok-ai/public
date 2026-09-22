@@ -2,6 +2,7 @@
 Feature: Manually align a peptide
   Apply updates the stored sequence and the corresponding monomer columns.
   Reset discards only the unsaved text and preserves the last applied sequence.
+  Apply recomputes the monomer-position statistics the viewers and the WebLogo headers draw.
 
   Background:
     Given user is logged in
@@ -33,6 +34,8 @@ Feature: Manually align a peptide
     And no error or warning balloon should have been shown
 
   Scenario: Apply changes the intended position without shifting adjacent monomers
+    Then the "count of cell M at 2" reading of Sequence Variability Map viewer should be 9
+    And the "count of cell V at 2" reading of Sequence Variability Map viewer should be 3
     When user enters "NH2-V-A-N-T-T-Y-K-N-Y-R-N-N-L-L--COOH" into Sequence text area in "Manual Alignment" pane
     Given user listens for "peptides-sar-ready" custom event
     When user clicks on Apply button in "Manual Alignment" pane
@@ -47,6 +50,8 @@ Feature: Manually align a peptide
     And the open tableview should have 1 Sequence Variability Map viewer
     And the open tableview should have 1 Most Potent Residues viewer
     And Sequence Variability Map viewer should report no error
+    And the "count of cell M at 2" reading of Sequence Variability Map viewer should be 8
+    And the "count of cell V at 2" reading of Sequence Variability Map viewer should be 4
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -74,7 +79,9 @@ Feature: Manually align a peptide
   Scenario: The edited alignment remains selectable from its WebLogo header
     When user clicks on the "V at 2" area of grid
     Then only rows where "2" is "V" should be selected
-    And Distribution pane in context panel should be present
-    And Selection pane in context panel should be present
+    When user expands Distribution pane in context panel
+    Then Distribution pane in context panel should contain text "Mean difference"
+    When user expands Selection pane in context panel
+    Then Selection pane in context panel should not contain text "No compounds selected"
     And no errors should have been logged
     And no error or warning balloon should have been shown

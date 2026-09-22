@@ -2,7 +2,7 @@
    smoke feature that passes on any stand, the manifest entries, the editor settings. Run in the
    package directory (where package.json is). Never overwrites: what exists is reported as such. */
 import {appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
-import {join, relative, sep} from 'node:path';
+import {dirname, join, relative, sep} from 'node:path';
 import {listFiles} from './discover.js';
 import {LIB_ROOT, PACKAGE_NAME} from './project.js';
 
@@ -25,13 +25,25 @@ import {STATES as STATE_LIST} from './states.js';
 
 const STATES = STATE_LIST.join('|');
 
-/** The library as a dependency: by path when init runs from a checkout of it (the monorepo, until
+/** The library as a dependency: `workspace:^` inside its pnpm workspace, by path from another checkout (until
  * it is on npm — npm links the directory and `npm ci` needs no registry), by version otherwise. */
 function libraryVersions(packageDir: string): {bdd: string; playwright: string} {
   const lib = JSON.parse(readFileSync(join(LIB_ROOT, 'package.json'), 'utf8')) as Manifest;
   const checkout = !LIB_ROOT.split(sep).includes('node_modules');
-  const bdd = checkout ? `file:${relative(packageDir, LIB_ROOT).split(sep).join('/')}` : `^${lib.version as string}`;
+  const workspace = workspaceRoot(LIB_ROOT);
+  const inWorkspace = workspace !== null && !relative(workspace, packageDir).startsWith('..');
+  const bdd = !checkout ? `^${lib.version as string}` :
+    inWorkspace ? 'workspace:^' : `file:${relative(packageDir, LIB_ROOT).split(sep).join('/')}`;
   return {bdd, playwright: lib.devDependencies?.['@playwright/test'] ?? '>=1.40.0'};
+}
+
+function workspaceRoot(dir: string): string | null {
+  for (let d = dir; ; d = dirname(d)) {
+    if (existsSync(join(d, 'pnpm-workspace.yaml')))
+      return d;
+    if (dirname(d) === d)
+      return null;
+  }
 }
 
 function indentOf(json: string): string {

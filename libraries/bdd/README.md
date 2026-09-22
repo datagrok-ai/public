@@ -233,11 +233,13 @@ list is the reference; this is the map:
   and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
   `remove button` and `checkbox` parts, typed into through `membership search`.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
-  filter set and checked row by row, cells, calculated and renamed columns, colour coding,
+  filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
+  equal row by row), calculated and renamed columns, colour coding,
   other open tables, links between tables, the filter panel's cards through its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
-- **Package functions and their results** (`platform/functions.ts`), **custom platform events**
+- **Package functions and their results** (`platform/functions.ts`: empty, text, a number or a
+  range, methods, a list, a table, a returned column's length, rows and prefix), **custom platform events**
   and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
   (`common/steps.ts`).
 - **The `viewers` tier** (below).
@@ -289,12 +291,13 @@ The `viewers` tier drives viewers the way the platform sees them:
 - **Pixels** — `should have repainted [by at least N pixels]`, `less/more ink than before`, an
   area's own ink and repaint, colours in an area (by hue, a shade of anti-aliasing allowed), two
   areas alike or different, the selection highlight (with a margin the selection warrants), the
-  value range and the colour scale against before.
+  value range and the colour scale against before; an area `painted in no color` (greys only).
 - **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
   collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
   against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
-  logged`, `no error or warning balloon should have been shown`.
+  logged`, `no error or warning balloon should have been shown`; a balloon that should have been
+  shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
   inner viewers, card readings, lassos, cross-widget drags.

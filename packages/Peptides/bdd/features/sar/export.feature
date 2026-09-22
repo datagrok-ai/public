@@ -3,6 +3,10 @@ Feature: Export peptide SAR results
   The two SAR viewers export monomer counts and mutation pairs as ordinary tables,
   including the original peptide identifiers when selected in the export dialog.
 
+  The expectations are computed from the source sequences and activities, not read from the
+  viewers. The manual case's leading "Monomer" column is called AAR, and its activity columns
+  "Seq 1 IC50"/"Seq 2 IC50", in the product.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized

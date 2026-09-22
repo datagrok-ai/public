@@ -245,6 +245,16 @@ export async function resetShell(page: Page): Promise<void> {
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)
     return;
+  // work a scenario started and never awaited (a known failure ends at its first failing claim) must
+  // not finish on the next feature's shell: an analysis that ends reopens its table and makes it
+  // current. The platform's own progress entries say when that work is over; a command's
+  // onAfterRunAction can come before it.
+  await page.evaluate(() => (window as any).__bdd?.settleCommand?.(60000)).catch(() => undefined);
+  const busy = await page.waitForFunction(() => document.querySelectorAll('.d4-task-bar-entry').length === 0, null,
+    {timeout: 60000, polling: 100}).then(() => '').catch(() => page.evaluate(() => Array.from(document.querySelectorAll('.d4-task-bar-entry'))
+    .map((e) => (e.textContent ?? '').trim()).join(' | ')).catch(() => '?'));
+  if (busy)
+    console.warn(`bdd: still running 60 s into the shell reset: ${busy}`);
   const open = (): Promise<number> => page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
   for (let i = 0; i < 3 && await open() > 0; i++)
     await page.keyboard.press('Escape').catch(() => undefined);

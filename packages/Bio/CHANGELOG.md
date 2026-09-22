@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: BDD suite closed its gaps against the TestTrack cases and the old Playwright specs: HELM and MSA runs of Analyze and Convert, the empty current row (GROK-16111), Molecules to HELM, the FASTA file handler and exporter, project round-trips, monomer library CRUD, BILN rendering; every feature states what it does not translate
 * Fixed sequence and monomer context panels staying on the previous cell when a grid cell is clicked within two seconds of expanding a section (core grid fix).
 * Tests: Atomic-level conversion selects the standard HELM library so custom monomers on the stand cannot change the fixture's chemistry, and restores the previous selection afterwards.
 * Tests: Monomer library uploads support stands with only Files storage as well as stands with multiple storage providers.

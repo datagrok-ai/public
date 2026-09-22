@@ -7,7 +7,7 @@ import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {reasonOf} from './failure.js';
 import {AreaChange, AreaColor, AreaColors, CanvasChange, Range, RangeChange, ScaleChange, ScaleRange} from './viewer-runtime.js';
-import {hitArea, onViewer} from './viewers.js';
+import {hitArea, onViewer, settle} from './viewers.js';
 
 const COLOR_MIN_PX = 10;
 const SIGNIFICANT_PX = 30;
@@ -157,6 +157,16 @@ export async function expectAreaNotColor(page: Page, target: ElementRef, area: s
   const read = await areaColors(page, target, area);
   const count = pixelsNear(read.colors, want);
   expect(count, `the "${area}" area of ${target.phrase} is painted in ${want} (${count} px); ${describeColors(read)}`).toBeLessThan(COLOR_MIN_PX);
+}
+
+/** Greys and white only inside the area, read once the viewer is settled: no saturated color
+ * covers even a few pixels (a stricter floor than the positive claims', which a negative can afford). */
+export async function expectAreaNoHue(page: Page, target: ElementRef, area: string): Promise<void> {
+  await hitArea(page, target, area);
+  await settle(page, target);
+  const read = await areaColors(page, target, area);
+  const hued = read.colors.filter((c) => c.count >= 4 && hsl(c.hex).s >= GREY_SATURATION);
+  expect(hued.map((c) => `${c.hex} (${c.count} px)`), `hued colors in the "${area}" area of ${target.phrase}; ${describeColors(read)}`).toEqual([]);
 }
 
 /** The area is painted in at least `count` hues: colors covering some pixels each, grouped by

@@ -39,13 +39,15 @@
     "@types/wu": "catalog:",
     "eslint-plugin-deprecation": "^3.0.0",
     "eslint-plugin-rxjs": "^5.0.3",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "@datagrok-libraries/bdd": "workspace:^"
   },
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

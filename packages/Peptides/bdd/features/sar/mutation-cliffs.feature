@@ -3,6 +3,10 @@ Feature: Compute and visualize peptide mutation cliffs
   The 200-peptide subset contains 2242 unique pairs differing at exactly one position.
   The map, position chart and export expose the corresponding statistics and peptides.
 
+  Sequence space, the manual pipeline's second clustering path, is switched on in
+  sar/from-top-menu.feature; the cluster statistics are checked against the source rows in
+  sar/tooltips.feature.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized
@@ -25,6 +29,7 @@ Feature: Compute and visualize peptide mutation cliffs
     And the "unique cliff pairs" reading of Sequence Variability Map viewer should be 2242
     And the "count of cell A at 2" reading of Sequence Variability Map viewer should be 59
     And the "mean difference of cell A at 2" reading of Sequence Variability Map viewer should be a finite number
+    And the "p-value of cell A at 2" reading of Sequence Variability Map viewer should be between 0 and 1
     And the "cliffs of cell A at 2" reading of Sequence Variability Map viewer should be 100
     And "2" column should have semantic type "Monomer"
     And the table should have a column "17"
@@ -35,11 +40,15 @@ Feature: Compute and visualize peptide mutation cliffs
     When user clicks on "Invariant Map" checkbox in Sequence Variability Map viewer
     Then the "mode" reading of Sequence Variability Map viewer should be "Invariant Map"
     And the "cell A at 2" area of Sequence Variability Map viewer should be painted
+    And the "cell A at 3" area of Sequence Variability Map viewer should be painted in at least 1 colors
     When user takes a snapshot of Sequence Variability Map viewer
     When user clicks on "Mutation Cliffs" checkbox in Sequence Variability Map viewer
     Then the "mode" reading of Sequence Variability Map viewer should be "Mutation Cliffs"
     And the "cell A at 2" area of Sequence Variability Map viewer should have repainted
     And the "cliffs of cell A at 2" reading of Sequence Variability Map viewer should be 100
+    And the "cell A at 2" area of Sequence Variability Map viewer should be painted in at least 1 colors
+    And the "cliffs of cell A at 3" reading of Sequence Variability Map viewer should be 0
+    And the "cell A at 3" area of Sequence Variability Map viewer should be painted in no color
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 

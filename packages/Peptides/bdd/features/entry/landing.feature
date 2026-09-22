@@ -11,6 +11,7 @@ Feature: Peptides landing view
 
   Scenario: The landing view offers three demos and folds the side panels
     Then the "Peptides" view should be current
+    And there should be 3 visible button in Peptides landing view
     And "Simple demo" button should be visible
     And "Complex demo" button should be visible
     And "HELM demo" button should be visible

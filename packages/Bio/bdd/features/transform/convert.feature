@@ -1,10 +1,16 @@
 @journey @realizes:bio.transform.convert-notation @realizes:bio.calculate.extract-region @realizes:bio.transform.split-to-monomers
 Feature: Transforming a fasta column
   The Bio | Transform and Bio | Calculate commands that derive columns from a sequence column:
-  a sub-region, another notation, one column per monomer position, and the atomic-level molecules.
+  a sub-region, another notation, one column per monomer position (To Atomic Level on fasta is in
+  atomic-level).
   Every command is run on the nine sequences of the fixture (its four blank rows convert to
   PEPTIDE1{}$$$$ and to ---- today, and the claims below are about sequences); each adds what it
   promises and nothing else.
+
+  Not translated, and why: the HELM and MSA cells of the manual matrix are in other-notations,
+  renderers and atomic-level. convert.md's "PolyTool > Convert" row is not a Bio command (the
+  notation conversion is Transform > Convert Sequence Notation, claimed here), and its fasta
+  column names and lengths belong to another fixture than filter_FASTA.
 
   Background:
     Given user is logged in

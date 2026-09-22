@@ -4,13 +4,16 @@ Gherkin features under `features/`, compiled by `@datagrok-libraries/bdd` (`publ
 into the Playwright specs under `generated/` — committed, never edited by hand. They replace the
 TestTrack Bio specs (`packages/UsageAnalysis/files/TestTrack/Bio/`) and the hand-written specs
 under `playwright/`, whose assertions each feature carries or strengthens (the review record is
-the `/bdd-translate` skill under `public/.claude/skills/`). Eighteen features, 101 scenarios,
-1.9 min in one run (2026-09-08, serial or on four workers alike: four shells booting at once take
-30 s each on this stand); one claim is an open product finding, not a test gap: the
-Similarity command through its dialog leaves the non-reference rows of `filter_HELM` empty where
-the same function called directly scores them (`calculate/scoring.feature`). The diversity
-search's worker chunk failures of the first round were the distance-matrix service terminating
-workers it had spawned beyond the job (fixed in `@datagrok-libraries/ml`).
+the `/bdd-translate` skill under `public/.claude/skills/`). The feature count and timings below
+are from the last full run recorded here; the 2026-09-22 gap round (every TestTrack case and old
+spec re-read against the features) added the FASTA file lifecycle, the project round-trips, the
+Monomers view and Match dialog, BILN rendering, the two-column settings of the top menu and the
+server side of library deletion — each feature says in its description what it leaves out and
+why. One claim is an open product finding, not a test gap: the Similarity command through its
+dialog leaves the non-reference rows of `filter_HELM` empty where the same function called
+directly scores them (`calculate/scoring.feature`). The diversity search's worker chunk failures
+of the first round were the distance-matrix service terminating workers it had spawned beyond
+the job (fixed in `@datagrok-libraries/ml`).
 
 The folders, by subject (each is a `grok-bdd run generated/<folder>` unit):
 
@@ -19,12 +22,13 @@ The folders, by subject (each is a `grok-bdd run generated/<folder>` unit):
 | `analyze/`   | sequence-space, activity-cliffs, msa, composition      | the Bio \| Analyze commands: embeddings and the docked scatter plot with the edited method in its description, cliffs over the Activity column, kalign per cluster, the WebLogo's glyphs as hit areas |
 | `transform/` | convert, atomic-level                                  | region, notation (separator, HELM), one Monomer column per position, V3000 molfiles with no MASS=1 on a heavy atom (GROK-15176) |
 | `calculate/` | scoring                                                | Identity is exactly 1 on the reference row, Similarity peaks there, an empty sequence scores to nothing |
-| `search/`    | subsequence, similarity, diversity                     | the substructure filter keeps the one row that contains the query; the neighbour set changes with the current row; a HELM table gets a HELM subset |
+| `search/`    | subsequence, similarity, diversity                     | the substructure filter keeps the one row that contains the query (with two sequence columns the dialog's OK does, in `menu/`); the neighbour set changes with the current row; a HELM table gets a HELM subset |
 | `annotate/`  | annotate, numbering                                    | the difference column is the two chains joined by `#`, liabilities sit where they say, Manage Annotations lists and drops them, Kabat reaches the aligned column |
-| `menu/`      | top-menu                                               | every command under its group, every dialog opens and cancels, the manage views open, the search viewers compute |
+| `menu/`      | top-menu                                               | every command under its group, every dialog opens and cancels, the manage views open with their content, the search viewers compute; on a two-column table Subsequence Search filters by the query, Composition binds the chosen column, To Atomic Level runs with Non-linear off |
 | `service/`   | service-surface                                        | the getters other packages call resolve after init with the methods they use |
-| `render/`    | renderers, cell-actions                                | the grid reports `helm` / `sequence` / `Monomer` as each column's cell type and paints monomers in their colors, a converted column takes its own notation's renderer (GROK-12164); Copy as puts the cell on the clipboard in the chosen notation, the current cell's composition and a monomer's details show on the context panel |
-| `manage/`    | libraries, collections                                 | toggling a library checkbox reloads the monomer library and Bio says so (`bio-monomer-lib-loaded`), Add uploads `fixtures/bdd-test-lib.json` through the file chooser and Delete removes it; a collection is made from the New Collection card, selects on click, is deleted after confirmation |
+| `render/`    | renderers, cell-actions, fasta-file                    | the grid reports `helm` / `sequence` / `Monomer` as each column's cell type (BILN included) and paints monomers in their colors, a converted column takes its own notation's renderer (GROK-12164); Copy puts the cell on the clipboard in each of the four notations, the current cell's composition and a monomer's details show on the context panel; a .fasta file opened from the computer is a detected sequence table (GROK-18616), Download > As FASTA... writes it back and the file opens as the same sequences |
+| `manage/`    | libraries, collections, monomers                       | the shipped library is a valid HELM library; toggling a library checkbox reloads the monomer library and Bio says so (`bio-monomer-lib-loaded`) and leaves the others selected, Add uploads `fixtures/bdd-test-lib.json` through the file chooser and it is still listed when the manager opens again, Delete removes it from every storage; the dialog entry lists what the view lists; a collection is made from the New Collection card, selects on click, is deleted after confirmation; Bio \| Manage \| Monomers is a table of every monomer, Match with Monomer Library offers PEPTIDE/RNA/CHEM, the standardized core library keeps its monomers |
+| `projects/`  | round-trips                                            | Sequence Space's embeddings and scatter plot (GROK-19928), an antibody numbering's aligned column, a HELM table's renderer and library survive a project save and reopen; the numbering run again gives the same result |
 
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` with this
 package published (`npx webpack && grok publish localhost` here — the features need the widget
@@ -48,8 +52,10 @@ reset in the Background and at the feature's end, the uploaded library and the c
 collection are deleted before and by the scenarios. With two library storages on the stand
 (the monomerDomainDB package's and the files) Add asks which one takes the file; the feature
 answers "Files" — a stand with the files alone never shows that dialog. PepSeA (a Docker
-container), Bio | Folding, the Manage Monomers view's CRUD and project round-trips are not
-exercised.
+container), Bio | Folding and the Manage Monomers view's CRUD are not exercised; projects are
+saved through the project API (the ribbon Save dialog and Data Sync are not — see
+`projects/round-trips.feature`). `@serial` features (libraries, round-trips) read or toggle the
+user's library selection and run one at a time.
 
 Atomic-level conversion selects `HELMCoreLibrary.json` for its standard monomer fixtures and
 restores the previous selection afterwards. Custom libraries can redefine symbols such as E
@@ -60,4 +66,6 @@ Editing: change a feature, `npx grok-bdd compile`, commit the regenerated spec w
 (`bindings/steps.ts`: the readiness step, the molfile and alignment readings;
 `bindings/annotations.ts`: what a column's annotations and liability hits say;
 `bindings/monomer-libs.ts`: the library selection, what the loaded library knows and where it
-comes from, the library and collection files on the server).
+comes from, the library and collection files on the server; `bindings/bio-b.ts`: a shipped library
+file's schema, the standardized library, a numbering's position names, and two columns compared
+row by row).

@@ -24,8 +24,9 @@ export function menuNames(path: string): {segments: string[]; names: string[]} {
  * entries arrive, which can detach the item between its visibility and its box: the box is
  * awaited. */
 async function enterGroup(item: Locator): Promise<void> {
-  await expect.poll(() => item.boundingBox(), {timeout: 5000, message: 'the box of the menu item'}).not.toBeNull();
-  const box = (await item.boundingBox())!;
+  const seen: {box: {x: number; y: number; width: number; height: number} | null} = {box: null};
+  await expect.poll(async () => (seen.box = await item.boundingBox()), {timeout: 5000, message: 'the box of the menu item'}).not.toBeNull();
+  const box = seen.box!;
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   await item.page().mouse.move(cx + 1, cy);
@@ -51,7 +52,7 @@ export async function openTopMenu(page: Page, path: string, pick: boolean): Prom
     await walkTopMenu(page, segments, names, pick);
   }
   catch (e) {
-    if (!/^no "|has no box|the box of the menu item/.test(String((e as Error).message)))
+    if (!/^no "|has no box|the box of the menu item|locator\.hover: Timeout/.test(String((e as Error).message)))
       throw e;
     await page.mouse.move(2, 2);
     await page.waitForTimeout(500);
@@ -103,6 +104,21 @@ export async function pickTopMenu(page: Page, path: string): Promise<void> {
   const {segments, names} = menuNames(path);
   if (segments.length < 2)
     throw new Error(`"${path}" names a group, not a command: a command is "Group > Item"`);
+  // the bar can rebuild between the walk and the click, collapsing the open group under the
+  // leaf: the whole pick is made once more from the bar
+  try {
+    await pickLeaf(page, segments, names, 5000);
+  }
+  catch (e) {
+    if (!/^no "|has no box|the box of the menu item|locator\.(hover|click): Timeout/.test(String((e as Error).message)))
+      throw e;
+    await page.mouse.move(2, 2);
+    await expect(page.locator('[role="menubar"] .d4-vert-menu').filter({visible: true})).toHaveCount(0);
+    await pickLeaf(page, segments, names, 15000);
+  }
+}
+
+async function pickLeaf(page: Page, segments: string[], names: string[], clickMs: number): Promise<void> {
   await openTopMenu(page, segments.slice(0, -1).join(' > '), false);
   const leaf = page.locator(`[name="${names[names.length - 1]}"]`).first();
   await leaf.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
@@ -110,7 +126,7 @@ export async function pickTopMenu(page: Page, path: string): Promise<void> {
   });
   await page.evaluate((p) => (window as any).__bdd.armCommand(p), segments.join(' | '));
   await guide.hop(page, leaf);
-  await leaf.click();
+  await leaf.click({timeout: clickMs});
 }
 
 /** The bar's group closes when the pointer leaves it (Escape is not a key it listens to). */
