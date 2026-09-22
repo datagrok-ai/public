@@ -17,9 +17,10 @@ src/nca/
     aumc.ts                         # AUMC first-moment: 3 methods × {naive, compensated} = 6 + two-term aumcExtrapolateToInfinity
     cmax.ts                         # findCmax — first-occurrence Cmax/Tmax
     lambda-z.ts                     # lambdaZBestFit (auto subset; PKNCA/WinNonlin flat-tolerance adj-R² tie-break — most points within adjRSquaredFactor of the global-max adj-R²) + lambdaZManual; centered-sum OLS; reports spanRatio (diagnostic only, never gates)
-    c0.ts                           # estimateC0 + insertC0 — IV bolus back-extrapolation (PKNCA c0/logslope/c1/cmin/set0 method chain)
+    c0.ts                           # estimateC0 / estimateC0Detailed + insertC0 — IV bolus back-extrapolation (PKNCA c0/logslope/c1/cmin/set0 method chain; the detailed form reports WHICH method answered)
+    augment.ts                      # augmentProfile — pipeline Steps 1–3 as ONE exported kernel: BLQ → observed Cmax → route-aware dose-time augmentation; returns the effective BLQ mask, the drop set, sourceIndex (augmented ↔ input), and the c0 estimate
     derived.ts                      # halfLifeFromLambdaZ, clearance, volumeTerminal, pctExtrapolated, meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag
-    compute-nca.ts                  # computeNca orchestrator — full per-profile pipeline
+    compute-nca.ts                  # computeNca orchestrator — augmentProfile + Steps 4–7 (integration, λz, derived, warnings)
     sparse.ts                       # sparseAuc + buildCompositeProfile — composite AUClast for destructive/batch designs; Holder covariance SE, Nedelman-Jia Satterthwaite df, Student-t CI
     bootstrap.ts                    # summarizeBootstrap — stratified-by-timepoint resampling + BCa interval for the nonlinear parameters, with a self-suppression gate
     __tests__/                      # Per-module tests + reference-suite vs fixtures
@@ -32,9 +33,13 @@ src/nca/
 
 - **One orchestrator, isolated kernels**: `computeNca` is the only entry point that fuses the steps. Each kernel (`applyBlqStrategy`, `findCmax`, `aucLinearUpLogDownNaive`, `lambdaZBestFit`, `estimateC0`, `halfLifeFromLambdaZ`, …) is a pure function tested in isolation and re-exported from the namespace for direct use. Keep new logic in kernels; only add to the orchestrator when it genuinely fuses kernel results.
 
-- **t=0 augmentation lives in the orchestrator only**: for IV bolus profiles without a t=0 sample the orchestrator inserts `(0, c0)` (estimated by `insertC0`); for extravascular profiles it inserts `(0, 0)` by convention. Kernels stay route-agnostic and never know about augmentation.
+- **t=0 augmentation lives in ONE exported kernel (`augmentProfile`)**, consumed by `computeNca` and by callers that need the engine's augmented index space (nca-studio's manual-λz editor maps `pointsUsed` / `manualPoints` through `sourceIndex`). The kernel is route-aware: for IV bolus a positive measured t=0 sample is the c0 (`method: 'observed'`); a MISSING t=0 row is prepended as `(0, c0)`, and a PRESENT-but-BLQ / non-positive t=0 row is REMOVED and replaced by `(0, c0)` (`replacedDoseTimeRow`) — a pre-dose sample can never anchor the back-extrapolation, whatever the substitution rule (PKNCA's own `c0` agrees, measured). For extravascular / IV infusion a kept t=0 row (even `conc = 0`) counts; otherwise `(0, 0)` is prepended by convention. Only index 0 is ever the dose-time row. The numeric kernels (`applyBlqStrategy`, `findCmax`, `insertC0`, `auc*`, `lambdaZ*`) stay route-agnostic and never know about augmentation. Do NOT re-orchestrate Steps 1–3 anywhere else — a positional mirror cannot track REPLACE (index 0 becomes synthetic and input row 0 disappears), which is exactly why `sourceIndex` is reported.
 
-- **Observed vs. computed Cmax**: reported Cmax/Tmax are the OBSERVED peak from the original (non-augmented) profile, even when the orchestrator inserts a t=0 point. Internal lambda_z fit and AUC integration use the AUGMENTED profile. Don't conflate.
+- **Two masks, on purpose**: `AugmentedProfile.blqMask` is the EFFECTIVE BLQ mask (input mask ∪ `exclude`d) that the OBSERVED quantities read — Cmax/Tmax skip it, Tlag treats it as 0, `BLQ_HIGH_FRACTION` counts it. `AugmentedProfile.dropMask` is what integration and the λz regression SKIP. They are separate because a substituted BLQ value (`set-zero`, `set-half-lloq`) must reach the integrator as the value the rule wrote while Cmax keeps skipping it — one mask cannot express both. Never collapse them.
+
+- **IV-bolus AUC integrates FROM the back-extrapolated c0** (Phoenix WinNonlin convention), so the dose-time → first-sample area is part of AUClast whether or not a pre-dose sample was drawn. Stock PKNCA does not do this (its raw-profile `auclast` is NA without a t=0 datum and integrates from an observed `(0, 0)` when present — measured 2026-09-22); the reference fixtures feed PKNCA the augmented profile. A deliberate, documented divergence — see `__tests__/REGEN.md`. `provenance.c0.pctAucBackExtrap` reports how much of AUCinf that segment is (Phoenix `AUC_%Back_Ext`), diagnostic only, never a gate.
+
+- **Observed vs. computed Cmax**: reported Cmax/Tmax are the OBSERVED peak from the original (non-augmented) profile, even when the kernel inserts a t=0 point. Internal lambda_z fit and AUC integration use the AUGMENTED profile. Don't conflate.
 
 - **Status flag separates degeneracy modes**: `'failed'` (no measurable point), `'partial'` (Cmax/AUClast computed but lambda_z not estimable → no AUCinf, t½, CL, Vz), `'ok'` (all parameters). All numeric fields default to `NaN` when not computed.
 

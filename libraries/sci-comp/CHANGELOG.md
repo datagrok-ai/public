@@ -1,5 +1,49 @@
 # sci-comp changelog
 
+## 0.11.0 (unreleased — GROK-20960)
+
+Non-Compartmental Analysis — two bug fixes in `computeNca` that **change computed
+values on affected profiles**. Every one of the 27 committed reference profiles is
+byte-identical (pinned by a jest snapshot committed before either fix); the fixes
+move only the regimes named below.
+
+* **Route-aware IV-bolus dose-time gate.** An IV-bolus profile whose `t = 0` row is
+  BLQ-flagged or non-positive / non-finite (a pre-dose sample encoded as `0`) was
+  taken as a measured dose-time value and integrated from `(0, 0)`. It is now
+  treated as ABSENT: the row is removed and `(0, c0)` from the PKNCA c0 chain
+  takes its slot, so the profile gives the same parameters as one with no
+  pre-dose row. **This changes AUClast / AUCinf / AUMC / CL / Vz / Vss / MRT on
+  every IV-bolus profile with such a row** (indometh subject 1 + `(0, 0)`:
+  AUClast 1.7194 → 2.0099, the no-row value). A positive measured `t = 0` value is
+  used as-is; extravascular and IV-infusion profiles are unchanged. PKNCA's own
+  `c0` ignores a substituted dose-time BLQ the same way (measured, fixture
+  `c0_pknca`).
+* `nca.augmentProfile(inputs, blq)` — pipeline Steps 1–3 (BLQ → observed Cmax →
+  dose-time augmentation) as one exported, stateless kernel returning the
+  augmented arrays, the effective BLQ mask, the drop set, `sourceIndex`
+  (augmented ↔ input index map; `-1` = synthetic point) and the c0 estimate.
+  `computeNca` now calls it; consumers that need the engine's augmented index
+  space (manual λz point selection) should too — a positional mirror cannot
+  track the replace case.
+* `provenance.c0?: C0Provenance | null` — `{value, method, replacedDoseTimeRow,
+  pctAucBackExtrap}`; `null` for non-IV-bolus routes and on `'failed'`.
+  `pctAucBackExtrap` is the back-extrapolated share of AUCinf (Phoenix
+  `AUC_%Back_Ext`), diagnostic only — on the indometh corpus it is 16–28 %.
+  **Compile-time impact: none** — the field is OPTIONAL, so code that constructs a
+  `ProfileProvenance` keeps compiling. `C0Method` moved to `types.ts` (still
+  exported from the namespace).
+* `nca.estimateC0Detailed` — `estimateC0` plus the chain method that answered;
+  `insertC0` now returns `method` too. `estimateC0` is unchanged.
+* New warning `C0_FALLBACK` (severity `warning`) when c0 fell back to `c1` /
+  `cmin` / `set0` — the log-slope was not estimable. The union stays open.
+* IV-bolus AUC convention documented (`__tests__/REGEN.md`): sci-comp integrates
+  from the back-extrapolated c0 (WinNonlin); stock PKNCA does not (raw-profile
+  `auclast` NA; 1.719365 with an observed `(0, 0)` row). Pre-existing behaviour,
+  now stated.
+* Fixtures: `02_indometh.json` gains provenance `c0_pknca` (PKNCA's own `c0`,
+  equal to the committed `c0_extrapolated` to ≥ 10 digits on 6/6 subjects) and
+  `pct_auc_back_extrap`; no previously committed value changed.
+
 ## 0.10.0 (2026-08-11)
 
 Non-Compartmental Analysis — terminal-phase span ratio (PKNCA `span.ratio`):

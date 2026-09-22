@@ -406,6 +406,128 @@ describe('computeNca — LAMBDAZ_LOW_SPAN (terminal-phase span diagnostic)', () 
   });
 });
 
+describe('computeNca — c0 provenance (IV bolus dose-time gate, GROK-20960)', () => {
+  // indometh subject 1 — the modal IV-bolus shape (no t=0 row, clean decay).
+  const indT = [0.25, 0.5, 0.75, 1, 1.25, 2, 3, 4, 5, 6, 8];
+  const indC = [1.5, 0.94, 0.78, 0.48, 0.37, 0.19, 0.12, 0.11, 0.08, 0.07, 0.05];
+  const withRow = (c0Row: number, flag = 0): ProfileInputs => ({
+    ...ivInputs([0, ...indT], [c0Row, ...indC], 25),
+    blqMask: Uint8Array.from([flag, ...indT.map(() => 0)]),
+  });
+  const c0Warn = (r: ReturnType<typeof computeNca>) =>
+    r.provenance.warnings.find((w) => w.code === 'C0_FALLBACK');
+
+  it('is null for non-IV-bolus routes', () => {
+    const po = computeNca(poInputs([0, 1, 2, 4, 8], [0, 1, 0.7, 0.3, 0.1], 2.5), DEFAULT_RULES);
+    expect(po.provenance.c0).toBeNull();
+    const inf = computeNca(ivInfusionInputs(indT, indC, 25, 1), DEFAULT_RULES);
+    expect(inf.provenance.c0).toBeNull();
+  });
+
+  it('is null on a failed IV-bolus profile (no chain ran)', () => {
+    const r = computeNca(
+      {...ivInputs([0, 1, 2], [0.005, 0.003, 0.002], 25), blqMask: new Uint8Array([1, 1, 1])},
+      DEFAULT_RULES);
+    expect(r.status).toBe('failed');
+    expect(r.provenance.c0).toBeNull();
+  });
+
+  it('records a logslope insert when no t=0 row exists — no warning', () => {
+    const r = computeNca(ivInputs(indT, indC, 25), DEFAULT_RULES);
+    expect(r.status).toBe('ok');
+    expect(r.provenance.c0).not.toBeNull();
+    expect(r.provenance.c0!.method).toBe('logslope');
+    expect(r.provenance.c0!.replacedDoseTimeRow).toBe(false);
+    expect(r.provenance.c0!.value).toBeGreaterThan(indC[0]);
+    expect(c0Warn(r)).toBeUndefined();
+  });
+
+  it('a (0, 0) pre-dose row is REPLACED — the result equals the no-row result (SF-F2)', () => {
+    const noRow = computeNca(ivInputs(indT, indC, 25), DEFAULT_RULES);
+    const zeroRow = computeNca(withRow(0), DEFAULT_RULES);
+    const flaggedRow = computeNca(withRow(0, 1), DEFAULT_RULES);
+    for (const r of [zeroRow, flaggedRow]) {
+      expect(r.status).toBe('ok');
+      expect(r.provenance.c0!.replacedDoseTimeRow).toBe(true);
+      expect(r.provenance.c0!.method).toBe('logslope');
+      expect(r.provenance.c0!.value).toBe(noRow.provenance.c0!.value);
+      expect(r.values.aucLast).toBe(noRow.values.aucLast);
+      expect(r.values.aucInf).toBe(noRow.values.aucInf);
+      expect(r.values.aumcLast).toBe(noRow.values.aumcLast);
+      expect(r.values.lambdaZ).toBe(noRow.values.lambdaZ);
+      expect(r.values.cmax).toBe(1.5); // observed peak, never the inserted c0
+      expect(r.values.tmax).toBe(0.25);
+      // Same window; pointsUsed are augmented indices, identical by construction
+      // (the replaced profile has the same length as the no-row prepend).
+      expect(Array.from(r.provenance.lambdaZ!.pointsUsed))
+        .toEqual(Array.from(noRow.provenance.lambdaZ!.pointsUsed));
+    }
+  });
+
+  it('a positive measured dose-time value is used as-is: method "observed", no extrapolation', () => {
+    const r = computeNca(withRow(2.4), DEFAULT_RULES);
+    expect(r.provenance.c0).toEqual({
+      value: 2.4, method: 'observed', replacedDoseTimeRow: false, pctAucBackExtrap: 0,
+    });
+    expect(r.values.cmax).toBe(2.4);
+    expect(r.values.tmax).toBe(0);
+    expect(c0Warn(r)).toBeUndefined();
+  });
+
+  it('emits C0_FALLBACK (severity "warning") when c0 fell back to c1', () => {
+    // First two post-dose points RISE, so the log-slope is not estimable and
+    // the chain answers with the first observation.
+    const t = [0.25, 0.5, 1, 2, 4, 8];
+    const c = [3.0, 3.4, 2.5, 1.6, 0.7, 0.15];
+    const r = computeNca(ivInputs(t, c, 25), DEFAULT_RULES);
+    expect(r.provenance.c0!.method).toBe('c1');
+    expect(r.provenance.c0!.value).toBe(3.0);
+    const w = c0Warn(r);
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('warning');
+    expect(w!.message).toContain('c1');
+  });
+
+  it('does not emit C0_FALLBACK for logslope or observed', () => {
+    expect(c0Warn(computeNca(ivInputs(indT, indC, 25), DEFAULT_RULES))).toBeUndefined();
+    expect(c0Warn(computeNca(withRow(2.4), DEFAULT_RULES))).toBeUndefined();
+  });
+
+  describe('pctAucBackExtrap — the back-extrapolated share of AUCinf (AC-U1.3.5)', () => {
+    it('is NaN on a partial profile (no AUCinf)', () => {
+      // Two post-dose points: c0 inserts, but λz cannot fit (minPoints 3).
+      const r = computeNca(ivInputs([0.5, 1], [4, 3], 25), DEFAULT_RULES);
+      expect(r.status).toBe('partial');
+      expect(r.provenance.c0).not.toBeNull();
+      expect(Number.isNaN(r.provenance.c0!.pctAucBackExtrap)).toBe(true);
+    });
+
+    it.each(['linear', 'log-linear', 'linear-up-log-down'] as const)(
+      'equals the [0, t1] segment over AUCinf under the %s method', (method) => {
+        const rules: NcaRules = {...DEFAULT_RULES, aucMethod: method};
+        const r = computeNca(ivInputs(indT, indC, 25), rules);
+        expect(r.status).toBe('ok');
+        const c0 = r.provenance.c0!.value;
+        const t1 = indT[0];
+        const c1 = indC[0];
+        // Hand-integrate the first segment with the method's own rule. c0 > c1
+        // so lin-up/log-down takes the log-down branch.
+        const lin = (c0 + c1) / 2 * t1;
+        const log = (c0 - c1) * t1 / Math.log(c0 / c1);
+        const seg = method === 'linear' ? lin : log;
+        expect(r.provenance.c0!.pctAucBackExtrap)
+          .toBeCloseTo(seg / r.values.aucInf * 100, 10);
+        expect(r.provenance.c0!.pctAucBackExtrap).toBeGreaterThan(0);
+      });
+
+    it('is identical for the replaced-row and no-row profiles', () => {
+      const a = computeNca(ivInputs(indT, indC, 25), DEFAULT_RULES).provenance.c0!;
+      const b = computeNca(withRow(0), DEFAULT_RULES).provenance.c0!;
+      expect(b.pctAucBackExtrap).toBe(a.pctAucBackExtrap);
+    });
+  });
+});
+
 /**
  * REGRESSION GUARD — `ParameterWarning.code` must stay an OPEN union.
  *
@@ -435,5 +557,11 @@ describe('ParameterWarning.code — open-union contract', () => {
       message: 'short terminal-phase span',
     };
     expect(coreWarning.code).toBe('LAMBDAZ_LOW_SPAN');
+    const c0Warning: ParameterWarning = {
+      code: 'C0_FALLBACK',
+      severity: 'warning',
+      message: 'c0 fell back to c1',
+    };
+    expect(c0Warning.code).toBe('C0_FALLBACK');
   });
 });

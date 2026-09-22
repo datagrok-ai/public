@@ -77,6 +77,12 @@ interface FixtureProfile {
     c0_extrapolated?: number | null;
     /** PKNCA's own `span.ratio` — the rule-18 oracle for `LambdaZResult.spanRatio`. */
     span_ratio?: number | null;
+    /** PKNCA's own `c0` PPTESTCD on the RAW IV-bolus profile — the independent
+     *  oracle for `provenance.c0.value` (closes the c0 circularity, F8). */
+    c0_pknca?: number | null;
+    /** Back-extrapolated share of AUCinf — hand formula on PKNCA's `c0` + first
+     *  observation + `aucinf.obs` (Phoenix `AUC_%Back_Ext`, no PKNCA equivalent). */
+    pct_auc_back_extrap?: number | null;
   };
 }
 
@@ -485,6 +491,93 @@ describe('reference suite — LambdaZResult.spanRatio', () => {
     expect(oracle(ind1)).toBeLessThan(1);
     expect(ind1.provenance!.lambda_z_adj_r_squared).toBeGreaterThan(0.99);
   });
+});
+
+/**
+ * IV-bolus dose-time gate (GROK-20960 slice U1 / F2) on the real IV corpus.
+ *
+ * Fx-2 — PKNCA's own `c0`: the committed `c0_extrapolated` was the CORE's c0
+ * fed back into PKNCA for the AUC run, so until now nothing independent said
+ * the back-extrapolation was right. `c0_pknca` is PKNCA's `c0` PPTESTCD on the
+ * raw profile; both the committed value and `provenance.c0.value` are asserted
+ * against it (measured equal to ≥ 10 digits on 6/6 subjects).
+ *
+ * Fx-1 — invariance: a pre-dose `(0, 0)` row — unflagged or BLQ-flagged — must
+ * not change a single IV-bolus parameter, because the row is REPLACED by the
+ * same `(0, c0)` the no-row profile gets. Before the gate the row was taken as
+ * a measured t=0 value and integrated from 0: subject 1 read AUClast 1.7194
+ * instead of 2.0099 (−14.5 %, silent). Asserted against the COMMITTED fixture
+ * values, not against the no-row run alone, so the test cannot pass by both
+ * paths being wrong the same way.
+ */
+describe('02 Indomethacin — IV-bolus dose-time gate (Fx-1 invariance + Fx-2 c0 oracle)', () => {
+  const subjects = loadAndGroup('02_indometh.csv');
+  const fxBySubject = new Map(
+    loadFixture('02_indometh.json').profiles.map((f) => [f.profile_key.subject, f]));
+  const withDoseTimeRow = (rows: Record<string, number>[], flag: 0 | 1): ProfileInputs => {
+    const base = buildInputs(rows, 'time', 25, ROUTE_IV_BOLUS);
+    const blqMask = new Uint8Array(base.time.length + 1);
+    blqMask[0] = flag;
+    return {
+      ...base,
+      time: Float64Array.from([0, ...base.time]),
+      conc: Float64Array.from([0, ...base.conc]),
+      blqMask,
+    };
+  };
+
+  it.each(subjects.map((s) => [s.subject, s] as const))(
+    'subject %s — c0 matches PKNCA\'s own c0 (fixture AND provenance)', (subjectId, group) => {
+      const fx = fxBySubject.get(subjectId)!;
+      const oracle = fx.provenance!.c0_pknca!;
+      expect(oracle).toBeGreaterThan(0);
+      expect(relErr(fx.provenance!.c0_extrapolated!, oracle)).toBeLessThan(TOL.auclast);
+      const r = computeNca(buildInputs(group.rows, 'time', 25, ROUTE_IV_BOLUS), PKNCA_RULES);
+      expect(r.provenance.c0).not.toBeNull();
+      expect(r.provenance.c0!.method).toBe('logslope');
+      expect(r.provenance.c0!.replacedDoseTimeRow).toBe(false);
+      expect(relErr(r.provenance.c0!.value, oracle)).toBeLessThan(TOL.auclast);
+    });
+
+  it.each(subjects.map((s) => [s.subject, s] as const))(
+    'subject %s — back-extrapolated share of AUCinf matches the PKNCA-input formula', (subjectId, group) => {
+      const fx = fxBySubject.get(subjectId)!;
+      const r = computeNca(buildInputs(group.rows, 'time', 25, ROUTE_IV_BOLUS), PKNCA_RULES);
+      expect(Math.abs(r.provenance.c0!.pctAucBackExtrap - fx.provenance!.pct_auc_back_extrap!))
+        .toBeLessThan(TOL.pctExtrap);
+    });
+
+  it('corpus incidence the diagnostic exists for: every indometh subject back-extrapolates > 15 % of AUCinf', () => {
+    // A fifth of the exposure on the library's headline IV fixture is in
+    // unmeasured territory — with every other statistic reading "fine".
+    for (const fx of fxBySubject.values())
+      expect(fx.provenance!.pct_auc_back_extrap!).toBeGreaterThan(15);
+    expect(fxBySubject.get('1')!.provenance!.pct_auc_back_extrap!).toBeCloseTo(20.6, 1);
+  });
+
+  describe.each([['unflagged', 0], ['BLQ-flagged', 1]] as const)(
+    'a %s (0, 0) pre-dose row is replaced — every parameter within tolerance of the committed fixture',
+    (_label, flag) => {
+      it.each(subjects.map((s) => [s.subject, s] as const))('subject %s', (subjectId, group) => {
+        const fx = fxBySubject.get(subjectId)!;
+        const noRow = computeNca(buildInputs(group.rows, 'time', 25, ROUTE_IV_BOLUS), PKNCA_RULES);
+        const inputs = withDoseTimeRow(group.rows, flag);
+        // The committed-fixture parity gate, verbatim.
+        assertProfile(subjectId, `02_indometh+(0,0,blq=${flag})`, inputs, fx);
+        const r = computeNca(inputs, PKNCA_RULES);
+        expect(r.provenance.c0!.replacedDoseTimeRow).toBe(true);
+        expect(r.provenance.c0!.value).toBe(noRow.provenance.c0!.value);
+        expect(r.provenance.c0!.pctAucBackExtrap).toBe(noRow.provenance.c0!.pctAucBackExtrap);
+        // Same λz window as the no-row profile (augmented indices coincide: the
+        // replaced profile has the no-row profile's length).
+        expect(Array.from(r.provenance.lambdaZ!.pointsUsed))
+          .toEqual(Array.from(noRow.provenance.lambdaZ!.pointsUsed));
+        expect(r.provenance.lambdaZ!.tStart).toBe(fx.provenance!.lambda_z_time_first);
+        expect(r.provenance.lambdaZ!.tEnd).toBe(fx.provenance!.lambda_z_time_last);
+        expect(r.values.cmax).toBe(fx.parameters.cmax);
+        expect(r.values.tmax).toBe(fx.parameters.tmax);
+      });
+    });
 });
 
 /**

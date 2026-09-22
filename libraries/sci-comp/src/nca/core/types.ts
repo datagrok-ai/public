@@ -209,6 +209,54 @@ export interface BlqProcessingResult {
   readonly excluded: Int32Array;
 }
 
+// c0 — dose-time concentration for IV bolus
+
+/**
+ * c0 estimation strategies (PKNCA `pk.calc.c0` method chain):
+ * `'c0'` an existing positive observation at the dose time; `'logslope'`
+ * log-linear back-extrapolation of the first two post-dose points; `'c1'` the
+ * first post-dose concentration; `'cmin'` the minimum positive concentration;
+ * `'set0'` zero.
+ */
+export type C0Method = 'c0' | 'logslope' | 'c1' | 'cmin' | 'set0';
+
+/**
+ * How the dose-time concentration of an IV-bolus profile was obtained — the
+ * kernel-level record produced by `augmentProfile`.
+ *
+ * `'observed'` means a positive measured dose-time sample was used as-is (no
+ * augmentation); any {@link C0Method} means the chain ran on the post-dose
+ * points and `(timeDose, value)` was inserted. `replacedDoseTimeRow` is true
+ * when the input DID carry a dose-time row but it was BLQ-flagged or
+ * non-positive/non-finite: a pre-dose sample cannot anchor the profile, so the
+ * row was removed and the estimate took its slot. The substitution rules govern
+ * how the profile integrates, never the identity of c0 — PKNCA's own `c0`
+ * ignores a numerically substituted dose-time BLQ, measured 2026-09-22.
+ */
+export interface C0Estimate {
+  readonly value: number;
+  readonly method: C0Method | 'observed';
+  readonly replacedDoseTimeRow: boolean;
+}
+
+/**
+ * c0 provenance as reported by `computeNca` — the {@link C0Estimate} plus the
+ * share of AUC₀–∞ that lies in the unmeasured dose-time → first-observation
+ * segment (Phoenix WinNonlin `AUC_%Back_Ext_obs`).
+ *
+ * `pctAucBackExtrap` is **diagnostic only** — no gate, no threshold (none is
+ * citable; {@link LambdaZResult.spanRatio} is the precedent). It is `0` for
+ * `'observed'` (a measured dose-time value has no extrapolated area), `NaN` on
+ * a `'partial'` profile (no AUC₀–∞ to take a share of), and the segment area
+ * over AUC₀–∞ × 100 otherwise, integrated with the profile's own AUC method
+ * and summation. A technically successful `'logslope'` on two widely spaced
+ * points can put 20 %+ of the exposure into unmeasured territory with no
+ * warning firing — this is the number that says so.
+ */
+export interface C0Provenance extends C0Estimate {
+  readonly pctAucBackExtrap: number;
+}
+
 // Final compute result
 
 /**
@@ -277,8 +325,12 @@ export type ParameterWarningCode =
   | 'LAMBDAZ_FEW_POINTS'
   | 'LAMBDAZ_LOW_SPAN'
   | 'BLQ_HIGH_FRACTION'
-  // eslint-disable-next-line @typescript-eslint/ban-types -- load-bearing: `string & {}`
-  // preserves literal autocomplete that a bare `| string` would collapse.
+  /** IV bolus: the log-slope was not estimable and c0 fell back to `c1` /
+   *  `cmin` / `set0` — the dose-time concentration rests on a plateau
+   *  assumption (severity `'warning'`; see {@link C0Estimate.method}). */
+  | 'C0_FALLBACK'
+  // Load-bearing: `string & {}` preserves literal autocomplete that a bare
+  // `| string` would collapse.
   | (string & {});
 
 /**
@@ -297,10 +349,21 @@ export interface ParameterWarning {
  */
 export interface ProfileProvenance {
   readonly lambdaZ: LambdaZResult | null;
+  /** BLQ pre-processing on the RAW inputs — `excluded` indexes the input
+   *  arrays (not the augmented profile). */
   readonly blqApplied: BlqProcessingResult;
   readonly aucMethod: AucMethod;
   readonly compensated: boolean;
   readonly warnings: ReadonlyArray<ParameterWarning>;
+  /**
+   * Dose-time concentration provenance. `computeNca` always sets it: `null`
+   * for non-IV-bolus routes and on `'failed'` (no measurable point — no chain
+   * ran, nothing to report); populated for every other IV-bolus outcome.
+   * OPTIONAL on the interface so consumers that construct a
+   * `ProfileProvenance` themselves (test doubles, synthetic failed results)
+   * keep compiling — a required field would break them on upgrade.
+   */
+  readonly c0?: C0Provenance | null;
 }
 
 /** Top-level result of {@link computeNca}. */

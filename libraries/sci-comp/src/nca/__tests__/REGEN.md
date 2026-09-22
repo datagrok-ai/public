@@ -35,9 +35,11 @@ Step 1 (`regen-fixtures.R`):
   new IV-infusion fixture (see below).
 
 Step 2 (`merge-fixtures.mjs`) injects `aumclast, aumcinf_obs, mrt, vss, tlag,
-pct_aumcextrap` into each profile's `parameters`, and `span_ratio` into its
-`provenance`, in `fixtures/0{1,2,3}.json` — **preserving every existing value
-exactly** (it never recomputes the original 8).
+pct_aumcextrap` into each profile's `parameters`, and `span_ratio` (all
+datasets) plus `c0_pknca`, `pct_auc_back_extrap` (02 indometh only — a key the R
+script did not produce for a dataset is left absent, never written as null)
+into its `provenance`, in `fixtures/0{1,2,3}.json` — **preserving every
+existing value exactly** (it never recomputes the original 8).
 
 ### `span_ratio` (terminal-phase span, PKNCA `span.ratio`)
 
@@ -51,6 +53,56 @@ itself reports — the rule-18 oracle for `LambdaZResult.spanRatio`.
 and pins the corpus incidence the diagnostic exists for: **4 of 18 profiles sit
 below the conventional 2**, worst `02_indometh` subject 1 at 0.685 with adjusted
 R² 0.994.
+
+### `c0_pknca` and `pct_auc_back_extrap` (IV bolus only — 02 indometh)
+
+`c0_pknca` is PKNCA's **own `c0` PPTESTCD** (`pk.calc.c0`, chain `c0 → logslope
+→ c1 → cmin → set0`), requested on the **raw** indometh profiles (no inserted
+row, `route = "intravascular"`, `duration = 0`). It is the independent oracle
+for the core's back-extrapolation: the committed `c0_extrapolated` was the
+core's own c0 fed back into PKNCA for the AUC run (see below), so until this
+key existed nothing outside the core vouched for the number. Measured
+2026-09-22: PKNCA's `c0` equals `c0_extrapolated` to ≥ 10 significant digits on
+all 6 subjects, and it does NOT change when a `(0, 0)` pre-dose row is present
+or when that row is numerically substituted (`conc.blq first = 0.01`) — PKNCA's
+c0 ignores a substituted dose-time BLQ, which is the semantics `augmentProfile`
+implements (a BLQ / non-positive dose-time row is *absent* for c0).
+
+`pct_auc_back_extrap` is the back-extrapolated share of AUCinf — the Phoenix
+WinNonlin `AUC_%Back_Ext_obs` analogue, which PKNCA does not report. It is a
+stated formula on PKNCA inputs, not a PKNCA output: the dose-time → first-
+observation segment `(c0 − C1)·t1 / ln(c0/C1)` (log-down, since `c0 > C1`;
+linear `(c0 + C1)/2·t1` otherwise) with `c0 = c0_pknca`, over PKNCA's
+`aucinf.obs`, × 100. Corpus: **every indometh subject back-extrapolates 16–28 %
+of its AUCinf** (subject 1: 20.55 %). Diagnostic only; `computeNca` reports it as
+`provenance.c0.pctAucBackExtrap`, asserted within `TOL.pctExtrap` (0.5 pp).
+
+## IV-bolus AUC convention — sci-comp (WinNonlin) vs stock PKNCA
+
+sci-comp integrates an IV-bolus profile **from the back-extrapolated c0**: the
+augmented profile `(0, c0), (t1, C1), …` is what `computeNca` integrates and
+fits λz on, so AUClast includes the dose-time → first-sample segment. That is
+the Phoenix WinNonlin convention (`AUC` with `C0`, reported alongside
+`AUC_%Back_Ext`). **Stock PKNCA does not do this.** Measured 2026-09-22
+(PKNCA 0.12.1, `regen-fixtures.R` prints it on every run):
+
+| indometh subject 1 | `auclast` |
+|---|---|
+| raw profile (no t=0 datum) | **NA** |
+| with an observed `(0, 0)` row | **1.719365** (integrates from 0) |
+| with `(0, 0)` + `conc.blq first = "drop"` | **NA** |
+| sci-comp / committed fixture (from c0 = 2.3936) | **2.009898** |
+
+This is why the 02 fixture feeds PKNCA the **augmented** profile (the core's c0
+inserted at `t = 0`): PKNCA validates the *integration of that profile*, not the
+*choice of convention*. The convention is a deliberate, documented design
+decision (nca-studio `nca-calculation-standards.md` §7), not a fixture-validated
+one, and must not be read as such. Consistency is the reason: the same subject
+must not lose 14.5 % of its AUC because a pre-dose sample happened to be drawn —
+before GROK-20960 a `(0, 0)` row was taken as a measured t=0 value and
+integrated from 0 (`1.7194` above); `augmentProfile` now REPLACES a BLQ /
+non-positive dose-time row by `(0, c0)`, so the with-row and no-row profiles
+give identical parameters (asserted in `reference-suite.test.ts`, Fx-1).
 
 ## PKNCA configuration (matches each fixture's `config` block)
 

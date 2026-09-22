@@ -73,13 +73,19 @@ ensure_t0_zero <- function(conc_df) {
   do.call(rbind, parts)
 }
 
-run_nca <- function(conc_df, dose_df, route, duration = 0, extra = character(0)) {
-  if (route == "extravascular") conc_df <- ensure_t0_zero(conc_df)
+# `options` is passed straight to PKNCAdata (e.g. `list(conc.blq = ...)`); the
+# default `list()` keeps PKNCA's global defaults — the configuration every
+# committed fixture was produced under. `prepend_t0` = FALSE runs an
+# extravascular profile exactly as given (no (0, 0) insertion).
+run_nca <- function(conc_df, dose_df, route, duration = 0, extra = character(0),
+                    options = list(), prepend_t0 = TRUE) {
+  if (route == "extravascular" && prepend_t0) conc_df <- ensure_t0_zero(conc_df)
   o_conc <- PKNCAconc(conc_df, conc ~ time | Subject)
   dose_df$duration <- duration
   o_dose <- PKNCAdose(dose_df, dose ~ time | Subject, route = route,
                       duration = "duration")
-  d <- PKNCAdata(o_conc, o_dose, intervals = interval_template(extra))
+  d <- PKNCAdata(o_conc, o_dose, intervals = interval_template(extra),
+                 options = options)
   res <- suppressWarnings(pk.nca(d))
   as.data.frame(res)
 }
@@ -177,6 +183,48 @@ ind_df <- run_nca(ind_aug, ind_dose, "intravascular", duration = 0,
 validate_old("02_indometh", ind_df, here("fixtures", "02_indometh.json"),
              skip = c("cmax", "tmax"))
 new_params[["02_indometh"]] <- collect_new(ind_df, unique(ind$Subject), "intravascular")
+
+# --- 02 Indometh: PKNCA's OWN c0 on the RAW profiles (GROK-20960, F8) -------
+# Independent oracle for the core's back-extrapolation: `c0` is a real PKNCA
+# PPTESTCD (pk.calc.c0, method chain c0 -> logslope -> c1 -> cmin -> set0), so
+# the fixture carries PKNCA's number rather than the core's own c0 fed back in
+# (the circularity the augmented run above has by construction). Requested on
+# the raw profiles (no inserted row) with route = intravascular.
+ind_raw <- ind[, c("Subject", "time", "conc")]
+ind_raw_df <- run_nca(ind_raw, ind_dose, "intravascular", duration = 0, extra = "c0")
+for (s in unique(ind$Subject)) {
+  c0_pknca <- getp(ind_raw_df, s, "c0")
+  # Back-extrapolated share of AUCinf (Phoenix AUC_%Back_Ext analogue; no PKNCA
+  # equivalent, so the oracle is the stated formula on PKNCA inputs): the
+  # dose-time -> first-observation segment, lin-up/log-down (log-down since
+  # c0 > C1 — linear fallback otherwise), over PKNCA's aucinf.obs, x 100.
+  g <- ind_raw[ind_raw$Subject == s, ]
+  g <- g[order(g$time), ]
+  t1 <- g$time[1]; c1 <- g$conc[1]
+  seg <- if (c0_pknca > c1) (c0_pknca - c1) * t1 / log(c0_pknca / c1) else (c0_pknca + c1) / 2 * t1
+  aucinf <- getp(ind_df, s, "aucinf.obs")
+  new_params[["02_indometh"]][[s]]$c0_pknca <- c0_pknca
+  new_params[["02_indometh"]][[s]]$pct_auc_back_extrap <- seg / aucinf * 100
+  cat(sprintf("[02 indometh] subj %s: PKNCA c0 = %.10f (fixture c0_extrapolated %.10f), back-extrap %.2f%% of AUCinf\n",
+              s, c0_pknca, as.numeric(ind_c0[[s]]), seg / aucinf * 100))
+}
+
+# --- 02 Indometh: STOCK PKNCA AUClast (printed, not asserted) ----------------
+# Documents the IV-bolus AUC convention divergence (REGEN.md "IV-bolus AUC
+# convention"): sci-comp integrates FROM the back-extrapolated c0 (Phoenix
+# WinNonlin), stock PKNCA does NOT — it reports NA without a t=0 datum and
+# integrates from the observed (0, 0) when a pre-dose row is present.
+ind_zero <- do.call(rbind, lapply(split(ind_raw, ind_raw$Subject), function(g) {
+  rbind(data.frame(Subject = g$Subject[1], time = 0, conc = 0), g)
+}))
+ind_zero_df <- run_nca(ind_zero, ind_dose, "intravascular", duration = 0)
+ind_zero_drop_df <- run_nca(ind_zero, ind_dose, "intravascular", duration = 0,
+                            options = list(conc.blq = list(first = "drop", middle = "drop", last = "drop")))
+for (s in unique(ind$Subject)) {
+  cat(sprintf("[02 indometh stock PKNCA] subj %s: auclast raw = %s | with (0,0) row = %s | (0,0) + first=drop = %s | sci-comp/fixture = %.6f\n",
+              s, format(getp(ind_raw_df, s, "auclast")), format(getp(ind_zero_df, s, "auclast")),
+              format(getp(ind_zero_drop_df, s, "auclast")), getp(ind_df, s, "auclast")))
+}
 
 # 03 Rat synthetic — extravascular, dose = Dose (per subject).
 rat <- read_ds(here("datasets", "03_rat_simple.csv"))
