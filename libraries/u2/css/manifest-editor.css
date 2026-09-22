@@ -1,0 +1,126 @@
+/* The manifest editor (src/dg/domain/authoring): the two-pane frame, the tree rows' badges and
+   greyed states, the context panel's title line, notes and relationship rows. Tokens only;
+   css/tokens.css, list.css, tree.css, form.css, section.css and badge.css must be loaded alongside. */
+.u2-manifest-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+}
+
+.u2-manifest-editor > .u2-splitter {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-manifest-tree {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.u2-manifest-tree-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-s) var(--dg-space-m);
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-manifest-tree > .u2-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-manifest-node {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  min-width: 0;
+}
+
+.u2-manifest-node-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.u2-manifest-node-hint {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  white-space: nowrap;
+}
+
+.u2-manifest-node-problem .u2-manifest-node-name {
+  text-decoration: underline wavy var(--dg-error);
+}
+
+/* an excluded table or column: greyed, not disabled — checking it back is one click away */
+.u2-manifest-node-excluded .u2-manifest-node-name {
+  color: var(--dg-text-color-light);
+}
+
+.u2-manifest-panel {
+  height: 100%;
+  min-height: 0;
+  padding: var(--dg-space-m) var(--dg-space-l);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.u2-manifest-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  margin-bottom: var(--dg-space-m);
+  font-size: var(--dg-font-size-h2);
+  font-weight: var(--dg-font-weight-bold);
+}
+
+.u2-manifest-panel-title .u2-manifest-node-hint {
+  font-weight: var(--dg-font-weight-regular);
+}
+
+.u2-manifest-panel-diagnostics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-xs);
+  margin-bottom: var(--dg-space-m);
+}
+
+.u2-manifest-panel-diagnostic {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  color: var(--dg-error);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-manifest-panel-note {
+  margin: var(--dg-space-s) 0;
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  line-height: var(--dg-line-height);
+}
+
+.u2-manifest-panel .u2-section {
+  margin-top: var(--dg-space-l);
+}
+
+.u2-manifest-relation {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-xs) 0;
+}
+
+.u2-manifest-relation-why {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}

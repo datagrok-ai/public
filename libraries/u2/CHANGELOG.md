@@ -2,6 +2,15 @@
 
 ## v.next
 
+* GROK-20298: Binding authoring, the Design step: `domains.authoring.ManifestEditor` (tag `u2-manifest-editor`) — a tree of the schema, its tables and their columns beside a context panel that edits the selected node; `plan()` answers the create envelope with the grants and column restrictions resolved to logical names
+* GROK-20298: `ManifestTree`: a checkbox includes each table and column (keys and unsupported columns locked), badges for the key, the foreign key as a ref or a plain value and the name column; a view, a keyless table or an unsupported column stays greyed with its reason, an excluded one is greyed but not disabled
+* GROK-20298: `ManifestContextPanel`: names checked with the mirrored `DomainManifestRules`, writable and the read-only opt-out, the name and searchable pickers, required, the relationships with an "include <target>" link, the access grid with the schema's rows inherited, column visibility; the field offer follows the editor context (`external` × `create`/`view` built, the other arms refuse by name)
+* GROK-20298: `ManifestModel` over the draft envelope: the ref RULE (a reported ref is a ref while its target is included, the scalar type otherwise), `toJSON()` carrying every declaration key through with `businessKey`, `filters[].column` and `delegate` following renames and exclusions, `revision` for views
+* GROK-20298: `AccessModel` beside the manifest — grants by scope and column visibility, applied by the dialog after Create
+* GROK-20298: `ManifestEditor.diagnostics` addressed by manifest path light up the row and the panel that own them
+* GROK-20298: `VirtualTree` nodes take `checked`, `locked` and `disabled` — a checkbox before the label, toggled by click (the selection stays put) or Space, reported through `TreeOptions.onCheck`
+* GROK-20298: `AccessGrid` (`u2-access-grid`), an input of principals × capabilities with inherited rows, locked capabilities, a remove button and an add picker
+* GROK-20298: `ChipsInput` (`u2-chips-input`), toggle chips over items
 * GROK-20298: External bindings: the domain seam declares its storage switches — `support.updateWhere/captions/transaction/concurrency/filters/batch` and `info.rowAddress` — and every control follows them: no `captions` projection unless declared, a table without `transaction` is read-only in u2, Bulk edit needs `updateWhere`, the History pane needs `audit`, rows are addressed by their id where `rowAddress` is `'id'`, and the `basic` filter profile drops the operators a warehouse refuses
 * GROK-20298: `Access.field` knows `'immutable'` (a key column: editable on a draft, read-only on a saved row); an import maps targets by the draft policy
 * GROK-20298: `domains.import` offers what `support.batch` declares — upsert under `upsert`, "All or nothing" under `partial` (fixed on otherwise), "Error on duplicate" under `skipDuplicates` — and sends nothing the storage refuses; without `validate` the preview lists the mapped rows with no verdicts ("Rows are checked when imported"); the report and the toast count `merged` rows in place of `updated` (`DomainBatchReportLike.merged`)

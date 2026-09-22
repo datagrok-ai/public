@@ -37,4 +37,8 @@ import '../../../css/dialog.css';
 import '../../../css/notify.css';
 import '../../../css/tooltip.css';
 import '../../../css/badge.css';
+import '../../../css/chips.css';
+import '../../../css/access-grid.css';
+import '../../../css/splitter.css';
+import '../../../css/manifest-editor.css';
 import '../../../css/domain.css';

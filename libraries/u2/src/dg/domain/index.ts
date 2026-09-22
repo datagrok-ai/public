@@ -52,6 +52,7 @@ import {route} from './routes.js';
 import {mountView} from './view-sync.js';
 import {bulkEdit} from './bulk.js';
 import {openImport} from './import.js';
+import {authoring} from './authoring/index.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
 
 /** An action over one row: `requires` names the capability it needs (permission ⇒ hidden),
@@ -405,4 +406,7 @@ export const domains = {
   saveButton,
   discardButton,
   newButton,
+  /** The manifest editor and its models — the Design step of binding authoring; the dialog lane
+   * adds `createBinding` here. */
+  authoring,
 };

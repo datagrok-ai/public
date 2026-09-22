@@ -91,6 +91,10 @@ export {ListInput} from './components/inputs/list-input.js';
 export type {ListInputOptions} from './components/inputs/list-input.js';
 export {MapInput} from './components/inputs/map-input.js';
 export type {MapInputOptions} from './components/inputs/map-input.js';
+export {ChipsInput} from './components/inputs/chips-input.js';
+export type {ChipsInputOptions} from './components/inputs/chips-input.js';
+export {AccessGrid} from './components/forms/access-grid.js';
+export type {AccessGridOptions, AccessRow, InheritedAccessRow} from './components/forms/access-grid.js';
 export {ButtonGroup} from './components/actions/button-group.js';
 export type {ButtonGroupItem, ButtonGroupOptions, ButtonGroupToggle, ButtonGroupDensity}
   from './components/actions/button-group.js';

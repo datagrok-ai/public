@@ -1587,6 +1587,189 @@
       }
     },
     {
+      "tag": "u2-chips-input",
+      "category": "Inputs",
+      "description": "Toggle chips, one per item; the value holds the pressed ones in item order.",
+      "usage": "For a handful of names picked inline (the groups a column is visible to). A long list belongs in `u2-multi-select`, a tall one in `u2-multi-choice-input`.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string_list",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "items",
+          "type": "string_list",
+          "bindable": true
+        },
+        {
+          "name": "emptyText",
+          "type": "string",
+          "description": "Stands in for an empty list; 'No items' by default."
+        }
+      ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-chips-input",
+        "props": {
+          "label": "Visible to",
+          "items": [
+            "Sales",
+            "Chemists"
+          ],
+          "value": [
+            "Sales"
+          ]
+        }
+      }
+    },
+    {
+      "tag": "u2-access-grid",
+      "category": "Inputs",
+      "description": "Who may do what: a row per principal, a checkbox per capability, a remove button, and a picker that adds a principal. The value is the rows — `[{principal, can: {view: true, …}}]`.",
+      "usage": "For the access a schema or a table grants (groups × View / Edit / Delete). Inherited rows and locked capabilities are code options; a spec passes the columns and the picker's list.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "object",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "capabilities",
+          "type": "string_list",
+          "description": "The columns, in order."
+        },
+        {
+          "name": "principals",
+          "type": "string_list",
+          "bindable": true,
+          "description": "What the add picker offers."
+        },
+        {
+          "name": "principalLabel",
+          "type": "string",
+          "description": "The first column's header; Group by default."
+        },
+        {
+          "name": "addText",
+          "type": "string",
+          "description": "The picker's placeholder."
+        }
+      ],
+      "defaults": {
+        "capabilities": [
+          "view",
+          "edit",
+          "delete"
+        ],
+        "principals": [
+          "All users",
+          "Developers"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-access-grid",
+        "props": {
+          "label": "Access",
+          "capabilities": [
+            "view",
+            "edit",
+            "delete"
+          ],
+          "principals": [
+            "Sales",
+            "Developers"
+          ],
+          "value": [
+            {
+              "principal": "Sales",
+              "can": {
+                "view": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "tag": "u2-qnum-input",
       "category": "Inputs",
       "description": "Qualified number editor — \"<5.2\", \"10\", \">1e3\". The value is the packed double the platform stores for a qnum: the qualifier rides in the two lowest mantissa bits.",

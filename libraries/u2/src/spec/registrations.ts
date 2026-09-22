@@ -17,6 +17,9 @@ import {RadioInput} from '../components/inputs/radio-input.js';
 import {ColorInput} from '../components/inputs/color-input.js';
 import {ListInput} from '../components/inputs/list-input.js';
 import {MapInput} from '../components/inputs/map-input.js';
+import {ChipsInput} from '../components/inputs/chips-input.js';
+import {AccessGrid} from '../components/forms/access-grid.js';
+import type {AccessRow} from '../components/forms/access-grid.js';
 import {QNum} from '../core/qnum.js';
 import {QNumInput} from '../components/inputs/qnum-input.js';
 import {FontInput} from '../components/inputs/font-input.js';
@@ -660,6 +663,50 @@ const METAS: ComponentMeta[] = [
     props: inputProps('object'),
     events: ['input', 'change'],
     example: {tag: 'u2-map-input', props: {label: 'Params', value: {solvent: 'DMSO'}}},
+  },
+  {
+    tag: 'u2-chips-input',
+    category: 'Inputs',
+    create: (props) => {
+      const input = new ChipsInput({
+        ...inputOptions<string[]>(props),
+        items: itemList(props.items),
+        emptyText: props.emptyText as string | undefined,
+      });
+      boundItems(input, props.items);
+      return input;
+    },
+    description: 'Toggle chips, one per item; the value holds the pressed ones in item order.',
+    usage: 'For a handful of names picked inline (the groups a column is visible to). A long list ' +
+      'belongs in `u2-multi-select`, a tall one in `u2-multi-choice-input`.',
+    props: inputProps('string_list', {name: 'items', type: 'string_list', bindable: true},
+      {name: 'emptyText', type: 'string', description: 'Stands in for an empty list; \'No items\' by default.'}),
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
+    events: ['change'],
+    example: {tag: 'u2-chips-input', props: {label: 'Visible to', items: ['Sales', 'Chemists'], value: ['Sales']}},
+  },
+  {
+    tag: 'u2-access-grid',
+    category: 'Inputs',
+    create: (props) => new AccessGrid({
+      ...inputOptions<AccessRow[]>(props),
+      capabilities: itemList(props.capabilities),
+      principals: itemList(props.principals),
+      principalLabel: props.principalLabel as string | undefined,
+      addText: props.addText as string | undefined,
+    }),
+    description: 'Who may do what: a row per principal, a checkbox per capability, a remove button, and ' +
+      'a picker that adds a principal. The value is the rows — `[{principal, can: {view: true, …}}]`.',
+    usage: 'For the access a schema or a table grants (groups × View / Edit / Delete). Inherited rows ' +
+      'and locked capabilities are code options; a spec passes the columns and the picker\'s list.',
+    props: inputProps('object', {name: 'capabilities', type: 'string_list', description: 'The columns, in order.'},
+      {name: 'principals', type: 'string_list', bindable: true, description: 'What the add picker offers.'},
+      {name: 'principalLabel', type: 'string', description: 'The first column\'s header; Group by default.'},
+      {name: 'addText', type: 'string', description: 'The picker\'s placeholder.'}),
+    defaults: {capabilities: ['view', 'edit', 'delete'], principals: ['All users', 'Developers']},
+    events: ['change'],
+    example: {tag: 'u2-access-grid', props: {label: 'Access', capabilities: ['view', 'edit', 'delete'],
+      principals: ['Sales', 'Developers'], value: [{principal: 'Sales', can: {view: true}}]}},
   },
   {
     tag: 'u2-qnum-input',

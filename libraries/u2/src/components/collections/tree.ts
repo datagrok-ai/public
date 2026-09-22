@@ -15,6 +15,13 @@ export interface TreeNode<T = unknown> {
   tooltip?: string;
   data?: T;
   children?: TreeNode<T>[] | (() => Promise<TreeNode<T>[]>);
+  /** A checkbox before the label with this state; absent, the row carries none. */
+  checked?: boolean;
+  /** The checkbox cannot be toggled — a state the node's owner decides (a key column). */
+  locked?: boolean;
+  /** The row is greyed out (`u2-tree-row-disabled`, `aria-disabled`): still selectable, so the
+   * reason in its tooltip and its detail can be read. */
+  disabled?: boolean;
 }
 
 export interface TreeOptions<T> {
@@ -25,6 +32,9 @@ export interface TreeOptions<T> {
   onRename?: (node: TreeNode<T>, newLabel: string) => void;
   /** The node's full action list: right-click selects the row and opens it as a menu at the cursor. */
   contextActions?: (node: TreeNode<T>) => Action[];
+  /** A checkbox toggled — by click or by Space on the selected row; the click never moves the
+   * selection. The tree re-renders from what the owner answers, so the owner rebuilds its roots. */
+  onCheck?: (node: TreeNode<T>, checked: boolean) => void;
 }
 
 interface FlatRow<T> {
@@ -50,12 +60,14 @@ export class VirtualTree<T = unknown> extends Control {
   private readonly _pending = new Map<string, Promise<TreeNode<T>[]>>();
   private readonly _rename: ((node: TreeNode<T>, newLabel: string) => void) | undefined;
   private readonly _render: ((node: TreeNode<T>) => HTMLElement) | undefined;
+  private readonly _check: ((node: TreeNode<T>, checked: boolean) => void) | undefined;
   private _endRename: (() => void) | undefined;
 
   constructor(options: TreeOptions<T> = {}) {
     super();
     this._rename = options.onRename;
     this._render = options.render;
+    this._check = options.onCheck;
     const contextActions = options.contextActions;
     this._list = new VirtualList<FlatRow<T>>({
       itemHeight: options.itemHeight ?? 22,
@@ -223,20 +235,38 @@ export class VirtualTree<T = unknown> extends Control {
     const label = this._render === undefined ? VirtualTree._span('u2-tree-label', row.node.label) :
       this._render(row.node);
     label.classList.add('u2-tree-label');
-    el.append(VirtualTree._span(twistie, open ? '▾' : '▸'), label);
+    el.append(VirtualTree._span(twistie, open ? '▾' : '▸'));
+    if (row.node.checked !== undefined)
+      el.append(VirtualTree._checkbox(row.node));
+    el.append(label);
+    if (row.node.disabled === true) {
+      el.classList.add('u2-tree-row-disabled');
+      rowEl.setAttribute('aria-disabled', 'true');
+    }
     el.title = row.node.tooltip ?? row.node.label;
     return el;
   }
 
   private _onClick(e: MouseEvent): void {
     const target = e.target as Element | null;
-    if (!target || !target.closest('.u2-tree-twistie'))
+    if (!target)
       return;
     const row = this._flat.peek()[VirtualTree._rowIndex(target)];
     if (!row || row.kind !== 'node')
       return;
-    e.stopPropagation();
-    this._setExpanded(row.node.id, !this.expanded.peek().has(row.node.id));
+    if (target.closest('.u2-tree-check')) {
+      // the checkbox is not the row: toggling it leaves the selection where it is
+      e.stopPropagation();
+      this._toggleCheck(row.node);
+    } else if (target.closest('.u2-tree-twistie')) {
+      e.stopPropagation();
+      this._setExpanded(row.node.id, !this.expanded.peek().has(row.node.id));
+    }
+  }
+
+  private _toggleCheck(node: TreeNode<T>): void {
+    if (this._check !== undefined && node.checked !== undefined && node.locked !== true)
+      this._check(node, !node.checked);
   }
 
   private _onKeyDown(e: KeyboardEvent): void {
@@ -246,34 +276,40 @@ export class VirtualTree<T = unknown> extends Control {
     if (!row)
       return;
     switch (e.key) {
-      case 'ArrowRight':
-        e.preventDefault();
-        if (row.kind === 'node' && VirtualTree._isBranch(row.node) && !this.expanded.peek().has(row.node.id))
-          this._setExpanded(row.node.id, true);
-        else if (index + 1 < rows.length && rows[index + 1].depth > row.depth)
-          this._select(index + 1);
+    case 'ArrowRight':
+      e.preventDefault();
+      if (row.kind === 'node' && VirtualTree._isBranch(row.node) && !this.expanded.peek().has(row.node.id))
+        this._setExpanded(row.node.id, true);
+      else if (index + 1 < rows.length && rows[index + 1].depth > row.depth)
+        this._select(index + 1);
+      break;
+    case 'ArrowLeft':
+      e.preventDefault();
+      if (row.kind === 'node' && this.expanded.peek().has(row.node.id)) {
+        this._setExpanded(row.node.id, false);
         break;
-      case 'ArrowLeft':
-        e.preventDefault();
-        if (row.kind === 'node' && this.expanded.peek().has(row.node.id)) {
-          this._setExpanded(row.node.id, false);
+      }
+      for (let i = index - 1; i >= 0; i--) {
+        if (rows[i].depth < row.depth) {
+          this._select(i);
           break;
         }
-        for (let i = index - 1; i >= 0; i--) {
-          if (rows[i].depth < row.depth) {
-            this._select(i);
-            break;
-          }
-        }
+      }
+      break;
+    case 'Enter':
+      e.preventDefault();
+      this._select(index);
+      break;
+    case 'F2':
+      e.preventDefault();
+      this._startRename(index);
+      break;
+    case ' ':
+      if (row.kind !== 'node' || row.node.checked === undefined)
         break;
-      case 'Enter':
-        e.preventDefault();
-        this._select(index);
-        break;
-      case 'F2':
-        e.preventDefault();
-        this._startRename(index);
-        break;
+      e.preventDefault();
+      this._toggleCheck(row.node);
+      break;
     }
   }
 
@@ -353,6 +389,17 @@ export class VirtualTree<T = unknown> extends Control {
     if (!branch)
       el.classList.add('u2-tree-twistie-hidden');
     return el;
+  }
+
+  private static _checkbox(node: TreeNode<unknown>): HTMLInputElement {
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.className = 'u2-tree-check';
+    box.checked = node.checked === true;
+    box.disabled = node.locked === true;
+    box.tabIndex = -1;
+    box.setAttribute('aria-label', `Include ${node.label}`);
+    return box;
   }
 
   private static _span(cls: string, text: string): HTMLElement {
