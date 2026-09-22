@@ -2,8 +2,9 @@
 Feature: Map Identifiers and Generate Conformers from the Calculate menu
   Map Identifiers opens on the open table with its molecule column in Ids and "smiles" in From
   Source. With the chem-chem service running, To Source "inchi_key" appends an inchi_key column of
-  27-character keys and To Source "smiles" appends a canonical smiles column holding, row by row,
-  the same molecule as the column it was made from.
+  27-character keys, To Source "chembl" appends a chembl column (the Chembl package answers the
+  lookup, so this one wants a stand that carries it) and To Source "smiles" appends a canonical
+  smiles column holding, row by row, the same molecule as the column it was made from.
 
   Generate Conformers runs the RDKit ETKDGv3 script on a single molecule — the dialog's own default,
   butane — with Num conformers 50, Optimize on, RMS threshold 0.1, Max attempts 5000 and Random seed
@@ -31,6 +32,16 @@ Feature: Map Identifiers and Generate Conformers from the Calculate menu
     And "inchi_key" column should have no missing values
     And every value of "inchi_key" column should match "^[A-Z]{14}-[A-Z]{10}-[A-Z]$"
     And every value of "inchi_key" column should have the same length
+    And the table should have 50 rows
+    And no errors should have been logged
+
+  Scenario: Map Identifiers appends ChEMBL ids for the molecules
+    When user picks "Chem > Calculate > Map Identifiers..." from the top menu
+    And user selects "chembl" in "To Source" input in "Map Identifiers" dialog
+    And user clicks on OK button in "Map Identifiers" dialog
+    Then the top menu command should have completed
+    And a new column "chembl" should have been added
+    And no error or warning balloon should have been shown
     And the table should have 50 rows
     And no errors should have been logged
 
