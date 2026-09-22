@@ -5,6 +5,12 @@
 * Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), and the viewers report the `search-results` status of `@datagrok-libraries/ml` — `card <row>` hit areas plus `cards` / `current card` / `selected cards` readings — instead of being addressed by position; `isRenderPending` / `onRendered` cover a scheduled or running render
 * Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
 * Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura
+* Substructure filter: Added the card's structure, search type, fingerprint, similarity cutoff and searching state as readings of the filter panel it sits in
+* Similarity and Diversity Search: Added a `chem-search` status beside `search-results` — metric, fingerprint, size, row source, header, the set of rows the cards show, card sizes and properties; Similarity adds the target row, cutoff and scores
+* Scaffold Tree: Added status readings of its nodes (count, checked, coloured, each node's scaffold, hits and colour), its message and why generation is blocked, hit areas for each node and its icons, and `aria-disabled` on a blocked icon
+* Matched Molecular Pairs: Added status readings of its activities, current tab, substitutions, pairs and generated molecules
+* Activity cliffs: Added the `only cliffs` reading beside `cliffs`, and named the cliff-count button `button-cliffs`
+* Added BDD features for the Chem section of TestTrack
 * GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder
 * GROK-20808: MMP: Fixed a crash when no table was selected in the dialog
 * GROK-20829: Guard isBitsetStale against the valueless root tree group

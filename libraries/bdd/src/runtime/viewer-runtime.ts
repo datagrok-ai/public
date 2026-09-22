@@ -362,10 +362,11 @@ function install(): void {
     return parts.canvas ?? parts.root ?? v.root;
   };
   // a WebGL canvas (the 3D scatter plot) has no 2D context and no pixels to read: its picture is
-  // the viewer's own `scene signature` reading
+  // the viewer's own `scene signature` reading; a canvas not laid out yet (a filter card's, the
+  // moment its panel opens) has no size, and getImageData throws on it
   const pixels = (cv: HTMLCanvasElement): ImageData => {
     const ctx = cv.getContext('2d');
-    return ctx ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
+    return ctx && cv.width > 0 && cv.height > 0 ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
   };
   /** The viewer's picture: its canvas with its `overlay` part composited on top when there is one
    * of the same size (the scatter plot draws regression lines, labels and stats on the overlay,

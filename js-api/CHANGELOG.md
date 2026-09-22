@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Sketcher: Fixed the "Malformed molfile" error the compact sketcher's tooltip logged on hover when the molecule had been typed as SMILES (a filter card's, a molecule input's): the tooltip converts it to a molblock first
+
 * GROK-20931: Added `Stats.cumSum(options?)` and `Stats.movingAvg(window, options?)` — a running total and a trailing average as a new column; `WindowOptions` = `{orderBy, ascending, by, order}` (walk along other columns, restart per group, or follow an explicit row order such as `grid.getRowOrder()`), plus `minPeriods` for `movingAvg`; the mask is the one the stats were created with (`Stats.fromColumn(col, mask)`)
 * GROK-20931: Added `DG.FuncOptions.Accessor` (a function that returns a table or a column for use inside a formula) and `DG.FuncParamOptions.Table`
 * GROK-20931: Added `DG.SEMTYPE.COLUMN_NAME` and `DG.SEMTYPE.TABLE_NAME` — semantic types for string parameters that name a column or a table; a column-name parameter's `options.table` names the parameter that supplies its table

@@ -120,6 +120,18 @@ that pins the fix.
 | [The settings show Dendrogram checked while the tree is shown — GROK-20640](../../packages/Peptides/bdd/features/sar/from-top-menu.feature) | `Dendrogram checkbox in "Peptides settings" dialog should be checked` | Unchecked: `settings.ts` looks the tree up among the view's viewers, and Dendrogram attaches it as a grid neighbour. |
 | [Unchecking Dendrogram removes the tree — GROK-20640](../../packages/Peptides/bdd/features/sar/from-top-menu.feature) | `the analysis grid should not have a dendrogram` | The tree stays: `closeViewer(DENDROGRAM)` in `model.ts` never finds it. |
 
+## Tags added on 2026-09-22 (`bdd/chem-gaps`)
+
+Three scenarios of the new Chem project, three defects, each the last scenario of its journey and
+checked in the baseline run of the review (public master merged at `0a5b842d79`) through the
+failed step inside the JSON report.
+
+| Scenario | Stops at | Was |
+| --- | --- | --- |
+| [Removing a colored scaffold leaves the scatter plot that is colored by it — GROK-18286](../../packages/Chem/bdd/features/scaffold-tree/colors-and-limits.feature) | `"colorColumnName" property of scatter plot viewer should be "Structure colors"` | The removal takes the plot's coloring with it. |
+| [The names go into a column of their own beside an existing canonical_smiles — GROK-20955](../../packages/Chem/bdd/features/transform/names-to-smiles.feature) | `1 new column should have been added` | No column: the run ends in "Column named 'canonical_smiles' already exists" and writes nothing. |
+| [Converted molecules keep their stereochemistry — GROK-20956](../../packages/Chem/bdd/features/transform/notation.feature) | `every molecule of "canonical_smiles_molblock" column should be the same as in "canonical_smiles" column` | Three rows differ: the molblock conversion inverts the vinyl stereocentre of the quinuclidines in rows 478, 487 and 488. |
+
 ## Validation
 
 Final complete suites on four workers, 2026-09-13:

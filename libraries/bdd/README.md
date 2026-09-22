@@ -40,6 +40,11 @@ npx grok-bdd run --reporter=list                     # compile --check, then Pla
 Under the pnpm workspace the package and the library resolve to one `@playwright/test`, so
 `grok-bdd link` is only for a package installed outside the workspace with npm.
 
+A slow stand may need longer budgets: `BDD_EXPECT_TIMEOUT` raises what every check waits (15 s)
+and `BDD_COMMAND_TIMEOUT` how long a top-menu command has to add its columns (180 s).
+`BDD_FRESH_PAGE=1` reloads the shell before every feature instead of resetting it, which tells a
+feature that fails on what an earlier one left behind.
+
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
 `node_modules/.bdd-link-backup/` and links the library's in its place (`--undo` puts it back).
@@ -160,6 +165,11 @@ Box plot has no "statsff" area right now; it has: view, x axis, y axis, stats, p
 A misspelled menu item gets the visible items, a phrase inside a menu that is not open gets
 `context menu: not open`, a misspelled property the nearest captions. A journey lists every failed
 scenario in that shape. A stack trace appears only for a programming error in a binding.
+
+Every run also leaves Playwright's JSON report in the project's `test-results/report.json`, with
+the stand and the machine it ran on: the failed step of a test is its deepest step with an `error`.
+The run history of UsageAnalysis (`packages/UsageAnalysis/bdd/history`) keeps such reports, when
+asked to, as dated records with a page to follow times, failures and flakes over them.
 
 ## Element phrases
 

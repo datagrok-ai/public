@@ -7,8 +7,8 @@
    do the lookups and the row scans, and say which column or category is missing. */
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
-import {Then, When} from '../../src/registry.js';
-import {changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
+import {Given, Then, When} from '../../src/registry.js';
+import {baselineAll, changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -258,6 +258,33 @@ export const tableTagIsFile = Then('the table should have tag {string} equal to 
   expect(file.length, `the length of ${path}`).toBeGreaterThan(0);
   expect(actual, `tag "${tag}" of the table against ${path}`).toBe(file);
 }, {tier: 'api', description: 'byte for byte, line breaks included — what a file handler put on the table it opened'});
+
+export const columnIsCurrentObject = Given('the {string} column is the current object', async (page: Page, column: string) => {
+  await page.evaluate((c) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    // forced: the shell drops a set that lands within two seconds of a context-panel edit, or on a value of the same kind
+    grok.shell.setCurrentObject(col, true, true);
+  }, column);
+  await expect.poll(() => page.evaluate(() => String((grok.shell.o as any)?.name ?? '')),
+    {message: 'the current object the context panel renders'}).toBe(column);
+}, {tier: 'api', description: 'what a click on the column header does, for a feature whose subject is what the context panel then shows'});
+
+export const cellIsCurrentObject = Given('the {string} cell of row {int} is the current object', async (page: Page, column: string, row: number) => {
+  const table: string = await page.evaluate(([c, r]) => {
+    const col = grok.shell.t.col(c as string);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    grok.shell.t.currentCell = grok.shell.t.cell(Number(r) - 1, c as string);
+    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), true, true);
+    return grok.shell.t.name;
+  }, [column, row] as [string, number]);
+  await expect.poll(() => page.evaluate(() => {
+    const cell = (grok.shell.o as any)?.cell;
+    return cell ? `${cell.dataFrame?.name}: ${cell.column?.name} ${cell.rowIndex + 1}` : String(grok.shell.o);
+  }), {message: 'the cell the current object is'}).toBe(`${table}: ${column} ${row}`);
+}, {tier: 'api', description: 'what a click on the cell does, for a feature whose subject is the panes the context panel then shows'});
 
 // --- columns -----------------------------------------------------------------------------------------
 

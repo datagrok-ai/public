@@ -136,9 +136,23 @@ function launch(project: Project, args: string[], env: Record<string, string> = 
   const config = ['playwright.config.js', 'playwright.config.ts'].map((f) => join(LIB_DIR, f)).find(existsSync);
   if (!config)
     throw new Error(`no Playwright config in ${LIB_DIR} — run \`npm run build\` in the library`);
-  const child = spawn(process.execPath, [playwrightCli(project), 'test', '--config', config, ...args],
-    {cwd: project.root, stdio: 'inherit', env: {...process.env, ...env, BDD_ROOT: project.root}});
+  const report = withJsonReport(project, args);
+  const child = spawn(process.execPath, [playwrightCli(project), 'test', '--config', config, ...report.args],
+    {cwd: project.root, stdio: 'inherit', env: {...process.env, ...report.env, ...env, BDD_ROOT: project.root}});
   return new Promise((resolve) => child.on('exit', (exit) => resolve(exit ?? 1)));
+}
+
+/** A `--reporter` on the command line replaces the config's reporters, the JSON report every run
+ * leaves in test-results/report.json among them: json joins the reporters given, to the same file. */
+function withJsonReport(project: Project, args: string[]): {args: string[]; env: Record<string, string>} {
+  const i = args.findIndex((a) => a === '--reporter' || a.startsWith('--reporter='));
+  const spaced = args[i] === '--reporter';
+  const value = i < 0 ? '' : spaced ? args[i + 1] ?? '' : args[i].slice('--reporter='.length);
+  if (i < 0 || value.split(',').includes('json'))
+    return {args, env: {}};
+  const named = process.env.PLAYWRIGHT_JSON_OUTPUT_FILE ?? process.env.PLAYWRIGHT_JSON_OUTPUT_NAME;
+  return {args: [...args.slice(0, i), `--reporter=${value},json`, ...args.slice(i + (spaced ? 2 : 1))],
+    env: named ? {} : {PLAYWRIGHT_JSON_OUTPUT_FILE: join(project.root, 'test-results', 'report.json')}};
 }
 
 function exec(command: string, args: string[], cwd: string): Promise<number> {

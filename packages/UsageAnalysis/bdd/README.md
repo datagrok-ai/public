@@ -128,6 +128,43 @@ grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:
 
 Editing: change a feature, `npx grok-bdd compile`, commit the regenerated spec with it;
 `npx grok-bdd compile --verbose` prints how every element phrase resolves; `npx grok-bdd run
---trace on` records a trace with DOM snapshots; `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json npx grok-bdd
-run --reporter=list,json` gives per-step timings. A failed step reports its feature line, the
+--trace on` records a trace with DOM snapshots; every run leaves Playwright's JSON report, per-step
+timings included, in `test-results/report.json`. A failed step reports its feature line, the
 step, the reason, and what the page shows instead — see "Reading a failure" in the library README.
+
+## Run history
+
+`history/` keeps the timings and outcomes of full runs of every bdd project in the repository, so
+a slowdown, a new failure or a flake shows against the runs before it. A record is made only when
+someone asks for one: after the suites have run (each project leaves its report in its
+`bdd/test-results/report.json`), from this directory
+
+```bash
+node history/history.mjs record --note "after the chem-gaps review"
+node history/history.mjs html
+```
+
+`record` keeps each project's last report as one dated file in `history/runs/` (commit it): every
+test with its outcome, time, worker and start, a journey's scenarios with theirs, the failed step
+and error of a failure, and where the run ran — the machine (host, CPU, threads, memory, OS), the
+stand and the branch and commit. A project whose last report is more than 12 hours older than the
+newest, or that covered only some of its specs, is left out and named (`--partial` keeps a partial
+one; a run narrowed with `--grep-invert`, such as `@full-stand` on a stand without that capability,
+counts as full and the record says what it excluded). Reports saved elsewhere are recorded by naming
+the files or their directory: `record <dir-or-report.json>...`.
+
+`html` writes `history/history.html` (not committed), a standalone page over every record:
+
+- **Timeline**: the wall time of the runs over time, one line per machine and stand, with the
+  failed and flaky tests under it; the tree below goes from all suites to projects, folders,
+  features, tests and a journey's scenarios, each row with its latest time, the change against the
+  previous run in the same place, a trend line and the outcome of the last 30 runs. A row chosen in
+  the tree becomes the subject of the charts.
+- **Compare**: two runs side by side at any level of the tree, sorted by the change in time, with
+  the tests that started or stopped failing, appeared or went away. Runs from different places are
+  flagged: a slower machine is not a regression.
+- **Failures and flakes**: every test or scenario that failed or was flaky in the runs shown, how
+  often, how often it flipped between passing and failing, and the step and error it last stopped
+  at.
+
+"Where the runs ran" narrows every view to one machine and stand.

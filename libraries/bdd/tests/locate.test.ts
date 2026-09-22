@@ -305,8 +305,24 @@ scenario('space cleanup deletes existing fixtures even when server filters retur
   const cleanupPage = await session.page(browser!);
   await cleanupPage.setContent('<div class="grok-browse-icons"><i class="fa fa-sync" title="Refresh">Refresh</i></div>' +
     '<div class="layout-browse"><span id="stale-fixture">BDD Fixture</span></div>');
-  await cleanupPage.locator('[title="Refresh"]').evaluate((icon) => {
-    icon.addEventListener('click', () => document.getElementById('stale-fixture')!.remove());
+  await cleanupPage.evaluate(() => {
+    // the viewer runtime the refresh wait installs was compiled by tsx, which names its functions
+    // through a helper the page lacks
+    (window as any).__name = (fn: unknown) => fn;
+    const listeners: ((args: unknown) => void)[] = [];
+    const stream = {subscribe: () => ({unsubscribe: () => undefined})};
+    const refreshed = {subscribe: (cb: (args: unknown) => void) => {
+      listeners.push(cb);
+      return {unsubscribe: () => void listeners.splice(listeners.indexOf(cb), 1)};
+    }};
+    (window as any).__bddStub = {shell: {tables: [], tableViews: []}, functions: {onBeforeRunAction: stream, onAfterRunAction: stream},
+      events: new Proxy({}, {get: (_, name) => name === 'onBrowseTreeRefreshed' ? refreshed :
+        name === 'onEvent' || name === 'onCustomEvent' ? () => stream : typeof name === 'string' && name.startsWith('on') ? stream : undefined})};
+    document.querySelector('[title="Refresh"]')!.addEventListener('click', () => {
+      document.getElementById('stale-fixture')!.remove();
+      for (const cb of [...listeners])
+        cb(true);
+    });
   });
   await cleanupPage.evaluate(() => {
     let spaces = [
@@ -321,7 +337,7 @@ scenario('space cleanup deletes existing fixtures even when server filters retur
       async delete(space: {id: string}) { spaces = spaces.filter((item) => item.id !== space.id); },
       async createRootSpace(name: string) { spaces.push({id: 'new-fixture', name, friendlyName: name}); },
     };
-    (window as any).grok = {dapi: {spaces: data}};
+    (window as any).grok = {...(window as any).__bddStub, dapi: {spaces: data}};
   });
   await noSpaceOnServer(cleanupPage, 'BDD Fixture');
   const remaining = () => cleanupPage.evaluate(async () =>
