@@ -54,41 +54,32 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
    * compute, so the DOM being populated says nothing about it. */
   get isRenderPending(): boolean {return this._renderPending > 0;}
 
-  /** The table rows the result cards show, in display order. */
-  protected cardRows(): number[] { return []; }
-
-  /** Readings a subclass adds to the common ones. */
+  /** Readings a subclass adds to the ones {@link chemSearchStatus} reports. */
   protected readings(): {[name: string]: number | string | boolean} { return {}; }
 
-  getWidgetStatus(): any {
-    const base: any = super.getWidgetStatus();
-    const cards = Array.from(this.root.querySelectorAll('.chem-viewer-grid > div, .chem-diversity-search > div')) as HTMLElement[];
-    const rootBox = this.root.getBoundingClientRect();
-    const hitAreas: {[name: string]: {x: number, y: number, width: number, height: number}} = {...(base.hitAreas ?? {})};
-    cards.forEach((card, i) => {
-      const r = card.getBoundingClientRect();
-      if (r.width > 0)
-        hitAreas[`card ${i + 1}`] = {x: r.left - rootBox.left, y: r.top - rootBox.top, width: r.width, height: r.height};
-    });
-    const sizes = new Set(cards.map((card) => {
+  /** What a Chem search shows beside its cards (`search-results` reports the cards themselves): the
+   * metric and fingerprint of the header, the card size, the rows the cards show as a set and the
+   * properties under them. */
+  private chemSearchStatus(): {values: {[name: string]: number | string | boolean}} {
+    const cards = Array.from(this.root.querySelectorAll('[data-row]')) as HTMLElement[];
+    const sizes = new Set<string>();
+    for (const card of cards) {
       const canvas = card.querySelector('canvas');
-      return canvas ? `${parseInt(canvas.style.width)}x${parseInt(canvas.style.height)}` : '';
-    }).filter((s) => s !== ''));
-    const properties = cards.length === 0 ? '' : Array.from(cards[cards.length - 1].querySelectorAll('.chem-similarity-prop-label'))
-      .map((l) => l.textContent ?? '').filter((l) => l !== '').join(', ');
-    return {...base, hitAreas, values: {...(base.values ?? {}),
-      'molecule column': this.moleculeColumn?.name ?? '',
+      if (canvas)
+        sizes.add(`${parseInt(canvas.style.width)}x${parseInt(canvas.style.height)}`);
+    }
+    const last = cards[cards.length - 1];
+    const properties = !last ? [] : Array.from(last.querySelectorAll('.chem-similarity-prop-label'))
+      .map((l) => l.textContent ?? '').filter((l) => l !== '');
+    return {values: {
       'metric': this.distanceMetric,
       'fingerprint': this.fingerprint,
-      'limit': this.limit,
       'size': this.size,
       'row source': this.rowSource,
       'header': this.metricsLink?.textContent?.trim() ?? '',
-      'cards': cards.length,
-      'card rows': this.cardRows().map((i) => i + 1).join(', '),
-      'card row set': this.cardRows().map((i) => i + 1).sort((a, b) => a - b).join(', '),
+      'card row set': cards.map((c) => Number(c.getAttribute('data-row'))).sort((a, b) => a - b).join(', '),
       'card sizes': Array.from(sizes).join(', '),
-      'card properties': properties,
+      'card properties': properties.join(', '),
       ...this.readings()}};
   }
 
@@ -148,6 +139,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumnName = this.moleculeColumn?.name ?? '';
     }
     this.addStatusProvider('search-results', () => searchResultsStatus(this.root, this.moleculeColumnName, this.limit));
+    this.addStatusProvider('chem-search', () => this.chemSearchStatus());
     await this.render(true);
   }
 

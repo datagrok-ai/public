@@ -111,7 +111,7 @@ export class SubstructureFilter extends DG.Filter {
   searchNotCompleted = false;
   recalculateFilter = false;
   _peerFilterDisabled = false;
-  statusPanel: DG.Viewer | null = null;
+  statusPanel: DG.Widget | null = null;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -426,8 +426,8 @@ export class SubstructureFilter extends DG.Filter {
 
   /** Reports what the card holds to the filter panel it sits in, keyed by its column. */
   reportToPanel(): void {
-    const panel = wu(grok.shell.tableViews).map((v) => Array.from(v.viewers)).toArray().flat()
-      .find((v) => v.type === DG.VIEWER.FILTERS && v.root.contains(this.root));
+    const host = this.root.closest('[name="viewer-Filters"]');
+    const panel = host ? DG.Widget.find(host) : null;
     if (panel == null)
       return;
     this.statusPanel = panel;

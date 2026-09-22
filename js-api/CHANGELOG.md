@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Sketcher: Fixed the "Malformed molfile" error the compact sketcher's tooltip logged on hover when the molecule had been typed as SMILES (a filter card's, a molecule input's): the tooltip converts it to a molblock first
+
 * GROK-20416: `ui.hints.addHintIndicator` accepts a function target and re-resolves it, so the blob follows an element that is rebuilt while the hint is up (a ribbon item) instead of being orphaned on the node that was replaced; ids are monotonic rather than one of 1000 random values, `ui.hints.remove` clears the reposition timer, and the highlight class is cleared wherever the hint ended up; a function whose target has not rendered yet returns the blob itself, which `remove` accepts, so the hint stays removable
 * GROK-20753: Domains: `DomainSupport.version` says whether the table's change token (`GET …/version`) moves — false for a registration the platform writes itself; a live client polls the aggregate there and wherever it lacks the table-level View grant (`can.view`), instead of failing on a 403 or watching a token that never advances
 * GROK-20753: Domains: `restore` is a fourth `/transaction` op (`{op: 'restore', table, id}` — the Delete grant, not a new permission, and the server orders a parent's restore before its child's, the inverse of the delete ordering), and `DomainFrameEditor.markRestored(rows)` / `unmarkRestored(rows)` stage a soft-deleted row's restore into the pending batch: it counts as one change, rides `save()` in the same transaction as the edits and the deletes, and `discard()` takes it back. `DomainRowState` gains `'restored'`; new `DomainRestoreResult` (what `restore(id)` and a `restore` op both answer) and `DG.DOMAIN_DELETED_COLUMN`

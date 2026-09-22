@@ -133,10 +133,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   /** What the analysis produced, tab by tab: the activities it ran on, the substitutions and the
    * pairs it found, and the molecules the Generation tab holds. */
-  getWidgetStatus(): any {
-    const base: any = super.getWidgetStatus();
+  getWidgetStatus(): DG.U2.IWidgetStatus {
+    const base = super.getWidgetStatus();
     const grids = this.pairedGrids;
-    return {...base, values: {...(base.values ?? {}),
+    return {...base, values: {...base.values,
       'activities': (this.activities ?? []).join(', '),
       'tab': this.tabs?.currentPane?.name ?? this.currentTab,
       'substitutions': grids?.fpGrid?.dataFrame?.rowCount ?? -1,

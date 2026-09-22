@@ -9,6 +9,7 @@ Feature: The Scaffold Tree viewer — building, checking, editing and filtering
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens spgi dataset
 

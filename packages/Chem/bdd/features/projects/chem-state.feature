@@ -8,6 +8,7 @@ Feature: A saved project brings back the Chem state it was saved with
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens spgi dataset
 

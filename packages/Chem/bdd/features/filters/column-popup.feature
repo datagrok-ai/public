@@ -9,6 +9,7 @@ Feature: A column popup's substructure filter moved to the filter panel
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens spgi-100 dataset
 

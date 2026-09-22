@@ -21,9 +21,8 @@ export const pickSearchType = When('user picks search type {string} in the {stri
 
 export const offersSearchTypes = Then('the {string} filter card should offer search types {string}', async (page: Page, caption: string, list: string) => {
   const select = searchType(page, caption);
-  await select.waitFor({state: 'visible', timeout: 10000});
-  const options = await select.locator('option').allTextContents();
-  expect(options.map((o) => o.trim()), `the search types of the "${caption}" card`).toEqual(list.split(/\s*,\s*/));
+  await expect.poll(async () => (await select.locator('option').allTextContents()).map((o) => o.trim()),
+    {message: `the search types of the "${caption}" card`}).toEqual(list.split(/\s*,\s*/));
 }, {description: 'the options of the search-type choice, in order'});
 
 export const openCardSettings = When('user opens the settings of the {string} filter card', async (page: Page, caption: string) => {

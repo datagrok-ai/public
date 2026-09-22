@@ -3,7 +3,7 @@
    the viewer's own "nodes" reading, not a wait of a fixed length. */
 import {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
-import {type ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
 
 export const treeBuilt = Then('{widget} should have finished building its tree', async (page: Page, target: ElementRef) => {
   let seen = -1;
@@ -14,7 +14,7 @@ export const treeBuilt = Then('{widget} should have finished building its tree',
     });
     seen = r.nodes;
     return r.nodes > 0 || /failed/i.test(r.message);
-  }, {timeout: 300000, intervals: [1000], message: 'the nodes of the scaffold tree'}).toBe(true).catch(() => {
+  }, {timeout: pollMs(300000), intervals: [1000], message: 'the nodes of the scaffold tree'}).toBe(true).catch(() => {
     throw new Error(`the scaffold tree built no node in five minutes; its "nodes" reading is ${seen}`);
   });
 }, {description: 'polls the viewer\'s "nodes" reading for as long as a generation takes (up to five minutes)'});
@@ -25,7 +25,7 @@ export const mmpReady = Then('{widget} should have finished its analysis', async
     seen = await viewers.onViewer(page, target, (e) =>
       Number((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.['substitutions'] ?? -1));
     return seen > 0;
-  }, {timeout: 300000, intervals: [1000], message: 'the substitutions of the analysis'}).toBe(true).catch(() => {
+  }, {timeout: pollMs(300000), intervals: [1000], message: 'the substitutions of the analysis'}).toBe(true).catch(() => {
     throw new Error(`the analysis found no substitution in five minutes; its "substitutions" reading is ${seen}`);
   });
 }, {description: 'polls the viewer\'s "substitutions" reading for as long as a matched-pairs run takes (up to five minutes)'});

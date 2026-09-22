@@ -58,10 +58,10 @@ export async function expectSwitched(page: Page, target: ElementRef, on: boolean
 }
 
 /** Several matches (stacked balloons, repeated rows): visible when any is, hidden when none is —
- * one query either way. */
-async function expectVisible(loc: Locator, visible: boolean): Promise<void> {
+ * one query either way. `timeout` is for what a long computation produces (a search's hits). */
+export async function expectVisible(loc: Locator, visible: boolean, timeout?: number): Promise<void> {
   const shown = loc.filter({visible: true});
-  await (visible ? expect(shown, 'visible expected').not.toHaveCount(0) : expect(shown, 'hidden expected').toHaveCount(0));
+  await (visible ? expect(shown, 'visible expected').not.toHaveCount(0, {timeout}) : expect(shown, 'hidden expected').toHaveCount(0, {timeout}));
 }
 
 /** Options and tabs say `aria-selected`, toggles and cards `aria-pressed`, radio-like buttons

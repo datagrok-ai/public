@@ -34,7 +34,7 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
   // dialog, a docked panel, a sticky option) reaches the next one; BDD_FRESH_PAGE starts each
   // feature from a reload, at the cost of a shell load per feature
   guide.silent(page);
-  const inShell = process.env.BDD_FRESH_PAGE === undefined &&
+  const inShell = process.env.BDD_FRESH_PAGE !== '1' &&
     await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell) {
     // a dev stand's pub serve can take minutes to hand out the bundle while it recompiles or is

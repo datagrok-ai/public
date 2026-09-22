@@ -264,21 +264,26 @@ export const columnIsCurrentObject = Given('the {string} column is the current o
     const col = grok.shell.t.col(c);
     if (!col)
       throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
-    grok.shell.o = col;
+    // forced: the shell drops a set that lands within two seconds of a context-panel edit, or on a value of the same kind
+    grok.shell.setCurrentObject(col, true, true);
   }, column);
   await expect.poll(() => page.evaluate(() => String((grok.shell.o as any)?.name ?? '')),
     {message: 'the current object the context panel renders'}).toBe(column);
 }, {tier: 'api', description: 'what a click on the column header does, for a feature whose subject is what the context panel then shows'});
 
 export const cellIsCurrentObject = Given('the {string} cell of row {int} is the current object', async (page: Page, column: string, row: number) => {
-  await page.evaluate(([c, r]) => {
+  const table: string = await page.evaluate(([c, r]) => {
     const col = grok.shell.t.col(c as string);
     if (!col)
       throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
     grok.shell.t.currentCell = grok.shell.t.cell(Number(r) - 1, c as string);
-    grok.shell.o = DG.SemanticValue.fromTableCell(grok.shell.t.currentCell);
+    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), true, true);
+    return grok.shell.t.name;
   }, [column, row] as [string, number]);
-  await expect.poll(() => page.evaluate(() => grok.shell.o != null), {message: 'the current object'}).toBe(true);
+  await expect.poll(() => page.evaluate(() => {
+    const cell = (grok.shell.o as any)?.cell;
+    return cell ? `${cell.dataFrame?.name}: ${cell.column?.name} ${cell.rowIndex + 1}` : String(grok.shell.o);
+  }), {message: 'the cell the current object is'}).toBe(`${table}: ${column} ${row}`);
 }, {tier: 'api', description: 'what a click on the cell does, for a feature whose subject is the panes the context panel then shows'});
 
 // --- columns -----------------------------------------------------------------------------------------

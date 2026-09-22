@@ -9,6 +9,7 @@ Feature: Substructure search from the Search menu
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens smiles dataset
 

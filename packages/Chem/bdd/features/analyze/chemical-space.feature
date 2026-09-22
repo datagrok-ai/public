@@ -8,6 +8,7 @@ Feature: Chemical Space over SMILES, V2000 and V3000 molecules
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
 
   Scenario: The dialog opens on the molecule column of smiles-50

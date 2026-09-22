@@ -7,8 +7,13 @@ Feature: R-Groups Analysis with MCS, Replace latest and no core
   latest on it takes the latest set away and puts its own in place. A run with an empty sketcher
   says "No core was provided" and keeps the columns of the run before it.
 
+  The dialog remembers Only match at R groups per account, and an MCS core carries no labelled R
+  group, so the first run unticks it through the dialog's gear; the account is left with the option
+  off, the product's default.
+
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
 
   Scenario: MCS over molecules that are all the same finds no R-groups
@@ -22,7 +27,11 @@ Feature: R-Groups Analysis with MCS, Replace latest and no core
     When user picks "Chem > Analyze > R-Groups Analysis..." from the top menu
     Then "R-Groups Analysis" dialog should be visible
     And "Visual analysis" input in "R-Groups Analysis" dialog should be checked
+    # the dialog remembers Only match at R groups per account, and an MCS core carries no labelled R group
+    When user clicks on R-Groups settings icon
+    And user unchecks "Only match at R groups" input in "R-Groups Analysis" dialog
     When user clicks on MCS button in "R-Groups Analysis" dialog
+    And "R-Groups Analysis" dialog should have finished updating
     And user clicks on OK button in "R-Groups Analysis" dialog
     Then the top menu command should have completed
     And no new column should have been added
@@ -33,6 +42,7 @@ Feature: R-Groups Analysis with MCS, Replace latest and no core
     Given user opens sar-small dataset
     When user picks "Chem > Analyze > R-Groups Analysis..." from the top menu
     And user clicks on MCS button in "R-Groups Analysis" dialog
+    And "R-Groups Analysis" dialog should have finished updating
     And user clicks on OK button in "R-Groups Analysis" dialog
     Then the top menu command should have completed
     And a new column matching "^R1" should have been added
@@ -43,6 +53,7 @@ Feature: R-Groups Analysis with MCS, Replace latest and no core
     When user picks "Chem > Analyze > R-Groups Analysis..." from the top menu
     Then "Replace latest" input in "R-Groups Analysis" dialog should be visible
     When user clicks on MCS button in "R-Groups Analysis" dialog
+    And "R-Groups Analysis" dialog should have finished updating
     And user unchecks "Replace latest" input in "R-Groups Analysis" dialog
     And user clicks on OK button in "R-Groups Analysis" dialog
     Then the top menu command should have completed
@@ -53,6 +64,7 @@ Feature: R-Groups Analysis with MCS, Replace latest and no core
   Scenario: With Replace latest on the third run takes the latest set away
     When user picks "Chem > Analyze > R-Groups Analysis..." from the top menu
     And user clicks on MCS button in "R-Groups Analysis" dialog
+    And "R-Groups Analysis" dialog should have finished updating
     And user checks "Replace latest" input in "R-Groups Analysis" dialog
     And user clicks on OK button in "R-Groups Analysis" dialog
     Then the top menu command should have completed
@@ -70,6 +82,7 @@ Feature: R-Groups Analysis with MCS, Replace latest and no core
     Given user opens smiles dataset
     When user picks "Chem > Analyze > R-Groups Analysis..." from the top menu
     And user clicks on MCS button in "R-Groups Analysis" dialog
+    And "R-Groups Analysis" dialog should have finished updating
     Then the canvases of "R-Groups Analysis" dialog should be painted in at least 2 colors
     When user clicks on OK button in "R-Groups Analysis" dialog
     Then the top menu command should have completed

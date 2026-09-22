@@ -148,14 +148,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
   }
 
-  protected cardRows(): number[] {
-    return this.idxs ? Array.from({length: this.idxs.length}, (_, i) => this.idxs!.get(i)) : [];
-  }
-
   protected readings(): {[name: string]: number | string | boolean} {
     const scores = this.scores ? Array.from({length: this.scores.length}, (_, i) => this.scores!.get(i)) : [];
     return {
-      'target row': this.targetMoleculeIdx + 1,
+      'target row': this.targetMoleculeIdx,
       'cutoff': this.cutoff,
       'scores': scores.map((s) => s.toFixed(2)).join(', '),
       'min score': scores.length === 0 ? -1 : Math.min(...scores),

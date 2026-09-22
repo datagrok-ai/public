@@ -11,6 +11,7 @@ Feature: The substructure filter card and its search types
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens spgi-100 dataset
 

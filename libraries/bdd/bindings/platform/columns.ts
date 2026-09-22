@@ -93,7 +93,7 @@ export const everyValueMatches = Then('every value of {string} column should mat
 
 export const fewerDistinctThanRows = Then('{string} column should have fewer distinct values than the table has rows', async (page: Page, column: string) => {
   const f = await columnFacts(page, column);
-  const distinct = new Set(f.values.filter((_, i) => filled(f).includes(i))).size;
+  const distinct = new Set(filled(f).map((i) => f.values[i])).size;
   expect(distinct, `distinct values of "${column}" against the ${f.values.length} rows`).toBeLessThan(f.values.length);
 }, {description: 'a column that groups the rows rather than naming each of them'});
 

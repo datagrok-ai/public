@@ -3,7 +3,9 @@
    Empty cells are compared as empty; a cell RDKit cannot read fails the step with its row. */
 import {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
-import {type ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, expect, gestures, viewers} from '@datagrok-libraries/bdd/runtime';
+
+declare const grok: any;
 
 type Pair = {row: number; a: string; b: string};
 
@@ -56,21 +58,19 @@ function pairs(a: string[], b: string[]): Pair[] {
   return a.map((x, i) => ({row: i + 1, a: x, b: b[i]}));
 }
 
-export const sameMolecules = Then('every molecule of {string} column should be the same as in {string} column', async (page: Page, x: string, y: string) => {
-  const {values: [a, b], unreadable} = await canonical(page, [x, y]);
+async function expectSameMolecules(page: Page, x: string, y: string, flat: boolean): Promise<void> {
+  const {values: [a, b], unreadable} = await canonical(page, [x, y], flat);
   expect(unreadable, 'cells RDKit could not read').toEqual([]);
   expect(a.filter(Boolean).length, `molecules in "${x}"`).toBeGreaterThan(0);
   const bad = pairs(a, b).filter((p) => p.a !== p.b).map((p) => `row ${p.row}: ${p.a} vs ${p.b}`);
   expect(bad.slice(0, 10), `rows where "${x}" and "${y}" hold different molecules (${bad.length})`).toEqual([]);
-}, {description: 'canonical SMILES of the two columns equal row by row: the same molecules in any notation'});
+}
 
-export const sameFlatMolecules = Then('every molecule of {string} column should be the same as in {string} column ignoring stereochemistry', async (page: Page, x: string, y: string) => {
-  const {values: [a, b], unreadable} = await canonical(page, [x, y], true);
-  expect(unreadable, 'cells RDKit could not read').toEqual([]);
-  expect(a.filter(Boolean).length, `molecules in "${x}"`).toBeGreaterThan(0);
-  const bad = pairs(a, b).filter((p) => p.a !== p.b).map((p) => `row ${p.row}: ${p.a} vs ${p.b}`);
-  expect(bad.slice(0, 10), `rows where "${x}" and "${y}" hold different molecules (${bad.length})`).toEqual([]);
-}, {description: 'canonical SMILES without chiral tags and double-bond directions equal row by row: the same atoms and bonds'});
+export const sameMolecules = Then('every molecule of {string} column should be the same as in {string} column', (page: Page, x: string, y: string) =>
+  expectSameMolecules(page, x, y, false), {description: 'canonical SMILES of the two columns equal row by row: the same molecules in any notation'});
+
+export const sameFlatMolecules = Then('every molecule of {string} column should be the same as in {string} column ignoring stereochemistry', (page: Page, x: string, y: string) =>
+  expectSameMolecules(page, x, y, true), {description: 'canonical SMILES without chiral tags and double-bond directions equal row by row: the same atoms and bonds'});
 
 export const noSameMolecule = Then('no molecule of {string} column should be the same as in {string} column', async (page: Page, x: string, y: string) => {
   const {values: [a, b], unreadable} = await canonical(page, [x, y]);
@@ -94,8 +94,9 @@ export const someMoleculesChanged = Then('some but not all molecules of {string}
   expect(changed, `rows where "${x}" holds another molecule than "${y}"`).toBeLessThan(a.length);
 });
 
-export const noSubstructure = Then('no molecule of {string} column should contain {string}', async (page: Page, column: string, query: string) => {
-  const hits: string[] = await page.evaluate(async ([n, q]) => {
+/** The filled rows (1-based) whose molecule contains the query, an RDKit substructure match. */
+function rowsContaining(page: Page, column: string, query: string): Promise<string[]> {
+  return page.evaluate(async ([n, q]) => {
     const col = grok.shell.t.col(n);
     if (!col)
       throw new Error(`no "${n}" column in ${grok.shell.t.name}`);
@@ -121,29 +122,14 @@ export const noSubstructure = Then('no molecule of {string} column should contai
     }
     return out;
   }, [column, query] as [string, string]);
-  expect(hits, `molecules of "${column}" containing ${query}`).toEqual([]);
+}
+
+export const noSubstructure = Then('no molecule of {string} column should contain {string}', async (page: Page, column: string, query: string) => {
+  expect(await rowsContaining(page, column, query), `molecules of "${column}" containing ${query}`).toEqual([]);
 }, {description: 'an RDKit substructure query (SMILES or SMARTS) matched against every filled cell'});
 
 export const moleculesMatching = Then('{int} molecules of {string} column should contain {string}', async (page: Page, count: number, column: string, query: string) => {
-  const n: number = await page.evaluate(async ([c, q]) => {
-    const col = grok.shell.t.col(c);
-    if (!col)
-      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
-    const rdkit = await grok.functions.call('Chem:getRdKitModule');
-    const qmol = rdkit.get_qmol(q);
-    let hits = 0;
-    for (let i = 0; i < col.length; i++) {
-      if (col.isNone(i) || col.get(i) === '')
-        continue;
-      const mol = rdkit.get_mol(col.get(i));
-      if (mol.get_substruct_match(qmol) !== '{}')
-        hits++;
-      mol.delete();
-    }
-    qmol.delete();
-    return hits;
-  }, [column, query] as [string, string]);
-  expect(n, `molecules of "${column}" containing ${query}`).toBe(count);
+  expect((await rowsContaining(page, column, query)).length, `molecules of "${column}" containing ${query}`).toBe(count);
 });
 
 export const noMoreFragments = Then('no molecule of {string} column should have more fragments than in {string} column', async (page: Page, x: string, y: string) => {
@@ -154,13 +140,12 @@ export const noMoreFragments = Then('no molecule of {string} column should have 
 }, {description: 'dot-separated components of the canonical SMILES, row by row'});
 
 export const clipboardMolecule = Then('the clipboard should hold the molecule of row {int} of {string} column', async (page: Page, row: number, column: string) => {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-  const r = await page.evaluate(async ([i, n]) => {
+  const text = await gestures.readClipboard(page);
+  const r = await page.evaluate(async ([i, n, text]) => {
     const col = grok.shell.t.col(n);
     if (!col)
       throw new Error(`no "${n}" column in ${grok.shell.t.name}`);
     const rdkit = await grok.functions.call('Chem:getRdKitModule');
-    const text = await navigator.clipboard.readText();
     const smiles = (v: string) => {
       const mol = rdkit.get_mol(v);
       try {
@@ -178,7 +163,7 @@ export const clipboardMolecule = Then('the clipboard should hold the molecule of
       copied = `unreadable: ${text.slice(0, 60)}`;
     }
     return {copied, cell: smiles(String(col.get(i - 1)))};
-  }, [row, column] as [number, string]);
+  }, [row, column, text] as [number, string, string]);
   expect(r.copied, `the clipboard's molecule against row ${row} of "${column}"`).toBe(r.cell);
 }, {description: 'the clipboard text read by RDKit (SMILES, SMARTS or molfile) is the cell\'s molecule'});
 
@@ -217,8 +202,11 @@ export const sortedBySimilarity = Then('the first {int} rows of grid should be i
     expect(r.scores[i], `the similarity of grid row ${i + 1} against grid row ${i} (${r.scores.join(', ')})`).toBeLessThanOrEqual(r.scores[i - 1] + 1e-9);
 }, {description: 'the grid\'s row order (getRowOrder): the query row first, then Tanimoto on Morgan fingerprints (radius 2, 2048 bits) never rising'});
 
-export const filterPassesMatching = Then('the filter should pass exactly the molecules of {string} column containing {string}', async (page: Page, column: string, query: string) => {
-  const r = await page.evaluate(async ([c, q]) => {
+/** The rows of the current table where the filter and an RDKit substructure match of the query
+ * disagree, with how many rows contain the query, how many pass, and how many RDKit could not read. */
+function filterAgainstQuery(page: Page, column: string, query: string):
+  Promise<{wrong: string[]; matched: number; unreadable: number; passed: number}> {
+  return page.evaluate(async ([c, q]) => {
     const df = grok.shell.t;
     const col = df.col(c);
     if (!col)
@@ -228,31 +216,40 @@ export const filterPassesMatching = Then('the filter should pass exactly the mol
     const wrong: string[] = [];
     let matched = 0;
     let unreadable = 0;
-    for (let i = 0; i < df.rowCount; i++) {
-      let hit = false;
-      try {
-        const mol = rdkit.get_mol(col.get(i));
-        hit = mol.get_substruct_match(qmol) !== '{}';
-        mol.delete();
+    try {
+      for (let i = 0; i < df.rowCount; i++) {
+        let hit = false;
+        try {
+          const mol = rdkit.get_mol(col.get(i));
+          hit = mol.get_substruct_match(qmol) !== '{}';
+          mol.delete();
+        }
+        catch {
+          unreadable++;
+        }
+        if (hit)
+          matched++;
+        if (hit !== df.filter.get(i))
+          wrong.push(`row ${i + 1} ${hit ? 'contains it but is filtered out' : 'passes without it'}`);
       }
-      catch {
-        unreadable++;
-      }
-      if (hit)
-        matched++;
-      if (hit !== df.filter.get(i))
-        wrong.push(`row ${i + 1} ${hit ? 'contains it but is filtered out' : 'passes without it'}`);
     }
-    qmol.delete();
+    finally {
+      qmol.delete();
+    }
     return {wrong, matched, unreadable, passed: df.filter.trueCount};
   }, [column, query] as [string, string]);
+}
+
+export const filterPassesMatching = Then('the filter should pass exactly the molecules of {string} column containing {string}', async (page: Page, column: string, query: string) => {
+  const r = await filterAgainstQuery(page, column, query);
   expect(r.unreadable, `molecules of "${column}" RDKit could not read`).toBe(0);
   expect(r.wrong.slice(0, 10), `rows the filter disagrees with ${query} on (${r.wrong.length}; ${r.matched} contain it, ${r.passed} pass)`).toEqual([]);
 }, {description: 'every row passes the filter if and only if its molecule contains the query (RDKit substructure match); polls nothing, so it follows a row-count step'});
 
 export const readingIsRowMolecule = Then('the {string} reading of filter panel should be the molecule of row {int} of {string} column', async (page: Page, reading: string, row: number, column: string) => {
   await expect.poll(() => page.evaluate(async ([name, i, c]) => {
-    const host = document.querySelector('[name="viewer-Filters"]');
+    // a cloned view leaves the first view's panel in the DOM, hidden
+    const host = Array.from(document.querySelectorAll('[name="viewer-Filters"]')).find((e) => (e as HTMLElement).offsetParent !== null);
     const values = host == null ? {} : (window as any).__bdd.viewerOf(host).getWidgetStatus()?.values ?? {};
     const rdkit = await grok.functions.call('Chem:getRdKitModule');
     const smiles = (v: string) => {
@@ -275,16 +272,16 @@ export const cardsFromFilteredRows = Then('every card of {widget} should show a 
   await expect.poll(async () => {
     const r = await viewers.onViewer(page, target, (e) => {
       const v = (window as any).__bdd.viewerOf(e);
-      const rows = String(v.getWidgetStatus()?.values?.['card rows'] ?? '').split(', ').filter(Boolean).map(Number);
+      const rows = String(v.getWidgetStatus()?.values?.['card row set'] ?? '').split(', ').filter(Boolean).map(Number);
       const df = grok.shell.t;
-      return {rows, out: rows.filter((i: number) => !df.filter.get(i - 1)).length, passing: df.filter.trueCount, limit: v.limit};
+      return {rows, out: rows.filter((i: number) => !df.filter.get(i)).length, passing: df.filter.trueCount, limit: v.limit};
     });
     seen = `cards ${r.rows.join(', ')}; ${r.out} of them filtered out; ${r.passing} rows pass, limit ${r.limit}`;
     return r.out === 0 && r.rows.length === Math.min(r.passing, r.limit);
   }, {message: 'the cards against the rows that pass the filter'}).toBe(true).catch(() => {
     throw new Error(`the cards are not the rows that pass the filter: ${seen}`);
   });
-}, {description: 'the viewer\'s "card rows" reading against the table filter: each card is a passing row, and there are as many cards as passing rows up to the limit'});
+}, {description: 'the viewer\'s "card row set" reading against the table filter: each card is a passing row, and there are as many cards as passing rows up to the limit'});
 
 export const matrixDiagonal = Then('the similarity columns of table {string} should be symmetric, read {float} on the diagonal and less somewhere off it', async (page: Page, name: string, self: number) => {
   const r = await page.evaluate(([n, s]) => {
@@ -344,25 +341,8 @@ export const filterMatchesReading = Then('the filter should pass exactly the mol
   const query = await viewers.onViewer(page, target, (e, name: any) =>
     String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading);
   expect(query, `the "${reading}" reading to filter by`).not.toBe('');
-  const r = await page.evaluate(async ([c, q]) => {
-    const df = grok.shell.t;
-    const col = df.col(c);
-    const rdkit = await grok.functions.call('Chem:getRdKitModule');
-    const qmol = rdkit.get_qmol(q);
-    const wrong: string[] = [];
-    let matched = 0;
-    for (let i = 0; i < df.rowCount; i++) {
-      const mol = rdkit.get_mol(col.get(i));
-      const hit = mol.get_substruct_match(qmol) !== '{}';
-      mol.delete();
-      if (hit)
-        matched++;
-      if (hit !== df.filter.get(i))
-        wrong.push(`row ${i + 1} ${hit ? 'contains it but is filtered out' : 'passes without it'}`);
-    }
-    qmol.delete();
-    return {wrong, matched, passed: df.filter.trueCount};
-  }, [column, query] as [string, string]);
+  const r = await filterAgainstQuery(page, column, query);
+  expect(r.unreadable, `molecules of "${column}" RDKit could not read`).toBe(0);
   expect(r.matched, 'molecules containing the scaffold the reading holds').toBeGreaterThan(0);
   expect(r.wrong.slice(0, 10), `rows the filter disagrees with the "${reading}" reading on (${r.wrong.length}; ${r.matched} contain it, ${r.passed} pass)`).toEqual([]);
 }, {description: 'the scaffold a viewer reports, matched against the column by RDKit, against what the table filter keeps'});

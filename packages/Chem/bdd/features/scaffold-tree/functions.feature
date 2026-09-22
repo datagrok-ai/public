@@ -11,6 +11,7 @@ Feature: Scaffold Tree — add, generate, filter, inspect
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens smiles-50 dataset
 

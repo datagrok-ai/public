@@ -37,3 +37,6 @@ kind('MPO profile', {
   parts: {actions: '.chem-mpo-actions-button'},
   description: 'a row of the Manage Profiles list, by the profile name; "actions of X MPO profile" is its ⋮ button',
 });
+
+element('R-Groups settings icon', {selector: '.chem-rgroup-settings-icon',
+  description: 'the gear of the R-Groups Analysis dialog: shows Matching strategy and Only match at R groups, which the dialog remembers per account'});

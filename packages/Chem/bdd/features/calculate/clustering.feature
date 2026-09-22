@@ -9,6 +9,7 @@ Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens smiles dataset
 

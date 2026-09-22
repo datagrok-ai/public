@@ -58,15 +58,6 @@ export const noMpoProfile = Given('no MPO profile named {string} is on the serve
   }
 }, {tier: 'api', description: 'deletes the profiles (comma-separated) and their pMPO model files; when the feature ends, every profile the user saved during it goes too, with its model file'});
 
-export const mpoProfileOnServer = Given('an MPO profile named {string} is on the server', async (page: Page, name: string) => {
-  atFeatureEnd(page, () => deleteProfiles(page, [name]));
-  await deleteProfiles(page, [name]);
-  await page.evaluate((json) => grok.functions.call('Chem:saveMpoProfile', {profileJson: json}), JSON.stringify({
-    type: 'MPO Desirability Profile', name, description: 'made by a bdd feature', aggregation: 'Average',
-    properties: {MW: {functionType: 'numerical', line: [[200, 0], [350, 1], [500, 0]], weight: 1}},
-  }));
-}, {tier: 'api', description: 'a one-property profile (MW) saved through Chem:saveMpoProfile, deleted when the feature ends'});
-
 export const mpoProfileProperties = Then('the MPO profile {string} should have the properties {string}',
   (page: Page, name: string, list: string) =>
     expect.poll(() => page.evaluate(async (n) => {

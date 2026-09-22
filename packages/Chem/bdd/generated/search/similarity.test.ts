@@ -36,7 +36,7 @@ test.describe("The Similarity Search viewer and its properties", () => {
       await session.step(19, "And the \"metric\" reading of Chem Similarity Search viewer should be \"Tanimoto\"", () => readingReads(page, "metric", el("Chem Similarity Search viewer"), "Tanimoto"));
       await session.step(20, "And the \"fingerprint\" reading of Chem Similarity Search viewer should be \"Morgan\"", () => readingReads(page, "fingerprint", el("Chem Similarity Search viewer"), "Morgan"));
       await session.step(21, "And the \"header\" reading of Chem Similarity Search viewer should be \"Tanimoto, Morgan\"", () => readingReads(page, "header", el("Chem Similarity Search viewer"), "Tanimoto, Morgan"));
-      await session.step(22, "And the \"target row\" reading of Chem Similarity Search viewer should be 1", () => readingIs(page, "target row", el("Chem Similarity Search viewer"), 1));
+      await session.step(22, "And the \"target row\" reading of Chem Similarity Search viewer should be 0", () => readingIs(page, "target row", el("Chem Similarity Search viewer"), 0));
       await session.step(23, "And the \"scores\" reading of Chem Similarity Search viewer should include the text \"1.00, \"", () => readingIncludes(page, "scores", el("Chem Similarity Search viewer"), "1.00, "));
       await session.step(24, "And no errors should have been logged", () => noErrors(page));
     });

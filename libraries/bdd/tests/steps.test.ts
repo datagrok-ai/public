@@ -10,15 +10,11 @@ import {fillsParent, shouldOffer, visibleCount} from '../bindings/common/steps.j
 import {mouseOverRowIs} from '../bindings/platform/columns.js';
 import {newestMatchingDistinct, newestMatchingFilled} from '../bindings/platform/commands.js';
 import {setTableTag, tableTagIsFile} from '../bindings/platform/data.js';
-import {taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
-import {openTableOf} from '../bindings/platform/steps.js';
+import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
+import {fixtureFamilies, isStaleFixture, openTableOf} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
 import {select} from '../src/runtime/gestures.js';
 import {locate} from '../src/runtime/locate.js';
-import {tableTagIsFile} from '../bindings/platform/data.js';
-import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
-import {fixtureFamilies, isStaleFixture} from '../bindings/platform/steps.js';
-import {el} from '../src/runtime/args.js';
 import {knownFailure} from '../src/runtime/harness.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
 
@@ -68,7 +64,11 @@ async function standIn(p: Page, columns: Record<string, (string | null)[]>): Pro
       getTag: (k: string) => tags[k] ?? null,
       setTag: (k: string, v: string) => { tags[k] = v; },
     };
-    (window as any).grok = {shell: {t}};
+    // the event streams the viewer runtime subscribes to when a step changes the table through it
+    const stream = {subscribe: () => ({unsubscribe: () => undefined})};
+    (window as any).grok = {shell: {t, tables: [t], tableViews: []},
+      events: {onViewerAdded: stream, onViewerClosed: stream, onEvent: () => stream, onCustomEvent: () => stream},
+      functions: {onBeforeRunAction: stream, onAfterRunAction: stream}};
   }, columns);
 }
 

@@ -67,11 +67,11 @@ test.describe("Convert Notation is offered once in a molecule column's Actions",
       await session.step(47, "And user clicks on CANCEL button in \"Convert Notation\" dialog", () => clickOn(page, el("CANCEL button in \"Convert Notation\" dialog")));
       await session.step(48, "And user clicks on \"Convert Notation...\" action in context panel", () => clickOn(page, el("\"Convert Notation...\" action in context panel")));
       await session.step(49, "And user clicks on CANCEL button in \"Convert Notation\" dialog", () => clickOn(page, el("CANCEL button in \"Convert Notation\" dialog")));
-      await session.step(50, "And user clicks on the \"header canonical_smiles\" area of grid", () => clickArea(page, "header canonical_smiles", el("grid")));
-      await session.step(51, "Then the context panel should show \"canonical_smiles\"", () => contextPanelShows(page, "canonical_smiles"));
-      await session.step(52, "When user expands Actions accordion header in context panel", () => expand(page, el("Actions accordion header in context panel")));
-      await session.step(53, "Then there should be 1 visible \"Convert Notation...\" action in context panel", () => visibleCount(page, 1, el("\"Convert Notation...\" action in context panel")));
-      await session.step(54, "And no errors should have been logged", () => noErrors(page));
+      await session.step(51, "Given the \"canonical_smiles\" column is the current object", () => columnIsCurrentObject(page, "canonical_smiles"));
+      await session.step(52, "Then the context panel should show \"canonical_smiles\"", () => contextPanelShows(page, "canonical_smiles"));
+      await session.step(53, "When user expands Actions accordion header in context panel", () => expand(page, el("Actions accordion header in context panel")));
+      await session.step(54, "Then there should be 1 visible \"Convert Notation...\" action in context panel", () => visibleCount(page, 1, el("\"Convert Notation...\" action in context panel")));
+      await session.step(55, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

@@ -239,6 +239,11 @@ export async function press(page: Page, key: string): Promise<void> {
     await dialog.press(name);
     return;
   }
+  // a popup (a column's, a picker's) hides on the Escape that reaches the document: a field that
+  // has the focus and keeps the key to itself (a card's search box the popup just filled) would
+  // hold it back, so the key is pressed with nothing focused
+  if (name === 'Escape' && await page.locator('.d4-popup-host').filter({visible: true}).count() > 0)
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
   await page.keyboard.press(name);
 }
 

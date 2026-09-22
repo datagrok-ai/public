@@ -85,7 +85,6 @@ export async function knownFailure(body: () => Promise<void>): Promise<void> {
   catch {
     return;
   }
-  throw new Error('tagged @known-failure and passed — the bug it describes is fixed, so the tag has to go');
   throw new Error(KNOWN_FAILURE_PASSED);
 }
 

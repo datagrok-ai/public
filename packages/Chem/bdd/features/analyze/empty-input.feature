@@ -7,6 +7,7 @@ Feature: R-Groups Analysis and Chemical Space on an all-empty molecule column
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens a table "empty_mols" with:
       | id | structure |
@@ -26,6 +27,7 @@ Feature: R-Groups Analysis and Chemical Space on an all-empty molecule column
     When user picks "Chem > Analyze > R-Groups Analysis..." from the top menu
     Then "R-Groups Analysis" dialog should be visible
     When user clicks on MCS button in "R-Groups Analysis" dialog
+    And "R-Groups Analysis" dialog should have finished updating
     And user clicks on OK button in "R-Groups Analysis" dialog
     Then an error balloon containing "No core was provided" should have been shown
     And no new column should have been added

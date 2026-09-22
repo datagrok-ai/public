@@ -10,6 +10,7 @@ Feature: A substructure card from a cell, after a reset and on a cloned view
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens spgi-100 dataset
 

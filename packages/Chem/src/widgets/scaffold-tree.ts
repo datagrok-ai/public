@@ -865,12 +865,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   /** What the tree holds, node by node, and where its nodes and icons are. A node is numbered by
    * its place in `tree.items`, the order the tree draws. */
-  getWidgetStatus(): any {
-    const base: any = super.getWidgetStatus();
-    // the orphan folders sit among the items and carry no scaffold; a node number counts scaffolds
-    const nodes = this.tree.items.filter((node) => !(value(node)?.orphans ?? false));
+  getWidgetStatus(): DG.U2.IWidgetStatus {
+    const base = super.getWidgetStatus();
+    const nodes = this.tree.items.filter((node) => !isOrphans(node));
     const rootBox = this.root.getBoundingClientRect();
-    const hitAreas: {[name: string]: {x: number, y: number, width: number, height: number}} = {...(base.hitAreas ?? {})};
+    const hitAreas = {...base.hitAreas};
     const area = (name: string, element?: Element | null) => {
       if (!element)
         return;
@@ -878,7 +877,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (r.width > 0 && r.height > 0)
         hitAreas[name] = {x: r.left - rootBox.left, y: r.top - rootBox.top, width: r.width, height: r.height};
     };
-    const values: {[name: string]: number | string | boolean} = {
+    const values: {[name: string]: number | string | boolean} = {...base.values,
       'nodes': nodes.length,
       'root nodes': this.tree.children.length,
       'checked nodes': this.checkedNodes.length,
@@ -891,7 +890,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       'bit operation': this.bitOperation,
       'rows kept': this.bitset?.trueCount ?? -1,
     };
-    nodes.forEach((node, i) => {
+    for (const [i, node] of nodes.entries()) {
       const n = value(node);
       values[`scaffold of node ${i + 1}`] = n.smiles ?? '';
       values[`hits of node ${i + 1}`] = n.bitset ? n.bitset.trueCount : -1;
@@ -904,7 +903,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       area(`remove icon of node ${i + 1}`, icons.querySelector('.fa-trash-alt'));
       area(`edit icon of node ${i + 1}`, icons.querySelector('.fa-pencil'));
       area(`color icon of node ${i + 1}`, node.root.querySelector('.chem-mol-box-info-buttons .fa-circle'));
-    });
+    }
     area('generate icon', this._iconGenerate);
     area('add icon', this._iconAdd);
     return {...base, hitAreas, values};

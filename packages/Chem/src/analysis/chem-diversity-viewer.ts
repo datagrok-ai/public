@@ -29,8 +29,6 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   }
 
 
-  protected cardRows(): number[] { return this.renderMolIds; }
-
   async renderInternal(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;

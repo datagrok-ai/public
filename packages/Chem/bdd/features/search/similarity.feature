@@ -19,7 +19,7 @@ Feature: The Similarity Search viewer and its properties
     And the "metric" reading of Chem Similarity Search viewer should be "Tanimoto"
     And the "fingerprint" reading of Chem Similarity Search viewer should be "Morgan"
     And the "header" reading of Chem Similarity Search viewer should be "Tanimoto, Morgan"
-    And the "target row" reading of Chem Similarity Search viewer should be 1
+    And the "target row" reading of Chem Similarity Search viewer should be 0
     And the "scores" reading of Chem Similarity Search viewer should include the text "1.00, "
     And no errors should have been logged
 

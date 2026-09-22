@@ -44,21 +44,14 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
     grok.shell.addTableView(df);
   }, [dataset.path, rows ?? null, name ?? null] as [string, number | null, string | null]);
   await page.locator('[name="viewer-Grid"]').first().waitFor();
-  // a file handler that types its own column (an sdf, a mol) fires no detection event, so a table
-  // that already carries a semantic type is as ready as one detection has run over
-  await expect.poll(() => page.evaluate(() => {
+  // resolved the moment the detection event lands, not on the next poll
+  await page.evaluate(([timeout, what, handled]) => new Promise<void>((resolve, reject) => {
     const w = window as any;
     const df = w.grok.shell.tv?.dataFrame;
-    return (w.__bddDetected.includes(df?.dart) ||
-      (df?.columns?.toList() ?? []).some((c: any) => c.semType)) as boolean;
-  }), {timeout: pollMs(60000), message: `${dataset.name}: semantic types were not detected (is auto-detection on?)`}).toBe(true);
-  // a second after the grid is created the view makes row 0 current when no row is, and every
-  // viewer repaints its marker mid-feature; done here, the view's timer skips it
-  // resolved the moment the detection event lands, not on the next poll
-  await page.evaluate(([timeout, what]) => new Promise<void>((resolve, reject) => {
-    const w = window as any;
-    const dart = w.grok.shell.tv?.dataFrame?.dart;
-    if (w.__bddDetected.includes(dart))
+    const dart = df?.dart;
+    // a file handler that types its own column (an sdf, a mol) fires no detection event, so such a
+    // table that already carries a semantic type is as ready as one detection has run over
+    if (w.__bddDetected.includes(dart) || (handled && (df?.columns?.toList() ?? []).some((c: any) => c.semType)))
       return resolve();
     const timer = setTimeout(() => { sub.unsubscribe(); reject(new Error(`${what}: semantic types were not detected (is auto-detection on?)`)); }, timeout);
     const sub = w.grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
@@ -68,7 +61,7 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
       sub.unsubscribe();
       resolve();
     });
-  }), [pollMs(60000), dataset.name] as [number, string]);
+  }), [pollMs(60000), dataset.name, !/\.(csv|tsv|txt)$/i.test(dataset.path)] as [number, string, boolean]);
   // a second after the grid is created the view makes row 0 of its first column current when no row
   // is, and every viewer repaints its marker mid-feature; done here, the same cell, the view's timer
   // skips it — and a "current column" claim does not depend on which of the two got there first
@@ -278,6 +271,28 @@ export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: 
   await expect(page.locator('.d4-toolbox[caption]').first(), 'the toolbox pane').toBeVisible({timeout: 15000});
   atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.showToolbox = false; grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
 }, {tier: 'api', description: 'idempotent: leaves simple mode and docks the toolbox pane afresh (off by default for a user, hidden at startup while empty); puts both back at feature end'});
+
+/* Which sketcher a molecule input, a filter card or a dialog opens is the account's choice, kept on
+   the server: a feature that draws or types a molecule names the one it was written against, so an
+   account that picked another one elsewhere does not change what the feature sees. */
+export const sketcherIs = Given('the molecule sketcher is {string}', async (page: Page, name: string) => {
+  const was = await page.evaluate((n) => {
+    const known = DG.Func.find({meta: {role: 'moleculeSketcher'}}).map((f: any) => f.friendlyName);
+    if (!known.includes(n))
+      throw new Error(`no molecule sketcher "${n}"; the stand has: ${known.join(', ')}`);
+    const before = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? null;
+    grok.userSettings.add(DG.chem.STORAGE_NAME, DG.chem.KEY, n);
+    DG.chem.currentSketcherType = n;
+    return before;
+  }, name);
+  atFeatureEnd(page, () => page.evaluate((b) => {
+    if (b === null)
+      grok.userSettings.delete(DG.chem.STORAGE_NAME, DG.chem.KEY);
+    else
+      grok.userSettings.add(DG.chem.STORAGE_NAME, DG.chem.KEY, b);
+    DG.chem.currentSketcherType = b ?? DG.DEFAULT_SKETCHER;
+  }, was));
+}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default); the account\'s own choice comes back at feature end'});
 
 /** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
  * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */
@@ -898,7 +913,7 @@ export const openTableOf = Given('user opens a table {string} with:', async (pag
     {message: `a table view of "${name}"`}).toBe(true);
 }, {tier: 'api', description: 'a small table written in the feature — the header row names the columns, types are detected as from a CSV — in a table view of its own'});
 
-export const loadTable = Given('the {string} file is loaded as a table',async (page: Page, path: string) => {
+export const loadTable = Given('the {string} file is loaded as a table', async (page: Page, path: string) => {
   const name = await page.evaluate(async (p) => {
     const df = await grok.dapi.files.readCsv(p);
     df.name = p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');

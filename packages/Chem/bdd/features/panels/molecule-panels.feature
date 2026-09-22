@@ -10,11 +10,11 @@ Feature: Mixture, synthon-search and highlight panes of the Chem context panel
 
   The Gasteiger Partial Charges pane draws its charge map for a SMILES cell and for a V2000 cell.
   The two Synthon Search panes are offered with their Space, Max hits, Include synthons and Cutoff
-  controls, and on the second molecule of smiles both come back with hits that open as a table of
-  their own.
+  controls; the hits they come back with are panels/synthon-search, a `@full-stand` feature.
 
   Background:
     Given user is logged in
+    And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And user opens test_mixtures dataset
     And the context panel is open
@@ -78,31 +78,5 @@ Feature: Mixture, synthon-search and highlight panes of the Chem context panel
     And "Substructure Search" pane in "Synthon Search" pane in context panel should not contain the text "No synthon spaces found in synthon-data/"
     When user expands "Similarity Search" accordion header in "Synthon Search" pane in context panel
     Then "Cutoff" slider in "Similarity Search" pane in context panel should have the value "0.5"
-    And no errors should have been logged
-
-  @realizes:chem.cp.panels-synthon-search
-  Scenario: The Substructure Search pane returns hits and offers them as a table
-    Given user opens smiles dataset
-    When user clicks on the "cell 2 of canonical_smiles" area of grid
-    And user expands Databases accordion header in context panel
-    And user expands "Synthon Search" accordion header in "Databases" pane in context panel
-    And user expands "Substructure Search" accordion header in "Synthon Search" pane in context panel
-    Then grid in "Substructure Search" pane in context panel should be visible
-    And the "rows shown" reading of grid in "Substructure Search" pane in context panel should be at least 1
-    And there should be 1 visible "Open compounds as table" icon in "Substructure Search" pane in context panel
-    And no errors should have been logged
-
-  @realizes:chem.cp.panels-synthon-search
-  Scenario: The Similarity Search pane returns hits and opens them as a table
-    Given user opens smiles dataset
-    When user clicks on the "cell 2 of canonical_smiles" area of grid
-    And user expands Databases accordion header in context panel
-    And user expands "Synthon Search" accordion header in "Databases" pane in context panel
-    And user expands "Similarity Search" accordion header in "Synthon Search" pane in context panel
-    Then grid in "Similarity Search" pane in context panel should be visible
-    And the "rows shown" reading of grid in "Similarity Search" pane in context panel should be at least 1
-    And "Cutoff" slider in "Similarity Search" pane in context panel should have the value "0.5"
-    When user clicks on "Open compounds as table" icon in "Similarity Search" pane in context panel
-    Then table "Synthon Similarity Search Results" should be open
     And no errors should have been logged
 

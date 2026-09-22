@@ -3,7 +3,7 @@
    added to the table read against the columns it started with. A dialog a command shows in
    between is driven with the base steps (`OK button in "Sequence Space" dialog`). */
 import {Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
 
@@ -45,6 +45,9 @@ export const commandCompleted = Then('the top menu command should have completed
  * that returned at once (a dialog of its own) may still be at work. */
 async function expectAdded(page: Page, predicate: (added: string[]) => string | null, what: string): Promise<void> {
   let shown = '';
+  // a command that computes in the browser (a descriptor batch, a toxicity run over a thousand
+  // molecules) keeps working well past the shared expect budget
+  const budget = pollMs(Number(process.env.BDD_COMMAND_TIMEOUT ?? 180000));
   try {
     await expect.poll(async () => {
       const c = await columnsSince(page);
@@ -55,14 +58,12 @@ async function expectAdded(page: Page, predicate: (added: string[]) => string | 
       const added = c.now.filter((n) => !c.before!.includes(n));
       shown = added.length === 0 ? 'no column was added' : `added: ${added.join(', ')}`;
       return predicate(added) ?? 'ok';
-      // a command that computes in the browser (a descriptor batch, a toxicity run over a
-      // thousand molecules) keeps working well past the shared expect budget
-    }, {timeout: Number(process.env.BDD_COMMAND_TIMEOUT ?? 180000)}).toBe('ok');
+    }, {timeout: budget}).toBe('ok');
   }
   catch (e) {
     if (!shown)
       throw e;
-    throw new Error(`${what} — ${shown} (within ${Math.round(Number(process.env.BDD_COMMAND_TIMEOUT ?? 180000) / 1000)} s of the command)`);
+    throw new Error(`${what} — ${shown} (within ${Math.round(budget / 1000)} s of the command)`);
   }
 }
 

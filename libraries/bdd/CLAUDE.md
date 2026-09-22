@@ -292,6 +292,15 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   affectionate_einstein`.
 - `grok-bdd run` defaults to 4 workers (`PLAYWRIGHT_WORKERS` overrides); the installed
   `@datagrok-libraries/test` base config is older than the checkout's and says one.
+- Budgets a slow stand may raise: `BDD_EXPECT_TIMEOUT` (every check, 15 s), `BDD_COMMAND_TIMEOUT`
+  (the columns a top-menu command adds, 180 s). `BDD_FRESH_PAGE` reloads the shell before every
+  feature instead of resetting it: a feature that fails only after another one, and passes with
+  the variable set, is failing on state the other left behind.
+- Every run leaves its JSON report in the project's `test-results/report.json`, with the stand and
+  the machine in `config.metadata` (a `--reporter` on the command line gets `json` added). The run
+  history in `packages/UsageAnalysis/bdd/history` records such reports **only when the user asks
+  for it** — never as part of a run, a review or a fix (`node history.mjs record --note …`, then
+  `html`; see that package's bdd README).
 - A sharing feature shares with `DATAGROK_SHARING_LOGIN` or, unset, with the `bddsecond` user
   `global-setup.ts` creates through `POST /public/v1/users` with the dev-key token (a missing
   login answers 200 with an `ApiError` body; users cannot be deleted, so it stays).

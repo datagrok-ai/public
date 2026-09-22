@@ -47,7 +47,8 @@ Feature: Convert Notation is offered once in a molecule column's Actions
     And user clicks on CANCEL button in "Convert Notation" dialog
     And user clicks on "Convert Notation..." action in context panel
     And user clicks on CANCEL button in "Convert Notation" dialog
-    And user clicks on the "header canonical_smiles" area of grid
+    # the conversion scrolled the grid to its new column: the header of canonical_smiles is out of view
+    Given the "canonical_smiles" column is the current object
     Then the context panel should show "canonical_smiles"
     When user expands Actions accordion header in context panel
     Then there should be 1 visible "Convert Notation..." action in context panel
