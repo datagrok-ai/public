@@ -231,8 +231,9 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) schema?: string,
     @grok.decorators.param({options: {optional: true}}) table?: string,
     @grok.decorators.param({options: {optional: true}}) catalog?: string): Promise<string | null> {
-    return domains.authoring.createBinding({connection: connection ?? undefined, schema: schema ?? undefined,
-      table: table ?? undefined, catalog: catalog ?? undefined});
+    const result = await domains.authoring.createBinding({connection: connection ?? undefined,
+      schema: schema ?? undefined, table: table ?? undefined, catalog: catalog ?? undefined});
+    return result?.name ?? null;
   }
 
   @grok.decorators.func({})

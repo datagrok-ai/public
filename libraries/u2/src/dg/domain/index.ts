@@ -54,7 +54,7 @@ import {bulkEdit} from './bulk.js';
 import {openImport} from './import.js';
 import {authoring} from './authoring/index.js';
 import {BindingDialog, createBinding} from './authoring/binding-dialog.js';
-export type {CreateBindingOptions} from './authoring/binding-dialog.js';
+export type {CreateBindingOptions, BindingResult, AccessOutcome} from './authoring/binding-dialog.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
 
 /** An action over one row: `requires` names the capability it needs (permission ⇒ hidden),
@@ -409,7 +409,7 @@ export const domains = {
   discardButton,
   newButton,
   /** The manifest editor and its models — the Design step of binding authoring — and the
-   * "Create domain schema" dialog over them (Connection › Design › Review; resolves to the
-   * name). The editor stays platform-free; the dialog is what talks to `grok.dapi`. */
+   * "Create domain schema" dialog over them (Connection › Design › Review › Created; resolves
+   * to `{name, access}`). The editor stays platform-free; the dialog is what talks to `grok.dapi`. */
   authoring: Object.assign(authoring, {createBinding, BindingDialog}),
 };

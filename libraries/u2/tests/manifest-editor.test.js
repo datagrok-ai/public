@@ -91,7 +91,8 @@ ui('the schema panel: name, friendly name, writable, the access grid with the cr
   const picker = grid.querySelector('.u2-access-grid-add');
   picker.value = 'Sales';
   fire(picker, 'change');
-  assert.deepEqual(e.access.grants.value, [{scope: 'schema', group: 'Sales', view: true, edit: false, delete: false}]);
+  assert.deepEqual(e.access.grants.value, [{scope: {kind: 'schema'}, group: {id: 'Sales', label: 'Sales'},
+    view: true, edit: false, delete: false}]);
   assert.deepEqual(grid.querySelectorAll('tbody tr')[1].querySelectorAll('.u2-access-grid-check').map((b) => b.disabled),
     [false, true, true], 'Edit and Delete need a writable binding');
 
@@ -149,7 +150,8 @@ ui('the column panel: logical name, the type beside the warehouse type, required
   radios[1].click();
   await flush();
   fire(panel(e).querySelectorAll('.u2-chip')[0], 'click');
-  assert.deepEqual(e.access.visibility.value, [{table: 'orders', column: 'shipname', groups: ['Sales']}]);
+  assert.deepEqual(e.access.visibility.value, [{table: 'orders', column: 'shipname',
+    groups: [{id: 'Sales', label: 'Sales'}]}]);
 
   await select(e, 'orderid');
   assert.equal(panel(e).querySelector('[data-u2-name="required"] .u2-input-checkbox').disabled, true, 'a key is always required');
@@ -214,28 +216,37 @@ ui('view mode: every field is text, the checkboxes are locked, the access grid c
   e.dispose();
 });
 
-ui('plan() resolves the access to the manifest\'s logical names and drops what is no longer there', async () => {
-  const e = await editor();
-  e.access.addGroup('schema', 'Sales');
-  e.access.addGroup('orders', 'Developers');
-  e.access.addGroup('order_details', 'Developers');
-  e.access.setVisibility('orders', 'freight', ['Sales']);
-  e.access.setVisibility('orders', 'shipcity', ['Sales']);
+ui('plan() fans a schema row out over every included table, merges it with the table rows, resolves logical names', async () => {
+  const e = await editor({groups: [{id: 'g-sales', label: 'Sales'}, 'Developers']});
+  const sales = {id: 'g-sales', label: 'Sales'};
+  const dev = {id: 'Developers', label: 'Developers'};
+  e.access.addGroup({kind: 'schema'}, sales);
+  e.access.addGroup({kind: 'table', table: 'orders'}, dev);
+  e.access.addGroup({kind: 'table', table: 'orders'}, sales);
+  e.access.setGrant({kind: 'table', table: 'orders'}, 'g-sales', 'edit', true);
+  e.access.addGroup({kind: 'table', table: 'order_details'}, dev);
+  e.access.setVisibility('orders', 'freight', [sales]);
+  e.access.setVisibility('orders', 'shipcity', [sales]);
   e.model.renameTable('orders', 'order');
   e.model.renameColumn('orders', 'freight', 'freight_cost');
   e.model.includeColumn('orders', 'shipcity', false);
-  e.model.includeTable('order_details', false);
   e.model.name.value = 'northwind_sales';
-  const plan = e.plan();
+  let plan = e.plan();
   assert.equal(plan.name, 'northwind_sales');
   assert.equal(plan.friendlyName, 'Northwind sales');
   assert.equal(plan.manifest.name, 'northwind_sales');
-  assert.deepEqual(Object.keys(plan.manifest.tables), ['order']);
   assert.deepEqual(plan.grants, [
-    {table: null, group: 'Sales', view: true, edit: false, delete: false},
-    {table: 'order', group: 'Developers', view: true, edit: false, delete: false},
-  ]);
-  assert.deepEqual(plan.restrictions, [{table: 'order', column: 'freight_cost', groups: ['Sales']}]);
+    {table: 'order', group: sales, view: true, edit: true, delete: false},
+    {table: 'order_details', group: sales, view: true, edit: false, delete: false},
+    {table: 'order', group: dev, view: true, edit: false, delete: false},
+    {table: 'order_details', group: dev, view: true, edit: false, delete: false},
+  ], 'one grant per table and group; the schema row and the table row for Sales merged');
+  assert.deepEqual(plan.restrictions, [{table: 'order', column: 'freight_cost', groups: [sales]}]);
+  e.model.includeTable('order_details', false);
+  plan = e.plan();
+  assert.deepEqual(Object.keys(plan.manifest.tables), ['order']);
+  assert.deepEqual(plan.grants.map((g) => [g.table, g.group.id]), [['order', 'g-sales'], ['order', 'Developers']],
+    'an excluded table gets nothing');
   e.dispose();
 });
 

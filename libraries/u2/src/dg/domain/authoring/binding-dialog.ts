@@ -1,12 +1,15 @@
 /* `domains.authoring.createBinding` — the "Create domain schema" dialog over an external database:
-   **Connection** (the connection and its remote schema; the author's rights on it; the draft is
-   read as soon as both are picked, and what the server refuses is said right there), **Design**
-   (the `ManifestEditor` over the draft) and **Review** (the manifest as it will be sent beside
-   the findings; VALIDATE is the dry run, CREATE the real one, then the access rows, then the app
-   over the first table). The server owns every rule — the dialog names its refusals. */
+   **Connection** (the connection and its remote schema; the author's rights on it, the DML trio
+   included; the draft is read as soon as both are picked, and what the server refuses is said
+   right there), **Design** (the `ManifestEditor` over the draft) and **Review** (the manifest as
+   it will be sent beside the findings; VALIDATE is the dry run, bound to the exact payload it
+   checked; CREATE the real one, then the column restrictions, then the table grants). With access
+   rows the dialog ends on **Created** — what was applied, what failed and why, RETRY ACCESS over
+   the failed steps alone, OPEN — since a created schema is never reported as anything else. The
+   server owns every rule — the dialog names its refusals. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
-import {signal} from '../../../core/signals.js';
+import {computed, signal} from '../../../core/signals.js';
 import {Control} from '../../../core/component.js';
 import {div, divV, link, span} from '../../../core/elements.js';
 import {plural} from '../../../core/text.js';
@@ -19,7 +22,7 @@ import {DomainErrors} from '../errors.js';
 import {route} from '../routes.js';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
-import type {DraftEnvelope, ManifestDiagnostic, ManifestJson} from './manifest-model.js';
+import type {AccessPrincipal, DraftEnvelope, ManifestDiagnostic, ManifestJson} from './manifest-model.js';
 
 export interface CreateBindingOptions {
   connection?: DG.DataConnection;
@@ -31,8 +34,26 @@ export interface CreateBindingOptions {
   groups?: string[];
 }
 
-/** Opens the dialog; resolves to the created schema's name, or null where it was cancelled. */
-export function createBinding(options: CreateBindingOptions = {}): Promise<string | null> {
+/** How the access rows went after the create: each step by the line the Created state shows. */
+export interface AccessOutcome {
+  applied: string[];
+  failed: {op: string, message: string}[];
+}
+
+export interface BindingResult {
+  name: string;
+  access: AccessOutcome;
+}
+
+/** The event `grok.events` carries once a schema is created and its access applied — for a JS
+ * listener; the Dart Domains tree refreshes through its own entry point's return. */
+export const SCHEMA_CREATED_EVENT = 'domain-schema-created';
+
+/** Opens the dialog; resolves once it closes — to the created schema with its access outcome,
+ * null where it was cancelled before the create. Refuses while domain databases are off. */
+export function createBinding(options: CreateBindingOptions = {}): Promise<BindingResult | null> {
+  if (grok.shell.settings.enableDomainDatabases !== true)
+    return Promise.reject(new Error('Domain databases are a Beta feature — enable them in Settings > Beta'));
   return new BindingDialog(options).open();
 }
 
@@ -40,6 +61,16 @@ export function createBinding(options: CreateBindingOptions = {}): Promise<strin
  * (connection_info.dart) rules out, kept here since the js-api has no such helper. */
 const NON_DATABASE_SOURCES = new Set(['AzureBlob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave',
   'Git', 'SharePoint', 'EFS', 'AWS', 'GCP', 'Domain']);
+
+const DML = ['AddRows', 'ChangeValues', 'RemoveRows'];
+
+/** One access step after the create: a column restriction, or one permission on one table. */
+interface AccessOp {
+  kind: 'restrict' | 'grant';
+  table: string;
+  label: string;
+  run: () => Promise<unknown>;
+}
 
 export class BindingDialog extends Control {
   readonly wizard: Wizard;
@@ -49,24 +80,31 @@ export class BindingDialog extends Control {
   private readonly _options: CreateBindingOptions;
   private readonly _editor = signal<ManifestEditor | undefined>(undefined);
   private _connections: DG.DataConnection[] = [];
-  /** Group name → id; null where two groups carry the name. */
-  private readonly _groups = new Map<string, string | null>();
+  private _groups: AccessPrincipal[] = [];
   private readonly _draft = signal<DraftEnvelope | null>(null);
   /** What stands between the connection step and Design: the read in progress, or its refusal. */
   private readonly _reading = signal<string | null>(null);
   /** Why the editor could not be built over the draft. */
   private readonly _designProblem = signal<string | null>(null);
-  private readonly _validated = signal(false);
+  /** The exact create payload the dry run passed; anything else is not validated. */
+  private readonly _validated = signal<string | null>(null);
+  private readonly _failed = signal(0);
   private readonly _facts = span('Only database connections are offered', 'u2-binding-facts');
   private readonly _access = span('', 'u2-binding-access');
   private readonly _designHost = div([], 'u2-binding-design');
   private readonly _json = document.createElement('pre');
   private readonly _issues = divV([], 'u2-binding-issues');
+  private readonly _createdHost = divV([], 'u2-binding-created');
   private _built: DraftEnvelope | null = null;
+  private _writeHint: string | undefined;
   private _describeGen = 0;
   private _readGen = 0;
   private _loaded: Promise<void> = Promise.resolve();
-  private _resolve: ((name: string | null) => void) | undefined;
+  private _described: Promise<void> = Promise.resolve();
+  private _result: BindingResult | undefined;
+  private _firstTable = '';
+  private _pending: AccessOp[] = [];
+  private _resolve: ((result: BindingResult | null) => void) | undefined;
 
   constructor(options: CreateBindingOptions = {}) {
     super();
@@ -85,18 +123,22 @@ export class BindingDialog extends Control {
             this._reading.value ?? 'Pick a connection and a schema'},
         {id: 'design', title: 'Design', content: () => this._designHost,
           onActivate: () => void this._design(), canProceed: () => this._designGate()},
-        {id: 'review', title: 'Review', content: () => this._reviewStep(), finishText: 'CREATE',
+        {id: 'review', title: 'Review', content: () => this._reviewStep(), nextText: 'CREATE',
           onActivate: () => this._review(), actions: [{text: 'VALIDATE', run: () => this._validate()}],
-          canProceed: () => this._validated.value ? null : 'Validate before creating'},
+          canProceed: () => this._reviewGate(), commit: () => this._create()},
+        {id: 'created', title: 'Created', content: () => this._createdHost, done: true, actions: [
+          {text: 'RETRY ACCESS', run: () => this._retry(), enabled: computed(() => this._failed.value > 0)},
+          {text: 'OPEN', run: () => this._openAndClose()},
+        ]},
       ],
-      onFinish: () => this._create(),
+      onFinish: () => this._settle(this._result ?? null),
       onCancel: () => this._settle(null),
     }));
     this.wizard.root.classList.add('u2-binding-dialog');
     this.root.append(this.wizard.root);
   }
 
-  open(): Promise<string | null> {
+  open(): Promise<BindingResult | null> {
     this.wizard.openInDialog('Create domain schema', {width: 960, height: 640});
     return new Promise((resolve) => this._resolve = resolve);
   }
@@ -115,12 +157,12 @@ export class BindingDialog extends Control {
     return [{code: DomainErrors.codeOf(e) || 'error', message: DomainErrors.message(e)}];
   }
 
-  private _settle(name: string | null): void {
+  private _settle(result: BindingResult | null): void {
     const resolve = this._resolve;
     this._resolve = undefined;
     this.wizard.dispose();
     this.dispose();
-    resolve?.(name);
+    resolve?.(result);
   }
 
   private _say(content: string | HTMLElement, error = false): void {
@@ -149,14 +191,13 @@ export class BindingDialog extends Control {
       this.schema.setItems([]);
       this._access.textContent = '';
       if (conn !== undefined)
-        void this._describe(conn, gen);
+        this._described = this._describe(conn, gen);
     });
     form.effect(() => {
       const conn = this._picked();
       const schema = this.schema.value.value;
       const gen = ++this._readGen;
       this._draft.value = null;
-      this._validated.value = false;
       this._reading.value = null;
       if (conn !== undefined && schema !== null)
         void this._read(conn, schema, gen);
@@ -167,7 +208,8 @@ export class BindingDialog extends Control {
   private _offerConnections(list: DG.DataConnection[]): void {
     const preset = this._options.connection;
     this._connections = preset !== undefined && !list.some((c) => c.id === preset.id) ? [preset, ...list] : list;
-    this.connection.setItems(this._connections.map((c) => ({value: c.id, label: `${c.friendlyName} (${c.dataSource})`})));
+    this.connection.setItems(this._connections.map((c) =>
+      ({value: c.id, label: `${c.friendlyName} (${c.dataSource})`})));
     if (preset !== undefined && this.connection.value.peek() === null)
       this.connection.value.value = preset.id;
   }
@@ -180,8 +222,14 @@ export class BindingDialog extends Control {
       list.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
       this._offerConnections(list);
       stage = 'Groups';
-      for (const g of await grok.dapi.groups.filter('personal = false').list({pageSize: 500}))
-        this._groups.set(g.friendlyName, this._groups.has(g.friendlyName) ? null : g.id);
+      const wanted = this._options.groups;
+      const groups = (await grok.dapi.groups.filter('personal = false').list({pageSize: 500}))
+        .filter((g) => wanted === undefined || wanted.includes(g.friendlyName));
+      const byName = new Map<string, number>();
+      for (const g of groups)
+        byName.set(g.friendlyName, (byName.get(g.friendlyName) ?? 0) + 1);
+      this._groups = groups.map((g) => ({id: g.id,
+        label: byName.get(g.friendlyName)! > 1 ? `${g.friendlyName} (${g.id.slice(0, 8)})` : g.friendlyName}));
     } catch (e) {
       if (stage === 'Connections' && preset === undefined)
         this.connection.setItems([]);
@@ -193,6 +241,7 @@ export class BindingDialog extends Control {
   private async _describe(conn: DG.DataConnection, gen: number): Promise<void> {
     this._facts.className = 'u2-binding-facts';
     this._facts.textContent = `${conn.dataSource} · reading the schemas…`;
+    this._writeHint = undefined;
     let stage = 'The schemas';
     try {
       const schemas = await grok.dapi.connections.getSchemas(conn, this._options.catalog ?? null);
@@ -205,17 +254,24 @@ export class BindingDialog extends Control {
       if (preset !== undefined)
         this.schema.value.value = preset;
       stage = 'Your rights on the connection';
-      const [getSchema, query] = await Promise.all([grok.dapi.permissions.check(conn, 'DataConnection.GetSchema'),
-        grok.dapi.permissions.check(conn, 'DataConnection.Query')]);
+      const rights = ['GetSchema', 'Query', ...DML];
+      const granted = await Promise.all(rights.map((r) => grok.dapi.permissions.check(conn, `DataConnection.${r}`)));
       if (gen !== this._describeGen)
         return;
-      const missing = [...(getSchema ? [] : ['GetSchema']), ...(query ? [] : ['Query'])];
-      this._access.textContent = missing.length === 0 ? 'You may introspect and query this connection' :
-        `You lack ${missing.join(' and ')} on this connection — the draft will be refused`;
-      this._access.classList.toggle('u2-binding-problem', missing.length > 0);
+      const missing = rights.filter((_, i) => !granted[i]);
+      const read = missing.filter((r) => !DML.includes(r));
+      const write = missing.filter((r) => DML.includes(r));
+      this._writeHint = write.length === 0 ? undefined :
+        `writes need ${write.join(', ')} on the connection, which you lack`;
+      this._access.textContent = read.length > 0 ?
+        `You lack ${read.join(' and ')} on this connection — the draft will be refused` :
+        write.length === 0 ? 'You may introspect, query and write to this connection' :
+          `You may introspect and query this connection; ${this._writeHint}`;
+      this._access.classList.toggle('u2-binding-problem', read.length > 0);
     } catch (e) {
       if (gen !== this._describeGen)
         return;
+      this._writeHint = 'your rights on the connection could not be read';
       this._facts.textContent = `${conn.dataSource} · ${stage} could not be read: ${DomainErrors.message(e)}`;
       this._facts.classList.add('u2-binding-problem');
     }
@@ -249,16 +305,13 @@ export class BindingDialog extends Control {
       return;
     this._designProblem.value = null;
     try {
-      await this._loaded;
+      await Promise.all([this._loaded, this._described]);
       if (this.scope.isDisposed || this._draft.peek() !== draft)
         return;
       this._editor.peek()?.dispose();
       this._built = draft;
-      this._validated.value = false;
-      const offered = [...this._groups.keys()];
       const editor = this.runInScope(() => new ManifestEditor(draft, {
-        context: {mode: 'create', storage: 'external'},
-        groups: this._options.groups === undefined ? offered : offered.filter((g) => this._options.groups!.includes(g)),
+        context: {mode: 'create', storage: 'external'}, groups: this._groups, writableDisabled: this._writeHint,
       }));
       const only = this._options.table;
       if (only !== undefined && editor.model.table(only) !== undefined) {
@@ -290,17 +343,37 @@ export class BindingDialog extends Control {
     return div([this._json, this._issues], 'u2-binding-review');
   }
 
+  /** The create payload as one string — what a validation is bound to. */
+  private static _payload(editor: ManifestEditor): string {
+    const model = editor.model;
+    return JSON.stringify({name: model.name.peek(), friendlyName: model.friendlyName.peek(), manifest: model.toJSON()});
+  }
+
+  private _isValidated(editor: ManifestEditor): boolean {
+    const model = editor.model;
+    model.revision.value;
+    model.name.value;
+    model.friendlyName.value;
+    return this._validated.value === BindingDialog._payload(editor);
+  }
+
+  private _reviewGate(): string | null {
+    const editor = this._editor.value;
+    return editor !== undefined && this._isValidated(editor) ? null : 'Validate before creating';
+  }
+
   private _review(): void {
     const editor = this.editor!;
     this._json.textContent = JSON.stringify(editor.model.toJSON(), null, 2);
+    this._say(this._isValidated(editor) ? badge('Validated', {variant: 'success'}) : '');
     this._renderIssues();
   }
 
   private _renderIssues(): void {
     const editor = this.editor!;
     const issues = editor.diagnostics.peek();
-    this._issues.replaceChildren(span(issues.length === 0 ? 'No findings' : plural(issues.length, 'finding', 'findings'),
-      'u2-binding-issues-title'));
+    this._issues.replaceChildren(span(issues.length === 0 ? 'No findings' :
+      plural(issues.length, 'finding', 'findings'), 'u2-binding-issues-title'));
     for (const issue of issues) {
       const row = div([link(issue.path ?? 'schema', () => {
         void editor.select(editor.model.resolvePath(issue.path));
@@ -310,26 +383,34 @@ export class BindingDialog extends Control {
     }
   }
 
+  /** The dry run over the payload as it stands; an answer to a payload since changed is dropped. */
   private async _validate(): Promise<void> {
     const editor = this.editor!;
     const plan = editor.plan();
+    const payload = BindingDialog._payload(editor);
+    const stale = (): boolean => this.editor !== editor || BindingDialog._payload(editor) !== payload;
     this._say('Validating…');
     try {
       await grok.dapi.domains.createSchema(plan.name, {friendlyName: plan.friendlyName || undefined,
         manifest: plan.manifest, dryRun: true});
+      if (stale())
+        return this._say('Changed while validating — validate again');
       editor.diagnostics.value = [];
-      this._validated.value = true;
+      this._validated.value = payload;
       this._say(badge('Validated', {variant: 'success'}));
     } catch (e) {
+      if (stale())
+        return this._say('Changed while validating — validate again');
       editor.diagnostics.value = BindingDialog.issues(e);
-      this._validated.value = false;
+      this._validated.value = null;
       this._say(DomainErrors.message(e), true);
     }
     this._renderIssues();
   }
 
-  /** The schema exists once the create answered: the promise resolves there, whatever the access
-   * rows and the app opening afterwards report. */
+  /** The create, then the access rows; the schema exists once the create answered, and the
+   * dialog reports it as created whatever the access rows say: without any, today's short way
+   * (a toast, the app, the promise); with some, the Created step. */
   private async _create(): Promise<boolean> {
     const editor = this.editor!;
     const plan = editor.plan();
@@ -339,64 +420,113 @@ export class BindingDialog extends Control {
         manifest: plan.manifest});
     } catch (e) {
       editor.diagnostics.value = BindingDialog.issues(e);
-      this._validated.value = false;
+      this._validated.value = null;
       this._renderIssues();
       this._say(DomainErrors.message(e), true);
       return false;
     }
-    const problems = await this._applyAccess(plan);
+    const ops = BindingDialog._accessOps(plan);
+    this._result = {name: plan.name, access: {applied: [], failed: []}};
+    this._firstTable = Object.keys(plan.manifest.tables)[0];
+    this._say('Applying access…');
+    await this._applyAccess(ops);
     grok.dapi.domains.invalidateUiCaches();
+    grok.events.fireCustomEvent(SCHEMA_CREATED_EVENT, {name: plan.name});
+    if (ops.length > 0) {
+      this._renderCreated();
+      return true;
+    }
     notify.info(`Domain schema ${plan.name} created`);
-    for (const problem of problems)
-      notify.warning(problem);
-    this._settle(plan.name);
+    await this._openAndClose();
+    return false;
+  }
+
+  private async _openAndClose(): Promise<void> {
+    const result = this._result!;
+    const first = this._firstTable;
+    this._settle(result);
     try {
-      const view = await route(`/domains/${plan.name}/${Object.keys(plan.manifest.tables)[0]}`);
+      const view = await route(`/domains/${result.name}/${first}`);
       if (view !== null)
         grok.shell.addView(view);
     } catch (e) {
-      notify.error(`Domain schema ${plan.name} could not be opened: ${DomainErrors.message(e)}`);
+      notify.error(`Domain schema ${result.name} could not be opened: ${DomainErrors.message(e)}`);
     }
-    return true;
   }
 
-  /** The access rows after the create: schema-scope grants fan out on the server, table grants
-   * are row access, a visibility row restricts the column to its groups. Every failure is
-   * collected and named — the schema exists by now, and the rows can be redone from its page. */
-  private async _applyAccess(plan: ManifestPlan): Promise<string[]> {
-    const problems: string[] = [];
-    const groupId = (name: string): string => {
-      const id = this._groups.get(name);
-      if (id === undefined)
-        throw new Error(`Group "${name}" is not known`);
-      if (id === null)
-        throw new Error(`Group "${name}" is ambiguous — two groups carry the name`);
-      return id;
+  private async _retry(): Promise<void> {
+    this._say('Applying access…');
+    await this._applyAccess(this._pending);
+    this._renderCreated();
+  }
+
+  /** Restrictions first — a column meant for some is never readable by all in between — then the
+   * grants, none on a table whose restriction failed. What failed stays for a retry. */
+  private async _applyAccess(ops: AccessOp[]): Promise<void> {
+    const access = this._result!.access;
+    const failed: {op: AccessOp, message: string}[] = [];
+    const broken = new Set<string>();
+    const run = async (op: AccessOp): Promise<void> => {
+      try {
+        await op.run();
+        access.applied.push(op.label);
+      } catch (e) {
+        failed.push({op, message: DomainErrors.message(e)});
+        if (op.kind === 'restrict')
+          broken.add(op.table);
+      }
     };
-    const domains = grok.dapi.domains;
+    for (const op of ops.filter((o) => o.kind === 'restrict'))
+      await run(op);
+    for (const op of ops.filter((o) => o.kind === 'grant')) {
+      if (broken.has(op.table))
+        failed.push({op, message: `withheld — a column restriction of ${op.table} failed`});
+      else
+        await run(op);
+    }
+    this._pending = failed.map((f) => f.op);
+    access.failed = failed.map((f) => ({op: f.op.label, message: f.message}));
+    this._failed.value = failed.length;
+  }
+
+  private static _accessOps(plan: ManifestPlan): AccessOp[] {
+    const table = (t: string): DG.DomainTableClient => grok.dapi.domains.table(`${plan.name}.${t}`);
+    const ops: AccessOp[] = [];
+    for (const r of plan.restrictions) {
+      const who = r.groups.length === 0 ? 'nobody else' : r.groups.map((g) => g.label).join(', ');
+      ops.push({kind: 'restrict', table: r.table, label: `${r.table}.${r.column} visible to ${who}`,
+        run: async () => {
+          if (r.groups.length === 0)
+            await table(r.table).restrictColumn(r.column);
+          for (const g of r.groups)
+            await table(r.table).shareColumn(r.column, g.id, 'View');
+        }});
+    }
     for (const g of plan.grants) {
       const permissions = [...(g.view ? ['View'] : []), ...(g.edit ? ['Edit'] : []), ...(g.delete ? ['Delete'] : [])];
       for (const permission of permissions) {
-        try {
-          const id = groupId(g.group);
-          await (g.table === null ? domains.schema(plan.name).grant(id, permission) :
-            domains.table(`${plan.name}.${g.table}`).grant(id, permission));
-        } catch (e) {
-          problems.push(`${g.table ?? plan.name}: ${permission} for ${g.group}: ${DomainErrors.message(e)}`);
-        }
+        ops.push({kind: 'grant', table: g.table, label: `${g.table}: ${permission} for ${g.group.label}`,
+          run: () => table(g.table).grant(g.group.id, permission)});
       }
     }
-    for (const r of plan.restrictions) {
-      const table = domains.table(`${plan.name}.${r.table}`);
-      try {
-        if (r.groups.length === 0)
-          await table.restrictColumn(r.column);
-        for (const group of r.groups)
-          await table.shareColumn(r.column, groupId(group), 'View');
-      } catch (e) {
-        problems.push(`${r.table}.${r.column}: visibility: ${DomainErrors.message(e)}`);
-      }
+    return ops;
+  }
+
+  private _renderCreated(): void {
+    const {name, access} = this._result!;
+    const list = (title: string, lines: string[], cls: string): HTMLElement =>
+      divV([span(title, 'u2-binding-created-title'), ...lines.map((l) => span(l))], `u2-binding-created-list ${cls}`);
+    const content: HTMLElement[] = [div([badge('Created', {variant: 'success'}),
+      span(`Domain schema ${name} is registered`)], 'u2-binding-created-head')];
+    if (access.applied.length > 0)
+      content.push(list('Access applied', access.applied, 'u2-binding-created-applied'));
+    if (access.failed.length > 0) {
+      content.push(list(`${plural(access.failed.length, 'access step', 'access steps')} failed — retry, or redo ` +
+        'them from the schema\'s page', access.failed.map((f) => `${f.op}: ${f.message}`),
+      'u2-binding-created-failed'));
     }
-    return problems;
+    this._createdHost.replaceChildren(...content);
+    this._say(access.failed.length === 0 ? badge('Access applied', {variant: 'success'}) :
+      `${plural(access.failed.length, 'access step', 'access steps')} failed`, access.failed.length > 0);
   }
 }

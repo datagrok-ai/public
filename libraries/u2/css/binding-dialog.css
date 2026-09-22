@@ -62,3 +62,32 @@
 .u2-binding-issue {
   color: var(--dg-error);
 }
+
+.u2-binding-created {
+  gap: var(--dg-space-l);
+  padding: var(--dg-space-m);
+  overflow: auto;
+}
+
+.u2-binding-created-head {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-binding-created-list {
+  gap: var(--dg-space-xs);
+}
+
+.u2-binding-created-title {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-created-applied {
+  color: var(--dg-success);
+}
+
+.u2-binding-created-failed {
+  color: var(--dg-error);
+}

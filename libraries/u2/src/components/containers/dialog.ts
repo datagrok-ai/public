@@ -33,6 +33,7 @@ export class Dialog extends Control {
   private _cancel: HTMLButtonElement | undefined;
   private _onOK: (() => unknown) | undefined;
   private _onCancel: (() => void) | undefined;
+  private _closeGuard: (() => boolean) | undefined;
   private _scope: Scope | undefined;
   private _restore: HTMLElement | undefined;
   private _drag: {dx: number, dy: number} | undefined;
@@ -111,6 +112,13 @@ export class Dialog extends Control {
     return this._ok;
   }
 
+  /** Vetoes every close — ✕, Esc and the buttons — while `fn` answers false: work in flight the
+   * dialog must outlive. */
+  closeGuard(fn: () => boolean): Dialog {
+    this._closeGuard = fn;
+    return this;
+  }
+
   onCancel(fn: () => void): Dialog {
     this._onCancel = fn;
     if (!this._cancel) {
@@ -175,7 +183,7 @@ export class Dialog extends Control {
   }
 
   private _finish(fn: (() => unknown) | undefined): void {
-    if (fn?.() === false)
+    if (this._closeGuard?.() === false || fn?.() === false)
       return;
     this.close();
   }

@@ -8,27 +8,32 @@ import {signal, Signal, ReadonlySignal} from '../../../core/signals.js';
 import {Splitter} from '../../../components/containers/splitter.js';
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {AccessModel, ManifestModel} from './manifest-model.js';
-import type {AccessJson, DraftEnvelope, ManifestDiagnostic, ManifestJson, ManifestSelection} from './manifest-model.js';
+import type {AccessJson, AccessPrincipal, DraftEnvelope, ManifestDiagnostic, ManifestJson, ManifestSelection}
+  from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 import {ManifestContextPanel} from './manifest-panel.js';
 
 export interface ManifestEditorOptions {
   context: EditorContext;
-  /** The groups and users the access pickers offer. */
-  groups?: string[];
+  /** The groups the access pickers offer — by id with a label, or a bare name that is both. */
+  groups?: (string | AccessPrincipal)[];
   /** The schema's friendly name, carried beside the manifest. */
   friendlyName?: string;
   /** Access rows to start from (an editor reopened on what it produced). */
   access?: Partial<AccessJson>;
   /** The left pane's share of the width (0.42 by default). */
   treeShare?: number;
+  /** Why the Writable switch cannot be turned on here (a DML right the author lacks); the switch
+   * is then disabled with this hint. */
+  writableDisabled?: string;
 }
 
-/** A grant to apply after Create, by the names the API takes. */
+/** A grant to apply after Create, by the names the API takes: one per table and group, the
+ * schema-scope rows fanned out over every included table. */
 export interface PlannedGrant {
-  /** The table's logical name, or null for the schema (every table). */
-  table: string | null;
-  group: string;
+  /** The table's logical name. */
+  table: string;
+  group: AccessPrincipal;
   view: boolean;
   edit: boolean;
   delete: boolean;
@@ -38,7 +43,7 @@ export interface PlannedGrant {
 export interface PlannedRestriction {
   table: string;
   column: string;
-  groups: string[];
+  groups: AccessPrincipal[];
 }
 
 /** Everything the dialog submits: the create envelope and what to apply afterwards. Grants and
@@ -73,7 +78,8 @@ export class ManifestEditor extends Control {
     this.tree = this.runInScope(() => new ManifestTree(this.model, {editable, diagnostics: this.diagnostics}));
     this.selected = this.tree.selected;
     this.panel = this.runInScope(() => new ManifestContextPanel(this.model, {selected: this.selected,
-      access: this.access, context: options.context, groups: options.groups, diagnostics: this.diagnostics}));
+      access: this.access, context: options.context, groups: options.groups?.map((g) => AccessModel.principal(g)),
+      diagnostics: this.diagnostics, writableDisabled: options.writableDisabled}));
     const share = options.treeShare ?? 0.42;
     const splitter = this.runInScope(() => new Splitter([this.tree, this.panel],
       {direction: 'horizontal', sizes: [share, 1 - share], minSize: 200}));
@@ -89,19 +95,24 @@ export class ManifestEditor extends Control {
     return this.tree.select(selection);
   }
 
-  /** The create envelope plus the access to apply, resolved to the manifest's logical names. */
+  /** The create envelope plus the access to apply, resolved to the manifest's logical names. A
+   * schema-scope row and a table row for the same group merge into one grant per table. */
   plan(): ManifestPlan {
     const model = this.model;
     const manifest = model.toJSON();
-    const logicalOf = (remote: string): string | null => {
-      const table = model.table(remote);
-      return table !== undefined && table.included ? table.logical : null;
-    };
-    const grants: PlannedGrant[] = [];
+    const included = model.tables.peek().filter((t) => t.included);
+    const logicalOf = (remote: string): string | null => included.find((t) => t.remote === remote)?.logical ?? null;
+    const grants = new Map<string, PlannedGrant>();
     for (const g of this.access.grants.peek()) {
-      const table = g.scope === 'schema' ? null : logicalOf(g.scope);
-      if (g.scope === 'schema' || table !== null)
-        grants.push({table, group: g.group, view: g.view, edit: g.edit, delete: g.delete});
+      const tables = g.scope.kind === 'schema' ? included.map((t) => t.logical) : [logicalOf(g.scope.table)];
+      for (const table of tables) {
+        if (table === null)
+          continue;
+        const key = `${table}\u0000${g.group.id}`;
+        const merged = grants.get(key) ?? {table, group: g.group, view: false, edit: false, delete: false};
+        grants.set(key, {...merged, view: merged.view || g.view, edit: merged.edit || g.edit,
+          delete: merged.delete || g.delete});
+      }
     }
     const restrictions: PlannedRestriction[] = [];
     for (const v of this.access.visibility.peek()) {
@@ -110,6 +121,7 @@ export class ManifestEditor extends Control {
       if (v.groups !== null && table !== null && column !== undefined && column.included)
         restrictions.push({table, column: column.logical, groups: [...v.groups]});
     }
-    return {name: model.name.peek(), friendlyName: model.friendlyName.peek(), manifest, grants, restrictions};
+    return {name: model.name.peek(), friendlyName: model.friendlyName.peek(), manifest, grants: [...grants.values()],
+      restrictions};
   }
 }

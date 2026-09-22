@@ -285,3 +285,63 @@ wizard('an async finish answering false keeps the dialog open; true closes it', 
   assert.equal(dialog.isOpen.value, false);
   scope.dispose();
 });
+
+wizard('while a finish runs, the rail, CANCEL, the close button and Esc are blocked', async () => {
+  const scope = new Scope();
+  let release;
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: steps(undefined),
+    onFinish: () => new Promise((r) => release = () => r(true)),
+    onCancel: () => outcome.push('cancel'),
+  }));
+  const dialog = w.openInDialog('Create');
+  w.next();
+  w.next();
+  footer(w, 'FINISH').click();
+  assert.equal(footer(w, 'CANCEL').disabled, true);
+  assert.equal(w.root.classList.contains('u2-wizard-busy'), true);
+  fire(markers(w)[0], 'click');
+  assert.equal(w.currentStep.value, 'three', 'the rail does not move');
+  w.back();
+  assert.equal(w.currentStep.value, 'three');
+  footer(w, 'CANCEL').click();
+  dialog.root.querySelector('.u2-dialog-close').click();
+  fire(dialog.root, 'keydown', {key: 'Escape'});
+  assert.equal(dialog.isOpen.value, true, 'nothing closes a wizard mid-finish');
+  release();
+  await flush();
+  assert.equal(w.completed.value, true);
+  assert.equal(dialog.isOpen.value, false);
+  assert.deepEqual(outcome, [], 'a committed finish is never a cancel');
+  scope.dispose();
+});
+
+wizard('a step\'s commit runs on NEXT (reading nextText): false keeps the step; a done step closes as a finish', async () => {
+  const scope = new Scope();
+  const outcome = [];
+  let answer = false;
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'review', title: 'Review', content: content('Review', 'last'), nextText: 'CREATE',
+        commit: () => Promise.resolve(answer)},
+      {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+    ],
+    onFinish: () => outcome.push('finish'),
+    onCancel: () => outcome.push('cancel'),
+  }));
+  const dialog = w.openInDialog('Create');
+  assert.equal(footer(w, 'CREATE').textContent, 'CREATE');
+  footer(w, 'CREATE').click();
+  assert.equal(footer(w, 'CREATE').disabled, true, 'the footer waits on the commit');
+  await flush();
+  assert.equal(w.currentStep.value, 'review', 'refused: the step stays');
+  answer = true;
+  footer(w, 'CREATE').click();
+  await flush();
+  assert.equal(w.currentStep.value, 'report');
+  dialog.root.querySelector('.u2-dialog-close').click();
+  assert.deepEqual(outcome, ['finish'], 'closing a done step is the CLOSE button');
+  assert.equal(w.completed.value, true);
+  scope.dispose();
+});

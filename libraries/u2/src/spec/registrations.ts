@@ -35,6 +35,7 @@ import {StatCard} from '../components/display/stat-card.js';
 import {DataTable} from '../components/collections/data-table.js';
 import type {DataTableColumn} from '../components/collections/data-table.js';
 import {TabStrip, TabStripOptions} from '../components/containers/tabs.js';
+import {Wizard} from '../components/containers/wizard.js';
 import {PropertyGrid, PropDescriptor} from '../components/forms/property-grid.js';
 import {Breadcrumbs} from '../components/navigation/breadcrumbs.js';
 import {FilterBuilder} from '../components/filter/filter-builder.js';
@@ -166,6 +167,15 @@ function card(props: Props, children: Child[]): Card {
     selected: props.selected as boolean | Signal<boolean> | undefined,
     children: children.map(element),
   });
+}
+
+/** Every spec child is a step; a wizard needs one, so an empty node gets a blank first step. */
+function wizard(children: Child[], nodes: SpecNode[]): Wizard {
+  const steps = children.map((child, i) => ({
+    id: String(childProp(nodes[i], 'id') ?? `step-${i}`), title: childTitle(nodes[i], `Step ${i + 1}`),
+    content: element(child), done: childProp(nodes[i], 'done') === true,
+  }));
+  return new Wizard({steps: steps.length > 0 ? steps : [{id: 'step-0', title: 'Step 1', content: divV([])}]});
 }
 
 function section(props: Props, children: Child[]): Section {
@@ -361,6 +371,28 @@ const METAS: ComponentMeta[] = [
     example: {tag: 'u2-splitter', props: {direction: 'horizontal', sizes: [0.3, 0.7]}, children: [
       {tag: 'u2-panel', children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
       {tag: 'u2-panel', children: [{tag: 'u2-text-area', props: {label: 'Notes'}}]},
+    ]},
+  },
+  {
+    tag: 'u2-wizard',
+    category: 'Containers',
+    create: () => wizard([], []),
+    createWithChildren: (_props, children, nodes) => wizard(children, nodes),
+    description: 'Steps on a rail with BACK / NEXT / FINISH, one per spec child; the child node carries the ' +
+      'step title. Panels are hidden, never rebuilt, so a step\'s inputs keep their state.',
+    usage: 'For a flow whose steps are known up front. A spec expresses the steps alone; gates ' +
+      '(`canProceed`), a step\'s `commit`, its `actions`, `onFinish`/`onCancel` and dialog mode are code options.',
+    props: [],
+    childProps: [
+      {name: 'title', type: 'string', description: 'Step title; numbered when absent.'},
+      {name: 'id', type: 'string', description: 'Step id for `goTo`; `step-<index>` when absent.'},
+      {name: 'done', type: 'bool', description: 'A terminal report step: no BACK, the closing button reads CLOSE.'},
+    ],
+    acceptsChildren: true,
+    defaultChildren: [{tag: 'u2-panel', props: {title: 'Step 1'}}, {tag: 'u2-panel', props: {title: 'Step 2'}}],
+    example: {tag: 'u2-wizard', children: [
+      {tag: 'u2-panel', props: {title: 'Source'}, children: [{tag: 'u2-text-input', props: {label: 'File'}}]},
+      {tag: 'u2-panel', props: {title: 'Options'}, children: [{tag: 'u2-bool-input', props: {label: 'Header row'}}]},
     ]},
   },
   {

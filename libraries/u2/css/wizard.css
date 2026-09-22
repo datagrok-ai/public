@@ -91,6 +91,11 @@
   border-color: var(--dg-accent);
 }
 
+.u2-wizard-busy .u2-wizard-steps {
+  pointer-events: none;
+  color: var(--dg-text-color-disabled);
+}
+
 .u2-wizard-content {
   flex: 1 1 auto;
   min-height: 0;

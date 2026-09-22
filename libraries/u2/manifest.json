@@ -767,6 +767,78 @@
       }
     },
     {
+      "tag": "u2-wizard",
+      "category": "Containers",
+      "description": "Steps on a rail with BACK / NEXT / FINISH, one per spec child; the child node carries the step title. Panels are hidden, never rebuilt, so a step's inputs keep their state.",
+      "usage": "For a flow whose steps are known up front. A spec expresses the steps alone; gates (`canProceed`), a step's `commit`, its `actions`, `onFinish`/`onCancel` and dialog mode are code options.",
+      "props": [],
+      "childProps": [
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Step title; numbered when absent."
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Step id for `goTo`; `step-<index>` when absent."
+        },
+        {
+          "name": "done",
+          "type": "bool",
+          "description": "A terminal report step: no BACK, the closing button reads CLOSE."
+        }
+      ],
+      "acceptsChildren": true,
+      "defaultChildren": [
+        {
+          "tag": "u2-panel",
+          "props": {
+            "title": "Step 1"
+          }
+        },
+        {
+          "tag": "u2-panel",
+          "props": {
+            "title": "Step 2"
+          }
+        }
+      ],
+      "example": {
+        "tag": "u2-wizard",
+        "children": [
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Source"
+            },
+            "children": [
+              {
+                "tag": "u2-text-input",
+                "props": {
+                  "label": "File"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Options"
+            },
+            "children": [
+              {
+                "tag": "u2-bool-input",
+                "props": {
+                  "label": "Header row"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "tag": "u2-accordion",
       "category": "Containers",
       "description": "Independently expanding panes, one per spec child; the child node carries the pane title.",

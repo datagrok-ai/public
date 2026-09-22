@@ -2,10 +2,12 @@
    → `{manifest, inventory, diagnostics}`) plus the user's edits, projected back into the manifest
    to submit by `toJSON()`. Every table and column is identified by its REMOTE name — the logical
    name is what the user edits — and every declaration key the editor does not expose is carried
-   through untouched (Astra 4: deep preservation). Refs follow one RULE, never an edit: a
-   relation the warehouse reported as `ref` becomes `{type: 'ref', ref}` while its target table
-   is included, and the column keeps its scalar type otherwise. The rules the server checks are
-   mirrored in `ManifestRules`; the dry run remains the authority. */
+   through untouched (Astra 4: deep preservation). A declared type — `ref` included — is the
+   authority; the inventory only explains, and is consulted when the USER changes inclusion:
+   excluding a ref's target demotes the ref to the plain type the inventory knows (no such type:
+   the column drops out with a reason), including a target promotes back the refs the inventory
+   stamped `ref`. Remote names are vocabulary of the external storage alone. The rules the server
+   checks are mirrored in `ManifestRules`; the dry run remains the authority. */
 import {computed, signal, Signal, ReadonlySignal} from '../../../core/signals.js';
 import {ManifestRules} from './manifest-rules.js';
 
@@ -63,6 +65,8 @@ export interface InventoryColumn {
   table: string;
   remote: string;
   dbType?: string;
+  /** The platform type the draft mapped the warehouse type to — what a demoted ref becomes. */
+  type?: string;
   code?: string;
   message?: string;
 }
@@ -124,7 +128,7 @@ export interface RelationView {
   targetColumn: string;
   /** What the warehouse and the draft said. */
   status: 'ref' | 'plain';
-  /** Whether the column is a ref right now — the rule's answer. */
+  /** Whether the column is a ref onto this target right now. */
   ref: boolean;
   targetIncluded: boolean;
   targetLogical: string | null;
@@ -137,9 +141,9 @@ export interface ColumnView {
   table: string;
   remote: string;
   logical: string;
-  /** The type the manifest will carry: `ref` under the rule, the scalar type otherwise. */
+  /** The type the manifest will carry — as declared, until an inclusion change demoted or
+   * promoted it; '' for a column dropped by a demotion. */
   type: string;
-  scalarType: string;
   dbType?: string;
   included: boolean;
   isKey: boolean;
@@ -147,6 +151,7 @@ export interface ColumnView {
   isName: boolean;
   searchable: boolean;
   supported: boolean;
+  /** Why the column cannot be included: unsupported, or a demoted ref no plain type serves. */
   reason?: string;
   code?: string;
   relation?: RelationView;
@@ -155,8 +160,14 @@ export interface ColumnView {
 interface ColumnState {
   remote: string;
   logical: string;
+  /** The declaration as drafted or registered: the authority on the type. */
   decl: ManifestColumnJson;
   included: boolean;
+  /** The type carried now; '' once a demotion found no plain type for it. */
+  type: string;
+  /** The ref's target table by REMOTE name — from the declaration, else the inventory's relation. */
+  target?: string;
+  demoted?: string;
 }
 
 interface TableState {
@@ -187,6 +198,7 @@ export class ManifestModel {
   private readonly _order: string[] = [];
   private readonly _unsupported = new Map<string, InventoryColumn>();
   private readonly _dbTypes = new Map<string, string>();
+  private readonly _plainTypes = new Map<string, string>();
   private readonly _relations: InventoryRelation[];
   private readonly _columnViews = new Map<string, ReadonlySignal<ColumnView[]>>();
   private _writable: boolean;
@@ -211,8 +223,17 @@ export class ManifestModel {
       const key = ManifestModel._key(c.table, c.remote);
       if (c.dbType !== undefined)
         this._dbTypes.set(key, c.dbType);
+      if (c.type !== undefined)
+        this._plainTypes.set(key, c.type);
       if (c.code !== undefined)
         this._unsupported.set(key, c);
+    }
+    for (const state of this._tables.values()) {
+      for (const column of state.columns.values()) {
+        const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote);
+        column.target = column.decl.type === 'ref' ? this._byLogical(column.decl.ref)?.remote :
+          relation?.status === 'ref' ? relation.targetTable : undefined;
+      }
     }
     this.tables = computed(() => {
       this._rev.value;
@@ -272,28 +293,34 @@ export class ManifestModel {
     return this.relations.peek().find((r) => r.table === table && r.column === column);
   }
 
+  /** Excluding a table demotes the refs onto it; including one promotes them back. */
   includeTable(remote: string, on: boolean): void {
     const state = this._tables.get(remote);
     if (state === undefined || state.decl === null || state.included === on)
       return;
-    this._mutate(() => state.included = on);
+    this._mutate(() => {
+      state.included = on;
+      this._follow(state, on);
+    });
   }
 
   /** Every bindable table in, or every table out. */
   includeTables(on: boolean): void {
     this._mutate(() => {
-      for (const state of this._tables.values()) {
-        if (state.decl !== null)
-          state.included = on;
-      }
+      const bindable = [...this._tables.values()].filter((s) => s.decl !== null);
+      for (const state of bindable)
+        state.included = on;
+      for (const state of bindable)
+        this._follow(state, on);
     });
   }
 
-  /** A key column stays: the row id encodes it. */
+  /** A key column stays: the row id encodes it; a demoted column has no type to come back with. */
   includeColumn(table: string, remote: string, on: boolean): void {
     const state = this._tables.get(table);
     const column = state?.columns.get(remote);
-    if (state === undefined || column === undefined || state.key.includes(remote) || column.included === on)
+    if (state === undefined || column === undefined || state.key.includes(remote) || column.included === on ||
+        column.demoted !== undefined)
       return;
     this._mutate(() => column.included = on);
   }
@@ -430,7 +457,7 @@ export class ManifestModel {
     for (const [name, c] of Object.entries(decl?.columns ?? {})) {
       const columnRemote = c.column ?? name;
       keyByLogical.set(name, columnRemote);
-      columns.set(columnRemote, {remote: columnRemote, logical: name, decl: {...c}, included: true});
+      columns.set(columnRemote, {remote: columnRemote, logical: name, decl: {...c}, included: true, type: c.type});
     }
     const key = decl?.businessKey?.map((k) => keyByLogical.get(k) ?? k) ?? inventory?.key ?? [];
     this._tables.set(remote, {remote, logical, decl: decl === null ? null : {...decl}, included: decl !== null,
@@ -441,6 +468,47 @@ export class ManifestModel {
   private _mutate(edit: () => void): void {
     edit();
     this._rev.value = this._rev.peek() + 1;
+  }
+
+  private _byLogical(logical: string | undefined): TableState | undefined {
+    return [...this._tables.values()].find((t) => t.decl !== null && t.logical === logical);
+  }
+
+  /** The refs onto [target] follow its inclusion: out, they become the plain type the inventory
+   * knows or drop out with a reason; in, they are refs again. */
+  private _follow(target: TableState, on: boolean): void {
+    for (const state of this._tables.values()) {
+      for (const column of state.columns.values()) {
+        if (column.target !== target.remote)
+          continue;
+        if (on) {
+          column.type = 'ref';
+          if (column.demoted !== undefined) {
+            column.demoted = undefined;
+            column.included = true;
+          }
+        } else if (column.type === 'ref') {
+          const plain = this._plainType(state, column);
+          column.type = plain ?? '';
+          if (plain === null) {
+            column.demoted = `${target.remote} is not included and the draft names no plain type for this column`;
+            column.included = false;
+          }
+        }
+      }
+    }
+  }
+
+  /** The type a ref carries as a plain value: what the inventory mapped the column to, else the
+   * type of the key the inventory's relation points at; null where the inventory is silent. */
+  private _plainType(state: TableState, column: ColumnState): string | null {
+    const mapped = this._plainTypes.get(ManifestModel._key(state.remote, column.remote));
+    if (mapped !== undefined)
+      return mapped;
+    const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote);
+    const key = relation === undefined ? undefined :
+      this._tables.get(relation.targetTable)?.columns.get(relation.targetColumn);
+    return key === undefined || key.decl.type === 'ref' ? null : key.decl.type;
   }
 
   private _setSingle(table: string, remote: string | null, flag: 'isName' | 'searchable'): void {
@@ -478,12 +546,14 @@ export class ManifestModel {
 
   private _relationView(r: InventoryRelation): RelationView {
     const target = this._tables.get(r.targetTable);
+    const column = this._tables.get(r.table)?.columns.get(r.column);
     const targetIncluded = target !== undefined && target.decl !== null && target.included;
-    const ref = r.status === 'ref' && targetIncluded;
-    const canFix = r.status === 'ref' && !targetIncluded && target !== undefined && target.decl !== null;
+    const ref = column !== undefined && column.type === 'ref' && column.target === r.targetTable;
+    const canFix = r.status === 'ref' && !ref && !targetIncluded && target !== undefined && target.decl !== null;
     const reason = ref ? `ref: ${target!.logical}` :
-      r.status === 'ref' ? 'target not included — stays a plain value' :
-        r.message ?? 'stays a plain value';
+      column?.demoted !== undefined ? 'target not included — left out' :
+        r.status === 'ref' ? 'target not included — stays a plain value' :
+          r.message ?? 'stays a plain value';
     return {table: r.table, column: r.column, targetTable: r.targetTable, targetColumn: r.targetColumn,
       status: r.status, ref, targetIncluded, targetLogical: target?.logical ?? null, reason, canFix};
   }
@@ -491,39 +561,27 @@ export class ManifestModel {
   private _columnView(state: TableState, column: ColumnState): ColumnView {
     const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote);
     const view = relation === undefined ? undefined : this._relationView(relation);
-    const scalarType = this._scalarType(state, column);
     const isKey = state.key.includes(column.remote);
     return {
-      table: state.remote, remote: column.remote, logical: column.logical,
-      type: view?.ref === true ? 'ref' : scalarType, scalarType,
+      table: state.remote, remote: column.remote, logical: column.logical, type: column.type,
       dbType: this._dbTypes.get(ManifestModel._key(state.remote, column.remote)),
       included: column.included, isKey,
       required: isKey || column.decl.required === true,
       isName: column.decl.isName === true, searchable: column.decl.searchable === true,
-      supported: true, relation: view,
+      supported: true, reason: column.demoted, relation: view,
     };
   }
 
   private _unsupportedView(state: TableState, u: InventoryColumn): ColumnView {
     return {
-      table: state.remote, remote: u.remote, logical: u.remote, type: u.dbType ?? '', scalarType: u.dbType ?? '',
+      table: state.remote, remote: u.remote, logical: u.remote, type: u.dbType ?? '',
       dbType: u.dbType, included: false, isKey: false, required: false, isName: false, searchable: false,
       supported: false, reason: u.message, code: u.code,
     };
   }
 
-  /** The scalar type of a column — for a drafted ref, the type of the key it points at. */
-  private _scalarType(state: TableState, column: ColumnState): string {
-    const decl = column.decl;
-    if (decl.type !== 'ref')
-      return decl.type;
-    const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote);
-    const target = relation === undefined ? undefined : this._tables.get(relation.targetTable);
-    const key = target === undefined || relation === undefined ? undefined : target.columns.get(relation.targetColumn);
-    return key === undefined || key.decl.type === 'ref' ? 'string' : key.decl.type;
-  }
-
   private _toJSON(name: string): ManifestJson {
+    const external = this._draft.storage?.kind === 'external';
     const tables: Record<string, ManifestTableJson> = {};
     for (const remote of this._order) {
       const state = this._tables.get(remote)!;
@@ -532,11 +590,11 @@ export class ManifestModel {
       const columns: Record<string, ManifestColumnJson> = {};
       for (const column of state.columns.values()) {
         if (column.included)
-          columns[column.logical] = this._columnJSON(state, column);
+          columns[column.logical] = this._columnJSON(column, external);
       }
       const {table: _table, businessKey: _key, writable, filters, delegate, ...rest} = state.decl;
       const decl: ManifestTableJson = {...rest, columns};
-      if (state.logical !== state.remote)
+      if (external && state.logical !== state.remote)
         decl.table = state.remote;
       if (state.key.length > 0)
         decl.businessKey = state.key.map((k) => ManifestModel._current(state, k)!);
@@ -569,13 +627,14 @@ export class ManifestModel {
     return json;
   }
 
-  private _columnJSON(state: TableState, column: ColumnState): ManifestColumnJson {
-    const {type: _type, ref: _ref, column: _column, ...rest} = column.decl;
-    const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote);
-    const view = relation === undefined ? undefined : this._relationView(relation);
-    const json: ManifestColumnJson = view?.ref === true ? {type: 'ref', ref: view.targetLogical!, ...rest} :
-      {type: this._scalarType(state, column), ...rest};
-    if (column.logical !== column.remote)
+  /** The declaration with the current type: a ref names its target's CURRENT logical name (the
+   * declared one where the target is not in the manifest). */
+  private _columnJSON(column: ColumnState, external: boolean): ManifestColumnJson {
+    const {type: _type, ref, column: _column, ...rest} = column.decl;
+    const target = column.target === undefined ? undefined : this._tables.get(column.target);
+    const json: ManifestColumnJson = column.type === 'ref' ? {type: 'ref', ref: target?.logical ?? ref, ...rest} :
+      {type: column.type, ...rest};
+    if (external && column.logical !== column.remote)
       json.column = column.remote;
     return json;
   }
@@ -592,11 +651,19 @@ export class ManifestModel {
   }
 }
 
+/** The schema — every included table — or one table by its remote name. */
+export type AccessScope = {kind: 'schema'} | {kind: 'table', table: string};
+
+/** A group by id, with the label it is shown under (a duplicate name carries a disambiguator). */
+export interface AccessPrincipal {
+  id: string;
+  label: string;
+}
+
 /** One row of the access grid: who, and which of View / Edit / Delete. */
 export interface AccessGrant {
-  /** `'schema'` — every table — or a table's remote name. */
-  scope: string;
-  group: string;
+  scope: AccessScope;
+  group: AccessPrincipal;
   view: boolean;
   edit: boolean;
   delete: boolean;
@@ -606,7 +673,7 @@ export interface AccessGrant {
 export interface ColumnVisibility {
   table: string;
   column: string;
-  groups: string[] | null;
+  groups: AccessPrincipal[] | null;
 }
 
 export interface AccessJson {
@@ -617,55 +684,79 @@ export interface AccessJson {
 export type AccessCapability = 'view' | 'edit' | 'delete';
 
 /** Access is not in the manifest — declared grants are refused for a user schema — so the dialog
- * applies what this holds after Create through the grants API and the column restrictions.
- * Tables and columns are keyed by REMOTE name, as the manifest model keys them; the editor's
- * `plan()` resolves them to the logical names the API takes. */
+ * applies what this holds after Create through the table grants and the column restrictions: a
+ * schema-scope row is the same grant on every included table, there is no schema-wide row
+ * access. Tables and columns are keyed by REMOTE name, as the manifest model keys them; the
+ * editor's `plan()` resolves them to the logical names the API takes. */
 export class AccessModel {
   readonly grants: Signal<AccessGrant[]>;
   readonly visibility: Signal<ColumnVisibility[]>;
 
   constructor(json: Partial<AccessJson> = {}) {
-    this.grants = signal(json.grants?.map((g) => ({...g})) ?? []);
-    this.visibility = signal(json.visibility?.map((v) =>
-      ({...v, groups: v.groups === null ? null : [...v.groups]})) ?? []);
+    const copy = AccessModel._copy(json);
+    this.grants = signal(copy.grants);
+    this.visibility = signal(copy.visibility);
   }
 
-  grantsOf(scope: string): ReadonlySignal<AccessGrant[]> {
-    return computed(() => this.grants.value.filter((g) => g.scope === scope));
+  static sameScope(a: AccessScope, b: AccessScope): boolean {
+    return a.kind === b.kind && (a.kind === 'schema' || a.table === (b as {table: string}).table);
+  }
+
+  /** A bare string names a group that is its own label. */
+  static principal(group: string | AccessPrincipal): AccessPrincipal {
+    return typeof group === 'string' ? {id: group, label: group} : group;
+  }
+
+  grantsOf(scope: AccessScope): ReadonlySignal<AccessGrant[]> {
+    return computed(() => this.grants.value.filter((g) => AccessModel.sameScope(g.scope, scope)));
   }
 
   /** Replaces the scope's rows wholesale — what the access grid hands back. */
-  setGrants(scope: string, rows: Omit<AccessGrant, 'scope'>[]): void {
-    this.grants.value = [...this.grants.peek().filter((g) => g.scope !== scope),
+  setGrants(scope: AccessScope, rows: Omit<AccessGrant, 'scope'>[]): void {
+    this.grants.value = [...this.grants.peek().filter((g) => !AccessModel.sameScope(g.scope, scope)),
       ...rows.map((r) => ({...r, scope}))];
   }
 
-  addGroup(scope: string, group: string): void {
-    if (this.grants.peek().some((g) => g.scope === scope && g.group === group))
+  addGroup(scope: AccessScope, group: string | AccessPrincipal): void {
+    const principal = AccessModel.principal(group);
+    if (this._grant(scope, principal.id) !== undefined)
       return;
-    this.grants.value = [...this.grants.peek(), {scope, group, view: true, edit: false, delete: false}];
+    this.grants.value = [...this.grants.peek(), {scope, group: principal, view: true, edit: false, delete: false}];
   }
 
-  removeGroup(scope: string, group: string): void {
-    this.grants.value = this.grants.peek().filter((g) => !(g.scope === scope && g.group === group));
+  removeGroup(scope: AccessScope, groupId: string): void {
+    this.grants.value = this.grants.peek()
+      .filter((g) => !(AccessModel.sameScope(g.scope, scope) && g.group.id === groupId));
   }
 
-  setGrant(scope: string, group: string, capability: AccessCapability, on: boolean): void {
+  setGrant(scope: AccessScope, groupId: string, capability: AccessCapability, on: boolean): void {
     this.grants.value = this.grants.peek().map((g) =>
-      g.scope === scope && g.group === group ? {...g, [capability]: on} : g);
+      AccessModel.sameScope(g.scope, scope) && g.group.id === groupId ? {...g, [capability]: on} : g);
   }
 
-  visibilityOf(table: string, column: string): string[] | null {
+  visibilityOf(table: string, column: string): AccessPrincipal[] | null {
     return this.visibility.peek().find((v) => v.table === table && v.column === column)?.groups ?? null;
   }
 
-  setVisibility(table: string, column: string, groups: string[] | null): void {
+  setVisibility(table: string, column: string, groups: (string | AccessPrincipal)[] | null): void {
     const rest = this.visibility.peek().filter((v) => !(v.table === table && v.column === column));
-    this.visibility.value = groups === null ? rest : [...rest, {table, column, groups: [...groups]}];
+    this.visibility.value = groups === null ? rest :
+      [...rest, {table, column, groups: groups.map((g) => AccessModel.principal(g))}];
   }
 
   toJSON(): AccessJson {
-    return {grants: this.grants.peek().map((g) => ({...g})),
-      visibility: this.visibility.peek().map((v) => ({...v, groups: v.groups === null ? null : [...v.groups]}))};
+    return AccessModel._copy({grants: this.grants.peek(), visibility: this.visibility.peek()});
+  }
+
+  private static _copy(json: Partial<AccessJson>): AccessJson {
+    return {
+      grants: json.grants?.map((g) => ({...g, scope: {...g.scope}, group: {...g.group}})) ?? [],
+      visibility: json.visibility?.map((v) =>
+        ({...v, groups: v.groups === null ? null : v.groups.map((g) => ({...g}))})) ?? [],
+    };
+  }
+
+  private _grant(scope: AccessScope, groupId: string): AccessGrant | undefined {
+    return this.grants.peek().find((g) => AccessModel.sameScope(g.scope, scope) && g.group.id === groupId);
   }
 }

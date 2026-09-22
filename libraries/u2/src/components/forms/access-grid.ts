@@ -118,7 +118,8 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     tr.dataset.principal = row.principal;
     const who = AccessGrid._cell('td', '');
     tr.append(who);
-    who.append(span(row.principal, 'u2-access-grid-principal'));
+    const item = this._principals.find((p) => itemValue(p) === row.principal);
+    who.append(span(item === undefined ? row.principal : itemLabel(item), 'u2-access-grid-principal'));
     if (from !== null && from !== '')
       who.append(span(from, 'u2-access-grid-from'));
     for (const c of this._capabilities) {
@@ -128,7 +129,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
       box.checked = row.can[c.name] === true;
       box.disabled = from !== null || this._locked.has(c.name);
       box.dataset.capability = c.name;
-      box.setAttribute('aria-label', `${c.label} for ${row.principal}`);
+      box.setAttribute('aria-label', `${c.label} for ${who.textContent}`);
       const cell = AccessGrid._cell('td', '', 'u2-access-grid-cap');
       cell.append(box);
       tr.append(cell);
@@ -140,7 +141,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
       remove.type = 'button';
       remove.className = 'u2-access-grid-remove';
       remove.textContent = '✕';
-      remove.setAttribute('aria-label', `Remove ${row.principal}`);
+      remove.setAttribute('aria-label', `Remove ${who.textContent}`);
       last.append(remove);
     }
     return tr;

@@ -277,9 +277,9 @@ export interface DomainDraftTable {
   message?: string;
 }
 
-/** A remote column the draft left out of its table (a type the binding cannot carry — `bytea`,
- * `bigint` …), named so the author can see what is missing. */
-export interface DomainDraftColumn { table: string; remote: string; dbType: string; code: string; message: string; }
+/** A remote column of a drafted table with its warehouse type; `code` and `message` only on one
+ * the draft left out (a type the binding cannot carry — `bytea`, `bigint` …, a malformed name). */
+export interface DomainDraftColumn { table: string; remote: string; dbType: string; code?: string; message?: string; }
 
 /** One foreign key touching a drafted table: `status: 'ref'` became a ref column in the manifest,
  * `'plain'` stayed a scalar and `code` says why (`external-ref-out` — the target is not in the

@@ -146,27 +146,62 @@ test('resolvePath addresses a diagnostic to its node by the current logical name
   assert.deepEqual(model.resolvePath(undefined), {kind: 'schema'});
 });
 
+test('a registered manifest opened without an inventory round-trips: declared refs stay refs', () => {
+  const model = new ManifestModel({manifest: draft().manifest});
+  assert.deepEqual(model.toJSON(), DRAFT.manifest);
+  assert.equal(column(model, 'order_details', 'orderid').type, 'ref');
+  assert.equal(model.relations.value.length, 0, 'nothing to explain');
+  model.renameTable('orders', 'order');
+  assert.equal(model.toJSON().tables.order_details.columns.orderid.ref, 'order', 'the ref follows the rename');
+  model.renameTable('orders', 'orders');
+  // with no inventory to name a plain type, excluding the target drops the ref column with a reason
+  model.includeTable('orders', false);
+  const dropped = column(model, 'order_details', 'orderid');
+  assert.equal(dropped.included, false);
+  assert.match(dropped.reason, /orders is not included/);
+  assert.equal(model.toJSON().tables.order_details.columns.orderid, undefined);
+  model.includeColumn('order_details', 'orderid', true);
+  assert.equal(column(model, 'order_details', 'orderid').included, false, 'no type to come back with');
+  model.includeTable('orders', true);
+  assert.deepEqual(model.toJSON(), DRAFT.manifest, 'including the target restores the ref');
+});
+
+test('remote names are the external storage\'s vocabulary: a platform storage emits none', () => {
+  const manifest = {name: 'lab', storage: {kind: 'domain'},
+    tables: {sample: {businessKey: ['id'], columns: {id: {type: 'int', required: true}, label: {type: 'string'}}}}};
+  const model = new ManifestModel({manifest});
+  model.renameTable('sample', 'specimen');
+  model.renameColumn('sample', 'label', 'caption');
+  const json = model.toJSON();
+  assert.deepEqual(Object.keys(json.tables), ['specimen']);
+  assert.equal(json.tables.specimen.table, undefined);
+  assert.deepEqual(json.tables.specimen.columns.caption, {type: 'string'});
+});
+
 test('the access model round-trips and edits by scope', () => {
+  const schema = {kind: 'schema'};
+  const orders = {kind: 'table', table: 'orders'};
   const access = new AccessModel();
-  access.addGroup('schema', 'Sales');
-  access.addGroup('schema', 'Sales');
-  access.addGroup('orders', 'Chemists');
-  access.setGrant('orders', 'Chemists', 'edit', true);
+  access.addGroup(schema, 'Sales');
+  access.addGroup(schema, {id: 'Sales', label: 'Sales (dup)'});
+  access.addGroup(orders, {id: 'g-chem', label: 'Chemists'});
+  access.setGrant(orders, 'g-chem', 'edit', true);
   access.setVisibility('orders', 'freight', ['Sales']);
   access.setVisibility('orders', 'shipname', null);
   const json = access.toJSON();
   assert.deepEqual(json, {
-    grants: [{scope: 'schema', group: 'Sales', view: true, edit: false, delete: false},
-      {scope: 'orders', group: 'Chemists', view: true, edit: true, delete: false}],
-    visibility: [{table: 'orders', column: 'freight', groups: ['Sales']}],
+    grants: [{scope: schema, group: {id: 'Sales', label: 'Sales'}, view: true, edit: false, delete: false},
+      {scope: orders, group: {id: 'g-chem', label: 'Chemists'}, view: true, edit: true, delete: false}],
+    visibility: [{table: 'orders', column: 'freight', groups: [{id: 'Sales', label: 'Sales'}]}],
   });
   assert.deepEqual(new AccessModel(json).toJSON(), json);
-  assert.deepEqual(access.grantsOf('orders').value.map((g) => g.group), ['Chemists']);
-  access.removeGroup('schema', 'Sales');
-  access.setGrants('orders', [{group: 'Developers', view: true, edit: false, delete: false}]);
-  assert.deepEqual(access.grants.value.map((g) => [g.scope, g.group]), [['orders', 'Developers']]);
-  assert.deepEqual(access.visibilityOf('orders', 'freight'), ['Sales']);
+  assert.deepEqual(access.grantsOf(orders).value.map((g) => g.group.label), ['Chemists']);
+  access.removeGroup(schema, 'Sales');
+  access.setGrants(orders, [{group: {id: 'g-dev', label: 'Developers'}, view: true, edit: false, delete: false}]);
+  assert.deepEqual(access.grants.value.map((g) => [g.scope.table, g.group.id]), [['orders', 'g-dev']]);
+  assert.deepEqual(access.visibilityOf('orders', 'freight').map((g) => g.id), ['Sales']);
   assert.equal(access.visibilityOf('orders', 'shipname'), null);
+  assert.equal(AccessModel.sameScope({kind: 'table', table: 'schema'}, schema), false, 'a table named schema is a table');
 });
 
 test('the field offer: the external vocabulary under create and view; the other arms refuse by name', () => {

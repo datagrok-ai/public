@@ -1,7 +1,8 @@
 /* Multi-step wizard. Panels are hidden, never detached, so a step's state survives navigation;
    lazy content is built once under the step's own scope. In dialog mode the wizard's own footer
    carries the buttons — the Dialog's button row stays empty — and any close that is not a finish
-   reports a cancel, which covers CANCEL, the ✕ and Esc in one place. */
+   reports a cancel, which covers CANCEL, the ✕ and Esc in one place; while a step's commit, an
+   action or the finish runs, none of them closes and the rail does not move. */
 import {signal, computed, untracked, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
@@ -22,6 +23,11 @@ export interface WizardStep {
   done?: boolean;
   /** What the closing button reads on the last step (FINISH by default). */
   finishText?: string;
+  /** What NEXT reads on this step (NEXT by default) — CREATE on a step whose commit registers. */
+  nextText?: string;
+  /** Work NEXT runs before leaving this step: the wizard waits on it and nothing closes meanwhile;
+   * `false` keeps the step (a commit the server refused). */
+  commit?: () => void | boolean | Promise<void | boolean>;
   /** Buttons of this step's own, before NEXT in the footer — a check the user runs before
    * finishing. While one runs, the footer waits. */
   actions?: WizardAction[];
@@ -31,6 +37,8 @@ export interface WizardStep {
 export interface WizardAction {
   text: string;
   run: () => void | Promise<void>;
+  /** Follows the signal; enabled otherwise. */
+  enabled?: ReadonlySignal<boolean>;
 }
 
 export interface WizardOptions {
@@ -119,22 +127,32 @@ export class Wizard extends Control {
     if (this._blockReason.peek() !== null)
       return;
     const index = this._index.peek();
-    if (index < this._steps.length - 1)
-      this._index.value = index + 1;
-    else
+    if (index === this._steps.length - 1) {
       this._finish();
+      return;
+    }
+    const commit = this._steps[index].options.commit;
+    const advance = (ok: unknown): void => {
+      if (ok !== false && !this.scope.isDisposed && this._index.peek() === index)
+        this._index.value = index + 1;
+    };
+    if (commit)
+      void this._run(commit()).then(advance);
+    else
+      advance(undefined);
   }
 
   back(): void {
     const index = this._index.peek();
-    if (index > 0)
+    if (index > 0 && !this._busy.peek())
       this._index.value = index - 1;
   }
 
+  /** A visited step, or the next one through its gate; nothing moves while the wizard is busy. */
   goTo(id: string): void {
     const target = this._steps.findIndex((s) => s.options.id === id);
     const index = this._index.peek();
-    if (target < 0 || target === index)
+    if (target < 0 || target === index || this._busy.peek())
       return;
     if (this._visited.has(id))
       this._index.value = target;
@@ -145,17 +163,26 @@ export class Wizard extends Control {
   /** Shows the wizard as a modal dialog; repeated calls reopen the same one. */
   openInDialog(title: string, options: {width?: number, height?: number} = {}): Dialog {
     if (!this._dialog) {
-      const dialog = this.runInScope(() => Dialog.create(title).add(this));
+      const dialog = this.runInScope(() => Dialog.create(title).add(this).closeGuard(() => !this._busy.peek()));
       this._dialog = dialog;
-      this._cancel = this._button('CANCEL', () => dialog.close());
+      this._cancel = this._button('CANCEL', () => {
+        if (!this._busy.peek())
+          dialog.close();
+      });
       this._footer.insertBefore(this._cancel, this._back);
       let open = false;
+      // ✕ and Esc on a done step are the CLOSE button; anywhere else they are a cancel
       this.effect(() => {
         const closed = open && !dialog.isOpen.value;
         open = dialog.isOpen.value;
-        const onCancel = this._options.onCancel;
-        if (closed && onCancel && !this._completed.peek())
-          untracked(() => onCancel());
+        if (!closed || this._completed.peek())
+          return;
+        untracked(() => {
+          if (this._steps[this._index.peek()].options.done === true)
+            this._finish();
+          else
+            this._options.onCancel?.();
+        });
       });
     }
     return this._dialog.show({modal: true, width: options.width, height: options.height});
@@ -236,7 +263,7 @@ export class Wizard extends Control {
     this._back.style.display = index === 0 || done ? 'none' : '';
     if (this._cancel !== undefined)
       this._cancel.style.display = done ? 'none' : '';
-    this._next.textContent = index < this._steps.length - 1 ? 'NEXT' : done ? 'CLOSE' :
+    this._next.textContent = index < this._steps.length - 1 ? current.options.nextText ?? 'NEXT' : done ? 'CLOSE' :
       current.options.finishText ?? 'FINISH';
 
     const builder = current.builder;
@@ -252,10 +279,14 @@ export class Wizard extends Control {
   private _applyGate(): void {
     const reason = this._blockReason.value;
     const busy = this._busy.value;
+    const current = this._steps[this._index.value];
     this._next.disabled = reason !== null;
     this._back.disabled = busy;
-    for (const b of this._steps[this._index.value].actions)
-      b.disabled = busy;
+    if (this._cancel !== undefined)
+      this._cancel.disabled = busy;
+    this.root.classList.toggle('u2-wizard-busy', busy);
+    this._rail.setAttribute('aria-busy', String(busy));
+    current.actions.forEach((b, i) => b.disabled = busy || current.options.actions![i].enabled?.value === false);
     this._reason.textContent = reason ?? '';
   }
 

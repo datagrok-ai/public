@@ -1315,11 +1315,14 @@ export class DomainsDataSource {
    * runs every check and registers nothing — `{status: 'ok', issues: []}`, or exactly the
    * refusal the create would give: a {@link DomainManifestValidationError} whose `errors` are
    * addressed by manifest path, a DomainError code `'schema-name-taken'` / `'invalid-storage'`
-   * / `'external-unreachable'`. Pass `dryRun` as a literal `true` for the typed dry-run answer. */
+   * / `'external-unreachable'`. A literal `true` / `false` / omitted `dryRun` types the answer
+   * precisely; a boolean variable answers the union. */
   createSchema(name: string, options: {friendlyName?: string; description?: string;
       manifest?: {[key: string]: any}; dryRun: true}): Promise<DomainSchemaDryRun>;
   createSchema(name: string, options?: {friendlyName?: string; description?: string;
-      manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<DomainSchemaCreated>;
+      manifest?: {[key: string]: any}; dryRun?: false}): Promise<DomainSchemaCreated>;
+  createSchema(name: string, options: {friendlyName?: string; description?: string;
+      manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<DomainSchemaDryRun | DomainSchemaCreated>;
   createSchema(name: string, options?: {friendlyName?: string; description?: string;
       manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<any> {
     return domainCall(api.grok_Dapi_Domains_CreateSchema(this.dart, name,

@@ -26,20 +26,24 @@ import {badge} from '../../../components/display/badge.js';
 import {ObjectForm} from '../../forms/object-form.js';
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {fieldOffer} from './editor-context.js';
-import {ManifestModel} from './manifest-model.js';
-import type {AccessGrant, AccessModel, ColumnView, ManifestDiagnostic, ManifestSelection, RelationView}
-  from './manifest-model.js';
+import {AccessModel, ManifestModel} from './manifest-model.js';
+import type {AccessGrant, AccessPrincipal, AccessScope, ColumnView, ManifestDiagnostic, ManifestSelection,
+  RelationView} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 
 export interface ManifestContextPanelOptions {
   selected: ReadonlySignal<ManifestSelection>;
   access: AccessModel;
   context: EditorContext;
-  /** The groups and users the access pickers offer. */
-  groups?: string[];
+  /** The groups the access pickers offer. */
+  groups?: AccessPrincipal[];
   /** Diagnostics addressed by manifest path; the ones about the selected node are listed on top. */
   diagnostics?: ReadonlySignal<ManifestDiagnostic[]>;
+  /** Why the Writable switch cannot be turned on here; the switch is then disabled with this hint. */
+  writableDisabled?: string;
 }
+
+const SCHEMA: AccessScope = {kind: 'schema'};
 
 const CAPABILITIES = [{name: 'view', label: 'View'}, {name: 'edit', label: 'Edit'}, {name: 'delete', label: 'Delete'}];
 const CREATOR = 'You (creator)';
@@ -51,8 +55,9 @@ export class ManifestContextPanel extends Control {
   readonly offer: FieldOffer;
 
   private readonly _access: AccessModel;
-  private readonly _groups: string[];
+  private readonly _groups: AccessPrincipal[];
   private readonly _diagnostics: ReadonlySignal<ManifestDiagnostic[]> | undefined;
+  private readonly _writableDisabled: string | undefined;
   private _shown: Scope | undefined;
 
   constructor(readonly model: ManifestModel, options: ManifestContextPanelOptions) {
@@ -61,6 +66,7 @@ export class ManifestContextPanel extends Control {
     this._access = options.access;
     this._groups = options.groups ?? [];
     this._diagnostics = options.diagnostics;
+    this._writableDisabled = options.writableDisabled;
     this.root.classList.add('u2-manifest-panel');
     this.root.dataset.u2 = 'manifest-panel';
     this.own(() => this._shown?.dispose());
@@ -106,17 +112,19 @@ export class ManifestContextPanel extends Control {
       name: 'friendlyName', value: friendly, commitOn: 'change', onChanged: (v) => model.friendlyName.value = v}));
     const writable = model.writable.peek();
     if (this.offer.writable) {
+      const hint = this._writableDisabled;
       this._field(form, 'Writable', 'writable', writable ? 'Yes' : 'No', () => new BoolInput({label: 'Writable',
-        name: 'writable', value: writable, onChanged: (v) => model.setWritable(v)}));
-      form.addElement(ManifestContextPanel._note(
-        '— users with Edit on a table may insert, update and delete rows in the warehouse'));
+        name: 'writable', value: writable, enabled: hint === undefined, tooltipText: hint,
+        onChanged: (v) => model.setWritable(v)}));
+      form.addElement(ManifestContextPanel._note(hint === undefined ?
+        '— users with Edit on a table may insert, update and delete rows in the warehouse' : `— ${hint}`));
     }
     form.addElement(ManifestContextPanel._note('Queries run as the platform service with the connection\'s ' +
       'stored credentials; users need View on a table, nothing on the connection.'));
     const access = new Section({title: 'Access — every table', collapsible: false});
-    access.add(this._accessGrid('schema', [ManifestContextPanel._creator()], writable ? [] : ['edit', 'delete']));
-    access.add(ManifestContextPanel._note('Applied after Create through the schema\'s grants (fans out to ' +
-      'every table). Edit and Delete need a writable binding.'));
+    access.add(this._accessGrid(SCHEMA, [ManifestContextPanel._creator()], writable ? [] : ['edit', 'delete']));
+    access.add(ManifestContextPanel._note('Applied after Create as the same grant on every included table — ' +
+      'there is no schema-wide row access. Edit and Delete need a writable binding.'));
     return [ManifestContextPanel._title('Schema', name), form, access];
   }
 
@@ -168,11 +176,12 @@ export class ManifestContextPanel extends Control {
       relations.add(ManifestContextPanel._note('The warehouse reports no foreign keys on this table.'));
     for (const r of rels)
       relations.add(this._relation(r, `${r.column} → ${r.targetTable}`));
-    const schemaRows = this._access.grantsOf('schema').peek()
-      .map((g): InheritedAccessRow => ({...ManifestContextPanel._row(g), from: '(schema)'}));
+    const schemaRows = this._access.grantsOf(SCHEMA).peek()
+      .map((g): InheritedAccessRow => ({...ManifestContextPanel._row(g), from: '(every table)'}));
     const locked = !model.writable.peek() || table.readOnly ? ['edit', 'delete'] : [];
     const access = new Section({title: 'Access — this table', collapsible: false});
-    access.add(this._accessGrid(remote, [ManifestContextPanel._creator(), ...schemaRows], locked));
+    access.add(this._accessGrid({kind: 'table', table: remote}, [ManifestContextPanel._creator(), ...schemaRows],
+      locked));
     return [title, form, relations, access];
   }
 
@@ -238,7 +247,7 @@ export class ManifestContextPanel extends Control {
     const current = access.visibilityOf(table, remote);
     if (!this.offer.editable) {
       section.add(ManifestContextPanel._note(current === null ? EVERYONE :
-        `${SOME}: ${current.length === 0 ? 'none yet' : current.join(', ')}`));
+        `${SOME}: ${current.length === 0 ? 'none yet' : current.map((g) => g.label).join(', ')}`));
       return section;
     }
     const some = signal(current !== null);
@@ -248,8 +257,10 @@ export class ManifestContextPanel extends Control {
         some.value = v === SOME;
         access.setVisibility(table, remote, v === SOME ? access.visibilityOf(table, remote) ?? [] : null);
       }});
-    const chips = new ChipsInput({label: 'Groups', name: 'visibleTo', items: this._groups, value: current ?? [],
-      enabled: some, emptyText: 'No groups to pick from', onChanged: (v) => access.setVisibility(table, remote, v)});
+    const known = this._known(current ?? []);
+    const chips = new ChipsInput({label: 'Groups', name: 'visibleTo', items: known.map(ManifestContextPanel._item),
+      value: (current ?? []).map((g) => g.id), enabled: some, emptyText: 'No groups to pick from',
+      onChanged: (ids) => access.setVisibility(table, remote, ids.map((id) => known.find((g) => g.id === id)!))});
     const form = new Form({layout: 'wide'});
     form.add(radio).add(chips);
     section.add(form, ManifestContextPanel._note('Applied after Create as a column restriction; a restricted ' +
@@ -265,14 +276,26 @@ export class ManifestContextPanel extends Control {
     return row;
   }
 
-  private _accessGrid(scope: string, inherited: InheritedAccessRow[], locked: string[]): AccessGrid {
+  private _accessGrid(scope: AccessScope, inherited: InheritedAccessRow[], locked: string[]): AccessGrid {
     const access = this._access;
-    const grid = new AccessGrid({name: `access-${scope}`, inline: true, capabilities: CAPABILITIES,
-      principals: this._groups, inherited, locked, enabled: this.offer.editable,
-      value: access.grantsOf(scope).peek().map((g) => ManifestContextPanel._row(g)),
-      onChanged: (rows) => access.setGrants(scope, rows.map((r) => ({group: r.principal,
+    const rows = access.grantsOf(scope).peek();
+    const known = this._known(rows.map((g) => g.group));
+    const grid = new AccessGrid({name: `access-${scope.kind === 'schema' ? 'schema' : scope.table}`, inline: true,
+      capabilities: CAPABILITIES, principals: known.map(ManifestContextPanel._item), inherited, locked,
+      enabled: this.offer.editable, value: rows.map((g) => ManifestContextPanel._row(g)),
+      onChanged: (changed) => access.setGrants(scope, changed.map((r) => ({
+        group: known.find((g) => g.id === r.principal)!,
         view: r.can.view === true, edit: r.can.edit === true, delete: r.can.delete === true})))});
     return grid;
+  }
+
+  /** The offered groups plus the ones already granted — a row reopened from elsewhere keeps its label. */
+  private _known(granted: AccessPrincipal[]): AccessPrincipal[] {
+    return [...this._groups, ...granted.filter((g) => !this._groups.some((k) => k.id === g.id))];
+  }
+
+  private static _item(g: AccessPrincipal): {value: string, label: string} {
+    return {value: g.id, label: g.label};
   }
 
   /** An editor where the offer allows an edit, the value as text otherwise. */
@@ -284,7 +307,7 @@ export class ManifestContextPanel extends Control {
   }
 
   private static _row(g: AccessGrant): AccessRow {
-    return {principal: g.group, can: {view: g.view, edit: g.edit, delete: g.delete}};
+    return {principal: g.group.id, can: {view: g.view, edit: g.edit, delete: g.delete}};
   }
 
   private static _creator(): InheritedAccessRow {

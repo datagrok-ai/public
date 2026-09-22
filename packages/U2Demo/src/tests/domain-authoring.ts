@@ -14,6 +14,7 @@ category('U2: domain authoring', () => {
   let connection: DG.DataConnection | null = null;
   let skip: string | null = null;
   let created = false;
+  let flagBefore: boolean | undefined;
 
   const buttonNamed = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog button')]
     .find((b) => b.textContent === text);
@@ -34,6 +35,9 @@ category('U2: domain authoring', () => {
   };
 
   before(async () => {
+    // grok test's fresh client profile boots with the Beta flag off, and the dialog refuses without it
+    flagBefore = grok.shell.settings.enableDomainDatabases;
+    grok.shell.settings.enableDomainDatabases = true;
     connection = (await grok.dapi.connections.list({pageSize: 500})).find((c) => c.nqName === CONNECTION) ?? null;
     if (connection === null) {
       skip = `the ${CONNECTION} connection is not on this stand`;
@@ -56,6 +60,7 @@ category('U2: domain authoring', () => {
       dialog.click();
     if (created)
       await grok.dapi.domains.schema(name).delete();
+    grok.shell.settings.enableDomainDatabases = flagBefore ?? false;
   });
 
   test('the PowerPack function: connection › design › review creates the schema and opens the app', async () => {
