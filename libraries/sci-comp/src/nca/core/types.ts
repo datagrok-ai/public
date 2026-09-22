@@ -352,6 +352,13 @@ export type ParameterWarningCode =
    *  `cmin` / `set0` — the dose-time concentration rests on a plateau
    *  assumption (severity `'warning'`; see {@link C0Estimate.method}). */
   | 'C0_FALLBACK'
+  /** The accepted lambda_z window contains one or more BLQ points whose value
+   *  was SUBSTITUTED (`set-half-lloq`) rather than measured: the terminal slope
+   *  — and everything derived from it — is fitted partly through a number
+   *  nobody observed. Adjusted R² cannot detect this (a substitute sitting
+   *  near the trend line scores well precisely because it is near the line),
+   *  so it is reported rather than inferred (severity `'warning'`). */
+  | 'LAMBDAZ_SUBSTITUTED_BLQ'
   // Load-bearing: `string & {}` preserves literal autocomplete that a bare
   // `| string` would collapse.
   | (string & {});

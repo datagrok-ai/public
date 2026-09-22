@@ -1,4 +1,5 @@
 import {computeNca} from '../compute-nca';
+import {augmentProfile} from '../augment';
 import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
 import type {ProfileInputs, NcaRules, ParameterWarning} from '../types';
 
@@ -105,6 +106,22 @@ describe('computeNca — BLQ handling', () => {
     // BLQ at index 0 → preFirstMeasurable set-zero; no NaN propagation.
     expect(Number.isFinite(r.values.aucLast)).toBe(true);
     expect(Number.isFinite(r.values.lambdaZ)).toBe(true);
+
+    // The EV dose-time contract (GROK-20960 AC-U2.1.2), asserted where the
+    // behaviour lives rather than only in the kernel's own suite: under a
+    // SUBSTITUTING rule the flagged t=0 sample is a KEPT dose-time value, so
+    // nothing is prepended and the profile keeps its own length — there is no
+    // duplicated t=0. Under a DROPPING rule the row leaves the drop set empty
+    // at t=0, so the `(0, 0)` prepend happens as it always did.
+    const kept = augmentProfile(inputs, DEFAULT_RULES.blq)!;
+    expect(Array.from(kept.sourceIndex)).not.toContain(-1);
+    expect(kept.time.length).toBe(inputs.time.length);
+    for (const rule of ['exclude', 'missing'] as const) {
+      const dropped = augmentProfile(inputs,
+        {preFirstMeasurable: rule, embedded: rule, afterLast: rule, consecutiveAfterLast: rule})!;
+      expect(dropped.sourceIndex[0]).toBe(-1);
+      expect(dropped.time.length).toBe(inputs.time.length + 1);
+    }
   });
 
   it('every point BLQ → status "failed"', () => {
@@ -525,6 +542,70 @@ describe('computeNca — c0 provenance (IV bolus dose-time gate, GROK-20960)', (
       const b = computeNca(withRow(0), DEFAULT_RULES).provenance.c0!;
       expect(b.pctAucBackExtrap).toBe(a.pctAucBackExtrap);
     });
+  });
+});
+
+describe('computeNca — LAMBDAZ_SUBSTITUTED_BLQ (λz fitted through unmeasured values)', () => {
+  const halfLloq: NcaRules = {
+    ...DEFAULT_RULES,
+    blq: {
+      preFirstMeasurable: 'set-half-lloq', embedded: 'set-half-lloq',
+      afterLast: 'set-half-lloq', consecutiveAfterLast: 'set-half-lloq',
+    },
+  };
+  const subWarn = (r: ReturnType<typeof computeNca>) =>
+    r.provenance.warnings.find((w) => w.code === 'LAMBDAZ_SUBSTITUTED_BLQ');
+  // Clean log-linear decay plus ONE trailing BLQ. Under set-half-lloq the
+  // substitute is positive, survives the trailing trim, and lands close enough
+  // to the line that the fit is ACCEPTED — the case adj-R² cannot detect.
+  const t = [0, 1, 2, 4, 8, 12, 24];
+  const c = [0, 4, 3.2, 2, 0.8, 0.32, 0];
+  const blq = [1, 0, 0, 0, 0, 0, 1];
+  const withBlq = (rules: NcaRules) => computeNca(
+    {...poInputs(t, c, 10), lloq: 0.05, blqMask: Uint8Array.from(blq)}, rules);
+
+  it('fires when an accepted λz window contains a substituted BLQ value', () => {
+    const r = withBlq(halfLloq);
+    expect(r.status).toBe('ok');
+    // The fit really did absorb the substitute, and its statistics look fine.
+    expect(r.provenance.lambdaZ!.adjRSquared).toBeGreaterThan(0.85);
+    const w = subWarn(r);
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('warning');
+    expect(w!.message).toContain('24'); // names the offending time
+    expect(w!.message).toContain('1 substituted');
+  });
+
+  it('does NOT fire under set-zero — the λz filter drops non-positive substitutes itself', () => {
+    const r = withBlq(DEFAULT_RULES); // set-zero ×4
+    expect(subWarn(r)).toBeUndefined();
+  });
+
+  it('does NOT fire under exclude / missing — the points are dropped, not substituted', () => {
+    for (const rule of ['exclude', 'missing'] as const) {
+      const r = withBlq({...DEFAULT_RULES,
+        blq: {preFirstMeasurable: rule, embedded: rule, afterLast: rule, consecutiveAfterLast: rule}});
+      expect(subWarn(r)).toBeUndefined();
+    }
+  });
+
+  it('does NOT fire on a clean profile with no BLQ at all', () => {
+    const times = [0, 0.5, 1, 2, 4, 8, 12];
+    const conc = times.map((x) => 10 * Math.exp(-0.3 * x));
+    expect(subWarn(computeNca(poInputs(times, conc, 10), halfLloq))).toBeUndefined();
+  });
+
+  it('does NOT fire when the substitute stays OUTSIDE the accepted window', () => {
+    // BLQ at the START (pre-first-measurable) under set-half-lloq: substituted,
+    // but far from the terminal phase, so it never enters the λz window.
+    const r = computeNca({
+      ...poInputs([0, 0.5, 1, 2, 4, 8, 12], [0, 0, 4, 3.2, 2, 0.8, 0.32], 10),
+      lloq: 0.05, blqMask: Uint8Array.from([1, 1, 0, 0, 0, 0, 0]),
+    }, halfLloq);
+    expect(r.status).toBe('ok');
+    const used = Array.from(r.provenance.lambdaZ!.pointsUsed);
+    expect(Math.min(...used)).toBeGreaterThan(1); // window starts past the substitutes
+    expect(subWarn(r)).toBeUndefined();
   });
 });
 

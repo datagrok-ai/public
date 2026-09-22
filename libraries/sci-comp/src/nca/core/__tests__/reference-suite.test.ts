@@ -20,6 +20,7 @@
 import {readFileSync} from 'fs';
 import {join} from 'path';
 import {computeNca} from '../compute-nca';
+import {augmentProfile} from '../augment';
 import {sparseAuc} from '../sparse';
 import type {SparseInput} from '../sparse';
 import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
@@ -617,7 +618,13 @@ describe('02 Indomethacin — IV-bolus dose-time gate (Fx-1 invariance + Fx-2 c0
  *    observation and extrapolates AUCinf from THAT (`aucinf = auclast +
  *    clast.obs / λz`, the two limbs on different profiles). sci-comp honours
  *    the substitutes consistently (D1): `cLast = LLOQ/2` at the last sample,
- *    AUCinf = AUClast + cLast/λz — the Phoenix behaviour. Asserted on both
+ *    AUCinf = AUClast + cLast/λz. **This is a HOUSE decision, not a cited
+ *    vendor behaviour** — it is chosen because it keeps ONE terminal anchor
+ *    for both limbs (the same cLast/tLast that ends AUClast starts the tail),
+ *    where PKNCA's own treatment is internally mixed. An earlier draft
+ *    attributed it to Phoenix; that attribution could not be verified against
+ *    a primary Certara source and has been withdrawn (peer review 2026-09-22).
+ *    Asserted on both
  *    sides so the divergence is characterised, not hidden.
  *  - R-D Tlag: PKNCA computes `tlag` on the PRE-clean data, so it agrees with
  *    the mask-based definition under keep / drop / numeric; with the BLQ rows
@@ -754,7 +761,7 @@ describe('06 BLQ rules — per-rule PKNCA parity (F1, GROK-20960)', () => {
       if (trailingDiverges) {
         // DOCUMENTED DIVERGENCE (set-half-lloq, trailing substitutes). Ours: the
         // substitutes are real points — tLast is the last sample, cLast = LLOQ/2,
-        // and AUCinf extrapolates from it (self-consistent, Phoenix).
+        // and AUCinf extrapolates from it (self-consistent — house choice).
         const rs = bySubject.get(s)!;
         const tLastOurs = rs[rs.length - 1].time;
         expect(r.values.aucInf).toBeCloseTo(r.values.aucLast + (LLOQ / 2) / r.values.lambdaZ, 10);
@@ -839,6 +846,37 @@ describe('06 BLQ rules — per-rule PKNCA parity (F1, GROK-20960)', () => {
     expect(p4.status).toBe('ok');
     expect(profileOf(rc, 'P4').provenance!.lambda_z_adj_r_squared!)
       .toBeGreaterThanOrEqual(PKNCA_RULES.lambdaZ.minRSquared);
+  });
+
+  it('P4 under set-half-lloq: the ACCEPTED fit contains an unmeasured point, and says so', () => {
+    // The case adjusted R² provably cannot catch (peer review, 2026-09-22): the
+    // trailing LLOQ/2 substitute at t = 24 is positive, survives the trailing
+    // trim, joins the window, and scores 0.999 — high BECAUSE it sits near the
+    // line, not because it was measured. It also becomes the terminal anchor
+    // the AUCinf tail is extrapolated from. Nothing in the fit statistics can
+    // distinguish that from a genuine observation, so the engine reports it.
+    const rc = blockById('R-C');
+    const inputs = inputsFor('P4');
+    const r = computeNca(inputs, rulesFor(rc));
+    expect(r.status).toBe('ok');
+    expect(r.provenance.lambdaZ!.adjRSquared).toBeGreaterThan(0.99);
+
+    // The window genuinely contains a substituted (BLQ-flagged, not dropped) point.
+    const aug = augmentProfile(inputs, rulesFor(rc).blq)!;
+    const substituted = Array.from(r.provenance.lambdaZ!.pointsUsed)
+      .filter((i) => aug.blqMask[i] !== 0 && aug.dropMask[i] === 0);
+    expect(substituted.length).toBe(1);
+    expect(aug.time[substituted[0]]).toBe(24);
+    expect(aug.conc[substituted[0]]).toBe(LLOQ / 2);
+
+    const w = r.provenance.warnings.find((x) => x.code === 'LAMBDAZ_SUBSTITUTED_BLQ');
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('warning');
+
+    // P1 under the same rule fits only measured points → no warning. The signal
+    // tracks the fit's contents, not merely "this profile had a BLQ somewhere".
+    const p1 = computeNca(inputsFor('P1'), rulesFor(rc));
+    expect(p1.provenance.warnings.some((x) => x.code === 'LAMBDAZ_SUBSTITUTED_BLQ')).toBe(false);
   });
 
   it('I1: the flagged pre-dose row is replaced under EVERY rule; identical results; c0 = PKNCA\'s c0', () => {

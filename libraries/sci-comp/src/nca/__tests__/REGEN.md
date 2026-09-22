@@ -109,7 +109,7 @@ The regression pin: P1 `set-zero` AUClast 13.4729 vs `exclude` 15.8010 — the
 
 ### Measured divergences from PKNCA (asserted, not skipped)
 
-Three cells in the 06 table are NOT parity, and `reference-suite.test.ts`
+FOUR cells in the 06 table are NOT parity, and `reference-suite.test.ts`
 asserts what each side does from the fixture's own numbers:
 
 1. **R-B AUC is NA in PKNCA.** `first = "drop"` removes the t=0 zero and PKNCA
@@ -132,15 +132,52 @@ asserts what each side does from the fixture's own numbers:
    LLOQ/2 substitutes PKNCA integrates `auclast` through them (P4: to 24 h) but
    keeps `tlast` / `clast.obs` at the last above-LOQ observation (12 h, 0.32)
    and extrapolates `aucinf.obs = auclast + clast.obs / λz` from THAT. sci-comp
-   honours the substitutes consistently (D1, the Phoenix behaviour): `cLast =
-   LLOQ/2` at the last sample, `AUCinf = AUClast + cLast/λz`. Cmax, AUClast,
-   AUMClast and the λz window still agree; the AUCinf family (AUCinf, CL, Vz,
-   %extrap, AUMCinf, MRT) differs and is asserted on both sides.
+   honours the substitutes consistently (D1): `cLast = LLOQ/2` at the last
+   sample, `AUCinf = AUClast + cLast/λz`. **Provenance of this choice: `house`,
+   NOT `winnonlin`.** An earlier draft called it "the Phoenix behaviour"; peer
+   review (2026-09-22) could not verify that against a primary Certara source,
+   so the attribution is withdrawn rather than left asserted. The choice stands
+   on its own merit — ONE terminal anchor serves both limbs (the `cLast`/`tLast`
+   that ends AUClast starts the extrapolated tail), where PKNCA's treatment is
+   internally mixed. Cmax, AUClast, AUMClast and the λz window still agree; the
+   AUCinf family (AUCinf, CL, Vz, %extrap, AUMCinf, MRT) differs and is asserted
+   on both sides.
+4. **A substituted point can enter an ACCEPTED λz fit, and adjusted R² cannot
+   say so.** P4 under R-C: the trailing LLOQ/2 substitute at t = 24 is positive,
+   survives the trailing trim, joins the window and scores adj-R² 0.9995 — high
+   *because* it sits near the line, not because it was measured. It also becomes
+   the terminal anchor of the AUCinf tail. The fit statistics are structurally
+   incapable of distinguishing this from a genuine observation, so the engine
+   REPORTS it: `LAMBDAZ_SUBSTITUTED_BLQ` (severity `warning`) names the offending
+   times whenever a point in the accepted window is BLQ-flagged but not dropped.
+   Found by peer review, 2026-09-22; pinned by the P4 assertion in
+   `reference-suite.test.ts` and four unit cases in `compute-nca.test.ts`.
 
 Tlag: PKNCA computes `tlag` on the PRE-clean data, so it agrees with sci-comp's
 mask-based definition under keep / drop / numeric (P1 = 0.5 h in R-A, R-B, R-C,
 R-E). Only R-D (BLQ rows physically removed, predose 0 prepended) cannot see the
 lag and reports 0; sci-comp stays mask-based (0.5 h) under every rule (AD-7).
+
+### Exposure note: the route-aware gate widens how often `logslope` runs
+
+Worth stating plainly, because it is a change in *population* rather than in
+formula. Before GROK-20960 an IV-bolus profile carrying a non-positive pre-dose
+row never reached the c0 chain at all — `hasT0` was true and the profile
+integrated from the `(0, 0)`. Now such a profile is routed through
+`c0 → logslope → c1 → cmin → set0`, and `logslope` extrapolates from the **first
+two** post-dose measurable points only (`c0.ts`). For a genuinely biexponential
+IV bolus whose first two samples straddle the distribution phase, a two-point
+log-linear back-extrapolation can misestimate C0 — and with it CL, Vz and the
+back-extrapolated share. The chain itself is unchanged (it is PKNCA's, ported),
+but it is now *hit far more often*, and the committed fixtures exercise one
+decay geometry (indometh subject 1), not a fast-distribution shape.
+
+Two things bound the risk rather than remove it: `provenance.c0.pctAucBackExtrap`
+reports how much of AUC₀–∞ actually rides on the extrapolation (16–28 % across
+indometh), and `C0_FALLBACK` fires when the log-slope was not estimable at all.
+Neither detects a *confidently wrong* two-point slope. Raised by peer review
+2026-09-22; a diagnostic for widely-spaced early samples relative to the apparent
+terminal half-life is filed as a follow-up, not shipped here.
 
 ## IV-bolus AUC convention — sci-comp (WinNonlin) vs stock PKNCA
 

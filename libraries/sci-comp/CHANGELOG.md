@@ -8,6 +8,17 @@ byte-identical (pinned by a jest snapshot committed before either fix); the fixe
 move only the regimes named below. A MINOR bump on purpose: under the `0.x` caret
 rule a consumer takes these numbers only by widening its range.
 
+* **Route-aware IV-bolus dose-time gate.** An IV-bolus profile whose `t = 0` row is
+  BLQ-flagged or non-positive / non-finite (a pre-dose sample encoded as `0`) was
+  taken as a measured dose-time value and integrated from `(0, 0)`. It is now
+  treated as ABSENT: the row is removed and `(0, c0)` from the PKNCA c0 chain
+  takes its slot, so the profile gives the same parameters as one with no
+  pre-dose row. **This changes AUClast / AUCinf / AUMC / CL / Vz / Vss / MRT on
+  every IV-bolus profile with such a row** (indometh subject 1 + `(0, 0)`:
+  AUClast 1.7194 → 2.0099, the no-row value). A positive measured `t = 0` value is
+  used as-is; extravascular and IV-infusion profiles are unchanged. PKNCA's own
+  `c0` ignores a substituted dose-time BLQ the same way (measured, fixture
+  `c0_pknca`).
 * **BLQ substitutions now reach the integrator and the λz filter.** `applyBlqStrategy`
   wrote the substituted values, but `computeNca` integrated and fitted λz on the
   effective BLQ mask, so every rule was numerically `exclude` and a declared
@@ -24,22 +35,20 @@ rule a consumer takes these numbers only by widening its range.
   second `(0, 0)` prepended. Per-rule contract on the `BlqRule` TSDoc.
 * New fixture `06_blq_rules` (5 subjects × 5 rule blocks, each a real PKNCA 0.12.1
   `conc.blq` run) — the first reference assertion for nca-studio's shipped default.
-  Three cells are documented divergences from PKNCA, asserted as such (PKNCA `drop`
+  FOUR cells are documented divergences from PKNCA, asserted as such (PKNCA `drop`
   leaves AUC NA without a t=0 datum; PKNCA reports λz fits below our adj-R² floor —
   its `pk.calc.half.life` never consults `min.hl.r.squared`; PKNCA extrapolates AUCinf
-  from `clast.obs` while integrating `auclast` through LLOQ/2 substitutes). See
-  `__tests__/REGEN.md`.
-* **Route-aware IV-bolus dose-time gate.** An IV-bolus profile whose `t = 0` row is
-  BLQ-flagged or non-positive / non-finite (a pre-dose sample encoded as `0`) was
-  taken as a measured dose-time value and integrated from `(0, 0)`. It is now
-  treated as ABSENT: the row is removed and `(0, c0)` from the PKNCA c0 chain
-  takes its slot, so the profile gives the same parameters as one with no
-  pre-dose row. **This changes AUClast / AUCinf / AUMC / CL / Vz / Vss / MRT on
-  every IV-bolus profile with such a row** (indometh subject 1 + `(0, 0)`:
-  AUClast 1.7194 → 2.0099, the no-row value). A positive measured `t = 0` value is
-  used as-is; extravascular and IV-infusion profiles are unchanged. PKNCA's own
-  `c0` ignores a substituted dose-time BLQ the same way (measured, fixture
-  `c0_pknca`).
+  from `clast.obs` while integrating `auclast` through LLOQ/2 substitutes; and a
+  substitute can enter an accepted fit undetected by adj-R², which we warn about).
+  See `__tests__/REGEN.md`.
+* New warning `LAMBDAZ_SUBSTITUTED_BLQ` (severity `warning`): the accepted λz
+  window contains one or more BLQ points whose value was SUBSTITUTED rather than
+  measured, so the terminal slope — and everything derived from it — rests partly
+  on unmeasured concentrations. Adjusted R² provably cannot detect this (a
+  substitute sitting near the trend line scores well *because* it is near the
+  line: fixture P4 reaches adj-R² 0.9995 that way and the substitute also becomes
+  the terminal anchor of the AUCinf tail), so the condition is reported rather
+  than inferred. Only reachable since this release made substitutes λz-eligible.
 * `nca.augmentProfile(inputs, blq)` — pipeline Steps 1–3 (BLQ → observed Cmax →
   dose-time augmentation) as one exported, stateless kernel returning the
   augmented arrays, the effective BLQ mask, the drop set, `sourceIndex`

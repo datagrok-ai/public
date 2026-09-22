@@ -252,6 +252,31 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
         `(${rules.extrapWarnPctAumc}%) — MRT/Vss are fragile`,
     });
   }
+  // A point that is BLQ-flagged but NOT in the drop set is a SUBSTITUTED value
+  // (`set-half-lloq` — `set-zero` substitutes are non-positive and the λz filter
+  // drops them itself). When one lands inside the accepted window, the terminal
+  // slope is fitted partly through a number nobody measured, and the fit
+  // statistics cannot say so: a substitute near the trend line scores WELL
+  // precisely because it is near the line. Measured on the `06_blq_rules` P4
+  // profile — a trailing LLOQ/2 substitute joins a 3-point fit at adj-R² 0.9995
+  // and becomes the terminal anchor. Reported, never inferred.
+  if (lambdaZRes !== null) {
+    const substituted: number[] = [];
+    for (let k = 0; k < lambdaZRes.pointsUsed.length; k++) {
+      const i = lambdaZRes.pointsUsed[k];
+      if (augBlq[i] !== 0 && dropMask[i] === 0) substituted.push(augTime[i]);
+    }
+    if (substituted.length > 0) {
+      warnings.push({
+        code: 'LAMBDAZ_SUBSTITUTED_BLQ',
+        severity: 'warning',
+        message:
+          `lambda_z was fitted through ${substituted.length} substituted BLQ ` +
+          `value(s) (t = ${substituted.join(', ')}) — the terminal slope and ` +
+          `everything derived from it rest partly on unmeasured concentrations`,
+      });
+    }
+  }
   if (lambdaZRes !== null &&
       lambdaZRes.pointsUsed.length <= rules.lambdaZ.minPoints) {
     warnings.push({
