@@ -1,12 +1,34 @@
 # sci-comp changelog
 
-## 0.11.0 (unreleased — GROK-20960)
+## 0.11.0 (2026-09-22 — GROK-20960)
 
 Non-Compartmental Analysis — two bug fixes in `computeNca` that **change computed
 values on affected profiles**. Every one of the 27 committed reference profiles is
 byte-identical (pinned by a jest snapshot committed before either fix); the fixes
-move only the regimes named below.
+move only the regimes named below. A MINOR bump on purpose: under the `0.x` caret
+rule a consumer takes these numbers only by widening its range.
 
+* **BLQ substitutions now reach the integrator and the λz filter.** `applyBlqStrategy`
+  wrote the substituted values, but `computeNca` integrated and fitted λz on the
+  effective BLQ mask, so every rule was numerically `exclude` and a declared
+  `set-zero` / `set-half-lloq` was a no-op. AUC/AUMC now integrate the value the rule
+  wrote (`set-zero` → 0, `set-half-lloq` → LLOQ/2), and positive substitutes are
+  λz-eligible (the fit's own `conc ≤ 0` guard still keeps zeros out). Cmax/Tmax and
+  Tlag are observed quantities and keep reading the BLQ mask. **This changes AUC /
+  AUMC / λz-derived values on every profile with an EMBEDDED or dose-time BLQ under
+  `set-zero` / `set-half-lloq`, and on every profile with trailing BLQ under
+  `set-half-lloq`** (fixture P1: AUClast `exclude` 15.8010 → `set-zero` 13.4729).
+  Trailing `set-zero` substitutes are still trimmed (BUG-05), so trailing-BLQ-only
+  profiles under `set-zero` are unchanged. `missing` ≡ `exclude` on every parameter.
+  An extravascular profile whose t=0 sample is a substituted BLQ no longer gets a
+  second `(0, 0)` prepended. Per-rule contract on the `BlqRule` TSDoc.
+* New fixture `06_blq_rules` (5 subjects × 5 rule blocks, each a real PKNCA 0.12.1
+  `conc.blq` run) — the first reference assertion for nca-studio's shipped default.
+  Three cells are documented divergences from PKNCA, asserted as such (PKNCA `drop`
+  leaves AUC NA without a t=0 datum; PKNCA reports λz fits below our adj-R² floor —
+  its `pk.calc.half.life` never consults `min.hl.r.squared`; PKNCA extrapolates AUCinf
+  from `clast.obs` while integrating `auclast` through LLOQ/2 substitutes). See
+  `__tests__/REGEN.md`.
 * **Route-aware IV-bolus dose-time gate.** An IV-bolus profile whose `t = 0` row is
   BLQ-flagged or non-positive / non-finite (a pre-dose sample encoded as `0`) was
   taken as a measured dose-time value and integrated from `(0, 0)`. It is now

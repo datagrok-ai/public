@@ -49,8 +49,8 @@ export interface AugmentedProfile {
   /** EFFECTIVE BLQ mask — input `blqMask` ∪ `exclude`d points. What the
    *  OBSERVED quantities read: Cmax/Tmax skip it, Tlag treats it as 0. */
   readonly blqMask: Uint8Array;
-  /** What integration (AUC/AUMC) and the λz regression SKIP. Excluded and
-   *  non-finite (`missing`) points; substituted (`set-zero` / `set-half-lloq`)
+  /** What integration (AUC/AUMC) and the λz regression SKIP: `exclude`d and
+   *  non-finite (`missing`) points. Substituted (`set-zero` / `set-half-lloq`)
    *  values are NOT in it — they reach the integrator as the values the rule
    *  wrote. The λz regression additionally drops `conc <= 0` itself. */
   readonly dropMask: Uint8Array;
@@ -89,7 +89,7 @@ export function augmentProfile(
   const effBlq = new Uint8Array(inputs.blqMask);
   for (let k = 0; k < blqApplied.excluded.length; k++)
     effBlq[blqApplied.excluded[k]] = 1;
-  const dropMask = buildDropMask(procConc, effBlq, blqApplied);
+  const dropMask = buildDropMask(procConc, blqApplied);
 
   // Step 2: observed Cmax/Tmax on the un-augmented post-BLQ profile.
   const observedCmax = findCmax(inputs.time, procConc, effBlq);
@@ -159,20 +159,28 @@ export function augmentProfile(
 }
 
 /**
- * The drop set — what integration and λz skip. Deliberately a separate mask
- * from the effective BLQ mask: the observed quantities (Cmax, Tlag) keep
+ * The drop set — what integration and λz skip: `exclude`d points and
+ * non-finite (`missing`) values. Deliberately a separate mask from the
+ * effective BLQ mask: the observed quantities (Cmax, Tlag, BLQ fraction) keep
  * reading the BLQ mask, while AUC/AUMC/λz must honour the values the
- * substitution rules wrote (`set-zero` → 0 integrated, `set-half-lloq` →
- * LLOQ/2 integrated and λz-eligible). Two named sets make the U1 → U2
- * transition a one-line redefinition here with the IV-bolus gate untouched.
+ * substitution rules wrote — `set-zero` integrates as 0 (and the λz
+ * regression's own `conc <= 0` guard keeps it out of the fit), `set-half-lloq`
+ * integrates as LLOQ/2 and IS λz-eligible. Before GROK-20960 the integrator and
+ * the λz filter read the effective BLQ mask, so every rule was numerically
+ * `exclude` and a declared `set-zero` was a no-op (DATA-GAP-42).
  *
- * U1 (this commit): identical to the effective BLQ mask — no numeric change
- * beyond the route-aware gate. U2 redefines it as `excluded ∪ non-finite`.
+ * `missing` ≡ `exclude` for every parameter: both land here; they differ only
+ * in whether the concentration was overwritten with NaN.
  */
 function buildDropMask(
-  _conc: Float64Array, effBlq: Uint8Array, _blqApplied: BlqProcessingResult,
+  conc: Float64Array, blqApplied: BlqProcessingResult,
 ): Uint8Array {
-  return new Uint8Array(effBlq);
+  const dropMask = new Uint8Array(conc.length);
+  for (let k = 0; k < blqApplied.excluded.length; k++)
+    dropMask[blqApplied.excluded[k]] = 1;
+  for (let i = 0; i < conc.length; i++)
+    if (!Number.isFinite(conc[i])) dropMask[i] = 1;
+  return dropMask;
 }
 
 function prependScalar(src: Float64Array, value: number): Float64Array {

@@ -82,11 +82,34 @@ export interface ProfileInputs {
 /** Trapezoidal AUC integration scheme. */
 export type AucMethod = 'linear' | 'log-linear' | 'linear-up-log-down';
 
-/** Action taken on a single BLQ data point during pre-processing. */
+/**
+ * Action taken on a single BLQ data point during pre-processing, and what
+ * each does downstream (the contract `computeNca` implements — see
+ * `augmentProfile`):
+ *
+ * | rule            | AUC / AUMC                     | λz regression                 | Cmax / Tmax | Tlag (EV)   |
+ * |-----------------|--------------------------------|-------------------------------|-------------|-------------|
+ * | `set-zero`      | integrated as 0                | excluded (`conc <= 0` guard)  | skipped     | counts as 0 |
+ * | `set-half-lloq` | integrated as LLOQ/2           | ELIGIBLE (positive)           | skipped     | counts as 0 |
+ * | `exclude`       | point dropped                  | dropped                       | skipped     | counts as 0 |
+ * | `missing`       | point dropped (NaN)            | dropped                       | skipped     | counts as 0 |
+ *
+ * `missing` ≡ `exclude` for every reported parameter. Cmax/Tmax and Tlag are
+ * OBSERVED quantities and read the BLQ mask under every rule — a substituted
+ * sample is not a quantifiable observation (Tlag therefore diverges from
+ * PKNCA's `tlag`, which is computed on the cleaned profile when the BLQ rows
+ * are physically removed). Trailing interaction: `collectMeasurable` trims the
+ * TRAILING run of non-positive values, so trailing `set-zero` substitutes are
+ * trimmed (cLast/tLast = last positive; identical to `exclude`), while
+ * trailing `set-half-lloq` substitutes survive — cLast = LLOQ/2 and tLast
+ * moves to the last sample, and they are λz-eligible. For an IV-bolus
+ * dose-time row a BLQ flag makes the row ABSENT for c0 whatever the rule.
+ */
 export type BlqRule = 'set-zero' | 'set-half-lloq' | 'exclude' | 'missing';
 
 /**
  * BLQ-handling configuration broken out by phase of the concentration profile.
+ * Per-rule effects are on {@link BlqRule}.
  */
 export interface BlqStrategy {
   /** BLQ points before the first measurable observation. */

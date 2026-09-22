@@ -168,13 +168,54 @@ describe('augmentProfile — only index 0 is the dose-time row (AC-U1.2.5)', () 
   });
 });
 
-describe('augmentProfile — masks in U1 (dropMask ≡ effective blqMask)', () => {
-  it('both masks carry the input mask ∪ excluded, with the synthetic slot unmasked', () => {
-    const a = augmentProfile(
-      inputs([0.5, 1, 2, 4, 6], [0.01, 2, 1.5, 0.5, 0.01], ROUTE_PO, [1, 0, 0, 0, 1]), EXCLUDE)!;
+describe('augmentProfile — two masks (AD-2): effective BLQ vs the drop set', () => {
+  const MISSING: BlqStrategy = {
+    preFirstMeasurable: 'missing', embedded: 'missing',
+    afterLast: 'missing', consecutiveAfterLast: 'missing',
+  };
+  const T = [0.5, 1, 2, 4, 6];
+  const C = [0.01, 2, 1.5, 0.5, 0.01];
+  const M = [1, 0, 0, 0, 1];
+
+  it('exclude: both masks carry the input mask ∪ excluded, synthetic slot unmasked', () => {
+    const a = augmentProfile(inputs(T, C, ROUTE_PO, M), EXCLUDE)!;
     expect(Array.from(a.blqMask)).toEqual([0, 1, 0, 0, 0, 1]);
     expect(Array.from(a.dropMask)).toEqual([0, 1, 0, 0, 0, 1]);
     expect(Array.from(a.blqApplied.excluded)).toEqual([0, 4]); // INPUT index space
+  });
+
+  it('missing: NaN lands in the drop set exactly like exclude', () => {
+    const a = augmentProfile(inputs(T, C, ROUTE_PO, M), MISSING)!;
+    expect(Array.from(a.dropMask)).toEqual([0, 1, 0, 0, 0, 1]);
+    expect(Number.isNaN(a.conc[1])).toBe(true);
+    expect(a.blqApplied.excluded.length).toBe(0);
+  });
+
+  it('set-zero / set-half-lloq: the BLQ mask still flags the point, the drop set does NOT', () => {
+    for (const [blq, value] of [[SET_ZERO, 0], [HALF_LLOQ, 0.025]] as const) {
+      const a = augmentProfile(inputs(T, C, ROUTE_PO, M), blq)!;
+      expect(Array.from(a.blqMask)).toEqual([0, 1, 0, 0, 0, 1]); // Cmax / Tlag semantics
+      expect(Array.from(a.dropMask)).toEqual([0, 0, 0, 0, 0, 0]); // integrates the substitute
+      expect(a.conc[1]).toBe(value);
+      expect(a.conc[5]).toBe(value);
+      // The observed peak still skips the flagged points.
+      expect(a.observedCmax.cmax).toBe(2);
+    }
+  });
+
+  it('EV t=0: a substituted BLQ at the dose time is a KEPT dose-time value — no (0, 0) prepend (AC-U2.1.2)', () => {
+    // compute-nca.test.ts "one BLQ at the start": BLQ at index 0 under set-zero.
+    const t = [0, 0.25, 0.5, 1, 2, 4, 8, 12];
+    const c = [0, 0.5, 1.0, 0.8, 0.5, 0.3, 0.1, 0.05];
+    const kept = augmentProfile(inputs(t, c, ROUTE_PO, [1, 0, 0, 0, 0, 0, 0, 0]), SET_ZERO)!;
+    expect(Array.from(kept.sourceIndex)).not.toContain(-1);
+    expect(kept.time.length).toBe(t.length);
+    // exclude / missing at t=0 → dropped → prepend as before.
+    for (const blq of [EXCLUDE, MISSING]) {
+      const dropped = augmentProfile(inputs(t, c, ROUTE_PO, [1, 0, 0, 0, 0, 0, 0, 0]), blq)!;
+      expect(dropped.sourceIndex[0]).toBe(-1);
+      expect(dropped.time.length).toBe(t.length + 1);
+    }
   });
 });
 

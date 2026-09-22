@@ -33,6 +33,9 @@ Step 1 (`regen-fixtures.R`):
   do not commit it).
 - writes `datasets/04_iv_infusion.csv` + `fixtures/04_iv_infusion.json` — the
   new IV-infusion fixture (see below).
+- writes `fixtures/06_blq_rules.json` — the per-rule BLQ oracle from
+  `datasets/06_blq_rules.csv` (see "The BLQ-rules fixture"), and prints PKNCA's
+  own `c0` for indometh plus the stock-PKNCA `auclast` contrast.
 
 Step 2 (`merge-fixtures.mjs`) injects `aumclast, aumcinf_obs, mrt, vss, tlag,
 pct_aumcextrap` into each profile's `parameters`, and `span_ratio` (all
@@ -76,6 +79,68 @@ linear `(c0 + C1)/2·t1` otherwise) with `c0 = c0_pknca`, over PKNCA's
 `aucinf.obs`, × 100. Corpus: **every indometh subject back-extrapolates 16–28 %
 of its AUCinf** (subject 1: 20.55 %). Diagnostic only; `computeNca` reports it as
 `provenance.c0.pctAucBackExtrap`, asserted within `TOL.pctExtrap` (0.5 pp).
+
+## The BLQ-rules fixture (06) — per-rule PKNCA oracle
+
+`datasets/06_blq_rules.csv` (five hand-authored subjects, BLQ encoded as
+`conc = 0` with `blq = 1`, single LLOQ 0.05) × `fixtures/06_blq_rules.json`
+(FIVE rule blocks, each a real PKNCA run under the `conc.blq` option that means
+the same thing as the sci-comp `BlqStrategy` it is paired with — the mapping is
+in `regen-fixtures.R`):
+
+| Block | sci-comp `BlqStrategy` | PKNCA `conc.blq` | Notes |
+|---|---|---|---|
+| R-A | `set-zero` × 4 | `keep` × 3 | the substituted 0 integrates; λz's own `conc ≤ 0` guard keeps it out of the fit |
+| R-B | `exclude` × 4 | `drop` × 3 | the pre-GROK-20960 numbers — every rule used to integrate as `exclude` |
+| R-C | `set-half-lloq` × 4 | `0.025` × 3 (numeric) | substitutes enter λz and move tlast |
+| R-D | `missing` × 4 | BLQ rows physically removed (≡ `conc.na = "drop"`) | asserted identical to R-B on every parameter |
+| R-E | nca-studio's shipped default `set-zero, set-zero, set-zero, exclude` | `keep` × 3 | PKNCA cannot express the afterLast split; the trailing run is trimmed either way, so R-E ≡ R-A — the GAP-W3 assertion |
+
+Subjects: **P1** leading BLQ at 0 and 0.5 h, embedded BLQ at 6 h, positive tail;
+**P2** leading BLQ, clean middle, two trailing BLQ; **P3** positive to 4 h then
+three trailing BLQ with only two post-Cmax positives (λz NA under set-zero /
+exclude / missing — the `status: 'partial'` oracle); **P4** clean log-linear
+decay with one trailing BLQ that lands on the line under LLOQ/2; **I1** indometh
+subject 1 + a FLAGGED `(0, 0, blq = 1)` pre-dose row (the dose-time gate under
+every rule — identical numbers in all five blocks; c0 = PKNCA's own c0).
+
+The regression pin: P1 `set-zero` AUClast 13.4729 vs `exclude` 15.8010 — the
+"four rules bit-identical" defect cannot silently return.
+
+### Measured divergences from PKNCA (asserted, not skipped)
+
+Three cells in the 06 table are NOT parity, and `reference-suite.test.ts`
+asserts what each side does from the fixture's own numbers:
+
+1. **R-B AUC is NA in PKNCA.** `first = "drop"` removes the t=0 zero and PKNCA
+   does not extrapolate to the interval start (the same NA as a raw IV-bolus
+   profile), so `auclast` / `aucinf` are NA on every PO subject. sci-comp's
+   `exclude` at t=0 drops the row and prepends `(0, 0)` by the extravascular
+   convention — exactly the R-D construction, which is therefore the AUC oracle
+   for `exclude` (`config.auc_oracle_block`). R-B pins Cmax / Tmax / λz / Tlag
+   under PKNCA's own option.
+2. **PKNCA reports λz fits below sci-comp's adj-R² floor.** `pk.calc.half.life`
+   (0.12.1 source) selects by `lambda.z > 0` and the adj-R² tie-break only;
+   `min.hl.r.squared` is not consulted there (it belongs to the post-hoc
+   `exclude_half.life` helper). Under `set-half-lloq`, P2 and P3 get a PKNCA λz
+   through the flat LLOQ/2 tail at r² 0.761 / 0.678 (adj 0.681 / 0.571);
+   sci-comp's `minRSquared = 0.85` rejects every window → `'partial'`. A slope
+   through substitutes is not a terminal phase; "not estimated" is the honest
+   reading. The suite asserts the rejection AND that PKNCA's adj-R² is below
+   the floor, and that these are the only two such cells.
+3. **PKNCA's AUCinf under numeric substitution is two-profiled.** With trailing
+   LLOQ/2 substitutes PKNCA integrates `auclast` through them (P4: to 24 h) but
+   keeps `tlast` / `clast.obs` at the last above-LOQ observation (12 h, 0.32)
+   and extrapolates `aucinf.obs = auclast + clast.obs / λz` from THAT. sci-comp
+   honours the substitutes consistently (D1, the Phoenix behaviour): `cLast =
+   LLOQ/2` at the last sample, `AUCinf = AUClast + cLast/λz`. Cmax, AUClast,
+   AUMClast and the λz window still agree; the AUCinf family (AUCinf, CL, Vz,
+   %extrap, AUMCinf, MRT) differs and is asserted on both sides.
+
+Tlag: PKNCA computes `tlag` on the PRE-clean data, so it agrees with sci-comp's
+mask-based definition under keep / drop / numeric (P1 = 0.5 h in R-A, R-B, R-C,
+R-E). Only R-D (BLQ rows physically removed, predose 0 prepended) cannot see the
+lag and reports 0; sci-comp stays mask-based (0.5 h) under every rule (AD-7).
 
 ## IV-bolus AUC convention — sci-comp (WinNonlin) vs stock PKNCA
 

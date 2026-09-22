@@ -189,69 +189,83 @@ function relErr(got: number, expected: number): number {
   return Math.abs(got - expected) / Math.abs(expected);
 }
 
+const NO_SKIP: ReadonlySet<string> = new Set();
+
+/**
+ * Assert one profile against its fixture. `rules` defaults to the PKNCA
+ * configuration every committed fixture was produced under; `skip` names
+ * fixture parameter keys the caller asserts separately (the 06 BLQ-rules
+ * suite, where a few cells are documented divergences rather than parity).
+ */
 function assertProfile(
   subject: string, dataset: string,
   inputs: ProfileInputs, fx: FixtureProfile,
+  rules: NcaRules = PKNCA_RULES, skip: ReadonlySet<string> = NO_SKIP,
 ) {
-  const r = computeNca(inputs, PKNCA_RULES);
+  const r = computeNca(inputs, rules);
   const p = fx.parameters;
   const tag = `${dataset} subject ${subject}`;
+  const on = (key: string): boolean => !skip.has(key);
 
-  if (p.cmax !== null)
+  if (on('cmax') && p.cmax !== null)
     expect(relErr(r.values.cmax, p.cmax)).toBeLessThan(TOL.cmax);
 
-  if (p.tmax !== null) {
+  if (on('tmax') && p.tmax !== null) {
     // Tmax — exact match (per §9.2)
     expect(r.values.tmax).toBe(p.tmax);
   }
-  if (p.auclast !== null)
+  if (on('auclast') && p.auclast !== null)
     expect(relErr(r.values.aucLast, p.auclast)).toBeLessThan(TOL.auclast);
 
-  if (p.aucinf !== null)
+  if (on('aucinf') && p.aucinf !== null)
     expect(relErr(r.values.aucInf, p.aucinf)).toBeLessThan(TOL.aucinf);
 
-  if (p.lambda_z !== null)
+  if (on('lambda_z') && p.lambda_z !== null)
     expect(relErr(r.values.lambdaZ, p.lambda_z)).toBeLessThan(TOL.lambdaZ);
 
-  if (p.half_life !== null)
+  if (on('half_life') && p.half_life !== null)
     expect(relErr(r.values.halfLife, p.half_life)).toBeLessThan(TOL.halfLife);
 
-  if (p.cl !== null)
+  if (on('cl') && p.cl !== null)
     expect(relErr(r.values.cl, p.cl)).toBeLessThan(TOL.cl);
 
-  if (p.vz !== null)
+  if (on('vz') && p.vz !== null)
     expect(relErr(r.values.vz, p.vz)).toBeLessThan(TOL.vz);
 
-  if (p.pct_aucextrap !== null) {
+  if (on('pct_aucextrap') && p.pct_aucextrap !== null) {
     expect(Math.abs(r.values.pctExtrap - p.pct_aucextrap))
       .toBeLessThan(TOL.pctExtrap);
   }
 
   // ── FR-200 moment / lag parameters ──────────────────────────────────────
-  if (p.aumclast != null)
+  if (on('aumclast') && p.aumclast != null)
     expect(relErr(r.values.aumcLast, p.aumclast)).toBeLessThan(TOL.aumcLast);
 
-  if (p.aumcinf_obs != null)
+  if (on('aumcinf_obs') && p.aumcinf_obs != null)
     expect(relErr(r.values.aumcInf, p.aumcinf_obs)).toBeLessThan(TOL.aumcInf);
 
-  if (p.mrt != null)
+  if (on('mrt') && p.mrt != null)
     expect(relErr(r.values.mrt, p.mrt)).toBeLessThan(TOL.mrt);
 
   // Vss: gate-first. null (extravascular) ⇒ assert the route gate (NaN);
   // a number (IV) ⇒ assert parity. `== null` also covers a missing key.
-  if (p.vss == null)
-    expect(Number.isNaN(r.values.vss)).toBe(true);
-  else
-    expect(relErr(r.values.vss, p.vss)).toBeLessThan(TOL.vss);
+  if (on('vss')) {
+    if (p.vss == null)
+      expect(Number.isNaN(r.values.vss)).toBe(true);
+    else
+      expect(relErr(r.values.vss, p.vss)).toBeLessThan(TOL.vss);
+  }
 
   // Tlag: gate-first. null (IV) ⇒ assert the route gate (NaN); a number
   // (extravascular) ⇒ assert the exact observed time.
-  if (p.tlag == null)
-    expect(Number.isNaN(r.values.tlag)).toBe(true);
-  else
-    expect(r.values.tlag).toBe(p.tlag);
+  if (on('tlag')) {
+    if (p.tlag == null)
+      expect(Number.isNaN(r.values.tlag)).toBe(true);
+    else
+      expect(r.values.tlag).toBe(p.tlag);
+  }
 
-  if (p.pct_aumcextrap != null) {
+  if (on('pct_aumcextrap') && p.pct_aumcextrap != null) {
     expect(Math.abs(r.values.pctExtrapAumc - p.pct_aumcextrap))
       .toBeLessThan(TOL.pctExtrapAumc);
   }
@@ -578,6 +592,267 @@ describe('02 Indomethacin — IV-bolus dose-time gate (Fx-1 invariance + Fx-2 c0
         expect(r.values.tmax).toBe(fx.parameters.tmax);
       });
     });
+});
+
+/**
+ * 06 BLQ rules — per-rule PKNCA parity (GROK-20960 slice U2 / F1, Fx-3).
+ *
+ * Before this slice every BLQ rule integrated as `exclude`: the integrator and
+ * the λz filter read the effective BLQ mask, so a declared `set-zero` /
+ * `set-half-lloq` substitution never reached AUC/AUMC/λz. Four hand-authored
+ * subjects × the FIVE rule blocks of `06_blq_rules.json`, each block a real
+ * PKNCA 0.12.1 run under the `conc.blq` option that means the same thing
+ * (see `regen-fixtures.R`). Table-driven from the fixture's own block list, so
+ * a sixth block cannot be silently left uncovered.
+ *
+ * Three cells are DOCUMENTED DIVERGENCES, asserted as such — never skipped:
+ *  - R-B (PKNCA `drop` × 3): PKNCA's AUC is NA once the t=0 zero is dropped
+ *    (no origin datum; it does not extrapolate to the interval start), while
+ *    sci-comp's `exclude` prepends `(0, 0)` by the extravascular convention —
+ *    the R-D construction. The fixture's `auc_oracle_block` points R-B's AUC
+ *    family at R-D; R-B itself pins Cmax / Tmax / λz / Tlag under PKNCA's own
+ *    option.
+ *  - R-C with TRAILING substitutes (P2, P3): PKNCA integrates `auclast` through
+ *    the LLOQ/2 tail but keeps `tlast` / `clast.obs` at the last above-LOQ
+ *    observation and extrapolates AUCinf from THAT (`aucinf = auclast +
+ *    clast.obs / λz`, the two limbs on different profiles). sci-comp honours
+ *    the substitutes consistently (D1): `cLast = LLOQ/2` at the last sample,
+ *    AUCinf = AUClast + cLast/λz — the Phoenix behaviour. Asserted on both
+ *    sides so the divergence is characterised, not hidden.
+ *  - R-D Tlag: PKNCA computes `tlag` on the PRE-clean data, so it agrees with
+ *    the mask-based definition under keep / drop / numeric; with the BLQ rows
+ *    physically removed it cannot see the lag, and reports the predose 0.
+ *    sci-comp's Tlag is mask-based under every rule (AD-7).
+ */
+describe('06 BLQ rules — per-rule PKNCA parity (F1, GROK-20960)', () => {
+  interface BlqBlock {
+    id: string;
+    sci_comp_blq: NcaRules['blq'];
+    config: {conc_blq: unknown; auc_oracle_block: string};
+    note: string;
+    profiles: FixtureProfile[];
+  }
+  interface BlqFixture {
+    config: {lloq: number};
+    dataset_meta: {dose: {po: {value: number}; iv_bolus: {value: number}}};
+    blocks: BlqBlock[];
+  }
+  interface BlqRow { time: number; conc: number; blq: 0 | 1; route: string; dose: number }
+
+  const fixture: BlqFixture = JSON.parse(
+    readFileSync(join(FIXTURES_DIR, '06_blq_rules.json'), 'utf-8'));
+  const LLOQ = fixture.config.lloq;
+  const {headers, rows} = parseCsv(readFileSync(join(DATASETS_DIR, '06_blq_rules.csv'), 'utf-8'));
+  const col = (name: string) => headers.indexOf(name);
+  const bySubject = new Map<string, BlqRow[]>();
+  for (const r of rows) {
+    const s = r[col('Subject')];
+    if (!bySubject.has(s)) bySubject.set(s, []);
+    bySubject.get(s)!.push({
+      time: parseFloat(r[col('time')]), conc: parseFloat(r[col('conc')]),
+      blq: r[col('blq')] === '1' ? 1 : 0, route: r[col('route')], dose: parseFloat(r[col('Dose')]),
+    });
+  }
+  const subjects = Array.from(bySubject.keys());
+  const inputsFor = (s: string): ProfileInputs => {
+    const rs = bySubject.get(s)!;
+    return {
+      time: Float64Array.from(rs.map((r) => r.time)),
+      conc: Float64Array.from(rs.map((r) => r.conc)),
+      blqMask: Uint8Array.from(rs.map((r) => r.blq)),
+      lloq: LLOQ, dose: rs[0].dose, doseUnits: 'mg', concentrationUnits: 'mg/L', timeUnits: 'h',
+      route: rs[0].route === 'IV-bolus' ? ROUTE_IV_BOLUS : ROUTE_PO,
+      infusionDuration: null, bodyWeight: null,
+    };
+  };
+  const rulesFor = (b: BlqBlock): NcaRules => ({...PKNCA_RULES, blq: b.sci_comp_blq});
+  const profileOf = (b: BlqBlock, s: string): FixtureProfile =>
+    b.profiles.find((p) => p.profile_key.subject === s)!;
+  const blockById = (id: string): BlqBlock => fixture.blocks.find((b) => b.id === id)!;
+  /** Does the subject's profile END in a BLQ run (a trailing substitute under set-half-lloq)? */
+  const hasTrailingBlq = (s: string): boolean => bySubject.get(s)!.slice(-1)[0].blq === 1;
+  const isHalfLloq = (b: BlqBlock): boolean => b.sci_comp_blq.afterLast === 'set-half-lloq';
+  const isRowsRemoved = (b: BlqBlock): boolean => b.config.conc_blq === 'rows-removed';
+  /** sci-comp's documented Tlag: the last BLQ-or-zero sample time before the first
+   *  measurable positive one, on the augmented series (0 when none precedes it). */
+  const maskBasedTlag = (s: string): number => {
+    const rs = bySubject.get(s)!;
+    let last = 0;
+    for (const r of rs) {
+      if (r.blq === 0 && r.conc > 0) return last;
+      last = r.time;
+    }
+    return NaN;
+  };
+
+  it('the fixture carries the five rule blocks and every subject in each', () => {
+    expect(fixture.blocks.length).toBeGreaterThanOrEqual(5);
+    for (const id of ['R-A', 'R-B', 'R-C', 'R-D', 'R-E']) expect(blockById(id)).toBeDefined();
+    for (const b of fixture.blocks)
+      expect(b.profiles.map((p) => p.profile_key.subject).sort()).toEqual([...subjects].sort());
+    expect(subjects).toContain('P1');
+    expect(subjects).toContain('I1');
+  });
+
+  const cases = fixture.blocks.flatMap((b) => subjects.map((s) => [b.id, s, b] as const));
+  it.each(cases)('block %s subject %s — every parameter matches PKNCA (or its documented divergence)',
+    (_id, s, b) => {
+      const fx = profileOf(b, s);
+      const inputs = inputsFor(s);
+      const rules = rulesFor(b);
+      const r = computeNca(inputs, rules);
+      const aucFx = profileOf(blockById(b.config.auc_oracle_block), s);
+      const LZ_FAMILY = ['lambda_z', 'half_life'];
+      const INF_FAMILY = ['aucinf', 'cl', 'vz', 'pct_aucextrap', 'aumcinf_obs', 'mrt', 'vss', 'pct_aumcextrap'];
+      // DOCUMENTED DIVERGENCE 1 — PKNCA reported a fit sci-comp's adj-R² floor
+      // rejects. pk.calc.half.life (0.12.1 source) selects by `lambda.z > 0` +
+      // the adj-R² tie-break only; `min.hl.r.squared` is not consulted there.
+      // sci-comp's `minRSquared` IS a floor (lambda-z.ts: "no PKNCA equivalent").
+      // On P2/P3 under set-half-lloq PKNCA fits the flat LLOQ/2 tail at r² 0.76 /
+      // 0.68 — a slope through substitutes, not a terminal phase. We report
+      // 'partial' (λz not estimated), which is the honest reading.
+      const guardRejects = fx.parameters.lambda_z !== null &&
+        fx.provenance!.lambda_z_adj_r_squared! < rules.lambdaZ.minRSquared;
+      // DOCUMENTED DIVERGENCE 2 — set-half-lloq with a trailing substitute and an
+      // ACCEPTED fit: tLast / cLast semantics differ (see the describe header).
+      const trailingDiverges = isHalfLloq(b) && hasTrailingBlq(s) && !guardRejects &&
+        fx.parameters.lambda_z !== null;
+      const skip = new Set<string>(['auclast', 'aumclast', 'tlag']);
+      if (guardRejects) for (const k of [...LZ_FAMILY, ...INF_FAMILY]) skip.add(k);
+      if (trailingDiverges) for (const k of INF_FAMILY) skip.add(k);
+
+      // The parity gate, verbatim, on everything that is straight PKNCA parity.
+      assertProfile(s, `06_blq_rules/${b.id}`, inputs, fx, rules, skip);
+
+      // AUC family through the fixture's oracle indirection (R-B → R-D).
+      expect(aucFx.parameters.auclast).not.toBeNull();
+      expect(relErr(r.values.aucLast, aucFx.parameters.auclast!)).toBeLessThan(TOL.auclast);
+      expect(relErr(r.values.aumcLast, aucFx.parameters.aumclast!)).toBeLessThan(TOL.aumcLast);
+
+      // λz: PKNCA NA ⇒ status 'partial' with the λz family NaN (Fx-5); a value ⇒
+      // the SAME window, not just the same number — unless the floor rejects it.
+      if (fx.parameters.lambda_z === null || guardRejects) {
+        expect(r.status).toBe('partial');
+        expect(Number.isNaN(r.values.lambdaZ)).toBe(true);
+        expect(Number.isNaN(r.values.aucInf)).toBe(true);
+        expect(Number.isFinite(r.values.aucLast)).toBe(true);
+        if (guardRejects) {
+          // Characterise the divergence from the fixture's own numbers.
+          expect(fx.provenance!.lambda_z_adj_r_squared!).toBeLessThan(rules.lambdaZ.minRSquared);
+          expect(fx.provenance!.lambda_z_r_squared!).toBeLessThan(rules.lambdaZ.minRSquared);
+          expect(isHalfLloq(b) && hasTrailingBlq(s)).toBe(true); // only ever the substituted-tail case
+        }
+      } else {
+        expect(r.status).toBe('ok');
+        expect(r.provenance.lambdaZ!.tStart).toBe(fx.provenance!.lambda_z_time_first);
+        expect(r.provenance.lambdaZ!.tEnd).toBe(fx.provenance!.lambda_z_time_last);
+        expect(r.provenance.lambdaZ!.pointsUsed.length).toBe(fx.provenance!.lambda_z_n_points);
+        expect(relErr(r.provenance.lambdaZ!.adjRSquared, fx.provenance!.lambda_z_adj_r_squared!))
+          .toBeLessThan(TOL.lambdaZ);
+      }
+
+      if (trailingDiverges) {
+        // DOCUMENTED DIVERGENCE (set-half-lloq, trailing substitutes). Ours: the
+        // substitutes are real points — tLast is the last sample, cLast = LLOQ/2,
+        // and AUCinf extrapolates from it (self-consistent, Phoenix).
+        const rs = bySubject.get(s)!;
+        const tLastOurs = rs[rs.length - 1].time;
+        expect(r.values.aucInf).toBeCloseTo(r.values.aucLast + (LLOQ / 2) / r.values.lambdaZ, 10);
+        // PKNCA's: auclast integrated to the last sample (asserted above) but
+        // AUCinf extrapolated from clast.obs at the last ABOVE-LOQ time —
+        // characterised from the fixture's own numbers, so the divergence is
+        // a measured fact, not a skipped cell.
+        const p = fx.parameters;
+        const prov = fx.provenance!;
+        expect(prov.lambda_z_time_last).toBe(tLastOurs); // the substitutes ARE in PKNCA's fit
+        expect((prov as {tlast?: number}).tlast).toBeLessThan(tLastOurs); // …but not its tlast
+        expect(p.aucinf!).toBeCloseTo(p.auclast! + prov.clast_obs! / p.lambda_z!, 6);
+        expect(relErr(r.values.aucInf, p.aucinf!)).toBeGreaterThan(TOL.aucinf); // genuinely different
+      }
+
+      // Tlag: mask-based under EVERY rule (AD-7); PKNCA parity where PKNCA can
+      // see the BLQ rows (every block except rows-removed).
+      if (inputs.route === ROUTE_IV_BOLUS)
+        expect(Number.isNaN(r.values.tlag)).toBe(true);
+      else {
+        expect(r.values.tlag).toBe(maskBasedTlag(s));
+        if (!isRowsRemoved(b)) expect(r.values.tlag).toBe(fx.parameters.tlag);
+      }
+    });
+
+  it('P1: set-zero and exclude are NOT bit-identical — AUClast differs by > 1 % (regression pin)', () => {
+    const a = computeNca(inputsFor('P1'), rulesFor(blockById('R-A'))).values.aucLast;
+    const bv = computeNca(inputsFor('P1'), rulesFor(blockById('R-B'))).values.aucLast;
+    expect(relErr(a, bv)).toBeGreaterThan(0.01);
+    // And each is the PKNCA number for its rule, not the other's.
+    expect(relErr(a, profileOf(blockById('R-A'), 'P1').parameters.auclast!)).toBeLessThan(TOL.auclast);
+    expect(relErr(bv, profileOf(blockById('R-D'), 'P1').parameters.auclast!)).toBeLessThan(TOL.auclast);
+  });
+
+  const everyField = (v: ReturnType<typeof computeNca>['values']) =>
+    Object.entries(v).map(([k, x]) => [k, Number.isNaN(x) ? 'NaN' : x]);
+
+  it('missing ≡ exclude on every ParameterValues field, for every subject (R-D ≡ R-B)', () => {
+    for (const s of subjects) {
+      const ex = computeNca(inputsFor(s), rulesFor(blockById('R-B')));
+      const mi = computeNca(inputsFor(s), rulesFor(blockById('R-D')));
+      expect(everyField(mi.values)).toEqual(everyField(ex.values));
+      expect(mi.status).toBe(ex.status);
+    }
+  });
+
+  it('the nca-studio shipped default ≡ set-zero on every field (R-E ≡ R-A) — GAP-W3', () => {
+    for (const s of subjects) {
+      const a = computeNca(inputsFor(s), rulesFor(blockById('R-A')));
+      const e = computeNca(inputsFor(s), rulesFor(blockById('R-E')));
+      expect(everyField(e.values)).toEqual(everyField(a.values));
+      expect(e.status).toBe(a.status);
+    }
+  });
+
+  it('P3 (Fx-5): partial under set-zero / exclude / missing (PKNCA λz NA)', () => {
+    for (const id of ['R-A', 'R-B', 'R-D', 'R-E']) {
+      expect(profileOf(blockById(id), 'P3').parameters.lambda_z).toBeNull();
+      expect(computeNca(inputsFor('P3'), rulesFor(blockById(id))).status).toBe('partial');
+    }
+  });
+
+  it('P2 / P3 under set-half-lloq: PKNCA fits the flat LLOQ/2 tail below our adj-R² floor → partial', () => {
+    // The two documented cells of divergence 1, named explicitly so the case
+    // count is pinned: exactly the trailing-substitute subjects whose tail is
+    // flat, and no other cell in the table.
+    const rc = blockById('R-C');
+    const rejected = subjects.filter((s) => {
+      const fx = profileOf(rc, s);
+      return fx.parameters.lambda_z !== null &&
+        fx.provenance!.lambda_z_adj_r_squared! < PKNCA_RULES.lambdaZ.minRSquared;
+    });
+    expect(rejected.sort()).toEqual(['P2', 'P3']);
+    for (const s of rejected) {
+      const r = computeNca(inputsFor(s), rulesFor(rc));
+      expect(r.status).toBe('partial');
+      expect(r.provenance.lambdaZ).toBeNull();
+    }
+    // …and P4 is the accepted-fit counterpart: its trailing substitute lands on
+    // the line, both tools fit it, and only the AUCinf construction differs.
+    const p4 = computeNca(inputsFor('P4'), rulesFor(rc));
+    expect(p4.status).toBe('ok');
+    expect(profileOf(rc, 'P4').provenance!.lambda_z_adj_r_squared!)
+      .toBeGreaterThanOrEqual(PKNCA_RULES.lambdaZ.minRSquared);
+  });
+
+  it('I1: the flagged pre-dose row is replaced under EVERY rule; identical results; c0 = PKNCA\'s c0', () => {
+    const ref = computeNca(inputsFor('I1'), rulesFor(blockById('R-A')));
+    for (const b of fixture.blocks) {
+      const r = computeNca(inputsFor('I1'), rulesFor(b));
+      expect(r.provenance.c0!.replacedDoseTimeRow).toBe(true);
+      expect(r.provenance.c0!.method).toBe('logslope');
+      expect(relErr(r.provenance.c0!.value, profileOf(b, 'I1').provenance!.c0_pknca!)).toBeLessThan(TOL.auclast);
+      expect(everyField(r.values)).toEqual(everyField(ref.values));
+      // Never the substitute: under set-half-lloq the pre-dose row would read 0.025.
+      expect(r.provenance.c0!.value).not.toBe(LLOQ / 2);
+    }
+  });
 });
 
 /**
