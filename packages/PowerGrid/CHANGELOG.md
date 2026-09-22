@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Forms viewer: Fixed the viewer drawing no cards at all when the leading card has no row (after a grid-header sort clears the current row, or with Show Current Row off and nothing hovered): a card for no row now keeps a real card's size, so the record cards stay laid out
 * GROK-20888: Fixed the Tags and Bar summary columns painting the whole grid body in the chip color (a canvas path leak: `roundRect` without `beginPath`)
 * Tests: Added the `bdd` project with five Forms viewer features (30 scenarios) on the `viewers` tier, and gave the viewer its automation surface (`isRenderPending`, `onRendered`, `getWidgetStatus` with cards, fields, labels and sort indicators as hit areas)
 * GROK-20380: Fixed the Forms viewer ordering its cards by the spreadsheet's sort with Use Grid Sort off

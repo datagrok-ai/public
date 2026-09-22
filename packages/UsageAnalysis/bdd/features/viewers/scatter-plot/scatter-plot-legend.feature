@@ -279,7 +279,6 @@ Feature: Scatter plot legend
     And the "rows shown" reading of first scatter plot viewer should be 38
     And no errors should have been logged
 
-  @known-failure
   Scenario: The second scatter plot draws its Filter again after the layout (GROK-20896)
     Then the "rows shown" reading of last scatter plot viewer should be 38
     And the legend of last scatter plot viewer should list 2 items

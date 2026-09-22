@@ -25,7 +25,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Forms viewer mouse interactions and row binding", () => {
   const session = feature(test, "features/viewers/forms/forms-interactions.feature", import.meta.url);
-  test("Forms viewer mouse interactions and row binding", {tag: ["@journey", "@viewers", "@realizes:viewers.forms", "@known-failure"]}, async ({browser}) => {
+  test("Forms viewer mouse interactions and row binding", {tag: ["@journey", "@viewers", "@realizes:viewers.forms"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 9, page);
     await session.step(16, "Given user is logged in", () => loggedIn(page));
@@ -136,13 +136,13 @@ test.describe("Forms viewer mouse interactions and row binding", () => {
       await session.step(122, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Show Current Row off leaves the record cards where they were", async () => {
-      await session.step(132, "Given user moves the pointer away from grid", () => pointerAway(page, el("grid")));
-      await session.step(133, "Then the \"mouse-over record\" reading of forms viewer should be \"\"", () => readingReads(page, "mouse-over record", el("forms viewer"), ""));
-      await session.step(134, "And the \"cards\" reading of forms viewer should be 7", () => readingIs(page, "cards", el("forms viewer"), 7));
-      await session.step(135, "When user sets \"showCurrentRow\" property of forms viewer to \"false\"", () => setProperty(page, "showCurrentRow", el("forms viewer"), "false"));
-      await session.step(136, "Then the \"cards\" reading of forms viewer should be 6", () => readingIs(page, "cards", el("forms viewer"), 6));
-      await session.step(137, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
-    }, {knownFailure: true});
+      await session.step(130, "Given user moves the pointer away from grid", () => pointerAway(page, el("grid")));
+      await session.step(131, "Then the \"mouse-over record\" reading of forms viewer should be \"\"", () => readingReads(page, "mouse-over record", el("forms viewer"), ""));
+      await session.step(132, "And the \"cards\" reading of forms viewer should be 7", () => readingIs(page, "cards", el("forms viewer"), 7));
+      await session.step(133, "When user sets \"showCurrentRow\" property of forms viewer to \"false\"", () => setProperty(page, "showCurrentRow", el("forms viewer"), "false"));
+      await session.step(134, "Then the \"cards\" reading of forms viewer should be 6", () => readingIs(page, "cards", el("forms viewer"), 6));
+      await session.step(135, "And the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+    });
     run.finish();
   });
 });

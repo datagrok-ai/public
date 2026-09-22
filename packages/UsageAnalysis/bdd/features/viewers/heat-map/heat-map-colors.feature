@@ -28,13 +28,10 @@ Feature: Heat map colouring
     And the "column AGE" area of heat map viewer should have repainted
     And no errors should have been logged
 
-  @known-failure
   Scenario: Heatmap Colors off stops filling the cells with colour (GROK-20619)
-    # The dense heat-map path (row height above 1 px, grid_core.dart `_rowHeight > 1`) calls `getGridCellAutoColor` directly, bypassing
-    # the `heatmapColors` check in the normal cell renderer. The property write lands but the
-    # AGE column's band remains identical: 0 pixels differ. Global Color Scaling above provides
-    # a positive repaint check on the same band. The old spec also carried GROK-20619.
-    # Left last: a known failure aborts before its restore step.
+    # Fixed 2026-09-21 in grid_core.dart: the dense heat-map path coloured every uncoded column
+    # directly, bypassing the `heatmapColors` gate of the cell renderer; it now shares that gate.
+    # Global Color Scaling above provides a positive repaint check on the same band.
     Then the "heatmap colors" reading of heat map viewer should be "true"
     When user sets "heatmapColors" property of heat map viewer to "false"
     Then the "heatmap colors" reading of heat map viewer should be "false"

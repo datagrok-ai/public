@@ -79,9 +79,8 @@ Feature: Who holds a role, and what it grants
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  # GROK-20902: the pane of a new role lists the global permissions of other groups ("via
-  # Administrators", "via All users"), while its MANAGE dialog has nothing checked.
-  @known-failure
+  # GROK-20902, fixed 2026-09-21 in privileges_service.dart: the global permissions of a group
+  # were every group's ("via Administrators", "via All users"); they are the group's own grants.
   Scenario: A new role has no global permissions in its pane (Roles-14)
     When user expands "Global Permissions" section in context panel
     Then "Global Permissions" section in context panel should contain text "No global permissions"
@@ -103,12 +102,10 @@ Feature: Who holds a role, and what it grants
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  # GROK-20904: deleting a role that holds a global permission logs "ERROR 23503 ... violates foreign
-  # key constraint permissions_user_group_id_fkey" and the role stays. This scenario needs the grant of
-  # the one before it: when that could not grant the permission, the delete succeeds and the tag
-  # reports a fix that did not happen — read the grant scenario first. The feature's own cleanup revokes the role's
-  # global permissions before it deletes the role.
-  @known-failure
+  # GROK-20904, fixed 2026-09-22 by db_up/20260922_0_permissions_group_cascade.sql: deleting a role
+  # that held a global permission violated permissions_user_group_id_fkey and the role stayed; the
+  # key now cascades, so a group's grants go with it. This scenario needs the grant of the one before
+  # it. The feature's own cleanup still revokes the role's global permissions before it deletes the role.
   Scenario: A role that grants a permission can still be deleted (Roles-14, Roles-15)
     When user types "BDD-RA-Role-{time}" into gallery search
     Then the gallery counter should be lower than remembered

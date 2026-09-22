@@ -89,10 +89,10 @@ Feature: Inspect peptide statistics in tooltips
     And no error or warning balloon should have been shown
 
   Scenario: WebLogo header tooltips replace their statistics and clear the highlight on leaving
-    # the settings round trip re-adds columns at the right edge and the grid follows them; Home
-    # brings the first positions back on screen
+    # the settings round trip re-adds columns at the right edge and the grid follows them; a
+    # Shift-wheel over the grid scrolls it back to the first positions
     When user moves the pointer away from Sequence Variability Map viewer
-    And user presses Home in grid
+    And user scrolls the mouse wheel up 5 times over the "cell 1 of 14" area of grid holding Shift
     And user hovers over the "A at 2" area of grid
     Then Count table row in tooltip should contain text "14 (14.000%)"
     And the "highlighted rows" reading of grid should be 14

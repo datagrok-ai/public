@@ -23,7 +23,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Correlation plot — the matrix and the numbers in it", () => {
   const session = feature(test, "features/viewers/correlation-plot/correlation-plot.feature", import.meta.url);
-  test("Correlation plot — the matrix and the numbers in it", {tag: ["@journey", "@viewers", "@realizes:viewers.correlation-plot", "@known-failure"]}, async ({browser}) => {
+  test("Correlation plot — the matrix and the numbers in it", {tag: ["@journey", "@viewers", "@realizes:viewers.correlation-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 9, page);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
@@ -138,13 +138,13 @@ test.describe("Correlation plot — the matrix and the numbers in it", () => {
       await session.step(139, "Then the \"cells\" reading of correlation plot viewer should be 16", () => readingIs(page, "cells", el("correlation plot viewer"), 16));
       await session.step(140, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Cells six times apart in coefficient are painted the same full red (GROK — color_coding.dart:322-337)", async () => {
-      await session.step(153, "Then the \"correlation of WEIGHT and AGE\" reading of correlation plot viewer should be between 0.0647 and 0.0649", () => readingBetween(page, "correlation of WEIGHT and AGE", el("correlation plot viewer"), 0.0647, 0.0649));
-      await session.step(154, "And the \"correlation of WEIGHT and HEIGHT\" reading of correlation plot viewer should be between 0.4124 and 0.4125", () => readingBetween(page, "correlation of WEIGHT and HEIGHT", el("correlation plot viewer"), 0.4124, 0.4125));
-      await session.step(155, "And the \"color of cell AGE x WEIGHT\" and \"color of cell HEIGHT x WEIGHT\" readings of correlation plot viewer should differ", () => readingsDiffer(page, "color of cell AGE x WEIGHT", "color of cell HEIGHT x WEIGHT", el("correlation plot viewer")));
-      await session.step(156, "And the \"color of cell AGE x WEIGHT\" reading of correlation plot viewer should not be \"#ff0000\"", () => readingDoesNotRead(page, "color of cell AGE x WEIGHT", el("correlation plot viewer"), "#ff0000"));
-      await session.step(157, "And no errors should have been logged", () => noErrors(page));
-    }, {knownFailure: true});
+    await run.scenario("Cells six times apart in coefficient are painted on the same -1..1 scale", async () => {
+      await session.step(147, "Then the \"correlation of WEIGHT and AGE\" reading of correlation plot viewer should be between 0.0647 and 0.0649", () => readingBetween(page, "correlation of WEIGHT and AGE", el("correlation plot viewer"), 0.0647, 0.0649));
+      await session.step(148, "And the \"correlation of WEIGHT and HEIGHT\" reading of correlation plot viewer should be between 0.4124 and 0.4125", () => readingBetween(page, "correlation of WEIGHT and HEIGHT", el("correlation plot viewer"), 0.4124, 0.4125));
+      await session.step(149, "And the \"color of cell AGE x WEIGHT\" and \"color of cell HEIGHT x WEIGHT\" readings of correlation plot viewer should differ", () => readingsDiffer(page, "color of cell AGE x WEIGHT", "color of cell HEIGHT x WEIGHT", el("correlation plot viewer")));
+      await session.step(150, "And the \"color of cell AGE x WEIGHT\" reading of correlation plot viewer should not be \"#ff0000\"", () => readingDoesNotRead(page, "color of cell AGE x WEIGHT", el("correlation plot viewer"), "#ff0000"));
+      await session.step(151, "And no errors should have been logged", () => noErrors(page));
+    });
     run.finish();
   });
 });

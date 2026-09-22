@@ -26,7 +26,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Forms viewer field set, row binding, sort mirroring and pinning", () => {
   const session = feature(test, "features/viewers/forms/forms-core.feature", import.meta.url);
-  test("Forms viewer field set, row binding, sort mirroring and pinning", {tag: ["@journey", "@viewers", "@realizes:viewers.forms", "@known-failure"]}, async ({browser}) => {
+  test("Forms viewer field set, row binding, sort mirroring and pinning", {tag: ["@journey", "@viewers", "@realizes:viewers.forms"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 11, page);
     await session.step(36, "Given user is logged in", () => loggedIn(page));
@@ -227,14 +227,14 @@ test.describe("Forms viewer field set, row binding, sort mirroring and pinning",
       await session.step(241, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A sort from the grid header keeps the cards it was showing", async () => {
-      await session.step(251, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
-      await session.step(252, "Then the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
-      await session.step(253, "When user double-clicks on the \"header AGE\" area of grid", () => doubleClickArea(page, "header AGE", el("grid")));
-      await session.step(254, "Then the \"current row\" reading of grid should be 0", () => readingIs(page, "current row", el("grid"), 0));
-      await session.step(255, "And the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
-      await session.step(256, "And the \"cards\" reading of forms viewer should be 7", () => readingIs(page, "cards", el("forms viewer"), 7));
-      await session.step(257, "And the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
-    }, {knownFailure: true});
+      await session.step(249, "Given user selects rows where \"SEVERITY\" is \"Critical\"", () => selectWhereIs(page, "SEVERITY", "Critical"));
+      await session.step(250, "Then the record cards of forms viewer should show rows \"215, 304, 428, 430, 512\"", () => recordCardRows(page, el("forms viewer"), "215, 304, 428, 430, 512"));
+      await session.step(251, "When user double-clicks on the \"header AGE\" area of grid", () => doubleClickArea(page, "header AGE", el("grid")));
+      await session.step(252, "Then the \"current row\" reading of grid should be 0", () => readingIs(page, "current row", el("grid"), 0));
+      await session.step(253, "And the \"sort column\" reading of forms viewer should be \"AGE\"", () => readingReads(page, "sort column", el("forms viewer"), "AGE"));
+      await session.step(254, "And the \"cards\" reading of forms viewer should be 7", () => readingIs(page, "cards", el("forms viewer"), 7));
+      await session.step(255, "And the record cards of forms viewer should show rows \"304, 512, 428, 430, 215\"", () => recordCardRows(page, el("forms viewer"), "304, 512, 428, 430, 215"));
+    });
     run.finish();
   });
 });
