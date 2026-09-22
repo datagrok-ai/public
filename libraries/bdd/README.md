@@ -30,12 +30,15 @@ when it runs from a checkout — and npm links the directory into `node_modules`
 of `public`, against a local stand on `http://localhost:8888`:
 
 ```bash
-cd public/libraries/bdd && npm ci && npm run build   # the library; dist/ is not committed
-npx playwright install chromium                      # its browser, once per machine (here, not in the package)
-cd ../../packages/<Package> && npm ci                # the package: the library among its dev dependencies
-npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
+cd public && grok setup                              # once per checkout: the pnpm workspace (needs `npm i -g datagrok-tools`)
+cd libraries/bdd && npm run build                    # the library; dist/ is not committed (2 s)
+npx playwright install chromium                      # its browser, once per machine
+cd ../../packages/<Package>/bdd                      # the package's bdd project; the workspace already links the library
 npx grok-bdd run --reporter=list                     # compile --check, then Playwright (4 workers; --workers N, or any Playwright flag)
 ```
+
+Under the pnpm workspace the package and the library resolve to one `@playwright/test`, so
+`grok-bdd link` is only for a package installed outside the workspace with npm.
 
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
@@ -91,8 +94,11 @@ grok-bdd run [--headed] [-g "name"] [--reporter=list] [generated/<folder>]
 Every command runs from the package directory (or from `bdd/`). A feature change needs
 `grok-bdd compile` before `grok-bdd run`: the run starts with the drift check and stops on a stale
 spec. Results land in `bdd/test-results/` (a trace and a screenshot on failure; `--trace on`
-records DOM snapshots too, `--video on` a video); `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json` adds a
-JSON report with a duration per step.
+records DOM snapshots too, `--video on` a video); `PLAYWRIGHT_JSON_OUTPUT_NAME=<absolute path>.json` adds a
+JSON report with a duration per step (a relative name lands in this library's `dist/`, the Playwright
+config directory); `node tool/step-times.cjs <bdd project dir> run1.json [run2.json ...]` aggregates
+the reports by step phrase and binding — count, total, mean, p90, per run — into `step-times.md`
+beside them.
 
 ## How a feature runs
 
@@ -336,20 +342,34 @@ features/guides/<name>.feature` compiles it, runs it on one worker in guide mode
 scenario into `guides/<feature slug>/<scenario slug>/`:
 
 - `guide.mp4` — the pointer travels to every element a step acts on, the element is lit (the rest
-  of the page dimmed), a small target is zoomed into in place while the click lands, the page
-  after the step is revealed, and a caption reads the step as an instruction ("Click on Open local
-  file icon in browse toolbar"); a `Then` step shows what it checked with a check mark;
+  of the page dimmed) and rests under the pointer before the click lands; an icon-sized target
+  (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
+  where it is; the page after the step is revealed, and a caption above the page (clear of a
+  player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
+  toolbar"). A choice is shown being made: a native `<select>` opens its list, the option is typed
+  so the list highlights it, Enter takes it; a column selector opens its picker, the name is typed
+  into the search short of its last letter (a complete unique name is taken on the spot) and the
+  row it leaves is clicked. A `Then` step shows what it checked with a check mark —
+  when a person could see it (a dialog, a column, a row count, a value, a legend item's color);
+  the checks a test needs and a person does not (error and balloon floors, server state, viewer
+  readings and pixels, "than before" claims, property bags, widget counts, task-bar and command
+  bookkeeping) are left out, by the `HIDDEN_CHECKS` patterns in `src/runtime/guide.ts`;
 - `step-NN.png` — the lit picture of every step, and `steps.md` — the numbered steps with those
   pictures, ready to paste into a reply;
 - with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair.
 
 Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
 it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
-element the step located, and where the page's own mouse went. Tests know nothing of it: without
-the variable no line of it runs. The viewport is a laptop's (1600×900; `BDD_GUIDE_VIEWPORT=<w>x<h>`
+element the step located, and where the page's own mouse went. A move with a button held is a
+drag: the page is pictured along the way (`NN-dragK.png`, at most eight per step), so the video
+shows what the drag draws — a selection box, an annotation region — growing under the pointer,
+and the step's still shows it complete at the release point. Tests know nothing of it: without
+the variable no line of it runs. The viewport is 1080p (1920×1080, so the top menu keeps every group on the bar; `BDD_GUIDE_VIEWPORT=<w>x<h>`
 for another) so the video reads without zooming every step, and the shell is the full one (simple
-mode off, which the login step and the panel steps read from `shellSimpleMode()`), as a person
-has it. Every step is in the video except the login (`guide.silent`) and a step that neither
+mode off), as a person has it — filmed or in a plain run: every `@guide` scenario carries `And
+simple mode is off` right after the login (the compiler refuses one without it), and the step
+puts simple mode back at feature end. Every step is in the video except the login and that shell
+step (`guide.silent`) and a step that neither
 acted nor changed the page (its before and after pictures are the same file): a table opened
 through the API is shown under its caption. A path walked inside a step — the top menu's group,
 then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as it was
@@ -363,8 +383,8 @@ A feature tagged `@help:<page dir>` (`@help:access/files`) illustrates a help pa
 `grok-bdd guide --help-pages` films every such feature and copies each scenario's GIF and thumb
 into `<public>/help/<page dir>/img/<scenario slug>.gif` (`BDD_HELP_ROOT` names another tree), so
 the walkthroughs on the docs site are regenerated from features rather than recorded by hand.
-Guides live under `features/guides/` and run with the rest of the suite: an answer that stops
-being true fails a test.
+Guides live under `features/guides/` and run with the rest of the suite, in the full shell: an
+answer that stops being true fails a test.
 
 ## Generated specs
 

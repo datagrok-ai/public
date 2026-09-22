@@ -179,13 +179,15 @@ export class PackageFunctions {
   })
   static openEditor(
     @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) mol: DG.SemanticValue): void {
-    const df = grok.shell.tv.grid.dataFrame;
-    const col = df.columns.bySemType('Macromolecule')! as DG.Column<string>;
+    const cell = mol.cell;
+    const df = cell?.dataFrame ?? grok.shell.tv.grid.dataFrame;
+    const col = (cell?.column ?? df.columns.bySemType('Macromolecule')!) as DG.Column<string>;
+    const rowIdx = cell?.rowIndex ?? df.currentRowIdx;
     const colSh = _package.seqHelper.getSeqHandler(col);
     const colUnits = col.meta.units;
-    if (df.currentRowIdx === -1)
+    if (rowIdx === -1)
       return;
-    const gCell = DG.GridCell.fromColumnRow(grok.shell.tv.grid, col.name, df.currentRowIdx);
+    const gCell = mol.gridCell ?? DG.GridCell.fromColumnRow(grok.shell.tv.grid, col.name, rowIdx);
     if (colUnits === NOTATION.HELM)
       checkMonomersAndOpenWebEditor(gCell, undefined, undefined);
     else {

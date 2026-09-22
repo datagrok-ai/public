@@ -42,6 +42,9 @@ Feature: Pie chart persistence
     Then pie chart viewer should be absent
     When user adds a scatter plot viewer
     Then scatter plot viewer should be visible
+    When user colors "RACE" column categorically:
+      | Asian | #1F77B4 |
+    Then the categorical color of "Asian" in "RACE" column should be "#1F77B4"
     When user loads the saved layout
     Then pie chart viewer should be visible
     And scatter plot viewer should be absent

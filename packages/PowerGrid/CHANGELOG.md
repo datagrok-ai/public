@@ -3,6 +3,7 @@
 ## v.next
 
 * Tests: Added `bdd/features/grid/summary-columns.feature` (13 tests), translating the summary-column scenarios of the TestTrack grid specs: every renderer item of Add > Summary Columns with its renderer read from the grid, the top-panel remove icon (GROK-18256), a Tags column whose source column is removed (GROK-19942), a renamed source column, and the columns across a layout and a project; and `bdd/features/grid/summary-columns-tags.feature`, which claims what a Tags column draws and carries `@known-failure` for GROK-20888
+* Forms viewer: Fixed the viewer drawing no cards at all when the leading card has no row (after a grid-header sort clears the current row, or with Show Current Row off and nothing hovered): a card for no row now keeps a real card's size, so the record cards stay laid out
 * GROK-20888: Fixed the Tags and Bar summary columns painting the whole grid body in the chip color (a canvas path leak: `roundRect` without `beginPath`)
 * Tests: Added the `bdd` project with five Forms viewer features (30 scenarios) on the `viewers` tier, and gave the viewer its automation surface (`isRenderPending`, `onRendered`, `getWidgetStatus` with cards, fields, labels and sort indicators as hit areas)
 * GROK-20380: Fixed the Forms viewer ordering its cards by the spreadsheet's sort with Use Grid Sort off

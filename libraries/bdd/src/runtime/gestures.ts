@@ -6,6 +6,7 @@ import {type Locator, type Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
 import {cssString, escapeRegExp, exactText, locateActionable as locate, refOf, withAttr} from './locate.js';
+import * as guide from './guide.js';
 
 // a real control before the generic `.ui-input-editor`: a Dart float input puts a `div.ui-input-editor`
 // wrapper before its `input.ui-input-editor`, and `.first()` takes DOM order, so one list with the
@@ -240,9 +241,42 @@ export async function typeInColumnGrid(page: Page, option: string, what: string,
   await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
   const search = page.locator('input.d4-column-selector-search-input');
   await search.waitFor({state: 'visible', timeout: 10000});
+  // a guide shows the picker open with its search box, the name typed short of its last letter
+  // (the picker takes a name the moment it is complete and unique, before any row is clicked)
+  // and the row it leaves, clicked as a person would; a test types the name and commits with Enter
+  await guide.hop(page, search);
+  if (guide.guideDir() && option.length > 1) {
+    await typeVerified(search, option.slice(0, -1), `the column picker of ${what}`);
+    const row = await pickerRow(popup, option);
+    if (row) {
+      await guide.hopAt(page, row);
+      await page.mouse.click(row.x + row.width / 2, row.y + row.height / 2);
+      if (await popup.waitFor({state: 'detached', timeout: 1500}).then(() => true, () => false))
+        return popup;
+    }
+  }
   await typeVerified(search, option, `the column picker of ${what}`);
   await search.press('Enter');
   return popup;
+}
+
+/** The row of the open picker's grid that names the column, in page pixels, read through the
+ * grid's JS API (`cell().bounds`, canvas-relative): the picker takes the row that becomes current,
+ * and a status read makes one current when none is. */
+async function pickerRow(popup: Locator, name: string): Promise<guide.GuideBox | null> {
+  const grid = popup.locator('[name="viewer-Grid"]').first();
+  if (await grid.count() === 0)
+    return null;
+  return grid.evaluate((el, n) => {
+    const g = (window as any).DG.Widget.find(el);
+    const names: string[] = g.dataFrame.col('__name').toList();
+    const idx = names.indexOf(n);
+    if (idx < 0 || !g.dataFrame.filter.get(idx))
+      return null;
+    const b = g.cell('__name', g.tableRowToGrid(idx)).bounds;
+    const r = el.getBoundingClientRect();
+    return {x: r.x + b.x, y: r.y + b.y, width: b.width, height: b.height};
+  }, name).catch(() => null);
 }
 
 /** The same, and the popup's disappearance is the step's own outcome check: a picker still open
@@ -272,7 +306,7 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
   // a Dart choice input's name can land on its <select> itself rather than on the host around it
   const native = await loc.first().evaluate((e) => e.tagName === 'SELECT') ? loc.first() : loc.locator('select').first();
   if (await native.count() > 0) {
-    await native.selectOption({label: option});
+    await selectNative(page, native, option);
     return;
   }
   const columnSelector = (await loc.first().evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc.first() : loc.locator('.d4-column-selector').first();
@@ -283,7 +317,14 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
     return;
   }
   const editor = await editorOf(page, target);
-  await editor.click();
+  // the Dart property grid puts its <select> into the value cell only once that cell is clicked
+  const cell = loc.locator('.property-grid-item-value').first();
+  await (await cell.count() > 0 ? cell : editor).click();
+  const shown = loc.locator('select').first();
+  if (await shown.count() > 0) {
+    await selectNative(page, shown, option);
+    return;
+  }
   let options = optionsNamed(page, option);
   await options.first().waitFor({timeout: 1500}).catch(() => undefined);
   // comboboxes and typeaheads open on a keystroke, not on the click
@@ -293,7 +334,29 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
   }
   if (await options.count() === 0)
     options = page.locator(OPTION).filter({hasText: new RegExp(escapeRegExp(option), 'i')});
+  await guide.hop(page, options.first());
   await options.first().click();
+}
+
+/** A native `<select>`: `selectOption` for a test. A guide makes the choice the way a person sees
+ * it — the list opened with a click (headless Chromium draws it on the page), the option typed so
+ * the list highlights it (one stop: the open list with the option lit), Enter to take it; the
+ * label is checked afterwards, and the option set outright if type-ahead stopped on another one
+ * with the same prefix. */
+async function selectNative(page: Page, select: Locator, option: string): Promise<void> {
+  if (!guide.guideDir()) {
+    await select.selectOption({label: option});
+    return;
+  }
+  await select.click();
+  await page.waitForTimeout(300);
+  await page.keyboard.type(option);
+  await page.waitForTimeout(300);
+  await guide.hop(page, select);
+  await page.keyboard.press('Enter');
+  const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '');
+  if (taken !== option)
+    await select.selectOption({label: option});
 }
 
 /** Popup rows called `option`: by their whole text, by their primary-text part, or by a title/aria label. */

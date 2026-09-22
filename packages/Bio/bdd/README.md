@@ -6,9 +6,9 @@ TestTrack Bio specs (`packages/UsageAnalysis/files/TestTrack/Bio/`) and the hand
 under `playwright/`, whose assertions each feature carries or strengthens (the review record is
 the `/bdd-translate` skill under `public/.claude/skills/`). Eighteen features, 101 scenarios,
 1.9 min in one run (2026-09-08, serial or on four workers alike: four shells booting at once take
-30 s each on this stand); one claim is an open product finding, not a test gap: the
-Similarity command through its dialog leaves the non-reference rows of `filter_HELM` empty where
-the same function called directly scores them (`calculate/scoring.feature`). The diversity
+30 s each on this stand); the Similarity command used to leave the rows of `filter_HELM` whose
+length differed from the reference's empty (fixed 2026-09-21 in `@datagrok-libraries/bio`,
+`calculate/scoring.feature` asserts no blanks). The diversity
 search's worker chunk failures of the first round were the distance-matrix service terminating
 workers it had spawned beyond the job (fixed in `@datagrok-libraries/ml`).
 

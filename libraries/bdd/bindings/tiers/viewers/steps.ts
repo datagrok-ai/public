@@ -187,6 +187,9 @@ export const wheelOverArea = When('user scrolls the mouse wheel {word} over the 
 export const wheelOverAreaHolding = When('user scrolls the mouse wheel {word} over the {string} area of {widget} holding {key}', (page: Page, direction: string, area: string, target: ElementRef, key: string) =>
   v.wheelOverArea(page, target, area, direction, 1, keysOf(key)), {tier: 'ui', description: 'the same notches with a modifier held — Control zooms where a plain wheel scrolls'});
 
+export const wheelOverAreaTimes = When('user scrolls the mouse wheel {word} {int} times over the {string} area of {widget}', (page: Page, direction: string, times: number, area: string, target: ElementRef) =>
+  v.wheelOverArea(page, target, area, direction, times), {tier: 'ui', description: 'a run of wheel events — enough of them to reach the end of a long table'});
+
 export const wheelOverAreaTimesHolding = When('user scrolls the mouse wheel {word} {int} times over the {string} area of {widget} holding {key}', (page: Page, direction: string, times: number, area: string, target: ElementRef, key: string) =>
   v.wheelOverArea(page, target, area, direction, times, keysOf(key)), {tier: 'ui', description: 'a run of wheel events with a modifier held — enough of them to reach a limit'});
 

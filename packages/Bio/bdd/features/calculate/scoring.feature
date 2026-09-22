@@ -1,8 +1,8 @@
 @journey @realizes:bio.calculate.identity @realizes:bio.calculate.similarity
 Feature: Identity and similarity scoring
   Bio | Calculate | Identity... and Similarity... score every sequence against a reference typed
-  into the dialog. With the first row as the reference, identity is exactly 1 there and
-  similarity peaks there; both stay within 0..1 and leave no cell blank.
+  into the dialog. With the first row as the reference, identity is exactly 1 there and stays
+  within 0..1; similarity peaks there. Neither leaves a cell blank, whatever the row's length.
 
   Background:
     Given user is logged in
@@ -37,10 +37,8 @@ Feature: Identity and similarity scoring
     And a new column "Similarity" should have been added
     And "Similarity" column should have its maximum in row 1
     And every value of "Similarity" column should lie between 0 and 2
-    And the table should have a column "Identity"
     And no error or warning balloon should have been shown
     And no errors should have been logged
-    And "Similarity" column should have missing values
     When user removes "Similarity" column
     And user picks "Bio > Calculate > Similarity..." from the top menu
     Then Similarity dialog should be visible
@@ -50,8 +48,6 @@ Feature: Identity and similarity scoring
     And 1 new column should have been added
     And a new column "Similarity" should have been added
     And "Similarity" column should have its maximum in row 3
-    When user filters rows where "Similarity" is not null
-    Then 2 row should pass the filter
 
   Scenario: The scoring functions answer an empty sequence with nothing, not an error
     When user calls "Bio:seqIdentity" function with:
@@ -66,3 +62,9 @@ Feature: Identity and similarity scoring
       | seq2       | MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL  |
     Then the result should be an alignment of at least 37 positions
     And no errors should have been logged
+
+  # Fixed 2026-09-21: the similarity scoring blanked every row whose length differed from the
+  # reference's; it now scores the reference's positions, as identity does. Last, so nothing
+  # inherits the filter.
+  Scenario: Similarity leaves no cell blank
+    Then "Similarity" column should have no missing values

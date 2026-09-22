@@ -12,7 +12,7 @@ const root = resolve(process.env.BDD_ROOT ?? (basename(here) === 'dist' ? dirnam
 const url = (process.env.DATAGROK_URL ?? 'http://localhost:8888').replace(/\/$/, '');
 function guideViewport(spec = ''): {width: number; height: number} {
   const m = /^(\d+)x(\d+)$/.exec(spec);
-  return m ? {width: Number(m[1]), height: Number(m[2])} : {width: 1600, height: 900};
+  return m ? {width: Number(m[1]), height: Number(m[2])} : {width: 1920, height: 1080};
 }
 
 const globalSetup =['global-setup.js', 'global-setup.ts'].map((f) => join(here, 'src', 'runtime', f)).find(existsSync)!;
@@ -28,8 +28,8 @@ export default defineConfig({
     ...baseConfig.use,
     baseURL: url,
     storageState: join(root, 'e2e', '.auth.json'),
-    // a guide run (`grok-bdd guide`) is filmed at a laptop's size, so the video reads without a
-    // zoom on every step: BDD_GUIDE_VIEWPORT=<w>x<h> chooses another
+    // a guide run (`grok-bdd guide`) is filmed at 1080p: below 1920 px the top menu bar folds its
+    // last groups (Chem, Bio) into "more"; BDD_GUIDE_VIEWPORT=<w>x<h> chooses another
     ...(process.env.BDD_GUIDE ? {viewport: guideViewport(process.env.BDD_GUIDE_VIEWPORT)} : {}),
     // a failed run keeps its trace (actions, console, network) and the failure screenshot, but
     // neither DOM snapshots (serializing the shell's DOM around every action was ~45% of a

@@ -5,7 +5,7 @@
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
-import {baselineAll, settleAll} from '../../src/runtime/viewers.js';
+import {changeAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 
@@ -163,16 +163,14 @@ export const columnCount = Then('the table should have {int} column(s)', async (
 
 // --- the current row ---------------------------------------------------------------------------------
 
-async function makeCurrent(page: Page, row: number | 'last'): Promise<void> {
-  await baselineAll(page);
-  await page.evaluate((r) => {
+function makeCurrent(page: Page, row: number | 'last'): Promise<void> {
+  return changeAll(page, (r) => {
     const df = grok.shell.t;
     const idx = r === 'last' ? df.rowCount - 1 : r - 1;
     if (idx < 0 || idx >= df.rowCount)
       throw new Error(`row ${r} is outside the table's ${df.rowCount} rows`);
     df.currentRowIdx = idx;
   }, row);
-  await settleAll(page);
 }
 
 export const makeRowCurrent = When('user makes row {int} current', (page: Page, row: number) => makeCurrent(page, row),

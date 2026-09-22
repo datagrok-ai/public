@@ -52,7 +52,7 @@ test.describe("Antibody numbering with the bundled immunum engine", () => {
       await session.step(31, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The engine's own result honours the five-column contract", async () => {
-      await session.step(34, "When user calls \"Bio:immunumAntibodyNumbering\" function with:", () => callWith(page, "Bio:immunumAntibodyNumbering", [["df","table"],["seqCol","column:AntibodyHC"],["scheme","imgt"]]));
+      await session.step(34, "When user calls \"Bio:immunumAntibodyNumbering\" function with:", () => callWith(page, "Bio:immunumAntibodyNumbering", [["df","table"],["seqCol","column:AntibodyHC"],["scheme","imgt"]]), [["df","table"],["seqCol","column:AntibodyHC"],["scheme","imgt"]]);
       await session.step(38, "Then the result should be a table with columns \"position_names, chain_type, annotations_json, numbering_detail, numbering_map\"", () => resultTableColumns(page, "position_names, chain_type, annotations_json, numbering_detail, numbering_map"));
       await session.step(39, "And every column of the result table should be filled in row 1", () => resultTableFilled(page, 1));
       await session.step(40, "And no errors should have been logged", () => noErrors(page));

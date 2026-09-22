@@ -42,27 +42,41 @@ scenario is not evidence for the named bug.
   presses 25 ms apart at the one-second autofocus boundary (`xamgle/lib/src/views/table_view.dart`).
   Targeting the viewer tests its shortcut independently of that global focus change; the core
   autofocus behavior itself is unchanged.
+- [Pivot table links](../../packages/UsageAnalysis/bdd/features/viewers/pivot-table/pivot-table-links.feature)
+  (2026-09-21): a filter `DIS_POP in [AS]` appeared after Control-clicks on the aggregated grid's
+  row headers, by a group no click named. Cause in the core: the grid's key handler
+  (`d4/lib/src/viewers/grid/features/grid_keyboard_navigation.dart`) read `currentPos` on every
+  key, and that getter makes row 0 current when no cell is — so the Control key itself, pressed
+  in a focused grid, made row 0 current, and a pivot with Filtering Enabled filtered its source by
+  the first group. The handler now reads `currentGridCell?.pos`. The grid status
+  (`grid_status.dart`) had the same getter behind its `current row` reading, which reset the
+  current cell on every read and hid the defect; it now reports the table's current row and
+  column, which is what the grid highlights. The scenario is untagged.
 
-## Retained product defects
+## Product defects fixed on 2026-09-21
 
-Core paths below are relative to `core/client/`; public source links are relative to this file.
-Expected values remain unchanged.
+Every `@known-failure` tag of that date was retired the same day: each defect below is fixed at
+its cause and the scenario that carried the tag passes untagged. Core paths are relative to
+`core/`; public source links are relative to this file. Expected values were not changed.
 
-| Scenario | Observed failure | Cause |
+| Scenario | Was | Fix |
 | --- | --- | --- |
-| [Correlation tooltip disabled](../../packages/UsageAnalysis/bdd/features/viewers/correlation-plot/correlation-plot-cells.feature) | A visible tooltip still contains `Pearson R` with `showTooltip=false`. | `d4/lib/src/viewers/correlation_plot/correlation_plot_core.dart` supplies a custom cell tooltip without checking the flag. The nested grid must also suppress its default fallback when the tooltip is disabled. |
-| [Correlation color scale](../../packages/UsageAnalysis/bdd/features/viewers/correlation-plot/correlation-plot.feature) | Correlations approximately 0.0648 and 0.4124 have the same full-red color. | The plot sets column bounds to -1 and 1, but the numeric path in `d4/lib/src/common/color_coding.dart` passes null bounds to linear coloring. |
-| [Forms after header sort](../../packages/UsageAnalysis/bdd/features/viewers/forms/forms-core.feature) | 0 visible cards instead of 7. | Sorting clears the current row. [Forms](../utils/src/viewers/forms-viewer.ts) creates an empty leading card; `d4/lib/src/widgets/virtual_item_view.dart` measures its zero height and computes zero layout columns. |
-| [Forms with Show Current Row off](../../packages/UsageAnalysis/bdd/features/viewers/forms/forms-interactions.feature) | 0 visible cards instead of 6. | The same layout defect: a blank mouseover card becomes the first measured item. Both tags remain because they cover different user actions. |
-| [Heatmap Colors off — GROK-20619](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map-colors.feature) | The AGE band changes by 0 pixels. | The dense path at row height ≤5 in `d4/lib/src/viewers/grid/grid_core.dart` bypasses the normal cell renderer's `heatmapColors` gate and colors cells directly. The normal renderer does honor the flag. |
-| [Returning to heat-map mode](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map-navigation.feature) | Row height stays near the grid's 28 px instead of fitting the table within 0–8 px. | `GridLook.refreshGrid` and `GridCore.onLookChanged` preserve the grid's vertical viewport instead of restoring the full heat-map range. |
-| [Heat-map Row Height disabled](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map.feature) | The Row Height property exists but is not disabled. | `libs/property_grid/lib/property_grid_lib.dart` skips initial dependency evaluation when the controlling property has no editor. `isGrid` is non-editable, although its value is available on the look. |
-| [Heat-map column cap before settings](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map.feature) | Setting the cap to 3 leaves 11 columns visible. | The API does invoke the Dart setter. `GridLook.refreshGrid` returns because the fresh look has no `viewer` reference; opening settings binds that reference, after which the same API write works. The feature's earlier API-versus-setter explanation was corrected. |
-| [Filtered group comparison — GROK-20795](../../packages/EDA/bdd/features/analyze/filtered-group-comparison.feature) | The first result count is 157 instead of 104; full-table counts are 157/5266/354 instead of filtered 104/2823/279. | [Control comparisons](../../packages/EDA/src/control-comparisons/control-comparisons-ui.ts) passes the original columns to factorization without applying the table's filter. Fixture counts were checked against demog, including missing AGE values and the excluded control group. |
-| [Empty Pareto objective](../../packages/EDA/bdd/features/pareto-front-objectives.feature) | The picker offers 17 columns instead of 16, including the all-null integer column. | [Pareto viewer](../../packages/EDA/src/pareto-optimization/pareto-front-viewer.ts) filters the picker by numerical type only. Its separate initialization check for nonempty columns is not applied to the picker. |
+| [Correlation tooltip disabled](../../packages/UsageAnalysis/bdd/features/viewers/correlation-plot/correlation-plot-cells.feature) | A tooltip with `Pearson R` with `showTooltip=false`. | `client/d4/lib/src/viewers/correlation_plot/correlation_plot_core.dart`: the cell tooltip handler reads the flag and suppresses the default tooltip too. |
+| [Correlation color scale](../../packages/UsageAnalysis/bdd/features/viewers/correlation-plot/correlation-plot.feature) | 0.0648 and 0.4124 painted the same full red. | `client/d4/lib/src/common/color_coding.dart`: the numerical branch honours a grid column's own `minScale`/`maxScale` (the plot's -1..1). |
+| [Forms after header sort](../../packages/UsageAnalysis/bdd/features/viewers/forms/forms-core.feature), [Forms with Show Current Row off](../../packages/UsageAnalysis/bdd/features/viewers/forms/forms-interactions.feature), [PowerGrid twin](../../packages/PowerGrid/bdd/features/viewers/forms/forms-interactions.feature) | 0 cards: the leading card for row -1 was zero pixels tall and the virtual view laid out nothing. | [Forms](../utils/src/viewers/forms-viewer.ts): the card for no row is a placeholder with a real card's size and no handlers. |
+| [Heatmap Colors off — GROK-20619](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map-colors.feature) | The AGE band changed by 0 pixels. | `client/d4/lib/src/viewers/grid/grid_core.dart`: the dense heat-map path shares the cell renderer's `heatmapColors` gate. |
+| [Returning to heat-map mode](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map-navigation.feature) | Row height stayed at 28 px. | `client/d4/lib/src/viewers/grid/grid_look.dart`: the mode switch rebuilds the vertical range. |
+| [Heat-map Row Height disabled](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map.feature) | The Row Height row was not disabled. | `client/libs/property_grid/lib/property_grid_lib.dart`: the initial dependency pass runs when the controlling property exists on the source, not only when it has an editor. |
+| [Heat-map column cap before settings](../../packages/UsageAnalysis/bdd/features/viewers/heat-map/heat-map.feature) | 11 columns visible after setting the cap to 3. | `grid_core.dart`: the grid binds `look.viewer` on every look it is given, so a setter's `refreshGrid()` works before the property panel opens. |
+| [Second scatter plot's filter after a layout — GROK-20896](../../packages/UsageAnalysis/bdd/features/viewers/scatter-plot/scatter-plot-legend.feature) | The second viewer showed every row. | `client/d4/lib/src/viewer_base/data_frame_viewer.dart`: a viewer that finds another one computing the same formula column looks again shortly instead of waiting for nothing. |
+| [Filtered group comparison — GROK-20795](../../packages/EDA/bdd/features/analyze/filtered-group-comparison.feature) | Full-table counts 157/5266/354 instead of 104/2823/279. | [Control comparisons](../../packages/EDA/src/control-comparisons/control-comparisons-ui.ts) clone the columns through the table's filter before factorization. |
+| [Empty Pareto objective](../../packages/EDA/bdd/features/pareto-front-objectives.feature) | 17 columns offered, the all-null one included. | `shared/ddt/lib/src/data_frame/column_filter.dart` combines conditions (`numerical; not empty`, `Column.matches` agrees); the [Pareto viewer](../../packages/EDA/src/pareto-optimization/pareto-front-viewer.ts) asks for it. |
+| [Similarity leaves no cell blank](../../packages/Bio/bdd/features/calculate/scoring.feature) | Blank in every row whose length differed from the reference's. | `libraries/bio/src/monomer-works/monomer-utils.ts`: similarity scores the reference's positions, as identity does. |
+| [Centroid linkage — GROK-19595](../../packages/Dendrogram/bdd/features/clustering/chem-dialog.feature) | No tree: the cluster matrix mixed two labelings. | `libraries/math/.../fastcluster.cpp`: centroid takes the same dendrogram path as median (wasm rebuilt). |
+| [Global permissions of a role — GROK-20902](../../packages/UsageAnalysis/bdd/features/users-groups-roles/roles-assignment.feature) | The pane listed every group's grants. | `server/datlas/lib/src/services/privileges_service.dart`: `getPermissions(groupId, global: true)` returns the group's own grants. |
+| [Deleting a role keeps its grants — GROK-20904](../../packages/UsageAnalysis/bdd/features/users-groups-roles/roles-assignment.feature) | The delete violated `permissions_user_group_id_fkey`. | `server/db/db_up/20260922_0_permissions_group_cascade.sql` (and `init_db.sql`): the key cascades, so a group's grants are deleted with it; a group delete already drops the permission caches. |
 
-The retained defects have implementation causes independent of keyboard differences between
-macOS and Windows. Their tags remain assertions of the desired behavior, not skips.
+No `@known-failure` tag remains in any project.
 
 ## Validation
 

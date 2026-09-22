@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.grid]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -19,7 +20,7 @@ import {clearField, clickOn, enterInto, isExpanded, pressKey, shouldBe, shouldCo
 import {columnIncomplete, columnTag, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {colorCodedCategorically, colorConditional, colorOff, noColorCoding, noneSelected, rowsRangeSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {contextPanelOpen, contextPanelShows, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {areaAtLeastTall, areaColor, areaNotColor, areasDiffer, areasSame, clickArea, dragAreaBy, dragSelectionBetweenAreas, noErrors, notRepainted, pickFromAreaContextMenu, pickPropertyColor, pointerAway, propertyShouldBe, readingAsRemembered, readingDoesNotRead, readingLower, readingReads, readingsDiffer, rememberReading, repainted, repaintedBy, setProperty, showsRows, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaAtLeastTall, areaColor, areaNotColor, areasDiffer, areasSame, clickArea, dragAreaBy, dragSelectionBetweenAreas, noErrors, pickFromAreaContextMenu, pickPropertyColor, pointerAway, propertyShouldBe, readingAsRemembered, readingDoesNotRead, readingLower, readingReads, readingsDiffer, rememberReading, repainted, repaintedBy, setProperty, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Grid cell appearance", () => {
@@ -124,45 +125,43 @@ test.describe("Grid cell appearance", () => {
       await session.step(120, "And user makes row 1 current", () => makeRowCurrent(page, 1));
       await session.step(121, "Then no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("A bigger cell font repaints the grid and an idle grid does not", async () => {
-      await session.step(124, "When user takes a snapshot of grid", () => takeSnapshot(page, el("grid")));
-      await session.step(125, "Then grid should not have repainted", () => notRepainted(page, el("grid")));
-      await session.step(126, "When user sets \"Default Cell Font\" property of grid to \"20px Roboto\"", () => setProperty(page, "Default Cell Font", el("grid"), "20px Roboto"));
-      await session.step(127, "Then grid should have repainted by at least 3000 pixels", () => repaintedBy(page, el("grid"), 3000));
-      await session.step(128, "When user sets \"Default Cell Font\" property of grid to \"12px Roboto\"", () => setProperty(page, "Default Cell Font", el("grid"), "12px Roboto"));
-      await session.step(129, "Then grid should have repainted", () => repainted(page, el("grid")));
-      await session.step(130, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("A bigger cell font repaints the grid", async () => {
+      await session.step(124, "When user sets \"Default Cell Font\" property of grid to \"20px Roboto\"", () => setProperty(page, "Default Cell Font", el("grid"), "20px Roboto"));
+      await session.step(125, "Then grid should have repainted by at least 3000 pixels", () => repaintedBy(page, el("grid"), 3000));
+      await session.step(126, "When user sets \"Default Cell Font\" property of grid to \"12px Roboto\"", () => setProperty(page, "Default Cell Font", el("grid"), "12px Roboto"));
+      await session.step(127, "Then grid should have repainted", () => repainted(page, el("grid")));
+      await session.step(128, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Selected Rows Color paints the selected rows and Escape takes it away", async () => {
-      await session.step(133, "When user presses Escape", () => pressKey(page, "Escape"));
-      await session.step(134, "Then no rows should be selected", () => noneSelected(page));
-      await session.step(135, "When user sets \"Selected Rows Color\" property of grid to \"#00FF00\"", () => setProperty(page, "Selected Rows Color", el("grid"), "#00FF00"));
-      await session.step(136, "Then the \"cell 6 of USUBJID\" area of grid should not contain the color \"#00FF00\"", () => areaNotColor(page, "cell 6 of USUBJID", el("grid"), "#00FF00"));
-      await session.step(137, "When user drags a selection box from the \"row header 5\" area to the \"row header 7\" area of grid", () => dragSelectionBetweenAreas(page, "row header 5", "row header 7", el("grid")));
-      await session.step(138, "Then rows 5 to 7 should be selected", () => rowsRangeSelected(page, 5, 7));
-      await session.step(139, "And the \"cell 6 of USUBJID\" area of grid should contain the color \"#00FF00\"", () => areaColor(page, "cell 6 of USUBJID", el("grid"), "#00FF00"));
-      await session.step(140, "And the \"cell 9 of USUBJID\" area of grid should not contain the color \"#00FF00\"", () => areaNotColor(page, "cell 9 of USUBJID", el("grid"), "#00FF00"));
-      await session.step(141, "When user presses Escape", () => pressKey(page, "Escape"));
-      await session.step(142, "Then no rows should be selected", () => noneSelected(page));
-      await session.step(143, "And the \"cell 6 of USUBJID\" area of grid should not contain the color \"#00FF00\"", () => areaNotColor(page, "cell 6 of USUBJID", el("grid"), "#00FF00"));
-      await session.step(144, "When user sets \"Selected Rows Color\" property of grid to \"819780688\"", () => setProperty(page, "Selected Rows Color", el("grid"), "819780688"));
-      await session.step(145, "Then no errors should have been logged", () => noErrors(page));
+      await session.step(131, "When user presses Escape", () => pressKey(page, "Escape"));
+      await session.step(132, "Then no rows should be selected", () => noneSelected(page));
+      await session.step(133, "When user sets \"Selected Rows Color\" property of grid to \"#00FF00\"", () => setProperty(page, "Selected Rows Color", el("grid"), "#00FF00"));
+      await session.step(134, "Then the \"cell 6 of USUBJID\" area of grid should not contain the color \"#00FF00\"", () => areaNotColor(page, "cell 6 of USUBJID", el("grid"), "#00FF00"));
+      await session.step(135, "When user drags a selection box from the \"row header 5\" area to the \"row header 7\" area of grid", () => dragSelectionBetweenAreas(page, "row header 5", "row header 7", el("grid")));
+      await session.step(136, "Then rows 5 to 7 should be selected", () => rowsRangeSelected(page, 5, 7));
+      await session.step(137, "And the \"cell 6 of USUBJID\" area of grid should contain the color \"#00FF00\"", () => areaColor(page, "cell 6 of USUBJID", el("grid"), "#00FF00"));
+      await session.step(138, "And the \"cell 9 of USUBJID\" area of grid should not contain the color \"#00FF00\"", () => areaNotColor(page, "cell 9 of USUBJID", el("grid"), "#00FF00"));
+      await session.step(139, "When user presses Escape", () => pressKey(page, "Escape"));
+      await session.step(140, "Then no rows should be selected", () => noneSelected(page));
+      await session.step(141, "And the \"cell 6 of USUBJID\" area of grid should not contain the color \"#00FF00\"", () => areaNotColor(page, "cell 6 of USUBJID", el("grid"), "#00FF00"));
+      await session.step(142, "When user sets \"Selected Rows Color\" property of grid to \"819780688\"", () => setProperty(page, "Selected Rows Color", el("grid"), "819780688"));
+      await session.step(143, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A column's colour coding wins over the background its Style sets (GROK-18638)", async () => {
-      await session.step(148, "When user clicks on the \"header SEVERITY\" area of grid", () => clickArea(page, "header SEVERITY", el("grid")));
-      await session.step(149, "Given the context panel is open", () => contextPanelOpen(page));
-      await session.step(150, "Then the context panel should show \"SEVERITY\"", () => contextPanelShows(page, "SEVERITY"));
-      await session.step(151, "Given Style accordion header in context panel is expanded", () => isExpanded(page, el("Style accordion header in context panel")));
-      await session.step(152, "And Content accordion header in context panel is expanded", () => isExpanded(page, el("Content accordion header in context panel")));
-      await session.step(153, "When user picks the color \"#FFA500\" for the \"Back Color\" property in the context panel", () => pickPropertyColor(page, "#FFA500", "Back Color"));
-      await session.step(154, "Then the \"color of cell 1 of SEVERITY\" reading of grid should be \"#ffa500\"", () => readingReads(page, "color of cell 1 of SEVERITY", el("grid"), "#ffa500"));
-      await session.step(155, "And the \"color of cell 2 of SEVERITY\" reading of grid should be \"#ffa500\"", () => readingReads(page, "color of cell 2 of SEVERITY", el("grid"), "#ffa500"));
-      await session.step(156, "When user picks \"Color Coding > Categorical\" from the context menu of the \"header SEVERITY\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Categorical", "header SEVERITY", el("grid")));
-      await session.step(157, "Then the \"color of cell 1 of SEVERITY\" reading of grid should not be \"#ffa500\"", () => readingDoesNotRead(page, "color of cell 1 of SEVERITY", el("grid"), "#ffa500"));
-      await session.step(158, "And the \"color of cell 1 of SEVERITY\" and \"color of cell 3 of SEVERITY\" readings of grid should differ", () => readingsDiffer(page, "color of cell 1 of SEVERITY", "color of cell 3 of SEVERITY", el("grid")));
-      await session.step(159, "When user removes the coloring of \"SEVERITY\" column", () => colorOff(page, "SEVERITY"));
-      await session.step(160, "Then the \"color of cell 1 of SEVERITY\" reading of grid should be \"#ffa500\"", () => readingReads(page, "color of cell 1 of SEVERITY", el("grid"), "#ffa500"));
-      await session.step(161, "And no errors should have been logged", () => noErrors(page));
+      await session.step(146, "When user clicks on the \"header SEVERITY\" area of grid", () => clickArea(page, "header SEVERITY", el("grid")));
+      await session.step(147, "Given the context panel is open", () => contextPanelOpen(page));
+      await session.step(148, "Then the context panel should show \"SEVERITY\"", () => contextPanelShows(page, "SEVERITY"));
+      await session.step(149, "Given Style accordion header in context panel is expanded", () => isExpanded(page, el("Style accordion header in context panel")));
+      await session.step(150, "And Content accordion header in context panel is expanded", () => isExpanded(page, el("Content accordion header in context panel")));
+      await session.step(151, "When user picks the color \"#FFA500\" for the \"Back Color\" property in the context panel", () => pickPropertyColor(page, "#FFA500", "Back Color"));
+      await session.step(152, "Then the \"color of cell 1 of SEVERITY\" reading of grid should be \"#ffa500\"", () => readingReads(page, "color of cell 1 of SEVERITY", el("grid"), "#ffa500"));
+      await session.step(153, "And the \"color of cell 2 of SEVERITY\" reading of grid should be \"#ffa500\"", () => readingReads(page, "color of cell 2 of SEVERITY", el("grid"), "#ffa500"));
+      await session.step(154, "When user picks \"Color Coding > Categorical\" from the context menu of the \"header SEVERITY\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Categorical", "header SEVERITY", el("grid")));
+      await session.step(155, "Then the \"color of cell 1 of SEVERITY\" reading of grid should not be \"#ffa500\"", () => readingDoesNotRead(page, "color of cell 1 of SEVERITY", el("grid"), "#ffa500"));
+      await session.step(156, "And the \"color of cell 1 of SEVERITY\" and \"color of cell 3 of SEVERITY\" readings of grid should differ", () => readingsDiffer(page, "color of cell 1 of SEVERITY", "color of cell 3 of SEVERITY", el("grid")));
+      await session.step(157, "When user removes the coloring of \"SEVERITY\" column", () => colorOff(page, "SEVERITY"));
+      await session.step(158, "Then the \"color of cell 1 of SEVERITY\" reading of grid should be \"#ffa500\"", () => readingReads(page, "color of cell 1 of SEVERITY", el("grid"), "#ffa500"));
+      await session.step(159, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

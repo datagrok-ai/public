@@ -47,6 +47,7 @@ export class FormsViewer extends DG.JsViewer {
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
   columnLabelWidth: number = 0;
+  cardSize: DG.Point | null = null;
   currentRowIndicator = ui.div('', 'd4-multi-form-form-indicator d4-multi-form-form-indicator-current-row');
   mouseOverRowIndicator = ui.div('', 'd4-multi-form-form-indicator d4-multi-form-form-indicator-mouse-over-row');
   splitColLeft: HTMLElement;
@@ -323,6 +324,7 @@ export class FormsViewer extends DG.JsViewer {
     const form = this.renderForm(0, true);
     form.classList.add('temp');
     document.body.appendChild(form);
+    this.cardSize = new DG.Point(form.offsetWidth, form.offsetHeight);
 
     for (const name of this.fieldsColumnNames) {
       const formField = form.querySelector('[column="' + name + '"]') as HTMLInputElement;
@@ -496,6 +498,14 @@ export class FormsViewer extends DG.JsViewer {
       form.append(this.mouseOverRowIndicator);
     if (this.showCurrentRow && savedIdx === this.currentRowPos)
       form.append(this.currentRowIndicator);
+    // the virtual view sizes its layout by its first item, so a card for no row keeps a real card's size
+    if (row === -1) {
+      if (this.cardSize) {
+        form.style.minWidth = `${this.cardSize.x}px`;
+        form.style.minHeight = `${this.cardSize.y}px`;
+      }
+      return form;
+    }
     if (pinned) {
       const pinnedRowIndicator = ui.div('', 'd4-multi-form-form-indicator');
       pinnedRowIndicator.style.backgroundColor = DG.Color.toHtml(DG.Color.scatterPlotMarker);

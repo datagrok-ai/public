@@ -24,7 +24,7 @@ except ImportError:
 ACCENT = (255, 90, 31)
 CHECK = (46, 160, 67)
 BAR = (20, 24, 32, 205)
-SMALL_TARGET = 0.04   # a target under this share of the frame is zoomed into
+SMALL_TARGET_PX = 28   # a target no wider and no taller than this (an icon, a checkbox) is zoomed into; larger ones are lit and clicked in place
 
 
 def find_ffmpeg(explicit):
@@ -97,7 +97,8 @@ class Renderer:
         self.big = load_font(max(20, self.h // 18))
         self.cursor = cursor_sprite(max(1.0, self.h / 700))
         self.bar_h = int(self.h * 0.085) & ~1
-        # the caption sits under the page, so nothing of the page is covered
+        # the caption sits above the page: nothing of the page is covered, and a player's timeline
+        # lands on the bottom edge
         self.out_h = self.h + self.bar_h
         self.cur = (self.w / 2, self.h / 2)
 
@@ -161,9 +162,9 @@ class Renderer:
             y0 = min(max(0, anchor[1] - ch / 2), self.h - ch)
             frame = frame.crop((int(x0), int(y0), int(x0 + cw), int(y0 + ch))).resize((self.w, self.h), Image.BILINEAR)
         canvas = Image.new('RGB', (self.w, self.out_h), BAR[:3])
-        canvas.paste(frame, (0, 0))
+        canvas.paste(frame, (0, self.bar_h))
         if caption is not None:
-            canvas.paste(caption, (0, self.h), caption)
+            canvas.paste(caption, (0, 0), caption)
         return canvas
 
     def title_frames(self, base):
@@ -206,13 +207,28 @@ class Renderer:
         # a path walked inside the step (a menu: the group, then each item): the pointer travels to
         # every stop over the page as it was then, the last stop being the step's own target
         legs = [(self._image(h['shot']), h['target']) for h in step.get('hops', [])] or [(before, target)]
-        for shot, stop in legs[:-1]:
+
+        def hit(stop, c):
+            return stop is not None and stop['x'] <= c['x'] <= stop['x'] + stop['width'] and stop['y'] <= c['y'] <= stop['y'] + stop['height']
+
+        # the click ripples where the walk clicked: the selector that opened a picker, the leaf of a
+        # menu, the row taken — a click no stop accounts for rides on the last one
+        clicked = [any(hit(stop, c) for c in clicks) for _, stop in legs]
+        clicks_last = bool(clicks) and (clicked[-1] or not any(clicked))
+        for (shot, stop), here in zip(legs[:-1], clicked[:-1]):
             dest = (stop['x'] + stop['width'] / 2, stop['y'] + stop['height'] / 2)
+            for c in clicks:
+                if hit(stop, c):
+                    dest = (c['x'], c['y'])
             lit = self.spotlight(shot, stop)
             yield from self.travel_frames(shot, lit, dest, caption)
             still = self.compose(lit, dest, caption=caption)
             for _ in range(int(0.5 * fps)):
                 yield still
+            if here:
+                n = int(0.4 * fps)
+                for i in range(n):
+                    yield self.compose(lit, dest, ripple=(i + 1) / n, caption=caption)
         before, target = legs[-1]
         if target:
             dest = (target['x'] + target['width'] / 2, target['y'] + target['height'] / 2)
@@ -223,9 +239,9 @@ class Renderer:
         else:
             dest = None
         if clicks and target:
-            c = clicks[0]
-            if target['x'] <= c['x'] <= target['x'] + target['width'] and target['y'] <= c['y'] <= target['y'] + target['height']:
-                dest = (c['x'], c['y'])
+            for c in clicks:
+                if hit(target, c):
+                    dest = (c['x'], c['y'])
         lit = self.spotlight(before, target) if target else before
         lit_after = self.spotlight(after, target) if target else after
         # a picture of the step for steps.md: the target lit, the pointer on it, no zoom; a step
@@ -236,23 +252,48 @@ class Renderer:
             for _ in range(int(self.hold * fps)):
                 yield still
             return
-        self.compose(lit, dest, caption=caption).save(os.path.join(self.folder, f'step-{index:02d}.png'))
-        small = target is not None and target['width'] * target['height'] < SMALL_TARGET * self.w * self.h
+        # the pages pictured while a button was held: a drag's still shows what it drew, at its end
+        drags = [p for p in pointer if p.get('shot')]
+        if drags:
+            drawn = self._image(drags[-1]['shot'])
+            still = self.compose(self.spotlight(drawn, target) if target else drawn, (drags[-1]['x'], drags[-1]['y']), caption=caption)
+        else:
+            still = self.compose(lit, dest, caption=caption)
+        still.save(os.path.join(self.folder, f'step-{index:02d}.png'))
+        small = target is not None and target['width'] <= SMALL_TARGET_PX and target['height'] <= SMALL_TARGET_PX
         zoom = self.zoom if small and self.zoom > 1 else 1.0
         yield from self.travel_frames(before, lit, dest, caption)
-        # the zoom is slow enough to be read as a zoom, and rests before the click lands
+        # an icon-sized target is zoomed into, slowly enough to be read as a zoom; any other is lit
+        # where it is — either way the target rests under the pointer before the click lands
         if zoom > 1:
             n = int(self.zoom_time * fps)
             for i in range(n):
                 z = 1 + (zoom - 1) * ease((i + 1) / n)
                 yield self.compose(lit, dest, zoom=z, anchor=dest, caption=caption)
-            rest = self.compose(lit, dest, zoom=zoom, anchor=dest, caption=caption)
-            for _ in range(int(0.4 * fps)):
-                yield rest
-        if clicks:
+        rest = self.compose(lit, dest, zoom=zoom, anchor=dest, caption=caption)
+        for _ in range(int(0.4 * fps)):
+            yield rest
+        if clicks_last:
             n = int(0.4 * fps)
             for i in range(n):
                 yield self.compose(lit, dest, ripple=(i + 1) / n, zoom=zoom, anchor=dest, caption=caption)
+        # the drag: the pointer travels to each pictured point over the page as it was, the next
+        # picture fading in as it arrives, so the box grows under the pointer; the step then ends
+        # from the last picture, the pointer where the button was released
+        for p in drags:
+            drawn = self.spotlight(self._image(p['shot']), target) if target else self._image(p['shot'])
+            to = (p['x'], p['y'])
+            n = max(1, int(0.3 * fps))
+            for i in range(n):
+                t = ease((i + 1) / n)
+                pos = (dest[0] + (to[0] - dest[0]) * t, dest[1] + (to[1] - dest[1]) * t)
+                mix = max(0.0, (t - 0.6) / 0.4)
+                yield self.compose(Image.blend(lit, drawn, mix) if mix > 0 else lit, pos, zoom=zoom, anchor=dest, caption=caption)
+            lit, dest = drawn, to
+        if drags:
+            rest = self.compose(lit, dest, zoom=zoom, anchor=dest, caption=caption)
+            for _ in range(int(0.5 * fps)):
+                yield rest
         n = int((self.zoom_time if zoom > 1 else 0.35) * fps)
         for i in range(n):
             t = ease((i + 1) / n)
@@ -326,10 +367,14 @@ def selftest(folder):
     os.makedirs(folder, exist_ok=True)
     w, h = 640, 400
     for name, color in [('01-before.png', (240, 243, 247)), ('01-after.png', (224, 236, 250)),
-                        ('02-before.png', (224, 236, 250)), ('02-after.png', (224, 236, 250))]:
+                        ('02-before.png', (224, 236, 250)), ('02-after.png', (224, 236, 250)),
+                        ('03-before.png', (224, 236, 250)), ('03-drag1.png', (224, 236, 250)),
+                        ('03-drag2.png', (224, 236, 250)), ('03-after.png', (224, 236, 250))]:
         img = Image.new('RGB', (w, h), color)
         d = ImageDraw.Draw(img)
         d.rectangle((40, 40, 120, 64), fill=(32, 131, 213))
+        if name.startswith('03-drag'):
+            d.rectangle((200, 100, 200 + 60 * int(name[7]), 100 + 40 * int(name[7])), fill=(180, 180, 180))
         d.text((300, 200), name, fill=(40, 40, 40))
         img.save(os.path.join(folder, name))
     manifest = {'feature': 'Self test', 'scenario': 'Two synthetic steps', 'description': '', 'tags': [],
@@ -340,7 +385,12 @@ def selftest(folder):
                      'clicks': [{'x': 80, 'y': 52, 'button': 'left'}], 'keys': [], 'typed': '', 'ms': 10},
                     {'index': 2, 'line': 2, 'keyword': 'Then', 'text': 'the page should be blue', 'caption': 'The page is blue',
                      'kind': 'check', 'before': '02-before.png', 'after': '02-after.png', 'pointer': [], 'clicks': [],
-                     'keys': ['Enter'], 'typed': '', 'ms': 5}]}
+                     'keys': ['Enter'], 'typed': '', 'ms': 5},
+                    {'index': 3, 'line': 3, 'keyword': 'When', 'text': 'user drags across the page', 'caption': 'Drag across the page',
+                     'kind': 'action', 'before': '03-before.png', 'after': '03-after.png',
+                     'target': {'x': 180, 'y': 80, 'width': 300, 'height': 200},
+                     'pointer': [{'x': 200, 'y': 100}, {'x': 260, 'y': 140, 'shot': '03-drag1.png'}, {'x': 320, 'y': 180, 'shot': '03-drag2.png'}],
+                     'clicks': [{'x': 200, 'y': 100, 'button': 'left'}], 'keys': [], 'typed': '', 'ms': 10}]}
     with open(os.path.join(folder, 'steps.json'), 'w', encoding='utf-8') as f:
         json.dump(manifest, f)
 

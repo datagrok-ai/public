@@ -5,6 +5,10 @@ into the Playwright specs under `generated/` — committed, never edited by hand
 holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
 `viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`viewers/grid/grid-context-menu.feature` is not a translation but the reproduction of a bug
+(2026-09-22: a right click put the current row back where it was and scrolled there), kept as the
+proof that a right-clicked cell becomes current and that the Current Value actions of Chem and Helm
+act on it — the stand needs those two packages;
 `features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
 (seven viewers sharing one legend column, the legend under filters, its placement, molecules in
 it; the section's scatter plot and line chart cases went into those viewers' legend features);
@@ -73,10 +77,10 @@ From a fresh checkout of `public`, against a local stand on `http://localhost:88
 `DATAGROK_URL=https://… npx grok-bdd run`):
 
 ```bash
-cd public/libraries/bdd && npm ci && npm run build   # the library (a path dependency of this package; dist/ is not committed)
-npx playwright install chromium                      # its browser, once per machine (here, not in the package)
-cd ../../packages/UsageAnalysis && npm ci            # the package; npm links the library in and puts grok-bdd in .bin
-npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
+cd public && grok setup                              # once per checkout: the pnpm workspace (needs `npm i -g datagrok-tools`)
+cd libraries/bdd && npm run build                    # the library (a workspace dependency of this package; dist/ is not committed)
+npx playwright install chromium                      # its browser, once per machine
+cd ../../packages/UsageAnalysis/bdd                  # this bdd project; the workspace already links the library, no `grok-bdd link`
 npx grok-bdd run --reporter=list                     # compile --check, then Playwright on 4 workers
 PLAYWRIGHT_WORKERS=2 npx grok-bdd run                # a stand whose pub serve or datlas falls behind at 4 (bundle loads past 30 s, 502s)
 npx grok-bdd run --workers 2 generated/viewers/box-plot   # any Playwright flag or path passes through

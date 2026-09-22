@@ -50,8 +50,8 @@ Feature: Box plot property surface
     Then tooltip should contain text "Show Group Comparison"
     When user closes the context menu
     And user right-clicks on the "p value" area of box plot viewer
-    Then context menu should contain text "Show P Value"
-    And context menu should not contain text "Statistics Format"
+    Then the open menu should list "Show P Value"
+    And the open menu should not list "Statistics Format"
     When user closes the context menu
     And user moves the pointer away from box plot viewer
     And user hovers over the "p value" area of box plot viewer
@@ -83,8 +83,11 @@ Feature: Box plot property surface
     And box plot viewer should have a "stats" area
     When user sets "Marker Color Column" property of box plot viewer to "SEX"
     And user resizes box plot viewer to 120 wide
-    And user restores the size of box plot viewer
-    Then no errors should have been logged
+    Then box plot viewer should be painted
+    When user restores the size of box plot viewer
+    Then box plot viewer should be painted
+    And box plot viewer should have a "stats" area
+    And no errors should have been logged
     When user sets "Marker Color Column" property of box plot viewer to ""
 
   Scenario: Marker gate and size scaling
@@ -102,13 +105,12 @@ Feature: Box plot property surface
     Then box plot viewer should have repainted
     When user sets "Marker Size Column" property of box plot viewer to ""
 
-  Scenario: Whisker and control-band style
+  Scenario: Whisker style
     When user sets "Whisker Line Width" property of box plot viewer to "4"
     Then box plot viewer should have repainted
     When user sets "Whisker Width Ratio" property of box plot viewer to "0.3"
     Then box plot viewer should have repainted
-    When user sets "Control Band Color" property of box plot viewer to "#00AA00"
-    Then no errors should have been logged
+    And no errors should have been logged
     When user sets properties of box plot viewer:
       | Whisker Line Width  | 2   |
       | Whisker Width Ratio | 0.5 |

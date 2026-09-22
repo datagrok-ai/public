@@ -46,7 +46,10 @@ kind('input', {
   editorSelector: INPUT_EDITOR,
   parts: INPUT_PARTS,
 });
-inputKind('text input', ['text-input'], '.ui-input-text', ['text field', 'textbox']);
+// a bare <input> outside any input host that names itself (aria-label) is a text input too: the
+// Save project dialog's Name
+inputKind('text input', ['text-input'], '.ui-input-text, input[aria-label]:not(.ui-input-root *)', ['text field', 'textbox'],
+  {match: [...INPUT_MATCH, 'aria']});
 inputKind('text area', ['text-area'], '.ui-input-textarea', ['textarea', 'multiline input']);
 inputKind('choice input', ['choice-input'], '.ui-input-choice', ['dropdown', 'choice', 'select']);
 inputKind('multi choice input', ['multi-choice-input'], '', ['multi choice']);

@@ -20,7 +20,7 @@ interface Manifest {
   [key: string]: unknown;
 }
 
-const GITIGNORE = ['bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
+const GITIGNORE = ['bdd/guides/', 'bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
 import {STATES as STATE_LIST} from './states.js';
 
 const STATES = STATE_LIST.join('|');

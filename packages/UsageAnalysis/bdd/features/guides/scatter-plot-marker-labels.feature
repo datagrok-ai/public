@@ -8,6 +8,7 @@ Feature: Label scatter plot markers with the structure, the ID and a potency val
 
   Scenario: Pick the label columns of a scatter plot
     Given user is logged in
+    And simple mode is off
     And user opens spgi dataset
     And user adds a scatter plot viewer with:
       | X | Chemical Space X |
