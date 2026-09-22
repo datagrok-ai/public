@@ -56,7 +56,29 @@ paths:
     post:
       operationId: createSchema
       summary: create schema
-      description: "Creates an empty user-managed domain schema; body {name, friendlyName?, description?}. The physical PostgreSQL schema is 'usr_<name>'; tables are added afterwards via the apply endpoint. Requires the CreateDomainSchema global privilege; the creator receives the full permission set on the schema entity."
+      description: "Creates a user-managed domain schema; body {name, friendlyName?, description?, manifest?}. Without a manifest the schema is born empty (physical PostgreSQL schema 'usr_<name>'; tables are added afterwards via the apply endpoint). With one — it must bind an external storage — the schema is registered in one call as 'ext_<name>' after a live validation of the binding: {id, name, pgSchema, version, binding: {status, validatedOn}}. [dryRun] runs every check and writes nothing: {status: 'ok', issues: []} or the refusal the create would give. Requires the CreateDomainSchema global privilege (and, for a binding, Query on the connection); the creator receives the full permission set on the schema entity."
+      tags:
+        - domains
+      parameters:
+        - name: dryRun
+          in: query
+          required: false
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/draft:
+    post:
+      operationId: draftSchema
+      summary: draft schema
+      description: "Drafts an external schema from a live introspection; body {connection (qualified name or id), schema, catalog?, tables?: [remote names]}. Answers {manifest, inventory: {tables, columns, relations}, diagnostics}: a parseable manifest for the requested (default: every bindable) table, and the inventory of what the draft does not declare and why. Requires CreateDomainSchema plus GetSchema and Query on the connection."
       tags:
         - domains
       requestBody:
@@ -89,6 +111,22 @@ paths:
       operationId: getSchemaSnapshot
       summary: get schema snapshot
       description: "The declaration snapshot the schema was last registered against (MIGRATIONS.md §2); 404 when none is recorded."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/{schema}/validate:
+    post:
+      operationId: validateSchema
+      summary: validate schema
+      description: "Re-validates an external schema's binding against its warehouse (external-bindings §9.2) — the connection policy, the credential proof and the declared tables — and records the outcome: {schema, status, validatedOn, issues}. Requires Edit on the schema entity; a schema stored locally answers 422 `unsupported`."
       tags:
         - domains
       parameters:
@@ -700,7 +738,7 @@ paths:
     get:
       operationId: getAccess
       summary: get access
-      description: "Table-level access of the current user, composed by the server from the predicates the reads and writes apply: {can: {view, insert, edit, delete, share}, fields: {<column>: editable | readonly}, travelableRelations, securingTable, securityMode, audit, hasBusinessKey, support}. `support` is caller-independent — {systemColumns, writes, deleted, restore, audit, ancestors, probe, watch} — and says what the table can do at all, so a client offers only what the server declared. A restricted column is absent from `fields`; read-only registrations answer every write false and every field readonly; grants reaching individual rows show up in the `~can_edit`/`~can_delete`/`~can_share` (null off row mode) columns of a `withAccess` read instead."
+      description: "Table-level access of the current user, composed by the server from the predicates the reads and writes apply: {can: {view, insert, edit, delete, share}, fields: {<column>: editable | readonly}, travelableRelations, securingTable, securityMode, audit, hasBusinessKey, support}. `support` is caller-independent — {systemColumns, writes, deleted, restore, audit, version, ancestors, probe, watch} — and says what the table can do at all, so a client offers only what the server declared. A restricted column is absent from `fields`; read-only registrations answer every write false and every field readonly; grants reaching individual rows show up in the `~can_edit`/`~can_delete`/`~can_share` (null off row mode) columns of a `withAccess` read instead."
       tags:
         - domains
       parameters:
