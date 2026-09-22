@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## v.next
+
+* GROK-20298: The plugin-declared Northwind domain schema is `northwind_demo` (was `northwind`): the name `northwind` is the EXTERNAL binding of the same data (a domain schema over the Northwind connection), and two packages may not ship one schema name
+
 ## 1.11.4 (2026-09-11)
 
 * Tutorials: Links to the Tutorials app and to individual tutorials can now be shared and opened directly

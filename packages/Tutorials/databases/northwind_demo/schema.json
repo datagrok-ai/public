@@ -1,6 +1,6 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
-  "name": "northwind",
+  "name": "northwind_demo",
   "version": "1.0.0",
   "tables": {
     "categories": {

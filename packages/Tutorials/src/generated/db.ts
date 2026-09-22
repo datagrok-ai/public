@@ -7,7 +7,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type {Dayjs} from 'dayjs';
 
-/** Row of `northwind.categories`. */
+/** Row of `northwind_demo.categories`. */
 export interface CategoriesRow {
   id: string;
   version: number;
@@ -18,7 +18,7 @@ export interface CategoriesRow {
   description?: string;
 }
 
-/** Insert payload for `northwind.categories`. */
+/** Insert payload for `northwind_demo.categories`. */
 export interface CategoriesInsert {
   name: string;
   description?: string;
@@ -26,12 +26,12 @@ export interface CategoriesInsert {
 
 export type CategoriesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description';
 
-/** Expand keys of `northwind.categories` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.categories` → fields each adds to the row (consumed by query()/builder). */
 export type CategoriesExpand = {
   'details:products': {products?: ProductsRow[]};
 };
 
-/** Row of `northwind.suppliers`. */
+/** Row of `northwind_demo.suppliers`. */
 export interface SuppliersRow {
   id: string;
   version: number;
@@ -51,7 +51,7 @@ export interface SuppliersRow {
   home_page?: string;
 }
 
-/** Insert payload for `northwind.suppliers`. */
+/** Insert payload for `northwind_demo.suppliers`. */
 export interface SuppliersInsert {
   company_name: string;
   contact_name?: string;
@@ -70,12 +70,12 @@ export type SuppliersColumn = 'id' | 'version' | 'created_on' | 'updated_on' | '
   'contact_name' | 'contact_title' | 'address' | 'city' | 'region' | 'postal_code' | 'country' | 'phone' | 'fax' |
   'home_page';
 
-/** Expand keys of `northwind.suppliers` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.suppliers` → fields each adds to the row (consumed by query()/builder). */
 export type SuppliersExpand = {
   'details:products': {products?: ProductsRow[]};
 };
 
-/** Row of `northwind.products`. */
+/** Row of `northwind_demo.products`. */
 export interface ProductsRow {
   id: string;
   version: number;
@@ -93,7 +93,7 @@ export interface ProductsRow {
   discontinued?: boolean;
 }
 
-/** Insert payload for `northwind.products`. */
+/** Insert payload for `northwind_demo.products`. */
 export interface ProductsInsert {
   name: string;
   supplier_id?: string;
@@ -110,7 +110,7 @@ export type ProductsColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'a
   'category_id' | 'quantity_per_unit' | 'unit_price' | 'units_in_stock' | 'units_on_order' | 'reorder_level' |
   'discontinued';
 
-/** Expand keys of `northwind.products` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.products` → fields each adds to the row (consumed by query()/builder). */
 export type ProductsExpand = {
   'supplier_id': {'supplier_id.company_name'?: string; 'supplier_id.contact_name'?: string;
     'supplier_id.contact_title'?: string; 'supplier_id.address'?: string; 'supplier_id.city'?: string;
@@ -120,7 +120,7 @@ export type ProductsExpand = {
   'details:order_details': {order_details?: OrderDetailsRow[]};
 };
 
-/** Row of `northwind.customers`. */
+/** Row of `northwind_demo.customers`. */
 export interface CustomersRow {
   id: string;
   version: number;
@@ -140,7 +140,7 @@ export interface CustomersRow {
   fax?: string;
 }
 
-/** Insert payload for `northwind.customers`. */
+/** Insert payload for `northwind_demo.customers`. */
 export interface CustomersInsert {
   code: string;
   company_name: string;
@@ -159,12 +159,12 @@ export type CustomersColumn = 'id' | 'version' | 'created_on' | 'updated_on' | '
   'company_name' | 'contact_name' | 'contact_title' | 'address' | 'city' | 'region' | 'postal_code' | 'country' |
   'phone' | 'fax';
 
-/** Expand keys of `northwind.customers` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.customers` → fields each adds to the row (consumed by query()/builder). */
 export type CustomersExpand = {
   'details:orders': {orders?: OrdersRow[]};
 };
 
-/** Row of `northwind.employees`. */
+/** Row of `northwind_demo.employees`. */
 export interface EmployeesRow {
   id: string;
   version: number;
@@ -188,7 +188,7 @@ export interface EmployeesRow {
   reports_to?: string;
 }
 
-/** Insert payload for `northwind.employees`. */
+/** Insert payload for `northwind_demo.employees`. */
 export interface EmployeesInsert {
   last_name: string;
   first_name: string;
@@ -211,7 +211,7 @@ export type EmployeesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | '
   'first_name' | 'title' | 'title_of_courtesy' | 'birth_date' | 'hire_date' | 'address' | 'city' | 'region' |
   'postal_code' | 'country' | 'home_phone' | 'extension' | 'notes' | 'reports_to';
 
-/** Expand keys of `northwind.employees` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.employees` → fields each adds to the row (consumed by query()/builder). */
 export type EmployeesExpand = {
   'reports_to': {'reports_to.last_name'?: string; 'reports_to.first_name'?: string; 'reports_to.title'?: string;
     'reports_to.title_of_courtesy'?: string; 'reports_to.birth_date'?: Dayjs; 'reports_to.hire_date'?: Dayjs;
@@ -223,7 +223,7 @@ export type EmployeesExpand = {
   'details:orders': {orders?: OrdersRow[]};
 };
 
-/** Row of `northwind.shippers`. */
+/** Row of `northwind_demo.shippers`. */
 export interface ShippersRow {
   id: string;
   version: number;
@@ -234,7 +234,7 @@ export interface ShippersRow {
   phone?: string;
 }
 
-/** Insert payload for `northwind.shippers`. */
+/** Insert payload for `northwind_demo.shippers`. */
 export interface ShippersInsert {
   company_name: string;
   phone?: string;
@@ -242,12 +242,12 @@ export interface ShippersInsert {
 
 export type ShippersColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'company_name' | 'phone';
 
-/** Expand keys of `northwind.shippers` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.shippers` → fields each adds to the row (consumed by query()/builder). */
 export type ShippersExpand = {
   'details:orders': {orders?: OrdersRow[]};
 };
 
-/** Row of `northwind.regions`. */
+/** Row of `northwind_demo.regions`. */
 export interface RegionsRow {
   id: string;
   version: number;
@@ -257,19 +257,19 @@ export interface RegionsRow {
   name: string;
 }
 
-/** Insert payload for `northwind.regions`. */
+/** Insert payload for `northwind_demo.regions`. */
 export interface RegionsInsert {
   name: string;
 }
 
 export type RegionsColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name';
 
-/** Expand keys of `northwind.regions` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.regions` → fields each adds to the row (consumed by query()/builder). */
 export type RegionsExpand = {
   'details:territories': {territories?: TerritoriesRow[]};
 };
 
-/** Row of `northwind.territories`. */
+/** Row of `northwind_demo.territories`. */
 export interface TerritoriesRow {
   id: string;
   version: number;
@@ -281,7 +281,7 @@ export interface TerritoriesRow {
   region_id: string;
 }
 
-/** Insert payload for `northwind.territories`. */
+/** Insert payload for `northwind_demo.territories`. */
 export interface TerritoriesInsert {
   code: string;
   name: string;
@@ -291,13 +291,13 @@ export interface TerritoriesInsert {
 export type TerritoriesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'region_id';
 
-/** Expand keys of `northwind.territories` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.territories` → fields each adds to the row (consumed by query()/builder). */
 export type TerritoriesExpand = {
   'region_id': {'region_id.name'?: string};
   'details:employee_territories': {employee_territories?: EmployeeTerritoriesRow[]};
 };
 
-/** Row of `northwind.employee_territories`. */
+/** Row of `northwind_demo.employee_territories`. */
 export interface EmployeeTerritoriesRow {
   id: string;
   version: number;
@@ -308,7 +308,7 @@ export interface EmployeeTerritoriesRow {
   territory_id: string;
 }
 
-/** Insert payload for `northwind.employee_territories`. */
+/** Insert payload for `northwind_demo.employee_territories`. */
 export interface EmployeeTerritoriesInsert {
   employee_id: string;
   territory_id: string;
@@ -317,7 +317,7 @@ export interface EmployeeTerritoriesInsert {
 export type EmployeeTerritoriesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' |
   'employee_id' | 'territory_id';
 
-/** Expand keys of `northwind.employee_territories` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.employee_territories` → fields each adds to the row (consumed by query()/builder). */
 export type EmployeeTerritoriesExpand = {
   'employee_id': {'employee_id.last_name'?: string; 'employee_id.first_name'?: string; 'employee_id.title'?: string;
     'employee_id.title_of_courtesy'?: string; 'employee_id.birth_date'?: Dayjs; 'employee_id.hire_date'?: Dayjs;
@@ -327,7 +327,7 @@ export type EmployeeTerritoriesExpand = {
   'territory_id': {'territory_id.code'?: string; 'territory_id.name'?: string; 'territory_id.region_id'?: string};
 };
 
-/** Row of `northwind.orders`. */
+/** Row of `northwind_demo.orders`. */
 export interface OrdersRow {
   id: string;
   version: number;
@@ -350,7 +350,7 @@ export interface OrdersRow {
   ship_country?: string;
 }
 
-/** Insert payload for `northwind.orders`. */
+/** Insert payload for `northwind_demo.orders`. */
 export interface OrdersInsert {
   order_number: number;
   customer_id?: string;
@@ -372,7 +372,7 @@ export type OrdersColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'aut
   'customer_id' | 'employee_id' | 'order_date' | 'required_date' | 'shipped_date' | 'ship_via' | 'freight' |
   'ship_name' | 'ship_address' | 'ship_city' | 'ship_region' | 'ship_postal_code' | 'ship_country';
 
-/** Expand keys of `northwind.orders` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.orders` → fields each adds to the row (consumed by query()/builder). */
 export type OrdersExpand = {
   'customer_id': {'customer_id.code'?: string; 'customer_id.company_name'?: string;
     'customer_id.contact_name'?: string; 'customer_id.contact_title'?: string; 'customer_id.address'?: string;
@@ -387,7 +387,7 @@ export type OrdersExpand = {
   'details:order_details': {order_details?: OrderDetailsRow[]};
 };
 
-/** Row of `northwind.order_details`. */
+/** Row of `northwind_demo.order_details`. */
 export interface OrderDetailsRow {
   id: string;
   version: number;
@@ -401,7 +401,7 @@ export interface OrderDetailsRow {
   discount?: number;
 }
 
-/** Insert payload for `northwind.order_details`. */
+/** Insert payload for `northwind_demo.order_details`. */
 export interface OrderDetailsInsert {
   order_id: string;
   product_id: string;
@@ -413,7 +413,7 @@ export interface OrderDetailsInsert {
 export type OrderDetailsColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'order_id' |
   'product_id' | 'unit_price' | 'quantity' | 'discount';
 
-/** Expand keys of `northwind.order_details` → fields each adds to the row (consumed by query()/builder). */
+/** Expand keys of `northwind_demo.order_details` → fields each adds to the row (consumed by query()/builder). */
 export type OrderDetailsExpand = {
   'order_id': {'order_id.order_number'?: number; 'order_id.customer_id'?: string; 'order_id.employee_id'?: string;
     'order_id.order_date'?: Dayjs; 'order_id.required_date'?: Dayjs; 'order_id.shipped_date'?: Dayjs;
@@ -425,79 +425,79 @@ export type OrderDetailsExpand = {
     'product_id.units_on_order'?: number; 'product_id.reorder_level'?: number; 'product_id.discontinued'?: boolean};
 };
 
-export type NorthwindTransactionOp =
-  {op: 'insert'; table: 'categories'; ref?: string; values: DG.DomainTxValues<CategoriesInsert>} |
+export type NorthwindDemoTransactionOp =
+  {op: 'insert'; table: 'categories'; ref?: string; values: DG.DomainTxValues<CategoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'categories'; id: string; values: DG.DomainTxValues<Partial<CategoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'categories'; id: string} |
-  {op: 'insert'; table: 'suppliers'; ref?: string; values: DG.DomainTxValues<SuppliersInsert>} |
+  {op: 'insert'; table: 'suppliers'; ref?: string; values: DG.DomainTxValues<SuppliersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'suppliers'; id: string; values: DG.DomainTxValues<Partial<SuppliersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'suppliers'; id: string} |
-  {op: 'insert'; table: 'products'; ref?: string; values: DG.DomainTxValues<ProductsInsert>} |
+  {op: 'insert'; table: 'products'; ref?: string; values: DG.DomainTxValues<ProductsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'products'; id: string; values: DG.DomainTxValues<Partial<ProductsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'products'; id: string} |
-  {op: 'insert'; table: 'customers'; ref?: string; values: DG.DomainTxValues<CustomersInsert>} |
+  {op: 'insert'; table: 'customers'; ref?: string; values: DG.DomainTxValues<CustomersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'customers'; id: string; values: DG.DomainTxValues<Partial<CustomersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'customers'; id: string} |
-  {op: 'insert'; table: 'employees'; ref?: string; values: DG.DomainTxValues<EmployeesInsert>} |
+  {op: 'insert'; table: 'employees'; ref?: string; values: DG.DomainTxValues<EmployeesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'employees'; id: string; values: DG.DomainTxValues<Partial<EmployeesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'employees'; id: string} |
-  {op: 'insert'; table: 'shippers'; ref?: string; values: DG.DomainTxValues<ShippersInsert>} |
+  {op: 'insert'; table: 'shippers'; ref?: string; values: DG.DomainTxValues<ShippersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'shippers'; id: string; values: DG.DomainTxValues<Partial<ShippersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'shippers'; id: string} |
-  {op: 'insert'; table: 'regions'; ref?: string; values: DG.DomainTxValues<RegionsInsert>} |
+  {op: 'insert'; table: 'regions'; ref?: string; values: DG.DomainTxValues<RegionsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'regions'; id: string; values: DG.DomainTxValues<Partial<RegionsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'regions'; id: string} |
-  {op: 'insert'; table: 'territories'; ref?: string; values: DG.DomainTxValues<TerritoriesInsert>} |
+  {op: 'insert'; table: 'territories'; ref?: string; values: DG.DomainTxValues<TerritoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'territories'; id: string; values: DG.DomainTxValues<Partial<TerritoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'territories'; id: string} |
-  {op: 'insert'; table: 'employee_territories'; ref?: string; values: DG.DomainTxValues<EmployeeTerritoriesInsert>} |
+  {op: 'insert'; table: 'employee_territories'; ref?: string; values: DG.DomainTxValues<EmployeeTerritoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'employee_territories'; id: string; values: DG.DomainTxValues<Partial<EmployeeTerritoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'employee_territories'; id: string} |
-  {op: 'insert'; table: 'orders'; ref?: string; values: DG.DomainTxValues<OrdersInsert>} |
+  {op: 'insert'; table: 'orders'; ref?: string; values: DG.DomainTxValues<OrdersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'orders'; id: string; values: DG.DomainTxValues<Partial<OrdersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'orders'; id: string} |
-  {op: 'insert'; table: 'order_details'; ref?: string; values: DG.DomainTxValues<OrderDetailsInsert>} |
+  {op: 'insert'; table: 'order_details'; ref?: string; values: DG.DomainTxValues<OrderDetailsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'order_details'; id: string; values: DG.DomainTxValues<Partial<OrderDetailsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'order_details'; id: string};
 
-/** Typed clients for the `northwind` domain schema tables (lazy — no import-time side effects). */
-export const northwindDb = {
+/** Typed clients for the `northwind_demo` domain schema tables (lazy — no import-time side effects). */
+export const northwindDemoDb = {
   get categorieses() {
-    return grok.dapi.domains.table<CategoriesRow, CategoriesInsert, CategoriesColumn, CategoriesExpand>('northwind.categories');
+    return grok.dapi.domains.table<CategoriesRow, CategoriesInsert, CategoriesColumn, CategoriesExpand>('northwind_demo.categories');
   },
   get supplierses() {
-    return grok.dapi.domains.table<SuppliersRow, SuppliersInsert, SuppliersColumn, SuppliersExpand>('northwind.suppliers');
+    return grok.dapi.domains.table<SuppliersRow, SuppliersInsert, SuppliersColumn, SuppliersExpand>('northwind_demo.suppliers');
   },
   get productses() {
-    return grok.dapi.domains.table<ProductsRow, ProductsInsert, ProductsColumn, ProductsExpand>('northwind.products');
+    return grok.dapi.domains.table<ProductsRow, ProductsInsert, ProductsColumn, ProductsExpand>('northwind_demo.products');
   },
   get customerses() {
-    return grok.dapi.domains.table<CustomersRow, CustomersInsert, CustomersColumn, CustomersExpand>('northwind.customers');
+    return grok.dapi.domains.table<CustomersRow, CustomersInsert, CustomersColumn, CustomersExpand>('northwind_demo.customers');
   },
   get employeeses() {
-    return grok.dapi.domains.table<EmployeesRow, EmployeesInsert, EmployeesColumn, EmployeesExpand>('northwind.employees');
+    return grok.dapi.domains.table<EmployeesRow, EmployeesInsert, EmployeesColumn, EmployeesExpand>('northwind_demo.employees');
   },
   get shipperses() {
-    return grok.dapi.domains.table<ShippersRow, ShippersInsert, ShippersColumn, ShippersExpand>('northwind.shippers');
+    return grok.dapi.domains.table<ShippersRow, ShippersInsert, ShippersColumn, ShippersExpand>('northwind_demo.shippers');
   },
   get regionses() {
-    return grok.dapi.domains.table<RegionsRow, RegionsInsert, RegionsColumn, RegionsExpand>('northwind.regions');
+    return grok.dapi.domains.table<RegionsRow, RegionsInsert, RegionsColumn, RegionsExpand>('northwind_demo.regions');
   },
   get territorieses() {
-    return grok.dapi.domains.table<TerritoriesRow, TerritoriesInsert, TerritoriesColumn, TerritoriesExpand>('northwind.territories');
+    return grok.dapi.domains.table<TerritoriesRow, TerritoriesInsert, TerritoriesColumn, TerritoriesExpand>('northwind_demo.territories');
   },
   get employeeTerritorieses() {
-    return grok.dapi.domains.table<EmployeeTerritoriesRow, EmployeeTerritoriesInsert, EmployeeTerritoriesColumn, EmployeeTerritoriesExpand>('northwind.employee_territories');
+    return grok.dapi.domains.table<EmployeeTerritoriesRow, EmployeeTerritoriesInsert, EmployeeTerritoriesColumn, EmployeeTerritoriesExpand>('northwind_demo.employee_territories');
   },
   get orderses() {
-    return grok.dapi.domains.table<OrdersRow, OrdersInsert, OrdersColumn, OrdersExpand>('northwind.orders');
+    return grok.dapi.domains.table<OrdersRow, OrdersInsert, OrdersColumn, OrdersExpand>('northwind_demo.orders');
   },
   get orderDetailses() {
-    return grok.dapi.domains.table<OrderDetailsRow, OrderDetailsInsert, OrderDetailsColumn, OrderDetailsExpand>('northwind.order_details');
+    return grok.dapi.domains.table<OrderDetailsRow, OrderDetailsInsert, OrderDetailsColumn, OrderDetailsExpand>('northwind_demo.order_details');
   },
-  transaction<T extends NorthwindTransactionOp[]>(ops: [...T]):
+  transaction<T extends NorthwindDemoTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {
-    return grok.dapi.domains.transaction('northwind', ops) as
+    return grok.dapi.domains.transaction('northwind_demo', ops) as
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;
   },
 };
