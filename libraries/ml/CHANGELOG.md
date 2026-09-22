@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Activity cliffs: the scatter plot reports the number of cliffs found as a `cliffs` status reading (what its "N cliffs" button shows)
 * `SearchBaseViewer`: Added `isRenderPending` / `onRendered`; a render that throws no longer leaves the viewer pending for ever
 * Added `searchResultsStatus` — the `search-results` status a card-based search viewer registers: `card <row>` hit areas plus `cards`, `current card`, `selected cards`, `target column` and `limit`, over cards marked with `data-row` and `d4-current` / `d4-selected` (Chem's similarity and diversity viewers)
 

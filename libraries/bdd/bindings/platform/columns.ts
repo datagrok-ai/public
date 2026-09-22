@@ -66,6 +66,11 @@ export const columnTag = Then('{string} column should have tag {string} equal to
   await expect.poll(async () => (await columnFacts(page, column)).tags[tag] ?? '', {message: `tag "${tag}" of "${column}"`}).toBe(value);
 });
 
+export const columnTagLists = Then('the {string} tag of {string} column should list at least {int} values', async (page: Page, tag: string, column: string, count: number) => {
+  const values = ((await columnFacts(page, column)).tags[tag] ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '');
+  expect(values.length, `values in the "${tag}" tag of "${column}": ${values.slice(0, 5).join(', ')}${values.length > 5 ? ', …' : ''}`).toBeGreaterThanOrEqual(count);
+}, {description: 'a comma-separated tag (the .positionNames a numbering run writes on the aligned column)'});
+
 export const columnType = Then('{string} column should have type {string}', async (page: Page, column: string, type: string) => {
   expect((await columnFacts(page, column)).type, `type of "${column}"`).toBe(type);
 }, {description: 'the storage type: string, int, double, ...'});
@@ -114,6 +119,26 @@ export const sameLengthPerGroup = Then('every value of {string} column should ha
   const uneven = [...lengths].filter(([, ls]) => ls.size > 1).map(([k, ls]) => `${group} ${k}: ${[...ls].join(', ')}`);
   expect(uneven, `groups of "${group}" whose "${column}" values differ in length`).toEqual([]);
 }, {description: 'an alignment run per cluster: one width per cluster, not one width overall'});
+
+export const distinctLengths = Then('the values of {string} column should have at least {int} distinct lengths', async (page: Page, column: string, count: number) => {
+  const f = await columnFacts(page, column);
+  const lengths = [...new Set(filled(f).map((i) => f.values[i].length))].sort((a, b) => a - b);
+  expect(lengths.length, `distinct lengths of the filled values of "${column}": ${lengths.join(', ') || 'none'}`).toBeGreaterThanOrEqual(count);
+}, {description: 'the filled cells — an alignment run per cluster pads each cluster to its own width, one global alignment to one'});
+
+export const someValueContains = Then('some value of {string} column should contain {string}', async (page: Page, column: string, text: string) => {
+  const f = await columnFacts(page, column);
+  expect(filled(f).some((i) => f.values[i].includes(text)), `a value of "${column}" containing "${text}"`).toBe(true);
+});
+
+export const columnsEqual = Then('{string} column should hold the same values as {string} column', async (page: Page, a: string, b: string) => {
+  const fa = await columnFacts(page, a);
+  const fb = await columnFacts(page, b);
+  expect(fa.rows, 'rows of the current table').toBeGreaterThan(0);
+  const bad = fa.values.map((x, i) => [i, x, fb.values[i]] as const).filter(([, x, y]) => x !== y)
+    .map(([i, x, y]) => `row ${i + 1}: ${x.slice(0, 30)} ≠ ${y.slice(0, 30)}`);
+  expect(bad, `rows where "${a}" and "${b}" differ`).toEqual([]);
+}, {description: 'row by row, as text; a missing value equals only a missing value'});
 
 export const displayedInRow = Then('the {string} cell of row {int} should be displayed as {string}',
   async (page: Page, column: string, row: number, text: string) => {

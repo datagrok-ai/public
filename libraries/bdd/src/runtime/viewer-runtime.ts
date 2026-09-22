@@ -1120,8 +1120,10 @@ function install(): void {
         commandArm = undefined;
       let resolve!: () => void;
       const done = new Promise<void>((r) => { resolve = r; });
+      // an unsaved call has no id: two undefined ids are not the same call (a transform the
+      // command runs inside itself ended the wait before the command had docked its result)
       const after = grok.functions.onAfterRunAction.subscribe((ended: any) => {
-        if (ended?.dart === fc.dart || ended?.id === fc.id) {
+        if (ended?.dart === fc.dart || (fc.id != null && ended?.id === fc.id)) {
           after.unsubscribe();
           resolve();
         }
@@ -1129,12 +1131,13 @@ function install(): void {
       command = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()};
     });
     commandArm = sub;
-    // a pick that started no call within 5 s is disarmed — this arm only, never a later pick's
+    // a pick that started no call is disarmed after a minute — this arm only, never a later pick's;
+    // the call of a command with a dialog starts on its OK, often well after the pick
     setTimeout(() => {
       sub.unsubscribe();
       if (commandArm === sub)
         commandArm = undefined;
-    }, 5000);
+    }, 60000);
   };
   const waitCommand = async (capMs: number): Promise<string> => {
     // the click's handler may start the call a task or two later
@@ -1148,6 +1151,19 @@ function install(): void {
     if (await Promise.race([c.done.then(() => 'done'), timeout]) === 'timeout')
       throw new Error(`${c.name} has been running for ${Math.round((Date.now() - c.started) / 1000)} s`);
     return c.name;
+  };
+  /** The shell reset waits here: a command a scenario started and never awaited (a known failure
+   * ends at its first failing claim) would otherwise finish on the next feature's shell. */
+  const settleCommand = async (capMs: number): Promise<boolean> => {
+    const c = command;
+    command = undefined;
+    commandArm?.unsubscribe();
+    commandArm = undefined;
+    if (!c)
+      return true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<false>((r) => { timer = setTimeout(() => r(false), capMs); });
+    return Promise.race([c.done.then(() => true), timeout]).finally(() => clearTimeout(timer));
   };
   /** The current table's columns now and before the last menu command; `same` says whether the
    * table is still the one the command started on. */
@@ -1190,7 +1206,7 @@ function install(): void {
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
-    takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, columnsSince, listenCustom, customFired};
+    takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
