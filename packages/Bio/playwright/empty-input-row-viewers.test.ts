@@ -2,7 +2,6 @@ import {expect} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
-import {knownOpenBug} from '@datagrok-libraries/test/src/playwright/known-open-bug';
 test.use(specTestOptions);
 type ViewerCase = {
   label: string;
@@ -175,11 +174,10 @@ for (const vc of viewerCases) {
       }, vc.viewerSelector);
       expect(probe.rowCount, `${vc.label}: source table must not be silently rewritten on empty input`).toBe(baseRowCount);
       expect(probe.docked || probe.balloonCount > 0, `${vc.label}: viewer must react on empty input (dock or reject), not silently no-op`).toBe(true);
-      await knownOpenBug('GROK-16111', () => {
-        expect(probe.balloonCount,
-          `GROK-16111: empty current-row input must surface a rejection balloon. probe=${JSON.stringify(probe)}`)
-          .toBeGreaterThan(0);
-      });
+      // Fails on GROK-16111: empty current-row input must surface a rejection balloon.
+      expect(probe.balloonCount,
+        `GROK-16111: empty current-row input must surface a rejection balloon. probe=${JSON.stringify(probe)}`)
+        .toBeGreaterThan(0);
     });
     finishSpec();
   });
