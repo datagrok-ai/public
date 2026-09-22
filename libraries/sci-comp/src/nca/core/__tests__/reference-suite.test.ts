@@ -486,3 +486,61 @@ describe('reference suite — LambdaZResult.spanRatio', () => {
     expect(ind1.provenance!.lambda_z_adj_r_squared).toBeGreaterThan(0.99);
   });
 });
+
+/**
+ * Byte-identity pin for the 27 committed dense profiles (01/02/03/04) — a
+ * PERMANENT gate, not a one-cycle pin.
+ *
+ * The tolerance assertions above prove PARITY with PKNCA (≤ 0.1 % / 0.5 % /
+ * 1 %); they cannot distinguish "unchanged" from "changed within the gate". A
+ * numbers-changing fix needs the exact pin so its delta is attributable: the
+ * snapshot was committed from UNCHANGED code (GROK-20960, slice U0) and every
+ * later change to any of these profiles fails this test. jest serialises the
+ * numbers exactly, so a 1e-12 drift is a failure, not noise.
+ *
+ * Lifecycle: a future fix that deliberately moves one of these profiles must
+ * update the snapshot (`jest -u`) in ITS OWN commit, with the CHANGELOG naming
+ * the moved profiles — the same attribution discipline this pin was created
+ * for. An unexplained snapshot diff in a review is a defect.
+ */
+describe('computeNca output snapshot @0.10.0 — byte-identity pin for numbers-changing fixes', () => {
+  // The same table the span-ratio block drives: 27 profiles across all four
+  // dense fixtures, so a fifth fixture cannot be silently left unpinned.
+  const SNAPSHOT_FIXTURES: ReadonlyArray<{
+    csv: string; timeCol: string; route: RouteCode;
+    dose: (row: Record<string, number>) => number; tInf?: number;
+  }> = [
+    {csv: '01_theoph.csv', timeCol: 'Time', route: ROUTE_PO, dose: (r) => r.Dose * r.Wt},
+    {csv: '02_indometh.csv', timeCol: 'time', route: ROUTE_IV_BOLUS, dose: () => 25},
+    {csv: '03_rat_simple.csv', timeCol: 'Time', route: ROUTE_PO, dose: (r) => r.Dose},
+    {csv: '04_iv_infusion.csv', timeCol: 'time', route: ROUTE_IV_INFUSION, dose: () => 100, tInf: 1},
+  ];
+
+  it.each([false, true])('compensatedSummation=%s — every profile matches the committed snapshot', (compensated) => {
+    const rules: NcaRules = {...PKNCA_RULES, compensatedSummation: compensated};
+    const out: Record<string, unknown> = {};
+    let n = 0;
+    for (const spec of SNAPSHOT_FIXTURES) {
+      for (const group of loadAndGroup(spec.csv)) {
+        const inputs = buildInputs(group.rows, spec.timeCol,
+          spec.dose(group.rows[0]), spec.route, spec.tInf ?? null);
+        const r = computeNca(inputs, rules);
+        const lz = r.provenance.lambdaZ;
+        out[`${spec.csv}/${group.subject}`] = {
+          status: r.status,
+          values: r.values,
+          lambdaZ: lz === null ? null : {
+            lambdaZ: lz.lambdaZ,
+            pointsUsed: Array.from(lz.pointsUsed),
+            tStart: lz.tStart,
+            tEnd: lz.tEnd,
+            spanRatio: lz.spanRatio,
+          },
+        };
+        n++;
+      }
+    }
+    expect(n).toBe(27);
+    expect(out).toMatchSnapshot();
+  });
+});
