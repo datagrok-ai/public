@@ -722,6 +722,8 @@ export class BrowsePanel extends DartWidget {
   get localTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_MainTree(this.dart); }
   bindItemTooltip(content: string | Element | (() => string | Element), el: Element): void { api.grok_BrowsePanel_BindItemTooltip(this.dart, content, el); }
+  /** Expands the groups along a slash-separated path of node texts (`Platform/Domains/northwind`) and selects the node at its end; a path the tree does not hold is ignored. */
+  async expandPath(path: string): Promise<void> { await api.grok_BrowsePanel_ExpandPath(this.dart, path); }
 }
 
 /** Represents a virtual view, where visual elements are created only when user

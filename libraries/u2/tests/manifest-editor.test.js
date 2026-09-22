@@ -83,7 +83,21 @@ ui('the schema panel: name, friendly name, writable, the access grid with the cr
   const e = await editor();
   assert.deepEqual(e.selected.value, {kind: 'schema'});
   assert.equal(title(e), 'Schemanorthwind');
-  assert.deepEqual(inputNames(e), ['name', 'friendlyName', 'writable', 'access-schema']);
+  assert.deepEqual(inputNames(e), ['friendlyName', 'name', 'writable', 'access-schema']);
+  // every hint is its input's postfix — on the editor's line, never on a line of its own
+  assert.equal(panel(e).querySelector('[data-u2-name="name"] .u2-input-postfix').textContent,
+    'registered as ext_northwind');
+  assert.equal(panel(e).querySelector('[data-u2-name="writable"] .u2-input-postfix').textContent,
+    'users with Edit on a table may insert, update and delete rows in the warehouse');
+  assert.equal(panel(e).querySelector('.u2-manifest-panel-hint'), null, 'no hint spans while editable');
+  const friendly = panel(e).querySelector('[data-u2-name="friendlyName"] input');
+  friendly.value = 'Northwind Sales 2';
+  fire(friendly, 'change');
+  await flush();
+  assert.equal(e.model.name.value, 'northwind_sales_2', 'the identifier follows the friendly name');
+  assert.equal(panel(e).querySelector('[data-u2-name="name"] input').value, 'northwind_sales_2');
+  assert.equal(panel(e).querySelector('[data-u2-name="name"] .u2-input-postfix').textContent,
+    'registered as ext_northwind_sales_2');
   const grid = panel(e).querySelector('.u2-access-grid');
   assert.deepEqual(grid.querySelectorAll('tbody tr').map((r) => r.querySelector('.u2-access-grid-principal').textContent),
     ['You (creator)']);
@@ -112,7 +126,9 @@ ui('the table panel: names, the key as text, the pickers, relationships with the
   assert.equal(title(e), 'Tableorder_details');
   assert.deepEqual(inputNames(e), ['logical', 'friendlyName', 'nameColumn', 'searchable', 'access-order_details']);
   assert.equal(panel(e).querySelector('[data-u2-name="key"] .u2-form-readonly-value').textContent,
-    'orderid, productid — the primary key; the row id encodes it');
+    'orderid, productidthe primary key; the row id encodes it');
+  assert.equal(panel(e).querySelector('[data-u2-name="key"] .u2-manifest-panel-hint').textContent,
+    'the primary key; the row id encodes it', 'the hint on the key line');
   const relations = panel(e).querySelectorAll('.u2-manifest-relation');
   assert.deepEqual(relations.map((r) => r.querySelector('.u2-badge').textContent), ['ref', 'plain value']);
   assert.equal(relations[0].querySelector('.u2-link'), null, 'nothing to fix on a ref');
@@ -140,6 +156,11 @@ ui('the column panel: logical name, the type beside the warehouse type, required
   assert.deepEqual(inputNames(e), ['logical', 'required', 'isName', 'searchable', 'visibility', 'visibleTo']);
   assert.equal(panel(e).querySelector('[data-u2-name="type"] .u2-form-readonly-value').textContent, 'string');
   assert.equal(panel(e).querySelector('[data-u2-name="isName"] .u2-input-checkbox').checked, true);
+  assert.equal(panel(e).querySelector('[data-u2-name="isName"] .u2-input-postfix').textContent,
+    'shown wherever a row is referred to');
+  assert.equal(panel(e).querySelector('[data-u2-name="searchable"] .u2-input-postfix').textContent,
+    'one per table');
+  assert.equal(panel(e).querySelectorAll('.u2-manifest-panel-note').length, 1, 'only the visibility note stands alone');
   assert.equal(panel(e).querySelector('.u2-manifest-relation'), null, 'no foreign key, no Reference section');
   const chips = panel(e).querySelectorAll('.u2-chip');
   assert.deepEqual(chips.map((c) => c.textContent), ['Sales', 'Developers']);
@@ -162,6 +183,39 @@ ui('the column panel: logical name, the type beside the warehouse type, required
   await select(e, 'shipvia');
   assert.equal(panel(e).querySelector('.u2-manifest-relation').textContent,
     'foreign key to shippersplain valueshippers is not in the draft');
+  e.dispose();
+});
+
+ui('a principal picker feeds the access grid and the visibility chips; the value stays {id, label}', async () => {
+  const picks = [];
+  const e = await editor({groups: [], principalPicker: (onPick) => {
+    const b = document.createElement('button');
+    b.className = 'test-pick';
+    b.addEventListener('click', () => onPick({id: 'g-sales', label: 'Sales'}));
+    picks.push(b);
+    return b;
+  }});
+  assert.equal(panel(e).querySelector('.u2-access-grid-add'), null, 'no select when a picker is given');
+  panel(e).querySelector('.u2-access-grid tfoot .test-pick').click();
+  await flush();
+  assert.deepEqual(e.access.grants.value, [{scope: {kind: 'schema'}, group: {id: 'g-sales', label: 'Sales'},
+    view: true, edit: false, delete: false}]);
+  assert.deepEqual(panel(e).querySelectorAll('.u2-access-grid-principal').map((p) => p.textContent),
+    ['You (creator)', 'Sales'], 'a picked principal is shown by its label');
+  await select(e, 'shipname');
+  const visiblePicker = () => panel(e).querySelector('[data-u2-name="visibleTo"] .u2-input-box .test-pick');
+  assert.equal(visiblePicker().style.display, 'none', 'visible to everyone: no picker to restrict with');
+  const radios = panel(e).querySelectorAll('[data-u2-name="visibility"] input');
+  radios[0].checked = false;
+  radios[1].click();
+  await flush();
+  assert.equal(visiblePicker().style.display, '', 'only these groups: the picker is offered');
+  assert.deepEqual(panel(e).querySelectorAll('.u2-chip').map((c) => c.textContent), [], 'nothing offered up front');
+  visiblePicker().click();
+  await flush();
+  assert.deepEqual(panel(e).querySelectorAll('.u2-chip').map((c) => [c.textContent, c.getAttribute('aria-pressed')]),
+    [['Sales', 'true']]);
+  assert.deepEqual(e.access.visibilityOf('orders', 'shipname'), [{id: 'g-sales', label: 'Sales'}]);
   e.dispose();
 });
 
@@ -206,7 +260,9 @@ ui('view mode: every field is text, the checkboxes are locked, the access grid c
   const e = await editor({context: {mode: 'view', storage: 'external'}});
   assert.equal(e.offer.editable, false);
   assert.deepEqual(panel(e).querySelectorAll('[data-u2="readonly-field"]').map((f) => f.dataset.u2Name),
-    ['name', 'friendlyName', 'writable']);
+    ['friendlyName', 'name', 'writable']);
+  assert.equal(panel(e).querySelector('[data-u2-name="name"] .u2-form-readonly-value .u2-manifest-panel-hint').textContent,
+    'registered as ext_northwind');
   assert.equal(panel(e).querySelector('.u2-access-grid-add').disabled, true);
   assert.equal(rowOf(e, 'orders').querySelector('.u2-tree-check').disabled, true);
   assert.equal(e.tree.root.querySelector('.u2-manifest-tree-header .u2-link'), null, 'no Check all / Clear');

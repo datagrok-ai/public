@@ -12,13 +12,18 @@ import type {AccessJson, AccessPrincipal, DraftEnvelope, ManifestDiagnostic, Man
   from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 import {ManifestContextPanel} from './manifest-panel.js';
+import type {PrincipalPicker} from './manifest-panel.js';
 
 export interface ManifestEditorOptions {
   context: EditorContext;
-  /** The groups the access pickers offer — by id with a label, or a bare name that is both. */
+  /** The groups the access pickers offer up front — by id with a label, or a bare name that is both. */
   groups?: (string | AccessPrincipal)[];
+  /** The look-up that finds any other group or user (the platform's picker, in the dialog). */
+  principalPicker?: PrincipalPicker;
   /** The schema's friendly name, carried beside the manifest. */
   friendlyName?: string;
+  /** The registered schema names, which `ManifestModel.proposeName` steers clear of. */
+  takenNames?: string[];
   /** Access rows to start from (an editor reopened on what it produced). */
   access?: Partial<AccessJson>;
   /** The left pane's share of the width (0.42 by default). */
@@ -69,7 +74,7 @@ export class ManifestEditor extends Control {
   constructor(draft: DraftEnvelope, options: ManifestEditorOptions) {
     super();
     this.context = options.context;
-    this.model = new ManifestModel(draft, {friendlyName: options.friendlyName});
+    this.model = new ManifestModel(draft, {friendlyName: options.friendlyName, takenNames: options.takenNames});
     this.access = new AccessModel(options.access);
     this.diagnostics = signal<ManifestDiagnostic[]>(draft.diagnostics ?? []);
     this.root.classList.add('u2-manifest-editor');
@@ -79,7 +84,8 @@ export class ManifestEditor extends Control {
     this.selected = this.tree.selected;
     this.panel = this.runInScope(() => new ManifestContextPanel(this.model, {selected: this.selected,
       access: this.access, context: options.context, groups: options.groups?.map((g) => AccessModel.principal(g)),
-      diagnostics: this.diagnostics, writableDisabled: options.writableDisabled}));
+      principalPicker: options.principalPicker, diagnostics: this.diagnostics,
+      writableDisabled: options.writableDisabled}));
     const share = options.treeShare ?? 0.42;
     const splitter = this.runInScope(() => new Splitter([this.tree, this.panel],
       {direction: 'horizontal', sizes: [share, 1 - share], minSize: 200}));

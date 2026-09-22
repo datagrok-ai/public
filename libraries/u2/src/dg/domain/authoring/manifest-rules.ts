@@ -25,6 +25,15 @@ export class ManifestRules {
       `${what} name must be lowercase letters, digits and underscores, starting with a letter`;
   }
 
+  /** The identifier a free-text name harmonizes to: lower case, runs of anything else folded to one
+   * underscore, `s_` in front when it does not start with a letter, cut to the schema length. */
+  static identifier(text: string): string {
+    let id = text.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    if (id !== '' && !/^[a-z]/.test(id))
+      id = `s_${id}`;
+    return id.slice(0, ManifestRules.MAX_SCHEMA_NAME_LENGTH).replace(/_+$/, '');
+  }
+
   static checkSchemaName(name: string): string | null {
     const problem = ManifestRules.checkIdentifier(name, 'Schema');
     if (problem !== null)

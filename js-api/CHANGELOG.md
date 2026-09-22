@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: `grok.shell.browsePanel.expandPath(path)` expands the groups along a slash-separated path of node texts and selects the node at its end
 * GROK-20298: `grok.dapi.permissions.check` takes a fine permission by its qualified name (`'DataConnection.Query'`) beside the four entity ones; `FUNC_TYPES.DOMAIN_ROUTES` / `DOMAIN_AUTHORING` and their `functionRoles` entries
 * GROK-20298: Domains: authoring an external binding — `grok.dapi.domains.draft({connection, schema, catalog?, tables?})` drafts a manifest over a database the caller may query (`DomainDraft` = the manifest, the `inventory` of tables / columns / relations with why something stayed out, `diagnostics`); `createSchema(name, {manifest, dryRun})` creates an external binding from a manifest (validated live, `ext_<name>`) or answers the dry run (`DomainSchemaDryRun`; typed as `DomainSchemaCreated` otherwise); `DomainSchemaClient.validate()` (`DomainSchemaValidation`); `DomainManifestValidationError.errors` typed as `DomainManifestIssue[]` (`{path, code, message}`)
 * GROK-20298: Domains: `DomainSupport` gains `updateWhere`, `captions`, `transaction`, `concurrency` (`'version' | 'expected' | 'none'`), `filters` (`'full' | 'basic'`) and `batch` (`{upsert, partial, validate, skipDuplicates}`); `DomainTableInfo.rowAddress`; `FieldAccess` gains `'immutable'` (settable on insert, read-only afterwards) and the frame editor admits it on new rows only

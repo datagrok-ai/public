@@ -1,8 +1,9 @@
 /* Binding authoring end to end (EMS external bindings, authoring WO-A4): the PowerPack function
-   opens the u2 "Create domain schema" dialog over the Northwind connection preset to `orders`;
-   NEXT › a name › NEXT › VALIDATE › CREATE registers a throwaway schema and opens the u2 app over
-   its `orders`; the schema is deleted afterwards. Northwind itself is never written. Skips itself
-   without the connection or the CreateDomainSchema privilege. */
+   opens the u2 "Create domain schema" dialog over the Northwind connection preset to `orders` —
+   on the Design step, the identifier proposed from the connection and the schema; a name › NEXT ›
+   VALIDATE › CREATE registers a throwaway schema and opens the u2 app over its `orders`; the
+   schema is deleted afterwards. Northwind itself is never written. Skips itself without the
+   connection or the CreateDomainSchema privilege. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
@@ -69,10 +70,12 @@ category('U2: domain authoring', () => {
     const running = grok.functions.call('PowerPack:createDomainBinding',
       {connection, schema: 'public', table: 'orders'}) as Promise<string | null>;
     await until(() => /bindable/.test(document.querySelector('.u2-binding-facts')?.textContent ?? ''), 'the draft');
-    await until(() => buttonNamed('NEXT')?.disabled === false, 'NEXT after the draft');
-    buttonNamed('NEXT')!.click();
-    await until(() => document.querySelector('.u2-manifest-editor') !== null, 'the Design step');
+    await until(() => document.querySelector('.u2-manifest-editor') !== null, 'the Design step, opened on');
+    expect(document.querySelector('.u2-wizard-step-current')?.textContent, '2Design', 'connection and schema preset');
     const nameInput = document.querySelector<HTMLInputElement>('.u2-manifest-editor [data-u2-name="name"] input')!;
+    expect(/^[a-z][a-z0-9_]*$/.test(nameInput.value), true, `a proposed identifier: "${nameInput.value}"`);
+    expect(document.querySelector('.u2-manifest-editor [data-u2-name="name"] .u2-input-postfix')?.textContent,
+      `registered as ext_${nameInput.value}`);
     nameInput.value = name;
     nameInput.dispatchEvent(new Event('change', {bubbles: true}));
     await until(() => buttonNamed('NEXT')?.disabled === false, 'NEXT after the name');
@@ -88,8 +91,9 @@ category('U2: domain authoring', () => {
     const result = await running;
     expect(result, name);
     expect(document.querySelector('.u2-binding-dialog'), null, 'the dialog closed');
-    const schema = await grok.dapi.domains.schemas.filter(`name = "${name}"`).first();
-    expect(schema?.name, name, 'registered');
+    // not `filter('name = …')`: a schema registered with a friendly name is not found by it
+    const schemas = await grok.dapi.domains.schemas.list({pageSize: 500});
+    expect(schemas.some((s) => s.name === name), true, 'registered');
     await until(() => [...grok.shell.views].some((v) => (v.path ?? '').includes(`/domains/${name}/orders`)),
       'the u2 app over orders');
     // the fixture's Northwind (the local demo container) ships 830 orders

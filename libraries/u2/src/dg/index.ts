@@ -13,6 +13,8 @@ export type {PropertyEditorOptions} from './forms/property-editor.js';
 export {fromDartInput, PlatformInput} from './inputs/from-dart-input.js';
 export type {DartInputLike} from './inputs/from-dart-input.js';
 export {userInput} from './inputs/user-input.js';
+export {groupInput} from './inputs/group-input.js';
+export type {GroupInputOptions} from './inputs/group-input.js';
 export {dapiSource, dapiPager, sanitizeFilterValue} from './entities/dapi-source.js';
 export type {DapiSourceLike, DapiSourceOptions, DapiPagerSourceLike, DapiPagerOptions} from './entities/dapi-source.js';
 export {handlerRenderer, HandlerRenderer, chip, EntityChip, entityCard, EntityCard, entityInput}

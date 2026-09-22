@@ -124,3 +124,18 @@
   color: var(--dg-text-color-light);
   font-size: var(--dg-font-size-small);
 }
+
+/* a hint after a read-only value (an editable input carries its hint as the postfix) */
+.u2-manifest-panel-hint {
+  margin-left: var(--dg-space-m);
+  overflow: hidden;
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* the group look-up beside the visibility chips */
+.u2-manifest-panel .u2-input-box > .u2-typeahead {
+  margin-left: var(--dg-space-m);
+}

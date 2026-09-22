@@ -7,6 +7,11 @@ import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
 import {Wizard} from '../src/components/containers/wizard.js';
 
+test('an unknown start step is refused', () => {
+  assert.throws(() => new Wizard({steps: [{id: 'a', title: 'A', content: document.createElement('div')}],
+    start: 'nope'}), /no step "nope"/);
+});
+
 function wizard(name, body) {
   test(name, async () => {
     const live = Scope.liveCount;

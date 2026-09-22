@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {expectNoThrow} from '../helpers';
 
 // DG.BrowsePanel — navigation tree accessors + item-tooltip binding, reached via grok.shell.browsePanel.
@@ -42,6 +42,28 @@ category('AI: App: BrowsePanel JS API', () => {
     } finally {
       el.remove();
     }
+  });
+
+  test('expandPath expands the groups along a path of node texts without selecting', async () => {
+    const tree = grok.shell.browsePanel.mainTree;
+    const before = tree.currentItem?.text;
+    // Settings: always there, its sections loaded on the first expand (Domains is Beta-gated)
+    await grok.shell.browsePanel.expandPath('Platform/Settings');
+    const platform = tree.children.find((n) => n.text === 'Platform') as DG.TreeViewGroup;
+    expect(platform?.expanded, true, 'Platform expanded');
+    const settings = platform.children.find((n) => n.text === 'Settings') as DG.TreeViewGroup;
+    expect(settings?.expanded, true, 'Settings expanded');
+    for (let i = 0; i < 50 && settings.children.length === 0; i++)
+      await delay(100);
+    expect(settings.children.length > 0, true, 'Settings loaded its sections');
+    expect(tree.currentItem?.text, before, 'the selection is untouched');
+    let threw = false;
+    try {
+      await grok.shell.browsePanel.expandPath('Platform/No such node');
+    } catch {
+      threw = true;
+    }
+    expect(threw, false, 'an unknown path is ignored');
   });
 
   test('bindItemTooltip with a function content provider does not throw', async () => {

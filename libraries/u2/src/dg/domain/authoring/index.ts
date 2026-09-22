@@ -14,7 +14,7 @@ export type {DraftEnvelope, DraftInventory, InventoryTable, InventoryColumn, Inv
   ManifestTableJson, ManifestColumnJson, ManifestStorageJson, ManifestDiagnostic, ManifestSelection, TableView,
   ColumnView, RelationView, AccessGrant, AccessCapability, ColumnVisibility, AccessJson} from './manifest-model.js';
 export type {ManifestTreeOptions, ManifestNode} from './manifest-tree.js';
-export type {ManifestContextPanelOptions} from './manifest-panel.js';
+export type {ManifestContextPanelOptions, PrincipalPicker} from './manifest-panel.js';
 export type {EditorContext, EditorMode, EditorStorage, FieldOffer} from './editor-context.js';
 
 /** The namespace `domains.authoring` exposes; a plain object, so the dialog lane extends it. */

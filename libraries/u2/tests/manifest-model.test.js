@@ -215,3 +215,27 @@ test('the field offer: the external vocabulary under create and view; the other 
   assert.throws(() => fieldOffer({mode: 'create', storage: 'domain'}), /not built yet/);
   assert.throws(() => fieldOffer({mode: 'edit', storage: 'external'}), /"edit" mode is not built yet/);
 });
+
+test('the identifier follows the friendly name, harmonized and free of the registered names, until set by hand', () => {
+  assert.equal(ManifestRules.identifier('Northwind public'), 'northwind_public');
+  assert.equal(ManifestRules.identifier('  2nd DB — Sales!  '), 's_2nd_db_sales');
+  assert.equal(ManifestRules.identifier('x'.repeat(70)).length, ManifestRules.MAX_SCHEMA_NAME_LENGTH);
+  const model = new ManifestModel(draft(), {takenNames: ['northwind_public', 'northwind_public_2']});
+  assert.equal(model.name.value, 'northwind', 'the draft name until a friendly name is given');
+  model.setSchemaFriendlyName('Northwind public');
+  assert.equal(model.name.value, 'northwind_public_3');
+  model.setSchemaFriendlyName('Grants');
+  assert.equal(model.name.value, 'grants_2', 'a reserved route name is stepped over too');
+  model.setSchemaName('nw');
+  model.setSchemaFriendlyName('Northwind public');
+  assert.equal(model.name.value, 'nw', 'set by hand: the friendly name no longer drives it');
+  assert.equal(model.toJSON().name, 'nw');
+  model.setSchemaName('');
+  assert.equal(model.name.value, 'northwind_public_3', 'cleared: it follows the friendly name again');
+  model.setSchemaFriendlyName('Sales');
+  assert.equal(model.name.value, 'sales');
+  const rev = model.revision.value;
+  model.setSchemaName('');
+  assert.equal(model.name.value, 'sales');
+  assert.equal(model.revision.value, rev + 1, 'cleared to the name it had: a view still re-renders');
+});

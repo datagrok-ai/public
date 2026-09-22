@@ -30,8 +30,11 @@ export interface AccessGridOptions extends InputOptions<AccessRow[]> {
   inherited?: LiveOption<InheritedAccessRow[]>;
   /** Capabilities that cannot be granted now; their boxes stay, disabled. */
   locked?: LiveOption<string[]>;
-  /** The picker's placeholder ('+ add group or user…' by default). */
+  /** The add select's placeholder ('+ add group or user…' by default); ignored with `picker`. */
   addText?: string;
+  /** The add control in place of the select — a look-up over a directory, say; every pick is
+   * handed to `add`, and a principal picked that way joins the labels. */
+  picker?: (add: (item: {value: string, label: string}) => void) => HTMLElement;
 }
 
 function itemValue(item: ChoiceItem): string {
@@ -44,7 +47,7 @@ function itemLabel(item: ChoiceItem): string {
 
 export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
   private _body!: HTMLElement;
-  private _picker!: HTMLSelectElement;
+  private _picker: HTMLSelectElement | undefined;
   private _capabilities!: {name: string, label: string}[];
   private _principals!: ChoiceItem[];
   private _inherited!: InheritedAccessRow[];
@@ -88,11 +91,17 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     const tfoot = document.createElement('tfoot');
     tfoot.append(foot);
     table.append(thead, this._body, tfoot);
-    this._picker = document.createElement('select');
-    this._picker.className = 'u2-access-grid-add';
-    this._picker.setAttribute('aria-label', this.options.addText ?? '+ add group or user…');
-    cell.append(this._picker);
-    this._listen(this._picker, 'change', () => this._add(this._picker.value));
+    const picker = this.options.picker;
+    if (picker !== undefined)
+      cell.append(picker((item) => this._add(item.value, item.label)));
+    else {
+      const select = document.createElement('select');
+      select.className = 'u2-access-grid-add';
+      select.setAttribute('aria-label', this.options.addText ?? '+ add group or user…');
+      cell.append(select);
+      this._picker = select;
+      this._listen(select, 'change', () => this._add(select.value));
+    }
     this._listen(this._body, 'change', (e) => this._onChange(e.target as HTMLInputElement));
     this._listen(this._body, 'click', (e) => this._onClick(e.target as HTMLElement));
     this.effect(() => {
@@ -148,8 +157,10 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
   }
 
   private _fillPicker(): void {
-    const taken = new Set([...this.value.peek(), ...this._inherited].map((r) => r.principal));
     const picker = this._picker;
+    if (picker === undefined)
+      return;
+    const taken = new Set([...this.value.peek(), ...this._inherited].map((r) => r.principal));
     picker.textContent = '';
     picker.append(new Option(this.options.addText ?? '+ add group or user…', ''));
     for (const item of this._principals) {
@@ -159,9 +170,11 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     picker.value = '';
   }
 
-  private _add(principal: string): void {
+  private _add(principal: string, label?: string): void {
     if (principal === '' || this.value.peek().some((r) => r.principal === principal))
       return;
+    if (label !== undefined && !this._principals.some((p) => itemValue(p) === principal))
+      this._principals = [...this._principals, {value: principal, label}];
     const can: Record<string, boolean> = {};
     for (const c of this._capabilities)
       can[c.name] = c === this._capabilities[0];

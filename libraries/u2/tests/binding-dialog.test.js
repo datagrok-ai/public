@@ -1,6 +1,8 @@
 /* The "Create domain schema" dialog over stubbed dapi calls: the draft is read once the
-   connection and the schema are picked, the Design step is built over it (one table included when
-   the caller named one), the review shows the manifest, VALIDATE is the dry run bound to the exact
+   connection and the schema are picked (both preset: the dialog opens on Design, the Connection
+   step a BACK away), the Design step is built over it (one table included when the caller named
+   one; the identifier proposed from the connection and the schema, clear of the registered
+   names; the platform group picker in the access grids), the review shows the manifest, VALIDATE is the dry run bound to the exact
    payload it checked (a refusal lands on the rows and blocks CREATE; a payload changed since is
    not validated), CREATE is the real one followed by the column restrictions and then the table
    grants — a schema row is the same grant on every included table, never a schema grant — and
@@ -48,14 +50,14 @@ function stub(calls, dryRun, failing = {}) {
   grok.events.fireCustomEvent = (id, args) => calls.push(['event', id, args]);
   grok.dapi.connections = {list: async () => [CONN], getSchemas: async () => ['public', 'audit']};
   grok.dapi.permissions = {check: async (_c, right) => right !== 'DataConnection.RemoveRows'};
-  grok.dapi.groups = {filter: () => ({list: async () =>
-    [{id: 'g-sales', friendlyName: 'Sales'}, {id: 'g-dev', friendlyName: 'Developers'},
-      {id: 'g-dev-2', friendlyName: 'Developers'}]})};
+  grok.dapi.groups = {getGroupsLookup: async (query) => [{id: 'g-sales', friendlyName: 'Sales', personal: false},
+    {id: 'u-sam', friendlyName: 'Sam Sales', personal: true}].filter((g) => g.friendlyName.toLowerCase().includes(query))};
   const refuse = (step) => {
     if (failing[step])
       throw new Error(failing[step]);
   };
   Object.assign(grok.dapi.domains, {
+    schemas: {list: async () => [{name: 'postgresnorthwind_public'}]},
     draft: async (body) => {
       calls.push(['draft', body]);
       return JSON.parse(JSON.stringify(DRAFT));
@@ -85,13 +87,23 @@ const reason = () => document.querySelector('.u2-wizard-reason').textContent;
 const status = () => document.querySelector('.u2-wizard-status');
 const accessCalls = (calls) => calls.filter((c) => c[0].endsWith('grant') || c[0].endsWith('Column')).map((c) => c.join(' '));
 
-/** Connection › Design (the name set) › Review, ready to validate. */
+/** Design (opened on, the name set) › Review, ready to validate. */
 async function toReview(dialog, name) {
   await flush();
+  dialog.editor.model.setSchemaName(name);
   dialog.wizard.next();
   await flush();
-  dialog.editor.model.name.value = name;
-  dialog.wizard.next();
+}
+
+/** A pick in the platform group picker: the look-up is typed into (past its debounce), the first
+ * row — highlighted as the candidates land — taken with Enter. */
+async function pick(input, query) {
+  input.focus();
+  input.value = query;
+  fire(input, 'input');
+  await new Promise((r) => setTimeout(r, 200));
+  await flush();
+  fire(input, 'keydown', {key: 'Enter'});
   await flush();
 }
 
@@ -112,31 +124,54 @@ scoped('connection › design › review › created: draft, dry run, create, re
   assert.match(document.querySelector('.u2-binding-facts').textContent, /Postgres · public: \d+ of \d+ tables bindable/);
   assert.equal(document.querySelector('.u2-binding-access').textContent,
     'You may introspect and query this connection; writes need RemoveRows on the connection, which you lack');
-  assert.equal(buttonNamed('NEXT').disabled, false);
-
-  dialog.wizard.next();
-  await flush();
-  assert.equal(dialog.wizard.currentStep.value, 'design');
+  assert.equal(dialog.wizard.currentStep.value, 'design', 'connection and schema preset: opened on Design');
   const editor = dialog.editor;
   assert.ok(editor, 'the editor is built over the draft');
   assert.deepEqual(editor.model.tables.value.filter((t) => t.included).map((t) => t.remote), ['orders'],
     'only the named table starts included');
-  const writable = editor.panel.root.querySelector('[data-u2-name="writable"] .u2-input-checkbox');
+  assert.equal(editor.model.friendlyName.value, 'PostgresNorthwind public', 'the connection and the remote schema');
+  assert.equal(editor.model.name.value, 'postgresnorthwind_public_2', 'harmonized, past the registered one');
+  const panel = editor.panel.root;
+  assert.equal(panel.querySelector('[data-u2-name="name"] input').value, 'postgresnorthwind_public_2');
+  assert.equal(panel.querySelector('[data-u2-name="name"] .u2-input-postfix').textContent,
+    'registered as ext_postgresnorthwind_public_2');
+  const writable = panel.querySelector('[data-u2-name="writable"] .u2-input-checkbox');
   assert.equal(writable.disabled, true, 'the Writable switch is off with the reason');
-  assert.match(editor.panel.root.textContent, /writes need RemoveRows/);
-  assert.equal(buttonNamed('NEXT').disabled, false, 'the drafted name passes');
-  editor.model.name.value = 'Bad Name';
+  assert.equal(panel.querySelector('[data-u2-name="writable"] .u2-input-postfix').textContent,
+    'writes need RemoveRows on the connection, which you lack');
+  assert.equal(buttonNamed('NEXT').disabled, false, 'the proposed name passes');
+  editor.model.setSchemaName('Bad Name');
   assert.equal(buttonNamed('NEXT').disabled, true);
   assert.match(reason(), /^Name: /);
-  editor.model.name.value = 'northwind_sales';
+  editor.model.setSchemaName('northwind_sales');
+
+  dialog.wizard.back();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'connection', 'the Connection step is a BACK away, pre-filled');
+  assert.equal(dialog.connection.value.value, CONN.id);
+  assert.equal(dialog.schema.value.value, 'public');
+  dialog.wizard.next();
+  await flush();
+  assert.equal(dialog.editor, editor, 'the same draft: the editor is kept');
+
   await editor.select({kind: 'schema'});
   await flush();
-  const picker = editor.panel.root.querySelector('.u2-access-grid-add');
-  assert.deepEqual(picker.querySelectorAll('option').map((o) => o.textContent), ['+ add group or user…', 'Sales',
-    'Developers (g-dev)', 'Developers (g-dev-2)'], 'groups are offered by label, a duplicate name disambiguated');
-  editor.access.addGroup(SCHEMA, SALES);
+  assert.equal(editor.panel.root.querySelector('.u2-access-grid-add'), null, 'no fixed list');
+  await pick(editor.panel.root.querySelector('.u2-access-grid .u2-typeahead input'), 'sales');
+  assert.deepEqual(editor.access.grants.value, [{scope: SCHEMA, group: SALES, view: true, edit: false, delete: false}],
+    'the platform look-up: the pick is stored as {id, label}');
+  assert.equal(editor.panel.root.querySelector('.u2-access-grid .u2-typeahead input').value, '', 'ready for the next');
   editor.access.addGroup(ORDERS, DEV);
   editor.access.setGrant(ORDERS, 'g-dev', 'edit', true);
+  editor.access.setVisibility('orders', 'freight', []);
+  await editor.select({kind: 'column', table: 'orders', column: 'freight'});
+  await flush();
+  await pick(editor.panel.root.querySelector('[data-u2-name="visibleTo"] .u2-typeahead input'), 'sales');
+  assert.deepEqual(editor.access.visibilityOf('orders', 'freight'), [{id: 'g-sales', label: 'Sales'}]);
+  await pick(editor.panel.root.querySelector('[data-u2-name="visibleTo"] .u2-typeahead input'), 'sam');
+  assert.deepEqual(editor.access.visibilityOf('orders', 'freight'), [SALES, {id: 'u-sam', label: 'Sam Sales'}],
+    'a user through the personal group');
+  assert.deepEqual(editor.panel.root.querySelectorAll('.u2-chip').map((c) => c.textContent), ['Sales', 'Sam Sales']);
   editor.access.setVisibility('orders', 'freight', [SALES]);
   assert.equal(buttonNamed('NEXT').disabled, false);
 
@@ -320,6 +355,28 @@ scoped('a draft the server refuses is named on the connection step and blocks NE
   assert.equal(buttonNamed('NEXT').disabled, true);
   assert.equal(reason(), 'You don\'t have DataConnection.Query on connection "x"');
   fire(document.querySelector('.u2-dialog'), 'keydown', {key: 'Escape'});
+  await flush();
+  assert.equal(await done, null);
+});
+
+scoped('a connection alone opens on Connection; Design follows once the schema is picked and the draft is in', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const dialog = new domains.authoring.BindingDialog({connection: CONN});
+  const done = dialog.open();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'connection');
+  assert.equal(buttonNamed('NEXT').disabled, true);
+  assert.equal(reason(), 'Pick a connection and a schema');
+  dialog.schema.value.value = 'audit';
+  await flush();
+  assert.equal(buttonNamed('NEXT').disabled, false);
+  dialog.wizard.next();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'design');
+  assert.equal(dialog.editor.model.friendlyName.value, 'PostgresNorthwind audit');
+  assert.equal(dialog.editor.model.name.value, 'postgresnorthwind_audit');
+  buttonNamed('CANCEL').click();
   await flush();
   assert.equal(await done, null);
 });

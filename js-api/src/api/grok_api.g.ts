@@ -1046,6 +1046,7 @@ export interface IDartApi {
   grok_BrowsePanel_Get_LocalTree(view: any): any;
   grok_BrowsePanel_Get_MainTree(view: any): any;
   grok_BrowsePanel_BindItemTooltip(view: any, content: any, el: any): any;
+  grok_BrowsePanel_ExpandPath(view: any, path: String): Promise<any>;
   grok_InfoPanels_GetAccordion(x: any): any;
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;

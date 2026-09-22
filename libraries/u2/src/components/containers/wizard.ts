@@ -43,6 +43,9 @@ export interface WizardAction {
 
 export interface WizardOptions {
   steps: WizardStep[];
+  /** The step to open on (the first by default); the ones before it count as visited — the host
+   * pre-filled them — so BACK and the rail reach them. */
+  start?: string;
   /** Answering `false` keeps the wizard open — a finish the server refused; the footer waits
    * on a promise. */
   onFinish?: () => void | boolean | Promise<void | boolean>;
@@ -117,6 +120,12 @@ export class Wizard extends Control {
 
     for (const step of options.steps)
       this._addStep(step);
+    const start = options.start === undefined ? 0 : options.steps.findIndex((s) => s.id === options.start);
+    if (start < 0)
+      throw new Error(`Wizard: no step "${options.start}" to start on`);
+    for (const step of options.steps.slice(0, start))
+      this._visited.add(step.id);
+    this._index.value = start;
 
     this.effect(() => this._applyStep());
     this.effect(() => this._applyGate());

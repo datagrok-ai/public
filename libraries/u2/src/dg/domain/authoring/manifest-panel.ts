@@ -31,12 +31,18 @@ import type {AccessGrant, AccessPrincipal, AccessScope, ColumnView, ManifestDiag
   RelationView} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 
+/** Builds a look-up control that hands every picked principal to `onPick` — the platform's group
+ * and user picker, in the access grids and beside the visibility chips. */
+export type PrincipalPicker = (onPick: (principal: AccessPrincipal) => void) => HTMLElement;
+
 export interface ManifestContextPanelOptions {
   selected: ReadonlySignal<ManifestSelection>;
   access: AccessModel;
   context: EditorContext;
-  /** The groups the access pickers offer. */
+  /** The groups the access pickers offer up front. */
   groups?: AccessPrincipal[];
+  /** The look-up that finds any other; without it the pickers offer `groups` alone. */
+  principalPicker?: PrincipalPicker;
   /** Diagnostics addressed by manifest path; the ones about the selected node are listed on top. */
   diagnostics?: ReadonlySignal<ManifestDiagnostic[]>;
   /** Why the Writable switch cannot be turned on here; the switch is then disabled with this hint. */
@@ -56,6 +62,7 @@ export class ManifestContextPanel extends Control {
 
   private readonly _access: AccessModel;
   private readonly _groups: AccessPrincipal[];
+  private readonly _picker: PrincipalPicker | undefined;
   private readonly _diagnostics: ReadonlySignal<ManifestDiagnostic[]> | undefined;
   private readonly _writableDisabled: string | undefined;
   private _shown: Scope | undefined;
@@ -65,6 +72,7 @@ export class ManifestContextPanel extends Control {
     this.offer = fieldOffer(options.context);
     this._access = options.access;
     this._groups = options.groups ?? [];
+    this._picker = options.principalPicker;
     this._diagnostics = options.diagnostics;
     this._writableDisabled = options.writableDisabled;
     this.root.classList.add('u2-manifest-panel');
@@ -99,25 +107,22 @@ export class ManifestContextPanel extends Control {
     const model = this.model;
     const form = new Form({layout: 'wide'});
     const name = model.name.peek();
-    this._field(form, 'Name', 'name', name, () => {
-      const input = new TextInput({label: 'Name', name: 'name', value: name, commitOn: 'change',
-        onChanged: (v) => model.name.value = v});
-      input.addValidator((v) => model.checkSchemaName(v));
-      return input;
-    });
-    form.addElement(ManifestContextPanel._note(
-      `registered as ext_${name}; lowercase letters, digits, underscores`));
     const friendly = model.friendlyName.peek();
     this._field(form, 'Friendly name', 'friendlyName', friendly, () => new TextInput({label: 'Friendly name',
-      name: 'friendlyName', value: friendly, commitOn: 'change', onChanged: (v) => model.friendlyName.value = v}));
+      name: 'friendlyName', value: friendly, commitOn: 'change', onChanged: (v) => model.setSchemaFriendlyName(v)}));
+    this._field(form, 'Identifier', 'name', name, (hint) => {
+      const input = new TextInput({label: 'Identifier', name: 'name', value: name, commitOn: 'change',
+        onChanged: (v) => model.setSchemaName(v), ...hint});
+      input.addValidator((v) => model.checkSchemaName(v));
+      return input;
+    }, `registered as ext_${name}`);
     const writable = model.writable.peek();
     if (this.offer.writable) {
       const hint = this._writableDisabled;
-      this._field(form, 'Writable', 'writable', writable ? 'Yes' : 'No', () => new BoolInput({label: 'Writable',
+      this._field(form, 'Writable', 'writable', writable ? 'Yes' : 'No', (extra) => new BoolInput({label: 'Writable',
         name: 'writable', value: writable, enabled: hint === undefined, tooltipText: hint,
-        onChanged: (v) => model.setWritable(v)}));
-      form.addElement(ManifestContextPanel._note(hint === undefined ?
-        '— users with Edit on a table may insert, update and delete rows in the warehouse' : `— ${hint}`));
+        onChanged: (v) => model.setWritable(v), ...extra}),
+      hint ?? 'users with Edit on a table may insert, update and delete rows in the warehouse');
     }
     form.addElement(ManifestContextPanel._note('Queries run as the platform service with the connection\'s ' +
       'stored credentials; users need View on a table, nothing on the connection.'));
@@ -153,7 +158,9 @@ export class ManifestContextPanel extends Control {
       name: 'friendlyName', value: table.friendlyName, commitOn: 'change',
       onChanged: (v) => model.setFriendlyName(remote, v)}));
     const key = table.key.map((k) => columns.find((c) => c.remote === k)?.logical ?? k).join(', ');
-    form.addElement(ObjectForm.readonlyField('Key', 'key', `${key} — the primary key; the row id encodes it`).row);
+    const keyField = ObjectForm.readonlyField('Key', 'key', key);
+    keyField.value.append(ManifestContextPanel._hint('the primary key; the row id encodes it'));
+    form.addElement(keyField.row);
     const strings = columns.filter((c) => c.supported && c.included && c.type === 'string')
       .map((c) => ({value: c.remote, label: c.logical}));
     const pick = (label: string, name: string, current: ColumnView | undefined,
@@ -166,9 +173,10 @@ export class ManifestContextPanel extends Control {
     if (this.offer.searchable)
       pick('Searchable', 'searchable', columns.find((c) => c.searchable), (r) => model.setSearchable(remote, r));
     if (this.offer.writable && model.writable.peek()) {
-      this._field(form, 'Read-only', 'readOnly', table.readOnly ? 'Yes' : 'No', () => new BoolInput({label: 'Read-only',
-        name: 'readOnly', value: table.readOnly, onChanged: (v) => model.setReadOnly(remote, v)}));
-      form.addElement(ManifestContextPanel._note('— opt this table out of writes'));
+      this._field(form, 'Read-only', 'readOnly', table.readOnly ? 'Yes' : 'No', (hint) => new BoolInput({
+        label: 'Read-only', name: 'readOnly', value: table.readOnly, onChanged: (v) => model.setReadOnly(remote, v),
+        ...hint}),
+      'opt this table out of writes');
     }
     const relations = new Section({title: 'Relationships', collapsible: false});
     const rels = model.relations.peek().filter((r) => r.table === remote);
@@ -206,24 +214,23 @@ export class ManifestContextPanel extends Control {
     form.addElement(ObjectForm.readonlyField('Type', 'type',
       column.dbType === undefined ? type : `${type} ← ${column.dbType}`).row);
     if (this.offer.required) {
-      this._field(form, 'Required', 'required', column.required ? 'Yes' : 'No', () => new BoolInput({label: 'Required',
-        name: 'required', value: column.required, enabled: !column.isKey,
-        onChanged: (v) => model.setRequired(table, remote, v)}));
-      form.addElement(ManifestContextPanel._note(column.isKey ? '— key columns are always required' :
-        '— NOT NULL is not reported by the warehouse; tick it if you know'));
+      this._field(form, 'Required', 'required', column.required ? 'Yes' : 'No', (hint) => new BoolInput({
+        label: 'Required', name: 'required', value: column.required, enabled: !column.isKey,
+        onChanged: (v) => model.setRequired(table, remote, v), ...hint}),
+      column.isKey ? 'key columns are always required' :
+        'NOT NULL is not reported by the warehouse; tick it if you know');
     }
     const isString = column.type === 'string';
     if (this.offer.nameColumn) {
-      this._field(form, 'Name column', 'isName', column.isName ? 'Yes' : 'No', () => new BoolInput({
+      this._field(form, 'Name column', 'isName', column.isName ? 'Yes' : 'No', (hint) => new BoolInput({
         label: 'Name column', name: 'isName', value: column.isName, enabled: isString,
-        onChanged: (v) => model.setNameColumn(table, v ? remote : null)}));
-      form.addElement(ManifestContextPanel._note('— shown wherever a row is referred to'));
+        onChanged: (v) => model.setNameColumn(table, v ? remote : null), ...hint}),
+      'shown wherever a row is referred to');
     }
     if (this.offer.searchable) {
-      this._field(form, 'Searchable', 'searchable', column.searchable ? 'Yes' : 'No', () => new BoolInput({
+      this._field(form, 'Searchable', 'searchable', column.searchable ? 'Yes' : 'No', (hint) => new BoolInput({
         label: 'Searchable', name: 'searchable', value: column.searchable, enabled: isString,
-        onChanged: (v) => model.setSearchable(table, v ? remote : null)}));
-      form.addElement(ManifestContextPanel._note('— one per table'));
+        onChanged: (v) => model.setSearchable(table, v ? remote : null), ...hint}), 'one per table');
     }
     const content: (HTMLElement | Control)[] = [title, form];
     const relation = column.relation;
@@ -263,6 +270,19 @@ export class ManifestContextPanel extends Control {
       onChanged: (ids) => access.setVisibility(table, remote, ids.map((id) => known.find((g) => g.id === id)!))});
     const form = new Form({layout: 'wide'});
     form.add(radio).add(chips);
+    // a pick becomes a pressed chip; the chips stay the place to unpress it
+    if (this._picker !== undefined) {
+      const picker = this._picker((principal) => {
+        if (!known.some((g) => g.id === principal.id)) {
+          known.push(principal);
+          chips.setItems(known.map(ManifestContextPanel._item));
+        }
+        if (!chips.value.peek().includes(principal.id))
+          chips.value.value = [...chips.value.peek(), principal.id];
+      });
+      chips.box.append(picker);
+      chips.effect(() => picker.style.display = some.value ? '' : 'none');
+    }
     section.add(form, ManifestContextPanel._note('Applied after Create as a column restriction; a restricted ' +
       'column is absent from every other user\'s reads, filters and forms.'));
     return section;
@@ -280,9 +300,15 @@ export class ManifestContextPanel extends Control {
     const access = this._access;
     const rows = access.grantsOf(scope).peek();
     const known = this._known(rows.map((g) => g.group));
+    const picker = this._picker;
     const grid = new AccessGrid({name: `access-${scope.kind === 'schema' ? 'schema' : scope.table}`, inline: true,
       capabilities: CAPABILITIES, principals: known.map(ManifestContextPanel._item), inherited, locked,
       enabled: this.offer.editable, value: rows.map((g) => ManifestContextPanel._row(g)),
+      picker: picker === undefined ? undefined : (add) => picker((principal) => {
+        if (!known.some((g) => g.id === principal.id))
+          known.push(principal);
+        add({value: principal.id, label: principal.label});
+      }),
       onChanged: (changed) => access.setGrants(scope, changed.map((r) => ({
         group: known.find((g) => g.id === r.principal)!,
         view: r.can.view === true, edit: r.can.edit === true, delete: r.can.delete === true})))});
@@ -298,12 +324,22 @@ export class ManifestContextPanel extends Control {
     return {value: g.id, label: g.label};
   }
 
-  /** An editor where the offer allows an edit, the value as text otherwise. */
-  private _field(form: Form, label: string, name: string, text: string, build: () => Input<any>): void {
+  /** An editor where the offer allows an edit, the value as text otherwise; the hint sits on the
+   * same line, after the editor — the input's postfix, or a span after the text. */
+  private _field(form: Form, label: string, name: string, text: string,
+    build: (hint: {postfix?: string}) => Input<any>, hint?: string): void {
     if (this.offer.editable)
-      form.add(build());
-    else
-      form.addElement(ObjectForm.readonlyField(label, name, text).row);
+      form.add(build(hint === undefined ? {} : {postfix: hint}));
+    else {
+      const field = ObjectForm.readonlyField(label, name, text);
+      if (hint !== undefined)
+        field.value.append(ManifestContextPanel._hint(hint));
+      form.addElement(field.row);
+    }
+  }
+
+  private static _hint(text: string): HTMLElement {
+    return span(text, 'u2-manifest-panel-hint');
   }
 
   private static _row(g: AccessGrant): AccessRow {

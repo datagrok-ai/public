@@ -202,11 +202,15 @@ export class ManifestModel {
   private readonly _relations: InventoryRelation[];
   private readonly _columnViews = new Map<string, ReadonlySignal<ColumnView[]>>();
   private _writable: boolean;
+  /** `name` was set by hand and no longer follows the friendly name. */
+  private _detached = false;
+  private readonly _taken: Set<string>;
 
-  constructor(draft: DraftEnvelope, options: {friendlyName?: string} = {}) {
+  constructor(draft: DraftEnvelope, options: {friendlyName?: string, takenNames?: string[]} = {}) {
     this._draft = draft.manifest;
     this.name = signal(draft.manifest.name);
     this.friendlyName = signal(options.friendlyName ?? '');
+    this._taken = new Set([...ManifestRules.RESERVED_SCHEMA_NAMES, ...(options.takenNames ?? [])]);
     this.revision = this._rev;
     this._writable = draft.manifest.storage?.writable === true;
     this._relations = draft.inventory?.relations ?? [];
@@ -327,6 +331,33 @@ export class ManifestModel {
 
   checkSchemaName(name: string): string | null {
     return ManifestRules.checkSchemaName(name);
+  }
+
+  /** The friendly name; the identifier follows it ({@link proposeName}) until set by hand. */
+  setSchemaFriendlyName(friendlyName: string): void {
+    this.friendlyName.value = friendlyName;
+    if (!this._detached)
+      this.name.value = this.proposeName(friendlyName);
+  }
+
+  /** The identifier by hand; an empty one lets it follow the friendly name again (a view
+   * re-renders even when that is the name it already had). */
+  setSchemaName(name: string): void {
+    this._detached = name !== '';
+    const next = name === '' ? this.proposeName(this.friendlyName.peek()) : name;
+    if (next === this.name.peek())
+      this._rev.value = this._rev.peek() + 1;
+    else
+      this.name.value = next;
+  }
+
+  /** The harmonized identifier, free of the registered and the reserved names: `_2`, `_3`… on a collision. */
+  proposeName(friendlyName: string): string {
+    const base = ManifestRules.identifier(friendlyName);
+    let candidate = base;
+    for (let n = 2; base !== '' && this._taken.has(candidate); n++)
+      candidate = `${base.slice(0, ManifestRules.MAX_SCHEMA_NAME_LENGTH - `_${n}`.length)}_${n}`;
+    return candidate;
   }
 
   checkTableName(remote: string, logical: string): string | null {

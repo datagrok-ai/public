@@ -20,17 +20,19 @@ import {badge} from '../../../components/display/badge.js';
 import {notify} from '../../../components/display/notify.js';
 import {DomainErrors} from '../errors.js';
 import {route} from '../routes.js';
+import {groupInput} from '../../inputs/group-input.js';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
-import type {AccessPrincipal, DraftEnvelope, ManifestDiagnostic, ManifestJson} from './manifest-model.js';
+import type {DraftEnvelope, ManifestDiagnostic, ManifestJson} from './manifest-model.js';
 
 export interface CreateBindingOptions {
   connection?: DG.DataConnection;
+  /** With `connection`, the dialog opens on Design; the Connection step stays a BACK away. */
   schema?: string;
   catalog?: string;
   /** Only this table starts included; the rest of the schema is drafted and offered excluded. */
   table?: string;
-  /** The group names the access pickers offer; every non-personal group otherwise. */
+  /** The group names the access pickers find; every group and user the look-up answers otherwise. */
   groups?: string[];
 }
 
@@ -80,7 +82,7 @@ export class BindingDialog extends Control {
   private readonly _options: CreateBindingOptions;
   private readonly _editor = signal<ManifestEditor | undefined>(undefined);
   private _connections: DG.DataConnection[] = [];
-  private _groups: AccessPrincipal[] = [];
+  private _takenNames: string[] = [];
   private readonly _draft = signal<DraftEnvelope | null>(null);
   /** What stands between the connection step and Design: the read in progress, or its refusal. */
   private readonly _reading = signal<string | null>(null);
@@ -116,13 +118,15 @@ export class BindingDialog extends Control {
     this.schema = this.runInScope(() => new ChoiceInput({label: 'Schema', name: 'schema', items: [],
       nullable: false, emptyText: 'Pick a connection first'}));
     this._json.className = 'u2-binding-json';
+    // the connection step is built up front: it starts the reads, whichever step opens first
+    const connection = this.runInScope(() => this._connectionStep());
     this.wizard = this.runInScope(() => new Wizard({
+      start: options.connection !== undefined && options.schema !== undefined ? 'design' : undefined,
       steps: [
-        {id: 'connection', title: 'Connection', content: () => this._connectionStep(),
+        {id: 'connection', title: 'Connection', content: connection,
           canProceed: () => this._draft.value !== null ? null :
             this._reading.value ?? 'Pick a connection and a schema'},
-        {id: 'design', title: 'Design', content: () => this._designHost,
-          onActivate: () => void this._design(), canProceed: () => this._designGate()},
+        {id: 'design', title: 'Design', content: () => this._designHost, canProceed: () => this._designGate()},
         {id: 'review', title: 'Review', content: () => this._reviewStep(), nextText: 'CREATE',
           onActivate: () => this._review(), actions: [{text: 'VALIDATE', run: () => this._validate()}],
           canProceed: () => this._reviewGate(), commit: () => this._create()},
@@ -136,6 +140,12 @@ export class BindingDialog extends Control {
     }));
     this.wizard.root.classList.add('u2-binding-dialog');
     this.root.append(this.wizard.root);
+    // the editor is built once Design is open and the draft is in, whichever comes second
+    this.effect(() => {
+      this._draft.value;
+      if (this.wizard.currentStep.value === 'design')
+        void this._design();
+    });
   }
 
   open(): Promise<BindingResult | null> {
@@ -221,15 +231,8 @@ export class BindingDialog extends Control {
         .filter((c) => !NON_DATABASE_SOURCES.has(c.dataSource));
       list.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
       this._offerConnections(list);
-      stage = 'Groups';
-      const wanted = this._options.groups;
-      const groups = (await grok.dapi.groups.filter('personal = false').list({pageSize: 500}))
-        .filter((g) => wanted === undefined || wanted.includes(g.friendlyName));
-      const byName = new Map<string, number>();
-      for (const g of groups)
-        byName.set(g.friendlyName, (byName.get(g.friendlyName) ?? 0) + 1);
-      this._groups = groups.map((g) => ({id: g.id,
-        label: byName.get(g.friendlyName)! > 1 ? `${g.friendlyName} (${g.id.slice(0, 8)})` : g.friendlyName}));
+      stage = 'Registered schemas';
+      this._takenNames = (await grok.dapi.domains.schemas.list({pageSize: 500})).map((s) => s.name);
     } catch (e) {
       if (stage === 'Connections' && preset === undefined)
         this.connection.setItems([]);
@@ -310,9 +313,15 @@ export class BindingDialog extends Control {
         return;
       this._editor.peek()?.dispose();
       this._built = draft;
+      const wanted = this._options.groups;
       const editor = this.runInScope(() => new ManifestEditor(draft, {
-        context: {mode: 'create', storage: 'external'}, groups: this._groups, writableDisabled: this._writeHint,
+        context: {mode: 'create', storage: 'external'}, takenNames: this._takenNames, writableDisabled: this._writeHint,
+        principalPicker: (onPick) => groupInput({
+          accept: wanted === undefined ? undefined : (g) => wanted.includes(g.friendlyName),
+          onPick: (g, label) => onPick({id: g.id, label}),
+        }).root,
       }));
+      editor.model.setSchemaFriendlyName(`${this._picked()!.friendlyName} ${this.schema.value.peek()}`);
       const only = this._options.table;
       if (only !== undefined && editor.model.table(only) !== undefined) {
         editor.model.includeTables(false);
@@ -332,7 +341,7 @@ export class BindingDialog extends Control {
       return problem;
     const editor = this._editor.value;
     if (editor === undefined)
-      return 'Reading the draft…';
+      return this._reading.value ?? 'Reading the draft…';
     const name = editor.model.checkSchemaName(editor.model.name.value);
     if (name !== null)
       return `Name: ${name}`;
