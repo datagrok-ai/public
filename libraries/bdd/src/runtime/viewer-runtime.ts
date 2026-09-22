@@ -365,7 +365,11 @@ function install(): void {
   // the viewer's own `scene signature` reading
   const pixels = (cv: HTMLCanvasElement): ImageData => {
     const ctx = cv.getContext('2d');
-    return ctx ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
+    // a viewer in a dock tab that has just been brought forward is laid out with no width yet:
+    // there are no pixels to read, and the empty picture is what "than before" compares against
+    if (!ctx || cv.width === 0 || cv.height === 0)
+      return new ImageData(1, 1);
+    return ctx.getImageData(0, 0, cv.width, cv.height);
   };
   /** The viewer's picture: its canvas with its `overlay` part composited on top when there is one
    * of the same size (the scatter plot draws regression lines, labels and stats on the overlay,
