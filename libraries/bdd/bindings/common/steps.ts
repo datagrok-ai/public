@@ -88,7 +88,7 @@ export const fillsParent = Then('{element} should fill its parent', async (page:
   }), {message: `${target.phrase} against its parent`}).toBe('fills');
 }, {description: 'as wide and as tall as the content box of the element it sits in, to a pixel'});
 export const shouldOffer = Then('{element} should offer {string}', (page: Page, target: ElementRef, list: string) => expectOptions(page, target, list),
-  {description: 'the choices of a dropdown, comma-separated, exactly and in this order'});
+  {description: 'the choices of a dropdown, comma-separated, exactly and in this order; the blank option of a nullable dropdown is not a choice'});
 export const shouldHaveItems = Then('{element} should have {int} item(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveRows = Then('{element} should have {int} row(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 

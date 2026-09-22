@@ -196,8 +196,9 @@ export async function expectOptions(page: Page, target: ElementRef, list: string
   const read = () => loc.first().evaluate((e) => {
     const select = e.tagName === 'SELECT' ? e as HTMLSelectElement : e.querySelector('select');
     const items = select ? Array.from(select.options) : Array.from(e.querySelectorAll('[role="option"]'));
-    return items.map((o) => (o.textContent ?? '').trim());
+    return items.map((o) => (o.textContent ?? '').trim()).filter(Boolean);
   }).catch(() => [] as string[]);
+  // the blank option of a nullable dropdown is no choice, and the phrase cannot name it
   await expect.poll(read, {message: `the choices ${target.phrase} offers`}).toEqual(want);
 }
 

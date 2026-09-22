@@ -103,11 +103,25 @@ export async function pickTopMenu(page: Page, path: string): Promise<void> {
   const {segments, names} = menuNames(path);
   if (segments.length < 2)
     throw new Error(`"${path}" names a group, not a command: a command is "Group > Item"`);
-  await openTopMenu(page, segments.slice(0, -1).join(' > '), false);
   const leaf = page.locator(`[name="${names[names.length - 1]}"]`).first();
-  await leaf.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
-    throw new Error(`no "${segments[segments.length - 1]}" in the ${segments.slice(0, -1).join(' > ')} menu; it shows: ${await visibleLabels(page, names[names.length - 2]) || 'nothing'}`);
-  });
+  const openToLeaf = async () => {
+    await openTopMenu(page, segments.slice(0, -1).join(' > '), false);
+    await leaf.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
+      throw new Error(`no "${segments[segments.length - 1]}" in the ${segments.slice(0, -1).join(' > ')} menu; it shows: ${await visibleLabels(page, names[names.length - 2]) || 'nothing'}`);
+    });
+  };
+  // the bar rebuild that `openTopMenu` walks again can also land after the walk, emptying the
+  // group the leaf is in (a folded bar, a package group arriving): the same one more walk
+  try {
+    await openToLeaf();
+  }
+  catch (e) {
+    if (!/^no "/.test(String((e as Error).message)))
+      throw e;
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(500);
+    await openToLeaf();
+  }
   await page.evaluate((p) => (window as any).__bdd.armCommand(p), segments.join(' | '));
   await guide.hop(page, leaf);
   await leaf.click();
