@@ -62,44 +62,7 @@ export class SearchBaseViewer extends DG.JsViewer {
       this.targetColumn = this.targetColumnName ? this.dataFrame.col(this.targetColumnName) ?? undefined : undefined;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.maxLimit});
     }
-    this.addStatusProvider('search-results', () => this.resultsStatus());
     this.render();
-  }
-
-  /** What the result cards report about themselves. A subclass marks each card with the row it
-   * shows (`data-row`), and `d4-current` / `d4-selected` carry its state — so the areas and the
-   * counts here hold for any subclass that honours that contract, and none of it needs the card's
-   * own layout. A card with no row of its own, such as the sketched reference molecule, is not
-   * reported. */
-  protected resultsStatus(): {hitAreas: {[name: string]: DG.IRectBounds}, values: {[name: string]: number | string}} {
-    const origin = this.root.getBoundingClientRect();
-    const hitAreas: {[name: string]: DG.IRectBounds} = {};
-    let current = -1;
-    let selected = 0;
-    const cards = Array.from(this.root.querySelectorAll('[data-row]')) as HTMLElement[];
-    for (const card of cards) {
-      const row = Number(card.getAttribute('data-row'));
-      const box = card.getBoundingClientRect();
-      hitAreas[`card ${row}`] = {
-        x: box.left - origin.left, y: box.top - origin.top, width: box.width, height: box.height,
-      };
-      // the similarity viewer marks both the current row and the reference molecule `d4-current`,
-      // so this reports the first of them rather than whichever came last
-      if (current === -1 && card.classList.contains('d4-current'))
-        current = row;
-      if (card.classList.contains('d4-selected'))
-        selected++;
-    }
-    return {
-      hitAreas,
-      values: {
-        'target column': this.targetColumnName ?? '',
-        'limit': this.limit,
-        'cards': cards.length,
-        'current card': current,
-        'selected cards': selected,
-      },
-    };
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -141,10 +104,11 @@ export class SearchBaseViewer extends DG.JsViewer {
       }
       this.computeRequested = this.computeRequested || computeData;
       await this.renderInt(computeData);
-    // settle on both outcomes, or one failed render leaves the viewer pending for good
+    // settle on both outcomes, or one failed render leaves the viewer pending for good — and a
+    // rejected chain would skip every later render, so the failure is logged rather than rethrown
     }).then(settle, (e) => {
       settle();
-      throw e;
+      console.error(e);
     });
   }
 
@@ -162,4 +126,41 @@ export class SearchBaseViewer extends DG.JsViewer {
     }
     return true;
   }
+}
+
+/** What a search viewer's result cards report about themselves — the `search-results` status a
+ * viewer registers with `addStatusProvider`. The viewer marks each card with the row it shows
+ * (`data-row`), and `d4-current` / `d4-selected` carry its state, so the areas and the counts hold
+ * for any card layout. A card with no row of its own, such as the sketched reference molecule, is
+ * not reported. */
+export function searchResultsStatus(root: HTMLElement, targetColumn: string, limit: number):
+  {hitAreas: {[name: string]: DG.IRectBounds}, values: {[name: string]: number | string}} {
+  const origin = root.getBoundingClientRect();
+  const hitAreas: {[name: string]: DG.IRectBounds} = {};
+  let current = -1;
+  let selected = 0;
+  const cards = Array.from(root.querySelectorAll('[data-row]')) as HTMLElement[];
+  for (const card of cards) {
+    const row = Number(card.getAttribute('data-row'));
+    const box = card.getBoundingClientRect();
+    hitAreas[`card ${row}`] = {
+      x: box.left - origin.left, y: box.top - origin.top, width: box.width, height: box.height,
+    };
+    // the similarity viewer marks both the current row and the reference molecule `d4-current`,
+    // so this reports the first of them rather than whichever came last
+    if (current === -1 && card.classList.contains('d4-current'))
+      current = row;
+    if (card.classList.contains('d4-selected'))
+      selected++;
+  }
+  return {
+    hitAreas,
+    values: {
+      'target column': targetColumn ?? '',
+      'limit': limit,
+      'cards': cards.length,
+      'current card': current,
+      'selected cards': selected,
+    },
+  };
 }

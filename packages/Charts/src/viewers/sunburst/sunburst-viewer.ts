@@ -8,7 +8,7 @@ import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import * as echarts from 'echarts';
 import {fromEvent, Observable, Subject} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
+import {ERROR_CLASS, LayoutSettler, MessageHandler} from '../../utils/utils';
 import {laidOutSegmentCount, sunburstStatus} from './sunburst-status';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
@@ -46,6 +46,7 @@ export class SunburstViewer extends EChartViewer {
   private latestRenderToken = 0;
   private _renderPending = 0;
   private _layoutPending = false;
+  private _layout = new LayoutSettler();
   private _onRendered = new Subject<void>();
   viewerFilter: DG.BitSet | null = null;
 
@@ -415,30 +416,22 @@ export class SunburstViewer extends EChartViewer {
     const settle = () => {
       if (--this._renderPending > 0)
         return;
+      // `_render` ends at `setOption(..., lazyUpdate: true)`: the frame is owed until the sectors are laid out
       this._layoutPending = true;
-      this.renderFinished(0);
+      this._layout.settle(() => this.renderError === null && (this.eligibleHierarchyNames ?? []).length > 0 &&
+        (this.root.querySelector('canvas') === null || laidOutSegmentCount(this.chart) === 0), () => {
+        this._layoutPending = false;
+        this._onRendered.next();
+      });
     };
     this.renderQueue = this.renderQueue
       .then(() => this._renderWithToken(currentToken, orderedHierarchyNames))
-      // settle on both outcomes, or one failed render leaves the viewer pending for good
+      // settle on both outcomes, or one failed render leaves the viewer pending for good — and a
+      // rejected queue would skip every later render, so the failure is logged rather than rethrown
       .then(settle, (e) => {
         settle();
-        throw e;
+        console.error(e);
       });
-  }
-
-  /** `_render` ends at `setOption(..., lazyUpdate: true)`, so echarts has not built the series yet
-   * and zrender paints it a frame later. Neither the canvas nor the promise says the sunburst is
-   * there — the sectors the layout left do. */
-  private renderFinished(attempt: number): void {
-    const owed = this.renderError === null && (this.eligibleHierarchyNames ?? []).length > 0 &&
-      (this.root.querySelector('canvas') === null || laidOutSegmentCount(this.chart) === 0);
-    if (owed && attempt < 20) {
-      setTimeout(() => requestAnimationFrame(() => this.renderFinished(attempt + 1)));
-      return;
-    }
-    this._layoutPending = false;
-    this._onRendered.next();
   }
 
   private async _renderWithToken(token: number, orderedHierarchyNames?: string[]) {
@@ -500,6 +493,7 @@ export class SunburstViewer extends EChartViewer {
   detach() {
     for (const sub of this.subs)
       sub.unsubscribe();
+    this._layout.cancel();
     super.detach();
   }
 }

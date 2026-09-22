@@ -19,17 +19,13 @@ enum LINKS {
 const SCHEMA_NAME = 'schema for tutorial';
 const PROPERTY_NAME = 'project name';
 
-/** Resolves an element the platform renders asynchronously, and says which one was missing when it
- * never turns up — a lookup that silently returns `undefined` throws a TypeError one line later. */
-async function waitForElement<T extends Element>(get: () => T | null | undefined, what: string,
-  timeoutMs = 10000): Promise<T> {
-  for (let waited = 0; waited < timeoutMs; waited += 50) {
-    const el = get();
-    if (el != null)
-      return el;
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-  throw new Error(`Sticky Meta tutorial: ${what} never appeared`);
+/** [Tutorial.waitFor], naming the element that was missing when it never turns up — a lookup that
+ * silently returns `undefined` throws a TypeError one line later. */
+async function waitForElement<T extends Element>(get: () => T | null | undefined, what: string): Promise<T> {
+  const el = await Tutorial.waitFor(get);
+  if (el == null)
+    throw new Error(`Sticky Meta tutorial: ${what} never appeared`);
+  return el;
 }
 
 /** Case-insensitive match on an element's trimmed text. */

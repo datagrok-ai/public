@@ -42,7 +42,8 @@ export class ViewersTutorial extends Tutorial {
 
     // resolved on every use: the ribbon is rebuilt while this step is up, and a captured element
     // leaves both the click listener and the highlight on the node that was replaced
-    const addViewerIcon = () => grok.shell.v.getRibbonPanels()[1]?.[1] ?? null;
+    const addViewerIcon = (): HTMLElement | null => grok.shell.v.getRibbonPanels().flat()
+      .find((item) => item.querySelector('i[aria-label="Add viewer"]') != null) ?? null;
     await this.action(
       'Click the Add viewer icon to open the gallery',
       elementClick(addViewerIcon), addViewerIcon);

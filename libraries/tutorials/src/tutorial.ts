@@ -363,9 +363,7 @@ export abstract class Tutorial extends DG.Widget {
         continue;
       // a function target lets the blob follow a rebuilt element (a ribbon item), instead of being
       // left on the node that was replaced
-      const target = ui.hints.addHintIndicator(h, false);
-      if (target != null)
-        this.activeHints.push(target);
+      this.activeHints.push(ui.hints.addHintIndicator(h, false));
     }
   }
 
@@ -504,18 +502,23 @@ export abstract class Tutorial extends DG.Widget {
     return (filter ? nodes.filter(filter) : nodes)[0] ?? null;
   }
 
-  /** [getElement], but waits for a control the platform builds a moment after its host appears.
-   * Steps used to be preceded by a fixed sleep for this, or to give up and skip themselves -
-   * which shifts every step number after them. */
-  private async awaitElement(element: HTMLElement, selector: string,
-    filter: ((idx: number, el: Element) => boolean) | null = null, timeoutMs = 10000): Promise<EleLoose | null> {
+  /** Polls [get] every 100 ms until it returns something, for up to [timeoutMs]; null when it never
+   * does. Steps wait on this for a control the platform builds a moment after its host appears —
+   * they used to be preceded by a fixed sleep for it, or to give up and skip themselves, which
+   * shifts every step number after them. */
+  static async waitFor<T>(get: () => T | null | undefined, timeoutMs = 10000): Promise<T | null> {
     for (let waited = 0; waited < timeoutMs; waited += 100) {
-      const found = this.getElement(element, selector, filter);
+      const found = get();
       if (found != null)
         return found;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     return null;
+  }
+
+  private awaitElement(element: HTMLElement, selector: string,
+    filter: ((idx: number, el: Element) => boolean) | null = null, timeoutMs = 10000): Promise<EleLoose | null> {
+    return Tutorial.waitFor(() => this.getElement(element, selector, filter), timeoutMs);
   }
 
   protected get menuRoot(): HTMLElement {
@@ -563,13 +566,9 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to put the specified value into a dialog input. */
   protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string,
     value: string, description: string = '', historyHint: boolean = false, count: number = 0): Promise<void> {
-    let inp: DG.InputBase | undefined;
     // a dialog builds its inputs a moment after it opens; callers used to sleep for this
-    for (let waited = 0; waited < 10000 && inp == null; waited += 100) {
-      inp = dlg.inputs.filter((input: DG.InputBase) => input.caption.toLowerCase() == caption.toLowerCase())[count];
-      if (inp == null)
-        await new Promise((resolve) => setTimeout(resolve, 100));
-    }
+    const inp = await Tutorial.waitFor(() =>
+      dlg.inputs.filter((input: DG.InputBase) => input.caption.toLowerCase() == caption.toLowerCase())[count]);
     if (inp == null) {
       console.error('Tutorial step skipped: no dialog input', this.name, caption, count);
       return;

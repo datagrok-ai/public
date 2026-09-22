@@ -2626,13 +2626,13 @@ export namespace hints {
    * moves with it; bound to a single node, it would be orphaned on the node that was replaced and
    * the learner would see nothing highlighted.
    *
+   * Returns the target — or, for a function whose target has not rendered yet, the blob itself;
+   * [remove] takes either.
+   *
    * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/hints}
    */
-  export function addHintIndicator(el: HTMLElement, clickToClose?: boolean, autoClose?: number): HTMLElement;
-  export function addHintIndicator(el: HTMLElement | (() => HTMLElement | null), clickToClose?: boolean,
-    autoClose?: number): HTMLElement | null;
   export function addHintIndicator(el: HTMLElement | (() => HTMLElement | null),
-    clickToClose: boolean = true, autoClose?: number): HTMLElement | null {
+    clickToClose: boolean = true, autoClose?: number): HTMLElement {
     const resolve = typeof el === 'function' ? el : () => el;
     let target: HTMLElement | null = resolve();
     const name = 'hint-target-' + ++hintId;
@@ -2656,7 +2656,8 @@ export namespace hints {
         clippers = [];
         for (let p = target!.parentElement; p != null && p !== document.body; p = p.parentElement) {
           const style = getComputedStyle(p);
-          if (/(auto|scroll)/.test(style.overflowY + style.overflowX))
+          // a collapsed ribbon menu row is `overflow: hidden`: a target on it is off screen just the same
+          if (/(auto|scroll|hidden)/.test(style.overflowY + style.overflowX))
             clippers.push(p);
         }
       }
@@ -2712,7 +2713,7 @@ export namespace hints {
 
     if (autoClose! > 0)
       setTimeout(() => remove(target ?? hintIndicator), autoClose);
-    return target;
+    return target ?? hintIndicator;
   }
 
   /** Describes series of visual components in the wizard. Each wizard page is associated with the

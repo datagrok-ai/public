@@ -2,7 +2,8 @@
 
 ## v.next
 
-* `SearchBaseViewer`: Added `isRenderPending` / `onRendered` and a `search-results` status provider — `card <row>` hit areas plus `cards`, `current card`, `selected cards`, `target column` and `limit`, for any subclass that marks its cards with `data-row`; a render that throws no longer leaves the viewer pending for ever
+* `SearchBaseViewer`: Added `isRenderPending` / `onRendered`; a render that throws no longer leaves the viewer pending for ever
+* Added `searchResultsStatus` — the `search-results` status a card-based search viewer registers: `card <row>` hit areas plus `cards`, `current card`, `selected cards`, `target column` and `limit`, over cards marked with `data-row` and `d4-current` / `d4-selected` (Chem's similarity and diversity viewers)
 
 ## 6.10.16 (2026-09-08)
 
