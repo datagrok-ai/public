@@ -17,9 +17,9 @@ import {Roots, localPath} from '../roots';
 import {proseLines} from '../citations';
 
 /** The keys a proposal may set; `reviewed`, `described_by` and `described_blob` are the tool's, never the model's. */
-export const PROPOSAL_KEYS = ['caption', 'description', 'actions', 'ui_text', 'kind', 'quality', 'quality_notes', 'illustrates'];
+export const PROPOSAL_KEYS = ['caption', 'description', 'actions', 'kind', 'quality', 'quality_notes', 'illustrates'];
 /** Bumped when the prompt or the answer shape changes, so cached answers to the old prompt are not reused. */
-export const PROMPT_VERSION = 1;
+export const PROMPT_VERSION = 2;
 const FRAMES = 6;
 const FRAME_WIDTH = 1024;
 const DEFAULT_MODEL = 'claude-sonnet-5';
@@ -86,14 +86,22 @@ export interface Proposal {
   caption?: string;
   description?: string;
   actions?: string[];
-  ui_text?: string[];
   kind?: string;
   quality?: string;
   quality_notes?: string;
   illustrates?: string[];
 }
 
-export type Describer = (item: Prepared, model: string) => {proposal?: Proposal, error?: string, raw?: string};
+/** What one model call cost: the envelope's token counts and its price. */
+export interface Usage {
+  input: number;
+  output: number;
+  cache_read: number;
+  cache_write: number;
+  cost_usd: number;
+}
+
+export type Describer = (item: Prepared, model: string) => {proposal?: Proposal, error?: string, raw?: string, usage?: Usage};
 export type FrameSampler = (item: {local: string, format: string}, dir: string) => {frames: Frame[], probe?: Probe, stillOnly: boolean};
 
 export interface Outcome {
@@ -104,9 +112,10 @@ export interface Outcome {
   caption?: string;
   detail?: string;
   record?: string;
+  usage?: Usage;
 }
 
-export async function enrichMedia(o: EnrichOptions): Promise<{items: Prepared[], outcomes: Outcome[], notes: string[]}> {
+export async function enrichMedia(o: EnrichOptions): Promise<{items: Prepared[], outcomes: Outcome[], notes: string[], usage: Usage}> {
   if (REFUSED_MODELS.test(o.model)) throw new Error(`--model ${o.model}: the describer is a cheaper model; a frontier model is refused`);
   const roots: Roots = {repoRoot: o.repoRoot, landingDir: o.landingDir};
   const genDir = o.outRoot;
@@ -143,39 +152,46 @@ export async function enrichMedia(o: EnrichOptions): Promise<{items: Prepared[],
     items.push(item);
   }
   if (!items.length) notes.push('nothing to describe: every shown media file the filter admits has a description (use --stale to refresh stale ones)');
-  if (o.dryRun) return {items, outcomes: items.map((i) => ({id: i.id, pages: i.pages.length, frames: 0, status: 'dry-run'})), notes};
+  const total: Usage = {input: 0, output: 0, cache_read: 0, cache_write: 0, cost_usd: 0};
+  if (o.dryRun) return {items, outcomes: items.map((i) => ({id: i.id, pages: i.pages.length, frames: 0, status: 'dry-run'})), notes, usage: total};
   if (items.some((i) => i.stillOnly)) notes.push('ffmpeg not found: animations were judged by their first frame only, and never rated above docs');
   const describe = o.describe ?? claudeDescribe;
   const cacheDir = path.join(o.outRoot, '..', '..', 'enrich', 'media');
   fs.mkdirSync(cacheDir, {recursive: true});
   const outcomes: Outcome[] = [];
+  const spend = (u?: Usage) => {
+    if (!u) return;
+    for (const k of Object.keys(total) as (keyof Usage)[]) total[k] += u[k] ?? 0;
+  };
   for (const item of items) {
     const cached = path.join(cacheDir, `${item.cacheKey}.json`);
     let proposal: Proposal | undefined;
     let status: Outcome['status'] = 'described';
-    let detail: string | undefined;
+    let usage: Usage | undefined;
     if (fs.existsSync(cached)) {
       proposal = JSON.parse(fs.readFileSync(cached, 'utf8')).proposal;
       status = 'cached';
     } else {
       const answer = describe(item, o.model);
+      usage = answer.usage;
+      spend(usage);
       if (!answer.proposal) {
-        outcomes.push({id: item.id, pages: item.pages.length, frames: item.frames.length, status: 'failed', detail: answer.error ?? 'no answer'});
+        outcomes.push({id: item.id, pages: item.pages.length, frames: item.frames.length, status: 'failed', detail: answer.error ?? 'no answer', usage});
         continue;
       }
       proposal = answer.proposal;
     }
     const checked = validate(o.system, proposal, item);
     if (checked.error) {
-      outcomes.push({id: item.id, pages: item.pages.length, frames: item.frames.length, status: 'failed', detail: checked.error});
+      outcomes.push({id: item.id, pages: item.pages.length, frames: item.frames.length, status: 'failed', detail: checked.error, usage});
       continue;
     }
-    if (status === 'described') fs.writeFileSync(cached, `${JSON.stringify({key: item.cacheKey, id: item.id, model: o.model, at: new Date().toISOString(), proposal}, null, 2)}\n`);
+    if (status === 'described') fs.writeFileSync(cached, `${JSON.stringify({key: item.cacheKey, id: item.id, model: o.model, at: new Date().toISOString(), usage, proposal}, null, 2)}\n`);
     const applied = apply(roots, item, checked.proposal!, o.model);
     outcomes.push({id: item.id, pages: item.pages.length, frames: item.frames.length, status: applied.skipped ? 'skipped' : status, caption: checked.proposal!.caption,
-      detail: applied.skipped, record: applied.record});
+      detail: applied.skipped, record: applied.record, usage});
   }
-  return {items, outcomes, notes};
+  return {items, outcomes, notes, usage: total};
 }
 
 /** A path prefix, or a glob with `*` and `**`. */
@@ -235,7 +251,7 @@ export function prompt(item: Prepared): string {
     frames,
     '',
     'Answer with this shape:',
-    '{"caption": "at most 12 words, what it shows", "description": "2-4 sentences a reader would understand without the picture: what is on screen and, for an animation, what happens in order", "actions": ["for an animation: the user actions shown, in order; [] for a still"], "ui_text": ["labels, menu items, dialog titles legible in the picture"], "kind": "screenshot | animation | clip | diagram | icon | logo | thumbnail | badge | photo", "quality": "unfit | docs | answer | marketing", "quality_notes": "why not higher: cropping, clutter, low resolution, debug data, an old UI; empty for marketing", "illustrates": ["feature ids from the list above that the picture actually shows"]}',
+    `{"caption": "3-8 words naming the concept the page is teaching with this picture, as a title: the text around the embed and the file name (${path.posix.basename(item.path)}) say what it is (\\"Using a parameterized query\\", \\"Sharing a connection\\"), not a play-by-play of the frames", "description": "2-4 sentences a reader would understand without the picture: what is on screen and, for an animation, what happens in order", "actions": ["for an animation: the user actions shown, in order; [] for a still"], "kind": "screenshot | animation | clip | diagram | icon | logo | thumbnail | badge | photo", "quality": "unfit | docs | answer | marketing", "quality_notes": "why not higher: cropping, clutter, low resolution, debug data, an old UI; empty for marketing", "illustrates": ["feature ids from the list above that the picture actually shows"]}`,
     '',
     'Quality tiers: unfit = do not show anyone (placeholder, broken, unreadable, obviously outdated UI, test data); docs = fine inside its page, not on its own; answer = clear enough to send alone to a user asking how to do this; marketing = polished, fit for a presentation or the website.',
   ].join('\n');
@@ -248,14 +264,18 @@ export const claudeDescribe: Describer = (item, model) => {
   if (r.error) return {error: `claude: ${r.error.message}`};
   if (r.status !== 0) return {error: `claude exited ${r.status}: ${(r.stderr || r.stdout || '').trim().slice(0, 300)}`, raw: r.stdout};
   let text = r.stdout;
+  let usage: Usage | undefined;
   try {
     const envelope = JSON.parse(r.stdout);
-    if (envelope.is_error) return {error: `claude: ${String(envelope.result ?? '').slice(0, 300)}`, raw: r.stdout};
+    const u = envelope.usage ?? {};
+    usage = {input: Number(u.input_tokens ?? 0), output: Number(u.output_tokens ?? 0), cache_read: Number(u.cache_read_input_tokens ?? 0),
+      cache_write: Number(u.cache_creation_input_tokens ?? 0), cost_usd: Number(envelope.total_cost_usd ?? 0)};
+    if (envelope.is_error) return {error: `claude: ${String(envelope.result ?? '').slice(0, 300)}`, raw: r.stdout, usage};
     text = typeof envelope.result === 'string' ? envelope.result : JSON.stringify(envelope.structured_output ?? envelope.result ?? '');
   } catch {
     // not an envelope: the raw text may still carry the block
   }
-  return parseAnswer(text, r.stdout);
+  return {...parseAnswer(text, r.stdout), usage};
 };
 
 export function parseAnswer(text: string, raw?: string): {proposal?: Proposal, error?: string, raw?: string} {
@@ -284,7 +304,6 @@ export function validate(system: TypeSystem, proposal: Proposal, item: Prepared)
   const allowed = new Set(item.candidates.map((c) => c.id));
   const shows = Array.isArray(illustrates) ? illustrates.filter((x): x is string => typeof x === 'string' && allowed.has(x)) : [];
   if (Array.isArray(rest.actions) && !rest.actions.length) delete rest.actions;
-  if (Array.isArray(rest.ui_text) && !rest.ui_text.length) delete rest.ui_text;
   if (item.stillOnly && /gif|mp4|webm/.test(item.format) && (rest.quality === 'answer' || rest.quality === 'marketing')) rest.quality = 'docs';
   if (typeof rest.description !== 'string') return {error: 'no description in the answer'};
   return {proposal: {...rest, ...(shows.length ? {illustrates: shows} : {})} as Proposal};

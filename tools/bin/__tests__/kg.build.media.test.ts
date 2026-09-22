@@ -33,7 +33,7 @@ describe('media extractor (notation.md §3.7)', () => {
     expect(gif).toEqual({id: GIF, type: 'media', name: 'histogram.gif', batch: expect.any(String), blob: git(repo, 'hash-object', `${IMG}/histogram.gif`), bytes: 43,
       format: 'gif', kind: 'animation', path: `${IMG}/histogram.gif`, url: `https://datagrok.ai/help/visualize/viewers/img/histogram.gif`,
       thumbnail: `media:${IMG}/histogram-thumb.png`, caption: 'Changing the bin count', description: expect.stringContaining('drags the Bins slider'),
-      actions: ['opens the histogram', 'drags the Bins slider left', 'drags it back'], ui_text: ['Bins', 'Context Panel'], quality: 'answer', reviewed: true,
+      actions: ['opens the histogram', 'drags the Bins slider left', 'drags it back'], quality: 'answer', reviewed: true,
       described_by: 'person', described_blob: gif.blob, width: 800, height: 500, seconds: 6, provenance: 'annotation', source_layer: 'public', status: 'active', visibility: 'public'});
     const unused = media.find((m) => m.id === `media:${IMG}/unused.png`);
     expect(unused).toMatchObject({provenance: 'filesystem', format: 'png', bytes: 70});

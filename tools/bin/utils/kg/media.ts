@@ -24,7 +24,7 @@ export const MEDIA_EXT = Object.keys(FORMATS);
 /** The record files: one per folder of media files, one catalog of hosted videos (any folder may carry either). */
 export const RECORD_FILES = ['media.yaml', 'videos.yaml'];
 /** What a record may say about a media node; everything else on the node comes from the file, the page or the build. */
-export const RECORD_KEYS = ['kind', 'animated', 'width', 'height', 'seconds', 'caption', 'description', 'actions', 'ui_text',
+export const RECORD_KEYS = ['kind', 'animated', 'width', 'height', 'seconds', 'caption', 'description', 'actions',
   'quality', 'quality_notes', 'reviewed', 'described_by', 'described_blob', 'illustrates'];
 /** A hosted video has no file name to take its name from, so its record may carry a title. */
 const HOSTED_KEYS = [...RECORD_KEYS, 'title'];

@@ -23,7 +23,7 @@ function makeRepo(): string {
 }
 
 const answer = (overrides: Record<string, unknown> = {}) => ({proposal: {caption: 'The Bins slider', description: 'The context panel with the Bins slider at 12.', actions: [],
-  ui_text: ['Bins'], kind: 'screenshot', quality: 'answer', quality_notes: '', illustrates: ['visualize/viewers/histogram', 'nope/feature'], ...overrides}});
+  kind: 'screenshot', quality: 'answer', quality_notes: '', illustrates: ['visualize/viewers/histogram', 'nope/feature'], ...overrides}});
 const stills: FrameSampler = ({local}) => ({frames: [{file: local}], probe: {width: 1, height: 1}, stillOnly: false});
 
 async function run(repo: string, extra: Record<string, unknown> = {}, describe: Describer = () => answer(), frames: FrameSampler = stills) {
@@ -52,7 +52,7 @@ describe('grok kg enrich media', () => {
     const {outcomes} = await run(repo, {}, describe);
     expect(outcomes).toEqual([{id: BINS, pages: 1, frames: 1, status: 'described', caption: 'The Bins slider', detail: undefined, record: `${IMG}/media.yaml`}]);
     const record = yaml.load(fs.readFileSync(path.join(repo, IMG, 'media.yaml'), 'utf8')) as Record<string, Record<string, unknown>>;
-    expect(record['bins.png']).toEqual({caption: 'The Bins slider', description: 'The context panel with the Bins slider at 12.', ui_text: ['Bins'], kind: 'screenshot', quality: 'answer',
+    expect(record['bins.png']).toEqual({caption: 'The Bins slider', description: 'The context panel with the Bins slider at 12.', kind: 'screenshot', quality: 'answer',
       illustrates: ['visualize/viewers/histogram'], reviewed: false, described_by: 'claude-sonnet-5', described_blob: git(repo, 'hash-object', `${IMG}/bins.png`), width: 1, height: 1});
     expect(record['histogram.gif'].reviewed).toBe(true);
     // the blob is quoted, so YAML never reads a digit-only one as a number

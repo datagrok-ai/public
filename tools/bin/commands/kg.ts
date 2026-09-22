@@ -195,7 +195,7 @@ async function enrichVerb(argv: any, kgRoot: string, repoRoot: string, subject: 
     return fail(e.message);
   }
   if (output === 'json') {
-    console.log(JSON.stringify({notes: result.notes, outcomes: result.outcomes, prompts: argv['show-prompt'] === true ? result.items.map((i) => i.prompt) : undefined}));
+    console.log(JSON.stringify({notes: result.notes, outcomes: result.outcomes, usage: result.usage, prompts: argv['show-prompt'] === true ? result.items.map((i) => i.prompt) : undefined}));
     return true;
   }
   for (const note of result.notes) console.log(`note: ${note}`);
@@ -205,6 +205,9 @@ async function enrichVerb(argv: any, kgRoot: string, repoRoot: string, subject: 
   const failed = result.outcomes.filter((r) => r.status === 'failed').length;
   console.log(`${result.outcomes.length} media: ${result.outcomes.filter((r) => r.status === 'described').length} described, ${result.outcomes.filter((r) => r.status === 'cached').length} from the cache, ` +
     `${result.outcomes.filter((r) => r.status === 'skipped').length} skipped, ${failed} failed${result.outcomes.some((r) => r.status === 'dry-run') ? ' (dry run: nothing written)' : ''}`);
+  const u = result.usage;
+  if (u.input || u.output || u.cache_read)
+    console.log(`tokens: ${u.input.toLocaleString('en-US')} input, ${u.output.toLocaleString('en-US')} output, ${u.cache_read.toLocaleString('en-US')} cache read, ${u.cache_write.toLocaleString('en-US')} cache written; $${u.cost_usd.toFixed(2)}`);
   if (failed) process.exitCode = 1;
   return true;
 }
