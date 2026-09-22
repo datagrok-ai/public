@@ -1,4 +1,4 @@
-@journey @viewers @realizes:viewers.filters
+@journey @viewers @realizes:viewers.filters @serial
 Feature: The panel's criterion composes with the viewers
   A card's criterion and a viewer's own filtering intersect and neither loses the other: a scatter
   plot zoom narrows the rows the card left and Reset View gives them back, a histogram range and a
@@ -22,6 +22,9 @@ Feature: The panel's criterion composes with the viewers
   histogram lets go by a double-click on its slider (dev restores the full range that way, which the
   md says it does not) and the PC plot by Reset View; the GROK-16713 redraw is the panel's canvases
   changing across the command after they held still across the moment before it.
+
+  @serial: the "should not have repainted" claims of this journey read the panel while another
+  feature's page is working the same stand; it passes alone and failed twice in a full viewers run.
 
   Background:
     Given user is logged in
