@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added dapi/domains/authoring.js (authoring an external binding: `draft` over a connection, the dry run, `createSchema(name, {manifest})`, a table grant, `validate()`, `delete()`)
 * GROK-20298: Added dapi/domains/external-binding.js (a domain table bound to an external database: ids are the remote key, the storage switches in `access().support`, refusals by name) and dapi/domains/external-write.js (writing through a binding: a client-supplied key on insert, `update(id, values, {expected})` guarding on the values last read, the `DomainVersionConflictError` naming `expected`/`current`)
 
 * GROK-20753: Added misc/utils/uuid4.js (DG.Utils.uuid4 — a v4 uuid outside a secure context)

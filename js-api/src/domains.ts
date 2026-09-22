@@ -107,6 +107,10 @@ export function splitDomainTable(name: string): [string, string] {
 
 /** One per-column failure of a validation-failed write. */
 export interface DomainColumnError { column: string; code: string; message: string; }
+/** One manifest issue, addressed by the manifest path it belongs to (`'tables.orders.businessKey'`,
+ * `'storage.connection'`, `'schema'`) — what {@link DomainManifestValidationError.errors}, a dry-run
+ * and a live validation answer. */
+export interface DomainManifestIssue { path?: string; code: string; message: string; }
 /** Per-row failure list of a validation-failed write ({@link DomainValidationError.rows}). */
 export interface DomainRowErrors { index: number; id?: string | null; errors: DomainColumnError[]; }
 
@@ -247,6 +251,84 @@ export interface DomainSupport {
   filters: DomainFilterProfile;
   /** What {@link DomainTableClient.batch} can do beyond a plain insert ({@link DomainBatchSupport}). */
   batch: DomainBatchSupport;
+}
+
+/** What {@link DomainsDataSource.draft} drafts over: an external database the caller may
+ * introspect and query (`connection` is its nqName or id), one remote schema (and catalog where
+ * the warehouse has them), and optionally the remote tables to draft — absent, every bindable one. */
+export interface DomainDraftRequest {
+  connection: string;
+  schema: string;
+  catalog?: string;
+  tables?: string[];
+}
+
+/** One remote table of the schema — the inventory lists EVERY table, requested or not, so an
+ * author sees what else could be drafted. A `bindable` one is in the manifest under its
+ * `logical` name (when requested, or when no `tables` were named) with the primary key as
+ * `key`; the others say why not (`external-table-view`, `external-key-missing`,
+ * `external-column-type`; `external-table-missing` for a requested name the schema lacks). */
+export interface DomainDraftTable {
+  remote: string;
+  logical?: string;
+  bindable: boolean;
+  key?: string[];
+  code?: string;
+  message?: string;
+}
+
+/** A remote column the draft left out of its table (a type the binding cannot carry — `bytea`,
+ * `bigint` …), named so the author can see what is missing. */
+export interface DomainDraftColumn { table: string; remote: string; dbType: string; code: string; message: string; }
+
+/** One foreign key touching a drafted table: `status: 'ref'` became a ref column in the manifest,
+ * `'plain'` stayed a scalar and `code` says why (`external-ref-out` — the target is not in the
+ * draft, `external-ref-composite`, `external-ref-key`, `external-ref-type`, `external-ref-ambiguous`). */
+export interface DomainDraftRelation {
+  table: string;
+  column: string;
+  targetTable: string;
+  targetColumn: string;
+  status: 'ref' | 'plain';
+  code?: string;
+  message?: string;
+}
+
+/** A manifest drafted over an external database ({@link DomainsDataSource.draft}): the manifest as
+ * the author's starting point, the inventory of what the warehouse has and what the draft did with
+ * it, and warehouse-level diagnostics (`external-relations-unavailable` when the foreign keys
+ * could not be read). Nothing is registered until {@link DomainsDataSource.createSchema}. */
+export interface DomainDraft {
+  manifest: {[key: string]: any};
+  inventory: {tables: DomainDraftTable[]; columns: DomainDraftColumn[]; relations: DomainDraftRelation[]};
+  diagnostics: DomainManifestIssue[];
+}
+
+/** The verdict of a schema dry run ({@link DomainsDataSource.createSchema} with `dryRun`): `'ok'`
+ * with no issues — a refused manifest rejects with the typed error instead. */
+/** A binding's recorded verdict (ExternalBinding.STATUS_*). */
+export type DomainBindingStatus = 'ok' | 'unvalidated' | 'drifted' | 'connection-missing';
+
+export interface DomainSchemaDryRun { status: 'ok'; issues: DomainManifestIssue[]; }
+
+/** What creating a schema answers: its registry identity, physical schema (`usr_<name>` for a
+ * platform-stored one, `ext_<name>` for an external binding) and, for a binding, the live
+ * validation it passed. */
+export interface DomainSchemaCreated {
+  id: string;
+  name: string;
+  pgSchema: string;
+  version: string;
+  binding?: {status: DomainBindingStatus; validatedOn: string};
+}
+
+/** The recorded outcome of validating an external schema's binding against its warehouse
+ * ({@link DomainSchemaClient.validate}). */
+export interface DomainSchemaValidation {
+  schema: string;
+  status: DomainBindingStatus;
+  validatedOn: string;
+  issues: DomainManifestIssue[];
 }
 
 /** Effective access of the CURRENT user on one domain table
@@ -416,7 +498,8 @@ export class DomainFilterError extends DomainError {}             // code 'filte
 export class DomainForbiddenError extends DomainError {}          // code 'forbidden'
 export class DomainNotFoundError extends DomainError {}           // code 'not-found'
 export class DomainManifestValidationError extends DomainError {  // code 'manifest-validation'
-  get errors(): {[key: string]: any}[] { return this.body['errors'] ?? []; }
+  /** The issues by manifest path ({@link DomainManifestIssue}). */
+  get errors(): DomainManifestIssue[] { return this.body['errors'] ?? []; }
 }
 /** The one refusal for an operation this table's storage or declaration cannot do (422) —
  * `pathTo` on a flat table. Distinct from a permission failure

@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+Domains: new `Dapi: domain authoring` (4 cases over the stand's `NorthwindBinding:PostgresNorthwind` connection, a throwaway `auth_<random>` schema — the draft's names, keys and one ref; dry run → create → `manifest()` → `validate()` → `delete()` with `schema-name-taken` on a second dry run; `external-identifier` and `invalid-storage` refusals by path; a restricted user's 403 from `draft`; self-skipping without the connection or the privilege)
+
 Domains: `Dapi: domain access` pins the fifteen `support` keys; new `Dapi: domain external` (read, over the `northwind` binding) and `Dapi: domain external write` (over the `extwlive` scratch binding — `update(id, values, {expected})` 200/409/422, self-skipping when the binding is absent); `Dapi: domain frame editor` covers `'immutable'` keys; `withRestrictedUser` blocks its probe user with the `{user, transfers}` body the route reads
 
 Utils: `AI: Utils: static helpers` gained 2 `uuid4` cases (the version-4 shape, and 1000 calls all distinct)

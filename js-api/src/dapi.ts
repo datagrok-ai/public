@@ -41,6 +41,8 @@ import {
   DomainBatchValidation,
   DomainDatetimeColumns,
   DomainDeleteReport,
+  DomainDraft,
+  DomainDraftRequest,
   DomainError,
   DomainFacetKind,
   DomainFacetResultOf,
@@ -60,6 +62,9 @@ import {
   DomainRowInsert,
   DomainAccess,
   DomainSavedFilterInfo,
+  DomainSchemaCreated,
+  DomainSchemaDryRun,
+  DomainSchemaValidation,
   DomainTableClientOptions,
   DomainTableInfo,
   DomainTableVersion,
@@ -1288,11 +1293,37 @@ export class DomainsDataSource {
     return domainCall(api.grok_Dapi_Domains_Transaction(this.dart, schema, ops));
   }
 
-  /** Creates an empty user-managed domain schema (physical PG schema 'usr_<name>');
-   * requires the CreateDomainSchema privilege. Add tables via schema(name).apply(). */
-  createSchema(name: string, options?: {friendlyName?: string; description?: string}): Promise<{[key: string]: any}> {
+  /** Drafts a manifest over an external database the caller may introspect and query
+   * (requires CreateDomainSchema, and GetSchema + Query on the connection): the manifest as
+   * a starting point — remote names kept, the primary key as the business key, one-column
+   * foreign keys onto drafted tables as refs — with the inventory of what the warehouse has
+   * and why a table or column stayed out ({@link DomainDraft}). Nothing is registered; hand
+   * the (edited) manifest to {@link createSchema}. A malformed remote identifier rejects with a
+   * {@link DomainManifestValidationError} addressed by path (`'schema'`, `'tables[i]'`); no
+   * right on the connection with a {@link DomainForbiddenError} naming what is missing;
+   * an unreachable warehouse with a DomainError code `'external-unreachable'` (503). */
+  draft(body: DomainDraftRequest): Promise<DomainDraft> {
+    return domainCall(api.grok_Dapi_Domains_DraftSchema(this.dart, body));
+  }
+
+  /** Creates a user-managed domain schema; requires the CreateDomainSchema privilege. Without
+   * `manifest` the schema is empty and platform-stored ('usr_<name>'; add tables via
+   * schema(name).apply()). With one (`storage.kind: 'external'` — a {@link draft}, edited) it is
+   * an external binding ('ext_<name>'): the manifest is validated live against the warehouse
+   * before anything is registered, and the answer carries the binding's verdict. `dryRun: true`
+   * runs every check and registers nothing — `{status: 'ok', issues: []}`, or exactly the
+   * refusal the create would give: a {@link DomainManifestValidationError} whose `errors` are
+   * addressed by manifest path, a DomainError code `'schema-name-taken'` / `'invalid-storage'`
+   * / `'external-unreachable'`. Pass `dryRun` as a literal `true` for the typed dry-run answer. */
+  createSchema(name: string, options: {friendlyName?: string; description?: string;
+      manifest?: {[key: string]: any}; dryRun: true}): Promise<DomainSchemaDryRun>;
+  createSchema(name: string, options?: {friendlyName?: string; description?: string;
+      manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<DomainSchemaCreated>;
+  createSchema(name: string, options?: {friendlyName?: string; description?: string;
+      manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<any> {
     return domainCall(api.grok_Dapi_Domains_CreateSchema(this.dart, name,
-      options?.friendlyName ?? null, options?.description ?? null));
+      options?.friendlyName ?? null, options?.description ?? null,
+      {manifest: options?.manifest ?? null, dryRun: options?.dryRun ?? false}));
   }
 
   /** Lifecycle handle for a registered domain schema (mirrors table()). */
@@ -1369,6 +1400,13 @@ export class DomainSchemaClient {
   /** Full manifest reconstructed from the registry (feeds editors; doubles as export). */
   manifest(): Promise<{[key: string]: any}> {
     return domainCall(api.grok_Dapi_Domains_GetManifest(this.dart, this.name));
+  }
+
+  /** Re-validates an external schema's binding against its warehouse and records the
+   * outcome ({@link DomainSchemaValidation}: `status` `'ok'` or the issues by manifest path).
+   * Requires Edit on the schema; a platform-stored schema is a {@link DomainUnsupportedError}. */
+  validate(): Promise<DomainSchemaValidation> {
+    return domainCall(api.grok_Dapi_Domains_ValidateSchema(this.dart, this.name));
   }
 
   /** Applies a partial manifest; dryRun returns the change plan. Named tables replace
