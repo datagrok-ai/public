@@ -9,6 +9,7 @@
 * Export Mutation Cliffs: Preserved the original double-precision activities and deltas
 * Viewers: Added automation surfaces (`getWidgetStatus`, `isRenderPending`, `onRendered`) and a `peptides-sar-ready` event; Command works as Control for multi-selection on macOS
 * Added BDD feature files translating the Playwright specs (`bdd/`)
+* Settings: Fixed the Sequence space checkbox warning "Embeddings columns are not initialized" instead of adding the viewer; unchecking it now removes the viewer and its columns
 
 ## 1.27.11 (2026-07-12)
 

@@ -95,8 +95,8 @@ Feature: Inspect peptide statistics in tooltips
     And no error or warning balloon should have been shown
 
   Scenario: WebLogo header tooltips replace their statistics and clear the highlight on leaving
-    # the settings round trip re-adds columns at the right edge and the grid follows them; a
-    # Shift-wheel over the row header (always on screen) scrolls it back to the first positions
+    # the settings round trip may leave the grid scrolled to the columns it re-adds at the right
+    # edge; a Shift-wheel over a row header, on screen either way, brings the first positions back
     When user moves the pointer away from Sequence Variability Map viewer
     And user scrolls the mouse wheel up 5 times over the "row header 1" area of grid holding Shift
     And user hovers over the "A at 2" area of grid

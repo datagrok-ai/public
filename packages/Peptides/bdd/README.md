@@ -39,10 +39,11 @@ publish the WebLogo glyphs it draws in the native grid's headers as hit areas.
 |---|---|
 | `panel/peptides-pane` | Renderer/metadata, real activity preview values, WebLogo selection, Clusters vs Generate clusters, Manual Alignment without an analysis |
 | `sar/from-panel` | Pane launch, completed MCL threshold, clustering settings, invariant map and distribution grouping, cliff glyphs |
-| `sar/from-top-menu` | Dialog defaults, dock layout, clustering settings and their effect on the clusters, settings-dialog state, repeated optional-viewer lifecycle, Sequence space, Dendrogram on and off |
+| `sar/from-top-menu` | Dialog defaults, dock layout, clustering settings and their effect on the clusters, settings-dialog state, repeated optional-viewer lifecycle, Dendrogram on and off |
 | `sar/weblogo-selection` | Exact source-row masks for click, Shift and Control/Command; Distribution and Selection panes after each |
 | `sar/tooltips` | Cell statistics, cliff glyphs, highlight cleanup, cluster statistics and selection |
 | `sar/mutation-cliffs` | Independent pair counts, p-values, a cliff cell drawn and a cliff-free cell left blank, position chart, full export contents |
+| `sar/sequence-space` | Sequence space added, removed and re-added from the settings dialog: viewer, embedding and cluster columns |
 | `sar/similarity-threshold` | Fresh analyses at thresholds 10, 50, 75, 90, 93 and 96 on 200 peptides and at 90 on all 647; header and map selection after each |
 | `sar/export` | Every invariant-map cell, every mutation pair/activity/delta, both source IDs |
 | `sar/manual-alignment` | Apply, adjacent/end positions, recomputed statistics, Reset, selection and panes against edited data |
@@ -68,7 +69,9 @@ comparison; `docs/` contains the original survey, decisions and translation note
 description states what it leaves out and why. Project persistence uses the public project API;
 it does not cover the ribbon Save dialog. Dashboard invocation uses the registered function;
 gallery-card navigation is the Browse suite's. Per-cluster WebLogo glyph interaction is not
-exposed as hit areas (the Logo Summary Table reports whole cells only).
+exposed as hit areas (the Logo Summary Table reports whole cells only). Sequence space activation was added on
+2026-09-22 to reproduce and verify a fix for the settings dialog (`sar/sequence-space`,
+GROK-20965); the sequence space parameters pane itself is not covered.
 
 ## Run record
 
@@ -77,10 +80,8 @@ run time and the default 70 spends a long time on this fixture, while 93 cluster
 `sar/default-launch` runs the defaults once. The from-panel journey re-clusters at 90 and back at
 93; the threshold outline runs 10, 50, 75, 90, 93 and 96 on 200 peptides, plus 90 on all 647.
 
-Known failures, each with its ticket above the scenario: Sequence space checked in the settings
-embeds nothing (GROK-20965, fixed, lands with the next dev deploy — then drop the tag); the settings
-reopen with Dendrogram unchecked while the tree is shown, and unchecking Dendrogram leaves the tree
-(both GROK-20640).
+Known failures, each with its ticket above the scenario: the settings reopen with Dendrogram
+unchecked while the tree is shown, and unchecking Dendrogram leaves the tree (both GROK-20640).
 
 2026-09-22, dev.datagrok.ai (core master, Peptides and EDA published from this checkout as debug
 builds): 19 tests (13 features; the threshold outline expands to 6) green three times in a row on

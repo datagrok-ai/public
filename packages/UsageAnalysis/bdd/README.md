@@ -5,6 +5,10 @@ into the Playwright specs under `generated/` — committed, never edited by hand
 holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
 `viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`viewers/grid/grid-context-menu.feature` is not a translation but the reproduction of a bug
+(2026-09-22: a right click put the current row back where it was and scrolled there), kept as the
+proof that a right-clicked cell becomes current and that the Current Value actions of Chem and Helm
+act on it — the stand needs those two packages;
 `features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
 (seven viewers sharing one legend column, the legend under filters, its placement, molecules in
 it; the section's scatter plot and line chart cases went into those viewers' legend features);

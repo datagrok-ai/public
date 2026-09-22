@@ -2,7 +2,8 @@
 Feature: Configure peptide SAR through the top menu
   The SAR dialog selects the sequence and activity columns and lays the viewers out around the
   grid. MCL settings can be reapplied, the optional Active peptide selection viewer can be removed
-  and added again, and Sequence space and Dendrogram can be switched on from the settings.
+  and added again, and Dendrogram can be switched on from the settings (Sequence space from the
+  settings is sar/sequence-space.feature).
 
   Launches set the MCL similarity threshold to 93: the default 70 spends minutes on this fixture
   and ends in one cluster (sar/default-launch.feature runs the defaults once).
@@ -131,25 +132,6 @@ Feature: Configure peptide SAR through the top menu
       | cycle            |
       | Initial addition |
       | Re-addition      |
-
-  # GROK-20965: checking Sequence space in the settings
-  # saves showSequenceSpace=true and fires peptides-sar-ready, but nothing is embedded or plotted.
-  # `applySettings` (model.ts) drops the sequenceSpaceParams update when only the switch changed,
-  # because the parameters themselves did not.
-  @known-failure
-  Scenario: Sequence space embeds the peptides and plots them
-    When user clicks on "Peptides analysis settings" icon
-    And user expands Viewers pane in "Peptides settings" dialog
-    And user checks "Sequence space" checkbox in "Peptides settings" dialog
-    Given user listens for "peptides-sar-ready" custom event
-    When user clicks on OK button in "Peptides settings" dialog
-    Then the SAR analysis should be ready
-    And the SAR setting "showSequenceSpace" should be "true"
-    And the open tableview should have 1 scatter plot viewer
-    And scatter plot viewer should be painted
-    And the "rows shown" reading of scatter plot viewer should be 647
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
 
   Scenario: Dendrogram clusters the peptides next to the grid
     Given the analysis grid should not have a dendrogram
