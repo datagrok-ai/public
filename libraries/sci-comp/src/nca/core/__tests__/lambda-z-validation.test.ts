@@ -103,7 +103,9 @@ function loadFixture(fixtureName: string): FixtureFile {
 function runLambdaZ(p: SubjectProfile, route: string) {
   let time = p.time;
   let conc = p.conc;
-  let blqMask = new Uint8Array(p.conc.length);
+  // Annotated: TS ≥ 5.7 infers `new Uint8Array(n)` as `Uint8Array<ArrayBuffer>`,
+  // which the `Uint8Array<ArrayBufferLike>` from `insertC0` cannot be assigned to.
+  let blqMask: Uint8Array = new Uint8Array(p.conc.length);
   let cmaxIdx: number;
 
   if (route === 'iv-bolus' && !Array.from(time).includes(0)) {
