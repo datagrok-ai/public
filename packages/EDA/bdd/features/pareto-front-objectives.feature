@@ -17,9 +17,9 @@ Feature: Pareto front objectives
   property and a next one that opens the settings of a new viewer at once would edit the old one.
 
   The case's cars-with-missing.csv is on no stand and in no repository. An int column whose every
-  value is null stands in for its empty turbo; the property offers every numeric column, empty or
-  not, while the viewer computes only over the non-empty ones, so that scenario is @known-failure
-  until the offer leaves the empty column out.
+  value is null stands in for its empty turbo; the property used to offer every numeric column,
+  empty or not, while the viewer computes only over the non-empty ones. Fixed 2026-09-21: the
+  picker's column filter is `numerical; not empty` (a core ColumnFilter now combines conditions).
 
   Background:
     Given user is logged in
@@ -93,7 +93,6 @@ Feature: Pareto front objectives
     And the "text of cell 1 of __name" reading of grid viewer in "Select columns..." dialog should be "diesel"
     And no errors should have been logged
 
-  @known-failure
   Scenario: An empty column is not offered as an objective
     Then the "rows" reading of grid viewer in "Select columns..." dialog should be 16
 
