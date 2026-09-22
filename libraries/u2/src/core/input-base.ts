@@ -65,6 +65,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private _postfixEl: HTMLElement | undefined;
   private _liveBinds: Map<string, Signal<unknown>> | undefined;
   private _enabled = true;
+  /** The value {@link follow} last wrote, until `onChanged` has skipped it. */
+  private _followed: {value: T} | undefined;
 
   constructor(options: O, defaultValue: T) {
     super();
@@ -117,12 +119,28 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       let initial = true;
       this.effect(() => {
         const value = this.value.value;
+        const followed = this._followed;
+        this._followed = undefined;
         if (initial)
           initial = false;
-        else
+        else if (followed === undefined || !Object.is(followed.value, value))
           onChanged(value);
       });
     }
+  }
+
+  /** Keeps the value on `read` (the model field the input edits): re-read whenever a signal `read`
+   * reads changes, written only when it differs, never echoed back through `onChanged`. A panel
+   * built once over a live model thus shows edits made elsewhere without a rebuild, and the field
+   * being typed in keeps its focus and caret. One-way; owned by the input. */
+  follow(read: () => T): this {
+    return this.effect(() => {
+      const value = read();
+      if (Object.is(value, this.value.peek()))
+        return;
+      this._followed = {value};
+      Input.system(() => this.value.value = value);
+    });
   }
 
   /** Applies a value write the input makes on its own behalf — pruning a selection whose item

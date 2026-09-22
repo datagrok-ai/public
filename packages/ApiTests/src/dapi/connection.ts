@@ -10,6 +10,11 @@ category('Dapi: connection', () => {
     dataSource: 'PostgresDart', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'
   };
 
+  test('isDatabase', async () => {
+    expect(DG.DataConnection.create('db', dcParams).isDatabase, true);
+    expect(DG.DataConnection.create('share', {dataSource: 'S3'}).isDatabase, false);
+  });
+
   test('Create, save, delete, share', async () => {
     // Unique name + id per run, and clean up only THIS connection. A shared name
     // ('Local DG Test') plus a category-wide cleanup made concurrent stress runs

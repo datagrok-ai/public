@@ -59,10 +59,8 @@ export function createBinding(options: CreateBindingOptions = {}): Promise<Bindi
   return new BindingDialog(options).open();
 }
 
-/** The platform's file shares, secret stores and the domain handle: what `DataSourceType.isDatabase`
- * (connection_info.dart) rules out, kept here since the js-api has no such helper. */
-const NON_DATABASE_SOURCES = new Set(['AzureBlob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave',
-  'Git', 'SharePoint', 'EFS', 'AWS', 'GCP', 'Domain']);
+/** The domain handle is a database to the platform, but not one to bind. */
+const DOMAIN_SOURCE = 'Domain';
 
 const DML = ['AddRows', 'ChangeValues', 'RemoveRows'];
 
@@ -228,7 +226,7 @@ export class BindingDialog extends Control {
     let stage = 'Connections';
     try {
       const list = (await grok.dapi.connections.list({pageSize: 500}))
-        .filter((c) => !NON_DATABASE_SOURCES.has(c.dataSource));
+        .filter((c) => c.isDatabase && c.dataSource !== DOMAIN_SOURCE);
       list.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
       this._offerConnections(list);
       stage = 'Registered schemas';

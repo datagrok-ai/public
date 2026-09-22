@@ -23,7 +23,9 @@ const {domains} = await import('../src/dg/domain/index.js');
 
 const DRAFT = JSON.parse(readFileSync(new URL('./fixtures/authoring/northwind-draft.json', import.meta.url), 'utf8'));
 const CONN = {id: 'c1', nqName: 'NorthwindBinding:PostgresNorthwind', friendlyName: 'PostgresNorthwind',
-  dataSource: 'Postgres'};
+  dataSource: 'Postgres', isDatabase: true};
+const NOT_BINDABLE = [{id: 'c-s3', friendlyName: 'Bucket', dataSource: 'S3', isDatabase: false},
+  {id: 'c-dom', friendlyName: 'Domains', dataSource: 'Domain', isDatabase: true}];
 const SALES = {id: 'g-sales', label: 'Sales'};
 const DEV = {id: 'g-dev', label: 'Developers'};
 const SCHEMA = {kind: 'schema'};
@@ -48,7 +50,7 @@ function scoped(name, body) {
 function stub(calls, dryRun, failing = {}) {
   grok.shell.settings = {enableDomainDatabases: true};
   grok.events.fireCustomEvent = (id, args) => calls.push(['event', id, args]);
-  grok.dapi.connections = {list: async () => [CONN], getSchemas: async () => ['public', 'audit']};
+  grok.dapi.connections = {list: async () => [CONN, ...NOT_BINDABLE], getSchemas: async () => ['public', 'audit']};
   grok.dapi.permissions = {check: async (_c, right) => right !== 'DataConnection.RemoveRows'};
   grok.dapi.groups = {getGroupsLookup: async (query) => [{id: 'g-sales', friendlyName: 'Sales', personal: false},
     {id: 'u-sam', friendlyName: 'Sam Sales', personal: true}].filter((g) => g.friendlyName.toLowerCase().includes(query))};

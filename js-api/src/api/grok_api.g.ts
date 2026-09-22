@@ -1845,6 +1845,7 @@ export interface IDartApi {
   grok_DataConnection_Query(c: any, name: String, sql: String): any;
   grok_DataConnection_Get_Credentials(c: any): any;
   grok_DataConnection_Get_DataSource(c: any): any;
+  grok_DataConnection_Get_IsDatabase(c: any): any;
   grok_DataConnection_Test(c: any): Promise<any>;
   grok_Credentials_Parameters(c: any): any;
   grok_Credentials_OpenParameters(c: any): any;
