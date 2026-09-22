@@ -12,8 +12,9 @@ import {installViewerRuntime, baselineAll} from './viewers.js';
 import * as guide from './guide.js';
 
 const MORE = '[role="menubar"] .d4-menu-item-more';
-// what a bar rebuild does to a walk in progress: the item lost its box, the group its hover
-const REBUILT = /has no box|the box of the menu item|locator\.hover: Timeout/;
+// what a bar rebuild does to a walk in progress: the item lost its box, the group its hover, or the
+// group it was in shows nothing any more (a group that lists other items is a missing item)
+const REBUILT = /has no box|the box of the menu item|locator\.hover: Timeout|it shows: nothing$/;
 
 /** `Bio > Analyze > Sequence Space...` → the segments and the platform names of the path so far. */
 export function menuNames(path: string): {segments: string[]; names: string[]} {
