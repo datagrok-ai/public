@@ -557,6 +557,14 @@ Verbs:
                 the generation renders) and the clicked node or edge on the right, with
                 Cypher and the four operations. The render tier (<gen>/vis/) is exported on
                 first start. --port (default 7475), --open to launch the browser; Ctrl-C stops.
+    enrich media  Proposals for the media files the current generation shows but no record
+                describes: frames sampled with ffmpeg (winget Gyan.FFmpeg is found), a cheaper
+                model asked through claude -p (a Sonnet id; Opus and Fable are refused) what
+                each shows, the answer validated against the media type and merged into the
+                folder's media.yaml as a proposal (reviewed: false, described_by, described_blob);
+                a reviewed entry is never overwritten; answers are cached under .kg/enrich/.
+                --limit N (20), --only <path prefix|glob>, --stale (refresh descriptions older
+                than the file), --dry-run (list only), --model <id>, --show-prompt.
     ask         One of the questions under core/docs/knowledge-graph/questions/ against the
                 index: grok kg ask tests-for-feature --set feature=visualize/viewers, or
                 grok kg ask alone to list them with their parameters and status. A blocked

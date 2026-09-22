@@ -11,6 +11,7 @@ import {selectExtractors, runExtractors, provides, EXTRACTORS} from '../utils/kg
 import {Mode} from '../utils/kg/build/context';
 import {writeBuild, writeManifest, projectPublic, gitRevisions, buildInputs, batchId, toolsVersion} from '../utils/kg/build/write';
 import {landingRoot} from '../utils/kg/roots';
+import {enrichMedia} from '../utils/kg/enrich/media';
 import {readManifest, generationDir, newGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/generation';
 import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_MEMORY_MB, LoadResult, TableRows} from '../utils/kg/kuzu';
 import {impact, testsFor, explain, find, resolveTarget, resolveTargets, parseTiers, DEFAULT_LIMIT, TIER_CHOICES, Change} from '../utils/kg/ops';
@@ -27,7 +28,7 @@ import {HELP_KG} from './help';
 
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
 const OPS = ['impact', 'tests-for', 'explain', 'find'];
-const VERBS = ['check', 'gen', 'build', 'report', 'gc', 'serve', 'ask'];
+const VERBS = ['check', 'gen', 'build', 'report', 'gc', 'serve', 'ask', 'enrich'];
 const SERVE_PORT = 7475;
 /** How many generations `grok kg gc` keeps beside the current one. */
 const KEEP_GENERATIONS = 2;
@@ -51,8 +52,8 @@ export async function kg(argv: any): Promise<boolean> {
     console.error(`unknown verb '${verb}'`);
     return false;
   }
-  const takes = verb === 'report' || verb === 'ask' ? 2 : 1;
-  if (args.length > takes) return fail(`unexpected argument '${args[takes]}': grok kg ${verb} takes ${takes === 2 ? `one ${verb === 'report' ? 'report' : 'question'} name and ` : ''}options only`);
+  const takes = verb === 'report' || verb === 'ask' || verb === 'enrich' ? 2 : 1;
+  if (args.length > takes) return fail(`unexpected argument '${args[takes]}': grok kg ${verb} takes ${takes === 2 ? `one ${verb === 'report' ? 'report' : verb === 'enrich' ? 'subject' : 'question'} name and ` : ''}options only`);
   const formats = verb === 'report' ? ['table', 'json', 'md'] : verb === 'ask' ? ['table', 'json', 'csv'] : ['table', 'json'];
   if (!formats.includes(output)) return fail(`--output must be ${formats.slice(0, -1).join(', ')} or ${formats[formats.length - 1]}, got '${output}'`);
   if (verb === 'gc') return collect(argv, output);
@@ -68,6 +69,7 @@ export async function kg(argv: any): Promise<boolean> {
   if (verb === 'report') return reportVerb(argv, kgRoot, repoRoot, args[1], output as ReportFormat);
   if (verb === 'serve') return serve(argv, kgRoot, repoRoot);
   if (verb === 'ask') return askVerb(argv, kgRoot, repoRoot, args[1], output as OutputFormat);
+  if (verb === 'enrich') return enrichVerb(argv, kgRoot, repoRoot, args[1], output);
 
   const system = loadTypeSystem(kgRoot);
   const homes = typesOnly ? null : loadHomes(system, repoRoot, undefined, landingRoot(repoRoot, argv.landing));
@@ -173,6 +175,37 @@ async function reportVerb(argv: any, kgRoot: string, repoRoot: string, name: str
   const system = loadTypeSystem(kgRoot);
   const data = readGraph(outRoot, repoRoot, system, name as ReportName);
   printReport(buildReport(name as ReportName, data, {system, repoRoot, base}), output);
+  return true;
+}
+
+/** `grok kg enrich media [--limit N] [--only <path|glob>] [--stale] [--dry-run] [--model <id>]`: proposals for the shown but
+ * undescribed media of the current generation, written into their media.yaml (enrich/media.ts). */
+async function enrichVerb(argv: any, kgRoot: string, repoRoot: string, subject: string | undefined, output: string): Promise<boolean> {
+  if (subject !== 'media') return fail(`grok kg enrich takes the subject 'media'${subject ? `, not '${subject}'` : ''}`);
+  const root = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
+  const outRoot = currentDir(root);
+  if (!outRoot) return fail(`${slashes(root)}: nothing built yet; run grok kg build`);
+  const limit = argv.limit === undefined ? 20 : Number(argv.limit);
+  if (!Number.isInteger(limit) || limit < 1) return fail('--limit must be a positive integer');
+  let result;
+  try {
+    result = await enrichMedia({kgRoot, repoRoot, landingDir: landingRoot(repoRoot, argv.landing), outRoot, system: loadTypeSystem(kgRoot), limit,
+      only: argv.only === undefined ? undefined : String(argv.only), stale: argv.stale === true, dryRun: argv['dry-run'] === true, model: String(argv.model ?? 'claude-sonnet-5')});
+  } catch (e: any) {
+    return fail(e.message);
+  }
+  if (output === 'json') {
+    console.log(JSON.stringify({notes: result.notes, outcomes: result.outcomes, prompts: argv['show-prompt'] === true ? result.items.map((i) => i.prompt) : undefined}));
+    return true;
+  }
+  for (const note of result.notes) console.log(`note: ${note}`);
+  for (const r of result.outcomes)
+    console.log(`${r.status.padEnd(9)} ${r.id} (${r.pages} page${r.pages === 1 ? '' : 's'}, ${r.frames} frame${r.frames === 1 ? '' : 's'})${r.caption ? `: ${r.caption}` : ''}${r.detail ? ` — ${r.detail}` : ''}${r.record ? ` → ${r.record}` : ''}`);
+  if (argv['show-prompt'] === true && result.items.length) console.log(`\n${result.items[0].prompt}`);
+  const failed = result.outcomes.filter((r) => r.status === 'failed').length;
+  console.log(`${result.outcomes.length} media: ${result.outcomes.filter((r) => r.status === 'described').length} described, ${result.outcomes.filter((r) => r.status === 'cached').length} from the cache, ` +
+    `${result.outcomes.filter((r) => r.status === 'skipped').length} skipped, ${failed} failed${result.outcomes.some((r) => r.status === 'dry-run') ? ' (dry run: nothing written)' : ''}`);
+  if (failed) process.exitCode = 1;
   return true;
 }
 

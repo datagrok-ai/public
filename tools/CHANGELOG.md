@@ -2,6 +2,8 @@
 
 ## v.next
 
+* grok kg: `enrich media`: for the media files the graph shows but no record describes (or `--stale` describes for an older blob), six frames sampled with ffmpeg across the clip, a cheaper model asked through claude -p (Sonnet; Opus and Fable refused) what the file shows, given the page, the heading, the alt text, the text around the embed and a closed list of feature candidates; the answer validated against the media type and merged into the folder's media.yaml as a proposal (reviewed: false, described_by, described_blob quoted), a reviewed entry never overwritten, answers cached under .kg/enrich/media by blob, model, prompt version, frame policy and context
+
 * grok kg: media, after the second review: a hosted video is as visible as its record's folder (an internal videos.yaml no longer reaches the public snapshot); an untracked media.yaml edited twice moves the batch; sizes come from the git blob so LF and CRLF checkouts agree; conflicted files are set aside; illustrates keeps the canonical id an alias resolves to and carries proposed: true when unreviewed; a Docusaurus mdx-code-block fence, an HTML comment and a slide split by a comment are read as rendered; the feature questions require a current description
 
 * grok kg: the marketing site as an external root: `--landing <dir>` (else <repo>/../landing, else C:/dg/landing; `--landing false` for none) makes every web/*.html a web-page node with the address nginx gives it, its headings as anchors and its img, video, YouTube and background-image embeds; the site's media files, records and revision join the graph and the batch; landing: paths resolve there in check, the extractors and the browser's editor links
