@@ -49,6 +49,12 @@ rule a consumer takes these numbers only by widening its range.
   line: fixture P4 reaches adj-R² 0.9995 that way and the substitute also becomes
   the terminal anchor of the AUCinf tail), so the condition is reported rather
   than inferred. Only reachable since this release made substitutes λz-eligible.
+  It fires on EITHER harm independently: a substitute inside the fitted window
+  (the slope rests on it) **or** a substituted `cLast` (the extrapolated tail
+  rests on it). The two coincide under `auto-best-fit` but not under
+  `manual-points`, where force-excluding the terminal substitute from the fit
+  leaves it anchoring AUCinf — keying the check on fit membership alone would
+  have silenced the warning exactly when an analyst acted on it.
 * `nca.augmentProfile(inputs, blq)` — pipeline Steps 1–3 (BLQ → observed Cmax →
   dose-time augmentation) as one exported, stateless kernel returning the
   augmented arrays, the effective BLQ mask, the drop set, `sourceIndex`

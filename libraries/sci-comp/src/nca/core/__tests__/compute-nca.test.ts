@@ -595,6 +595,37 @@ describe('computeNca — LAMBDAZ_SUBSTITUTED_BLQ (λz fitted through unmeasured 
     expect(subWarn(computeNca(poInputs(times, conc, 10), halfLloq))).toBeUndefined();
   });
 
+  it('STILL fires in manual mode when the terminal substitute is force-EXCLUDED from the fit', () => {
+    // The false-reassurance case (peer review round 2). `cLast` comes from Step 4
+    // and is independent of the caller's manual selection, so excluding the
+    // terminal substitute from the λz window does NOT stop it anchoring the
+    // AUCinf tail. Keyed only on fit membership, the warning would fall silent
+    // exactly when the analyst acted on it — the corrective gesture would hide
+    // the contamination instead of removing it.
+    const inputs: ProfileInputs = {
+      ...poInputs(t, c, 10), lloq: 0.05, blqMask: Uint8Array.from(blq),
+    };
+    const auto = computeNca(inputs, halfLloq);
+    const augTimes = [...t]; // no augmentation: a kept t=0 substitute, EV route
+    const terminal = augTimes.indexOf(24);
+    // Fit the three points BEFORE the substitute, excluding it (force-out).
+    const manual: NcaRules = {...halfLloq,
+      lambdaZ: {...halfLloq.lambdaZ, mode: 'manual-points',
+        manualPoints: Int32Array.from([augTimes.indexOf(4), augTimes.indexOf(8), augTimes.indexOf(12)])}};
+    const r = computeNca(inputs, manual);
+    expect(r.status).toBe('ok');
+    // The substitute is genuinely OUT of the fit …
+    expect(Array.from(r.provenance.lambdaZ!.pointsUsed)).not.toContain(terminal);
+    // … but still the terminal anchor: AUCinf is extrapolated from LLOQ/2.
+    expect(r.values.aucInf - r.values.aucLast)
+      .toBeCloseTo((0.05 / 2) / r.values.lambdaZ, 10);
+    const w = subWarn(r);
+    expect(w).toBeDefined();
+    expect(w!.message).toContain('C_last');
+    // The auto fit warns too, for the other reason (substitute inside the window).
+    expect(subWarn(auto)).toBeDefined();
+  });
+
   it('does NOT fire when the substitute stays OUTSIDE the accepted window', () => {
     // BLQ at the START (pre-first-measurable) under set-half-lloq: substituted,
     // but far from the terminal phase, so it never enters the λz window.

@@ -179,6 +179,22 @@ Neither detects a *confidently wrong* two-point slope. Raised by peer review
 2026-09-22; a diagnostic for widely-spaced early samples relative to the apparent
 terminal half-life is filed as a follow-up, not shipped here.
 
+### Provenance of the vendor attributions in this file (audited 2026-09-22)
+
+Two peer-review rounds checked the "Phoenix / WinNonlin" claims here against
+Certara's published documentation. The outcome was NOT uniform, so it is recorded
+per claim rather than left to the reader to assume a project-wide audit:
+
+| Claim | Status |
+|---|---|
+| `AUC_%Back_Ext` (`_obs`) is a real, named Phoenix parameter | **VERIFIED** (round 1, Certara Phoenix online help — NCA parameter formulas / discrete plasma parameters) |
+| Phoenix integrates IV-bolus AUC FROM a back-extrapolated `C0`, with a 2-point log-linear method falling back to the first observed value | **VERIFIED** (round 1, same source) — this is the basis of the convention section below |
+| A trailing LLOQ/2 SUBSTITUTE is used as `Clast`/`Tlast` for the AUCinf term | **WITHDRAWN** — could not be verified against a primary Certara source; re-tagged `house` and justified on self-consistency (divergence #3 above) |
+
+The distinction is deliberate: a citation that was checked and held is kept, one
+that could not be checked is withdrawn. Anything added here later gets the same
+treatment — cite the section, or tag it `house`.
+
 ## IV-bolus AUC convention — sci-comp (WinNonlin) vs stock PKNCA
 
 sci-comp integrates an IV-bolus profile **from the back-extrapolated c0**: the

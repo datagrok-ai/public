@@ -122,6 +122,9 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   let aumcLast = NaN;
   let cLast = NaN;
   let tLast = NaN;
+  // Augmented index of `cLast` — the base of every extrapolated tail. Tracked so
+  // Step 7 can ask whether the anchor was MEASURED or substituted; -1 = none.
+  let cLastIdx = -1;
   if (dense.time.length >= 2) {
     const last = dense.time.length - 1;
     const aumcFn = pickAumcFn(rules.aucMethod, rules.compensatedSummation);
@@ -129,11 +132,13 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     aumcLast = aumcFn(dense.time, dense.conc, 0, last);
     cLast = dense.conc[last];
     tLast = dense.time[last];
+    cLastIdx = dense.idx[last];
   } else if (dense.time.length === 1) {
     aucLast = 0;
     aumcLast = 0;
     cLast = dense.conc[0];
     tLast = dense.time[0];
+    cLastIdx = dense.idx[0];
   }
 
   // Tlag is an OBSERVED quantity (independent of lambda_z) and an absorption
@@ -253,27 +258,53 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     });
   }
   // A point that is BLQ-flagged but NOT in the drop set is a SUBSTITUTED value
-  // (`set-half-lloq` — `set-zero` substitutes are non-positive and the λz filter
-  // drops them itself). When one lands inside the accepted window, the terminal
-  // slope is fitted partly through a number nobody measured, and the fit
-  // statistics cannot say so: a substitute near the trend line scores WELL
-  // precisely because it is near the line. Measured on the `06_blq_rules` P4
-  // profile — a trailing LLOQ/2 substitute joins a 3-point fit at adj-R² 0.9995
-  // and becomes the terminal anchor. Reported, never inferred.
-  if (lambdaZRes !== null) {
-    const substituted: number[] = [];
-    for (let k = 0; k < lambdaZRes.pointsUsed.length; k++) {
-      const i = lambdaZRes.pointsUsed[k];
-      if (augBlq[i] !== 0 && dropMask[i] === 0) substituted.push(augTime[i]);
+  // (`set-half-lloq` — `set-zero` substitutes are non-positive and both the λz
+  // filter and the trailing trim drop them). Two DISTINCT harms follow, and the
+  // terminal parameters can carry either one alone:
+  //
+  //   (1) a substitute inside the fitted window — the SLOPE rests on a number
+  //       nobody measured, and no fit statistic can say so (a substitute near
+  //       the trend line scores WELL precisely because it is near the line);
+  //   (2) a substituted `cLast` — the extrapolated TAIL rests on it, since
+  //       AUCinf = AUClast + cLast/λz and AUMCinf likewise.
+  //
+  // They coincide under `auto-best-fit` (every candidate window is a trailing
+  // subset of the eligible points, so the last eligible point — which is cLast —
+  // is in every window), but NOT under `manual-points`: `cLast` comes from Step 4
+  // and is independent of the caller's selection, so force-EXCLUDING the terminal
+  // substitute from the fit removes it from `pointsUsed` while leaving it as the
+  // tail anchor. Keying only on fit membership would make the signal vanish
+  // exactly when an analyst acts on it — worse than never warning. So the anchor
+  // is checked on its own, whatever the mode.
+  const isSubstituted = (i: number): boolean =>
+    i >= 0 && augBlq[i] !== 0 && dropMask[i] === 0;
+  if (status === 'ok') {
+    const inFit: number[] = [];
+    if (lambdaZRes !== null) {
+      for (let k = 0; k < lambdaZRes.pointsUsed.length; k++) {
+        const i = lambdaZRes.pointsUsed[k];
+        if (isSubstituted(i)) inFit.push(augTime[i]);
+      }
     }
-    if (substituted.length > 0) {
+    const anchorSubstituted = isSubstituted(cLastIdx);
+    if (inFit.length > 0 || anchorSubstituted) {
+      const parts: string[] = [];
+      if (inFit.length > 0) {
+        parts.push(
+          `lambda_z was fitted through ${inFit.length} substituted BLQ value(s) ` +
+          `(t = ${inFit.join(', ')})`);
+      }
+      if (anchorSubstituted) {
+        parts.push(
+          `the terminal anchor C_last is a substituted BLQ value ` +
+          `(t = ${tLast}, C = ${cLast}), so the extrapolated AUC/AUMC tail rests on it`);
+      }
       warnings.push({
         code: 'LAMBDAZ_SUBSTITUTED_BLQ',
         severity: 'warning',
         message:
-          `lambda_z was fitted through ${substituted.length} substituted BLQ ` +
-          `value(s) (t = ${substituted.join(', ')}) — the terminal slope and ` +
-          `everything derived from it rest partly on unmeasured concentrations`,
+          `${parts.join('; ')} — terminal parameters rest partly on unmeasured ` +
+          `concentrations`,
       });
     }
   }
@@ -344,12 +375,14 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
 /** Build dense Float64Arrays of (time, conc) skipping the drop set and NaN entries. */
 function collectMeasurable(
   time: Float64Array, conc: Float64Array, dropMask: Uint8Array,
-): {time: Float64Array; conc: Float64Array} {
+): {time: Float64Array; conc: Float64Array; idx: Int32Array} {
   const tBuf: number[] = [];
   const cBuf: number[] = [];
+  const iBuf: number[] = [];
   for (let i = 0; i < time.length; i++) {
     if (dropMask[i] !== 0) continue;
     if (!Number.isFinite(conc[i])) continue;
+    iBuf.push(i);
     tBuf.push(time[i]);
     cBuf.push(conc[i]);
   }
@@ -364,8 +397,16 @@ function collectMeasurable(
   while (cBuf.length > 0 && cBuf[cBuf.length - 1] <= 0) {
     cBuf.pop();
     tBuf.pop();
+    iBuf.pop();
   }
-  return {time: Float64Array.from(tBuf), conc: Float64Array.from(cBuf)};
+  // `idx` keeps each kept point's index in the AUGMENTED arrays, so a caller can
+  // ask what a dense position actually was — specifically whether `cLast` (the
+  // last element, the base of every extrapolated tail) is a measured value or a
+  // BLQ substitute. Without it that question is unanswerable after the fact.
+  return {
+    time: Float64Array.from(tBuf), conc: Float64Array.from(cBuf),
+    idx: Int32Array.from(iBuf),
+  };
 }
 
 function countBlq(blqMask: Uint8Array): number {
