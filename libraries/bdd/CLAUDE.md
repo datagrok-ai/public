@@ -54,7 +54,7 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   with nothing to link; one outside it depends by path (`file:…`) and `grok-bdd link` makes its
   Playwright the library's copy (redo after `npm ci`).
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
-  resets the shell (first waiting, up to 60 s, until the task bar has no progress entry — an
+  resets the shell (first waiting up to 60 s for the command the scenario armed and up to 25 s until the task bar has no progress entry — an
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
   menus, `ui.tooltip.hide`, notices removed, `closeAll`, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several

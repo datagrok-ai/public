@@ -56,7 +56,7 @@ Feature: Bio results survive a project save and reopen
     Then the table should have 20 rows
     And "AntibodyHC" column should have units "fasta"
     And "AntibodyHC (aligned)" column should have tag ".numberingScheme" equal to "kabat"
-    And "AntibodyHC (aligned)" column should list at least 100 position names
+    And the ".positionNames" tag of "AntibodyHC (aligned)" column should list at least 100 values
     And "AntibodyHC (aligned)" column should have no missing values
     And "AntibodyHC" column should carry at least 7 annotations
     When user picks "Bio > Annotate > Apply Numbering Scheme..." from the top menu

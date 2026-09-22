@@ -76,6 +76,29 @@ export const shouldHaveValueBetween = Then('{element} should have a value betwee
 export const visibleCount = Then('there should be {int} visible {element}', async (page: Page, count: number, target: ElementRef) =>
   expect((await locate(page, target)).filter({visible: true}), `visible ${target.phrase}`).toHaveCount(count),
 {description: 'how many of the elements the phrase names are shown — one of a kind, never a duplicate'});
+
+/** Visible counts remembered by phrase, for a claim against before (a search narrows a list whose
+ * size depends on the stand: what matters is that it shrank). */
+const rememberedVisible = new WeakMap<Page, Map<string, number>>();
+const visibleNow = async (page: Page, target: ElementRef): Promise<number> => (await locate(page, target)).filter({visible: true}).count();
+async function expectVisibleAgainstRemembered(page: Page, target: ElementRef, fewer: boolean): Promise<void> {
+  const remembered = rememberedVisible.get(page)?.get(target.phrase);
+  if (remembered === undefined)
+    throw new Error(`no count of visible ${target.phrase} remembered: "user remembers the number of visible ${target.phrase}" first`);
+  await expect.poll(async () => {
+    const count = await visibleNow(page, target);
+    return `${(fewer ? count < remembered : count > remembered) ? '' : 'not '}${fewer ? 'fewer' : 'more'} (${count} vs ${remembered})`;
+  }, {message: `visible ${target.phrase} against the remembered count`}).toMatch(/^(fewer|more) \(/);
+}
+export const rememberVisibleCount = When('user remembers the number of visible {element}', async (page: Page, target: ElementRef) => {
+  const counts = rememberedVisible.get(page) ?? new Map<string, number>();
+  rememberedVisible.set(page, counts);
+  counts.set(target.phrase, await visibleNow(page, target));
+}, {description: 'how many are shown now, read once, for "fewer/more visible … than remembered" with the same phrase'});
+export const visibleFewerThanRemembered = Then('there should be fewer visible {element} than remembered', (page: Page, target: ElementRef) =>
+  expectVisibleAgainstRemembered(page, target, true), {description: 'strictly fewer than the remembered count — a list a search narrowed'});
+export const visibleMoreThanRemembered = Then('there should be more visible {element} than remembered', (page: Page, target: ElementRef) =>
+  expectVisibleAgainstRemembered(page, target, false), {description: 'strictly more than the remembered count — a list something added to'});
 export const fillsParent = Then('{element} should fill its parent', async (page: Page, target: ElementRef) => {
   const loc = (await locate(page, target)).filter({visible: true}).first();
   await expect.poll(() => loc.evaluate((e) => {

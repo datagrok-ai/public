@@ -1120,8 +1120,10 @@ function install(): void {
         commandArm = undefined;
       let resolve!: () => void;
       const done = new Promise<void>((r) => { resolve = r; });
+      // an unsaved call has no id: two undefined ids are not the same call (a transform the
+      // command runs inside itself ended the wait before the command had docked its result)
       const after = grok.functions.onAfterRunAction.subscribe((ended: any) => {
-        if (ended?.dart === fc.dart || ended?.id === fc.id) {
+        if (ended?.dart === fc.dart || (fc.id != null && ended?.id === fc.id)) {
           after.unsubscribe();
           resolve();
         }
@@ -1159,8 +1161,9 @@ function install(): void {
     commandArm = undefined;
     if (!c)
       return true;
-    const timeout = new Promise<false>((r) => setTimeout(() => r(false), capMs));
-    return Promise.race([c.done.then(() => true), timeout]);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<false>((r) => { timer = setTimeout(() => r(false), capMs); });
+    return Promise.race([c.done.then(() => true), timeout]).finally(() => clearTimeout(timer));
   };
   /** The current table's columns now and before the last menu command; `same` says whether the
    * table is still the one the command started on. */

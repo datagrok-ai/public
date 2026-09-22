@@ -11,6 +11,7 @@ import {hitArea, onViewer, settle} from './viewers.js';
 
 const COLOR_MIN_PX = 10;
 const SIGNIFICANT_PX = 30;
+const HUE_FLOOR_PX = 4;
 const HUE_TOLERANCE = 20;
 const GREY_SATURATION = 0.15;
 const LIGHTNESS_TOLERANCE = 0.15;
@@ -174,7 +175,7 @@ export async function expectAreaNoHue(page: Page, target: ElementRef, area: stri
     else
       groups.push({hex: c.hex, count: c.count});
   }
-  const hued = groups.filter((g) => g.count >= 4);
+  const hued = groups.filter((g) => g.count >= HUE_FLOOR_PX);
   expect(hued.map((c) => `${c.hex} (${c.count} px)`), `hued colors in the "${area}" area of ${target.phrase}; ${describeColors(read)}`).toEqual([]);
 }
 

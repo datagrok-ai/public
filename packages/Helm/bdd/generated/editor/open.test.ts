@@ -22,7 +22,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Opening the HELM editor from a cell", () => {
   const session = feature(test, "features/editor/open.feature", import.meta.url);
-  test("Opening the HELM editor from a cell", {tag: ["@journey", "@realizes:helm.cell-editor.molecule", "@realizes:helm.action.edit-helm", "@known-failure"]}, async ({browser}) => {
+  test("Opening the HELM editor from a cell", {tag: ["@journey", "@realizes:helm.cell-editor.molecule", "@realizes:helm.action.edit-helm"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
@@ -60,12 +60,18 @@ test.describe("Opening the HELM editor from a cell", () => {
       await session.step(59, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Edit Helm... on another cell opens that cell, not the current one", async () => {
-      await session.step(67, "When user clicks on the \"cell 1 of HELM\" area of grid", () => clickArea(page, "cell 1 of HELM", el("grid")));
-      await session.step(68, "Then row 1 should be current", () => currentRowIs(page, 1));
-      await session.step(69, "When user picks \"Current Value > Edit Helm...\" from the context menu of the \"cell 2 of HELM\" area of grid", () => pickFromAreaContextMenu(page, "Current Value > Edit Helm...", "cell 2 of HELM", el("grid")));
-      await session.step(70, "Then HELM editor should be visible", () => shouldBe(page, el("HELM editor"), "visible"));
-      await session.step(71, "And notation pane should have text \"PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$V2.0\"", () => shouldHaveText(page, el("notation pane"), "PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$V2.0"));
-    }, {knownFailure: true});
+      await session.step(64, "When user clicks on the \"cell 1 of HELM\" area of grid", () => clickArea(page, "cell 1 of HELM", el("grid")));
+      await session.step(65, "Then row 1 should be current", () => currentRowIs(page, 1));
+      await session.step(66, "When user picks \"Current Value > Edit Helm...\" from the context menu of the \"cell 2 of HELM\" area of grid", () => pickFromAreaContextMenu(page, "Current Value > Edit Helm...", "cell 2 of HELM", el("grid")));
+      await session.step(67, "Then HELM editor should be visible", () => shouldBe(page, el("HELM editor"), "visible"));
+      await session.step(68, "And notation pane should have text \"PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$V2.0\"", () => shouldHaveText(page, el("notation pane"), "PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$V2.0"));
+      await session.step(69, "When user clicks on OK button in HELM editor", () => clickOn(page, el("OK button in HELM editor")));
+      await session.step(70, "Then HELM editor should be absent", () => shouldBe(page, el("HELM editor"), "absent"));
+      await session.step(71, "And the value of \"HELM\" column in row 1 should be \"PEPTIDE1{A.C}$$$$\"", () => valueInRow(page, "HELM", 1, "PEPTIDE1{A.C}$$$$"));
+      await session.step(72, "And the value of \"HELM\" column in row 2 should be \"PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$V2.0\"", () => valueInRow(page, "HELM", 2, "PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$V2.0"));
+      await session.step(73, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(74, "And no errors should have been logged", () => noErrors(page));
+    });
     run.finish();
   });
 });

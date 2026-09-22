@@ -3,7 +3,7 @@
    generic — grid areas, the context menu, the context panel, dialogs, typing — is the library's
    (`grok-bdd list-steps`). */
 import type {Page} from '@playwright/test';
-import {Given, Then, When} from '@datagrok-libraries/bdd';
+import {Given, When} from '@datagrok-libraries/bdd';
 import {ElementRef, expect, locate} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;

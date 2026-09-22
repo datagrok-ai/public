@@ -66,6 +66,11 @@ export const columnTag = Then('{string} column should have tag {string} equal to
   await expect.poll(async () => (await columnFacts(page, column)).tags[tag] ?? '', {message: `tag "${tag}" of "${column}"`}).toBe(value);
 });
 
+export const columnTagLists = Then('the {string} tag of {string} column should list at least {int} values', async (page: Page, tag: string, column: string, count: number) => {
+  const values = ((await columnFacts(page, column)).tags[tag] ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '');
+  expect(values.length, `values in the "${tag}" tag of "${column}": ${values.slice(0, 5).join(', ')}${values.length > 5 ? ', …' : ''}`).toBeGreaterThanOrEqual(count);
+}, {description: 'a comma-separated tag (the .positionNames a numbering run writes on the aligned column)'});
+
 export const columnType = Then('{string} column should have type {string}', async (page: Page, column: string, type: string) => {
   expect((await columnFacts(page, column)).type, `type of "${column}"`).toBe(type);
 }, {description: 'the storage type: string, int, double, ...'});

@@ -3,8 +3,8 @@ Feature: Sequence Activity Cliffs
   Bio | Analyze | Activity Cliffs... embeds the sequences, scores the pairs that are close in
   sequence and far in activity, and docks a scatter plot with the cliffs drawn over it. The
   fixture carries an Activity column: the editor needs a numeric column to fill Activities. The
-  cliffs themselves are claimed by the "N cliffs" button the analysis puts on its plot: the sali
-  column and the plot are there even when no pair qualifies.
+  cliffs themselves are claimed by the plot's "cliffs" reading (what its "N cliffs" button shows):
+  the sali column and the plot are there even when no pair qualifies.
 
   Not translated, and why: the HELM and MSA runs of the manual cases are in other-notations; the
   empty current row (GROK-16111) is in empty-current-row. The "Show only cliffs" switch and the
@@ -37,7 +37,7 @@ Feature: Sequence Activity Cliffs
     And title of scatter plot viewer should have text "Activity cliffs"
     And "X" property of scatter plot viewer should be "Embed_X_1"
     And "Y" property of scatter plot viewer should be "Embed_Y_1"
-    And the activity cliffs plot should report at least 1 cliff
+    And the "cliffs" reading of scatter plot viewer should be at least 1
     And scatter plot viewer should be painted
     And no error or warning balloon should have been shown
     And no errors should have been logged
@@ -55,7 +55,7 @@ Feature: Sequence Activity Cliffs
     And "X" property of second scatter plot viewer should be "Embed_X_2"
     And "Description" property of second scatter plot viewer should contain "method: t-SNE"
     And "Description" property of second scatter plot viewer should contain "similarity: Levenshtein"
-    And the activity cliffs plot should report at least 1 cliff
+    And the "cliffs" reading of second scatter plot viewer should be at least 1
     And second scatter plot viewer should be painted
     And no error or warning balloon should have been shown
     And no errors should have been logged

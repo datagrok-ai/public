@@ -235,35 +235,30 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   };
 }
 
-/** Everything closed and the Home view current — the state the next scenario starts from. A page
- * that is not in the shell (about:blank, the login page) is left alone. Dialogs and menus are
- * closed the platform's way (Escape, as many times as there are open ones), the tooltip through
- * its API, notifications as their close icons would; a dialog that survives that is reported in
- * the run's output rather than pulled out of the DOM behind the platform's back. Errors the
- * teardown itself raises (work cancelled by `closeAll`) are dropped. */
 /** Task bar entries a reset already waited out: a job that never ends is waited for once, not by
  * every later scenario of the page. */
 const stuckEntries = new WeakMap<Page, Set<string>>();
 const SETTLE_MS = 25000;
+const COMMAND_SETTLE_MS = 60000;
 
 /** Work a scenario started and never awaited (a known failure ends at its first failing claim) must
  * not finish on the next feature's shell: an analysis that ends reopens its table and makes it
- * current. The platform's own progress entries say when that work is over — a command's
- * onAfterRunAction can come before it — and one budget covers both waits. */
+ * current. The command the scenario armed says exactly when its call is over and gets the longer
+ * wait (an embedding under another worker's load takes over 25 s); the platform's progress entries
+ * cover work a command's onAfterRunAction comes before, on their own budget. */
 async function settleWork(page: Page): Promise<void> {
-  const deadline = Date.now() + SETTLE_MS;
-  const settled = await page.evaluate((ms) => (window as any).__bdd?.settleCommand?.(ms) ?? true, SETTLE_MS).catch(() => true);
+  const settled = await page.evaluate((ms) => (window as any).__bdd?.settleCommand?.(ms) ?? true, COMMAND_SETTLE_MS).catch(() => true);
   if (!settled)
-    console.warn(`bdd: a menu command the scenario started was still running ${SETTLE_MS / 1000} s into the shell reset`);
+    console.warn(`bdd: a menu command the scenario started was still running ${COMMAND_SETTLE_MS / 1000} s into the shell reset`);
+  const deadline = Date.now() + SETTLE_MS;
   const stuck = stuckEntries.get(page) ?? new Set<string>();
   stuckEntries.set(page, stuck);
-  // the entries still shown and not already waited out; empty = the page is quiet
   const running = (known: string[]): string[] => Array.from(document.querySelectorAll('.d4-task-bar-entry'))
     .filter((e) => (e as HTMLElement).offsetParent !== null)
     .map((e) => (e.textContent ?? '').trim())
     .filter((t) => !known.includes(t));
   const known = [...stuck];
-  const quiet = await page.waitForFunction(`(${running.toString()})(${JSON.stringify(known)}).length === 0`, null,
+  const quiet = await page.waitForFunction((k) => running(k).length === 0, known,
     {timeout: Math.max(1, deadline - Date.now()), polling: 100}).then(() => true).catch(() => false);
   const left: string[] = quiet ? [] : await page.evaluate(running, known).catch(() => []);
   if (left.length > 0) {
@@ -273,6 +268,13 @@ async function settleWork(page: Page): Promise<void> {
   }
 }
 
+/** Everything closed and the Home view current — the state the next scenario starts from. A page
+ * that is not in the shell (about:blank, the login page) is left alone. Work the scenario left
+ * running is waited out first; then dialogs and menus are closed the platform's way (Escape, as
+ * many times as there are open ones), the tooltip through its API, notifications as their close
+ * icons would; a dialog that survives that is reported in the run's output rather than pulled out
+ * of the DOM behind the platform's back. Errors the teardown itself raises (work cancelled by
+ * `closeAll`) are dropped. */
 export async function resetShell(page: Page): Promise<void> {
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)

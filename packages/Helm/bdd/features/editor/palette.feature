@@ -20,8 +20,11 @@ Feature: The HELM editor's monomer palette
     When user clicks on Peptides palette tab
     Then G monomer tile should be visible
     And Aca monomer tile should be visible
-    When user types "Aca" into palette search
-    Then there should be 1 visible monomer tile
+    # how many tiles "Aca" matches depends on the libraries the stand has selected (1 on dev, 13
+    # on a stand with every shipped library on): the claim is that the search narrowed the palette
+    When user remembers the number of visible monomer tiles
+    And user types "Aca" into palette search
+    Then there should be fewer visible monomer tiles than remembered
     And Aca monomer tile should be visible
     And G monomer tile should be hidden
     When user clears palette search

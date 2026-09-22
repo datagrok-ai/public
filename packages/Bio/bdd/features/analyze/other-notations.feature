@@ -55,7 +55,7 @@ Feature: The Analyze commands on HELM and MSA columns
     And a new column matching "sali|SALI" should have been added
     And scatter plot viewer should be visible
     And title of scatter plot viewer should have text "Activity cliffs"
-    And the activity cliffs plot should report at least 1 cliff
+    And the "cliffs" reading of scatter plot viewer should be at least 1
     And scatter plot viewer should be painted
     And no error or warning balloon should have been shown
     And no errors should have been logged

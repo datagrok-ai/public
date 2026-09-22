@@ -58,14 +58,17 @@ Feature: Opening the HELM editor from a cell
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
-  # GROK-20962: Edit Helm... (`openEditor` in
-  # src/package.ts) opens df.currentRowIdx and ignores the cell it was picked on, so a right-click on
-  # a cell that is not current edits — and on OK overwrites — the current row instead. Last in the
-  # journey: the editor it opens stays open for the shell reset to close.
-  @known-failure
+  # GROK-20962 (fixed 2026-09-22): the action used to open the current row whatever cell it was
+  # picked on, and OK then overwrote that row.
   Scenario: Edit Helm... on another cell opens that cell, not the current one
     When user clicks on the "cell 1 of HELM" area of grid
     Then row 1 should be current
     When user picks "Current Value > Edit Helm..." from the context menu of the "cell 2 of HELM" area of grid
     Then HELM editor should be visible
     And notation pane should have text "PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$V2.0"
+    When user clicks on OK button in HELM editor
+    Then HELM editor should be absent
+    And the value of "HELM" column in row 1 should be "PEPTIDE1{A.C}$$$$"
+    And the value of "HELM" column in row 2 should be "PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$V2.0"
+    And no error or warning balloon should have been shown
+    And no errors should have been logged

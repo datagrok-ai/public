@@ -34,7 +34,7 @@ Feature: Antibody numbering with the bundled immunum engine
     And every value of "AntibodyHC (aligned)" column should have the same length
     And "AntibodyHC (aligned)" column should have no missing values
     And every value of "AntibodyHC (aligned)" column should match "[A-Z]{20}"
-    And "AntibodyHC (aligned)" column should list at least 100 position names
+    And the ".positionNames" tag of "AntibodyHC (aligned)" column should list at least 100 values
     And "AntibodyHC" column should carry at least 7 annotations
     And no error or warning balloon should have been shown
     And no errors should have been logged

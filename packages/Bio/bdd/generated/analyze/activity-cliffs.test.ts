@@ -12,14 +12,13 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {cliffCount} from '../../bindings/cliffs.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe, shouldHaveText, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnSemType} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {commandCompleted, newColumnMatching, newColumnNamed, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {noBalloons, noErrors, painted, propertyShouldBe, propertyShouldContain} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {noBalloons, noErrors, painted, propertyShouldBe, propertyShouldContain, readingAtLeast} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Sequence Activity Cliffs", () => {
@@ -52,7 +51,7 @@ test.describe("Sequence Activity Cliffs", () => {
       await session.step(37, "And title of scatter plot viewer should have text \"Activity cliffs\"", () => shouldHaveText(page, el("title of scatter plot viewer"), "Activity cliffs"));
       await session.step(38, "And \"X\" property of scatter plot viewer should be \"Embed_X_1\"", () => propertyShouldBe(page, "X", el("scatter plot viewer"), "Embed_X_1"));
       await session.step(39, "And \"Y\" property of scatter plot viewer should be \"Embed_Y_1\"", () => propertyShouldBe(page, "Y", el("scatter plot viewer"), "Embed_Y_1"));
-      await session.step(40, "And the activity cliffs plot should report at least 1 cliff", () => cliffCount(page, 1));
+      await session.step(40, "And the \"cliffs\" reading of scatter plot viewer should be at least 1", () => readingAtLeast(page, "cliffs", el("scatter plot viewer"), 1));
       await session.step(41, "And scatter plot viewer should be painted", () => painted(page, el("scatter plot viewer")));
       await session.step(42, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(43, "And no errors should have been logged", () => noErrors(page));
@@ -70,7 +69,7 @@ test.describe("Sequence Activity Cliffs", () => {
       await session.step(55, "And \"X\" property of second scatter plot viewer should be \"Embed_X_2\"", () => propertyShouldBe(page, "X", el("second scatter plot viewer"), "Embed_X_2"));
       await session.step(56, "And \"Description\" property of second scatter plot viewer should contain \"method: t-SNE\"", () => propertyShouldContain(page, "Description", el("second scatter plot viewer"), "method: t-SNE"));
       await session.step(57, "And \"Description\" property of second scatter plot viewer should contain \"similarity: Levenshtein\"", () => propertyShouldContain(page, "Description", el("second scatter plot viewer"), "similarity: Levenshtein"));
-      await session.step(58, "And the activity cliffs plot should report at least 1 cliff", () => cliffCount(page, 1));
+      await session.step(58, "And the \"cliffs\" reading of second scatter plot viewer should be at least 1", () => readingAtLeast(page, "cliffs", el("second scatter plot viewer"), 1));
       await session.step(59, "And second scatter plot viewer should be painted", () => painted(page, el("second scatter plot viewer")));
       await session.step(60, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(61, "And no errors should have been logged", () => noErrors(page));

@@ -14,9 +14,9 @@ on three workers against dev (2026-09-22, green three runs in a row).
 | `panels/`  | properties           | the context panel's Properties pane: formula, weight and extinction coefficient of the current cell, following the current cell, and the "Too long sequence" guard over 1000 characters |
 | `service/` | surface              | `Helm:getHelmHelper` exposes the methods other packages call; `Helm:getMolfiles` returns one hwe pseudo-molfile per row |
 
-One scenario is `@known-failure`, GROK-20962: Edit Helm... opens the current row, not the cell it was picked on (`openEditor` in `src/package.ts`
-reads `df.currentRowIdx`), so a right-click on another cell edits — and on OK overwrites — the
-current one.
+No scenario is `@known-failure`. GROK-20962 (Edit Helm... opened the current row, not the cell it
+was picked on, and OK overwrote that row) was fixed on 2026-09-22; `editor/open` ends with the
+scenario that pins the fix.
 
 What is not here, and why (each feature says it too): the monomer tooltip on hover, since the
 renderer publishes no hit area for the monomers it draws (a `grid.addStatusProvider` in

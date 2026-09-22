@@ -218,7 +218,8 @@ list is the reference; this is the map:
 
 - **Gestures and outcomes on any element** (`bindings/common/steps.ts`): clicks, hovers, typing
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
-  `should be/become {state}`, text, value and item counts. States: visible, hidden, present,
+  `should be/become {state}`, text, value and item counts, a visible count remembered and then
+  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list). States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
   collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
   `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
@@ -368,7 +369,7 @@ drag: the page is pictured along the way (`NN-dragK.png`, at most eight per step
 shows what the drag draws — a selection box, an annotation region — growing under the pointer,
 and the step's still shows it complete at the release point. Tests know nothing of it: without
 the variable no line of it runs. The viewport is 1080p (1920×1080, so the top menu keeps every group on the bar; `BDD_GUIDE_VIEWPORT=<w>x<h>`
-for another) so the video reads without zooming every step, and the shell is the full one (simple
+for another) so the video reads without zooming every step — the video itself, caption strip included, is 1600×1000, the frames downsampled from the page (`VIDEO_W`, `VIDEO_H` in the renderer) — and the shell is the full one (simple
 mode off), as a person has it — filmed or in a plain run: every `@guide` scenario carries `And
 simple mode is off` right after the login (the compiler refuses one without it), and the step
 puts simple mode back at feature end. Every step is in the video except the login and that shell

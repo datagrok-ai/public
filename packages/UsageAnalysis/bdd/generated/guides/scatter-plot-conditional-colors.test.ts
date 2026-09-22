@@ -15,10 +15,10 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, hoverOver, pressKey, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, hoverOver, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {colorCodedAs} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaColor, hasArea, legendItemColor, legendLists, pickColorSwatch, pickFromAreaContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areaColor, closeContextMenu, hasArea, legendItemColor, legendLists, pickColorSwatch, pickFromAreaContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Color a scatter plot by conditions, then change one condition's color", () => {
@@ -31,7 +31,7 @@ test.describe("Color a scatter plot by conditions, then change one condition's c
     await session.step(15, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["X","WEIGHT"],["Y","HEIGHT"],["Color","AGE"]]), [["X","WEIGHT"],["Y","HEIGHT"],["Color","AGE"]]);
     await session.step(19, "Then scatter plot viewer should have a \"color scale\" area", () => hasArea(page, el("scatter plot viewer"), "color scale"));
     await session.step(20, "When user picks \"Color Coding > Conditional\" from the context menu of the \"header AGE\" area of grid", () => pickFromAreaContextMenu(page, "Color Coding > Conditional", "header AGE", el("grid")));
-    await session.step(21, "And user presses Escape", () => pressKey(page, "Escape"));
+    await session.step(21, "And user closes the context menu", () => closeContextMenu(page));
     await session.step(22, "Then \"AGE\" column should be color-coded conditionally", () => colorCodedAs(page, "AGE", "conditionally"));
     await session.step(23, "And context menu should be hidden", () => shouldBe(page, el("context menu"), "hidden"));
     await session.step(24, "And the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));

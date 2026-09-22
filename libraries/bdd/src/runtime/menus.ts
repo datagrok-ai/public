@@ -55,7 +55,8 @@ export async function openTopMenu(page: Page, path: string, pick: boolean): Prom
     await walkTopMenu(page, segments, names, pick);
   }
   catch (e) {
-    if (!/^no "|has no box|the box of the menu item|locator\.hover: Timeout/.test(String((e as Error).message)))
+    const message = String((e as Error).message);
+    if (!/^no "/.test(message) && !REBUILT.test(message))
       throw e;
     await page.mouse.move(2, 2);
     await expect(page.locator('[role="menubar"] .d4-vert-menu').filter({visible: true}), 'the top menu closed before the walk is made again').toHaveCount(0);

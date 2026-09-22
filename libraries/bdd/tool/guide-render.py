@@ -1,7 +1,8 @@
 """Renders a guide manifest (`steps.json` + the PNGs a `BDD_GUIDE` run wrote) into guide.mp4,
 step-NN.png (the annotated picture of every step), steps.md, and with --gif also guide.gif and
 guide-thumb.png. Pillow does the drawing, ffmpeg the encoding (FFMPEG env, PATH, the
-imageio-ffmpeg package, or Playwright's own build, which can only write WebM).
+imageio-ffmpeg package, or Playwright's own build, which can only write WebM). The video and the
+stills are 1600×1000 with the caption strip: the page is filmed at 1080p and downsampled.
 
     py tool/guide-render.py <scenario dir> [--gif] [--fps 30] [--hold 1.4] [--travel 0.7]
         [--zoom 1.8] [--zoom-time 0.8] [--ffmpeg <path>] [--quiet]
@@ -25,6 +26,7 @@ ACCENT = (255, 90, 31)
 CHECK = (46, 160, 67)
 BAR = (20, 24, 32, 205)
 SMALL_TARGET_PX = 28   # a target no wider and no taller than this (an icon, a checkbox) is zoomed into; larger ones are lit and clicked in place
+VIDEO_W, VIDEO_H = 1600, 1000   # the video and the stills, caption strip included; the page is filmed larger and downsampled
 
 
 def find_ffmpeg(explicit):
@@ -92,14 +94,19 @@ class Renderer:
         self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup']
         first = self._image(self.steps[0]['before'] if self.steps else self.manifest['steps'][0]['before'])
         self.w, self.h = first.width & ~1, first.height & ~1
-        self.font = load_font(max(14, self.h // 34))
-        self.small = load_font(max(12, self.h // 46))
         self.big = load_font(max(20, self.h // 18))
         self.cursor = cursor_sprite(max(1.0, self.h / 700))
-        self.bar_h = int(self.h * 0.085) & ~1
         # the caption sits above the page: nothing of the page is covered, and a player's timeline
-        # lands on the bottom edge
+        # lands on the bottom edge. The page keeps the pixels it was filmed at (every box, pointer
+        # and zoom is in them); the strip is as tall as makes page plus strip the video's aspect
+        # (120 px over a 1080p page), and the composed frame is downsampled to the video size —
+        # never upsampled, so a small capture stays as it is
+        self.bar_h = max(int(self.h * 0.085), round(self.w * VIDEO_H / VIDEO_W) - self.h) & ~1
         self.out_h = self.h + self.bar_h
+        scale = min(1.0, VIDEO_W / self.w, VIDEO_H / self.out_h)
+        self.video = (int(self.w * scale) & ~1, int(self.out_h * scale) & ~1)
+        self.font = load_font(max(14, self.bar_h // 3))
+        self.small = load_font(max(12, self.bar_h // 4))
         self.cur = (self.w / 2, self.h / 2)
 
     def _image(self, name):
@@ -165,7 +172,7 @@ class Renderer:
         canvas.paste(frame, (0, self.bar_h))
         if caption is not None:
             canvas.paste(caption, (0, 0), caption)
-        return canvas
+        return canvas if canvas.size == self.video else canvas.resize(self.video, Image.LANCZOS)
 
     def title_frames(self, base):
         layer = Image.new('RGBA', (self.w, self.h), (10, 14, 20, 150))
@@ -338,7 +345,7 @@ class Renderer:
         video = os.path.join(self.folder, 'guide.mp4' if h264 else 'guide.webm')
         codec = ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'] \
             if h264 else ['-c:v', 'libvpx', '-b:v', '2M', '-pix_fmt', 'yuv420p']
-        cmd = [ffmpeg, '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{self.w}x{self.out_h}',
+        cmd = [ffmpeg, '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{self.video[0]}x{self.video[1]}',
                '-r', str(self.fps), '-i', '-', *codec, video]
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         count = 0
@@ -353,7 +360,7 @@ class Renderer:
             out = os.path.join(self.folder, 'guide.gif')
             # a docs GIF: ten frames a second at 880 px, no dithering (which defeats GIF's run-length
             # compression on flat UI colors) — a seven-step guide lands around a megabyte
-            width = min(880, self.w) & ~1
+            width = min(880, self.video[0]) & ~1
             vf = (f'fps=10,scale={width}:-2:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];'
                   '[b][p]paletteuse=dither=none:diff_mode=rectangle')
             subprocess.run([ffmpeg, '-y', '-loglevel', 'error', '-i', video, '-vf', vf, out], check=True)

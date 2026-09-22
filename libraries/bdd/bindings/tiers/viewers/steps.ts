@@ -527,29 +527,27 @@ export const noBalloons = Then('no error or warning balloon should have been sho
 
 /** The balloons of a type since the last read, polled: a balloon a command raises lands a task
  * after the gesture. */
-async function expectBalloon(page: Page, type: string, text: string | RegExp, capMs = 5000): Promise<void> {
-  const types = type.split(' or ');
+async function expectBalloon(page: Page, types: string[], text: string | RegExp, capMs = 5000): Promise<void> {
   const what = typeof text === 'string' ? `containing "${text}"` : `matching /${text.source}/`;
-  let shown: string[] = [];
+  let shown: Awaited<ReturnType<typeof v.takeBalloons>> = [];
   await expect.poll(async () => {
-    shown = shown.concat((await v.takeBalloons(page)).map((b) => `${b.type}: ${b.message}`));
-    return shown.some((s) => types.some((t) => s.startsWith(`${t}: `)) &&
-      (typeof text === 'string' ? s.includes(text) : text.test(s.slice(s.indexOf(': ') + 2))));
-  }, {timeout: pollMs(capMs), message: `an ${type} balloon ${what}; balloons since the last check: ${shown.join(' | ') || 'none'}`}).toBe(true);
+    shown = shown.concat(await v.takeBalloons(page));
+    return shown.some((b) => types.includes(b.type) && (typeof text === 'string' ? b.message.includes(text) : text.test(b.message)));
+  }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}; balloons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`}).toBe(true);
 }
 
-export const errorBalloonText = Then('an error balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'error', text),
+export const errorBalloonText = Then('an error balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, ['error'], text),
   {description: 'since the previous balloon check; reading clears the balloons'});
 
-export const warningBalloonText = Then('a warning balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'warning', text));
+export const warningBalloonText = Then('a warning balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, ['warning'], text));
 
-export const infoBalloonText = Then('an info balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, 'info', text));
+export const infoBalloonText = Then('an info balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, ['info'], text));
 
 export const errorOrWarningBalloonMatching = Then('an error or warning balloon matching {string} should have been shown',
-  (page: Page, pattern: string) => expectBalloon(page, 'error or warning', new RegExp(pattern, 'i'), 10000),
+  (page: Page, pattern: string) => expectBalloon(page, ['error', 'warning'], new RegExp(pattern, 'i'), 10000),
   {description: 'either kind, its message against a case-insensitive regular expression — a rejection a command may raise as either, told from an unrelated balloon that lands meanwhile'});
 
-export const infoBalloon = Then('an info balloon should have been shown', (page: Page) => expectBalloon(page, 'info', ''),
+export const infoBalloon = Then('an info balloon should have been shown', (page: Page) => expectBalloon(page, ['info'], ''),
   {description: 'any info balloon since the previous balloon check — a command that answers with one of several messages'});
 
 // --- tooltips --------------------------------------------------------------------------------------

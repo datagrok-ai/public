@@ -102,6 +102,24 @@ area and the `region titles shown` count are missing. Checked in the review run 
 | [Auto Layout off](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-region-titles.feature) | `the "region Adults title" area … should lie inside the "view" area` | No such area: `autoLayout=false` gates the reserve off and the title goes with it. |
 | [A resized line chart keeps its band title](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-regions-2d-viewers.feature) | `line chart viewer should have a "region Adults title" area` | No such area after the resize to 800 by 500; the strip is dropped with it. |
 
+## Tags added on 2026-09-22 (`opavlenko/bdd-bio-peptides-helm`)
+
+Six scenarios, three defects, checked in the review run of 2026-09-22 (public master merged at
+`de03278381`, core master `375ec691be`): each stops at the step named here, run with
+`--grep @known-failure` and the JSON reporter. The branch also carried a Helm tag (GROK-20962,
+Edit Helm... opening the current row instead of the picked cell) that master fixed the same day
+(`25e26dc9e9`); it was retired before the merge and `editor/open.feature` ends with the scenario
+that pins the fix.
+
+| Scenario | Stops at | Was |
+| --- | --- | --- |
+| [Similarity Search rejects an empty current row — GROK-16111](../../packages/Bio/bdd/features/analyze/empty-current-row.feature) | `an error or warning balloon matching … should have been shown` | No balloon: the viewer searches with the empty sequence, and its "Running similaritySearch..." progress entry never ends (the shell reset waits it out once per page). |
+| [Diversity Search rejects an empty current row — GROK-16111](../../packages/Bio/bdd/features/analyze/empty-current-row.feature) | the same claim | The same, with "Running diversitySearch...". |
+| [Activity Cliffs rejects an empty current row — GROK-16111](../../packages/Bio/bdd/features/analyze/empty-current-row.feature) | the same claim, right after OK | No balloon; the analysis runs on the 63 sequences left. |
+| [The identity function scores a HELM sequence against itself — GROK-20964](../../packages/Bio/bdd/features/calculate/scoring.feature) | `user calls "Bio:seqIdentity" function with:` | The call throws "The column of notation 'helm' must be 'Macromolecule'": the one-cell column it builds is detected but never typed. |
+| [The settings show Dendrogram checked while the tree is shown — GROK-20640](../../packages/Peptides/bdd/features/sar/from-top-menu.feature) | `Dendrogram checkbox in "Peptides settings" dialog should be checked` | Unchecked: `settings.ts` looks the tree up among the view's viewers, and Dendrogram attaches it as a grid neighbour. |
+| [Unchecking Dendrogram removes the tree — GROK-20640](../../packages/Peptides/bdd/features/sar/from-top-menu.feature) | `the analysis grid should not have a dendrogram` | The tree stays: `closeViewer(DENDROGRAM)` in `model.ts` never finds it. |
+
 ## Validation
 
 Final complete suites on four workers, 2026-09-13:

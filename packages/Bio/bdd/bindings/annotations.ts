@@ -91,14 +91,3 @@ export const listMatchesAnnotations = Then('annotations list in {string} dialog 
   const f = await annotationFacts(page, column);
   await expect(page.locator(`[name="dialog-${dialog.replace(/\s+/g, '-')}"] [data-u2-name="annotations"] [data-u2="item"]`), `rows of the annotations list against ${f.count} annotations`).toHaveCount(f.count);
 });
-
-/** A numbering run tags the aligned column with the positions it assigned. */
-export const positionNamesCount = Then('{string} column should list at least {int} position names', async (page: Page, column: string, count: number) => {
-  const names: string[] = await page.evaluate((c) => {
-    const col = grok.shell.t.col(c);
-    if (!col)
-      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
-    return String(col.getTag('.positionNames') ?? '').split(',').map((s: string) => s.trim()).filter((s: string) => s !== '');
-  }, column);
-  expect(names.length, `position names in the .positionNames tag of "${column}"`).toBeGreaterThanOrEqual(count);
-}, {description: 'the comma-separated .positionNames tag a numbering run writes on the aligned column'});

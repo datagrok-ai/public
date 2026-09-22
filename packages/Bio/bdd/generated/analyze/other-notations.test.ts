@@ -12,7 +12,6 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {cliffCount} from '../../bindings/cliffs.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -85,7 +84,7 @@ test.describe("The Analyze commands on HELM and MSA columns", () => {
     await session.step(55, "And a new column matching \"sali|SALI\" should have been added", () => newColumnMatching(page, "sali|SALI"));
     await session.step(56, "And scatter plot viewer should be visible", () => shouldBe(page, el("scatter plot viewer"), "visible"));
     await session.step(57, "And title of scatter plot viewer should have text \"Activity cliffs\"", () => shouldHaveText(page, el("title of scatter plot viewer"), "Activity cliffs"));
-    await session.step(58, "And the activity cliffs plot should report at least 1 cliff", () => cliffCount(page, 1));
+    await session.step(58, "And the \"cliffs\" reading of scatter plot viewer should be at least 1", () => readingAtLeast(page, "cliffs", el("scatter plot viewer"), 1));
     await session.step(59, "And scatter plot viewer should be painted", () => painted(page, el("scatter plot viewer")));
     await session.step(60, "And no error or warning balloon should have been shown", () => noBalloons(page));
     await session.step(61, "And no errors should have been logged", () => noErrors(page));
@@ -106,7 +105,7 @@ test.describe("The Analyze commands on HELM and MSA columns", () => {
     await session.step(55, "And a new column matching \"sali|SALI\" should have been added", () => newColumnMatching(page, "sali|SALI"));
     await session.step(56, "And scatter plot viewer should be visible", () => shouldBe(page, el("scatter plot viewer"), "visible"));
     await session.step(57, "And title of scatter plot viewer should have text \"Activity cliffs\"", () => shouldHaveText(page, el("title of scatter plot viewer"), "Activity cliffs"));
-    await session.step(58, "And the activity cliffs plot should report at least 1 cliff", () => cliffCount(page, 1));
+    await session.step(58, "And the \"cliffs\" reading of scatter plot viewer should be at least 1", () => readingAtLeast(page, "cliffs", el("scatter plot viewer"), 1));
     await session.step(59, "And scatter plot viewer should be painted", () => painted(page, el("scatter plot viewer")));
     await session.step(60, "And no error or warning balloon should have been shown", () => noBalloons(page));
     await session.step(61, "And no errors should have been logged", () => noErrors(page));
