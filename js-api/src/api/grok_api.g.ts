@@ -1146,6 +1146,7 @@ export interface IDartApi {
   grok_Stream_Listen(stream: any, onData: any): any;
   grok_Object_ToString(o: any): any;
   grok_Dapi_Entities(): any;
+  grok_Dapi_EntityTypes(): any;
   grok_Dapi_Queries(): any;
   grok_Dapi_Functions(): any;
   grok_Dapi_Function_Calls(): any;

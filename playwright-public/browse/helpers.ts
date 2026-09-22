@@ -9,6 +9,7 @@ import {
   CONTEXT_PANEL_EXPAND_ALL,
   RIBBON,
   SIDEBAR_BROWSE_ICON,
+  TREE_CHILDREN_HOST_CLASS,
   TREE_EXPAND_ARROW,
   TREE_EXPAND_ARROW_EXPANDED,
   TREE_NODE_GROUP_LABEL,
@@ -182,17 +183,24 @@ export async function expandTreeGroup(page: Page, name: string | string[]): Prom
     } else {
       await label.click();
     }
-    // Wait for the arrow to flip to expanded; fall back to a short sleep if the wait misses.
-    await tri.evaluate((el) => new Promise<void>((resolve) => {
-      if (el.classList.contains('d4-tree-view-tri-expanded')) { resolve(); return; }
-      const o = new MutationObserver(() => {
-        if (el.classList.contains('d4-tree-view-tri-expanded')) { o.disconnect(); resolve(); }
-      });
-      o.observe(el, { attributes: true, attributeFilter: ['class'] });
-      setTimeout(() => { o.disconnect(); resolve(); }, 800);
-    })).catch(() => page.waitForTimeout(400));
   }
+  await waitForChildrenLoaded(node);
   return label;
+}
+
+/**
+ * Wait until the group's children are in the DOM, reading the children host's `data-state`.
+ * `d4-tree-view-tri-expanded` only reports the intent to expand — it is added synchronously by
+ * the click, before the group has any children and before the request goes out.
+ * `node` is the group's own row (`.d4-tree-view-node`); its next sibling is the children host.
+ * Returns false if the group never got there, so a caller can assert on it rather than read a
+ * half-built subtree.
+ */
+export async function waitForChildrenLoaded(node: Locator, timeout = 15_000): Promise<boolean> {
+  return node
+    .locator(`xpath=following-sibling::div[contains(@class,"${TREE_CHILDREN_HOST_CLASS}") and @data-state="loaded"][1]`)
+    .waitFor({ state: 'attached', timeout })
+    .then(() => true, () => false);
 }
 
 /**

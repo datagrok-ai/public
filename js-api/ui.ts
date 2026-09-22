@@ -2610,33 +2610,51 @@ export namespace hints {
     return root;
   }
 
+  let hintId = 0;
+
+  /** The reposition timer of every live hint, by its `data-target`, so [remove] can stop it. */
+  const _hintIntervals: {[name: string]: any} = {};
+
+  /** Ticks (of 50 ms, so 30 s) a hint waits for a missing target before giving up. A rebuild
+   * replaces a ribbon in a couple of seconds; a target absent this long is gone for good. */
+  const HINT_GRACE_TICKS = 600;
+
   /** Adds a hint indication to the provided element and returns it.
+   *
+   * Pass a function instead of an element when the target is rebuilt while the hint is up — a
+   * ribbon item, a re-rendered toolbar. The blob then re-resolves its target on every tick and
+   * moves with it; bound to a single node, it would be orphaned on the node that was replaced and
+   * the learner would see nothing highlighted.
+   *
    * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/hints}
    */
-  export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
-    const id = Math.floor(Math.random() * 1000);
+  export function addHintIndicator(el: HTMLElement, clickToClose?: boolean, autoClose?: number): HTMLElement;
+  export function addHintIndicator(el: HTMLElement | (() => HTMLElement | null), clickToClose?: boolean,
+    autoClose?: number): HTMLElement | null;
+  export function addHintIndicator(el: HTMLElement | (() => HTMLElement | null),
+    clickToClose: boolean = true, autoClose?: number): HTMLElement | null {
+    const resolve = typeof el === 'function' ? el : () => el;
+    let target: HTMLElement | null = resolve();
+    const name = 'hint-target-' + ++hintId;
     const hintIndicator = document.createElement('div');
     hintIndicator.className = 'ui-hint-blob';
 
-    hintIndicator.setAttribute('data-target', 'hint-target-' + id);
-    el.setAttribute('data-target', 'hint-target-' + id);
+    hintIndicator.setAttribute('data-target', name);
 
-    el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
 
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
 
     let clippers: HTMLElement[] | null = null;
-    function targetClipped(): boolean {
-      const r = el.getBoundingClientRect();
+    function targetClipped(r: DOMRect): boolean {
       if (r.width === 0 && r.height === 0)
         return true;
       if (r.bottom <= 0 || r.right <= 0 || r.top >= window.innerHeight || r.left >= window.innerWidth)
         return true;
       if (clippers == null) {
         clippers = [];
-        for (let p = el.parentElement; p != null && p !== document.body; p = p.parentElement) {
+        for (let p = target!.parentElement; p != null && p !== document.body; p = p.parentElement) {
           const style = getComputedStyle(p);
           if (/(auto|scroll)/.test(style.overflowY + style.overflowX))
             clippers.push(p);
@@ -2650,28 +2668,51 @@ export namespace hints {
       return false;
     }
 
-    let setPosition = setInterval(function () {
-      if ($('body').has(el).length != 0) {
-        const indicatorNode = el.getBoundingClientRect();
-        hintIndicator.style.left = indicatorNode.left + 'px';
-        hintIndicator.style.top = indicatorNode.top + 'px';
-        hintIndicator.style.display = targetClipped() ? 'none' : '';
-      } else {
-        hintIndicator.remove();
-        clearInterval(setPosition);
+    /** Moves the hint onto [next], which a rebuild may have made a different node than the one the
+     * hint was attached to. The scroll parents are re-read with it. */
+    function attach(next: HTMLElement): void {
+      // `data-target` stays on the node that had it: the caller holds the node it passed in, and
+      // [remove] resolves the blob - and now the class - through that attribute
+      target?.classList.remove('ui-hint-target');
+      target = next;
+      clippers = null;
+      target.setAttribute('data-target', name);
+      target.classList.add('ui-hint-target');
+      if (clickToClose)
+        $(target).off(`click.${name}`).on(`click.${name}`, () => remove(target!));
+    }
+
+    let missedTicks = 0;
+    const setPosition = setInterval(function () {
+      const next = resolve();
+      if (next == null || !document.body.contains(next)) {
+        // nothing to point at right now; a rebuild may bring the target back, and a target that
+        // has not rendered yet may arrive for the first time
+        hintIndicator.style.display = 'none';
+        if (++missedTicks > HINT_GRACE_TICKS)
+          remove(target ?? hintIndicator);
+        return;
       }
-    }, 10);
+      missedTicks = 0;
+      if (next !== target)
+        attach(next);
+      const box = target!.getBoundingClientRect();
+      hintIndicator.style.left = box.left + 'px';
+      hintIndicator.style.top = box.top + 'px';
+      hintIndicator.style.display = targetClipped(box) ? 'none' : '';
+    }, 50);
 
-    if (clickToClose) {
-      $(el).on('click', () => {
-        remove(el);
-      });
-    }
+    _hintIntervals[name] = setPosition;
+    // a resolver whose target has not rendered yet keeps the blob hidden until a tick finds it
+    hintIndicator.setAttribute('data-target', name);
+    if (target != null)
+      attach(target);
+    else
+      hintIndicator.style.display = 'none';
 
-    if (autoClose! > 0) {
-      setTimeout(() => remove(el), autoClose);
-    }
-    return el;
+    if (autoClose! > 0)
+      setTimeout(() => remove(target ?? hintIndicator), autoClose);
+    return target;
   }
 
   /** Describes series of visual components in the wizard. Each wizard page is associated with the
@@ -2754,6 +2795,13 @@ export namespace hints {
     if (el) {
       const id = el.getAttribute('data-target');
       $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
+      if (id != null) {
+        clearInterval(_hintIntervals[id]);
+        delete _hintIntervals[id];
+        // the hint may have followed its target onto a rebuilt node, which is the one wearing the
+        // class now - clearing only `el` would leave the highlight on screen for good
+        $(`[data-target="${id}"]`).removeClass('ui-hint-target ui-text-hint-target');
+      }
       el.classList.remove('ui-hint-target', 'ui-text-hint-target');
     }
     $('div.ui-hint-overlay')?.remove();

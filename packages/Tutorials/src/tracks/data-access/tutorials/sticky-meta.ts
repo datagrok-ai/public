@@ -13,6 +13,28 @@ enum LINKS {
   STICKY_META = 'https://datagrok.ai/help/govern/catalog/sticky-meta',
 }
 
+/** What the steps tell the learner to type. The later steps look these values back up, so they have
+ * to be the same string in both places — they used to disagree in case, and the lookup that missed
+ * took the rest of the tutorial down with it. */
+const SCHEMA_NAME = 'schema for tutorial';
+const PROPERTY_NAME = 'project name';
+
+/** Resolves an element the platform renders asynchronously, and says which one was missing when it
+ * never turns up — a lookup that silently returns `undefined` throws a TypeError one line later. */
+async function waitForElement<T extends Element>(get: () => T | null | undefined, what: string,
+  timeoutMs = 10000): Promise<T> {
+  for (let waited = 0; waited < timeoutMs; waited += 50) {
+    const el = get();
+    if (el != null)
+      return el;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Sticky Meta tutorial: ${what} never appeared`);
+}
+
+/** Case-insensitive match on an element's trimmed text. */
+const textIs = (value: string) => (el: Element) => el.textContent?.trim().toLowerCase() === value.toLowerCase();
+
 /** Sticky Meta tutorial */
 export class StickyMetaTutorial extends Tutorial {
   get name() { return 'Sticky Meta'; }
@@ -133,7 +155,7 @@ export class StickyMetaTutorial extends Tutorial {
     await this.action('Explore schema dialog', fromEvent(doneBtn, 'click'));
 
     // --- Step 9: Fill in schema details ---
-    await this.textInpAction(schemaDialogRoot, 'Set "Name" to "schema for tutorial"', 'Name', 'schema for tutorial');
+    await this.textInpAction(schemaDialogRoot, `Set "Name" to "${SCHEMA_NAME}"`, 'Name', SCHEMA_NAME);
 
     const assocWithRoot = $(schemaDialogRoot)
       .find('label.ui-label.ui-input-label span')
@@ -167,7 +189,7 @@ export class StickyMetaTutorial extends Tutorial {
     const selectorOkBtn = $(selectorDlg.root).find('button.ui-btn-ok')[0];
     await this.action('Confirm entity selection', selectorDlg.onClose, selectorOkBtn);
 
-    await this.textInpAction(propertyRow, 'Set property "Name" to "project name"', 'Name', 'project name');
+    await this.textInpAction(propertyRow, `Set property "Name" to "${PROPERTY_NAME}"`, 'Name', PROPERTY_NAME);
     await this.choiceInputAction(propertyRow, 'Set property "Type" to "string"', 'Property Type', 'string');
     await this.action('Save schema', schemaDialog.onClose, $(schemaDialog.root).find('button.ui-btn-ok[name="button-OK"]')[0], 'Click OK to save schema.');
 
@@ -194,17 +216,22 @@ export class StickyMetaTutorial extends Tutorial {
       });
     });
 
-    await new Promise(resolve => setTimeout(resolve, 500));
-
     // --- Step 11: Fill in sticky meta property ---
-    const stickyPane = document.querySelector('.d4-accordion-pane[d4-title="Sticky meta"]') as HTMLElement;
+    const stickyPane = await waitForElement<HTMLElement>(
+      () => document.querySelector<HTMLElement>('.d4-accordion-pane[d4-title="Sticky meta"]'),
+      'the Sticky meta pane');
     const header = stickyPane.querySelector('.d4-accordion-pane-header') as HTMLElement;
     if (header && !stickyPane.children[0].classList.contains('expanded')) header.click();
 
-    const schemaSection = Array.from(stickyPane.querySelectorAll('.grok-sticky-meta-schema-header'))
-      .find(el => el.textContent?.trim() === 'Schema for tutorial') as HTMLElement;
+    const schemaSection = await waitForElement<HTMLElement>(
+      () => Array.from(stickyPane.querySelectorAll<HTMLElement>('.grok-sticky-meta-schema-header'))
+        .find(textIs(SCHEMA_NAME)), `the "${SCHEMA_NAME}" section`);
 
-    const projectPropertyInput = schemaSection.parentElement?.querySelector('input[name="input-Project-name"]') as HTMLInputElement;
+    // by its label, not by a generated input name: the property is named by the learner
+    const projectPropertyInput = await waitForElement<HTMLInputElement>(
+      () => Array.from(schemaSection.parentElement!.querySelectorAll('.ui-input-root'))
+        .find((root) => textIs(PROPERTY_NAME)(root.querySelector('label.ui-label span')!))
+        ?.querySelector('input'), `the "${PROPERTY_NAME}" input`);
     await this.action(
       'Enter value for project name',
       new Promise<void>((resolve) => {
@@ -221,12 +248,14 @@ export class StickyMetaTutorial extends Tutorial {
 
     // --- Step 12: Save sticky meta ---
     const accordionPane = schemaSection.closest<HTMLDivElement>('.d4-accordion-pane');
-    const saveBtn = Array.from(accordionPane!.querySelectorAll<HTMLButtonElement>('button[name^="button-Save"]'))
-      .find(btn => !btn.classList.contains('disabled'));
+    const saveBtn = await waitForElement<HTMLButtonElement>(
+      () => Array.from(accordionPane!.querySelectorAll<HTMLButtonElement>('button[name^="button-Save"]'))
+        .find((btn) => !btn.classList.contains('disabled') && btn.getAttribute('aria-disabled') !== 'true'),
+      'the enabled Save button');
 
     await this.action(
       'Save sticky meta changes',
-      new Promise<void>((resolve) => saveBtn?.addEventListener('click', () => resolve(), { once: true })),
+      new Promise<void>((resolve) => saveBtn.addEventListener('click', () => resolve(), {once: true})),
       saveBtn
     );
 

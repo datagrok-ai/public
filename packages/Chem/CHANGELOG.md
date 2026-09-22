@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), so the viewer reports `card <row>` hit areas and `cards` / `current card` / `selected cards` readings instead of being addressed by position
 * Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
 * Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura
 * GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder

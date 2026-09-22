@@ -6,9 +6,10 @@ import * as ui from 'datagrok-api/ui';
 import {EChartViewer} from '../echart/echart-viewer';
 import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import * as echarts from 'echarts';
-import {fromEvent} from 'rxjs';
+import {fromEvent, Observable, Subject} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
+import {laidOutSegmentCount, sunburstStatus} from './sunburst-status';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
@@ -43,7 +44,25 @@ export class SunburstViewer extends EChartViewer {
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   private moleculeRenderErrorLogged: boolean = false;
   private latestRenderToken = 0;
+  private _renderPending = 0;
+  private _layoutPending = false;
+  private _onRendered = new Subject<void>();
   viewerFilter: DG.BitSet | null = null;
+
+  /** Fires after every render pass — what automation settles on together with [isRenderPending]. */
+  get onRendered(): Observable<void> {return this._onRendered;}
+
+  /** Whether a queued render still owes a frame - including the frame echarts lays the sectors out
+   * on, which is after `setOption` returns. A canvas on its own says nothing. */
+  get isRenderPending(): boolean {return this._renderPending > 0 || this._layoutPending;}
+
+  /** The message the viewer put in place of the sunburst, `null` while it is drawn. */
+  get renderError(): string | null {
+    const message = this.root.querySelector(`.${ERROR_CLASS}`);
+    return message === null ? null : message.textContent;
+  }
+
+  getWidgetStatus(): DG.IWidgetStatus {return sunburstStatus(this);}
   constructor() {
     super();
     this.initEventListeners();
@@ -392,8 +411,34 @@ export class SunburstViewer extends EChartViewer {
   render(orderedHierarchyNames?: string[]): void {
     const currentToken = ++this.latestRenderToken;
 
+    this._renderPending++;
+    const settle = () => {
+      if (--this._renderPending > 0)
+        return;
+      this._layoutPending = true;
+      this.renderFinished(0);
+    };
     this.renderQueue = this.renderQueue
-      .then(() => this._renderWithToken(currentToken, orderedHierarchyNames));
+      .then(() => this._renderWithToken(currentToken, orderedHierarchyNames))
+      // settle on both outcomes, or one failed render leaves the viewer pending for good
+      .then(settle, (e) => {
+        settle();
+        throw e;
+      });
+  }
+
+  /** `_render` ends at `setOption(..., lazyUpdate: true)`, so echarts has not built the series yet
+   * and zrender paints it a frame later. Neither the canvas nor the promise says the sunburst is
+   * there — the sectors the layout left do. */
+  private renderFinished(attempt: number): void {
+    const owed = this.renderError === null && (this.eligibleHierarchyNames ?? []).length > 0 &&
+      (this.root.querySelector('canvas') === null || laidOutSegmentCount(this.chart) === 0);
+    if (owed && attempt < 20) {
+      setTimeout(() => requestAnimationFrame(() => this.renderFinished(attempt + 1)));
+      return;
+    }
+    this._layoutPending = false;
+    this._onRendered.next();
   }
 
   private async _renderWithToken(token: number, orderedHierarchyNames?: string[]) {

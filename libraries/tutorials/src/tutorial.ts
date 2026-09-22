@@ -8,6 +8,12 @@ import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
 
 
+/** What a step can point a hint at: an element, or a function that resolves one every time the
+ * hint repositions. Pass a function whenever the target is rebuilt while the step is up — a ribbon
+ * item, a re-rendered toolbar — or the highlight is left behind on the replaced node. */
+export type HintTarget = HTMLElement | (() => HTMLElement | null);
+
+
 /** A base class for tutorials */
 export abstract class Tutorial extends DG.Widget {
   get type(): string {
@@ -351,16 +357,15 @@ export abstract class Tutorial extends DG.Widget {
     this.currentSection = undefined;
   }
 
-  _placeHints(hint: HTMLElement | HTMLElement[]) {
-    if (hint instanceof HTMLElement) {
-      this.activeHints.push(hint);
-      ui.hints.addHintIndicator(hint, false);
-    } else if (Array.isArray(hint)) {
-      this.activeHints.push(...hint);
-      hint.forEach((h) => {
-        if (h != null)
-          ui.hints.addHintIndicator(h, false);
-      });
+  _placeHints(hint: HintTarget | HintTarget[]) {
+    for (const h of Array.isArray(hint) ? hint : [hint]) {
+      if (h == null)
+        continue;
+      // a function target lets the blob follow a rebuilt element (a ribbon item), instead of being
+      // left on the node that was replaced
+      const target = ui.hints.addHintIndicator(h, false);
+      if (target != null)
+        this.activeHints.push(target);
     }
   }
 
@@ -383,7 +388,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   async action(instructions: string, completed: Observable<any> | Promise<void>,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<void> {
     if (this.closed)
       return;
 
@@ -428,7 +433,7 @@ export abstract class Tutorial extends DG.Widget {
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
 
     if (hint != null)
-      this._removeHints(hint);
+      this._removeHints(this.activeHints);
     sub.unsubscribe();
 
     // if (this.manualMode && manual !== false) {
@@ -499,6 +504,20 @@ export abstract class Tutorial extends DG.Widget {
     return (filter ? nodes.filter(filter) : nodes)[0] ?? null;
   }
 
+  /** [getElement], but waits for a control the platform builds a moment after its host appears.
+   * Steps used to be preceded by a fixed sleep for this, or to give up and skip themselves -
+   * which shifts every step number after them. */
+  private async awaitElement(element: HTMLElement, selector: string,
+    filter: ((idx: number, el: Element) => boolean) | null = null, timeoutMs = 10000): Promise<EleLoose | null> {
+    for (let waited = 0; waited < timeoutMs; waited += 100) {
+      const found = this.getElement(element, selector, filter);
+      if (found != null)
+        return found;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return null;
+  }
+
   protected get menuRoot(): HTMLElement {
     return grok.shell.v.ribbonMenu.root;
   }
@@ -544,8 +563,17 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to put the specified value into a dialog input. */
   protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string,
     value: string, description: string = '', historyHint: boolean = false, count: number = 0): Promise<void> {
-    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption.toLowerCase() == caption.toLowerCase())[count];
-    if (inp == null) return;
+    let inp: DG.InputBase | undefined;
+    // a dialog builds its inputs a moment after it opens; callers used to sleep for this
+    for (let waited = 0; waited < 10000 && inp == null; waited += 100) {
+      inp = dlg.inputs.filter((input: DG.InputBase) => input.caption.toLowerCase() == caption.toLowerCase())[count];
+      if (inp == null)
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (inp == null) {
+      console.error('Tutorial step skipped: no dialog input', this.name, caption, count);
+      return;
+    }
     await this.action(instructions,
       new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
@@ -561,9 +589,12 @@ export abstract class Tutorial extends DG.Widget {
   /** A helper method to access text inputs in a view. */
   protected async textInpAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = ''): Promise<void> {
-    const inputRoot = this.getElement(root, 'div.ui-input-root', (idx, inp) =>
+    const inputRoot = await this.awaitElement(root, 'div.ui-input-root', (idx, inp) =>
       $(inp).find('label.ui-label.ui-input-label')[0]?.textContent?.toLowerCase() === caption.toLowerCase());
-    if (inputRoot == null) return;
+    if (inputRoot == null) {
+      console.error('Tutorial step skipped: no text input', this.name, caption);
+      return;
+    }
     const input = this.getElement(inputRoot, 'input.ui-input-editor') as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
     await this.action(instructions, source, inputRoot, description);
@@ -591,9 +622,12 @@ export abstract class Tutorial extends DG.Widget {
 
   private async prepareColumnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string,
     description: string, inputSelector: string, valueSelector: string, intervalPeriod: number = 1000): Promise<void> {
-    const columnInput = this.getElement(root, inputSelector, (idx, inp) =>
+    const columnInput = await this.awaitElement(root, inputSelector, (idx, inp) =>
       this.getElement(inp as HTMLElement, 'label.ui-label.ui-input-label')?.textContent === caption);
-    if (columnInput == null) return;
+    if (columnInput == null) {
+      console.error('Tutorial step skipped: no column input', this.name, caption);
+      return;
+    }
     const source = interval(intervalPeriod).pipe(
       map((_) => this.getElement(columnInput, valueSelector)?.textContent),
       filter((value) => value === columnName));
@@ -617,8 +651,12 @@ export abstract class Tutorial extends DG.Widget {
 
   protected async buttonClickAction(root: HTMLElement, instructions: string,
     caption: string, description: string = '') {
-    const btn = this.getElement(root, 'button.ui-btn', (idx, btn) => btn.textContent?.toLowerCase() === caption.toLowerCase());
-    if (btn == null) return;
+    const btn = await this.awaitElement(root, 'button.ui-btn',
+      (idx, btn) => btn.textContent?.toLowerCase() === caption.toLowerCase());
+    if (btn == null) {
+      console.error('Tutorial step skipped: no button', this.name, caption);
+      return;
+    }
     const source = fromEvent(btn, 'click');
     await this.action(instructions, source, btn, description);
   };

@@ -55,6 +55,10 @@ export class ScatterPlotLinesRenderer {
   visibility: BitArray;
   currentLineStyle: ScatterPlotCurrentLineStyle;
   arrowWidth = 15;
+  /** What the last frame actually put on the canvas, as flat triples of line index and the drawn
+   * curve's midpoint. Recorded where the stroke happens rather than recomputed, because whether a
+   * line reaches the canvas depends on its length on screen as well as on the filter. */
+  private _drawn: number[] = [];
 
   get currentLineId(): number {
     return this._currentLineIdx;
@@ -110,6 +114,49 @@ export class ScatterPlotLinesRenderer {
       .subscribe((_: any) => {
         this.renderLines();
       });
+
+    sp.addStatusProvider('lines-on-scatter-plot', () => this.linesStatus());
+  }
+
+  /** Whether line [i] is a candidate for the frame: both ends pass the filter and its visibility bit
+   * is set. Whether it then reaches the canvas depends on its length on screen too. */
+  private isLineVisible(i: number, filter: DG.BitSet): boolean {
+    return filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i);
+  }
+
+  /** What the series reports about itself: one hit area per line the last frame drew, named both by
+   * its index in the series and by the pair of rows it joins, plus the counts a test compares. The
+   * lines are painted onto the scatter plot's own canvas, so the coordinates are already in the
+   * viewer's hit-area space - and `lines drawn` is what replaces scanning the canvas for the
+   * series' colour. */
+  linesStatus(): {hitAreas: {[name: string]: DG.IRectBounds}, values: {[name: string]: number | string}} {
+    const hitAreas: {[name: string]: any} = {};
+    const hit = 6;
+    const view = this.sp.viewBox;
+    for (let k = 0; k < this._drawn.length; k += 3) {
+      const i = this._drawn[k];
+      const x = this._drawn[k + 1];
+      const y = this._drawn[k + 2];
+      // a line can run under the axis strip or off-screen after a zoom, and a click there hits
+      // nothing - so a point the viewer does not show is not reported
+      if (x < view.minX || x > view.maxX || y < view.minY || y > view.maxY)
+        continue;
+      const box = {x: x - hit / 2, y: y - hit / 2, width: hit, height: hit};
+      hitAreas[`line ${i}`] = box;
+      // several lines can join the same pair of rows, which is what multipleLinesCounts tracks;
+      // naming them all by the pair would let the last one silently win
+      if (this.multipleLinesCounts[i] === 0)
+        hitAreas[`line ${this.lines.from[i]}-${this.lines.to[i]}`] = box;
+    }
+    return {
+      hitAreas,
+      values: {
+        'lines': this.lines.from.length,
+        'lines drawn': this._drawn.length / 3,
+        'current line': this._currentLineIdx,
+        'hovered line': this.mouseOverLineId,
+      },
+    };
   }
 
   updateLines(lines: ILineSeries) {
@@ -129,8 +176,9 @@ export class ScatterPlotLinesRenderer {
     }
     const filter = this.sp.dataFrame.filter;
     const shortLineSquare = (this.lines.shortLineThreshold ?? 5) ** 2;
+    this._drawn.length = 0;
     for (let i = 0; i < this.lines.from.length; i++) {
-      if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
+      if (this.isLineVisible(i, filter)) {
         let lineLen = 0;
         const sizeFrom = this.sp.getMarkerSize(this.lines.from[i]) / 2;
         const sizeTo = this.sp.getMarkerSize(this.lines.to[i]) / 2;
@@ -153,6 +201,7 @@ export class ScatterPlotLinesRenderer {
             this.toggleCurrentLineStyle(true);
           const multiLines = this.multipleLinesCounts[i];
           let controlPoint: DG.Point | null = null;
+          let pathLaid = false;
           if (multiLines) {
             lineLen = this.getLineLength(aX, aY, bX, bY);
             const startPointWithMarker = this.getPointOnDistance(aX, aY, bX, bY, sizeTo, lineLen);
@@ -166,11 +215,13 @@ export class ScatterPlotLinesRenderer {
               this.findControlPoint(multiLines, bX, bY, aX, aY, i);
             this.ctx.moveTo(aX!, aY!);
             this.ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, bX, bY);
+            pathLaid = true;
           } else {
             // do not draw line if it is too short
             if (!this.lines.skipShortLines || (bX - aX) ** 2 + (bY - aY) ** 2 > shortLineSquare) {
               this.ctx.moveTo(aX!, aY!);
               this.ctx.lineTo(bX, bY);
+              pathLaid = true;
             }
           }
           if (this.lines.drawArrows ?? this.lines.drawArrowsArr?.getBit(i)) {
@@ -185,6 +236,12 @@ export class ScatterPlotLinesRenderer {
           }
           this.ctx.stroke();
           this.ctx.closePath();
+          if (pathLaid) {
+            // the quadratic's own midpoint, not the chord's, so a curved line's area sits on it
+            this._drawn.push(i,
+              controlPoint == null ? (aX! + bX) / 2 : 0.25 * aX! + 0.5 * controlPoint.x + 0.25 * bX,
+              controlPoint == null ? (aY! + bY) / 2 : 0.25 * aY! + 0.5 * controlPoint.y + 0.25 * bY);
+          }
           if (i === this._currentLineIdx)
             this.toggleCurrentLineStyle(false);
         }
@@ -247,7 +304,7 @@ export class ScatterPlotLinesRenderer {
     let dist = null;
     const filter = this.sp.dataFrame.filter;
     for (let i = 0; i < this.lines.from.length; i++) {
-      if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i]) && this.visibility.getBit(i)) {
+      if (this.isLineVisible(i, filter)) {
         const sizeFrom = this.sp.getMarkerSize(this.lines.from[i]) / 2;
         const sizeTo = this.sp.getMarkerSize(this.lines.to[i]) / 2;
         const pFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));

@@ -20,7 +20,7 @@ import {
   UserSession,
   Property,
   FileInfo, ProjectOpenOptions, Func, UserReport, UserReportsRule, ViewLayout, ViewInfo, UserNotification,
-  DomainSchema,
+  DomainSchema, EntityType,
 } from './entities';
 import { DockerImage } from "./api/grok_shared.api.g";
 import {toJs, toDart} from "./wrappers";
@@ -129,6 +129,11 @@ export class Dapi {
   /** Entities API */
   get entities(): EntitiesDataSource {
     return new EntitiesDataSource(api.grok_Dapi_Entities());
+  }
+
+  /** Entity types API (`/api/entities/types`) - the types a sticky meta schema is attached to. */
+  get entityTypes(): HttpDataSource<EntityType> {
+    return new HttpDataSource(api.grok_Dapi_EntityTypes());
   }
 
   /** Data Queries API */
@@ -305,6 +310,11 @@ export class Dapi {
 }
 
 
+/** Anything the data-source writes accept: they only pass the Dart handle on. An {@link Entity}
+ * qualifies, and so do the few server objects that are not entities, such as {@link EntityType}. */
+export interface DartObject { dart: any }
+
+
 /**
  * Common functionality for handling collections of entities stored on the server.
  * Works with Datagrok REST API, allows to get filtered and paginated lists of entities,
@@ -391,12 +401,12 @@ export class HttpDataSource<T> {
   }
 
   /** Saves an entity; the saved copy comes back with this source's {@link include}s loaded. */
-  save(e: Entity): Promise<T> {
+  save(e: DartObject): Promise<T> {
     return api.grok_DataSource_Save(this.prepare({includes: this.query.includes}), e.dart);
   }
 
   /** Deletes an entity. */
-  delete(e: Entity): Promise<void> {
+  delete(e: DartObject): Promise<void> {
     return api.grok_DataSource_Delete(api.grok_DataSource_ResetQuery(this.dart), e.dart);
   }
 

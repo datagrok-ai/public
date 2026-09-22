@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {Observable, Subject} from 'rxjs';
 
 export class SearchBaseViewer extends DG.JsViewer {
   private _name: string = '';
@@ -15,6 +16,16 @@ export class SearchBaseViewer extends DG.JsViewer {
   protected maxLimit: number = 100;
   protected recomputeOnCurrentRowChange: boolean = true;
   protected skipRecomputingProperies: string[] = [];
+  private _renderPending = 0;
+  private _onRendered = new Subject<void>();
+
+  /** Fires when the render queue drains — what automation settles on with [isRenderPending]. */
+  get onRendered(): Observable<void> {return this._onRendered;}
+
+  /** Whether a queued render still owes a frame. The viewer renders through a promise chain and
+   * refingerprints off the main thread, so its DOM being non-empty says nothing about the frame. */
+  get isRenderPending(): boolean {return this._renderPending > 0;}
+
   constructor(name: string, semType: string) {
     super();
     this.limit = this.int('limit', 10, {min: 1, max: this.maxLimit});
@@ -51,7 +62,44 @@ export class SearchBaseViewer extends DG.JsViewer {
       this.targetColumn = this.targetColumnName ? this.dataFrame.col(this.targetColumnName) ?? undefined : undefined;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.maxLimit});
     }
+    this.addStatusProvider('search-results', () => this.resultsStatus());
     this.render();
+  }
+
+  /** What the result cards report about themselves. A subclass marks each card with the row it
+   * shows (`data-row`), and `d4-current` / `d4-selected` carry its state — so the areas and the
+   * counts here hold for any subclass that honours that contract, and none of it needs the card's
+   * own layout. A card with no row of its own, such as the sketched reference molecule, is not
+   * reported. */
+  protected resultsStatus(): {hitAreas: {[name: string]: DG.IRectBounds}, values: {[name: string]: number | string}} {
+    const origin = this.root.getBoundingClientRect();
+    const hitAreas: {[name: string]: DG.IRectBounds} = {};
+    let current = -1;
+    let selected = 0;
+    const cards = Array.from(this.root.querySelectorAll('[data-row]')) as HTMLElement[];
+    for (const card of cards) {
+      const row = Number(card.getAttribute('data-row'));
+      const box = card.getBoundingClientRect();
+      hitAreas[`card ${row}`] = {
+        x: box.left - origin.left, y: box.top - origin.top, width: box.width, height: box.height,
+      };
+      // the similarity viewer marks both the current row and the reference molecule `d4-current`,
+      // so this reports the first of them rather than whichever came last
+      if (current === -1 && card.classList.contains('d4-current'))
+        current = row;
+      if (card.classList.contains('d4-selected'))
+        selected++;
+    }
+    return {
+      hitAreas,
+      values: {
+        'target column': this.targetColumnName ?? '',
+        'limit': this.limit,
+        'cards': cards.length,
+        'current card': current,
+        'selected cards': selected,
+      },
+    };
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -80,6 +128,11 @@ export class SearchBaseViewer extends DG.JsViewer {
   public renderPromise: Promise<void> = Promise.resolve();
 
   protected render(computeData = true): void {
+    this._renderPending++;
+    const settle = () => {
+      if (--this._renderPending === 0)
+        this._onRendered.next();
+    };
     this.renderPromise = this.renderPromise.then(async () => {
       if (this.dataFrame && !this.targetColumn) {
         ui.empty(this.root);
@@ -88,6 +141,10 @@ export class SearchBaseViewer extends DG.JsViewer {
       }
       this.computeRequested = this.computeRequested || computeData;
       await this.renderInt(computeData);
+    // settle on both outcomes, or one failed render leaves the viewer pending for good
+    }).then(settle, (e) => {
+      settle();
+      throw e;
     });
   }
 

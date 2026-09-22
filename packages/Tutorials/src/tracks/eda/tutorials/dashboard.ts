@@ -53,9 +53,6 @@ export class DashboardTutorial extends Tutorial {
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
       providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
     await this.dlgInputAction(dlg, `Set "Name" to "${connectionName}"`, 'Name', connectionName);
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
     await this.dlgInputAction(dlg, 'Set "Port" to "54324"', 'Port', '54324');
@@ -70,8 +67,6 @@ export class DashboardTutorial extends Tutorial {
       'DataQueryView', starbucksNodes[starbucksNodes.length - 1],
       `Open the context menu on Postgres | ${connectionName} and click "New Query..."`);
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
     await this.textInpAction(dqv.root, `Set "Name" to "${queryName}"`, 'Name', queryName);
 
     const query = 'select * from starbucks_us where state = @state;';

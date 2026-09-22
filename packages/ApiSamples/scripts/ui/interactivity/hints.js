@@ -10,6 +10,11 @@ const icon1 = $('div.d4-ribbon-item').has('i.svg-remove-selected-rows')[0];
 let indicator1 = ui.hints.addHintIndicator(icon1, false, 4000);
 let indicator2 = ui.hints.addHintIndicator(scatterPlot.root, true);
 
+// Pass a function when the target is rebuilt while the hint is up (a ribbon item, a re-rendered
+// toolbar): the blob re-resolves it and moves with it, instead of being left on the replaced node.
+let indicator3 = ui.hints.addHintIndicator(
+  () => $('div.d4-ribbon-item').has('i.svg-add-viewer')[0] ?? null, false, 8000);
+
 // Place a hint popup with a custom HTMLElement.
 let msg = ui.divV([
   ui.h1('Title'),
