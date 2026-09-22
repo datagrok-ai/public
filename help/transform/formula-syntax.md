@@ -53,6 +53,20 @@ Use `row` when the formula explicitly requires the row index.
 row % 2 == 0
 ```
 
+### Tables and columns by name
+
+Use [table and column functions](functions/table-functions.md) to reference a column or a table by name,
+including other open tables, to look a value up by key, or to compute a running value over a column.
+The table name is optional and defaults to the table the formula runs on.
+
+```javascript
+${quantity} * Lookup("products", "id", ${productId}, "price")   // Value from another table, matched by key
+Avg(Column("price", "products"))                                // Whole column of another table
+CumSum(${amount}) / Sum($[amount])                              // Running share of the total
+${price} - MovingAvg(${price}, 7)                               // Deviation from the 7-row trailing average
+RowCount("products")
+```
+
 ## Operators, constants, and literals
 
 ### Operators
@@ -219,7 +233,7 @@ in(20, 60, 40)
 
 ### Built-in functions
 
-Datagrok provides built-in functions, including [calculations](functions/math-functions.md), [text manipulation](functions/text-functions.md), [statistical analysis](functions/stats-functions.md), [date/time](functions/datetime-functions.md) operations, [conversions](functions/conversion-functions.md), [binning](functions/binning-functions.md), and [timespan](functions/timespan-functions.md) operations. 
+Datagrok provides built-in functions, including [calculations](functions/math-functions.md), [text manipulation](functions/text-functions.md), [statistical analysis](functions/stats-functions.md), [date/time](functions/datetime-functions.md) operations, [conversions](functions/conversion-functions.md), [binning](functions/binning-functions.md), [timespan](functions/timespan-functions.md), and [table and column](functions/table-functions.md) operations. 
 
 ```javascript
 RoundFloat(${IC50} / Median($[IC50]) * E, 3)

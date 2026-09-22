@@ -2,6 +2,11 @@
 
 ## v.next
 
+* GROK-20931: Add New Column: Resizing the dialog now widens only the formula and preview pane; the column and function lists keep their width
+* GROK-20931: Add New Column: Clicking a function in the formula makes it the current object, so its help shows in the context panel
+* GROK-20931: Add New Column: Table-name and column-name selectors pop up automatically for parameters that take a table or a column, or for string parameters with the `TableName` / `ColumnName` semantic type; a column argument is offered from the table named by the parameter's `options.table` sibling (else the call's table argument), filtered by the parameter's column type filter
+* GROK-20931: Add New Column: Autocomplete shows the highlighted function's signature and description; the hint below the editor describes the call the caret is inside of; inserted functions use parameter names as placeholders instead of types
+* GROK-20931: Add New Column: Functions marked with the `accessor` option (`Table`, `Column`) are offered in autocomplete although they return a table or a column; a column-returning call satisfies a column parameter in validation
 * Viewer gallery: Named the gallery surfaces — `viewer-card-<name>`, `card-label-<name>`, `viewer-tag-<tag>`, `viewer-gallery-root`, `viewer-gallery-controls`, `viewer-gallery-search`, `viewer-gallery-list`, `viewer-gallery-recent` — with `aria-label`, `role` and `aria-disabled` on the cards
 * Status bar: The window toggles now carry `name`, `aria-label` and `aria-pressed`, so they are addressable by what they do rather than by the FontAwesome class of their icon; the Tabs toggle no longer bypasses the shared state setter
 * GROK-20922: Apply the Learn overflow class to the Spotlight tab pane restored on start
