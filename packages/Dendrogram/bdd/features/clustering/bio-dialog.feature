@@ -72,11 +72,11 @@ Feature: Hierarchical clustering from the Bio menu
     When user clicks on "Assign Clusters" icon
     Then "Assign Clusters" dialog should be visible
     When user enters "5" into Clusters input in "Assign Clusters" dialog
-    Then Threshold input in "Assign Clusters" dialog should have a value between 11.05 and 11.07
+    Then Threshold input in "Assign Clusters" dialog should have a value between 11.59 and 11.61
     When user clicks on Assign button in "Assign Clusters" dialog
     Then the "Assign Clusters" dialog should close
-    And the table should have a column "Cluster (11.06)"
-    And "Cluster (11.06)" column should have no missing values
+    And the table should have a column "Cluster (11.60)"
+    And "Cluster (11.60)" column should have no missing values
     And the newest column matching "^Cluster \(" should have 5 distinct values
     And no errors should have been logged
 

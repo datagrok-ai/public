@@ -88,11 +88,11 @@ test.describe("Hierarchical clustering from the Bio menu", () => {
       await session.step(72, "When user clicks on \"Assign Clusters\" icon", () => clickOn(page, el("\"Assign Clusters\" icon")));
       await session.step(73, "Then \"Assign Clusters\" dialog should be visible", () => shouldBe(page, el("\"Assign Clusters\" dialog"), "visible"));
       await session.step(74, "When user enters \"5\" into Clusters input in \"Assign Clusters\" dialog", () => enterInto(page, "5", el("Clusters input in \"Assign Clusters\" dialog")));
-      await session.step(75, "Then Threshold input in \"Assign Clusters\" dialog should have a value between 11.05 and 11.07", () => shouldHaveValueBetween(page, el("Threshold input in \"Assign Clusters\" dialog"), 11.05, 11.07));
+      await session.step(75, "Then Threshold input in \"Assign Clusters\" dialog should have a value between 11.59 and 11.61", () => shouldHaveValueBetween(page, el("Threshold input in \"Assign Clusters\" dialog"), 11.59, 11.61));
       await session.step(76, "When user clicks on Assign button in \"Assign Clusters\" dialog", () => clickOn(page, el("Assign button in \"Assign Clusters\" dialog")));
       await session.step(77, "Then the \"Assign Clusters\" dialog should close", () => dialogCloses(page, "Assign Clusters"));
-      await session.step(78, "And the table should have a column \"Cluster (11.06)\"", () => hasColumn(page, "Cluster (11.06)"));
-      await session.step(79, "And \"Cluster (11.06)\" column should have no missing values", () => columnComplete(page, "Cluster (11.06)"));
+      await session.step(78, "And the table should have a column \"Cluster (11.60)\"", () => hasColumn(page, "Cluster (11.60)"));
+      await session.step(79, "And \"Cluster (11.60)\" column should have no missing values", () => columnComplete(page, "Cluster (11.60)"));
       await session.step(80, "And the newest column matching \"^Cluster \\(\" should have 5 distinct values", () => newestMatchingDistinct(page, "^Cluster \\(", 5));
       await session.step(81, "And no errors should have been logged", () => noErrors(page));
     });

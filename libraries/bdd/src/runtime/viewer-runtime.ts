@@ -1004,8 +1004,28 @@ function install(): void {
       }
     }
     if (!box) {
+      // a row wider than the panel that clips it (a tree node in Browse), or one below its fold,
+      // has a centre the pointer cannot reach: scroll it in and aim inside what is actually shown
+      el.scrollIntoView({block: 'nearest', inline: 'nearest'});
       const r = el.getBoundingClientRect();
-      box = {x: r.x, y: r.y, width: r.width, height: r.height};
+      let [left, top, right, bottom] = [r.left, r.top, r.right, r.bottom];
+      for (let host = el.parentElement; host; host = host.parentElement) {
+        const style = getComputedStyle(host);
+        if (!/auto|scroll|hidden/.test(style.overflowX + style.overflowY))
+          continue;
+        const clip = host.getBoundingClientRect();
+        left = Math.max(left, clip.left);
+        top = Math.max(top, clip.top);
+        right = Math.min(right, clip.right);
+        bottom = Math.min(bottom, clip.bottom);
+      }
+      left = Math.max(left, 0);
+      top = Math.max(top, 0);
+      right = Math.min(right, window.innerWidth);
+      bottom = Math.min(bottom, window.innerHeight);
+      if (right <= left || bottom <= top)
+        throw new Error(`the element is not on screen: ${Math.round(r.width)}×${Math.round(r.height)} at ${Math.round(r.x)},${Math.round(r.y)}, clipped away`);
+      box = {x: left, y: top, width: right - left, height: bottom - top};
     }
     return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
   };

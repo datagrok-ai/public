@@ -231,8 +231,11 @@ export const deleteSelected = When('user deletes the selected rows', (page: Page
     df.rows.removeWhereIdx((i: number) => set.has(i));
   }, null), {tier: 'api', description: 'df.rows.removeWhereIdx — the UI path is the grid\'s Delete Rows command'});
 
+/* The claim is about the table a step before it opened, and a view that is still opening has none:
+   a read that threw ended the poll, so the step failed on the gap rather than waiting it out. */
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
-  expect.poll(() => page.evaluate(() => grok.shell.t.rowCount as number), {message: 'rows in the table'}).toBe(count));
+  expect.poll(() => page.evaluate(() => grok.shell.t ? grok.shell.t.rowCount as number : 'no table is open'),
+    {message: 'rows in the table'}).toBe(count));
 
 /** The one claim about a value the column may no longer hold (the rows were deleted), so it
  * counts on its own rather than through `rowFacts`, which refuses an unknown value. */

@@ -393,9 +393,10 @@ export class PackageFunctions {
       if (args.args.viewer.type === DG.VIEWER.GRID)
         attachSummaryColumnHandlers(args.args.viewer as DG.Grid);
     });
-    // the grids of the tables opened before this autostart landed
+    // the grids of the tables opened before this autostart landed; a table view can be without one
     for (const view of grok.shell.tableViews)
-      attachSummaryColumnHandlers(view.grid);
+      if (view.grid)
+        attachSummaryColumnHandlers(view.grid);
 
     if (navigator.gpu)
       gpuDevice = await getGPUDevice();
