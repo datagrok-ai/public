@@ -1,4 +1,5 @@
 ---
+documents: [access/files/shares]
 title: "Google Cloud"
 description: Connect Datagrok to a Google Cloud Storage bucket as a file share.
 keywords:

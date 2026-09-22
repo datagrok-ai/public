@@ -1,0 +1,42 @@
+property-panel-share.png:
+  caption: Sharing a query from the context panel
+  described_blob: 5165221eb50337b351c7868ae720fa56ef2f3b28
+  described_by: claude-sonnet-5
+  description: >-
+    The context panel shows a query named Fact Forge with Details, Queries (13), and an expanded
+    Sharing section. Under Sharing, it lists that Alexander Paramonov can view the query directly,
+    and that via the Demo namespace all users can view it while the Developers group has special
+    permissions. A blue Share... button sits at the bottom.
+  height: 255
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, tightly cropped panel image from a deprecated help page; shows an older context-panel
+    layout
+  reviewed: true
+  width: 294
+share-connection.gif:
+  actions:
+    - Right-click a connection to open its context menu
+    - Choose Share...
+    - Type a name in the User, group, or email field
+    - Select a matching user from the suggestions
+    - Type a message
+    - Click OK to confirm sharing
+  caption: Sharing a connection
+  described_blob: 8a38943d14d80f79b8c4bcd2e16198357b1dc00d
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the Connections browse view, right-clicking a connection named Fact Forge to
+    open its context menu, then choosing Share. A Share Fact Forge dialog appears where the user
+    searches for a person by typing "alex", picks Alexander Paramonov from the matching results,
+    types a short message ("hi!"), and clicks OK to share the connection with view access.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    old UI styling (dated context menu and dialog look, small low-contrast screenshot); page itself
+    is filed under _deprecated
+  reviewed: true
+  seconds: 19
+  width: 800

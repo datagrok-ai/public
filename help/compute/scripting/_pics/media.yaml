@@ -1,0 +1,659 @@
+ColumnSelectorDemo.png:
+  caption: Selecting a column input for a dataframe function
+  described_blob: 72adb36ace358d7242cffbf5b779933271d10b9b
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled ColumnSelectorDemo shows a Table dropdown set to
+    OligoTools_registration_example_02, a Data_columns multi-select showing three columns chosen
+    (Chemistry, Type, Sequence), and an Id_column dropdown set to Number. Cancel and OK buttons
+    appear at the bottom right, with a history icon at the bottom left.
+  height: 231
+  kind: screenshot
+  quality: docs
+  quality_notes: clear but generic dialog crop with no surrounding page context
+  reviewed: true
+  width: 529
+Scripting-FileIO-connectors.png:
+  caption: Selecting a file connector source
+  described_blob: 77377a56d7a56bbc94f4e2e466ad4ef2780bdc46
+  described_by: claude-sonnet-5
+  description: >-
+    A "Select a file" dialog lists expandable source options for choosing a file: CoreWeave,
+    Dropbox, Files, GitHub, GoogleCloud, and S3. Each entry has an expand arrow to drill into that
+    storage's folder tree, with Cancel and OK buttons at the bottom.
+  height: 258
+  kind: screenshot
+  quality: docs
+  quality_notes: small, tightly cropped dialog with no surrounding context
+  reviewed: true
+  width: 173
+Scripting-FileIO-load.png:
+  caption: Loading a file into a script input
+  described_blob: d98310ce14822e944697a974f9b98a484848eb75
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "DfFromJSON" shows a single input labeled "JSON file" with the filename
+    "nucleotides_activity.json" entered. To its right are a folder icon and a connection icon; the
+    folder icon is highlighted with an "Open file" tooltip. Cancel and OK buttons appear below.
+  height: 153
+  kind: screenshot
+  quality: docs
+  quality_notes: small, tightly cropped dialog with no surrounding context
+  reviewed: true
+  width: 441
+Scripting-FileIO-save.png:
+  caption: Downloading a saved file from FileIO
+  described_blob: a5743e632e1ba55809d890b277e604fd589a6ec3
+  described_by: claude-sonnet-5
+  description: >-
+    A context menu is open over a file variable named json_file, shown in the Variables panel with
+    type DG.FileInfo and semantics link. The menu lists Open, Download, Download Zip, Delete, and
+    Rename, with Download highlighted.
+  height: 217
+  kind: screenshot
+  quality: docs
+  quality_notes: Small, cropped screenshot showing only a context menu with no surrounding page chrome
+  reviewed: true
+  width: 360
+Scripting-Integration-TopMenu.png:
+  caption: Adding a script to the Bio top menu
+  described_blob: 80816d070e6378e5751f2fad85f1bf1c4f6c28d3
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok top menu shows the Bio menu open, cascading through Calculate to a submenu with
+    Identity, Similarity, and Sequences clusters options, with the cursor hovering over Sequences
+    clusters. Below, a script editor named Sequence generator shows Python header comments including
+    a "# top-menu: Bio | Calculate | Sequences clusters..." annotation that places the script at
+    that menu location.
+  height: 238
+  kind: screenshot
+  quality: docs
+  quality_notes: small crop focused on menu and script header, useful only alongside the surrounding explanation
+  reviewed: true
+  width: 743
+Scripting-Semtypes-support-UI.png:
+  caption: Semantic type detected in a script parameter dialog
+  described_blob: cb42663c3c5be0f7c50e94b8bbcdf293223e233c
+  described_by: claude-sonnet-5
+  description: >-
+    The GasteigerCharges Demo script's input dialog shows a Mol parameter with a molecule editor
+    sketch area displaying a compound, and a Contours numeric input set to 10. A tooltip reading
+    "Molecule, in SMI..." points at the Mol field, indicating the semantic type detected for that
+    parameter.
+  height: 271
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, cropped dialog with a partially cut-off tooltip; illustrative but not self-explanatory
+    without surrounding text
+  reviewed: true
+  width: 438
+auto-complete-sql.png:
+  caption: Autocomplete suggestions from a lookup query
+  described_blob: 8018ee139bc852fda33118e54edb57e4da5bc90e
+  described_by: claude-sonnet-5
+  description: >-
+    Two query editors are shown stacked: ProductLookup, which takes a string input and selects
+    product names matching a pattern, and ProductDetails, whose productName input parameter declares
+    suggestions from ProductLookup. A ProductDetails parameter form is overlaid, showing the Product
+    Name field with "Ch%" typed in and a dropdown of matching suggestions (Chai, Chang, Chef Anton's
+    Cajun Seasoning, Chef Anton's Gumbo Mix, Chartreuse verte, Chocolade).
+  height: 334
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small UI crop with overlapping panels and no visible chrome, clear enough for its page but not a
+    standalone answer
+  reviewed: true
+  width: 704
+builtin-viewers.png:
+  caption: Built-in viewers for script output
+  described_blob: db3fac6c6bad4bcd31655bea97b60f3683d98722
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid view titled "DF with linechart" shows a clinical trial dataframe with columns
+    like USUBJID, AGE, SEX, RACE, and HEIGHT, alongside a scatter plot of HEIGHT versus WEIGHT.
+    Below the grid and scatter plot, three line charts split by AGE, HEIGHT, and WEIGHT averages are
+    stacked, plotting values across a date axis from December 1990 to December 1991.
+  height: 787
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small UI chrome and dense text are hard to read at full size, but layout and viewer types are
+    clear
+  reviewed: true
+  width: 1337
+call-compare.png:
+  caption: Comparing historical function call runs
+  described_blob: f578995e1f5d4a3d215d005bb8a37bbee4a159b0
+  described_by: claude-sonnet-5
+  description: >-
+    A list of four function call history entries, all run by Admin on March 15, each with a
+    timestamp and a selection checkbox. Four entries are selected, and a tooltip reading "Compare
+    selected runs" points to a compare icon in the toolbar above the list, alongside delete and
+    select-all icons.
+  height: 311
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop showing only the run list and one tooltip, no surrounding context of the comparison
+    view itself
+  reviewed: true
+  width: 304
+captions-hints.png:
+  caption: Captions and hints for script inputs
+  described_blob: db8c02bb8fb7cb19d803bff3453ddcd15a126dc2
+  described_by: claude-sonnet-5
+  description: >-
+    A parameter input panel titled "Captions and hints" shows a numeric input labeled "Initial
+    volume of liquid" with the value 1. Below the input, a tooltip-style hint box reads "Used to
+    calculate the initial concentration and the volume change." History and bug-report icons appear
+    at the bottom left of the panel.
+  height: 350
+  kind: screenshot
+  quality: docs
+  quality_notes: Tightly cropped to the panel with surrounding UI cut off; no visible chrome for context
+  reviewed: true
+  width: 1126
+comparsion-view.png:
+  caption: Comparing historical function runs
+  described_blob: a97522294e2243b4492b298577fb49f3cb1e4a59
+  described_by: claude-sonnet-5
+  description: >-
+    A Rich Function View editor shows two saved ObjectCooling runs stacked as rows, each with its
+    initial temperature, a line chart and grid of temperature versus time, time to cool, and
+    temperature difference. Below the run rows, a combined Comparison chart overlays the temperature
+    curves of four selected runs in different colors with a shared legend.
+  height: 785
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Clear and readable, but legend run labels are truncated on the right edge, so it reads as a page
+    illustration rather than a standalone answer.
+  reviewed: true
+  width: 1548
+customized-forms.png:
+  caption: Customized script input form
+  described_blob: 0001bb0c318f20d7743e112f071cd15ec550c3b6
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "Template" shows two numeric inputs, "First component" set to 3 and "Second
+    component" set to 6, with History and Delete icons and Cancel/OK buttons at the bottom. It
+    illustrates how a script's parameter editor can be customized based on parameter metadata.
+  height: 173
+  kind: screenshot
+  quality: docs
+  quality_notes: small, low-resolution crop of a single dialog with minimal context
+  reviewed: true
+  width: 263
+dataframeiddemo-input.png:
+  caption: Script input dialog for a DataFrame ID column
+  described_blob: cb2b0001e8422d1ac812b9b77096946fea250ac3
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "DataframeIDDemo" shows script input controls: a Table dropdown set to
+    "peptides" with folder and database icons beside it, an Id_column text field set to "ID", and an
+    Id_prefix text field set to "id_". A tooltip "Prefix for ID column" is shown near the Id_prefix
+    field, with Cancel and OK buttons at the bottom.
+  height: 211
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop showing only the dialog, with a stray cursor and partially cut-off tooltip
+    overlapping the left edge
+  reviewed: true
+  width: 353
+default-script.gif:
+  actions:
+    - click the Run button
+    - view the resulting alert dialog
+    - click OK to dismiss the dialog
+  caption: Running a script
+  described_blob: b0f4f322d26e583d598397b78ec609828ba6649f
+  described_by: claude-sonnet-5
+  description: >-
+    The script editor shows a simple JavaScript script named "Template" with a Hello world
+    description, containing a single line that calls alert('Hello World!'). The user clicks the
+    green Run button in the top toolbar, and a browser dialog titled "localhost:8080 says" pops up
+    showing the text "Hello World!" with an OK button. The user then clicks OK to dismiss the
+    dialog, returning to the plain script editor view.
+  height: 302
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small cropped view of just the toolbar and editor pane, low visual polish, generic hello-world
+    example
+  reviewed: true
+  seconds: 4.8
+  width: 1280
+embed-as-iframe.png:
+  caption: Embedding a compute model view as an iframe
+  described_blob: 4a1dc0465bbde5f031c84e523242cfc3caf1f7d9
+  described_by: claude-sonnet-5
+  description: >-
+    The top panel shows an HTML code snippet with an iframe tag pointing to a Compute.LotkaVolterra
+    function URL, with query parameters setting model inputs like x0, y0, alpha, beta, gamma, sigma,
+    h, timeStart, timeStop, and mode=presentation. Below it, the rendered result shows the embedded
+    Lotka-Volterra model view with input fields for each parameter and a line chart plotting
+    predator and prey population curves over time.
+  height: 643
+  kind: screenshot
+  quality: docs
+  quality_notes: clear and readable but a static code+result pairing rather than a full standalone walkthrough
+  reviewed: true
+  width: 625
+export-demo.gif:
+  actions:
+    - clicks through the Excel tabs from the input table/chart sheet to the input scalars sheet
+    - >-
+      clicks through several output sheets, each showing the same table and chart for a different
+      run
+    - opens the final output scalars summary sheet
+  caption: Exporting rich function view results to Excel
+  described_blob: 37a8b85781fca75f50c1ca31ab2745dce32bedb3
+  described_by: claude-sonnet-5
+  description: >-
+    An Excel workbook opens with multiple tabs generated from exporting a function's run results.
+    The input sheets show the table and scalar parameters used for a run, while separate output
+    sheets (tempOnTime, tempOnTime2, tempOnTime3, tempOnTime4) each contain the same
+    time/temperature table and line chart for a different run. A final "Output scalars" sheet lists
+    the scalar outputs of all runs side by side for comparison.
+  height: 284
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small, cropped view of the spreadsheet with truncated columns and a visible cursor; readable but
+    not polished enough to stand alone
+  reviewed: true
+  seconds: 10
+  width: 1280
+history.png:
+  caption: Browsing run history
+  described_blob: ac648ea859bfc725ed40c5b93fea3be980ec8a3a
+  described_by: claude-sonnet-5
+  description: >-
+    A run-history panel lists filter controls at top (Only favorites toggle, Search, Started after
+    date, Tag dropdown) and a selection toolbar showing zero selected with swap, delete, and
+    select-all icons. Below, two historical run entries are listed, each showing the author avatar,
+    run name, timestamp, and tags, with a star icon marking a favorite.
+  height: 392
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    cropped panel fragment with no surrounding context; readable but not self-explanatory enough to
+    stand alone
+  reviewed: true
+  width: 355
+input-categories.png:
+  caption: Grouping inputs into categories
+  described_blob: dd7cf787ba6dc05540684732f104ac5a8762c498
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled InputGroupingDemo shows form inputs organized under two bold section headers,
+    "Experimental data" and "Goals". The Experimental data group contains Temperature data (a combo
+    box with folder and table icons) and Initial pressure. The Goals group contains Goal pressure
+    and Goal humidity, both shown with red underlines indicating required or invalid fields.
+  height: 329
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, cropped dialog with no surrounding context; fine as an inline illustration but not
+    self-explanatory alone
+  reviewed: true
+  width: 352
+input-form.png:
+  caption: Auto-generated input form for a script
+  described_blob: 1ee067873670fc02b57968f02f20aa1b402fb76a
+  described_by: claude-sonnet-5
+  description: >-
+    A small floating panel titled "Template" shows two text inputs labeled A and B, each with a red
+    underline indicating an unset required value. Below the inputs are history, delete, Cancel, and
+    OK controls.
+  height: 173
+  kind: screenshot
+  quality: docs
+  quality_notes: small, tightly cropped panel with no surrounding context
+  reviewed: true
+  width: 181
+input-viewers.gif:
+  actions:
+    - select a table for the dataframe input
+    - click Run
+    - view the Line chart and Grid rendered for the input data
+    - click the Output tab
+  caption: Declaring a dataframe input with viewers
+  described_blob: 416e4f816f6ce88254e59ba6dbd8e8c465152e3a
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows a script editor with a header declaring an input dataframe parameter that
+    requests a Line chart and a Grid viewer. Switching to the Rich Function View editor, the user
+    selects a table for the "test" input, clicks Run, and the view renders both a line chart and a
+    grid of the input data side by side. Finally the user opens the Output tab next to Input.
+  height: 355
+  kind: animation
+  quality: docs
+  quality_notes: small UI, text barely legible at this resolution
+  reviewed: true
+  seconds: 10.3
+  width: 1264
+output-categories.gif:
+  actions:
+    - view the script's output annotations with category tags
+    - open the Rich Function View input form
+    - click RUN
+    - view the resulting line chart
+    - switch to the tab grouping outputs by category
+  caption: Grouping script outputs into tabs by category
+  described_blob: 6bee29587a279bd56306387cc36aea661046a495
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows a JavaScript script's header annotations declaring dataframe and scalar
+    outputs with a `category:` tag (Experimental data, Simulation data, Tab #3), then runs the
+    script from the Rich Function View input form. The result panel shows a line chart plotted for
+    the test dataframe, then switches to a tabbed layout with tabs labeled Input, Experimental data,
+    Simulation data, and Tab #3, where the output line chart appears under its assigned category
+    tab.
+  height: 432
+  kind: animation
+  quality: docs
+  quality_notes: small UI, low information density in most frames, useful mainly alongside the surrounding text
+  reviewed: true
+  seconds: 12.9
+  width: 1258
+python-script-error-log.png:
+  caption: Reading the script error log
+  described_blob: 388ce9bca3228e6b66dfaa3a5e14ad2686b2f837
+  described_by: claude-sonnet-5
+  description: >-
+    A log panel shows a Python script execution error. It reports an AttributeError raised by a
+    worker process, followed by a traceback pointing to the line 'cellCount = myData.shape[0] *
+    myData.shape[0]', because myData is an int and has no shape attribute.
+  height: 156
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Tightly cropped log strip with a raw traceback and stray layout artifacts (e.g. 'Cell' and
+    'Traceback (most recent call last)' text overlapping at the right edge), not legible as a
+    standalone answer.
+  reviewed: true
+  width: 1177
+python-script-error.png:
+  caption: Script error balloon for a bad attribute
+  described_blob: 050a5163fb01613e00f476d34bc6948784f38d0a
+  described_by: claude-sonnet-5
+  description: >-
+    A small red error notification shows a Python AttributeError: 'int' object has no attribute
+    'shape'. It illustrates the error balloon that appears in the upper-right corner when a
+    scripting error occurs, alongside a log window at the bottom of the screen with more detail.
+  height: 66
+  kind: screenshot
+  quality: docs
+  quality_notes: Tightly cropped to just the error balloon text, no surrounding UI context visible
+  reviewed: true
+  width: 289
+rfv-help.png:
+  caption: Viewing a script's custom readme
+  described_blob: dba169028c4bec3b0f62f8f97bf35bb5085ea241
+  described_by: claude-sonnet-5
+  description: >-
+    A RichFunctionView for a script named Object cooling, with an input form on the left and output
+    viewers (a temperature-vs-time chart and table) in the center. The info icon on the ribbon panel
+    is highlighted, and clicking it opens a readme panel on the right showing the text "This is
+    custom readme for a script".
+  height: 388
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    annotated with a red highlight box around the info icon and the readme panel rather than a clean
+    capture
+  reviewed: true
+  width: 1335
+rich-function-demo.gif:
+  actions:
+    - view the script source with input/output annotations
+    - switch to the generated UI editor view
+    - click RUN to execute the script
+    - >-
+      switch between CoolingRate, CoolingRate2, and CoolingRate3 output tabs to compare chart and
+      grid renderings
+  caption: Editing a Rich Function View for a script
+  described_blob: 3476e6c8f885426d9eb5ee5b56d66c951c6f15a9
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the Rich Function View editor for a JavaScript script in Datagrok, first
+    displaying the script's source code with input/output tag annotations, then switching to the
+    generated UI editor. The editor shows input fields grouped into categories (Category1,
+    Category2) on the left and, after running the script, tabbed output viewers (CoolingRate,
+    CoolingRate2, CoolingRate3) with a line chart and a data grid on the right. The user clicks the
+    RUN button and then switches between the output tabs to compare a chart view against a grid view
+    of the same computed table.
+  height: 389
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text is hard to read at this resolution and the tooltip "My lovely caption" looks like
+    leftover placeholder/test content rather than a polished example
+  reviewed: true
+  seconds: 10
+  width: 1280
+run-on-input.gif:
+  actions:
+    - open the Input dataframe dropdown
+    - select the "demog" dataframe
+    - view auto-switches to Stats and renders output charts/table
+    - hover over a chart to show a tooltip
+  caption: Automatic script rerun on input change
+  described_blob: 9d49d4d623a9cc46a21a3b1e183a699947316ccb
+  described_by: claude-sonnet-5
+  description: >-
+    In the Data stats script editor, the user opens the Input dataframe dropdown and picks "demog".
+    As soon as the dataframe is selected, the input data grid appears and the view automatically
+    switches to the Stats tab, rendering the output charts and summary table without the user
+    clicking Run. Hovering over one of the trend charts then shows a tooltip with per-point
+    aggregate values.
+  height: 660
+  kind: animation
+  quality: answer
+  quality_notes: >-
+    raw UI capture at small scale with default cursor visible; clear enough to confirm the
+    runOnInput behavior on its own but not polished for marketing
+  reviewed: true
+  seconds: 6.6
+  width: 1280
+script-debud-output-enable.png:
+  caption: Enabling debug output for a script
+  described_blob: 837b8897e29043887cce4451a503ba46d786dfb3
+  described_by: claude-sonnet-5
+  description: >-
+    A small toolbar shows a bug icon button being highlighted next to Cancel and OK buttons, with a
+    tooltip reading "Include debug information and show summary." This control toggles debug mode
+    when running a script from the input parameter window.
+  height: 76
+  kind: screenshot
+  quality: docs
+  quality_notes: tightly cropped UI fragment with no surrounding context
+  reviewed: true
+  width: 323
+script-outputs.gif:
+  actions:
+    - save the script
+    - click Run
+    - enter values for inputs A and B
+    - click OK to run the script
+    - view the resulting output variables
+  caption: Running a Python script and viewing its outputs
+  described_blob: c8cc3ea37450d350b7ba1910da65ff5fd5a97008
+  described_by: claude-sonnet-5
+  description: >-
+    The script editor shows a Python script named Calculate-sum that takes two integer inputs a and
+    b and produces two outputs, sum and isSuccess. After saving the script, the user clicks Run,
+    enters 2 and 3 into the A and B parameter fields, and clicks OK. The script executes, and the
+    Variables panel then displays the results: sum equal to 5 and isSuccess equal to "Success!".
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 21
+  width: 800
+script-rest.png:
+  caption: Generating a REST API call for a script
+  described_blob: 8cd82eee7f82bd17f4446295606a9cd769bd87af
+  described_by: claude-sonnet-5
+  description: >-
+    The Scripts panel shows a saved JavaScript script named "My script to share" with its details on
+    the left. A red arrow points from the script entry to the context panel's REST section, where a
+    CURL tab is selected showing a generated curl command with a POST request to the script's
+    function endpoint, an Authorization Bearer token header, a Content-Type header, and an empty
+    JSON body.
+  height: 1003
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    sample bearer token and endpoint are illustrative rather than a real credential, but the arrow
+    overlay and dense header text make it more of a guided reference than a clean standalone answer
+  reviewed: true
+  width: 1556
+scripts.png:
+  caption: Creating a JavaScript script
+  described_blob: 8a96e381b360f20388633502b4f1e4ea3ff147dc
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok sidebar shows the Functions tree expanded to Scripts, with the New menu open
+    listing script language options: R, Python, Grok, Julia, JavaScript, NodeJS, and Octave.
+    JavaScript Script is highlighted as the selected option.
+  height: 658
+  kind: screenshot
+  quality: docs
+  quality_notes: annotated with red boxes for tutorial guidance, not a clean marketing shot
+  reviewed: true
+  width: 1005
+sens-analysis.png:
+  caption: Sensitivity Analysis with Monte Carlo method
+  described_blob: e81226ce15e4a4e73d04101f825d0fa558f497ec
+  described_by: claude-sonnet-5
+  description: >-
+    A Rich Function View for the ObjectCooling script shows an input panel on the left with Method
+    set to Monte Carlo, Samples set to 10, and grouped input sliders for Environment, Object
+    properties, and Simulation parameters. On the right, the context help panel explains Sensitivity
+    Analysis, listing the Monte Carlo, Sobol, and Grid methods and describing the Monte Carlo
+    workflow and resulting visualizations (Correlation plot, PC plot, Line chart/Scatterplot, Grid).
+  height: 783
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    context help text panel dominates the right half, cropping the actual sensitivity analysis
+    input/results UI to a narrow left strip
+  reviewed: true
+  width: 1326
+sharing.gif:
+  actions:
+    - open the script's context menu
+    - choose Share...
+    - type a user name into the User, group, or email field
+    - select the user from the suggestions
+    - click OK
+    - reopen Share and change the user's permission to Can edit
+  caption: Sharing a script
+  described_blob: 6ac0168d82cbd780b20c9d6bee013a2b1f56266f
+  described_by: claude-sonnet-5
+  description: >-
+    In the Scripts browser, the user opens the context menu for "My script to share" and chooses
+    Share. In the Share dialog they add a collaborator by name, leave the permission at Can view,
+    and confirm; a "Shared" toast confirms the change. Reopening the dialog shows the collaborator
+    listed with their permission upgraded to Can edit.
+  height: 800
+  kind: animation
+  quality: docs
+  quality_notes: small cropped capture area with visible dotted crop border; low information density per frame
+  reviewed: true
+  seconds: 29.6
+  width: 1186
+template-script-output.png:
+  caption: Script output in the Variables panel
+  described_blob: a3be9e742f370d676c1912fbc26daec60d96714e
+  described_by: claude-sonnet-5
+  description: >-
+    A small Variables panel lists one output from a parameterized script: name "cellCount", value
+    510, type double, with an empty semantics column. It shows how a script's output value appears
+    after running against a dataframe.
+  height: 111
+  kind: screenshot
+  quality: docs
+  quality_notes: tightly cropped to a single table with no surrounding context
+  reviewed: true
+  width: 431
+template-script-run.png:
+  caption: Running a template script on a dataframe
+  described_blob: 9921db1f19781f2041897c674f64b92c6e4e7ea2
+  described_by: claude-sonnet-5
+  description: >-
+    A small dialog titled "Template" lets the user pick input data via a "My Data" dropdown set to
+    "cars," alongside icons for opening a file, choosing a connection, or selecting a database.
+    Below are undo and delete icons on the left and Cancel/OK buttons on the right.
+  height: 137
+  kind: screenshot
+  quality: docs
+  quality_notes: very small, tightly cropped dialog with no surrounding context
+  reviewed: true
+  width: 201
+units-example.png:
+  caption: Adding a unit label to a script input
+  described_blob: 5bd3a7b9cf9cc90cbda28ac3134243fa0d37a3ad
+  described_by: claude-sonnet-5
+  description: >-
+    A small script input form field labeled "Initial_temp" with a numeric value of 10, showing a
+    unit label "°C" displayed to the right of the input field.
+  height: 55
+  kind: screenshot
+  quality: docs
+  quality_notes: cropped to a single input row with no surrounding form context
+  reviewed: true
+  width: 281
+viewers-block.png:
+  caption: Visualizing input data with viewer blocks
+  described_blob: d220263796ecd8579841f6146590b5cbb37fe49b
+  described_by: claude-sonnet-5
+  description: >-
+    A RichFunctionView interface titled "Viewer block option demo" shows a script input dataframe
+    named demog rendered as two side-by-side viewers: a Line chart on the left plotting AGE,
+    STARTED, and HEIGHT as separate split panels, and a Filters panel on the right listing SEX and
+    RACE categories with checkboxes and row counts. The input form and Run button sit in the
+    collapsed left sidebar.
+  height: 544
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear and readable but a narrow feature-specific example, not a general answer to a broader
+    question
+  reviewed: true
+  width: 1334
+viewers-customization.png:
+  caption: Customizing viewers for a scripting dataframe
+  described_blob: 5bef4ebd5df270c4181cb66db8af467f9a81a7ae
+  described_by: claude-sonnet-5
+  description: >-
+    A grid titled "DF with customized viewers" shows automobile data with columns like model,
+    diesel, turbo, two doors, hatchback, wheel base, and length. To its right, a scatter plot charts
+    curb weight against model, and below it another scatter plot charts curb weight against
+    horsepower with a linear regression line and its equation and r2 value displayed.
+  height: 786
+  kind: screenshot
+  quality: docs
+  quality_notes: clear UI capture but shows only the result state, not the customization steps that produced it
+  reviewed: true
+  width: 1334
+viewers-toolbox.png:
+  caption: The Viewers toolbox in the sidebar
+  described_blob: 4caa44f06bdb956f30918e2bff6cfcb6a1b3f43c
+  described_by: claude-sonnet-5
+  description: >-
+    A demographics table is open in the grid, with the left sidebar expanded to the Viewers panel. A
+    red box highlights a grid of viewer-type icons (bar chart, line chart, pie chart, scatter plot,
+    box plot, histogram, heat map, and more) that can be dragged or clicked to add a new viewer for
+    the dataframe.
+  height: 391
+  kind: screenshot
+  quality: docs
+  quality_notes: annotated with a red highlight box rather than a clean native screenshot
+  reviewed: true
+  width: 909

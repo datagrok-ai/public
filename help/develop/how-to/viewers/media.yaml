@@ -1,0 +1,69 @@
+custom-filters.gif:
+  actions:
+    - open the grid menu
+    - navigate Add > Add External
+    - select Single Choice from the filter type list
+    - select individual study values via radio buttons in the new filter panel
+  caption: Adding a custom filter through the UI
+  described_blob: 4a671aea0809b2b0aa5b380535a2df1daf9cca17
+  described_by: claude-sonnet-5
+  description: >-
+    A grid's hamburger menu opens to show Add > Add External, which lists custom filter types
+    including Single Choice and Multi Choice alongside the built-in SubstructureFilter. Selecting
+    Single Choice adds a new radio-button filter panel to the filter list next to the existing site,
+    sex, and race filters, letting the user pick exactly one study value at a time.
+  height: 500
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 21.8
+  width: 800
+dev-tools-viewer.gif:
+  actions:
+    - expand viewer property panel sections (Markers, Description)
+    - click the panel's menu icon
+    - generate a JS snippet reflecting current viewer properties
+    - view the snippet output in the console
+  caption: Getting a viewer properties code snippet
+  described_blob: 6ff1834b207df35462c8953d4abb100333a1314d
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot of demographic data (height vs. weight, colored by sex) is shown with its
+    property panel open on the right, expanding through Markers and Description sections. The user
+    opens the panel's hamburger menu and the panel produces a JavaScript snippet
+    (grok.shell.v.addViewer with DG.VIEWER.SCATTER_PLOT and the viewer's properties like
+    xColumnName, yColumnName, colorColumnName, markerMinSize, markerMaxSize, markerDefaultSize). The
+    snippet then appears logged in the browser console alongside the ScatterPlotViewer object.
+  height: 858
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear UI walkthrough but console/dev-tools clutter and small property-grid text limit it to
+    in-page use
+  reviewed: true
+  seconds: 31.9
+  width: 1815
+top-menu-add-viewer.gif:
+  actions:
+    - click the top-menu icon for adding a viewer
+    - view the dropdown list of registered viewers
+    - close the dropdown
+  caption: Registering a viewer via the top menu
+  described_blob: 6e409f12d40d38887197ac5c77e9b26c03268a0f
+  described_by: claude-sonnet-5
+  description: >-
+    A grid with clinical demographics data is shown with the toolbar's Add viewer icon (the circular
+    arrow/refresh-like icon) highlighted. Clicking it opens a dropdown listing available viewers
+    such as Filters, Column Viewer, Card, Viewer host, Web viewer, Similarity Search, Diversity
+    Search, and PhyloTree, then the menu closes and the grid returns to view.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small crop of the toolbar area, viewer list is generic and not tied to a specific highlighted
+    item
+  reviewed: true
+  seconds: 4.3
+  width: 800

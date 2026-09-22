@@ -1,0 +1,174 @@
+login-signup.png:
+  caption: User authentication process UML diagram
+  described_blob: 577cc992e49dd838f23a2de07ff893d5aa035c86
+  described_by: claude-sonnet-5
+  description: >-
+    A UML activity diagram spanning Web UI, Datlas, permanent storage, and OAuth swimlanes, showing
+    the full authentication flow: signup, OAuth login, password login, email confirmation, and
+    invites. It traces decision points such as whether a user exists, is blocked, has a unique
+    login, domain-allowed signup, and email confirmation state, down to database actions like
+    creating a user, storing sessions, and sending confirmation codes.
+  height: 1422
+  illustrates:
+    - govern/access-control/authentication
+    - govern/access-control
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    dense flowchart with small text, not readable at a glance without zooming; useful as a technical
+    reference alongside the page but not standalone
+  reviewed: true
+  width: 5602
+open-api-weather-map-connection.png:
+  caption: Webservices Manager tree for an imported connection
+  described_blob: 7544477c830d15b1f1e33f197cc57344ce738e10
+  described_by: claude-sonnet-5
+  description: >-
+    The Webservices Manager panel shows an OpenWeatherMap connection expanded in a tree view,
+    listing its auto-generated queries such as "5 day/3 hour Forecast By City Name," "Current
+    Weather Data By City Name," and several UV-index and geographic-coordinate queries. Each query
+    is prefixed with a function icon, illustrating how importing a Swagger file creates a connection
+    with its associated queries ready to browse.
+  height: 222
+  kind: screenshot
+  quality: docs
+  quality_notes: small, tightly cropped tree view with no surrounding chrome for context
+  reviewed: true
+  width: 612
+open-api-weathermap-query.png:
+  caption: Context panel for an OpenWeatherMap query
+  described_blob: 3b6c028da95764165f92fe2c103be9e8e3f90997
+  described_by: claude-sonnet-5
+  description: >-
+    The context panel shows a 'Cities In Cycle' query from the OpenWeatherMap connection, with its
+    description, metadata (creator, dates, params), and a Run section with parameter inputs for Lat,
+    Lon, and Cnt plus a Run button. Below that are collapsible Query and Transformations sections
+    and a Usage section showing successful run count, average time, and first/last call timestamps.
+  height: 912
+  kind: screenshot
+  quality: docs
+  quality_notes: cropped to just the panel, no surrounding app chrome for orientation
+  reviewed: true
+  width: 465
+open-api-weathermap-results.png:
+  caption: Query results in an interactive grid
+  described_blob: 1463b2b445baff2875903204eadb416c57eca951
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid displays results from an OpenWeatherMap query, with columns for id, name,
+    coordinates, temperature, feels-like, min/max temperature, pressure, and humidity. Rows list
+    towns and villages (Petrila, Jitani, Petrosani, and others) with their weather readings. The
+    first row is selected, highlighted in green.
+  height: 605
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Cropped to just the grid with no surrounding chrome, so it reads as a generic data table rather
+    than showing the webservice query workflow it illustrates.
+  reviewed: true
+  width: 2395
+recipe-editor.png:
+  caption: Building a data transformation pipeline in the job editor
+  described_blob: 586e8ab5cbae4b24df9b08c70c0c443ea07bce9e
+  described_by: claude-sonnet-5
+  description: >-
+    A job editor canvas showing connected steps: a Datlas Health Summary source and a Jira JQL
+    Search feed into KeepColumns and JoinTables, whose outputs run to two PublishTable steps and a
+    Save health log step. Arrows connect each step's output triangle to the next step's input,
+    illustrating how functions are chained by drawing connections between them.
+  height: 572
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear diagram but a specific, domain-tied example (health summary/Jira) rather than a generic
+    illustration
+  reviewed: true
+  width: 716
+script-param-choices.gif:
+  actions:
+    - open the Fruit dropdown
+    - select "Banana"
+    - open the Vegetable dropdown
+    - select "Cauliflower"
+  caption: Choice input suggests values for a script parameter
+  described_blob: 60d504f92a1e95321a9cedf149d30c5b047618b0
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "Shop" shows two dropdown inputs, Fruit and Vegetable, each offering a fixed set
+    of choices. The animation selects Banana from the Fruit dropdown, then opens the Vegetable
+    dropdown and selects Cauliflower.
+  height: 173
+  kind: animation
+  quality: docs
+  quality_notes: small cropped dialog, no surrounding page context
+  reviewed: true
+  seconds: 3.6
+  width: 221
+script-param-suggestions.gif:
+  actions:
+    - type "uk" into the Country field, showing Ukraine, Cook Islands, Korea in the dropdown
+    - change to "us", showing Ukraine, Cook Islands, Korea
+    - continue typing "us", showing Australia, Austria, Belarus
+    - type "Bel", narrowing to Belarus and select it
+    - type "gr", still showing Belarus
+    - complete to "gree", showing Greece and Greenland
+  caption: Autocomplete suggestions for parameter values
+  described_blob: d641ab0aaf92f84489e0b357ccff7a8d0252ad67
+  described_by: claude-sonnet-5
+  description: >-
+    A script input panel labeled "Sales by country" with a Country text field. As the user types
+    partial country names, a dropdown of matching country suggestions appears below the field and
+    narrows with each keystroke, letting the user pick the intended value instead of typing it in
+    full.
+  height: 134
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small cropped UI snippet with no surrounding context; fine to illustrate the specific feature
+    but not self-explanatory alone
+  reviewed: true
+  seconds: 13.4
+  width: 278
+script-param-validators.gif:
+  actions:
+    - type an invalid value into Count1, turning it red
+    - type an invalid value into Count2, turning it red
+    - type a valid value into Count3, turning it green
+    - type another value into Count3, turning it red
+    - hover the invalid field, revealing an error tooltip
+  caption: Adding validators to script parameters
+  described_blob: 873b77f8e954fd671d5bd7addfa399a40677a3a8
+  described_by: claude-sonnet-5
+  description: >-
+    A parameter input form titled "Numbers" shows three fields, Count1, Count2, and Count3, each
+    with a validator applied. As the user types values, fields that fail validation turn red with a
+    colored underline, while a valid entry shows a green underline; a small warning tooltip
+    beginning with "Error" appears next to an invalid field.
+  height: 200
+  illustrates:
+    - compute/functions
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small, cropped view of a single dialog with no surrounding context; generic placeholder field
+    names (Count1-3) rather than a real-world example
+  reviewed: true
+  seconds: 12.4
+  width: 248
+swagger-security-definitions.png:
+  caption: Setting the API key security type for a connection
+  described_blob: 54066dfa7ac5053f3d1de5cd2e070bbbb7f66b60
+  described_by: claude-sonnet-5
+  description: >-
+    The Edit Connection dialog for a Web data source named AirNow shows a Security dropdown set to
+    api_key and an ApiKey field with a masked value, both highlighted in a red box. An arrow points
+    from the context menu's Edit... option on the AirNow connection to this dialog, showing how to
+    reach it.
+  height: 339
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    annotated with a red box and arrow rather than a clean capture, and combines two overlapping UI
+    states in one image
+  reviewed: true
+  width: 794

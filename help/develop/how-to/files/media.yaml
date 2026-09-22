@@ -1,0 +1,41 @@
+file-exporter.gif:
+  actions:
+    - open the export dropdown menu on the grid
+    - click "Save as SDF"
+    - choose a location and confirm the filename "smiles.sdf" in the Save As dialog
+    - click Save
+  caption: Exporting a table as SDF
+  described_blob: 2919bd3abf451306e40c88163a37e5f9a548f51f
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecules with columns like molregno, canonical_smiles, and computed descriptors is
+    shown, each row rendering a chemical structure. The user opens the export menu (the down-arrow
+    icon) revealing options including As CSV, As JSON, As Excel Document, As Presentation, and Save
+    as SDF, then clicks "Save as SDF". A Save As file dialog appears with the filename "smiles.sdf"
+    and type "SDF File (*.sdf)" pre-filled; after saving, the grid is shown again with a tooltip
+    revealing a NOCount value on hover.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 13
+  width: 800
+folder-content-preview.png:
+  caption: Custom folder content preview
+  described_blob: 24be9698e35365ae087ee5464c88ae9dd66d4eb8
+  described_by: claude-sonnet-5
+  description: >-
+    The Files browser shows a folder tree on the left with 'demo_files' selected, expanded into
+    subfolders like bio, chem, forms, geo, and others. The right panel shows a custom preview of the
+    selected folder's contents: a search box and a list of CSV files (corp_net.csv,
+    covid-19-cases.csv, demog.csv, energy_uk.csv), plus a START link below the list.
+  height: 500
+  illustrates:
+    - access/files
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clean UI capture but the preview list is cropped and the folder tree obscures much of the
+    demonstrated custom preview panel
+  reviewed: true
+  width: 800

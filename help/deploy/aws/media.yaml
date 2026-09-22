@@ -1,0 +1,46 @@
+marketplace-get-pass.gif:
+  actions:
+    - Open the CloudFormation stack Outputs tab
+    - Click the DatagrokAdminPassword secret link
+    - Click 'Retrieve secret value'
+    - Copy the password value
+  caption: Retrieving the Datagrok admin password from AWS Secrets Manager
+  described_blob: 330a65a80921a391c9687de6639302f8bbb9c055
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows AWS CloudFormation Stack Outputs for the datagrok stack, then navigates to
+    the DatagrokAdminPassword secret in AWS Secrets Manager. The user clicks 'Retrieve secret value'
+    to reveal the key/value pair (user: admin, password: a generated string) and copies the password
+    value.
+  height: 796
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 12.3
+  width: 1458
+marketplace.gif:
+  actions:
+    - Subscribe to the Datagrok product on AWS Marketplace
+    - Open Launch this software and its CloudFormation deployment template
+    - Fill in VPC CIDR, internet ingress/egress access, allowed CIDR, and ACM certificate ARN fields
+    - Acknowledge IAM capabilities and click Create stack
+    - Watch the CloudFormation stack Events tab as resources create
+  caption: Deploying Datagrok from AWS Marketplace
+  described_blob: cd29f526a5482d89688788d06c14a3e45d195542
+  described_by: claude-sonnet-5
+  description: >-
+    The animation walks through subscribing to the Datagrok listing on AWS Marketplace, then
+    launching it via the provided CloudFormation template. It shows filling in the network and SSL
+    certificate parameters (VPC CIDR, internet access toggles, allowed CIDR, ACM certificate ARN),
+    acknowledging IAM capabilities, and clicking Create stack. The stack's Events tab is then shown
+    as resources (load balancer listeners, ECS services, task definitions, the database) create in
+    sequence over about ten minutes.
+  height: 1080
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small text and dense CloudFormation console UI are hard to read at a glance; useful walkthrough
+    but not clear enough to stand alone without the surrounding steps.
+  reviewed: true
+  seconds: 4.7
+  width: 1920

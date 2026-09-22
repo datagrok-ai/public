@@ -21,7 +21,7 @@ Debug.gif:
   kind: animation
   quality: docs
   quality_notes: Debug log text is mostly cut off/truncated in the narrow panel and not fully readable
-  reviewed: false
+  reviewed: true
   seconds: 30.4
   width: 1600
 browse-schema.gif:
@@ -47,7 +47,7 @@ browse-schema.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 57.2
   width: 1600
 database-connection.gif:
@@ -73,7 +73,7 @@ database-connection.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 68.8
   width: 1600
 db-data-enrichment.gif:
@@ -95,7 +95,7 @@ db-data-enrichment.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 27.1
   width: 1025
 db-explorer.gif:
@@ -121,7 +121,7 @@ db-explorer.gif:
   quality_notes: >-
     functional context-panel UI with default styling and dense database field names, not polished
     for external marketing
-  reviewed: false
+  reviewed: true
   seconds: 41.8
   width: 1600
 db-hierarchy-browser.gif:
@@ -146,7 +146,7 @@ db-hierarchy-browser.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 80.4
   width: 1600
 dynamic-dashboards.gif:
@@ -171,7 +171,7 @@ dynamic-dashboards.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 82.8
   width: 800
 layout.gif:
@@ -199,7 +199,7 @@ layout.gif:
   quality_notes: >-
     context menus are small and partially cropped, text is hard to read at full resolution, and the
     UI is busy with overlapping panels
-  reviewed: false
+  reviewed: true
   seconds: 84.9
   width: 1600
 parameterized-queries.png:
@@ -217,7 +217,7 @@ parameterized-queries.png:
   kind: screenshot
   quality: docs
   quality_notes: small, cropped dialog with no surrounding context; readable but minimal on its own
-  reviewed: false
+  reviewed: true
   width: 289
 post-process.gif:
   actions:
@@ -239,7 +239,7 @@ post-process.gif:
   kind: animation
   quality: docs
   quality_notes: small cropped panel, right edge of the results grid is cut off
-  reviewed: false
+  reviewed: true
   seconds: 45.2
   width: 1600
 query-add.gif:
@@ -262,7 +262,7 @@ query-add.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 16.1
   width: 1600
 query-editor-ai.gif:
@@ -289,7 +289,7 @@ query-editor-ai.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 32.6
   width: 1600
 sharing-database-connections.gif:
@@ -312,7 +312,7 @@ sharing-database-connections.gif:
     - govern/access-control
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 48.5
   width: 1600
 transformations.gif:
@@ -337,7 +337,7 @@ transformations.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 70.7
   width: 1600
 visual-query-editor.gif:
@@ -365,6 +365,6 @@ visual-query-editor.gif:
     - access/databases
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 104.6
   width: 1600

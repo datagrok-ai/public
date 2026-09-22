@@ -1,131 +1,140 @@
 anova.gif:
   actions:
-    - Open the ML menu and navigate to Analyze > Group Comparison > ANOVA
-    - Set Category to RACE and Feature to AGE in the ANOVA dialog
-    - Click Run
-    - Hover over the results to reveal explanatory tooltips for the conclusion and hypotheses
-  caption: Running one-way ANOVA on a group comparison
+    - open ML > Analyze > Group Comparison > ANOVA menu
+    - select Category and Feature columns in the ANOVA dialog
+    - click Run
+    - hover over the conclusion and results table to reveal explanatory tooltips
+  caption: Running ANOVA from the ML menu
   described_blob: 3159223e10d43d4fbafdbf7e9d940a43e7dad074
   described_by: claude-sonnet-5
   description: >-
-    In the demographics table, the ML > Analyze > Group Comparison menu is opened and ANOVA is
-    selected. The ANOVA dialog is filled in with Category set to RACE and Feature set to AGE, then
-    run. The result shows a box plot of AGE by RACE group plus a one-way ANOVA (Welch's) results
-    table, with tooltips explaining the conclusion, F-statistic, and null/alternative hypotheses.
+    The animation opens the ML > Analyze > Group Comparison > ANOVA dialog on a demographic table,
+    sets Category to RACE and Feature to AGE, and clicks Run. The result shows a box plot of AGE by
+    RACE group plus a One-Way ANOVA results table reporting the F statistic and p-value, with
+    tooltips explaining the conclusion and the null/alternative hypotheses.
   height: 500
+  illustrates:
+    - explore/group-comparison
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 14.1
   width: 800
 cluster-data.gif:
   actions:
-    - Open the ML menu
-    - Navigate to Cluster > Cluster...
-    - Select feature columns in the Cluster Data dialog and run clustering
-    - View the resulting clusters column and scatter plot colored by cluster
-    - Add labels to the scatter plot points
-  caption: Clustering data with the ML menu
+    - open the ML menu
+    - hover Cluster to expand its submenu
+    - click Cluster... to open the Cluster Data dialog
+    - select features to cluster on
+    - run clustering, producing a clusters column and a scatter plot
+    - open scatter plot properties and enable point labels colored by the clusters column
+  caption: Clustering a table with ML > Cluster
   described_blob: 0ebc06578241ac5c5fd4a8d579eb69b6e3cd46e3
   described_by: claude-sonnet-5
   description: >-
-    A grid of car data is open with a green-highlighted row and column selector on the right. The
-    user opens the ML menu, goes to Cluster, and selects Cluster... to open the Cluster Data dialog,
-    where feature columns are checked. After running, a new clusters column appears in the grid and
-    a scatter plot opens showing points colored by cluster (c0, c1, c2); labels are then added to
-    the points showing car model names plotted by curb weight and horsepower.
+    On a car dataset grid, the user opens the ML menu, hovers Cluster, and picks Cluster... to open
+    the Cluster Data dialog, where features to cluster on are checked. After running it, a new
+    'clusters' column appears in the grid and a scatter plot opens showing the rows colored by
+    cluster (c0, c1, c2). The scatter plot is then configured to show point labels (car model names)
+    and colored by the clusters column.
   height: 500
+  illustrates:
+    - explore/cluster-data
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 26
   width: 800
 control-comparisons.gif:
   actions:
     - open ML > Analyze > Group Comparison menu
-    - select Control comparisons dialog options (Category, Control, Feature)
+    - set Category, Control, Feature, Alpha, Method, and Full report in the dialog
     - click Run
-    - hover over a result row to view the hypothesis tooltip
-  caption: Running control comparisons on a demographic feature
+    - hover a results-table row to see the hypothesis test details
+  caption: Comparing groups against a control
   described_blob: ad620de5833795050377d2d8ee649d23039ae1c2
   described_by: claude-sonnet-5
   description: >-
-    In the demog table, the user opens ML > Analyze > Group Comparison, which launches the Control
-    comparisons dialog. They set Category to RACE, Control group to Caucasian, and Feature to
-    HEIGHT, with Full report enabled, then click Run. The result is a box plot of HEIGHT by RACE
-    plus a results table listing each group's conclusion (Significant/Not significant), mean
-    difference, and confidence interval versus the Caucasian control, with a tooltip showing the
-    null/alternative hypothesis wording.
+    In a demographics table, the user opens the ML > Analyze > Group Comparison menu and dialog,
+    choosing RACE as the category, Caucasian as the control, and HEIGHT as the feature to compare
+    with the Dunnett method. Running it produces a box plot of HEIGHT by RACE with a color-coded
+    scatter overlay, plus a results table listing each group's conclusion (Significant or Not
+    significant), mean difference, and confidence interval versus the Caucasian control. Hovering a
+    row shows the underlying null/alternative hypothesis and conclusion text.
   height: 500
+  illustrates:
+    - explore/group-comparison
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 18.5
   width: 800
 missing-values-imputation.gif:
   actions:
-    - open the ML menu
-    - select Impute Missing Values...
-    - review the KNN Imputation dialog (Impute, Using, Distance, Neighbors, In-place)
-    - click Run
-    - view the grid with imputed height values
+    - hover the blank height cell
+    - open the ML menu and choose Impute Missing Values
+    - review the KNN Imputation dialog and click Run
+    - hover the height column header to check the updated stats
   caption: Imputing missing values with KNN
   described_blob: 46287799d30d7aec7282a6a95f15dcffa345e387
   described_by: claude-sonnet-5
   description: >-
-    A data grid shows numeric and categorical columns, including a height column with empty cells.
-    The user opens the ML menu and selects Impute Missing Values, which opens a KNN Imputation
-    dialog with fields for the columns to impute, the columns to use, distance metric, and neighbor
-    count. After clicking Run, the previously blank height cells are filled in with computed values.
+    A grid of clinical trial data shows a blank height cell for one row. The user opens the ML menu
+    and selects Impute Missing Values, which opens the KNN Imputation dialog with Impute, Using,
+    Distance metric, and Neighbors fields. After running it, the previously blank height cell is
+    filled in with an estimated value, and the column's histogram tooltip confirms there are no more
+    nulls.
   height: 1000
+  illustrates:
+    - explore/missing-values-imputation
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 13
   width: 1600
 pca.gif:
   actions:
-    - open a data table
-    - open ML > PCA dialog
-    - select all features
-    - set Components to 2
-    - click OK
-    - wait for computation
-    - view new PCA1/PCA2 columns added to the table
-  caption: Running PCA on a table
+    - open the PCA dialog from the ML menu
+    - select all columns as Features
+    - click OK to run PCA
+    - view the resulting PCA1 and PCA2 columns added to the table
+  caption: Running PCA on a data table
   described_blob: d511232e59c7d5aef74a2eb00702a4d1d18385db
   described_by: claude-sonnet-5
   description: >-
-    A packages panel lists installed Datagrok plugins grouped by category. The user opens a data
-    table with 100 numeric columns and 100,000 rows, then launches the PCA dialog from the ML menu,
-    selecting all 100 features and leaving Components set to 2. After clicking OK, the status bar
-    shows 'Running PCA...' while it computes, and the result appends two new columns, PCA1 and PCA2,
-    to the table.
+    A Packages browser is shown first, then a data table with 100 numeric columns and 100,000 rows
+    opens. The PCA dialog appears, where the user selects all 100 feature columns, leaves Components
+    at 2, and clicks OK. The table then computes and appends two new columns, PCA1 and PCA2, holding
+    the reduced coordinates.
   height: 670
+  illustrates:
+    - explore/dim-reduction
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 22.9
   width: 1536
 t-test.gif:
   actions:
-    - Open ML > Analyze > Group Comparison > T-test
-    - Set Category to SEX and Feature to AGE in the Two-sample t-test dialog
+    - Open the ML menu
+    - Navigate Analyze > Group Comparison > T-test
+    - Select Category and Feature columns in the dialog
     - Click Run
-    - View the resulting box plot and t-test results table
-  caption: Running a two-sample t-test on grouped data
+    - View the box plot and results table
+  caption: Running a two-sample t-test from the ML menu
   described_blob: ca6e67688b2e02aecfa3956d3a6dfc4b9f577b43
   described_by: claude-sonnet-5
   description: >-
-    In a demographics table, the ML menu opens Analyze > Group Comparison > T-test, which opens a
-    two-sample t-test dialog with Category set to SEX and Feature set to AGE. Clicking Run produces
-    a box plot comparing AGE distributions for F and M plus a results panel below the grid. The
-    results table reports the conclusion (Significant), t-statistic, degrees of freedom, p-value,
-    mean difference and confidence interval, with a tooltip explaining the null and alternative
-    hypotheses.
+    In a demographics table, the user opens the ML menu and navigates Analyze > Group Comparison >
+    T-test, which opens a two-sample t-test dialog with Category (SEX) and Feature (AGE) selected
+    and Full report enabled. After clicking Run, a box plot compares AGE distributions for F and M,
+    and a results table below reports the test as significant with t, df, p-value, and mean
+    difference, along with hypothesis text explaining the conclusion.
   height: 500
+  illustrates:
+    - explore/group-comparison
   kind: animation
   quality: answer
-  reviewed: false
+  reviewed: true
   seconds: 12.3
   width: 800

@@ -1,0 +1,22 @@
+semantic-type-detectors.gif:
+  actions:
+    - hover over the Longitude column header to reveal its detected semantic type tooltip
+    - hover over the Magnitude column header to reveal its detected semantic type tooltip
+  caption: Detecting semantic types by column stats
+  described_blob: c682b00b62d336da01dd0a4a0a1e19d7a444948d
+  described_by: claude-sonnet-5
+  description: >-
+    An earthquakes data grid is shown with columns DateTime, Latitude, Longitude, Depth, Magnitude,
+    and MagType. The cursor hovers successively over the Longitude and Magnitude column headers,
+    each time opening a tooltip that shows the detected semantic type name along with
+    min/avg/max/std statistics and a distribution histogram, confirming that Datagrok auto-detected
+    these columns as Longitude and Magnitude semantic types.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear and on-topic but narrowly scoped to one interaction step, not self-explanatory without
+    surrounding text
+  reviewed: true
+  seconds: 9.8
+  width: 800

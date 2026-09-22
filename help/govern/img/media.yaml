@@ -1,0 +1,341 @@
+connection-credentials-by-group.gif:
+  actions:
+    - Open Platform > Connections in the Browse tree
+    - Search for and select the GitHub connection
+    - Open the connection's context menu and choose Credentials...
+    - View and select a group row in the Manage credentials dialog
+  caption: Managing connection credentials per group
+  described_blob: 1cba9d2c49e7a119188f34238a0727ca2a107ccc
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows a Datagrok Browse panel navigating to Connections, searching for and
+    selecting a GitHub connection, then opening its context menu and choosing Credentials. The
+    resulting "Manage credentials for GitHub" dialog lists rows for the All users group and
+    per-group rows (Administrators, Developers, and a named user), each with fields for security
+    type and credential values such as ClientId, ClientSecret, and Token. The Administrators row is
+    selected, showing where a group's specific credentials would be entered before clicking OK.
+  height: 1001
+  illustrates:
+    - govern/access-control/credentials
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 23.4
+  width: 1601
+create-new-service-user-dialog.png:
+  caption: Creating a service user
+  described_blob: 49e5e11cce0f60023cb25c0e2a3d2f05fbe71c06
+  described_by: claude-sonnet-5
+  description: >-
+    A small dialog titled "Create new service user" with a single "Login" text field and Cancel/OK
+    buttons. It is used to create a service user account by entering its login and confirming with
+    OK.
+  height: 190
+  illustrates:
+    - govern/access-control
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 331
+create-new-user-dialog.png:
+  caption: Creating a new user manually
+  described_blob: 67be22733f24a912597dc07d0dad75f4c1e3e0e3
+  described_by: claude-sonnet-5
+  description: >-
+    The Create new user dialog has fields for Email, Login, First Name, and Last Name, with Cancel
+    and OK buttons at the bottom. It is used to add a user account directly without sending a
+    sign-up invitation.
+  height: 334
+  illustrates:
+    - govern/access-control
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Small, cropped dialog screenshot with no surrounding context; fine as an inline illustration but
+    not detailed enough to stand alone.
+  reviewed: true
+  width: 292
+feedback.gif:
+  actions:
+    - Open the logo menu
+    - Navigate to Help > Feedback
+    - Open the Feedback dialog
+    - Check Include logs
+    - Click OK
+  caption: Submitting feedback from the Help menu
+  described_blob: cbfb783603a32a175374564ee0bf9e09bf5caa1d
+  described_by: claude-sonnet-5
+  description: >-
+    The animation opens the Datagrok logo menu, navigates to Help > Feedback, and opens the Feedback
+    dialog with a text box for the message. It shows checking the "Include logs" checkbox, which
+    reveals a tooltip explaining that it includes last logs from all services including server and
+    client, before submitting with OK.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 11.1
+  width: 800
+group-all-users.png:
+  caption: Adding the All users group
+  described_blob: eff13d6a690e2efa498d19d384fdaa6361b62faa
+  described_by: claude-sonnet-5
+  description: >-
+    A "Demo Group" dialog shows a search field with the text "all use" typed in, filtering the group
+    picker below it. One result, "All users" with a member count of 926, is listed with a plus icon
+    to add it to the group.
+  height: 165
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, cropped dialog with generic placeholder group name ("Demo Group"); fine as an inline
+    illustration but not clear enough to stand alone
+  reviewed: true
+  width: 630
+group-membership.gif:
+  actions:
+    - Select a group in the Groups panel
+    - >-
+      Open the group's context menu and choose the option to create an invitation link (with
+      password)
+    - Copy the generated URL containing the groupPassword parameter
+    - Open a new browser tab and paste the URL into the address bar
+    - Navigate to the URL, landing on the Datagrok home page
+    - Return to the Groups panel and confirm the new member appears in the group's member list
+  caption: Sharing a group via invitation link
+  described_blob: ddf1e428eaba6192293aaf5e43dfd52d43abcac4
+  described_by: claude-sonnet-5
+  description: >-
+    In the Datagrok Groups admin panel, the user clicks a group named "Test" and opens its Actions
+    menu to generate an invitation link with an embedded group password. The browser then navigates
+    to a URL of the form public.datagrok.ai/?groupPassword=..., which is meant to be pasted into a
+    browser to auto-join the group; the recording shows this being pasted into a new browser tab's
+    address bar. After navigating, the recipient lands on the Datagrok home page, and returning to
+    the Groups panel shows the new member added to the "Test" group's member list.
+  height: 501
+  illustrates:
+    - govern/access-control
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small UI text and cursor actions are hard to follow at this resolution, and the middle frames
+    show generic browser chrome (Google new-tab page) rather than the Datagrok UI, diluting the
+    demonstration.
+  reviewed: true
+  seconds: 51.9
+  width: 800
+groups.png:
+  caption: Group membership and nested groups
+  described_blob: 8df4ad0764cb54453468cc96e213faeaf7163c77
+  described_by: claude-sonnet-5
+  description: >-
+    A block diagram shows Group 1 containing User 1 and Group 2 as direct members, with arrows
+    pointing into Group 1. Group 2 in turn contains User 2 and User 3 as its members, with arrows
+    pointing into Group 2. This illustrates how nested group membership works: users become indirect
+    members of a parent group through their membership in a child group.
+  height: 221
+  illustrates:
+    - govern/access-control
+  kind: diagram
+  quality: answer
+  reviewed: true
+  width: 361
+handled_exception.gif:
+  actions:
+    - hover over the error message box
+    - reveal the copy/dismiss/open icons
+    - hover over the open icon to reveal the Report tooltip
+  caption: Reporting a handled exception
+  described_blob: 7364ba0edc92bb0d2bfa3d41178c272974f5232c
+  described_by: claude-sonnet-5
+  description: >-
+    A red error message box shows a database error, ERROR 42P01 relation "imaginary_table" does not
+    exist. The user hovers over the box, revealing copy, dismiss, and open icons, then hovers over
+    the open icon, which shows a Report tooltip for submitting the error.
+  height: 183
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    shows only the error box in isolation, cropped from the surrounding app UI, useful in context
+    but not as a standalone answer
+  reviewed: true
+  seconds: 2.7
+  width: 595
+invite-a-friend-dialog.png:
+  caption: Inviting a friend to Datagrok
+  described_blob: 0d7b0f34c88873952a8e22874e285ad176267286
+  described_by: claude-sonnet-5
+  description: >-
+    A small dialog titled "Invite a Friend" with a single Email input field. CANCEL and OK buttons
+    appear at the bottom right, with OK highlighted in blue.
+  height: 190
+  illustrates:
+    - govern/access-control
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Small, low-resolution crop with mostly empty space; fine embedded in the page but too sparse to
+    stand alone as a full answer.
+  reviewed: true
+  width: 250
+red-exclamation-mark-icon.gif:
+  actions:
+    - hover over the red exclamation-mark icon in the sidebar
+    - read the 'Click to report error' tooltip with the error message
+  caption: Reporting an unhandled exception
+  described_blob: aaeb68adaf497b4ff755806c87fc024ced900228
+  described_by: claude-sonnet-5
+  description: >-
+    The bottom-left corner of the Datagrok sidebar shows a red exclamation-mark icon that appears
+    when a client-side error occurs, next to the gear (settings) icon. Hovering over it reveals a
+    tooltip reading "Click to report error" with the error detail, here a NullError: method not
+    found: 'selection' on null. The animation cycles through the icon appearing and the tooltip
+    being shown, then briefly reveals a panel behind it (TIMELINES, CONSOLE, CLIENT, TABLES tabs
+    with a CANCEL action) before returning.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small cropped UI region with a partially obscured panel appearing briefly behind the tooltip;
+    useful in context but not self-explanatory on its own
+  reviewed: true
+  seconds: 2.8
+  width: 800
+report-an-error.gif:
+  actions:
+    - Type a description in the Summary tab
+    - Check the Email checkbox and view its tooltip
+    - Open the Timelines tab to view captured events
+    - Open the Console tab to view captured log/stack trace
+    - Open the Tables tab and check Metadata and Data
+    - Hover the Save as JSON icon
+  caption: Reporting an error with the bug-report dialog
+  described_blob: b5e37f950b2e80b867a5a71150b93d86bb48387d
+  described_by: claude-sonnet-5
+  description: >-
+    The Report an error dialog opens over a data table view, with a Summary tab where the user types
+    a description like "Error opening project" and sees an attached screenshot of the current app
+    state. Checking Email shows a tooltip explaining the report will be sent to
+    feedback@datagrok.ai. The user then switches through the Timelines, Console, and Services tabs,
+    which list timestamped UI events, log lines, and stack traces captured for the report. Finally,
+    on the Tables tab, they check Metadata and Data checkboxes for a table and hover the Save as
+    JSON icon in the corner.
+  height: 722
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 48.2
+  width: 800
+settings-internal-auth.png:
+  caption: Enabling internal authentication
+  described_blob: d9654a1c8dc53e3f921f856d2d7a3eddbde48386
+  described_by: claude-sonnet-5
+  description: >-
+    The Settings - Users and Sessions panel shows toggles for Send Welcome Email, Internal
+    Authentication, and Domain Authentication. The Internal Authentication toggle is highlighted
+    with a red box and set to on, while Domain Authentication is also enabled below it.
+  height: 255
+  illustrates:
+    - govern/access-control/authentication
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop of a settings panel with a red highlight box overlay; not resolution-limited but too
+    narrow a fragment to stand alone
+  reviewed: true
+  width: 322
+ua-context-panel.gif:
+  actions:
+    - click a data point on the scatter plot
+    - view the tooltip with package/user/time details
+    - >-
+      observe the context panel update with Total, Packages, Functions, and Audit summary for the
+      selection
+    - expand Functions to see per-function call counts
+  caption: Exploring package usage in the context panel
+  described_blob: ec7cf4c3af967e8f1f1eefa6f9076e9c7c46c117
+  described_by: claude-sonnet-5
+  description: >-
+    The Usage Analysis app shows a Packages scatter plot with users and dates on the axes, and a
+    context panel on the right that updates as the user clicks data points. Clicking a bubble on the
+    plot brings up a tooltip with package, user, and time details, then the context panel's Total,
+    Packages, Functions, and Audit summary sections refresh with counts scoped to the selection,
+    including drilling into a package like Bioreactor to see its function call and event breakdown.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: small text in the context panel and user list is hard to read at this resolution
+  reviewed: true
+  seconds: 11.6
+  width: 1600
+ua-drilldown.gif:
+  actions:
+    - click a datapoint on the Packages scatterplot
+    - view switches to the Functions tab filtered to the clicked package
+    - hover a datapoint on the Functions scatterplot to open a details tooltip
+  caption: Drilling down from Packages to Functions in Usage Analysis
+  described_blob: 77f3127bb29c12efce44dd72149726cc2f53376a
+  described_by: claude-sonnet-5
+  description: >-
+    The Usage Analysis app shows a scatterplot on the Packages tab, with packages listed on the
+    vertical axis, dates on the horizontal axis, and dot size/color encoding usage. Clicking a
+    datapoint for the Bioreactors package switches the view to the Functions tab, filtered to that
+    package's users and showing per-function usage dots for Bioreactor and BioreactorDemo. Hovering
+    a dot then opens a tooltip in the Context Panel with details such as function name, package,
+    user, and call count.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small text and dense right-side panel are hard to read at reduced size; otherwise clear and
+    on-topic
+  reviewed: true
+  seconds: 14.2
+  width: 1600
+ua-filters.gif:
+  actions:
+    - open the Filters panel
+    - select groups (Administrators, Demo Group)
+    - type and select packages (Chembl, Chem, DevTools)
+    - click Apply
+    - view the filtered, narrower chart
+  caption: Filtering Usage Analysis by group and package
+  described_blob: 25a7dbf67c7591a91b88f92ab39c510b90d47c35
+  described_by: claude-sonnet-5
+  description: >-
+    The Usage Analysis app's Packages view shows a bubble chart of package usage by date and user.
+    The user opens the Filters panel, selects the Administrators and Demo Group groups, then types
+    into the Packages filter to add Chembl, Chem, and DevTools, and clicks Apply. The chart reloads
+    and narrows to only those three packages, now plotted over a zoomed-in hourly timeline.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded UI text is hard to read at this resolution; right-side user list is truncated
+    off-screen
+  reviewed: true
+  seconds: 25.7
+  width: 1600
+сonfiguring-reporting-system.gif:
+  actions:
+    - open Toolbox > Settings > Server > Admin
+    - expand the Error reporting section
+    - hover Auto report errors to reveal its tooltip
+    - check the Auto report errors checkbox
+    - click Save and apply
+  caption: Configuring the error reporting system
+  described_blob: 4531f246afca2b5fea1d406c2e8f1073f2904e59
+  described_by: claude-sonnet-5
+  description: >-
+    The Settings panel is open under Admin. The user expands the Error reporting section, which
+    shows a Report email field pre-filled with feedback@datagrok.ai, plus Notify assignee, Auto
+    report errors, and Secure test reporting checkboxes. A tooltip explains that Auto report errors,
+    when enabled, automatically creates a report with extended logs (console, server, data
+    connectivity, Docker) and sends it to the server whenever an error occurs. The user checks Auto
+    report errors and clicks Save and apply, and the button confirms with a green Saved! label.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 16.1
+  width: 800

@@ -1,0 +1,32 @@
+main-page.png:
+  caption: Datagrok welcome page
+  described_blob: 2e5fde2dd0dc8878e3d702eca9174f13c59839b7
+  described_by: claude-sonnet-5
+  description: >-
+    Screenshot of Datagrok's welcome page after launch, with the left sidebar showing top-level
+    navigation (Datagrok, Help, Community, Tutorials, YouTube, JavaScript API Examples) and a
+    Recently Opened list of datasets. The center panel shows an 'Overview' help page describing who
+    the platform is for and how to get started, and the right context panel shows an About section
+    with an app icon and a 'Datagrok: Swiss Army Knife for Data' summary.
+  height: 526
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small text and dense multi-panel layout reduce readability at a glance; fine as an inline
+    illustration but not strong enough to stand alone
+  reviewed: true
+  width: 1152
+user-settings-formatting.png:
+  caption: Setting default date and number formats
+  described_blob: 5c740bc399abd527a77915d29fd6937384dd5f1c
+  described_by: claude-sonnet-5
+  description: >-
+    The Format tab of the user settings panel, showing global Settings fields for Date Format,
+    Integer Number Format, and Floating Point Number Format, each with an editable pattern string
+    and an Apply button. The left sidebar lists other settings sections such as General, Sync, Beta,
+    Dev, and Colors.
+  height: 490
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 811

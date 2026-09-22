@@ -1,0 +1,17 @@
+collab-notifications-0.png:
+  caption: Notifications page in User profile
+  described_blob: 8411ea3d26e6d227143cc20e551829ea48beacf5
+  described_by: claude-sonnet-5
+  description: >-
+    The User profile page shows a Personal panel with the user's avatar, name, login, and account
+    links, next to a Notifications panel listing recent activity. Each entry shows a date, an
+    avatar, the sharer's name, and a link to the shared project, data connection, package, or
+    script.
+  height: 860
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    sample data with old dates and placeholder entity names (e.g. "grok package", "data connection")
+    makes it look stale/test-like
+  reviewed: true
+  width: 1684

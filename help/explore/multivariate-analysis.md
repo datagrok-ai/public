@@ -1,4 +1,6 @@
 ---
+feature: explore/multivariate-analysis
+owner: P:askalkin
 title: "Multivariate analysis"
 sidebar_position: 3
 description: Model relationships between multiple predictors and a response variable using partial least squares regression.

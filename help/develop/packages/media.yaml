@@ -1,0 +1,192 @@
+api-key.png:
+  caption: Finding the API key in your user profile
+  described_blob: 1c0431a178c7a1fd53afb9061d1448fcec1b49f6
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok user profile panel is shown, listing the user's name, login, and email, with links
+    for Change password, Developer key, API key, and Logout below. A cursor points at the "API
+    key..." link, which the user clicks to reveal their API key for use with the REST API.
+  height: 521
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 276
+datagrok-inspector-debug.png:
+  caption: 'Inspector: Debug pane settings'
+  described_blob: d187834cd62a2e847693116d27d63dccd46c4664
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel is open on the Debug section, showing a left-hand list of Inspector tabs
+    (Summary, Client Log, Server Log, Local Storage, Current Column, Project JSON, View JSON, Viewer
+    JSON, Current Objects, Markup, Profiler, Serialization, Subscriptions, File Types, Entity Meta,
+    Debug, Widgets, Project tree checklist, Build Information, renderDevPanel) with Debug
+    highlighted. On the right are debug toggles: Beta, Show Properties Serialization Panel
+    (checked), Save Semantic Type Detection Duration, Hide Menus On Mouse Out (checked), Hide
+    Tooltips On Mouse Out (checked), Show Render Stats, Use Default Encoders, Selenium, Debug
+    Queries, plus a GET VIEW LAYOUT button.
+  height: 648
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    raw developer settings panel with many low-level toggles; useful alongside the surrounding text
+    but not self-explanatory on its own
+  reviewed: true
+  width: 715
+datagrok-inspector.png:
+  caption: Inspecting platform events with the Inspector
+  described_blob: caae42fd353a45cbca796c75475c3987e5300a71
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel's Summary view lists event names such as d4-window-closed, d4-tooltip-shown,
+    and d4-run-command, each with a fire count and the argument object passed to it. A left sidebar
+    navigates to other Inspector sections like Client Log, Server Log, Current Column, View JSON,
+    Widgets, and Debug.
+  height: 477
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    argument column is truncated and unreadable, and several rows use non-descriptive labels like
+    'Instance of ...'
+  reviewed: true
+  width: 800
+get-grok-name.png:
+  caption: Copying a connection's Grok name
+  described_blob: ff5edcafc4b03497c0d4e833623eea623c913c86
+  described_by: claude-sonnet-5
+  description: >-
+    A connection's context panel shows Details and Activity sections. An open right-click context
+    menu lists actions including Create folder, Delete, Edit, Clone, Clear cache, Test, Share, and
+    Credentials. The Copy item is expanded into a submenu offering ID, Grok name, Markup, and URL.
+  height: 548
+  kind: screenshot
+  quality: docs
+  quality_notes: cropped to the menu, sidebar labels partly cut off
+  reviewed: true
+  width: 643
+grid-adaptive-number-formatting.gif:
+  actions:
+    - type "grok." to open the namespace autocomplete list
+    - select "data" and type "." to list its methods
+    - select "parseCsv" and enter the csv string argument
+    - open the options object and browse CsvImportOptions properties
+    - select "delimiter" and type its value
+  caption: Using IntelliSense to call the JS API
+  described_blob: 28b79fe5aabd5e60690b43ff1b2d633e570a8aba
+  described_by: claude-sonnet-5
+  description: >-
+    A code editor shows autocomplete suggestions as the developer builds a call to the grok JS API.
+    Typing "grok." lists top-level namespaces like data, dapi, and shell; selecting "data" and
+    typing "." lists methods such as parseCsv, query, and db. After choosing parseCsv and supplying
+    a CSV string argument, the editor offers CsvImportOptions properties (delimiter, headerRow,
+    maxRows, etc.), and the developer picks "delimiter" and types its value.
+  height: 359
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    plain IDE screen capture with no platform UI, useful only as a supporting illustration on the
+    page
+  reviewed: true
+  seconds: 21.9
+  width: 866
+webstorm-debugging-01.png:
+  caption: Opening WebStorm's Edit Configurations dialog
+  described_blob: 3341682157348fa28059cde67e337a03258eb811
+  described_by: claude-sonnet-5
+  description: >-
+    A cropped screenshot of WebStorm's top toolbar showing the Run/Debug configuration dropdown,
+    expanded to reveal a context menu with entries for Edit Configurations..., JS Debug, and Webpack
+    & Publish. The cursor points at the Edit Configurations... option, which is the first step for
+    setting up a shell script or JS Debug run configuration.
+  height: 170
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Small, tightly cropped toolbar fragment with no surrounding window chrome for context; low
+    resolution (231x170) makes menu text hard to read on its own.
+  reviewed: true
+  width: 231
+webstorm-debugging-02.png:
+  caption: Selecting Shell Script in Run/Debug Configurations
+  described_blob: d2f7c91effc1e77c0a18cd8cfdbbf5d48b71d7ab
+  described_by: claude-sonnet-5
+  description: >-
+    This is a screenshot of JetBrains WebStorm's Run/Debug Configurations dialog, showing the Add
+    New Configuration dropdown menu with a list of configuration types. The mouse cursor is hovering
+    over and highlighting the Shell Script entry near the bottom of the list, among options like
+    Firefox Remote, Grunt.js, Gulp.js, JavaScript Debug, Jest, Karma, npm, NW.js, PhoneGap/Cordova,
+    Protractor, React Native, XSLT, and several Dart-related types under Other.
+  height: 530
+  kind: screenshot
+  quality: docs
+  quality_notes: Cropped dropdown menu only, no dialog chrome or surrounding context visible on its own
+  reviewed: true
+  width: 247
+webstorm-debugging-03.png:
+  caption: WebStorm Shell Script configuration for publishing
+  described_blob: ac5d7f568d768e7f9cf45a2fa0b8aa49819bb358
+  described_by: claude-sonnet-5
+  description: >-
+    A WebStorm Run/Debug Configurations dialog shows a Shell Script configuration named "Webpack &
+    Publish" nested under JavaScript Debug and Shell Script in the left tree. The Script path and
+    Interpreter path both point to cmd.exe, the working directory is set to the package folder, and
+    the Interpreter options field contains the command "/c call webpack && call grok publish dev &&
+    call echo", with "dev" highlighted for editing.
+  height: 568
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Small, dense dialog screenshot with local file paths visible; clear enough to follow inline but
+    not polished enough to stand alone
+  reviewed: true
+  width: 812
+webstorm-debugging-04.png:
+  caption: Grok config file for WebStorm run configurations
+  described_blob: 27ec0877e0e6ee646704d4bd7118912a39639b84
+  described_by: claude-sonnet-5
+  description: >-
+    A text editor window titled "Lister" shows the contents of C:\Users\x1\.grok\config.yaml. It
+    lists three named servers (dev, public, compose) each with a url and key, plus a default entry
+    set to dev.
+  height: 282
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    generic text-editor view of a config file with placeholder-looking keys; only useful alongside
+    the surrounding tutorial steps
+  reviewed: true
+  width: 480
+webstorm-debugging-05.png:
+  caption: Adding a JS Debug run configuration
+  described_blob: 97420d13bf533e22c88a9e73ad6feb6a74f4fcfb
+  described_by: claude-sonnet-5
+  description: >-
+    A WebStorm Run/Debug Configurations dialog shows a new JS Debug entry named "JS Debug" pointed
+    at https://dev.datagrok.ai/, with a project file tree below for remote URL mapping. In the
+    Before launch section, a Run Shell Script "Webpack & Publish" step is already added, and a
+    dropdown for adding another Before Launch step is open with "Run Another Configuration"
+    highlighted.
+  height: 689
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    dense IDE dialog with small text and an open dropdown menu overlapping the tree; readable but
+    cluttered, fine embedded in the walkthrough rather than standalone
+  reviewed: true
+  width: 1001
+webstorm-debugging-06.png:
+  caption: Debugging a package in WebStorm
+  described_blob: 134311d5f7fa7a926e424af704f798c1f80dd6fa
+  described_by: claude-sonnet-5
+  description: >-
+    WebStorm is shown mid-debug session with package.js open in the editor, a breakpoint hit inside
+    a testHelloWorld function, and the Debugger panel below showing the call stack frames and local
+    variables. A browser window is open alongside it on a Datagrok Functions page, showing the
+    testHelloWorld function selected in the tree with its details panel open on the right.
+  height: 1038
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    busy IDE screenshot with small text and debug internals not central to the point being
+    illustrated
+  reviewed: true
+  width: 1920

@@ -1,0 +1,97 @@
+running_tests.gif:
+  actions:
+    - right-click a test node in the tree
+    - select Run from the context menu
+    - click the Run button in the Tests details panel
+    - >-
+      observe the test icon turn into a green checkmark and the Results panel show OK with a run
+      time
+  caption: Running a single test in Test Manager
+  described_blob: 6113fd20789805e6f59fa953b533f140448efe05
+  described_by: claude-sonnet-5
+  description: >-
+    The TestManager panel of DevTools shows the test tree on the left (Dapi > admin > "Dapi: admin -
+    getServiceInfos") and a Tests details panel on the right with package, category and test name.
+    The user right-clicks the test node and selects Run from a context menu, then clicks the Run
+    button in the details panel; the test completes and the tree node gets a green checkmark while
+    the Results section shows "OK" with an elapsed time in milliseconds.
+  height: 343
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI region, no visible progress bar or fail-icon state despite the surrounding text
+    describing those; low information density for a standalone answer
+  reviewed: true
+  seconds: 17.1
+  width: 799
+test-mngr-start.png:
+  caption: Opening Test Manager from the Tools menu
+  described_blob: 54e483288840abb42ea0d8013cde8046a47f6454
+  described_by: claude-sonnet-5
+  description: >-
+    A screenshot of the Datagrok top menu with Tools expanded, showing the Dev submenu open. The Dev
+    submenu lists entries including Benchmarks, Open Test Dataset, Inspector, View Snapshot,
+    Generate HTML Help Pages, Generate Demo Datasets, Command History, Test Tracking, Queue
+    Tracking, Test Manager, JS API Tests, and Test Packages, with Test Manager highlighted.
+  height: 241
+  kind: screenshot
+  quality: docs
+  quality_notes: small crop of a menu only, low resolution (300x241), no surrounding context or window chrome
+  reviewed: true
+  width: 300
+test-mngr-tests-list.png:
+  caption: Test Manager tests list
+  described_blob: 987e8a517d568195a1cd1bf006cf716522e6c1ea
+  described_by: claude-sonnet-5
+  description: >-
+    Screenshot of the Test Manager panel showing the "Clinical Case" package expanded to reveal the
+    "clinicalCase" category, with individual tests like openApp, cumulativeEnrollment, validation,
+    hysLaw, baselineEndpoint, labValuesByVisit, and survivalDataframe listed beneath it. Run, Run
+    All, Debug, and Benchmark controls appear at the top of the panel.
+  height: 206
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, cropped panel view with no surrounding context; fine to illustrate the test tree
+    structure but not self-explanatory alone
+  reviewed: true
+  width: 500
+test_manager_progress_bar.png:
+  caption: Tracking test run progress
+  described_blob: c7068f06180c1153951309335e2b6e4e1e0ca850
+  described_by: claude-sonnet-5
+  description: >-
+    A test tree panel shows the Dapi > files category expanded, with completed tests marked by green
+    checkmarks and one test in progress shown with a spinner. A status bar at the bottom reads
+    "ApiTests/Dapi: 10% completed", indicating the overall progress of the running test package.
+  height: 272
+  kind: screenshot
+  quality: docs
+  quality_notes: cropped to a small panel with no surrounding UI chrome for context
+  reviewed: true
+  width: 736
+test_results.gif:
+  actions:
+    - select a test category in the tree
+    - view aggregated results grid in the details panel
+    - click ADD TO WORKSPACE
+    - explore the results as a table in the workspace
+  caption: Reviewing test results in Test Manager
+  described_blob: e330e660cee560de600a0f6d2f1f937e5d1606f7
+  described_by: claude-sonnet-5
+  description: >-
+    The Test Manager panel shows the Chem package test tree with a 'substructure search' category
+    expanded, listing individual tests with green checkmarks. Clicking a category selects it and the
+    right-side details panel switches from a single test's OK/ms result to a grid of all results in
+    that category (success, result, ms, category, name columns). The grid is then added to the
+    workspace as its own table, where it can be explored with the standard grid tools (Filter,
+    Actions, Colors, Stats, Serialization, Dev panels).
+  height: 392
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI region with truncated columns; useful in context but not self-explanatory as a
+    standalone answer
+  reviewed: true
+  seconds: 12.9
+  width: 800

@@ -1,0 +1,17 @@
+context-actions.png:
+  caption: Registering a custom cell context action
+  described_blob: e76c559d12346cade42a04580686ad66e585c02b
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecule structures shows a right-click context menu open on a selected cell. The
+    custom action group "Actions" appears at the top with entries Add to variables, Copy value, Add
+    to favorites, Sketch, and Use as Filter, above the standard chem context actions like Gasteiger
+    Partial Charges, Descriptors, and Drug Likeness.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Clear and readable, but it is a narrow developer-feature illustration (a custom menu action)
+    cropped from a larger workflow, not a general standalone how-to.
+  reviewed: true
+  width: 800

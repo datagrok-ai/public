@@ -4,7 +4,7 @@ import {describe, it, expect} from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
-import {enrichMedia, parseAnswer, validate, Prepared, Describer, FrameSampler} from '../utils/kg/enrich/media';
+import {enrichMedia, matches, parseAnswer, validate, Prepared, Describer, FrameSampler} from '../utils/kg/enrich/media';
 import {loadTypeSystem} from '../utils/kg/types';
 import {copyFixture, git, write, buildFixture, runKg, kgRoot, KG_DIR} from './kg-fixture';
 
@@ -102,5 +102,17 @@ describe('grok kg enrich media', () => {
     expect(checked.proposal).toEqual({caption: 'c', description: 'd', quality: 'docs', illustrates: ['visualize/viewers']});
     expect(validate(system, {caption: 'c'}, item).error).toBe('no description in the answer');
     expect(validate(system, {description: 'd', kind: 'poster'} as any, item).error).toMatch(/kind: "poster" is not one of/);
+  });
+
+  it('--only takes a prefix, a glob, or a folder with a trailing **', () => {
+    const file = `${IMG}/bins.png`;
+    expect(matches(file, 'public/help/visualize')).toBe(true);
+    expect(matches(file, 'public/help/visualize/')).toBe(true);
+    expect(matches(file, 'public/help/compute')).toBe(false);
+    expect(matches(file, 'public/help/**/*.png')).toBe(true);
+    expect(matches(file, 'public/help/*/img/*.png')).toBe(false);
+    expect(matches(file, 'public/help/visualize/**')).toBe(true);
+    expect(matches(file, 'public/help/visualize/viewers/img/**')).toBe(true);
+    expect(matches(file, 'public/help/compute/**')).toBe(false);
   });
 });

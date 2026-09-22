@@ -1,4 +1,6 @@
 ---
+feature: explore/group-comparison
+owner: P:askalkin
 title: "Group comparison"
 sidebar_position: 6
 description: Test whether a numeric feature's average differs between groups using t-test, ANOVA, or control comparisons.

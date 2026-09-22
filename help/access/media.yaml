@@ -16,6 +16,6 @@ file-shares-file-viewers.gif:
   quality_notes: >-
     Small UI text and file tree are hard to read at this resolution, and the viewer content itself
     is not explained on screen.
-  reviewed: false
+  reviewed: true
   seconds: 10.4
   width: 800

@@ -1,0 +1,47 @@
+dendrogram-close-button.png:
+  caption: Closing the dendrogram viewer
+  described_blob: 26efd33482d62d6e76aaf583b26da2c743e46cc0
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of peptide sequences is shown with a hierarchical clustering dendrogram injected as an
+    extra column on the left, its branches colored orange and green for related clusters. A red
+    arrow points to an X button in the top-right corner of the tree view, which closes the
+    dendrogram and restores the original grid.
+  height: 976
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    annotated with a red arrow, cropped mid-table, useful in context but not a clean standalone
+    answer
+  reviewed: true
+  width: 2034
+export-csv.png:
+  caption: Save as CSV export options
+  described_blob: 8f7a9302a42007edc41da60b884d11a059c37a24
+  described_by: claude-sonnet-5
+  description: >-
+    A screenshot of the 'Save as CSV' dialog, showing controls for Delimiter, New line, and Missing
+    Value, plus checkboxes for Include Header, Selected Columns Only, Filtered Rows Only, and
+    Selected Rows Only, and a Columns field. The dialog has Cancel, Set Default, and OK buttons at
+    the bottom.
+  height: 402
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 358
+export.png:
+  caption: Data export format menu
+  described_blob: f94b4761cc6b2373c81a5b6b34ec17a594ccdbc1
+  described_by: claude-sonnet-5
+  description: >-
+    This is a dropdown menu opened from the export toolbar button in a table view. It lists export
+    format options: As CSV, As CSV (options)..., As JSON, As Excel Document, As Presentation, and
+    CSV and PNG as ZIP.
+  height: 300
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, tightly cropped dropdown with no surrounding context; fine as an inline illustration but
+    not self-explanatory on its own
+  reviewed: true
+  width: 181

@@ -1,0 +1,933 @@
+admetica-column.gif:
+  actions:
+    - Open the Admetica dialog on a molecule table
+    - >-
+      Expand and check ADMET endpoint categories (Absorption, Distribution) while reading their
+      descriptions
+    - Confirm with OK to run the predictions
+    - Scroll the resulting grid showing new prediction columns colored by value
+    - Inspect the Context Panel pie chart and grouped ADMET results for a selected row
+  caption: Predicting ADMET properties with Admetica
+  described_blob: 3e168a90c4fc381d8df576c48e583ec36c62b371
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecules (sar-small table) is shown with the Admetica dialog open, where the user
+    selects ADMET endpoint categories such as Absorption, Distribution, Metabolism, and Excretion,
+    each with an explanatory description panel. After confirming the selection, new prediction
+    columns (Caco2, Lipophilicity, Solubility, PPBR, VDss, CYP inhibitor/substrate scores, CL-Hepa,
+    CL-Micro, Half-Life) are added to the grid, colored by value, and the Context Panel shows a pie
+    chart and grouped summary of the predicted properties for the selected row.
+  height: 457
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 38.2
+  width: 800
+cdd_collections.png:
+  caption: Browsing collections in a CDD Vault
+  described_blob: b242efdeedfa44a90df8ad3cd300acb3cf993ab1
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok sidebar shows a CDD Vault connection expanded to DataGrok test vault > Collections
+    > test_collection, with the file tree also listing Protocols, Saved Searches, Molecules, and
+    Search. The main grid shows the selected collection's molecules, with columns for id, name,
+    smiles (rendered as structures), class, and created_at.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: table is cropped on the right (created_at column cut off) and only a few rows are visible
+  reviewed: true
+  width: 800
+cdd_context_panel.png:
+  caption: CDD Vault context panel
+  described_blob: cf4ced011d749e3ab3adc9b5c73e9c1799697766
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecules with canonical SMILES is shown on the left, with the first row's structure
+    selected and highlighted. The context panel on the right shows a 'CDD Vault' section listing
+    vault fields for that molecule, including id, class, created_at, modified_at, name, synonyms,
+    registration_type, owner, smiles, cxsmiles, inchi, inchi_key, iupac_name, molfile,
+    molecular_weight, log_p, log_d, and log_s.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    informative but dense with small text and a long field list; not polished enough to stand alone
+    as marketing
+  reviewed: true
+  width: 800
+cdd_molecules.png:
+  caption: Browsing molecules in a CDD Vault
+  described_blob: 5bae33756ae865d5e725e6a14252ce8637b5ad71
+  described_by: claude-sonnet-5
+  description: >-
+    A grid view shows the Molecules table from a CDD Vault connection, navigated via the sidebar
+    tree (Chem > Admetica > CDD Vault > DataGrok test vault > Molecules). Columns show id, name,
+    smiles (rendered as structure images), class, created_at, and modified_at, with the first row
+    selected and its structure highlighted.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: Sidebar and toolbar clutter typical of a full app screenshot rather than a focused crop.
+  reviewed: true
+  width: 800
+cdd_protocols.png:
+  caption: Browsing CDD Vault protocols
+  described_blob: 74793bcc93c26f0948bca16e957d91896cab27ba
+  described_by: claude-sonnet-5
+  description: >-
+    The screenshot shows the Datagrok tree browser with a CDD Vault connection expanded to a
+    Protocols node, with one protocol selected. The main grid displays the molecules belonging to
+    that protocol, including id, name, structure, class, and creation/modification timestamps.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Small UI details (row highlight, column widths) are only legible at full resolution; fine
+    standalone but needs the surrounding text for context.
+  reviewed: true
+  width: 800
+cdd_saved_search.png:
+  caption: Browsing a saved search in CDD Vault
+  described_blob: bea8a285e07ec0019f5f626d76b4145e819844f3
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok sidebar tree shows the CDD Vault connection expanded to a saved search named
+    test_search_1 under DataGrok test vault > Saved Searches. The main grid displays its results: a
+    molecule column with structure images alongside Molecule Name and several assay result columns
+    (Mean IC50, Std Dev IC50, IC50 Count) for the Ba/F3_EGFR CTGlo dataset.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: clear and readable but shows a narrow internal test vault view rather than a generalized example
+  reviewed: true
+  width: 800
+cdd_search.png:
+  caption: Searching CDD Vault by substructure
+  described_blob: 379d80804a3ecc4f2922a64b2fca2e778ef3148f
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok sidebar shows the CDD Vault app expanded under Chem, with the Search page selected
+    under DataGrok test vault. The right panel has a Protocol section scoped to a specific protocol
+    and run, and a Structure section with a substructure search field showing a drawn benzene ring.
+    Below, a Search button and a results grid list matching molecules with id, name, SMILES
+    structure, class, and timestamps.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear and readable, but shows internal test-vault data (protocol names like "Ba/F3_EGFR [WT]
+    CTGlo", "DataGrok test vault") rather than a generic example
+  reviewed: true
+  width: 800
+chem-exploration.png:
+  caption: Exploring a chemical dataset
+  described_blob: 20e2cf7cfc280ace7ec76cdb06d21c55fd0b8bea
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecules is shown with a substructure filter panel on the left using a sketched
+    naphthalene query, plus histogram filters for HeavyAtomCount and NumHAcceptors. The Chem menu
+    item is highlighted in the top menu, and the Context Panel on the right shows info panes for a
+    selected molecule, including Gasteiger Partial Charges, Properties, Descriptors, Databases, and
+    Biology sections like Toxicity, Structural Alerts, and Drug Likeness.
+  height: 1000
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: annotated with red highlight boxes and callout labels rather than a clean UI capture
+  reviewed: true
+  width: 1601
+chem-spreadsheet-0.png:
+  caption: Chemically-aware spreadsheet grid
+  described_blob: 82ec03a8dbd3f28d46dc24b14bb6c57f26206428
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid showing a molecule column of chemical structures rendered inline, with a
+    hovering column-info tooltip displaying the most diverse structures and category count.
+    Additional columns show computed descriptors like FractionCSP3, NumSaturate, and radar-chart
+    cell renderings, while the right-hand context panel lists chemistry properties including
+    toxicity predictions (mutagenicity, tumorigenicity, irritating effects) and a 3D structure
+    viewer.
+  height: 1001
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Dense UI with overlapping tooltip and many small panels crowds the frame, better suited
+    alongside explanatory text than standalone.
+  reviewed: true
+  width: 1601
+filter-substructure.gif:
+  actions:
+    - open the filter panel
+    - click the smiles filter to edit it
+    - sketch a substructure query in the molecule sketcher
+    - apply the sketch to filter the table
+  caption: Filtering molecules by substructure search
+  described_blob: 777443c06267d46944f98bc1e69fd29d1a4ca4e3
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid of molecules with a Chem space scatter plot is shown alongside a smiles
+    substructure filter in the left filter panel. The user opens the molecule sketcher, draws a
+    naphthalene-like substructure query, and applies it. The grid and histograms update to show only
+    rows matching the sketched substructure, and the scatter plot highlights the corresponding
+    filtered points.
+  height: 1001
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: readable UI but small/dense text and cropped viewer panel on the right edge
+  reviewed: true
+  seconds: 29.6
+  width: 1601
+interactive-panes.gif:
+  actions:
+    - Expand the Gasteiger Partial Charges info pane
+    - Open the pane's parameter editor (Edit parameters)
+    - Set the Contours value and click Apply
+    - Open the pane's More actions menu and add it as a column
+  caption: Customizing chemistry info panes
+  described_blob: 940fec20a1856ad6c3550e49f52349aa0b0df66c
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule table is open with a Chemistry info panel on the right showing a collapsed tree of
+    panes (Gasteiger Partial Charges, Properties, Descriptors, Toxicity, Structural Alerts, Drug
+    Likeness, ADME/Tox, 2D/3D Structure). The user expands the Gasteiger Partial Charges pane, opens
+    its parameter editor and sets Contours to 10, then applies it, and finally uses the pane's More
+    actions menu to add the Gasteiger Partial Charges result as a new column in the grid.
+  height: 1001
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 25.8
+  width: 1601
+match-r-groups.gif:
+  actions:
+    - Open Chem > Analyze > R-Groups Analysis
+    - Draw/confirm the core structure with labeled R-groups in the sketcher
+    - Open the gear/settings panel
+    - Check 'Only match at R groups'
+    - Click OK to run the analysis
+    - View the resulting Core column and R-group trellis plot
+  caption: Enabling Only Match at R Groups
+  described_blob: bc05d092fdd97cae069aba7872a52b3db5a386ac
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid is opened via Chem > Analyze > R-Groups Analysis. In the R-Groups Analysis
+    dialog, a core structure with R1-R3 substitution points is drawn in the sketcher, then the gear
+    icon reveals additional options including a 'Matching strategy' dropdown and an 'Only match at R
+    groups' checkbox, which is checked. Clicking OK adds a Core column to the grid and opens a
+    Trellis plot of R-group substituents (R1 vs R2), which is then expanded to fill the view.
+  height: 740
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 33
+  width: 800
+mixtures_components.gif:
+  actions:
+    - hover over a component structure in the mixture cell to reveal a name tooltip
+    - hover over another component to reveal its name and ratio
+    - view the corresponding 2D structure update in the context panel
+  caption: Exploring mixture components in a grid cell
+  described_blob: 7f7789d18862c7e979727eb043e48ef9a4a4512a
+  described_by: claude-sonnet-5
+  description: >-
+    A grid cell shows a mixture entry ("mixture") rendering its components as chemical structures
+    separated into a mixture group, with concentration/ratio labels beneath each. The context panel
+    on the right shows Chemistry, Databases, Biology, and Structure sections for the selected
+    structure. Hovering over the pentane component shows a tooltip with its name, then hovering over
+    the isoamyl alcohol component shows a tooltip with its name and ratio; the context panel's 2D
+    Structure preview updates to match the hovered/selected component.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: small embedded grid/panel view, text and labels are low resolution when viewed at full size
+  reviewed: true
+  seconds: 12.6
+  width: 800
+mixtures_context_panel.gif:
+  actions:
+    - Expand the Mixture node in the context panel
+    - View the component table with structures and names
+    - Expand the MixtureTree node
+    - View component 1 (t-butyllithium) with its quantity, units, and error
+    - Expand component 2 (pentane)
+  caption: Browsing a mixture's components in the context panel
+  described_blob: e3bb537b8df4dac1b07872c0b65e4c19dd105bb9
+  described_by: claude-sonnet-5
+  description: >-
+    A grid shows a mixture column with structures grouped into layers (a bulk component highlighted
+    in green, then a table of ingredients with ratios and weight percentages). The context panel on
+    the right opens a Chemistry section with Mixture and MixtureTree entries. Expanding Mixture
+    reveals a table listing each component's structure and name (t-butyllithium, pentane), and
+    expanding MixtureTree shows the same data as a hierarchical tree with component nodes carrying
+    name, quantity, units, and error fields.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small UI region cropped from a browser window; text and structures are legible but low visual
+    polish, functional documentation capture rather than a curated shot.
+  reviewed: true
+  seconds: 8.4
+  width: 800
+mmp-activity-cells.png:
+  caption: Matched molecular pair activity cells
+  described_blob: 771c42d7d3678ea6e1028bcd6b1da708b72abdf2
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of fragment substitutions from an MMP analysis shows From and To fragment structures
+    alongside delta columns for Activity, Permeability, and Toxicity. Each delta cell renders a
+    compact two-point line chart connecting individual pair values, letting you see the trend and
+    spread of the change at a glance, with a numeric count of pairs per row.
+  height: 453
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Small crop of a wider grid, some columns cut off at the edges; readable but not a polished
+    standalone image
+  reviewed: true
+  width: 872
+mmp_fragments_modes.gif:
+  actions:
+    - switch the Fragments mode dropdown from "All" to "Current"
+    - select a molecule row in the main grid, updating the Current fragment list
+    - select a fragment pair row in the Fragments table
+    - enable the "Follow current row" checkbox
+    - select a different fragment pair row, filtering the Molecule Pairs table to match
+  caption: 'Matched Molecular Pairs: Fragments tab modes and Follow current row'
+  described_blob: 98aab301059c3baf472dc2c7e71d75ed5164a259
+  described_by: claude-sonnet-5
+  description: >-
+    The Matched Molecular Pairs Analysis panel shows a Fragments table listing substructure
+    substitution pairs with their delta Activity, Permeability, and Toxicity, plus a Molecule Pairs
+    table below it. The user switches the Fragments dropdown from "All" (40 fragment pairs) to
+    "Current" mode, which narrows the list to only the fragment pairs relevant to the molecule
+    selected in the main grid. Selecting different rows in the main table updates the Current
+    fragment list accordingly, and turning on the "Follow current row" checkbox makes the Molecule
+    Pairs table filter down to just the pairs that match whichever fragment row is selected,
+    changing again when a different fragment row is picked.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded UI recording; legible at normal size but text and grid values are tiny when
+    viewed standalone
+  reviewed: true
+  seconds: 15.8
+  width: 800
+mmp_molecule_pairs_navigation.gif:
+  actions:
+    - click a row in the Fragments substitutions table
+    - click a row in the Molecule Pairs table below it
+    - hover over a molecule pair's structure to reveal a details tooltip
+  caption: Navigating matched molecular pairs in a dataset
+  described_blob: 451ee5b5b7a921eafb1eb430297330c430b06933
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecule structures with an Activity column is shown alongside a Matched Molecular
+    Pairs Analysis panel listing fragment substitutions and molecule pairs, each with delta
+    Activity, Permeability, and Toxicity values. Clicking a fragment substitution row highlights the
+    corresponding molecule pairs below and pins related rows in the main grid; clicking a molecule
+    pair row then pins that pair's source and target rows in the grid, highlighted in green, and a
+    tooltip appears showing Permeability_to, Delta Toxicity, Toxicity_from, and Toxicity_to for the
+    hovered pair.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 12.3
+  width: 800
+mmp_start.gif:
+  actions:
+    - open the Chem menu, then Analyze, then Matched Molecular Pairs
+    - >-
+      select the smiles column and check the Activity, Permeability, and Toxicity columns in Select
+      columns
+    - set Activities to delta scaling for each property and click OK
+    - >-
+      review the resulting Matched Molecular Pairs Analysis panel with fragment substitutions and
+      molecule pairs
+  caption: Launching Matched Molecular Pairs analysis
+  described_blob: ee780ebed8df095bcedd7f0549309b9ec566dabc
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid with SMILES structures and Activity, Permeability, and Toxicity columns is
+    shown. The user opens the Chem > Analyze menu and selects Matched Molecular Pairs, then in the
+    dialog picks the SMILES column, checks all three activity columns with a delta scaling, and
+    confirms. The Matched Molecular Pairs Analysis panel opens on the right, showing Substitutions,
+    Fragments, Cliffs, and Generation tabs with a fragment substitution table and a molecule pairs
+    table listing activity deltas.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small/cropped panel text is hard to read at this resolution, and menu tooltips overlap; adequate
+    for illustrating the workflow within its page but not standalone
+  reviewed: true
+  seconds: 16.4
+  width: 800
+mmp_substitutions_context_panel.gif:
+  actions:
+    - click a fragment substitution row (Δ Permeability cell)
+    - click a molecule pair row
+    - hover over a molecule pair's To structure to reveal a value tooltip
+    - click another molecule pair row, updating the context panel with new structures and chart
+  caption: Matched Molecular Pairs substitutions context panel
+  described_blob: 40d6d9d7634f28c3d637f27c5dea50f874167b98
+  described_by: claude-sonnet-5
+  description: >-
+    A Matched Molecular Pairs Analysis panel is open on the Substitutions tab, listing fragment
+    substitutions (From/To with delta Activity, Permeability, Toxicity) and the matched molecule
+    pairs below. A context panel on the right shows the two molecule structures with their Activity,
+    Permeability, and Toxicity values plus a parallel-coordinates-style line chart of the selected
+    property. Clicking different substitution rows and molecule pairs updates the highlighted
+    structures, numeric values, and chart lines on the right.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense grid are hard to read at reduced size; informative for someone following
+    the docs page but not self-explanatory alone
+  reviewed: true
+  seconds: 9.9
+  width: 800
+mmp_tab_cliffs.gif:
+  actions:
+    - adjust the Activity value cutoff slider on the scatterplot
+    - zoom into the scatterplot to reveal molecule structures at each node
+    - click a pair to select it in the table and open its details in the Context Panel
+  caption: Exploring activity cliffs in the MMP scatterplot
+  described_blob: 39794cd10d88d9a9f89932cdeb19503f85fb567f
+  described_by: claude-sonnet-5
+  description: >-
+    The Matched Molecular Pairs Analysis panel shows the Cliffs tab: a scatterplot of chemical space
+    with arrows connecting matched molecule pairs, colored and sized by Activity, Permeability, and
+    Toxicity, alongside a Molecule Pairs table below. The user adjusts the Activity value cutoff
+    slider, which changes the number of filtered pairs shown as arrows on the plot and rows in the
+    table. Zooming into the plot expands pair markers into circles containing molecule structures,
+    and clicking a pair highlights its row and opens a Context Panel on the right showing the
+    structures and Activity/Permeability/Toxicity values for both molecules in the pair.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 14.9
+  width: 800
+mmp_tab_fragments.gif:
+  actions:
+    - click a fragment-pair cell in the trellis to select it
+    - click a different cell to select it
+    - open the 'Edit columns aggregations' dialog and adjust which properties are aggregated
+    - open the filter panel and drag a range slider on the Δ Activity histogram
+  caption: Fragment-to-fragment trellis in Matched Molecular Pairs
+  described_blob: 436a997fe0c8d625a061e005a3fc130f742992ba
+  described_by: claude-sonnet-5
+  description: >-
+    The Fragments tab of the Matched Molecular Pairs Analysis shows a trellis grid of fragment
+    pairs, each cell plotting the mean change in activity, permeability, and toxicity between
+    molecules that swap one fragment for another, with a molecule pairs table below. The user
+    selects cells in the grid to inspect specific fragment substitutions, then opens the
+    column-aggregations dialog to change which properties are aggregated in each cell, and finally
+    opens the filter panel to drag range sliders on the Δ Activity, Δ Permeability, and Δ Toxicity
+    histograms, narrowing the pairs shown.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: small dense UI text and numeric labels are hard to read at this resolution
+  reviewed: true
+  seconds: 20.6
+  width: 800
+mmp_tab_generations.gif:
+  actions:
+    - >-
+      scroll the Generated Molecules grid horizontally to reveal Predicted molecule, Property type,
+      Observed, Predicted, Δ activity, Prediction columns
+    - hover over the Observed column header to show its value-distribution tooltip
+    - hover over the Predicted column header to show its value-distribution tooltip
+  caption: 'MMP Analysis: Generation tab'
+  described_blob: a6b9754304d217577b2097a71c95f4cb35f1008d
+  described_by: claude-sonnet-5
+  description: >-
+    The Matched Molecular Pairs Analysis panel shows the Generation tab, listing generated molecules
+    with their core structure, the substructure fragments changed From and To. The grid then scrolls
+    to show the predicted molecule structure alongside Observed, Predicted, Δ activity, and a
+    Prediction checkbox per row. The user hovers the Observed and Predicted column headers,
+    revealing tooltips with value distributions (histograms, min/avg/max/std) for each. Context
+    panel scatter plots for Activity, Permeability, and Toxicity (Observed vs. Predicted with
+    regression line and r2) remain visible on the right throughout.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded panel view with dense tabular/chemical data, legible but busy for a standalone
+    image
+  reviewed: true
+  seconds: 9.7
+  width: 800
+mpo-data-driven.gif:
+  actions:
+    - switch Method from Manual to Data-driven
+    - select a training dataset
+    - review the generated descriptor statistics, ROC curve, and confusion matrix
+    - scroll through descriptor rows
+    - open and scroll the underlying training data grid
+  caption: Building a data-driven MPO profile
+  described_blob: 95bbaa7f422b3acd380351774e531bb8a402761a
+  described_by: claude-sonnet-5
+  description: >-
+    In the MPO Profile editor, the user switches the Method dropdown from Manual to Data-driven and
+    picks a training dataset. The tool then generates a Descriptor Statistics table listing each
+    molecular descriptor with its auto-fitted desirability curve, weight, and mean(desired) value,
+    alongside an ROC curve (AUC 0.7) and a CNS confusion matrix. The user scrolls the descriptor
+    table and expands the linked Training Data grid, which lists individual drugs with their
+    descriptor values and true/predicted CNS activity checkboxes.
+  height: 865
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense tables are hard to read at this resolution, and cursor movement is
+    somewhat aimless; useful within the page but not self-explanatory alone
+  reviewed: true
+  seconds: 23.2
+  width: 1178
+mpo-desirability-settings.gif:
+  actions:
+    - open the Caco2 desirability dialog in freeform mode
+    - switch Mode to gaussian and drag the curve peak
+    - switch Mode to sigmoid and drag the inflection point
+    - set Missing Values to 'Use default score' and drag the default score slider
+    - click OK to close the dialog
+    - open the Aggregation dropdown and select 'Min'
+  caption: Editing desirability curve settings for an MPO property
+  described_blob: cb0dfc06b4448191a2e4c0fc3ab05df7a6f538a5
+  described_by: claude-sonnet-5
+  description: >-
+    In the MPO Profile editor, a Caco2 property's desirability curve is opened in a popup dialog
+    that lets the user pick a curve Mode (freeform, gaussian, sigmoid) and adjust its parameters
+    (Min, Max, Mean/Sigma or x0/k), plus a Missing Values policy such as excluding the row or using
+    a default score. As the mode and parameters change, the live histogram and curve in the dialog
+    update, and the Scores histogram and Best/Worst scores panels on the right recompute
+    accordingly. The clip ends by switching the profile's overall Aggregation method from Average to
+    Min in a dropdown, which reshapes the scores distribution.
+  height: 834
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear and on-topic but tightly cropped to the dialog workflow with small chart text, and the
+    final aggregation-dropdown action is a tangent from the desirability-curve topic it illustrates
+  reviewed: true
+  seconds: 42.3
+  width: 1178
+mpo-profile-creation.gif:
+  actions:
+    - choose a dataset to auto-populate properties
+    - drag control points on the Caco2 desirability curve to reshape it
+    - adjust the Lipophilicity weight value
+    - select a molecule row in the grid
+    - observe the live score histogram and best/worst scoring molecules update in the context panel
+  caption: Creating an MPO desirability profile
+  described_blob: 7b088d9c879d5642f875b25b35bccc32c3c2cb30
+  described_by: claude-sonnet-5
+  description: >-
+    An empty MPO Profile named "Untitled Profile" is set up by picking a dataset, which
+    auto-populates properties (Caco2, Lipophilicity, Solubility) each with its own desirability
+    curve editor and histogram. The user drags points on the Caco2 curve to reshape the desirability
+    function, then adjusts the Lipophilicity weight, while the context panel on the right updates a
+    live score histogram and shows the current best- and worst-scoring molecules. Selecting a row in
+    the molecule grid highlights the corresponding bar in the score histogram.
+  height: 834
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 29.5
+  width: 1178
+mpo-profiles.gif:
+  actions:
+    - >-
+      open a profile from the list to view its dataset, aggregation, and property desirability
+      curves
+    - navigate back to the profile list
+    - open the row context menu on a profile
+    - select Delete to remove the profile
+  caption: Managing MPO profiles
+  described_blob: 83ca8643791732048d25643add91e45bc2480bb3
+  described_by: claude-sonnet-5
+  description: >-
+    The MPO Profiles view lists saved profiles with their name and description, alongside Create
+    Profile and Upload buttons. Clicking a profile opens its editor, showing dataset selection, an
+    aggregation method, and per-property weight and desirability curves. The animation opens a
+    profile to view its settings, returns to the list, then uses the row's context menu (Edit,
+    Clone, Download, Delete) to delete a profile.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and low-motion capture; adequate to illustrate the list/menu/editor but not
+    polished enough for marketing
+  reviewed: true
+  seconds: 30.4
+  width: 800
+mpo-scoring.gif:
+  actions:
+    - Open Chem > Calculate > MPO Score
+    - Select or create a scoring profile
+    - Adjust property weights and desirability curves
+    - Run the scoring (OK)
+    - Enable Pareto front and Add radar options to explore results
+  caption: Scoring compounds with MPO Score
+  described_blob: 1516d1839576e908239c974b71c9c13224dc345c
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid in the Chem package is scored using Chem > Calculate > MPO Score. The MPO Score
+    dialog opens with a selectable profile (ADME Test), showing weighted properties (Caco2,
+    Lipophilicity, Solubility) each with a desirability curve, plus Pareto front and radar options.
+    After running the score, a new ADME Test column is added to the grid alongside a side panel
+    showing a score histogram, best/worst scoring molecules, and a Pareto scatter plot of ADME Test
+    vs. Solubility desirability with molecule thumbnails; a radar column is then added showing
+    per-row desirability shapes for each molecule.
+  height: 864
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Long screen-capture with dense, small UI text and overlapping dialog/grid content; informative
+    but not polished enough for marketing use.
+  reviewed: true
+  seconds: 40.7
+  width: 1178
+new-r-groups-analysis.gif:
+  actions:
+    - Open the Chem menu and navigate to Analyze > R-Groups Analysis
+    - Confirm the core scaffold with R-group attachment points in the sketcher dialog
+    - Click OK to run the analysis
+    - Review the resulting Core/R1/R2/R3/R4 columns added to the grid
+    - Open a Trellis plot to visualize R-group distributions as a pie-chart matrix
+  caption: Running R-Group Analysis on a molecule set
+  described_blob: 90b5883156e32798b434cda67d0d1f5b27e7504a
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid of molecules is shown with the Chem > Analyze menu open, and R-Groups Analysis
+    is selected. A dialog lets the user sketch or confirm a core structure with R-group attachment
+    points, then runs the decomposition. The grid updates with new Core, R1, R2, R3, R4 columns
+    showing each molecule split into its scaffold and substituents, and a Trellis plot opens
+    summarizing the R-group combinations as a grid of pie charts.
+  height: 740
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 33.7
+  width: 800
+retrosynthesis-panel.png:
+  caption: Viewing a retrosynthesis tree
+  described_blob: 6111d67ef4be3987a3f6a494bbf0b86a8bcfe3b9
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid on the left lists structures with row numbers and IDs, one row highlighted in
+    green. On the right, the Context Panel's expanded Retrosynthesis pane shows several candidate
+    routes as scored tabs (0.749, 0.738, 0.677, 0.677), with the selected route displayed as a tree
+    of boxed structures connecting the target molecule at top to simpler starting materials at the
+    bottom through intermediate fragments.
+  height: 466
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: score tabs are cut off at the right edge of the panel
+  reviewed: true
+  width: 680
+sar_matrix_demo.gif:
+  actions:
+    - Open the Chem > Analyze menu and choose SAR Matrix
+    - Wait for the SAR matrices to build
+    - Select a scaffold series from the list on the left
+    - Select a different series to view its core/substituent matrix
+    - Click a matrix cell to open the compound detail panel
+    - Review the R-group decomposition and design-action option in the panel
+  caption: Running the SAR Matrix analysis on compounds
+  described_blob: 70a7927841d8ef343d1340e030d4af553926a0cd
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid of chemical structures is open, and the user opens the Chem > Analyze menu and
+    selects SAR Matrix. After the matrix builds, it opens as a new view: a list of scaffold series
+    on the left and a grid of R-group combinations on the right, each cell showing a compound
+    structure colored by potency. Clicking a cell opens a side panel listing compounds measured with
+    that core and that substituent, along with an R-group decomposition and an option to add
+    unmeasured combinations to a synthesis make list.
+  height: 1000
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small UI text is hard to read at this resolution and several intermediate menu/panel states pass
+    quickly.
+  reviewed: true
+  seconds: 20.7
+  width: 1600
+sar_matrix_make_list.png:
+  caption: Reviewing the SAR Matrix Make list
+  described_blob: 49c45deb2cfc668f3babce93032eeb86a003862f
+  described_by: claude-sonnet-5
+  description: >-
+    A table titled "Make list" lists seven candidate compounds with columns for Structure, Status,
+    Activity, Activity basis, Support (n), Series, Core, Substituent, and Method. Rows show
+    compounds in Virtual or Synthesized status, with CYP3A4 (raw) activity values and either
+    predicted or measured methods, each sharing Series 199 with a common core and a distinct
+    substituent.
+  height: 664
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small UI text and dense table read fine embedded in the page but are cropped tight around the
+    grid, with no surrounding context on their own
+  reviewed: true
+  width: 1226
+sar_matrix_overview.png:
+  caption: Exploring SAR with the SAR Matrix
+  described_blob: aafb67bfa6fc4897400577a527fd7525c2f33c1a
+  described_by: claude-sonnet-5
+  description: >-
+    The SAR Matrix viewer shows compound series broken into cores (rows) and R-group substituents
+    (columns), with cells colored and labeled by potency value. A selected cell's structure and
+    predicted potency are shown on the right, along with a local Free-Wilson breakdown into matrix
+    mean, core effect, and substituent effect, plus lists of measured compounds sharing that core or
+    substituent.
+  height: 1217
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    dense, small text and many overlapping labels make it hard to read at a glance; fine as an
+    in-page illustration but not something to send alone
+  reviewed: true
+  width: 2469
+sar_matrix_transfer.png:
+  caption: 'SAR Transfer: predicting analogs across cores'
+  described_blob: e87c5fc740b1bfdd6d2ca917eb956197ef493ace
+  described_by: claude-sonnet-5
+  description: >-
+    The SAR Transfer tab of the SAR Matrix shows a pairing between Series 133 Core 1 and Core 2,
+    with a correlation of 1.00 and 4 shared substituents. A grid lists R-group substituents as
+    columns and the two cores as rows, with cells colored from red to green by potency and columns
+    for substituents only one core has tried marked predicted. A side panel highlights the best
+    predicted analog, naming the core to make it on, the substituent, and its predicted value.
+  height: 1202
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 2454
+scaffold-tree-annotated.gif:
+  actions:
+    - auto-generate the scaffold hierarchy
+    - open the color picker and assign a color to a scaffold node
+    - check scaffold nodes to select matching rows
+    - combine selections with AND/OR to filter the grid down to matching rows
+  caption: Building and filtering with the scaffold tree
+  described_blob: 9adf0aa45bb7d9d838050e6156707c5d12b65a7e
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid is shown next to the Scaffold Tree panel, which auto-generates a hierarchy of
+    chemical scaffolds extracted from the dataset. The user assigns a highlight color to one
+    scaffold node via a color picker, then checks scaffold nodes to select and filter the grid,
+    narrowing it down until only rows matching the checked scaffolds remain.
+  height: 859
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: on-screen caption text and cursor obscure part of the grid; UI chrome crowds the frame
+  reviewed: true
+  seconds: 24.7
+  width: 1188
+scaffold-tree-toolbar-actions-1.png:
+  caption: Scaffold tree toolbar actions
+  described_blob: ff71fc4794117afdca2d8d716752d3d203b13dde
+  described_by: claude-sonnet-5
+  description: >-
+    The screenshot shows a molecule grid next to a scaffold tree panel with a toolbar (add, filter,
+    folder, download, sort, delete, OR logic). A right-click context menu on a scaffold node is
+    open, showing 'Add New...', 'Edit...', and 'Remove' options.
+  height: 1526
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Annotated with a red box and arrow label pointing to the toolbar, which is helpful for docs but
+    not polished enough for standalone marketing use.
+  reviewed: true
+  width: 2830
+script-gasteiger-part-charges-0.png:
+  caption: Gasteiger partial charges script
+  described_blob: 17ea976e9156354e05c94781bdbffa7ddbb62e22
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok scripts editor shows an RDKit-based Python script named "Chemistry | Gasteiger
+    Partial Charges", with input parameters for a molecule and a contours count. A dialog overlays
+    the script showing the same script run with a molecule structure rendered with a Gasteiger
+    partial-charge contour map and a Contours input set to 10.
+  height: 1000
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: code editor and dialog both visible in one cluttered screenshot; small text
+  reviewed: true
+  width: 1600
+script-output-gasteiger-part-charges-0.png:
+  caption: Gasteiger partial charges script output
+  described_blob: 16c8485b62c63acd7ece053258a4b03beecb0561
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule viewer panel titled "Chemistry | Gasteiger Partial Charges" shows a large multi-ring
+    organic structure with atoms highlighted by colored halos (pink/magenta and green) sized to
+    represent computed Gasteiger partial charges. A "Charges" label sits above the structure, and
+    nitrogen and oxygen atoms are labeled in blue and red.
+  height: 1000
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small floating panel cropped from a larger UI, low information density, charge legend/scale not
+    shown
+  reviewed: true
+  width: 1600
+script-output-info-pane-0.png:
+  caption: Script-based info pane for molecules
+  described_blob: b3034684b80e657940ac930c45eecd90dfedc79d
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid shows a selected row with a compound structure alongside descriptor columns like
+    NumSaturatedHeterocycles and NumAliphaticHeterocycles. The context panel on the right displays a
+    Chemistry section expanded to Gasteiger Partial Charges, rendering the selected molecule with
+    colored highlights over atoms and rings to show partial charge distribution.
+  height: 1000
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    context panel section header repeats ('Chemistry' and 'Gasteiger Partial Charges' both nested
+    and top-level), and descriptor columns are cut off at the right edge
+  reviewed: true
+  width: 1600
+simsearch-colors.gif:
+  actions:
+    - open the Select Columns dialog for Molecule Properties
+    - search for and check the FractionCSP3 column
+    - confirm the selection
+    - open the column context menu to show the FractionCSP3 color filter/histogram
+    - change Apply Color To from background to text in the similarity viewer properties panel
+  caption: Adding molecule properties to similarity search cards
+  described_blob: 1f2bd0729a0cd548d77b7a04dad0ae82a5ee0dc5
+  described_by: claude-sonnet-5
+  description: >-
+    The Molecules similarity viewer is docked beside a grid of chemical structures, showing a
+    reference molecule card and ranked similar molecules with their Tanimoto/Morgan similarity
+    scores. The user opens the Select Columns dialog and checks the FractionCSP3 property, which
+    then appears on each similarity card and as a color-coded column in the grid. The Misc panel's
+    Apply Color To setting is switched from background to text, changing how the FractionCSP3 value
+    is highlighted on the cards.
+  height: 1000
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small viewer panel and dense side property grid make some labels truncated and hard to read at
+    this resolution
+  reviewed: true
+  seconds: 30.9
+  width: 1600
+sketcher-menu-0.png:
+  caption: Sketcher options and favorites menu
+  described_blob: d01a08caee32e57f739b6be800cfa271a61fb1d9
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule sketcher dialog is open with a structure drawn on the canvas, labeled "unknown
+    chirality" below it. A menu is open at top right offering Copy as SMILES, Copy as MOLBLOCK,
+    Recent, Favorites, and OpenChemLib as the active sketcher engine; hovering Favorites expands a
+    panel of saved structure thumbnails with an Add to Favorites option.
+  height: 1001
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Background grid and other UI chrome are visible and slightly distracting, but the menu and
+    dialog are clear and readable.
+  reviewed: true
+  width: 1601
+surechembl_search_results.gif:
+  actions:
+    - click the plus icon next to a molecule's patent count to expand its patent list
+    - open the expanded patent list as a linked data table with title and id columns
+    - hover over a row to reveal a tooltip with the patent's assignee and publication date
+  caption: Searching patents with SureChEMBL
+  described_blob: cc5cb54a455e917bf062668890a06c739ff3ce8e
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid is shown in Datagrok with a SureChEMBL info panel open, listing substructure
+    search results and a patent count for a selected molecule. Clicking the plus icon next to that
+    molecule's patent count expands a table of patents (language, assignee/applicant, publication
+    date), which is then opened as a separate linked table showing patent title, structure, and
+    patent ID for each of the 23 matching patents.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text at 800x500 is hard to read (patent titles, table headers), and the panel is
+    cropped against a generic chemical dataset rather than a curated example
+  reviewed: true
+  seconds: 21.3
+  width: 800

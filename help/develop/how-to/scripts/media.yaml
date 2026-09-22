@@ -1,0 +1,18 @@
+custom-script-handler.png:
+  caption: Publishing a custom script handler
+  described_blob: 8e8070ea84e197727cf71ca323bb2679a7d9eb11
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok sidebar shows the Scripts folder under Platform > Functions, with the New menu open
+    listing script language options: R, Python, Octave, NodeJS, Julia, JavaScript, Grok, Pyodide,
+    and a new Clojure Script entry added at the bottom. The highlighted items show that after
+    publishing a script handler package, its language appears alongside the built-in options when
+    creating a new script.
+  height: 435
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop of the sidebar and menu with red highlight boxes added; clear but narrowly scoped to
+    one UI detail
+  reviewed: true
+  width: 512

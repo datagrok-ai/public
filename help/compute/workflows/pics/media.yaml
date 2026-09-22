@@ -1,0 +1,197 @@
+WineQFetch_workflow.png:
+  caption: Running a workflow's data fetch step
+  described_blob: f50fa5dd699f859be8cd6e77e11ad5f23b1058af
+  described_by: claude-sonnet-5
+  description: >-
+    The Model Hub workflow editor shows a workflow named 'winequalitywf' with a 'Fetch data' step
+    selected in the Steps panel. The Step review panel shows auto-generated inputs 'Url_red' and
+    'Url_white', each pre-filled with a URL, and a blue RUN button below them.
+  height: 305
+  kind: screenshot
+  quality: docs
+  quality_notes: URL input values are truncated so the full parameter values aren't visible
+  reviewed: true
+  width: 730
+WineQ_regression.png:
+  caption: Reviewing the regression step's scatter plot
+  described_blob: 764c1dc9324d43d8fa69b67640217153b1c1e40c
+  described_by: claude-sonnet-5
+  description: >-
+    The Model Hub workflow view shows a three-step wine quality workflow (Fetch data, Clustering,
+    Train Regression Model) in the left panel, with the regression step selected and marked
+    complete. The Step review panel shows the Df_wine input and a PCA components slider set to 0.2.
+    The main pane displays a scatter plot of predicted versus actual wine quality values.
+  height: 743
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small UI chrome and text are hard to read at this resolution; useful in context but not detailed
+    enough to stand alone
+  reviewed: true
+  width: 1291
+WineQ_two_steps_connection.png:
+  caption: Reviewing an auto-connected workflow step input
+  described_blob: f949f8652f0ad9bdd50addd6111c5a5d0ed7479b
+  described_by: claude-sonnet-5
+  description: >-
+    The Model Hub view shows a workflow named winequalitywf with two steps: Fetch data (completed)
+    and Clustering (current). The Step review panel on the right shows the Clustering step's Inputs
+    section, where the Df_wine parameter is already set to df_wine, the dataframe produced by the
+    Fetch data step. A RUN button below lets the user execute this step.
+  height: 224
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop showing only the relevant UI region, adequate for illustrating the point in context
+    but not self-explanatory alone
+  reviewed: true
+  width: 598
+WineQ_two_steps_step_input.png:
+  caption: Adding an input parameter step to a workflow
+  described_blob: 348ec89e813d91b7258767119b55badb4961c210
+  described_by: claude-sonnet-5
+  description: >-
+    The Model Hub view shows a two-step wine quality workflow with Fetch data and Clustering steps
+    completed. The Step review panel lists Inputs for the Clustering step: Df_wine, PCA components
+    set to 10, and Clusters set to 4, with Rerun and Next buttons below. The main panel shows a
+    scatter plot of PCA1 vs PCA2 colored by cluster (0-3).
+  height: 742
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    functional but dense UI screenshot with small text; adequate for its page but not
+    self-explanatory alone
+  reviewed: true
+  width: 1295
+WineQ_two_steps_visualization.png:
+  caption: Two-step workflow output visualization
+  described_blob: b34b294820c2aea68d63ecf32d1ac5a872c1eb9b
+  described_by: claude-sonnet-5
+  description: >-
+    A Model Hub workflow view shows the Steps panel with a "winequalitywf" workflow whose Fetch data
+    and Clustering steps are both complete (green checkmarks). The right panel displays the
+    Clustering step's output, a scatter plot of PCA1 vs PCA2 colored by cluster, with points grouped
+    into five colored clusters (0-4) plus some outliers. A Rerun/Next control lets the user move
+    between steps.
+  height: 743
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Legend cluster labels (1, 3) render in near-white/light text that is hard to read against the
+    panel background.
+  reviewed: true
+  width: 1292
+example-workflow.png:
+  caption: Running a workflow model in ModelHub
+  described_blob: ef769ff8695798042a4023d6999d8cc543cf55b3
+  described_by: claude-sonnet-5
+  description: >-
+    The ModelHub interface shows the WineQuality workflow with its Steps panel listing 'winequality'
+    and 'step1'. The Step review panel displays the Inputs section for step1, with fields A and B
+    both empty and flagged with a red warning icon, and a disabled RUN button below them. The Output
+    panel on the right is empty.
+  height: 252
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop of the interface showing only the step review panel; inputs are unfilled placeholders
+    rather than a completed run
+  reviewed: true
+  width: 712
+wineQ_full_workflow.png:
+  caption: Multi-step workflow tree with completed steps
+  described_blob: fe7a1d1eecda373b6633d0fed0673bcec3d52d6c
+  described_by: claude-sonnet-5
+  description: >-
+    The Model Hub view shows the "Wine quality analysis demo workflow" with its Steps panel
+    expanded. The workflow group "winequalitywf" lists four steps: Fetch data (marked ready with a
+    green arrow and a run icon), Clustering, Train Regression M..., and Merge predictions..., each
+    with an empty status circle.
+  height: 282
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    cropped tightly to the steps panel; step names are truncated and no results or connecting arrows
+    between steps are visible
+  reviewed: true
+  width: 495
+wineQ_full_workflow_analysis_done.png:
+  caption: Wine quality workflow ready for final merge step
+  described_blob: de1b79eb7845a7dbc9e95b8226e2eeec2cf702e6
+  described_by: claude-sonnet-5
+  description: >-
+    The Model Hub step-by-step view of the Wine quality analysis demo workflow shows the Clustering
+    step selected, with Fetch data, Clustering, and Train Regression Model already checked off in
+    the left-hand Steps list. The scatter plot on the right displays PCA1 vs PCA2 with points
+    colored by cluster (0 and 1), and the next step, Merge predictions, is armed with a run arrow,
+    ready for execution.
+  height: 739
+  kind: screenshot
+  quality: docs
+  quality_notes: small UI crop with default zoom, plain scatter plot; clear but not polished enough for marketing
+  reviewed: true
+  width: 1291
+wineQ_full_workflow_consistency_check.png:
+  caption: Consistency check across a full workflow
+  described_blob: 5da8fb345b82ed5aa8b1c9c29acabd08f09aed30
+  described_by: claude-sonnet-5
+  description: >-
+    A Model Hub workflow view for winequalitywf shows a left panel of steps (Fetch data, Clustering,
+    Train Regression Model, Merge predictions) where Clustering is selected and the last step Merge
+    predictions is flagged for rerun. The main panel shows a scatter plot of the Clustering step's
+    output, colored by cluster (0, 1, 2), with PCA1 and PCA2 axes and Rerun/Next buttons for
+    reviewing the step.
+  height: 742
+  kind: screenshot
+  quality: docs
+  quality_notes: small UI text and dense panel labels reduce standalone clarity
+  reviewed: true
+  width: 1289
+wineQ_full_workflow_data_fetched.png:
+  caption: Analysis steps ready for execution
+  described_blob: d8ae0f6f74aaff6b0274b0352c7d3074cc288649
+  described_by: claude-sonnet-5
+  description: >-
+    The Model Hub shows the Wine quality analysis demo workflow with its step list: Fetch data is
+    checked off complete, while Clustering and Train Regression now show green ready-to-run arrows.
+    Merge predictions remains grayed out as not yet ready. The Step review panel on the right shows
+    the Fetch data step's Url_red and Url_white inputs with Rerun and Next buttons.
+  height: 307
+  kind: screenshot
+  quality: docs
+  quality_notes: small crop of the workflow panel, URLs truncated, no wider context of the full page
+  reviewed: true
+  width: 493
+wineQ_full_workflow_done.png:
+  caption: 'Wine quality workflow: merged prediction and clustering results'
+  described_blob: 130124d19843d2ce2ed139e788a056fa28467a1a
+  described_by: claude-sonnet-5
+  description: >-
+    A Model Hub workflow view shows the final "Merge predictions" step of the wineequalitywf
+    pipeline, with a scatter plot of predicted versus actual wine quality on the right. Points are
+    colored by cluster (0, 1, 2, 3), and the spread shows no clear separation between clusters and
+    only weak correlation between predicted and actual values. The left panel lists the workflow
+    steps (Fetch data, Clustering, Train Regression Model, Merge predictions), all marked complete.
+  height: 744
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small UI text at this resolution and dense overlapping scatter points reduce readability outside
+    the page's context
+  reviewed: true
+  width: 1288
+workflow-intro.png:
+  caption: Anatomy of a workflow page
+  described_blob: 7dc5ca4c5f926d2229b287a88a3564db9ee07951
+  described_by: claude-sonnet-5
+  description: >-
+    An annotated Model Hub workflow view labels its four regions: Topbar with view controls at top,
+    Navigation on the left showing the step tree (winequalitywf with Fetch data, Clustering, Train
+    Regression Model, Merge predictions, all completed), Input in the middle showing the active
+    step's auto-generated form with dataframe selectors and Rerun/Next buttons, and Output on the
+    right showing a scatter plot of predicted vs. actual values colored by cluster.
+  height: 744
+  kind: screenshot
+  quality: docs
+  reviewed: true
+  width: 1288

@@ -1,0 +1,143 @@
+add-identifier.png:
+  caption: Testing an identifier's regular expression
+  described_blob: c0e6e6ec32351f3ef248336d7b3ffbadc0686181
+  described_by: claude-sonnet-5
+  description: >-
+    The Add Identifier dialog is open in DB Explorer, configuring a CHEMBLID identifier on the
+    molecule_dictionary table's chembl_id column with match regexp CHEMBL\d+. A preview panel on the
+    right shows a sample matched record (chembl_id CHEMBL6329) with its fields. An overlaid Test
+    Regular Expression popup shows the test identifier CHEMBL123 with a successful match
+    confirmation.
+  height: 1002
+  kind: screenshot
+  quality: docs
+  quality_notes: dense with unrelated UI chrome (sidebar, molecule fields) around the relevant dialog
+  reviewed: true
+  width: 1599
+chembl-hover.png:
+  caption: CHEMBL identifier hover tooltip
+  described_blob: 6acba930ca71d7fd7066cd49661be6286beae94e
+  described_by: claude-sonnet-5
+  description: >-
+    A grid column lists CHEMBL identifiers such as CHEMBL483900 and CHEMBL1184518 next to an Info
+    column with linked compound descriptions. Hovering over the CHEMBL483900 identifier opens a
+    tooltip showing its 2D chemical structure.
+  height: 271
+  illustrates:
+    - explore/data-augmentation
+  kind: screenshot
+  quality: docs
+  quality_notes: small crop, grid text behind the tooltip is partly obscured
+  reviewed: true
+  width: 562
+chembl-ids.png:
+  caption: Highlighted CHEMBL IDs in a grid
+  described_blob: b7ff3137d11892a74d9e66e4a197cf31caf4013a
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows a Name column and an Info column with descriptive text. Two of the three
+    rows are labeled "Other" while the Info column text contains CHEMBL IDs (e.g. CHEMBL483900,
+    CHEMBL1184518) rendered as clickable blue links, alongside a Wikipedia link, illustrating that
+    the platform recognizes and highlights the registered identifier pattern anywhere it appears in
+    text.
+  height: 294
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Info column text is cut off by the panel width, and the table content (beer-related compound
+    descriptions) isn't explained, so it reads as an isolated crop without the surrounding page.
+  reviewed: true
+  width: 610
+chembl-search-everywhere.png:
+  caption: Searching for a CHEMBL identifier everywhere
+  described_blob: 427d1253e7d3906e791713de10b03d5a70cef5c1
+  described_by: claude-sonnet-5
+  description: >-
+    The Search Everywhere bar at the top shows the query "CHEMBL483900, CHEMBL483900" with a result
+    summary reading "2 CHEMBL_ID objects. Open table". Below, two result cards labeled CHEMBL483900
+    each render the compound's molecular structure. A project tree with a chembl-scaffolds table is
+    open in the left sidebar.
+  height: 453
+  illustrates:
+    - explore/data-augmentation
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    duplicate result cards and a busy sidebar of unrelated apps clutter the frame; not cropped
+    tightly to the relevant search bar and results
+  reviewed: true
+  width: 828
+configure-joins.png:
+  caption: Configuring an explicit join with the Add Join Option dialog
+  described_blob: 6a24bded8fe1d24c8804480871d08a593047f8cc
+  described_by: claude-sonnet-5
+  description: >-
+    A DB Explorer dialog titled "Add Join Option" for the Chembl.public Identifiers connection. It
+    sets a join from the public.molecule_hierarchy table's molregno column to the
+    public.compound_structures table on its molregno column, and selects canonical_smiles and
+    standard_inchi, aliased as SMILES and INCHI, to include in the output. A preview panel on the
+    right shows the resulting columns for a sample row, including the rendered molecule structure.
+  height: 1003
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    A cropped dialog screenshot with domain-specific (ChEMBL) sample data rather than a generic
+    example, so it documents the dialog fields well but isn't self-explanatory enough to stand
+    alone.
+  reviewed: true
+  width: 1600
+configured-editor.png:
+  caption: Configuring an identifier-exploration editor
+  described_blob: 4f44c98c1aad8972e0ae84ca12cd5976ba4b05b8
+  described_by: claude-sonnet-5
+  description: >-
+    A screenshot of Datagrok's no-code configuration editor for a Postgres data source
+    (Chembl.public Identifiers), open in the app's Databases panel. It shows sections for
+    Identifiers, Joins, Explicit References, Custom Selected Columns, and Renderers, each with
+    tables defining schema/table/column mappings for the connection, plus Import JSON, Export JSON,
+    and Save buttons at the bottom.
+  height: 1119
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Dense, small text and many table rows make it hard to read at a glance without zooming; fine as
+    an illustration next to the how-to text but not self-explanatory alone.
+  reviewed: true
+  width: 1602
+connection-path-5.png:
+  caption: Viewing a connection's link path
+  described_blob: 563b048b04888f1d2f4c3aa53d67d915ed348784
+  described_by: claude-sonnet-5
+  description: >-
+    The context panel for a Postgres connection named CHEMBL shows its Details section with server,
+    database, and creation info, and an open Links panel listing the connection's ID, Grok path
+    ("Chembl:Chembl"), Markup syntax, and full URL. The database tree on the left shows several
+    database types including Postgres expanded to reveal multiple connections.
+  height: 999
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear UI capture but scoped narrowly to one connection's details panel, not self-explanatory
+    without surrounding text
+  reviewed: true
+  width: 1600
+laucnh-configurator.gif:
+  actions:
+    - right-click a database connection
+    - select Configure Identifiers... from the context menu
+    - select the schema in the dialog
+    - click OK
+  caption: Opening the Database Explorer editor
+  described_blob: 06932f5ea8926266c0590e1a9c70c9166a995a14
+  described_by: claude-sonnet-5
+  description: >-
+    In the Databases tree, the user right-clicks a Postgres connection and picks Configure
+    Identifiers... from the context menu. A dialog prompts for the primary schema (defaulting to
+    "public"), and clicking OK opens the Database Explorer editor for that connection, showing empty
+    Identifiers, Joins, Header Names, and Custom Selected Columns sections with a Save button.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 8.5
+  width: 1600

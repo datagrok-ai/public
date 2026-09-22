@@ -1,0 +1,45 @@
+log-export-cw.gif:
+  actions:
+    - Open Settings and select the Logger tab
+    - Scroll down to the Export logs to CloudWatch section
+    - Click Add new export block
+    - >-
+      View the new export block form with its Enabled, Level, Params, AWS Connection, Log Group,
+      Stream, and Batch Size fields
+  caption: Adding a log export block to CloudWatch
+  described_blob: 9e3da47e34d12e997aeb56fd98d0e1ee1c5ed6e1
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows Datagrok's Settings dialog on the Logger tab, scrolled down to the "Export
+    logs to CloudWatch" section. The user clicks "Add new export block", which reveals a new form
+    with fields for Enabled, Level, Params, AWS Connection, Log Group, Stream, and Batch Size, ready
+    to be filled in.
+  height: 1424
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI region against a mostly empty settings panel; useful within the page but not
+    self-explanatory alone
+  reviewed: true
+  seconds: 9.5
+  width: 2870
+test-tracking-system.png:
+  caption: Test Tracking System overview
+  described_blob: cbfc0ea5d60d9824b3ce68beeeeab41bcb7b80ff
+  described_by: claude-sonnet-5
+  description: >-
+    A split-screen view of the Datagrok Test Manager: the left panel is a browsable tree of test
+    entities (data query, data job, group, view layout) above a grid of test run results with file
+    name, path, date, pass/fail result, environment, and priority columns; the right context panel
+    shows details for the selected data job, including its last run status, a history table of prior
+    runs with dates and errors, and a linked JIRA issue (GROK-5779) describing the underlying bug.
+    The interface lets a user navigate from a failed test run directly to its history and the
+    corresponding JIRA ticket.
+  height: 666
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    test data with 2019 dates and internal file/entity names makes it feel dated and cluttered
+    rather than a clean generic example
+  reviewed: true
+  width: 1072

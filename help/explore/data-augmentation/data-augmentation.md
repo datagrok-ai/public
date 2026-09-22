@@ -1,4 +1,6 @@
 ---
+feature: explore/data-augmentation
+owner: P:askalkin
 title: "Data augmentation"
 description: Automatically enrich datasets with suggested layouts, predictive models, external data, and info panes.
 keywords:

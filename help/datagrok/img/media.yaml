@@ -1,0 +1,42 @@
+drag-csv-save-project.gif:
+  actions:
+    - opened the context panel to view chemistry/biology properties of a selected molecule
+    - filtered rows to Active_Integrase only
+    - clicked Save and named the project in the Save project dialog
+    - opened Share and added a user to share the project with
+  caption: Sharing a saved project
+  described_blob: 5c906017a3d17ddc61e1ce6917021f781e20d2a9
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows a Datagrok grid of ~1,000 molecules with computed properties (pIC50, charge,
+    activity class), opening the context panel to inspect chemistry and biology properties for a
+    selected molecule. The user filters rows to only Active_Integrase compounds, then saves the
+    current view as a project named "mol1K (1)" via the Save dialog. Finally, a Share dialog opens
+    for the saved project, where the user adds a collaborator and sends a notification.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    long, busy animation with small text and dense grid content that is hard to follow as a still;
+    fine embedded in the tutorial page but not self-explanatory alone
+  reviewed: true
+  seconds: 51.1
+  width: 1600
+install_package.png:
+  caption: Installing a plugin from the Packages browser
+  described_blob: 1f8d82bc770184f980b88b1f123c7fbcfcba0d91
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok Packages browse view lists plugins grouped by category (Bioinformatics,
+    Cheminformatics, Compute, Data Access). A cloud download icon appears on the Marvin Sketcher
+    tile with an "Install package" tooltip, while the context panel on the right shows details for
+    the selected Chem plugin, including its description, links, and metadata like version,
+    repository, and update date.
+  height: 1296
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Cluttered with multiple unrelated red arrows pointing to different UI elements (sidebar icons,
+    Plugins node, install icon), which spreads focus rather than isolating the install action.
+  reviewed: true
+  width: 2551

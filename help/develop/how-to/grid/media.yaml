@@ -1,0 +1,79 @@
+binary-cell-renderer.gif:
+  actions:
+    - double-click an empty cell in the images column
+    - browse to and select an image file in the file picker
+    - open the file
+  caption: Embedding an image in a grid cell
+  described_blob: e3807d2320f75a2d260775e734a2a28dbf489138
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid has an "images" column with empty cells and an adjacent "byte array col". The
+    user double-clicks the first cell, opening a file picker, and selects a local image file
+    (unnamed.jpg). The picker closes and the selected image now renders inline as a large white "1"
+    on a black background inside the grid cell.
+  height: 501
+  illustrates:
+    - visualize/viewers/grid
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 9.2
+  width: 801
+custom-cell-renderers-add-summary-column.gif:
+  actions:
+    - right-click a column header to open the context menu
+    - hover Add > Summary Columns
+    - select sparkline to add a sparkline summary column
+    - >-
+      repeat Add > Summary Columns and select the pie chart renderer to add a piechart summary
+      column
+  caption: Adding a custom summary column via the grid menu
+  described_blob: a54a75e85ab77909f7aa47d66dbabe4e5e64ba40
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of demographic data shows a right-click context menu opened on a column header, with Add
+    > Summary Columns revealing built-in options like sparkline and bar chart plus custom renderers
+    such as sparklineCellRenderer and barchartCellRenderer contributed by a package. The user
+    selects sparkline, which adds a sparkline_ts column of small line charts, then repeats the
+    process to add a piechart_ts column of pie charts to the grid.
+  height: 744
+  illustrates:
+    - visualize/viewers/grid
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 21.8
+  width: 1388
+custom-column-sorting.png:
+  caption: Custom column sorting with a script
+  described_blob: 6ffeaf889ff5c9e825ec8933d67cb4f635193879
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok table view shows a grid with months (Jan, Feb, Mar, May) and a value column, sorted
+    in a custom, non-alphabetical order via a script rather than the default sort. A bar chart and a
+    scatter plot are attached below the grid, both reflecting the same custom category order for the
+    months.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: small sample dataset, no annotation highlighting the sort control itself
+  reviewed: true
+  width: 800
+custom-column-tooltip.gif:
+  actions:
+    - hover the cursor over the grid column header
+  caption: Custom column tooltip for HELM strings
+  described_blob: df1debfc91e96cee4399a1e78fceaf267e4c610e
+  described_by: claude-sonnet-5
+  description: >-
+    A grid column named "HELM string" lists macromolecule sequences. Hovering the mouse over the
+    column header triggers a custom tooltip showing the HELM notation details: units (helm), quality
+    (Macromolecule), and a color-coded monomer sequence diagram numbered 1 through 5. The tooltip
+    appears automatically and stays visible while the cursor rests over the header.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: column is cropped on the left, cursor obscures part of the header text
+  reviewed: true
+  seconds: 2.5
+  width: 800

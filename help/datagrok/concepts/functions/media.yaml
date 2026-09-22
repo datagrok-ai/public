@@ -1,0 +1,253 @@
+autocomplete.gif:
+  actions:
+    - type "Shigella" into the Organism field
+    - view the filtered suggestion dropdown
+    - clear the field and type "virus"
+    - view the new suggestion list
+    - type "afri" to narrow it
+    - view suggestions filtered to "africa"
+  caption: Autocomplete for a function's Organism parameter
+  described_blob: 41b8ab9c57e69406da6a2abe24d35bc2efe6d572
+  described_by: claude-sonnet-5
+  description: >-
+    A run dialog for the "Chembl Targets by organism" function shows a Max Number Of Molecules field
+    and an Organism text input. As the user types into Organism, a dropdown suggests matching
+    values: typing "Shigella" lists Shigella species, and clearing the field and typing "virus" then
+    "africa" narrows the list to matching organism names like African swine fever virus.
+  height: 261
+  illustrates:
+    - compute/functions
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small, cropped dialog screenshot with no surrounding app chrome; fine for illustrating the
+    annotation but not self-explanatory out of context
+  reviewed: true
+  seconds: 12.2
+  width: 337
+console-macros.gif:
+  actions:
+    - click a column header context menu and remove a column
+    - open the Add menu
+    - open Select Random Rows and set a row percentage
+    - select random rows via the toolbar
+    - open Select > Duplicates and select duplicate rows
+  caption: Recording UI actions as reusable console macros
+  described_blob: bdd7338c3234fea8d2e8fc23555f7635e784bc45
+  described_by: claude-sonnet-5
+  description: >-
+    In the Datagrok grid, the user right-clicks a column header, opens the Add menu, and picks
+    Select Random Rows and Select Duplicates, each action echoing a corresponding command
+    (DeleteColumns, SelectRows, CmdSelectRandomSubset, CmdRemoveSelectedRows, CmdSelectDuplicates)
+    in the Console panel on the right. A closing title card reads "Reusable macros for all UI
+    actions."
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text is barely legible at this resolution and the demo data table is cluttered; fine
+    within its page but not strong enough to stand alone
+  reviewed: true
+  seconds: 20.1
+  width: 800
+default-values-from-file.gif:
+  actions:
+    - open the Model dropdown
+    - select a car model from the list
+    - observe Mpg, Cyl, Disp, and Hp auto-populate
+    - repeat with another model selection
+  caption: Auto-filling function parameters from a lookup table
+  described_blob: d1dbeef5cb457e18b5b8f9952f3afa321a254085
+  described_by: claude-sonnet-5
+  description: >-
+    A function editor shows a script with input parameters bound to a lookup file, cars.csv. A
+    'cars' parameter dialog is open with a Model dropdown and read-only Mpg, Cyl, Disp, and Hp
+    fields below it. As different car models are selected from the dropdown (Mazda RX4, Mazda RX4
+    Wag, Datsun 710, Hornet 4 Drive), the Mpg, Cyl, Disp, and Hp fields automatically populate with
+    the corresponding values from the underlying data table.
+  height: 500
+  illustrates:
+    - compute/functions
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 4.7
+  width: 800
+dependent-parameters.gif:
+  actions:
+    - >-
+      Open the Ship Country dropdown and select Argentina, which sets Ship City to Buenos Aires and
+      Customer Id to CACTU
+    - Change Ship Country to Spain, which updates Employee to Callahan
+    - Open Ship City and select Madrid
+    - Select Barcelona as Ship City, updating Customer Id to GALED
+    - Select Sevilla as Ship City, updating Customer Id to GODOS
+  caption: Dependent function parameters via dropdowns
+  described_blob: 378283515a65a807f3f4b784b5540d4597dc47d7
+  described_by: claude-sonnet-5
+  description: >-
+    A parameter input panel for the function "OrdersByEmployee" shows four dropdown fields: Ship
+    Country, Ship City, Customer Id, and Employee. Picking a value in one dropdown automatically
+    updates the choices available in the others, showing how a parameter's suggestions or choices
+    can reference another parameter's current value.
+  height: 248
+  illustrates:
+    - compute/functions
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Tightly cropped to a small dialog with no surrounding app chrome, and cursor/selection changes
+    are easy to miss at this resolution
+  reviewed: true
+  seconds: 10.2
+  width: 292
+function-input.png:
+  caption: Function input dialog
+  described_blob: 9daa13340513d9b73a700e415047dd9c4ba3ea76
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "Function Input" with a Data section listing dropdown inputs for Ship Country
+    (Spain), Ship City (Madrid), Customer Id (GALED), and Employee (Callahan), and a Computation
+    section with a numeric Factor input set to 2. The dialog footer has a reset icon and Cancel/OK
+    buttons.
+  height: 369
+  illustrates:
+    - compute/functions
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear standalone UI capture, but the surrounding page gives no context for what these specific
+    fields do without the accompanying text
+  reviewed: true
+  width: 331
+input-types.png:
+  caption: All function input types
+  described_blob: 33f59ffc26e1bc3fee0cf3d5f8004cf37ca6e2b0
+  described_by: claude-sonnet-5
+  description: >-
+    A code snippet on the left annotates function parameters with inputType tags: a double as a
+    Slider, a string as a Color picker, and a string with choices as Radio buttons. On the right,
+    the resulting Input Types dialog shows the generated controls: an X1 slider, an S2 color input
+    with a blue swatch, and an F radio group with options A and B.
+  height: 236
+  illustrates:
+    - compute/functions
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop showing only code and dialog, no surrounding context; fine to illustrate the
+    annotation syntax but not self-explanatory alone
+  reviewed: true
+  width: 671
+molecule-input.png:
+  caption: Molecule input for a semantic-type parameter
+  described_blob: fc693b3bb2fc28b2b1c14103d174c86d5ddc4ef3
+  described_by: claude-sonnet-5
+  description: >-
+    A cropped screenshot shows a single labeled input field named "Substructure" with an empty
+    molecule-sketcher box outlined to its right, containing a small benzene ring icon. This
+    illustrates the input widget Datagrok generates for a script or query parameter annotated with
+    the Molecule semantic type.
+  height: 81
+  illustrates:
+    - compute/functions
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Tightly cropped to just the one input control with no surrounding context or labels beyond the
+    field name.
+  reviewed: true
+  width: 195
+multiple-choice-input.png:
+  caption: Choice input example dialog
+  described_blob: 54817f4168fd10e51f9abebb595a1b48d86f4304
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "Choice input example" shows a dropdown labeled "Ship Cou..." and a multi-select
+    choice list below it, labeled "2 of 3", with checkboxes for France (checked), Italy (unchecked),
+    and Germany (checked). The dialog has undo and bug-report icons plus Cancel and OK buttons at
+    the bottom.
+  height: 254
+  illustrates:
+    - compute/functions
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, cropped dialog screenshot with no surrounding context; clear enough to illustrate the
+    control but not polished for standalone marketing use
+  reviewed: true
+  width: 287
+param-visible-enabled-expressions.gif:
+  actions:
+    - switch the Type dropdown from ICE to Electric
+    - observe ICE-only fields hide and Battery Capacity field appear
+    - reopen the Type dropdown
+    - switch Type back to ICE
+    - edit the Tank Volume value to exceed 50
+  caption: Visible and enabled expressions for function parameters
+  described_blob: 23c2357bd5ea8ac7d9753985d760f2da596ecad1
+  described_by: claude-sonnet-5
+  description: >-
+    A code panel defines a function with input annotations that use visible and enabled expressions:
+    the Type dropdown toggles between ICE and Electric, cylinders/tank fields show only for ICE
+    while battery capacity shows only for Electric, and the Tank Extension checkbox stays disabled
+    until Tank Volume exceeds 50. In the running parameter dialog, the user switches Type from ICE
+    to Electric, watching the ICE-only fields disappear and Battery Capacity appear, then reopens
+    the dropdown to switch back to ICE and edits Tank Volume toward a value above 50 to enable the
+    Tank Extension checkbox.
+  height: 373
+  illustrates:
+    - compute/functions
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    shows the raw annotation code and a debug alert() call alongside a minimal dev-console dialog
+    rather than a real application, so it's clear in context but not self-contained enough to stand
+    alone
+  reviewed: true
+  seconds: 9.1
+  width: 642
+search-integrated-queries.gif:
+  actions:
+    - Type a natural-language query into the Search Everywhere bar
+    - Refine the query text with a different target name
+    - View the matched query's results as a table with linked bar and pie charts
+    - Type a second natural-language query for a different function/parameter
+    - New query results and viewer load
+  caption: Running annotated queries from a natural-language search
+  described_blob: c6c7e0f673f0929b60b89c9ef3c1a4e5ac24e9fc
+  described_by: claude-sonnet-5
+  description: >-
+    The Search Everywhere bar is used to type natural-language queries like "bioactivity for
+    bacterial targets for Acinetobacter genomosp. 3" and "bioactivity for bacterial targets for
+    Shigella"; Datagrok matches an annotated query, extracts the target name as a parameter, and
+    runs it, showing a data table of compounds alongside a bar chart of average standard value and a
+    pie chart broken down by standard type. A second query, "Pharmacokinetic Data for LEVOFLOXACIN",
+    is then typed, and the view transitions to a new query result with another viewer loading in.
+  height: 1000
+  illustrates:
+    - compute/functions
+  kind: animation
+  quality: answer
+  quality_notes: >-
+    final frame captured mid-transition with a faded, still-loading viewer, but the preceding frames
+    clearly demonstrate the flow end to end
+  reviewed: true
+  seconds: 23.4
+  width: 1600
+single-choice-input.png:
+  caption: Choice input dropdown example
+  described_blob: c9e73e9ff2b5b005a7e70e668e7be2ee19b11473
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "Choice input example" shows a "Ship Country" field with a dropdown open,
+    listing France, Italy, and Germany as selectable choices; France is highlighted as the current
+    selection. History and bug-report icons and an OK button appear at the bottom of the dialog.
+  height: 184
+  illustrates:
+    - compute/functions
+  kind: screenshot
+  quality: docs
+  quality_notes: small, tightly cropped dialog screenshot with no surrounding context
+  reviewed: true
+  width: 289

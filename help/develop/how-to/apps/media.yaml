@@ -1,0 +1,22 @@
+app-data.gif:
+  actions:
+    - click the Files icon in the left sidebar
+    - expand the App Data tree node
+    - expand the ApiTests package folder
+    - click the titanic.csv file to preview it
+  caption: Browsing package files under App Data
+  described_blob: 5d8831bb220a318028f1926c8156fe1e3891953e
+  described_by: claude-sonnet-5
+  description: >-
+    The Functions browser panel is open, listing categories like math, widgets, text, and enrich
+    alongside function search results. The user clicks the Files icon in the sidebar, switching to
+    the file browser, then expands the App Data node in the tree to reveal package folders
+    (ApiSamples, ApiTests, Bio, etc.). The ApiTests folder is expanded to show its titanic.csv file,
+    which is then selected to preview its contents.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: small cropped viewport showing only sidebar and tree, no visible file preview content
+  reviewed: true
+  seconds: 10.5
+  width: 800

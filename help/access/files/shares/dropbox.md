@@ -1,4 +1,5 @@
 ---
+documents: [access/files/shares]
 title: "Dropbox"
 description: Connect Datagrok to Dropbox storage as a file share.
 keywords:

@@ -194,11 +194,12 @@ export async function enrichMedia(o: EnrichOptions): Promise<{items: Prepared[],
   return {items, outcomes, notes, usage: total};
 }
 
-/** A path prefix, or a glob with `*` and `**`. */
-function matches(file: string, only?: string): boolean {
+/** A path prefix, or a glob with `*` and `**`; a trailing `**` takes the folder and everything under it. */
+export function matches(file: string, only?: string): boolean {
   if (!only) return true;
   if (!/[*?]/.test(only)) return file.startsWith(only.replace(/\/+$/, ''));
-  const re = new RegExp(`^${only.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/?/g, '\u0000').replace(/\*/g, '[^/]*').replace(/\u0000/g, '(?:.*/)?')}$`);
+  const re = new RegExp(`^${only.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\/?\*\*$/, '\u0001').replace(/\*\*\/?/g, '\u0000')
+    .replace(/\*/g, '[^/]*').replace(/\u0000/g, '(?:.*/)?').replace(/\u0001/g, '(?:/.*)?')}$`);
   return re.test(file);
 }
 
