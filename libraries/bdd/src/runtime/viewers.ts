@@ -110,13 +110,14 @@ export function baselineAll(page: Page): Promise<void> {
 /** Waits until no viewer of any open table view has a refresh or a repaint pending — after a
  * change that reaches them all, so the next step's baseline is the state after it. */
 export function settleAll(page: Page): Promise<void> {
-  return evaluate(page, async () => {
-    const b = (window as any).__bdd;
-    for (const view of Array.from((window as any).grok.shell.tableViews ?? []) as any[]) {
-      for (const v of Array.from(view.viewers ?? []) as any[])
-        await b.quiet(v);
-    }
-  }, undefined);
+  return evaluate(page, () => (window as any).__bdd.settleAll(), undefined);
+}
+
+/** A change every viewer answers, in one round trip: every viewer's baseline, then `body` in the
+ * page, then every viewer has drawn it. `body` is sent as source, the way a page function is. */
+export function changeAll<A>(page: Page, body: (arg: A) => void, arg: A): Promise<void> {
+  return evaluate(page, ([src, a]) => (window as any).__bdd.changeAll(new Function(`return (${src});`)(), a),
+    [body.toString(), arg] as [string, A]);
 }
 
 /** Resolves once the viewer has nothing pending (`capMs` for a viewer without the signal). */

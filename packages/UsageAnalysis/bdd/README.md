@@ -5,6 +5,10 @@ into the Playwright specs under `generated/` — committed, never edited by hand
 holds one folder per platform viewer (every TestTrack viewer spec translated, most as `@journey`
 features: the data and the viewer opened once, the scenarios in order as soft steps) plus
 `viewer-chrome.feature`, the outline over the title and description every viewer shares;
+`viewers/grid/grid-context-menu.feature` is not a translation but the reproduction of a bug
+(2026-09-22: a right click put the current row back where it was and scrolled there), kept as the
+proof that a right-clicked cell becomes current and that the Current Value actions of Chem and Helm
+act on it — the stand needs those two packages;
 `features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
 (seven viewers sharing one legend column, the legend under filters, its placement, molecules in
 it; the section's scatter plot and line chart cases went into those viewers' legend features);
@@ -39,6 +43,26 @@ The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the 
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
 
+The grid folder, `features/viewers/grid/`, holds ten features on demog-1000. They replace the
+TestTrack grid scenarios `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid.md`,
+`grid-appearance-summary-persist.md`, `grid-cell-appearance.md`, `grid-columns-style-persist.md`,
+`grid-dialogs-groups.md`, `grid-edit-clipboard.md`, `grid-rows-select-filter-navigate.md` and the
+manual checklist `grid-ui.md`, as far as the grid's signals reach; each feature's description says
+what is not translated and why. The summary-column renderers of Add > Summary Columns belong to
+PowerGrid and are claimed in `packages/PowerGrid/bdd/features/grid/summary-columns.feature`.
+
+| Feature | What it claims |
+|---|---|
+| `grid-viewer` | a second grid as a viewer; the column tooltip menu, Columns listing the chosen columns, None showing none; Pick Up / Apply carrying the grid's look to a second grid |
+| `grid-columns` | Column Sizing, header double-click sort, the two-level Sort dialog, resizers (two selected columns together, a column collapsed to a hairline), reordering, widening until the grid scrolls sideways (GROK-19753), the Order or Hide Columns type filter and Reset (GROK-19333, GROK-20167), the status-bar column manager keeping its filter across tables (GROK-19332) |
+| `grid-rows` | current row, selection by the row strip, the keyboard and by value, Allow Row Selection, Row Source, a filter and a sort sharing one order, Tab and Shift+Tab wrapping at the row edges (Escape clears the current row only with the focus on the grid overlay), Shift+click / Control+click (inverts, keeps the current row) / a plain click (keeps the selection) / a drag on the row strip, header selection |
+| `grid-appearance` | colour coding per column and grid-wide, formats (kept in a narrowed column, shown in the Context Panel), missing-value colour, row height, font, Selected Rows Color, a Style background overridden by colour coding (GROK-18638) |
+| `grid-editing` | in-place editing, Allow Edit, Add New Row On Last Row Edit, Editable by for one's own and another login, the clipboard (the rows copied in the grid's column order, a hidden column included) |
+| `grid-pinning` | Pin Row / Unpin Row / Pin Selected Rows / Unpin All Rows, a non-unique value's warning, Pin Column / Pin 2 Columns / Unpin, a header dropped into the pinned columns, Control+clicks under pinned rows, the arrows across the frozen boundary |
+| `grid-column-groups` | Group columns... from the Context Panel, the band (`group <name>`) in the group's colour, clicks on it (GROK-17505, GROK-17442, GROK-18213), the groups with their colours after a layout saved to the server and the groups after a project (GROK-17441, the project without their colours), regrouping and ungrouping |
+| `grid-persistence` | four colour codings, row height, missing-value colour, min/max stats rows, a moved, a hidden, a widened and a pinned column, two pinned rows and a sort, all back from a layout loaded over a fresh view and from a project |
+| `grid-forms-column` | Design a Form... (the designer view, Close and Apply, Edit), Default HTML Form, Custom HTML Form... |
+| `grid-context-menu` | a right click below the current row makes the clicked row current and keeps the scroll; the Current Value actions act on the right-clicked cell — Chem's Copy as SMILES on the `smiles` demo file, Helm's Edit Helm... on the `helm-peptides` one (the stand needs both packages) |
 `features/viewers/filter-panel/` stands in for the TestTrack scenarios of
 `files/TestTrack/Viewers/FilterPanel/` — `panel-core-ladder.md`, `add-remove-entry-points.md`,
 `filter-type-selection-modes.md`, `hierarchical-and-combined-boolean.md`,
@@ -54,10 +78,10 @@ From a fresh checkout of `public`, against a local stand on `http://localhost:88
 `DATAGROK_URL=https://… npx grok-bdd run`):
 
 ```bash
-cd public/libraries/bdd && npm ci && npm run build   # the library (a path dependency of this package; dist/ is not committed)
-npx playwright install chromium                      # its browser, once per machine (here, not in the package)
-cd ../../packages/UsageAnalysis && npm ci            # the package; npm links the library in and puts grok-bdd in .bin
-npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
+cd public && grok setup                              # once per checkout: the pnpm workspace (needs `npm i -g datagrok-tools`)
+cd libraries/bdd && npm run build                    # the library (a workspace dependency of this package; dist/ is not committed)
+npx playwright install chromium                      # its browser, once per machine
+cd ../../packages/UsageAnalysis/bdd                  # this bdd project; the workspace already links the library, no `grok-bdd link`
 npx grok-bdd run --reporter=list                     # compile --check, then Playwright on 4 workers
 PLAYWRIGHT_WORKERS=2 npx grok-bdd run                # a stand whose pub serve or datlas falls behind at 4 (bundle loads past 30 s, 502s)
 npx grok-bdd run --workers 2 generated/viewers/box-plot   # any Playwright flag or path passes through

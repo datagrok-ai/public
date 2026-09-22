@@ -6,6 +6,7 @@ Feature: Open a file from your computer
 
   Scenario: Open a local CSV file as a table
     Given user is logged in
+    And simple mode is off
     And the browse panel is open
     When user uploads "fixtures/browse-import.csv" through "Open local file" icon inside browse toolbar
     Then the "browse-import" view should be current

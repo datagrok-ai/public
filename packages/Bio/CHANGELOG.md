@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Similarity scoring: Fixed blank scores for sequences whose length differs from the reference's; the score covers the reference's positions, as identity does (in `@datagrok-libraries/bio`)
 * Fixed sequence and monomer context panels staying on the previous cell when a grid cell is clicked within two seconds of expanding a section (core grid fix).
 * Tests: Atomic-level conversion selects the standard HELM library so custom monomers on the stand cannot change the fixture's chemistry, and restores the previous selection afterwards.
 * Tests: Monomer library uploads support stands with only Files storage as well as stands with multiple storage providers.

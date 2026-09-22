@@ -8,6 +8,7 @@ Feature: Export only the filtered rows
 
   Scenario: Extract the filtered rows into their own table, then export that table
     Given user is logged in
+    And simple mode is off
     And user opens demog dataset
     When user clicks on filter icon in toolbar
     And user clicks on the "category RA of DIS_POP" area of filter panel

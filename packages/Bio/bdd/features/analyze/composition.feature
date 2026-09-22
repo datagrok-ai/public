@@ -38,7 +38,7 @@ Feature: Composition analysis
     When user clicks on settings icon of WebLogo viewer
     Then context panel should be visible
     And "Show Position Labels" property in context panel should be present
-    When user clicks on "Layout" category in context panel
+    Given "Layout" category in context panel is expanded
     Then "Show Position Labels" property in context panel should be visible
     And "Show Position Labels" property of WebLogo viewer should be "true"
 

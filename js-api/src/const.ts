@@ -877,6 +877,10 @@ export enum EVENT_TYPE {
   VIEW_CHANGED = 'grok-view-changed',
   VIEW_CHANGING = 'grok-view-changing',
 
+  // Browse events
+  BROWSE_TREE_REFRESHED = 'd4-browse-tree-refreshed',
+  TREE_NODE_CHILDREN_LOADED = 'd4-tree-view-child-node-children-loaded',
+
   // Object events
   CURRENT_OBJECT_CHANGED = 'd4-current-object-changed',
   CURRENT_CELL_CHANGED = 'd4-current-cell-changed',

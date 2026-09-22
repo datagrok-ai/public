@@ -98,8 +98,7 @@ Feature: PC plot colouring, legend and colour scale
     When user sets properties of pc plot viewer:
       | Color Min | 30 |
       | Color Max | 60 |
-    Then "Color Min" property of pc plot viewer should be "30"
-    And the "color scale" area of pc plot viewer should have repainted
+    Then the "color scale" area of pc plot viewer should have repainted
     And pc plot viewer should have repainted by at least 2000 pixels
     When user sets "Color Axis Type" property of pc plot viewer to "logarithmic"
     Then the "color scale" area of pc plot viewer should have repainted

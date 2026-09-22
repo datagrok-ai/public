@@ -47,8 +47,7 @@ Feature: Annotation regions
     And no errors should have been logged
 
   Scenario: Hiding the viewer's regions takes the region off the plot but not out of the look
-    When user takes a snapshot of scatter plot viewer
-    And user sets "showViewerAnnotationRegions" property of scatter plot viewer to "false"
+    When user sets "showViewerAnnotationRegions" property of scatter plot viewer to "false"
     Then the "viewer regions" reading of scatter plot viewer should be 1
     And the "regions shown" reading of scatter plot viewer should be 0
     And scatter plot viewer should not have a "region 1" area

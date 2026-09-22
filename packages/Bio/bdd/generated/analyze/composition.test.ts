@@ -14,7 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnUnits} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {commandCompleted, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {clearSelection, noneSelected, onlyStartingWithSelected, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';
@@ -58,7 +58,7 @@ test.describe("Composition analysis", () => {
       await session.step(38, "When user clicks on settings icon of WebLogo viewer", () => clickOn(page, el("settings icon of WebLogo viewer")));
       await session.step(39, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
       await session.step(40, "And \"Show Position Labels\" property in context panel should be present", () => shouldBe(page, el("\"Show Position Labels\" property in context panel"), "present"));
-      await session.step(41, "When user clicks on \"Layout\" category in context panel", () => clickOn(page, el("\"Layout\" category in context panel")));
+      await session.step(41, "Given \"Layout\" category in context panel is expanded", () => isExpanded(page, el("\"Layout\" category in context panel")));
       await session.step(42, "Then \"Show Position Labels\" property in context panel should be visible", () => shouldBe(page, el("\"Show Position Labels\" property in context panel"), "visible"));
       await session.step(43, "And \"Show Position Labels\" property of WebLogo viewer should be \"true\"", () => propertyShouldBe(page, "Show Position Labels", el("WebLogo viewer"), "true"));
     });

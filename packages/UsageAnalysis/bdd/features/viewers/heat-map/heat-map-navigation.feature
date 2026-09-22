@@ -60,16 +60,12 @@ Feature: Heat map navigation and grid mode
     Then the "is heatmap" reading of heat map viewer should be "true"
     And no errors should have been logged
 
-  @known-failure
-  Scenario: Is Heatmap on again brings the whole table back on screen (grid_look.dart:435)
-    # `isHeatmap = true` flips the mode flag and `refreshGrid()` rebuilds the columns, but it
-    # passes `updateVertScroll: false, keepVisualRange: false`, so the vertical scroll window the
-    # grid mode left behind (about 34 rows of 1000) is kept. `_rowHeight` in heat map mode is
-    # `contentBox.height / (maxRow - minRow + 1)` (grid_core.dart:1686), so it stays at the grid's
-    # 28 px, the per-cell areas stay instead of the column bands, and `y scroll span` stays at
-    # 0.034 — the heat map does not come back. The spec this replaces asserted a repaint of at
-    # least 1000 pixels in each direction, which the chrome change alone produced.
-    # Left last: a known failure aborts before its restore step.
+  Scenario: Is Heatmap on again brings the whole table back on screen
+    # Fixed 2026-09-21 in grid_look.dart: the mode switch refreshed the columns but kept the
+    # vertical scroll window the grid mode left behind (about 34 rows of 1000), so the row height
+    # stayed at 28 px and the heat map did not come back; the switch now rebuilds the range.
+    # The spec this replaces asserted a repaint of at least 1000 pixels, which the chrome change
+    # alone produced.
     Given user sets "isHeatmap" property of heat map viewer to "false"
     Then the "row height" reading of heat map viewer should be between 20 and 40
     When user sets "isHeatmap" property of heat map viewer to "true"

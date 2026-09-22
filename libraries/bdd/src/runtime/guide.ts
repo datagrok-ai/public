@@ -16,9 +16,13 @@ export interface GuideBox {
 export interface GuidePoint {
   x: number;
   y: number;
+  /** The page as it was when the pointer got here with a button held — what a drag draws. */
+  shot?: string;
 }
 
 export type GuideStepKind = 'action' | 'check' | 'setup';
+
+const DRAG_SHOTS = 8;
 
 /** A stop on a path the step walks (a menu group, then its item): the page as the pointer set
  * off for it, and where it went. */
@@ -91,6 +95,31 @@ export function shellSimpleMode(): boolean {
  * balloon) has to be on the page for the picture, while a test never waits for it. */
 function settleMs(): number {
   return Number(process.env.BDD_GUIDE_SETTLE ?? 500);
+}
+
+/** Checks a viewer of the video has no use for — what a test needs to know, not what a person
+ * sees: error and balloon floors, server state, the readings and pixels a viewer reports, claims
+ * against a snapshot ("than before"), property bags, widget counts, task-bar and command
+ * bookkeeping. A check that names what is on the page (a dialog, a column, a row count, a value,
+ * a legend item's color) stays. Matched against the lowercased text of a `Then` (an `And` after
+ * one included) — never an action: "drags across the "view" area of …" is a step to show. */
+const HIDDEN_CHECKS: RegExp[] = [
+  /^no errors should have been logged$/, /^no error or warning balloon should have been shown$/,
+  / on the server$/,
+  /^the top menu command should have completed$/, /^the package autostarts have completed$/, /\btask bar\b/,
+  /\breadings? of\b/, /\bas remembered\b/, /^user remembers /, /\blistens for\b/, /\bshould have fired\b/,
+  /\brepainted\b/, /\bpainted\b/, /\bink than before\b/, /\bcontain the color\b/, /\bthan before$/, /\bthan the ".*" area$/,
+  /\bpixels tall$/, /\bareas? of\b/, /\bshould (not )?have an? ".*" area$/, /\bproperty of\b/, /^properties of /,
+  /\bvalue range of\b/, /\bcolor scale of\b/, /\bcells of\b.*\bwide\b/, /\bshould show (fewer|more) rows\b/,
+  /^the (open tableview|current view) should (have|hold)/, /\bshould be added to the open tableview$/,
+  /^the .* view should be current$/, /\bnever increase$/,
+  /^the legend of .* should (be (wider|narrower|taller|shorter|placed|docked|in a corner|in the|collapsed|on the)|list (fewer|the same))/,
+  /^every item in the legend of/,
+];
+
+export function hiddenInGuide(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  return HIDDEN_CHECKS.some((re) => re.test(t));
 }
 
 export function slugOf(name: string): string {
@@ -191,12 +220,33 @@ export function attach(page: Page): void {
   const click = mouse.click.bind(mouse);
   const dblclick = mouse.dblclick.bind(mouse);
   const down = mouse.down.bind(mouse);
+  const up = mouse.up.bind(mouse);
   let at: GuidePoint = {x: 0, y: 0};
+  let held = false;
   const rec = (): Recording | undefined => recordings.get(page);
+  // a move with a button held is a drag: the page is pictured along the way (at most DRAG_SHOTS
+  // per step), so the video shows what the drag draws — a selection box, an annotation region
   mouse.move = async (x: number, y: number, options?: unknown) => {
+    const r = rec();
+    if (held && r?.open && r.pointer.filter((p) => p.shot).length < DRAG_SHOTS) {
+      const from = at;
+      const legs = Math.min(3, Math.max(1, Math.round(Math.hypot(x - from.x, y - from.y) / 120)));
+      for (let i = 1; i <= legs; i++) {
+        at = {x: from.x + (x - from.x) * i / legs, y: from.y + (y - from.y) * i / legs};
+        await move(at.x, at.y, {steps: 4});
+        const n = r.pointer.filter((p) => p.shot).length + 1;
+        at.shot = await shot(page, r.dir, `${String(r.open.index).padStart(2, '0')}-drag${n}.png`);
+        r.pointer.push(at);
+      }
+      return;
+    }
     at = {x, y};
-    rec()?.pointer.push(at);
+    r?.pointer.push(at);
     return move(x, y, options);
+  };
+  mouse.up = async (options?: unknown) => {
+    held = false;
+    return up(options);
   };
   mouse.click = async (x: number, y: number, options?: {button?: string}) => {
     at = {x, y};
@@ -212,6 +262,7 @@ export function attach(page: Page): void {
   };
   mouse.down = async (options?: {button?: string}) => {
     rec()?.clicks.push({x: at.x, y: at.y, button: options?.button ?? 'left'});
+    held = true;
     return down(options);
   };
   const keyboard = page.keyboard as any;
@@ -251,11 +302,17 @@ export async function located(page: Page, loc: Locator): Promise<void> {
  * and the element's place on it; the guide moves the pointer stop by stop and lights each. An
  * element located before the first stop becomes the first, on the "before" picture. */
 export async function hop(page: Page, loc: Locator): Promise<void> {
-  const r = recordings.get(page);
-  if (!r || !r.open)
+  if (!recordings.get(page)?.open)
     return;
   const box = await loc.first().boundingBox({timeout: 200}).catch(() => null);
-  if (!box)
+  if (box)
+    await hopAt(page, box);
+}
+
+/** The same stop for a place that is no element of its own — a row of a canvas grid. */
+export async function hopAt(page: Page, box: GuideBox): Promise<void> {
+  const r = recordings.get(page);
+  if (!r || !r.open)
     return;
   if (r.hops.length === 0 && r.target)
     r.hops.push({shot: r.open.before, target: r.target});
@@ -344,9 +401,11 @@ export async function end(page: Page | undefined): Promise<void> {
   r.lastType = type;
   const acted = !!target || r.pointer.length > 0 || r.clicks.length > 0 || r.keys.length > 0 || r.typed.length > 0;
   // every step a reader would take is in the guide, a table opened through the API included (the
-  // page after it is the point); left out are the login and a step that changed nothing on the page
-  const kind: GuideStepKind = type === 'Then' ? 'check' :
-    r.silent || !(acted || !sameFile(r.dir, open.before, after)) ? 'setup' : 'action';
+  // page after it is the point); left out are the login, a step that changed nothing on the page,
+  // and a check a person has no use for
+  const hidden = r.silent || (type === 'Then' && hiddenInGuide(open.text));
+  const kind: GuideStepKind = hidden ? 'setup' : type === 'Then' ? 'check' :
+    acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
   if (!target && r.clicks.length > 0) {
     const last = r.clicks[r.clicks.length - 1];
     target = {x: last.x - 12, y: last.y - 12, width: 24, height: 24};

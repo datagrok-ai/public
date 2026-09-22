@@ -4,7 +4,7 @@ import {existsSync, mkdtempSync, readFileSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {test} from 'node:test';
-import {captionOf, parseTitle, slugOf} from '../src/runtime/guide.js';
+import {captionOf, hiddenInGuide, parseTitle, slugOf} from '../src/runtime/guide.js';
 
 test('a step title splits into its keyword and text', () => {
   assert.deepEqual(parseTitle('When user clicks on browse tab'), {keyword: 'When', text: 'user clicks on browse tab'});
@@ -84,4 +84,18 @@ test('the renderer turns a synthetic manifest into a video, a GIF, a thumb and s
   finally {
     rmSync(dir, {recursive: true, force: true});
   }
+});
+
+test('checks a person has no use for are hidden from a guide; what the page shows stays', () => {
+  for (const hidden of ['no errors should have been logged', 'no error or warning balloon should have been shown',
+    '1 project named "Molecular dashboard" should be on the server', 'the "labels shown" reading of scatter plot viewer should be at least 1',
+    'scatter plot viewer should be painted in at least 3 colors', 'scatter plot viewer should have repainted',
+    'box plot viewer should show fewer rows than before', '"Value" property of box plot viewer should be "AGE"',
+    'the current view should hold at least 5 viewers', 'scatter plot viewer should have a "view" area',
+    'the "spgi-100" view should be current', 'the top menu command should have completed'])
+    assert.ok(hiddenInGuide(hidden), hidden);
+  for (const shown of ['"Link Tables" dialog should be visible', 'grid should show 5 rows', '2550 rows should pass the filter',
+    'the table should have a column "canonical_smiles"', 'the "Series" item in the legend of scatter plot viewer should be colored "#ff0000"',
+    '"Id" input in "Link Tables" dialog should have value "Id"', 'the downloaded file should contain "RA"'])
+    assert.ok(!hiddenInGuide(shown), shown);
 });

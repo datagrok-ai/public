@@ -195,6 +195,11 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   zero-size "Properties..." group, so labels occur twice — `openGroup` waits on the first visible
   candidate and tries every one; the top menu bar folds into a "more" group under 1920 px, its
   vertical groups are entered with two moves inside the item, Escape does not close it.
+- The Dart property grid's choice editor is lazy: its `<select>` enters the value cell only once
+  that cell is clicked (`select` clicks it first). The Save project dialog's name field is a bare
+  `<input>` (aria-label "Name"), which `text input` reaches. Typing into a column picker's search
+  box used to toggle the scatter plot's regression line on every "r" (the R shortcut listened on
+  the plot's root) — fixed 2026-09-21 in `regression_line.dart`.
 - Filters: `user filters rows where …` writes the filter bitset, and anything that calls
   `requestFilter` (a histogram on every menu pick) recomputes it — hold a filter across viewer
   interaction through a filter card. `getFiltersGroup` creates a panel when there is none.

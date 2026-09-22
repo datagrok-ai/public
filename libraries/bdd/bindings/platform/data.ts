@@ -8,7 +8,7 @@
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
-import {baselineAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
+import {changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -20,12 +20,8 @@ const selectedCount = (page: Page): Promise<number> => page.evaluate(() => grok.
 const filteredCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.filter.trueCount as number);
 
 /** A change to the table every viewer answers: baselines first, the change, then every viewer
- * has drawn it. */
-async function changeTable(page: Page, body: (arg: any) => void, arg: unknown): Promise<void> {
-  await baselineAll(page);
-  await page.evaluate(body as (arg: unknown) => void, arg);
-  await settleAll(page);
-}
+ * has drawn it — one round trip. */
+const changeTable = (page: Page, body: (arg: any) => void, arg: unknown): Promise<void> => changeAll(page, body, arg);
 
 /** The selection or the filter becomes exactly the rows a test names. A value the column does
  * not hold (a typo) fails in the page with the values it does hold; an empty result is legal. */
@@ -609,9 +605,8 @@ type NamedChange = {op: 'select', column: string, values: string[]} | {op: 'unse
 
 /** A change to an open table that is not the current view's — the one a viewer rebound to it
  * draws — made without switching views; every viewer of every view is then waited on. */
-async function changeNamedTable(page: Page, name: string, change: NamedChange): Promise<void> {
-  await baselineAll(page);
-  await evaluate(page, ([n, ch]) => {
+function changeNamedTable(page: Page, name: string, change: NamedChange): Promise<void> {
+  return changeAll(page, ([n, ch]) => {
     const b = (window as any).__bdd;
     const t = b.tableNamed(n);
     if (ch.op === 'select') {
@@ -639,7 +634,6 @@ async function changeNamedTable(page: Page, name: string, change: NamedChange): 
       view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({type: 'histogram', column: ch.column, min: ch.min, max: ch.max}, true);
     }
   }, [name, change] as [string, NamedChange]);
-  await settleAll(page);
 }
 
 export const selectInTableOneOf = When('user selects rows of table {string} where {string} is one of {string}',

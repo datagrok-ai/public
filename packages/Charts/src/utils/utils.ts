@@ -10,6 +10,28 @@ export function unsubscribeAll(subs: Subscription[]): void {
   subs.length = 0;
 }
 
+/** Runs [done] once [owed] stops reporting a frame outstanding, re-checking on up to 20 frames.
+ * `setOption` returns before echarts lays a series out, and zrender paints it a frame later, so
+ * neither the promise nor the canvas says the picture is there — what the layout left does. */
+export class LayoutSettler {
+  private timer: any = null;
+
+  settle(owed: () => boolean, done: () => void, attempt = 0): void {
+    this.timer = null;
+    if (owed() && attempt < 20) {
+      this.timer = setTimeout(() => requestAnimationFrame(() => this.settle(owed, done, attempt + 1)));
+      return;
+    }
+    done();
+  }
+
+  cancel(): void {
+    if (this.timer !== null)
+      clearTimeout(this.timer);
+    this.timer = null;
+  }
+}
+
 export namespace ts {
   /** A type guard function.
    * See https://stackoverflow.com/questions/64616994/typescript-type-narrowing-not-working-for-in-when-key-is-stored-in-a-variable*/

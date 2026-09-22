@@ -15,6 +15,7 @@ import type {ElementRef} from '../../../src/runtime/args.js';
 import {el} from '../../../src/runtime/args.js';
 import {exactText, locate} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
+import * as guide from '../../../src/runtime/guide.js';
 import * as v from '../../../src/runtime/viewers.js';
 
 const settle = v.settle;
@@ -253,6 +254,8 @@ async function openColumnSelector(page: Page, target: ElementRef, which: string)
   await page.mouse.move(centre.x, centre.y);
   const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase()}"]`);
   await selector.waitFor({state: 'visible', timeout: 5000});
+  // the guide lights the selector, not the whole viewer the phrase named
+  await guide.located(page, selector);
   await g.openColumnSelector(page, selector, false);
   return selector;
 }
@@ -624,9 +627,22 @@ export const toggleInColumnList = When('user toggles the {string} column in the 
     let rows: ColumnListRow[] = [];
     await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column) !== undefined,
       {timeout: pollMs(5000), message: `no "${column}" row in the column list of ${target.phrase}; it shows: ${namesOf(rows)}`}).toBe(true);
-    const row = rowNamed(rows, column)!;
+    let row = rowNamed(rows, column)!;
+    // a list in a dialog that just opened is still finding its place: the box is clicked where
+    // two reads in a row agree it is
+    await expect.poll(async () => {
+      const again = rowNamed(await columnListRows(page, target), column);
+      const still = again !== undefined && again.x === row.x && again.y === row.y;
+      row = again ?? row;
+      return still;
+    }, {timeout: pollMs(3000), message: `the "${column}" row of the column list of ${target.phrase} keeps moving`}).toBe(true);
     await page.mouse.move(row.x, row.y);
     await page.mouse.click(row.x, row.y);
+    const flipped = async (ms: number): Promise<boolean> => expect.poll(async () => rowNamed(await columnListRows(page, target), column)?.checked,
+      {timeout: pollMs(ms)}).toBe(!row.checked).then(() => true, () => false);
+    // the first click on a list that just opened is now and then spent on giving it the focus
+    if (!(await flipped(1500)))
+      await page.mouse.click(row.x, row.y);
     await expect.poll(async () => rowNamed(await columnListRows(page, target), column)?.checked,
       {timeout: pollMs(5000), message: `the box of "${column}" in the column list of ${target.phrase} did not flip`}).toBe(!row.checked);
   }, {tier: 'ui', description: 'a click on the check box of the row that names the column; done once the box has flipped'});

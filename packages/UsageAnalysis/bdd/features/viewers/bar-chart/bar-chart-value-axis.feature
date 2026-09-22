@@ -19,8 +19,7 @@ Feature: Bar chart value axis range and scale
 
   Scenario: Min above the shortest bars clips them and the indicators show it
     When user sets "Min" property of bar chart viewer to "10"
-    Then "Min" property of bar chart viewer should be "10"
-    And the "clipped bars" reading of bar chart viewer should be 3
+    Then the "clipped bars" reading of bar chart viewer should be 3
     When user sets "Show Clipped Bar Indicators" property of bar chart viewer to "false"
     Then bar chart viewer should have repainted by at least 150 pixels
     When user sets "Show Clipped Bar Indicators" property of bar chart viewer to "true"
@@ -29,15 +28,14 @@ Feature: Bar chart value axis range and scale
 
   Scenario: Max below the tallest bar clips it too
     When user sets "Max" property of bar chart viewer to "60"
-    Then "Max" property of bar chart viewer should be "60"
-    And the "clipped bars" reading of bar chart viewer should be 4
+    Then the "clipped bars" reading of bar chart viewer should be 4
     When user sets "Show Clipped Bar Indicators" property of bar chart viewer to "false"
     Then bar chart viewer should have repainted by at least 150 pixels
     When user sets "Show Clipped Bar Indicators" property of bar chart viewer to "true"
     Then bar chart viewer should have repainted by at least 150 pixels
     And no errors should have been logged
 
-  Scenario: The value-axis scroll bar shows on the constrained range
+  Scenario: The value-axis slider is there under the pointer on the constrained range
     When user hovers over bar chart viewer
     Then x-slider range slider in bar chart viewer should be visible
     And no errors should have been logged

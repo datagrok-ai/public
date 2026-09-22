@@ -44,9 +44,9 @@ test.describe("Multiple sequence alignment with kalign", () => {
     await run.scenario("Alignment parameters toggles the kalign penalties", async () => {
       await session.step(24, "Then \"Gap open\" input in MSA dialog should be hidden", () => shouldBe(page, el("\"Gap open\" input in MSA dialog"), "hidden"));
       await session.step(25, "When user clicks on \"Alignment parameters\" button in MSA dialog", () => clickOn(page, el("\"Alignment parameters\" button in MSA dialog")));
-      await session.step(26, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["\"Gap open\" input in MSA dialog"],["\"Gap extend\" input in MSA dialog"],["\"Terminal gap\" input in MSA dialog"]]));
+      await session.step(26, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["\"Gap open\" input in MSA dialog"],["\"Gap extend\" input in MSA dialog"],["\"Terminal gap\" input in MSA dialog"]]), [["\"Gap open\" input in MSA dialog"],["\"Gap extend\" input in MSA dialog"],["\"Terminal gap\" input in MSA dialog"]]);
       await session.step(30, "When user clicks on \"Alignment parameters\" button in MSA dialog", () => clickOn(page, el("\"Alignment parameters\" button in MSA dialog")));
-      await session.step(31, "Then the following elements should be hidden:", () => followingShouldBe(page, "hidden", [["\"Gap open\" input in MSA dialog"],["\"Gap extend\" input in MSA dialog"],["\"Terminal gap\" input in MSA dialog"]]));
+      await session.step(31, "Then the following elements should be hidden:", () => followingShouldBe(page, "hidden", [["\"Gap open\" input in MSA dialog"],["\"Gap extend\" input in MSA dialog"],["\"Terminal gap\" input in MSA dialog"]]), [["\"Gap open\" input in MSA dialog"],["\"Gap extend\" input in MSA dialog"],["\"Terminal gap\" input in MSA dialog"]]);
     });
     await run.scenario("OK aligns the column", async () => {
       await session.step(37, "When user clicks on OK button in MSA dialog", () => clickOn(page, el("OK button in MSA dialog")));

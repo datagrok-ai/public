@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.scatter-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -49,30 +50,29 @@ test.describe("A NaN and an Infinity in the plotted columns", () => {
     });
     await run.scenario("The square marker and the regression line survive both values", async () => {
       await session.step(39, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Marker Type","square"]]), [["Marker Type","square"]]);
-      await session.step(41, "Then \"Marker Type\" property of scatter plot viewer should be \"square\"", () => propertyShouldBe(page, "Marker Type", el("scatter plot viewer"), "square"));
-      await session.step(42, "And scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
-      await session.step(43, "And scatter plot viewer should be painted in at least 2 colors", () => paintedInColors(page, el("scatter plot viewer"), 2));
-      await session.step(44, "And the \"regression lines\" reading of scatter plot viewer should be at least 1", () => readingAtLeast(page, "regression lines", el("scatter plot viewer"), 1));
-      await session.step(45, "And no errors should have been logged", () => noErrors(page));
+      await session.step(41, "Then scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
+      await session.step(42, "And scatter plot viewer should be painted in at least 2 colors", () => paintedInColors(page, el("scatter plot viewer"), 2));
+      await session.step(43, "And the \"regression lines\" reading of scatter plot viewer should be at least 1", () => readingAtLeast(page, "regression lines", el("scatter plot viewer"), 1));
+      await session.step(44, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A layout round-trip brings the plot back over the same data", async () => {
-      await session.step(48, "When user remembers the \"rows shown\" reading of scatter plot viewer", () => rememberReading(page, "rows shown", el("scatter plot viewer")));
-      await session.step(49, "And user saves the layout of the current table view", () => saveLayout(page));
-      await session.step(50, "And user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Marker Type","circle"],["X","AGE"]]), [["Marker Type","circle"],["X","AGE"]]);
-      await session.step(53, "Then \"X\" property of scatter plot viewer should be \"AGE\"", () => propertyShouldBe(page, "X", el("scatter plot viewer"), "AGE"));
-      await session.step(54, "When user loads the saved layout", () => loadLayout(page));
-      await session.step(55, "Then \"X\" property of scatter plot viewer should be \"HEIGHT\"", () => propertyShouldBe(page, "X", el("scatter plot viewer"), "HEIGHT"));
-      await session.step(56, "And \"Marker Type\" property of scatter plot viewer should be \"square\"", () => propertyShouldBe(page, "Marker Type", el("scatter plot viewer"), "square"));
-      await session.step(57, "And the \"rows shown\" reading of scatter plot viewer should be as remembered", () => readingAsRemembered(page, "rows shown", el("scatter plot viewer")));
-      await session.step(58, "And the \"x axis max\" reading of scatter plot viewer should be a finite number", () => readingFinite(page, "x axis max", el("scatter plot viewer")));
-      await session.step(59, "And no errors should have been logged", () => noErrors(page));
+      await session.step(47, "When user remembers the \"rows shown\" reading of scatter plot viewer", () => rememberReading(page, "rows shown", el("scatter plot viewer")));
+      await session.step(48, "And user saves the layout of the current table view", () => saveLayout(page));
+      await session.step(49, "And user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Marker Type","circle"],["X","AGE"]]), [["Marker Type","circle"],["X","AGE"]]);
+      await session.step(52, "Then \"X\" property of scatter plot viewer should be \"AGE\"", () => propertyShouldBe(page, "X", el("scatter plot viewer"), "AGE"));
+      await session.step(53, "When user loads the saved layout", () => loadLayout(page));
+      await session.step(54, "Then \"X\" property of scatter plot viewer should be \"HEIGHT\"", () => propertyShouldBe(page, "X", el("scatter plot viewer"), "HEIGHT"));
+      await session.step(55, "And \"Marker Type\" property of scatter plot viewer should be \"square\"", () => propertyShouldBe(page, "Marker Type", el("scatter plot viewer"), "square"));
+      await session.step(56, "And the \"rows shown\" reading of scatter plot viewer should be as remembered", () => readingAsRemembered(page, "rows shown", el("scatter plot viewer")));
+      await session.step(57, "And the \"x axis max\" reading of scatter plot viewer should be a finite number", () => readingFinite(page, "x axis max", el("scatter plot viewer")));
+      await session.step(58, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The two values put back restore every row", async () => {
-      await session.step(62, "When user sets \"HEIGHT\" column in row 1 to \"174.705\"", () => setCell(page, "HEIGHT", 1, "174.705"));
-      await session.step(63, "And user sets \"WEIGHT\" column in row 2 to \"64\"", () => setCell(page, "WEIGHT", 2, "64"));
-      await session.step(64, "Then scatter plot viewer should show 872 rows", () => showsRows(page, el("scatter plot viewer"), 872));
-      await session.step(65, "And the \"y axis max\" reading of scatter plot viewer should be a finite number", () => readingFinite(page, "y axis max", el("scatter plot viewer")));
-      await session.step(66, "And no errors should have been logged", () => noErrors(page));
+      await session.step(61, "When user sets \"HEIGHT\" column in row 1 to \"174.705\"", () => setCell(page, "HEIGHT", 1, "174.705"));
+      await session.step(62, "And user sets \"WEIGHT\" column in row 2 to \"64\"", () => setCell(page, "WEIGHT", 2, "64"));
+      await session.step(63, "Then scatter plot viewer should show 872 rows", () => showsRows(page, el("scatter plot viewer"), 872));
+      await session.step(64, "And the \"y axis max\" reading of scatter plot viewer should be a finite number", () => readingFinite(page, "y axis max", el("scatter plot viewer")));
+      await session.step(65, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

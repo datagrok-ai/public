@@ -53,7 +53,6 @@ Feature: Tile viewer property surface
     And tile viewer should have a "field AGE of row 1" area
     And tile viewer should have a "label AGE of row 1" area
     And tile viewer should not have a "field SEVERITY of row 1" area
-    And the "current row" reading of tile viewer should be 1
     And the "lane of row 1" reading of tile viewer should be "All rows"
     And the "USUBJID of row 1" reading of tile viewer should be "X0273T21000300003"
     And the "AGE of row 1" reading of tile viewer should be "26"

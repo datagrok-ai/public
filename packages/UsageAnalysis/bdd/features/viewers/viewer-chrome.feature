@@ -30,6 +30,7 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
     Then description of <viewer> viewer should have text "By race"
     When user sets "Description Position" property of <viewer> viewer to "Bottom"
     Then description of <viewer> viewer should be visible
+    And the description of <viewer> viewer should be below its content
     When user sets "Description Position" property of <viewer> viewer to "Left"
     Then description of <viewer> viewer should be visible
     When user sets "Description Position" property of <viewer> viewer to "Right"
@@ -73,7 +74,7 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
       | trellis plot | Viewer Type | Bar chart | Histogram |
       | line chart   | lineWidth   | 3         | 5         |
 
-  Scenario Outline: Tooltip > Edit... opens the tooltip editor of the <viewer>, and CANCEL leaves the tooltip alone
+  Scenario Outline: Tooltip > Edit... opens the tooltip editor of the <viewer>, and CANCEL closes it
     Given user adds a <viewer> viewer
     Then <viewer> viewer should be painted
     When user picks "Tooltip > Edit..." from the viewer menu of <viewer> viewer
