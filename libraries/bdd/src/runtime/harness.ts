@@ -241,20 +241,43 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
  * its API, notifications as their close icons would; a dialog that survives that is reported in
  * the run's output rather than pulled out of the DOM behind the platform's back. Errors the
  * teardown itself raises (work cancelled by `closeAll`) are dropped. */
+/** Task bar entries a reset already waited out: a job that never ends is waited for once, not by
+ * every later scenario of the page. */
+const stuckEntries = new WeakMap<Page, Set<string>>();
+const SETTLE_MS = 25000;
+
+/** Work a scenario started and never awaited (a known failure ends at its first failing claim) must
+ * not finish on the next feature's shell: an analysis that ends reopens its table and makes it
+ * current. The platform's own progress entries say when that work is over — a command's
+ * onAfterRunAction can come before it — and one budget covers both waits. */
+async function settleWork(page: Page): Promise<void> {
+  const deadline = Date.now() + SETTLE_MS;
+  const settled = await page.evaluate((ms) => (window as any).__bdd?.settleCommand?.(ms) ?? true, SETTLE_MS).catch(() => true);
+  if (!settled)
+    console.warn(`bdd: a menu command the scenario started was still running ${SETTLE_MS / 1000} s into the shell reset`);
+  const stuck = stuckEntries.get(page) ?? new Set<string>();
+  stuckEntries.set(page, stuck);
+  // the entries still shown and not already waited out; empty = the page is quiet
+  const running = (known: string[]): string[] => Array.from(document.querySelectorAll('.d4-task-bar-entry'))
+    .filter((e) => (e as HTMLElement).offsetParent !== null)
+    .map((e) => (e.textContent ?? '').trim())
+    .filter((t) => !known.includes(t));
+  const known = [...stuck];
+  const quiet = await page.waitForFunction(`(${running.toString()})(${JSON.stringify(known)}).length === 0`, null,
+    {timeout: Math.max(1, deadline - Date.now()), polling: 100}).then(() => true).catch(() => false);
+  const left: string[] = quiet ? [] : await page.evaluate(running, known).catch(() => []);
+  if (left.length > 0) {
+    for (const t of left)
+      stuck.add(t);
+    console.warn(`bdd: still running ${SETTLE_MS / 1000} s into the shell reset (not waited for again): ${left.join(' | ')}`);
+  }
+}
+
 export async function resetShell(page: Page): Promise<void> {
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)
     return;
-  // work a scenario started and never awaited (a known failure ends at its first failing claim) must
-  // not finish on the next feature's shell: an analysis that ends reopens its table and makes it
-  // current. The platform's own progress entries say when that work is over; a command's
-  // onAfterRunAction can come before it.
-  await page.evaluate(() => (window as any).__bdd?.settleCommand?.(60000)).catch(() => undefined);
-  const busy = await page.waitForFunction(() => document.querySelectorAll('.d4-task-bar-entry').length === 0, null,
-    {timeout: 60000, polling: 100}).then(() => '').catch(() => page.evaluate(() => Array.from(document.querySelectorAll('.d4-task-bar-entry'))
-    .map((e) => (e.textContent ?? '').trim()).join(' | ')).catch(() => '?'));
-  if (busy)
-    console.warn(`bdd: still running 60 s into the shell reset: ${busy}`);
+  await settleWork(page);
   const open = (): Promise<number> => page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
   for (let i = 0; i < 3 && await open() > 0; i++)
     await page.keyboard.press('Escape').catch(() => undefined);

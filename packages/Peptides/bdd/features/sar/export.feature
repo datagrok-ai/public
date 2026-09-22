@@ -7,6 +7,8 @@ Feature: Export peptide SAR results
   viewers. The manual case's leading "Monomer" column is called AAR, and its activity columns
   "Seq 1 IC50"/"Seq 2 IC50", in the product.
 
+  Not translated, and why: nothing of the manual cases is left out.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized

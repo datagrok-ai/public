@@ -49,7 +49,7 @@ test.describe("The current-row analyses on an empty sequence", () => {
       await session.step(35, "And user makes row 1 current", () => makeRowCurrent(page, 1));
       await session.step(36, "And user picks \"Bio > Search > Similarity Search\" from the top menu", () => pickFromTopMenu(page, "Bio > Search > Similarity Search"));
       await session.step(37, "Then the top menu command should have completed", () => commandCompleted(page));
-      await session.step(38, "And an error or warning balloon matching \"empty|missing|null|no sequence\" should have been shown", () => errorOrWarningBalloonMatching(page, "empty|missing|null|no sequence"));
+      await session.step(38, "And an error or warning balloon matching \"empty|missing|no sequence\" should have been shown", () => errorOrWarningBalloonMatching(page, "empty|missing|no sequence"));
     });
   });
   test("Diversity Search on an empty current row keeps the table", {tag: ["@realizes:bio.int.empty-input-on-row-viewers"]}, async ({browser}) => {
@@ -75,7 +75,7 @@ test.describe("The current-row analyses on an empty sequence", () => {
       await session.step(55, "And user makes row 1 current", () => makeRowCurrent(page, 1));
       await session.step(56, "And user picks \"Bio > Search > Diversity Search\" from the top menu", () => pickFromTopMenu(page, "Bio > Search > Diversity Search"));
       await session.step(57, "Then the top menu command should have completed", () => commandCompleted(page));
-      await session.step(58, "And an error or warning balloon matching \"empty|missing|null|no sequence\" should have been shown", () => errorOrWarningBalloonMatching(page, "empty|missing|null|no sequence"));
+      await session.step(58, "And an error or warning balloon matching \"empty|missing|no sequence\" should have been shown", () => errorOrWarningBalloonMatching(page, "empty|missing|no sequence"));
     });
   });
   test("Activity Cliffs with an empty current row keeps the table", {tag: ["@realizes:bio.int.empty-input-on-row-viewers"]}, async ({browser}) => {
@@ -104,7 +104,7 @@ test.describe("The current-row analyses on an empty sequence", () => {
       await session.step(80, "And user picks \"Bio > Analyze > Activity Cliffs...\" from the top menu", () => pickFromTopMenu(page, "Bio > Analyze > Activity Cliffs..."));
       await session.step(81, "And user selects \"Activity\" in Activities input in \"Sequence Activity Cliffs\" dialog", () => selectIn(page, "Activity", el("Activities input in \"Sequence Activity Cliffs\" dialog")));
       await session.step(82, "And user clicks on OK button in \"Sequence Activity Cliffs\" dialog", () => clickOn(page, el("OK button in \"Sequence Activity Cliffs\" dialog")));
-      await session.step(83, "Then an error or warning balloon matching \"empty|missing|null|no sequence\" should have been shown", () => errorOrWarningBalloonMatching(page, "empty|missing|null|no sequence"));
+      await session.step(83, "Then an error or warning balloon matching \"empty|missing|no sequence\" should have been shown", () => errorOrWarningBalloonMatching(page, "empty|missing|no sequence"));
     });
   });
 });

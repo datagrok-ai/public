@@ -64,8 +64,9 @@ without the R3 attachment required by the branched HELM fixture.
 Editing: change a feature, `npx grok-bdd compile`, commit the regenerated spec with it;
 `npx grok-bdd list-steps` prints every phrase this package can use, including its own
 (`bindings/steps.ts`: the readiness step, the molfile and alignment readings;
-`bindings/annotations.ts`: what a column's annotations and liability hits say;
-`bindings/monomer-libs.ts`: the library selection, what the loaded library knows and where it
-comes from, the library and collection files on the server; `bindings/bio-b.ts`: a shipped library
-file's schema, the standardized library, a numbering's position names, and two columns compared
-row by row).
+`bindings/annotations.ts`: what a column's annotations and liability hits say, and a numbering's
+position names; `bindings/monomer-libs.ts`: the library selection, what the loaded library knows
+and where it comes from, the library and collection files on the server;
+`bindings/library-files.ts`: a shipped library file's schema, the standardized library and the
+Manage Monomers sketcher's readiness; `bindings/cliffs.ts`: the cliff count of an activity-cliffs
+plot).

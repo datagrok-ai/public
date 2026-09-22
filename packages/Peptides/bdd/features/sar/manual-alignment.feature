@@ -4,6 +4,9 @@ Feature: Manually align a peptide
   Reset discards only the unsaved text and preserves the last applied sequence.
   Apply recomputes the monomer-position statistics the viewers and the WebLogo headers draw.
 
+  Not translated, and why: nothing is left out; the pane without an analysis ("works with
+  peptides analysis") is claimed in panel/peptides-pane.feature.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized

@@ -12,6 +12,8 @@ import {installViewerRuntime, baselineAll} from './viewers.js';
 import * as guide from './guide.js';
 
 const MORE = '[role="menubar"] .d4-menu-item-more';
+// what a bar rebuild does to a walk in progress: the item lost its box, the group its hover
+const REBUILT = /has no box|the box of the menu item|locator\.hover: Timeout/;
 
 /** `Bio > Analyze > Sequence Space...` → the segments and the platform names of the path so far. */
 export function menuNames(path: string): {segments: string[]; names: string[]} {
@@ -55,7 +57,7 @@ export async function openTopMenu(page: Page, path: string, pick: boolean): Prom
     if (!/^no "|has no box|the box of the menu item|locator\.hover: Timeout/.test(String((e as Error).message)))
       throw e;
     await page.mouse.move(2, 2);
-    await page.waitForTimeout(500);
+    await expect(page.locator('[role="menubar"] .d4-vert-menu').filter({visible: true}), 'the top menu closed before the walk is made again').toHaveCount(0);
     await walkTopMenu(page, segments, names, pick);
   }
 }
@@ -104,21 +106,28 @@ export async function pickTopMenu(page: Page, path: string): Promise<void> {
   const {segments, names} = menuNames(path);
   if (segments.length < 2)
     throw new Error(`"${path}" names a group, not a command: a command is "Group > Item"`);
-  // the bar can rebuild between the walk and the click, collapsing the open group under the
-  // leaf: the whole pick is made once more from the bar
+  // the bar can rebuild between the walk and the click, collapsing the open group under the leaf:
+  // only that (the item lost its box, the group its hover) makes the pick again from the bar; a
+  // missing, disabled or covered leaf is reported as it is. A core "menu settled" signal would
+  // remove this.
   try {
-    await pickLeaf(page, segments, names, 5000);
+    await pickLeaf(page, segments, names);
   }
   catch (e) {
-    if (!/^no "|has no box|the box of the menu item|locator\.(hover|click): Timeout/.test(String((e as Error).message)))
+    const message = String((e as Error).message);
+    // a leaf the click waited on because it vanished or kept moving went with its group; one that
+    // is disabled or covered is a state of the product and is reported
+    const leafGone = /locator\.click: Timeout/.test(message) && /not visible|not stable|detached/.test(message) &&
+      !/not enabled|intercepts pointer events/.test(message);
+    if (!REBUILT.test(message) && !leafGone)
       throw e;
     await page.mouse.move(2, 2);
-    await expect(page.locator('[role="menubar"] .d4-vert-menu').filter({visible: true})).toHaveCount(0);
-    await pickLeaf(page, segments, names, 15000);
+    await expect(page.locator('[role="menubar"] .d4-vert-menu').filter({visible: true}), 'the top menu closed before the pick is made again').toHaveCount(0);
+    await pickLeaf(page, segments, names);
   }
 }
 
-async function pickLeaf(page: Page, segments: string[], names: string[], clickMs: number): Promise<void> {
+async function pickLeaf(page: Page, segments: string[], names: string[]): Promise<void> {
   await openTopMenu(page, segments.slice(0, -1).join(' > '), false);
   const leaf = page.locator(`[name="${names[names.length - 1]}"]`).first();
   await leaf.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
@@ -126,7 +135,7 @@ async function pickLeaf(page: Page, segments: string[], names: string[], clickMs
   });
   await page.evaluate((p) => (window as any).__bdd.armCommand(p), segments.join(' | '));
   await guide.hop(page, leaf);
-  await leaf.click({timeout: clickMs});
+  await leaf.click({timeout: 5000});
 }
 
 /** The bar's group closes when the pointer leaves it (Escape is not a key it listens to). */

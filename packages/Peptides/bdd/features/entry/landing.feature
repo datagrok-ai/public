@@ -2,6 +2,10 @@
 Feature: Peptides landing view
   The landing view offers examples in FASTA, separator and HELM notation.
 
+  Not translated, and why: opening it from the app browser, as the manual case does — Peptides
+  registers no app (its Browse > Apps "Peptides" group is other packages' browsePath), so the view
+  is opened through the package's entry function, Peptides:Peptides.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized

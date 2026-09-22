@@ -4,6 +4,9 @@ Feature: The Properties pane of a HELM cell
   formula, molecular weight and extinction coefficient; it follows the current cell, and a
   sequence over 1000 characters gets a warning instead of a calculation.
 
+  Not translated, and why: nothing of the manual cases is left out; the old spec's direct
+  Helm:propertiesWidget call is replaced by the pane itself.
+
   Background:
     Given user is logged in
     And the Helm package is initialized

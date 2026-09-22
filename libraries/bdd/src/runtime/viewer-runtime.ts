@@ -1112,6 +1112,8 @@ function install(): void {
   const settleCommand = async (capMs: number): Promise<boolean> => {
     const c = command;
     command = undefined;
+    commandArm?.unsubscribe();
+    commandArm = undefined;
     if (!c)
       return true;
     const timeout = new Promise<false>((r) => setTimeout(() => r(false), capMs));

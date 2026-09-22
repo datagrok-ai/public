@@ -35,7 +35,7 @@ Feature: The current-row analyses on an empty sequence
     And user makes row 1 current
     And user picks "Bio > Search > Similarity Search" from the top menu
     Then the top menu command should have completed
-    And an error or warning balloon matching "empty|missing|null|no sequence" should have been shown
+    And an error or warning balloon matching "empty|missing|no sequence" should have been shown
 
   Scenario: Diversity Search on an empty current row keeps the table
     Given user opens filter_FASTA dataset
@@ -55,7 +55,7 @@ Feature: The current-row analyses on an empty sequence
     And user makes row 1 current
     And user picks "Bio > Search > Diversity Search" from the top menu
     Then the top menu command should have completed
-    And an error or warning balloon matching "empty|missing|null|no sequence" should have been shown
+    And an error or warning balloon matching "empty|missing|no sequence" should have been shown
 
   Scenario: Activity Cliffs with an empty current row keeps the table
     Given user opens FASTA_sample dataset
@@ -80,4 +80,4 @@ Feature: The current-row analyses on an empty sequence
     And user picks "Bio > Analyze > Activity Cliffs..." from the top menu
     And user selects "Activity" in Activities input in "Sequence Activity Cliffs" dialog
     And user clicks on OK button in "Sequence Activity Cliffs" dialog
-    Then an error or warning balloon matching "empty|missing|null|no sequence" should have been shown
+    Then an error or warning balloon matching "empty|missing|no sequence" should have been shown

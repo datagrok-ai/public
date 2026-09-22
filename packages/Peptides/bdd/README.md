@@ -77,9 +77,10 @@ run time and the default 70 spends a long time on this fixture, while 93 cluster
 `sar/default-launch` runs the defaults once. The from-panel journey re-clusters at 90 and back at
 93; the threshold outline runs 10, 50, 75, 90, 93 and 96 on 200 peptides, plus 90 on all 647.
 
-Known failures, each a candidate finding waiting for its ticket (stated above the scenario):
-Sequence space checked in the settings embeds nothing; the settings reopen with Dendrogram
-unchecked while the tree is shown; unchecking Dendrogram leaves the tree.
+Known failures, each with its ticket above the scenario: Sequence space checked in the settings
+embeds nothing (GROK-20965, fixed, lands with the next dev deploy — then drop the tag); the settings
+reopen with Dendrogram unchecked while the tree is shown, and unchecking Dendrogram leaves the tree
+(both GROK-20640).
 
 2026-09-22, dev.datagrok.ai (core master, Peptides and EDA published from this checkout as debug
 builds): 19 tests (13 features; the threshold outline expands to 6) green three times in a row on

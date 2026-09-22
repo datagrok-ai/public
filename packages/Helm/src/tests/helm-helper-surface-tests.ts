@@ -12,9 +12,19 @@ import {MonomersFuncs} from '@datagrok-libraries/bio/src/helm/types';
 
 category('HelmHelper: getHoveredAtom', () => {
   let helmHelper: IHelmHelper;
+  let libHelper: IMonomerLibHelper;
+  let userLibSettings: UserLibSettings;
 
   before(async () => {
     helmHelper = await getHelmHelper();
+    libHelper = await getMonomerLibHelper();
+    userLibSettings = await getUserLibSettings();
+    await libHelper.loadMonomerLibForTests();
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await libHelper.loadMonomerLib(true);
   });
 
   const helm = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$';
@@ -90,6 +100,6 @@ category('HelmHelper: monomersFuncs', () => {
     const bracketed = funcs.getMonomer(HelmTypes.AA, '[meI]');
     expect(bracketed?.id, '[meI]');
     expect(bracketed?.n, 'missing');
-    funcs.getMonomerSet(HelmTypes.AA);
+    expect(funcs.getMonomerSet(HelmTypes.AA) != null, true);
   });
 });

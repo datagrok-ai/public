@@ -48,8 +48,9 @@ WebLogo glyphs Peptides draws in grid headers).
 
 - **One registry, through `dist/`.** Specs import the library by package subpath, project bindings
   by relative path; never mix `src/` and `dist/` in one run. ESM everywhere. One `@playwright/test`
-  per run: packages depend by path (`file:../../libraries/bdd`) and `grok-bdd link` makes the
-  package's Playwright the library's copy (redo after `npm ci`).
+  per run: a package of the pnpm workspace depends on `workspace:^` and resolves the library's copy
+  with nothing to link; one outside it depends by path (`file:…`) and `grok-bdd link` makes its
+  Playwright the library's copy (redo after `npm ci`).
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
   resets the shell (first waiting, up to 60 s, until the task bar has no progress entry — an
   analysis a scenario left running reopens its closed table and makes it current in the next feature;

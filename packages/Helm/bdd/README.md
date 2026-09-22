@@ -14,8 +14,7 @@ on three workers against dev (2026-09-22, green three runs in a row).
 | `panels/`  | properties           | the context panel's Properties pane: formula, weight and extinction coefficient of the current cell, following the current cell, and the "Too long sequence" guard over 1000 characters |
 | `service/` | surface              | `Helm:getHelmHelper` exposes the methods other packages call; `Helm:getMolfiles` returns one hwe pseudo-molfile per row |
 
-One scenario is `@known-failure`, a candidate finding whose ticket waits for a manual walk: Edit
-Helm... opens the current row, not the cell it was picked on (`openEditor` in `src/package.ts`
+One scenario is `@known-failure`, GROK-20962: Edit Helm... opens the current row, not the cell it was picked on (`openEditor` in `src/package.ts`
 reads `df.currentRowIdx`), so a right-click on another cell edits — and on OK overwrites — the
 current one.
 
@@ -26,14 +25,16 @@ renderer publishes no hit area for the monomers it draws (a `grid.addStatusProvi
 `buildMonomersFuncsFromLib`), which have no user-visible effect and are the package's own tests in
 `src/tests` (`helm-helper-surface-tests.ts` covers the ones no test had); starring a Favorites tile,
 which would leave a user setting behind; the extinction coefficient of the editor's Properties tab,
-which reads 0 where the context panel reads 0.06 for the same sequence (candidate finding).
+which shows 0 where the context panel shows 0.06 for the same sequence — the editor does not show
+the full number (a display format, confirmed by the Helm owners), so the pane's value is claimed.
 
-Run from the package directory against a stand with Helm, Bio and Chem published:
+Run from the package directory against a stand with Helm, Bio and Chem published. Helm is a
+package of the `public/` pnpm workspace, so it resolves the library with nothing to link:
 
 ```bash
-cd public/libraries/bdd && npm run build              # the library (a path dependency; dist/ is not committed)
+cd public && grok setup                               # once per checkout: the pnpm workspace
+cd libraries/bdd && npm run build                     # the library; dist/ is not committed
 cd ../../packages/Helm
-npx grok-bdd link                                     # one Playwright, if the run reports "Requiring @playwright/test second time"
 DATAGROK_URL=https://dev.datagrok.ai DATAGROK_SERVER=dev npx grok-bdd run --workers=3 --reporter=list
 npx grok-bdd run generated/editor                     # one folder
 ```

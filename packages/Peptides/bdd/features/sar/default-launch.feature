@@ -2,6 +2,9 @@ Feature: Launch SAR with the dialog defaults
   Every other feature launches at similarity threshold 93 to keep MCL fast; this one accepts what
   the dialog offers, so the default clustering path (threshold 70, inflation 1.4) runs somewhere.
 
+  Not translated, and why: nothing is left out; the launch's viewers and settings are claimed in
+  sar/from-top-menu.feature.
+
   Scenario: Accepting the defaults builds the analysis on all peptides
     Given user is logged in
     And the Peptides package is initialized

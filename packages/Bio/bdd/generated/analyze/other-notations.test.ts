@@ -12,7 +12,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {cliffCount} from '../../bindings/bio-a.js';
+import {cliffCount} from '../../bindings/cliffs.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';

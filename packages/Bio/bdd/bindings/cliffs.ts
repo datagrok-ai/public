@@ -1,5 +1,4 @@
-/* The step the analyze features needed beyond the library's: the cliff count an activity-cliffs
-   plot reports. */
+/* Activity cliffs: the cliff count an activity-cliffs plot reports. */
 import {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
 import {expect, pollMs} from '@datagrok-libraries/bdd/runtime';

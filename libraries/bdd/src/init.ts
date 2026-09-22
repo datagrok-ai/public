@@ -25,16 +25,22 @@ import {STATES as STATE_LIST} from './states.js';
 
 const STATES = STATE_LIST.join('|');
 
-/** The library as a dependency: `workspace:^` inside its pnpm workspace, by path from another checkout (until
- * it is on npm — npm links the directory and `npm ci` needs no registry), by version otherwise. */
+/** The library as a dependency: `workspace:^` for a package of its pnpm workspace, by path from any
+ * other checkout (until it is on npm — npm links the directory and `npm ci` needs no registry), by
+ * version otherwise. */
+export function libraryDependency(packageDir: string, libRoot: string, version: string): string {
+  if (libRoot.split(sep).includes('node_modules'))
+    return `^${version}`;
+  const root = workspaceRoot(libRoot);
+  if (root !== null && workspaceGlobs(root).some((g) => g.test(relative(root, packageDir).split(sep).join('/'))))
+    return 'workspace:^';
+  return `file:${relative(packageDir, libRoot).split(sep).join('/')}`;
+}
+
 function libraryVersions(packageDir: string): {bdd: string; playwright: string} {
   const lib = JSON.parse(readFileSync(join(LIB_ROOT, 'package.json'), 'utf8')) as Manifest;
-  const checkout = !LIB_ROOT.split(sep).includes('node_modules');
-  const workspace = workspaceRoot(LIB_ROOT);
-  const inWorkspace = workspace !== null && !relative(workspace, packageDir).startsWith('..');
-  const bdd = !checkout ? `^${lib.version as string}` :
-    inWorkspace ? 'workspace:^' : `file:${relative(packageDir, LIB_ROOT).split(sep).join('/')}`;
-  return {bdd, playwright: lib.devDependencies?.['@playwright/test'] ?? '>=1.40.0'};
+  return {bdd: libraryDependency(packageDir, LIB_ROOT, lib.version as string),
+    playwright: lib.devDependencies?.['@playwright/test'] ?? '>=1.40.0'};
 }
 
 function workspaceRoot(dir: string): string | null {
@@ -44,6 +50,23 @@ function workspaceRoot(dir: string): string | null {
     if (dirname(d) === d)
       return null;
   }
+}
+
+/** The `packages:` globs of a pnpm-workspace.yaml as path tests (`*` one segment, `**` any). A
+ * directory under the root that no glob names is not a workspace package, and `workspace:^` there
+ * would fail the install. */
+function workspaceGlobs(root: string): RegExp[] {
+  const globs: RegExp[] = [];
+  let inPackages = false;
+  for (const line of readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8').split(/\r?\n/)) {
+    if (/^\S/.test(line))
+      inPackages = /^packages:\s*$/.test(line);
+    const item = inPackages ? /^\s+-\s+['"]?([^'"#\s]+)['"]?/.exec(line) : null;
+    if (item && !item[1].startsWith('!'))
+      globs.push(new RegExp('^' + item[1].split('/').map((seg) => seg === '**' ? '.*' :
+        seg.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')).join('/') + '$'));
+  }
+  return globs;
 }
 
 function indentOf(json: string): string {

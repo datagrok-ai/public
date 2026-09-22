@@ -3,7 +3,7 @@ Feature: Select peptides through WebLogo headers
   Header glyphs select the matching peptides and update the selection and distribution panes.
   Shift adds another position and Control toggles it off again.
 
-  Not checked: the grid's own selection highlight (the claims read the selection itself, row by
+  Not translated, and why: the grid's own selection highlight (the claims read the selection itself, row by
   row, which is what the grid draws), and the manual case's "the Sequence Variability Map
   highlights the picked cell" — the map keeps its own selection and does not mirror WebLogo picks
   (model.ts), so the feature claims it stays empty.

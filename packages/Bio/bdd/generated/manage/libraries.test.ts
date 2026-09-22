@@ -12,7 +12,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {libraryFileConforms} from '../../bindings/bio-b.js';
+import {libraryFileConforms} from '../../bindings/library-files.js';
 import {allLibrariesSelected, chooseLibraryStorage, knownMonomer, loadedFrom, noLibraryOnServer, noSuchLibrary, notLoadedFrom, unknownMonomer} from '../../bindings/monomer-libs.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';

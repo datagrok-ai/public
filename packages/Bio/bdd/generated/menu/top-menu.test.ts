@@ -12,7 +12,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {monomerSketcherReady} from '../../bindings/bio-b.js';
+import {monomerSketcherReady} from '../../bindings/library-files.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, selectIn, shouldBe, shouldHaveText, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';

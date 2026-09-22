@@ -34,13 +34,13 @@
     "@datagrok-libraries/ml": "workspace:^"
   },
   "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
     "@playwright/test": "^1.48.0",
     "@types/webpack-env": "^1.18.5",
     "@types/wu": "catalog:",
     "eslint-plugin-deprecation": "^3.0.0",
     "eslint-plugin-rxjs": "^5.0.3",
-    "path": "^0.12.7",
-    "@datagrok-libraries/bdd": "workspace:^"
+    "path": "^0.12.7"
   },
   "scripts": {
     "build": "grok build",

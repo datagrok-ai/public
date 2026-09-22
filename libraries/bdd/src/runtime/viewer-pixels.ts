@@ -165,7 +165,16 @@ export async function expectAreaNoHue(page: Page, target: ElementRef, area: stri
   await hitArea(page, target, area);
   await settle(page, target);
   const read = await areaColors(page, target, area);
-  const hued = read.colors.filter((c) => c.count >= 4 && hsl(c.hex).s >= GREY_SATURATION);
+  // a mark spread over anti-aliased shades counts as one hue: its shades are summed before the floor
+  const groups: {hex: string; count: number}[] = [];
+  for (const c of read.colors.filter((x) => hsl(x.hex).s >= GREY_SATURATION)) {
+    const g = groups.find((x) => near(x.hex, c.hex));
+    if (g)
+      g.count += c.count;
+    else
+      groups.push({hex: c.hex, count: c.count});
+  }
+  const hued = groups.filter((g) => g.count >= 4);
   expect(hued.map((c) => `${c.hex} (${c.count} px)`), `hued colors in the "${area}" area of ${target.phrase}; ${describeColors(read)}`).toEqual([]);
 }
 

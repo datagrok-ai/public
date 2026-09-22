@@ -3,9 +3,9 @@ Feature: Compute and visualize peptide mutation cliffs
   The 200-peptide subset contains 2242 unique pairs differing at exactly one position.
   The map, position chart and export expose the corresponding statistics and peptides.
 
-  Sequence space, the manual pipeline's second clustering path, is switched on in
-  sar/from-top-menu.feature; the cluster statistics are checked against the source rows in
-  sar/tooltips.feature.
+  Not translated, and why: nothing is left out here. Sequence space, the manual pipeline's second
+  clustering path, is switched on in sar/from-top-menu.feature; the cluster statistics are checked
+  against the source rows in sar/tooltips.feature.
 
   Background:
     Given user is logged in

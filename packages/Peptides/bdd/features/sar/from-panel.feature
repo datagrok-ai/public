@@ -7,6 +7,8 @@ Feature: Launch and configure SAR from the Peptides pane
   sar/default-launch.feature runs the defaults). The manual case's Analyze Peptides dialog does not
   appear here: Launch SAR in the pane starts the analysis directly.
 
+  Not translated, and why: nothing of the manual cases is left out beyond that dialog.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized

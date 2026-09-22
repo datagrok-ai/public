@@ -1,8 +1,8 @@
-/* Readings the gap round needed: a library file as the package ships it, the standardized library
-   the Match dialog's backend builds, and a numbering run's position names. */
+/* The monomer library files as the package ships them, the standardized library the Match
+   dialog's backend builds, and the readiness of the Manage Monomers view's sketcher. */
 import {expect, Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
-import {readResult} from '@datagrok-libraries/bdd/runtime';
+import {callFunction, readResult} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -23,27 +23,14 @@ export const libraryFileConforms = Then('the {string} monomer library file shoul
   }, {tier: 'api', description: 'the file under System:AppData/Bio/monomer-libraries: a non-empty array, every monomer with a symbol and a molfile or smiles'});
 
 export const standardiseLibrary = When('user standardises the {string} monomer library', async (page: Page, name: string) => {
-  await page.evaluate(async (path) => {
-    const text = await grok.dapi.files.readAsText(path);
-    const result = await grok.functions.call('Bio:standardiseMonomerLibrary', {library: text});
-    (window as any).__bddLastResult = {name: 'Bio:standardiseMonomerLibrary', value: JSON.parse(result)};
-  }, LIBRARIES + name);
-}, {tier: 'api', description: 'Bio:standardiseMonomerLibrary over the shipped file; the parsed JSON becomes the result the next steps read'});
+  const text: string = await page.evaluate((path) => grok.dapi.files.readAsText(path), LIBRARIES + name);
+  await callFunction(page, 'Bio:standardiseMonomerLibrary', [['library', text]]);
+}, {tier: 'api', description: 'Bio:standardiseMonomerLibrary over the shipped file; its JSON becomes the result the next steps read'});
 
 export const resultHoldsMonomer = Then('the result should hold {string} monomer {string}', async (page: Page, polymerType: string, symbol: string) => {
-  const found: string[] = await readResult(page, `(Array.isArray(value) ? value : []).filter((m) => m.symbol === arg).map((m) => String(m.polymerType))`, symbol);
+  const found: string[] = await readResult(page, `((v) => Array.isArray(v) ? v : [])(typeof value === 'string' ? JSON.parse(value) : value).filter((m) => m.symbol === arg).map((m) => String(m.polymerType))`, symbol);
   expect(found, `polymer types of the "${symbol}" monomers in the result`).toContain(polymerType);
 }, {description: 'a monomer list (a standardized library): some entry with that symbol and that polymer type'});
-
-export const positionNamesCount = Then('{string} column should list at least {int} position names', async (page: Page, column: string, count: number) => {
-  const names: string[] = await page.evaluate((c) => {
-    const col = grok.shell.t.col(c);
-    if (!col)
-      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
-    return String(col.getTag('.positionNames') ?? '').split(',').map((s: string) => s.trim()).filter((s: string) => s !== '');
-  }, column);
-  expect(names.length, `position names in the .positionNames tag of "${column}"`).toBeGreaterThanOrEqual(count);
-}, {description: 'the comma-separated .positionNames tag a numbering run writes on the aligned column'});
 
 /** The Manage Monomers view hosts a monomer editor with a sketcher that mounts seconds after the
  * view (Ketcher: about ten on dev). Closed before that, the sketcher's late mount throws
