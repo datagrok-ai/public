@@ -427,8 +427,21 @@ export function readExpanded(loc: Locator): Promise<boolean | null> {
   });
 }
 
+/** What a Dart tree group says about its children in the `data-state` of its children host —
+ * `loading` while an expansion fetches them, `loaded` once every child is in the DOM, `error` when
+ * the fetch failed; `null` for a row that is not a Dart group. The twistie class read above is the
+ * intent to expand, stamped in the same turn as the click; this is the readiness. */
+export function readChildrenState(loc: Locator): Promise<string | null> {
+  return loc.first().evaluate((el) => {
+    const group = el.parentElement?.matches('.d4-tree-view-group') ? el.parentElement : null;
+    const host = group?.querySelector(':scope > .d4-tree-view-group-host') as HTMLElement | null;
+    return host?.dataset.state ?? null;
+  });
+}
+
 /** Reads where the element is first, so a tree row that is already open stays open — without
- * that, "user expands" would close it. */
+ * that, "user expands" would close it. An expanded Dart group is also waited for until its
+ * children are loaded (or their fetch failed), so the step after can address them. */
 export async function setExpanded(page: Page, target: ElementRef, expanded: boolean): Promise<void> {
   const self = (await locate(page, target)).first();
   if (await readExpanded(self) === expanded)
@@ -440,6 +453,8 @@ export async function setExpanded(page: Page, target: ElementRef, expanded: bool
   await (await twistie.count() > 0 ? twistie : control).click();
   await expect.poll(() => readExpanded(self),
     {message: `${target.phrase} after ${expanded ? 'expanding' : 'collapsing'} it`}).toBe(expanded);
+  if (expanded)
+    await expect.poll(() => readChildrenState(self), {message: `the children of ${target.phrase} after expanding it`}).not.toBe('loading');
 }
 
 /** A switch that governs something: the Dart `SwitchInput` draws it as `div.ui-input-switch` and
