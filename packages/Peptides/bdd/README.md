@@ -43,6 +43,7 @@ publish the WebLogo glyphs it draws in the native grid's headers as hit areas.
 | `sar/weblogo-selection` | Exact source-row masks for click, Shift and Control/Command; dependent panes |
 | `sar/tooltips` | Cell statistics, highlight cleanup, cluster statistics and selection |
 | `sar/mutation-cliffs` | Independent pair counts, cell repaint, position chart, full export contents |
+| `sar/sequence-space` | Sequence space added, removed and re-added from the settings dialog: viewer, embedding and cluster columns |
 | `sar/similarity-threshold` | Fresh analyses at thresholds 10, 50, 75 and 90 |
 | `sar/export` | Every invariant-map cell, every mutation pair/activity/delta, both source IDs |
 | `sar/manual-alignment` | Apply, adjacent/end positions, Reset, selection against edited data |
@@ -66,8 +67,9 @@ The original `playwright/` specs and `public/playwright-public/Peptides/` descri
 comparison. `HANDOFF.md` records the original survey and decisions; `docs/` contains the survey
 and translation notes. Project persistence uses the public project API; it does not cover the
 ribbon Save dialog. Dashboard invocation uses the registered function; gallery-card navigation
-is separate. Dendrogram activation, per-cluster WebLogo glyph interaction, and Sequence Space
-activation remain outside this translation's agreed scope.
+is separate. Dendrogram activation and per-cluster WebLogo glyph interaction remain outside this
+translation's agreed scope. Sequence space activation was added on 2026-09-22 to reproduce and
+verify a fix for the settings dialog; the sequence space parameters pane itself is not covered.
 
 ## Run record
 

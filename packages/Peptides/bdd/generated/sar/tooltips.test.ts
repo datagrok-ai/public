@@ -112,7 +112,7 @@ test.describe("Inspect peptide statistics in tooltips", () => {
     });
     await run.scenario("WebLogo header tooltips replace their statistics and clear the highlight on leaving", async () => {
       await session.step(94, "When user moves the pointer away from Sequence Variability Map viewer", () => pointerAway(page, el("Sequence Variability Map viewer")));
-      await session.step(95, "And user scrolls the mouse wheel up 5 times over the \"cell 1 of 14\" area of grid holding Shift", () => wheelOverAreaTimesHolding(page, "up", 5, "cell 1 of 14", el("grid"), "Shift"));
+      await session.step(95, "And user scrolls the mouse wheel up 5 times over the \"row header 1\" area of grid holding Shift", () => wheelOverAreaTimesHolding(page, "up", 5, "row header 1", el("grid"), "Shift"));
       await session.step(96, "And user hovers over the \"A at 2\" area of grid", () => hoverArea(page, "A at 2", el("grid")));
       await session.step(97, "Then Count table row in tooltip should contain text \"14 (14.000%)\"", () => shouldContainText(page, el("Count table row in tooltip"), "14 (14.000%)"));
       await session.step(98, "And the \"highlighted rows\" reading of grid should be 14", () => readingIs(page, "highlighted rows", el("grid"), 14));
