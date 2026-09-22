@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## v.next
+
+* Tutorials: Dashboards tutorial follows the dashboard it saved by id — on a shared server its last steps accepted any project named "Coffee sales dashboard", so a project from someone else's run could be opened instead and fail with a connection-permission error
+
 ## 1.11.4 (2026-09-11)
 
 * Tutorials: Links to the Tutorials app and to individual tutorials can now be shared and opened directly
