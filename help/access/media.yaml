@@ -1,0 +1,21 @@
+file-shares-file-viewers.gif:
+  actions:
+    - Browse into the demo/bio/cif folder
+    - Click the 1xt5.cif file
+    - View the resulting 3D structure viewer that opens automatically
+  caption: Custom viewer opening for a CIF file
+  described_blob: b4a6522ad25627a18af2aa0db748aaf2702e4968
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the Files browser navigating into demo/bio/cif, which lists several .cif
+    structure files. The user clicks on 1xt5.cif, and the platform automatically opens a 3D
+    ribbon-diagram viewer rendering the molecular structure for that file type.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small UI text and file tree are hard to read at this resolution, and the viewer content itself
+    is not explained on screen.
+  reviewed: false
+  seconds: 10.4
+  width: 800

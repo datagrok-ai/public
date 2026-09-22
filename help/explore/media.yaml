@@ -1,0 +1,131 @@
+anova.gif:
+  actions:
+    - Open the ML menu and navigate to Analyze > Group Comparison > ANOVA
+    - Set Category to RACE and Feature to AGE in the ANOVA dialog
+    - Click Run
+    - Hover over the results to reveal explanatory tooltips for the conclusion and hypotheses
+  caption: Running one-way ANOVA on a group comparison
+  described_blob: 3159223e10d43d4fbafdbf7e9d940a43e7dad074
+  described_by: claude-sonnet-5
+  description: >-
+    In the demographics table, the ML > Analyze > Group Comparison menu is opened and ANOVA is
+    selected. The ANOVA dialog is filled in with Category set to RACE and Feature set to AGE, then
+    run. The result shows a box plot of AGE by RACE group plus a one-way ANOVA (Welch's) results
+    table, with tooltips explaining the conclusion, F-statistic, and null/alternative hypotheses.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 14.1
+  width: 800
+cluster-data.gif:
+  actions:
+    - Open the ML menu
+    - Navigate to Cluster > Cluster...
+    - Select feature columns in the Cluster Data dialog and run clustering
+    - View the resulting clusters column and scatter plot colored by cluster
+    - Add labels to the scatter plot points
+  caption: Clustering data with the ML menu
+  described_blob: 0ebc06578241ac5c5fd4a8d579eb69b6e3cd46e3
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of car data is open with a green-highlighted row and column selector on the right. The
+    user opens the ML menu, goes to Cluster, and selects Cluster... to open the Cluster Data dialog,
+    where feature columns are checked. After running, a new clusters column appears in the grid and
+    a scatter plot opens showing points colored by cluster (c0, c1, c2); labels are then added to
+    the points showing car model names plotted by curb weight and horsepower.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 26
+  width: 800
+control-comparisons.gif:
+  actions:
+    - open ML > Analyze > Group Comparison menu
+    - select Control comparisons dialog options (Category, Control, Feature)
+    - click Run
+    - hover over a result row to view the hypothesis tooltip
+  caption: Running control comparisons on a demographic feature
+  described_blob: ad620de5833795050377d2d8ee649d23039ae1c2
+  described_by: claude-sonnet-5
+  description: >-
+    In the demog table, the user opens ML > Analyze > Group Comparison, which launches the Control
+    comparisons dialog. They set Category to RACE, Control group to Caucasian, and Feature to
+    HEIGHT, with Full report enabled, then click Run. The result is a box plot of HEIGHT by RACE
+    plus a results table listing each group's conclusion (Significant/Not significant), mean
+    difference, and confidence interval versus the Caucasian control, with a tooltip showing the
+    null/alternative hypothesis wording.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 18.5
+  width: 800
+missing-values-imputation.gif:
+  actions:
+    - open the ML menu
+    - select Impute Missing Values...
+    - review the KNN Imputation dialog (Impute, Using, Distance, Neighbors, In-place)
+    - click Run
+    - view the grid with imputed height values
+  caption: Imputing missing values with KNN
+  described_blob: 46287799d30d7aec7282a6a95f15dcffa345e387
+  described_by: claude-sonnet-5
+  description: >-
+    A data grid shows numeric and categorical columns, including a height column with empty cells.
+    The user opens the ML menu and selects Impute Missing Values, which opens a KNN Imputation
+    dialog with fields for the columns to impute, the columns to use, distance metric, and neighbor
+    count. After clicking Run, the previously blank height cells are filled in with computed values.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 13
+  width: 1600
+pca.gif:
+  actions:
+    - open a data table
+    - open ML > PCA dialog
+    - select all features
+    - set Components to 2
+    - click OK
+    - wait for computation
+    - view new PCA1/PCA2 columns added to the table
+  caption: Running PCA on a table
+  described_blob: d511232e59c7d5aef74a2eb00702a4d1d18385db
+  described_by: claude-sonnet-5
+  description: >-
+    A packages panel lists installed Datagrok plugins grouped by category. The user opens a data
+    table with 100 numeric columns and 100,000 rows, then launches the PCA dialog from the ML menu,
+    selecting all 100 features and leaving Components set to 2. After clicking OK, the status bar
+    shows 'Running PCA...' while it computes, and the result appends two new columns, PCA1 and PCA2,
+    to the table.
+  height: 670
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 22.9
+  width: 1536
+t-test.gif:
+  actions:
+    - Open ML > Analyze > Group Comparison > T-test
+    - Set Category to SEX and Feature to AGE in the Two-sample t-test dialog
+    - Click Run
+    - View the resulting box plot and t-test results table
+  caption: Running a two-sample t-test on grouped data
+  described_blob: ca6e67688b2e02aecfa3956d3a6dfc4b9f577b43
+  described_by: claude-sonnet-5
+  description: >-
+    In a demographics table, the ML menu opens Analyze > Group Comparison > T-test, which opens a
+    two-sample t-test dialog with Category set to SEX and Feature set to AGE. Clicking Run produces
+    a box plot comparing AGE distributions for F and M plus a results panel below the grid. The
+    results table reports the conclusion (Significant), t-statistic, degrees of freedom, p-value,
+    mean difference and confidence interval, with a tooltip explaining the null and alternative
+    hypotheses.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 12.3
+  width: 800

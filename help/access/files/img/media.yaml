@@ -1,0 +1,200 @@
+Cell-image-segmentation.gif:
+  actions:
+    - select an image file in the Demo Files/images/cells folder
+    - view the augmented preview with segmented cell outlines and count in the context panel
+    - >-
+      click through additional cell images (cells2.jpg, cells3.jpg) to see the overlay and count
+      update
+  caption: Cell image segmentation info panel
+  described_blob: 85dec2aa6111bd64b6b1dd039be1f12c7bbea553
+  described_by: claude-sonnet-5
+  description: >-
+    The Files browser shows a folder of cell microscopy images (cells1–cells5) with a preview panel
+    on the right. Selecting an image opens a custom 'Cell Imaging Segmentation' info panel that
+    overlays detected cell boundaries in magenta and reports a cell count next to the image name. As
+    the user clicks through different cell images, the panel updates its segmentation overlay and
+    count accordingly.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and busy multi-panel layout make it hard to read standalone without surrounding
+    context
+  reviewed: false
+  seconds: 39.3
+  width: 1600
+Smiles-renderer.png:
+  caption: Rendering SMILES strings as 2D structures in a CSV preview
+  described_blob: b37e5d1697c5e915cb446baf6819d2ae2efd7df2
+  described_by: claude-sonnet-5
+  description: >-
+    The Files view shows a preview of smiles.csv, with a grid of molecule rows (molregno,
+    canonical_smiles, and computed columns like NumSaturatedHeterocycles) where the canonical_smiles
+    column is rendered as 2D chemical structure drawings instead of raw text. An overlapping Excel
+    window in the background shows the same file's raw SMILES strings for comparison.
+  height: 507
+  kind: screenshot
+  quality: docs
+  quality_notes: A stray Excel window overlaps part of the file preview, cluttering the screenshot.
+  reviewed: false
+  width: 804
+add-a-file-share.gif:
+  actions:
+    - Open Actions panel
+    - Click New file share
+    - Choose S3 as the data source
+    - Enter Name, Region, and Bucket
+    - Toggle Anonymous access
+    - Switch to Credentials owner and enter Access Key and Secret Key
+    - Confirm with OK
+    - New share appears in the file tree
+  caption: Adding a file share connection
+  described_blob: f8d80943a95facb00ceef4aa3b261bb5315f1508
+  described_by: claude-sonnet-5
+  description: >-
+    In the Files view, the user opens the Actions panel and clicks "New file share", which opens the
+    New file share dialog. They select S3 as the data source and fill in the name (ORBIT), region,
+    and bucket, first toggling Anonymous access on, then switching to a Credentials owner with an
+    access key and secret key. After clicking OK, the new ORBIT share appears in the file tree
+    alongside Home, App Data, Demo Files and Physionet.
+  height: 500
+  illustrates:
+    - govern/access-control
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 33.9
+  width: 800
+clinical-case-file-manager.gif:
+  actions:
+    - browse to a folder in App Data
+    - view the custom preview widget suggesting an application for the folder's file types
+    - click the "Run ClinicalCase" link
+    - the ClinicalCase application opens with a summary dashboard
+  caption: Launching a file-type-based application from the Files browser
+  described_blob: 6e9269a3250ac87711e6ea719cb6f4610a4b3198
+  described_by: claude-sonnet-5
+  description: >-
+    The Files app shows a folder of clinical data files (ClinicalCase, containing SDTM CSVs like
+    ae.csv, dm.csv, lb.csv). The context panel preview recognizes the folder's content type and
+    displays a custom widget with a "Run ClinicalCase" link instead of a generic file preview.
+    Clicking the link launches the ClinicalCase application, which opens a dashboard summarizing the
+    CDISCPILOT01 study with enrollment, demographics, and error charts.
+  height: 500
+  illustrates:
+    - govern/access-control
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small viewport crops long labels (e.g. race categories) and the file tree is cluttered with
+    unrelated folders, but the widget and resulting app are clearly readable
+  reviewed: false
+  seconds: 12.4
+  width: 800
+file-manager-details.gif:
+  actions:
+    - expand Details on a numeric column
+    - expand Stats to view summary statistics
+    - select the canonical_smiles column and view its Details/categories
+    - expand the Chem section and its structure options
+    - resize the Context Panel
+  caption: Exploring the Context Panel's Details tab
+  described_blob: 718580d2b06172966eebe3fb651e24b7798c790d
+  described_by: claude-sonnet-5
+  description: >-
+    A file browser shows a selected CSV of chemical structures with a Context Panel on the right.
+    The animation walks through the Details section, then Stats (showing count, unique, min/max,
+    sum, median for a numeric column), then Details for a SMILES column (showing category
+    breakdown), then the Chem section with structure-rendering options like scaffold column and
+    highlight-from-column, and finally resizes the panel to reveal a new grid column.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small dense text and cursor movement make it hard to follow without pausing; fine as inline
+    documentation but not standalone
+  reviewed: false
+  seconds: 60.7
+  width: 800
+file-manager-file-browsing.gif:
+  actions:
+    - click 3onz.cif to preview a 3D protein structure
+    - click aspirin-3d.sdf to preview a 3D molecule
+    - click fruits.csv to preview a table with embedded images
+    - click smiles.csv to preview a table with rendered chemical structures
+    - hover a cell to show a tooltip with more structures
+    - click tennis_players.html to preview its HTML/code content
+  caption: Browsing and previewing files
+  described_blob: 2864dcee099902766d6be61f8e4e9d82b87e4a18
+  described_by: claude-sonnet-5
+  description: >-
+    The Files view shows a folder of sample files (a CIF structure, an SDF molecule, a JPEG, CSV
+    tables, an HTML file, a ZIP) in a tree on the left and a live preview pane on the right.
+    Selecting different files updates the preview: a protein structure renders in 3D, a small
+    molecule renders in 3D, a CSV with an image column shows fruit photos inline, another CSV
+    renders chemical structures from SMILES, and an HTML file shows its source in a text/code
+    preview. A details panel on the right lists file metadata such as size and modification date.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 60.2
+  width: 800
+preview-with-custom-viewer.gif:
+  actions:
+    - click a .pdb file in the file list
+    - view the resulting 3D molecule preview
+    - drag to rotate the 3D structure
+  caption: Previewing a molecule with a custom NGL viewer
+  described_blob: d223db01c601951b98a757a98c0f1357cc598483
+  described_by: claude-sonnet-5
+  description: >-
+    In the Files view, a folder of NGL-format molecular files (1blu.mmtf, 1blu.pdb, 1crn.gro,
+    1crn.mtl) is shown after a script filters PDB files in the folder. Clicking a .pdb file opens a
+    preview panel showing the molecule rendered as a 3D ribbon structure by a custom viewer, which
+    the user then rotates with the mouse.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: small UI region, low information density outside the immediate preview panel
+  reviewed: false
+  seconds: 7
+  width: 800
+share-the-folder.gif:
+  actions:
+    - Right-click the folder and open the context menu
+    - Choose "Share folder..."
+    - Add a person and set the access level in the Share folder dialog
+    - Confirm the share
+    - View the "Shared" confirmation and the resulting Activity log entry
+  caption: Sharing a folder
+  described_blob: e096d06b320310a311afaafb984988b2071647d6
+  described_by: claude-sonnet-5
+  description: >-
+    In the Files browser, the user right-clicks the "forms" folder and selects "Share folder..."
+    from the context menu. In the Share folder dialog they add a user and set the access level, then
+    confirm; a green "Shared" confirmation banner appears over the folder view. The folder's
+    Activity panel logs the share event, and the recipient's notifications show the shared data
+    connection.
+  height: 1000
+  illustrates:
+    - govern/access-control
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 53
+  width: 1600
+sharepoint-parameters.png:
+  caption: Configuring a SharePoint file share connection
+  described_blob: d960a2e627297740ade72829328602dca6e7f1fb
+  described_by: claude-sonnet-5
+  description: >-
+    A 'New file share' dialog with Data Source set to SharePoint. Fields shown are Name, Domain
+    (test.sharepoint.com), a checked Root site checkbox, and Drive (test), with an Access token
+    field where a cursor is clicking the 'connect...' link to start OAuth authorization. Cancel,
+    Test, and OK buttons sit at the bottom.
+  height: 373
+  kind: screenshot
+  quality: answer
+  reviewed: false
+  width: 378

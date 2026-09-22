@@ -1,0 +1,176 @@
+pls-expl-vars.png:
+  caption: Reading a PLS explained variance chart
+  described_blob: 763cde567ea0612fa505ebdeaa19f88d1fd551eb
+  described_by: claude-sonnet-5
+  description: >-
+    A horizontal bar chart titled "Explained Variance" shows cumulative fit as latent components are
+    added to a PLS model predicting price. One component explains 0.70 of the variance, two
+    components explain 0.82, and three components explain 0.92, with each bar's value plotted
+    against a 0-to-0.92 axis.
+  height: 250
+  kind: screenshot
+  quality: answer
+  reviewed: false
+  width: 400
+pls-formula.gif:
+  actions:
+    - hover a bar in the Regression Coefficients chart to show its value
+    - hover the 'price (predicted)' column header
+    - read the expanded model formula tooltip listing coefficients for each feature
+  caption: Model formula in the Regression Coefficients tooltip
+  described_blob: 8445cc60a785b8138c538136aa85edd344b48134
+  described_by: claude-sonnet-5
+  description: >-
+    A PLS analysis of a cars dataset shows Observed vs. Predicted, Scores, Loadings, Regression
+    Coefficients, and Explained Variance panels. The user hovers a feature bar in the Regression
+    Coefficients chart to reveal its coefficient value, then hovers the predicted price column
+    header, opening a tooltip that expands the full linear formula with each feature's coefficient.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: small UI text and dense multi-panel layout are only legible at full size
+  reviewed: false
+  seconds: 4.1
+  width: 1601
+pls-loadings.png:
+  caption: Reading a PLS loadings scatterplot
+  described_blob: b0be279ce8391943849131c91249bb7c69c467df
+  described_by: claude-sonnet-5
+  description: >-
+    A scatterplot titled "Loadings" plots each feature of a car dataset (symbol, price, doors,
+    horsepower, engine size, curb weight, width, length, wheel base, highway/city mpg, turbo,
+    diesel, height, hatchback) by its loading on the first two latent factors (x.loading.p1 and
+    x.loading.p2). Points far from the origin, like horsepower and curb weight, are well described
+    by these factors, while points plotted close together, like width and length, correlate with
+    each other.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    several point labels overlap and are unreadable (symbol, price, doors cluster near top),
+    reducing clarity
+  reviewed: false
+  width: 800
+pls-model-n-scores.gif:
+  actions:
+    - drag a selection rectangle over points on the Observed vs. Predicted scatterplot
+    - view the same points highlighted in orange on the Scores scatterplot
+  caption: Selecting points on the Observed vs. Predicted plot
+  described_blob: ccf2317d028a2483e169e24789298cb5f6498594
+  described_by: claude-sonnet-5
+  description: >-
+    A PLS model dashboard shows the Observed vs. Predicted regression line next to a Scores
+    scatterplot with two confidence ellipses. The user drags a rectangular selection box around a
+    point near the top of the Observed vs. Predicted plot, and the corresponding cars (jaguar,
+    porsche) highlight in orange in both the Observed vs. Predicted and Scores viewers, showing the
+    linked selection between the two plots.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: small text and dense multi-viewer layout make individual labels hard to read at a glance
+  reviewed: false
+  seconds: 7.3
+  width: 1601
+pls-predicted-vs-reference.png:
+  caption: Observed vs. Predicted scatterplot for PLS regression
+  described_blob: 977e50a37aa67e5b31229ec285f3c849b099593b
+  described_by: claude-sonnet-5
+  description: >-
+    A scatterplot titled 'Observed vs. Predicted' plots each car model's predicted price against its
+    actual price, with points labeled by car brand/model. A fitted regression line is overlaid with
+    its equation (y = 1038 + 0.921 * x) and r2 = 0.921 shown in the top-left corner, indicating a
+    strong fit between predicted and observed values.
+  height: 500
+  kind: screenshot
+  quality: answer
+  reviewed: false
+  width: 800
+pls-regr-coeffs.png:
+  caption: Reading PLS regression coefficients
+  described_blob: 817e399272b1ddee9d97b588b69620c05b595e10
+  described_by: claude-sonnet-5
+  description: >-
+    A horizontal bar chart titled "Regression Coefficients" lists model features on the y-axis
+    (diesel, two.doors, symbol, width, eng.size, horsepower, length, wheel.base, curb.weight,
+    peak.rpm, highway.mpg, city.mpg, turbo, height, hatchback) with green bars showing each one's
+    coefficient value in the linear model, labeled numerically and ranging from about 4750.79 down
+    to -4460.82. A bias term of -3460.281 is noted below the chart.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Plain default chart styling with unlabeled axis units beyond the caption; fine as an in-page
+    illustration but not distinctive enough to stand alone.
+  reviewed: false
+  width: 800
+pls-run.gif:
+  actions:
+    - open the ML menu and choose Analyze > Multivariate Analysis (PLS)
+    - set the Predict field to price and choose predictor columns in Using
+    - set the number of components
+    - click Run
+    - >-
+      view the resulting Observed vs. Predicted, Scores, Loadings, Variable Importance, Explained
+      Variance and Regression Coefficients panels
+  caption: Running multivariate analysis (PLS)
+  described_blob: 4d148f6281ba46c8d8e6d6636387f5d98ab5c8df
+  described_by: claude-sonnet-5
+  description: >-
+    In the cars table, the ML > Analyze menu opens Multivariate Analysis, where the user sets price
+    as the predicted variable, selects predictor columns, and sets the number of PLS components.
+    Running it produces a set of linked charts: Observed vs. Predicted scatterplot with the fit line
+    and r2, a Scores plot, a Loadings plot, Variable Importance and Explained Variance bar charts,
+    and a Regression Coefficients bar chart.
+  height: 1001
+  kind: animation
+  quality: answer
+  reviewed: false
+  seconds: 14
+  width: 1601
+pls-scores.png:
+  caption: PLS scores scatterplot with Hotelling's T² ellipses
+  described_blob: 88452f5a2dd9c2c813c081abaf24d351f1008ffc
+  described_by: claude-sonnet-5
+  description: >-
+    A scatterplot titled 'Scores' plots x.score.t1 on the horizontal axis against x.score.t2 on the
+    vertical axis, with each point labeled by a car make (e.g. porsche, jaguar, mercedes, toyota,
+    volkswagen). Two concentric ellipses centered near the origin mark Hotelling's T² confidence
+    regions: an inner orange ellipse and an outer blue ellipse. Most points cluster inside the
+    orange ellipse, while porsche and jaguar sit near or outside the blue ellipse, and one point
+    (alfaromeo) is highlighted with a black outline.
+  height: 500
+  kind: screenshot
+  quality: answer
+  reviewed: false
+  width: 800
+pls-vip.png:
+  caption: Reading a PLS variable importance chart
+  described_blob: 9f3703a74c771504631937b7a37da70fa59e2b65
+  described_by: claude-sonnet-5
+  description: >-
+    A horizontal bar chart titled "Variable Importance" lists model features on the y-axis
+    (eng.size, horsepower, curb.weight, city.mpg, highway.mpg, width, length, wheel.base, diesel,
+    hatchback, height, symbol, turbo, peak.rpm, two.doors) ranked from highest to lowest VIP score,
+    with each green bar labeled by its numeric value on the x-axis. The scores range from 1.52 for
+    eng.size down to 0.47 for two.doors.
+  height: 500
+  kind: screenshot
+  quality: answer
+  reviewed: false
+  width: 800
+pls_vs_pca.png:
+  caption: PLS components compared with PCA components
+  described_blob: 4ac45b6b248ad1da5fd4c9f672f6f4147c5829fa
+  described_by: claude-sonnet-5
+  description: >-
+    Two side-by-side scatter plots of car price against a fitted regression line, one using the
+    first PLS component (PLS1) and one using the first PCA component (PC1), each labeled with points
+    for individual car makes. The PLS plot shows a tighter fit with r2 = 0.701, while the PCA plot
+    shows a looser fit with r2 = 0.430, illustrating that PLS captures more of the response variable
+    than PCA with the same number of components.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: small text labels are cluttered and hard to read at full resolution; plain default chart styling
+  reviewed: false
+  width: 800
