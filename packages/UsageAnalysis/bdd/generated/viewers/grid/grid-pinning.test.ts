@@ -1,0 +1,196 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/viewers/grid/grid-pinning.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [viewers.grid]
+--- */
+import {test} from '@playwright/test';
+import '../../../bindings/grid.js';
+import '../../../bindings/spaces.js';
+import '../../../bindings/tile-viewer.js';
+import '../../../bindings/trellis-plot.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {pressKey} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {currentRowIs, makeLastRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {columnsSelected, onlyOfAnySelected, rowsRangeSelected, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {clickArea, clickAreaHolding, dragAreaToArea, eventFired, hasArea, hasNoArea, listenFor, loadLayout, noBalloons, noErrors, pickFromAreaContextMenu, propertyShouldBe, readingIs, readingReads, saveLayout, showsRows, warningBalloonText} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("Grid pinned rows and pinned columns", () => {
+  const session = feature(test, "features/viewers/grid/grid-pinning.feature", import.meta.url);
+  test("Pin Column freezes one more column and Pin Row pins two unique rows", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(34, "Given user is logged in", () => loggedIn(page));
+    await session.step(35, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(36, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
+    await session.step(37, "And \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(38, "And the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(41, "Given user listens for \"d4-grid-pinned_rows-changed\" event on grid", () => listenFor(page, "d4-grid-pinned_rows-changed", el("grid")));
+    await session.step(42, "When user picks \"Pin > Pin Column\" from the context menu of the \"header SEX\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Column", "header SEX", el("grid")));
+    await session.step(43, "Then \"Frozen Columns\" property of grid should be \"2\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "2"));
+    await session.step(44, "And the \"column order\" reading of grid should be \"SEX, USUBJID, AGE, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY\"", () => readingReads(page, "column order", el("grid"), "SEX, USUBJID, AGE, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"));
+    await session.step(45, "When user picks \"Pin > Pin Row\" from the context menu of the \"cell 1 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Row", "cell 1 of USUBJID", el("grid")));
+    await session.step(46, "Then \"d4-grid-pinned_rows-changed\" event should have fired on grid", () => eventFired(page, "d4-grid-pinned_rows-changed", el("grid")));
+    await session.step(47, "And the \"pinned rows\" reading of grid should be 1", () => readingIs(page, "pinned rows", el("grid"), 1));
+    await session.step(48, "When user picks \"Pin > Pin Row\" from the context menu of the \"cell 3 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Row", "cell 3 of USUBJID", el("grid")));
+    await session.step(49, "Then the \"pinned rows\" reading of grid should be 2", () => readingIs(page, "pinned rows", el("grid"), 2));
+    await session.step(50, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(51, "When user picks \"Pin > Unpin All Rows\" from the context menu of the \"cell 1 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Unpin All Rows", "cell 1 of USUBJID", el("grid")));
+    await session.step(52, "Then the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(53, "When user picks \"Pin > Unpin All Columns\" from the context menu of the \"header SEX\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Unpin All Columns", "header SEX", el("grid")));
+    await session.step(54, "Then \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(55, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Control+clicks under two pinned rows select exactly the rows clicked", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(34, "Given user is logged in", () => loggedIn(page));
+    await session.step(35, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(36, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
+    await session.step(37, "And \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(38, "And the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(58, "When user picks \"Pin > Pin Row\" from the context menu of the \"cell 1 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Row", "cell 1 of USUBJID", el("grid")));
+    await session.step(59, "And user picks \"Pin > Pin Row\" from the context menu of the \"cell 2 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Row", "cell 2 of USUBJID", el("grid")));
+    await session.step(60, "Then the \"pinned rows\" reading of grid should be 2", () => readingIs(page, "pinned rows", el("grid"), 2));
+    await session.step(61, "When user clicks on the \"cell 5 of AGE\" area of grid", () => clickArea(page, "cell 5 of AGE", el("grid")));
+    await session.step(62, "And user presses Control+End", () => pressKey(page, "Control+End"));
+    await session.step(63, "Then grid should have a \"row header 1000\" area", () => hasArea(page, el("grid"), "row header 1000"));
+    await session.step(64, "And grid should have a \"row header 1\" area", () => hasArea(page, el("grid"), "row header 1"));
+    await session.step(65, "And grid should have a \"row header 2\" area", () => hasArea(page, el("grid"), "row header 2"));
+    await session.step(66, "And grid should not have a \"row header 5\" area", () => hasNoArea(page, el("grid"), "row header 5"));
+    await session.step(67, "When user clicks on the \"row header 990\" area of grid holding Control", () => clickAreaHolding(page, "row header 990", el("grid"), "Control"));
+    await session.step(68, "And user clicks on the \"row header 995\" area of grid holding Control", () => clickAreaHolding(page, "row header 995", el("grid"), "Control"));
+    await session.step(69, "And user clicks on the \"row header 998\" area of grid holding Control", () => clickAreaHolding(page, "row header 998", el("grid"), "Control"));
+    await session.step(70, "Then 3 rows should be selected", () => selectedRowCount(page, 3));
+    await session.step(71, "And only rows where \"USUBJID\" is one of \"X0273T51070200002, X0273T51080100021, X0273T51080200011\" should be selected", () => onlyOfAnySelected(page, "USUBJID", "X0273T51070200002, X0273T51080100021, X0273T51080200011"));
+    await session.step(72, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Unpin Row releases one pinned row and keeps the other", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(34, "Given user is logged in", () => loggedIn(page));
+    await session.step(35, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(36, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
+    await session.step(37, "And \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(38, "And the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(75, "When user picks \"Pin > Pin Row\" from the context menu of the \"cell 3 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Row", "cell 3 of USUBJID", el("grid")));
+    await session.step(76, "And user picks \"Pin > Pin Row\" from the context menu of the \"cell 6 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Row", "cell 6 of USUBJID", el("grid")));
+    await session.step(77, "Then the \"pinned rows\" reading of grid should be 2", () => readingIs(page, "pinned rows", el("grid"), 2));
+    await session.step(78, "When user picks \"Pin > Unpin Row\" from the context menu of the \"cell 3 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Unpin Row", "cell 3 of USUBJID", el("grid")));
+    await session.step(79, "Then the \"pinned rows\" reading of grid should be 1", () => readingIs(page, "pinned rows", el("grid"), 1));
+    await session.step(80, "When user clicks on the \"cell 8 of AGE\" area of grid", () => clickArea(page, "cell 8 of AGE", el("grid")));
+    await session.step(81, "And user presses Control+End", () => pressKey(page, "Control+End"));
+    await session.step(82, "Then grid should have a \"row header 1000\" area", () => hasArea(page, el("grid"), "row header 1000"));
+    await session.step(83, "And grid should have a \"row header 6\" area", () => hasArea(page, el("grid"), "row header 6"));
+    await session.step(84, "And grid should not have a \"row header 3\" area", () => hasNoArea(page, el("grid"), "row header 3"));
+    await session.step(85, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Pin Selected Rows pins every selected row at once", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(34, "Given user is logged in", () => loggedIn(page));
+    await session.step(35, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(36, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
+    await session.step(37, "And \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(38, "And the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(88, "When user clicks on the \"row header 5\" area of grid", () => clickArea(page, "row header 5", el("grid")));
+    await session.step(89, "And user clicks on the \"row header 7\" area of grid holding Shift", () => clickAreaHolding(page, "row header 7", el("grid"), "Shift"));
+    await session.step(90, "Then rows 5 to 7 should be selected", () => rowsRangeSelected(page, 5, 7));
+    await session.step(91, "And 3 rows should be selected", () => selectedRowCount(page, 3));
+    await session.step(92, "When user picks \"Pin > Pin Selected Rows\" from the context menu of the \"cell 6 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Selected Rows", "cell 6 of USUBJID", el("grid")));
+    await session.step(93, "Then the \"pinned rows\" reading of grid should be 3", () => readingIs(page, "pinned rows", el("grid"), 3));
+    await session.step(94, "When user clicks on the \"cell 9 of AGE\" area of grid", () => clickArea(page, "cell 9 of AGE", el("grid")));
+    await session.step(95, "And user presses Control+End", () => pressKey(page, "Control+End"));
+    await session.step(96, "Then grid should have a \"row header 1000\" area", () => hasArea(page, el("grid"), "row header 1000"));
+    await session.step(97, "And grid should have a \"row header 5\" area", () => hasArea(page, el("grid"), "row header 5"));
+    await session.step(98, "And grid should have a \"row header 6\" area", () => hasArea(page, el("grid"), "row header 6"));
+    await session.step(99, "And grid should have a \"row header 7\" area", () => hasArea(page, el("grid"), "row header 7"));
+    await session.step(100, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A row pinned by a non-unique value warns and is not the row the layout brings back", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(34, "Given user is logged in", () => loggedIn(page));
+    await session.step(35, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(36, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
+    await session.step(37, "And \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(38, "And the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(103, "When user picks \"Pin > Pin Row\" from the context menu of the \"cell 8 of SEX\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Row", "cell 8 of SEX", el("grid")));
+    await session.step(104, "Then a warning balloon containing \"non-unique\" should have been shown", () => warningBalloonText(page, "non-unique"));
+    await session.step(105, "And the \"pinned rows\" reading of grid should be 1", () => readingIs(page, "pinned rows", el("grid"), 1));
+    await session.step(106, "When user picks \"Pin > Pin Row\" from the context menu of the \"cell 5 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Row", "cell 5 of USUBJID", el("grid")));
+    await session.step(107, "Then the \"pinned rows\" reading of grid should be 2", () => readingIs(page, "pinned rows", el("grid"), 2));
+    await session.step(108, "When user saves the layout of the current table view", () => saveLayout(page));
+    await session.step(109, "And user picks \"Pin > Unpin All Rows\" from the context menu of the \"cell 5 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Unpin All Rows", "cell 5 of USUBJID", el("grid")));
+    await session.step(110, "Then the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(111, "When user loads the saved layout", () => loadLayout(page));
+    await session.step(112, "And user makes the last row current", () => makeLastRowCurrent(page));
+    await session.step(113, "Then grid should have a \"row header 1000\" area", () => hasArea(page, el("grid"), "row header 1000"));
+    await session.step(114, "And grid should have a \"row header 5\" area", () => hasArea(page, el("grid"), "row header 5"));
+    await session.step(115, "And grid should not have a \"row header 8\" area", () => hasNoArea(page, el("grid"), "row header 8"));
+    await session.step(116, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("Pin 2 Columns pins a column selection and Unpin Column releases one of them", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(34, "Given user is logged in", () => loggedIn(page));
+    await session.step(35, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(36, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
+    await session.step(37, "And \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(38, "And the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(119, "When user clicks on the \"header RACE\" area of grid holding Control", () => clickAreaHolding(page, "header RACE", el("grid"), "Control"));
+    await session.step(120, "And user clicks on the \"header DIS_POP\" area of grid holding Control", () => clickAreaHolding(page, "header DIS_POP", el("grid"), "Control"));
+    await session.step(121, "Then columns \"RACE, DIS_POP\" should be selected", () => columnsSelected(page, "RACE, DIS_POP"));
+    await session.step(122, "When user picks \"Pin > Pin 2 Columns\" from the context menu of the \"header RACE\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin 2 Columns", "header RACE", el("grid")));
+    await session.step(123, "Then \"Frozen Columns\" property of grid should be \"3\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "3"));
+    await session.step(124, "And the \"column order\" reading of grid should be \"RACE, DIS_POP, USUBJID, AGE, SEX, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY\"", () => readingReads(page, "column order", el("grid"), "RACE, DIS_POP, USUBJID, AGE, SEX, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"));
+    await session.step(125, "When user presses Escape", () => pressKey(page, "Escape"));
+    await session.step(126, "And user picks \"Pin > Unpin Column\" from the context menu of the \"header RACE\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Unpin Column", "header RACE", el("grid")));
+    await session.step(127, "Then \"Frozen Columns\" property of grid should be \"2\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "2"));
+    await session.step(128, "And the \"column order\" reading of grid should be \"DIS_POP, RACE, USUBJID, AGE, SEX, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY\"", () => readingReads(page, "column order", el("grid"), "DIS_POP, RACE, USUBJID, AGE, SEX, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"));
+    await session.step(129, "When user picks \"Pin > Unpin All Columns\" from the context menu of the \"header DIS_POP\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Unpin All Columns", "header DIS_POP", el("grid")));
+    await session.step(130, "Then \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(131, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("A header dropped inside the pinned columns is pinned, one dropped outside is only moved", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(34, "Given user is logged in", () => loggedIn(page));
+    await session.step(35, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(36, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
+    await session.step(37, "And \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(38, "And the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(134, "When user picks \"Pin > Pin Column\" from the context menu of the \"header SEX\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Column", "header SEX", el("grid")));
+    await session.step(135, "And user picks \"Pin > Pin Column\" from the context menu of the \"header RACE\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Column", "header RACE", el("grid")));
+    await session.step(136, "Then \"Frozen Columns\" property of grid should be \"3\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "3"));
+    await session.step(137, "When user drags the \"header DEMOG\" area of grid to the \"header SEX\" area", () => dragAreaToArea(page, "header DEMOG", el("grid"), "header SEX"));
+    await session.step(138, "Then \"Frozen Columns\" property of grid should be \"4\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "4"));
+    await session.step(139, "And the \"column order\" reading of grid should be \"SEX, DEMOG, RACE, USUBJID, AGE, DIS_POP, HEIGHT, WEIGHT, CONTROL, STARTED, SEVERITY\"", () => readingReads(page, "column order", el("grid"), "SEX, DEMOG, RACE, USUBJID, AGE, DIS_POP, HEIGHT, WEIGHT, CONTROL, STARTED, SEVERITY"));
+    await session.step(140, "When user drags the \"header HEIGHT\" area of grid to the \"header AGE\" area", () => dragAreaToArea(page, "header HEIGHT", el("grid"), "header AGE"));
+    await session.step(141, "Then \"Frozen Columns\" property of grid should be \"4\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "4"));
+    await session.step(142, "And the \"column order\" reading of grid should be \"SEX, DEMOG, RACE, USUBJID, AGE, HEIGHT, DIS_POP, WEIGHT, CONTROL, STARTED, SEVERITY\"", () => readingReads(page, "column order", el("grid"), "SEX, DEMOG, RACE, USUBJID, AGE, HEIGHT, DIS_POP, WEIGHT, CONTROL, STARTED, SEVERITY"));
+    await session.step(143, "And no errors should have been logged", () => noErrors(page));
+  });
+  test("The arrow keys cross the pinned-column boundary both ways", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(34, "Given user is logged in", () => loggedIn(page));
+    await session.step(35, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(36, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
+    await session.step(37, "And \"Frozen Columns\" property of grid should be \"1\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "1"));
+    await session.step(38, "And the \"pinned rows\" reading of grid should be 0", () => readingIs(page, "pinned rows", el("grid"), 0));
+    await session.step(146, "When user picks \"Pin > Pin Column\" from the context menu of the \"header SEX\" area of grid", () => pickFromAreaContextMenu(page, "Pin > Pin Column", "header SEX", el("grid")));
+    await session.step(147, "Then \"Frozen Columns\" property of grid should be \"2\"", () => propertyShouldBe(page, "Frozen Columns", el("grid"), "2"));
+    await session.step(148, "When user clicks on the \"cell 3 of SEX\" area of grid", () => clickArea(page, "cell 3 of SEX", el("grid")));
+    await session.step(149, "Then the \"current column\" reading of grid should be \"SEX\"", () => readingReads(page, "current column", el("grid"), "SEX"));
+    await session.step(150, "When user presses ArrowRight", () => pressKey(page, "ArrowRight"));
+    await session.step(151, "Then the \"current column\" reading of grid should be \"USUBJID\"", () => readingReads(page, "current column", el("grid"), "USUBJID"));
+    await session.step(152, "When user presses ArrowRight", () => pressKey(page, "ArrowRight"));
+    await session.step(153, "Then the \"current column\" reading of grid should be \"AGE\"", () => readingReads(page, "current column", el("grid"), "AGE"));
+    await session.step(154, "When user presses ArrowLeft", () => pressKey(page, "ArrowLeft"));
+    await session.step(155, "And user presses ArrowLeft", () => pressKey(page, "ArrowLeft"));
+    await session.step(156, "Then the \"current column\" reading of grid should be \"SEX\"", () => readingReads(page, "current column", el("grid"), "SEX"));
+    await session.step(157, "And row 3 should be current", () => currentRowIs(page, 3));
+    await session.step(158, "And no errors should have been logged", () => noErrors(page));
+  });
+});

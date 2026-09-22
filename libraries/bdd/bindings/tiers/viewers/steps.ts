@@ -346,11 +346,11 @@ export const readingBetween = Then('the {string} reading of {widget} should be b
     }, {message: `"${name}" reading of ${target.phrase} should be between ${lo} and ${hi}`}).toBe(true);
   }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
 
-export const pickColorSwatch = When('user picks the color {string} in the color picker dialog', async (page: Page, hex: string) => {
-  const swatch = page.locator(`.d4-dialog [name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
-  await expect(swatch, `a "${hex}" swatch in the open colour dialog`).toBeVisible();
+export const pickColorSwatch = When('user picks the color {string} in the color picker( dialog)', async (page: Page, hex: string) => {
+  const swatch = page.locator(`[name="color-${hex.replace('#', '')}" i]`).filter({visible: true}).first();
+  await expect(swatch, `a "${hex}" swatch in the open colour picker`).toBeVisible();
   await swatch.click();
-}, {tier: 'ui', description: 'a swatch of the open colour dialog by its #rrggbb — the dialog every categorical legend opens'});
+}, {tier: 'ui', description: 'a swatch of the open colour picker by its #rrggbb — the dialog a categorical legend opens, or the popup the editor of a colour property opens ("user clicks on editor of \\"Back Color\\" property in context panel")'});
 
 export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
   await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);
