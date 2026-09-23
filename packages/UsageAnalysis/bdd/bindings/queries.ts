@@ -38,11 +38,16 @@ export const clickEveryColumn = When('user clicks every column of every table un
     for (const col of [...new Set(await directChildren(table))]) {
       const colNode = page.locator(`[name="${col}"]`).first();
       await colNode.scrollIntoViewIfNeeded();
-      await colNode.click({position: {x: 60, y: 8}});
       const want = col.slice(table.length + 3);
       let shown = '';
-      await expect.poll(async () => (shown = await page.evaluate(() => String(grok.shell.o?.name ?? ''))) && norm(shown) === norm(want),
-        {message: `the current object after clicking ${col}`, timeout: pollMs(10000)}).toBe(true).catch(() => undefined);
+      // the panel drops a change within 2 s of a property edit and while the object is frozen
+      // (property_panel.dart), so a click that lands in that window makes nothing current: it is
+      // made again before the column counts as one the panel did not follow
+      for (let attempt = 0; attempt < 2 && norm(shown) !== norm(want); attempt++) {
+        await colNode.click({position: {x: 60, y: 8}});
+        await expect.poll(async () => (shown = await page.evaluate(() => String(grok.shell.o?.name ?? ''))) && norm(shown) === norm(want),
+          {message: `the current object after clicking ${col}`, timeout: pollMs(attempt === 0 ? 5000 : 10000)}).toBe(true).catch(() => undefined);
+      }
       const panes: string[] = await page.evaluate(() => Array.from(document.querySelectorAll('.grok-prop-panel .d4-accordion-pane-header'))
         .map((e) => (e.firstChild?.textContent ?? '').trim()));
       results.push({table: table.slice(prefix.length + 3), column: want, shown, panes});
