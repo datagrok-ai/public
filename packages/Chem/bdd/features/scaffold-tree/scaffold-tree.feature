@@ -3,8 +3,9 @@ Feature: The Scaffold Tree viewer — building, checking, editing and filtering
   Chem | Analyze | Scaffold Tree adds the viewer to spgi-100 (100 rows, molecule column Structure) in
   its empty state. The magic wand builds a tree from Structure. Checking its first node keeps exactly
   the molecules of Structure that contain that node's own scaffold, and unchecking it lets every row
-  through again. Edit scaffold on the node replaces its structure with quinoline and the filter
-  follows it. A scaffold sketched by hand on the plus icon becomes a node that keeps the molecules containing it, and a
+  through again; the toolbar offers generate, sketch, upload, save, expand/collapse, clear filter and
+  drop, and Clear filter unchecks a checked node. Edit scaffold on the node replaces its structure
+  with quinoline and the filter follows it. A scaffold sketched by hand on the plus icon becomes a node that keeps the molecules containing it, and a
   clone of the view carries the same scaffold and the same filtered rows.
 
   Background:
@@ -42,6 +43,24 @@ Feature: The Scaffold Tree viewer — building, checking, editing and filtering
     And the "hits of node 1" reading of Scaffold Tree viewer should be at least 1
     And the filter should pass exactly the molecules of "Structure" column containing the "scaffold of node 1" reading of Scaffold Tree viewer
     When user clicks on the "checkbox of node 1" area of Scaffold Tree viewer
+    Then the "checked nodes" reading of Scaffold Tree viewer should be 0
+    And all rows should pass the filter
+    And no errors should have been logged
+
+  Scenario: The viewer's own toolbar offers its actions, and Clear filter unchecks the tree
+    When user clicks on the "checkbox of node 1" area of Scaffold Tree viewer
+    Then the "checked nodes" reading of Scaffold Tree viewer should be 1
+    And the filter should pass exactly the molecules of "Structure" column containing the "scaffold of node 1" reading of Scaffold Tree viewer
+    When user hovers over Scaffold Tree viewer
+    Then the following elements should be visible:
+      | "Generate" icon inside Scaffold Tree viewer                   |
+      | "Sketch scaffolds manually" icon inside Scaffold Tree viewer  |
+      | "Upload saved tree file" icon inside Scaffold Tree viewer     |
+      | "Save this tree to disk" icon inside Scaffold Tree viewer     |
+      | "Expand / collapse all" icon inside Scaffold Tree viewer      |
+      | "Clear filter" icon inside Scaffold Tree viewer               |
+      | "Drop all trees" icon inside Scaffold Tree viewer             |
+    When user clicks on "Clear filter" icon inside Scaffold Tree viewer
     Then the "checked nodes" reading of Scaffold Tree viewer should be 0
     And all rows should pass the filter
     And no errors should have been logged

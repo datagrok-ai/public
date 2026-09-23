@@ -303,7 +303,8 @@ Feature: Scatter plot legend
     When user opens an empty filter panel
     And user adds a card for "DIS_POP" to the filter panel
     And user clicks on the "category RA of DIS_POP" area of filter panel
-    And user clicks on the "checkbox Psoriasis of DIS_POP" area of filter panel
+    Then 434 rows should pass the filter
+    When user clicks on the "checkbox Psoriasis of DIS_POP" area of filter panel
     Then 638 rows should pass the filter
     And scatter plot viewer should show 633 rows
     And the legend of scatter plot viewer should list 6 items

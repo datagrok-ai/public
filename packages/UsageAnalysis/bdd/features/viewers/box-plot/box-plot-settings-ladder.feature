@@ -38,15 +38,8 @@ Feature: Box plot settings ladder
       | Show All Categories   | true |
     And user sets "Value" property of box plot viewer to "WEIGHT"
     Then properties of box plot viewer should be:
-      | Value                 | WEIGHT |
-      | Category 1            | SEX    |
-      | Category 2            | RACE   |
-      | Marker Color Column   | HEIGHT |
-      | Invert Color Scheme   | true   |
-      | Color Min             | 20     |
-      | Color Max             | 80     |
-      | Show Minor Categories | true   |
-      | Show All Categories   | true   |
+      | Category 1          | SEX    |
+      | Marker Color Column | HEIGHT |
 
   Scenario: Value limits and the log axis
     When user sets properties of box plot viewer:

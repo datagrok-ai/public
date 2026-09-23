@@ -292,27 +292,42 @@ export const readingIs = Then('the {string} reading of {widget} should be {float
   {description: 'a reading the viewer reports (getWidgetStatus().values): "rows shown", the bar chart\'s "bars" / "stack segments" / "clipped bars", the 3D scatter plot\'s "camera distance"'});
 
 export const readingReads = Then('the {string} reading of {widget} should be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
-  await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).toBe(value);
+  await expect.poll(async () => String(await v.readingOf(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).toBe(value);
 }, {description: 'a reading as text (a source column, a signature, a true/false flag) by exact value'});
 
-/** Two readings of one viewer, compared as text: 'same', or what each holds when they disagree. */
-async function compareReadings(page: Page, target: ElementRef, a: string, b: string): Promise<string> {
-  const x = String(await v.readValue(page, target, a));
-  const y = String(await v.readValue(page, target, b));
-  return x === y ? 'same' : `${a} is ${x}, ${b} is ${y}`;
+/** Two readings of one viewer, compared as text: 'same', 'differ', or the reading that is missing. */
+async function compareReadings(page: Page, target: ElementRef, a: string, b: string): Promise<{state: string; text: string}> {
+  const x = await v.readingOf(page, target, a);
+  const y = await v.readingOf(page, target, b);
+  const missing = [x, y].find((r) => r instanceof v.MissingReading);
+  if (missing)
+    return {state: 'missing', text: String(missing)};
+  return {state: String(x) === String(y) ? 'same' : 'differ', text: `${a} is ${String(x)}, ${b} is ${String(y)}`};
 }
 
-export const readingsEqual = Then('the {string} and {string} readings of {widget} should be the same', async (page: Page, a: string, b: string, target: ElementRef) => {
-  await expect.poll(() => compareReadings(page, target, a, b), {message: `${target.phrase}`}).toBe('same');
-}, {description: 'two readings of the same viewer, as text — the colour of a linked column\'s cell against its source\'s'});
+async function expectComparison(page: Page, target: ElementRef, a: string, b: string, want: 'same' | 'differ'): Promise<void> {
+  let last = {state: '', text: ''};
+  try {
+    await expect.poll(async () => (last = await compareReadings(page, target, a, b)).state, {timeout: pollMs(5000)}).toBe(want);
+  }
+  catch {
+    throw new Error(`the "${a}" and "${b}" readings of ${target.phrase} should be ${want === 'same' ? 'the same' : 'different'}: ${last.text}`);
+  }
+}
 
-export const readingsDiffer = Then('the {string} and {string} readings of {widget} should differ', async (page: Page, a: string, b: string, target: ElementRef) => {
-  await expect.poll(() => compareReadings(page, target, a, b), {message: `${target.phrase}`}).not.toBe('same');
-});
+export const readingsEqual = Then('the {string} and {string} readings of {widget} should be the same', (page: Page, a: string, b: string, target: ElementRef) =>
+  expectComparison(page, target, a, b, 'same'),
+{description: 'two readings of the same viewer, as text — the colour of a linked column\'s cell against its source\'s'});
+
+export const readingsDiffer = Then('the {string} and {string} readings of {widget} should differ', (page: Page, a: string, b: string, target: ElementRef) =>
+  expectComparison(page, target, a, b, 'differ'));
 
 export const readingDoesNotRead = Then('the {string} reading of {widget} should not be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
-  await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).not.toBe(value);
-});
+  await expect.poll(async () => {
+    const r = await v.readingOf(page, target, name);
+    return !(r instanceof v.MissingReading) && String(r) !== value ? true : String(r);
+  }, {message: `"${name}" reading of ${target.phrase} should not be "${value}"`}).toBe(true);
+}, {description: 'a missing reading is no pass: the reading must be there and hold something else'});
 
 /** `getWidgetStatus().error` as the last validate left it; '' when the viewer reports none. This
  * is what retires the old specs' "a <canvas> element still exists under the viewer root" probe: a
@@ -336,7 +351,7 @@ export const reportsNoError = Then('{widget} should report no error', async (pag
 
 export const readingFinite = Then('the {string} reading of {widget} should be a finite number', async (page: Page, name: string, target: ElementRef) => {
   await expect.poll(async () => {
-    const value = await v.readValue(page, target, name);
+    const value = await v.readingOf(page, target, name);
     return typeof value === 'number' && isFinite(value) ? 'finite' : String(value);
   }, {message: `"${name}" reading of ${target.phrase}`}).toBe('finite');
 }, {description: 'not null, NaN or Infinity — a viewer that let a NaN or an Infinity of the data into its axis reports no number there'});
@@ -344,8 +359,9 @@ export const readingFinite = Then('the {string} reading of {widget} should be a 
 export const readingBetween = Then('the {string} reading of {widget} should be between {float} and {float}',
   async (page: Page, name: string, target: ElementRef, lo: number, hi: number) => {
     await expect.poll(async () => {
-      const value = Number(await v.readValue(page, target, name));
-      return value >= lo && value <= hi ? true : value;
+      const r = await v.readingOf(page, target, name);
+      const value = Number(r);
+      return value >= lo && value <= hi ? true : String(r);
     }, {message: `"${name}" reading of ${target.phrase} should be between ${lo} and ${hi}`}).toBe(true);
   }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
 
@@ -356,7 +372,10 @@ export const pickColorSwatch = When('user picks the color {string} in the color 
 }, {tier: 'ui', description: 'a swatch of the open colour picker by its #rrggbb — the dialog a categorical legend opens, or the popup the editor of a colour property opens ("user clicks on editor of \\"Back Color\\" property in context panel")'});
 
 export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
-  await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);
+  await expect.poll(async () => {
+    const r = await v.readingOf(page, target, name);
+    return typeof r === 'number' && r >= value ? true : String(r);
+  }, {message: `"${name}" reading of ${target.phrase} should be at least ${value}`}).toBe(true);
 });
 
 export const readingLower = Then('the {string} reading of {widget} should be lower than before', (page: Page, name: string, target: ElementRef) =>

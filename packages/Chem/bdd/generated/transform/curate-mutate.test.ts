@@ -19,7 +19,7 @@ import {check, clickOn, enterInto, shouldBe, shouldContainText, shouldHaveValue,
 import {columnComplete, columnSemType, distinctValues} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {commandCompleted, newColumnNamed, newColumnsCount, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount, tableOpen} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {autostartsCompleted, openDataset, sketcherIs, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {autostartsCompleted, closeCurrentView, openDataset, sketcherIs, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -83,18 +83,20 @@ test.describe("Curate and Mutate from the Transform menu", () => {
       await session.step(70, "And \"mutations\" column should have semantic type \"Molecule\"", () => columnSemType(page, "mutations", "Molecule"));
       await session.step(71, "And \"mutations\" column should have at least 20 distinct values", () => distinctValues(page, "mutations", 20));
       await session.step(72, "And no errors should have been logged", () => noErrors(page));
+      await session.step(74, "When user closes the current view", () => closeCurrentView(page));
+      await session.step(75, "And user switches to the \"chem_standards\" table view", () => switchTableView(page, "chem_standards"));
     });
     await run.scenario("Mutate with two steps still returns a hundred molecules", async () => {
-      await session.step(75, "When user picks \"Chem > Transform > Mutate...\" from the top menu", () => pickFromTopMenu(page, "Chem > Transform > Mutate..."));
-      await session.step(76, "And user enters \"2\" into Steps input in \"Mutate\" dialog", () => enterInto(page, "2", el("Steps input in \"Mutate\" dialog")));
-      await session.step(77, "And user clicks on OK button in \"Mutate\" dialog", () => clickOn(page, el("OK button in \"Mutate\" dialog")));
-      await session.step(78, "Then the top menu command should have completed", () => commandCompleted(page));
-      await session.step(79, "And table \"mutations\" should be open", () => tableOpen(page, "mutations"));
-      await session.step(80, "When user switches to the \"mutations\" table view", () => switchTableView(page, "mutations"));
-      await session.step(81, "Then the table should have 100 rows", () => rowCount(page, 100));
-      await session.step(82, "And \"mutations\" column should have no missing values", () => columnComplete(page, "mutations"));
-      await session.step(83, "And \"mutations\" column should have at least 20 distinct values", () => distinctValues(page, "mutations", 20));
-      await session.step(84, "And no errors should have been logged", () => noErrors(page));
+      await session.step(78, "When user picks \"Chem > Transform > Mutate...\" from the top menu", () => pickFromTopMenu(page, "Chem > Transform > Mutate..."));
+      await session.step(79, "And user enters \"2\" into Steps input in \"Mutate\" dialog", () => enterInto(page, "2", el("Steps input in \"Mutate\" dialog")));
+      await session.step(80, "And user clicks on OK button in \"Mutate\" dialog", () => clickOn(page, el("OK button in \"Mutate\" dialog")));
+      await session.step(81, "Then the top menu command should have completed", () => commandCompleted(page));
+      await session.step(82, "And table \"mutations\" should be open", () => tableOpen(page, "mutations"));
+      await session.step(83, "When user switches to the \"mutations\" table view", () => switchTableView(page, "mutations"));
+      await session.step(84, "Then the table should have 100 rows", () => rowCount(page, 100));
+      await session.step(85, "And \"mutations\" column should have no missing values", () => columnComplete(page, "mutations"));
+      await session.step(86, "And \"mutations\" column should have at least 20 distinct values", () => distinctValues(page, "mutations", 20));
+      await session.step(87, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

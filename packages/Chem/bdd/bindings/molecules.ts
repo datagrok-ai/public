@@ -133,15 +133,16 @@ export const moleculesMatching = Then('{int} molecules of {string} column should
 });
 
 export const noMoreFragments = Then('no molecule of {string} column should have more fragments than in {string} column', async (page: Page, x: string, y: string) => {
-  const {values: [a, b]} = await canonical(page, [x, y]);
+  const {values: [a, b], unreadable} = await canonical(page, [x, y]);
+  expect(unreadable, 'cells RDKit could not read').toEqual([]);
   const parts = (s: string) => s === '' ? 0 : s.split('.').length;
   const bad = pairs(a, b).filter((p) => parts(p.a) > parts(p.b)).map((p) => `row ${p.row}: ${p.a}`);
   expect(bad, `rows where "${x}" has more fragments than "${y}"`).toEqual([]);
 }, {description: 'dot-separated components of the canonical SMILES, row by row'});
 
-export const clipboardMolecule = Then('the clipboard should hold the molecule of row {int} of {string} column', async (page: Page, row: number, column: string) => {
-  const text = await gestures.readClipboard(page);
-  const r = await page.evaluate(async ([i, n, text]) => {
+/** RDKit's canonical SMILES of the cell and of a text; a text RDKit cannot read comes back marked. */
+function sameAsCell(page: Page, row: number, column: string, text: string): Promise<{text: string; cell: string}> {
+  return page.evaluate(async ([i, n, t]) => {
     const col = grok.shell.t.col(n);
     if (!col)
       throw new Error(`no "${n}" column in ${grok.shell.t.name}`);
@@ -155,17 +156,34 @@ export const clipboardMolecule = Then('the clipboard should hold the molecule of
         mol.delete();
       }
     };
-    let copied = '';
+    let read = '';
     try {
-      copied = smiles(text);
+      read = t === '' ? '' : smiles(t);
     }
     catch {
-      copied = `unreadable: ${text.slice(0, 60)}`;
+      read = `unreadable: ${t.slice(0, 60)}`;
     }
-    return {copied, cell: smiles(String(col.get(i - 1)))};
+    return {text: read, cell: col.isNone(i - 1) ? '' : smiles(String(col.get(i - 1)))};
   }, [row, column, text] as [number, string, string]);
-  expect(r.copied, `the clipboard's molecule against row ${row} of "${column}"`).toBe(r.cell);
-}, {description: 'the clipboard text read by RDKit (SMILES, SMARTS or molfile) is the cell\'s molecule'});
+}
+
+export const clipboardMolecule = Then('the clipboard should hold the molecule of row {int} of {string} column', async (page: Page, row: number, column: string) => {
+  let last = {text: '', cell: ''};
+  try {
+    await expect.poll(async () => {
+      last = await sameAsCell(page, row, column, await gestures.readClipboard(page));
+      return last.text === last.cell;
+    }).toBe(true);
+  }
+  catch {
+    throw new Error(`the clipboard holds ${last.text || 'nothing'}, not the molecule of row ${row} of "${column}" (${last.cell})`);
+  }
+}, {description: 'the clipboard text read by RDKit (SMILES, SMARTS or molfile) is the cell\'s molecule; polled, since a copy writes the clipboard asynchronously'});
+
+export const rowMolecule = Then('the molecule in row {int} of {string} column should be {string}', async (page: Page, row: number, column: string, smiles: string) => {
+  const r = await sameAsCell(page, row, column, smiles);
+  expect(r.cell, `the molecule in row ${row} of "${column}"`).toBe(r.text);
+}, {description: 'the cell and the SMILES read by RDKit as the same molecule, stereochemistry included'});
 
 export const sortedBySimilarity = Then('the first {int} rows of grid should be in falling similarity to row {int} of {string} column', async (page: Page, count: number, row: number, column: string) => {
   await expect.poll(() => page.evaluate(() => (grok.shell.tv.grid.getRowOrder() as Int32Array)[0] + 1),
@@ -240,11 +258,32 @@ function filterAgainstQuery(page: Page, column: string, query: string):
   }, [column, query] as [string, string]);
 }
 
-export const filterPassesMatching = Then('the filter should pass exactly the molecules of {string} column containing {string}', async (page: Page, column: string, query: string) => {
-  const r = await filterAgainstQuery(page, column, query);
-  expect(r.unreadable, `molecules of "${column}" RDKit could not read`).toBe(0);
-  expect(r.wrong.slice(0, 10), `rows the filter disagrees with ${query} on (${r.wrong.length}; ${r.matched} contain it, ${r.passed} pass)`).toEqual([]);
-}, {description: 'every row passes the filter if and only if its molecule contains the query (RDKit substructure match); polls nothing, so it follows a row-count step'});
+/** Polled until the filter keeps exactly the rows whose molecule contains the query: a filter card
+ * or a tree applies its bitset after the search it started ends. */
+async function expectFilterMatches(page: Page, column: string, query: () => Promise<string>, what: string, someMatch: boolean): Promise<void> {
+  let q = undefined as string | undefined;
+  let r = undefined as Awaited<ReturnType<typeof filterAgainstQuery>> | undefined;
+  try {
+    await expect.poll(async () => {
+      r = undefined;
+      q = await query();
+      if (q === '')
+        return false;
+      r = await filterAgainstQuery(page, column, q);
+      return r.unreadable === 0 && r.wrong.length === 0 && (!someMatch || r.matched > 0);
+    }).toBe(true);
+  }
+  catch (e) {
+    if (q === undefined || (q !== '' && r === undefined))
+      throw e;
+    throw new Error(r === undefined ? `${what} is empty` : `the filter against ${what} (${q}): ${r.unreadable} molecules of "${column}" ` +
+      `RDKit could not read, ${r.wrong.length} rows off (${r.wrong.slice(0, 10).join('; ')}); ${r.matched} contain it, ${r.passed} pass`);
+  }
+}
+
+export const filterPassesMatching = Then('the filter should pass exactly the molecules of {string} column containing {string}', (page: Page, column: string, query: string) =>
+  expectFilterMatches(page, column, async () => query, query, false),
+{description: 'every row passes the filter if and only if its molecule contains the query (RDKit substructure match), polled'});
 
 export const readingIsRowMolecule = Then('the {string} reading of filter panel should be the molecule of row {int} of {string} column', async (page: Page, reading: string, row: number, column: string) => {
   await expect.poll(() => page.evaluate(async ([name, i, c]) => {
@@ -337,12 +376,7 @@ export const readingIsMolecule = Then('the {string} reading of {widget} should b
   });
 }, {description: 'a reading that holds a molecule in any notation, read by RDKit and compared with the one named'});
 
-export const filterMatchesReading = Then('the filter should pass exactly the molecules of {string} column containing the {string} reading of {widget}', async (page: Page, column: string, reading: string, target: ElementRef) => {
-  const query = await viewers.onViewer(page, target, (e, name: any) =>
-    String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading);
-  expect(query, `the "${reading}" reading to filter by`).not.toBe('');
-  const r = await filterAgainstQuery(page, column, query);
-  expect(r.unreadable, `molecules of "${column}" RDKit could not read`).toBe(0);
-  expect(r.matched, 'molecules containing the scaffold the reading holds').toBeGreaterThan(0);
-  expect(r.wrong.slice(0, 10), `rows the filter disagrees with the "${reading}" reading on (${r.wrong.length}; ${r.matched} contain it, ${r.passed} pass)`).toEqual([]);
-}, {description: 'the scaffold a viewer reports, matched against the column by RDKit, against what the table filter keeps'});
+export const filterMatchesReading = Then('the filter should pass exactly the molecules of {string} column containing the {string} reading of {widget}', (page: Page, column: string, reading: string, target: ElementRef) =>
+  expectFilterMatches(page, column, () => viewers.onViewer(page, target, (e, name: any) =>
+    String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading), `the "${reading}" reading`, true),
+{description: 'the scaffold a viewer reports, matched against the column by RDKit, against what the table filter keeps; some molecule must contain it; polled'});

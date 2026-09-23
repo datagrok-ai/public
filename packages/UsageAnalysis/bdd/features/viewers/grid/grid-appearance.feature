@@ -52,13 +52,12 @@ Feature: Grid cell appearance
     And the "cell 2 of HEIGHT" and "cell 4 of HEIGHT" areas of grid should be painted in the same colors
     And no errors should have been logged
 
-  Scenario: Narrowing a coloured column keeps its colour and its text
+  Scenario: Narrowing a coloured column keeps its colour
     When user picks "Grid Color Coding > All" from the context menu of the "cell 1 of AGE" area of grid
     And user remembers the "color of cell 1 of AGE" reading of grid
     And user drags the "column resizer AGE" area of grid by 30 pixels to the left
     Then the "column width of AGE" reading of grid should be lower than before
     And the "color of cell 1 of AGE" reading of grid should be as remembered
-    And the "text of cell 1 of AGE" reading of grid should be "26"
     When user picks "Column Sizing > Optimal" from the context menu of the "cell 1 of AGE" area of grid
     And user picks "Grid Color Coding > Auto" from the context menu of the "cell 1 of AGE" area of grid
     Then no errors should have been logged

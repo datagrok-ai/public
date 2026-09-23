@@ -91,10 +91,9 @@ Feature: Annotation regions on the other two-dimensional viewers
     And the "region Adults title" area of density plot viewer should lie inside the "region Adults" area
     And the "region Adults" area of density plot viewer should lie inside the "view" area
     When user sets "showViewerAnnotationRegions" property of density plot viewer to "false"
-    Then the "regions shown" reading of density plot viewer should be 0
-    And density plot viewer should not have a "region Adults" area
+    Then density plot viewer should not have a "region Adults" area
     And density plot viewer should not have a "region Adults title" area
     When user sets "showViewerAnnotationRegions" property of density plot viewer to "true"
-    Then the "regions shown" reading of density plot viewer should be 1
+    Then density plot viewer should have a "region Adults" area
     And density plot viewer should have a "region Adults title" area
     And no errors should have been logged

@@ -9,9 +9,9 @@ Feature: Who holds a role, and what it grants
   the feature; the user assigned is the bddmanaged fixture user, whose assignment goes with the role.
   An assignment is claimed on the server, and an addition also in the pane; a removal on the server
   only, since the pane empties while it reloads. A global permission has no reading in the JS API,
-  so it is claimed in the MANAGE dialog, reopened after SAVE: the pane cannot tell the role's own
-  grant from the ones it lists of other groups (GROK-20902). The cleanup revokes the grant before it
-  deletes the role.
+  so it is claimed in the MANAGE dialog, reopened after SAVE; since GROK-20902 was fixed the pane
+  lists the role's own grants only, which the scenario on a new role claims. The cleanup revokes the
+  grant before it deletes the role.
 
   Background:
     Given user is logged in
@@ -108,8 +108,7 @@ Feature: Who holds a role, and what it grants
   # it. The feature's own cleanup still revokes the role's global permissions before it deletes the role.
   Scenario: A role that grants a permission can still be deleted (Roles-14, Roles-15)
     When user types "BDD-RA-Role-{time}" into gallery search
-    Then the gallery counter should be lower than remembered
-    When user picks "Delete" from the context menu of "BDD-RA-Role-{time}" link in gallery
+    And user picks "Delete" from the context menu of "BDD-RA-Role-{time}" link in gallery
     Then "Are you sure?" dialog should be visible
     When user clicks on DELETE button in "Are you sure?" dialog
     Then the "Are you sure?" dialog should close

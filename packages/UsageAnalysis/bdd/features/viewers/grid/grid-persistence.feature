@@ -1,9 +1,13 @@
 @journey @viewers @realizes:viewers.grid
 Feature: Grid appearance and geometry across a layout and a project
-  One journey that dresses the grid up and then asks two round-trips to give all of it back: four
+  One journey that dresses the grid up and then asks two round-trips to give it back: four
   colour codings (Linear on AGE, Conditional on HEIGHT, Categorical on SEX, WEIGHT linked to SEX),
-  the row height, the missing-value colour, the min and max stats rows, a column moved, a column
-  hidden, a column widened, a column and two rows pinned and a sort. Every claim reads the grid's
+  the row height, the missing-value colour, a column moved, a column hidden, a column widened, a
+  column and two rows pinned and a sort. The min and max stats rows are added on the way (the
+  GROK-19809 guard: they leave the columns alone) but are not claimed after the round-trips: the
+  grid keeps them in a field of its own, not in its look (`GridCore.specialRows`), and neither the
+  layout nor the project brings them back (`stats rows` read "" after both, 2026-09-23), which the
+  TestTrack spec also leaves out. Every claim reads the grid's
   own status where it has one: the renderer-resolved `color of cell <r> of <c>`, `column order`,
   `column width of AGE`, `row height` (with the height of a drawn cell next to it), `pinned rows`,
   `sort column` and `sort direction`; the colour codings' tags and Frozen Columns are read from the

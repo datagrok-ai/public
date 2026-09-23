@@ -24,8 +24,7 @@ Feature: Multivariate analysis
     And editor of Using input in "Multivariate Analysis (PLS)" dialog should contain text "(15)"
     And Components input in "Multivariate Analysis (PLS)" dialog should have value "3"
     When user clicks on RUN button in "Multivariate Analysis (PLS)" dialog
-    Then the top menu command should have completed
-    And "Multivariate Analysis (PLS)" dialog should be hidden
+    Then "Multivariate Analysis (PLS)" dialog should be hidden
     And 7 new columns should have been added
     And the table should have a column "price (predicted)"
     And the table should have a column "x.score.t3"

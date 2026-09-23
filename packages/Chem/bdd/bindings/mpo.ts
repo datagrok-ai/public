@@ -58,6 +58,12 @@ export const noMpoProfile = Given('no MPO profile named {string} is on the serve
   }
 }, {tier: 'api', description: 'deletes the profiles (comma-separated) and their pMPO model files; when the feature ends, every profile the user saved during it goes too, with its model file'});
 
+export const shippedMpoProfile = Given('the shipped MPO profile {string} is on the server', async (page: Page, name: string) => {
+  if (await profileCount(page, name) === 0)
+    await page.evaluate(() => grok.functions.call('Chem:seedMpoProfiles'));
+  await expect.poll(() => profileCount(page, name), {message: `MPO profiles named "${name}" in the mpo domain table`}).toBe(1);
+}, {tier: 'api', description: 'a profile of the package\'s mpo folder; on a stand that was never seeded, Chem:seedMpoProfiles (idempotent) adds the shipped ones, which stay'});
+
 export const mpoProfileProperties = Then('the MPO profile {string} should have the properties {string}',
   (page: Page, name: string, list: string) =>
     expect.poll(() => page.evaluate(async (n) => {

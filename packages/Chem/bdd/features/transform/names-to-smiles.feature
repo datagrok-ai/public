@@ -1,7 +1,8 @@
 @journey @realizes:chem.cp.names-to-smiles
 Feature: Names To Smiles over a column of compound names
   Chem | Transform | Names To Smiles... looks the names up in ChEMBL and writes the structures into a
-  canonical_smiles column beside them, so the lookup needs the ChEMBL database of the stand. On a
+  canonical_smiles column beside them — aspirin and caffeine, compared with their structures through
+  RDKit — so the lookup needs the ChEMBL database of the stand. On a
   table that already carries a canonical_smiles column the run ends in "Column named
   'canonical_smiles' already exists" and writes nothing (GROK-20955); that scenario is last and a
   known failure.
@@ -22,6 +23,8 @@ Feature: Names To Smiles over a column of compound names
     Then the top menu command should have completed
     And a new column "canonical_smiles" should have been added
     And "canonical_smiles" column should have semantic type "Molecule"
+    And the molecule in row 1 of "canonical_smiles" column should be "CC(=O)Oc1ccccc1C(=O)O"
+    And the molecule in row 2 of "canonical_smiles" column should be "Cn1c(=O)c2c(ncn2C)n(C)c1=O"
     And the table should have 2 rows
     And no errors should have been logged
 

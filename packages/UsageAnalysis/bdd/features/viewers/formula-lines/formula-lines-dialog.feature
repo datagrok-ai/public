@@ -2,10 +2,12 @@
 Feature: The Formula Lines dialog and the look it writes
   PowerPack's Formula Lines dialog adds and edits the lines and bands a viewer draws: an item
   added there lands in the `formulaLines` look, a deleted one leaves it. What the dialog cannot
-  express directly is written into the look and read back as what the viewer draws — the
-  `formula lines` reading counts the active items: two lines sharing a formula over different
-  ranges are both drawn, an item unchecked in Show is not, and a dataframe line (the table's
-  `.formula-lines` tag) is drawn by every viewer whose axis carries its column.
+  express directly is written into the look and read back as what the viewer does with it — the
+  `formula lines` reading counts the active items (visible, on the plot's axes), whether or not a
+  frame drew them: two lines sharing a formula over different ranges are both active, an item
+  unchecked in Show is not, and a dataframe line (the table's `.formula-lines` tag) is active in
+  every viewer whose axis carries its column. What a frame drew is the `formula line "<title>"`
+  hit area each viewer publishes per drawn item.
   On demog-1000; from `formula-lines-dialog.md`.
 
   Background:
@@ -43,7 +45,8 @@ Feature: The Formula Lines dialog and the look it writes
     And user resizes scatter plot viewer to 800 by 500
     When user sets "formulaLines" property of scatter plot viewer to '[{"type":"line","formula":"${HEIGHT} = ${WEIGHT} + 100","min":60,"max":90,"title":"Light"},{"type":"line","formula":"${HEIGHT} = ${WEIGHT} + 100","min":100,"max":150,"title":"Heavy"}]'
     Then the "formula lines" reading of scatter plot viewer should be 2
-    And scatter plot viewer should have more ink than before
+    And scatter plot viewer should have a "formula line Light" area
+    And scatter plot viewer should have a "formula line Heavy" area
     When user sets "formulaLines" property of scatter plot viewer to ""
     Then the "formula lines" reading of scatter plot viewer should be 0
     And no errors should have been logged
@@ -70,13 +73,12 @@ Feature: The Formula Lines dialog and the look it writes
       | yColumnName | HEIGHT |
     When user sets "formulaLines" property of scatter plot viewer to '[{"type":"line","formula":"${HEIGHT} = 168.5","color":"#ff0000","style":"dashed"}]'
     Then the "formula lines" reading of scatter plot viewer should be 1
-    And "formulaLines" property of scatter plot viewer should contain "\"color\":\"#ff0000\""
-    And "formulaLines" property of scatter plot viewer should contain "\"style\":\"dashed\""
     When user saves the layout of the current table view
     And user sets "formulaLines" property of scatter plot viewer to ""
     Then the "formula lines" reading of scatter plot viewer should be 0
     When user loads the saved layout
     Then the "formula lines" reading of scatter plot viewer should be 1
+    And "formulaLines" property of scatter plot viewer should contain "\"color\":\"#ff0000\""
     And "formulaLines" property of scatter plot viewer should contain "\"style\":\"dashed\""
     When user sets "formulaLines" property of scatter plot viewer to ""
     Then no errors should have been logged

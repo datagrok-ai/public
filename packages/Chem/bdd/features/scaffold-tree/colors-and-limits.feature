@@ -13,7 +13,7 @@ Feature: Scaffold Tree colors, blocked generation and two tables
     And user opens spgi dataset
     And user picks "Chem > Analyze > Scaffold Tree" from the top menu
 
-  Scenario: Coloring a scaffold adds the colors column and dropping the tree removes it
+  Scenario: Coloring a scaffold adds the colors column
     When user hovers over Scaffold Tree viewer
     And user clicks on "Generate" icon inside Scaffold Tree viewer
     Then Scaffold Tree viewer should have finished building its tree

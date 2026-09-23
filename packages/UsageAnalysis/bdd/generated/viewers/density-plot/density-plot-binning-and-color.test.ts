@@ -53,7 +53,7 @@ test.describe("Density plot binning, bin shape and the colour scale", () => {
     await run.scenario("A single rectangular bin holds every row that was binned", async () => {
       await session.step(41, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["binShape","rectangle"],["bins","1"]]), [["binShape","rectangle"],["bins","1"]]);
       await session.step(44, "Then the \"bins drawn\" reading of density plot viewer should be 1", () => readingIs(page, "bins drawn", el("density plot viewer"), 1));
-      await session.step(45, "And the \"rows in densest bin\" reading of density plot viewer should be higher than before", () => readingHigher(page, "rows in densest bin", el("density plot viewer")));
+      await session.step(45, "And the \"rows in densest bin\" reading of density plot viewer should be 1000", () => readingIs(page, "rows in densest bin", el("density plot viewer"), 1000));
       await session.step(46, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["bins","50"],["binShape","hexagon"]]), [["bins","50"],["binShape","hexagon"]]);
       await session.step(49, "Then no errors should have been logged", () => noErrors(page));
     });

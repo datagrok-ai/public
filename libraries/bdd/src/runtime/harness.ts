@@ -258,7 +258,8 @@ async function settleWork(page: Page): Promise<void> {
     .map((e) => (e.textContent ?? '').trim())
     .filter((t) => !known.includes(t));
   const known = [...stuck];
-  const quiet = await page.waitForFunction((k) => running(k).length === 0, known,
+  // the predicate runs in the page, where only its own source exists: `running` goes in as text
+  const quiet = await page.waitForFunction(`(${running})(${JSON.stringify(known)}).length === 0`, undefined,
     {timeout: Math.max(1, deadline - Date.now()), polling: 100}).then(() => true).catch(() => false);
   const left: string[] = quiet ? [] : await page.evaluate(running, known).catch(() => []);
   if (left.length > 0) {

@@ -17,7 +17,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, areaPainted, areaRepainted, hasArea, noErrors, readingBetween, readingIs, readingReads, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, areaLessInk, areaPainted, areaRepainted, hasArea, noErrors, readingBetween, readingIs, readingReads, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Heat map colouring", () => {
@@ -25,30 +25,31 @@ test.describe("Heat map colouring", () => {
   test("Heat map colouring", {tag: ["@journey", "@viewers", "@realizes:viewers.heat-map"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 2, page);
-    await session.step(11, "Given user is logged in", () => loggedIn(page));
-    await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(13, "And user adds a heat map viewer", () => addViewer(page, "heat map"));
-    await session.step(14, "Then the \"is heatmap\" reading of heat map viewer should be \"true\"", () => readingReads(page, "is heatmap", el("heat map viewer"), "true"));
-    await session.step(15, "And the \"row height\" reading of heat map viewer should be between 0 and 8", () => readingBetween(page, "row height", el("heat map viewer"), 0, 8));
-    await session.step(16, "And heat map viewer should have a \"column AGE\" area", () => hasArea(page, el("heat map viewer"), "column AGE"));
-    await session.step(17, "And the \"column AGE\" area of heat map viewer should be painted", () => areaPainted(page, "column AGE", el("heat map viewer")));
+    await session.step(10, "Given user is logged in", () => loggedIn(page));
+    await session.step(11, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+    await session.step(12, "And user adds a heat map viewer", () => addViewer(page, "heat map"));
+    await session.step(13, "Then the \"is heatmap\" reading of heat map viewer should be \"true\"", () => readingReads(page, "is heatmap", el("heat map viewer"), "true"));
+    await session.step(14, "And the \"row height\" reading of heat map viewer should be between 0 and 8", () => readingBetween(page, "row height", el("heat map viewer"), 0, 8));
+    await session.step(15, "And heat map viewer should have a \"column AGE\" area", () => hasArea(page, el("heat map viewer"), "column AGE"));
+    await session.step(16, "And the \"column AGE\" area of heat map viewer should be painted", () => areaPainted(page, "column AGE", el("heat map viewer")));
     await run.scenario("Global Color Scaling recolours every numerical column", async () => {
-      await session.step(20, "Then the \"global color scaling\" reading of heat map viewer should be \"false\"", () => readingReads(page, "global color scaling", el("heat map viewer"), "false"));
-      await session.step(21, "When user sets \"globalColorScaling\" property of heat map viewer to \"true\"", () => setProperty(page, "globalColorScaling", el("heat map viewer"), "true"));
-      await session.step(22, "Then the \"global color scaling\" reading of heat map viewer should be \"true\"", () => readingReads(page, "global color scaling", el("heat map viewer"), "true"));
-      await session.step(23, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
-      await session.step(24, "And the \"column WEIGHT\" area of heat map viewer should have repainted", () => areaRepainted(page, "column WEIGHT", el("heat map viewer")));
-      await session.step(25, "And the \"rows shown\" reading of heat map viewer should be 1000", () => readingIs(page, "rows shown", el("heat map viewer"), 1000));
-      await session.step(26, "When user sets \"globalColorScaling\" property of heat map viewer to \"false\"", () => setProperty(page, "globalColorScaling", el("heat map viewer"), "false"));
-      await session.step(27, "Then the \"global color scaling\" reading of heat map viewer should be \"false\"", () => readingReads(page, "global color scaling", el("heat map viewer"), "false"));
-      await session.step(28, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
-      await session.step(29, "And no errors should have been logged", () => noErrors(page));
+      await session.step(19, "Then the \"global color scaling\" reading of heat map viewer should be \"false\"", () => readingReads(page, "global color scaling", el("heat map viewer"), "false"));
+      await session.step(20, "When user sets \"globalColorScaling\" property of heat map viewer to \"true\"", () => setProperty(page, "globalColorScaling", el("heat map viewer"), "true"));
+      await session.step(21, "Then the \"global color scaling\" reading of heat map viewer should be \"true\"", () => readingReads(page, "global color scaling", el("heat map viewer"), "true"));
+      await session.step(22, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
+      await session.step(23, "And the \"column WEIGHT\" area of heat map viewer should have repainted", () => areaRepainted(page, "column WEIGHT", el("heat map viewer")));
+      await session.step(24, "And the \"rows shown\" reading of heat map viewer should be 1000", () => readingIs(page, "rows shown", el("heat map viewer"), 1000));
+      await session.step(25, "When user sets \"globalColorScaling\" property of heat map viewer to \"false\"", () => setProperty(page, "globalColorScaling", el("heat map viewer"), "false"));
+      await session.step(26, "Then the \"global color scaling\" reading of heat map viewer should be \"false\"", () => readingReads(page, "global color scaling", el("heat map viewer"), "false"));
+      await session.step(27, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
+      await session.step(28, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Heatmap Colors off stops filling the cells with colour (GROK-20619)", async () => {
-      await session.step(35, "Then the \"heatmap colors\" reading of heat map viewer should be \"true\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "true"));
-      await session.step(36, "When user sets \"heatmapColors\" property of heat map viewer to \"false\"", () => setProperty(page, "heatmapColors", el("heat map viewer"), "false"));
-      await session.step(37, "Then the \"heatmap colors\" reading of heat map viewer should be \"false\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "false"));
-      await session.step(38, "And the \"column AGE\" area of heat map viewer should have repainted", () => areaRepainted(page, "column AGE", el("heat map viewer")));
+      await session.step(34, "Then the \"heatmap colors\" reading of heat map viewer should be \"true\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "true"));
+      await session.step(35, "When user sets \"heatmapColors\" property of heat map viewer to \"false\"", () => setProperty(page, "heatmapColors", el("heat map viewer"), "false"));
+      await session.step(36, "Then the \"heatmap colors\" reading of heat map viewer should be \"false\"", () => readingReads(page, "heatmap colors", el("heat map viewer"), "false"));
+      await session.step(37, "And the \"column AGE\" area of heat map viewer should have less ink than before", () => areaLessInk(page, "column AGE", el("heat map viewer")));
+      await session.step(38, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

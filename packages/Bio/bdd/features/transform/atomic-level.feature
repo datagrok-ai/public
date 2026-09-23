@@ -103,6 +103,7 @@ Feature: To Atomic Level
     And editor of Sequence input in "To Atomic Level" dialog should have text "HELM string"
     When user clicks on OK button in "To Atomic Level" dialog
     Then the "To Atomic Level" dialog should close
+    And the table should have a column "molfile(HELM string)"
     And "molfile(HELM string)" column should have units "molblock"
     And "molfile(HELM string)" column should have no missing values
     And every value of "molfile(HELM string)" column should contain "M  V30 BEGIN CTAB"

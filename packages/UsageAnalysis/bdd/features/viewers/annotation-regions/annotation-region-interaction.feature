@@ -50,8 +50,8 @@ Feature: Annotation region interaction
     Then only rows where "AGE" is between 31 and 38 should be selected
     When user clicks on the "region Inner" area of scatter plot viewer holding Control
     Then no rows should be selected
-    When user clicks on the "region Inner" area of scatter plot viewer
-    And user clicks on the "region Outer" area of scatter plot viewer holding Shift
+    When user clicks on the "region Outer" area of scatter plot viewer
+    And user clicks on the "region Inner" area of scatter plot viewer holding Shift
     Then only rows where "AGE" is between 21 and 60 should be selected
     When user clears the row selection
     Then no errors should have been logged
@@ -106,8 +106,8 @@ Feature: Annotation region interaction
     When user sets properties of scatter plot viewer:
       | xColumnName | WEIGHT |
       | yColumnName | AGE    |
-    Then the "regions shown" reading of scatter plot viewer should be 2
-    And scatter plot viewer should have a "region Outer" area
+    Then scatter plot viewer should have a "region Outer" area
+    And scatter plot viewer should have a "region Inner" area
     When user sets "xColumnName" property of scatter plot viewer to "HEIGHT"
     Then scatter plot viewer should not have a "region Outer" area
     And scatter plot viewer should not have a "region Inner" area
@@ -116,16 +116,19 @@ Feature: Annotation region interaction
     When user sets properties of scatter plot viewer:
       | xColumnName | AGE    |
       | yColumnName | WEIGHT |
-    Then the "regions shown" reading of scatter plot viewer should be 2
+    Then scatter plot viewer should have a "region Outer" area
+    And scatter plot viewer should have a "region Inner" area
     And no errors should have been logged
 
   Scenario: A column rename follows into the regions
     When user renames "AGE" column to "AGE (years)"
     Then "annotationRegions" property of scatter plot viewer should contain "\"x\":\"AGE (years)\""
-    And the "regions shown" reading of scatter plot viewer should be 2
+    And scatter plot viewer should have a "region Outer" area
+    And scatter plot viewer should have a "region Inner" area
     When user renames "AGE (years)" column to "AGE"
     Then "annotationRegions" property of scatter plot viewer should contain "\"x\":\"AGE\""
-    And the "regions shown" reading of scatter plot viewer should be 2
+    And scatter plot viewer should have a "region Outer" area
+    And scatter plot viewer should have a "region Inner" area
     And no errors should have been logged
 
   Scenario: Escape leaves the drawing mode with the regions untouched
@@ -137,5 +140,6 @@ Feature: Annotation region interaction
     Then the "region drawing mode" reading of scatter plot viewer should be "false"
     And the "viewer regions" reading of scatter plot viewer should be 2
     When user sets "showViewerAnnotationRegions" property of scatter plot viewer to "true"
-    Then the "regions shown" reading of scatter plot viewer should be 2
+    Then scatter plot viewer should have a "region Outer" area
+    And scatter plot viewer should have a "region Inner" area
     And no errors should have been logged

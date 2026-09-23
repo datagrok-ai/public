@@ -7,7 +7,7 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
   Then what the `*-ui.md` checklists ask of several viewers alike: Pick Up on one viewer and Apply
   on a second of the same type copies a setting, and a later change of the first leaves the second
   as it was; Tooltip > Edit... opens the tooltip editor ("Edit Aggregated Tooltip" for the line
-  chart, which aggregates its points) and CANCEL changes nothing; the context menu carries the General and Tooltip groups, and General's Clone and Close act; the viewer
+  chart, which aggregates its points) and CANCEL closes it; the context menu carries the General and Tooltip groups, and General's Clone and Close act; the viewer
   added to the right of the grid, docks along the left edge of the view by its title bar, and its "?"
   icon opens its help page (the page's title is searched in the help panel).
   Not translated: the General items that leave the page (Save to Gallery, Save as PNG, Embed...)

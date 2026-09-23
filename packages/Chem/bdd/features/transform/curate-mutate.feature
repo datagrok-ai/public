@@ -70,6 +70,9 @@ Feature: Curate and Mutate from the Transform menu
     And "mutations" column should have semantic type "Molecule"
     And "mutations" column should have at least 20 distinct values
     And no errors should have been logged
+    # the second run opens a table of the same name: this one must not answer for it
+    When user closes the current view
+    And user switches to the "chem_standards" table view
 
   Scenario: Mutate with two steps still returns a hundred molecules
     When user picks "Chem > Transform > Mutate..." from the top menu

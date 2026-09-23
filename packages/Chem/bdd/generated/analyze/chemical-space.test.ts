@@ -17,7 +17,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe, shouldContainText, shouldHaveValue, shouldNotBe, shouldOffer} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {commandCompleted, newColumnMatching, newColumnsMatching, newestMatchingFilled, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {autostartsCompleted, openDataset, sketcherIs, viewHoldsViewers} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {autostartsCompleted, openDataset, openDatasetRows, sketcherIs, viewHoldsViewers} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -66,7 +66,7 @@ test.describe("Chemical Space over SMILES, V2000 and V3000 molecules", () => {
       await session.step(48, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("UMAP on V2000 molecules from an SDF", async () => {
-      await session.step(51, "Given user opens mol1K.sdf dataset", () => openDataset(page, ds("mol1K.sdf")));
+      await session.step(51, "Given user opens mol1K.sdf dataset keeping the first 100 rows", () => openDatasetRows(page, ds("mol1K.sdf"), 100));
       await session.step(52, "When user picks \"Chem > Analyze > Chemical Space...\" from the top menu", () => pickFromTopMenu(page, "Chem > Analyze > Chemical Space..."));
       await session.step(53, "Then \"Chem Space\" dialog should be visible", () => shouldBe(page, el("\"Chem Space\" dialog"), "visible"));
       await session.step(54, "When user clicks on OK button in \"Chem Space\" dialog", () => clickOn(page, el("OK button in \"Chem Space\" dialog")));

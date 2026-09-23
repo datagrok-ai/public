@@ -78,7 +78,8 @@ Feature: Hierarchical clustering from the Chem menu
     And the "tree height" reading of grid should not be as remembered
     And no errors should have been logged
 
-  Scenario: Numeric columns with centroid linkage are run
+  @GROK-19595
+  Scenario: Numeric columns with centroid linkage attach a tree with a leaf for every row
     When user clicks on "Remove Dendrogram" icon
     And user picks "Chem > Analyze > Hierarchical Clustering..." from the top menu
     And user clicks on editor of Features input in "Hierarchical Clustering" dialog
@@ -91,8 +92,5 @@ Feature: Hierarchical clustering from the Chem menu
     When user clicks on OK button in "Hierarchical Clustering" dialog
     Then "Hierarchical Clustering" dialog should be hidden
     And the task bar should have finished "Creating dendrogram"
-
-  @GROK-19595
-  Scenario: Numeric columns with centroid linkage attach a tree with a leaf for every row
-    Then the "tree leaves" reading of grid should be 1000
+    And the "tree leaves" reading of grid should be 1000
     And no errors should have been logged

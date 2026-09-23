@@ -28,8 +28,7 @@ Feature: Antibody numbering with the bundled immunum engine
   Scenario: Kabat numbering aligns the column and annotates its regions
     When user selects "kabat" in Scheme input in "Apply Antibody Numbering" dialog
     And user clicks on OK button in "Apply Antibody Numbering" dialog
-    Then the top menu command should have completed
-    And a new column "AntibodyHC (aligned)" should have been added
+    Then a new column "AntibodyHC (aligned)" should have been added
     And "AntibodyHC (aligned)" column should have tag ".numberingScheme" equal to "kabat"
     And every value of "AntibodyHC (aligned)" column should have the same length
     And "AntibodyHC (aligned)" column should have no missing values

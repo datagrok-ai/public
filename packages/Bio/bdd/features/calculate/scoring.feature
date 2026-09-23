@@ -90,7 +90,7 @@ Feature: Identity and similarity scoring
   # Known failure, GROK-20964: seqIdentity throws
   # "The column of notation 'helm' must be 'Macromolecule'" for any non-empty HELM sequence
   # (probed on dev 2026-09-22); the one-cell column it builds is detected but never typed.
-  @known-failure
+  @known-failure @GROK-20964
   Scenario: The identity function scores a HELM sequence against itself
     When user calls "Bio:seqIdentity" function with:
       | seq | PEPTIDE1{L.M.P.Q.R.S.T}$$$$ |

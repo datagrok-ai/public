@@ -25,7 +25,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Identity and similarity scoring", () => {
   const session = feature(test, "features/calculate/scoring.feature", import.meta.url);
-  test("Identity and similarity scoring", {tag: ["@journey", "@realizes:bio.calculate.identity", "@realizes:bio.calculate.similarity", "@known-failure"]}, async ({browser}) => {
+  test("Identity and similarity scoring", {tag: ["@journey", "@realizes:bio.calculate.identity", "@realizes:bio.calculate.similarity", "@known-failure", "@GROK-20964"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 10, page);
     await session.step(13, "Given user is logged in", () => loggedIn(page));

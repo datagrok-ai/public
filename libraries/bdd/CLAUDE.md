@@ -208,7 +208,11 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   the plot's root) — fixed 2026-09-21 in `regression_line.dart`.
 - Filters: `user filters rows where …` writes the filter bitset, and anything that calls
   `requestFilter` (a histogram on every menu pick) recomputes it — hold a filter across viewer
-  interaction through a filter card. `getFiltersGroup` creates a panel when there is none.
+  interaction through a filter card. `getFiltersGroup` creates a panel when there is none. A click
+  on a categorical card's category name applies "only this one" from a 1 ms debounce that reads the
+  card's current row when it fires (`grid_filter_base.dart`); Chrome runs queued input before timers,
+  so a checkbox click on the same card right after it can move that row first and the card keeps
+  the wrong category — claim the count after the name click before the next click on that card.
 - Readings: `rows shown` is `combinedFilter.trueCount` except where the viewer means "what the
   frame drew" (scatter plot, PC plot under a transformation, density plot); demog-1000 has 128
   blank HEIGHTs, so a plot on HEIGHT draws 872; its auto-picked category is DIS_POP; a calendar at
@@ -283,6 +287,49 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   (`.cm-editor`); a document is not an input value, the text goes in at the caret. The Model Hub
   gallery is on the page and empty for seconds after `Compute2:modelCatalog` returns: wait for
   cards, not the element.
+
+## Claims that cannot fail — what every audit finds again
+
+Each of these passed green while the thing it named was broken (audits of 2026-09-21 and
+2026-09-23). Read every Then of a new feature against this list before running it.
+
+- **A page function sees only its own source.** A Node-side helper named inside `page.evaluate` /
+  `waitForFunction` is a `ReferenceError` in the page, and a `.catch` around the call turns the
+  check into a no-op: the shell reset's task-bar wait never waited from the day it was written.
+  Pass the function itself, or its source as text (`` `(${fn})(…)` ``).
+- **Absence is not a value.** A throw ends an `expect.poll`, so a reading or a column a computation
+  adds late fails the claim at once — the reading steps return `MissingReading` and the column
+  polls the missing column's text instead; neither may ever satisfy a negative.
+- **A negative, a zero or "unchanged" right after an async gesture reads the state before it.**
+  Two search types in a row that both keep 0 rows, a header that echoes the property just set while
+  the cards re-render 200 ms later, "no new column" read once while the analysis runs: pair every
+  such claim with one the gesture must change (a remembered reading that must differ, an end signal
+  first — a balloon, a column, `… should have finished updating`).
+- **`the top menu command should have completed` is the menu function's call.** A package command
+  whose function only builds and shows its own dialog has ended before OK; the step now fails after
+  that OK (`waitCommand`), and the claim is what the OK produces.
+- **Coarse where the number is known.** `fewer than N`, `at least 1`, `lower than before` all pass
+  on 0; "split differently" on label text passes for the same partition renumbered. Write the exact
+  count the description states — measured in a run, never guessed.
+- **Echoes.** A property, tag or header read back right after the step wrote it, a setting-derived
+  count (`regions shown`, `formula lines` = active, not drawn): claim what the frame drew (its hit
+  area) or what the change caused downstream.
+- **Name resolution lands on journey leftovers.** A second `mutations` table, an `R1` column from
+  the first run: close what a scenario made, or claim the new name (`R1_1`).
+- **Text and pixel matchers are wide.** `contain text` is case-insensitive textContent over the
+  whole element, hidden children included; a list reading's `contain` is membership after a comma
+  split (an item with a comma is refused); white is the blank the colour steps skip (refused), grey
+  gridlines are ink (`painted` skips a 2 px border) — a cell claim needs a hue or a reading.
+- **Fixtures that cannot tell the semantics apart**: Shift-adding a region nested in the one already
+  selected gives the same rows as a replace; pick a pair whose union differs from either.
+- **State the harness or an earlier feature left**, stated as the product's: `openTable`'s current
+  cell, the context panel or toolbox open, a custom-event count (reset by `listens for`), a per-account
+  setting toggled through the UI (pin it with a Given that restores it at feature end).
+- **Package bindings take `expect` and `pollMs` from `@datagrok-libraries/bdd/runtime`**, never from
+  `@playwright/test`: the `@known-failure` narrowing and `BDD_EXPECT_TIMEOUT` go through them.
+- **Titles and descriptions that promise more than the Thens claim** ("…and dropping the tree
+  removes it", "builds a ball-and-stick view" checked as "shows no error") — trim the text or add
+  the claim.
 
 ## Environment
 

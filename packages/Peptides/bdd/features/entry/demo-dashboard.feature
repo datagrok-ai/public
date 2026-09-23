@@ -26,6 +26,7 @@ Feature: Peptide SAR demo dashboard
     And the SAR setting "activityScaling" should be "-lg"
     And the SAR activity column should use "-lg" scaling
     And the SAR setting "mclSettings.threshold" should be "94"
+    And the "completed threshold" reading of MCL viewer should be 94
     And the table should have a column "Cluster (MCL)"
     And the open tableview should have 1 Sequence Variability Map viewer
     And the open tableview should have 1 Most Potent Residues viewer

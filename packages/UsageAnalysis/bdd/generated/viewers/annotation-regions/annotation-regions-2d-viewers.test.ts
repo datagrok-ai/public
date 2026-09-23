@@ -97,12 +97,11 @@ test.describe("Annotation regions on the other two-dimensional viewers", () => {
     await session.step(91, "And the \"region Adults title\" area of density plot viewer should lie inside the \"region Adults\" area", () => areaLies(page, "region Adults title", el("density plot viewer"), "inside", "region Adults"));
     await session.step(92, "And the \"region Adults\" area of density plot viewer should lie inside the \"view\" area", () => areaLies(page, "region Adults", el("density plot viewer"), "inside", "view"));
     await session.step(93, "When user sets \"showViewerAnnotationRegions\" property of density plot viewer to \"false\"", () => setProperty(page, "showViewerAnnotationRegions", el("density plot viewer"), "false"));
-    await session.step(94, "Then the \"regions shown\" reading of density plot viewer should be 0", () => readingIs(page, "regions shown", el("density plot viewer"), 0));
-    await session.step(95, "And density plot viewer should not have a \"region Adults\" area", () => hasNoArea(page, el("density plot viewer"), "region Adults"));
-    await session.step(96, "And density plot viewer should not have a \"region Adults title\" area", () => hasNoArea(page, el("density plot viewer"), "region Adults title"));
-    await session.step(97, "When user sets \"showViewerAnnotationRegions\" property of density plot viewer to \"true\"", () => setProperty(page, "showViewerAnnotationRegions", el("density plot viewer"), "true"));
-    await session.step(98, "Then the \"regions shown\" reading of density plot viewer should be 1", () => readingIs(page, "regions shown", el("density plot viewer"), 1));
-    await session.step(99, "And density plot viewer should have a \"region Adults title\" area", () => hasArea(page, el("density plot viewer"), "region Adults title"));
-    await session.step(100, "And no errors should have been logged", () => noErrors(page));
+    await session.step(94, "Then density plot viewer should not have a \"region Adults\" area", () => hasNoArea(page, el("density plot viewer"), "region Adults"));
+    await session.step(95, "And density plot viewer should not have a \"region Adults title\" area", () => hasNoArea(page, el("density plot viewer"), "region Adults title"));
+    await session.step(96, "When user sets \"showViewerAnnotationRegions\" property of density plot viewer to \"true\"", () => setProperty(page, "showViewerAnnotationRegions", el("density plot viewer"), "true"));
+    await session.step(97, "Then density plot viewer should have a \"region Adults\" area", () => hasArea(page, el("density plot viewer"), "region Adults"));
+    await session.step(98, "And density plot viewer should have a \"region Adults title\" area", () => hasArea(page, el("density plot viewer"), "region Adults title"));
+    await session.step(99, "And no errors should have been logged", () => noErrors(page));
   });
 });

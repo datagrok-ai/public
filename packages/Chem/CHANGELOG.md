@@ -10,6 +10,7 @@
 * Scaffold Tree: Added status readings of its nodes (count, checked, coloured, each node's scaffold, hits and colour), its message and why generation is blocked, hit areas for each node and its icons, and `aria-disabled` on a blocked icon
 * Matched Molecular Pairs: Added status readings of its activities, current tab, substitutions, pairs and generated molecules
 * Activity cliffs: Added the `only cliffs` reading beside `cliffs`, and named the cliff-count button `button-cliffs`
+* R-Groups Analysis: Fixed OK with an empty sketcher removing the latest analysis before reporting that no core was provided
 * Added BDD features for the Chem section of TestTrack
 * GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder
 * GROK-20808: MMP: Fixed a crash when no table was selected in the dialog

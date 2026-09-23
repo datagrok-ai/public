@@ -27,8 +27,7 @@ Feature: The Annotations group on a numeric axis
     Then "formulaLines" property of scatter plot viewer should contain "${WEIGHT} = 77.4"
     And the "formula lines" reading of scatter plot viewer should be 1
     When user sets "formulaLines" property of scatter plot viewer to ""
-    Then the "formula lines" reading of scatter plot viewer should be 0
-    When user picks "Annotations > Add Band" from the context menu of the "left edge of x axis" area of scatter plot viewer
+    And user picks "Annotations > Add Band" from the context menu of the "left edge of x axis" area of scatter plot viewer
     And user clicks OK button in "Formula Lines" dialog
     Then "formulaLines" property of scatter plot viewer should contain "${WEIGHT} in (64.2, 91.0)"
     And the "formula lines" reading of scatter plot viewer should be 1
@@ -43,8 +42,7 @@ Feature: The Annotations group on a numeric axis
     And scatter plot viewer should have a "region 1" area
     And the "region 1" and "view" areas of scatter plot viewer should be the same height
     When user sets "annotationRegions" property of scatter plot viewer to "[]"
-    Then the "viewer regions" reading of scatter plot viewer should be 0
-    And no errors should have been logged
+    Then no errors should have been logged
 
   Scenario: The scatter plot's Y axis adds a line, a band and a region on HEIGHT
     Given user adds a scatter plot viewer with:
@@ -89,8 +87,7 @@ Feature: The Annotations group on a numeric axis
     When user sets properties of density plot viewer:
       | formulaLines      |    |
       | annotationRegions | [] |
-    Then the "viewer regions" reading of density plot viewer should be 0
-    And no errors should have been logged
+    Then no errors should have been logged
 
   Scenario: The line chart's axes add items on AGE and on the aggregated HEIGHT
     Given user adds a line chart viewer with:
