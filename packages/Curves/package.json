@@ -9,11 +9,11 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "workspace:^",
-    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/test": "1.4.1",
     "@datagrok-libraries/utils": "workspace:^",
     "@types/wu": "catalog:",
     "cash-dom": "catalog:",
-    "datagrok-api": "workspace:^",
+    "datagrok-api": "^1.27.0",
     "dayjs": "catalog:",
     "exceljs": "catalog:",
     "jstat": "^1.9.6",
