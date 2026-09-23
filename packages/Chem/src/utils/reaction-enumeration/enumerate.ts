@@ -23,6 +23,8 @@ export interface RouteStep {
   product: string;
   templateSmarts: string;
   reactionName: string;
+  /** Products this template kept from these reactants, so >1 means the step branched. */
+  nProducts: number;
 }
 
 export type Route = RouteStep[];
@@ -323,6 +325,7 @@ function exceedsComponentCap(numReactants: number, cap: number): boolean {
 export interface OutputStep {
   template: string;
   reactionName: string;
+  nProducts: number;
 }
 
 export interface OutputRow {
@@ -433,7 +436,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
   productPools.push((round1OverrideActive ? (roundBBs[0] ?? uniqueBBs) : uniqueBBs)
     .map((s) => ({smiles: s, routes: [], firstRound: 0})));
 
-  const {max_num_components, max_num_combinations_per_template, max_num_routes_per_compound} = config;
+  const {max_num_components, max_num_combinations_per_template, max_num_routes_per_compound,
+    max_num_products_per_step} = config;
 
   const buildBlockingFilter = (mol: RDMol, blocking: RDMol[]): boolean => {
     for (const q of blocking) if (hasMatch(mol, q)) return true;
@@ -470,6 +474,10 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       const prevRoundProducts = round === 1 ? [] : productPools[round - 1].map((p) => p.smiles);
       const allPriorPool = new Set<string>();
       for (let r = 0; r < round; r++) for (const p of productPools[r]) allPriorPool.add(p.smiles);
+      // Built once per round: productPools only grows when a round ends. First occurrence wins.
+      const allPrevProducts = new Map<string, ProductRecord>();
+      for (let r = 1; r < round; r++)
+        for (const p of productPools[r]) if (!allPrevProducts.has(p.smiles)) allPrevProducts.set(p.smiles, p);
 
       const allowedTemplateKeys = roundAllowedTemplateKeys[round - 1];
       const activeBBs = roundBBs[round - 1] ?? uniqueBBs;
@@ -575,8 +583,10 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           totalCombos += c;
         }
         const comboCap = max_num_combinations_per_template;
+        const productCap = max_num_products_per_step;
         let executed = 0;
         let truncated = false;
+        let productCapped = 0;
         progressContext.combosTotal = totalCombos;
 
         configLoop:
@@ -614,6 +624,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             // level, so a copy still aliases the original's memory and molList.delete() reaches
             // into both, corrupting the heap. Matches the pattern in reactions.ts.
             const inputMols: RDMol[] = [];
+            const comboSteps: RouteStep[] = [];
             try {
               molList = new rdkit.MolList();
               let allValid = true;
@@ -674,56 +685,59 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                       try {evalMol.delete();} catch {/* ignore */}
                     }
 
-                    const step: RouteStep = {
+                    comboSteps.push({
                       reactants: combo.slice(),
                       product: productSmiles,
                       templateSmarts: t.smarts,
                       reactionName: t.reactionName,
-                    };
-
-                    // The synthesis history preceding this step: for each combo component that is
-                    // itself a product of ANY earlier round, splice in its known route. Restricting
-                    // this to round-(r-1) would drop the history of older products a step legitimately
-                    // consumes, making the route look like it started from pre-formed intermediates.
-                    let baseRoutes: Route[];
-                    if (round === 1)
-                      baseRoutes = [[]];
-                    else {
-                      const allPrevProducts = new Map<string, ProductRecord>();
-                      for (let r = 1; r < round; r++) {
-                        for (const p of productPools[r]) {
-                          // First occurrence wins (typically the shorter route).
-                          if (!allPrevProducts.has(p.smiles)) allPrevProducts.set(p.smiles, p);
-                        }
-                      }
-                      const prevComponents = combo.filter((c) => allPrevProducts.has(c));
-                      if (prevComponents.length === 0) baseRoutes = [[]];
-                      else {
-                        const prevRouteLists = prevComponents.map((pc) => {
-                          const rec = allPrevProducts.get(pc);
-                          return rec && rec.routes.length > 0 ? rec.routes : [[]];
-                        });
-                        baseRoutes = [];
-                        for (const combo2 of cartesian(prevRouteLists)) {
-                          const merged: Route = [];
-                          for (const r of combo2) for (const s of r) merged.push(s);
-                          baseRoutes.push(merged);
-                        }
-                      }
-                    }
-
-                    let rec = newPool.get(productSmiles);
-                    if (!rec) {
-                      rec = {smiles: productSmiles, routes: [], firstRound: round};
-                      newPool.set(productSmiles, rec);
-                    }
-                    for (const base of baseRoutes)
-                      if (!addRouteIfNew(rec, [...base, step], max_num_routes_per_compound)) break;
+                      nProducts: 0,
+                    });
                   } finally {
                     try {productMol?.delete();} catch {/* ignore */}
                   }
                 } finally {
                   try {productSet.delete();} catch {/* ignore */}
+                }
+              }
+
+              // The routes below hold these same step objects, so one stamp reaches every route.
+              for (const s of comboSteps) s.nProducts = comboSteps.length;
+              // Keeping an arbitrary few would be arbitrary regiochemistry, so drop the whole combo.
+              if (productCap >= 0 && comboSteps.length > productCap)
+                productCapped++;
+              else if (comboSteps.length > 0) {
+                // The synthesis history preceding this step: for each combo component that is
+                // itself a product of ANY earlier round, splice in its known route. Restricting
+                // this to round-(r-1) would drop the history of older products a step legitimately
+                // consumes, making the route look like it started from pre-formed intermediates.
+                let baseRoutes: Route[];
+                if (round === 1)
+                  baseRoutes = [[]];
+                else {
+                  const prevComponents = combo.filter((c) => allPrevProducts.has(c));
+                  if (prevComponents.length === 0) baseRoutes = [[]];
+                  else {
+                    const prevRouteLists = prevComponents.map((pc) => {
+                      const rec = allPrevProducts.get(pc);
+                      return rec && rec.routes.length > 0 ? rec.routes : [[]];
+                    });
+                    baseRoutes = [];
+                    for (const combo2 of cartesian(prevRouteLists)) {
+                      const merged: Route = [];
+                      for (const r of combo2) for (const s of r) merged.push(s);
+                      baseRoutes.push(merged);
+                    }
+                  }
+                }
+
+                for (const step of comboSteps) {
+                  let rec = newPool.get(step.product);
+                  if (!rec) {
+                    rec = {smiles: step.product, routes: [], firstRound: round};
+                    newPool.set(step.product, rec);
+                  }
+                  for (const base of baseRoutes)
+                    if (!addRouteIfNew(rec, [...base, step], max_num_routes_per_compound)) break;
                 }
               }
             } catch (e) {
@@ -738,6 +752,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         }
         if (truncated)
           warnings.push(`Template ${t.index + 1} (${t.reactionName || ''}): truncated at ${executed}/${totalCombos} combinations (cap=${comboCap}).`);
+        if (productCapped > 0)
+          warnings.push(`Step ${round}, template ${t.index + 1} (${t.reactionName || ''}): dropped ${productCapped} combination(s) over the ${productCap}-product cap.`);
       }
 
       productPools.push(Array.from(newPool.values()));
@@ -778,7 +794,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         rows.push({
           product: rec.smiles,
           route: formatRoute(route),
-          steps: route.map((s) => ({template: s.templateSmarts, reactionName: s.reactionName})),
+          steps: route.map((s) => ({
+            template: s.templateSmarts, reactionName: s.reactionName, nProducts: s.nProducts,
+          })),
           round: rec.firstRound,
           n_routes: rec.routes.length,
         });

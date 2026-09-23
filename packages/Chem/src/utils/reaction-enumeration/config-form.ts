@@ -65,6 +65,10 @@ export function buildCombinationLimitFields(initial: EnumeratorConfig): {
   const maxCombos = intInput('Max combinations per template', initial.max_num_combinations_per_template,
     'Per template per step: cap on the number of reactant combinations actually run. If the ' +
     'cartesian product exceeds this, the enumerator runs the first N and stops. Leave blank for no cap.', 1);
+  const maxProducts = intInput('Max products per step', initial.max_num_products_per_step,
+    'Per reactant combination: counts the products that passed the product filters. Keeping an ' +
+    'arbitrary few of them would be arbitrary regiochemistry, so a step over this cap is dropped ' +
+    'whole — nothing it made is kept or seeds the next step. Leave blank for no cap.', 1);
   const keepBBs = boolInput('Keep building blocks in output', initial.keep_building_blocks_in_final_output,
     'Include the original building blocks (step 0) in the final product list.');
 
@@ -72,10 +76,14 @@ export function buildCombinationLimitFields(initial: EnumeratorConfig): {
     target.max_num_components = maxComponents.get();
     target.max_num_routes_per_compound = maxRoutes.get();
     target.max_num_combinations_per_template = maxCombos.get();
+    target.max_num_products_per_step = maxProducts.get();
     target.keep_building_blocks_in_final_output = keepBBs.get();
   };
 
-  return {inputs: [maxComponents.input, maxRoutes.input, maxCombos.input, keepBBs.input], syncToConfig};
+  return {
+    inputs: [maxComponents.input, maxRoutes.input, maxCombos.input, maxProducts.input, keepBBs.input],
+    syncToConfig,
+  };
 }
 
 // Product-level filters: atom counts, charge/radical/isotope rejection.
@@ -95,6 +103,7 @@ export function buildProductFilterFields(initial: EnumeratorConfig): {
     maxMetals: intInput('Max metals', ps.max_num_metals, DISABLED_HINT),
     maxHal: intInput('Max halogens', ps.max_num_halogens, DISABLED_HINT),
     maxArom: intInput('Max aromatic atoms', ps.max_num_aromatic_atoms, DISABLED_HINT),
+    maxAromRings: intInput('Max aromatic rings', ps.max_num_aromatic_rings, DISABLED_HINT),
     maxUnsat: intInput('Max unsaturated non-aromatic bonds', ps.max_num_unsaturated_nonaromatic_bonds,
       DISABLED_HINT),
     allowedAtoms: csvInput('Only these atoms allowed', ps.only_these_atoms_allowed,
@@ -121,6 +130,7 @@ export function buildProductFilterFields(initial: EnumeratorConfig): {
       max_num_metals: products.maxMetals.get(),
       max_num_halogens: products.maxHal.get(),
       max_num_aromatic_atoms: products.maxArom.get(),
+      max_num_aromatic_rings: products.maxAromRings.get(),
       max_num_unsaturated_nonaromatic_bonds: products.maxUnsat.get(),
       only_these_atoms_allowed: products.allowedAtoms.get(),
       remove_radicals: products.rmRadicals.get(),
