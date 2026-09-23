@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Substructure Search: A second run no longer asks for the molecule column, which offered the hidden canonical SMILES column the first search leaves
 * Reaction renderer: Replaced inter-step arrows with numbered panels and improved scaffold alignment using cached molecular coordinates
 * Substructure filter: Fixed the search progress staying in the task bar at 100% — a search's end closes it, a detached filter terminates every search it started, and the fingerprint precalculation clears its own entry
 * GROK-20955: Names To Smiles: Fixed the run failing on a table that already has a canonical_smiles column; the structures go into a column of their own

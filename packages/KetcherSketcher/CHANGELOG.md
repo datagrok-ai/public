@@ -1,5 +1,11 @@
 # Ketcher Sketcher changelog
 
+## v.next
+
+* Fixed a structure drawn from a template coming out twice: an export taken while the pointer was still over the canvas included the template's floating preview
+* Fixed a structure drawn right before OK being lost: the molblock is written and announced in the change itself, and the Indigo exports run one at a time (overlapping conversions got each other's replies or none)
+* The editor is ready without waiting for the hidden macromolecules editor to load
+
 ## 2.4.8
 
 * Fixed multiple sketchers on one page breaking each other (upstream ketcher-core singletons): opening a new sketcher now suspends the others behind a "Reload" placeholder that remounts the editor with its molecule preserved
