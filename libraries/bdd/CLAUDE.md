@@ -46,6 +46,31 @@ WebLogo glyphs Peptides draws in grid headers), the annotation regions' `region 
 hit areas and `title strip top` / `title strip right` / `region titles shown` readings
 (`AnnotationRegionsMixin.addStatus`).
 
+## What never becomes a feature — hard rule
+
+A feature tests what a user does and sees in the browser. Two kinds of test never go in one — not
+when translating, not when looking for gaps, not when a TestTrack case asks for it (lead's ruling,
+2026-09-23):
+
+- **Anything that runs a server-side script or compute container, or reaches an outside web
+  service**: Python/R/Julia scripts, Jupyter kernels, Docker containers, third-party lookups.
+  Examples: Chem Curate, Mutate, IUPAC Name, Generate Conformers, Butina, Synthon Search, the 3D
+  Structure and Gasteiger panes (Python); Descriptors and Map Identifiers (the chem-chem
+  container); the Identifiers pane (UniChem and PubChem lookups); Bio Molecules to HELM and its 3D
+  embedding. The outcome depends on the stand's kernel, containers and network (a cold kernel after
+  a restart hangs past any budget; a late error from a lookup fails the next scenario's "no errors"),
+  so the suite reports the environment, never the UI. Test the script with a package test. Check the
+  code path, not the menu name: a JS-looking command or pane can call
+  `grok.functions.call('<Pkg>:<PythonScript>')`; the package's `scripts/` folder lists the scripts.
+  A pane builds when expanded, and the expanded state persists in `localStorage` for the worker's
+  page, so a scenario that expands a server-backed pane makes it build in later scenarios too.
+- **Anything with nothing UI-specific**: a function called with arguments and its result checked,
+  a server outcome no UI shows. That is a package test (`src/tests/`) or an `ApiTests` test.
+
+A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
+`playwright` case, a scenario of either kind is skipped, and the feature description says so in
+one line. A gap hunt counts these as covered elsewhere, not as gaps.
+
 ## Invariants — what must not regress
 
 - **One registry, through `dist/`.** Specs import the library by package subpath, project bindings

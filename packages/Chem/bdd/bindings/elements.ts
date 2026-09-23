@@ -39,8 +39,5 @@ kind('MPO profile', {
   description: 'a row of the Manage Profiles list, by the profile name; "actions of X MPO profile" is its ⋮ button',
 });
 
-element('3D structure view', {selector: '.d4-ngl-viewer canvas',
-  description: 'the canvas NGL draws the ball-and-stick molecule on, inside the 3D Structure pane'});
-
 element('R-Groups settings icon', {selector: '.chem-rgroup-settings-icon',
   description: 'the gear of the R-Groups Analysis dialog: shows Matching strategy and Only match at R groups, which the dialog remembers per account'});

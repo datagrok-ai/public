@@ -2,12 +2,11 @@
 Feature: Identity and similarity scoring
   Bio | Calculate | Identity... and Similarity... score every sequence against a reference typed
   into the dialog. With the first row as the reference, identity is exactly 1 there and stays
-  within 0..1; similarity peaks there. Neither leaves a cell blank, whatever the row's length. The functions behind them are called directly
-  too: identity of a sequence with itself is 1, a local alignment finds a shared stretch, and
-  Get Region returns the column it names.
+  within 0..1; similarity peaks there. Neither leaves a cell blank, whatever the row's length.
 
-  Not translated, and why: nothing of the manual cases is left out; Get Region through its dialog
-  is in transform/convert and transform/other-notations.
+  Not translated, and why: the functions behind the dialogs called directly (seqIdentity,
+  sequenceAlignment, getRegion) have no UI — see the bdd library's CLAUDE.md, "What never becomes
+  a feature". Get Region through its dialog is in transform/convert and transform/other-notations.
 
   Background:
     Given user is logged in
@@ -61,51 +60,6 @@ Feature: Identity and similarity scoring
     And 1 new column should have been added
     And a new column "Similarity" should have been added
     And "Similarity" column should have its maximum in row 3
-
-  Scenario: The scoring functions answer an empty sequence with nothing, not an error
-    When user calls "Bio:seqIdentity" function with:
-      | seq |                                                                |
-      | ref | PEPTIDE1{D.E.F.G}\|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0 |
-    Then the result should be empty
-    When user calls "Bio:sequenceAlignment" function with:
-      | alignType  | Global alignment                       |
-      | alignTable | BLOSUM62                               |
-      | gap        | -10                                    |
-      | seq1       | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW        |
-      | seq2       | MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL  |
-    Then the result should be an alignment of at least 37 positions
-    And no errors should have been logged
-
-  Scenario: The identity function scores a fasta sequence against a reference
-    When user calls "Bio:seqIdentity" function with:
-      | seq | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW |
-      | ref | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW |
-    Then the result should be the number 1
-    When user calls "Bio:seqIdentity" function with:
-      | seq | MDYKETLLMPKTAAAAAAAANKEPQIQEKW  |
-      | ref | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW |
-    Then the result should be a number between 0.1 and 0.99
-    And no errors should have been logged
-
-  Scenario: A local alignment with BLOSUM45 finds the shared stretch
-    When user calls "Bio:sequenceAlignment" function with:
-      | alignType  | Local alignment                        |
-      | alignTable | BLOSUM45                               |
-      | gap        | -10                                    |
-      | seq1       | MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW        |
-      | seq2       | AAAAKETLLMPKTDFPAAAA                   |
-    Then the result should be an alignment of at least 12 positions
-    And no errors should have been logged
-
-  Scenario: Get Region called as a function returns the named region column
-    When user calls "Bio:getRegion" function with:
-      | sequence | column:HELM string |
-      | start    | 3                  |
-      | end      | 6                  |
-      | name     | region 3-6         |
-    Then the result should have a "name" of "region 3-6"
-    And row 2 of the result column should be "PEPTIDE1{P.Q.R.S}$$$$"
-    And no errors should have been logged
 
   # GROK-20963 (fixed 2026-09-21): the similarity scoring blanked every row whose length differed
   # from the reference's; it now scores the reference's positions, as identity does. Last, so
