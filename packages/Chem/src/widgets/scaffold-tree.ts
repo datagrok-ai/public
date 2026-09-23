@@ -419,6 +419,11 @@ export async function updateVisibleNodes(
 async function renderMoleculeAsync(group: DG.TreeViewGroup, gropVal: ITreeNode, thisViewer: ScaffoldTreeViewer): Promise<void> {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
+      // a removed node still gets its resize callback; drawing a colored one would register its color again
+      if (!group.root.isConnected) {
+        resolve();
+        return;
+      }
       const canvas = group.root.querySelector('.chem-canvas') as HTMLCanvasElement;
 
       const {chosenColor, parentColor, smiles, colorOn} = gropVal;

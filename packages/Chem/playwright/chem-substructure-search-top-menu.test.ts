@@ -210,10 +210,9 @@ test('Chem: Substructure Search via top menu — match / no-match / re-invoke re
     console.log(`[probe] setup: rowCount=${info.total} hasMolCol=${info.hasMolCol} ` +
       `molCols=${info.molCols.length} ${JSON.stringify(info.molCols)}`);
     expect(info.hasMolCol, `${MOL_COL} must be a Molecule column`).toBe(true);
-    // The branch the editor takes is chosen on this count (Chem/src/package.ts:744-765): one
-    // Molecule column calls the function directly, two or more raise the picker. Pinning it
-    // here and again in Scenario 2 is what makes the two invocations' different behaviour a
-    // measured state change rather than two contradictory claims about the same product.
+    // The branch the editor takes is chosen on the Molecule columns a user can search (not the
+    // ~-prefixed helpers): one calls the function directly, two or more raise the picker.
+    // Scenario 2 pins the helper column a search caches, which the editor must leave out.
     expect(info.molCols, `the fixture must start with exactly one Molecule column, got ${JSON.stringify(info.molCols)}`)
       .toEqual([MOL_COL]);
   });
@@ -305,42 +304,36 @@ test('Chem: Substructure Search via top menu — match / no-match / re-invoke re
     // Positive control: with no Filter Panel rendered both counts would be 0 and the
     // no-second-card check below would pass on there being no cards at all.
     expect(cardsBefore, 'the Filter Panel must be rendering the card for the card-count comparison to mean anything').toBeGreaterThan(0);
-    // Why this invocation behaves differently from Scenario 1's: running a search caches
-    // helper columns on the dataframe (saveColumn, Chem/src/chem-searches.ts:176-187), one of
-    // which holds canonical SMILES and is itself typed Molecule. The editor's branch is chosen
-    // on the Molecule-column count, so it now raises the picker instead of calling directly.
-    // Asserting the count here is what keeps that from reading as a contradiction with S1S2.
+    // Running a search caches helper columns on the dataframe (saveColumn, Chem/src/chem-searches.ts),
+    // one of which holds canonical SMILES and is itself typed Molecule. It is no column to search,
+    // so the re-invocation must still skip the picker; the count here keeps that from passing
+    // only because no helper was cached.
     const molColsNow = await page.evaluate(() => grok.shell.t.columns.toList()
       .filter((c: any) => c.semType === 'Molecule').map((c: any) => c.name as string));
     console.log(`[probe] S2S1 before re-invoke: molCols=${molColsNow.length} ` +
       `${JSON.stringify(molColsNow)} cardsBefore=${cardsBefore}`);
     expect(molColsNow.length,
-      `the searches already run must have cached a second Molecule-typed column, or the picker ` +
-      `below cannot appear; columns seen: ${JSON.stringify(molColsNow)}`).toBeGreaterThan(1);
+      `the searches already run must have cached a second Molecule-typed column, or skipping the ` +
+      `picker below proves nothing; columns seen: ${JSON.stringify(molColsNow)}`).toBeGreaterThan(1);
 
     await openChemMenuItem(page, SUBSTRUCTURE_LEAF);
-    const picker = page.locator(`${PICKER_DIALOG} [name="button-OK"]`).first();
-    await picker.waitFor({state: 'visible', timeout: 20_000});
-
-    expect(await page.locator(PICKER_DIALOG).count(), 're-invoking the top-menu leaf must open the column-picker dialog').toBe(1);
-    await picker.click();
     await page.locator(SMILES_INPUT).first().waitFor({state: 'visible', timeout: 20_000});
+    expect(await page.locator(PICKER_DIALOG).count(),
+      'the cached ~-prefixed helper is no column to search, so re-invoking must skip the column picker').toBe(0);
     await page.waitForFunction((t) => grok.shell.t.filter.trueCount === t, total, {timeout: 20_000});
     const cardsAfter = await page.locator(FILTER_CARD).count();
     const cardAfter = await readCardState(page, MOL_COL);
     const resetCount = await readTrueCount(page);
-    console.log(`[probe] S2S1 after OK: cardsAfter=${cardsAfter} (before=${cardsBefore}) ` +
+    console.log(`[probe] S2S1 after re-invoke: cardsAfter=${cardsAfter} (before=${cardsBefore}) ` +
       `columns=${JSON.stringify(cardAfter.columns)} type=${cardAfter.type} empty=${cardAfter.empty} ` +
       `isFiltering=${cardAfter.isFiltering} molBlock=${JSON.stringify((cardAfter.molBlock ?? '').slice(0, 120))} ` +
       `trueCount=${resetCount}/${total}`);
     expect(cardsAfter, 're-invoking must not add a second substructure filter card').toBe(cardsBefore);
-    // The picker offers the user-visible column, not the cached ~-prefixed helper; confirming
-    // it must therefore leave the filter on canonical_smiles.
     expect(cardAfter.columns,
-      `confirming the picker must prepare the filter on the user-visible molecule column, got ${JSON.stringify(cardAfter.columns)}`)
+      `re-invoking must prepare the filter on the user-visible molecule column, got ${JSON.stringify(cardAfter.columns)}`)
       .toEqual([MOL_COL]);
     expect(cardAfter.empty,
-      `confirming the picker must re-prepare the card empty, got ${JSON.stringify(cardAfter.molBlock)}`).toBe(true);
+      `re-invoking must re-prepare the card empty, got ${JSON.stringify(cardAfter.molBlock)}`).toBe(true);
     expect(resetCount, 're-invoke resets the filter to the full table before the new query').toBe(total);
   });
 
