@@ -17,7 +17,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {connectionHasChat, connectionHasNoChat, deleteChatOfConnection} from '../../bindings/connections.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, isExpanded, pressKeyIn, rightClickOn, shouldBe, shouldContainText, typeInto, uncheck, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {browsePanelOpen, connectionOnServer, contextPanelOpen, contextPanelShows, dialogCloses, pickSharingUser, sharingPaneLists, urlShouldContain, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, connectionOnServer, contextPanelOpen, contextPanelShows, dialogCloses, paneCountAtLeast, pickSharingUser, sharingPaneLists, urlShouldContain, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {closeContextMenu, menuLists, noBalloons, noErrors, pickFromContextMenu, pickFromOpenMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -67,7 +67,7 @@ test.describe("A connection in the connections browser and its context panel", (
       await session.step(61, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("The Activity pane records the connection", async () => {
-      await session.step(64, "Then Activity section in context panel should be present", () => shouldBe(page, el("Activity section in context panel"), "present"));
+      await session.step(64, "Then the \"Activity\" pane of the context panel should count at least 1", () => paneCountAtLeast(page, "Activity", 1));
       await session.step(65, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A chat message is posted on the connection and removed with it", async () => {

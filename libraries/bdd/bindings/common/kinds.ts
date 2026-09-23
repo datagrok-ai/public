@@ -282,9 +282,6 @@ kind('gallery card', {
   labelSelector: '.grok-gallery-grid-item-title',
   dartNames: ['div-{q}'],
 });
-/** An action link of a toolbox pane or a context pane ("Run query...", "Add New Column") — a Dart
- * label of its own class, not the `.d4-link-label` a link is. */
-kind('action', {selector: '.d4-link-action', match: ['text']});
 kind('wizard', {selector: u2('wizard'), match: ['name', 'aria']});
 kind('wizard step', {aliases: ['step'], selector: '.u2-wizard-step', match: ['label', 'text'], labelSelector: '.u2-wizard-title'});
 kind('dock panel', {

@@ -56,7 +56,7 @@ test.describe("The Scripts view and a script's context panel", () => {
       await session.step(70, "And \"Details\" section in context panel should contain text \"table\"", () => shouldContainText(page, el("\"Details\" section in context panel"), "table"));
       await session.step(71, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Activity counts the creation and the run", async () => {
+    await run.scenario("Activity records what the script has been through", async () => {
       await session.step(74, "Given user opens cars dataset", () => openDataset(page, ds("cars")));
       await session.step(75, "And user opens the Scripts view", () => scriptsView(page));
       await session.step(76, "When user types \"BddScriptBrowser{time}\" into gallery search", () => typeInto(page, session.text("BddScriptBrowser{time}"), el("gallery search")));

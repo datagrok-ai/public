@@ -70,7 +70,7 @@ Feature: The Scripts view and a script's context panel
     And "Details" section in context panel should contain text "table"
     And no errors should have been logged
 
-  Scenario: Activity counts the creation and the run
+  Scenario: Activity records what the script has been through
     Given user opens cars dataset
     And user opens the Scripts view
     When user types "BddScriptBrowser{time}" into gallery search

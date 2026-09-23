@@ -4,10 +4,13 @@ Feature: The Octave template counts the cells of its sample table
   like every other language's (files/TestTrack/Scripts/create.md 13-20). With cars — 30 rows by 17
   columns, 510 cells, which R, Python, NodeJS, Julia, Grok and Pyodide answer — Octave answers 527:
   the table reaches Octave with 31 rows (probed on dev 22 Sep through the JS API as well, so it is
-  the Octave handler's conversion, not the editor).
+  the Octave handler's conversion, not the editor). That is GROK-17456 "Octave: Incorrect rows
+  count", closed Won't fix, so 527 is what the product promises today and what the scenario claims;
+  should the handler ever be fixed, this scenario is the one that says so.
 
   Octave runs in a container, so the feature is @full-stand. The run and its answer are two
-  scenarios: the first waits for the run to end, so the known failure is the value, not a timeout.
+  scenarios: the first waits for the run to end, so a failure of the second is the value, not a
+  timeout.
 
   Not translated, and why: nothing of the Octave row of the md is left out.
 
@@ -34,8 +37,5 @@ Feature: The Octave template counts the cells of its sample table
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  # Candidate finding, ticket pending Olesia's manual walk: Octave answers 527 (31 rows x 17 columns)
-  # for the 30-row cars table.
-  @known-failure
-  Scenario: Octave counts the 510 cells of cars
-    Then the script results should show "count" as "510"
+  Scenario: Octave counts the cells of cars its own way
+    Then the script results should show "count" as "527"

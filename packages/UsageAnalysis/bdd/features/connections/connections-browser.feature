@@ -61,7 +61,7 @@ Feature: A connection in the connections browser and its context panel
     And no error or warning balloon should have been shown
 
   Scenario: The Activity pane records the connection
-    Then Activity section in context panel should be present
+    Then the "Activity" pane of the context panel should count at least 1
     And no errors should have been logged
 
   Scenario: A chat message is posted on the connection and removed with it

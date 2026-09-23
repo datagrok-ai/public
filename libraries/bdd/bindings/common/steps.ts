@@ -323,12 +323,12 @@ export const holdsCode = Then('{element} should hold the code {string}', async (
 }, {description: 'the editor document, exactly (trimmed)'});
 
 export const appendToEditor = When('user appends {string} to {element}', async (page: Page, text: string, target: ElementRef) => {
-  const editor = (await locate(page, target)).first();
+  const editor = (await locate(page, target)).filter({visible: true}).first();
   await editor.click();
   await page.keyboard.press('ControlOrMeta+End');
   await page.keyboard.press('Enter');
   await page.keyboard.type(text);
-  await expect(editor, `${target.phrase} after the text was appended`).toContainText(text);
+  await expect.poll(() => codeOf(page, target), {message: `the code of ${target.phrase} after the text was appended`}).toContain(text);
 }, {tier: 'ui', description: 'a new last line typed into a code editor, so its dirty flag sees a real edit'});
 
 /** A Dart text area (`ui.textInput` multiline) is a bare `<textarea class="ui-input-editor">` that

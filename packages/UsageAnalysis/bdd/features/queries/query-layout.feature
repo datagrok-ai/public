@@ -17,13 +17,14 @@ Feature: A query's layout
     Given user is logged in
     And the browse panel is open
     And no query named "BDD-Q-layout-{time}" is on the server
-    # a save that fails still leaves the layout's project behind (part of the finding below)
-    And no project named "BDD-Q-layout-{time}" is on the server
+    And the layout saved for the query "BDD-Q-layout-{time}" is deleted at the end
 
   Scenario: The Layout tab waits for a run, then takes viewers from the toolbox
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
-    When user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    When user hovers over Databases---Postgres---NorthwindTest tree node inside browse tree
+    # the context-menu gesture does not scroll a node below the fold into view; the hover does
+    And user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user enters "BDD-Q-layout-{time}" into Name input
     And user replaces the code of code editor with "select * from products"
@@ -41,11 +42,6 @@ Feature: A query's layout
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  # Candidate finding, ticket pending Olesia's manual walk: saving a query with a layout fails for
-  # a user who is not an administrator — "You don't have a permission to share this object" — and
-  # nothing is saved: the save shares the layout's project with All users at full access
-  # (data_query_view.dart:238-245). CI runs as an administrator and never sees it.
-  @known-failure
   Scenario: Save keeps the query with its layout, and the saved query runs with its viewers
     When user clicks on Save button
     Then 1 query named "BDD-Q-layout-{time}" should be on the server

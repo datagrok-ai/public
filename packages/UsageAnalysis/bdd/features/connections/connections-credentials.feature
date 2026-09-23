@@ -3,8 +3,9 @@ Feature: Connections that log in with real credentials
   The two cases whose claim is a successful login: an existing connection's Edit dialog passes TEST
   once it holds the right login and password (edit.md, "set the right login/password — test OK"),
   and the external provider's connection is created from the dialog against the writable test
-  database (external-provider.md, its first step). The secrets come from DG_PG_LOGIN /
-  DG_PG_PASSWORD and DG_PG_EXT_LOGIN / DG_PG_EXT_PASSWORD, typed from the environment and never
+  database (external-provider.md, its first step). The login of the test server is "datagrok", the
+  same literal the old specs default to; only the passwords are secrets (DG_PG_PASSWORD,
+  DG_PG_EXT_PASSWORD), typed from the environment and never
   printed; a run without them leaves this feature out (--grep-invert @needs-credentials). The
   connections are named BDD-Conn-…-{run} and deleted at feature end — checked gone.
 
@@ -26,7 +27,7 @@ Feature: Connections that log in with real credentials
     When user right-clicks on Databases---Postgres---BDD-Conn-Creds-{run} tree node inside browse tree
     And user picks "Edit..." from the open menu
     Then "Edit Connection" dialog should be visible
-    When user enters the DG_PG_LOGIN secret into Login input in "Edit Connection" dialog
+    When user enters "datagrok" into Login input in "Edit Connection" dialog
     And user enters the DG_PG_PASSWORD secret into Password input in "Edit Connection" dialog
     Given user watches the task bar
     When user clicks on TEST button in "Edit Connection" dialog

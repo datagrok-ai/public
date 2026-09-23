@@ -96,7 +96,7 @@ Feature: Adding a database connection
     And user enters "db.datagrok.ai" into Server input in "Add new connection" dialog
     And user enters "54322" into Port input in "Add new connection" dialog
     And user enters "northwind" into Db input in "Add new connection" dialog
-    And user enters the DG_PG_LOGIN secret into Login input in "Add new connection" dialog
+    And user enters "datagrok" into Login input in "Add new connection" dialog
     And user enters the DG_PG_PASSWORD secret into Password input in "Add new connection" dialog
     Given user watches the task bar
     When user clicks on TEST button in "Add new connection" dialog

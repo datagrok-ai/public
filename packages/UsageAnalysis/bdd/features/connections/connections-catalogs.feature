@@ -57,9 +57,10 @@ Feature: The catalogs of an MS SQL connection
     Then the "tempdb" catalog of the "MSSQLTest" connection should have the comment "BDD comment {run}"
     And no error or warning balloon should have been shown
 
-  # Candidate finding, ticket pending Olesia's manual walk: clearing the Comment input and pressing
-  # Save leaves the old comment on the server (probed on dev 2026-09-22; typing a new comment does
-  # save). The feature-end cleanup clears it through the API either way.
+  # Candidate finding, walked by hand on dev 2026-09-23 (master 9b278de8): typing a comment and
+  # pressing SAVE stores it, emptying the same field and pressing SAVE does not — the button still
+  # says SAVED, and the old comment is back in the pane when the catalog is opened again. A commit
+  # (Tab) before SAVE changes nothing. The feature-end cleanup clears it through the API.
   @known-failure
   Scenario: Clearing the comment in the pane clears it on the server
     When user clears Comment input in context panel

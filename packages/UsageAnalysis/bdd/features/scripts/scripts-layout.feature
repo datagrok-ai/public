@@ -5,13 +5,11 @@ Feature: The layout of a script's result
   and playwright-public/scripts/scripts-layout.test.ts, which reapplied the layout through the JS
   API and skipped its own save when the dialog did not close — so it proved the API, not the view.
 
-  The script is this feature's own ({time} in its name) and is deleted at the end, together with any
-  layout the failing save leaves behind.
+  The script is this feature's own ({time} in its name) and is deleted at the end, together with the
+  layout the save writes.
 
   Not translated, and why: docking one viewer over another (md step 4) has no named drop target —
-  the dock manager's drop zones carry no name, so there is nothing for a gesture to aim at. The
-  standalone run with the layout, the project round trip and File > Refresh (md 7-12) follow the
-  Save, which fails for a non-admin (below), so they are left out until it is fixed.
+  the dock manager's drop zones carry no name, so there is nothing for a gesture to aim at.
 
   Serial: every scenario here works in the Scripts view, whose search text and view mode are the
   account's own settings — two features searching it at the same time would see each other's text.
@@ -32,7 +30,8 @@ Feature: The layout of a script's result
     And user double-clicks on "BddScriptLayout{time}" link in gallery
     Then the "BddScriptLayout{time}" view should be current
     When user clicks on Layout tab
-    Then grid viewer should be absent
+    Then "Run script to get data and edit layout." text should be visible
+    And grid viewer should be absent
     And no errors should have been logged
 
   Scenario: Running the script fills the layout with its result
@@ -49,11 +48,8 @@ Feature: The layout of a script's result
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  # Candidate finding, ticket pending Olesia's manual walk: saving a script's layout shares the
-  # layout's project with All users at full access (script_view.dart), which a non-admin cannot do,
-  # so the save ends with the error balloon "You don't have a permission to share this object" and
-  # the script keeps no layout. The layout it saved before the share is left on the server.
-  @known-failure
   Scenario: Save stores the layout with the script
     When user saves the script
     Then no error or warning balloon should have been shown
+    And the script "BddScriptLayout{time}" on the server should have a layout
+    And no errors should have been logged

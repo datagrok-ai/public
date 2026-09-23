@@ -25,7 +25,9 @@ Feature: A SQL query from creation to deletion
   Scenario: A new query is typed, run in its editor and on its own, and saved
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
-    When user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    When user hovers over Databases---Postgres---NorthwindTest tree node inside browse tree
+    # the context-menu gesture does not scroll a node below the fold into view; the hover does
+    And user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user enters "BDD-Q-life-{time}" into Name input
     And user replaces the code of code editor with "select * from products"

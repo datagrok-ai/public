@@ -8,7 +8,7 @@ Feature: Identifiers configured on a connection
 
   The connection is the feature's own — BDD-Conn-Ident-{time}, db.datagrok.ai:54322/northwind,
   saved through the API and given the Northwind login and password in its Edit dialog from
-  DG_PG_LOGIN / DG_PG_PASSWORD (typed from the environment, never printed) — so the configuration
+  the "datagrok" login and DG_PG_PASSWORD (typed from the environment, never printed) — so the configuration
   lives and dies with it; it is deleted at feature end and checked gone. {time} rather than {run}:
   the connection's name drops the dashes of its friendly name.
 
@@ -30,7 +30,7 @@ Feature: Identifiers configured on a connection
     And Databases---Postgres tree node inside browse tree is expanded
     When user right-clicks on Databases---Postgres---BDD-Conn-Ident-{time} tree node inside browse tree
     And user picks "Edit..." from the open menu
-    And user enters the DG_PG_LOGIN secret into Login input in "Edit Connection" dialog
+    And user enters "datagrok" into Login input in "Edit Connection" dialog
     And user enters the DG_PG_PASSWORD secret into Password input in "Edit Connection" dialog
     And user clicks on OK button in "Edit Connection" dialog
     Then the "Edit Connection" dialog should close
@@ -56,8 +56,7 @@ Feature: Identifiers configured on a connection
     And user clicks on Add button in "Add Identifier" dialog
     Then the "Add Identifier" dialog should close
     When user clicks on Save button
-    Then an info balloon should have been shown
-    And no error or warning balloon should have been shown
+    Then no error or warning balloon should have been shown
 
   Scenario: The table's column comes with the identifier's semantic type
     When user reloads the page

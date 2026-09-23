@@ -4,7 +4,7 @@
    Connections on the server, secrets, the local file and the reload are the library's. */
 import type {Page} from '@playwright/test';
 import {Given, Then, When, kind} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, chatIdsOf, deleteChatsOf, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -22,36 +22,6 @@ type Conn = {id: string; name: string; friendlyName: string};
 function connections(page: Page): Promise<Conn[]> {
   return page.evaluate(async () => (await grok.dapi.connections.list({pageSize: 5000}))
     .map((c: any) => ({id: c.id, name: c.name, friendlyName: c.friendlyName})));
-}
-
-/** The session's own endpoints for what the JS API does not wrap (a connection's chats). */
-async function api(page: Page) {
-  const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
-    token: String(grok.dapi.token)}));
-  return {
-    get: async <T>(path: string): Promise<T> => (await page.request.get(`${root}${path}`, {headers: {Authorization: token}})).json(),
-    remove: async (path: string): Promise<void> => {
-      const done = await page.request.delete(`${root}${path}`, {headers: {Authorization: token}});
-      if (!done.ok())
-        throw new Error(`DELETE ${path}: HTTP ${done.status()}`);
-    },
-  };
-}
-
-/* A chat about an entity is found by the entity (`/chats?entityId=`); a group's chat lives in a
-   hidden group made for it (`/chats/with_groups`). Either goes before the entity does, or the chat
-   outlives what it was about (libraries/bdd CLAUDE.md, groups). */
-async function chatIdsOf(page: Page, id: string): Promise<string[]> {
-  const a = await api(page);
-  const about = await a.get<{id: string}[]>(`/chats?entityId=${id}`);
-  const grouped = await a.get<{id: string}[]>(`/chats/with_groups?ids=${id}`);
-  return [...new Set([...(Array.isArray(about) ? about : []), ...(Array.isArray(grouped) ? grouped : [])].map((c) => c.id))];
-}
-
-async function deleteChatsOf(page: Page, id: string): Promise<void> {
-  const a = await api(page);
-  for (const chat of await chatIdsOf(page, id))
-    await a.remove(`/chats/${chat}`);
 }
 
 const chatsOf = async (page: Page, id: string): Promise<number> => (await chatIdsOf(page, id)).length;
@@ -154,8 +124,3 @@ export const hiddenProvidersShown = Given('the hidden providers of the Databases
   await expect(page.locator('[name="tree-Databases---Show-more"]').filter({visible: true}), 'the "Show more" row, gone once the providers show')
     .toHaveCount(0, {timeout: pollMs(15000)});
 }, {tier: 'ui', description: 'clicks "Show more" when it is there; the row goes once the hidden providers show'});
-
-/* What only the Connections features need: the tree rows and schema boxes the core does not name
-   yet, a connection's chats, a catalog's Database meta comment, a table dropped in a shared test
-   database, the hidden providers of the tree, and the balloon a connection test answers with.
-   Connections on the server, secrets, the local file and the reload are the library's. */

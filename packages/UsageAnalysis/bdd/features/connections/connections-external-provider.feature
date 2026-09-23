@@ -2,7 +2,7 @@
 Feature: Writing to an external Postgres through queries
   Queries on an external Postgres run DDL and DML and read back what they wrote. Translated from
   TestTrack Connections/external-provider.md (playwright-public connections/09-external-provider,
-  whose CRUD part was hard-skipped: "no writable external Postgres on the CI stack"). On dev the
+  whose CRUD part was hard-skipped: "no writable external Postgres on the CI stack").
   It needs a login that may write in that database, which the suite does not have today: the stored
   credentials of the Dbtests PostgreSQLDBTests connection answer "permission denied for schema
   public", and the DG_PG_EXT_LOGIN / DG_PG_EXT_PASSWORD of the dev harness are refused by
@@ -49,8 +49,10 @@ Feature: Writing to an external Postgres through queries
     And user replaces the code of code editor with "create table bdd_tmp_{time} (id int, name varchar(50))"
     And user clicks on Save button
     Then 1 query named "BDD-Conn-Ext-Create-{time}" should be on the server
+    Given user watches the task bar
     When user clicks on play icon
-    Then no error or warning balloon should have been shown
+    Then the task bar should have finished "BDD-Conn-Ext-Create-{time}"
+    And no error or warning balloon should have been shown
     And no errors should have been logged
 
   Scenario: An INSERT query writes a row the SELECT query reads back
@@ -64,8 +66,10 @@ Feature: Writing to an external Postgres through queries
     And user replaces the code of code editor with "insert into bdd_tmp_{time} (id, name) values (1, 'test')"
     And user clicks on Save button
     Then 1 query named "BDD-Conn-Ext-Insert-{time}" should be on the server
+    Given user watches the task bar
     When user clicks on play icon
-    Then no error or warning balloon should have been shown
+    Then the task bar should have finished "BDD-Conn-Ext-Insert-{time}"
+    And no error or warning balloon should have been shown
     When user closes the current view
     Given the browse panel is open
     And Databases tree node inside browse tree is expanded
@@ -91,8 +95,10 @@ Feature: Writing to an external Postgres through queries
     And user replaces the code of code editor with "update bdd_tmp_{time} set name = 'bdd' where id = 1"
     And user clicks on Save button
     Then 1 query named "BDD-Conn-Ext-Update-{time}" should be on the server
+    Given user watches the task bar
     When user clicks on play icon
-    Then no error or warning balloon should have been shown
+    Then the task bar should have finished "BDD-Conn-Ext-Update-{time}"
+    And no error or warning balloon should have been shown
     When user closes the current view
     Given the browse panel is open
     And Databases tree node inside browse tree is expanded

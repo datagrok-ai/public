@@ -9,6 +9,7 @@ import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
 import {armEvent} from '../../src/runtime/viewer-menus.js';
+import {deleteChatsOf, serverRequests} from '../../src/runtime/server.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -449,40 +450,6 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
   }, [source, filter] as [CleanupSource, string]);
 }
 
-/** Endpoints the JS API does not wrap (chats, global permissions), called with the page's session. */
-async function serverRequests(page: Page) {
-  const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
-    token: String(grok.dapi.token)}));
-  const headers = {Authorization: token};
-  const checked = async (method: string, path: string, response: Promise<{ok(): boolean; text(): Promise<string>}>) => {
-    const done = await response;
-    const body = await done.text();
-    if (!done.ok() || body.includes('ApiError'))
-      throw new Error(`${method} ${path}: ${body.slice(0, 200)}`);
-  };
-  return {
-    async get<T>(path: string): Promise<T> {
-      const got = await page.request.get(`${root}${path}`, {headers});
-      if (!got.ok())
-        throw new Error(`GET ${path} failed: HTTP ${got.status()}`);
-      return got.json();
-    },
-    post: (path: string, data: unknown) => checked('POST', path, page.request.post(`${root}${path}`, {headers, data})),
-    remove: (path: string) => checked('DELETE', path, page.request.delete(`${root}${path}`, {headers})),
-  };
-}
-
-/* A group's chat lives in a hidden group made for it; every other entity's is found by the entity
-   itself. Deleting the entity first leaves a chat that throws in every profile's chat listing
-   (forum.dart), so the chat goes first, whichever way it is held. */
-async function deleteChatsOf(page: Page, entity: ServerEntity): Promise<void> {
-  const api = await serverRequests(page);
-  const listed = await Promise.all([api.get<{id: string}[]>(`/chats/with_groups?ids=${entity.id}`),
-    api.get<{id: string}[]>(`/chats?entityId=${entity.id}`)]);
-  for (const chat of new Set(listed.flat().filter(Boolean).map((c) => c.id)))
-    await api.remove(`/chats/${chat}`);
-}
-
 /* groups.delete refuses a group holding a global permission, and an entity delete orphans the grant. */
 async function deleteGlobalGrantsOf(page: Page, entity: ServerEntity): Promise<void> {
   const api = await serverRequests(page);
@@ -596,7 +563,7 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
                 // a chat outlives the entity it is about and then throws in every profile's chat
                 // listing: the sources whose features post one delete it first
                 if (['groups', 'queries', 'scripts', 'connections'].includes(stage.source))
-                  await deleteChatsOf(page, entity);
+                  await deleteChatsOf(page, entity.id);
                 if (stage.source === 'groups')
                   await deleteGlobalGrantsOf(page, entity);
                 await page.evaluate(async ([src, id, ownerId]) => {
@@ -1094,17 +1061,29 @@ export const queryPostProcess = Then('the query {string} on the server should ha
   }, {message: `the post-process of the query "${name}" on the server`, timeout: pollMs(30000)}).toContain(text);
 }, {tier: 'api', description: 'what the save sent to the server, not what the editor shows'});
 
-export const queryHasLayout = Then('the query {string} on the server should have a layout', async (page: Page, name: string) => {
+export const entityHasLayout = Then('the {word} {string} on the server should have a layout', async (page: Page, kind: string, name: string) => {
+  const source = kind === 'query' ? 'queries' : kind === 'script' ? 'scripts' : null;
+  if (source == null)
+    throw new Error(`a layout is saved with a query or a script, not with a ${kind}`);
   await expect.poll(async () => {
     try {
-      const query = await serverEntityNamed(page, 'queries', name);
-      return page.evaluate(async (id) => (await grok.dapi.queries.find(id))?.layout ? 'a layout' : 'no layout', query.id);
+      const entity = await serverEntityNamed(page, source, name);
+      // the view writes the layout id into the options of the output table parameter, and shares
+      // the layout itself: a reference to a layout the server no longer holds is not a layout
+      return page.evaluate(async ([id, src]) => {
+        const full = await (src === 'queries' ? grok.dapi.queries : grok.dapi.scripts).find(id);
+        const ids = full.outputs.map((p: any) => p.options?.['layout']).filter((x: any) => x);
+        if (ids.length === 0)
+          return 'no layout';
+        const layout = await grok.dapi.layouts.find(ids[0]).catch(() => null);
+        return layout ? 'a layout' : `a layout id the server does not hold (${ids[0]})`;
+      }, [entity.id, source]);
     }
     catch (error) {
       return String(error);
     }
-  }, {message: `the layout of the query "${name}" on the server`, timeout: pollMs(30000)}).toBe('a layout');
-}, {tier: 'api'});
+  }, {message: `the layout of the ${kind} "${name}" on the server`, timeout: pollMs(30000)}).toBe('a layout');
+}, {tier: 'api', description: 'the layout id the save wrote on the output parameter, and the layout it points at'});
 
 /* --- the script view ------------------------------------------------------------------------- */
 

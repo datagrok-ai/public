@@ -35,7 +35,7 @@ element('gallery toolbar', {selector: '.grok-gallery-search-bar',
   description: 'the bar above a gallery: New, Refresh, the search, the view modes and the counter — the scope for its icons, which the Browse toolbar repeats'});
 element('gallery counter', {selector: '.grok-items-view-counts',
   description: 'how many items the gallery lists: "N", "shown / total" under a filter, "N of M" while only the first N are rendered'});
-element('chat input', {selector: '.grok-comments-post-input', aliases: ['chat post input', 'chat message box'],
+element('chat input', {selector: '.grok-comments-post-input', aliases: ['chat post input'],
   description: 'the message box of an entity\'s Chats pane: a bare textarea no input kind reaches'});
 element('chat header', {selector: '.grok-chat-header',
   description: 'the title line of the open chat thread: "Chats > <thread>"'});

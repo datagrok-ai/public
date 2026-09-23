@@ -4,8 +4,9 @@
    view's type) is the library's. */
 import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, gestures, locate, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {gestures, locate, pollMs} from '@datagrok-libraries/bdd/runtime';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
+import {deleteLayoutsAtEnd} from '../helpers/layouts.js';
 
 declare const grok: any;
 
@@ -104,3 +105,9 @@ export const builderRowHolds = Then('the {string} row of the visual query should
   await expect.poll(async () => (await panel.locator('.d4-tag').allTextContents()).map((t) => t.replace(/×|✕/g, '').trim()).filter(Boolean),
     {message: `the tags of the "${row}" row of the visual query`, timeout: pollMs(15000)}).toEqual(want);
 }, {description: 'the tags the row shows, in order'});
+
+/* The query view names the layout it saves after the query, and neither the layout nor the project
+   that wraps it goes with the query. */
+export const cleanQueryLayout = Given('the layout saved for the query {string} is deleted at the end', async (page: Page, name: string) => {
+  deleteLayoutsAtEnd(page, `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+}, {tier: 'api', description: 'the layout of that name this account made since the step ran, and the project it belongs to, go when the feature ends'});

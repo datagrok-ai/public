@@ -1,10 +1,11 @@
 /* What only the Scripts features need: the Results table the script view puts under the code, the
    Save button's state while the core names it with a class alone, the editor's Save (DiffStudio's
-   bindings own that phrase too, with state of their own), and the layouts a failed save leaves
-   behind. Scripts on the server, the console, the alerts and the pane counts are the library's. */
+   bindings own that phrase too, with state of their own), and the layouts the view leaves behind.
+   Scripts on the server, the console, the alerts and the pane counts are the library's. */
 import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, deleteChatsOf, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {deleteLayoutsAtEnd} from '../helpers/layouts.js';
 
 declare const grok: any;
 
@@ -30,29 +31,9 @@ export const scriptResultListed = Then('the script results should list {string}'
   {message: `a row for "${output}" in the script results`, timeout: pollMs(180000)}).toBe(true);
 }, {description: 'the run has ended with that output in the Results table under the editor, whatever its value'});
 
-/* A layout saved from the script view is named after the script's dataframe output ("Df", "Df_1"),
-   and the save that fails on the share still leaves it — with the project it made. */
+/* A layout saved from the script view is named after the script's dataframe output ("Df", "Df_1"). */
 export const cleanLayouts = Given('the layouts saved for the script are deleted at the end', async (page: Page) => {
-  const since = Date.now() - 60 * 1000;
-  atFeatureEnd(page, async () => {
-    const left: string[] = await page.evaluate(async (from) => {
-      const me = (await grok.dapi.users.current()).id;
-      const gone: string[] = [];
-      for (const layout of await grok.dapi.layouts.list({pageSize: 1000})) {
-        const made = layout.createdOn ? new Date(layout.createdOn.toString()).getTime() : 0;
-        if (made < from || String(layout.author?.id ?? '') !== String(me) || !/^Df(_\d+)?$/.test(String(layout.name)))
-          continue;
-        const project = (await grok.dapi.projects.list({pageSize: 1000})).find((p: any) => p.name === layout.name);
-        if (project)
-          await grok.dapi.projects.delete(project);
-        await grok.dapi.layouts.delete(layout);
-        gone.push(String(layout.name));
-      }
-      return gone;
-    }, since);
-    if (left.length > 0)
-      console.warn(`bdd: deleted the layouts the script view left behind: ${left.join(', ')}`);
-  });
+  deleteLayoutsAtEnd(page, '^Df(_\\d+)?$');
 }, {tier: 'api', description: 'every "Df"-named layout of this account made since the step ran, and the project it belongs to, go when the feature ends'});
 
 /* The editor's Save: the ribbon button, done when it reads "Saved"; the script it creates is
@@ -72,15 +53,22 @@ export const saveScript = When('user saves the script', async (page: Page) => {
     return id !== '';
   }, {message: "the script view's script on the server", timeout: pollMs(30000)}).toBe(true);
   atFeatureEnd(page, async () => {
+    await deleteChatsOf(page, id);
     await page.evaluate(async (scriptId) => {
-      const headers = {Authorization: String(grok.dapi.token)};
-      const root = grok.dapi.root;
-      const chats = await (await fetch(`${root}/chats?entityId=${scriptId}`, {headers})).json();
-      for (const chat of Array.isArray(chats) ? chats : [])
-        await fetch(`${root}/chats/${chat.id}`, {method: 'DELETE', headers});
       const script = await grok.dapi.scripts.find(scriptId).catch(() => null);
       if (script)
         await grok.dapi.scripts.delete(script);
     }, id);
   });
 }, {tier: 'ui', description: 'the ribbon Save of the script view, done when it reads "Saved"; the script is deleted with its chats at feature end'});
+
+/* The Signature Editor keeps the ribbon it finds when it opens and puts that back when it is left
+   (DevTools `function-signature-editor.ts`), and a view switched to a moment ago still has the
+   previous render's icons in the DOM while its own panels are not on the view yet: opening the
+   editor in that gap restores nothing and the ribbon stays empty. */
+export const ribbonReady = Then('the ribbon of the current view should be ready', async (page: Page) => {
+  await expect.poll(() => page.evaluate(() => {
+    const panels = grok.shell.v?.getRibbonPanels?.() ?? [];
+    return panels.reduce((n: number, p: any[]) => n + p.length, 0);
+  }), {message: "the icons the current view's own ribbon panels hold", timeout: pollMs(30000)}).toBeGreaterThan(0);
+}, {tier: 'api', description: 'the view\'s own ribbon panels, not the icons the previous render left in the DOM'});

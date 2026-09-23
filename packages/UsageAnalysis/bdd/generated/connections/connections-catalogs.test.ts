@@ -58,11 +58,11 @@ test.describe("The catalogs of an MS SQL connection", () => {
       await session.step(58, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("Clearing the comment in the pane clears it on the server", async () => {
-      await session.step(65, "When user clears Comment input in context panel", () => clearField(page, el("Comment input in context panel")));
-      await session.step(66, "And user clicks on SAVE button in context panel", () => clickOn(page, el("SAVE button in context panel")));
-      await session.step(67, "Then the \"tempdb\" catalog of the \"MSSQLTest\" connection should have the comment \"\"", () => catalogCommentIs(page, "tempdb", "MSSQLTest", ""));
-      await session.step(68, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(69, "And no errors should have been logged", () => noErrors(page));
+      await session.step(66, "When user clears Comment input in context panel", () => clearField(page, el("Comment input in context panel")));
+      await session.step(67, "And user clicks on SAVE button in context panel", () => clickOn(page, el("SAVE button in context panel")));
+      await session.step(68, "Then the \"tempdb\" catalog of the \"MSSQLTest\" connection should have the comment \"\"", () => catalogCommentIs(page, "tempdb", "MSSQLTest", ""));
+      await session.step(69, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(70, "And no errors should have been logged", () => noErrors(page));
     }, {knownFailure: true});
     run.finish();
   });

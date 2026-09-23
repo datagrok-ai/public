@@ -9,7 +9,7 @@ Feature: A query's post-process runs on its result
   reason as the other features that save into NorthwindTest.
 
   Not translated, and why: the case's layout half — two viewers on the Layout tab kept with the
-  query — is query-layout.feature, since saving a layout fails for a non-admin today.
+  query — is query-layout.feature, which owns the layout and its cleanup.
 
   Background:
     Given user is logged in
@@ -19,7 +19,9 @@ Feature: A query's post-process runs on its result
   Scenario: A line is typed into the Post-Process tab of a new query
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
-    When user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    When user hovers over Databases---Postgres---NorthwindTest tree node inside browse tree
+    # the context-menu gesture does not scroll a node below the fold into view; the hover does
+    And user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user enters "BDD-Q-pp-{time}" into Name input
     And user replaces the code of code editor with "select * from products"
@@ -28,9 +30,10 @@ Feature: A query's post-process runs on its result
     And the "rows" reading of grid should be 77
     When user moves the pointer away from play icon
     And user clicks on Post-Process tab
-    And user puts "grok.shell.info('PP' + result.rowCount);" on the first line of code editor
-    Then code editor should contain the text "grok.shell.info('PP' + result.rowCount);"
-    And no errors should have been logged
+    # after the template's body: a line above its "//language: javascript" header invalidates the
+    # script ("Missing or incorrect \"language\" annotation") and the post-process never runs
+    And user appends "grok.shell.info('PP' + result.rowCount);" to code editor
+    Then no errors should have been logged
     And no error or warning balloon should have been shown
 
   # The core now saves what the editor holds (it used to send the copy the editor syncs 250 ms
@@ -41,11 +44,6 @@ Feature: A query's post-process runs on its result
     And the query "BDD-Q-pp-{time}" on the server should have a post-process containing "grok.shell.info('PP' + result.rowCount);"
     And no errors should have been logged
 
-  # Candidate finding, ticket pending Olesia's manual walk: the saved query run from the browse tree
-  # returns its 77 rows, but the post-process the query carries does not run — no balloon, on the
-  # local master stand (2026-09-23). Typing the same line and running it in the editor does announce
-  # it (the scenario above this one), so it is the saved query's run that skips the script.
-  @known-failure
   Scenario: The saved query announces its row count when it is run from the tree
     Given the toolbox pane is hidden
     And the browse panel is open
