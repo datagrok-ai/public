@@ -1,7 +1,8 @@
 # Tutorials changelog
 
-## v.next
+## 1.11.5 (2026-09-23)
 
+* Tutorials: Dashboards tutorial now opens the dashboard you just saved, not another user's dashboard with the same name
 * GROK-19337: Peptides-SAR tutorial: Fixed callouts rendering body text as bold headings (`paragraphs()` now emits a bold title only when one is explicitly passed), removed spurious mid-sentence `<br>` line breaks, and narrowed the action panel (~18% narrower dock ratio)
 * Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
 * Demo app: Fixed clipped/misplaced "Updating..." overlay — place it on the tab-content of the active view instead of `tab-content[0]`, so it stays bounded (tab-content is `position: relative`) and lands on the pane that's actually being replaced rather than a sibling (e.g. the home page) when the dock is split
