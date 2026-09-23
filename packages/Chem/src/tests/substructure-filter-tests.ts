@@ -14,7 +14,8 @@ import { sketchersWarmUp } from './sketcher-tests';
 
 const expectedResults: {[key: string]: any} = {
   'oneColumn': [737141248, 593097, 3256025153, 4],
-  'malformed': [3029331455, 16127],
+  // Crux rejects row 13's non-kekulizable seven-member aromatic ring; RDKit's permissive fallback accepted it.
+  'malformed': [3029323263, 16127],
   'empty': [524214],
 };
 
@@ -198,7 +199,7 @@ M  END
 
   test('malformed_filterByOneColumn', async () => {
     await testOneColumn('tests/Test_smiles_malformed.csv', 'canonical_smiles', 'c1ccccc1',
-      'terminate_substructure_search-tests/Test_smiles_malformed-canonical_smiles', 'malformed', 36);
+      'terminate_substructure_search-tests/Test_smiles_malformed-canonical_smiles', 'malformed', 35);
   });
 
   test('empty_filterByOneColumn', async () => {
@@ -466,4 +467,3 @@ async function testOneColumn(dfName: string, colName: string, substructure: stri
   filter.detach();
   await delay(1000); //for progressBar to be closed and finish detach
 }
-

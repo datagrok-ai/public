@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 /**
- * RDKit-based substructure filters that uses Datagrok's collaborative filtering.
+ * Substructure filter using Datagrok's collaborative filtering and Crux workers for Contains searches.
  * 1. On onRowsFiltering event, only FILTER OUT rows that do not satisfy this filter's criteria
  * 2. Call dataFrame.rows.requestFilter when filtering criteria changes.
  * */
@@ -8,8 +8,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
-import {initRdKitService} from '../utils/chem-common-rdkit';
+import {FILTER_TYPES, chemSubstructureSearchLibrary, subscribeToColumnChanges} from '../chem-searches';
+import {CruxSubstructureService} from '../crux-service/crux-substructure-service';
 import {Subject, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import wu from 'wu';
@@ -29,7 +29,6 @@ import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const FILTER_ENABLED_SYNC_EVENT = 'chem-filter-enabled-sync';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
-const PRE_CALCULATED_FP = 'chem-precalculated-fp';
 const ALIGN_SYNC_EVENT = 'chem-align-sync';
 const HIGHLIGHT_SYNC_EVENT = 'chem-highlight-sync';
 let chemFilterid = 0;
@@ -112,6 +111,8 @@ export class SubstructureFilter extends DG.Filter {
   recalculateFilter = false;
   _peerFilterDisabled = false;
   statusPanel: DG.Widget | null = null;
+  private cruxService?: CruxSubstructureService;
+  private recheckingRows = false;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -171,7 +172,6 @@ export class SubstructureFilter extends DG.Filter {
 
   constructor() {
     super();
-    initRdKitService(); // No await
     this.filterId = chemFilterid++;
     this.root = ui.divV([]);
     this.calculating = false;
@@ -352,13 +352,8 @@ export class SubstructureFilter extends DG.Filter {
       }
     }));
 
-    if (this.column !== null && this.column.temp[PRE_CALCULATED_FP] == null) {
-      _package.logger.debug(`********pre-calculating fp, filter: ${this.filterId}`);
-      this.column!.temp[PRE_CALCULATED_FP] = this.filterId;
-      this.currentSearches.add('');
-      chemSubstructureSearchLibrary(this.column!, '', '', FILTER_TYPES.substructure, false, false)
-        .then((_) => { }); // Precalculating fingerprints in case they were not precalculated before
-    }
+    if (this.column !== null)
+      subscribeToColumnChanges(this.column);
 
     const onChangedEvent: any = this.sketcher.onChanged;
     this.onSketcherChangedSubs?.push(onChangedEvent.subscribe(async (_: any) => {
@@ -414,6 +409,8 @@ export class SubstructureFilter extends DG.Filter {
     //terminating search (in case the search was active at the moment of detach)
     _package.logger.debug(`************finish search in detach ${this.filterId}`);
     this.terminatePreviousSearch();
+    this.cruxService?.dispose();
+    this.cruxService = undefined;
     const smarts = this.moleculeToSmarts(this.currentMolecule);
     this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
@@ -679,34 +676,52 @@ export class SubstructureFilter extends DG.Filter {
 
   /** Re-checks only the rows modified since the last search and updates the existing bitset in place. */
   private async _recheckModifiedRows(molecule: string): Promise<void> {
-    if (this.modifiedRows.size === 0 || this.bitset == null || this.column == null)
+    if (this.recheckingRows || this.modifiedRows.size === 0 || this.bitset == null || this.column == null)
       return;
+    this.recheckingRows = true;
     const mask = new BitArray(this.column!.length);
     for (const i of this.modifiedRows)
       mask.setBit(i, true);
     this.modifiedRows.clear();
     const smarts = this.moleculeToSmarts(molecule);
-    const partialResult = await chemSubstructureSearchLibrary(this.column!, molecule, smarts!, FILTER_TYPES.substructure,
-      false, true, this.searchType, this.similarityCutOff, this.fp, mask);
-    if (this.bitset == null || this.isDetached)
-      return;
-    for (let i = mask.findNext(-1); i !== -1; i = mask.findNext(i))
-      this.bitset.set(i, partialResult.getBit(i));
-    // synchronize the updated bitset with peer filters on the same column (e.g. cloned views),
-    // mirroring finishSearch — only the active filter does this
-    if (this.column!.temp[CHEM_APPLY_FILTER_SYNC]?.filterId === this.filterId) {
-      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
-        bitset: this.bitset,
-        molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
-        tableName: this.tableName, searchType: this.searchType,
-        simCutOff: this.similarityCutOff, fp: this.fp,
-      });
+    const searchType = this.searchType;
+    try {
+      const partialResult = searchType === SubstructureSearchType.CONTAINS ?
+        await (this.cruxService ??= new CruxSubstructureService())
+          .search(this.column, molecule, smarts, this.fp, this.similarityCutOff, true, mask) :
+        await chemSubstructureSearchLibrary(this.column, molecule, smarts, FILTER_TYPES.substructure,
+          false, true, searchType, this.similarityCutOff, this.fp, mask);
+      if (this.bitset == null || this.isDetached || molecule !== this.currentMolecule || searchType !== this.searchType ||
+        this.bitset.length !== mask.length)
+        return;
+      for (let i = mask.findNext(-1); i !== -1; i = mask.findNext(i))
+        this.bitset.set(i, partialResult.getBit(i));
+      // Synchronize edited rows with peer filters, mirroring finishSearch.
+      if (this.column!.temp[CHEM_APPLY_FILTER_SYNC]?.filterId === this.filterId) {
+        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
+          bitset: this.bitset,
+          molblock: this.currentMolecule, colName: this.columnName, filterId: this.filterId,
+          tableName: this.tableName, searchType: this.searchType,
+          simCutOff: this.similarityCutOff, fp: this.fp,
+        });
+      }
+      this.dataFrame?.rows.requestFilter();
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError'))
+        throw error;
+    } finally {
+      this.recheckingRows = false;
+      if (this.modifiedRows.size > 0 && !this.isDetached && this.isFiltering && !this.calculating)
+        void this._recheckModifiedRows(this.currentMolecule);
     }
-    this.dataFrame?.rows.requestFilter();
   }
 
   async getFilterBitset(): Promise<BitArray> {
     const smarts = this.moleculeToSmarts(this.currentMolecule);
+    if (this.searchType === SubstructureSearchType.CONTAINS) {
+      return (this.cruxService ??= new CruxSubstructureService()).search(this.resolveColumn()!,
+        this.currentMolecule, smarts, this.fp, this.similarityCutOff);
+    }
     return await chemSubstructureSearchLibrary(this.resolveColumn()!, this.currentMolecule, smarts!, FILTER_TYPES.substructure,
       false, false, this.searchType, this.similarityCutOff, this.fp);
   }

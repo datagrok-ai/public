@@ -1,0 +1,7 @@
+{
+  "name": "@datagrok/crux-js",
+  "version": "0.2.0",
+  "license": "UNLICENSED",
+  "cruxJs": "83fc581df140a9d897050f7bf447142675c8826e",
+  "cruxCore": "26f2be2f2718df4d744550cf027ba8f37d7c80cd"
+}

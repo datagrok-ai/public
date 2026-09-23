@@ -24,6 +24,7 @@ import './tests/pharmacophore-features-tests';
 
 import './tests/save-as-sdf-tests';
 import './tests/substructure-filter-tests';
+import './tests/crux-substructure-tests';
 
 import './tests/mol2-importer-tests';
 import './tests/chemical-table-parsing';
