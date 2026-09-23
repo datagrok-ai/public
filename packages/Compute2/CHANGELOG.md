@@ -1,6 +1,6 @@
 # Compute2 changelog
 
-## v.next
+## 1.6.0 (2026-09-23)
 
 * TreeWizard: Fixed saving a step to history overwriting the previously saved run (a loaded or re-saved step now gets a new id; saved runs are immutable)
 * Ribbon panels and menus migrated to the injected per-view service from webcomponents-vue; removed view prop drilling, busy-guarded ribbon actions use the built-in disabled API

@@ -1,6 +1,6 @@
 # compute-api changelog
 
-## v.next
+## 0.8.0 (2026-09-23)
 
 * Removed `testPipeline` (the Compute test-runner feature was removed)
 
