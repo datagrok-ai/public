@@ -1,6 +1,6 @@
 # Curves changelog
 
-## v.next
+## 1.13.2 (2026-09-23)
 
 * Curves: Saving a project or layout with a curve column works again on platforms up to 1.27.x. Painting a cell wrote the default options into a dataframe `.%fit` tag, which those platforms cannot serialize into a layout. Reading the options no longer writes them; a level's tag is written only when an option is set there, and a legacy `.fit` tag is read in place until then
 
