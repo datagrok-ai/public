@@ -2,6 +2,7 @@
 
 ## v.next
 
+* historyUtils.saveRun: Added the `newId` option to save a run under a fresh id
 * Old views: Removed `testFunctionView`/`testPipeline` and the Test runner ribbon group; their module-level import of the view classes formed a cycle that threw `Cannot access 'FunctionView' before initialization` in consumers
 * RTD: Added `getMatchedPositions`/`getBasePosition` controller methods exposing matched node positions to link handlers
 * HistoricalRunsDelete.awaitDelete: dialog helper resolving null on dismissal (mirrors awaitMetadata)
