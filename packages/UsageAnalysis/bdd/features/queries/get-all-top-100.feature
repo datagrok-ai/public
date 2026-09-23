@@ -8,7 +8,9 @@ Feature: Get All and Get Top 100 on a table of the schema
   Read-only: nothing is saved, so nothing is cleaned up. The PostgresDart row is @full-stand — a
   minimal stack carries no PostgresDart connection.
 
-  Not translated, and why: nothing of the case is left out.
+  Not translated, and why: the case is translated step by step; where the md walks
+  Browse > Platform > Functions to reach a view, the feature takes the route directly (the walk
+  itself is claimed in scripts-create).
 
   Background:
     Given user is logged in

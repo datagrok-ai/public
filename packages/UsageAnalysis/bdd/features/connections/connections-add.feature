@@ -83,6 +83,7 @@ Feature: Adding a database connection
     When user clicks on OK button in "Add new connection" dialog
     Then the "Add new connection" dialog should close
     And 1 connection named "BDD-Conn-Add-{run}" should be on the server
+    And the "BDD-Conn-Add-{run}" connection on the server should have the data source "Postgres"
     Given Databases---Postgres tree node inside browse tree is expanded
     Then Databases---Postgres---BDD-Conn-Add-{run} tree node inside browse tree should be visible
 
@@ -105,6 +106,7 @@ Feature: Adding a database connection
     When user clicks on OK button in "Add new connection" dialog
     Then the "Add new connection" dialog should close
     And 1 connection named "BDD-Conn-Add-Ok-{run}" should be on the server
+    And the "BDD-Conn-Add-Ok-{run}" connection on the server should have the data source "Postgres"
     Given Databases---Postgres tree node inside browse tree is expanded
     Then Databases---Postgres---BDD-Conn-Add-Ok-{run} tree node inside browse tree should be visible
     And no error or warning balloon should have been shown

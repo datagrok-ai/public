@@ -4,7 +4,7 @@
 import {readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {Page} from '@playwright/test';
+import {Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
@@ -346,8 +346,9 @@ const exposed = new WeakSet<Page>();
  * through the test's own calls: the page asks a function the test exposed, so neither the step, its
  * failure, the trace nor a guide carries the value. */
 export const enterSecret = When('user enters the {word} secret into {element}', async (page: Page, variable: string, target: ElementRef) => {
-  if (!process.env[variable])
-    throw new Error(`the ${variable} environment variable is not set — a @needs-credentials scenario needs it`);
+  // a stand without the secret is a gap in the run, not a defect: the scenario is skipped and says
+  // which variable it wanted, instead of failing red on a wall nobody can climb from here
+  test.skip(!process.env[variable], `the ${variable} environment variable is not set — this @needs-credentials scenario needs it`);
   if (!exposed.has(page)) {
     await page.exposeFunction('__bddSecret', (name: string) => process.env[name] ?? null);
     exposed.add(page);

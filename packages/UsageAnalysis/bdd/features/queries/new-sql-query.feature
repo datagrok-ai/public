@@ -8,8 +8,9 @@ Feature: A SQL query started from a table of the schema
   feature claims it, then saves under its own run-named name and removes that query at its end.
   It is @serial, since it saves into the NorthwindTest connection other query features list.
 
-  Not translated, and why: nothing of the case is left out; the save under another name is the
-  only departure, for the reason above.
+  Not translated, and why: the case is translated step by step; the save under another name is
+  the only departure, for the reason above. The md reaches the editor through Browse > Platform >
+  Functions; the feature takes the tree of the connection, the way a person working in Databases does.
 
   Background:
     Given user is logged in

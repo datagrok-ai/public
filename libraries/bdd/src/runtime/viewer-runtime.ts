@@ -1075,6 +1075,8 @@ function install(): void {
   };
   /** The balloons shown since the last read, and clears them. */
   const takeBalloons = (): Balloon[] => balloons.splice(0, balloons.length);
+  /** Puts back what a typed claim read but did not want, so the floor after it still sees them. */
+  const putBalloons = (back: Balloon[]): void => { balloons.unshift(...back); };
   const saveLayout = (): void => { layout = grok.shell.tv.saveLayout(); };
   /** Saves through the server and keeps only the id: "loads the saved layout" then fetches what
    * the server stored, so the round-trip covers the serialization too. */
@@ -1226,7 +1228,7 @@ function install(): void {
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
-    takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
+    takeBalloons, putBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));

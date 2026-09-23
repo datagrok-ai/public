@@ -63,6 +63,9 @@ Feature: The catalogs of an MS SQL connection
   # (Tab) before SAVE changes nothing. The feature-end cleanup clears it through the API.
   @known-failure
   Scenario: Clearing the comment in the pane clears it on the server
+    # the comment the scenario above saved: without this the claim below is satisfied by a SAVE
+    # that never wrote anything
+    Then the "tempdb" catalog of the "MSSQLTest" connection should have the comment "BDD comment {run}"
     When user clears Comment input in context panel
     And user clicks on SAVE button in context panel
     Then the "tempdb" catalog of the "MSSQLTest" connection should have the comment ""

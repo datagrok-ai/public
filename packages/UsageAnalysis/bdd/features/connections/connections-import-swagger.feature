@@ -40,8 +40,12 @@ Feature: Importing an OpenAPI (Swagger) file as a connection
     Given Platform---Functions---OpenAPI---BDD-Conn-Swagger tree node inside browse tree is expanded
     Then the following elements should be visible:
       | Platform---Functions---OpenAPI---BDD-Conn-Swagger---Current-Weather-Data-By-City-Name tree node inside browse tree |
-      | Platform---Functions---OpenAPI---BDD-Conn-Swagger---Cities-In-Cycle tree node inside browse tree                   |
+      | Platform---Functions---OpenAPI---BDD-Conn-Swagger---Cities-Within-a-Rectangle-Zone tree node inside browse tree |
+      | Platform---Functions---OpenAPI---BDD-Conn-Swagger---Cities-In-Cycle tree node inside browse tree |
       | Platform---Functions---OpenAPI---BDD-Conn-Swagger---5-day/3-hour-Forecast-By-City-Name tree node inside browse tree |
+      | Platform---Functions---OpenAPI---BDD-Conn-Swagger---Call-Current-UV-Data-For-One-Location-By-Geographic-Coordinates tree node inside browse tree |
+      | Platform---Functions---OpenAPI---BDD-Conn-Swagger---Call-Forecast-UV-Data-For-One-Location-By-Geographic-Coordinates tree node inside browse tree |
+      | Platform---Functions---OpenAPI---BDD-Conn-Swagger---Call-Historical-UV-Data-For-One-Location tree node inside browse tree |
     When user opens the context menu of Platform---Functions---OpenAPI---BDD-Conn-Swagger tree node inside browse tree
     Then the open menu should list "Edit..."
     And the open menu should list "Test connection"

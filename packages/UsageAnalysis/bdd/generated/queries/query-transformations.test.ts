@@ -21,15 +21,15 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, hoverOver, isExpanded, replaceCode, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {hasColumn, hasNoColumn, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeCurrentView, currentViewType, dialogCloses, noQueryOnServer, queriesOnServer, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeCurrentView, currentViewType, dialogCloses, noQueryOnServer, queriesOnServer, queryTransformations, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu, pointerAway, readingIs} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Transformations saved with a query", () => {
   const session = feature(test, "features/queries/query-transformations.feature", import.meta.url);
-  test("Transformations saved with a query", {tag: ["@journey", "@serial", "@realizes:views.queries"]}, async ({browser}) => {
+  test("Transformations saved with a query", {tag: ["@journey", "@serial", "@realizes:views.queries", "@known-failure"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 2, page);
+    const run = journey(test, 3, page);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(20, "And no query named \"BDD-Q-tr-{time}\" is on the server", () => noQueryOnServer(page, session.text("BDD-Q-tr-{time}")));
@@ -77,6 +77,9 @@ test.describe("Transformations saved with a query", () => {
       await session.step(65, "And no errors should have been logged", () => noErrors(page));
       await session.step(66, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
+    await run.scenario("The saved query carries its transformations on the server", async () => {
+      await session.step(74, "Then the query \"BDD-Q-tr-{time}\" on the server should have transformations containing \"doubled\"", () => queryTransformations(page, session.text("BDD-Q-tr-{time}"), "doubled"));
+    }, {knownFailure: true});
     run.finish();
   });
 });

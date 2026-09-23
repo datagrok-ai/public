@@ -64,3 +64,11 @@ Feature: Transformations saved with a query
     And the table should not have a column "doubled"
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  # Candidate finding, 2026-09-24 on dev: the view's Save writes query.script (data_query_view.dart
+  # :233-234) but the server holds it empty, so nothing of the Transformations tab survives the
+  # save. The scenarios above cannot see it — "Run query..." injects the editor's own copy into the
+  # call (:869-873) — which is why this claim is here on its own.
+  @known-failure
+  Scenario: The saved query carries its transformations on the server
+    Then the query "BDD-Q-tr-{time}" on the server should have transformations containing "doubled"

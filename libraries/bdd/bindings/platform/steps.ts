@@ -720,6 +720,14 @@ export const connectionOnServer = Given('a {string} connection named {string} is
     await refresh.first().click();
 }, {tier: 'api', description: 'a connection of that data source without credentials, deleted at feature end'});
 
+export const connectionDataSource = Then('the {string} connection on the server should have the data source {string}', async (page: Page, name: string, source: string) => {
+  await expect.poll(async () => {
+    const list = await page.evaluate(async (n) => (await grok.dapi.connections.list({pageSize: 5000}))
+      .filter((c: any) => c.friendlyName === n || c.name === n).map((c: any) => String(c.dataSource)), name);
+    return list.length === 1 ? list[0] : `${list.length} connections named "${name}"`;
+  }, {message: `the data source of the connection "${name}" on the server`, timeout: pollMs(30000)}).toBe(source);
+}, {tier: 'api', description: 'the provider the connection was saved under, not the tree branch it is shown in'});
+
 export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));
   atFeatureEnd(page, cleanup);
@@ -1048,6 +1056,44 @@ export const scriptHasParam = Then('the script {string} on the server should hav
     }, script.id);
     expect(params, `the parameters the server parsed from "${name}"`).toContain(`${direction} ${param}: ${type}`);
   }, {tier: 'api', description: 'the parameters the server parsed from the script header, not the header text'});
+
+/* What the server holds for a saved query, not what the editor shows: the SQL of its body and the
+   transformation script it carries. The view runs a query from the editor's own copy
+   (data_query_view.dart), so without these a save that never reached the server stays invisible. */
+export const queryText = Then('the query {string} on the server should have the text {string}', async (page: Page, name: string, text: string) =>
+  expectQueryField(page, name, 'query', text, true),
+{tier: 'api', description: 'query.query on the server, trimmed and compared whole'});
+
+export const queryTextContains = Then('the query {string} on the server should have the text containing {string}', async (page: Page, name: string, text: string) =>
+  expectQueryField(page, name, 'query', text, false), {tier: 'api'});
+
+export const queryTransformations = Then('the query {string} on the server should have transformations containing {string}', async (page: Page, name: string, text: string) =>
+  expectQueryField(page, name, 'script', text, false),
+{tier: 'api', description: 'query.script — what the Transformations tab saved, read back from the server'});
+
+export const queryNoTransformations = Then('the query {string} on the server should not have transformations containing {string}', async (page: Page, name: string, text: string) => {
+  await expect.poll(async () => {
+    const query = await serverEntityNamed(page, 'queries', name);
+    return page.evaluate(async (id) => String((await grok.dapi.queries.find(id) as any)?.script ?? ''), query.id);
+  }, {message: `the transformations of the query "${name}" on the server`, timeout: pollMs(30000)}).not.toContain(text);
+}, {tier: 'api', description: 'polled like its positive twin: a step the save has not written yet is not an absent step'});
+
+async function expectQueryField(page: Page, name: string, field: 'query' | 'script', text: string, whole: boolean): Promise<void> {
+  const read = async () => {
+    try {
+      const query = await serverEntityNamed(page, 'queries', name);
+      return page.evaluate(async ([id, f]) => String(((await grok.dapi.queries.find(id)) as any)?.[f] ?? ''), [query.id, field] as [string, string]);
+    }
+    catch (error) {
+      return String(error);
+    }
+  };
+  const message = `the ${field === 'query' ? 'text' : 'transformations'} of the query "${name}" on the server`;
+  if (whole)
+    await expect.poll(async () => (await read()).trim(), {message, timeout: pollMs(30000)}).toBe(text.trim());
+  else
+    await expect.poll(read, {message, timeout: pollMs(30000)}).toContain(text);
+}
 
 export const queryPostProcess = Then('the query {string} on the server should have a post-process containing {string}', async (page: Page, name: string, text: string) => {
   await expect.poll(async () => {
