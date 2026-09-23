@@ -24,7 +24,7 @@ test.describe("Hierarchical clustering from the Chem menu", () => {
   const session = feature(test, "features/clustering/chem-dialog.feature", import.meta.url);
   test("Hierarchical clustering from the Chem menu", {tag: ["@journey", "@realizes:dendrogram.cp.hier-clustering-chem-dialog-end-to-end", "@GROK-19595"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 5, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens mol1K dataset", () => openDataset(page, ds("mol1K")));
     await run.scenario("The dialog opens on the molecule column with every distance and linkage", async () => {
@@ -90,23 +90,21 @@ test.describe("Hierarchical clustering from the Chem menu", () => {
       await session.step(78, "And the \"tree height\" reading of grid should not be as remembered", () => readingNotAsRemembered(page, "tree height", el("grid")));
       await session.step(79, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Numeric columns with centroid linkage are run", async () => {
-      await session.step(82, "When user clicks on \"Remove Dendrogram\" icon", () => clickOn(page, el("\"Remove Dendrogram\" icon")));
-      await session.step(83, "And user picks \"Chem > Analyze > Hierarchical Clustering...\" from the top menu", () => pickFromTopMenu(page, "Chem > Analyze > Hierarchical Clustering..."));
-      await session.step(84, "And user clicks on editor of Features input in \"Hierarchical Clustering\" dialog", () => clickOn(page, el("editor of Features input in \"Hierarchical Clustering\" dialog")));
-      await session.step(85, "And user clicks on None label in \"Select columns...\" dialog", () => clickOn(page, el("None label in \"Select columns...\" dialog")));
-      await session.step(86, "And user clicks on the \"cell 4 of x\" area of grid viewer in \"Select columns...\" dialog", () => clickArea(page, "cell 4 of x", el("grid viewer in \"Select columns...\" dialog")));
-      await session.step(87, "And user clicks on the \"cell 5 of x\" area of grid viewer in \"Select columns...\" dialog", () => clickArea(page, "cell 5 of x", el("grid viewer in \"Select columns...\" dialog")));
-      await session.step(88, "And user clicks on OK button in \"Select columns...\" dialog", () => clickOn(page, el("OK button in \"Select columns...\" dialog")));
-      await session.step(89, "And user selects \"centroid\" in Linkage input in \"Hierarchical Clustering\" dialog", () => selectIn(page, "centroid", el("Linkage input in \"Hierarchical Clustering\" dialog")));
-      await session.step(90, "Then Linkage input in \"Hierarchical Clustering\" dialog should have value \"centroid\"", () => shouldHaveValue(page, el("Linkage input in \"Hierarchical Clustering\" dialog"), "centroid"));
-      await session.step(91, "When user clicks on OK button in \"Hierarchical Clustering\" dialog", () => clickOn(page, el("OK button in \"Hierarchical Clustering\" dialog")));
-      await session.step(92, "Then \"Hierarchical Clustering\" dialog should be hidden", () => shouldBe(page, el("\"Hierarchical Clustering\" dialog"), "hidden"));
-      await session.step(93, "And the task bar should have finished \"Creating dendrogram\"", () => taskBarFinished(page, "Creating dendrogram"));
-    });
     await run.scenario("Numeric columns with centroid linkage attach a tree with a leaf for every row", async () => {
-      await session.step(97, "Then the \"tree leaves\" reading of grid should be 1000", () => readingIs(page, "tree leaves", el("grid"), 1000));
-      await session.step(98, "And no errors should have been logged", () => noErrors(page));
+      await session.step(83, "When user clicks on \"Remove Dendrogram\" icon", () => clickOn(page, el("\"Remove Dendrogram\" icon")));
+      await session.step(84, "And user picks \"Chem > Analyze > Hierarchical Clustering...\" from the top menu", () => pickFromTopMenu(page, "Chem > Analyze > Hierarchical Clustering..."));
+      await session.step(85, "And user clicks on editor of Features input in \"Hierarchical Clustering\" dialog", () => clickOn(page, el("editor of Features input in \"Hierarchical Clustering\" dialog")));
+      await session.step(86, "And user clicks on None label in \"Select columns...\" dialog", () => clickOn(page, el("None label in \"Select columns...\" dialog")));
+      await session.step(87, "And user clicks on the \"cell 4 of x\" area of grid viewer in \"Select columns...\" dialog", () => clickArea(page, "cell 4 of x", el("grid viewer in \"Select columns...\" dialog")));
+      await session.step(88, "And user clicks on the \"cell 5 of x\" area of grid viewer in \"Select columns...\" dialog", () => clickArea(page, "cell 5 of x", el("grid viewer in \"Select columns...\" dialog")));
+      await session.step(89, "And user clicks on OK button in \"Select columns...\" dialog", () => clickOn(page, el("OK button in \"Select columns...\" dialog")));
+      await session.step(90, "And user selects \"centroid\" in Linkage input in \"Hierarchical Clustering\" dialog", () => selectIn(page, "centroid", el("Linkage input in \"Hierarchical Clustering\" dialog")));
+      await session.step(91, "Then Linkage input in \"Hierarchical Clustering\" dialog should have value \"centroid\"", () => shouldHaveValue(page, el("Linkage input in \"Hierarchical Clustering\" dialog"), "centroid"));
+      await session.step(92, "When user clicks on OK button in \"Hierarchical Clustering\" dialog", () => clickOn(page, el("OK button in \"Hierarchical Clustering\" dialog")));
+      await session.step(93, "Then \"Hierarchical Clustering\" dialog should be hidden", () => shouldBe(page, el("\"Hierarchical Clustering\" dialog"), "hidden"));
+      await session.step(94, "And the task bar should have finished \"Creating dendrogram\"", () => taskBarFinished(page, "Creating dendrogram"));
+      await session.step(95, "And the \"tree leaves\" reading of grid should be 1000", () => readingIs(page, "tree leaves", el("grid"), 1000));
+      await session.step(96, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

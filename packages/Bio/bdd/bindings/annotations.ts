@@ -2,8 +2,9 @@
    list, the liability scanner's per-row hits live in a `~<column>_annotations` companion column
    (a JSON list of hits with the monomers matched and where). The steps read both the way the
    package writes them, so a claim about what a scan found is a claim about the data. */
-import {expect, Page} from '@playwright/test';
+import type {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
+import {expect} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -45,10 +46,11 @@ function annotationFacts(page: Page, column: string): Promise<AnnotationFacts> {
 const remembered = new WeakMap<Page, number>();
 
 export const carriesAtLeast = Then('{string} column should carry at least {int} annotation(s)', async (page: Page, column: string, count: number) => {
-  const f = await annotationFacts(page, column);
-  remembered.set(page, f.count);
-  expect(f.count, `annotations on "${column}"`).toBeGreaterThanOrEqual(count);
-}, {description: 'the column\'s .annotations tag; remembered for "one annotation fewer than before"'});
+  let seen = 0;
+  await expect.poll(async () => (seen = (await annotationFacts(page, column)).count), {message: `annotations on "${column}"`})
+    .toBeGreaterThanOrEqual(count);
+  remembered.set(page, seen);
+}, {description: 'the column\'s .annotations tag, polled: a scan writes it after the column it adds; remembered for "one annotation fewer than before"'});
 
 export const carriesNone = Then('{string} column should carry no annotations', async (page: Page, column: string) => {
   expect((await annotationFacts(page, column)).count, `annotations on "${column}"`).toBe(0);
@@ -66,11 +68,11 @@ export const oneFewer = Then('{string} column should carry one annotation fewer 
 const rememberedHits = new WeakMap<Page, number>();
 
 export const hitsMatch = Then('every liability hit on {string} column should match its motif at the position it reports', async (page: Page, column: string) => {
-  const f = await annotationFacts(page, column);
+  let f: AnnotationFacts = {count: 0, hits: 0, misplaced: []};
+  await expect.poll(async () => (f = await annotationFacts(page, column)).hits, {message: `liability hits on "${column}"`}).toBeGreaterThan(0);
   rememberedHits.set(page, f.hits);
-  expect(f.hits, `liability hits on "${column}"`).toBeGreaterThan(0);
   expect(f.misplaced, 'hits whose matched monomers are not at the position reported').toEqual([]);
-}, {description: 'every hit of the ~<column>_annotations column reads its matched monomers at its position index'});
+}, {description: 'every hit of the ~<column>_annotations column reads its matched monomers at its position index; polled for the first hit'});
 
 export const countBelowHits = Then('the total of {string} column should be fewer than the liability hits found before', async (page: Page, counts: string) => {
   const before = rememberedHits.get(page);

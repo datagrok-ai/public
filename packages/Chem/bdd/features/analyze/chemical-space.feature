@@ -4,7 +4,7 @@ Feature: Chemical Space over SMILES, V2000 and V3000 molecules
   Tanimoto, Plot embeddings and Cluster embeddings on and Cluster MCS off. OK adds a pair of Embed_X / Embed_Y
   columns, a Cluster (DBSCAN) column and a scatter plot of the embedding. A second run with
   t-SNE adds a second pair of embedding columns. The same holds for molecules read from a V2000 SDF
-  and from a V3000 SDF.
+  (the first 100 of mol1K.sdf: the claim is about the notation, not the size) and from a V3000 SDF.
 
   Background:
     Given user is logged in
@@ -48,7 +48,7 @@ Feature: Chemical Space over SMILES, V2000 and V3000 molecules
     And no errors should have been logged
 
   Scenario: UMAP on V2000 molecules from an SDF
-    Given user opens mol1K.sdf dataset
+    Given user opens mol1K.sdf dataset keeping the first 100 rows
     When user picks "Chem > Analyze > Chemical Space..." from the top menu
     Then "Chem Space" dialog should be visible
     When user clicks on OK button in "Chem Space" dialog

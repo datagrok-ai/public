@@ -177,7 +177,8 @@ Feature: Grid cell editing and the clipboard
     When user clicks on the "cell 1 of USUBJID" area of grid
     And user presses Control+A
     And user presses Control+C
-    And user presses Control+V
+    Then the clipboard should hold 1001 lines
+    When user presses Control+V
     Then the table should have 1000 rows
     And the value of "USUBJID" column in row 1 should be "X0273T21000300003"
     And the value of "AGE" column in row 1 should be "26"

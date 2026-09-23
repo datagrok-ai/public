@@ -74,7 +74,9 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     When user clicks on the "cell 1 of canonical_smiles" area of grid
     And user expands Structure accordion header in context panel
     And user expands "3D Structure" accordion header in context panel
-    Then "3D Structure" pane in context panel should not contain the text "Molecule has no atoms or malformed"
+    Then 3D structure view in "3D Structure" pane in context panel should be visible
+    And "3D Structure" pane in context panel should not contain the text "Molecule has no atoms or malformed"
+    And "3D Structure" pane in context panel should not contain the text "Molecule is possibly malformed"
     And no errors should have been logged
 
   @realizes:chem.cell.molecule

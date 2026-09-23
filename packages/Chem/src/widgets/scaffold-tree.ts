@@ -1341,13 +1341,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   removeColorCoding(node: TreeViewGroup) {
+    // a node that only inherits its color owns no entry: the entry is its colored ancestor's, which stays
     const processGroup = (group: DG.TreeViewGroup) => {
       const groupValue = value(group);
-      const smiles = (groupValue.chosenColor && groupValue.colorOn) ?
-        groupValue.smiles :
-        this.getParentSmilesIterative(group);
-
-      removeElementByMolecule(this.colorCodedScaffolds, smiles);
+      if (groupValue.chosenColor && groupValue.colorOn)
+        removeElementByMolecule(this.colorCodedScaffolds, groupValue.smiles);
       removeElementByMolecule(this.checkedScaffolds, groupValue.smiles);
 
       if (group.children && !isOrphans(group))

@@ -1,6 +1,7 @@
 /* Chem's own screen parts: the calculators listed on the left of the Chemical Properties dialog
-   (a checkbox and a name per registered calculator function), and the MPO Profiles app — the
-   editable title and description of a profile tab, its property rows and the rows of the list. */
+   (a checkbox and a name per registered calculator function), the MPO Profiles app — the
+   editable title and description of a profile tab, its property rows and the rows of the list —
+   and the 3D view of a molecule. */
 import {element, kind} from '@datagrok-libraries/bdd';
 
 kind('calculator', {
@@ -37,6 +38,9 @@ kind('MPO profile', {
   parts: {actions: '.chem-mpo-actions-button'},
   description: 'a row of the Manage Profiles list, by the profile name; "actions of X MPO profile" is its ⋮ button',
 });
+
+element('3D structure view', {selector: '.d4-ngl-viewer canvas',
+  description: 'the canvas NGL draws the ball-and-stick molecule on, inside the 3D Structure pane'});
 
 element('R-Groups settings icon', {selector: '.chem-rgroup-settings-icon',
   description: 'the gear of the R-Groups Analysis dialog: shows Matching strategy and Only match at R groups, which the dialog remembers per account'});

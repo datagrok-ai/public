@@ -2,9 +2,9 @@
    without the isotope flag that breaks standardization downstream (GROK-15176), a pairwise
    alignment's shape. Everything generic — the top menu, dialogs, columns, viewers — is the
    library's (`grok-bdd list-steps`). */
-import {expect, Page} from '@playwright/test';
+import type {Page} from '@playwright/test';
 import {Given, Then} from '@datagrok-libraries/bdd';
-import {readResult} from '@datagrok-libraries/bdd/runtime';
+import {expect, readResult} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 

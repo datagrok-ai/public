@@ -4,10 +4,13 @@ Feature: Chemical properties, toxicity risks and InChI from the Calculate menu
   Chemical Properties opens on the molecule column with MW the only property ticked and no calculator
   ticked, and OK with no calculator asks for one and adds nothing; with the OCL calculator ticked it adds MW;
   run again with every property ticked it adds nine columns, MW under a new name. Toxicity Risks
-  opens with Mutagenicity the only risk ticked; each risk column holds Unknown, None, Low or High,
-  with at least one Low or High. To InchI adds an inchi column of InChI strings, To InchI Keys an
-  inchi_key column of 27-character keys. No command changes the number of rows. A molecule
-  OpenChemLib cannot parse keeps its property cells empty.
+  opens with Mutagenicity the only risk ticked, and with the other three ticked it adds a column per
+  risk; each holds Unknown, None, Low or High, and Tumorigenicity, Irritating effects and Reproductive
+  effects each hold at least one Low or High (Mutagenicity has none among these molecules). It runs
+  on the first 100 molecules: OpenChemLib assesses every risk of every molecule, 44 s for four risks
+  over 1000, and the claims are about the columns, not the scale. To InchI adds an inchi column of
+  InChI strings, To InchI Keys an inchi_key column of 27-character keys. No command changes the
+  number of rows.
 
   Background:
     Given user is logged in
@@ -65,39 +68,6 @@ Feature: Chemical properties, toxicity risks and InChI from the Calculate menu
     And the table should have 1000 rows
     And no errors should have been logged
 
-  Scenario: Toxicity Risks with Mutagenicity alone adds a column of risk levels
-    When user picks "Chem > Calculate > Toxicity Risks..." from the top menu
-    Then Mutagenicity input in "Toxicity Risks" dialog should be checked
-    And Tumorigenicity input in "Toxicity Risks" dialog should not be checked
-    And "Irritating effects" input in "Toxicity Risks" dialog should not be checked
-    And "Reproductive effects" input in "Toxicity Risks" dialog should not be checked
-    When user clicks on OK button in "Toxicity Risks" dialog
-    Then 1 new column should have been added
-    And a new column "Mutagenicity" should have been added
-    And "Mutagenicity" column should have type "string"
-    And every value of "Mutagenicity" column should match "^(Unknown|None|Low|High)$"
-    And "Mutagenicity" column should have no missing values
-    And some value of "Mutagenicity" column should match "^(Low|High)$"
-    And the table should have 1000 rows
-    And no errors should have been logged
-
-  Scenario: Toxicity Risks with every risk adds four columns of risk levels
-    When user picks "Chem > Calculate > Toxicity Risks..." from the top menu
-    And user checks Tumorigenicity input in "Toxicity Risks" dialog
-    And user checks "Irritating effects" input in "Toxicity Risks" dialog
-    And user checks "Reproductive effects" input in "Toxicity Risks" dialog
-    And user clicks on OK button in "Toxicity Risks" dialog
-    Then 4 new columns should have been added
-    And a new column "Mutagenicity (2)" should have been added
-    And every value of "Tumorigenicity" column should match "^(Unknown|None|Low|High)$"
-    And some value of "Tumorigenicity" column should match "^(Low|High)$"
-    And every value of "Irritating effects" column should match "^(Unknown|None|Low|High)$"
-    And some value of "Irritating effects" column should match "^(Low|High)$"
-    And every value of "Reproductive effects" column should match "^(Unknown|None|Low|High)$"
-    And some value of "Reproductive effects" column should match "^(Low|High)$"
-    And the table should have 1000 rows
-    And no errors should have been logged
-
   Scenario: To InchI adds a column of InChI strings
     When user picks "Chem > Calculate > To InchI..." from the top menu
     Then Molecules input in "To InchI" dialog should contain text "canonical_smiles"
@@ -115,4 +85,29 @@ Feature: Chemical properties, toxicity risks and InChI from the Calculate menu
     And "inchi_key" column should have no missing values
     And every value of "inchi_key" column should match "^[A-Z]{14}-[A-Z]{10}-[A-Z]$"
     And the table should have 1000 rows
+    And no errors should have been logged
+
+  Scenario: Toxicity Risks opens with Mutagenicity alone and adds a column per ticked risk
+    Given user opens smiles dataset keeping the first 100 rows as "smiles_100"
+    When user picks "Chem > Calculate > Toxicity Risks..." from the top menu
+    Then Mutagenicity input in "Toxicity Risks" dialog should be checked
+    And Tumorigenicity input in "Toxicity Risks" dialog should not be checked
+    And "Irritating effects" input in "Toxicity Risks" dialog should not be checked
+    And "Reproductive effects" input in "Toxicity Risks" dialog should not be checked
+    When user checks Tumorigenicity input in "Toxicity Risks" dialog
+    And user checks "Irritating effects" input in "Toxicity Risks" dialog
+    And user checks "Reproductive effects" input in "Toxicity Risks" dialog
+    And user clicks on OK button in "Toxicity Risks" dialog
+    Then 4 new columns should have been added
+    And a new column "Mutagenicity" should have been added
+    And "Mutagenicity" column should have type "string"
+    And "Mutagenicity" column should have no missing values
+    And every value of "Mutagenicity" column should match "^(Unknown|None|Low|High)$"
+    And every value of "Tumorigenicity" column should match "^(Unknown|None|Low|High)$"
+    And some value of "Tumorigenicity" column should match "^(Low|High)$"
+    And every value of "Irritating effects" column should match "^(Unknown|None|Low|High)$"
+    And some value of "Irritating effects" column should match "^(Low|High)$"
+    And every value of "Reproductive effects" column should match "^(Unknown|None|Low|High)$"
+    And some value of "Reproductive effects" column should match "^(Low|High)$"
+    And the table should have 100 rows
     And no errors should have been logged

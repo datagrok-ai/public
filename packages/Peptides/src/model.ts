@@ -265,7 +265,7 @@ export class PeptidesModel {
         this._monomerPositionStats = null;
         break;
       case 'dendrogram':
-        this.settings!.showDendrogram ? await this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
+        this.settings!.showDendrogram ? await this.addDendrogram() : this.dendrogramCloseButton?.click();
         break;
       case 'clusterMaxActivity':
         this.settings!.showClusterMaxActivity ? await this.addClusterMaxActivityViewer() :
@@ -1141,6 +1141,13 @@ export class PeptidesModel {
     const viewer = this.findViewer(viewerType);
     viewer?.detach();
     viewer?.close();
+  }
+
+  /** The Dendrogram package attaches its tree inside the analysis grid's root, not as a viewer; the
+   * tree's own close button is the one handle on it: it is there while the tree is shown, and a click
+   * on it removes the tree the way the user would. */
+  get dendrogramCloseButton(): HTMLElement | null {
+    return this.analysisView?.grid?.root.querySelector('.dendrogram-close-bttn') ?? null;
   }
 
   /**

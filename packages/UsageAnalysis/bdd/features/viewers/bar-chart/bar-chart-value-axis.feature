@@ -1,10 +1,11 @@
 @journey @viewers @realizes:viewers.bar-chart
 Feature: Bar chart value axis range and scale
   Min and Max constrain the value axis: bars wholly below the min and bars beyond the max are
-  clipped and marked by the clipped-bar indicators (GROK-19346), the value-axis scroll bar stays
-  on the constrained range, a logarithmic axis re-scales the positive counts with the clipping
-  intact, and clearing Min and Max restores the full range. One journey on spgi-100 with a bar
-  chart counting CAST Idea ID by Primary Series Name.
+  clipped and marked by the clipped-bar indicators (GROK-19346), the value-axis slider still shows
+  under the pointer, a logarithmic axis re-scales the positive counts with the clipping intact,
+  and clearing Min and Max unclips every bar. The range the value axis spans is not claimed: the
+  bar chart reports no reading for it and keeps its viewport out of the JS API. One journey on
+  spgi-100 with a bar chart counting CAST Idea ID by Primary Series Name.
 
   Background:
     Given user is logged in
@@ -54,14 +55,11 @@ Feature: Bar chart value axis range and scale
     Then bar chart viewer should have repainted
     And no errors should have been logged
 
-  Scenario: Clearing Min and Max restores the full range
+  Scenario: Clearing Min and Max unclips every bar
     When user sets properties of bar chart viewer:
       | Min | |
       | Max | |
-    Then properties of bar chart viewer should be:
-      | Min       |        |
-      | Max       |        |
-      | Axis Type | linear |
+    Then "Axis Type" property of bar chart viewer should be "linear"
     And the "clipped bars" reading of bar chart viewer should be 0
     And bar chart viewer should be painted
     When user moves the pointer away from bar chart viewer

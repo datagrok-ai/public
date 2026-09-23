@@ -55,7 +55,8 @@ Feature: Categorical filter card
 
   Scenario: Radio mode keeps exactly one category and offers no batch operations
     When user clicks on the "category RA of DIS_POP" area of filter panel
-    And user clicks on the "checkbox UC of DIS_POP" area of filter panel
+    Then 434 rows should pass the filter
+    When user clicks on the "checkbox UC of DIS_POP" area of filter panel
     Then 557 rows should pass the filter
     And the "selected categories of DIS_POP" reading of filter panel should be "RA, UC"
     When user picks "Mode | Radio" from the indicator menu of the "DIS_POP" filter card

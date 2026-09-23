@@ -25,10 +25,13 @@ const settle = v.settle;
 /* A reading whose value is a comma-separated list: the tile viewer's `fields` and `lane names`, the
    pc plot's `axes`, the trellis plot's `x columns`. */
 async function expectReadingContains(page: Page, target: ElementRef, name: string, item: string, negate: boolean): Promise<void> {
+  if (item.includes(','))
+    throw new Error(`"${item}" holds a comma, so it is never one member of the "${name}" list and a negative claim on it cannot fail; name one member`);
   let last = '';
   const poll = expect.poll(async () => {
-    last = String(await v.readValue(page, target, name));
-    return last.split(/\s*,\s*/).includes(item);
+    const r = await v.readingOf(page, target, name);
+    last = String(r);
+    return r instanceof v.MissingReading ? negate : last.split(/\s*,\s*/).includes(item);
   }, {timeout: pollMs(5000), message: `"${name}" of ${target.phrase} is "${last}"`});
   await (negate ? poll.not : poll).toBe(true);
 }
@@ -472,8 +475,9 @@ export const dragLasso = When('user drags a lasso over the {string} area of {wid
 async function expectTextIn(page: Page, name: string, target: ElementRef, text: string, negate: boolean): Promise<void> {
   let last = '';
   const holds = async (): Promise<boolean> => {
-    last = String(await v.readValue(page, target, name));
-    return last.includes(text);
+    const r = await v.readingOf(page, target, name);
+    last = String(r);
+    return r instanceof v.MissingReading ? negate : last.includes(text);
   };
   try {
     const poll = expect.poll(holds, {timeout: pollMs(5000)});

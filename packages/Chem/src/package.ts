@@ -783,7 +783,9 @@ export class PackageFunctions {
       grok.shell.warning(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
       return;
     }
-    const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+    // a search leaves a hidden (~) canonical SMILES column that is detected as molecules too
+    const isMolecules = (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && !col.name.startsWith('~');
+    const molColumns = grok.shell.tv.dataFrame.columns.toList().filter(isMolecules);
     if (!molColumns.length) {
       grok.shell.warning(`Data doesn't contain molecule columns`);
       return;
@@ -791,7 +793,7 @@ export class PackageFunctions {
       call.func.prepare({molecules: molColumns[0]}).call(true);
     else {
       const colInput = ui.input.column('Molecules', {table: grok.shell.tv.dataFrame, value: molColumns[0],
-        filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+        filter: isMolecules});
       ui.dialog({title: 'Substructure search'})
         .add(colInput)
         .onOK(async () => {
@@ -2791,6 +2793,7 @@ export class PackageFunctions {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
     const col = res.col('canonical_smiles');
+    col.name = data.columns.getUnusedName(col.name);
     col.meta.units = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
     data.columns.add(col);

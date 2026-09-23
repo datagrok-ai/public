@@ -6,18 +6,19 @@ import {Then} from '@datagrok-libraries/bdd';
 import {type ElementRef, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
 
 export const treeBuilt = Then('{widget} should have finished building its tree', async (page: Page, target: ElementRef) => {
-  let seen = -1;
+  let seen = {nodes: -1, message: ''};
+  // a failed generation ends the wait at once, and fails it
   await expect.poll(async () => {
-    const r = await viewers.onViewer(page, target, (e) => {
+    seen = await viewers.onViewer(page, target, (e) => {
       const values = (window as any).__bdd.viewerOf(e).getWidgetStatus()?.values ?? {};
       return {nodes: Number(values['nodes'] ?? -1), message: String(values['message'] ?? '')};
     });
-    seen = r.nodes;
-    return r.nodes > 0 || /failed/i.test(r.message);
+    return seen.nodes > 0 || /failed/i.test(seen.message);
   }, {timeout: pollMs(300000), intervals: [1000], message: 'the nodes of the scaffold tree'}).toBe(true).catch(() => {
-    throw new Error(`the scaffold tree built no node in five minutes; its "nodes" reading is ${seen}`);
+    throw new Error(`the scaffold tree built no node in five minutes; its "nodes" reading is ${seen.nodes}`);
   });
-}, {description: 'polls the viewer\'s "nodes" reading for as long as a generation takes (up to five minutes)'});
+  expect(seen.message, 'the scaffold tree\'s message after the generation').not.toMatch(/failed/i);
+}, {description: 'polls the viewer\'s "nodes" reading for as long as a generation takes (up to five minutes); a generation that reports it failed fails the step'});
 
 export const mmpReady = Then('{widget} should have finished its analysis', async (page: Page, target: ElementRef) => {
   let seen = -1;
