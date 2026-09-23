@@ -66,9 +66,8 @@ export function buildCombinationLimitFields(initial: EnumeratorConfig): {
     'Per template per step: cap on the number of reactant combinations actually run. If the ' +
     'cartesian product exceeds this, the enumerator runs the first N and stops. Leave blank for no cap.', 1);
   const maxProducts = intInput('Max products per step', initial.max_num_products_per_step,
-    'Per reactant combination: counts the products that passed the product filters. Keeping an ' +
-    'arbitrary few of them would be arbitrary regiochemistry, so a step over this cap is dropped ' +
-    'whole — nothing it made is kept or seeds the next step. Leave blank for no cap.', 1);
+    'Per reactant combination: a step that makes more products than this has all of them ' +
+    'removed. Leave blank for no cap.', 1);
   const keepBBs = boolInput('Keep building blocks in output', initial.keep_building_blocks_in_final_output,
     'Include the original building blocks (step 0) in the final product list.');
 

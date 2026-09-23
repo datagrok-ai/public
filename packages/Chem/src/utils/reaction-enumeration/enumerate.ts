@@ -702,7 +702,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
               // The routes below hold these same step objects, so one stamp reaches every route.
               for (const s of comboSteps) s.nProducts = comboSteps.length;
-              // Keeping an arbitrary few would be arbitrary regiochemistry, so drop the whole combo.
+              // Over the cap, every product of the combo is removed, not just the excess.
               if (productCap >= 0 && comboSteps.length > productCap)
                 productCapped++;
               else if (comboSteps.length > 0) {

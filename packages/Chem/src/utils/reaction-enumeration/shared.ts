@@ -133,7 +133,7 @@ const STEP_PRODUCTS_PREFIX = '~step_products_';
 const HIERARCHICAL_MAX_PRODUCTS = 500_000;
 
 const COLUMN_DESCRIPTIONS: Record<string, string> = {
-  product: 'The molecule this route ends at.',
+  product: 'The product this route makes: the molecule its last step produced.',
   route: 'Every step of the synthesis, drawn as reactions.',
   product_counts: 'How many products each step kept, one line per step. More than one means the ' +
     'template matched in several places and more than one of those products passed the filters.',
