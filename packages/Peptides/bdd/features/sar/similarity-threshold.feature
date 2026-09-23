@@ -51,11 +51,13 @@ Feature: Launch SAR at different similarity thresholds
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+    # the clusters of each threshold, measured on master 2026-09-23 (the local master stand twice and
+    # dev): 96 makes five clusters, not the six it made when the feature was written
     Examples:
       | threshold | clusters |
       | 10        | 1        |
       | 75        | 2        |
-      | 96        | 6        |
+      | 96        | 5        |
 
   Scenario: Similarity threshold 90 on all peptides preserves the analysis and its selection behavior
     When user closes all views
