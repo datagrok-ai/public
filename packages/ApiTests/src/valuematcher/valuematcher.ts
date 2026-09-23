@@ -10,6 +10,24 @@ category('ValueMatcher', () => {
     expect(matcher.validate(10)!.toString(), '"10" does not match "5"');
   });
 
+  test('numerical pattern equals (word)', async () => {
+    const matcher = DG.ValueMatcher.numerical('equals 634783');
+    expect(matcher.operator, '=');
+    expect(matcher.match(634783).toString(), 'true');
+    expect(matcher.validate(634784)!.toString(), '"634784" does not match "equals 634783"');
+  });
+
+  test('numerical pattern matches single-precision cells', async () => {
+    const col = DG.Column.fromList('double', 'score', [0.47, 0.5, 0.47, 0.83, 1.25]);
+    expect(DG.ValueMatcher.numerical('0.47').match(col.get(0)).toString(), 'true');
+    expect(DG.ValueMatcher.numerical('>= 0.83').match(col.get(3)).toString(), 'true');
+    expect(DG.ValueMatcher.numerical('< 0.47').match(col.get(0)).toString(), 'false');
+    expect(DG.ValueMatcher.numerical('16777217').match(16777216).toString(), 'false');
+    const df = DG.DataFrame.fromColumns([col]);
+    df.rows.match('score = 0.47').filter();
+    expect(df.filter.trueCount, 2);
+  });
+
   test('numerical pattern equals =', async () => {
     const matcher = DG.ValueMatcher.numerical('= 5');
     expect(matcher.operator, '=');
