@@ -42,17 +42,22 @@ and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/
 `aria-disabled` on menu items, property rows and dialog buttons, `Func.topMenu`,
 `d4-balloon-shown`, `grok.shell.autostartsCompleted`, `Resizer.isResizePending`, `data-legend-*`,
 `DG.Widget.addStatusProvider` (a package's own areas and readings on a native widget, e.g. the
-WebLogo glyphs Peptides draws in grid headers).
+WebLogo glyphs Peptides draws in grid headers), the annotation regions' `region "<title>" title`
+hit areas and `title strip top` / `title strip right` / `region titles shown` readings
+(`AnnotationRegionsMixin.addStatus`).
 
 ## Invariants — what must not regress
 
 - **One registry, through `dist/`.** Specs import the library by package subpath, project bindings
   by relative path; never mix `src/` and `dist/` in one run. ESM everywhere. One `@playwright/test`
-  per run: packages depend by path (`file:../../libraries/bdd`) and `grok-bdd link` makes the
-  package's Playwright the library's copy (redo after `npm ci`).
+  per run: a package of the pnpm workspace depends on `workspace:^` and resolves the library's copy
+  with nothing to link; one outside it depends by path (`file:…`) and `grok-bdd link` makes its
+  Playwright the library's copy (redo after `npm ci`).
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
-  resets the shell (Escape for dialogs and menus, `ui.tooltip.hide`, notices removed, `closeAll`,
-  Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
+  resets the shell (first waiting up to 60 s for the command the scenario armed and up to 25 s until the task bar has no progress entry — an
+  analysis a scenario left running reopens its closed table and makes it current in the next feature;
+  a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
+  menus, `ui.tooltip.hide`, notices removed, `closeAll`, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
@@ -192,7 +197,10 @@ WebLogo glyphs Peptides draws in grid headers).
 - Menus: a Dart group opens on the first pointer move; the popup mirrors every property under a
   zero-size "Properties..." group, so labels occur twice — `openGroup` waits on the first visible
   candidate and tries every one; the top menu bar folds into a "more" group under 1920 px, its
-  vertical groups are entered with two moves inside the item, Escape does not close it.
+  vertical groups are entered with two moves inside the item, Escape does not close it. The bar
+  rebuilds when a package's entries arrive, with no signal that it is done: a pick can find its
+  leaf and then click a collapsed group, so `pickTopMenu` makes the whole pick once more from the
+  bar (a core "menu settled" signal would remove that).
 - The Dart property grid's choice editor is lazy: its `<select>` enters the value cell only once
   that cell is clicked (`select` clicks it first). The Save project dialog's name field is a bare
   `<input>` (aria-label "Name"), which `text input` reaches. Typing into a column picker's search
@@ -211,6 +219,24 @@ WebLogo glyphs Peptides draws in grid headers).
 - `painted in at least N colors` groups by hue: a linear scale is one colour. `repainted`
   measures the whole canvas; `the "x" area … should have repainted` one area. A hover highlight
   can be gone by the time a later step reads it: repaint checks right after the gesture.
+- An area phrase can name a part of a hit area: `left edge of x axis` (a 16 px strip along that
+  edge — the axis away from the column selector in its middle), `top left corner of region Older`
+  (a 16 px square), `overlap of region Tall and region Heavy` (the rectangle two areas share), and
+  they nest (`left edge of overlap of …`). Resolved in-page by `edgeOf`, through `findArea` and
+  `quietAreaRects`, so every gesture step, `should have a … area`, the menu steps and the checks
+  that compare areas with each other or with a remembered place take them; the ink readings and
+  `taller/wider than before` (`areaRectChange`) do not.
+- A marker under the pointer takes precedence over an annotation region: the scatter plot hit-tests
+  its regions only while no marker is hovered (`navigation.dart`), so a region gesture aims at a
+  marker-free point (half-integer AGE on demog, small `markerDefaultSize`) and a title click is
+  preceded by a hover. A right-click over a region opens the region's own menu (Edit… | Show
+  Annotation Regions | Title Font), not the viewer's; `mouseOverRegions` is not cleared by hiding
+  the regions, only by the pointer leaving the viewer. The histogram hit-tests a region only where
+  no bin is under the pointer and its bins slider sits at the top centre of the plot; the scatter
+  plot's Color and Size selectors cover the top-right corner; the bar chart hit-tests between the
+  bars, and a band on its aggregated axis selects the rows of the bars whose value lies in the band,
+  not rows by their own value. A line chart binds a region to its aggregated caption
+  (`y: "avg(WEIGHT)"`).
 - A JS viewer joins by `getWidgetStatus()` (canvas under `parts`, `hitAreas` in CSS px,
   `values`), `get isRenderPending()` and `onRendered`; a package viewer's surface reaches the
   stand only when the package is republished, and a library viewer only when the package's
@@ -266,6 +292,15 @@ WebLogo glyphs Peptides draws in grid headers).
   affectionate_einstein`.
 - `grok-bdd run` defaults to 4 workers (`PLAYWRIGHT_WORKERS` overrides); the installed
   `@datagrok-libraries/test` base config is older than the checkout's and says one.
+- Budgets a slow stand may raise: `BDD_EXPECT_TIMEOUT` (every check, 15 s), `BDD_COMMAND_TIMEOUT`
+  (the columns a top-menu command adds, 180 s). `BDD_FRESH_PAGE` reloads the shell before every
+  feature instead of resetting it: a feature that fails only after another one, and passes with
+  the variable set, is failing on state the other left behind.
+- Every run leaves its JSON report in the project's `test-results/report.json`, with the stand and
+  the machine in `config.metadata` (a `--reporter` on the command line gets `json` added). The run
+  history in `packages/UsageAnalysis/bdd/history` records such reports **only when the user asks
+  for it** — never as part of a run, a review or a fix (`node history.mjs record --note …`, then
+  `html`; see that package's bdd README).
 - A sharing feature shares with `DATAGROK_SHARING_LOGIN` or, unset, with the `bddsecond` user
   `global-setup.ts` creates through `POST /public/v1/users` with the dev-key token (a missing
   login answers 200 with an `ApiError` body; users cannot be deleted, so it stays).

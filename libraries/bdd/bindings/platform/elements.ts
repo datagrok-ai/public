@@ -62,6 +62,12 @@ element('filter panel', {selector: '[name="viewer-Filters"]', aliases: ['filters
     // the "?" of the Filters title bar, not of the group header: its tooltip is the panel's summary
     'help icon': 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " panel-base ")][1]' +
       '//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-help"]'}});
+element('sketcher dialog', {selector: '.d4-dialog:has(input[placeholder^="SMILES"])', aliases: ['molecule sketcher dialog'],
+  description: 'the dialog a molecule sketcher opens in (a filter card, a molecule input); untitled, told by its SMILES field',
+  parts: {'molecule input': 'input[placeholder^="SMILES"]'}});
+element('column popup', {selector: '.d4-popup-host [aria-label="column popup"]',
+  description: 'the popup a grid header\'s Column options icon opens: the column\'s own Filter, Actions and Colors panes; a molecule column\'s filter carries its sketcher inline',
+  parts: {title: '.d4-accordion-title', 'molecule input': 'input[placeholder^="SMILES"]'}});
 element('color picker icon', {selector: '[name="legend-icon-color-picker"]',
   description: 'the palette icon a hovered legend item shows to its left (the platform appends it to the page body)'});
 element('marker picker icon', {selector: '[name="legend-icon-marker-picker"]',

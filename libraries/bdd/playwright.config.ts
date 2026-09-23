@@ -2,6 +2,7 @@
    points BDD_ROOT at the project). The shared Datagrok base (login storage state, viewport,
    traces) with the project's generated/ as the test dir. */
 import {existsSync} from 'node:fs';
+import {cpus, hostname, platform, release, totalmem} from 'node:os';
 import {basename, dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {defineConfig} from '@playwright/test';
@@ -23,6 +24,13 @@ export default defineConfig({
   workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 4),
   testDir: join(root, 'generated'),
   outputDir: join(root, 'test-results'),
+  // every run leaves its JSON report beside the failure artifacts and says where it ran: UsageAnalysis'
+  // bdd/history keeps such reports as a run's record (a --reporter given on the command line replaces
+  // these, and `grok-bdd run` adds json to it)
+  reporter: [['list'], ['json', {outputFile: process.env.PLAYWRIGHT_JSON_OUTPUT_FILE ??
+    process.env.PLAYWRIGHT_JSON_OUTPUT_NAME ?? join(root, 'test-results', 'report.json')}]],
+  metadata: {stand: url, machine: {host: hostname(), os: `${platform()} ${release()}`, cpu: cpus()[0]?.model.trim(),
+    cores: cpus().length, memoryGb: Math.round(totalmem() / 2 ** 30), node: process.version}},
   globalSetup,
   use: {
     ...baseConfig.use,
@@ -41,6 +49,9 @@ export default defineConfig({
     // headless is software-rasterized throughout
     launchOptions: {args: [`--unsafely-treat-insecure-origin-as-secure=${url}`, '--disable-accelerated-2d-canvas']},
   },
+  // a stand that computes in the browser (chemistry over a thousand molecules) needs longer than the
+  // shared 15 s once two workers share it: BDD_EXPECT_TIMEOUT raises what every check waits
+  expect: {...baseConfig.expect, timeout: Number(process.env.BDD_EXPECT_TIMEOUT ?? baseConfig.expect?.timeout ?? 15000)},
   // @serial features share server state another worker would change under them (a fuzzy gallery
   // search over fixtures the others create and delete): they take turns, beside everything else
   projects: [{name: 'bdd', grepInvert: /@serial(\s|$)/}, {name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}],

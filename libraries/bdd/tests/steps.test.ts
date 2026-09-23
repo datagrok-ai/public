@@ -9,10 +9,12 @@ import '../bindings/platform/elements.js';
 import {fillsParent, shouldOffer, visibleCount} from '../bindings/common/steps.js';
 import {mouseOverRowIs} from '../bindings/platform/columns.js';
 import {newestMatchingDistinct, newestMatchingFilled} from '../bindings/platform/commands.js';
-import {tableTagIsFile} from '../bindings/platform/data.js';
+import {setTableTag, tableTagIsFile} from '../bindings/platform/data.js';
 import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
-import {fixtureFamilies, isStaleFixture} from '../bindings/platform/steps.js';
+import {fixtureFamilies, isStaleFixture, openTableOf} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
+import {select} from '../src/runtime/gestures.js';
+import {locate} from '../src/runtime/locate.js';
 import {knownFailure} from '../src/runtime/harness.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
 
@@ -62,7 +64,11 @@ async function standIn(p: Page, columns: Record<string, (string | null)[]>): Pro
       getTag: (k: string) => tags[k] ?? null,
       setTag: (k: string, v: string) => { tags[k] = v; },
     };
-    (window as any).grok = {shell: {t}};
+    // the event streams the viewer runtime subscribes to when a step changes the table through it
+    const stream = {subscribe: () => ({unsubscribe: () => undefined})};
+    (window as any).grok = {shell: {t, tables: [t], tableViews: []},
+      events: {onViewerAdded: stream, onViewerClosed: stream, onEvent: () => stream, onCustomEvent: () => stream},
+      functions: {onBeforeRunAction: stream, onAfterRunAction: stream}};
   }, columns);
 }
 
@@ -87,6 +93,41 @@ scenario('the newest column matching a pattern: distinct values and missing valu
   await fails(() => newestMatchingFilled(page!, '^Cluster \\('));
   await newestMatchingFilled(page!, '1\\.00');
   await assert.rejects(() => newestMatchingDistinct(page!, '^Missing', 1), /no column matching/);
+});
+
+scenario('a table tag is set on the current table', async () => {
+  await page!.setContent('<div></div>');
+  await standIn(page!, {node: ['a']});
+  await setTableTag(page!, '.newick-alt', '(a,b);');
+  assert.equal(await page!.evaluate(() => (window as any).grok.shell.t.getTag('.newick-alt')), '(a,b);');
+});
+
+scenario('a table written in the feature is parsed as a CSV into a view of its own', async () => {
+  await page!.setContent('<div></div>');
+  await page!.evaluate(() => {
+    const w = window as any;
+    w.DG = {DataFrame: {fromCsv: (csv: string) => ({csv, name: ''})}};
+    w.grok = {shell: {addTableView: (df: any) => { w.grok.shell.tv = {dataFrame: df, grid: {}}; }}};
+  });
+  await openTableOf(page!, 'leaves', [['leaf', 'note'], ['A', 'x, y'], ['B', 'say "hi"']]);
+  assert.equal(await page!.evaluate(() => (window as any).grok.shell.tv.dataFrame.csv), 'leaf,note\nA,"x, y"\nB,"say ""hi"""');
+  await assert.rejects(() => openTableOf(page!, 'empty', [['leaf']]), /at least one row/);
+});
+
+scenario('a Dart property row opens its editor on the value before a choice is made, and names its label and value', async () => {
+  await page!.setContent(`<table><tr class="property-grid-item" name="prop-newick-tag"><td class="property-grid-item-name"><div class="property-grid-item-name-text"><span>Newick Tag</span></div></td>
+    <td class="property-grid-item-value"><div class="property-grid-item-view-label" name="prop-view-newick-tag"></div></td></tr></table>`);
+  await page!.evaluate(() => {
+    const cell = document.querySelector('.property-grid-item-value')!;
+    cell.addEventListener('click', () => {
+      if (!cell.querySelector('select'))
+        cell.insertAdjacentHTML('beforeend', '<select><option value=""></option><option value=".newick-alt">.newick-alt</option></select>');
+    });
+  });
+  await select(page!, el('"Newick Tag" property'), '.newick-alt');
+  assert.equal(await page!.locator('select').inputValue(), '.newick-alt');
+  assert.equal(await (await locate(page!, el('value of "Newick Tag" property'))).count(), 1);
+  assert.equal((await (await locate(page!, el('label of "Newick Tag" property'))).textContent())?.trim(), 'Newick Tag');
 });
 
 scenario('the task bar record keeps an entry the bar has already removed', async () => {

@@ -7,8 +7,8 @@
    do the lookups and the row scans, and say which column or category is missing. */
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
-import {Then, When} from '../../src/registry.js';
-import {changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
+import {Given, Then, When} from '../../src/registry.js';
+import {baselineAll, changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -88,6 +88,10 @@ export const onlyOfSelected = Then('only rows where {string} is {string} should 
 export const onlyOfAnySelected = Then('only rows where {string} is one of {string} should be selected', (page: Page, column: string, values: string) =>
   expectOnlySelected(page, column, {in: list(values)}, `is one of ${values}`),
 {description: 'every row of these categories (comma-separated) and nothing else — a union built with Control clicks'});
+
+export const onlyBetweenSelected = Then('only rows where {string} is between {float} and {float} should be selected', (page: Page, column: string, min: number, max: number) =>
+  expectOnlySelected(page, column, {between: [min, max]}, `is between ${min} and ${max}`),
+{description: 'every row of the numeric range (both ends included) and nothing else — what a click on an annotation region selects'});
 
 export const onlyStartingWithSelected = Then('only rows where {string} starts with {string} should be selected', (page: Page, column: string, prefix: string) =>
   expectOnlySelected(page, column, {startsWith: prefix}, `starts with "${prefix}"`), {description: 'every row whose value starts with the text is selected and no other'});
@@ -258,6 +262,33 @@ export const tableTagIsFile = Then('the table should have tag {string} equal to 
   expect(actual, `tag "${tag}" of the table against ${path}`).toBe(file);
 }, {tier: 'api', description: 'byte for byte, line breaks included — what a file handler put on the table it opened'});
 
+export const columnIsCurrentObject = Given('the {string} column is the current object', async (page: Page, column: string) => {
+  await page.evaluate((c) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    // forced: the shell drops a set that lands within two seconds of a context-panel edit, or on a value of the same kind
+    grok.shell.setCurrentObject(col, true, true);
+  }, column);
+  await expect.poll(() => page.evaluate(() => String((grok.shell.o as any)?.name ?? '')),
+    {message: 'the current object the context panel renders'}).toBe(column);
+}, {tier: 'api', description: 'what a click on the column header does, for a feature whose subject is what the context panel then shows'});
+
+export const cellIsCurrentObject = Given('the {string} cell of row {int} is the current object', async (page: Page, column: string, row: number) => {
+  const table: string = await page.evaluate(([c, r]) => {
+    const col = grok.shell.t.col(c as string);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    grok.shell.t.currentCell = grok.shell.t.cell(Number(r) - 1, c as string);
+    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), true, true);
+    return grok.shell.t.name;
+  }, [column, row] as [string, number]);
+  await expect.poll(() => page.evaluate(() => {
+    const cell = (grok.shell.o as any)?.cell;
+    return cell ? `${cell.dataFrame?.name}: ${cell.column?.name} ${cell.rowIndex + 1}` : String(grok.shell.o);
+  }), {message: 'the cell the current object is'}).toBe(`${table}: ${column} ${row}`);
+}, {tier: 'api', description: 'what a click on the cell does, for a feature whose subject is the panes the context panel then shows'});
+
 // --- columns -----------------------------------------------------------------------------------------
 
 export const setCell = When('user sets {string} column in row {int} to {string}', (page: Page, column: string, row: number, value: string) =>
@@ -281,6 +312,17 @@ export const addCalculated = When('user adds a calculated column {string} with f
   await page.evaluate(async ([n, f]) => { await grok.shell.t.columns.addNewCalculated(n, f); }, [name, formula] as [string, string]);
   await expect.poll(() => page.evaluate((n) => grok.shell.t.columns.names().includes(n), name), {message: `"${name}" in the table's columns`}).toBe(true);
 }, {tier: 'api', description: 'a formula in the platform\'s syntax: ${HEIGHT} * 2'});
+
+const writeTableTag = (page: Page, tag: string, value: string): Promise<void> =>
+  changeTable(page, ([t, x]: [string, string]) => { grok.shell.t.setTag(t, x); }, [tag, value]);
+
+export const setTableTag = When('user sets the {string} tag of the table to {string}', (page: Page, tag: string, value: string) =>
+  writeTableTag(page, tag, value),
+{tier: 'api', description: 'a table tag through the JS API ("" empties it) — ".annotation-regions" holds the dataframe\'s annotation regions, which every viewer of the table reads on the change'});
+
+export const setTableTagText = When('user sets the {string} tag of the table to:', (page: Page, tag: string, value: string) =>
+  writeTableTag(page, tag, value),
+{tier: 'api', description: 'the same with the value as a doc string — JSON without escaped quotes'});
 
 export const removeColumn = When('user removes {string} column', (page: Page, name: string) =>
   evaluate(page, (n) => { const b = (window as any).__bdd; b.col(n); b.table().columns.remove(n); }, name), {tier: 'api'});

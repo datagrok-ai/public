@@ -8,10 +8,8 @@
  * non-null result.
  */
 
+import type {C0Method} from './types';
 import {findCmax} from './cmax';
-
-/** Available c0 estimation strategies. */
-export type C0Method = 'c0' | 'logslope' | 'c1' | 'cmin' | 'set0';
 
 /** Default PKNCA-compatible method chain. */
 export const C0_DEFAULT_METHODS: ReadonlyArray<C0Method> =
@@ -26,23 +24,39 @@ export interface C0Options {
 }
 
 /**
- * Estimate the dose-time concentration for an IV bolus profile.
+ * Estimate the dose-time concentration for an IV bolus profile and report
+ * WHICH method of the chain produced it.
  *
  * `time` is sorted ascending, `conc` has the same length, and `blqMask` marks
  * BLQ points with 1. NaN concentrations are treated as missing. The function
- * never throws; it returns `null` when every method in the chain fails.
+ * never throws; it returns `null` when every method in the chain fails. With
+ * the default chain that cannot happen — `'set0'` always answers — so `null`
+ * is reachable only through a caller-supplied `methods` list.
+ */
+export function estimateC0Detailed(
+  time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
+  options: C0Options = {},
+): {value: number; method: C0Method} | null {
+  const timeDose = options.timeDose ?? 0;
+  const methods = options.methods ?? C0_DEFAULT_METHODS;
+  for (const m of methods) {
+    const v = applyMethod(m, time, conc, blqMask, timeDose);
+    if (v !== null) return {value: v, method: m};
+  }
+  return null;
+}
+
+/**
+ * Estimate the dose-time concentration for an IV bolus profile — the value
+ * only. A one-line wrapper over {@link estimateC0Detailed} (one chain, not
+ * two); kept for callers that do not need the method.
  */
 export function estimateC0(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
   options: C0Options = {},
 ): number | null {
-  const timeDose = options.timeDose ?? 0;
-  const methods = options.methods ?? C0_DEFAULT_METHODS;
-  for (const m of methods) {
-    const v = applyMethod(m, time, conc, blqMask, timeDose);
-    if (v !== null) return v;
-  }
-  return null;
+  const r = estimateC0Detailed(time, conc, blqMask, options);
+  return r === null ? null : r.value;
 }
 
 function applyMethod(
@@ -141,15 +155,17 @@ function c0CMin(conc: Float64Array, blqMask: Uint8Array): number | null {
  * before AUC and lambda_z computation.
  *
  * Re-finds Cmax on the augmented profile; for IV bolus this typically
- * shifts Tmax to `timeDose`. Returns `null` when c0 estimation fails.
+ * shifts Tmax to `timeDose`. Returns `null` when c0 estimation fails. The
+ * returned `method` names the chain step that produced `c0`.
  */
 export function insertC0(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
   options: C0Options = {},
 ): {time: Float64Array; conc: Float64Array; blqMask: Uint8Array;
-    c0: number; cmaxIdx: number} | null {
-  const c0 = estimateC0(time, conc, blqMask, options);
-  if (c0 === null) return null;
+    c0: number; method: C0Method; cmaxIdx: number} | null {
+  const est = estimateC0Detailed(time, conc, blqMask, options);
+  if (est === null) return null;
+  const c0 = est.value;
   const timeDose = options.timeDose ?? 0;
   const n = time.length;
   const time2 = new Float64Array(n + 1);
@@ -163,5 +179,8 @@ export function insertC0(
 
   const cmaxR = findCmax(time2, conc2, blqMask2);
   if (cmaxR === null) return null;
-  return {time: time2, conc: conc2, blqMask: blqMask2, c0, cmaxIdx: cmaxR.cmaxIdx};
+  return {
+    time: time2, conc: conc2, blqMask: blqMask2,
+    c0, method: est.method, cmaxIdx: cmaxR.cmaxIdx,
+  };
 }

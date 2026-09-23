@@ -111,6 +111,7 @@ export class SubstructureFilter extends DG.Filter {
   searchNotCompleted = false;
   recalculateFilter = false;
   _peerFilterDisabled = false;
+  statusPanel: DG.Widget | null = null;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -260,6 +261,7 @@ export class SubstructureFilter extends DG.Filter {
     });
     super.attach(dataFrame);
     this.resolveColumn();
+    ui.tools.waitForElementInDom(this.root).then(() => this.reportToPanel());
     this.columnName ??= this.column?.name ?? '';
     this.tableName = dataFrame.name ?? '';
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
@@ -416,8 +418,32 @@ export class SubstructureFilter extends DG.Filter {
     this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
+    this.statusPanel?.removeStatusProvider(`chem-filter-${this.filterId}`);
+    this.statusPanel = null;
     super.detach(); //super.detach() leads to automatic call of requestFilter -> applyFilter
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
+  }
+
+  /** Reports what the card holds to the filter panel it sits in, keyed by its column. */
+  reportToPanel(): void {
+    const host = this.root.closest('[name="viewer-Filters"]');
+    const panel = host ? DG.Widget.find(host) : null;
+    if (panel == null)
+      return;
+    this.statusPanel = panel;
+    panel.addStatusProvider(`chem-filter-${this.filterId}`, () => {
+      const mol = this.currentMolecule;
+      const structure = this.isEmptyMolecule(mol) ? '' : !DG.chem.isMolBlock(mol) ? mol :
+        _convertMolNotation(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+      const col = this.columnName;
+      return {values: {
+        [`structure of ${col}`]: structure,
+        [`search type of ${col}`]: this.searchType,
+        [`fingerprint of ${col}`]: this.fp,
+        [`similarity cutoff of ${col}`]: this.similarityCutOff,
+        [`searching of ${col}`]: this.calculating || this.currentSearches.size > 0,
+      }};
+    });
   }
 
   setFilterScaffoldTagAndFireSync(align?: boolean) {

@@ -5,8 +5,9 @@ Feature: Hierarchical clustering from the Bio menu
   seven linkages. OK shows "Creating dendrogram ..." in the task bar and attaches a tree to the grid
   with a leaf for every sequence; the tree follows the grid's current row and puts a hovered leaf's
   row under the mouse; another distance and linkage attach a tree of another height; Assign
-  Clusters works on the sequence tree, where 5 clusters sit at a threshold of 11.06, and a threshold
-  above the tree's height is refused by the input.
+  Clusters works on the sequence tree, where 5 clusters sit at a threshold of 11.60 (the sequences
+  are aligned, so the distance is Hamming since 2026-09-22; it was 11.06 with Levenshtein), and a
+  threshold above the tree's height is refused by the input.
 
   Background:
     Given user is logged in
@@ -72,7 +73,7 @@ Feature: Hierarchical clustering from the Bio menu
     When user clicks on "Assign Clusters" icon
     Then "Assign Clusters" dialog should be visible
     When user enters "5" into Clusters input in "Assign Clusters" dialog
-    Then Threshold input in "Assign Clusters" dialog should have a value between 11.59 and 11.61
+    Then Threshold input in "Assign Clusters" dialog should have a value between 11.60 and 11.61
     When user clicks on Assign button in "Assign Clusters" dialog
     Then the "Assign Clusters" dialog should close
     And the table should have a column "Cluster (11.60)"

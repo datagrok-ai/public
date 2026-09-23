@@ -8,6 +8,7 @@ import {click, editorOf} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
+import {armEvent} from '../../src/runtime/viewer-menus.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -29,17 +30,28 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
       });
     }
     w.__bddTables ??= {};
-    const src = (w.__bddTables[p] ??= await grok.dapi.files.readCsv(p));
+    // a file that is not a csv goes through the file handler its extension is registered for (sdf → Chem);
+    // a .csv the comma parser reads as one tab-separated column goes through it too
+    const read = async (path: string) => {
+      if (!/\.(csv|tsv|txt)$/i.test(path))
+        return grok.data.files.openTable(path);
+      const df = await grok.dapi.files.readCsv(path);
+      return df.columns.length === 1 && df.columns.names()[0].includes('\t') ? grok.data.files.openTable(path) : df;
+    };
+    const src = (w.__bddTables[p] ??= await read(p));
     const df = r !== null && r < src.rowCount ? src.clone(DG.BitSet.create(src.rowCount, (i: number) => i < r)) : src.clone();
     df.name = n ?? p.replace(/^.*\//, '').replace(/\.[^.]+$/, '');
     grok.shell.addTableView(df);
   }, [dataset.path, rows ?? null, name ?? null] as [string, number | null, string | null]);
   await page.locator('[name="viewer-Grid"]').first().waitFor();
   // resolved the moment the detection event lands, not on the next poll
-  await page.evaluate(([timeout, what]) => new Promise<void>((resolve, reject) => {
+  await page.evaluate(([timeout, what, handled]) => new Promise<void>((resolve, reject) => {
     const w = window as any;
-    const dart = w.grok.shell.tv?.dataFrame?.dart;
-    if (w.__bddDetected.includes(dart))
+    const df = w.grok.shell.tv?.dataFrame;
+    const dart = df?.dart;
+    // a file handler that types its own column (an sdf, a mol) fires no detection event, so such a
+    // table that already carries a semantic type is as ready as one detection has run over
+    if (w.__bddDetected.includes(dart) || (handled && (df?.columns?.toList() ?? []).some((c: any) => c.semType)))
       return resolve();
     const timer = setTimeout(() => { sub.unsubscribe(); reject(new Error(`${what}: semantic types were not detected (is auto-detection on?)`)); }, timeout);
     const sub = w.grok.events.onEvent('ddt-semantic-type-detected').subscribe((a: any) => {
@@ -49,7 +61,7 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
       sub.unsubscribe();
       resolve();
     });
-  }), [pollMs(60000), dataset.name] as [number, string]);
+  }), [pollMs(60000), dataset.name, !/\.(csv|tsv|txt)$/i.test(dataset.path)] as [number, string, boolean]);
   // a second after the grid is created the view makes row 0 of its first column current when no row
   // is, and every viewer repaints its marker mid-feature; done here, the same cell, the view's timer
   // skips it — and a "current column" claim does not depend on which of the two got there first
@@ -250,13 +262,19 @@ export const clickPlainCheckbox = When('user clicks the plain checkbox in the {s
    the shell as it expects it. */
 
 export const browsePanelOpen = Given('the browse panel is open', async (page: Page) => {
-  await page.evaluate(() => {
+  const shown = await page.evaluate(() => {
+    const was = grok.shell.windows.showBrowse;
     grok.shell.windows.simpleMode = false;
     grok.shell.windows.showBrowse = true;
+    return was;
   });
   await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});
-  atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
-}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts simple mode back at feature end'});
+  // showBrowse is a user setting: left on, it opens the panel in every later page of the account
+  atFeatureEnd(page, () => page.evaluate(([simple, browse]) => {
+    grok.shell.windows.showBrowse = browse;
+    grok.shell.windows.simpleMode = simple;
+  }, [shellSimpleMode(), shown] as const));
+}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts the panel and simple mode back at feature end'});
 
 export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: Page) => {
   await page.evaluate(() => {
@@ -269,6 +287,28 @@ export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: 
   await expect(page.locator('.d4-toolbox[caption]').first(), 'the toolbox pane').toBeVisible({timeout: 15000});
   atFeatureEnd(page, () => page.evaluate((simple) => { grok.shell.windows.showToolbox = false; grok.shell.windows.simpleMode = simple; }, shellSimpleMode()));
 }, {tier: 'api', description: 'idempotent: leaves simple mode and docks the toolbox pane afresh (off by default for a user, hidden at startup while empty); puts both back at feature end'});
+
+/* Which sketcher a molecule input, a filter card or a dialog opens is the account's choice, kept on
+   the server: a feature that draws or types a molecule names the one it was written against, so an
+   account that picked another one elsewhere does not change what the feature sees. */
+export const sketcherIs = Given('the molecule sketcher is {string}', async (page: Page, name: string) => {
+  const was = await page.evaluate((n) => {
+    const known = DG.Func.find({meta: {role: 'moleculeSketcher'}}).map((f: any) => f.friendlyName);
+    if (!known.includes(n))
+      throw new Error(`no molecule sketcher "${n}"; the stand has: ${known.join(', ')}`);
+    const before = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? null;
+    grok.userSettings.add(DG.chem.STORAGE_NAME, DG.chem.KEY, n);
+    DG.chem.currentSketcherType = n;
+    return before;
+  }, name);
+  atFeatureEnd(page, () => page.evaluate((b) => {
+    if (b === null)
+      grok.userSettings.delete(DG.chem.STORAGE_NAME, DG.chem.KEY);
+    else
+      grok.userSettings.add(DG.chem.STORAGE_NAME, DG.chem.KEY, b);
+    DG.chem.currentSketcherType = b ?? DG.DEFAULT_SKETCHER;
+  }, was));
+}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default); the account\'s own choice comes back at feature end'});
 
 /** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
  * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */
@@ -615,9 +655,13 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
   atFeatureEnd(page, cleanup);
   await cleanup();
   // API deletion does not invalidate the open tree's cached nodes (including prior teardown).
-  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0)
+  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0) {
+    // the tree rebuilds after Refresh: a node right-clicked mid-rebuild opens no menu
+    const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
     await click(page, el('"Refresh" icon inside browse toolbar'));
-}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree, and deletes them again at feature end'});
+    await refreshed();
+  }
+}, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree and waits for it to rebuild, and deletes them again at feature end'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
    18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK
@@ -970,6 +1014,19 @@ export const viewHoldsViewers = Then('the current view should hold at least {int
 /** A table in the workspace and nothing else: no view, so a form that offers the open tables in a
  * choice gains the option without losing the focus of the view it lives in. Named after the file,
  * which is the name such a choice shows. */
+export const openTableOf = Given('user opens a table {string} with:', async (page: Page, name: string, rows: string[][]) => {
+  const [header, ...body] = rows;
+  if (!header || body.length === 0)
+    throw new Error('the table needs a header row and at least one row of values');
+  await page.evaluate(([n, csv]) => {
+    const df = (window as any).DG.DataFrame.fromCsv(csv);
+    df.name = n;
+    grok.shell.addTableView(df);
+  }, [name, [header, ...body].map((r) => r.map((c) => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\n')] as [string, string]);
+  await expect.poll(() => page.evaluate((n) => grok.shell.tv?.dataFrame?.name === n && !!grok.shell.tv.grid, name),
+    {message: `a table view of "${name}"`}).toBe(true);
+}, {tier: 'api', description: 'a small table written in the feature — the header row names the columns, types are detected as from a CSV — in a table view of its own'});
+
 export const loadTable = Given('the {string} file is loaded as a table', async (page: Page, path: string) => {
   const name = await page.evaluate(async (p) => {
     const df = await grok.dapi.files.readCsv(p);

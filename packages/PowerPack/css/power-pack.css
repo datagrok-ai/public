@@ -439,6 +439,25 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     width: 100%;
 }
 
+/* Only the formula pane takes the extra width when the dialog is resized. */
+.ui-addnewcolumn-expression-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+    padding-right: 20px;
+}
+
+.ui-addnewcolumn-columns-pane, .ui-addnewcolumn-functions-pane {
+    display: flex;
+    flex: 0 0 190px;
+    min-width: 0;
+}
+
+.ui-addnewcolumn-columns-pane {
+    padding-right: 20px;
+}
+
 .ui-addnewcolumn-element {
     display: flex;
     flex-direction: column;
@@ -787,6 +806,17 @@ body.dartium .power-pack-widgets-host.ui-div {
 .cm-hint-div {
     padding-top: 2px;
     min-height: 33px;
+}
+
+.cm-hint-description {
+    color: var(--grey-5);
+    padding-top: 2px;
+}
+
+.cm-tooltip.cm-completionInfo {
+    max-width: 360px;
+    padding: 4px 8px;
+    font-size: 12px;
 }
 
 .cm-tooltip-hover {

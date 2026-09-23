@@ -5,12 +5,13 @@ import {readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {el} from '../../src/runtime/args.js';
-import {expectCount, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, State} from '../../src/runtime/assertions.js';
+import {expectCount, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, expectVisible, State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
+import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {locate} from '../../src/runtime/locate.js';
 
 export const clickOn = When('user clicks (on ){element}', (page: Page, target: ElementRef) => g.click(page, target), {tier: 'ui'});
@@ -63,6 +64,9 @@ export const fillIn = When('user fills in:', async (page: Page, table: string[][
 
 export const shouldBe = Then('{element} should be/become {state}', (page: Page, target: ElementRef, state: State) => expectState(page, target, state));
 export const shouldNotBe = Then('{element} should not be/become {state}', (page: Page, target: ElementRef, state: State) => expectState(page, target, state, true));
+export const shouldBecomeVisibleWithin = Then('{element} should become visible within {int} seconds',
+  async (page: Page, target: ElementRef, seconds: number) => expectVisible(await locate(page, target), true, pollMs(seconds * 1000)),
+  {description: 'for what a computation produces well past the usual budget (a search\'s hits): the budget is the scenario\'s claim about how long it may take'});
 export const shouldContainText = Then('{element} should contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text));
 export const shouldNotContainText = Then('{element} should not contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {negate: true}));
 export const shouldHaveText = Then('{element} should have (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {exact: true}));
@@ -76,6 +80,29 @@ export const shouldHaveValueBetween = Then('{element} should have a value betwee
 export const visibleCount = Then('there should be {int} visible {element}', async (page: Page, count: number, target: ElementRef) =>
   expect((await locate(page, target)).filter({visible: true}), `visible ${target.phrase}`).toHaveCount(count),
 {description: 'how many of the elements the phrase names are shown — one of a kind, never a duplicate'});
+
+/** Visible counts remembered by phrase, for a claim against before (a search narrows a list whose
+ * size depends on the stand: what matters is that it shrank). */
+const rememberedVisible = new WeakMap<Page, Map<string, number>>();
+const visibleNow = async (page: Page, target: ElementRef): Promise<number> => (await locate(page, target)).filter({visible: true}).count();
+async function expectVisibleAgainstRemembered(page: Page, target: ElementRef, fewer: boolean): Promise<void> {
+  const remembered = rememberedVisible.get(page)?.get(target.phrase);
+  if (remembered === undefined)
+    throw new Error(`no count of visible ${target.phrase} remembered: "user remembers the number of visible ${target.phrase}" first`);
+  await expect.poll(async () => {
+    const count = await visibleNow(page, target);
+    return `${(fewer ? count < remembered : count > remembered) ? '' : 'not '}${fewer ? 'fewer' : 'more'} (${count} vs ${remembered})`;
+  }, {message: `visible ${target.phrase} against the remembered count`}).toMatch(/^(fewer|more) \(/);
+}
+export const rememberVisibleCount = When('user remembers the number of visible {element}', async (page: Page, target: ElementRef) => {
+  const counts = rememberedVisible.get(page) ?? new Map<string, number>();
+  rememberedVisible.set(page, counts);
+  counts.set(target.phrase, await visibleNow(page, target));
+}, {description: 'how many are shown now, read once, for "fewer/more visible … than remembered" with the same phrase'});
+export const visibleFewerThanRemembered = Then('there should be fewer visible {element} than remembered', (page: Page, target: ElementRef) =>
+  expectVisibleAgainstRemembered(page, target, true), {description: 'strictly fewer than the remembered count — a list a search narrowed'});
+export const visibleMoreThanRemembered = Then('there should be more visible {element} than remembered', (page: Page, target: ElementRef) =>
+  expectVisibleAgainstRemembered(page, target, false), {description: 'strictly more than the remembered count — a list something added to'});
 export const fillsParent = Then('{element} should fill its parent', async (page: Page, target: ElementRef) => {
   const loc = (await locate(page, target)).filter({visible: true}).first();
   await expect.poll(() => loc.evaluate((e) => {
@@ -88,7 +115,7 @@ export const fillsParent = Then('{element} should fill its parent', async (page:
   }), {message: `${target.phrase} against its parent`}).toBe('fills');
 }, {description: 'as wide and as tall as the content box of the element it sits in, to a pixel'});
 export const shouldOffer = Then('{element} should offer {string}', (page: Page, target: ElementRef, list: string) => expectOptions(page, target, list),
-  {description: 'the choices of a dropdown, comma-separated, exactly and in this order'});
+  {description: 'the choices of a dropdown, comma-separated, exactly and in this order; the blank option of a nullable dropdown is not a choice'});
 export const shouldHaveItems = Then('{element} should have {int} item(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveRows = Then('{element} should have {int} row(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 
@@ -124,41 +151,139 @@ export const clipboardLineValues = Then('line {int} of the clipboard should hold
 export const pasteInto = When('user pastes {string} into {element}', async (page: Page, text: string, target: ElementRef) =>
   g.paste(page, await g.editorOf(page, target), text), {tier: 'ui', description: 'through the clipboard and the paste key over what the editor held; "\\n" is a line break'});
 
+const rememberedClips = new WeakMap<Page, string[]>();
+
+export const rememberClipboard = When('user remembers the clipboard text', async (page: Page) => {
+  const text = await g.readClipboard(page);
+  expect(text, 'the clipboard text to remember').not.toBe('');
+  if (!rememberedClips.has(page))
+    atFeatureEnd(page, async () => void rememberedClips.delete(page));
+  rememberedClips.set(page, [...(rememberedClips.get(page) ?? []), text]);
+}, {tier: 'api', description: 'kept with every text remembered before it in the feature'});
+
+export const clipboardDiffers = Then('the clipboard text should differ from every remembered one', async (page: Page) => {
+  const text = await g.readClipboard(page);
+  const kept = rememberedClips.get(page) ?? [];
+  expect(kept.length, 'texts remembered before').toBeGreaterThan(0);
+  expect(kept.filter((k) => k === text).length, 'remembered texts equal to the clipboard').toBe(0);
+});
+
+export const clipboardImage = Then('the clipboard should hold a PNG image of at least {int} bytes', async (page: Page, bytes: number) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await expect.poll(() => page.evaluate(async () => {
+    for (const item of await navigator.clipboard.read())
+      if (item.types.includes('image/png'))
+        return (await item.getType('image/png')).size;
+    return 0;
+  }), {message: 'the size of the PNG image on the clipboard'}).toBeGreaterThanOrEqual(bytes);
+});
+
 /** The state a scenario needs, rather than a gesture: `setExpanded` reads where the element is
  * first, so a group that is already open stays open — "user expands" on it would close it. */
 export const isExpanded = Given('{element} is expanded', (page: Page, target: ElementRef) => g.setExpanded(page, target, true), {tier: 'ui'});
 
+export const finishedUpdating = Then('{element} should have finished updating', async (page: Page, target: ElementRef) => {
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  // ui.setUpdateIndicator shades the element it works in ("Updating..." with a loader) until the
+  // work is done; a computation the click started (an MCS over a column) can take a while
+  await expect.poll(() => loc.locator('.d4-update-shadow').count(),
+    {timeout: pollMs(120000), message: `the update indicator ${target.phrase} shows`}).toBe(0);
+}, {description: 'no "Updating..." shade over the element: what a click started in it has finished (up to two minutes)'});
+
 // --- a file the page hands over, and handing it back ---------------------------------------------
 
-/* The page saves a file (a form's "Save to file", an export) through the browser's download; the
-   step keeps it in the temp directory for the file chooser a later step answers with it. One file
-   per worker: the next download replaces it. */
-let downloaded: string | undefined;
+/* The page saves a file (a form's "Save to file", an export, a cell action) through the browser's
+   download. Every file the page downloads is kept in the temp directory, newest last: for the checks
+   on its text and for the file chooser a later step answers with it. */
+type Downloaded = {name: string; file: Promise<string>};
+const downloads = new WeakMap<Page, Downloaded[]>();
 
-function downloadedFile(): string {
-  if (!downloaded)
-    throw new Error('no file has been downloaded in this worker');
-  return downloaded;
+/** The page's downloads; `fresh` starts the list afresh. The listener is attached once per page. */
+function watched(page: Page, fresh: boolean): Downloaded[] {
+  if (!downloads.has(page))
+    page.on('download', (d) => {
+      const file = join(tmpdir(), `bdd-${process.pid}-${Date.now()}-${d.suggestedFilename()}`);
+      const saved = d.saveAs(file).then(() => file);
+      // a download the page cancels rejects here, and only a step that reads that file reports it
+      saved.catch(() => undefined);
+      downloads.get(page)!.push({name: d.suggestedFilename(), file: saved});
+    });
+  if (fresh || !downloads.has(page))
+    downloads.set(page, []);
+  return downloads.get(page)!;
 }
 
+export const watchDownloads = Given('user watches downloads', async (page: Page) => {
+  watched(page, true);
+}, {tier: 'api', description: 'records the files the page downloads from then on, forgetting the ones before, so a file downloaded earlier cannot answer for one the scenario expects'});
+
 export const downloadThrough = When('user downloads a file through {element}', async (page: Page, target: ElementRef) => {
-  const download = page.waitForEvent('download', {timeout: 10000});
+  const before = watched(page, false).length;
   await g.click(page, target);
-  const file = await download;
-  downloaded = join(tmpdir(), `bdd-${process.pid}-${Date.now()}-${file.suggestedFilename()}`);
-  await file.saveAs(downloaded);
+  await expect.poll(() => downloads.get(page)!.length, {timeout: 10000, message: `a download started by a click on ${target.phrase}`})
+    .toBeGreaterThan(before);
 }, {tier: 'ui', description: 'clicks the element and keeps the file the browser downloads, for "uploads the downloaded file"'});
 
-export const downloadedContains = Then('the downloaded file should contain {string}', async (page: Page, text: string) => {
-  expect(readFileSync(downloadedFile(), 'utf8'), `the downloaded file ${downloaded}`).toContain(text);
+async function lastDownloaded(page: Page): Promise<string> {
+  const last = downloads.get(page)?.at(-1);
+  if (!last)
+    throw new Error('no file has been downloaded on this page');
+  return last.file;
+}
+
+/** The browser numbers a file it has downloaded before ("smiles (2).sdf"), so the name a feature
+ * gives matches those too. */
+function named(name: string): (file: {name: string}) => boolean {
+  const dot = name.lastIndexOf('.');
+  const [stem, ext] = dot < 0 ? [name, ''] : [name.slice(0, dot), name.slice(dot)];
+  const re = new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( \\(\\d+\\))?${ext.replace(/\./g, '\\.')}$`);
+  return (file) => re.test(file.name);
+}
+
+async function textOf(page: Page, name: string): Promise<string> {
+  let names = '';
+  await expect.poll(() => {
+    const list = downloads.get(page);
+    if (!list)
+      throw new Error('"user watches downloads" did not run in this scenario');
+    names = list.map((d) => d.name).join(', ');
+    return list.some(named(name));
+  }, {message: `a download named "${name}"`}).toBe(true).catch(() => {
+    throw new Error(`no download named "${name}"; downloaded: ${names || 'nothing'}`);
+  });
+  return readFileSync(await downloads.get(page)!.filter(named(name)).pop()!.file, 'utf8');
+}
+
+export const fileDownloaded = Then('a file {string} should have been downloaded', async (page: Page, name: string) => {
+  await textOf(page, name);
 });
+
+export const downloadContains = Then('the downloaded file {string} should contain (the )text {string}', async (page: Page, name: string, text: string) => {
+  expect(await textOf(page, name), `the text of "${name}"`).toContain(text);
+});
+
+const occurrences = async (page: Page, name: string, text: string): Promise<number> => (await textOf(page, name)).split(text).length - 1;
+
+export const downloadCount = Then('the downloaded file {string} should contain {int} occurrences of {string}', async (page: Page, name: string, count: number, text: string) => {
+  expect(await occurrences(page, name, text), `occurrences of "${text}" in "${name}"`).toBe(count);
+}, {description: 'how many times the text appears in the file — a record terminator counts the records'});
+
+export const downloadFewer = Then('the downloaded file {string} should contain fewer than {int} occurrences of {string}', async (page: Page, name: string, count: number, text: string) => {
+  expect(await occurrences(page, name, text), `occurrences of "${text}" in "${name}"`).toBeLessThan(count);
+});
+
+export const downloadedContains = Then('the downloaded file should contain {string}', async (page: Page, text: string) => {
+  const file = await lastDownloaded(page);
+  expect(readFileSync(file, 'utf8'), `the downloaded file ${file}`).toContain(text);
+}, {description: 'the file downloaded last'});
 
 export const downloadedNotContains = Then('the downloaded file should not contain {string}', async (page: Page, text: string) => {
-  expect(readFileSync(downloadedFile(), 'utf8'), `the downloaded file ${downloaded}`).not.toContain(text);
-});
+  const file = await lastDownloaded(page);
+  expect(readFileSync(file, 'utf8'), `the downloaded file ${file}`).not.toContain(text);
+}, {description: 'the file downloaded last'});
 
-export const uploadDownloaded = When('user uploads the downloaded file through {element}', (page: Page, target: ElementRef) =>
-  g.chooseFile(page, target, downloadedFile()), {tier: 'ui', description: 'answers the file chooser the element opens with the file the last "downloads a file" kept'});
+export const uploadDownloaded = When('user uploads the downloaded file through {element}', async (page: Page, target: ElementRef) =>
+  g.chooseFile(page, target, await lastDownloaded(page)), {tier: 'ui', description: 'answers the file chooser the element opens with the file downloaded last'});
 
 // --- code editors ---------------------------------------------------------------------------------
 

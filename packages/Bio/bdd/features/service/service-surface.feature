@@ -4,6 +4,8 @@ Feature: The service surface other packages call
   holds those calls until Bio has initialized, so they resolve to the initialized singletons —
   never before, never to a stub. A sequence handler is per column and knows its notation.
 
+  Not translated: nothing of the md is left out.
+
   Background:
     Given user is logged in
 

@@ -7,10 +7,11 @@ import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {reasonOf} from './failure.js';
 import {AreaChange, AreaColor, AreaColors, CanvasChange, Range, RangeChange, ScaleChange, ScaleRange} from './viewer-runtime.js';
-import {hitArea, onViewer} from './viewers.js';
+import {hitArea, onViewer, settle} from './viewers.js';
 
 const COLOR_MIN_PX = 10;
 const SIGNIFICANT_PX = 30;
+const HUE_FLOOR_PX = 4;
 const HUE_TOLERANCE = 20;
 const GREY_SATURATION = 0.15;
 const LIGHTNESS_TOLERANCE = 0.15;
@@ -157,6 +158,25 @@ export async function expectAreaNotColor(page: Page, target: ElementRef, area: s
   const read = await areaColors(page, target, area);
   const count = pixelsNear(read.colors, want);
   expect(count, `the "${area}" area of ${target.phrase} is painted in ${want} (${count} px); ${describeColors(read)}`).toBeLessThan(COLOR_MIN_PX);
+}
+
+/** Greys and white only inside the area, read once the viewer is settled: no saturated color
+ * covers even a few pixels (a stricter floor than the positive claims', which a negative can afford). */
+export async function expectAreaNoHue(page: Page, target: ElementRef, area: string): Promise<void> {
+  await hitArea(page, target, area);
+  await settle(page, target);
+  const read = await areaColors(page, target, area);
+  // a mark spread over anti-aliased shades counts as one hue: its shades are summed before the floor
+  const groups: {hex: string; count: number}[] = [];
+  for (const c of read.colors.filter((x) => hsl(x.hex).s >= GREY_SATURATION)) {
+    const g = groups.find((x) => near(x.hex, c.hex));
+    if (g)
+      g.count += c.count;
+    else
+      groups.push({hex: c.hex, count: c.count});
+  }
+  const hued = groups.filter((g) => g.count >= HUE_FLOOR_PX);
+  expect(hued.map((c) => `${c.hex} (${c.count} px)`), `hued colors in the "${area}" area of ${target.phrase}; ${describeColors(read)}`).toEqual([]);
 }
 
 /** The area is painted in at least `count` hues: colors covering some pixels each, grouped by

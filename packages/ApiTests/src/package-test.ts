@@ -82,6 +82,7 @@ import './grid/color-coding';
 import './grid/viewer-set-property';
 import './grid/multi-value-column';
 import './stats/stats';
+import './stats/window-functions';
 import './bitset/bitset';
 import './bitset/bit-array';
 import './valuematcher/valuematcher';

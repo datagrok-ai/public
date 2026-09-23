@@ -1,7 +1,16 @@
 @journey
 Feature: Configure peptide SAR through the top menu
-  The SAR dialog selects the sequence and activity columns. MCL settings can be reapplied,
-  and the optional Active peptide selection viewer can be removed and added again.
+  The SAR dialog selects the sequence and activity columns and lays the viewers out around the
+  grid. MCL settings can be reapplied, the optional Active peptide selection viewer can be removed
+  and added again, and Dendrogram can be switched on from the settings (Sequence space from the
+  settings is sar/sequence-space.feature).
+
+  Launches set the MCL similarity threshold to 93: the default 70 spends minutes on this fixture
+  and ends in one cluster (sar/default-launch.feature runs the defaults once).
+  Not translated: the exact dock ratios of the manual case (0.7 / 0.3) — the claims are about
+  which viewer sits where, not about pixels — and "Active peptide selection below the Logo Summary
+  Table": it lands in that column but under the MCL viewer, not against the table, and the
+  library's docking claims are about panels that touch.
 
   Background:
     Given user is logged in
@@ -30,6 +39,10 @@ Feature: Configure peptide SAR through the top menu
     And Most Potent Residues viewer should be added to the open tableview
     And MCL viewer should be added to the open tableview
     And Logo Summary Table viewer should be added to the open tableview
+    And the "completed threshold" reading of MCL viewer should be 93
+    And Sequence Variability Map viewer should be docked left-of Most Potent Residues viewer
+    And Sequence Variability Map viewer should be docked in the bottom left corner of the view
+    And Logo Summary Table viewer should be docked in the top right corner of the view
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -40,8 +53,8 @@ Feature: Configure peptide SAR through the top menu
     And Viewers pane in "Peptides settings" dialog should be visible
     And MCL pane in "Peptides settings" dialog should be visible
     When user expands Viewers pane in "Peptides settings" dialog
-    Then Dendrogram checkbox in "Peptides settings" dialog should be present
-    And "Sequence space" checkbox in "Peptides settings" dialog should be present
+    Then Dendrogram checkbox in "Peptides settings" dialog should be unchecked
+    And "Sequence space" checkbox in "Peptides settings" dialog should be unchecked
     And "Active peptide selection" checkbox in "Peptides settings" dialog should be unchecked
     When user clicks on CANCEL button in "Peptides settings" dialog
     Then "Peptides settings" dialog should be hidden
@@ -50,6 +63,7 @@ Feature: Configure peptide SAR through the top menu
 
   Scenario: Applying a different inflation factor produces a rendered MCL result
     When user remembers the "completed computations" reading of MCL viewer
+    And user remembers the "clusters" reading of Logo Summary Table viewer
     And user clicks on "Peptides analysis settings" icon
     And user expands MCL pane in "Peptides settings" dialog
     Then "Inflation Factor" input in "Peptides settings" dialog should have value "1.4"
@@ -64,6 +78,7 @@ Feature: Configure peptide SAR through the top menu
     And the open tableview should have 1 MCL viewer
     And scatter plot viewer in MCL viewer should be painted
     And the "rows shown" reading of scatter plot viewer in MCL viewer should be 647
+    And the "clusters" reading of Logo Summary Table viewer should not be as remembered
     When user remembers the "completed computations" reading of MCL viewer
     And user clicks on "Peptides analysis settings" icon
     And user expands MCL pane in "Peptides settings" dialog
@@ -82,7 +97,8 @@ Feature: Configure peptide SAR through the top menu
     Given the open tableview should have 0 Active peptide selection viewers
     When user clicks on "Peptides analysis settings" icon
     And user expands Viewers pane in "Peptides settings" dialog
-    And user checks "Active peptide selection" checkbox in "Peptides settings" dialog
+    Then "Active peptide selection" checkbox in "Peptides settings" dialog should be unchecked
+    When user checks "Active peptide selection" checkbox in "Peptides settings" dialog
     Given user listens for "peptides-sar-ready" custom event
     When user clicks on OK button in "Peptides settings" dialog
     Then the SAR analysis should be ready
@@ -97,7 +113,8 @@ Feature: Configure peptide SAR through the top menu
     And the open tableview should have 1 MCL viewer
     When user clicks on "Peptides analysis settings" icon
     And user expands Viewers pane in "Peptides settings" dialog
-    And user unchecks "Active peptide selection" checkbox in "Peptides settings" dialog
+    Then "Active peptide selection" checkbox in "Peptides settings" dialog should be checked
+    When user unchecks "Active peptide selection" checkbox in "Peptides settings" dialog
     Given user listens for "peptides-sar-ready" custom event
     When user clicks on OK button in "Peptides settings" dialog
     Then the SAR analysis should be ready
@@ -115,3 +132,47 @@ Feature: Configure peptide SAR through the top menu
       | cycle            |
       | Initial addition |
       | Re-addition      |
+
+  Scenario: Dendrogram clusters the peptides next to the grid
+    Given the analysis grid should not have a dendrogram
+    When user clicks on "Peptides analysis settings" icon
+    And user expands Viewers pane in "Peptides settings" dialog
+    And user checks Dendrogram checkbox in "Peptides settings" dialog
+    Given user listens for "peptides-sar-ready" custom event
+    When user clicks on OK button in "Peptides settings" dialog
+    Then the SAR analysis should be ready
+    And the SAR setting "showDendrogram" should be "true"
+    And the analysis grid should have a dendrogram
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  # GROK-20640: the settings do not see the dendrogram
+  # they added. settings.ts reads the Dendrogram box from the view's viewers, and the Dendrogram
+  # package attaches the tree as a grid neighbour, so the box reopens unchecked.
+  @known-failure
+  Scenario: The settings show Dendrogram checked while the tree is shown
+    When user clicks on "Peptides analysis settings" icon
+    And user expands Viewers pane in "Peptides settings" dialog
+    Then Dendrogram checkbox in "Peptides settings" dialog should be checked
+    When user clicks on CANCEL button in "Peptides settings" dialog
+
+  Scenario: Leaving the settings unapplied keeps the tree
+    When user presses Escape
+    Then "Peptides settings" dialog should be absent
+    And the analysis grid should have a dendrogram
+    And no errors should have been logged
+
+  # GROK-20640, same cause: `closeViewer(DENDROGRAM)` in
+  # model.ts looks the tree up among the view's viewers, never finds it, and the tree stays. The box
+  # reopens unchecked (above), so it is checked and unchecked to send showDendrogram=false.
+  @known-failure
+  Scenario: Unchecking Dendrogram removes the tree
+    When user clicks on "Peptides analysis settings" icon
+    And user expands Viewers pane in "Peptides settings" dialog
+    And user checks Dendrogram checkbox in "Peptides settings" dialog
+    And user unchecks Dendrogram checkbox in "Peptides settings" dialog
+    Given user listens for "peptides-sar-ready" custom event
+    When user clicks on OK button in "Peptides settings" dialog
+    Then the SAR analysis should be ready
+    And the SAR setting "showDendrogram" should be "false"
+    And the analysis grid should not have a dendrogram

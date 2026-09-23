@@ -1,7 +1,12 @@
 @journey
 Feature: Save and reopen a peptide SAR analysis
-  A project keeps the peptide data, analysis settings and viewer layout.
+  A project keeps the peptide data, analysis settings and viewer layout; the selection made before
+  saving is not kept (the manual case allows either, the feature pins what the platform does).
   The reopened analysis remains interactive.
+
+  Not translated: the ribbon's Save dialog and opening from the Projects browser — the project
+  steps save and open through the JS API (the platform's own Save and Open paths are the Projects
+  suite's subject); here the claim is what the SAR analysis keeps across them.
 
   Background:
     Given user is logged in
@@ -23,6 +28,7 @@ Feature: Save and reopen a peptide SAR analysis
     And user clicks on the "cell M at 2" area of Sequence Variability Map viewer
     Then 9 rows should be selected
     And only rows where "2" is "M" should be selected
+    And the "selected monomer-positions" reading of Sequence Variability Map viewer should be "2:M"
     When user saves the current view as project "bdd-peptides-sar-roundtrip"
     And user closes all views
     And user opens the "bdd-peptides-sar-roundtrip" project
@@ -41,6 +47,8 @@ Feature: Save and reopen a peptide SAR analysis
     And the "activity scaling" reading of Sequence Variability Map viewer should be "lg"
     And the "header 2" area of grid should be at least 100 pixels tall
     And Sequence Variability Map viewer should report no error
+    And no rows should be selected
+    And the "selected monomer-positions" reading of Sequence Variability Map viewer should be ""
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -51,8 +59,15 @@ Feature: Save and reopen a peptide SAR analysis
     And user clicks on the "cell A at 2" area of Sequence Variability Map viewer
     Then 299 rows should be selected
     And only rows where "2" is "A" should be selected
-    And Distribution pane in context panel should be present
-    And "Mutation Cliffs pairs" pane in context panel should be present
+    And the "selected monomer-positions" reading of Sequence Variability Map viewer should be "2:A"
+    Given the context panel is open
+    When user expands Distribution pane in context panel
+    Then Distribution pane in context panel should contain text "Mean difference"
+    And Distribution pane in context panel should not contain text "No distribution"
+    When user expands Selection pane in context panel
+    Then grid in Selection pane in context panel should show 299 rows
+    When user collapses Selection pane in context panel
+    Then "Mutation Cliffs pairs" pane in context panel should be present
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

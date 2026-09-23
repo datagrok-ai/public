@@ -5,6 +5,12 @@ Feature: Monomer collections
   the New Collection card and lands on the server as it was entered; a card selects on click;
   Delete removes the file after confirmation.
 
+  Not translated: writing a collection file straight to the file share (the lifecycle md's S1 —
+  it tests the file store, not Bio; the New Collection dialog is the product path and is claimed);
+  a project "referencing" a collection (S3 — a project stores no reference to one); the
+  collection's metadata beyond name, description and monomers (tags, updated by/on) — the app
+  shows none of it.
+
   Background:
     Given user is logged in
     And the Bio package is initialized
@@ -42,6 +48,6 @@ Feature: Monomer collections
     Then "Delete Collection" dialog should be visible
     And "Delete Collection" dialog should contain text "bdd-test-collection"
     When user clicks on OK button in "Delete Collection" dialog
-    Then "bdd-test-collection" card should become hidden
+    Then "bdd-test-collection" card should become absent
     And there should be no "bdd-test-collection" monomer collection on the server
     And no error or warning balloon should have been shown

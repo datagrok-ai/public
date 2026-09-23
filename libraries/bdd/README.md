@@ -40,6 +40,11 @@ npx grok-bdd run --reporter=list                     # compile --check, then Pla
 Under the pnpm workspace the package and the library resolve to one `@playwright/test`, so
 `grok-bdd link` is only for a package installed outside the workspace with npm.
 
+A slow stand may need longer budgets: `BDD_EXPECT_TIMEOUT` raises what every check waits (15 s)
+and `BDD_COMMAND_TIMEOUT` how long a top-menu command has to add its columns (180 s).
+`BDD_FRESH_PAGE=1` reloads the shell before every feature instead of resetting it, which tells a
+feature that fails on what an earlier one left behind.
+
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
 `node_modules/.bdd-link-backup/` and links the library's in its place (`--undo` puts it back).
@@ -161,6 +166,11 @@ A misspelled menu item gets the visible items, a phrase inside a menu that is no
 `context menu: not open`, a misspelled property the nearest captions. A journey lists every failed
 scenario in that shape. A stack trace appears only for a programming error in a binding.
 
+Every run also leaves Playwright's JSON report in the project's `test-results/report.json`, with
+the stand and the machine it ran on: the failed step of a test is its deepest step with an `error`.
+The run history of UsageAnalysis (`packages/UsageAnalysis/bdd/history`) keeps such reports, when
+asked to, as dated records with a page to follow times, failures and flakes over them.
+
 ## Element phrases
 
 A phrase resolves, in this order, at every level:
@@ -218,7 +228,8 @@ list is the reference; this is the map:
 
 - **Gestures and outcomes on any element** (`bindings/common/steps.ts`): clicks, hovers, typing
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
-  `should be/become {state}`, text, value and item counts. States: visible, hidden, present,
+  `should be/become {state}`, text, value and item counts, a visible count remembered and then
+  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list). States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
   collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
   `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
@@ -233,11 +244,13 @@ list is the reference; this is the map:
   and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
   `remove button` and `checkbox` parts, typed into through `membership search`.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
-  filter set and checked row by row, cells, calculated and renamed columns, colour coding,
+  filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
+  equal row by row), calculated and renamed columns, colour coding,
   other open tables, links between tables, the filter panel's cards through its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
-- **Package functions and their results** (`platform/functions.ts`), **custom platform events**
+- **Package functions and their results** (`platform/functions.ts`: empty, text, a number or a
+  range, methods, a list, a table, a returned column's length, rows and prefix), **custom platform events**
   and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
   (`common/steps.ts`).
 - **The `viewers` tier** (below).
@@ -289,12 +302,13 @@ The `viewers` tier drives viewers the way the platform sees them:
 - **Pixels** — `should have repainted [by at least N pixels]`, `less/more ink than before`, an
   area's own ink and repaint, colours in an area (by hue, a shade of anti-aliasing allowed), two
   areas alike or different, the selection highlight (with a margin the selection warrants), the
-  value range and the colour scale against before.
+  value range and the colour scale against before; an area `painted in no color` (greys only).
 - **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
   collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
   against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
-  logged`, `no error or warning balloon should have been shown`.
+  logged`, `no error or warning balloon should have been shown`; a balloon that should have been
+  shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
   inner viewers, card readings, lassos, cross-widget drags.
@@ -365,7 +379,7 @@ drag: the page is pictured along the way (`NN-dragK.png`, at most eight per step
 shows what the drag draws — a selection box, an annotation region — growing under the pointer,
 and the step's still shows it complete at the release point. Tests know nothing of it: without
 the variable no line of it runs. The viewport is 1080p (1920×1080, so the top menu keeps every group on the bar; `BDD_GUIDE_VIEWPORT=<w>x<h>`
-for another) so the video reads without zooming every step, and the shell is the full one (simple
+for another) so the video reads without zooming every step — the video itself, caption strip included, is 1600×1000, the frames downsampled from the page (`VIDEO_W`, `VIDEO_H` in the renderer) — and the shell is the full one (simple
 mode off), as a person has it — filmed or in a plain run: every `@guide` scenario carries `And
 simple mode is off` right after the login (the compiler refuses one without it), and the step
 puts simple mode back at feature end. Every step is in the video except the login and that shell

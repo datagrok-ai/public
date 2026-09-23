@@ -272,16 +272,16 @@ export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: numbe
 /** Reads a level's options, migrating a value stored under the pre-`.%` tag name so that only one of
  * the two ever holds the options. */
 function readChartOptions(tags: any): IFitChartData {
-  // an empty tag parsed to an exception on every cell of the column
-  const stored = tags[FitConstants.TAG_FIT];
-  if (stored)
-    return JSON.parse(stored);
-  const legacy = tags[FitConstants.TAG_FIT_LEGACY];
-  const migrated = !!legacy;
-  tags[FitConstants.TAG_FIT] = migrated ? legacy : JSON.stringify(createDefaultChartData());
-  if (migrated)
-    delete tags[FitConstants.TAG_FIT_LEGACY];
-  return JSON.parse(tags[FitConstants.TAG_FIT]);
+  // TODO: once Curves requires platform 1.28, move '.fit' onto '.%fit' on read again, so an old
+  // table's options travel with its layouts without waiting for the next option change
+  return JSON.parse(tags[FitConstants.TAG_FIT] || tags[FitConstants.TAG_FIT_LEGACY] ||
+    JSON.stringify(createDefaultChartData()));
+}
+
+/** Stores a level's options, dropping the legacy copy so only one of the two tags ever holds them. */
+export function storeChartOptions(tags: any, chartOptions: IFitChartData): void {
+  tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
+  delete tags[FitConstants.TAG_FIT_LEGACY];
 }
 
 /** Returns existing, or creates new dataframe default chart options. */

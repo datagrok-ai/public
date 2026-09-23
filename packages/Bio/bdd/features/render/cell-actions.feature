@@ -5,6 +5,10 @@ Feature: Sequence cell actions and panels
   default separator, a dot); the cell made current shows its monomer composition on the context
   panel, and a cell of a Monomer column the monomer itself.
 
+  Not translated: the md's "Get Region" cell action — the product calls it Extract Region and its
+  dialog is claimed in transform/convert; the Split to Monomers function editor — its OK path is
+  claimed in render/renderers.
+
   Background:
     Given user is logged in
     And user opens filter_FASTA dataset keeping the first 9 rows
@@ -19,6 +23,8 @@ Feature: Sequence cell actions and panels
     Then the clipboard should have the text "M.D.Y.K.E.T.L.L.M.P.K.T.D.F.P.M.R.G.G.L.P.N.K.E.P.Q.I.Q.E.K.W"
     When user picks "Copy > fasta" from the context menu of the "cell 1 of fasta" area of grid
     Then the clipboard should have the text "MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"
+    When user picks "Copy > biln" from the context menu of the "cell 1 of fasta" area of grid
+    Then the clipboard should have the text "M-D-Y-K-E-T-L-L-M-P-K-T-D-F-P-M-R-G-G-L-P-N-K-E-P-Q-I-Q-E-K-W"
     And no error or warning balloon should have been shown
 
   Scenario: The current cell shows its composition on the context panel
@@ -43,4 +49,6 @@ Feature: Sequence cell actions and panels
     And "Monomer" section should be visible
     When user expands "Monomer" section
     Then "Monomer" section should contain text "meI"
+    And "Monomer" section should contain text "N-Methyl-Isoleucine"
+    And "Monomer" section should contain text "Backbone"
     And no error or warning balloon should have been shown
