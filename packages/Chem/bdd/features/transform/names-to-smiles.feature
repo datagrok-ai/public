@@ -2,10 +2,9 @@
 Feature: Names To Smiles over a column of compound names
   Chem | Transform | Names To Smiles... looks the names up in ChEMBL and writes the structures into a
   canonical_smiles column beside them — aspirin and caffeine, compared with their structures through
-  RDKit — so the lookup needs the ChEMBL database of the stand. On a
-  table that already carries a canonical_smiles column the run ends in "Column named
-  'canonical_smiles' already exists" and writes nothing (GROK-20955); that scenario is last and a
-  known failure.
+  RDKit — so the lookup needs the ChEMBL database of the stand. On a table that already carries a
+  canonical_smiles column the structures go into a column of their own, canonical_smiles (2)
+  (GROK-20955).
 
   Background:
     Given user is logged in
@@ -28,7 +27,6 @@ Feature: Names To Smiles over a column of compound names
     And the table should have 2 rows
     And no errors should have been logged
 
-  @known-failure @GROK-20955
   Scenario: The names go into a column of their own beside an existing canonical_smiles
     Given user opens a table "named_molecules" with:
       | name     | canonical_smiles |
@@ -39,4 +37,7 @@ Feature: Names To Smiles over a column of compound names
     And user clicks on OK button in "Names To Smiles" dialog
     Then the top menu command should have completed
     And 1 new column should have been added
+    And a new column "canonical_smiles (2)" should have been added
+    And the molecule in row 1 of "canonical_smiles (2)" column should be "CC(=O)Oc1ccccc1C(=O)O"
+    And the value of "canonical_smiles" column in row 1 should be "CCO"
     And no error or warning balloon should have been shown

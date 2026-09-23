@@ -10,11 +10,8 @@ Feature: Annotation regions on the other two-dimensional viewers
   title takes the strip above the first chart (inside the first chart's box, above the band's
   own rectangle). On demog-1000. PowerPack is installed on this stand, so the Formula Lines dialog
   opens after a region is drawn and the scenario accepts it with OK.
-  The band title after a resize is a @known-failure: the resize drops the strip and the title
-  with it, the same missing in-data fallback the scatter plot's known failures describe. That
-  scenario claims the title only after the resize: at creation the title lands a few seconds
-  late (the formula-lines feature initialises asynchronously and relays the strip out), which
-  the previous scenario's polling absorbs but a known-failure scenario's shorter one may not.
+  The band title after a resize is claimed only after the resize: at creation the title lands a
+  few seconds late (the formula-lines feature initialises asynchronously and relays the strip out).
 
   Background:
     Given user is logged in
@@ -64,7 +61,6 @@ Feature: Annotation regions on the other two-dimensional viewers
     And the "region Adults title" area of line chart viewer should lie inside the "chart 1" area
     And no errors should have been logged
 
-  @known-failure
   Scenario: A resized line chart keeps its band title
     Given user adds a line chart viewer with:
       | xColumnName       | AGE            |

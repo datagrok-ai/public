@@ -146,10 +146,6 @@ Feature: Configure peptide SAR through the top menu
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  # GROK-20640: the settings do not see the dendrogram
-  # they added. settings.ts reads the Dendrogram box from the view's viewers, and the Dendrogram
-  # package attaches the tree as a grid neighbour, so the box reopens unchecked.
-  @known-failure
   Scenario: The settings show Dendrogram checked while the tree is shown
     When user clicks on "Peptides analysis settings" icon
     And user expands Viewers pane in "Peptides settings" dialog
@@ -162,14 +158,9 @@ Feature: Configure peptide SAR through the top menu
     And the analysis grid should have a dendrogram
     And no errors should have been logged
 
-  # GROK-20640, same cause: `closeViewer(DENDROGRAM)` in
-  # model.ts looks the tree up among the view's viewers, never finds it, and the tree stays. The box
-  # reopens unchecked (above), so it is checked and unchecked to send showDendrogram=false.
-  @known-failure
   Scenario: Unchecking Dendrogram removes the tree
     When user clicks on "Peptides analysis settings" icon
     And user expands Viewers pane in "Peptides settings" dialog
-    And user checks Dendrogram checkbox in "Peptides settings" dialog
     And user unchecks Dendrogram checkbox in "Peptides settings" dialog
     Given user listens for "peptides-sar-ready" custom event
     When user clicks on OK button in "Peptides settings" dialog

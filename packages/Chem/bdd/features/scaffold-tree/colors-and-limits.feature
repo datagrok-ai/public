@@ -4,8 +4,9 @@ Feature: Scaffold Tree colors, blocked generation and two tables
   the hidden "Structure colors" column and names it in the viewer's reading, and a scatter plot
   colored by that column takes the scaffold's colors. The magic wand is blocked, with its reason, on
   a table with no molecule column and on a molecule column of 500 categories or more. With two tables
-  open the menu binds a new viewer to the active one. Removing the colored scaffold takes the plot's coloring
-  with it, where the plot should keep it; that scenario is last and a known failure.
+  open the menu binds a new viewer to the active one. Removing another scaffold keeps the colors
+  column and the plot's coloring; removing the last colored one drops the column, and the plot
+  goes back to no coloring.
 
   Background:
     Given user is logged in
@@ -66,14 +67,26 @@ Feature: Scaffold Tree colors, blocked generation and two tables
     Then the open tableview should have 0 Scaffold Tree viewers
     And no errors should have been logged
 
-  @known-failure @GROK-18286
-  Scenario: Removing a colored scaffold leaves the scatter plot that is colored by it
+  Scenario: Removing an uncolored scaffold keeps the colors column and the plot colored by it
     Given user switches to the "spgi-100" table view
-    Then the "nodes" reading of Scaffold Tree viewer should be at least 1
+    Then the "colored nodes" reading of Scaffold Tree viewer should be 1
+    When user remembers the "nodes" reading of Scaffold Tree viewer
+    And user hovers over the "node 2" area of Scaffold Tree viewer
+    And user clicks on the "remove icon of node 2" area of Scaffold Tree viewer
+    And user clicks on "Yes" button in "Remove scaffold" dialog
+    Then the "nodes" reading of Scaffold Tree viewer should not be as remembered
+    And the "colored nodes" reading of Scaffold Tree viewer should be 1
+    And the table should have a column "Structure colors"
+    And "colorColumnName" property of scatter plot viewer should be "Structure colors"
+    And no errors should have been logged
+
+  Scenario: Removing the last colored scaffold drops the colors column and the plot's coloring
+    Then the "color of node 1" reading of Scaffold Tree viewer should not be ""
     When user hovers over the "node 1" area of Scaffold Tree viewer
     And user clicks on the "remove icon of node 1" area of Scaffold Tree viewer
     And user clicks on "Yes" button in "Remove scaffold" dialog
-    Then the "nodes" reading of Scaffold Tree viewer should be lower than before
-    And "colorColumnName" property of scatter plot viewer should be "Structure colors"
+    Then the "colored nodes" reading of Scaffold Tree viewer should be 0
+    And the table should not have a column "Structure colors"
+    And "colorColumnName" property of scatter plot viewer should be ""
     And scatter plot viewer should be painted
     And no errors should have been logged

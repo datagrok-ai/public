@@ -5,11 +5,12 @@ Feature: Convert Notation and Recalculate Coordinates keep the molecules
   for row. Recalculate Coordinates with CoordGen adds a column of molblocks whose coordinates differ
   from the converted ones while the atoms and bonds stay the same.
 
-The stereochemistry survives in every row but four: converting to molblock inverts the vinyl
+  The stereochemistry survives in every row but four: converting to molblock inverts the vinyl
   stereocentre of the quinuclidines in rows 478, 487 and 488 (GROK-20956), and CoordGen flips the
-  C=N geometry of row 833. The main scenarios compare molecules without stereochemistry; the last
-  scenario compares them with it and is a known failure; the tag goes when the converted columns
-  hold the same stereoisomers as canonical_smiles.
+  C=N geometry of row 833. The inversion is RDKit's own: its molblock round trip of those SMILES
+  flips the centre in RDKit 2024.09 and keeps it in 2026.03, so the tag goes when Chem's
+  RDKit_minimal (1.2.23) is upgraded. The main scenarios compare molecules without
+  stereochemistry; the last scenario compares them with it and is a known failure.
 
   Background:
     Given user is logged in

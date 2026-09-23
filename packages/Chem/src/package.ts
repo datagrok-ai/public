@@ -2791,6 +2791,7 @@ export class PackageFunctions {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
     const col = res.col('canonical_smiles');
+    col.name = data.columns.getUnusedName(col.name);
     col.meta.units = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
     data.columns.add(col);

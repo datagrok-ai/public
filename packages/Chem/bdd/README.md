@@ -21,8 +21,9 @@ all but one `@journey` (the data opened once, the scenarios in order as soft ste
 | `sketcher/`      | cell editor | the sketcher opened from a molecule cell |
 | `transform/`     | notation, convert notation once, curate and mutate, names to smiles, reactions | the conversions and the columns they add, compared molecule by molecule through RDKit in the page |
 
-Three scenarios are `@known-failure` (GROK-18286, GROK-20955, GROK-20956); the library's
-[known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) names the step each stops at.
+One scenario is `@known-failure` (GROK-20956, RDKit's own molblock round trip; it goes with an
+RDKit_minimal upgrade); the library's [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md)
+names the step it stops at and the two defects fixed on 2026-09-23.
 `panels/synthon-search` is `@full-stand`: its SynthonSearch script takes the synthon library as a
 file input, and a stand whose Python scripting does not deliver file inputs to the kernel ends the
 call in the gateway's five-minute Timeout — such a stand runs with `--grep-invert @full-stand`.

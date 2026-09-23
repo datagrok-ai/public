@@ -88,49 +88,26 @@ The `bdd/grid-gaps` branch (2026-09-14) carried two tags for defects that master
 
 No `@known-failure` tag remained in any project after that date.
 
-## Tags added on 2026-09-21 (`bdd/annotation-regions`)
+## Tags retired on 2026-09-23
 
-Three scenarios describe one defect: a const-band region's title is drawn only in the strip the
-layout reserves above or beside the plot; when the strip is not there, the in-data fallback
-`AnnotationRegionsUtils.renderHeader` documents draws nothing, so the `region <name> title` hit
-area and the `region titles shown` count are missing. Checked in the review run of 2026-09-22
-(core master `8d44e62f93`): each scenario stops at the step named here.
+Eleven scenarios, checked one by one on 2026-09-23 against master with the core and packages of
+that day. Nine were product defects, now fixed. Two tagged claims made no sense: GROK-16111 wanted
+a balloon for an empty current row, and GROK-20964 was an API check inside a UI feature.
+
+| Scenario | Was | Resolution |
+| --- | --- | --- |
+| [A band title that does not fit — GROK-20388](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-region-titles.feature), [Auto Layout off](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-region-titles.feature), [A resized line chart keeps its band title](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-regions-2d-viewers.feature) | A const band's title vanished when its strip was not reserved. | `client/d4/lib/src/common/polygon.dart`: `containsPoint` counted a vertex level with the point on both of its edges; a band's sampled edge has one at every pixel row, so the title's cached anchor read as outside and the in-data fallback drew nothing. `annotation_regions_mixin.dart`: a layout that reserved a strip before the band's polygon existed lays out once more; the line chart, which maps per chart, keeps reserving unmeasured (`mapsDuringLayout`). |
+| [Similarity, Diversity and Activity Cliffs on an empty sequence — GROK-16111](../../packages/Bio/bdd/features/analyze/empty-current-row.feature) | A balloon was expected for an empty current row. | Won't fix: a balloon on every click on an empty row would be noise. The feature claims what the viewers report: Similarity Search targets the empty row and lists 11 rows, Diversity Search picks 10, Activity Cliffs finds 2 cliffs; no balloon. The "progress entry never ends" note was the dead shell-reset wait printing without waiting. |
+| [The identity function scores a HELM sequence — GROK-20964](../../packages/Bio/bdd/features/calculate/scoring.feature) | `Bio:seqIdentity` throws on HELM. | Removed: a function call is an API test (seqIdentity was never meant for HELM). |
+| [The Dendrogram box and the tree — GROK-20640](../../packages/Peptides/bdd/features/sar/from-top-menu.feature) | The box reopened unchecked, and unchecking it left the tree. | [Peptides model](../../packages/Peptides/src/model.ts) finds the tree the Dendrogram package attaches beside the grid by its close button (`dendrogramCloseButton`), for the box and for removing it. |
+| [Removing a scaffold under a colored one — GROK-18286](../../packages/Chem/bdd/features/scaffold-tree/colors-and-limits.feature) | The scatter plot colored by "Structure colors" lost its coloring. | [Scaffold Tree](../../packages/Chem/src/widgets/scaffold-tree.ts) `removeColorCoding` removed the colored ancestor's entry for a child that only inherits its color, so the column was dropped and rebuilt, unbinding the plot. The old claim (the last colored scaffold removed, the plot still colored) contradicted the design and became two scenarios. |
+| [Names beside an existing canonical_smiles — GROK-20955](../../packages/Chem/bdd/features/transform/names-to-smiles.feature) | "Column named 'canonical_smiles' already exists", nothing written. | [Chem](../../packages/Chem/src/package.ts) `namesToSmiles` takes an unused name: canonical_smiles (2). |
+
+## Open since 2026-09-22 (`bdd/chem-gaps`)
 
 | Scenario | Stops at | Was |
 | --- | --- | --- |
-| [A band title that does not fit — GROK-20388](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-region-titles.feature) | `the "region titles shown" reading … should be 1` | 0: the strip is not reserved (`_stripTitleFits` is false) and no title is drawn in the data. |
-| [Auto Layout off](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-region-titles.feature) | `the "region Adults title" area … should lie inside the "view" area` | No such area: `autoLayout=false` gates the reserve off and the title goes with it. |
-| [A resized line chart keeps its band title](../../packages/UsageAnalysis/bdd/features/viewers/annotation-regions/annotation-regions-2d-viewers.feature) | `line chart viewer should have a "region Adults title" area` | No such area after the resize to 800 by 500; the strip is dropped with it. |
-
-## Tags added on 2026-09-22 (`opavlenko/bdd-bio-peptides-helm`)
-
-Six scenarios, three defects, checked in the review run of 2026-09-22 (public master merged at
-`de03278381`, core master `375ec691be`): each stops at the step named here, run with
-`--grep @known-failure` and the JSON reporter. The branch also carried a Helm tag (GROK-20962,
-Edit Helm... opening the current row instead of the picked cell) that master fixed the same day
-(`25e26dc9e9`); it was retired before the merge and `editor/open.feature` ends with the scenario
-that pins the fix.
-
-| Scenario | Stops at | Was |
-| --- | --- | --- |
-| [Similarity Search rejects an empty current row — GROK-16111](../../packages/Bio/bdd/features/analyze/empty-current-row.feature) | `an error or warning balloon matching … should have been shown` | No balloon: the viewer searches with the empty sequence, and its "Running similaritySearch..." progress entry never ends (the shell reset waits it out once per page). |
-| [Diversity Search rejects an empty current row — GROK-16111](../../packages/Bio/bdd/features/analyze/empty-current-row.feature) | the same claim | The same, with "Running diversitySearch...". |
-| [Activity Cliffs rejects an empty current row — GROK-16111](../../packages/Bio/bdd/features/analyze/empty-current-row.feature) | the same claim, right after OK | No balloon; the analysis runs on the 63 sequences left. |
-| [The identity function scores a HELM sequence against itself — GROK-20964](../../packages/Bio/bdd/features/calculate/scoring.feature) | `user calls "Bio:seqIdentity" function with:` | The call throws "The column of notation 'helm' must be 'Macromolecule'": the one-cell column it builds is detected but never typed. |
-| [The settings show Dendrogram checked while the tree is shown — GROK-20640](../../packages/Peptides/bdd/features/sar/from-top-menu.feature) | `Dendrogram checkbox in "Peptides settings" dialog should be checked` | Unchecked: `settings.ts` looks the tree up among the view's viewers, and Dendrogram attaches it as a grid neighbour. |
-| [Unchecking Dendrogram removes the tree — GROK-20640](../../packages/Peptides/bdd/features/sar/from-top-menu.feature) | `the analysis grid should not have a dendrogram` | The tree stays: `closeViewer(DENDROGRAM)` in `model.ts` never finds it. |
-
-## Tags added on 2026-09-22 (`bdd/chem-gaps`)
-
-Three scenarios of the new Chem project, three defects, each the last scenario of its journey and
-checked in the baseline run of the review (public master merged at `0a5b842d79`) through the
-failed step inside the JSON report.
-
-| Scenario | Stops at | Was |
-| --- | --- | --- |
-| [Removing a colored scaffold leaves the scatter plot that is colored by it — GROK-18286](../../packages/Chem/bdd/features/scaffold-tree/colors-and-limits.feature) | `"colorColumnName" property of scatter plot viewer should be "Structure colors"` | The removal takes the plot's coloring with it. |
-| [The names go into a column of their own beside an existing canonical_smiles — GROK-20955](../../packages/Chem/bdd/features/transform/names-to-smiles.feature) | `1 new column should have been added` | No column: the run ends in "Column named 'canonical_smiles' already exists" and writes nothing. |
-| [Converted molecules keep their stereochemistry — GROK-20956](../../packages/Chem/bdd/features/transform/notation.feature) | `every molecule of "canonical_smiles_molblock" column should be the same as in "canonical_smiles" column` | Three rows differ: the molblock conversion inverts the vinyl stereocentre of the quinuclidines in rows 478, 487 and 488. |
+| [Converted molecules keep their stereochemistry — GROK-20956](../../packages/Chem/bdd/features/transform/notation.feature) | `every molecule of "canonical_smiles_molblock" column should be the same as in "canonical_smiles" column` | Rows 478, 487 and 488: the molblock conversion inverts the vinyl stereocentre of the quinuclidines. RDKit's own: its SMILES → molblock → SMILES round trip flips the centre in 2024.09 and keeps it in 2026.03 (checked in Python), so the tag goes when Chem's RDKit_minimal (1.2.23) is upgraded. |
 
 ## Validation
 

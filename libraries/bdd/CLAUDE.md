@@ -254,8 +254,9 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   a row's column, `cell N of x` is its checkbox, its Search input filters without renumbering. A
   Dart property grid category (`tr.property-grid-category`) has no aria state, only its icon
   (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
-  Invariants (`AppEvents.propertyEdited`) reaches across features: a settings click on a new viewer
-  right after another feature edited a property leaves the panel on the old one.
+  Invariants (`AppEvents.propertyEdited`) reaches across features: an implicit current-object change
+  on a new viewer right after another feature edited a property leaves the panel on the old one;
+  a viewer's "Properties..." command forces the change (since 2026-09-23).
 - Users, groups, roles: a login takes `[a-z0-9._-]` only (`grok_user.dart` `validateLogin`). A user
   cannot be deleted: a feature takes the `bddviewed` fixture user to look at, or `bddmanaged` to
   join, disable and favorite (the `@serial` features, never at the same time), both made once per

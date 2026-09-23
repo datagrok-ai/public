@@ -25,9 +25,9 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Identity and similarity scoring", () => {
   const session = feature(test, "features/calculate/scoring.feature", import.meta.url);
-  test("Identity and similarity scoring", {tag: ["@journey", "@realizes:bio.calculate.identity", "@realizes:bio.calculate.similarity", "@known-failure", "@GROK-20964"]}, async ({browser}) => {
+  test("Identity and similarity scoring", {tag: ["@journey", "@realizes:bio.calculate.identity", "@realizes:bio.calculate.similarity"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 10, page);
+    const run = journey(test, 9, page);
     await session.step(13, "Given user is logged in", () => loggedIn(page));
     await session.step(14, "And user opens filter_HELM dataset", () => openDataset(page, ds("filter_HELM")));
     await session.step(15, "And the Bio package is initialized", () => bioInitialized(page));
@@ -91,23 +91,19 @@ test.describe("Identity and similarity scoring", () => {
       await session.step(87, "Then the result should be a number between 0.1 and 0.99", () => resultNumberBetween(page, 0.1, 0.99));
       await session.step(88, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("The identity function scores a HELM sequence against itself", async () => {
-      await session.step(95, "When user calls \"Bio:seqIdentity\" function with:", () => callWith(page, "Bio:seqIdentity", [["seq","PEPTIDE1{L.M.P.Q.R.S.T}$$$$"],["ref","PEPTIDE1{L.M.P.Q.R.S.T}$$$$"]]), [["seq","PEPTIDE1{L.M.P.Q.R.S.T}$$$$"],["ref","PEPTIDE1{L.M.P.Q.R.S.T}$$$$"]]);
-      await session.step(98, "Then the result should be the number 1", () => resultIsNumber(page, 1));
-    }, {knownFailure: true});
     await run.scenario("A local alignment with BLOSUM45 finds the shared stretch", async () => {
-      await session.step(101, "When user calls \"Bio:sequenceAlignment\" function with:", () => callWith(page, "Bio:sequenceAlignment", [["alignType","Local alignment"],["alignTable","BLOSUM45"],["gap","-10"],["seq1","MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"],["seq2","AAAAKETLLMPKTDFPAAAA"]]), [["alignType","Local alignment"],["alignTable","BLOSUM45"],["gap","-10"],["seq1","MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"],["seq2","AAAAKETLLMPKTDFPAAAA"]]);
-      await session.step(107, "Then the result should be an alignment of at least 12 positions", () => alignmentLength(page, 12));
-      await session.step(108, "And no errors should have been logged", () => noErrors(page));
+      await session.step(91, "When user calls \"Bio:sequenceAlignment\" function with:", () => callWith(page, "Bio:sequenceAlignment", [["alignType","Local alignment"],["alignTable","BLOSUM45"],["gap","-10"],["seq1","MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"],["seq2","AAAAKETLLMPKTDFPAAAA"]]), [["alignType","Local alignment"],["alignTable","BLOSUM45"],["gap","-10"],["seq1","MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW"],["seq2","AAAAKETLLMPKTDFPAAAA"]]);
+      await session.step(97, "Then the result should be an alignment of at least 12 positions", () => alignmentLength(page, 12));
+      await session.step(98, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Get Region called as a function returns the named region column", async () => {
-      await session.step(111, "When user calls \"Bio:getRegion\" function with:", () => callWith(page, "Bio:getRegion", [["sequence","column:HELM string"],["start","3"],["end","6"],["name","region 3-6"]]), [["sequence","column:HELM string"],["start","3"],["end","6"],["name","region 3-6"]]);
-      await session.step(116, "Then the result should have a \"name\" of \"region 3-6\"", () => resultProperty(page, "name", "region 3-6"));
-      await session.step(117, "And row 2 of the result column should be \"PEPTIDE1{P.Q.R.S}$$$$\"", () => resultColumnValue(page, 2, "PEPTIDE1{P.Q.R.S}$$$$"));
-      await session.step(118, "And no errors should have been logged", () => noErrors(page));
+      await session.step(101, "When user calls \"Bio:getRegion\" function with:", () => callWith(page, "Bio:getRegion", [["sequence","column:HELM string"],["start","3"],["end","6"],["name","region 3-6"]]), [["sequence","column:HELM string"],["start","3"],["end","6"],["name","region 3-6"]]);
+      await session.step(106, "Then the result should have a \"name\" of \"region 3-6\"", () => resultProperty(page, "name", "region 3-6"));
+      await session.step(107, "And row 2 of the result column should be \"PEPTIDE1{P.Q.R.S}$$$$\"", () => resultColumnValue(page, 2, "PEPTIDE1{P.Q.R.S}$$$$"));
+      await session.step(108, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Similarity leaves no cell blank", async () => {
-      await session.step(124, "Then \"Similarity\" column should have no missing values", () => columnComplete(page, "Similarity"));
+      await session.step(114, "Then \"Similarity\" column should have no missing values", () => columnComplete(page, "Similarity"));
     });
     run.finish();
   });

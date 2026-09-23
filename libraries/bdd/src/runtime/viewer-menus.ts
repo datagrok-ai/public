@@ -13,6 +13,9 @@ import * as guide from './guide.js';
 
 const POPUP = '.d4-menu-popup';
 const SEP = /\s*[>|]\s*/;
+/** A menu is shown once its items are built, and a tree node's may wait for the server: under load that
+ * took past 3 s; the wait ends as the menu shows, so the cap costs only a real failure. */
+const MENU_SHOWN_MS = (): number => pollMs(10000);
 const MENU_ITEM = 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " d4-menu-item ")][1]';
 
 /** Arms a `grok.events.<name>` subscription before a gesture; the returned function waits for it. */
@@ -28,20 +31,25 @@ export async function closeContextMenu(page: Page): Promise<void> {
 
 async function rightClickArmed(page: Page, x: number, y: number, token: string): Promise<Locator> {
   await page.mouse.click(x, y, {button: 'right'});
-  if (!await page.evaluate((t) => (window as any).__bdd.waitArmed(t), token))
-    throw new Error(`no context menu opened at (${Math.round(x)}, ${Math.round(y)})`);
+  if (!await page.evaluate((t) => (window as any).__bdd.waitArmed(t), token)) {
+    const under = await page.evaluate(([px, py]) => {
+      const e = document.elementFromPoint(px, py);
+      return e ? `${e.tagName.toLowerCase()}${e.getAttribute('name') ? `[name="${e.getAttribute('name')}"]` : ''}.${[...e.classList].join('.')} "${(e.textContent ?? '').trim().slice(0, 40)}"` : 'nothing';
+    }, [x, y] as [number, number]).catch(() => 'unknown');
+    throw new Error(`no context menu opened at (${Math.round(x)}, ${Math.round(y)}); under the point now: ${under}`);
+  }
   return page.locator(POPUP).last();
 }
 
 export async function openContextMenuAt(page: Page, x: number, y: number): Promise<Locator> {
-  const token: string = await evaluate(page, (cap) => (window as any).__bdd.openMenu(cap), 3000);
+  const token: string = await evaluate(page, (cap) => (window as any).__bdd.openMenu(cap), MENU_SHOWN_MS());
   return rightClickArmed(page, x, y, token);
 }
 
 /** The context menu of an element: at a named hit area, else its `view` area when it reports
  * one, else its centre. Three roundtrips: the point and the arming in one, the click, the wait. */
 export async function openContextMenuOf(page: Page, target: ElementRef, area?: string): Promise<Locator> {
-  const {x, y, token} = await onViewer(page, target, (el, [a, cap]) => (window as any).__bdd.menuPoint(el, a, cap), [area ?? null, 3000] as [string | null, number]);
+  const {x, y, token} = await onViewer(page, target, (el, [a, cap]) => (window as any).__bdd.menuPoint(el, a, cap), [area ?? null, MENU_SHOWN_MS()] as [string | null, number]);
   return rightClickArmed(page, x, y, token);
 }
 

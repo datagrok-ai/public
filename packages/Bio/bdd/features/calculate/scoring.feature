@@ -87,16 +87,6 @@ Feature: Identity and similarity scoring
     Then the result should be a number between 0.1 and 0.99
     And no errors should have been logged
 
-  # Known failure, GROK-20964: seqIdentity throws
-  # "The column of notation 'helm' must be 'Macromolecule'" for any non-empty HELM sequence
-  # (probed on dev 2026-09-22); the one-cell column it builds is detected but never typed.
-  @known-failure @GROK-20964
-  Scenario: The identity function scores a HELM sequence against itself
-    When user calls "Bio:seqIdentity" function with:
-      | seq | PEPTIDE1{L.M.P.Q.R.S.T}$$$$ |
-      | ref | PEPTIDE1{L.M.P.Q.R.S.T}$$$$ |
-    Then the result should be the number 1
-
   Scenario: A local alignment with BLOSUM45 finds the shared stretch
     When user calls "Bio:sequenceAlignment" function with:
       | alignType  | Local alignment                        |

@@ -19,7 +19,7 @@ import {check, clickOn, enterInto, shouldBe, shouldContainText, shouldHaveValue,
 import {columnComplete, columnSemType, distinctValues} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {commandCompleted, newColumnNamed, newColumnsCount, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount, tableOpen} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {autostartsCompleted, closeCurrentView, openDataset, sketcherIs, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {autostartsCompleted, closeCurrentView, dialogCloses, openDataset, sketcherIs, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -43,7 +43,7 @@ test.describe("Curate and Mutate from the Transform menu", () => {
       await session.step(30, "And Kekulization input in \"Curate\" dialog should not be checked", () => shouldNotBe(page, el("Kekulization input in \"Curate\" dialog"), "checked"));
       await session.step(31, "And Tautomerization input in \"Curate\" dialog should not be checked", () => shouldNotBe(page, el("Tautomerization input in \"Curate\" dialog"), "checked"));
       await session.step(32, "When user clicks on OK button in \"Curate\" dialog", () => clickOn(page, el("OK button in \"Curate\" dialog")));
-      await session.step(33, "Then \"Curate\" dialog should be hidden", () => shouldBe(page, el("\"Curate\" dialog"), "hidden"));
+      await session.step(33, "Then the \"Curate\" dialog should close", () => dialogCloses(page, "Curate"));
       await session.step(34, "And the top menu command should have completed", () => commandCompleted(page));
       await session.step(35, "And 1 new column should have been added", () => newColumnsCount(page, 1));
       await session.step(36, "And a new column \"curated_molecule\" should have been added", () => newColumnNamed(page, "curated_molecule"));
@@ -74,7 +74,7 @@ test.describe("Curate and Mutate from the Transform menu", () => {
       await session.step(61, "And Randomize input in \"Mutate\" dialog should be checked", () => shouldBe(page, el("Randomize input in \"Mutate\" dialog"), "checked"));
       await session.step(62, "And \"Max random results\" input in \"Mutate\" dialog should have value \"100\"", () => shouldHaveValue(page, el("\"Max random results\" input in \"Mutate\" dialog"), "100"));
       await session.step(63, "When user clicks on OK button in \"Mutate\" dialog", () => clickOn(page, el("OK button in \"Mutate\" dialog")));
-      await session.step(64, "Then \"Mutate\" dialog should be hidden", () => shouldBe(page, el("\"Mutate\" dialog"), "hidden"));
+      await session.step(64, "Then the \"Mutate\" dialog should close", () => dialogCloses(page, "Mutate"));
       await session.step(65, "And the top menu command should have completed", () => commandCompleted(page));
       await session.step(66, "And table \"mutations\" should be open", () => tableOpen(page, "mutations"));
       await session.step(67, "When user switches to the \"mutations\" table view", () => switchTableView(page, "mutations"));

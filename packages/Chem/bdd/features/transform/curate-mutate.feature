@@ -30,7 +30,7 @@ Feature: Curate and Mutate from the Transform menu
     And Kekulization input in "Curate" dialog should not be checked
     And Tautomerization input in "Curate" dialog should not be checked
     When user clicks on OK button in "Curate" dialog
-    Then "Curate" dialog should be hidden
+    Then the "Curate" dialog should close
     And the top menu command should have completed
     And 1 new column should have been added
     And a new column "curated_molecule" should have been added
@@ -61,7 +61,7 @@ Feature: Curate and Mutate from the Transform menu
     And Randomize input in "Mutate" dialog should be checked
     And "Max random results" input in "Mutate" dialog should have value "100"
     When user clicks on OK button in "Mutate" dialog
-    Then "Mutate" dialog should be hidden
+    Then the "Mutate" dialog should close
     And the top menu command should have completed
     And table "mutations" should be open
     When user switches to the "mutations" table view
