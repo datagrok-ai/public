@@ -11,8 +11,9 @@ Feature: A SQL query from creation to deletion
 
   Not translated, and why: "check all tabs of the Context Panel" is claimed as the panes a query
   shows and the Query pane's text, not as clicks on every header (the old spec clicked them and
-  checked nothing). Posting in the query's Chats pane is left out until a chat of an entity can be
-  deleted again from a test: an orphan chat breaks the chat listing of every profile of the
+  checked nothing). Posting in the query's Chats pane is left out by decision: chats are tested where
+  they belong (the scripts and connections features post and delete one), and an orphan chat breaks
+  the chat listing of every profile of the
   account that made it, which is what the Groups round hit.
 
   Background:
