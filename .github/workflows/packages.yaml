@@ -361,7 +361,7 @@ jobs:
           # docker system prune -af --volumes
 
           # TODO: revert to 'latest' after next release (bleeding-edge needed for docker 'changed' status fix)
-          DATAGROK_VERSION='bleeding-edge'
+          DATAGROK_VERSION='latest'
           # if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
           #   DATAGROK_VERSION='latest'
           # else
