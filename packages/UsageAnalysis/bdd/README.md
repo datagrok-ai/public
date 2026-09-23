@@ -8,7 +8,8 @@ features: the data and the viewer opened once, the scenarios in order as soft st
 `viewers/grid/grid-context-menu.feature` is not a translation but the reproduction of a bug
 (2026-09-22: a right click put the current row back where it was and scrolled there), kept as the
 proof that a right-clicked cell becomes current and that the Current Value actions of Chem and Helm
-act on it — the stand needs those two packages;
+act on it — the stand needs those two packages; annotation regions and formula lines are PowerPack's
+and live in `packages/PowerPack/bdd/features/`;
 `features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
 (seven viewers sharing one legend column, the legend under filters, its placement, molecules in
 it; the section's scatter plot and line chart cases went into those viewers' legend features);
@@ -42,6 +43,17 @@ rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
 The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
+
+`features/viewers/nx/` holds the TestTrack Viewers/NX section. `nx-chain.feature` is its five
+chained md files as one journey on the full SPGI and its two linked tables: each part opens the
+project the one before saved through the Save dialog with data sync, and the last part deletes the
+five projects (their names carry the run's suffix, so parallel runs stay apart). It takes about four
+minutes and needs the ApiTests datasets on the stand and a Chem package whose Scaffold Tree reports
+its readings. `legend-backward-compatibility.feature` applies the pre-legend-position layout of
+github #3203 to SPGI. Their fixtures (two saved scaffold trees and the layout) are in
+`fixtures/nx/`, their steps (the Link Tables key pairs, the Formula Lines dialog, the Scaffold Tree
+filter card, rows and filter panels compared across views and a project round trip) in
+`bindings/nx.ts`.
 
 The grid folder, `features/viewers/grid/`, holds ten features on demog-1000. They replace the
 TestTrack grid scenarios `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid.md`,

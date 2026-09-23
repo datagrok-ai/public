@@ -115,7 +115,8 @@ export function atFeatureEnd(page: Page, cleanup: () => Promise<void>): void {
 
 /** The two console errors the browser raises about something that is not the platform's code.
  * Both are matched on the message AND on where it came from — a broad pattern here is how a
- * suite ends up silencing the failures it exists to catch. */
+ * suite ends up silencing the failures it exists to catch. An ignored error takes its translated
+ * stack trace ("Stack trace X") with it. */
 function ignoredError(text: string, url: string): boolean {
   // a resource the stand does not serve (a help page), logged by the browser rather than raised
   if (text.startsWith('Failed to load resource'))
@@ -123,6 +124,20 @@ function ignoredError(text: string, url: string): boolean {
   // an embedded third-party player refusing a feature policy of the page it is framed in:
   // a card of the Projects gallery carries a YouTube iframe, and its complaint is not ours
   return text.startsWith('Permissions policy violation') && /^https:\/\/(www\.)?youtube\.com\//.test(url);
+}
+
+const saveWindows = new WeakSet<Page>();
+
+/** The Save project dialog draws its preview of the view with html2canvas, which logs "Unable to
+ * find element in cloned iframe" for an element its clone of the page lacks — during the save or
+ * seconds after it. A step that saves a project opens this window; the step that opens a project and
+ * the shell reset after the test close it, so the message is ignored after a save and reported
+ * everywhere else. */
+export function projectSaveWindow(page: Page, open: boolean): void {
+  if (open)
+    saveWindows.add(page);
+  else
+    saveWindows.delete(page);
 }
 
 /** Starts collecting the page's console errors and uncaught exceptions. */
@@ -133,11 +148,20 @@ export function watchErrors(page: Page): void {
   errors.set(page, list);
   // "Stack trace X" arrives seconds after its "Look below, ID = X" error: joined while unreported, else dropped
   const announced = new Set<string>();
+  const ignored = new Set<string>();
   page.on('console', (m) => {
     const text = m.text();
-    if (m.type() !== 'error' || ignoredError(text, m.location().url))
+    if (m.type() !== 'error')
       return;
     const continuation = /^Stack trace (\S+)/.exec(text);
+    if (continuation && ignored.has(continuation[1]))
+      return;
+    if (ignoredError(text, m.location().url) || (saveWindows.has(page) && text.startsWith('Unable to find element in cloned iframe'))) {
+      const id = /Look below, ID = (\S+)/.exec(text);
+      if (id)
+        ignored.add(id[1]);
+      return;
+    }
     if (continuation && announced.has(continuation[1])) {
       const parent = list.findIndex((e) => new RegExp(`Look below, ID = ${continuation[1]}(\\s|$)`).test(e));
       if (parent >= 0)
@@ -276,6 +300,7 @@ async function settleWork(page: Page): Promise<void> {
  * of the DOM behind the platform's back. Errors the teardown itself raises (work cancelled by
  * `closeAll`) are dropped. */
 export async function resetShell(page: Page): Promise<void> {
+  saveWindows.delete(page);
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)
     return;

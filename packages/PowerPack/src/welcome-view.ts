@@ -44,6 +44,7 @@ export function welcomeView(): DG.View | undefined {
   suggestionMenuKeyNavigation(inputContainer);
 
   const searchHost = ui.block([], 'power-pack-search-host');
+  searchHost.setAttribute('aria-busy', 'false');
   const widgetsHost = ui.div([], 'power-pack-widgets-host');
   const previewHost = ui.div([], 'power-pack-workspace-preview');
   previewHost.style.display = 'none';
@@ -110,6 +111,7 @@ export function welcomeView(): DG.View | undefined {
     view.path = search ? `search?q=${encodeURIComponent(s)}` : 'search';
   }
 
+  input.addEventListener('input', () => searchHost.setAttribute('aria-busy', 'true'));
   rxjs.fromEvent(input, 'input').pipe(debounceTime(500)).subscribe((_) => doSearch(input.value));
 
   if (searchStr != null)

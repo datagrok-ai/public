@@ -249,6 +249,9 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
   const shown = await page.evaluate(() => {
     const was = grok.shell.windows.showBrowse;
     grok.shell.windows.simpleMode = false;
+    // a panel left on by the account's settings reads as shown while simple mode kept it out of the
+    // page, and the setter ignores a value it already has: off, then on, builds it
+    grok.shell.windows.showBrowse = false;
     grok.shell.windows.showBrowse = true;
     return was;
   });
@@ -396,15 +399,15 @@ type CleanupSource = NamedSource | 'projects' | 'tables';
 type ServerEntity = {id: string; name: string; friendlyName: string; createdOn: number; children?: string[]};
 type CleanupStage = {source: CleanupSource; ids: string[]};
 
-async function serverEntities(page: Page, source: CleanupSource, filter = ''): Promise<ServerEntity[]> {
-  return page.evaluate(async ([src, query]) => {
+async function serverEntities(page: Page, source: CleanupSource, filter = '', children = true): Promise<ServerEntity[]> {
+  return page.evaluate(async ([src, query, withChildren]) => {
     try {
       // The tables gallery hides system tables, including training artifacts.
       let data = (src === 'tables' ? grok.dapi.entities : grok.dapi[src]).order('id');
       const filters = [src === 'tables' ? 'entityType.name = "TableInfo"' : '', query].filter(Boolean);
       if (filters.length > 0)
         data = data.filter(filters.map((filter) => `(${filter})`).join(' and '));
-      if (src === 'projects')
+      if (src === 'projects' && withChildren)
         data = data.include('children');
       const result: ServerEntity[] = [];
       for (let pageNumber = 1; ; pageNumber++) {
@@ -413,7 +416,7 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
           result.push({id: entity.id, name: entity.name, friendlyName: entity.friendlyName,
             createdOn: entity.createdOn?.valueOf() ?? 0,
             // a project can hold a child whose entity is gone: one of those must not fail the listing
-            children: src === 'projects' ? entity.children.filter(Boolean).map((child: any) => child.id) : undefined});
+            children: src === 'projects' && withChildren ? entity.children.filter(Boolean).map((child: any) => child.id) : undefined});
         if (entities.length < 1000)
           return result;
       }
@@ -422,7 +425,7 @@ async function serverEntities(page: Page, source: CleanupSource, filter = ''): P
       // Dart ApiException loses its message when Playwright serializes it directly.
       throw new Error(`${src} list: ${(error as any)?.message ?? String(error)}`);
     }
-  }, [source, filter] as [CleanupSource, string]);
+  }, [source, filter, children] as [CleanupSource, string, boolean]);
 }
 
 /** Endpoints the JS API does not wrap (chats, global permissions), called with the page's session. */
@@ -607,9 +610,12 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
 }
 
 async function expectNamedCount(page: Page, source: CleanupSource, what: string, name: string, count: number): Promise<void> {
+  // A server filter can only hide an entity, so it narrows a claim that some exist, never one that none do:
+  // the complete project listing with children takes minutes on dev.
+  const filter = source === 'projects' && count > 0 ? `name = ${JSON.stringify(name)} or friendlyName = ${JSON.stringify(name)}` : '';
   await expect.poll(async () => {
     try {
-      return (await serverEntities(page, source)).filter((entity) => entity.friendlyName === name || entity.name === name).length;
+      return (await serverEntities(page, source, filter, filter === '')).filter((entity) => entity.friendlyName === name || entity.name === name).length;
     }
     catch (error) {
       return `the listing failed: ${String(error)}`;

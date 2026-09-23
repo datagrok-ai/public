@@ -541,6 +541,8 @@ class Preview {
   /** Source Scatter Plot axes */
   public srcAxes?: AxisNames;
 
+  private currentItem = '';
+
   public get root(): HTMLElement {return this.viewer.root;}
 
   /** Returns the current columns pair of the preview viewer. Single-axis hosts
@@ -883,6 +885,8 @@ class Preview {
     if (this.srcAxes)
       this.axes = this.srcAxes;
 
+    this.viewer.addStatusProvider('formula-lines-preview', () => ({values: {'current item': this.currentItem}}));
+
     /**
      * Creates special context menu for preview Scatter Plot.
      * Before opening the menu, it calculates the world coordinates of the click point.
@@ -913,6 +917,7 @@ class Preview {
     const clearMeta = (): void => {
       this.viewer.meta.annotationRegions.clear();
       this.viewer.meta.formulaLines.clear();
+      this.currentItem = '';
     }
 
     // Render the other formula lines as ghosts so the user keeps context for the line being edited.
@@ -962,6 +967,7 @@ class Preview {
           addLineGhosts(itemIdx);
         this.viewer.meta.formulaLines.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
+        this.currentItem = previewItem.formula ?? '';
         return true;
       } catch {
         clearMeta();
@@ -978,6 +984,7 @@ class Preview {
         clearMeta();
         this.viewer.meta.annotationRegions.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
+        this.currentItem = formatAreaFormula(previewItem);
         return true;
       } catch {
         clearMeta();
