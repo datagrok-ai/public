@@ -30,16 +30,6 @@ export const scriptResultListed = Then('the script results should list {string}'
   {message: `a row for "${output}" in the script results`, timeout: pollMs(180000)}).toBe(true);
 }, {description: 'the run has ended with that output in the Results table under the editor, whatever its value'});
 
-/* Switch to "Save button should be disabled/enabled" once the core names land: the ribbon's Save
-   says it is disabled only with a class (SaveButton.disable, project_ui.dart), no aria-disabled. */
-export const saveButtonState = Then('the Save button of the script view should be {word}', async (page: Page, state: string) => {
-  if (!['enabled', 'disabled'].includes(state))
-    throw new Error(`the Save button is enabled or disabled, not "${state}"`);
-  const save = page.locator('[name="button-Save"]').filter({visible: true}).first();
-  await expect.poll(() => save.evaluate((b) => b.classList.contains('disabled')),
-    {message: 'the "disabled" class of the Save button of the script view', timeout: pollMs(15000)}).toBe(state === 'disabled');
-}, {description: 'reads the class the button carries, until the core gives it aria-disabled'});
-
 /* A layout saved from the script view is named after the script's dataframe output ("Df", "Df_1"),
    and the save that fails on the share still leaves it — with the project it made. */
 export const cleanLayouts = Given('the layouts saved for the script are deleted at the end', async (page: Page) => {

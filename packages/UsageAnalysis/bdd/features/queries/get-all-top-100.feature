@@ -24,8 +24,7 @@ Feature: Get All and Get Top 100 on a table of the schema
     # the tree says nothing when a connection has finished listing its children, and a Schemas row
     # opened before that comes back empty: the connection's Orders query is the sign it has
     Then Databases---<provider>---NorthwindTest---Orders tree node inside browse tree should be visible
-    # switch to "Databases---<provider>---NorthwindTest---Schemas tree node" once the core names land
-    Given Databases---<provider>---NorthwindTest schemas node inside browse tree is expanded
+    Given Databases---<provider>---NorthwindTest---Schemas tree node inside browse tree is expanded
     And Databases---<provider>---NorthwindTest---Schemas---public tree node inside browse tree is expanded
     Given user watches the task bar
     # the context-menu gesture does not scroll a node below the fold into view; the hover does

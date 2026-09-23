@@ -9,9 +9,7 @@ Feature: The catalogs of an MS SQL connection
   The comment lands on a shared connection's catalog, so the feature is @serial and writes to tempdb,
   the catalog nothing else describes; the comment is claimed on the server (what SAVE wrote, not
   what the pane still shows), cleared by the last scenario and again at feature end. The Catalogs
-  row carries the connection's own tree name — until the core names it, it is reached through its
-  wrapper ("MS-SQL-MSSQLTest-Catalogs" tree group); switch to
-  Databases---MS-SQL---NorthwindTest---Catalogs tree node once the core names the row.
+  row is named by its path, as every other tree row is.
 
   Not translated, and why: the md's icon claim (two databases for catalogs, tables for schemas) —
   the icons carry no name or label to read. The old spec's comment check typed and read the inputs
@@ -32,7 +30,7 @@ Feature: The catalogs of an MS SQL connection
     And Databases---MS-SQL---NorthwindTest tree node inside browse tree is expanded
 
   Scenario: The Catalogs group lists the connection's databases, and a catalog its tables
-    Given "MS-SQL-MSSQLTest-Catalogs" tree group inside browse tree is expanded
+    Given Databases---MS-SQL---NorthwindTest---Catalogs tree node inside browse tree is expanded
     Then the following elements should be visible:
       | Databases---MS-SQL---NorthwindTest---Catalogs---northwind tree node inside browse tree |
       | Databases---MS-SQL---NorthwindTest---Catalogs---tempdb tree node inside browse tree    |

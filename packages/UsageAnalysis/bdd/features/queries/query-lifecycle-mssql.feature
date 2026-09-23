@@ -62,8 +62,6 @@ Feature: A SQL query on MS SQL from creation to deletion
     And the browse panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---MS-SQL tree node inside browse tree is expanded
-    # the connection's Schemas row carries the connection's own tree name: switch to the plain
-    # "Databases---MS-SQL---NorthwindTest tree node" once the core names land
     When user clicks on first Databases---MS-SQL---NorthwindTest tree node inside browse tree
     Then the current view should be a queries view
     When user enters "BDD-Q-mssql-renamed-{time}" into gallery search

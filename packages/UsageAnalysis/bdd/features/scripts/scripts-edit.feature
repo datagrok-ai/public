@@ -8,9 +8,7 @@ Feature: Editing a script
   The script is this feature's own ({time} in its name), is never run (so no container is needed),
   and is deleted with its chats at the end.
 
-  Not translated, and why: nothing of the md is left out. The Save button's state is read from the
-  class the ribbon gives it — it has no aria-disabled yet; switch to "Save button should be
-  disabled" once the core names land.
+  Not translated, and why: nothing of the md is left out.
 
   Serial: every scenario here works in the Scripts view, whose search text and view mode are the
   account's own settings — two features searching it at the same time would see each other's text.
@@ -32,16 +30,16 @@ Feature: Editing a script
     And user double-clicks on "BddScriptEdit{time}" link in gallery
     Then the "BddScriptEdit{time}" view should be current
     And code editor should contain the text "count <- nrow(table) * ncol(table)"
-    And the Save button of the script view should be disabled
+    And Save button should be disabled
     And no errors should have been logged
 
   Scenario: An appended line is saved to the server
     When user appends "newParam = \"test\"" to code editor
-    Then the Save button of the script view should be enabled
+    Then Save button should be enabled
     When user saves the script
     Then an info balloon containing "Script saved." should have been shown
     And the script "BddScriptEdit{time}" on the server should contain "newParam = \"test\""
-    And the Save button of the script view should be disabled
+    And Save button should be disabled
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

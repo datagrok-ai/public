@@ -9,7 +9,6 @@ sub_features_covered: [viewers.tree-map]
 import {test} from '@playwright/test';
 import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
-import '../../../bindings/queries.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';

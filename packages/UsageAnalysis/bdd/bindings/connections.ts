@@ -8,22 +8,13 @@ import {atFeatureEnd, expect, pollMs, viewers} from '@datagrok-libraries/bdd/run
 
 declare const grok: any;
 
-/* The Schemas / Catalogs row under a connection carries the connection's own tree name; only its
-   wrapper is distinct (`div-<Provider>-<ConnName>-Schemas`). Switch to
-   `Databases---<Provider>---<Conn>---Schemas tree node` once the core names the row. */
-kind('tree group', {
-  selector: '.d4-tree-view-group[name^="div-"]',
-  match: ['dart'],
-  dartNames: ['div-{q}'],
-  description: 'a Databases tree group the core names only by its wrapper: "Postgres-Chembl-Schemas" tree group',
-});
-
-/* The schema view draws one box per table with no name; switch to the core's name once it lands. */
+/* The schema view's boxes carry the core's own name (`div-table-<table>`), but the box is neither a
+   u2 element nor a widget, so the library's generic `element` kind does not reach it. */
 kind('schema table', {
   selector: '.d4-sketch-item',
-  match: ['label'],
-  labelSelector: '.d4-sketch-item-header',
-  description: 'a table box of the schema view (Schemas > <schema> > Browse), by its header',
+  match: ['dart'],
+  dartNames: ['table-{q}'],
+  description: 'a table box of the schema view (Schemas > <schema> > Browse), by its table name',
 });
 
 type Conn = {id: string; name: string; friendlyName: string};

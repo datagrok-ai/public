@@ -33,15 +33,20 @@ Feature: A query's post-process runs on its result
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  # Candidate finding, ticket pending Olesia's manual walk: the Post-Process editor syncs its text
-  # to the query 250 ms after the last key, and Save sends the synced copy
-  # (data_query_view.dart:231), so a Save right after typing stores the old template. The core
-  # fix (Save reads the editor) is in the separate core PR — remove the tag once it is deployed.
-  @known-failure
-  Scenario: Save right after typing keeps the line, and the saved query runs it
+  # The core now saves what the editor holds (it used to send the copy the editor syncs 250 ms
+  # after the last key, so a Save right after typing stored the old template).
+  Scenario: Save right after typing keeps the line
     When user clicks on Save button
     Then 1 query named "BDD-Q-pp-{time}" should be on the server
     And the query "BDD-Q-pp-{time}" on the server should have a post-process containing "grok.shell.info('PP' + result.rowCount);"
+    And no errors should have been logged
+
+  # Candidate finding, ticket pending Olesia's manual walk: the saved query run from the browse tree
+  # returns its 77 rows, but the post-process the query carries does not run — no balloon, on the
+  # local master stand (2026-09-23). Typing the same line and running it in the editor does announce
+  # it (the scenario above this one), so it is the saved query's run that skips the script.
+  @known-failure
+  Scenario: The saved query announces its row count when it is run from the tree
     Given the toolbox pane is hidden
     And the browse panel is open
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
@@ -49,7 +54,5 @@ Feature: A query's post-process runs on its result
     # the context-menu gesture does not scroll a node below the fold into view; the hover does
     And user hovers over Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree
     And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree
-    Then the current view should be a TableView view
-    And the table should have 77 rows
+    Then the table should have 77 rows
     And an info balloon containing "PP77" should have been shown
-    And no errors should have been logged

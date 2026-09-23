@@ -23,8 +23,7 @@ Feature: A SQL query started from a table of the schema
     # the tree says nothing when a connection has finished listing its children, and a Schemas row
     # opened before that comes back empty: the connection's Orders query is the sign it has
     Then Databases---Postgres---NorthwindTest---Orders tree node inside browse tree should be visible
-    # switch to "Databases---Postgres---NorthwindTest---Schemas tree node" once the core names land
-    Given Databases---Postgres---NorthwindTest schemas node inside browse tree is expanded
+    Given Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded
     When user picks "New SQL Query..." from the context menu of Databases---Postgres---NorthwindTest---Schemas---public---products tree node inside browse tree
     Then the current view should be a DataQueryView view

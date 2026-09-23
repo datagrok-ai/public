@@ -9,7 +9,6 @@ sub_features_covered: [views.queries]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/queries.js';
 import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
@@ -28,7 +27,7 @@ test.describe("A query's post-process runs on its result", () => {
   const session = feature(test, "features/queries/query-post-process.feature", import.meta.url);
   test("A query's post-process runs on its result", {tag: ["@journey", "@serial", "@realizes:views.queries", "@known-failure"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 2, page);
+    const run = journey(test, 3, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(17, "And no query named \"BDD-Q-pp-{time}\" is on the server", () => noQueryOnServer(page, session.text("BDD-Q-pp-{time}")));
@@ -49,20 +48,21 @@ test.describe("A query's post-process runs on its result", () => {
       await session.step(33, "And no errors should have been logged", () => noErrors(page));
       await session.step(34, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
-    await run.scenario("Save right after typing keeps the line, and the saved query runs it", async () => {
-      await session.step(42, "When user clicks on Save button", () => clickOn(page, el("Save button")));
-      await session.step(43, "Then 1 query named \"BDD-Q-pp-{time}\" should be on the server", () => queriesOnServer(page, 1, session.text("BDD-Q-pp-{time}")));
-      await session.step(44, "And the query \"BDD-Q-pp-{time}\" on the server should have a post-process containing \"grok.shell.info('PP' + result.rowCount);\"", () => queryPostProcess(page, session.text("BDD-Q-pp-{time}"), "grok.shell.info('PP' + result.rowCount);"));
-      await session.step(45, "Given the toolbox pane is hidden", () => toolboxPaneHidden(page));
-      await session.step(46, "And the browse panel is open", () => browsePanelOpen(page));
-      await session.step(47, "And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest tree node inside browse tree")));
-      await session.step(48, "When user clicks on \"Refresh\" icon inside browse toolbar", () => clickOn(page, el("\"Refresh\" icon inside browse toolbar")));
-      await session.step(50, "And user hovers over Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree", () => hoverOver(page, el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree"))));
-      await session.step(51, "And user picks \"Run\" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree", () => pickFromContextMenu(page, "Run", el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree"))));
-      await session.step(52, "Then the current view should be a TableView view", () => currentViewType(page, "TableView"));
-      await session.step(53, "And the table should have 77 rows", () => rowCount(page, 77));
-      await session.step(54, "And an info balloon containing \"PP77\" should have been shown", () => infoBalloonText(page, "PP77"));
-      await session.step(55, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("Save right after typing keeps the line", async () => {
+      await session.step(39, "When user clicks on Save button", () => clickOn(page, el("Save button")));
+      await session.step(40, "Then 1 query named \"BDD-Q-pp-{time}\" should be on the server", () => queriesOnServer(page, 1, session.text("BDD-Q-pp-{time}")));
+      await session.step(41, "And the query \"BDD-Q-pp-{time}\" on the server should have a post-process containing \"grok.shell.info('PP' + result.rowCount);\"", () => queryPostProcess(page, session.text("BDD-Q-pp-{time}"), "grok.shell.info('PP' + result.rowCount);"));
+      await session.step(42, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("The saved query announces its row count when it is run from the tree", async () => {
+      await session.step(50, "Given the toolbox pane is hidden", () => toolboxPaneHidden(page));
+      await session.step(51, "And the browse panel is open", () => browsePanelOpen(page));
+      await session.step(52, "And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest tree node inside browse tree")));
+      await session.step(53, "When user clicks on \"Refresh\" icon inside browse toolbar", () => clickOn(page, el("\"Refresh\" icon inside browse toolbar")));
+      await session.step(55, "And user hovers over Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree", () => hoverOver(page, el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree"))));
+      await session.step(56, "And user picks \"Run\" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree", () => pickFromContextMenu(page, "Run", el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree"))));
+      await session.step(57, "Then the table should have 77 rows", () => rowCount(page, 77));
+      await session.step(58, "And an info balloon containing \"PP77\" should have been shown", () => infoBalloonText(page, "PP77"));
     }, {knownFailure: true});
     run.finish();
   });

@@ -1,19 +1,13 @@
-/* What only the Queries features need: the Schemas row the core does not name yet, the walk over
-   every column of a schema, and the visual query builder, which publishes no status of its own.
+/* What only the Queries features need: the walk over every column of a schema, and the visual
+   query builder, which publishes no status of its own.
    Everything generic these features use (queries on the server, the editor's code, the current
    view's type) is the library's. */
 import {expect, Page} from '@playwright/test';
-import {Given, kind, Then, When} from '@datagrok-libraries/bdd';
+import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, gestures, locate, pollMs} from '@datagrok-libraries/bdd/runtime';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
-
-// package, temporary: switch to "<connection path>---Schemas tree node" once the core names land.
-// A connection's Schemas row reuses the connection's own tree name; it is the one node of that
-// name drawn with the database-tables icon.
-kind('schemas node', {selector: '.d4-tree-view-node:has(> .svg-database-tables)', match: ['dart'], dartNames: ['tree-{q}'],
-  description: 'the Schemas row under a connection, by the path of the connection: "Databases---Postgres---NorthwindTest" schemas node'});
 
 /* --- columns of a schema ----------------------------------------------------------------------
    The case clicks every column of every table and watches the context panel follow. The tree is

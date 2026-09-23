@@ -10,9 +10,7 @@ Feature: Identifiers configured on a connection
   saved through the API and given the Northwind login and password in its Edit dialog from
   DG_PG_LOGIN / DG_PG_PASSWORD (typed from the environment, never printed) — so the configuration
   lives and dies with it; it is deleted at feature end and checked gone. {time} rather than {run}:
-  the connection's name drops the dashes of its friendly name, and the Schemas row is reached
-  through a wrapper named after that name ("Postgres-BDDConnIdent{time}-Schemas" tree group) until
-  the core names the row.
+  the connection's name drops the dashes of its friendly name.
 
   Not translated, and why: "the values are highlighted in blue" — the semantic type the column
   carries is what the highlight is drawn from, and it is claimed directly. The md's reload is kept:
@@ -65,7 +63,7 @@ Feature: Identifiers configured on a connection
     When user reloads the page
     Given the browse panel is open
     And Databases---Postgres---BDD-Conn-Ident-{time} tree node inside browse tree is expanded
-    And "Postgres-BDDConnIdent{time}-Schemas" tree group inside browse tree is expanded
+    And Databases---Postgres---BDD-Conn-Ident-{time}---Schemas tree node inside browse tree is expanded
     And Databases---Postgres---BDD-Conn-Ident-{time}---Schemas---public tree node inside browse tree is expanded
     When user right-clicks on Databases---Postgres---BDD-Conn-Ident-{time}---Schemas---public---customers tree node inside browse tree
     And user picks "Get All" from the open menu

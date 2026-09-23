@@ -71,8 +71,6 @@ Feature: A SQL query from creation to deletion
     And the browse panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
-    # the connection's Schemas row carries the connection's own tree name: switch to the plain
-    # "Databases---Postgres---NorthwindTest tree node" once the core names land
     When user clicks on first Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the current view should be a queries view
     When user enters "BDD-Q-life-renamed-{time}" into gallery search

@@ -24,8 +24,7 @@ Feature: A visual query built on a table
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     Then Databases---Postgres---NorthwindTest---Orders tree node inside browse tree should be visible
-    # switch to "Databases---Postgres---NorthwindTest---Schemas tree node" once the core names land
-    Given Databases---Postgres---NorthwindTest schemas node inside browse tree is expanded
+    Given Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded
     When user hovers over Databases---Postgres---NorthwindTest---Schemas---public---customers tree node inside browse tree
     And user picks "New Visual Query..." from the context menu of Databases---Postgres---NorthwindTest---Schemas---public---customers tree node inside browse tree

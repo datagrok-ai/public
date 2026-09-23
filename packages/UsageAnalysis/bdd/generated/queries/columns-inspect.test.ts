@@ -35,12 +35,12 @@ test.describe("Every column of a schema in the context panel", () => {
     await session.step(21, "Given Databases---PostgresDart tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---PostgresDart tree node inside browse tree")));
     await session.step(22, "And Databases---PostgresDart---NorthwindTest tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---PostgresDart---NorthwindTest tree node inside browse tree")));
     await session.step(25, "Then Databases---PostgresDart---NorthwindTest---Orders tree node inside browse tree should be visible", () => shouldBe(page, el("Databases---PostgresDart---NorthwindTest---Orders tree node inside browse tree"), "visible"));
-    await session.step(27, "Given Databases---PostgresDart---NorthwindTest schemas node inside browse tree is expanded", () => isExpanded(page, el("Databases---PostgresDart---NorthwindTest schemas node inside browse tree")));
-    await session.step(28, "And Databases---PostgresDart---NorthwindTest---Schemas---public tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---PostgresDart---NorthwindTest---Schemas---public tree node inside browse tree")));
-    await session.step(29, "When user clicks every column of every table under Databases---PostgresDart---NorthwindTest---Schemas---public tree node inside browse tree", () => clickEveryColumn(page, el("Databases---PostgresDart---NorthwindTest---Schemas---public tree node inside browse tree")));
-    await session.step(30, "Then every clicked column should have been shown in the context panel with \"General, Actions, Inspect, Database meta\"", () => everyColumnShown(page, "General, Actions, Inspect, Database meta"));
-    await session.step(31, "And no errors should have been logged", () => noErrors(page));
-    await session.step(32, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(26, "Given Databases---PostgresDart---NorthwindTest---Schemas tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---PostgresDart---NorthwindTest---Schemas tree node inside browse tree")));
+    await session.step(27, "And Databases---PostgresDart---NorthwindTest---Schemas---public tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---PostgresDart---NorthwindTest---Schemas---public tree node inside browse tree")));
+    await session.step(28, "When user clicks every column of every table under Databases---PostgresDart---NorthwindTest---Schemas---public tree node inside browse tree", () => clickEveryColumn(page, el("Databases---PostgresDart---NorthwindTest---Schemas---public tree node inside browse tree")));
+    await session.step(29, "Then every clicked column should have been shown in the context panel with \"General, Actions, Inspect, Database meta\"", () => everyColumnShown(page, "General, Actions, Inspect, Database meta"));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
   test("Every column of every table of Postgres's public schema is shown on click [provider=Postgres, other=PostgresDart]", {tag: ["@realizes:views.queries"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -52,11 +52,11 @@ test.describe("Every column of a schema in the context panel", () => {
     await session.step(21, "Given Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
     await session.step(22, "And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest tree node inside browse tree")));
     await session.step(25, "Then Databases---Postgres---NorthwindTest---Orders tree node inside browse tree should be visible", () => shouldBe(page, el("Databases---Postgres---NorthwindTest---Orders tree node inside browse tree"), "visible"));
-    await session.step(27, "Given Databases---Postgres---NorthwindTest schemas node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest schemas node inside browse tree")));
-    await session.step(28, "And Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree")));
-    await session.step(29, "When user clicks every column of every table under Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree", () => clickEveryColumn(page, el("Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree")));
-    await session.step(30, "Then every clicked column should have been shown in the context panel with \"General, Actions, Inspect, Database meta\"", () => everyColumnShown(page, "General, Actions, Inspect, Database meta"));
-    await session.step(31, "And no errors should have been logged", () => noErrors(page));
-    await session.step(32, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(26, "Given Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree")));
+    await session.step(27, "And Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree")));
+    await session.step(28, "When user clicks every column of every table under Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree", () => clickEveryColumn(page, el("Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree")));
+    await session.step(29, "Then every clicked column should have been shown in the context panel with \"General, Actions, Inspect, Database meta\"", () => everyColumnShown(page, "General, Actions, Inspect, Database meta"));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
 });

@@ -8,10 +8,8 @@ Feature: The schemas of a connection and the schema view
   Tagged full-stand: CHEMBL ships with its own Docker container, so a stand without it (a local
   one) has no such connection.
 
-  The Schemas row carries the connection's own tree name, and the schema view's table boxes carry
-  none: until the core names them (the separate core change), the row is reached through its wrapper
-  ("Postgres-Chembl-Schemas" tree group) and a box by its header ("activities" schema table) —
-  switch to Databases---Postgres---CHEMBL---Schemas tree node and the core's box name then.
+  The Schemas row is named by its path and a schema view's table box by its table, both since the
+  core change that named them.
 
   A deep tree row is wider than the browse panel shows, and the context-menu gesture aims at the
   row's middle, past the panel's edge: those rows are right-clicked where the pointer can reach them
@@ -30,7 +28,7 @@ Feature: The schemas of a connection and the schema view
     And Databases---Postgres---CHEMBL tree node inside browse tree is expanded
 
   Scenario: The Schemas group lists the connection's schemas
-    Given "Postgres-Chembl-Schemas" tree group inside browse tree is expanded
+    Given Databases---Postgres---CHEMBL---Schemas tree node inside browse tree is expanded
     Then the following elements should be visible:
       | Databases---Postgres---CHEMBL---Schemas---public tree node inside browse tree             |
       | Databases---Postgres---CHEMBL---Schemas---information-schema tree node inside browse tree |
