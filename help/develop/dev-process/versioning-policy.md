@@ -70,6 +70,8 @@ Before publishing the release, the new version goes through all [quality assuran
 including the QA Engineer's manual testing of critical changes. The full process of release can be found
 in [wiki](ci-flow.mdx#release-cicd-flow).
 
+> **JS API version.** `datagrok-api` is versioned by the core release (`release-datagrok` bumps `js-api/package.json` to the release version and CI publishes it). Do not bump it in a feature PR — a `master` push with an unpublished version publishes immediately, and plugins built against it will not load on servers of an older version.
+
 How to request the release:
 
 1. **PATCH** release can be requested by anyone on the team. The main difference between other releases is that patch
