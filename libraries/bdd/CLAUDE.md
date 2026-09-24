@@ -67,6 +67,10 @@ when translating, not when looking for gaps, not when a TestTrack case asks for 
 - **Anything with nothing UI-specific**: a function called with arguments and its result checked,
   a server outcome no UI shows. That is a package test (`src/tests/`) or an `ApiTests` test.
 
+One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer's tree comes from
+the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,
+filtering, editing and removing nodes), which no package test reaches. Similar things should stay/be translated as well, as long as they actually test ui.
+
 A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in
 one line. A gap hunt counts these as covered elsewhere, not as gaps.

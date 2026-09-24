@@ -84,4 +84,33 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
         `Wrong similarity score for sequence at position ${i}`);
     }
   });
+
+  test('seqIdentity', async () => {
+    const ref = 'MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW';
+    expectFloat(await grok.functions.call('Bio:seqIdentity', {seq: ref, ref: ref}), 1, 0.001);
+    const changed: number = await grok.functions.call('Bio:seqIdentity',
+      {seq: 'MDYKETLLMPKTAAAAAAAANKEPQIQEKW', ref: ref});
+    expect(changed > 0.1 && changed < 0.99, true, `identity of a changed sequence: ${changed}`);
+  });
+
+  test('seqIdentity-emptySeq', async () => {
+    const res = await grok.functions.call('Bio:seqIdentity',
+      {seq: '', ref: 'PEPTIDE1{D.E.F.G}|PEPTIDE2{C.E}$PEPTIDE1,PEPTIDE2,2:R3-1:R1$$$V2.0'});
+    expect(res == null, true, `identity of an empty sequence: ${res}`);
+  });
+
+  test('sequenceAlignment', async () => {
+    const seq1 = 'MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW';
+    const cases: [string, string, string, number][] = [
+      ['Global alignment', 'BLOSUM62', 'MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL', 37],
+      ['Local alignment', 'BLOSUM45', 'AAAAKETLLMPKTDFPAAAA', 12],
+    ];
+    for (const [alignType, alignTable, seq2, minLength] of cases) {
+      const res = await grok.functions.call('Bio:sequenceAlignment',
+        {alignType: alignType, alignTable: alignTable, gap: -10, seq1: seq1, seq2: seq2});
+      const length = Math.min(res.seq1.length, res.seq2.length);
+      expect(length >= minLength, true,
+        `${alignType} with ${alignTable}: ${length} aligned positions, expected at least ${minLength}`);
+    }
+  });
 });
