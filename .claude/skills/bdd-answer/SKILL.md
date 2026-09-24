@@ -43,6 +43,16 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
   walks the list (`selectNative`, `typeInColumnGrid` in `src/runtime/gestures.ts`).
 - **The pointer rests on the lit element before every click**; only an icon-sized target (28 px
   or less each way) is zoomed into. The caption sits above the page, clear of a player's timeline.
+- **Every press is marked where it landed, under the pointer's tip**: a yellow dot and ring for
+  the left button, a green one for the right, twice for a double-click. The place is the one the
+  page received — every real press, release and move is logged in the page, whatever sent it (a
+  locator's own click, the page's mouse, a drag) — never the centre of the element the step named.
+- **The pointer never skips: each movement starts where the previous action ended.** The renderer
+  carries the pointer from frame to frame, through drags and menu stops, and refuses to make a
+  video in which it skips ("the pointer skipped N px") — a skip is a renderer bug to fix, never a
+  frame to accept. Since every move shows, a gesture that sends the pointer across the screen for
+  a test's sake (to the page's corner, to clear a hover) steps aside nearby in a guide instead
+  (`besidePicker` in `gestures.ts`).
 - **Only what a person would look for is in the video.** A `Then` shows when it names something
   on the page — a dialog, a column, a row count, a value, a legend item's color. The checks a
   test needs and a person does not are filmed out by the `HIDDEN_CHECKS` patterns in
@@ -71,11 +81,18 @@ cd public/packages/<Pkg>/bdd
 MSYS_NO_PATHCONV=1 npx grok-bdd guide features/guides/<slug>.feature [--gif]
 ```
 
-Watch `guides/<feature slug>/<scenario slug>/guide.mp4` once. What to fix and where:
+Watch `guides/<feature slug>/<scenario slug>/guide.mp4/gif` once, and open `audit.png` beside it:
+every press as the video shows it, next to the same picture with magenta ticks aimed at where the
+press landed. The dot, the ring and the pointer's tip sit between the ticks, on the element the
+step lit; the renderer measures both (`audit.json`: `mark_off`, `tip_off` in video pixels, and
+prints any press more than 2 px off or outside the lit element). What to fix and where:
 
 - the pointer goes to the wrong place → the step located a scope, not the element: make the
   phrase name the element (`"Open local file" icon inside browse toolbar`), or add the name to
   the core;
+- a press is `NOT ON THE LIT ELEMENT` in `audit.png` → the step lit one element and pressed
+  another (a stale box, a scope): the same fix — the element the gesture presses is the one it
+  names;
 - a dialog or balloon is missing from the "after" picture → `--settle 1000`;
 - a step reads badly in the caption → reword the step; a verb the caption leaves in the third
   person goes into the `VERBS` map of `src/runtime/guide.ts`;

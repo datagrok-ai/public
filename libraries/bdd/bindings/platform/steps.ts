@@ -9,6 +9,7 @@ import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {exactText, locate} from '../../src/runtime/locate.js';
 import {armEvent} from '../../src/runtime/viewer-menus.js';
+import {deleteChatsOf, serverRequests} from '../../src/runtime/server.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -121,7 +122,8 @@ async function deleteLeftoverProjects(page: Page, name: string): Promise<void> {
     .filter((project) => [project.name, project.friendlyName].includes(name) || isStaleFixture(project, families));
   for (const leftover of leftovers)
     await page.evaluate(async (id) => {
-      const project = await grok.dapi.projects.filter(`id = "${id}"`).include('children').first();
+      // find types the children (TableInfo, ViewInfo); a listing's include('children') leaves them plain entities
+      const project = await grok.dapi.projects.find(id);
       if (!project)
         return;
       for (const child of project.children) {
@@ -192,13 +194,68 @@ export const saveAllAsProject = When('user saves all open table views as project
 export const openProject = When('user opens the {string} project', async (page: Page, name: string) => {
   await page.evaluate(async (n) => {
     const id = ((window as any).__bddProjects ?? {})[n];
-    const p = id ? await grok.dapi.projects.find(id) : await grok.dapi.projects.filter(`name = "${n}"`).first();
+    const p = id ? await grok.dapi.projects.find(id) :
+      await grok.dapi.projects.filter(`friendlyName = "${n}" or name = "${n}"`).first();
     if (!p)
       throw new Error(`no project "${n}" on the server`);
     await p.open();
   }, name);
   await page.waitForFunction(() => grok.shell.tv?.dataFrame != null);
-}, {tier: 'api', description: 'the project this feature saved under that name, else the server\'s by name; done when a table view is current'});
+}, {tier: 'api', description: 'the project this feature saved under that name, else the server\'s by name or friendly name; done when a table view is current'});
+
+/** The same, awaited to the rows: a project whose table the save uploaded opens its view first and
+ * fills it afterwards, which on a loaded stand is well past the budget of the step above. */
+export const openProjectWithTable = When('user opens the {string} project and waits for its table', async (page: Page, name: string) => {
+  await openProject(page, name);
+  await expect.poll(() => page.evaluate(() => grok.shell.tv?.dataFrame?.rowCount ?? -1),
+    {message: `the rows of the table the "${name}" project opened`, timeout: pollMs(60000)}).toBeGreaterThan(0);
+}, {tier: 'api', description: 'opens the project and is done when its table view holds rows'});
+
+/** How the server keeps a table of a project: "sync: <creation script>" when opening the project
+ * re-runs the script (the Save dialog's Data sync), "snapshot" when it loads the uploaded data. */
+async function savedTableMode(page: Page, project: string, table: string): Promise<string> {
+  return page.evaluate(async ([p, t]) => {
+    const listed = await grok.dapi.projects.filter(`friendlyName = "${p}" or name = "${p}"`).first();
+    if (!listed)
+      return `no project "${p}" on the server`;
+    const found = await grok.dapi.projects.find(listed.id);
+    const infos = found.children.filter((c: any) => c instanceof DG.TableInfo);
+    const info = infos.find((c: any) => c.friendlyName === t || c.name === t);
+    if (!info)
+      return `the project holds no "${t}" table; it holds: ${infos.map((c: any) => c.friendlyName).join(', ') || 'none'}`;
+    const tags = (await grok.dapi.tables.find(info.id)).tags;
+    return tags['.data-sync'] === 'sync' ? `sync: ${tags['.script'] ?? ''}` : 'snapshot';
+  }, [project, table]);
+}
+
+export const savedWithDataSync = Then('the {string} table of the {string} project should be saved with data sync', async (page: Page, table: string, project: string) => {
+  await expect.poll(() => savedTableMode(page, project, table),
+    {message: `how the server keeps the "${table}" table of the "${project}" project`, timeout: pollMs(30000)}).toMatch(/^sync: \S/);
+}, {tier: 'api', description: 'the table carries the data-sync flag and a creation script on the server, so opening the project re-runs it'});
+
+export const savedAsSnapshot = Then('the {string} table of the {string} project should be saved as a snapshot', async (page: Page, table: string, project: string) => {
+  await expect.poll(() => savedTableMode(page, project, table),
+    {message: `how the server keeps the "${table}" table of the "${project}" project`, timeout: pollMs(30000)}).toBe('snapshot');
+}, {tier: 'api', description: 'the table has no data-sync flag on the server, so opening the project loads the uploaded data'});
+
+/** `TableInfo.execDataSync` marks the frame it rebuilt from the creation script; a frame loaded from
+ * the uploaded data carries no mark. */
+export const reloadedByDataSync = Then('the table should have been reloaded by data sync', async (page: Page) => {
+  await expect.poll(() => page.evaluate(() => grok.shell.tv?.dataFrame?.getTag('.data-sync') ?? 'no mark'),
+    {message: 'the data-sync mark of the current table', timeout: pollMs(30000)}).toBe('success');
+});
+
+export const loadedAsSnapshot = Then('the table should have been loaded as a snapshot', async (page: Page) => {
+  expect(await page.evaluate(() => grok.shell.tv?.dataFrame?.getTag('.data-sync') ?? 'no mark'),
+    'the data-sync mark of the current table').toBe('no mark');
+});
+
+/** The kind of view in front, when its name does not tell them apart: a query editor
+ * (DataQueryView) and the table view its Run leaves behind carry the same name. */
+export const currentViewType = Then('the current view should be a {word} view', async (page: Page, type: string) => {
+  await expect.poll(() => page.evaluate(() => String(grok.shell.v?.type ?? '')),
+    {message: 'the type of the current view'}).toBe(type);
+}, {description: 'grok.shell.v.type'});
 
 export const viewIsCurrent = Then('the {string} view should be current', async (page: Page, name: string) => {
   await expect.poll(() => page.evaluate(() => String((window as any).grok.shell.v?.name ?? '')), {message: 'the current view'}).toBe(name);
@@ -312,10 +369,18 @@ export const simpleModeOff = Given('simple mode is off', async (page: Page) => {
    property edit, one while the object is frozen — leaves the panel as it was. So a claim about
    the panel names the object first, and reads the panel only once that is the current one. */
 
+/* The setter is ignored while the shell is rearranging the side panels (a view opening, the toolbox
+   taking the panel), and the panel then stays hidden with `showContextPanel` already true — so the
+   flag is set again until the panel is really up. */
 export const contextPanelOpen = Given('the context panel is open', async (page: Page) => {
-  await page.evaluate(() => { grok.shell.windows.showContextPanel = true; });
-  await expect(page.locator('.grok-prop-panel'), 'the context panel').toBeVisible({timeout: pollMs(15000)});
-}, {tier: 'api', description: 'idempotent: the shell setting, then the panel visible — not a click on its toggle'});
+  await expect.poll(async () => page.evaluate(() => {
+    const shown = document.querySelector('.grok-prop-panel') as HTMLElement | null;
+    if (shown?.offsetParent != null)
+      return 'shown';
+    grok.shell.windows.showContextPanel = true;
+    return shown ? 'in the DOM, not shown' : 'not in the DOM';
+  }), {message: 'the context panel', timeout: pollMs(30000)}).toBe('shown');
+}, {tier: 'api', description: 'idempotent: the shell setting, re-applied until the panel is shown — not a click on its toggle'});
 
 export const contextPanelShows = Then('the context panel should show {string}', async (page: Page, name: string) => {
   await expect.poll(() => page.evaluate(() => {
@@ -394,7 +459,7 @@ export const sharingPaneListsNot = Then('the sharing pane should not list the sh
 }, {tier: 'ui', description: 'read once the pane has loaded'});
 
 // Space and group name filters miss existing entities, so names are matched after reading every page.
-type NamedSource = 'spaces' | 'models' | 'groups';
+type NamedSource = 'spaces' | 'models' | 'groups' | 'queries' | 'scripts' | 'connections';
 type CleanupSource = NamedSource | 'projects' | 'tables';
 type ServerEntity = {id: string; name: string; friendlyName: string; createdOn: number; children?: string[]};
 type CleanupStage = {source: CleanupSource; ids: string[]};
@@ -426,37 +491,6 @@ async function serverEntities(page: Page, source: CleanupSource, filter = '', ch
       throw new Error(`${src} list: ${(error as any)?.message ?? String(error)}`);
     }
   }, [source, filter, children] as [CleanupSource, string, boolean]);
-}
-
-/** Endpoints the JS API does not wrap (chats, global permissions), called with the page's session. */
-async function serverRequests(page: Page) {
-  const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
-    token: String(grok.dapi.token)}));
-  const headers = {Authorization: token};
-  const checked = async (method: string, path: string, response: Promise<{ok(): boolean; text(): Promise<string>}>) => {
-    const done = await response;
-    const body = await done.text();
-    if (!done.ok() || body.includes('ApiError'))
-      throw new Error(`${method} ${path}: ${body.slice(0, 200)}`);
-  };
-  return {
-    async get<T>(path: string): Promise<T> {
-      const got = await page.request.get(`${root}${path}`, {headers});
-      if (!got.ok())
-        throw new Error(`GET ${path} failed: HTTP ${got.status()}`);
-      return got.json();
-    },
-    post: (path: string, data: unknown) => checked('POST', path, page.request.post(`${root}${path}`, {headers, data})),
-    remove: (path: string) => checked('DELETE', path, page.request.delete(`${root}${path}`, {headers})),
-  };
-}
-
-/* A group's chat lives in a hidden group made for it; deleting that group, or the group, first leaves
-   a chat that throws in every profile's chat listing (forum.dart), so the chat goes first. */
-async function deleteChatsOf(page: Page, entity: ServerEntity): Promise<void> {
-  const api = await serverRequests(page);
-  for (const chat of await api.get<{id: string}[]>(`/chats/with_groups?ids=${entity.id}`))
-    await api.remove(`/chats/${chat.id}`);
 }
 
 /* groups.delete refuses a group holding a global permission, and an entity delete orphans the grant. */
@@ -554,8 +588,10 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
         for (const [modelId, stages] of pending) {
           while (stages.length > 0) {
             const stage = stages[0];
-            // Spaces and groups filters also miss IDs; verify deletion against the complete listing.
-            const filter = stage.source === 'spaces' || stage.source === 'groups' ? '' : stage.ids.map((id) => `id = "${id}"`).join(' or ');
+            // Only projects and tables answer an ID filter reliably; every other source is verified
+            // against the complete listing, as spaces and groups had to be.
+            const filter = stage.source === 'projects' || stage.source === 'tables' ?
+              stage.ids.map((id) => `id = "${id}"`).join(' or ') : '';
             const entities = stage.ids.length === 0 ? [] : (await serverEntities(page, stage.source, filter))
               .filter((entity) => stage.ids.includes(entity.id));
             if (entities.length === 0) {
@@ -567,10 +603,12 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
                 if (stage.source === 'tables' &&
                   (await serverEntities(page, 'models', `trainedOn.id = "${entity.id}"`)).length > 0)
                   throw new Error(`training table ${entity.id} is still used by another model; it was retained`);
-                if (stage.source === 'groups') {
-                  await deleteChatsOf(page, entity);
+                // a chat outlives the entity it is about and then throws in every profile's chat
+                // listing: the sources whose features post one delete it first
+                if (['groups', 'queries', 'scripts', 'connections'].includes(stage.source))
+                  await deleteChatsOf(page, entity.id);
+                if (stage.source === 'groups')
                   await deleteGlobalGrantsOf(page, entity);
-                }
                 await page.evaluate(async ([src, id, ownerId]) => {
                   let operation = 'lookup';
                   try {
@@ -625,17 +663,21 @@ async function expectNamedCount(page: Page, source: CleanupSource, what: string,
 
 const namesOf = (list: string): string[] => list.split(',').map((n) => n.trim()).filter(Boolean);
 
+/** The open Browse tree caches its nodes, so what the API added or deleted shows after a Refresh; the
+ * tree rebuilds after it, and a node right-clicked mid-rebuild opens no menu, or another node's. */
+async function refreshBrowseTree(page: Page): Promise<void> {
+  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() === 0)
+    return;
+  const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
+  await click(page, el('"Refresh" icon inside browse toolbar'));
+  await refreshed();
+}
+
 export const noSpaceOnServer = Given('no space named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'spaces', 'spaces', namesOf(name));
   atFeatureEnd(page, cleanup);
   await cleanup();
-  // API deletion does not invalidate the open tree's cached nodes (including prior teardown).
-  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0) {
-    // the tree rebuilds after Refresh: a node right-clicked mid-rebuild opens no menu
-    const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
-    await click(page, el('"Refresh" icon inside browse toolbar'));
-    await refreshed();
-  }
+  await refreshBrowseTree(page);
 }, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree and waits for it to rebuild, and deletes them again at feature end'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
@@ -644,6 +686,94 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
 export const spacesOnServer = Then('{int} space(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
   expectNamedCount(page, 'spaces', 'spaces', name, count),
 {tier: 'api', description: 'what the server holds, not what the tree draws — the refusal of a duplicate is a space that was never created'});
+
+/* --- queries, scripts and connections -----------------------------------------------------------
+   The entities a Queries, Scripts or Connections feature saves. Each is cleaned like a space: the
+   complete listing (a name filter misses rows, and a grok name differs from the friendly one —
+   "BDD-Q-x" is saved as "BDDQX"), the chats posted on it first, and the {run}/{time} family of a
+   run that was killed swept with it. */
+
+export const noQueryOnServer = Given('no query named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'queries', 'queries', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated) with their chats, and again at feature end — verified gone'});
+
+export const queriesOnServer = Then('{int} query/queries named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'queries', 'queries', name, count),
+{tier: 'api', description: 'what the server holds, by friendly or grok name — not what the tree draws'});
+
+export const noScriptOnServer = Given('no script named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'scripts', 'scripts', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes it (and its chats) now and again at feature end, whatever a scenario saved under the name'});
+
+export const scriptsOnServer = Then('{int} script(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'scripts', 'scripts', name, count), {tier: 'api'});
+
+export const noConnectionOnServer = Given('no connection named {string} is on the server', async (page: Page, name: string) => {
+  const cleanup = namedCleanup(page, 'connections', 'connections', namesOf(name));
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated) with their chats, and again at feature end — verified gone'});
+
+export const connectionsOnServer = Then('{int} connection(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
+  expectNamedCount(page, 'connections', 'connections', name, count),
+{tier: 'api', description: 'what the server holds, not what the tree draws'});
+
+/** A script saved through the JS API: the doc string is the script, with the `name:` header set to
+ * the name the feature uses (its comment character follows the language of the body). */
+export const scriptOnServer = Given('a script {string} is on the server:', async (page: Page, name: string, body: string) => {
+  const cleanup = namedCleanup(page, 'scripts', 'scripts', [name]);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+  const lines = body.split(/\r?\n/).filter((line) => !/^\s*(#|\/\/)name:/.test(line));
+  const comment = /^\s*\/\//.test(lines.find((line) => /^\s*(#|\/\/)language:/.test(line)) ?? '') ? '//' : '#';
+  await page.evaluate(async (text) => { await grok.dapi.scripts.save(DG.Script.create(text)); },
+    [`${comment}name: ${name}`, ...lines].join('\n'));
+  await expectNamedCount(page, 'scripts', 'scripts', name, 1);
+}, {tier: 'api', description: 'saved through the JS API under that name; deleted with its chats at feature end'});
+
+/** The coordinates of a data source without its credentials: Postgres points at the Northwind of
+ * the stand's test server, any other source copies the parameters of its Samples Northwind. A
+ * connection saved without `connString` and `ssl` answers every test with a bare HTTP 500, so both
+ * are set the way the dialog saves them. */
+export const connectionOnServer = Given('a {string} connection named {string} is on the server', async (page: Page, dataSource: string, name: string) => {
+  const cleanup = namedCleanup(page, 'connections', 'connections', [name]);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+  const failed = await page.evaluate(async ([ds, n]) => {
+    let params: Record<string, unknown> = {server: 'db.datagrok.ai', port: 54322, db: 'northwind', connString: '', ssl: false};
+    if (ds !== 'Postgres') {
+      const sample = (await grok.dapi.connections.list({pageSize: 5000}))
+        .find((c: any) => c.dataSource === ds && c.friendlyName === 'Northwind' && String(c.nqName).startsWith('Samples:'));
+      if (!sample)
+        return `no Samples Northwind connection of ${ds} to copy the coordinates from`;
+      params = {...(await grok.dapi.connections.find(sample.id)).parameters};
+    }
+    try {
+      await grok.dapi.connections.save(DG.DataConnection.create(n, {dataSource: ds, ...params}));
+      return '';
+    }
+    catch (error: any) {
+      // a Dart ApiException loses its message when Playwright serializes it directly
+      return `saving the ${ds} connection "${n}": ${error?.message ?? String(error)}`;
+    }
+  }, [dataSource, name] as [string, string]);
+  if (failed)
+    throw new Error(failed);
+  await expectNamedCount(page, 'connections', 'connections', name, 1);
+  await refreshBrowseTree(page);
+}, {tier: 'api', description: 'a connection of that data source without credentials, deleted at feature end'});
+
+export const connectionDataSource = Then('the {string} connection on the server should have the data source {string}', async (page: Page, name: string, source: string) => {
+  await expect.poll(async () => {
+    const list = await page.evaluate(async (n) => (await grok.dapi.connections.list({pageSize: 5000}))
+      .filter((c: any) => c.friendlyName === n || c.name === n).map((c: any) => String(c.dataSource)), name);
+    return list.length === 1 ? list[0] : `${list.length} connections named "${name}"`;
+  }, {message: `the data source of the connection "${name}" on the server`, timeout: pollMs(30000)}).toBe(source);
+}, {tier: 'api', description: 'the provider the connection was saved under, not the tree branch it is shown in'});
 
 export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));
@@ -937,3 +1067,181 @@ export const dialogCloses = Then('the {string} dialog should close', async (page
   const dialog = await locate(page, el(`${JSON.stringify(title)} dialog`));
   await expect(dialog.filter({visible: true}), `the "${title}" dialog`).toHaveCount(0, {timeout: pollMs(60000)});
 }, {tier: 'ui', description: 'the platform closes it when the work it started is done'});
+
+/* --- what the server holds for a script or a query ----------------------------------------------
+   The saved entity, not what the editor shows: the claim after a save is about what reached the
+   server. A name matches the friendly name or the grok name, as the cleanup does. */
+
+async function serverEntityNamed(page: Page, source: 'scripts' | 'queries', name: string): Promise<ServerEntity> {
+  const found = (await serverEntities(page, source)).filter((e) => e.friendlyName === name || e.name === name);
+  if (found.length !== 1)
+    throw new Error(`${found.length} ${source} named "${name}" on the server, expected one`);
+  return found[0];
+}
+
+export const scriptContains = Then('the script {string} on the server should contain {string}', async (page: Page, name: string, text: string) => {
+  await expect.poll(async () => {
+    try {
+      const script = await serverEntityNamed(page, 'scripts', name);
+      return page.evaluate(async (id) => String((await grok.dapi.scripts.find(id))?.script ?? ''), script.id);
+    }
+    catch (error) {
+      return String(error);
+    }
+  }, {message: `the body of the script "${name}" on the server`, timeout: pollMs(30000)}).toContain(text);
+}, {tier: 'api', description: 'the script body the save sent, not the text in the editor'});
+
+export const scriptHasParam = Then('the script {string} on the server should have (an ){word} {string} of type {string}',
+  async (page: Page, name: string, direction: string, param: string, type: string) => {
+    if (!['input', 'output'].includes(direction))
+      throw new Error(`a parameter is an input or an output, not "${direction}"`);
+    const script = await serverEntityNamed(page, 'scripts', name);
+    const params: string[] = await page.evaluate(async (id) => {
+      const full = await grok.dapi.scripts.find(id);
+      return [...full.inputs.map((p: any) => `input ${p.name}: ${p.propertyType}`),
+        ...full.outputs.map((p: any) => `output ${p.name}: ${p.propertyType}`)];
+    }, script.id);
+    expect(params, `the parameters the server parsed from "${name}"`).toContain(`${direction} ${param}: ${type}`);
+  }, {tier: 'api', description: 'the parameters the server parsed from the script header, not the header text'});
+
+/* The transformation script a saved query carries, read from the server, not from the editor: the
+   view runs a query from the editor's own copy (data_query_view.dart), so without this a save that
+   never reached the server stays invisible. The JS API's DataQuery does not carry the script, so it
+   is read from the query's REST entity. */
+async function savedTransformations(page: Page, name: string): Promise<string> {
+  const query = await serverEntityNamed(page, 'queries', name);
+  const saved = await (await serverRequests(page)).get<{script?: string}>(`/connectors/queries/${query.id}`);
+  return String(saved?.script ?? '');
+}
+
+export const queryTransformations = Then('the query {string} on the server should have transformations containing {string}', async (page: Page, name: string, text: string) => {
+  await expect.poll(() => savedTransformations(page, name),
+    {message: `the transformations of the query "${name}" on the server`, timeout: pollMs(30000)}).toContain(text);
+}, {tier: 'api', description: 'query.script — what the Transformations tab saved, read back from the server'});
+
+export const queryNoTransformations = Then('the query {string} on the server should not have transformations containing {string}', async (page: Page, name: string, text: string) => {
+  await expect.poll(() => savedTransformations(page, name),
+    {message: `the transformations of the query "${name}" on the server`, timeout: pollMs(30000)}).not.toContain(text);
+}, {tier: 'api', description: 'polled like its positive twin: a step the save has not written yet is not an absent step'});
+
+export const queryPostProcess = Then('the query {string} on the server should have a post-process containing {string}', async (page: Page, name: string, text: string) => {
+  await expect.poll(async () => {
+    try {
+      const query = await serverEntityNamed(page, 'queries', name);
+      return page.evaluate(async (id) => String((await grok.dapi.queries.find(id))?.postProcessScript ?? ''), query.id);
+    }
+    catch (error) {
+      return String(error);
+    }
+  }, {message: `the post-process of the query "${name}" on the server`, timeout: pollMs(30000)}).toContain(text);
+}, {tier: 'api', description: 'what the save sent to the server, not what the editor shows'});
+
+export const entityHasLayout = Then('the {word} {string} on the server should have a layout', async (page: Page, kind: string, name: string) => {
+  const source = kind === 'query' ? 'queries' : kind === 'script' ? 'scripts' : null;
+  if (source == null)
+    throw new Error(`a layout is saved with a query or a script, not with a ${kind}`);
+  await expect.poll(async () => {
+    try {
+      const entity = await serverEntityNamed(page, source, name);
+      // the view writes the layout id into the options of the output table parameter, and shares
+      // the layout itself: a reference to a layout the server no longer holds is not a layout
+      return page.evaluate(async ([id, src]) => {
+        const full = await (src === 'queries' ? grok.dapi.queries : grok.dapi.scripts).find(id);
+        const ids = full.outputs.map((p: any) => p.options?.['layout']).filter((x: any) => x);
+        if (ids.length === 0)
+          return 'no layout';
+        const layout = await grok.dapi.layouts.find(ids[0]).catch(() => null);
+        return layout ? 'a layout' : `a layout id the server does not hold (${ids[0]})`;
+      }, [entity.id, source]);
+    }
+    catch (error) {
+      return String(error);
+    }
+  }, {message: `the layout of the ${kind} "${name}" on the server`, timeout: pollMs(30000)}).toBe('a layout');
+}, {tier: 'api', description: 'the layout id the save wrote on the output parameter, and the layout it points at'});
+
+/* --- the script view ------------------------------------------------------------------------- */
+
+export const scriptsView = Given('user opens the Scripts view', async (page: Page) => {
+  await page.evaluate(() => {
+    // the route opens another Scripts view each time; one already open is made current instead
+    const open = Array.from(grok.shell.views as Iterable<any>).find((v) => v.type === 'scripts');
+    if (open)
+      grok.shell.v = open;
+    else
+      grok.shell.route('/scripts');
+  });
+  await page.waitForFunction(() => grok.shell.v?.type === 'scripts', null, {timeout: pollMs(30000)});
+  // the search text is a user setting: a run that died mid-search leaves the next visit filtered
+  const search = page.locator('.grok-gallery-search-bar input').filter({visible: true}).first();
+  if (await search.inputValue() !== '')
+    await search.fill('');
+  await expect.poll(() => page.locator('.grok-items-view-counts').filter({visible: true}).first().textContent()
+    .then((t) => (t ?? '').trim()).catch(() => ''), {message: 'the Scripts gallery counter once it has loaded every script',
+    timeout: pollMs(60000)}).toMatch(/^\d+ of \d+$/);
+}, {tier: 'api', description: 'Browse > Platform > Functions > Scripts, by its route (or made current when open), with its search empty and every script loaded'});
+
+/* --- the console ---------------------------------------------------------------------------- */
+
+const consoleText = (page: Page): Promise<string> =>
+  page.evaluate(() => (document.querySelector('.d4-console-body') as HTMLElement | null)?.innerText ?? '');
+const consoleMark = new WeakMap<Page, number>();
+
+/** The console logs the calls only while it is open. */
+async function openConsole(page: Page): Promise<void> {
+  const input = page.locator('.d4-console-wrapper input.ui-input-editor').filter({visible: true});
+  if (await input.count() === 0) {
+    // a focused text field would take the backquote as a character
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press('Backquote');
+  }
+  await expect(input, 'the console input').toBeVisible();
+}
+
+export const noteConsole = When('user notes the console output', async (page: Page) => {
+  await openConsole(page);
+  consoleMark.set(page, (await consoleText(page)).length);
+}, {tier: 'ui', description: 'opens the console (Backquote) when it is closed — it logs calls only while open — and marks what it shows now: a later "the console should show" reads only what came after'});
+
+export const consoleShows = Then('the console should show {string}', async (page: Page, text: string) => {
+  await expect.poll(async () => (await consoleText(page)).slice(consoleMark.get(page) ?? 0),
+    {message: 'the console output since it was noted', timeout: pollMs(30000)}).toContain(text);
+}, {description: 'the console logs every function call the UI makes and its outputs; read from the point "user notes the console output" marked'});
+
+export const consoleShowsTimes = Then('the console should show {string} {int} time(s)', async (page: Page, text: string, times: number) => {
+  const count = async () => (await consoleText(page)).slice(consoleMark.get(page) ?? 0).split(text).length - 1;
+  await expect.poll(count, {message: `occurrences of "${text}" in the console output since it was noted`, timeout: pollMs(30000)})
+    .toBeGreaterThanOrEqual(times);
+  expect(await count(), `occurrences of "${text}" in the console output since it was noted`).toBe(times);
+}, {description: 'exactly that many — a count that reaches the number and does not pass it'});
+
+/** A call typed into the console as a person would, under the qualified name the platform gave the
+ * saved script (its namespace is the owner's login, capitalised). */
+export const consoleCall = When('user calls the script {string} from the console with {string}', async (page: Page, name: string, args: string) => {
+  const script = await serverEntityNamed(page, 'scripts', name);
+  const nqName: string = await page.evaluate(async (id) => String((await grok.dapi.scripts.find(id)).nqName), script.id);
+  await openConsole(page);
+  const input = page.locator('.d4-console-wrapper input.ui-input-editor').filter({visible: true});
+  // put in whole: typed key by key, the console's completion rewrites the arguments as they come
+  await input.fill(`${nqName}(${args})`);
+  await input.press('Enter');
+}, {tier: 'ui', description: 'opens the console (Backquote) when it is closed and enters the qualified call'});
+
+/* --- the context panel's counting panes ------------------------------------------------------ */
+
+const paneCountOf = (page: Page, pane: string): Promise<string> =>
+  page.evaluate((p) => document.querySelector(`.grok-prop-panel [name="pane-${p}"]`)?.getAttribute('d4-info') ?? '', pane);
+
+export const paneCountAtLeast = Then('the {string} pane of the context panel should count at least {int}', async (page: Page, pane: string, count: number) => {
+  await expect.poll(async () => Number(await paneCountOf(page, pane) || '0'),
+    {message: `the count the "${pane}" pane of the context panel shows`, timeout: pollMs(60000)}).toBeGreaterThanOrEqual(count);
+}, {description: 'a counting pane with at least that many entries — the platform records an entity made through the JS API with a delay of its own'});
+
+/* --- the side panel ------------------------------------------------------------------------------ */
+
+/** Browse and the toolbox share the side panel: once the toolbox has taken it, "the browse panel is
+ * open" finds `showBrowse` already true and the tree stays hidden until the toolbox lets it go. */
+export const toolboxPaneHidden = Given('the toolbox pane is hidden', async (page: Page) => {
+  await page.evaluate(() => { grok.shell.windows.showToolbox = false; });
+  await expect(page.locator('.d4-toolbox[caption]').filter({visible: true}), 'the toolbox pane').toHaveCount(0, {timeout: pollMs(15000)});
+}, {tier: 'api', description: 'the side panel goes back to what it showed before the toolbox (the browse tree when it is open)'});

@@ -120,6 +120,15 @@ _Optional_
 Is available only for data link, will force run a link after OnInit
 hook.
 
+#### `params`
+
+_Optional_
+
+A static object attached to the link and readable from the handler with
+[`getParam`](#getparam). Lets one handler serve several links with
+different configuration. [Rules](#rules) use it to pass their condition
+and effects to the built-in handlers.
+
 
 ### Common controller methods
 
@@ -210,6 +219,14 @@ getAdditionalParam(name: string): any | undefined;
 
 Only used in actions, for passing additional parameters from
 [validators](#validators).
+
+#### `getParam`
+
+```
+getParam(name: string): any | undefined;
+```
+
+Returns a value from the link [`params`](#params) object.
 
 #### `hasCall`
 
@@ -563,7 +580,7 @@ input or output:
 
 | Key | Effect |
 |------|--------|
-| `hidden: true` | Hide the input from the script UI. If the input is a dataframe with one or more `viewer:` panels, those panels are hidden too. The input annotation must include `optional: true`, otherwise the platform requires a value. |
+| `hidden: true` | Hide the input from the script UI. If the input is a dataframe with one or more `viewer:` panels, those panels are hidden too. A hidden input is treated as optional regardless of its annotation: the default missing-value check and any validator link targeting it no longer block the run or show up in the UI, and the function is called with whatever value the input holds, possibly `null`. |
 | `items: string[]` | For choice inputs, replace the dropdown options. Example: `{ items: ['one', 'two', 'three'] }`. |
 
 Any other key/value pair is forwarded to the viewer hook unchanged, so
@@ -631,6 +648,107 @@ setDescriptionItem(name: string, description: any): void;
 ```
 
 Sets description to an output query with the specified name.
+
+
+## Rules
+
+Rules are a declarative shorthand for the most common form logic:
+hiding inputs, replacing dropdown items, emitting validation messages,
+setting or clearing values depending on other inputs. A rule has type
+`rule`, a condition and a list of effects. At config processing time
+it expands into ordinary [meta](#metadata-links), [validator](#io-validators)
+and [data](#data-links) links executed by built-in handlers, so the
+runtime never sees the rule itself.
+
+```
+{
+  id: 'advancedParams',
+  type: 'rule',
+  from: ['mode:solver/mode', 'df:solver/table', 'amb:solver/ambTemp'],
+  to: ['tol:solver/tolerance', 'col:solver/column', 'init:solver/initTemp'],
+  when: {'==': [{var: 'mode'}, 'advanced']},
+  effects: [
+    {effect: 'show', targets: ['tol', 'col']},
+    {effect: 'items', targets: 'col', items: {columns: [{var: 'df'}, 'numerical']}},
+    {effect: 'clear', targets: 'col'},
+    {effect: 'error', targets: 'init', message: {cat: ['Must exceed ambient ', {var: 'amb'}]}},
+  ],
+}
+```
+
+### Expressions
+
+`when` and every value-bearing effect field (`items`, `meta` values,
+`message`, `value`) is a [JSON Logic](https://jsonlogic.com/) expression.
+Plain literals are valid expressions and evaluate to themselves. The data
+available to `var` is:
+
+- `<alias>` — the first matched value of a `from` query;
+- `all.<alias>` — all matched values of a `from` query.
+
+Two extra operations are registered: `columns` (a dataframe and an
+optional filter `numerical`, `categorical`, a column type or a semantic
+type; returns column names) and `len` (length of a string, array or
+dataframe row count). Truthiness of `when` follows JSON Logic rules.
+`when` omitted or `null` means the rule is always on.
+
+JSON Logic reads any object with exactly one key as an operation. To pass
+such an object as a value, wrap it: `{literal: {foo: 1}}` evaluates to
+`{foo: 1}` wherever it appears in an expression.
+
+### Effects
+
+Every effect has an "on" state written while `when` holds and an "off"
+state written otherwise, so a rule fully re-derives its outputs on each
+run. `targets` is a `to` alias or an array of them.
+
+| Effect | Link | On | Off | Fields |
+|---|---|---|---|---|
+| `hide` / `show` | meta | `hidden: true` / `hidden: false` | the inverse | |
+| `items` | meta | `items: <evaluated>` | key omitted | `items` |
+| `meta` | meta | evaluated key/value pairs | keys omitted | `meta` |
+| `error` / `warning` / `notification` | validator | one message per target | cleared | `message` |
+| `set` | data | `setAll(target, value, restriction)` | restores the target's initial restriction | `value`, `restriction` (default `none`) |
+| `clear` | data | `setAll(target, null, restriction)` | no-op | `restriction` (default `none`) |
+
+Like every data link, a rule's data link runs when one of its `from`
+values changes and never when a target changes. So `clear` resets the
+target each time an input changes while `when` holds, and the user can
+edit the target freely in between. `clear` is `set` with a `null` value.
+Rules hold no memory of previous runs: their outputs are always a
+function of the current values.
+
+Rule data effects are defaults, not propagated results, so unlike plain
+[data links](#data-links) they use the `none` restriction unless one is
+given: the value is written directly and no consistency is tracked.
+Pass `restriction: 'restricted'` (or another type) to get the data-link
+behaviour. The [consistency](#consistency) rule for steps that have
+already run still applies: on a step whose outputs are current, an
+effect with `none` does nothing, and an effect with any other
+restriction only records the restriction and leaves the value alone.
+
+### Expansion
+
+A rule with id `r` becomes up to three links: `r::meta`, `r::validator`
+and `r::data`, one per effect family present. Each copies `from`, `not`,
+`base`, `nodePriority` and `dataFrameMutations`, keeps only the `to`
+entries its effects target, and carries `{when, effects}` in
+[`params`](#params). `debounce` is passed to the validator link and
+`runOnInit` to the data link. The `(call)` and `(template)` flags are not
+allowed in rule queries.
+
+Config processing rejects a rule whose effect targets an unknown `to`
+alias, whose `to` alias is targeted by no effect, whose expression
+references an unknown `from` alias (through `var`, `missing` or
+`missing_some`, at any nesting depth), or that applies `hide`/`show`
+twice to the same alias.
+
+Rules are self-contained: two rules writing the same effect to the same
+io is a configuration error, and which value ends up in the merged meta
+is unspecified.
+
+The default missing-value validators the driver adds for non-optional
+inputs are instances of the same built-in validator handler.
 
 
 ## Actions

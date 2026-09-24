@@ -84,6 +84,19 @@ export async function runRXTreeSnapshotTest(testName: string, fn: (expectObserva
   }
 }
 
+export async function expectThrowsAsync(fn: () => Promise<unknown>, match?: RegExp) {
+  let threw = false;
+  let err: unknown = undefined;
+  try {
+    await fn();
+  } catch (e) {
+    threw = true;
+    err = e;
+  }
+  expectDeepEqual(threw, true);
+  if (match) expectDeepEqual(match.test(String((err as Error)?.message ?? err)), true);
+}
+
 export function getTreeStates(config: PipelineConfigurationProcessed): [StateTree, Observable<StateTree>] {
   const initialTree = StateTree.fromPipelineConfig({config, mockMode: true});
   initialTree.init().subscribe();

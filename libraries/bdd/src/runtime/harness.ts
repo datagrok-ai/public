@@ -261,7 +261,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         if (!pageBorn.has(shared))
           pageBorn.set(shared, Date.now());
         watchErrors(shared);
-        guide.attach(shared);
+        await guide.attach(shared);
         page = shared;
       }
       return page;

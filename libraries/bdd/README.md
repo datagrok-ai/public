@@ -29,6 +29,11 @@ function called and its result checked),
 is a package test or an `ApiTests` test, never a feature. The same goes for a TestTrack case marked
 `manual-only` or `apitest`. The rule and its reasons are in `CLAUDE.md`, "What never becomes a feature".
 
+**Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
+database rows, the layout or chat the UI makes on the side, a setting or configuration of something
+it does not own — is removed or restored at feature end and swept again at its start, and the
+cleanup proves it is gone. See `CLAUDE.md`, "Everything a feature puts on the server goes".
+
 ## Using it in a package
 
 The library is not on npm yet, so a package depends on it by path — what `grok-bdd init` writes
@@ -362,7 +367,11 @@ features/guides/<name>.feature` compiles it, runs it on one worker in guide mode
 scenario into `guides/<feature slug>/<scenario slug>/`:
 
 - `guide.mp4` — the pointer travels to every element a step acts on, the element is lit (the rest
-  of the page dimmed) and rests under the pointer before the click lands; an icon-sized target
+  of the page dimmed) and rests under the pointer before the click lands; every press is marked
+  where the page received it, under the pointer's tip — a yellow dot and ring for the left button,
+  a green one for the right, twice for a double-click; the pointer never skips, each movement
+  starting where the previous action ended (the renderer refuses to make a video in which it
+  skips); an icon-sized target
   (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
   where it is; the page after the step is revealed, and a caption above the page (clear of a
   player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
@@ -376,11 +385,19 @@ scenario into `guides/<feature slug>/<scenario slug>/`:
   bookkeeping) are left out, by the `HIDDEN_CHECKS` patterns in `src/runtime/guide.ts`;
 - `step-NN.png` — the lit picture of every step, and `steps.md` — the numbered steps with those
   pictures, ready to paste into a reply;
-- with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair.
+- `audit.png` and `audit.json` — every press as the video shows it, beside the same picture with
+  ticks aimed at where it landed, and how far the mark's centre and the pointer's tip are from it
+  (the renderer prints a press more than 2 px off, or outside the element its stop lit);
+- with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair (the GIF's palette
+  always holds the press colours).
 
 Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
 it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
-element the step located, and where the page's own mouse went. A move with a button held is a
+element the step located, and what the pointer did — as the page saw it: capture listeners log
+every real press, release and move, whatever sent it (a locator's own click never goes through
+`page.mouse`), each press with its button, its place and the element under it, and a run of moves
+with no button held as the one point it came to rest. A step's presses and moves go to the stop
+they were made at (below). A move with a button held is a
 drag: the page is pictured along the way (`NN-dragK.png`, at most eight per step), so the video
 shows what the drag draws — a selection box, an annotation region — growing under the pointer,
 and the step's still shows it complete at the release point. Tests know nothing of it: without

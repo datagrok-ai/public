@@ -6,6 +6,7 @@ generated: features/guides/export-filtered-rows.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/connections.js';
 import '../../bindings/grid.js';
 import '../../bindings/nx.js';
 import '../../bindings/spaces.js';

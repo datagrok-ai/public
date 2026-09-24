@@ -84,8 +84,8 @@ export class FuncCallNode implements IStoreProvider {
       takeUntil(this.closed$),
     ).subscribe(this.consistencyInfo$);
 
-    this.instancesWrapper.validations$.pipe(
-      map((validations) => this.convertValidations(validations)),
+    combineLatest([this.instancesWrapper.validations$, this.instancesWrapper.hiddenIOs$]).pipe(
+      map(([validations, hidden]) => this.convertValidations(validations, hidden)),
       takeUntil(this.closed$),
     ).subscribe(this.validationInfo$);
 
@@ -217,10 +217,11 @@ export class FuncCallNode implements IStoreProvider {
 
   private convertValidations(
     validationsIn: Record<string, Record<string, ValidationResult | undefined>>,
+    hidden: Set<string>,
   ) {
     const validationArrays = Object.values(validationsIn).reduce((acc, val) => {
       for (const [k, v] of Object.entries(val)) {
-        if (v) {
+        if (v && !hidden.has(k)) {
           if (acc[k])
             acc[k].push(v);
           else

@@ -73,11 +73,14 @@ export interface SettingsInterface {
   /** Log user clicks */
   logActivity: boolean;
 
-  /** Top-menu groups hidden from the view ribbon, by label (see [View.fillRibbonContextMenu]). */
+  /** Top-menu groups hidden from the view ribbon, by label (e.g. `ML`). */
   hiddenMenus: Array<string>;
 
   /** Named ribbon panels hidden from the view ribbon. */
   hiddenRibbonPanels: Array<string>;
+
+  /** Current object dropdown in the view ribbon; 'Auto' hides it while the context panel is docked. */
+  contextRibbon: string;
 
   showCurrentRowInProperties: boolean;
 
