@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Plain data links stay inactive while the init hook and `runOnInit` links run, so init writes no longer propagate through them
 * RTD: Added declarative `rule` links (JSON Logic conditions expanding into meta/validator/data links), `params`/`getParam` controller support, and validation suppression for inputs hidden via meta
 
 ## 1.47.0 (2026-09-23)

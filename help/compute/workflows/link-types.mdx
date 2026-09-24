@@ -120,6 +120,15 @@ _Optional_
 Is available only for data link, will force run a link after OnInit
 hook.
 
+While the [init hook](#init-hook) and the `runOnInit` links run, plain
+data links are not yet active, so values written at that stage do not
+propagate through them. A data link that must carry an init value
+further, for example from a [state](configuration.mdx#states) into a
+script input, needs `runOnInit` itself; a chain of such links needs the
+flag on every link. Meta, validator and other derived links react to
+init writes as usual, and plain data links react to every change made
+after init.
+
 #### `params`
 
 _Optional_
@@ -952,6 +961,9 @@ the common ancestor, or operate only at the inner level.
 Uses the `onInit` field instead of links and is triggered only once
 when a workflow is created. Usually is used to populate static
 [states](configuration.mdx#states). Otherwise, the same as [data links](#data-links).
+Its writes are visible to [`runOnInit`](#runoninit) links and to derived
+links, but not to plain data links, which become active only after the
+init stage.
 
 
 ### Return hook
