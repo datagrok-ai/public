@@ -21,6 +21,10 @@ the method that matches your comparison:
 * [ANOVA](#anova): three or more groups.
 * [Control comparisons](#control-comparisons): several groups, each against one shared control.
 
+A [box plot](../visualize/viewers/box-plot.md#group-comparison) runs the same comparisons on the chart:
+it shows the p-value of the test that fits the groups, and its on-chart controls compare every group
+with a control.
+
 
 ## T-test
 

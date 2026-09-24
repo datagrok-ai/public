@@ -175,16 +175,40 @@ class Renderer:
             mid = self.bar_h / 2
             d.line([(x, mid), (x + s * 0.32, mid + s * 0.32), (x + s * 0.85, mid - s * 0.4)], fill=CHECK + (255,), width=3)
             x += s * 1.2
-        d.text((x, self.bar_h / 2), text, font=self.font, fill=(255, 255, 255, 255), anchor='lm')
-        x += d.textlength(text, font=self.font) + pad
-        for key in step.get('keys', [])[:4]:
-            label = key.replace('ControlOrMeta', 'Ctrl')
+        labels = [key.replace('ControlOrMeta', 'Ctrl') for key in step.get('keys', [])[:4]]
+        keys_w = sum(d.textlength(label, font=self.small) + 22 for label in labels)
+        font, lines = self.fit_caption(d, text, self.w - x - pad - keys_w)
+        gap = font.size * 0.62 if len(lines) > 1 else 0
+        for i, line in enumerate(lines):
+            y = self.bar_h / 2 + (2 * i - len(lines) + 1) * gap
+            d.text((x, y), line, font=font, fill=(255, 255, 255, 255), anchor='lm')
+        x += max(d.textlength(line, font=font) for line in lines) + pad
+        for label in labels:
             tw = d.textlength(label, font=self.small)
             d.rounded_rectangle((x, self.bar_h * 0.22, x + tw + 14, self.bar_h * 0.78), radius=5,
                                 fill=(60, 66, 78, 255), outline=(120, 128, 140, 255))
             d.text((x + 7, self.bar_h / 2), label, font=self.small, fill=(255, 255, 255, 255), anchor='lm')
             x += tw + 22
         return layer
+
+    def fit_caption(self, d, text, width):
+        """The caption at the bar's font size; if it is wider than the bar leaves it, the largest
+        size down to seven tenths of that which fits on one line, else two lines at that size, the
+        second cut short if it still overflows."""
+        floor = max(12, round(self.font.size * 0.7))
+        for size in range(self.font.size, floor - 1, -1):
+            font = self.font if size == self.font.size else load_font(size)
+            if d.textlength(text, font=font) <= width:
+                return font, [text]
+        words, first = text.split(' '), ''
+        while words and d.textlength((first + ' ' + words[0]).lstrip(), font=font) <= width:
+            first = (first + ' ' + words.pop(0)).lstrip()
+        rest = ' '.join(words)
+        if d.textlength(rest, font=font) > width:
+            while rest and d.textlength(rest + '…', font=font) > width:
+                rest = rest[:-1]
+            rest = rest.rstrip() + '…'
+        return font, [first, rest] if first else [rest]
 
     def press_mark(self, frame, at, t, button, ring=True):
         """A press `t` of the way through its ripple: a dot where the button went down and a ring
@@ -461,6 +485,11 @@ class Renderer:
             lines += [f"{i}. {mark}{step['caption']}", '', f"   ![Step {i}](step-{i:02d}.png)", '']
         with open(os.path.join(self.folder, 'steps.md'), 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
+        # a guide filmed again with fewer steps would keep the pictures of the steps it lost
+        n = len(self.steps) + 1
+        while os.path.exists(os.path.join(self.folder, f'step-{n:02d}.png')):
+            os.remove(os.path.join(self.folder, f'step-{n:02d}.png'))
+            n += 1
 
     def write_audit(self):
         """Measures every press on the frame the video shows: the centre of what the mark changed,

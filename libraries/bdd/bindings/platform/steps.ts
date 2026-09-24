@@ -333,6 +333,7 @@ export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: 
    the server: a feature that draws or types a molecule names the one it was written against, so an
    account that picked another one elsewhere does not change what the feature sees. */
 export const sketcherIs = Given('the molecule sketcher is {string}', async (page: Page, name: string) => {
+  silent(page);
   const was = await page.evaluate((n) => {
     const known = DG.Func.find({meta: {role: 'moleculeSketcher'}}).map((f: any) => f.friendlyName);
     if (!known.includes(n))
@@ -349,7 +350,7 @@ export const sketcherIs = Given('the molecule sketcher is {string}', async (page
       grok.userSettings.add(DG.chem.STORAGE_NAME, DG.chem.KEY, b);
     DG.chem.currentSketcherType = b ?? DG.DEFAULT_SKETCHER;
   }, was));
-}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default); the account\'s own choice comes back at feature end'});
+}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default); the account\'s own choice comes back at feature end; not in the video'});
 
 /** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
  * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */

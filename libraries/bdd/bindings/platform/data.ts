@@ -212,6 +212,9 @@ export const filterIsExactly = Then('the filter should pass exactly the rows whe
 export const filterIsExactlyCategory = Then('the filter should pass exactly the rows where {string} is {string}', (page: Page, column: string, value: string) =>
   expectFilterExactly(page, column, {eq: value}, `is ${value}`), {description: 'the table filter bit by bit: the category\'s rows pass, no other row does'});
 
+export const filterIsExactlyAnyOf = Then('the filter should pass exactly the rows where {string} is one of {string}', (page: Page, column: string, values: string) =>
+  expectFilterExactly(page, column, {in: list(values)}, `is one of ${values}`), {description: 'the table filter bit by bit: the rows of the listed values pass, no other row does; a value the column lacks fails'});
+
 export const filterIsExactlyContains = Then('the filter should pass exactly the rows where {string} contains {string}', (page: Page, column: string, text: string) =>
   expectFilterExactly(page, column, {contains: text}, `contains "${text}"`), {description: 'every row whose value contains the text passes and no other; a text no row contains fails'});
 

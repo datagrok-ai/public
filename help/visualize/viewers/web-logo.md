@@ -17,9 +17,12 @@ while the height of symbols within the stack indicates the relative frequency of
 In general, a sequence logo provides a richer and more precise description of, for example, a binding site,
 than would a consensus sequence.
 
-You must specify the tag `semType` with value `AminoacidsMultipleAlignment` or
-`NucleotidesMultipleAlignment` for the data column with multiple alignment sequences, it is mandatory to
-select the palette for monomers' colors.
+The viewer works on a macromolecule column (FASTA, separator, HELM, or BILN notation), which the Bio
+package detects on its own. To add it for the current table, select **Bio** > **Analyze** > **Composition**.
+
+A letter is also a selection. Hover over it to see how many sequences have that monomer at that
+position, and click it to select those rows. Every other viewer highlights the selection, so a
+histogram of an activity column shows where those sequences fall.
 
 You can customize the look of the viewer with properties. Properties `startPosition` and `endPosition`
 let you display multiple alignment partially. If property `startPosition` (`endPosition`)

@@ -2,7 +2,8 @@
 Feature: Box plot statistics and coloring
   The box coloring baseline and an explicit whisker color, the statistics strip and its ladder,
   the statistics format, the p-value toggle by key and by menu (the p-value area gone while Show P
-  Value is off and back when it is on), the three-group test branch, the
+  Value is off and back when it is on) and a T typed into the plot's own column selector leaving it
+  alone (the shortcut used to take the T of "HEIGHT"), the three-group test branch, the
   violin style with its bins and line widths, column color coding driving the marker colors, and
   a datetime value. One journey on demog-1000 with a box plot of AGE by SEX.
 
@@ -80,6 +81,13 @@ Feature: Box plot statistics and coloring
     Then "Show P Value" property of box plot viewer should be "false"
     And box plot viewer should not have a "p value" area
     When user sets "Show P Value" property of box plot viewer to "true"
+
+  Scenario: A T typed into the plot's own column selector is a letter, not the shortcut
+    When user picks "HEIGHT" in the "Value" column selector of box plot viewer
+    Then "Show P Value" property of box plot viewer should be "true"
+    And box plot viewer should have a "p value" area
+    When user picks "AGE" in the "Value" column selector of box plot viewer
+    Then "Value" property of box plot viewer should be "AGE"
 
   Scenario: Three groups take the Alexander-Govern branch
     When user sets "Category 1" property of box plot viewer to "RACE"

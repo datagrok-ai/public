@@ -680,6 +680,8 @@ function install(): void {
   };
   /** The painted pixels now, without moving the snapshot. */
   const ink = (el: Element): number => histogram(pixelsOf(viewerOf(el))).ink;
+  /** The pixels in the selection color now, without a snapshot. */
+  const hue = (el: Element): number => histogram(pixelsOf(viewerOf(el))).hue;
   const baseline = (el: Element): void => {
     try {
       snapshot(el);
@@ -1271,7 +1273,7 @@ function install(): void {
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
-    takeBalloons, putBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
+    takeBalloons, putBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, hue, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));

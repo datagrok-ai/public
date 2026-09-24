@@ -267,7 +267,11 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   that cell is clicked (`select` clicks it first). The Save project dialog's name field is a bare
   `<input>` (aria-label "Name"), which `text input` reaches. Typing into a column picker's search
   box used to toggle the scatter plot's regression line on every "r" (the R shortcut listened on
-  the plot's root) — fixed 2026-09-21 in `regression_line.dart`.
+  the plot's root) — fixed 2026-09-21 in `regression_line.dart`; the box plot's T (p-value) and the
+  line chart's R had the same hole until 2026-09-24 (picking "HEIGHT" hid the p-value). A
+  single-key shortcut on a viewer's root ignores keys whose target is an input or a text area. A
+  column selector named after a property with a space is reached without it (`"Category 1"` is
+  `div-column-combobox-category1`).
 - Filters: `user filters rows where …` writes the filter bitset, and anything that calls
   `requestFilter` (a histogram on every menu pick) recomputes it — hold a filter across viewer
   interaction through a filter card. `getFiltersGroup` creates a panel when there is none. A click
@@ -285,6 +289,9 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
 - `painted in at least N colors` groups by hue: a linear scale is one colour. `repainted`
   measures the whole canvas; `the "x" area … should have repainted` one area. A hover highlight
   can be gone by the time a later step reads it: repaint checks right after the gesture.
+  `should show a/no selection highlight` reads the canvas as it is, so a viewer no gesture touched
+  (a histogram that shows a selection made in the WebLogo) needs no snapshot; `more`/`less …
+  than before` compare with the snapshot.
 - An area phrase can name a part of a hit area: `left edge of x axis` (a 16 px strip along that
   edge — the axis away from the column selector in its middle), `top left corner of region Older`
   (a 16 px square), `overlap of region Tall and region Heavy` (the rectangle two areas share), and

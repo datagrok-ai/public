@@ -255,7 +255,8 @@ async function openColumnSelector(page: Page, target: ElementRef, which: string)
   const loc = await v.viewerLocator(page, target);
   const centre = v.centerOf(await v.hitArea(page, target, 'view'));
   await page.mouse.move(centre.x, centre.y);
-  const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase()}"]`);
+  // the selector is named by its property without spaces: "Category 1" is category1
+  const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase().replace(/\s+/g, '')}"]`);
   await selector.waitFor({state: 'visible', timeout: 5000});
   // the guide lights the selector, not the whole viewer the phrase named
   await guide.located(page, selector);

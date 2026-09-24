@@ -241,23 +241,36 @@ export function highlightMargin(c: CanvasChange): number {
   return Math.min(Math.max(HIGHLIGHT_FLOOR, HIGHLIGHT_PER_ROW * c.selected) * c.dpr * c.dpr, c.viewPx / 4);
 }
 
-/** Pixels in the selection hue against the snapshot: `more`/`less` than before by the margin the
- * selection warrants, `some`, or `none`. */
+/** Pixels in the selection hue: `more`/`less` than the snapshot by the margin the selection
+ * warrants, or `some`/`none` in the canvas as it is, which needs no snapshot. */
 export async function expectHighlight(page: Page, target: ElementRef, compare: 'more' | 'less' | 'some' | 'none'): Promise<void> {
   const wrong = {none: 'shows a selection highlight', some: 'shows no selection highlight',
     more: 'does not show more selection highlight than before', less: 'does not show less selection highlight than before'};
   let last: CanvasChange | undefined;
+  let hue: number | undefined;
+  let why = '';
   const holds = async (): Promise<boolean> => {
-    const c = last = await canvasChange(page, target);
-    const margin = highlightMargin(c);
-    return compare === 'none' ? c.hue === 0 : compare === 'some' ? c.hue > 0 : compare === 'more' ? c.hue >= c.hueBefore + margin : c.hue <= c.hueBefore - margin;
+    try {
+      if (compare === 'some' || compare === 'none') {
+        hue = await onViewer(page, target, (el) => (window as any).__bdd.hue(el), undefined);
+        return compare === 'some' ? hue! > 0 : hue === 0;
+      }
+      const c = last = await canvasChange(page, target);
+      const margin = highlightMargin(c);
+      return compare === 'more' ? c.hue >= c.hueBefore + margin : c.hue <= c.hueBefore - margin;
+    }
+    catch (e) {
+      why = reasonOf(e as Error);
+      return false;
+    }
   };
   try {
     await expect.poll(holds, {timeout: pollMs(10000)}).toBe(true);
   }
   catch {
-    throw new Error(`${target.phrase} ${wrong[compare]}` +
-      (last ? ` (${last.hueBefore} px in the selection color before, ${last.hue} now, ${last.selected} rows selected, margin ${Math.round(highlightMargin(last))})` : ''));
+    const detail = last ? ` (${last.hueBefore} px in the selection color before, ${last.hue} now, ${last.selected} rows selected, margin ${Math.round(highlightMargin(last))})`
+      : hue !== undefined ? ` (${hue} px in the selection color)` : why !== '' ? `: ${why}` : '';
+    throw new Error(`${target.phrase} ${wrong[compare]}${detail}`);
   }
 }
 

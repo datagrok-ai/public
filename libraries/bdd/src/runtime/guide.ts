@@ -122,7 +122,7 @@ const HIDDEN_CHECKS: RegExp[] = [
   /\bpixels tall$/, /\bareas? of\b/, /\bshould (not )?have an? ".*" area$/, /\bproperty of\b/, /^properties of /,
   /\bvalue range of\b/, /\bcolor scale of\b/, /\bcells of\b.*\bwide\b/, /\bshould show (fewer|more) rows\b/,
   /^the (open tableview|current view) should (have|hold)/, /\bshould be added to the open tableview$/,
-  /^the .* view should be current$/, /\bnever increase$/,
+  /^the .* view should be current$/, /\bnever increase$/, /\bshould have finished updating$/, / should match "/, /\bmatching "/,
   /^the legend of .* should (be (wider|narrower|taller|shorter|placed|docked|in a corner|in the|collapsed|on the)|list (fewer|the same))/,
   /^every item in the legend of/,
 ];
@@ -169,9 +169,11 @@ function imperative(verb: string): string {
 }
 
 /** Element phrases as a reader sees them: `inside` is `in`, a tree path `Files---Demo` is
- * `Files › Demo`, `on browse tab` keeps its words. */
+ * `Files › Demo`, `on browse tab` keeps its words, and the lines of a pasted text (`\n`) are
+ * listed with commas, the way a filter card's search box shows them. */
 function readable(text: string): string {
-  return text.replace(/\binside\b/g, 'in').replace(/---/g, ' › ').replace(/\s+/g, ' ').trim();
+  return text.replace(/\binside\b/g, 'in').replace(/---/g, ' › ').replace(/(\\n)+"/g, '"').replace(/\\n/g, ', ')
+    .replace(/\s+/g, ' ').trim();
 }
 
 /** `pass` → `passes`, `show` → `shows`, `fly` → `flies`. */
@@ -196,7 +198,7 @@ export function captionOf(text: string, kind: GuideStepKind, table?: string[][])
     const subject = t.split(/\bshould\b/)[0].trim();
     const last = subject.split(/\s+/).pop() ?? '';
     const plural = (/s$/.test(last) && !/(ss|us|is|'s)$/.test(last)) ||
-      /^(the )?(rows|columns)\b/.test(subject) || /\b(\d+|all|no|some|following)\s+[a-z]+s\b/.test(subject);
+      /^(only |all |no |some )?(the )?(rows|columns)\b/.test(subject) || /\b(\d+|all|no|some|following)\s+[a-z]+s\b/.test(subject);
     t = t.replace(/\bshould not be\b/g, plural ? 'are not' : 'is not')
       .replace(/\bshould not have\b/g, plural ? 'do not have' : 'does not have')
       .replace(/\bshould not (\w+)/g, (_, v: string) => (plural ? 'do not ' : 'does not ') + v)
@@ -390,7 +392,8 @@ function closeLeg(r: Recording, before: string, target: GuideBox | undefined, dr
   r.pending = [];
 }
 
-/** The open step is session plumbing (the login), never part of a guide. */
+/** The open step is set-up a person does not take (the login, a pinned setting, a wait for a
+ * package), never part of a guide. */
 export function silent(page: Page): void {
   const r = recordings.get(page);
   if (r?.open)
@@ -481,8 +484,8 @@ export async function end(page: Page | undefined): Promise<void> {
   const acted = !!target || r.legs.some((l) => l.pointer.length > 0) || r.keys.length > 0 || r.typed.length > 0;
   // every step a reader would take is in the guide, a table opened through the API included (the
   // page after it is the point); left out are the login, a step that changed nothing on the page,
-  // and a check a person has no use for
-  const hidden = r.silent || (type === 'Then' && hiddenInGuide(open.text));
+  // and a check or a wait a person has no use for
+  const hidden = r.silent || ((type === 'Then' || type === 'Given') && hiddenInGuide(open.text));
   const kind: GuideStepKind = hidden ? 'setup' : type === 'Then' ? 'check' :
     acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,

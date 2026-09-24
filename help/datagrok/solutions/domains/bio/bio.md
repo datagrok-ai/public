@@ -318,7 +318,7 @@ The substructure search feature finds sequences containing a specific pattern or
 <details>
 <summary>How to use</summary>
 
-1. In the **Top Menu**, select **Bio** > **Search** > **Substructure Search...**. Filter panel will open with Sequence column filter.
+1. In the **Top Menu**, select **Bio** > **Search** > **Subsequence Search...**. Filter panel will open with Sequence column filter.
 1. Enter or paste the sequence pattern in the provided substructure field. This will filter the dataset based on prompt. 
 
 </details>
@@ -427,8 +427,9 @@ A common use is to visualize protein-binding sites in DNA or functional motives 
 <details>
 <summary>How to use</summary>
 
-1. In the **Top Menu**, select **Bio** > **Composition Analysis**. The sequence logo viewer is added to the **Table View**.
+1. In the **Top Menu**, select **Bio** > **Analyze** > **Composition**. The sequence logo viewer is added to the **Table View**.
 2. To edit parameters, hover over the viewer's top and click the **Gear** icon.
+3. To select the sequences that have a monomer at a position, click its letter.
 
 </details>
 
@@ -444,7 +445,7 @@ Sequence space analysis is particularly useful for separating groups of sequence
 <details>
 <summary> How to use </summary>
 
-Go to the **Top Menu** and select **Bio** > **Analyse** > **Sequence Space...** This opens a **Sequence Space** parameter dialog.
+Go to the **Top Menu** and select **Bio** > **Analyze** > **Sequence Space...** This opens a **Sequence Space** parameter dialog.
 
 The dialog has the following inputs:
 
@@ -505,7 +506,7 @@ of similarity or dissimilarity between data points.
 
 To add a dendrogram viewer, do the following:
 
-1. In the **Top Menu**, select **Bio** > **Hierarchical clustering**. A dialog opens.
+1. In the **Top Menu**, select **Bio** > **Analyze** > **Hierarchical Clustering...**. A dialog opens.
 1. In the dialog, select the parameters and click **OK** to add the dendrogram to the **Table View**.
 
 </details>
@@ -528,7 +529,7 @@ Each engine exposes its own parameters (gap penalties, alignment method, and eng
 
 To perform MSA, do the following:
 
-1. In the **Top Menu**, select **Bio** > **MSA...**. A dialog opens.
+1. In the **Top Menu**, select **Bio** > **Analyze** > **MSA...**. A dialog opens.
 
    ![Multiple Sequence Alignment dialog](img/msa_dialog.png)<!--replace png with a GIF file showing the steps-->
 
@@ -597,7 +598,7 @@ or DNA sequences with measured affinity to a specific protein.
 
 To run the activity cliffs analysis, do the following:
 
-1. In the **Menu Ribbon**, select **Bio** > **Activity Cliffs...** A parameter dialog opens.
+1. In the **Top Menu**, select **Bio** > **Analyze** > **Activity Cliffs...** A parameter dialog opens.
 1. In the parameter dialog, specify the following:
    1. Select the source table, sequence column, and activity data column to analyze.
    1. Set the similarity cutoff.
@@ -709,7 +710,7 @@ Also, check out a YouTube video of [RDKit UGM presentation](https://www.youtube.
 
 To convert between sequence notations (e.g., HELM to FASTA, FASTA to separator format):
 
-1. In the **Top Menu**, select **Bio** > **Convert** > **Notation...**
+1. In the **Top Menu**, select **Bio** > **Transform** > **Convert Sequence Notation...**
 1. Select the source column containing sequences
 1. Choose the target notation (HELM, FASTA, Separator)
 1. For separator format, specify the delimiter character (e.g., `-`, `.`, `/`)
@@ -776,7 +777,7 @@ The Get Region function maintains `.positionNames` and `.positionLabels` tags fo
 <summary>How to use</summary>
 
 1. To call Get Region:
-    * Select **Bio** > **Calculate** > **GetRegion**. A dialog opens. In the dialog select a table and a sequence column.
+    * Select **Bio** > **Calculate** > **Extract Region...**. A dialog opens. In the dialog select a table and a sequence column.
     * Alternatively, click on the **Hamburger** icon of a Macromolecule column and expand the **Get Region** section.
 
 2. Fill in start and end positions of the region of interest, and name for the output column. A new column containing sequences of the region of interest is added to the table.
@@ -833,7 +834,7 @@ Linear sequences, represented in any notation (HELM, FASTA, BILN, Separator), ca
 <details>
 <summary>How to use</summary>
 
-1. In the **Top Menu**, select **Bio** > **Convert** > **To Atomic Level**. A dialog opens.
+1. In the **Top Menu**, select **Bio** > **Transform** > **To Atomic Level...**. A dialog opens.
 2. In the dialog, configure:
    * **Sequence column**: Select the column containing sequences
    * **Non-Linear**: Choose between optimized structures or linear representation
