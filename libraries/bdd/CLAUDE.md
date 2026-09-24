@@ -98,7 +98,9 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   by relative path; never mix `src/` and `dist/` in one run. ESM everywhere. One `@playwright/test`
   per run: a package of the pnpm workspace depends on `workspace:^` and resolves the library's copy
   with nothing to link; one outside it depends by path (`file:…`) and `grok-bdd link` makes its
-  Playwright the library's copy (redo after `npm ci`).
+  Playwright the library's copy (redo after `npm ci`). A package's `grok-bdd` loads `dist/`, so it
+  stops while a source is newer than its build (`staleBuild` in cli.ts): an "unknown kind" or "no step
+  matches" right after a pull is a stale build, and a kind is defined in `bindings/`, not `src/`.
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
   resets the shell (first waiting up to 60 s for the command the scenario armed and up to 25 s until the task bar has no progress entry — an
   analysis a scenario left running reopens its closed table and makes it current in the next feature;

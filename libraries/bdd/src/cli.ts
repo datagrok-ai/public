@@ -358,6 +358,20 @@ function link(cwd: string, undo: boolean): number {
   return 0;
 }
 
+/** The library's sources newer than their build. A package's compile and run load the library from
+ * `dist/`, so after a pull without a rebuild a sound feature fails on a kind or a step only the
+ * sources have. */
+function staleBuild(): string[] {
+  if (LIB_DIR === LIB_ROOT)
+    return [];
+  const sources = [...listFiles(join(LIB_ROOT, 'src'), '.ts'), ...listFiles(join(LIB_ROOT, 'bindings'), '.ts'),
+    join(LIB_ROOT, 'playwright.config.ts')];
+  return sources.filter((file) => {
+    const built = join(LIB_DIR, relative(LIB_ROOT, file)).replace(/\.ts$/, '.js');
+    return !existsSync(built) || statSync(built).mtimeMs < statSync(file).mtimeMs;
+  });
+}
+
 async function main(): Promise<number> {
   const [command = 'compile', ...flags] = process.argv.slice(2);
   if (command === '--help' || command === '-h' || command === 'help') {
@@ -369,6 +383,13 @@ async function main(): Promise<number> {
     return init(process.cwd());
   if (command === 'link')
     return link(process.cwd(), flags.includes('--undo'));
+  const stale = staleBuild();
+  if (stale.length > 0) {
+    const first = relative(LIB_ROOT, stale[0]).split(sep).join('/');
+    console.error(`grok-bdd: the library's build is older than its sources (${first}` +
+      `${stale.length > 1 ? ` and ${stale.length - 1} more` : ''}) — run \`npm run build\` in ${LIB_ROOT}`);
+    return 2;
+  }
   const project = loadProject(process.cwd());
   console.log(`bdd: ${project.name} at ${project.root}${project.tiers.length > 0 ? ` (tiers: ${project.tiers.join(', ')})` : ''}`);
   switch (command) {

@@ -463,7 +463,10 @@ on Reload Window; `taskkill /F /IM rg.exe` (or `pkill rg`) clears the ones alrea
 
 ## Developing the library
 
-`npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`; `npm run
+`npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`, which is what a
+package's `grok-bdd` loads: while any of those sources is newer than its build (a pull, an edit),
+every command but `init` and `link` stops and names the file, rather than failing a sound feature on
+a kind or a step only the sources have. `npm run
 test:unit` runs the engine tests (nouns, compile, project, init, failure) and the locator test,
 which drives the kinds and the platform names over a static page in the library's Chromium (and
 skips itself where none is installed); the library is a project itself (`features/platform`):
