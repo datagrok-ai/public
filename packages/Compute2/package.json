@@ -84,6 +84,11 @@
     "common/vue.js"
   ],
   "category": "Compute",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/webcomponents"
+    ]
+  },
   "meta": {
     "url": "/Modelhub",
     "dartium": false
