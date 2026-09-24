@@ -208,10 +208,6 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
 
 type EmitStep = (step: StepModel, indent: string, state: ScenarioState) => string[];
 
-/** A scenario that waits on something the platform itself gives minutes to (a connector's socket
- * timeout): Playwright's own way of saying so, three times the budget. */
-const SLOW_TAG = '@slow';
-
 function tagOptions(tags: string[]): string {
   const unique = [...new Set(tags)].filter((t) => t.startsWith('@'));
   return unique.length > 0 ? `, {tag: [${unique.map((t) => JSON.stringify(t)).join(', ')}]}` : '';
@@ -223,8 +219,6 @@ function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitl
   const out: string[] = [];
   const state: ScenarioState = {};
   out.push(`  test(${JSON.stringify(uniqueTitle(scenario.name))}${tagOptions([...feature.tags, ...scenario.tags])}, async ({browser}) => {`);
-  if ([...feature.tags, ...scenario.tags].includes(SLOW_TAG))
-    out.push('    test.slow();');
   out.push('    const page = await session.page(browser);');
   for (const step of feature.background)
     out.push(...emitStep(step, '    ', state));
@@ -249,8 +243,6 @@ function emitJourney(feature: FeatureModel, uniqueTitle: (s: string) => string, 
   const out: string[] = [];
   const state: ScenarioState = {};
   out.push(`  test(${JSON.stringify(feature.name)}${tagOptions([...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)])}, async ({browser}) => {`);
-  if ([...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)].includes(SLOW_TAG))
-    out.push('    test.slow();');
   out.push('    const page = await session.page(browser);');
   out.push(`    const run = journey(test, ${feature.scenarios.length}, page);`);
   for (const step of feature.background)

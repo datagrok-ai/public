@@ -1,19 +1,18 @@
-/* What only the Connections features need: the tree rows and schema boxes the core does not name
-   yet, a connection's chats, a catalog's Database meta comment, a table dropped in a shared test
-   database, the hidden providers of the tree, and the balloon a connection test answers with.
-   Connections on the server, secrets, the local file and the reload are the library's. */
+/* What only the Connections features need: the schema boxes the library's kinds do not reach, a
+   connection's chats and the hidden providers of the tree. Connections on the server are the
+   library's. */
 import type {Page} from '@playwright/test';
 import {Given, Then, When, kind} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, chatIdsOf, deleteChatsOf, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {chatIdsOf, deleteChatsOf, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
-/* The schema view's boxes carry the core's own name (`div-table-<table>`), but the box is neither a
-   u2 element nor a widget, so the library's generic `element` kind does not reach it. */
+/* The schema view names each table box's host (`div-table-<table>`, db_views.dart), which is neither
+   a u2 element nor a widget, so the library's generic `element` kind does not reach it. */
 kind('schema table', {
-  selector: '.d4-sketch-item',
+  selector: '.d4-host',
   match: ['dart'],
-  dartNames: ['table-{q}'],
+  dartNames: ['div-table-{q}'],
   description: 'a table box of the schema view (Schemas > <schema> > Browse), by its table name',
 });
 
@@ -43,76 +42,6 @@ export const deleteChatOfConnection = When('user deletes the chat of the {string
   expect(c, `the "${name}" connection`).toBeTruthy();
   await deleteChatsOf(page, c!.id);
 }, {tier: 'api', description: 'the chat goes first — a chat must never outlive the entity it is about'});
-
-/* A catalog's Database meta comment, read and written through the connection's database info —
-   what the pane's SAVE writes. The connection is named by its name or its friendly name. */
-async function catalogComment(page: Page, catalog: string, connection: string, set?: string): Promise<string> {
-  return page.evaluate(async ([cat, conn, value]) => {
-    const c = (await grok.dapi.connections.list({pageSize: 5000})).find((x: any) => x.name === conn || x.nqName === conn);
-    if (!c)
-      throw new Error(`no connection named ${conn}`);
-    const info = (await grok.dapi.connections.getDatabaseInfo(c, cat)).find((d: any) => d.name === cat);
-    if (!info)
-      throw new Error(`no catalog ${cat} in ${conn}`);
-    if (value !== null)
-      await info.setComment(value);
-    return info.comment ?? '';
-  }, [catalog, connection, set ?? null] as [string, string, string | null]);
-}
-
-export const catalogHasNoComment = Given('the {string} catalog of the {string} connection has no comment', async (page: Page, catalog: string, connection: string) => {
-  const clear = async () => {
-    await catalogComment(page, catalog, connection, '');
-    await expect.poll(() => catalogComment(page, catalog, connection), {message: `the comment on ${connection}/${catalog}`}).toBe('');
-  };
-  atFeatureEnd(page, clear);
-  await clear();
-}, {tier: 'api', description: 'clears the Database meta comment now and again at feature end — a shared connection keeps no trace'});
-
-export const catalogCommentIs = Then('the {string} catalog of the {string} connection should have the comment {string}', async (page: Page, catalog: string, connection: string, text: string) => {
-  await expect.poll(() => catalogComment(page, catalog, connection), {message: `the comment on ${connection}/${catalog}`, timeout: pollMs(15000)}).toBe(text);
-}, {tier: 'api', description: 'what the server holds for the catalog, not what the pane still shows'});
-
-/* A connection test answers on a balloon, and a test that cannot log in answers only when the
-   connector gives up — long after its task-bar entry has gone, so the balloon checks' 5 s is too
-   short. The connector's own socket timeout is 180 s (grok_connect, `socketTimeout|180`), and a
-   stand whose network drops the packets rather than refusing them takes all of it: ~40 s on dev,
-   the full timeout on a local stand. The test's own answer is awaited up to 200 s. */
-export const connectionTestEnded = Then('the connection test should have ended on an {word} balloon containing {string}',
-  async (page: Page, type: string, text: string) => {
-    let shown: string[] = [];
-    await expect.poll(async () => {
-      shown = shown.concat((await viewers.takeBalloons(page)).map((b: {type: string; message: string}) => `${b.type}: ${b.message}`));
-      return shown.some((s) => s.startsWith(`${type}: `) && s.includes(text));
-    }, {timeout: pollMs(200000), message: `an ${type} balloon containing "${text}"; balloons so far: ${shown.join(' | ') || 'none'}`}).toBe(true);
-  }, {description: 'the balloon a connection test answers with (info "connected successfully" or error "failed to connect: …"), awaited up to 200 s, past the connector 180 s socket timeout'});
-
-/* A table a scenario creates in a shared test database (the Dbtests connections) is dropped before
-   and after the feature, so a run that failed half-way leaves nothing behind. The connection is named
-   by its name. */
-export const noTableOnConnection = Given('no table {string} is in the database of the {string} connection', async (page: Page, table: string, connection: string) => {
-  if (!/^[a-z_][a-z0-9_]*$/.test(table))
-    throw new Error(`"${table}" is not a plain table name`);
-  const drop = async () => {
-    const error = await page.evaluate(async ([t, conn]) => {
-      const c = (await grok.dapi.connections.list({pageSize: 5000})).find((x: any) => x.name === conn || x.nqName === conn);
-      if (!c)
-        return `no connection named ${conn}`;
-      try {
-        await grok.data.db.query(c.nqName, `drop table if exists ${t}`);
-        return '';
-      }
-      catch (e: any) {
-        return String(e?.message ?? e);
-      }
-    }, [table, connection] as [string, string]);
-    // a DDL statement returns no result set, which some connectors report as an error
-    if (error && !/result|no results|resultset/i.test(error))
-      throw new Error(`dropping ${table} on ${connection}: ${error}`);
-  };
-  atFeatureEnd(page, drop);
-  await drop();
-}, {tier: 'api', description: 'drop table if exists, now and at feature end, through the connection itself'});
 
 /* The Databases tree hides the rarer providers behind "Show more" until its icon is clicked, and a
    page keeps them shown after that: an idempotent state for the scenarios after the one that claims

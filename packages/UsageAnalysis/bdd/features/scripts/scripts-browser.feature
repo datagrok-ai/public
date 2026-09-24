@@ -1,14 +1,13 @@
-@journey @full-stand @serial @realizes:views.scripts
+@journey @serial @realizes:views.scripts
 Feature: The Scripts view and a script's context panel
   The Scripts view finds a script by search; clicked, the script fills the context panel with its
   details (inputs and outputs), its activity (the creation and every run), its sharing and its chats;
   Share... gives the second account access, a chat message stays on the script; the gallery switches
-  its view mode and its order; a shared sample script (ACF) runs on TSLA and opens in the editor.
+  its view mode; Edit... opens the script in the editor.
   Translated from files/TestTrack/Scripts/browser.md and playwright-public/scripts/scripts-browser.test.ts.
 
-  The script is this feature's own ({time} in its name); it is deleted with its chat at the end,
-  and both are checked gone. R (the script and ACF) runs in a container, so the
-  feature is @full-stand.
+  The script is this feature's own ({time} in its name), a JavaScript one that runs in the page;
+  it is deleted with its chat at the end, and both are checked gone.
 
   Not translated, and why: the md's "Usage" tab is the Activity pane now (History stays at 0 for a
   run started this way), and its entries are not claimed at all: the pane
@@ -17,10 +16,12 @@ Feature: The Scripts view and a script's context panel
   count after a run is read in a fresh Scripts view: the context panel renders the current object
   once, and the same card clicked again keeps the count it showed. A run through the JS API is not
   counted there at all, and the platform records a script made through it with a delay of its own,
-  so the claim is "at least one" — the md's run is the UI's. The Sort list menu is not claimed here: after a
-  view-mode switch the gallery reloads for longer than a click waits, and the Users suite already
-  holds that menu and the order it gives. The old spec checked "Activity runs after >= before",
-  which an unchanged count passed.
+  so the claim is "at least one" — the md's run is the UI's. The Sort list menu is not claimed here:
+  after a view-mode switch the gallery reloads for longer than a click waits, and the Users suite
+  already holds that menu and the order it gives. The old spec checked "Activity runs after >=
+  before", which an unchanged count passed. The md's ACF sample on TSLA: ACF is an R script, run by
+  the server (see the bdd library's CLAUDE.md, "What never becomes a feature"), and a package's
+  sample a stand may not have; Edit... is claimed on the feature's own script.
 
   Serial: every scenario here works in the Scripts view, whose search text and view mode are the
   account's own settings — two features searching it at the same time would see each other's text.
@@ -29,12 +30,12 @@ Feature: The Scripts view and a script's context panel
     Given user is logged in
     And a script "BddScriptBrowser{time}" is on the server:
       """
-      #language: r
-      #input: dataframe table
-      #output: int count
-      #output: string newParam
-      count <- nrow(table) * ncol(table)
-      newParam <- "test"
+      //language: javascript
+      //input: dataframe table
+      //output: int count
+      //output: string newParam
+      count = table.rowCount * table.columns.length;
+      newParam = "test";
       """
     And the context panel is open
     And user opens the Scripts view
@@ -64,7 +65,6 @@ Feature: The Scripts view and a script's context panel
       | "Run" section in context panel      |
       | "Sharing" section in context panel  |
       | "Chats" section in context panel    |
-      | "Activity" section in context panel |
     When user clicks on "Details" pane header in context panel
     Then "Details" section in context panel should contain text "count, newParam"
     And "Details" section in context panel should contain text "table"
@@ -110,33 +110,12 @@ Feature: The Scripts view and a script's context panel
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: The ACF sample runs on TSLA's Close
-    Given the "System:DemoFiles/TSLA.csv" file is loaded as a table
-    And user opens the Scripts view
-    When user types "ACF" into gallery search
-    And user notes the console output
-    And user picks "Run..." from the context menu of "ACF" link in gallery
-    Then "ACF" dialog should be visible
-    When user selects "TSLA" in Data input in "ACF" dialog
-    And user clicks on editor of Columns input in "ACF" dialog
-    Then "Select columns..." dialog should be visible
-    And the "text of cell 5 of __name" reading of grid viewer in "Select columns..." dialog should be "Close"
-    When user clicks on the "cell 5 of x" area of grid viewer in "Select columns..." dialog
-    Then "Select columns..." dialog should contain text "1 checked"
-    When user clicks on OK button in "Select columns..." dialog
-    Then editor of Columns input in "ACF" dialog should contain text "(1)"
-    When user clicks on OK button in "ACF" dialog
-    Then the "ACF" dialog should close
-    And the console should show "ACF("
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  Scenario: Edit... opens the ACF sample in the editor
+  Scenario: Edit... opens the script in the editor
     Given user opens the Scripts view
-    When user types "ACF" into gallery search
-    And user picks "Edit..." from the context menu of "ACF" link in gallery
-    Then the "ACF" view should be current
-    And code editor should contain the text "#name: ACF"
+    When user types "BddScriptBrowser{time}" into gallery search
+    And user picks "Edit..." from the context menu of "BddScriptBrowser{time}" link in gallery
+    Then the "BddScriptBrowser{time}" view should be current
+    And code editor should contain the text "//name: BddScriptBrowser{time}"
     And no errors should have been logged
     When user closes the current view
     And user opens the Scripts view

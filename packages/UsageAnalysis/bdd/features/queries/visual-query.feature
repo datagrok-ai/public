@@ -26,8 +26,7 @@ Feature: A visual query built on a table
     Then Databases---Postgres---NorthwindTest---Orders tree node inside browse tree should be visible
     Given Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded
-    When user hovers over Databases---Postgres---NorthwindTest---Schemas---public---customers tree node inside browse tree
-    And user picks "New Visual Query..." from the context menu of Databases---Postgres---NorthwindTest---Schemas---public---customers tree node inside browse tree
+    When user picks "New Visual Query..." from the context menu of Databases---Postgres---NorthwindTest---Schemas---public---customers tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user adds "companyname" to the "Group-by" row of the visual query
     Then the "Group-by" row of the visual query should hold "companyname"
@@ -56,8 +55,6 @@ Feature: A visual query built on a table
     And the browse panel is open
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     When user clicks on "Refresh" icon inside browse toolbar
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    And user hovers over Databases---Postgres---NorthwindTest---BDD-Q-vq-{time} tree node inside browse tree
     And user picks "Edit..." from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-vq-{time} tree node inside browse tree
     Then the current view should be a DataQueryView view
     And the "Group-by" row of the visual query should hold "companyname"

@@ -19,9 +19,7 @@ Feature: A query's post-process runs on its result
   Scenario: A line is typed into the Post-Process tab of a new query
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
-    When user hovers over Databases---Postgres---NorthwindTest tree node inside browse tree
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    And user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    When user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user enters "BDD-Q-pp-{time}" into Name input
     And user replaces the code of code editor with "select * from products"
@@ -49,8 +47,6 @@ Feature: A query's post-process runs on its result
     And the browse panel is open
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     When user clicks on "Refresh" icon inside browse toolbar
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    And user hovers over Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree
     And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree
     Then the table should have 77 rows
     And an info balloon containing "PP77" should have been shown

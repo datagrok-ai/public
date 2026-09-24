@@ -29,6 +29,11 @@ function called and its result checked),
 is a package test or an `ApiTests` test, never a feature. The same goes for a TestTrack case marked
 `manual-only` or `apitest`. The rule and its reasons are in `CLAUDE.md`, "What never becomes a feature".
 
+**Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
+database rows, the layout or chat the UI makes on the side, a setting or configuration of something
+it does not own — is removed or restored at feature end and swept again at its start, and the
+cleanup proves it is gone. See `CLAUDE.md`, "Everything a feature puts on the server goes".
+
 ## Using it in a package
 
 The library is not on npm yet, so a package depends on it by path — what `grok-bdd init` writes

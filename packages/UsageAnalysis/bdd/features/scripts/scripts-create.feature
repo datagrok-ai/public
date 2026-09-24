@@ -1,21 +1,25 @@
-@journey @full-stand @serial @realizes:views.scripts
+@journey @serial @realizes:views.scripts
 Feature: Creating a script
-  A new R script from the Scripts view: the New menu offers every language, the template opens in
+  A new script from the Scripts view: the New menu offers every language, the template opens in
   the editor unsaved, the sample icon brings its sample table, the Signature editor renames the
   script and adds a parameter that lands in the code, a run with cars answers count = 510 in the
   results under the editor, and Save stores the script with the parameters the server parses from
-  its header. Translated from files/TestTrack/Scripts/create.md (1-12) and
-  playwright-public/scripts/scripts-create-debugged.test.ts (the R test).
+  its header; the JavaScript template raises its browser alert. Translated from
+  files/TestTrack/Scripts/create.md and playwright-public/scripts/scripts-create-debugged.test.ts.
 
-  R runs in a container, so the feature is @full-stand (dev has it). Every name carries {time}: the
-  old chain of files sharing one "testRscript" is gone, and the create feature renames the template
-  before it saves, so it never adds another of the old "Template_N" scripts.
+  The script is a Grok script, which runs in the page; the md's R runs on the server (see the bdd
+  library's CLAUDE.md, "What never becomes a feature"), and the flow is the same for every language.
+  Every name carries {time}: the old chain of files sharing one "testRscript" is gone, and the
+  feature renames the template before it saves, so it never adds another of the old "Template_N"
+  scripts.
 
   Not translated, and why: the md's new parameter is an output string; the Signature editor's
   parameter grid adds one (as an input bool), but its Direction and Type cells open no editor on a
   click, a double-click or Enter (probed on dev 22 Sep), so the feature claims what the "+" icon
   does and the header it writes. Step 12's "x" is the view's own close, which the harness does
-  through the shell — several "Close view" icons are on the page at once.
+  through the shell — several "Close view" icons are on the page at once. The md's 13-20 run the
+  template of every language: R, Python, Octave, NodeJS and Julia run on the server and Pyodide
+  loads its Python from a CDN, so the Grok run and the JavaScript alert here are the in-page ones.
 
   Serial: every scenario here works in the Scripts view, whose search text and view mode are the
   account's own settings — two features searching it at the same time would see each other's text.
@@ -33,7 +37,7 @@ Feature: Creating a script
     And gallery should be visible
     And no errors should have been logged
 
-  Scenario: New offers every language and opens the R template unsaved
+  Scenario: New offers every language and opens a template unsaved
     When user clicks on New button
     Then the open menu should list "R Script..."
     And the open menu should list "Python Script..."
@@ -43,9 +47,9 @@ Feature: Creating a script
     And the open menu should list "JavaScript Script..."
     And the open menu should list "Grok Script..."
     And the open menu should list "Pyodide Script..."
-    When user picks "R Script..." from the open menu
+    When user picks "Grok Script..." from the open menu
     Then the "Template" view should be current
-    And code editor should contain the text "#language: r"
+    And code editor should contain the text "#language: grok"
     And code editor should be visible
     And no errors should have been logged
 
@@ -94,6 +98,9 @@ Feature: Creating a script
     When user clicks on "Run script (F5)" icon
     Then "BddScriptCreate{time}" dialog should be visible
     When user selects "cars" in Table input in "BddScriptCreate{time}" dialog
+    # the parameter the Signature editor added has no default, and a Grok script refuses an
+    # undefined one ("newParam: Value not defined")
+    And user checks "New Param" input in "BddScriptCreate{time}" dialog
     And user clicks on OK button in "BddScriptCreate{time}" dialog
     Then the "BddScriptCreate{time}" dialog should close
     And the script results should show "count" as "510"
@@ -117,3 +124,14 @@ Feature: Creating a script
     Then gallery counter should have text "1"
     And "BddScriptCreate{time}" link in gallery should be visible
     And no errors should have been logged
+
+  Scenario: The JavaScript template raises its alert
+    Given browser alerts are recorded
+    When user clicks on New button
+    And user picks "JavaScript Script..." from the open menu
+    Then the "Template" view should be current
+    And code editor should contain the text "alert('Hello World!')"
+    When user clicks on "Run script (F5)" icon
+    Then the browser should have shown the alert "Hello World!"
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

@@ -51,13 +51,16 @@ export class PackageFunctions {
         addToJSContextCommand(args);
     });
 
-    // script editor, signature editor
-    grok.events.onViewAdded.subscribe((view) => {
+    // script editor, signature editor — also on the views opened before this package started
+    const addEditorTools = (view: DG.View) => {
       if (view.type == 'ScriptView' || view.type == 'DataQueryView')
         functionSignatureEditor(view);
       if (view.type == 'ScriptView')
         initScriptEditor(view);
-    });
+    };
+    for (const view of grok.shell.views)
+      addEditorTools(view);
+    grok.events.onViewAdded.subscribe(addEditorTools);
   }
 
 

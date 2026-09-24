@@ -68,19 +68,10 @@ export const everyColumnShown = Then('every clicked column should have been show
   expect(bad, `columns of ${results.length} clicked whose context panel did not follow`).toEqual([]);
 }, {description: 'each clicked column became the current object and its panel listed every named pane'});
 
-// package, temporary (CORE-SIGNAL): the actions browser of the Transformations tab takes about a
-// second after the tab opens before a click on a function runs it — the first click only makes
-// the row current — and nothing in the DOM says when it is ready. The click is repeated until the
-// function's dialog is up; replace with a plain click once the browser publishes a ready state.
+// package: the actions browser renders a function as its markup, which carries no name of its own
 export const openAction = When('user opens the {string} action of the transformations browser', async (page: Page, name: string) => {
-  const link = page.locator('.grok-actions-browser').filter({visible: true}).getByText(name, {exact: true}).first();
-  const dialog = page.locator(`[name="dialog-${name.trim().replace(/\s+/g, '-')}"]`).filter({visible: true});
-  await expect.poll(async () => {
-    if (await dialog.count() === 0)
-      await link.click();
-    return dialog.count();
-  }, {message: `the "${name}" dialog after clicking its action`, timeout: pollMs(10000), intervals: [300]}).toBeGreaterThan(0);
-}, {tier: 'ui', description: 'clicks the function in the Transformations tab\'s actions browser until its dialog opens (the browser has no ready signal)'});
+  await page.locator('.grok-actions-browser').filter({visible: true}).getByText(name, {exact: true}).first().click();
+}, {tier: 'ui', description: 'clicks the function in the Transformations tab\'s actions browser, which opens its dialog'});
 
 /* --- the visual query builder ------------------------------------------------------------------
    Each row of the builder (Data, Where, Group by, Aggregate, Pivot, Having, Order by) has a `+`

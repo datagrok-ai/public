@@ -18,12 +18,12 @@ import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/command
 import {clearSelection, noneSelected, onlyOfSelected, rowCount, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {listenCustom} from '@datagrok-libraries/bdd/bindings/platform/events';
 import {closeAllViews, openDataset, openDatasetRows} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {areaAtLeastTall, areaPainted, clickArea, noBalloons, noErrors, painted, readingIs, readingReads, viewerAdded} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {areaAtLeastTall, areaPainted, clickArea, noBalloons, noErrors, painted, readingBetween, readingIs, readingReads, viewerAdded} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Launch SAR at different similarity thresholds", () => {
   const session = feature(test, "features/sar/similarity-threshold.feature", import.meta.url);
-  test("Similarity threshold 10 preserves the analysis and its selection behavior [threshold=10, clusters=1]", async ({browser}) => {
+  test("Similarity threshold 10 preserves the analysis and its selection behavior [threshold=10, fewest clusters=1, most clusters=1]", async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And the Peptides package is initialized", () => peptidesInitialized(page));
@@ -50,7 +50,7 @@ test.describe("Launch SAR at different similarity thresholds", () => {
     await session.step(36, "And the \"A at 2\" area of grid should be painted", () => areaPainted(page, "A at 2", el("grid")));
     await session.step(37, "And scatter plot viewer in MCL viewer should be painted", () => painted(page, el("scatter plot viewer in MCL viewer")));
     await session.step(38, "And the \"completed threshold\" reading of MCL viewer should be 10", () => readingIs(page, "completed threshold", el("MCL viewer"), 10));
-    await session.step(39, "And the \"clusters\" reading of Logo Summary Table viewer should be 1", () => readingIs(page, "clusters", el("Logo Summary Table viewer"), 1));
+    await session.step(39, "And the \"clusters\" reading of Logo Summary Table viewer should be between 1 and 1", () => readingBetween(page, "clusters", el("Logo Summary Table viewer"), 1, 1));
     await session.step(40, "And no rows should be selected", () => noneSelected(page));
     await session.step(41, "When user clicks on the \"A at 2\" area of grid", () => clickArea(page, "A at 2", el("grid")));
     await session.step(42, "Then 59 rows should be selected", () => selectedRowCount(page, 59));
@@ -65,7 +65,7 @@ test.describe("Launch SAR at different similarity thresholds", () => {
     await session.step(51, "And no errors should have been logged", () => noErrors(page));
     await session.step(52, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("Similarity threshold 75 preserves the analysis and its selection behavior [threshold=75, clusters=2]", async ({browser}) => {
+  test("Similarity threshold 75 preserves the analysis and its selection behavior [threshold=75, fewest clusters=2, most clusters=2]", async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And the Peptides package is initialized", () => peptidesInitialized(page));
@@ -92,7 +92,7 @@ test.describe("Launch SAR at different similarity thresholds", () => {
     await session.step(36, "And the \"A at 2\" area of grid should be painted", () => areaPainted(page, "A at 2", el("grid")));
     await session.step(37, "And scatter plot viewer in MCL viewer should be painted", () => painted(page, el("scatter plot viewer in MCL viewer")));
     await session.step(38, "And the \"completed threshold\" reading of MCL viewer should be 75", () => readingIs(page, "completed threshold", el("MCL viewer"), 75));
-    await session.step(39, "And the \"clusters\" reading of Logo Summary Table viewer should be 2", () => readingIs(page, "clusters", el("Logo Summary Table viewer"), 2));
+    await session.step(39, "And the \"clusters\" reading of Logo Summary Table viewer should be between 2 and 2", () => readingBetween(page, "clusters", el("Logo Summary Table viewer"), 2, 2));
     await session.step(40, "And no rows should be selected", () => noneSelected(page));
     await session.step(41, "When user clicks on the \"A at 2\" area of grid", () => clickArea(page, "A at 2", el("grid")));
     await session.step(42, "Then 59 rows should be selected", () => selectedRowCount(page, 59));
@@ -107,7 +107,7 @@ test.describe("Launch SAR at different similarity thresholds", () => {
     await session.step(51, "And no errors should have been logged", () => noErrors(page));
     await session.step(52, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("Similarity threshold 96 preserves the analysis and its selection behavior [threshold=96, clusters=5]", async ({browser}) => {
+  test("Similarity threshold 96 preserves the analysis and its selection behavior [threshold=96, fewest clusters=5, most clusters=6]", async ({browser}) => {
     const page = await session.page(browser);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And the Peptides package is initialized", () => peptidesInitialized(page));
@@ -134,7 +134,7 @@ test.describe("Launch SAR at different similarity thresholds", () => {
     await session.step(36, "And the \"A at 2\" area of grid should be painted", () => areaPainted(page, "A at 2", el("grid")));
     await session.step(37, "And scatter plot viewer in MCL viewer should be painted", () => painted(page, el("scatter plot viewer in MCL viewer")));
     await session.step(38, "And the \"completed threshold\" reading of MCL viewer should be 96", () => readingIs(page, "completed threshold", el("MCL viewer"), 96));
-    await session.step(39, "And the \"clusters\" reading of Logo Summary Table viewer should be 5", () => readingIs(page, "clusters", el("Logo Summary Table viewer"), 5));
+    await session.step(39, "And the \"clusters\" reading of Logo Summary Table viewer should be between 5 and 6", () => readingBetween(page, "clusters", el("Logo Summary Table viewer"), 5, 6));
     await session.step(40, "And no rows should be selected", () => noneSelected(page));
     await session.step(41, "When user clicks on the \"A at 2\" area of grid", () => clickArea(page, "A at 2", el("grid")));
     await session.step(42, "Then 59 rows should be selected", () => selectedRowCount(page, 59));

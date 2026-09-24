@@ -9,10 +9,6 @@ Feature: Deleting a database connection
   Connections node any more; the list of connections is the provider's "Browse connections" view,
   and deleting from its gallery is the third scenario. The md's YES button is DELETE now.
 
-  A tree row is wider than the browse panel shows, and the context-menu gesture aims at the row's
-  middle — past the panel's edge for a long name, where no menu opens; the rows are right-clicked
-  instead, which lands inside them (library candidate: aim the context menu at the visible part).
-
   Background:
     Given user is logged in
     And the browse panel is open
@@ -21,8 +17,7 @@ Feature: Deleting a database connection
   Scenario: DELETE removes the connection from the server and the tree
     Given a "Postgres" connection named "BDD-Conn-Delete-{run}" is on the server
     And Databases---Postgres tree node inside browse tree is expanded
-    When user right-clicks on Databases---Postgres---BDD-Conn-Delete-{run} tree node inside browse tree
-    And user picks "Delete..." from the open menu
+    When user picks "Delete..." from the context menu of Databases---Postgres---BDD-Conn-Delete-{run} tree node inside browse tree
     Then "Are you sure?" dialog should be visible
     And "Are you sure?" dialog should contain text "Delete connection \"BDD-Conn-Delete-{run}\"?"
     When user clicks on DELETE button in "Are you sure?" dialog
@@ -35,8 +30,7 @@ Feature: Deleting a database connection
   Scenario: CANCEL keeps the connection
     Given a "Postgres" connection named "BDD-Conn-Keep-{run}" is on the server
     And Databases---Postgres tree node inside browse tree is expanded
-    When user right-clicks on Databases---Postgres---BDD-Conn-Keep-{run} tree node inside browse tree
-    And user picks "Delete..." from the open menu
+    When user picks "Delete..." from the context menu of Databases---Postgres---BDD-Conn-Keep-{run} tree node inside browse tree
     Then "Are you sure?" dialog should be visible
     When user clicks on CANCEL button in "Are you sure?" dialog
     Then the "Are you sure?" dialog should close
@@ -46,8 +40,7 @@ Feature: Deleting a database connection
 
   Scenario: A connection is deleted from the connections gallery
     Given a "Postgres" connection named "BDD-Conn-Gallery-{run}" is on the server
-    When user right-clicks on Databases---Postgres tree node inside browse tree
-    And user picks "Browse connections" from the open menu
+    When user picks "Browse connections" from the context menu of Databases---Postgres tree node inside browse tree
     Then the "Postgres" view should be current
     When user types "BDD-Conn-Gallery-{run}" into gallery search
     Then "BDD-Conn-Gallery-{run}" link in gallery should be visible

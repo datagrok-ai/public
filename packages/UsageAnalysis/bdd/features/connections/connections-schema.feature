@@ -1,19 +1,13 @@
-@connections @journey @full-stand
+@connections @journey
 Feature: The schemas of a connection and the schema view
   A connection lists its schemas under a Schemas group; a schema's menu offers Browse, and Browse
   opens the schema view — one box per table, and a box's menu is the table's own menu. Translated
   from TestTrack Connections/schema.md (playwright-public connections/07-schema.test.ts) and the
   Browse-DB-03 case that browse-platform-and-databases.feature left for this file. The connection is
   CHEMBL (Postgres), which the Browse features already rely on; nothing is created on the server.
-  Tagged full-stand: CHEMBL ships with its own Docker container, so a stand without it (a local
-  one) has no such connection.
 
   The Schemas row is named by its path and a schema view's table box by its table, both since the
   core change that named them.
-
-  A deep tree row is wider than the browse panel shows, and the context-menu gesture aims at the
-  row's middle, past the panel's edge: those rows are right-clicked where the pointer can reach them
-  (library candidate: aim the context menu inside the visible part of the element).
 
   Not translated, and why: the md's "Browse on the connection opens the schema" — Browse on a
   connection opens its queries gallery now (browse-context-panel-and-menus.feature claims the
@@ -35,7 +29,7 @@ Feature: The schemas of a connection and the schema view
     And no errors should have been logged
 
   Scenario: A schema's menu offers the schema view and the table actions
-    When user right-clicks on Databases---Postgres---CHEMBL---Schemas---public tree node inside browse tree
+    When user opens the context menu of Databases---Postgres---CHEMBL---Schemas---public tree node inside browse tree
     Then the open menu should list "Browse"
     And the open menu should list "Open as table"
     And the open menu should list "New Table..."
@@ -44,8 +38,7 @@ Feature: The schemas of a connection and the schema view
     Then no errors should have been logged
 
   Scenario: Browse opens the schema view with a box per table
-    When user right-clicks on Databases---Postgres---CHEMBL---Schemas---public tree node inside browse tree
-    And user picks "Browse" from the open menu
+    When user picks "Browse" from the context menu of Databases---Postgres---CHEMBL---Schemas---public tree node inside browse tree
     Then the "Schema: public" view should be current
     And "activities" schema table should be visible
     And "molecule_dictionary" schema table should be visible
@@ -53,7 +46,7 @@ Feature: The schemas of a connection and the schema view
     And no errors should have been logged
 
   Scenario: A table box's menu is the table's menu, and Get Top 100 reads the table
-    When user right-clicks on "activities" schema table
+    When user opens the context menu of "activities" schema table
     Then the open menu should list "Get All"
     And the open menu should list "Get Top 100"
     And the open menu should list "New SQL Query..."

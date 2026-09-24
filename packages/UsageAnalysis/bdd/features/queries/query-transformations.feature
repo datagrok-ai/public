@@ -22,9 +22,7 @@ Feature: Transformations saved with a query
   Scenario: A column added in the Transformations tab is in the result of the saved query
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
-    When user hovers over Databases---Postgres---NorthwindTest tree node inside browse tree
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    And user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    When user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user enters "BDD-Q-tr-{time}" into Name input
     And user replaces the code of code editor with "select * from products"
@@ -41,6 +39,9 @@ Feature: Transformations saved with a query
     Then the "Add New Column" dialog should close
     When user clicks on Save button
     Then 1 query named "BDD-Q-tr-{time}" should be on the server
+    # "Run query..." runs the editor's own copy of the steps (data_query_view.dart:869-873), so the
+    # result below cannot tell whether the save reached the server: the server's copy is read
+    And the query "BDD-Q-tr-{time}" on the server should have transformations containing "doubled"
     Given the toolbox pane is shown
     When user clicks on "Run query..." action in toolbox
     Then the current view should be a TableView view
@@ -58,15 +59,10 @@ Feature: Transformations saved with a query
     And user hovers over last "Remove step" icon
     And user clicks on last "Remove step" icon
     And user clicks on Save button
-    And user clicks on "Run query..." action in toolbox
+    Then the query "BDD-Q-tr-{time}" on the server should not have transformations containing "doubled"
+    When user clicks on "Run query..." action in toolbox
     Then the current view should be a TableView view
     And the table should have 77 rows
     And the table should not have a column "doubled"
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  # "Run query..." injects the editor's own copy of the script into the call
-  # (data_query_view.dart:869-873), so the scenarios above would stay green on a save that never
-  # reached the server: the server's own copy is claimed here.
-  Scenario: The saved query carries its transformations on the server
-    Then the query "BDD-Q-tr-{time}" on the server should have transformations containing "doubled"

@@ -1,13 +1,15 @@
-@journey @full-stand @serial @realizes:views.scripts
+@journey @serial @realizes:views.scripts
 Feature: Running a script with data from every source
-  An R script counts the cells of the table it gets; its Run... dialog takes the table from an open
+  A script counts the cells of the table it gets; its Run... dialog takes the table from an open
   table, from a local file, from Datagrok Files and from a database query, and the console runs it
   by its qualified name. A run started from the Scripts view shows nothing in the view: the console
   logs the call and its outputs. Translated from
   files/TestTrack/Scripts/run.md and playwright-public/scripts/scripts-run-debugged.test.ts.
 
   The script is this feature's own ({time} in its name; the md's shared "testRscript" chain is gone)
-  and is deleted with its chats at the end. R runs in a container, so the feature is @full-stand.
+  and is deleted with its chats at the end. It is a JavaScript script, which runs in the page: the
+  dialog, the sources of its table and the console are what is claimed, not a language's server
+  (see the bdd library's CLAUDE.md, "What never becomes a feature").
 
   Not translated, and why: nothing of the md is left out. The Activity pane's count of runs is
   claimed in scripts-browser.feature: the context panel renders the current object once, and the
@@ -22,12 +24,12 @@ Feature: Running a script with data from every source
     Given user is logged in
     And a script "BddScriptRun{time}" is on the server:
       """
-      #language: r
-      #input: dataframe table
-      #output: int count
-      #output: string newParam
-      count <- nrow(table) * ncol(table)
-      newParam <- "test"
+      //language: javascript
+      //input: dataframe table
+      //output: int count
+      //output: string newParam
+      count = table.rowCount * table.columns.length;
+      newParam = "test";
       """
     And the context panel is open
 

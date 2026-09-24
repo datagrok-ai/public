@@ -4,7 +4,7 @@
 import {readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {Page, test} from '@playwright/test';
+import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
@@ -338,40 +338,7 @@ export const textAreaHolds = Then('the text area of {element} should hold {strin
   await expect(area, `the text area of ${target.phrase}`).toHaveValue(text, {timeout: 15000});
 }, {description: 'the value of the first <textarea> inside the element'});
 
-// --- secrets, local files and the browser's own dialogs --------------------------------------------
-
-const exposed = new WeakSet<Page>();
-
-/** An environment variable (a password, an API key) put into the element's editor without passing
- * through the test's own calls: the page asks a function the test exposed, so neither the step, its
- * failure, the trace nor a guide carries the value. */
-export const enterSecret = When('user enters the {word} secret into {element}', async (page: Page, variable: string, target: ElementRef) => {
-  // a stand without the secret is a gap in the run, not a defect: the scenario is skipped and says
-  // which variable it wanted, instead of failing red on a wall nobody can climb from here
-  test.skip(!process.env[variable], `the ${variable} environment variable is not set — this @needs-credentials scenario needs it`);
-  if (!exposed.has(page)) {
-    await page.exposeFunction('__bddSecret', (name: string) => process.env[name] ?? null);
-    exposed.add(page);
-  }
-  const editor = await g.editorOf(page, target);
-  const entered = await editor.evaluate(async (input, name) => {
-    const value = await (window as any).__bddSecret(name);
-    const field = input as HTMLInputElement;
-    field.focus();
-    field.value = value ?? '';
-    field.dispatchEvent(new Event('input', {bubbles: true}));
-    field.dispatchEvent(new Event('change', {bubbles: true}));
-    field.blur();
-    return field.value.length > 0;
-  }, variable);
-  expect(entered, `${variable} entered into ${target.phrase}`).toBe(true);
-}, {tier: 'ui', description: 'the value is never printed — in a failure, a trace or a guide; the step fails naming the variable when it is unset'});
-
-export const openLocalFile = When('user opens the local file {string}', async (page: Page, file: string) => {
-  const chooser = page.waitForEvent('filechooser', {timeout: 10000});
-  await page.keyboard.press('ControlOrMeta+O');
-  await (await chooser).setFiles(join(process.env.BDD_ROOT ?? process.cwd(), file));
-}, {tier: 'ui', description: 'Ctrl/Cmd+O and the file chooser it opens, answered with a file of the bdd project — the keyboard way in to what a drop from the desktop does'});
+// --- the browser's own dialogs --------------------------------------------------------------------
 
 const alerts = new WeakMap<Page, string[]>();
 

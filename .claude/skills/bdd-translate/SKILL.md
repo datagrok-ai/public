@@ -29,6 +29,12 @@ or reaches an outside web service (check the code path behind the command or pan
 UI-specific (a function called and its result checked). Name what was dropped and why in one line
 of the feature description. A gap hunt applies the same filter: these are not gaps.
 
+Then list what each scenario leaves on the server — entities, files, database rows, the layout,
+project, chat or share the UI makes on the side, a configuration or setting of something the feature
+does not own — and give every item a cleanup that runs at feature end and again at its start, and
+reads the server back (hard rule, `CLAUDE.md` "Everything a feature puts on the server goes"). A
+scenario whose change cannot be undone is not translated.
+
 ## Pass 0 — is there anything to test against?
 
 Look at the viewer's `getWidgetStatus()` first. **A viewer that has none is the whole job**; the

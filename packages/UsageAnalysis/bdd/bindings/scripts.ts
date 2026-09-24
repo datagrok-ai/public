@@ -21,15 +21,8 @@ export const scriptResult = Then('the script results should show {string} as {st
     return row ? row[row.indexOf(o) + 1] ?? '' : '';
   }, output);
   await expect.poll(read, {message: `the value of "${output}" in the script results (null: no results table yet)`,
-    timeout: pollMs(120000)}).toBe(value);
+    timeout: pollMs(30000)}).toBe(value);
 }, {description: 'the Results table under the editor after a run: the value column of the output\'s row'});
-
-export const scriptResultListed = Then('the script results should list {string}', async (page: Page, output: string) => {
-  await expect.poll(() => page.evaluate((o) => Array.from(document.querySelectorAll('.d4-item-table'))
-    .filter((t) => (t as HTMLElement).offsetParent !== null && /name\s+value/.test((t as HTMLElement).innerText))
-    .some((t) => Array.from(t.querySelectorAll('td')).some((c) => c.textContent?.trim() === o)), output),
-  {message: `a row for "${output}" in the script results`, timeout: pollMs(180000)}).toBe(true);
-}, {description: 'the run has ended with that output in the Results table under the editor, whatever its value'});
 
 /* A layout saved from the script view is named after the script's dataframe output ("Df", "Df_1"). */
 export const cleanLayouts = Given('the layouts saved for the script are deleted at the end', async (page: Page) => {

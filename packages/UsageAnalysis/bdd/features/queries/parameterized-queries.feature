@@ -5,16 +5,14 @@ Feature: Running a query with parameters
   parameter parts of the TestTrack Queries cases browse-and-save-project and new-visual-query
   (playwright-public/queries chembl-parameterized-and-project, visual-query-and-params), on the
   Dbtests queries of NorthwindTest — Orders (eight typed parameters) and PostgresByStringChoices
-  (a country: France has 77 orders, USA 122) — and on CHEMBL's FRAC search.
+  (a country: France has 77 orders, USA 122).
 
-  Read-only: the queries are the stand's own, nothing is saved. The CHEMBL scenario is @full-stand:
-  a minimal stack has no CHEMBL.
+  Read-only: the queries are the stand's own, nothing is saved.
 
-  Not translated, and why: the case's "preview and run every CHEMBL query" — 29 queries, several
-  of them substructure searches that need Chem and minutes of a shared server; the FRAC search is
-  the one the case then works with, and it is here. The case's FRAC query took four level parameters; the query is now
-  "Search | By FRAC Classification And Substructure" with a Mechanism choice and a Substructure
-  sketcher, and those are what the scenario claims.
+  Not translated, and why: the case's CHEMBL queries — "preview and run every CHEMBL query" and the
+  FRAC search it then works with. They are the Chembl package's queries, which differ between
+  stands, and several are substructure searches the database computes; the parameter dialog and the
+  Source pane they would exercise are the ones claimed here on NorthwindTest.
 
   Background:
     Given user is logged in
@@ -24,9 +22,7 @@ Feature: Running a query with parameters
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    When user hovers over Databases---Postgres---NorthwindTest---Orders tree node inside browse tree
-    And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---Orders tree node inside browse tree
+    When user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---Orders tree node inside browse tree
     Then "Orders" dialog should be visible
     And the following elements should be visible:
       | "Employee Id" input in "Orders" dialog       |
@@ -46,9 +42,7 @@ Feature: Running a query with parameters
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    When user hovers over Databases---Postgres---NorthwindTest---PostgresByStringChoices tree node inside browse tree
-    And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---PostgresByStringChoices tree node inside browse tree
+    When user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---PostgresByStringChoices tree node inside browse tree
     Then "PostgresByStringChoices" dialog should be visible
     When user selects "France" in "Ship Country" input in "PostgresByStringChoices" dialog
     And user clicks on OK button in "PostgresByStringChoices" dialog
@@ -59,25 +53,5 @@ Feature: Running a query with parameters
     When user selects "USA" in "Ship Country" input in toolbox
     And user clicks on REFRESH button in toolbox
     Then the table should have 122 rows
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  @full-stand
-  Scenario: CHEMBL's FRAC search asks for a mechanism and a substructure
-    Given Databases tree node inside browse tree is expanded
-    And Databases---Postgres tree node inside browse tree is expanded
-    And Databases---Postgres---CHEMBL tree node inside browse tree is expanded
-    # a query group's tree name keeps the trailing space of its label: "Search " → "Search-"
-    And "Databases---Postgres---CHEMBL---Search-" tree node inside browse tree is expanded
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    When user hovers over Databases---Postgres---CHEMBL---Search-----By-FRAC-Classification-And-Substructure tree node inside browse tree
-    And user picks "Run" from the context menu of Databases---Postgres---CHEMBL---Search-----By-FRAC-Classification-And-Substructure tree node inside browse tree
-    Then "Search | By FRAC Classification And Substructure" dialog should be visible
-    And the following elements should be visible:
-      | Mechanism input in "Search \| By FRAC Classification And Substructure" dialog    |
-      | Substructure input in "Search \| By FRAC Classification And Substructure" dialog |
-    When user clicks on OK button in "Search | By FRAC Classification And Substructure" dialog
-    Then the current view should be a TableView view
-    And the table should have 26 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown

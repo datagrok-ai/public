@@ -1,19 +1,15 @@
-@connections @full-stand
+@connections
 Feature: A SPARQL connection
   Sparql is one of the providers the Databases tree hides until "Show more" is clicked; its New
   connection dialog asks for an endpoint and prefixes, and the connection is saved and deleted like
   any other. Translated from TestTrack Connections/sparql.md and sparql-ui.md (playwright-public
   connections/08-sparql.test.ts). The connection, BDD-Conn-Sparql-{run}, is deleted at feature end
-  and checked gone. Sparql is on a full stand only.
+  and checked gone.
 
   Not translated, and why: TEST against the md's endpoint (http://data.ontotext.com/repositories/
   data-last) — the endpoint gave no answer within a minute when probed from dev on 2026-09-22, so a
   claim on its result would test that public server, not Datagrok. The scenarios claim that TEST is
   offered (sparql-ui.md says it was missing; it is there now) and leave its result out.
-
-  A tree row is wider than the browse panel shows, and the context-menu gesture aims at the row's
-  middle — past the panel's edge for a long name, where no menu opens; the rows are right-clicked
-  instead, which lands inside them (library candidate: aim the context menu at the visible part).
 
   Background:
     Given user is logged in
@@ -38,8 +34,7 @@ Feature: A SPARQL connection
     Given no connection named "BDD-Conn-Sparql-{run}" is on the server
     And the hidden providers of the Databases tree are shown
     When user clicks on Databases---Sparql tree node inside browse tree
-    And user right-clicks on Databases---Sparql tree node inside browse tree
-    And user picks "New connection..." from the open menu
+    And user picks "New connection..." from the context menu of Databases---Sparql tree node inside browse tree
     Then "Add new connection" dialog should be visible
     And the following elements should be visible:
       | Endpoint input in "Add new connection" dialog |
@@ -51,8 +46,7 @@ Feature: A SPARQL connection
     Then the "Add new connection" dialog should close
     And 1 connection named "BDD-Conn-Sparql-{run}" should be on the server
     Given Databases---Sparql tree node inside browse tree is expanded
-    When user right-clicks on Databases---Sparql---BDD-Conn-Sparql-{run} tree node inside browse tree
-    And user picks "Delete..." from the open menu
+    When user picks "Delete..." from the context menu of Databases---Sparql---BDD-Conn-Sparql-{run} tree node inside browse tree
     And user clicks on DELETE button in "Are you sure?" dialog
     Then the "Are you sure?" dialog should close
     And 0 connections named "BDD-Conn-Sparql-{run}" should be on the server

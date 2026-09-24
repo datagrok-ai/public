@@ -617,17 +617,21 @@ async function expectNamedCount(page: Page, source: CleanupSource, what: string,
 
 const namesOf = (list: string): string[] => list.split(',').map((n) => n.trim()).filter(Boolean);
 
+/** The open Browse tree caches its nodes, so what the API added or deleted shows after a Refresh; the
+ * tree rebuilds after it, and a node right-clicked mid-rebuild opens no menu, or another node's. */
+async function refreshBrowseTree(page: Page): Promise<void> {
+  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() === 0)
+    return;
+  const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
+  await click(page, el('"Refresh" icon inside browse toolbar'));
+  await refreshed();
+}
+
 export const noSpaceOnServer = Given('no space named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'spaces', 'spaces', namesOf(name));
   atFeatureEnd(page, cleanup);
   await cleanup();
-  // API deletion does not invalidate the open tree's cached nodes (including prior teardown).
-  if (await (await locate(page, el('browse panel'))).filter({visible: true}).count() > 0) {
-    // the tree rebuilds after Refresh: a node right-clicked mid-rebuild opens no menu
-    const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
-    await click(page, el('"Refresh" icon inside browse toolbar'));
-    await refreshed();
-  }
+  await refreshBrowseTree(page);
 }, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree and waits for it to rebuild, and deletes them again at feature end'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
@@ -714,10 +718,7 @@ export const connectionOnServer = Given('a {string} connection named {string} is
   if (failed)
     throw new Error(failed);
   await expectNamedCount(page, 'connections', 'connections', name, 1);
-  // the Browse tree caches a provider's children: refresh an open one so the fixture shows
-  const refresh = (await locate(page, el('"Refresh" icon inside browse toolbar'))).filter({visible: true});
-  if (await refresh.count() > 0)
-    await refresh.first().click();
+  await refreshBrowseTree(page);
 }, {tier: 'api', description: 'a connection of that data source without credentials, deleted at feature end'});
 
 export const connectionDataSource = Then('the {string} connection on the server should have the data source {string}', async (page: Page, name: string, source: string) => {
@@ -1057,48 +1058,25 @@ export const scriptHasParam = Then('the script {string} on the server should hav
     expect(params, `the parameters the server parsed from "${name}"`).toContain(`${direction} ${param}: ${type}`);
   }, {tier: 'api', description: 'the parameters the server parsed from the script header, not the header text'});
 
-/* What the server holds for a saved query, not what the editor shows: the SQL of its body and the
-   transformation script it carries. The view runs a query from the editor's own copy
-   (data_query_view.dart), so without these a save that never reached the server stays invisible. */
-export const queryText = Then('the query {string} on the server should have the text {string}', async (page: Page, name: string, text: string) =>
-  expectQueryField(page, name, 'query', text, true),
-{tier: 'api', description: 'query.query on the server, trimmed and compared whole'});
+/* The transformation script a saved query carries, read from the server, not from the editor: the
+   view runs a query from the editor's own copy (data_query_view.dart), so without this a save that
+   never reached the server stays invisible. The JS API's DataQuery does not carry the script, so it
+   is read from the query's REST entity. */
+async function savedTransformations(page: Page, name: string): Promise<string> {
+  const query = await serverEntityNamed(page, 'queries', name);
+  const saved = await (await serverRequests(page)).get<{script?: string}>(`/connectors/queries/${query.id}`);
+  return String(saved?.script ?? '');
+}
 
-export const queryTextContains = Then('the query {string} on the server should have the text containing {string}', async (page: Page, name: string, text: string) =>
-  expectQueryField(page, name, 'query', text, false), {tier: 'api'});
-
-export const queryTransformations = Then('the query {string} on the server should have transformations containing {string}', async (page: Page, name: string, text: string) =>
-  expectQueryField(page, name, 'script', text, false),
-{tier: 'api', description: 'query.script — what the Transformations tab saved, read back from the server'});
+export const queryTransformations = Then('the query {string} on the server should have transformations containing {string}', async (page: Page, name: string, text: string) => {
+  await expect.poll(() => savedTransformations(page, name),
+    {message: `the transformations of the query "${name}" on the server`, timeout: pollMs(30000)}).toContain(text);
+}, {tier: 'api', description: 'query.script — what the Transformations tab saved, read back from the server'});
 
 export const queryNoTransformations = Then('the query {string} on the server should not have transformations containing {string}', async (page: Page, name: string, text: string) => {
-  await expect.poll(async () => {
-    const query = await serverEntityNamed(page, 'queries', name);
-    const api = await serverRequests(page);
-    return String((await api.get<Record<string, unknown>>(`/connectors/queries/${query.id}`))?.script ?? '');
-  }, {message: `the transformations of the query "${name}" on the server`, timeout: pollMs(30000)}).not.toContain(text);
+  await expect.poll(() => savedTransformations(page, name),
+    {message: `the transformations of the query "${name}" on the server`, timeout: pollMs(30000)}).not.toContain(text);
 }, {tier: 'api', description: 'polled like its positive twin: a step the save has not written yet is not an absent step'});
-
-async function expectQueryField(page: Page, name: string, field: 'query' | 'script', text: string, whole: boolean): Promise<void> {
-  // through the REST entity, not grok.dapi.queries.find: the JS object does not carry the query's
-  // own text or its transformations, and an absent property reads exactly like an empty one
-  const read = async () => {
-    try {
-      const query = await serverEntityNamed(page, 'queries', name);
-      const api = await serverRequests(page);
-      const saved = await api.get<Record<string, unknown>>(`/connectors/queries/${query.id}`);
-      return String(saved?.[field] ?? '');
-    }
-    catch (error) {
-      return String(error);
-    }
-  };
-  const message = `the ${field === 'query' ? 'text' : 'transformations'} of the query "${name}" on the server`;
-  if (whole)
-    await expect.poll(async () => (await read()).trim(), {message, timeout: pollMs(30000)}).toBe(text.trim());
-  else
-    await expect.poll(read, {message, timeout: pollMs(30000)}).toContain(text);
-}
 
 export const queryPostProcess = Then('the query {string} on the server should have a post-process containing {string}', async (page: Page, name: string, text: string) => {
   await expect.poll(async () => {
@@ -1181,12 +1159,12 @@ export const noteConsole = When('user notes the console output', async (page: Pa
 
 export const consoleShows = Then('the console should show {string}', async (page: Page, text: string) => {
   await expect.poll(async () => (await consoleText(page)).slice(consoleMark.get(page) ?? 0),
-    {message: 'the console output since it was noted', timeout: pollMs(120000)}).toContain(text);
+    {message: 'the console output since it was noted', timeout: pollMs(30000)}).toContain(text);
 }, {description: 'the console logs every function call the UI makes and its outputs; read from the point "user notes the console output" marked'});
 
 export const consoleShowsTimes = Then('the console should show {string} {int} time(s)', async (page: Page, text: string, times: number) => {
   const count = async () => (await consoleText(page)).slice(consoleMark.get(page) ?? 0).split(text).length - 1;
-  await expect.poll(count, {message: `occurrences of "${text}" in the console output since it was noted`, timeout: pollMs(120000)})
+  await expect.poll(count, {message: `occurrences of "${text}" in the console output since it was noted`, timeout: pollMs(30000)})
     .toBeGreaterThanOrEqual(times);
   expect(await count(), `occurrences of "${text}" in the console output since it was noted`).toBe(times);
 }, {description: 'exactly that many — a count that reaches the number and does not pass it'});
@@ -1208,17 +1186,12 @@ export const consoleCall = When('user calls the script {string} from the console
 const paneCountOf = (page: Page, pane: string): Promise<string> =>
   page.evaluate((p) => document.querySelector(`.grok-prop-panel [name="pane-${p}"]`)?.getAttribute('d4-info') ?? '', pane);
 
-export const paneCount = Then('the {string} pane of the context panel should count {int}', async (page: Page, pane: string, count: number) => {
-  await expect.poll(() => paneCountOf(page, pane),
-    {message: `the count the "${pane}" pane of the context panel shows`, timeout: pollMs(60000)}).toBe(String(count));
-}, {description: 'the number a counting pane carries (d4-info) — the pane itself hides while it is 0'});
-
 export const paneCountAtLeast = Then('the {string} pane of the context panel should count at least {int}', async (page: Page, pane: string, count: number) => {
   await expect.poll(async () => Number(await paneCountOf(page, pane) || '0'),
     {message: `the count the "${pane}" pane of the context panel shows`, timeout: pollMs(60000)}).toBeGreaterThanOrEqual(count);
 }, {description: 'a counting pane with at least that many entries — the platform records an entity made through the JS API with a delay of its own'});
 
-/* --- the side panel and the page -------------------------------------------------------------- */
+/* --- the side panel ------------------------------------------------------------------------------ */
 
 /** Browse and the toolbox share the side panel: once the toolbox has taken it, "the browse panel is
  * open" finds `showBrowse` already true and the tree stays hidden until the toolbox lets it go. */
@@ -1226,20 +1199,3 @@ export const toolboxPaneHidden = Given('the toolbox pane is hidden', async (page
   await page.evaluate(() => { grok.shell.windows.showToolbox = false; });
   await expect(page.locator('.d4-toolbox[caption]').filter({visible: true}), 'the toolbox pane').toHaveCount(0, {timeout: pollMs(15000)});
 }, {tier: 'api', description: 'the side panel goes back to what it showed before the toolbox (the browse tree when it is open)'});
-
-/** A reload, for what a session only picks up when it starts (the semantic types a connection's
- * identifiers define). The page comes back on the shell, in simple mode as a scenario finds it. */
-export const reloadPage = When('user reloads the page', async (page: Page) => {
-  await page.reload({waitUntil: 'domcontentloaded'});
-  await page.waitForFunction(() => {
-    try {
-      const w = window as any;
-      return typeof w.grok?.shell?.closeAll === 'function' && w.grok.shell.user != null && document.querySelector('[name="Browse"]') != null;
-    }
-    catch {
-      // the shell's API arrives in pieces while the bundle loads; a read between them throws
-      return false;
-    }
-  }, undefined, {timeout: 180000});
-  await page.evaluate(() => { grok.shell.windows.simpleMode = true; });
-}, {tier: 'ui', description: 'reloads the shell and waits for it; the in-page runtime is installed again by the next step that needs it'});

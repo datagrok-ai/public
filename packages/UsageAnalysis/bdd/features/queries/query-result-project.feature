@@ -23,9 +23,7 @@ Feature: A query result saved as a project
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    When user hovers over Databases---Postgres---NorthwindTest---PostgresByStringChoices tree node inside browse tree
-    And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---PostgresByStringChoices tree node inside browse tree
+    When user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---PostgresByStringChoices tree node inside browse tree
     And user selects "France" in "Ship Country" input in "PostgresByStringChoices" dialog
     And user clicks on OK button in "PostgresByStringChoices" dialog
     Then the current view should be a TableView view

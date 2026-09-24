@@ -11,7 +11,7 @@ import {randomUUID} from 'node:crypto';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
 import {leave} from './args.js';
-import {failure, isWaitFailure, journeyFailure, isSkip} from './failure.js';
+import {failure, isWaitFailure, journeyFailure} from './failure.js';
 import * as guide from './guide.js';
 import {explain} from './locate.js';
 import {whileExpectedToFail} from './patience.js';
@@ -60,10 +60,6 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
         await test.step(name, options?.knownFailure ? () => whileExpectedToFail(body) : body);
       }
       catch (e) {
-        // a scenario that skipped itself (a secret the stand has not got) is not a failure of the
-        // journey: the skip goes out to Playwright, which reports the test as skipped with its reason
-        if (isSkip(e))
-          throw e;
         if (!options?.knownFailure)
           failed.push({name, error: e});
         return;
@@ -229,8 +225,6 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         }
         catch (e) {
           const shown = isWaitFailure(e) && page && !page.isClosed() ? await explain(page).catch(() => '') : '';
-          if (isSkip(e))
-            throw e;
           throw failure(`${path || 'feature'}:${line}`, title, e, shown, file ? `${file}:${line}:1` : '');
         }
         finally {

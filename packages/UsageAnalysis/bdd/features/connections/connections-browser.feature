@@ -1,8 +1,8 @@
 @connections @journey
 Feature: A connection in the connections browser and its context panel
   A provider's "Browse connections" view lists its connections in a gallery with a search; a card
-  opens the connection on the context panel — its details, sharing, activity, chat, and the menu
-  behind the header's arrow. Translated from TestTrack Connections/browser.md
+  opens the connection on the context panel — its details, sharing, chat, and the menu behind the
+  header's arrow. Translated from TestTrack Connections/browser.md
   (playwright-public connections/04-browser.test.ts).
 
   The subject is a Postgres connection saved through the API without credentials,
@@ -12,11 +12,8 @@ Feature: A connection in the connections browser and its context panel
   Not translated, and why: the md's "Filter templates (magic wand)" icon — the view has no such icon
   any more (its toolbar has a plain filter). The old spec's checks that proved nothing are not
   restored: it granted the share through the API rather than the dialog, and its Activity regex
-  matched the connection's own name.
-
-  A tree row is wider than the browse panel shows, and the context-menu gesture aims at the row's
-  middle — past the panel's edge for a long name, where no menu opens; the rows are right-clicked
-  instead, which lands inside them (library candidate: aim the context menu at the visible part).
+  matched the connection's own name. The Activity pane is not claimed: the connection is saved
+  through the API, whose audit entry lands after the panel has counted.
 
   Background:
     Given user is logged in
@@ -26,8 +23,7 @@ Feature: A connection in the connections browser and its context panel
     And the context panel is open
 
   Scenario: The connections view searches by name and opens a card on the context panel
-    When user right-clicks on Databases---Postgres tree node inside browse tree
-    And user picks "Browse connections" from the open menu
+    When user picks "Browse connections" from the context menu of Databases---Postgres tree node inside browse tree
     Then the "Postgres" view should be current
     And the page address should contain "/connections/Postgres"
     When user types "BDD-Conn-Browser-{run}" into gallery search
@@ -59,10 +55,6 @@ Feature: A connection in the connections browser and its context panel
     When user clicks on "BDD-Conn-Browser-{run}" link in gallery
     Then the sharing pane should list the sharing user
     And no error or warning balloon should have been shown
-
-  Scenario: The Activity pane records the connection
-    Then the "Activity" pane of the context panel should count at least 1
-    And no errors should have been logged
 
   Scenario: A chat message is posted on the connection and removed with it
     Given Chats section in context panel is expanded

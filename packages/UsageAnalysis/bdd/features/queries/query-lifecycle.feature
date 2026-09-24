@@ -3,7 +3,7 @@ Feature: A SQL query from creation to deletion
   A query made on a Postgres connection from the Browse tree, run in its editor and on its own,
   saved, edited and renamed, found in the connection's queries view, and deleted. Translated from
   the TestTrack Queries cases adding, edit, browser and deleting (playwright-public/queries
-  postgres-query-lifecycle); the MS SQL run of the same cases is query-lifecycle-mssql.feature.
+  postgres-query-lifecycle).
 
   The query lives on the NorthwindTest connection (Dbtests), whose products and orders tables hold
   77 and 830 rows. It is the feature's own query, named with the run's time and removed when the
@@ -13,8 +13,9 @@ Feature: A SQL query from creation to deletion
   shows and the Query pane's text, not as clicks on every header (the old spec clicked them and
   checked nothing). Posting in the query's Chats pane is left out by decision: chats are tested where
   they belong (the scripts and connections features post and delete one), and an orphan chat breaks
-  the chat listing of every profile of the
-  account that made it, which is what the Groups round hit.
+  the chat listing of every profile of the account that made it, which is what the Groups round hit.
+  The ms-sql case repeats these four on an MS SQL connection: the editor, the tree and the panes are
+  the same for every provider, and what differs is the provider's server side.
 
   Background:
     Given user is logged in
@@ -25,9 +26,7 @@ Feature: A SQL query from creation to deletion
   Scenario: A new query is typed, run in its editor and on its own, and saved
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
-    When user hovers over Databases---Postgres---NorthwindTest tree node inside browse tree
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    And user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    When user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user enters "BDD-Q-life-{time}" into Name input
     And user replaces the code of code editor with "select * from products"
@@ -51,9 +50,7 @@ Feature: A SQL query from creation to deletion
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    When user hovers over Databases---Postgres---NorthwindTest---BDD-Q-life-{time} tree node inside browse tree
-    And user picks "Edit..." from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-life-{time} tree node inside browse tree
+    When user picks "Edit..." from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-life-{time} tree node inside browse tree
     Then the current view should be a DataQueryView view
     And Name input should have value "BDD-Q-life-{time}"
     And code editor should hold the code "select * from products"
@@ -99,8 +96,6 @@ Feature: A SQL query from creation to deletion
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     When user clicks on "Refresh" icon inside browse toolbar
-    # the context-menu gesture does not scroll a node below the fold into view; the hover does
-    And user hovers over Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree
     And user picks "Delete" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree
     Then "Are you sure?" dialog should be visible
     And "Are you sure?" dialog should contain the text "BDD-Q-life-renamed-{time}"

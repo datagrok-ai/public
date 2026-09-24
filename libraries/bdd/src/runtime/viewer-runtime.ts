@@ -1033,9 +1033,9 @@ function install(): void {
     return armEvent('onContextMenuShown', capMs);
   };
   /** Where to right-click an element for its context menu — a named hit area, else the viewer's
-   * `view` area, else the element's centre — with the canvas baseline taken and the menu armed. A
-   * tree node, a card or a list row has no render to wait through and no areas: its own centre
-   * (`settle` and `stableArea` throw for a non-viewer). */
+   * `view` area, else a point of the element's visible part that the page hit-tests to it — with
+   * the canvas baseline taken and the menu armed. A tree node, a card or a list row has no render to
+   * wait through and no areas (`settle` and `stableArea` throw for a non-viewer). */
   const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string}> => {
     const v = findViewer(el);
     if (!v && area !== null)
@@ -1051,9 +1051,52 @@ function install(): void {
           throw e;
       }
     }
+    // a tree row wider than the panel that clips it, a gallery link half under a docked panel: the
+    // right-click aims at a point of the element a person can see and the page hit-tests to it.
+    // Only an element with no part in sight is scrolled to — scrollIntoView moves overflow-hidden
+    // ancestors too, and the page with them.
     if (!box) {
-      const r = el.getBoundingClientRect();
-      box = {x: r.x, y: r.y, width: r.width, height: r.height};
+      const reachable = (b: Box): Box | undefined => {
+        for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.5], [0.75, 0.5], [0.5, 0.25], [0.5, 0.75], [0.1, 0.5], [0.9, 0.5]]) {
+          const [x, y] = [b.x + b.width * fx, b.y + b.height * fy];
+          const hit = document.elementFromPoint(x, y);
+          if (hit && (hit === el || el.contains(hit)))
+            return {x: x - 0.5, y: y - 0.5, width: 1, height: 1};
+        }
+        return undefined;
+      };
+      const visible = (): Box | undefined => {
+        const r = el.getBoundingClientRect();
+        let [left, top, right, bottom] = [r.left, r.top, r.right, r.bottom];
+        for (let p = el.parentElement; p; p = p.parentElement) {
+          const s = getComputedStyle(p);
+          const q = p.getBoundingClientRect();
+          if (s.overflowX !== 'visible')
+            [left, right] = [Math.max(left, q.left), Math.min(right, q.right)];
+          if (s.overflowY !== 'visible')
+            [top, bottom] = [Math.max(top, q.top), Math.min(bottom, q.bottom)];
+        }
+        [left, top, right, bottom] = [Math.max(left, 0), Math.max(top, 0), Math.min(right, innerWidth), Math.min(bottom, innerHeight)];
+        return right > left && bottom > top ? {x: left, y: top, width: right - left, height: bottom - top} : undefined;
+      };
+      // a panel docked a moment ago (the console) is still resizing what it pushed aside
+      let last = '';
+      for (let frame = 0; frame < 30; frame++) {
+        const r = el.getBoundingClientRect();
+        const now = `${r.x},${r.y},${r.width},${r.height}`;
+        if (now === last)
+          break;
+        last = now;
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+      const seen = visible();
+      box = seen && reachable(seen);
+      if (!box) {
+        el.scrollIntoView({block: 'nearest'});
+        const r = el.getBoundingClientRect();
+        const now = visible();
+        box = (now && reachable(now)) ?? now ?? {x: r.x, y: r.y, width: r.width, height: r.height};
+      }
     }
     return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
   };
