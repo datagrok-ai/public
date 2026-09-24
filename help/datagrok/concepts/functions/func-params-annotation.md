@@ -164,7 +164,7 @@ For `dataframe` type:
 | columns     | numerical              | Only numerical columns will be loaded (including datetime)   |
 | columns     | numerical_no_datetime  | Same as numerical, but datetime columns are excluded         |
 | columns     | categorical            | Only categorical columns will be loaded                      |
-| viewer      | Line chart \| Grid     | Visualizes the parameter with the specified [viewers](../../../compute/scripting/scripting-features/visualize-output-data.md) |
+| viewer      | Line chart(block: 60) \| Grid(block: 40) | Visualizes the parameter with the specified [viewers](../../../compute/scripting/scripting-features/visualize-output-data.md), for inputs and outputs. Each viewer takes [properties](../../../compute/scripting/scripting-features/visualize-output-data.md#customize-viewers-for-dataframe) in parentheses, and `block` [arranges them in rows](../../../compute/scripting/scripting-features/visualize-output-data.md#arrange-viewers) |
 
 For `column` and `column_list` types
 
@@ -197,6 +197,7 @@ For `numeric` types
 | step          | Increment used by the slider and the +/- clicker                                                                                           |
 | showSlider    | Explicitly shows or hides the slider (requires `min` and `max`)                                                                            |
 | showPlusMinus | Explicitly shows or hides the +/- clicker                                                                                                  |
+| format        | Display format, such as `0.00` or `G3` (three significant digits). Also applies to scalar outputs in the function view                    |
 
 For `list` type`
 
