@@ -122,7 +122,8 @@ async function deleteLeftoverProjects(page: Page, name: string): Promise<void> {
     .filter((project) => [project.name, project.friendlyName].includes(name) || isStaleFixture(project, families));
   for (const leftover of leftovers)
     await page.evaluate(async (id) => {
-      const project = await grok.dapi.projects.filter(`id = "${id}"`).include('children').first();
+      // find types the children (TableInfo, ViewInfo); a listing's include('children') leaves them plain entities
+      const project = await grok.dapi.projects.find(id);
       if (!project)
         return;
       for (const child of project.children) {
@@ -209,6 +210,45 @@ export const openProjectWithTable = When('user opens the {string} project and wa
   await expect.poll(() => page.evaluate(() => grok.shell.tv?.dataFrame?.rowCount ?? -1),
     {message: `the rows of the table the "${name}" project opened`, timeout: pollMs(60000)}).toBeGreaterThan(0);
 }, {tier: 'api', description: 'opens the project and is done when its table view holds rows'});
+
+/** How the server keeps a table of a project: "sync: <creation script>" when opening the project
+ * re-runs the script (the Save dialog's Data sync), "snapshot" when it loads the uploaded data. */
+async function savedTableMode(page: Page, project: string, table: string): Promise<string> {
+  return page.evaluate(async ([p, t]) => {
+    const listed = await grok.dapi.projects.filter(`friendlyName = "${p}" or name = "${p}"`).first();
+    if (!listed)
+      return `no project "${p}" on the server`;
+    const found = await grok.dapi.projects.find(listed.id);
+    const infos = found.children.filter((c: any) => c instanceof DG.TableInfo);
+    const info = infos.find((c: any) => c.friendlyName === t || c.name === t);
+    if (!info)
+      return `the project holds no "${t}" table; it holds: ${infos.map((c: any) => c.friendlyName).join(', ') || 'none'}`;
+    const tags = (await grok.dapi.tables.find(info.id)).tags;
+    return tags['.data-sync'] === 'sync' ? `sync: ${tags['.script'] ?? ''}` : 'snapshot';
+  }, [project, table]);
+}
+
+export const savedWithDataSync = Then('the {string} table of the {string} project should be saved with data sync', async (page: Page, table: string, project: string) => {
+  await expect.poll(() => savedTableMode(page, project, table),
+    {message: `how the server keeps the "${table}" table of the "${project}" project`, timeout: pollMs(30000)}).toMatch(/^sync: \S/);
+}, {tier: 'api', description: 'the table carries the data-sync flag and a creation script on the server, so opening the project re-runs it'});
+
+export const savedAsSnapshot = Then('the {string} table of the {string} project should be saved as a snapshot', async (page: Page, table: string, project: string) => {
+  await expect.poll(() => savedTableMode(page, project, table),
+    {message: `how the server keeps the "${table}" table of the "${project}" project`, timeout: pollMs(30000)}).toBe('snapshot');
+}, {tier: 'api', description: 'the table has no data-sync flag on the server, so opening the project loads the uploaded data'});
+
+/** `TableInfo.execDataSync` marks the frame it rebuilt from the creation script; a frame loaded from
+ * the uploaded data carries no mark. */
+export const reloadedByDataSync = Then('the table should have been reloaded by data sync', async (page: Page) => {
+  await expect.poll(() => page.evaluate(() => grok.shell.tv?.dataFrame?.getTag('.data-sync') ?? 'no mark'),
+    {message: 'the data-sync mark of the current table', timeout: pollMs(30000)}).toBe('success');
+});
+
+export const loadedAsSnapshot = Then('the table should have been loaded as a snapshot', async (page: Page) => {
+  expect(await page.evaluate(() => grok.shell.tv?.dataFrame?.getTag('.data-sync') ?? 'no mark'),
+    'the data-sync mark of the current table').toBe('no mark');
+});
 
 /** The kind of view in front, when its name does not tell them apart: a query editor
  * (DataQueryView) and the table view its Run leaves behind carry the same name. */
