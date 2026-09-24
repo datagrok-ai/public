@@ -362,7 +362,8 @@ function link(cwd: string, undo: boolean): number {
  * `dist/`, so after a pull without a rebuild a sound feature fails on a kind or a step only the
  * sources have. */
 function staleBuild(): string[] {
-  if (LIB_DIR === LIB_ROOT)
+  // a published copy ships no src/, and its install gives the files no meaningful order in time
+  if (LIB_DIR === LIB_ROOT || !existsSync(join(LIB_ROOT, 'src')))
     return [];
   const sources = [...listFiles(join(LIB_ROOT, 'src'), '.ts'), ...listFiles(join(LIB_ROOT, 'bindings'), '.ts'),
     join(LIB_ROOT, 'playwright.config.ts')];
