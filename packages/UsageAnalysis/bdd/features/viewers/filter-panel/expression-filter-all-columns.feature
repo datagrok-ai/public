@@ -15,11 +15,9 @@ Feature: Expression filter over All Columns
   integer or a double, and a comparison reaches every numeric column and no date. A value no column
   holds keeps no row, and Remove All brings every row back. The date is claimed by its count and by
   its rows through Prediction, whose Medium rows are the same two; there is no row check for dates.
-  Two outlines are @known-failure (GROK-20977), and an untagged outline performs their gestures and
-  claims the rules they commit. "equals" with a number keeps no row: in All Columns mode "equals" is
-  not an operation of the numeric columns. 0.47 with "=" keeps no row, in All Columns mode and on
-  Score itself: the card compares 0.4699999988 with 0.47 exactly. The first tag comes off when
-  "equals" reaches the numeric columns, the second when the comparison matches 32-bit values.
+  "equals" with a number reaches the numeric columns in All Columns mode, and 0.47 with "=" keeps
+  the two rows that show it, in All Columns mode and on Score itself: the card compares a typed
+  number in the 32-bit form Score stores (GROK-20977).
 
   Background:
     Given user is logged in
@@ -116,21 +114,6 @@ Feature: Expression filter over All Columns
     Then all rows should pass the filter
     And no errors should have been logged
 
-  Scenario Outline: The card commits a number rule as it is typed
-    When user selects "<column mode>" in Column input in "Expression" filter card
-    And user selects "<operation>" in Operation input in "Expression" filter card
-    And user types "<value>" into Value input in "Expression" filter card
-    And user clicks on "Add filter" button in "Expression" filter card
-    Then the "categories of Expression" reading of filter panel should be "<rule>"
-    And no errors should have been logged
-
-    Examples:
-      | column mode | operation | value       | rule                  |
-      | All Columns | equals    | 634783      | *  equals 634783      |
-      | All Columns | equals    | 15.05460453 | *  equals 15.05460453 |
-      | All Columns | =         | 0.47        | *  = 0.47             |
-      | Score       | =         | 0.47        | ${Score} = 0.47       |
-
   Scenario Outline: "equals" with a number keeps the rows that hold it
     When user selects "All Columns" in Column input in "Expression" filter card
     And user selects "equals" in Operation input in "Expression" filter card
@@ -140,7 +123,6 @@ Feature: Expression filter over All Columns
     And <count> rows should pass the filter
     And the filter should pass exactly the rows where "<column>" is "<value>"
 
-    @known-failure
     Examples:
       | value       | column  | count |
       | 634783      | Idea ID | 2     |
@@ -155,7 +137,6 @@ Feature: Expression filter over All Columns
     And 2 rows should pass the filter
     And the filter should pass exactly the rows where "Score" is between 0.465 and 0.475
 
-    @known-failure
     Examples:
       | column mode | rule            |
       | All Columns | *  = 0.47       |

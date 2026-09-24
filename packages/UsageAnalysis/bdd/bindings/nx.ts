@@ -315,25 +315,44 @@ export const setFormulaLineRange = When('user sets the range of the selected for
   }
 }, {tier: 'ui', description: 'the min and the max field of the Range row of the Format pane'});
 
-/** A line of the list is selected by a click on its formula; its formula is then retyped in the
- * editor's Line pane. */
-export const editFormulaLine = When('user changes formula line {int} in the Formula Lines dialog to {string}', async (page: Page, row: number, formula: string) => {
+/** A line of the list is found by its formula: the list's first row is clicked and the Down arrow
+ * walks the list, each row showing its item in the editor, until the Line pane holds that formula;
+ * the new formula is then typed there. The list shows only a few rows, so a line further down is
+ * reached the way a keyboard user reaches it. */
+export const editFormulaLine = When('user changes the formula line {string} in the Formula Lines dialog to {string}', async (page: Page, from: string, to: string) => {
   const dialog = formulaDialog(page);
   const grid = dialog.locator('[name="viewer-Grid"]').filter({visible: true}).first();
-  const box = await grid.evaluate((el, r) => {
-    const area = (window as any).__bdd.viewerOf(el).getWidgetStatus()?.hitAreas?.[`cell ${r} of formula`];
-    const c = ((window as any).__bdd.viewerOf(el).getWidgetStatus()?.parts?.canvas ?? el.querySelector('canvas')).getBoundingClientRect();
-    return area ? {x: c.x + area.x + area.width / 2, y: c.y + area.y + area.height / 2} : null;
-  }, row);
-  if (!box)
-    throw new Error(`the Formula Lines dialog lists no line ${row}`);
-  await page.mouse.click(box.x, box.y);
+  const status = () => grid.evaluate((el) => {
+    const s = (window as any).__bdd.viewerOf(el).getWidgetStatus();
+    const c = (s?.parts?.canvas ?? el.querySelector('canvas')).getBoundingClientRect();
+    const a = s?.hitAreas?.['cell 1 of formula'];
+    return {rows: Number(s?.values?.['rows'] ?? 0), current: Number(s?.values?.['current row'] ?? 0),
+      first: a ? {x: c.x + a.x + a.width / 2, y: c.y + a.y + a.height / 2} : null};
+  });
+  const st = await status();
+  if (!st.first)
+    throw new Error('the Formula Lines dialog lists no line');
+  await page.mouse.click(st.first.x, st.first.y);
+  await expect.poll(async () => (await status()).current, {message: 'the current line of the list after the click'}).toBe(1);
   const editor = dialog.locator('[name="pane-Line"] textarea').first();
-  await expect(editor, 'the formula editor of the selected line').toBeVisible({timeout: 5000});
-  await editor.fill(formula);
+  const seen: string[] = [];
+  for (let i = 0; i < st.rows; i++) {
+    // a constant line ("${Y} = 100") is edited in a Constant line pane, not the Line pane
+    const text = await editor.isVisible() ? await editor.inputValue() : '(not a formula line)';
+    seen.push(text);
+    if (text === from)
+      break;
+    if (i === st.rows - 1)
+      break;
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(async () => (await status()).current, {message: 'the current line of the list after the Down arrow'}).toBe(i + 2);
+  }
+  if (seen[seen.length - 1] !== from)
+    throw new Error(`the Formula Lines dialog has no line "${from}"; it walked: ${seen.join(' | ')}`);
+  await editor.fill(to);
   await editor.press('Tab');
-  await expect.poll(async () => (await listedFormulas(page))[row - 1], {message: `formula line ${row} of the Formula Lines dialog`}).toBe(formula);
-}, {tier: 'ui', description: 'a click on the formula of line N in the list (the list puts the newest line first), the new formula typed into the Line pane; done when the list shows it'});
+  await expect.poll(() => editor.inputValue(), {message: 'the formula of the edited line'}).toBe(to);
+}, {tier: 'ui', description: 'the first line of the list clicked, the Down arrow pressed until the editor shows that formula, the new one typed into the Line pane'});
 
 export const tableTagContains = Then('the {string} tag of the table should contain {string}', async (page: Page, tag: string, text: string) => {
   await expect.poll(() => page.evaluate((t) => String((window as any).grok.shell.tv?.dataFrame?.getTag(t) ?? ''), tag),

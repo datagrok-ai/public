@@ -19,8 +19,9 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
   filter (for a scatter plot, those it can place on its axes), its axis range against its filtered
   rows (a check that fails when the filtered rows span most of both axes, since they cannot tell a
   zoom from none), the properties set read back, the columns the grid pins, the Formula Lines list,
-  the "formula lines" reading and — for a line chart — the "formula line <title>" areas it reports
-  for a line it drew, legend placement, item counts and colors, the Scaffold Tree card's own
+  the "formula lines" reading (the items shown) and the "formula line <title>" areas a scatter plot
+  or a line chart reports only for a line it drew (the two lines of one formula over different
+  ranges get their own titles, Low range and High range, so each has an area of its own), legend placement, item counts and colors, the Scaffold Tree card's own
   readings (read through the filter the panel holds: the viewer inside a filter card has no viewer
   name of its own), and what each view's filter panel filters by. The chain waits for the Chem
   filters (no substructure card searching, every checked scaffold node counted) before it counts.
@@ -62,10 +63,8 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
   Not translated: resizing the grid when the layout is changed (closing the filter panel is the
   change); a new linear color scheme set on the first scatter plot itself (the scheme is changed on
   the column later, as the md's next steps do); the regression line drawn — with Row Source
-  FilteredSelected and nothing selected the plot draws no rows, so the property is claimed; a
-  scatter plot's formula lines drawn — the scatter plot reports no area for a formula line (the
-  line chart does), so for scatter plots the "formula lines" reading (items shown, not drawn) and
-  the look are claimed; the trellis plot's legend and the box plot's (neither draws one here); the
+  FilteredSelected and nothing selected the plot draws no rows, so the property is claimed; the
+  trellis plot's legend and the box plot's (neither draws one here); the
   Context Panel as the place a Legend Position is read.
   Known failures: a layout saved before Chemical Space X was renamed, applied after the rename,
   puts the old column name back into the "${Spec} result" formula, and a project saved afterwards
@@ -584,6 +583,7 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
     And user clicks OK button in "Formula Lines" dialog
     Then the "Formula Lines" dialog should close
     And the "formula lines" reading of scatter plot viewer should be 5
+    And scatter plot viewer should draw 5 formula lines
     And "formulaLines" property of scatter plot viewer should contain "${Chemical Space Y} = 0.1* ${Chemical Space X}"
     When user sets properties of scatter plot viewer:
       | Label Columns   | Structure, Id |
@@ -601,16 +601,22 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
     Then "xColumnName" property of second scatter plot viewer should be "Chemical Space X"
     And "colorColumnName" property of second scatter plot viewer should be "Chemical Space X"
     And the "formula lines" reading of second scatter plot viewer should be 5
+    And second scatter plot viewer should draw 5 formula lines
     When user picks "Tools > Formula Lines..." from the context menu of second scatter plot viewer
     Then the "Formula Lines" dialog should be visible
-    When user changes formula line 3 in the Formula Lines dialog to "${Chemical Space Y} = 0.3* ${Chemical Space X}"
+    When user changes the formula line "${Chemical Space Y} = 0.1* ${Chemical Space X}" in the Formula Lines dialog to "${Chemical Space Y} = 0.3* ${Chemical Space X}"
     And user adds the formula line "${Chemical Space Y} = 0.1* ${Chemical Space X}" in the Formula Lines dialog
     And user sets the range of the selected formula line to "1" .. "3"
+    And user enters "Low range" into Title input in "Formula Lines" dialog
     And user adds the formula line "${Chemical Space Y} = 0.1* ${Chemical Space X}" in the Formula Lines dialog
     And user sets the range of the selected formula line to "5" .. "20"
+    And user enters "High range" into Title input in "Formula Lines" dialog
     And user clicks OK button in "Formula Lines" dialog
     Then the "Formula Lines" dialog should close
     And the "formula lines" reading of second scatter plot viewer should be 7
+    And second scatter plot viewer should draw 7 formula lines
+    And second scatter plot viewer should have a "formula line \"Low range\"" area
+    And second scatter plot viewer should have a "formula line \"High range\"" area
     And "formulaLines" property of second scatter plot viewer should contain "${Chemical Space Y} = 0.3* ${Chemical Space X}"
     And the formula lines of second scatter plot viewer should hold "${Chemical Space Y} = 0.1* ${Chemical Space X}" over the ranges "1..3; 5..20"
     And the "formula lines" reading of first scatter plot viewer should be 5
@@ -619,11 +625,17 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
     And user clicks on the "cell 2 of visible" area of grid in "Formula Lines" dialog
     And user clicks OK button in "Formula Lines" dialog
     Then the "formula lines" reading of second scatter plot viewer should be 5
+    And second scatter plot viewer should draw 5 formula lines
+    And second scatter plot viewer should not have a "formula line \"Low range\"" area
+    And second scatter plot viewer should not have a "formula line \"High range\"" area
     When user picks "Tools > Formula Lines..." from the context menu of second scatter plot viewer
     And user clicks on the "cell 1 of visible" area of grid in "Formula Lines" dialog
     And user clicks on the "cell 2 of visible" area of grid in "Formula Lines" dialog
     And user clicks OK button in "Formula Lines" dialog
     Then the "formula lines" reading of second scatter plot viewer should be 7
+    And second scatter plot viewer should draw 7 formula lines
+    And second scatter plot viewer should have a "formula line \"Low range\"" area
+    And second scatter plot viewer should have a "formula line \"High range\"" area
     When user sets "Row Source" property of second scatter plot viewer to "FilteredSelected"
     And user picks "Tools > Show Regression Line" from the context menu of second scatter plot viewer
     Then "showRegressionLine" property of second scatter plot viewer should be "true"
@@ -712,7 +724,9 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
     And the ".formula-lines" tag of the table should contain "${Chem Space Y} = 0.75* ${Chem Space X}"
     And no formula line of the table should name "Chemical Space"
     And the "formula lines" reading of second scatter plot viewer should be 8
+    And second scatter plot viewer should draw 8 formula lines
     And the "formula lines" reading of first scatter plot viewer should be 6
+    And first scatter plot viewer should draw 6 formula lines
     And the "formula lines" reading of second line chart viewer should be 1
     And second line chart viewer should draw 1 formula line
     And no viewer of the current view should report an error
