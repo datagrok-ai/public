@@ -1,0 +1,45 @@
+{
+  "name": "lotkavolterraguided",
+  "friendlyName": "LotkaVolterraGuided",
+  "version": "0.0.1",
+  "description": "LotkaVolterraGuided package",
+  "dependencies": {
+    "datagrok-api": "^1.26.0",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/utils": "^4.6.5",
+    "diff-grok": "^1.2.0"
+  },
+  "devDependencies": {
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "css-loader": "^6.8.1",
+    "style-loader": "^3.3.3",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "debug-lotkavolterraguided": "webpack && grok publish",
+    "release-lotkavolterraguided": "webpack && grok publish --release",
+    "build-lotkavolterraguided": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-lotkavolterraguided-dev": "webpack && grok publish dev",
+    "release-lotkavolterraguided-dev": "webpack && grok publish dev --release",
+    "debug-lotkavolterraguided-local": "webpack && grok publish local",
+    "release-lotkavolterraguided-local": "webpack && grok publish local --release",
+    "debug-lotkavolterraguided-release": "webpack && grok publish release",
+    "release-lotkavolterraguided-release": "webpack && grok publish release --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/LotkaVolterraGuided"
+  }
+}
