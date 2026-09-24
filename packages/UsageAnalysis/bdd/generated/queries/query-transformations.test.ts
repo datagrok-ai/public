@@ -27,7 +27,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Transformations saved with a query", () => {
   const session = feature(test, "features/queries/query-transformations.feature", import.meta.url);
-  test("Transformations saved with a query", {tag: ["@journey", "@serial", "@realizes:views.queries", "@known-failure"]}, async ({browser}) => {
+  test("Transformations saved with a query", {tag: ["@journey", "@serial", "@realizes:views.queries"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 3, page);
     await session.step(18, "Given user is logged in", () => loggedIn(page));
@@ -78,8 +78,8 @@ test.describe("Transformations saved with a query", () => {
       await session.step(66, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("The saved query carries its transformations on the server", async () => {
-      await session.step(74, "Then the query \"BDD-Q-tr-{time}\" on the server should have transformations containing \"doubled\"", () => queryTransformations(page, session.text("BDD-Q-tr-{time}"), "doubled"));
-    }, {knownFailure: true});
+      await session.step(72, "Then the query \"BDD-Q-tr-{time}\" on the server should have transformations containing \"doubled\"", () => queryTransformations(page, session.text("BDD-Q-tr-{time}"), "doubled"));
+    });
     run.finish();
   });
 });

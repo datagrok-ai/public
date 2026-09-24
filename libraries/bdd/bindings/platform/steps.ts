@@ -1074,15 +1074,20 @@ export const queryTransformations = Then('the query {string} on the server shoul
 export const queryNoTransformations = Then('the query {string} on the server should not have transformations containing {string}', async (page: Page, name: string, text: string) => {
   await expect.poll(async () => {
     const query = await serverEntityNamed(page, 'queries', name);
-    return page.evaluate(async (id) => String((await grok.dapi.queries.find(id) as any)?.script ?? ''), query.id);
+    const api = await serverRequests(page);
+    return String((await api.get<Record<string, unknown>>(`/connectors/queries/${query.id}`))?.script ?? '');
   }, {message: `the transformations of the query "${name}" on the server`, timeout: pollMs(30000)}).not.toContain(text);
 }, {tier: 'api', description: 'polled like its positive twin: a step the save has not written yet is not an absent step'});
 
 async function expectQueryField(page: Page, name: string, field: 'query' | 'script', text: string, whole: boolean): Promise<void> {
+  // through the REST entity, not grok.dapi.queries.find: the JS object does not carry the query's
+  // own text or its transformations, and an absent property reads exactly like an empty one
   const read = async () => {
     try {
       const query = await serverEntityNamed(page, 'queries', name);
-      return page.evaluate(async ([id, f]) => String(((await grok.dapi.queries.find(id)) as any)?.[f] ?? ''), [query.id, field] as [string, string]);
+      const api = await serverRequests(page);
+      const saved = await api.get<Record<string, unknown>>(`/connectors/queries/${query.id}`);
+      return String(saved?.[field] ?? '');
     }
     catch (error) {
       return String(error);
