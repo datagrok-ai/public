@@ -24,8 +24,8 @@ src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [play
 src/runtime/            args, locate, gestures, assertions, harness (session, journey, resetShell, error floor),
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
                         viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
-                        guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), pointer path → steps.json; full shell)
-tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md (+ --gif: guide.gif, guide-thumb.png)
+                        guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), the page's own pointer events per stop → steps.json; full shell)
+tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
 bindings/platform/      the shell: elements, datasets, steps, data, columns, commands, functions, events — always loaded
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, events, floor), widgets (shared per-viewer steps)
@@ -248,6 +248,11 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   overflow-hidden ancestors too, and the page with them.
 - An entity saved through the JS API gets its first Activity entry late, and a counting pane hides
   at 0: claim its count (`should count at least`), never the pane's presence right after the save.
+- A guide takes the pointer from the page, not from `page.mouse`: a locator's `click()`, `hover()`,
+  `dragTo()` never pass through it, and a recorder that wrapped only the mouse had 60 of 80 clicks
+  with no place (drawn unmarked, at the element's centre). `guide.ts` logs trusted pointer events
+  in the page (capture listeners on every document) and drains them into the stop of the step they
+  belong to; `page.mouse` is wrapped only to picture a drag.
 - Package tools that decorate a view on `onViewAdded` (DevTools' Signature Editor icon) attach in
   the package's autostart; a view opened before it runs used to miss them (fixed in DevTools
   2026-09-24 by decorating the open views too).
@@ -354,7 +359,9 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
 - **A page function sees only its own source.** A Node-side helper named inside `page.evaluate` /
   `waitForFunction` is a `ReferenceError` in the page, and a `.catch` around the call turns the
   check into a no-op: the shell reset's task-bar wait never waited from the day it was written.
-  Pass the function itself, or its source as text (`` `(${fn})(…)` ``).
+  Pass the function itself, or its source as text (`` `(${fn})(…)` ``). Under `tsx` (the unit
+  tests, a package's bindings) a named function inside one — `const add = (e) => …` — is wrapped
+  in a `__name` call the page does not have: keep inner functions anonymous, passed inline.
 - **Absence is not a value.** A throw ends an `expect.poll`, so a reading or a column a computation
   adds late fails the claim at once — the reading steps return `MissingReading` and the column
   polls the missing column's text instead; neither may ever satisfy a negative.

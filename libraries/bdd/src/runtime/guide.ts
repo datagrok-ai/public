@@ -13,10 +13,21 @@ export interface GuideBox {
   height: number;
 }
 
-export interface GuidePoint {
+/** What the pointer did, in the page's CSS pixels — the screenshots' pixels. */
+export interface GuidePointer {
+  /** `move`: where the pointer came to rest, or with `held` a point of a drag; `down` and `up`: a
+   * button pressed or released there. */
+  type: 'move' | 'down' | 'up';
   x: number;
   y: number;
-  /** The page as it was when the pointer got here with a button held — what a drag draws. */
+  button?: 'left' | 'middle' | 'right';
+  /** 2 on the second press of a double-click. */
+  count?: number;
+  held?: boolean;
+  /** The element a press landed on: its platform name (or tag) and its rectangle. */
+  on?: string;
+  box?: GuideBox;
+  /** The page as it was with the button held here — what a drag has drawn so far. */
   shot?: string;
 }
 
@@ -24,11 +35,13 @@ export type GuideStepKind = 'action' | 'check' | 'setup';
 
 const DRAG_SHOTS = 8;
 
-/** A stop on a path the step walks (a menu group, then its item): the page as the pointer set
- * off for it, and where it went. */
-export interface GuideHop {
+/** A stop of a step: the page as the pointer set off for it, the element lit there, and what the
+ * pointer did at it. A step has one stop, or one per stop of a path it walked (a menu's group, each
+ * item, the leaf). */
+export interface GuideLeg {
   shot: string;
-  target: GuideBox;
+  target?: GuideBox;
+  pointer: GuidePointer[];
 }
 
 export interface GuideStep {
@@ -43,11 +56,7 @@ export interface GuideStep {
   after: string;
   /** The element the step acted on or checked, in page pixels — the last stop when it walked a path. */
   target?: GuideBox;
-  /** The stops of a path walked inside the step, in order; empty for a step with one target. */
-  hops: GuideHop[];
-  /** Where the pointer went during the step, in order. */
-  pointer: GuidePoint[];
-  clicks: {x: number; y: number; button: string}[];
+  legs: GuideLeg[];
   /** Keys pressed during the step (`Enter`, `Control+A`), and text typed. */
   keys: string[];
   typed: string;
@@ -67,13 +76,14 @@ interface Recording {
   dir: string;
   manifest: GuideManifest;
   lastType: string;
-  pointer: GuidePoint[];
-  clicks: {x: number; y: number; button: string}[];
   keys: string[];
   typed: string;
   located?: Locator;
   target?: GuideBox | null;
-  hops: GuideHop[];
+  legs: GuideLeg[];
+  /** What the pointer did since the last stop. */
+  pending: GuidePointer[];
+  dragShots: number;
   silent: boolean;
   open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; started: number; before: string};
 }
@@ -209,61 +219,108 @@ function typeOf(keyword: string, lastType: string): string {
   return keyword === 'And' || keyword === 'But' || keyword === '*' ? lastType : keyword;
 }
 
-/** The pointer is followed on the page's own `mouse`, whatever runtime path drives it (a gesture,
- * a menu walk, a viewer hit area); the methods are replaced in place, once per page. */
-export function attach(page: Page): void {
+/** Runs in the page, on every document it loads: logs each real press, release and move of the
+ * pointer, whatever sent it — the page's mouse, a locator's click, a drag — where the browser
+ * delivered it, and what the press landed on. A move with no button held only says where the
+ * pointer came to rest, so a run of them keeps the last; a synthetic `el.click()` has no place on
+ * the page and is not a gesture. */
+function capturePointer(): void {
+  const w = window as any;
+  if (w.__bddGuidePointer)
+    return;
+  const log: any[] = w.__bddGuidePointer = [];
+  const buttons = ['left', 'middle', 'right'];
+  // the listeners are inline arrows: tsx wraps a named function in a `__name` call the page lacks
+  for (const type of ['down', 'up', 'move'] as const) {
+    addEventListener(`pointer${type}`, (event) => {
+      const e = event as PointerEvent;
+      if (!e.isTrusted)
+        return;
+      const held = e.buttons !== 0;
+      const prev = log[log.length - 1];
+      if (type === 'move' && !held && prev?.type === 'move' && !prev.held)
+        log.pop();
+      const entry: any = {type, x: e.clientX, y: e.clientY};
+      if (type === 'move' && held)
+        entry.held = true;
+      if (type !== 'move')
+        entry.button = buttons[e.button] ?? 'left';
+      if (type === 'down') {
+        entry.count = 1;
+        const el = e.target instanceof Element ? e.target : null;
+        if (el) {
+          const r = el.getBoundingClientRect();
+          entry.box = {x: r.x, y: r.y, width: r.width, height: r.height};
+          entry.on = (el.closest('[name]')?.getAttribute('name') ?? el.tagName.toLowerCase()).slice(0, 80);
+        }
+      }
+      log.push(entry);
+      if (log.length > 2000)
+        log.splice(0, log.length - 2000);
+    }, {capture: true, passive: true});
+  }
+  // the browser says which press was a double-click's second: two quick clicks of their own (a
+  // property cell, then the select it opened a few pixels away) are not one
+  addEventListener('dblclick', (event) => {
+    const e = event as MouseEvent;
+    const press = [...log].reverse().find((p) => p.type === 'down');
+    if (e.isTrusted && press && Math.abs(press.x - e.clientX) < 1 && Math.abs(press.y - e.clientY) < 1)
+      press.count = 2;
+  }, {capture: true, passive: true});
+}
+
+/** What the pointer did since the last read. */
+async function drain(page: Page): Promise<GuidePointer[]> {
+  return page.evaluate(() => {
+    const log = (window as any).__bddGuidePointer as unknown[] | undefined;
+    return (log ? log.splice(0, log.length) : []) as GuidePointer[];
+  }).catch(() => []);
+}
+
+/** The pointer is followed in the page, whatever runtime path drives it (a gesture, a menu walk, a
+ * viewer hit area, a locator's own click). The page's `mouse` is wrapped only to picture drags. */
+export async function attach(page: Page): Promise<void> {
   if (!guideDir() || attached.has(page))
     return;
   attached.add(page);
+  await page.addInitScript(capturePointer);
+  await page.evaluate(capturePointer).catch(() => undefined);
+  const rec = (): Recording | undefined => recordings.get(page);
   const mouse = page.mouse as any;
   const move = mouse.move.bind(mouse);
-  const click = mouse.click.bind(mouse);
-  const dblclick = mouse.dblclick.bind(mouse);
   const down = mouse.down.bind(mouse);
   const up = mouse.up.bind(mouse);
-  let at: GuidePoint = {x: 0, y: 0};
   let held = false;
-  const rec = (): Recording | undefined => recordings.get(page);
   // a move with a button held is a drag: the page is pictured along the way (at most DRAG_SHOTS
   // per step), so the video shows what the drag draws — a selection box, an annotation region
   mouse.move = async (x: number, y: number, options?: unknown) => {
     const r = rec();
-    if (held && r?.open && r.pointer.filter((p) => p.shot).length < DRAG_SHOTS) {
-      const from = at;
-      const legs = Math.min(3, Math.max(1, Math.round(Math.hypot(x - from.x, y - from.y) / 120)));
-      for (let i = 1; i <= legs; i++) {
-        at = {x: from.x + (x - from.x) * i / legs, y: from.y + (y - from.y) * i / legs};
-        await move(at.x, at.y, {steps: 4});
-        const n = r.pointer.filter((p) => p.shot).length + 1;
-        at.shot = await shot(page, r.dir, `${String(r.open.index).padStart(2, '0')}-drag${n}.png`);
-        r.pointer.push(at);
-      }
-      return;
+    if (!held || !r?.open || r.dragShots >= DRAG_SHOTS)
+      return move(x, y, options);
+    r.pending.push(...await drain(page));
+    const last = [...r.pending].reverse().find((p) => p.type !== 'up');
+    const from = last ?? {x, y};
+    const legs = Math.min(3, Math.max(1, Math.round(Math.hypot(x - from.x, y - from.y) / 120)));
+    for (let i = 1; i <= legs; i++) {
+      const at = {x: from.x + (x - from.x) * i / legs, y: from.y + (y - from.y) * i / legs};
+      await move(at.x, at.y, {steps: 4});
+      r.pending.push(...await drain(page));
+      r.dragShots++;
+      const name = await shot(page, r.dir, `${String(r.open.index).padStart(2, '0')}-drag${r.dragShots}.png`);
+      const reached = r.pending[r.pending.length - 1];
+      if (reached?.type === 'move' && reached.held && Math.hypot(reached.x - at.x, reached.y - at.y) < 1)
+        reached.shot = name;
+      else
+        r.pending.push({type: 'move', x: at.x, y: at.y, held: true, shot: name});
     }
-    at = {x, y};
-    r?.pointer.push(at);
-    return move(x, y, options);
+  };
+  mouse.down = async (options?: unknown) => {
+    held = true;
+    return down(options);
   };
   mouse.up = async (options?: unknown) => {
     held = false;
     return up(options);
-  };
-  mouse.click = async (x: number, y: number, options?: {button?: string}) => {
-    at = {x, y};
-    rec()?.pointer.push(at);
-    rec()?.clicks.push({x, y, button: options?.button ?? 'left'});
-    return click(x, y, options);
-  };
-  mouse.dblclick = async (x: number, y: number, options?: {button?: string}) => {
-    at = {x, y};
-    rec()?.pointer.push(at);
-    rec()?.clicks.push({x, y, button: options?.button ?? 'left'});
-    return dblclick(x, y, options);
-  };
-  mouse.down = async (options?: {button?: string}) => {
-    rec()?.clicks.push({x: at.x, y: at.y, button: options?.button ?? 'left'});
-    held = true;
-    return down(options);
   };
   const keyboard = page.keyboard as any;
   const press = keyboard.press.bind(keyboard);
@@ -299,8 +356,9 @@ export async function located(page: Page, loc: Locator): Promise<void> {
 }
 
 /** A stop on the path the step walks: the page as it is now (a menu opened by the stop before)
- * and the element's place on it; the guide moves the pointer stop by stop and lights each. An
- * element located before the first stop becomes the first, on the "before" picture. */
+ * and the element's place on it; the guide moves the pointer stop by stop and lights each. What
+ * the pointer did before the first stop — on an element located before it, or anywhere (the
+ * right-click that opened the menu) — is a stop of its own, on the "before" picture. */
 export async function hop(page: Page, loc: Locator): Promise<void> {
   if (!recordings.get(page)?.open)
     return;
@@ -314,12 +372,22 @@ export async function hopAt(page: Page, box: GuideBox): Promise<void> {
   const r = recordings.get(page);
   if (!r || !r.open)
     return;
-  if (r.hops.length === 0 && r.target)
-    r.hops.push({shot: r.open.before, target: r.target});
+  closeLeg(r, r.open.before, r.target ?? undefined, await drain(page));
   const stem = String(r.open.index).padStart(2, '0');
-  r.hops.push({shot: await shot(page, r.dir, `${stem}-hop${r.hops.length + 1}.png`), target: box});
+  r.legs.push({shot: await shot(page, r.dir, `${stem}-hop${r.legs.length + 1}.png`), target: box, pointer: []});
   r.located = undefined;
   r.target = box;
+}
+
+/** What the pointer did since the last stop goes to that stop; before the first stop, to a stop on
+ * the page the step began with (when it acted there, or located something there). */
+function closeLeg(r: Recording, before: string, target: GuideBox | undefined, drained: GuidePointer[]): void {
+  r.pending.push(...drained);
+  if (r.legs.length > 0)
+    r.legs[r.legs.length - 1].pointer.push(...r.pending);
+  else if (target || r.pending.length > 0)
+    r.legs.push({shot: before, target, pointer: r.pending});
+  r.pending = [];
 }
 
 /** The open step is session plumbing (the login), never part of a guide. */
@@ -348,7 +416,7 @@ function recordingFor(page: Page, info: TestInfo): Recording {
   const viewport = page.viewportSize();
   const manifest: GuideManifest =
     {feature: featureName, scenario: scenarioName, description: '', tags: info.tags, viewport, steps: []};
-  r = {dir, manifest, lastType: 'Given', pointer: [], clicks: [], keys: [], typed: '', hops: [], silent: false};
+  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', legs: [], pending: [], dragShots: 0, silent: false};
   recordings.set(page, r);
   return r;
 }
@@ -367,13 +435,15 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   const {keyword, text} = parseTitle(title);
   const index = r.manifest.steps.length + 1;
   const stem = String(index).padStart(2, '0');
-  r.pointer = [];
-  r.clicks = [];
+  // what the pointer did between steps is part of neither
+  await drain(page);
   r.keys = [];
   r.typed = '';
   r.located = undefined;
   r.target = undefined;
-  r.hops = [];
+  r.legs = [];
+  r.pending = [];
+  r.dragShots = 0;
   r.silent = false;
   r.open = {index, line, keyword, text, table, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
 }
@@ -397,21 +467,26 @@ export async function end(page: Page | undefined): Promise<void> {
   let target = r.target ?? undefined;
   if (!target && r.located)
     target = await r.located.first().boundingBox({timeout: 200}).catch(() => null) ?? undefined;
+  r.pending.push(...await drain(page));
+  // a press nothing was located for lights the element it landed on, when that is not half the page
+  const press = [...r.legs.flatMap((l) => l.pointer), ...r.pending].reverse().find((p) => p.type === 'down');
+  const viewport = page.viewportSize();
+  if (!target && press?.box && (!viewport || press.box.width * press.box.height < viewport.width * viewport.height / 2))
+    target = press.box;
+  else if (!target && press)
+    target = {x: press.x - 12, y: press.y - 12, width: 24, height: 24};
+  closeLeg(r, open.before, target, []);
   const type = typeOf(open.keyword, r.lastType);
   r.lastType = type;
-  const acted = !!target || r.pointer.length > 0 || r.clicks.length > 0 || r.keys.length > 0 || r.typed.length > 0;
+  const acted = !!target || r.legs.some((l) => l.pointer.length > 0) || r.keys.length > 0 || r.typed.length > 0;
   // every step a reader would take is in the guide, a table opened through the API included (the
   // page after it is the point); left out are the login, a step that changed nothing on the page,
   // and a check a person has no use for
   const hidden = r.silent || (type === 'Then' && hiddenInGuide(open.text));
   const kind: GuideStepKind = hidden ? 'setup' : type === 'Then' ? 'check' :
     acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
-  if (!target && r.clicks.length > 0) {
-    const last = r.clicks[r.clicks.length - 1];
-    target = {x: last.x - 12, y: last.y - 12, width: 24, height: 24};
-  }
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,
-    caption: captionOf(open.text, kind, open.table), kind, before: open.before, after, target, hops: r.hops, pointer: r.pointer,
-    clicks: r.clicks, keys: r.keys, typed: r.typed, ms: Date.now() - open.started});
+    caption: captionOf(open.text, kind, open.table), kind, before: open.before, after, target, legs: r.legs,
+    keys: r.keys, typed: r.typed, ms: Date.now() - open.started});
   writeFileSync(join(r.dir, 'steps.json'), JSON.stringify(r.manifest, null, 2));
 }

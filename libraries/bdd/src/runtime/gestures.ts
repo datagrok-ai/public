@@ -317,8 +317,25 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
   await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.up();
-  if (leave)
-    await page.mouse.move(2, 2);
+  if (leave) {
+    const away = guide.guideDir() ? await besidePicker(page, box) : {x: 2, y: 2};
+    await page.mouse.move(away.x, away.y);
+  }
+}
+
+/** A guide's pointer steps just off the selector, clear of the picker it opened: the page's corner,
+ * where a test's goes, is a flight across the video and back. */
+async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
+  const popup = page.locator('.d4-column-grid').last();
+  await popup.waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
+  const picker = await popup.boundingBox().catch(() => null);
+  const view = page.viewportSize() ?? {width: 1920, height: 1080};
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  const clear = (p: {x: number; y: number}): boolean => p.x > 0 && p.y > 0 && p.x < view.width && p.y < view.height &&
+    (!picker || p.x < picker.x - 4 || p.x > picker.x + picker.width + 4 || p.y < picker.y - 4 || p.y > picker.y + picker.height + 4);
+  return [{x: box.x - 16, y: cy}, {x: cx, y: box.y - 16}, {x: box.x + box.width + 16, y: cy}, {x: cx, y: box.y + box.height + 16}]
+    .find(clear) ?? {x: 2, y: 2};
 }
 
 export async function select(page: Page, target: ElementRef, option: string): Promise<void> {

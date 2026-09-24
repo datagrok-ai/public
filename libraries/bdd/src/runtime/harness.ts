@@ -211,7 +211,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
           shared = await shared.context().newPage();
         shared ??= await (await browser.newContext()).newPage();
         watchErrors(shared);
-        guide.attach(shared);
+        await guide.attach(shared);
         page = shared;
       }
       return page;
