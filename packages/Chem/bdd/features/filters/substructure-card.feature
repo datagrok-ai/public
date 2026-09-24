@@ -7,7 +7,8 @@ Feature: The substructure filter card and its search types
   The card offers seven search types: Contains and Not contains split the table into 17 and 83 rows,
   Included in and Not included in split it into 0 and 100, Exact, Stereo agnostic and Similar keep
   none (pyridine is no molecule of the table and is similar to none), and Contains again keeps the
-  same 17 rows.
+  same 17 rows. A search type that keeps none is picked only after one that keeps some, so its 0 is
+  its own and not what the type before it left.
 
   Background:
     Given user is logged in
@@ -74,8 +75,12 @@ Feature: The substructure filter card and its search types
     Then all rows should pass the filter
     When user picks search type "Exact" in the "Structure" filter card
     Then 0 rows should pass the filter
+    When user picks search type "Contains" in the "Structure" filter card
+    Then 17 rows should pass the filter
     When user picks search type "Similar" in the "Structure" filter card
     Then 0 rows should pass the filter
+    When user picks search type "Not contains" in the "Structure" filter card
+    Then 83 rows should pass the filter
     When user picks search type "Stereo agnostic" in the "Structure" filter card
     Then 0 rows should pass the filter
     When user picks search type "Contains" in the "Structure" filter card

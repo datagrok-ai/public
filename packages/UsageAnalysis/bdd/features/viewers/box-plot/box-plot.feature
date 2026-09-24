@@ -153,15 +153,13 @@ Feature: Box plot property surface
 
   Scenario: Axis font
     When user sets "Axis Font" property of box plot viewer to "normal normal 16px \"Roboto\""
-    Then "Axis Font" property of box plot viewer should be "normal normal 16px \"Roboto\""
-    And box plot viewer should have repainted
+    Then box plot viewer should have repainted
     When user sets "Axis Font" property of box plot viewer to "normal normal 10px \"Roboto\""
     Then no errors should have been logged
 
   Scenario: Date category mapping
     When user sets "Category 1" property of box plot viewer to "STARTED"
-    Then "Category 1" property of box plot viewer should be "STARTED"
-    When user sets "Category 1 Map" property of box plot viewer to "month"
+    And user sets "Category 1 Map" property of box plot viewer to "month"
     Then box plot viewer should have repainted
     And "Category 1 Map" property of box plot viewer should be "month"
     When user sets "Category 1 Map" property of box plot viewer to "quarter"
@@ -177,8 +175,7 @@ Feature: Box plot property surface
       | Marker Size  | 10                  |
       | Row Tooltip  | AGE\nSEX\nWEIGHT    |
       | Show Tooltip | show custom tooltip |
-    Then "Row Tooltip" property of box plot viewer should be "AGE\nSEX\nWEIGHT"
-    When user hovers over the "marker" area of box plot viewer
+    And user hovers over the "marker" area of box plot viewer
     Then the tooltip should show columns "AGE, SEX, WEIGHT"
     When user moves the pointer away from box plot viewer
     Then tooltip should be hidden

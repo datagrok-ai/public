@@ -134,10 +134,25 @@ export async function expectBoundTable(page: Page, target: ElementRef, name: str
 /** A reading of the viewer as it is now; a name the viewer does not report fails naming the
  * readings it does. */
 export async function readValue(page: Page, target: ElementRef, name: string): Promise<unknown> {
+  const r = await readingOf(page, target, name);
+  if (r instanceof MissingReading)
+    throw new Error(String(r));
+  return r;
+}
+
+/** What a poll reads instead of a throw, which would end it: a package registers its provider
+ * after its own async work (Activity Cliffs after the embedding), so a reading can arrive after
+ * the viewer. No claim is satisfied by it; its text is what the failure shows. */
+export class MissingReading {
+  constructor(readonly text: string) {}
+  toString(): string { return this.text; }
+}
+
+export async function readingOf(page: Page, target: ElementRef, name: string): Promise<unknown> {
   const r: Reading = await onViewer(page, target, (el, n) => (window as any).__bdd.valueChange(el, n), name);
-  if (r.now === undefined || r.now === null)
-    throw new Error(`${target.phrase} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`);
-  return r.now;
+  return r.now === undefined || r.now === null
+    ? new MissingReading(`${target.phrase} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`)
+    : r.now;
 }
 
 export type ReadingCompare = 'equal' | 'lower' | 'higher' | 'differ' | 'same';

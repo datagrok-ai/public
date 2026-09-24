@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## 1.4.6 (2026-09-23)
+
+- Bundles webcomponents 0.3.7: InputForm funcCall swap and cleared-funcCall fixes, ValidationIcon retention, clearing and severity colors
+
 ## 1.4.5 (2026-08-14)
 
 - Viewer: Fixed `viewer-data-frame-changed` firing inside the Dart event (grid mutations in handlers crashed)

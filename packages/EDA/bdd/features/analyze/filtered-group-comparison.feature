@@ -19,10 +19,9 @@ Feature: Group comparison of a filtered table
     Then "Control comparisons" dialog should be visible
     And 3243 rows should pass the filter
     When user clicks on Run button in "Control comparisons" dialog
-    Then the top menu command should have completed
+    Then table "Control comparisons result" should be open
     And "Control comparisons" dialog should be hidden
     And 3243 rows should pass the filter
-    And table "Control comparisons result" should be open
     And table "Control comparisons result" should have 3 rows
     And table "Control comparisons result" should have no missing values in "n" column
     And second grid viewer should be bound to table "Control comparisons result"

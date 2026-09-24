@@ -84,8 +84,8 @@ export async function expectAreaInk(page: Page, target: ElementRef, area: string
 
 export async function expectAreaPainted(page: Page, target: ElementRef, area: string): Promise<void> {
   await hitArea(page, target, area);
-  await expect.poll(() => onViewer(page, target, (el, a) => (window as any).__bdd.areaInk(el, a), area),
-    {timeout: pollMs(5000), message: `the "${area}" area of ${target.phrase} is blank`}).toBeGreaterThan(0);
+  await expect.poll(() => onViewer(page, target, (el, a) => (window as any).__bdd.areaInk(el, a, 2), area),
+    {timeout: pollMs(5000), message: `the "${area}" area of ${target.phrase} is blank inside its edges`}).toBeGreaterThan(0);
 }
 
 export async function expectPalette(page: Page, target: ElementRef, min: number): Promise<void> {
@@ -129,6 +129,15 @@ export function parseHex(color: string): string {
   return want;
 }
 
+/** A color the area claims can see: the pixel reader skips white (every channel at 250 or above) as
+ * the blank, so a claim on it would read the light greys near it (gridlines) and could not fail. */
+function paintHex(color: string): string {
+  const want = parseHex(color);
+  if (parseInt(want.slice(1, 3), 16) >= 250 && parseInt(want.slice(3, 5), 16) >= 250 && parseInt(want.slice(5, 7), 16) >= 250)
+    throw new Error(`${want} is the blank the color steps skip; claim a hue ("painted in at least N colors") or "painted in no color"`);
+  return want;
+}
+
 function areaColors(page: Page, target: ElementRef, area: string): Promise<AreaColors> {
   return onViewer(page, target, (el, a) => (window as any).__bdd.areaColors(el, a), area);
 }
@@ -140,7 +149,7 @@ const pixelsNear = (colors: AreaColor[], want: string): number => colors.filter(
 
 /** The color (within a shade of anti-aliasing) covers some pixels of the area. */
 export async function expectAreaColor(page: Page, target: ElementRef, area: string, color: string): Promise<void> {
-  const want = parseHex(color);
+  const want = paintHex(color);
   await hitArea(page, target, area);
   let last: AreaColors | undefined;
   try {
@@ -153,7 +162,7 @@ export async function expectAreaColor(page: Page, target: ElementRef, area: stri
 
 /** No pixel of the color (nor a shade of it) inside the area, read once. */
 export async function expectAreaNotColor(page: Page, target: ElementRef, area: string, color: string): Promise<void> {
-  const want = parseHex(color);
+  const want = paintHex(color);
   await hitArea(page, target, area);
   const read = await areaColors(page, target, area);
   const count = pixelsNear(read.colors, want);

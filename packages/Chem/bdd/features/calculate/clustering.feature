@@ -1,11 +1,13 @@
 @journey @realizes:chem.cp.calculate-clustering
 Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
   On smiles, BitBIRCH Clustering with its defaults appends a cluster column that groups the
-  molecules: more than one cluster, fewer clusters than rows. Butina Cluster, the Python script,
-  groups the same fifty molecules its own way, and the two partitions do not agree row for row. Cluster MCS over a partition of
-  singletons appends a Molecule column with a structure on every row. Over the first 50 molecules,
-  Similarity Matrix builds a table with one similarity column per molecule, 1 down the diagonal and
-  something lower off it.
+  molecules: more than one cluster, fewer clusters than rows. On spgi-100, Cluster MCS over the
+  BitBIRCH clusters appends a Molecule column with a structure on every row, fewer structures than
+  rows. Over the first 50 molecules, Similarity Matrix builds a table with one similarity column per
+  molecule, 1 down the diagonal and something lower off it.
+
+  Not here: Butina Cluster, a server-side Python script — see the bdd library's CLAUDE.md,
+  "What never becomes a feature".
 
   Background:
     Given user is logged in
@@ -28,17 +30,6 @@ Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
     And the table should have 1000 rows
     And no errors should have been logged
 
-  Scenario: Cluster MCS writes a structure for every row
-    When user picks "Chem > Calculate > Cluster MCS..." from the top menu
-    Then "Cluster MCS" dialog should be visible
-    And Molecules input in "Cluster MCS" dialog should contain text "canonical_smiles"
-    When user clicks on OK button in "Cluster MCS" dialog
-    Then the top menu command should have completed
-    And a new column matching "MCS|mcs|Scaffold" should have been added
-    And the newest column matching "MCS|mcs|Scaffold" should have no missing values
-    And the table should have 1000 rows
-    And no errors should have been logged
-
   Scenario: The similarity matrix reads 1 down its diagonal
     Given user opens smiles dataset keeping the first 50 rows as "clustering_matrix_subset"
     When user picks "Chem > Calculate > Similarity Matrix..." from the top menu
@@ -52,7 +43,7 @@ Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
     And the similarity columns of table "canonical_smiles similarity matrix" should be symmetric, read 1 on the diagonal and less somewhere off it
     And no errors should have been logged
 
-  Scenario: Cluster MCS over real clusters writes a scaffold shared inside each of them
+  Scenario: Cluster MCS over the BitBIRCH clusters writes a structure on every row
     Given user opens spgi dataset
     When user picks "Chem > Calculate > BitBIRCH Clustering..." from the top menu
     And user clicks on OK button in "BitBIRCH Clustering" dialog
@@ -67,29 +58,4 @@ Feature: BitBIRCH clustering, Cluster MCS and the similarity matrix
     And the newest column matching "MCS|mcs|Scaffold" should have no missing values
     And "Cluster MCS" column should have fewer distinct values than the table has rows
     And the table should have 100 rows
-    And no errors should have been logged
-
-  Scenario: Butina clustering groups the same molecules its own way
-    Given user opens smiles-50 dataset
-    When user picks "Chem > Analyze > Butina Cluster..." from the top menu
-    Then "Butina Molecules Clustering" dialog should be visible
-    And Molecules input in "Butina Molecules Clustering" dialog should contain text "canonical_smiles"
-    And "Distance Cutoff" input in "Butina Molecules Clustering" dialog should have value "0.4"
-    When user clicks on OK button in "Butina Molecules Clustering" dialog
-    Then the top menu command should have completed
-    And a new column "cluster (Butina)" should have been added
-    And "cluster (Butina)" column should have no missing values
-    And "cluster (Butina)" column should have at least 2 distinct values
-    And "cluster (Butina)" column should have fewer distinct values than the table has rows
-    And the table should have 50 rows
-    And no errors should have been logged
-
-  Scenario: BitBIRCH and Butina split the same table differently
-    When user picks "Chem > Calculate > BitBIRCH Clustering..." from the top menu
-    And user clicks on OK button in "BitBIRCH Clustering" dialog
-    Then the top menu command should have completed
-    And a new column "Cluster (BitBIRCH)" should have been added
-    And "Cluster (BitBIRCH)" column should have at least 2 distinct values
-    And "Cluster (BitBIRCH)" column should have fewer distinct values than the table has rows
-    And some value of "Cluster (BitBIRCH)" column should differ from "cluster (Butina)" column in the same row
     And no errors should have been logged

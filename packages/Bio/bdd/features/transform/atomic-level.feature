@@ -1,16 +1,16 @@
 @journey @serial @realizes:bio.transform.to-atomic-level
 Feature: To Atomic Level
   Bio | Transform | To Atomic Level... builds a V3000 molfile per sequence: the linear path for
-  fasta, the HELM converter for a HELM column with branches and cycles. A molfile a downstream
-  standardizer accepts carries no MASS=1 flag on a heavy atom (GROK-15176).
+  fasta, the HELM converter for a HELM column with branches and cycles.
   The fixture uses the standard HELM monomers, including glutamate's R3 side-chain attachment;
   custom libraries on the stand must not override them. The same conversion opens from the
-  column's own Actions pane, and Molecules to HELM runs the other way.
+  column's own Actions pane.
 
   Not translated, and why: the manual case opens the column action from a right-click on the
   header; the action lives in the column's Actions pane on the context panel, which is where the
-  old spec clicked it too. Molecules to HELM runs a Python script on the server, so it needs the
-  stand's script environment.
+  old spec clicked it too. Molecules to HELM (a server-side Python script) and the single-sequence
+  functions called directly (no UI, GROK-15176's isotope check) — see the bdd library's
+  CLAUDE.md, "What never becomes a feature".
 
   Background:
     Given user is logged in
@@ -63,35 +63,6 @@ Feature: To Atomic Level
     And every value of "molfile(MSA)" column should contain "M  V30 BEGIN CTAB"
     And no error or warning balloon should have been shown
 
-  Scenario: Molecules to HELM turns peptide structures back into HELM
-    Given user opens helm_cyclic_cliffs dataset keeping the first 3 rows
-    Then "Structure" column should have semantic type "Molecule"
-    When user picks "Bio > Transform > Molecules to HELM..." from the top menu
-    Then "Molecules to HELM" dialog should be visible
-    And editor of Molecules input in "Molecules to HELM" dialog should have text "Structure"
-    When user clicks on OK button in "Molecules to HELM" dialog
-    Then the "Molecules to HELM" dialog should close
-    And the top menu command should have completed
-    And 1 new column should have been added
-    And a new column matching "^regenerated sequences" should have been added
-    And "regenerated sequences" column should have units "helm"
-    And "regenerated sequences" column should have no missing values
-    And every value of "regenerated sequences" column should match "^PEPTIDE\d+\{"
-    And no error or warning balloon should have been shown
-
-  Scenario: The single-sequence functions give clean V3000 molfiles
-    When user calls "Bio:toAtomicLevelSingleSeq" function with:
-      | sequence | ACDEFGHIK |
-    Then the result should contain text "V3000"
-    And the result should contain text "M  V30 BEGIN CTAB"
-    And the result should not carry an isotope flag on a heavy atom
-    When user calls "Bio:seq2atomic" function with:
-      | seq       | PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0 |
-      | nonlinear | true                                |
-    Then the result should contain text "V3000"
-    And the result should not carry an isotope flag on a heavy atom
-    And no errors should have been logged
-
   Scenario: The column's own action opens the same conversion on that column
     Given the context panel is open
     And user opens filter_HELM dataset
@@ -103,6 +74,7 @@ Feature: To Atomic Level
     And editor of Sequence input in "To Atomic Level" dialog should have text "HELM string"
     When user clicks on OK button in "To Atomic Level" dialog
     Then the "To Atomic Level" dialog should close
+    And the table should have a column "molfile(HELM string)"
     And "molfile(HELM string)" column should have units "molblock"
     And "molfile(HELM string)" column should have no missing values
     And every value of "molfile(HELM string)" column should contain "M  V30 BEGIN CTAB"

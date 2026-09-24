@@ -794,10 +794,14 @@ function install(): void {
     return result;
   };
   /** Painted pixels inside a hit area (the canvas may be scaled to the device). */
-  const areaInk = (el: Element, name: string): number => {
+  /** `inset` device pixels come off every side first: a grid cell's rectangle holds the row and
+   * column gridlines on its edges, which would make an empty cell "painted". */
+  const areaInk = (el: Element, name: string, inset = 0): number => {
     const v = viewerOf(el);
     const cv = canvasOf(v);
-    return inkIn(pixelsOf(v), deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv)));
+    const r = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv));
+    const i = r.w > 4 * inset && r.h > 4 * inset ? inset : 0;
+    return inkIn(pixelsOf(v), {x: r.x + i, y: r.y + i, w: r.w - 2 * i, h: r.h - 2 * i});
   };
   /** A hit area's ink now against the snapshot's (the area must have been reported then too). */
   const areaChange = (el: Element, name: string): AreaChange => {
@@ -1105,9 +1109,15 @@ function install(): void {
    * platform announces every call (`onBeforeRunAction` / `onAfterRunAction`), and the one whose
    * function is registered under the picked menu path is the command — its end is when the
    * command is done, whatever dialog it showed in between. */
-  let command: {name: string; done: Promise<void>; started: number} | undefined;
+  let command: {name: string; done: Promise<void>; started: number; ended?: number} | undefined;
   let columnsBefore: {table: any; names: string[]} | undefined;
   let commandArm: any;
+  // the last OK or RUN click in a dialog: a command that had ended before it only opened the dialog
+  let dialogOkAt = 0;
+  document.addEventListener('click', (e) => {
+    if ((e.target as Element | null)?.closest?.('.d4-dialog [name="button-OK"], .d4-dialog [name="button-RUN"]'))
+      dialogOkAt = Date.now();
+  }, true);
   const armCommand = (path: string): void => {
     const t = grok.shell.t;
     columnsBefore = t ? {table: t.dart, names: t.columns.names()} : undefined;
@@ -1123,15 +1133,17 @@ function install(): void {
         commandArm = undefined;
       let resolve!: () => void;
       const done = new Promise<void>((r) => { resolve = r; });
+      const started = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()} as NonNullable<typeof command>;
       // an unsaved call has no id: two undefined ids are not the same call (a transform the
       // command runs inside itself ended the wait before the command had docked its result)
       const after = grok.functions.onAfterRunAction.subscribe((ended: any) => {
         if (ended?.dart === fc.dart || (fc.id != null && ended?.id === fc.id)) {
           after.unsubscribe();
+          started.ended = Date.now();
           resolve();
         }
       });
-      command = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()};
+      command = started;
     });
     commandArm = sub;
     // a pick that started no call is disarmed after a minute — this arm only, never a later pick's;
@@ -1150,6 +1162,8 @@ function install(): void {
     if (!command)
       throw new Error('no menu command has started a function call in this scenario (a Dart command, or the menu item ran nothing)');
     const c = command;
+    if (c.ended !== undefined && dialogOkAt > c.ended)
+      throw new Error(`${c.name} ended when its dialog opened, before its OK was clicked, so its end says nothing about the work the OK started: claim what that work leaves (a column, a balloon, a viewer, a dialog that finished updating)`);
     const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), capMs));
     if (await Promise.race([c.done.then(() => 'done'), timeout]) === 'timeout')
       throw new Error(`${c.name} has been running for ${Math.round((Date.now() - c.started) / 1000)} s`);
@@ -1175,12 +1189,17 @@ function install(): void {
     return {before: columnsBefore?.names ?? null, now: t ? t.columns.names() : [], same: !!t && columnsBefore?.table === t.dart};
   };
 
-  /** Custom platform events (`grok.events.fireCustomEvent`) by id, counted from "listens for"
-   * until the page resets; a read takes the count and the last arguments and zeroes them. */
+  /** Custom platform events (`grok.events.fireCustomEvent`) by id, counted from the last "listens
+   * for" (an event an earlier scenario or feature left unread must not satisfy this one's claim);
+   * a read takes the count and the last arguments and zeroes them. */
   const customEvents = new Map<string, {count: number; last: unknown; sub: any}>();
   const listenCustom = (id: string): void => {
-    if (customEvents.has(id))
+    const known = customEvents.get(id);
+    if (known) {
+      known.count = 0;
+      known.last = undefined;
       return;
+    }
     const entry = {count: 0, last: undefined as unknown, sub: undefined as any};
     entry.sub = grok.events.onCustomEvent(id).subscribe((args: unknown) => { entry.count++; entry.last = args; });
     customEvents.set(id, entry);

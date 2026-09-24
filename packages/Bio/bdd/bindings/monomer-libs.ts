@@ -1,9 +1,9 @@
 /* The monomer library as Bio holds it: the selection of libraries in the user's settings, what
    the loaded library knows, and the library and collection files on the server that a feature
    creates and removes. Everything is read through Bio's own helper (`Bio:getMonomerLibHelper`). */
-import {expect, Page} from '@playwright/test';
+import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, el} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, el, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
 import {clickOn, selectIn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 
 declare const grok: any;
@@ -105,11 +105,11 @@ function sources(page: Page): Promise<string[]> {
 }
 
 export const loadedFrom = Then('the monomer library should be loaded from {string}', async (page: Page, name: string) => {
-  await expect.poll(() => sources(page), {timeout: 30000, message: 'the sources of the loaded monomers'}).toContain(name);
+  await expect.poll(() => sources(page), {timeout: pollMs(30000), message: 'the sources of the loaded monomers'}).toContain(name);
 }, {description: 'some monomer of the loaded library comes from that source; polls up to 30 s for a reload in flight'});
 
 export const notLoadedFrom = Then('the monomer library should not be loaded from {string}', async (page: Page, name: string) => {
-  await expect.poll(() => sources(page), {timeout: 30000, message: 'the sources of the loaded monomers'}).not.toContain(name);
+  await expect.poll(() => sources(page), {timeout: pollMs(30000), message: 'the sources of the loaded monomers'}).not.toContain(name);
 });
 
 function knows(page: Page, polymerType: string, symbol: string): Promise<boolean> {
@@ -120,11 +120,11 @@ function knows(page: Page, polymerType: string, symbol: string): Promise<boolean
 }
 
 export const knownMonomer = Then('{string} should be a known {string} monomer', async (page: Page, symbol: string, polymerType: string) => {
-  await expect.poll(() => knows(page, polymerType, symbol), {timeout: 30000, message: `the library knows ${polymerType} monomer "${symbol}"`}).toBe(true);
+  await expect.poll(() => knows(page, polymerType, symbol), {timeout: pollMs(30000), message: `the library knows ${polymerType} monomer "${symbol}"`}).toBe(true);
 }, {description: 'the loaded library resolves the symbol for the polymer type (PEPTIDE, RNA, CHEM)'});
 
 export const unknownMonomer = Then('{string} should not be a known {string} monomer', async (page: Page, symbol: string, polymerType: string) => {
-  await expect.poll(() => knows(page, polymerType, symbol), {timeout: 30000, message: `the library knows ${polymerType} monomer "${symbol}"`}).toBe(false);
+  await expect.poll(() => knows(page, polymerType, symbol), {timeout: pollMs(30000), message: `the library knows ${polymerType} monomer "${symbol}"`}).toBe(false);
 });
 
 export const collectionHolds = Then('the {string} monomer collection should hold monomers {string}', async (page: Page, name: string, list: string) => {

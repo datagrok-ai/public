@@ -8,7 +8,8 @@ Feature: Opening chemical file formats and saving a table as SDF
 
   The export icon of the toolbar offers As SDF..., which on smiles opens the Save as SDF dialog on canonical_smiles and downloads
   smiles.sdf, a V2000 molblock per row with the record terminator and the other columns as SD
-  fields. Choosing the v3Kmolblock notation writes V3000 molblocks instead.
+  fields. Choosing the v3Kmolblock notation writes V3000 molblocks instead, and Filtered Rows Only
+  writes one record for each of the 254 rows with two aromatic rings that pass the filter.
 
   Background:
     Given user is logged in
@@ -90,13 +91,13 @@ Feature: Opening chemical file formats and saving a table as SDF
     And user opens smiles dataset
     And user watches downloads
     When user filters rows where "NumAromaticRings" is between 2 and 2
-    Then fewer than 1000 rows should pass the filter
+    Then 254 rows should pass the filter
     When user clicks on "arrow-to-bottom" icon in toolbar
     And user clicks on "As SDF..." item
     And user checks "Filtered Rows Only" input in "Save as SDF" dialog
     And user clicks on OK button in "Save as SDF" dialog
     Then the "Save as SDF" dialog should close
     And a file "smiles.sdf" should have been downloaded
-    And the downloaded file "smiles.sdf" should contain fewer than 1000 occurrences of "$$$$"
+    And the downloaded file "smiles.sdf" should contain 254 occurrences of "$$$$"
     And no errors should have been logged
     And no error or warning balloon should have been shown

@@ -8,7 +8,8 @@ Feature: Activity Cliffs on a table with no numeric column
   The click is the pointer landing on the button as soon as the button is on screen, not the
   library's click, which waits for an enabled target and so would wait out the very seconds the
   defect lived in. OK's state is recorded in the task it enters the page and again as the click
-  lands, and the absence of a balloon and of an error is held over two seconds, not read once.
+  lands, together with whether the click point is on OK (a dialog still laying itself out moves it),
+  and the absence of a balloon and of an error is held over two seconds, not read once.
 
   Background:
     Given user is logged in

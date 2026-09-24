@@ -1,15 +1,16 @@
-@journey @realizes:bio.menu.manage.monomers @realizes:bio.menu.manage.match-with-library @realizes:bio.op.standardise_monomer_library
+@journey @realizes:bio.menu.manage.monomers @realizes:bio.menu.manage.match-with-library
 Feature: Monomers, and matching molecules against the library
   Bio | Manage | Monomers opens a table view of every monomer the selected libraries hold, one row
   per monomer with its symbol, name and polymer type. Match with Monomer Library asks for a
   molecule column and the polymer type to match against — peptide, RNA or chemical monomers. The
-  library standardization behind it keeps every monomer's symbol and polymer type. The Manage
-  Monomer Libraries app is the same view as the menu command.
+  Manage Monomer Libraries app is the same view as the menu command.
 
   Not translated: the Manage Monomer Libraries app's tree browser in Browse (its children load
   with no signal the tree gives, a core gap); creating or editing a monomer in the Monomers view
   (its editor dialog has no feature yet); running Match on a molecule column — the features' Bio
-  datasets hold no Molecule column, and Chem's is Chem's to test.
+  datasets hold no Molecule column, and Chem's is Chem's to test; the library standardization
+  function called directly (no UI) — see the bdd library's CLAUDE.md, "What never becomes a
+  feature".
 
   Background:
     Given user is logged in
@@ -41,11 +42,3 @@ Feature: Monomers, and matching molecules against the library
     And "Polymer Type" input in "Match with Monomer Library" dialog should have value "PEPTIDE"
     When user clicks on CANCEL button in "Match with Monomer Library" dialog
     Then "Match with Monomer Library" dialog should be hidden
-
-  Scenario: Standardizing the core library keeps its monomers and their polymer types
-    When user standardises the "HELMCoreLibrary.json" monomer library
-    Then the result should be a list of 500 or more items
-    And the result should hold "PEPTIDE" monomer "A"
-    And the result should hold "PEPTIDE" monomer "meI"
-    And the result should hold "RNA" monomer "A"
-    And no errors should have been logged

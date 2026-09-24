@@ -20,6 +20,15 @@ nothing is committed without the lead's order. The vocabulary and the invariants
 `public/libraries/bdd/README.md` and `CLAUDE.md` (`npx grok-bdd list-steps` prints every phrase);
 a viewer's areas and readings are in `core/client/d4/lib/src/viewers/<viewer>/CLAUDE.md`.
 
+## First — is it a UI test at all?
+
+Before anything else, drop what never becomes a feature (hard rule, `public/libraries/bdd/CLAUDE.md`
+"What never becomes a feature"): a TestTrack case marked `target_layer: manual-only` or `apitest`;
+any scenario that runs a server-side Python/R/Julia script, a Jupyter kernel or a Docker container,
+or reaches an outside web service (check the code path behind the command or pane, not its name); any scenario with nothing
+UI-specific (a function called and its result checked). Name what was dropped and why in one line
+of the feature description. A gap hunt applies the same filter: these are not gaps.
+
 ## Pass 0 — is there anything to test against?
 
 Look at the viewer's `getWidgetStatus()` first. **A viewer that has none is the whole job**; the

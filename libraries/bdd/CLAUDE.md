@@ -46,6 +46,35 @@ WebLogo glyphs Peptides draws in grid headers), the annotation regions' `region 
 hit areas and `title strip top` / `title strip right` / `region titles shown` readings
 (`AnnotationRegionsMixin.addStatus`).
 
+## What never becomes a feature — hard rule
+
+A feature tests what a user does and sees in the browser. Two kinds of test never go in one — not
+when translating, not when looking for gaps, not when a TestTrack case asks for it (lead's ruling,
+2026-09-23):
+
+- **Anything that runs a server-side script or compute container, or reaches an outside web
+  service**: Python/R/Julia scripts, Jupyter kernels, Docker containers, third-party lookups.
+  Examples: Chem Curate, Mutate, IUPAC Name, Generate Conformers, Butina, Synthon Search, the 3D
+  Structure and Gasteiger panes (Python); Descriptors and Map Identifiers (the chem-chem
+  container); the Identifiers pane (UniChem and PubChem lookups); Bio Molecules to HELM and its 3D
+  embedding. The outcome depends on the stand's kernel, containers and network (a cold kernel after
+  a restart hangs past any budget; a late error from a lookup fails the next scenario's "no errors"),
+  so the suite reports the environment, never the UI. Test the script with a package test. Check the
+  code path, not the menu name: a JS-looking command or pane can call
+  `grok.functions.call('<Pkg>:<PythonScript>')`; the package's `scripts/` folder lists the scripts.
+  A pane builds when expanded, and the expanded state persists in `localStorage` for the worker's
+  page, so a scenario that expands a server-backed pane makes it build in later scenarios too.
+- **Anything with nothing UI-specific**: a function called with arguments and its result checked,
+  a server outcome no UI shows. That is a package test (`src/tests/`) or an `ApiTests` test.
+
+One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer's tree comes from
+the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,
+filtering, editing and removing nodes), which no package test reaches. Similar things should stay/be translated as well, as long as they actually test ui.
+
+A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
+`playwright` case, a scenario of either kind is skipped, and the feature description says so in
+one line. A gap hunt counts these as covered elsewhere, not as gaps.
+
 ## Invariants — what must not regress
 
 - **One registry, through `dist/`.** Specs import the library by package subpath, project bindings
@@ -208,7 +237,11 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   the plot's root) — fixed 2026-09-21 in `regression_line.dart`.
 - Filters: `user filters rows where …` writes the filter bitset, and anything that calls
   `requestFilter` (a histogram on every menu pick) recomputes it — hold a filter across viewer
-  interaction through a filter card. `getFiltersGroup` creates a panel when there is none.
+  interaction through a filter card. `getFiltersGroup` creates a panel when there is none. A click
+  on a categorical card's category name applies "only this one" from a 1 ms debounce that reads the
+  card's current row when it fires (`grid_filter_base.dart`); Chrome runs queued input before timers,
+  so a checkbox click on the same card right after it can move that row first and the card keeps
+  the wrong category — claim the count after the name click before the next click on that card.
 - Readings: `rows shown` is `combinedFilter.trueCount` except where the viewer means "what the
   frame drew" (scatter plot, PC plot under a transformation, density plot); demog-1000 has 128
   blank HEIGHTs, so a plot on HEIGHT draws 872; its auto-picked category is DIS_POP; a calendar at
@@ -250,8 +283,9 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   a row's column, `cell N of x` is its checkbox, its Search input filters without renumbering. A
   Dart property grid category (`tr.property-grid-category`) has no aria state, only its icon
   (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
-  Invariants (`AppEvents.propertyEdited`) reaches across features: a settings click on a new viewer
-  right after another feature edited a property leaves the panel on the old one.
+  Invariants (`AppEvents.propertyEdited`) reaches across features: an implicit current-object change
+  on a new viewer right after another feature edited a property leaves the panel on the old one;
+  a viewer's "Properties..." command forces the change (since 2026-09-23).
 - Users, groups, roles: a login takes `[a-z0-9._-]` only (`grok_user.dart` `validateLogin`). A user
   cannot be deleted: a feature takes the `bddviewed` fixture user to look at, or `bddmanaged` to
   join, disable and favorite (the `@serial` features, never at the same time), both made once per
@@ -283,6 +317,49 @@ hit areas and `title strip top` / `title strip right` / `region titles shown` re
   (`.cm-editor`); a document is not an input value, the text goes in at the caret. The Model Hub
   gallery is on the page and empty for seconds after `Compute2:modelCatalog` returns: wait for
   cards, not the element.
+
+## Claims that cannot fail — what every audit finds again
+
+Each of these passed green while the thing it named was broken (audits of 2026-09-21 and
+2026-09-23). Read every Then of a new feature against this list before running it.
+
+- **A page function sees only its own source.** A Node-side helper named inside `page.evaluate` /
+  `waitForFunction` is a `ReferenceError` in the page, and a `.catch` around the call turns the
+  check into a no-op: the shell reset's task-bar wait never waited from the day it was written.
+  Pass the function itself, or its source as text (`` `(${fn})(…)` ``).
+- **Absence is not a value.** A throw ends an `expect.poll`, so a reading or a column a computation
+  adds late fails the claim at once — the reading steps return `MissingReading` and the column
+  polls the missing column's text instead; neither may ever satisfy a negative.
+- **A negative, a zero or "unchanged" right after an async gesture reads the state before it.**
+  Two search types in a row that both keep 0 rows, a header that echoes the property just set while
+  the cards re-render 200 ms later, "no new column" read once while the analysis runs: pair every
+  such claim with one the gesture must change (a remembered reading that must differ, an end signal
+  first — a balloon, a column, `… should have finished updating`).
+- **`the top menu command should have completed` is the menu function's call.** A package command
+  whose function only builds and shows its own dialog has ended before OK; the step now fails after
+  that OK (`waitCommand`), and the claim is what the OK produces.
+- **Coarse where the number is known.** `fewer than N`, `at least 1`, `lower than before` all pass
+  on 0; "split differently" on label text passes for the same partition renumbered. Write the exact
+  count the description states — measured in a run, never guessed.
+- **Echoes.** A property, tag or header read back right after the step wrote it, a setting-derived
+  count (`regions shown`, `formula lines` = active, not drawn): claim what the frame drew (its hit
+  area) or what the change caused downstream.
+- **Name resolution lands on journey leftovers.** A second `mutations` table, an `R1` column from
+  the first run: close what a scenario made, or claim the new name (`R1_1`).
+- **Text and pixel matchers are wide.** `contain text` is case-insensitive textContent over the
+  whole element, hidden children included; a list reading's `contain` is membership after a comma
+  split (an item with a comma is refused); white is the blank the colour steps skip (refused), grey
+  gridlines are ink (`painted` skips a 2 px border) — a cell claim needs a hue or a reading.
+- **Fixtures that cannot tell the semantics apart**: Shift-adding a region nested in the one already
+  selected gives the same rows as a replace; pick a pair whose union differs from either.
+- **State the harness or an earlier feature left**, stated as the product's: `openTable`'s current
+  cell, the context panel or toolbox open, a custom-event count (reset by `listens for`), a per-account
+  setting toggled through the UI (pin it with a Given that restores it at feature end).
+- **Package bindings take `expect` and `pollMs` from `@datagrok-libraries/bdd/runtime`**, never from
+  `@playwright/test`: the `@known-failure` narrowing and `BDD_EXPECT_TIMEOUT` go through them.
+- **Titles and descriptions that promise more than the Thens claim** ("…and dropping the tree
+  removes it", "builds a ball-and-stick view" checked as "shows no error") — trim the text or add
+  the claim.
 
 ## Environment
 

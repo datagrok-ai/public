@@ -3,8 +3,9 @@ Feature: A saved project brings back the Chem state it was saved with
   On spgi-100 a substructure search for pyridine keeps 17 of the 100 rows on a substructure card for
   Structure, and a generated Scaffold Tree with its first node checked narrows the table further.
   Saved as a project and reopened after everything is closed, the view comes back with the Scaffold
-  Tree, the substructure card holding pyridine, and the same rows passing; unchecking the restored
-  node widens the table back to the 17 rows the substructure search alone keeps.
+  Tree with as many nodes, the substructure card holding pyridine, and as many rows passing as before
+  the save (both remembered before it); unchecking the restored node widens the table back to the 17
+  rows the substructure search alone keeps.
 
   Background:
     Given user is logged in
@@ -31,16 +32,18 @@ Feature: A saved project brings back the Chem state it was saved with
     And no errors should have been logged
 
   Scenario: The project comes back with the tree, the card and the rows
-    When user saves the current view as project "chem-state-roundtrip"
+    When user remembers the "nodes" reading of Scaffold Tree viewer
+    And user remembers the "rows shown" reading of grid
+    And user saves the current view as project "chem-state-roundtrip"
     And user closes all views
     And user opens the "chem-state-roundtrip" project
     Then Scaffold Tree viewer should be visible
-    And the "nodes" reading of Scaffold Tree viewer should be at least 1
+    And the "nodes" reading of Scaffold Tree viewer should be as remembered
     And the "checked nodes" reading of Scaffold Tree viewer should be 1
     And "Structure" filter card should be visible
     And the "structure of Structure" reading of filter panel should be "c1ccncc1"
     And the table should have 100 rows
-    And fewer than 17 rows should pass the filter
+    And the "rows shown" reading of grid should be as remembered
     And no errors should have been logged
 
   Scenario: Unchecking the restored node leaves the substructure search alone

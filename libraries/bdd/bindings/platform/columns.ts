@@ -54,16 +54,20 @@ function columnFacts(page: Page, column: string): Promise<ColumnFacts> {
 
 const filled = (f: ColumnFacts): number[] => f.values.map((_, i) => i).filter((i) => f.values[i] !== '');
 
+/** A fact a poll waits for: a column a computation is about to add is not there yet, and a throw
+ * would end the poll at once — the missing column is kept as the value the failure shows. */
+const factOrAbsence = (read: Promise<string>): Promise<string> => read.catch((e) => `(${e?.message ?? String(e)})`);
+
 export const columnSemType = Then('{string} column should have semantic type {string}', async (page: Page, column: string, semType: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).semType, {message: `semantic type of "${column}"`}).toBe(semType);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.semType)), {message: `semantic type of "${column}"`}).toBe(semType);
 }, {description: 'what the detectors set (Macromolecule, Molecule, Monomer); polled, since detection runs after the column appears'});
 
 export const columnUnits = Then('{string} column should have units {string}', async (page: Page, column: string, units: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).tags['units'] ?? '', {message: `units of "${column}"`}).toBe(units);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.tags['units'] ?? '')), {message: `units of "${column}"`}).toBe(units);
 }, {description: 'the `units` tag — a sequence column\'s notation (fasta, separator, helm), a molecule column\'s molblock'});
 
 export const columnTag = Then('{string} column should have tag {string} equal to {string}', async (page: Page, column: string, tag: string, value: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).tags[tag] ?? '', {message: `tag "${tag}" of "${column}"`}).toBe(value);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.tags[tag] ?? '')), {message: `tag "${tag}" of "${column}"`}).toBe(value);
 });
 
 export const columnTagLists = Then('the {string} tag of {string} column should list at least {int} values', async (page: Page, tag: string, column: string, count: number) => {

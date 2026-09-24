@@ -1,6 +1,7 @@
 /* Chem's own screen parts: the calculators listed on the left of the Chemical Properties dialog
-   (a checkbox and a name per registered calculator function), and the MPO Profiles app — the
-   editable title and description of a profile tab, its property rows and the rows of the list. */
+   (a checkbox and a name per registered calculator function), the MPO Profiles app — the
+   editable title and description of a profile tab, its property rows and the rows of the list —
+   and the 3D view of a molecule. */
 import {element, kind} from '@datagrok-libraries/bdd';
 
 kind('calculator', {

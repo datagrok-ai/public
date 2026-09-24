@@ -46,8 +46,7 @@ Feature: Sequence cell renderers
     When user picks "Bio > Transform > Convert Sequence Notation..." from the top menu
     And user selects "separator" in "Convert to" input in "Convert Sequence Notation" dialog
     And user clicks on OK button in "Convert Sequence Notation" dialog
-    Then the top menu command should have completed
-    And 1 new column should have been added
+    Then 1 new column should have been added
     And a new column matching "^separator\(HELM string\)" should have been added
     And "separator(HELM string)" column should have units "separator"
     And the "cell type of separator(HELM string)" reading of grid should be "sequence"

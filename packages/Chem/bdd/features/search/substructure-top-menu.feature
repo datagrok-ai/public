@@ -3,9 +3,10 @@ Feature: Substructure search from the Search menu
   Chem | Search | Substructure Search... on smiles puts an empty substructure card for
   canonical_smiles on the filter panel and opens its sketcher; nothing is filtered yet. Benzene
   keeps exactly the 924 molecules that contain it, a gold atom keeps none, and the table keeps its
-  1000 rows. A second invocation asks for the molecule column (the first search leaves a hidden
-  canonical SMILES column behind), then empties the card again; carboxylic acid keeps exactly the
-  314 molecules that contain it, on the same single card.
+  1000 rows. A second invocation opens the sketcher again without asking for the molecule column
+  (the first search leaves a hidden canonical SMILES column behind, which is no column to search)
+  and empties the card; carboxylic acid keeps exactly the 314 molecules that contain it, on the
+  same single card.
 
   Background:
     Given user is logged in
@@ -41,11 +42,10 @@ Feature: Substructure search from the Search menu
     And the table should have 1000 rows
     And no errors should have been logged
 
-  Scenario: A second invocation asks for the column and starts from an empty card
+  Scenario: A second invocation starts from an empty card without asking for the column
     When user picks "Chem > Search > Substructure Search..." from the top menu
-    Then "Substructure search" dialog should be visible
-    When user clicks on OK button in "Substructure search" dialog
     Then sketcher dialog should be visible
+    And "Substructure search" dialog should not be visible
     And all rows should pass the filter
     When user types "C(=O)O" into molecule input of sketcher dialog
     And user presses Enter in molecule input of sketcher dialog

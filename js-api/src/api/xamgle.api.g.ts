@@ -21,6 +21,9 @@ export interface SettingsInterface {
   /** Show full screen link on docked viewers */
   dockShowFullScreenLink: boolean;
 
+  /** Show minimize link on docked viewers; a minimized viewer lives on the ribbon until restored */
+  allowViewerMinimization: boolean;
+
   /** Show notification when a file is imported */
   notifyOnFileImport: boolean;
 
@@ -130,8 +133,6 @@ export interface SettingsInterface {
   enableMcpServers: boolean;
 
   enableIndexedDBTablesCache: boolean;
-
-  allowViewerMinimization: boolean;
 
   viewersToTrellis: boolean;
 

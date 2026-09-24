@@ -39,7 +39,7 @@ export const topMenuLists = Then('the top menu should list:', async (page: Page,
 
 export const commandCompleted = Then('the top menu command should have completed', async (page: Page) => {
   await waitCommand(page, COMMAND_CAP);
-}, {description: 'the function call the last picked menu item started has ended (the platform\'s onAfterRunAction), dialog and all — up to two minutes'});
+}, {description: 'the function call the last picked menu item started has ended (the platform\'s onAfterRunAction), dialog and all — up to two minutes; fails when that call had ended before its dialog\'s OK, which only a package\'s own dialog opener does — claim what the OK produces instead'});
 
 /** The columns the current table gained since the last menu command; polled, since a command
  * that returned at once (a dialog of its own) may still be at work. */

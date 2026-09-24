@@ -5,9 +5,10 @@ Feature: Formula lines regression checks
   uses it, a line survives a change of the axis columns untouched (GROK-16214), a band and a line
   survive a logarithmic axis (GROK-20458), and hovering markers next to a line raises nothing
   (github-2530). The lines are written into the `formulaLines` look property or added from the
-  axis menu; what a viewer draws is its `formula lines` reading — the count of active items —
-  and, on the line chart, the `formula line "<title>"` hit area. On demog-1000; from
-  `formula-lines-regressions.md`.
+  axis menu. The `formula lines` reading counts the active items (visible, on the plot's axes),
+  whether or not they were drawn; what the last frame drew is the `formula line "<title>"` /
+  `formula band <n>` hit area, so the band on a logarithmic axis is claimed by its area.
+  On demog-1000; from `formula-lines-regressions.md`.
 
   Background:
     Given user is logged in
@@ -85,6 +86,7 @@ Feature: Formula lines regression checks
     Then the "formula lines" reading of scatter plot viewer should be 1
     When user sets "yAxisType" property of scatter plot viewer to "logarithmic"
     Then the "formula lines" reading of scatter plot viewer should be 1
+    And scatter plot viewer should have a "formula band 1" area
     And scatter plot viewer should have repainted
     And no error or warning balloon should have been shown
     When user sets "yAxisType" property of scatter plot viewer to "linear"

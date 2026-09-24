@@ -4,9 +4,11 @@ Feature: Grid summary columns
   renderer it registers with `gridChart` and `virtual` set (`src/package.ts`) is offered there under
   its friendly name, and picking one appends a virtual column of that name. The grid reports the
   column in `column order` and the renderer it was given as `cell type of <col>` (the function's
-  cell type, set before any drawing), so each is paired with a claim that the new column's cell
-  area is painted - an area that did not exist before the column did. Also this package's: the handler that follows a source
-  column into its summary columns when it is renamed or removed. Every scenario starts on a fresh
+  cell type, set before any drawing), so each is paired with a claim that a cell of the new column
+  is painted inside its gridlines, on row 3: the menu's right click on row 2 made that row current
+  and tints it, and an empty cell of a row neither current nor hovered reads blank (checked
+  against an unflagged Tags cell on 2026-09-23). Also this package's: the handler that follows a
+  source column into its summary columns when it is renamed or removed. Every scenario starts on a fresh
   demog-1000, whose own columns are USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG,
   CONTROL, STARTED and SEVERITY.
 
@@ -36,8 +38,9 @@ Feature: Grid summary columns
   GROK-19942 claim still rests on the renderer skipping a missing column. Which rows a Tags
   column marks is the last scenario: it carried `@known-failure` for GROK-20888 (a Tags column
   painted the grid over in one colour) until the fix of 2026-09-15 reached the stand; the marked
-  cell is claimed as painted — its chip is one hue on white — and the flood is what the white
-  claims on the neighbouring cells would catch. The grid
+  cell is claimed by its hue — the chip is one colour on white — and the flood by the unmarked
+  cells of row 1 staying free of any hue (row 1 is neither flagged nor current: the menu's right
+  click made row 2 current). The grid
   reports `cell type of <col>` for the columns it draws, so the round-trip scenario reads the first
   three summary columns, walks the current cell to the last one so the rest scroll into view, and
   reads them; the current column is not claimed there, since a virtual column is no table column.
@@ -53,7 +56,7 @@ Feature: Grid summary columns
     When user picks "Add > Summary Columns > <item>" from the context menu of the "cell 2 of USUBJID" area of grid
     Then the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, <item>"
     And the "cell type of <item>" reading of grid should be "<type>"
-    And the "cell 2 of <item>" area of grid should be painted
+    And the "cell 3 of <item>" area of grid should be painted
     And the table should have 11 columns
     And no errors should have been logged
 
@@ -94,7 +97,7 @@ Feature: Grid summary columns
   Scenario: The grid keeps drawing a Tags column whose source column was removed (GROK-19942)
     When user picks "Add > Summary Columns > Tags" from the context menu of the "cell 2 of USUBJID" area of grid
     Then the "cell type of Tags" reading of grid should be "tags"
-    And the "cell 3 of Tags" area of grid should be painted
+    And the "cell 3 of Tags" area of grid should be painted in at least 1 colors
     When user picks "Remove" from the context menu of the "header CONTROL" area of grid
     Then the table should not have a column "CONTROL"
     And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, STARTED, SEVERITY, Tags"
@@ -182,11 +185,10 @@ Feature: Grid summary columns
     When user picks "Add > Summary Columns > Sparklines" from the context menu of the "cell 2 of USUBJID" area of grid
     And user picks "Add > Summary Columns > Tags" from the context menu of the "cell 2 of Sparklines" area of grid
     Then the "cell type of Tags" reading of grid should be "tags"
-    And the "cell 1 of Tags" area of grid should contain the color "#FFFFFF"
-    And the "cell 3 of Tags" area of grid should be painted
+    And the "cell 1 of Tags" area of grid should be painted in no color
+    And the "cell 3 of Tags" area of grid should be painted in at least 1 colors
     And the "cell 1 of Tags" and "cell 3 of Tags" areas of grid should be painted in different colors
-    And the "cell 1 of Sparklines" area of grid should contain the color "#FFFFFF"
-    And the "cell 1 of SEVERITY" area of grid should contain the color "#FFFFFF"
+    And the "cell 1 of SEVERITY" area of grid should be painted in no color
     And the "text of cell 1 of SEVERITY" reading of grid should be "High"
     And the "text of cell 1 of CONTROL" reading of grid should be "false"
     And the "text of cell 3 of CONTROL" reading of grid should be "true"

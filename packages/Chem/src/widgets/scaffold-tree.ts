@@ -419,6 +419,11 @@ export async function updateVisibleNodes(
 async function renderMoleculeAsync(group: DG.TreeViewGroup, gropVal: ITreeNode, thisViewer: ScaffoldTreeViewer): Promise<void> {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
+      // a removed node still gets its resize callback; drawing a colored one would register its color again
+      if (!group.root.isConnected) {
+        resolve();
+        return;
+      }
       const canvas = group.root.querySelector('.chem-canvas') as HTMLCanvasElement;
 
       const {chosenColor, parentColor, smiles, colorOn} = gropVal;
@@ -1341,13 +1346,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   removeColorCoding(node: TreeViewGroup) {
+    // a node that only inherits its color owns no entry: the entry is its colored ancestor's, which stays
     const processGroup = (group: DG.TreeViewGroup) => {
       const groupValue = value(group);
-      const smiles = (groupValue.chosenColor && groupValue.colorOn) ?
-        groupValue.smiles :
-        this.getParentSmilesIterative(group);
-
-      removeElementByMolecule(this.colorCodedScaffolds, smiles);
+      if (groupValue.chosenColor && groupValue.colorOn)
+        removeElementByMolecule(this.colorCodedScaffolds, groupValue.smiles);
       removeElementByMolecule(this.checkedScaffolds, groupValue.smiles);
 
       if (group.children && !isOrphans(group))

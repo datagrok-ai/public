@@ -250,6 +250,7 @@ Key concepts:
 - **Route format**: every step is emitted as its own `reactants>>product` segment, joined by
   `BRANCH_DELIMITER` (`--**--`) defined in `src/rendering/rdkit-reaction-renderer.ts`. The renderer's
   `parseMultiStepReaction(string): string[][]` consumes this format and the cell renderer draws each
-  step with a step-arrow separator.
+  step in a numbered panel, with separators between panels and width-aware row wrapping. Retained
+  substrates are aligned using RDKit; molblocks and coordinate-bearing CXSMARTS are cached per route.
 - Tests: `src/tests/reaction-enumeration-tests.ts` — covers parsing helpers, route formatting,
   cross-round route reconstruction, depth-first linear-extension constraint, AA library end-to-end.

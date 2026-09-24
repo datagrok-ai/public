@@ -163,13 +163,13 @@ category('Model: Settings', () => {
     model.settings = {showDendrogram: true};
     expect(model.settings?.showDendrogram, true, 'Dendrogram is disabled after enabling');
 
-    await awaitCheck(() => model.findViewer(VIEWER_TYPE.DENDROGRAM) !== null,
+    await awaitCheck(() => model.dendrogramCloseButton !== null,
       'Dendrogram is not present in the view after 5s delay', 5000);
 
     // Disable dendrogram
     model.settings = {showDendrogram: false};
     expect(model.settings?.showDendrogram, false, 'Dendrogram is enabled after disabling');
-    expect(model.findViewer(VIEWER_TYPE.DENDROGRAM) === null, true,
+    expect(model.dendrogramCloseButton === null, true,
       'Dendrogram is present in the view after disabling');
   }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
 }, {clear: false});

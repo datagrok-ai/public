@@ -7,10 +7,9 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
 import {Editor} from 'ketcher-react';
 import {StandaloneStructServiceProvider} from 'ketcher-standalone';
-import {Ketcher} from 'ketcher-core';
+import {Ketcher, MolSerializer, Pile, SupportedFormat} from 'ketcher-core';
 import 'ketcher-react/dist/index.css';
 import '../css/editor.css';
-import {KETCHER_MOLV2000, KETCHER_MOLV3000} from './constants';
 
 type NotationKey = 'smiles' | 'molblock' | 'molblockV3000' | 'smarts';
 
@@ -40,6 +39,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   // so only one live editor per page is possible (upstream limitation): mounting a new one
   // suspends all others behind a "Reload" placeholder instead of letting them silently break.
   private static _instances = new Set<KetcherSketcher>();
+  private static _indigoTurn: Promise<unknown> = Promise.resolve();
   _smiles: string | null = null;
   _molV2000: string | null = null;
   _molV3000: string | null = null;
@@ -51,6 +51,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   private importedMoleculesCounter = 0;
   private _detached = false;
   private _suspended = false;
+  private _exportId = 0;
 
   constructor() {
     super();
@@ -75,6 +76,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         '' :
         _package.webRoot.substring(0, _package.webRoot.length - 1),
       structServiceProvider: structServiceProvider,
+      // its toggle is hidden (editor.css), and onInit would wait for its lazy chunk while the canvas already takes strokes
+      disableMacromoleculesEditor: true,
       errorHandler: (message: string) => {
         console.log('Sketcher error', message);
       },
@@ -94,7 +97,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         //   }
         // });
         this._restoreMolecule();
-        (this._sketcher.editor as any).subscribe('change', async () => {
+        (this._sketcher.editor as any).subscribe('change', () => {
           if (this._detached || this._suspended)
             return;
           this.updatingMolecule = false;
@@ -105,30 +108,62 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
             this.importedMoleculesCounter --;
           else
             this.explicitMol = null;
-          try {
-            this._smiles = await this._sketcher!.getSmiles();
-          } catch { //in case we are working with smarts - getSmiles() will fail with exception
-            this._smiles = null;
-          }
-          // detach() (e.g. clicking OK on the cell editor dialog) unmounts the React <Editor>
-          // while the awaits above are still pending; ketcher-core then drops its singleton
-          // instance and any getMolfile() still in flight throws "couldnt find ketcher instance N".
-          try {
-            if (this._detached || this._suspended)
-              return;
-            this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
-            this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
-            this._smarts = await this._sketcher!.getSmarts();
-          } catch {
-            return;
-          }
-          this.onChanged.next(null);
+          this._exportChange(this._sketcher!);
         });
       },
     };
 
     this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
     this.reactRoot.render(React.createElement(Editor, props, null));
+  }
+
+  /** Runs an Indigo conversion once the ones before it have ended: the standalone struct service hands a
+   * worker reply to every pending conversion of the same input, whatever its format, fails them all when
+   * the reply is an error (SMILES of a query), and drops the ones of another input unanswered. */
+  private static _inTurn<T>(conversion: () => Promise<T>): Promise<T> {
+    const result = KetcherSketcher._indigoTurn.then(conversion);
+    KetcherSketcher._indigoTurn = result.catch(() => {});
+    return result;
+  }
+
+  /** Exports the drawing as it is at the change. While the template tool hovers the canvas, Ketcher keeps the
+   * template under the cursor in the structure itself (with no change event), so an export read later took it
+   * in as a second copy of the template. The V2000 molblock is written at once and announced, so a dialog's
+   * OK right after a stroke has it; the Indigo notations follow in turn and are announced again only when
+   * they change the molblock (enhanced stereo). A conversion that starts after a detach finds no Ketcher
+   * instance and fails, and the getters then convert the molblock instead. */
+  private _exportChange(ketcher: Ketcher): void {
+    if ((window as any).isPolymerEditorTurnedOn || ketcher.containsReaction())
+      return;
+    const struct = ketcher.editor.struct();
+    const drawn = struct.clone(
+      new Pile<number>(struct.atoms.keys()).filter((id) => !struct.atoms.get(id)!.isPreview),
+      new Pile<number>(struct.bonds.keys()).filter((id) => !struct.bonds.get(id)!.isPreview));
+    let molV2000: string;
+    try {
+      molV2000 = new MolSerializer().serialize(drawn);
+    }
+    catch {
+      return;
+    }
+    const exportId = ++this._exportId;
+    this._molV2000 = molV2000;
+    this._smiles = this._molV3000 = this._smarts = null;
+    this.onChanged.next(null);
+    const molFile = this.molFile;
+    const convert = (format: SupportedFormat) => KetcherSketcher._inTurn(() => exportId !== this._exportId ?
+      Promise.reject(new Error('a later change is exported')) :
+      ketcher.formatterFactory.create(format, ketcher.editor.serverSettings as any).getStringFromStructureAsync(drawn));
+    Promise.all([convert(SupportedFormat.molV3000), convert(SupportedFormat.smarts), convert(SupportedFormat.smiles).catch(() => null)])
+      .then(([molV3000, smarts, smiles]) => {
+        if (exportId !== this._exportId)
+          return;
+        this._molV3000 = molV3000;
+        this._smarts = smarts;
+        this._smiles = smiles;
+        if (this.molFile !== molFile)
+          this.onChanged.next(null);
+      }, () => {});
   }
 
   private _suspend(): void {
@@ -251,8 +286,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   async getSmarts(): Promise<string> {
-    if (this._sketcher)
-      return !this._detached ? await this._sketcher.getSmarts() : this._smarts ?? '';
+    const ketcher = this._sketcher;
+    if (ketcher)
+      return !this._detached ? await KetcherSketcher._inTurn(() => ketcher.getSmarts()) : this._smarts ?? '';
     return this._smarts ?? '';
   }
 
@@ -302,6 +338,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   private _setNotation(notation: NotationKey, value: string): void {
+    this._exportId++;
     this.updatingMolecule = true;
     this.setKetcherMolecule(value);
     //@ts-ignore

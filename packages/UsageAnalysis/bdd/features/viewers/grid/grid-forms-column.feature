@@ -6,8 +6,10 @@ Feature: Grid form columns
   of its own named Summary, which Close and Apply leaves for the table view; Default HTML Form asks
   which columns to show and adds an `html` column; Custom HTML Form... asks for the markup and adds
   one too. The grid reports the new column in `column order` and its renderer as `cell type of
-  <col>`; the Context Panel of a form column offers Edit, which reopens the designer. The renderer
-  items of the same menu belong to PowerGrid and are claimed in
+  <col>`; the Context Panel of a form column offers Edit, which reopens the designer. What a form
+  or HTML cell shows is not claimed: those cells are DOM elements laid over the grid, the canvas
+  under them stays blank (read on 2026-09-23), and the grid reports no reading of their content.
+  The renderer items of the same menu belong to PowerGrid and are claimed in
   `packages/PowerGrid/bdd/features/grid/summary-columns.feature`. Source: `grid-ui.md` "Summary
   Columns - Form Designer"; the two HTML items are beyond the TestTrack specs (operator decision D3:
   every item of the menu). Every scenario starts on a fresh demog-1000.
@@ -32,7 +34,6 @@ Feature: Grid form columns
     Then the "demog-1000" view should be current
     And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, form"
     And the "cell type of form" reading of grid should be "form"
-    And the "cell 1 of form" area of grid should be painted
     When user clicks on the "header form" area of grid
     Given the context panel is open
     Then the context panel should show "form"
@@ -54,7 +55,6 @@ Feature: Grid form columns
     Then "Select columns..." dialog should be hidden
     And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, html"
     And the "cell type of html" reading of grid should be "html"
-    And the "cell 1 of html" area of grid should be painted
     And no errors should have been logged
 
   Scenario: Custom HTML Form... takes the markup and adds an HTML column
@@ -65,4 +65,3 @@ Feature: Grid form columns
     And the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, html"
     And the "cell type of html" reading of grid should be "html"
     And no errors should have been logged
-    And the "cell 1 of html" area of grid should be painted

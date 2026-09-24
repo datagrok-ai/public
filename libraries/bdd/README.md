@@ -23,6 +23,12 @@ Nothing in that scenario is a selector. Steps are the verbs, element phrases res
 contract (`data-u2`, `data-u2-name`, `data-u2-part`) and from a small registry of names, and the
 compiler reports every step, element or dataset it cannot resolve, with the line number.
 
+**What is not a feature.** A scenario that runs a server-side Python/R/Julia script, a Jupyter kernel
+or a Docker container, or reaches an outside web service, or that has nothing UI-specific (a
+function called and its result checked),
+is a package test or an `ApiTests` test, never a feature. The same goes for a TestTrack case marked
+`manual-only` or `apitest`. The rule and its reasons are in `CLAUDE.md`, "What never becomes a feature".
+
 ## Using it in a package
 
 The library is not on npm yet, so a package depends on it by path — what `grok-bdd init` writes

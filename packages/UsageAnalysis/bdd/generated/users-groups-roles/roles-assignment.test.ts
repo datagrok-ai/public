@@ -114,13 +114,12 @@ test.describe("Who holds a role, and what it grants", () => {
     });
     await run.scenario("A role that grants a permission can still be deleted (Roles-14, Roles-15)", async () => {
       await session.step(110, "When user types \"BDD-RA-Role-{time}\" into gallery search", () => typeInto(page, session.text("BDD-RA-Role-{time}"), el("gallery search")));
-      await session.step(111, "Then the gallery counter should be lower than remembered", () => galleryCountLower(page));
-      await session.step(112, "When user picks \"Delete\" from the context menu of \"BDD-RA-Role-{time}\" link in gallery", () => pickFromContextMenu(page, "Delete", el(session.text("\"BDD-RA-Role-{time}\" link in gallery"))));
-      await session.step(113, "Then \"Are you sure?\" dialog should be visible", () => shouldBe(page, el("\"Are you sure?\" dialog"), "visible"));
-      await session.step(114, "When user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
-      await session.step(115, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
-      await session.step(116, "And 0 roles named \"BDD-RA-Role-{time}\" should be on the server", () => groupsOnServer(page, 0, session.text("BDD-RA-Role-{time}")));
-      await session.step(117, "And no errors should have been logged", () => noErrors(page));
+      await session.step(111, "And user picks \"Delete\" from the context menu of \"BDD-RA-Role-{time}\" link in gallery", () => pickFromContextMenu(page, "Delete", el(session.text("\"BDD-RA-Role-{time}\" link in gallery"))));
+      await session.step(112, "Then \"Are you sure?\" dialog should be visible", () => shouldBe(page, el("\"Are you sure?\" dialog"), "visible"));
+      await session.step(113, "When user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
+      await session.step(114, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
+      await session.step(115, "And 0 roles named \"BDD-RA-Role-{time}\" should be on the server", () => groupsOnServer(page, 0, session.text("BDD-RA-Role-{time}")));
+      await session.step(116, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

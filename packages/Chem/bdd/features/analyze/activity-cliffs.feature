@@ -28,7 +28,7 @@ Feature: Activity Cliffs over molecules and their activity
     And a new column matching "^Embed_Y_" should have been added
     And the newest column matching "^Embed_X_" should have no missing values
     And scatter plot viewer should be visible
-    And the "cliffs" reading of scatter plot viewer should be at least 1
+    And the "cliffs" reading of scatter plot viewer should be 2
     And the "only cliffs" reading of scatter plot viewer should be "false"
     And the table should have 29 rows
     And all rows should pass the filter
@@ -42,7 +42,7 @@ Feature: Activity Cliffs over molecules and their activity
   Scenario: Show only cliffs keeps the rows that take part in one
     When user switches on "Show only cliffs" input
     Then the "only cliffs" reading of scatter plot viewer should be "true"
-    And fewer than 29 rows should pass the filter
+    And 4 rows should pass the filter
     When user switches off "Show only cliffs" input
     Then the "only cliffs" reading of scatter plot viewer should be "false"
     And all rows should pass the filter
@@ -55,7 +55,7 @@ Feature: Activity Cliffs over molecules and their activity
     Then "Similarity cutoff" input in "Activity Cliffs" dialog should have value "20"
     When user clicks on OK button in "Activity Cliffs" dialog
     Then the top menu command should have completed
-    And the "cliffs" reading of scatter plot viewer should be at least 10
+    And the "cliffs" reading of scatter plot viewer should be 52
     And no errors should have been logged
 
   Scenario: A stricter similarity cutoff finds fewer
