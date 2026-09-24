@@ -1573,8 +1573,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/compute-utils
       '@datagrok-libraries/test':
-        specifier: workspace:^
-        version: link:../../libraries/test
+        specifier: 1.4.1
+        version: 1.4.1(@playwright/test@1.63.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../../libraries/utils
@@ -19766,6 +19766,22 @@ snapshots:
     optionalDependencies:
       '@datagrok-libraries/bio': link:libraries/bio
 
+  '@datagrok-libraries/test@1.4.1(@playwright/test@1.63.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)':
+    dependencies:
+      cash-dom: 8.1.5
+      datagrok-api: 1.27.11(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      dayjs: 1.11.23
+      fast-sha256: 1.3.0
+      js-base64: 3.9.3
+      rxjs: 6.6.7
+      wu: 2.1.0
+    optionalDependencies:
+      '@playwright/test': 1.63.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
   '@datagrok-libraries/test@1.4.1(@playwright/test@1.63.0)(bufferutil@4.1.0)(utf-8-validate@6.0.6)':
     dependencies:
       cash-dom: 8.1.5
@@ -28309,6 +28325,25 @@ snapshots:
       call-bound: 1.0.4
       es-errors: 1.3.0
       is-data-view: 1.0.2
+
+  datagrok-api@1.27.11(bufferutil@4.1.0)(utf-8-validate@5.0.10):
+    dependencies:
+      '@babel/core': 7.29.7
+      '@datagrok-libraries/chem-meta': 1.2.12
+      '@types/react': 18.3.31
+      '@types/wu': 2.1.44
+      cash-dom: 8.1.5
+      dayjs: 1.11.23
+      openchemlib: 7.5.0
+      react: 18.3.1
+      rxjs: 6.6.7
+      typeahead-standalone: 4.14.1
+      ws: 8.21.3(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      wu: 2.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
 
   datagrok-api@1.27.11(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
