@@ -361,6 +361,14 @@ kind('membership candidate', {
   labelSelector: '.d4-user-selector-user-name',
   parts: {...MEMBERSHIP_PARTS, 'add button': '[name="button-Add"]'},
 });
+// a table row of the Save project dialog's entity list (project_entity_move.dart): its action,
+// its Data sync switch and the Creation script block
+kind('project table', {
+  aliases: ['saved table'],
+  selector: '.grok-project-move-entity-row',
+  match: ['dart'],
+  dartNames: ['project-table-{q}'],
+});
 kind('view', {
   selector: '.d4-view-handle, [name^="view-handle: "]',
   match: ['dart', 'text'],
