@@ -38,7 +38,7 @@ import $ from 'cash-dom';
 import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
-import {CanvasRenderer, Grid, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
+import {CanvasRenderer, Grid, GridCell, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
@@ -1672,10 +1672,10 @@ export class ObjectHandler<T = any> {
     throw 'Not defined.';
   }
 
-  /** String representation of the [item], by default item.toString().
+  /** String representation of the [item]: the value of a semantic value or a grid cell, item.toString() otherwise.
    * @param x - item */
   getCaption(x: T): string {
-    return `${x}`;
+    return x instanceof SemanticValue ? `${x.value}` : x instanceof GridCell ? `${x.cell?.value ?? ''}` : `${x}`;
   }
 
 
