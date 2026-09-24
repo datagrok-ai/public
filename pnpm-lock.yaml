@@ -1616,8 +1616,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/dock-spawn-dg
       '@datagrok-libraries/test':
-        specifier: workspace:^
-        version: link:../../libraries/test
+        specifier: 1.4.1
+        version: 1.4.1(@playwright/test@1.63.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../../libraries/utils
