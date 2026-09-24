@@ -2,13 +2,15 @@
 /* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {cloneConfig, DEFAULT_CONFIG} from '../utils/reaction-enumeration/config';
 import {
   enumerate, formatRoute, OutputRow, Route,
   splitSmartsByReactants, stripOuterParens, TemplateInput,
 } from '../utils/reaction-enumeration/enumerate';
+import {applyProductFilters, computeMolStats} from '../utils/reaction-enumeration/filters';
+import {addResultFilters, buildResultDataFrame} from '../utils/reaction-enumeration/shared';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
@@ -195,10 +197,139 @@ category('Reaction Enumeration', () => {
     expect(stripOuterParens('[#6:1]'), '[#6:1]');
   });
 
+  // ── product filters ─────────────────────────────────────────────────────
+  test('filters: aromatic ring count matches RDKit (fused, heteroaromatic, quinone, Kekulé input)', async () => {
+    const rdkit = getRdKitModule();
+    const cases: [string, number][] = [
+      ['C1CCCCC1', 0], ['C1=CC=CC=C1', 1], ['c1ccccc1-c2ccncc2C', 2],
+      ['c1ccc2ccccc2c1', 2], ['c1ccc2[nH]ccc2c1', 2], ['O=C1C=CC(=O)C=C1', 0],
+      // Biphenylene pins the rule to bonds: counting its all-aromatic atoms would say 3.
+      ['c1ccc2c(c1)-c1ccccc1-2', 2],
+    ];
+    for (const [smiles, expected] of cases) {
+      const mol = rdkit.get_mol(smiles);
+      try {
+        const stats = computeMolStats(mol);
+        expect(stats.numAromaticRings, expected, `numAromaticRings for ${smiles}`);
+        expect(stats.numAromaticRings, Number(JSON.parse(mol.get_descriptors()).NumAromaticRings),
+          `RDKit NumAromaticRings parity for ${smiles}`);
+      } finally {mol.delete();}
+    }
+
+    const naphthalene = rdkit.get_mol('c1ccc2ccccc2c1');
+    try {
+      const stats = computeMolStats(naphthalene);
+      const specs = cloneConfig(DEFAULT_CONFIG).products_specs;
+      specs.only_these_atoms_allowed = [];
+      specs.min_num_carbon_atoms = -1;
+      expect(applyProductFilters(stats, specs, [], naphthalene).pass, true, 'blank cap must not filter');
+      specs.max_num_aromatic_rings = 1;
+      expect(applyProductFilters(stats, specs, [], naphthalene).reason, 'max_num_aromatic_rings',
+        'and two rings must fail a cap of one');
+    } finally {naphthalene.delete();}
+  });
+
+
+  // ── per-step product counts ─────────────────────────────────────────────
+  // Methylates any OH, so a polyol branches once per OH and each product keeps the remaining ones.
+  const O_METHYLATION: TemplateInput = {
+    smarts: '[C:1][OH:2]>>[C:1][O:2]C', blockingSmartsList: [], reactionName: 'O-methylation',
+  };
+  const polyolConfig = (rounds: number) => {
+    const c = cloneConfig(DEFAULT_CONFIG);
+    c.enumeration.num_rounds = rounds;
+    c.products_specs.min_num_carbon_atoms = -1;
+    return c;
+  };
+
+  test('result filters: one histogram per step, over columns hidden in the grid', async () => {
+    const rdkit = getRdKitModule();
+    // Butane-1,2,3-triol: three OH sites, so the branch count falls 3 -> 2 -> 1 along the route.
+    const {rows} = await enumerate({rdkit, config: polyolConfig(3), templates: [O_METHYLATION],
+      buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts: []});
+    const df = buildResultDataFrame(rows);
+
+    const visible = df.columns.names().filter((c) => !c.startsWith('~'));
+    expect(visible.join(','),
+      'product,route,reaction_names,product_counts,template_1,template_2,template_3,' +
+      'round,n_routes,n_products',
+      'no per-step column reaches any grid, including the preview\'s');
+    for (const c of ['reaction_names', 'product_counts'])
+      expect(df.col(c)!.meta.multiValueSeparator, '\n', `${c} splits into per-step filter categories`);
+
+    const nSteps = df.col('reaction_names')!.toList().map((v: string) => v.split('\n').length);
+    const row = nSteps.indexOf(3);
+    expect(df.col('product_counts')!.get(row),
+      'Step 1: 3 products\nStep 2: 2 products\nStep 3: 1 product');
+    expect(df.col('n_products')!.get(row), 6, '3 x 2 x 1 isomer paths');
+    expect(df.col('~step_products_2')!.get(row), 2, 'each step keeps its own count for its histogram');
+    // A later step's 0 is what a "step 2 at most N" range keeps, rather than dropping the route.
+    expect(df.col('~step_products_2')!.get(nSteps.indexOf(1)), 0, 'a step never taken reads 0');
+
+    const tv = grok.shell.addTableView(df);
+    try {
+      addResultFilters(tv);
+      // The panel's serialized order, top to bottom — the only view of what actually got added.
+      const read = () => (tv.getFiltersGroup().getOptions(true).look.filters ?? []) as
+        {type: string; column?: string; colNames?: string[]}[];
+      await awaitCheck(() => read().length >= 11, 'filters never reached the panel', 5000);
+      const states = read();
+      const keys = states.map((s) => s.column ?? s.colNames?.join('|') ?? s.type);
+      expect(keys.join(','), [
+        '~reaction_name_1|~reaction_name_2|~reaction_name_3', 'product',
+        '~step_products_1', '~step_products_2', '~step_products_3',
+        'template_1', 'template_2', 'template_3', 'round', 'n_routes', 'n_products',
+      ].join(','), 'tree, product, then the count histograms in the summary cell\'s slot');
+      expect(states[keys.indexOf('~step_products_2')].type, 'histogram',
+        'a step whose count varies across routes gets a range, not categories');
+      // A friendlyName tag makes the filter group drop the column silently; a description must not.
+      for (const c of ['product_counts', 'n_products', '~step_products_1']) {
+        expect((tv.dataFrame.col(c)!.getTag(DG.TAGS.DESCRIPTION) ?? '').length > 0, true,
+          `${c} explains itself on hover`);
+      }
+    } finally {
+      tv.close();
+    }
+  });
+
+  test('per-step limit: a step over the cap is dropped whole, not trimmed to the cap', async () => {
+    const rdkit = getRdKitModule();
+    const bb = ['CC(O)C(O)CO'];
+    const run = async (cap?: number) => {
+      const cfg = polyolConfig(1);
+      if (cap !== undefined) cfg.max_num_products_per_step = cap;
+      return enumerate({rdkit, config: cfg, templates: [O_METHYLATION],
+        buildingBlocks: bb, exclusionSmarts: []});
+    };
+
+    expect((await run()).rows.length, 3, 'all three mono-methyl isomers without a cap');
+    expect((await run(3)).rows.length, 3, 'a cap the step meets exactly keeps every product');
+
+    const under = await run(2);
+    expect(under.rows.length, 0, 'three products over a cap of two drops all three');
+    expect(under.warnings.some((w) => w.includes('2-product cap')), true,
+      'and says so, rather than silently');
+  });
+
+  test('per-step limit: the cap counts kept products, not raw reaction outputs', async () => {
+    const rdkit = getRdKitModule();
+    // This SMARTS rejects two of the triol's three ethers, leaving one — within a cap of 1.
+    const cfg = polyolConfig(1);
+    cfg.max_num_products_per_step = 1;
+    const {rows, warnings} = await enumerate({rdkit, config: cfg, templates: [O_METHYLATION],
+      buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts: ['[CX4H1][OX2][CH3]']});
+
+    expect(rows.length, 1, 'the one product that passed the filters is kept');
+    expect(rows[0].product, 'COCC(O)C(C)O', 'the primary ether, reached only after two rejections');
+    expect(warnings.some((w) => w.includes('product cap')), false,
+      'nothing was dropped, so no cap warning');
+  });
+
+
   // ── route formatting ────────────────────────────────────────────────────
   const tmpl = '';
   const step = (reactants: string[], product: string) =>
-    ({reactants, product, templateSmarts: tmpl, reactionName: ''});
+    ({reactants, product, templateSmarts: tmpl, reactionName: '', nProducts: 1});
 
   test('route formatting: single-step route', async () => {
     const route: Route = [step(['BB1', 'BB2'], 'P1')];
