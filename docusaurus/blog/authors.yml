@@ -1,0 +1,13 @@
+# Blog authors. Reference by key in a post's front matter: `authors: [datagrok]`.
+# Inline authors in posts are rejected by the build (onInlineAuthors: 'throw'),
+# so every author must be defined here.
+#
+# Fields: name (required), title, url, image_url, page, socials.
+# `page: true` generates an author page at /blog/authors/<key>.
+
+datagrok:
+  name: Datagrok Team
+  title: Datagrok
+  url: https://datagrok.ai
+  image_url: /docusaurus_img/logo.png
+  page: false

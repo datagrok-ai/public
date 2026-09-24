@@ -4,6 +4,7 @@ Docusaurus 3.10 (React/Node.js) static site that serves the datagrok.ai document
 - `/help/*` — Platform documentation (Markdown from `public/help/`)
 - `/api/js/*` — JavaScript API reference (TypeDoc-generated)
 - `/api/py/*` — Python API reference (custom AST-based generator)
+- `/blog/*` — Blog (Markdown from `docusaurus/blog/`, see `blog/_README.md` for the authoring guide)
 
 ## datagrok.ai Site Architecture
 
@@ -17,6 +18,8 @@ The datagrok.ai website consists of two independently deployed parts on a single
    - Deployed by GitHub Actions → `/home/grok/docusaurus/`
 
 Nginx routes decide which directory serves each URL path. The two deploys never overwrite each other.
+Any new top-level route served by Docusaurus (e.g. `/blog`) needs a matching nginx `location` in the
+landing repo, otherwise the landing SPA catches it and serves the homepage.
 
 For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `../landing/CLAUDE.md`.
 
@@ -25,6 +28,7 @@ For the full architecture, nginx routing rules, search (Typesense), CI/CD pipeli
 | File                       | Purpose                                              |
 |----------------------------|------------------------------------------------------|
 | `docusaurus.config.js`     | Main config: plugins, theme, search, navbar          |
+| `blog/`                    | Blog posts, `authors.yml`, `tags.yml`                |
 | `sidebars.js`              | Help sidebar (auto-generated from filesystem)        |
 | `typedoc-sidebar.js`       | API sidebar (JS + Python combined)                   |
 | `generatePluginsPages.js`  | Generates plugin release pages from CHANGELOG.md     |
