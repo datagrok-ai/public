@@ -492,7 +492,7 @@ export const TreeWizard = Vue.defineComponent({
       if (editOptions.tags) fc.options['tags'] = editOptions.tags;
       fc.options[STEP_HISTORY_OPTION] = 'true';
       try {
-        await historyUtils.saveRun(fc);
+        await historyUtils.saveRun(fc, {newId: true});
         grok.shell.info('Step saved to history');
         return fc.id;
       } catch (e: any) {

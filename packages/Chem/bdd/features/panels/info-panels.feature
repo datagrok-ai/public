@@ -4,13 +4,16 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
   Highlight and not Descriptors, while the Chemistry group of a canonical_smiles cell offers
   Descriptors, Properties and MPO and not Rendering: the panel set follows what is current.
   Properties lists the nine OpenChemLib readings, Toxicity the four risks, Drug Likeness a score,
-  Identifiers the molecule's own Smiles, Inchi and Inchi key, and 2D Structure draws the molecule.
+  and 2D Structure draws the molecule.
   The same cell-level groups come up for V2000 molblocks in mol1K.sdf, for the V3000 molblocks of
   ApprovedDrugs2015 and for the SMARTS patterns of ex_smarts.
 
   On chembl-scaffolds, choosing Scaffold as the Rendering pane's scaffold column and ticking
   Highlight scaffold repaints the Smiles cells and puts the scaffold highlight colour into them,
   which was not there before.
+
+  Not here: the 3D Structure pane (a server-side Python script) and the Identifiers pane (outside
+  web services) — see the bdd library's CLAUDE.md, "What never becomes a feature".
 
   Background:
     Given user is logged in
@@ -48,18 +51,6 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     And "Drug Likeness" pane in "Biology" pane in context panel should not contain the text "Could not asses drug likeness"
     And no errors should have been logged
 
-  @realizes:chem.panel.structure.identifiers
-  Scenario: The Identifiers pane holds the molecule's own Smiles, Inchi and Inchi key
-    When user clicks on the "cell 1 of canonical_smiles" area of grid
-    And user expands Structure accordion header in context panel
-    And user expands Identifiers accordion header in context panel
-    Then "Identifiers" pane in context panel should contain the text "Smiles"
-    And "Identifiers" pane in context panel should contain the text "Inchi"
-    And "Identifiers" pane in context panel should contain the text "Inchi key"
-    And "Identifiers" pane in context panel should contain the text "InChI=1S/"
-    And "Identifiers" pane in context panel should not contain the text "Malformed molecule"
-    And no errors should have been logged
-
   @realizes:chem.panel.structure.2d-structure
   Scenario: The 2D Structure pane draws the molecule of the current cell
     When user clicks on the "cell 1 of canonical_smiles" area of grid
@@ -67,16 +58,6 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     And user expands "2D Structure" accordion header in context panel
     Then the canvases of "2D Structure" pane in context panel should be painted in at least 1 colors
     And "2D Structure" pane in context panel should not contain the text "Molecule is possibly malformed"
-    And no errors should have been logged
-
-  @realizes:chem.panel.structure.3d-structure
-  Scenario: The 3D Structure pane builds a ball-and-stick view of the molecule
-    When user clicks on the "cell 1 of canonical_smiles" area of grid
-    And user expands Structure accordion header in context panel
-    And user expands "3D Structure" accordion header in context panel
-    Then 3D structure view in "3D Structure" pane in context panel should be visible
-    And "3D Structure" pane in context panel should not contain the text "Molecule has no atoms or malformed"
-    And "3D Structure" pane in context panel should not contain the text "Molecule is possibly malformed"
     And no errors should have been logged
 
   @realizes:chem.cell.molecule
@@ -119,4 +100,3 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     When user expands Structure accordion header in context panel
     And user expands "2D Structure" accordion header in context panel
     Then the canvases of "2D Structure" pane in context panel should be painted in at least 1 colors
-

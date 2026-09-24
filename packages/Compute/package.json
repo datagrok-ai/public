@@ -31,7 +31,8 @@
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src"
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"

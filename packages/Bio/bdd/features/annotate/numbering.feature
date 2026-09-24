@@ -8,7 +8,8 @@ Feature: Antibody numbering with the bundled immunum engine
 
   Not translated: the md's timing bound on the worker call — a duration is not a claim the
   platform signals; the other schemes of the md title (Chothia, AHo) — the bundled engine offers
-  IMGT and Kabat only, which the dialog claim pins.
+  IMGT and Kabat only, which the dialog claim pins; the engine function's own result table, called
+  directly (no UI) — see the bdd library's CLAUDE.md, "What never becomes a feature".
 
   Background:
     Given user is logged in
@@ -36,13 +37,4 @@ Feature: Antibody numbering with the bundled immunum engine
     And the ".positionNames" tag of "AntibodyHC (aligned)" column should list at least 100 values
     And "AntibodyHC" column should carry at least 7 annotations
     And no error or warning balloon should have been shown
-    And no errors should have been logged
-
-  Scenario: The engine's own result honours the five-column contract
-    When user calls "Bio:immunumAntibodyNumbering" function with:
-      | df     | table             |
-      | seqCol | column:AntibodyHC |
-      | scheme | imgt              |
-    Then the result should be a table with columns "position_names, chain_type, annotations_json, numbering_detail, numbering_map"
-    And every column of the result table should be filled in row 1
     And no errors should have been logged

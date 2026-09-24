@@ -30,8 +30,6 @@ dataset('chembl-scaffolds', {path: 'System:AppData/Chem/chembl-scaffolds.csv',
   description: 'molecules with a scaffold column'});
 dataset('SMILES_highlighted', {path: 'System:AppData/Chem/tests/SMILES_highlighted.csv', aliases: ['smiles-highlighted'],
   description: 'a molecule column with a scaffold to highlight'});
-dataset('chem_standards', {path: 'System:AppData/Chem/chem_standards.csv', aliases: ['chem-standards'],
-  description: 'salts and parent molecules for curation'});
 dataset('smiles-only', {path: 'System:DemoFiles/chem/smiles_only.csv', aliases: ['smiles_only'],
   description: '1000 molecules in canonical_smiles and no other column'});
 dataset('drugs-props-train', {path: 'System:AppData/Eda/drugs-props-train.csv', aliases: ['drugs_props_train'],
