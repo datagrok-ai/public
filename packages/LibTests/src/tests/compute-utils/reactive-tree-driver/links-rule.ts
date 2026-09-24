@@ -219,6 +219,63 @@ category('ComputeUtils: Driver links rule', async () => {
     expectDeepEqual(evaluate({len: [{var: 's'}]}, ctx), 4);
     expectDeepEqual(evaluate({len: [{var: 'list'}]}, ctx), 2);
     expectDeepEqual(evaluate({len: [{var: 'missing'}]}, ctx), 0);
+    const spec = [['x', 'double'], ['n', 'string'], ['s', 'Text'], ['q'], 'x'];
+    expectDeepEqual(evaluate({columnsMissing: [{var: 'df'}, spec]}, ctx), ['n (string)', 'q']);
+    expectDeepEqual(evaluate({columnsMissing: [{var: 'missing'}, spec]}, ctx),
+      ['x (double)', 'n (string)', 's (Text)', 'q', 'x']);
+    expectDeepEqual(evaluate({columnsMissing: [{var: 'df'}, []]}, ctx), []);
+  });
+
+  test('Rules validate dataframe columns and feed dropdown items', async () => {
+    const spec = [['x', 'double'], ['s', 'string']];
+    const pconf = await getProcessedConfig({
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestDF1'},
+        {id: 'step2', nqName: 'LibTests:TestAdd2'},
+      ],
+      links: [{
+        id: 'schema',
+        type: 'rule',
+        from: 'df:step1/df',
+        to: 't:step1/df',
+        debounce: 0,
+        when: {and: [{var: 'df'}, {'!!': {columnsMissing: [{var: 'df'}, spec]}}]},
+        effects: [{
+          effect: 'error', targets: 't', message: {cat: ['Missing: ', {columnsMissing: [{var: 'df'}, spec]}]},
+        }],
+      }, {
+        id: 'choices',
+        type: 'rule',
+        from: 'table:step1/df',
+        to: 'c:step2/a',
+        effects: [{effect: 'items', targets: 'c', items: {columns: [{var: 'table'}, 'numerical']}}],
+      }],
+    });
+    const partial = DG.DataFrame.fromColumns([DG.Column.fromList('double', 'x', [1])]);
+    const full = DG.DataFrame.fromColumns([
+      DG.Column.fromList('double', 'x', [1]),
+      DG.Column.fromList('int', 'n', [1]),
+      DG.Column.fromList('string', 's', ['a']),
+    ]);
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+      const outBridge = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      const snap = () => snapshots.push([node.validationInfo$.value, outBridge.meta.a.value]);
+      cold('-a').subscribe(() => node.getStateStore().setState('df', partial));
+      cold('--a').subscribe(snap);
+      cold('---a').subscribe(() => node.getStateStore().setState('df', full));
+      cold('----a').subscribe(snap);
+    });
+    expectDeepEqual(snapshots, [
+      [{df: {errors: [{description: 'Missing: s (string)'}], warnings: [], notifications: []}}, {items: ['x']}],
+      [{}, {items: ['x', 'n']}],
+    ]);
   });
 
   test('Literal escape and null condition', async () => {

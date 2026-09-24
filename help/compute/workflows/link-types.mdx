@@ -695,11 +695,21 @@ available to `var` is:
 - `<alias>` — the first matched value of a `from` query;
 - `all.<alias>` — all matched values of a `from` query.
 
-Two extra operations are registered: `columns` (a dataframe and an
-optional filter `numerical`, `categorical`, a column type or a semantic
-type; returns column names) and `len` (length of a string, array or
-dataframe row count). Truthiness of `when` follows JSON Logic rules.
-`when` omitted or `null` means the rule is always on.
+Three extra operations are registered:
+
+- `columns`: a dataframe and an optional filter (`numerical`,
+  `categorical`, a column type or a semantic type); returns the matching
+  column names.
+- `columnsMissing`: a dataframe and a spec list of `[name, filter]` pairs
+  (or bare names); returns a description of every entry with no matching
+  column, such as `smiles (Molecule)`. Empty when the table satisfies the
+  spec, so `{'!!': {columnsMissing: [...]}}` is a schema check and the same
+  expression inside `cat` names the offending columns in the message.
+- `len`: length of a string or array, or the row count of a dataframe.
+
+Truthiness of `when` follows JSON Logic rules. `when` omitted or `null`
+means the rule is always on. All effects of one rule share its `when`;
+split effects with different conditions into separate rules.
 
 JSON Logic reads any object with exactly one key as an operation. To pass
 such an object as a value, wrap it: `{literal: {foo: 1}}` evaluates to

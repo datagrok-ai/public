@@ -9,19 +9,32 @@ export type RuleContext = Record<string, any> & {
 
 let opsRegistered = false;
 
+function columnsOf(df: any, kind?: string): DG.Column[] {
+  if (!(df instanceof DG.DataFrame))
+    return [];
+  const cols = df.columns.toList();
+  if (kind == null)
+    return cols;
+  if (kind === 'numerical')
+    return cols.filter((col) => col.isNumerical);
+  if (kind === 'categorical')
+    return cols.filter((col) => col.isCategorical);
+  return cols.filter((col) => col.type === kind || col.semType === kind);
+}
+
 function registerOps() {
   if (opsRegistered)
     return;
   opsRegistered = true;
-  jsonLogic.add_operation('columns', (df: any, kind?: string) => {
-    if (!(df instanceof DG.DataFrame))
-      return [];
-    const cols = df.columns.toList();
-    const filtered = kind == null ? cols :
-      kind === 'numerical' ? cols.filter((col) => col.isNumerical) :
-        kind === 'categorical' ? cols.filter((col) => col.isCategorical) :
-          cols.filter((col) => col.type === kind || col.semType === kind);
-    return filtered.map((col) => col.name);
+  jsonLogic.add_operation('columns', (df: any, kind?: string) => columnsOf(df, kind).map((col) => col.name));
+  jsonLogic.add_operation('columnsMissing', (df: any, spec: any[]) => {
+    const missing: string[] = [];
+    for (const entry of spec ?? []) {
+      const [name, kind] = Array.isArray(entry) ? entry : [entry];
+      if (!columnsOf(df, kind).some((col) => col.name === name))
+        missing.push(kind == null ? name : `${name} (${kind})`);
+    }
+    return missing;
   });
   jsonLogic.add_operation('len', (val: any) => {
     if (val == null)
