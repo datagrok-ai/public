@@ -334,6 +334,14 @@ export async function select(page: Page, target: ElementRef, option: string): Pr
     await selectNative(page, native, option);
     return;
   }
+  // a Dart radio group (`ui-input-radio`) offers its options as radios, each behind its own label
+  const radio = loc.locator(`input[type="radio"][data-value="${option.replace(/"/g, '\\"')}"]`).first();
+  if (await radio.count() > 0) {
+    const id = await radio.getAttribute('id');
+    await (id ? loc.locator(`label[for="${id}"]`).first() : radio).click();
+    await expect(radio, `"${option}" chosen in ${target.phrase}`).toBeChecked({timeout: 5000});
+    return;
+  }
   const columnSelector = (await loc.first().evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc.first() : loc.locator('.d4-column-selector').first();
   if (await columnSelector.count() > 0) {
     await openColumnSelector(page, columnSelector);

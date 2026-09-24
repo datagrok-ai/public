@@ -274,6 +274,14 @@ kind('card', {
   match: ['name', 'title', 'text'],
   labelSelector: '.u2-card-title, .card-label',
 });
+/** The entity cards of a Dart gallery (a connection's queries, the scripts browser): named
+ * `div-<Name>` and titled by their own label, not the `.d4-item-card` the card kind knows. */
+kind('gallery card', {
+  selector: '.d4-gallery-card',
+  match: ['dart', 'label', 'text'],
+  labelSelector: '.grok-gallery-grid-item-title',
+  dartNames: ['div-{q}'],
+});
 kind('wizard', {selector: u2('wizard'), match: ['name', 'aria']});
 kind('wizard step', {aliases: ['step'], selector: '.u2-wizard-step', match: ['label', 'text'], labelSelector: '.u2-wizard-title'});
 kind('dock panel', {

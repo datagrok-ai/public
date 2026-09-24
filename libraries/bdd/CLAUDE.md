@@ -75,6 +75,23 @@ A TestTrack case marked `target_layer: manual-only` or `apitest` is never transl
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in
 one line. A gap hunt counts these as covered elsewhere, not as gaps.
 
+## Everything a feature puts on the server goes — hard rule
+
+A feature leaves the stand as it found it (lead's ruling, 2026-09-24). Whatever it adds or changes
+on the server is removed or restored at feature end (`atFeatureEnd`), and swept again when the
+feature starts, since a killed run never reached its end; the cleanup reads the server back to
+prove it is gone. That covers:
+
+- entities it creates: projects, tables, layouts, queries, scripts, connections, spaces, groups,
+  files it uploads, rows or tables it writes into a database;
+- what the UI makes on the side: the layout and project a query or script save writes, the chat a
+  Chats pane post creates, the grant a Share dialog adds;
+- changes to things the feature does not own: a connection's identifiers configuration, a catalog's
+  comment, a shared connection's parameters, the account's settings — put back as they were.
+
+A feature that cannot undo what it does (a user cannot be deleted) works on a fixed fixture it makes
+once and reuses, never one per run. A change nothing can undo does not go in a feature.
+
 ## Invariants — what must not regress
 
 - **One registry, through `dist/`.** Specs import the library by package subpath, project bindings
@@ -222,7 +239,18 @@ one line. A gap hunt counts these as covered elsewhere, not as gaps.
   `div-section--<Name>`, on-canvas selectors `div-column-combobox-<bound property>` (hover-revealed,
   `X:AGE` with no space), menu items `div-Group---Item` with `aria-checked`, the close icon
   `name="Close"`, `camelCaseToCss` single-dashed. `Property.caption` is the raw name unless
-  `@Prop(name:)` set one; two properties sharing a caption must be named.
+  `@Prop(name:)` set one; two properties sharing a caption must be named. `annotate` prefixes the
+  element's tag (`div-`, `span-`, `icon-`…) and turns `:_; *\[]{}|` into dashes — the `dart` match
+  tries that form; a sketch box's name sits on its `.d4-host`, not on `.d4-sketch-item`.
+- A context menu of a non-viewer element is opened at a point of its visible part that
+  `elementFromPoint` gives back to it: a tree row runs past its panel's edge, and a panel docked a
+  moment ago (the console) covers part of a gallery. `scrollIntoView` is the last resort — it moves
+  overflow-hidden ancestors too, and the page with them.
+- An entity saved through the JS API gets its first Activity entry late, and a counting pane hides
+  at 0: claim its count (`should count at least`), never the pane's presence right after the save.
+- Package tools that decorate a view on `onViewAdded` (DevTools' Signature Editor icon) attach in
+  the package's autostart; a view opened before it runs used to miss them (fixed in DevTools
+  2026-09-24 by decorating the open views too).
 - Menus: a Dart group opens on the first pointer move; the popup mirrors every property under a
   zero-size "Properties..." group, so labels occur twice — `openGroup` waits on the first visible
   candidate and tries every one; the top menu bar folds into a "more" group under 1920 px, its

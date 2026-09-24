@@ -39,6 +39,20 @@ aggregation against a `groupBy`, the correlation plot's coefficient against `DG.
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the
 rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
 
+`features/queries/`, `features/scripts/` and `features/connections/` are the TestTrack Queries,
+Scripts and Connections cases: the query editor (typed, visual, Transformations, Post-Process,
+Layout), a query's result saved as a project, the schema's columns in the context panel, the
+Scripts view and editor (the Signature Editor, a run from every table source and the console),
+and the connection dialogs, browser, schema view, SPARQL provider and OpenAPI import. The queries
+run on the Postgres NorthwindTest connection of the Dbtests package; the scripts are JavaScript and
+Grok ones, which run in the page. Left out by the scope rule: runs of R, Python, Octave, Julia,
+NodeJS and Pyodide scripts, what a connection TEST answers, the other providers' repeats of the
+same dialogs, and the cases that need database credentials the suite does not hold (identifiers,
+an external provider's writes); the MS SQL catalogs case needs a connection set to browse
+catalogs, which the Dbtests one is not. Every query, script, connection, layout, project and chat
+a feature makes is deleted at its end and swept at its start; the features that save into the
+shared NorthwindTest connection or search the Scripts view (an account setting) are `@serial`.
+
 The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
