@@ -62,6 +62,9 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
       catch (e) {
         if (!options?.knownFailure)
           failed.push({name, error: e});
+        // a scenario that stopped midway leaves its dialog or menu over the viewers the next one uses
+        if (page)
+          await closeOverlays(page);
         return;
       }
       if (options?.knownFailure)
@@ -187,10 +190,30 @@ export function takeErrors(page: Page): string[] {
 /** One page per worker: every feature the worker runs uses the page the first one opened (the
  * shell boots once, ~4 s, and a package initializes once; the next feature starts from `user is
  * logged in` on the shell it finds, reset). A page that closed (a crash, a failed test restarting
- * the worker) is replaced in the same context, which keeps the storage state and the HTTP cache.
+ * the worker) is replaced in the same context, which keeps the storage state and the HTTP cache; a
+ * page past its age limit goes with its context (below).
  * The browser fixture closes the context with the worker. */
 let shared: Page | undefined;
 let lastTime = 0;
+
+/** The page's renderer keeps the memory every feature it ran took — the shell's reset closes views
+ * and tables, the process does not shrink — at about 2 GB a minute of work, outside the JS heap
+ * (a feature's heap stays under 0.5 GB), so no page reading tells it. A page that has lived longer
+ * than `BDD_PAGE_MAX_MIN` minutes (2 by default) is closed with its context after its feature, and
+ * the next feature opens a new one: a new page of the same context would share the old renderer. */
+const PAGE_MAX_MS = Number(process.env.BDD_PAGE_MAX_MIN ?? 2) * 60000;
+const pageBorn = new WeakMap<Page, number>();
+
+async function recycleIfHeavy(page: Page): Promise<void> {
+  const born = pageBorn.get(page) ?? Date.now();
+  if (Date.now() - born < PAGE_MAX_MS)
+    return;
+  console.warn(`bdd: the page has lived ${Math.round((Date.now() - born) / 60000)} min, past ${PAGE_MAX_MS / 60000}: the next feature opens a new page`);
+  // a new page of the same context lands in the same renderer process, which keeps its memory
+  await page.context().close().catch(() => undefined);
+  if (shared === page)
+    shared = undefined;
+}
 
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
@@ -218,6 +241,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         }
       }
       cleanups.delete(page);
+      await recycleIfHeavy(page);
     }
     page = undefined;
     if (failures.length)
@@ -234,6 +258,8 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         if (shared && shared.isClosed())
           shared = await shared.context().newPage();
         shared ??= await (await browser.newContext()).newPage();
+        if (!pageBorn.has(shared))
+          pageBorn.set(shared, Date.now());
         watchErrors(shared);
         guide.attach(shared);
         page = shared;
@@ -293,6 +319,13 @@ async function settleWork(page: Page): Promise<void> {
   }
 }
 
+/** Dialogs and menus closed the platform's way: Escape, as many times as there are open ones. */
+async function closeOverlays(page: Page): Promise<void> {
+  const open = (): Promise<number> => page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
+  for (let i = 0; i < 3 && await open() > 0; i++)
+    await page.keyboard.press('Escape').catch(() => undefined);
+}
+
 /** Everything closed and the Home view current — the state the next scenario starts from. A page
  * that is not in the shell (about:blank, the login page) is left alone. Work the scenario left
  * running is waited out first; then dialogs and menus are closed the platform's way (Escape, as
@@ -306,9 +339,7 @@ export async function resetShell(page: Page): Promise<void> {
   if (!inShell)
     return;
   await settleWork(page);
-  const open = (): Promise<number> => page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
-  for (let i = 0; i < 3 && await open() > 0; i++)
-    await page.keyboard.press('Escape').catch(() => undefined);
+  await closeOverlays(page);
   const left: string = await page.evaluate((notices) => {
     const w = window as any;
     w.ui?.tooltip?.hide?.();

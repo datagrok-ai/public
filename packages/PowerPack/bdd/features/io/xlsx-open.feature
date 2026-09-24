@@ -30,6 +30,7 @@ Feature: An Excel workbook opens from every entry path
     Given no table view is open
     And the "fixtures/xlsx-open-test.xlsx" file of the project is in the home folder as "xlsx-open-{time}.xlsx"
     And the browse panel is open
+    And user refreshes the browse tree
     And Files tree node inside browse tree is expanded
     And Files---My-files tree node inside browse tree is expanded
     When user double-clicks on Files---My-files---xlsx-open-{time}.xlsx tree node inside browse tree

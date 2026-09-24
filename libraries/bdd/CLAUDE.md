@@ -87,7 +87,11 @@ one line. A gap hunt counts these as covered elsewhere, not as gaps.
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
   menus, `ui.tooltip.hide`, notices removed, `closeAll`, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
-  Datagrok pages in one browser.
+  Datagrok pages in one browser. The renderer never gives back what a feature took (about 2 GB a
+  minute of work, outside the JS heap), so a page older than `BDD_PAGE_MAX_MIN` (2) minutes is
+  closed with its context after its feature and the next feature opens a new one (a new page of
+  the same context shares the old renderer process). A journey
+  scenario that fails closes its dialogs and menus (Escape) before the next scenario starts.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
   runtime. It waits for the PowerPack Home widgets to finish loading first, so what a widget logs
