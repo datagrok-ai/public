@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## v.next
+
+* RTD: Added declarative `rule` links (JSON Logic conditions expanding into meta/validator/data links), `params`/`getParam` controller support, and validation suppression for inputs hidden via meta
+
 ## 1.47.0 (2026-09-23)
 
 * historyUtils.saveRun: Added the `newId` option to save a run under a fresh id

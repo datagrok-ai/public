@@ -6,6 +6,7 @@ import {LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
 import {parseLinkIO} from '../config/LinkSpec';
+import {ruleValidatorHandler} from './rule-handlers';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -98,13 +99,8 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
         from: parseLinkIO(`in:${io.id}`, io.direction),
         to: parseLinkIO(`out:${io.id}`, io.direction),
         type: 'validator',
-        handler({controller}) {
-          const val = controller.getFirst('in');
-          if (val == null || val === '')
-            controller.setValidation('out', ({errors: [{description: 'Missing value'}]}));
-          else
-            controller.setValidation('out', undefined);
-        },
+        handler: ruleValidatorHandler,
+        params: {when: {missing: ['in']}, effects: [{effect: 'error', targets: ['out'], message: 'Missing value'}]},
       };
       const minfo: MatchInfo = {
         spec,

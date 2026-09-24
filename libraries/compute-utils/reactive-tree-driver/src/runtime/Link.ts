@@ -290,6 +290,7 @@ export class Link {
       id: this.matchInfo.spec.id, scopeInfo: scope, inputTemplates, outputTemplates,
       matchedInputs: this.matchInfo.inputs, matchedOutputs: this.matchInfo.outputs,
       basePath: this.matchInfo.basePath,
+      params: this.matchInfo.spec.params,
     };
 
     if (this.isValidator)

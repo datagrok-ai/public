@@ -6,26 +6,13 @@ import {parseLinkIO} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler} from '../../../test-utils';
+import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
 
 function expectThrows(fn: () => unknown, match?: RegExp) {
   let threw = false;
   let err: unknown = undefined;
   try {
     fn();
-  } catch (e) {
-    threw = true;
-    err = e;
-  }
-  expectDeepEqual(threw, true);
-  if (match) expectDeepEqual(match.test(String((err as Error)?.message ?? err)), true);
-}
-
-async function expectThrowsAsync(fn: () => Promise<unknown>, match?: RegExp) {
-  let threw = false;
-  let err: unknown = undefined;
-  try {
-    await fn();
   } catch (e) {
     threw = true;
     err = e;

@@ -4,6 +4,7 @@ import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-type
 import {callHandler, indexFromEnd} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
+import {expandLinks} from './rule-expansion';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
 import {DriverLogger, reportError} from '../data/Logger';
@@ -123,7 +124,7 @@ function processUIFlags<T extends PipelineDynamicItem<never>>(item: T): T {
 }
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
-  const links = conf.links?.map((link) => processLinkData(link));
+  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
@@ -132,7 +133,7 @@ function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: 
 }
 
 function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
-  const links = conf.links?.map((link) => processLinkData(link));
+  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
@@ -142,7 +143,7 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
-  const links = conf.links?.map((link) => processLinkData(link));
+  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
   const actions = processStepActions(conf.actions ?? [], logger);
   const io = getFuncCallIO(conf.nqName);
   const func = DG.Func.byName(conf.nqName);
@@ -261,13 +262,14 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   return {...link, from, to, base, not, actions};
 }
 
-function processLink(io: LinkSpecString, ioType: IOType) {
+export function normalizeLinkSpec(io?: LinkSpecString): string[] {
   if (Array.isArray(io))
-    return io.flatMap((item) => parseLinkIO(item, ioType));
-  else if (io)
-    return parseLinkIO(io, ioType);
-  else
-    return [];
+    return io;
+  return io ? [io] : [];
+}
+
+function processLink(io: LinkSpecString, ioType: IOType) {
+  return normalizeLinkSpec(io).flatMap((item) => parseLinkIO(item, ioType));
 }
 
 function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
