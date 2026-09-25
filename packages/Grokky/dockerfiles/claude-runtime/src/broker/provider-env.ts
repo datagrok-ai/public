@@ -4,7 +4,7 @@ export const BROKER_BASE = `http://${BROKER_HOST}:${BROKER_PORT}`;
 
 export const PLACEHOLDER_KEY = 'sk-ant-broker-placeholder';
 
-export type BrokerMode = 'anthropic' | 'subscription' | 'bedrock' | 'foundry' | 'none';
+export type BrokerMode = 'anthropic' | 'subscription' | 'bedrock' | 'foundry' | 'databricks' | 'none';
 
 export interface ProviderInfo {
   mode: BrokerMode;
