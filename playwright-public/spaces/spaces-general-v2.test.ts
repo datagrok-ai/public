@@ -20,6 +20,8 @@ const BASE = process.env.DATAGROK_URL!;
 const SHARING_LOGIN = process.env.DATAGROK_SHARING_LOGIN || 'test2';
 const SHARING_PASSWORD = process.env.DATAGROK_SHARING_PASSWORD || '';
 const AUTH_STATE = path.resolve(__dirname, '..', '.auth.json');
+// The top "Current object" ribbon repeats the entity name as a hidden 0x0 link label.
+const LINK_LABEL = '.d4-link-label:not(.grok-context-ribbon *)';
 
 // ===========================================================================
 // Helpers
@@ -151,18 +153,18 @@ async function dragFileToSpaceNode(page: Page, fileName: string, spaceName: stri
   // ~30 files that paint progressively; when only the first label is visible the target
   // (further down the list) may not be in the DOM yet — counting immediately raced and
   // threw "not found" intermittently. Wait for the file's own label instead.
-  const fileLabel = page.locator('.d4-link-label label')
+  const fileLabel = page.locator(`${LINK_LABEL} label`)
     .filter({ hasText: new RegExp(`^${fileName}$`) }).first();
   let found = false;
   for (let attempt = 0; attempt < 3 && !found; attempt++) {
     await page.goto(`${BASE}/files/System.DemoFiles/?browse=files`);
-    await page.locator('.d4-link-label label').first()
+    await page.locator(`${LINK_LABEL} label`).first()
       .waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
     found = await fileLabel.waitFor({ state: 'visible', timeout: 10_000 })
       .then(() => true).catch(() => false);
   }
   if (!found) {
-    const allFiles = await page.locator('.d4-link-label label').allTextContents();
+    const allFiles = await page.locator(`${LINK_LABEL} label`).allTextContents();
     throw new Error(`File "${fileName}" not found in DemoFiles. Available files: ${allFiles.join(', ')}`);
   }
   await fileLabel.scrollIntoViewIfNeeded();
@@ -188,7 +190,7 @@ async function addFileToSpaceViaCopy(page: Page, fileName: string, spaceName: st
 }
 
 async function rightClickItemInSpaceView(page: Page, name: string) {
-  const label = page.locator('.d4-link-label label')
+  const label = page.locator(`${LINK_LABEL} label`)
     .filter({ hasText: new RegExp(`^${name}$`) }).first();
   await expect(label).toBeVisible({ timeout: 10_000 });
   await label.locator('xpath=..').dispatchEvent('contextmenu', { button: 2, bubbles: true });
@@ -374,11 +376,11 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
       page.locator('#elementContent .grok-gallery-grid').first(),
     ).toBeVisible({ timeout: 10_000 });
     await expect(
-      page.locator('.d4-link-label').getByText(CHILD, { exact: true }).first(),
+      page.locator(LINK_LABEL).getByText(CHILD, { exact: true }).first(),
     ).toBeVisible({ timeout: 10_000 });
 
     // Create grandchild from the content view (right-click child card)
-    const childCard = page.locator('.d4-link-label')
+    const childCard = page.locator(LINK_LABEL)
       .filter({ hasText: new RegExp(`^${CHILD}$`) }).first();
     await childCard.dispatchEvent('contextmenu', { button: 2, bubbles: true });
     await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
@@ -387,7 +389,7 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
 
     // Navigate into child via double-click and verify grandchild is visible
     await openSpaceContent(page, ROOT);
-    const childLink = page.locator('.d4-link-label')
+    const childLink = page.locator(LINK_LABEL)
       .filter({ hasText: new RegExp(`^${CHILD}$`) }).first();
     await expect(childLink).toBeVisible({ timeout: 10_000 });
     const prevUrl = page.url();
@@ -398,7 +400,7 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
     expect(page.url()).toMatch(/\/s\//);
 
     await expect(
-      page.locator('.d4-link-label').getByText(GRAND, { exact: true }).first(),
+      page.locator(LINK_LABEL).getByText(GRAND, { exact: true }).first(),
     ).toBeVisible({ timeout: 10_000 });
   } finally {
     for (const n of [GRAND, CHILD, ROOT])
@@ -462,8 +464,8 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
 
     // Verify new name in the content view (gallery grid), old name gone
     await page.locator('.d4-tree-view-group-label', { hasText: /^Spaces$/i }).first().click();
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${NEW_NAME}$`) }).first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${ORIG}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${NEW_NAME}$`) }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${ORIG}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
 
     await apiDeleteSpace(page, NEW_NAME);
 
@@ -489,7 +491,7 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     await clickMenuItem(page, 'Create Child Space...');
     await fillNameAndOk(page, REN_CHILD);
     await openSpaceContent(page, REN_PARENT);
-    const childCard = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${REN_CHILD}$`) }).first();
+    const childCard = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${REN_CHILD}$`) }).first();
     await expect(childCard).toBeVisible({ timeout: 10_000 });
     await childCard.dispatchEvent('contextmenu', { button: 2, bubbles: true });
     await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
@@ -509,10 +511,10 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     // Verify renamed child in the content view
     await openSpaceContent(page, REN_PARENT);
     await expect(
-      page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${REN_CHILD_NEW}$`) }).first(),
+      page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${REN_CHILD_NEW}$`) }).first(),
     ).toBeVisible({ timeout: 10_000 });
     await expect(
-      page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${REN_CHILD}$`) }).first(),
+      page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${REN_CHILD}$`) }).first(),
     ).not.toBeVisible({ timeout: 3_000 });
 
     // Verify renamed child in the browse tree
@@ -567,7 +569,7 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
     await page.locator('.ui-btn', { hasText: /^DELETE$/i }).first().click();
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${SINGLE}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
     await page.locator('.d4-tree-view-group-label', { hasText: /^Spaces$/i }).first().click();
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${SINGLE}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${SINGLE}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
     // Refresh tree and verify result unchanged
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${SINGLE}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
@@ -582,15 +584,15 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
 
     // Part B: selective delete child1 from view, child2 survives
     await openSpaceContent(page, PARENT);
-    await expect(page.locator('.d4-link-label').getByText(CHILD1, { exact: true }).first()).toBeVisible({ timeout: 10_000 });
-    const child1Card = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD1}$`) }).first();
+    await expect(page.locator(LINK_LABEL).getByText(CHILD1, { exact: true }).first()).toBeVisible({ timeout: 10_000 });
+    const child1Card = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CHILD1}$`) }).first();
     await child1Card.dispatchEvent('contextmenu', { button: 2, bubbles: true });
     await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
     await clickMenuItem(page, /Delete/i);
     await page.locator('.ui-btn', { hasText: /^DELETE$/i }).first().click();
     // Verify child1 gone from view, child2 still in view
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD1}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
-    await expect(page.locator('.d4-link-label').getByText(CHILD2, { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CHILD1}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(LINK_LABEL).getByText(CHILD2, { exact: true }).first()).toBeVisible({ timeout: 5_000 });
     // Verify child1 also gone from tree
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${CHILD1}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
     // Refresh tree and verify result unchanged
@@ -607,8 +609,8 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${CHILD2}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
     // Verify parent and child2 gone from Spaces gallery view
     await page.locator('.d4-tree-view-group-label', { hasText: /^Spaces$/i }).first().click();
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${PARENT}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD2}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${PARENT}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CHILD2}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
     // Refresh tree and verify result unchanged
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${PARENT}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
@@ -639,7 +641,7 @@ test('6. Favorites: add and remove space from favorites', async () => {
         .find((e) => e.textContent?.trim() === 'Favorites') as HTMLElement | undefined;
       if (el) el.click();
     });
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${FAV}$`) }).first()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).toBeVisible({ timeout: 8_000 });
 
     // Verify in sidebar favorites pane (star icon)
     await page.locator('.d4-tab-header-stripe.layout-sidebar.vertical > div:nth-child(6)').click();
@@ -656,7 +658,7 @@ test('6. Favorites: add and remove space from favorites', async () => {
         .find((e) => e.textContent?.trim() === 'Favorites') as HTMLElement | undefined;
       if (el) el.click();
     });
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${FAV}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
 
     // Verify gone from sidebar favorites pane
     await page.locator('.d4-tab-header-stripe.layout-sidebar.vertical > div:nth-child(6)').click();
@@ -774,7 +776,7 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
     await clickMenuItem(page, 'Create Child Space...');
     await fillNameAndOk(page, SH_CHILD);
     await openSpaceContent(page, SH_PARENT);
-    const childCard = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${SH_CHILD}$`) }).first();
+    const childCard = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${SH_CHILD}$`) }).first();
     await expect(childCard).toBeVisible({ timeout: 10_000 });
     await childCard.dispatchEvent('contextmenu', { button: 2, bubbles: true });
     await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
@@ -801,13 +803,13 @@ test('8. Browse tree search: match by name and no-match empty result', async () 
     await page.locator('.d4-tree-view-group-label', { hasText: /^Spaces$/i }).first().click();
     const searchInput = page.locator('input[placeholder*="Search"]').first();
     await expect(searchInput).toBeVisible({ timeout: 8_000 });
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${SPACE}$`) }).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${SPACE}$`) }).first()).toBeVisible({ timeout: 15_000 });
 
     await searchInput.fill(SPACE);
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${SPACE}$`) }).first()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${SPACE}$`) }).first()).toBeVisible({ timeout: 8_000 });
 
     await searchInput.fill('xyzzy_no_match_123456');
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${SPACE}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${SPACE}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
   } finally {
     await apiDeleteSpace(page, SPACE);
   }
@@ -836,7 +838,7 @@ test('9. DnD dialog: options, default Link, Cancel, Link, Copy, duplicate add', 
     await page.locator('.ui-btn', { hasText: /^CANCEL$/i }).first().click();
     // Verify cancel: file not in view
     await openSpaceContent(page, SPACE);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^wells\.csv$/ }).first()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^wells\.csv$/ }).first()).not.toBeVisible({ timeout: 5_000 });
     // Verify cancel: file not in tree under space
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: /^wells\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
     // Refresh tree and verify result unchanged
@@ -849,9 +851,9 @@ test('9. DnD dialog: options, default Link, Cancel, Link, Copy, duplicate add', 
     await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
     // Verify linked file in view
     await openSpaceContent(page, SPACE);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
     // Click linked file to verify right panel shows info
-    const linkedFile = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
+    const linkedFile = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first();
     await linkedFile.dispatchEvent('click');
     await expect(page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first()).toBeVisible({ timeout: 8_000 });
 
@@ -862,10 +864,10 @@ test('9. DnD dialog: options, default Link, Cancel, Link, Copy, duplicate add', 
     await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
     // Verify both files in view
     await openSpaceContent(page, SPACE);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
     // Click copied file to verify right panel shows info
-    const copiedFile = page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first();
+    const copiedFile = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first();
     await copiedFile.dispatchEvent('click');
     await expect(page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first()).toBeVisible({ timeout: 8_000 });
 
@@ -875,9 +877,9 @@ test('9. DnD dialog: options, default Link, Cancel, Link, Copy, duplicate add', 
     await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
     await expect(page.locator('.d4-toast.error, [class*="error-toast"]').first()).not.toBeVisible({ timeout: 2_000 });
     await openSpaceContent(page, SPACE);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
     // Verify only one acidiq.csv in the space (not duplicated)
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ })).toHaveCount(1, { timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ })).toHaveCount(1, { timeout: 5_000 });
   } finally {
     await apiDeleteSpace(page, SPACE);
   }
@@ -901,10 +903,10 @@ test('10. DnD Move: file moves to target and is absent from source', async () =>
 
     await addFileToSpaceViaCopy(page, 'beer.csv', SRC);
     await openSpaceContent(page, SRC);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
     // Drag file from source view to target tree node
-    const fileInView = page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first();
+    const fileInView = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first();
     const tgtNode = page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${TGT}$`) }).first();
     await expect(tgtNode).toBeVisible({ timeout: 5_000 });
     page.setDefaultTimeout(15_000);
@@ -920,14 +922,14 @@ test('10. DnD Move: file moves to target and is absent from source', async () =>
 
     // Verify file gone from source view
     await openSpaceContent(page, SRC);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 8_000 });
 
     // Verify file present in target view
     await openSpaceContent(page, TGT);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
     // Click moved file to verify right panel shows info
-    const movedFile = page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first();
+    const movedFile = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first();
     await movedFile.dispatchEvent('click');
     await page.waitForTimeout(200);
     await expect(page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first()).toBeVisible({ timeout: 8_000 });
@@ -936,9 +938,9 @@ test('10. DnD Move: file moves to target and is absent from source', async () =>
     await resetToSpaces(page);
     await refreshSpacesTree(page);
     await openSpaceContent(page, SRC);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 5_000 });
     await openSpaceContent(page, TGT);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
   } finally {
     await apiDeleteSpace(page, SRC);
     await apiDeleteSpace(page, TGT);
@@ -971,7 +973,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await openSpaceContent(page, CV_SPACE);
 
     // Click first file — panel appears with file name and Details section
-    const fileLabel = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
+    const fileLabel = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first();
     await expect(fileLabel).toBeVisible({ timeout: 10_000 });
     await fileLabel.dispatchEvent('click');
     await page.waitForTimeout(200);
@@ -983,7 +985,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await expect(page.locator('.d4-accordion-pane-header').filter({ hasText: /Details/i }).first()).toBeVisible({ timeout: 5_000 });
 
     // Click second file — panel switches to show its name
-    const file2Label = page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first();
+    const file2Label = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first();
     await expect(file2Label).toBeVisible({ timeout: 5_000 });
     await file2Label.dispatchEvent('click');
     await page.waitForTimeout(200);
@@ -1009,7 +1011,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       const panel = page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first();
 
       // Click first child — panel shows child name and Details
-      const childCard = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
+      const childCard = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
       await expect(childCard).toBeVisible({ timeout: 10_000 });
       await childCard.dispatchEvent('click');
       await page.waitForTimeout(200);
@@ -1018,14 +1020,14 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       await expect(page.locator('.d4-accordion-pane-header').filter({ hasText: /Details/i }).first()).toBeVisible({ timeout: 5_000 });
 
       // Click second child — panel switches
-      const child2Card = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD2}$`) }).first();
+      const child2Card = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD2}$`) }).first();
       await expect(child2Card).toBeVisible({ timeout: 5_000 });
       await child2Card.dispatchEvent('click');
       await page.waitForTimeout(200);
       await expect(panel).toContainText(new RegExp(CV_CHILD2, 'i'), { timeout: 5_000 });
 
       // Click file — panel switches from space info to file info
-      const fileLabel = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
+      const fileLabel = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first();
       await expect(fileLabel).toBeVisible({ timeout: 5_000 });
       await fileLabel.dispatchEvent('click');
       await page.waitForTimeout(200);
@@ -1046,7 +1048,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await openSpaceContent(page, CV_SPACE);
 
     // Part A: double-click opens file as table view with grid and ribbon
-    const fileLabel = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
+    const fileLabel = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first();
     await expect(fileLabel).toBeVisible({ timeout: 10_000 });
     const spaceUrl = page.url();
     await fileLabel.dispatchEvent('dblclick');
@@ -1057,7 +1059,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
 
     // Part B: go back to space, enable eye icon preview, click file — preview appears inside space view
     await openSpaceContent(page, CV_SPACE);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
     const eyeIcon = page.locator('i.grok-icon[name="icon-eye"], i.fal.fa-eye').first();
     await expect(eyeIcon).toBeVisible({ timeout: 5_000 });
     // Enable preview if not already active
@@ -1067,7 +1069,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await page.waitForTimeout(200);
 
     // Click file — preview grid should appear inside the space view
-    const fileLabel2 = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
+    const fileLabel2 = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first();
     await fileLabel2.dispatchEvent('click');
     await page.waitForTimeout(500);
     // Verify preview grid appeared
@@ -1092,48 +1094,48 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     const searchInput = page.locator('input[placeholder*="Search"]').first();
     await expect(searchInput).toBeVisible({ timeout: 8_000 });
     // Wait for all items to load
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
     // Exact match — only acidiq visible
     await searchInput.fill('acidiq');
     await page.waitForTimeout(300);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
     // Partial match — "aci" finds acidiq
     await searchInput.fill('aci');
     await page.waitForTimeout(300);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
     // No match — nothing visible
     await searchInput.fill('xyzzy_no_match_12345');
     await page.waitForTimeout(300);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).not.toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
     // Clear search — all three files and child space visible again
     await searchInput.fill('');
     await page.waitForTimeout(300);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 5_000 });
 
     // Search by child space name — child visible, files hidden
     await searchInput.fill(CV_CHILD);
     await page.waitForTimeout(300);
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
     // Verify DemoFiles originals are intact after all operations
     await page.goto(`${BASE}/files/System.DemoFiles/?browse=files`);
-    await expect(page.locator('.d4-link-label label').first()).toBeVisible({ timeout: 10_000 });
-    const beerExists = await page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).count();
+    await expect(page.locator(`${LINK_LABEL} label`).first()).toBeVisible({ timeout: 10_000 });
+    const beerExists = await page.locator(`${LINK_LABEL} label`).filter({ hasText: /^beer\.csv$/ }).count();
     if (beerExists === 0) {
-      const allFiles = await page.locator('.d4-link-label label').allTextContents();
+      const allFiles = await page.locator(`${LINK_LABEL} label`).allTextContents();
       throw new Error(`beer.csv missing from DemoFiles after test! Available: ${allFiles.slice(0, 20).join(', ')}`);
     }
   });
@@ -1150,7 +1152,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       await page.locator('.d4-dialog').last().waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
 
       await openSpaceContent(page, CV_SPACE);
-      const childCard = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
+      const childCard = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
       await expect(childCard).toBeVisible({ timeout: 10_000 });
       await childCard.dispatchEvent('contextmenu', { button: 2, bubbles: true });
       await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
@@ -1170,22 +1172,22 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
 
       // Fresh navigation start: parent → child → grandchild
       await openSpaceContent(page, CV_SPACE);
-      await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 10_000 });
-      await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
       // Verify header contains parent name
       expect(page.url()).toMatch(/\/s\//);
 
       // Enter child
-      const childLink = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
+      const childLink = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
       const parentUrl = page.url();
       await childLink.dispatchEvent('dblclick');
       await page.waitForURL(url => url.toString() !== parentUrl, { timeout: 10_000 });
       await page.waitForTimeout(300);
       const childUrl = page.url();
-      await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first()).toBeVisible({ timeout: 10_000 });
 
       // Enter grandchild
-      const grandLink = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first();
+      const grandLink = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first();
       await grandLink.dispatchEvent('dblclick');
       await page.waitForURL(url => url.toString() !== childUrl, { timeout: 10_000 });
       await page.waitForTimeout(300);
@@ -1204,26 +1206,26 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
 
       // Navigate into child via content view instead of tree
       await openSpaceContent(page, CV_SPACE);
-      const childCardBack = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
+      const childCardBack = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
       await expect(childCardBack).toBeVisible({ timeout: 10_000 });
       const prevUrl2 = page.url();
       await childCardBack.dispatchEvent('dblclick');
       await page.waitForURL(url => url.toString() !== prevUrl2, { timeout: 10_000 });
       await page.waitForTimeout(300);
-      await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first()).toBeVisible({ timeout: 10_000 });
 
       // Navigate back to parent via tree — child card and file visible
       await openSpaceViaTree(page, CV_SPACE);
-      await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 10_000 });
-      await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+      await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
 
       // Verify search still works after navigating back
       const searchInput = page.locator('input[placeholder*="Search"]').first();
       await expect(searchInput).toBeVisible({ timeout: 5_000 });
       await searchInput.fill('acidiq');
       await page.waitForTimeout(300);
-      await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
-      await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
+      await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+      await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
     } finally {
       await apiDeleteSpace(page, CV_GRAND);
     }
@@ -1250,9 +1252,9 @@ test.describe('Copy semantics: delete source, copy unaffected', () => {
 
       // Copy file from source to target space via DnD (retry if tooltip blocks)
       await openSpaceContent(page, SRC);
-      await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
       for (let attempt = 0; attempt < 3; attempt++) {
-        const fl = page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first();
+        const fl = page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first();
         const tn = page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${TGT}$`) }).first();
         await expect(tn).toBeVisible({ timeout: 5_000 });
         page.setDefaultTimeout(15_000);
@@ -1271,7 +1273,7 @@ test.describe('Copy semantics: delete source, copy unaffected', () => {
 
       // Verify copied file appeared in target view
       await openSpaceContent(page, TGT);
-      await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
       // Delete source file from source space view
       await openSpaceContent(page, SRC);
@@ -1282,12 +1284,12 @@ test.describe('Copy semantics: delete source, copy unaffected', () => {
 
       // Verify copied entry still present in target view
       await openSpaceContent(page, TGT);
-      await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
       // Refresh tree and verify result unchanged
       await refreshSpacesTree(page);
       await openSpaceContent(page, TGT);
-      await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
     } finally {
       for (const n of [SRC, TGT]) await apiDeleteSpace(page, n);
     }
@@ -1333,7 +1335,7 @@ test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delet
     await page.keyboard.press('Delete');
     await renInp.pressSequentially('PW-Gen-tsla-renamed');
     await page.keyboard.press('Enter');
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).toBeVisible({ timeout: 8_000 });
     // Verify renamed file persists after refresh
     await refreshSpacesTree(page);
 
@@ -1344,25 +1346,25 @@ test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delet
     await expect(cancelInp).toBeVisible({ timeout: 5_000 });
     await cancelInp.pressSequentially('PW-should-not-appear');
     await cancelDlg.locator('.ui-btn', { hasText: /^CANCEL$/i }).first().click({ force: true });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
 
     await rightClickItemInSpaceView(page, 'acidiq.csv');
     await clickMenuItem(page, /Delete/i);
     await page.locator('.ui-btn', { hasText: /^CANCEL$/i }).first().click();
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
 
     await rightClickItemInSpaceView(page, 'PW-Gen-tsla-renamed');
     await clickMenuItem(page, /Delete/i);
     await page.locator('.ui-btn', { hasText: /^DELETE$/i }).first().click();
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).not.toBeVisible({ timeout: 8_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
     // Refresh and verify delete persisted
     await refreshSpacesTree(page);
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).not.toBeVisible({ timeout: 3_000 });
-    await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
 
     // Child space context menu has Rename, Delete, Share
-    const childCard = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD}$`) }).first();
+    const childCard = page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CHILD}$`) }).first();
     await expect(childCard).toBeVisible({ timeout: 10_000 });
     await childCard.dispatchEvent('contextmenu', { button: 2, bubbles: true });
     await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
@@ -1384,8 +1386,8 @@ test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delet
     await page.keyboard.press('Enter');
     await page.waitForTimeout(300);
     // Verify renamed child in view
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD_NEW}$`) }).first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CHILD_NEW}$`) }).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CHILD}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
     // Verify renamed child in tree
     await refreshSpacesTree(page);
 

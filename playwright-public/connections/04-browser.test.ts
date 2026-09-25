@@ -29,6 +29,8 @@ const PROVIDER = 'Postgres';
 // Own subject — 05 deletes the shared new_test_postgres, and 03 renames into it.
 const CONNECTION = 'browser_new_test_postgres';
 const SEARCH_TERM = 'new_test';
+// The top "Current object" ribbon repeats the connection name as a hidden 0x0 label.
+const RESULT_LABEL = 'label:not(.grok-context-ribbon *)';
 const SHARE_TARGET = 'Admin';
 const CHAT_MESSAGE = `pw-test ${Date.now()}`;
 
@@ -68,7 +70,7 @@ test.describe.serial('Connections / Browser (Postgres / browser_new_test_postgre
     await page.waitForTimeout(1000);
 
     // Step 4: click the result card label.
-    const resultLabel = page.locator('label', { hasText: new RegExp(`^${CONNECTION}$`) }).first();
+    const resultLabel = page.locator(RESULT_LABEL, { hasText: new RegExp(`^${CONNECTION}$`) }).first();
     await resultLabel.waitFor({ state: 'visible', timeout: 10_000 });
     await resultLabel.click();
     await page.waitForTimeout(800);
@@ -79,7 +81,7 @@ test.describe.serial('Connections / Browser (Postgres / browser_new_test_postgre
     await applyAutomationSetup(page);
     await expandDbProvider(page, PROVIDER);
     await openDbConnectionView(page, PROVIDER, CONNECTION);
-    await page.locator('label', { hasText: new RegExp(`^${CONNECTION}$`) }).first().click();
+    await page.locator(RESULT_LABEL, { hasText: new RegExp(`^${CONNECTION}$`) }).first().click();
     await showContextPanel(page);
 
     const { paneTextContent } = await clickContextPanelSection(page, 'Details');
@@ -216,7 +218,7 @@ test.describe.serial('Connections / Browser (Postgres / browser_new_test_postgre
     await applyAutomationSetup(page);
     await expandDbProvider(page, PROVIDER);
     await openDbConnectionView(page, PROVIDER, CONNECTION);
-    await page.locator('label', { hasText: new RegExp(`^${CONNECTION}$`) }).first().click();
+    await page.locator(RESULT_LABEL, { hasText: new RegExp(`^${CONNECTION}$`) }).first().click();
     await showContextPanel(page);
 
     const { paneTextContent } = await clickContextPanelSection(page, 'Activity');
@@ -231,7 +233,7 @@ test.describe.serial('Connections / Browser (Postgres / browser_new_test_postgre
     await applyAutomationSetup(page);
     await expandDbProvider(page, PROVIDER);
     await openDbConnectionView(page, PROVIDER, CONNECTION);
-    await page.locator('label', { hasText: new RegExp(`^${CONNECTION}$`) }).first().click();
+    await page.locator(RESULT_LABEL, { hasText: new RegExp(`^${CONNECTION}$`) }).first().click();
     await showContextPanel(page);
 
     const { paneTextContent } = await clickContextPanelSection(page, 'Chats');
@@ -253,7 +255,7 @@ test.describe.serial('Connections / Browser (Postgres / browser_new_test_postgre
     await applyAutomationSetup(page);
     await expandDbProvider(page, PROVIDER);
     await openDbConnectionView(page, PROVIDER, CONNECTION);
-    await page.locator('label', { hasText: new RegExp(`^${CONNECTION}$`) }).first().click();
+    await page.locator(RESULT_LABEL, { hasText: new RegExp(`^${CONNECTION}$`) }).first().click();
     await showContextPanel(page);
 
     const arrow = page.locator('[name="icon-context-arrow-down"]').first();

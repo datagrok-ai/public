@@ -53,6 +53,9 @@ async function readCardState(page: Page, molCol: string): Promise<CardState> {
     const filter = grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).filters
       .find((f: any) => (f.columnName ?? f.column) === col);
     const state = filter ? filter.saveState() : null;
+    // Ketcher writes its own stamped empty molfile since 6171abea0f, so "empty" means no atoms and no bonds.
+    const counts = typeof state?.molBlock === 'string' ? state.molBlock.split('\n')[3] ?? '' : '';
+    const noAtoms = /^\s*0\s+0\s/.test(counts);
     return {
       cards: cards.length,
       columns: cards.map((c) => {
@@ -61,7 +64,7 @@ async function readCardState(page: Page, molCol: string): Promise<CardState> {
       }),
       type: state ? state.type : null,
       molBlock: state ? state.molBlock : null,
-      empty: !!state && state.molBlock === DG.WHITE_MOLBLOCK,
+      empty: !!state && (state.molBlock === DG.WHITE_MOLBLOCK || noAtoms),
       isFiltering: filter ? filter.isFiltering : null,
     };
   }, molCol);

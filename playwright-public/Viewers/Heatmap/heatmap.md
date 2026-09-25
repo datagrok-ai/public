@@ -30,9 +30,8 @@ All scenarios start with:
 
 ## Heatmap colours
 
-1. Uncheck **Heatmap Colors** in **Context Panel > Misc** — the cells should stop
-   being colour-filled. They do not change today (GROK-20619, guarded by
-   `knownOpenBug`). Check it again.
+1. Uncheck **Heatmap Colors** in **Context Panel > Misc** — the cells stop being
+   colour-filled. Check it again.
 2. Flip **Global Color Scaling** — the cells are recoloured, then restored
 
 ## Column labels
