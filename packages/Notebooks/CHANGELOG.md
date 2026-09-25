@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Build: Fixed the package failing to load since the rspack migration (CodeMirror is not defined, process is not defined), so no notebook could be opened
+* GROK-20991: Fixed the package failing to load since the rspack migration (CodeMirror is not defined, process is not defined), so no notebook could be opened
 * Notebooks: Read the session token from `grok.dapi.token` instead of the `auth` cookie, which is now HttpOnly
 * GROK-20477: Guard mountNotebook against a null iframe browsing context and defer to the 'load' handler
 * GROK-20611: Notebooks: Fixed glitchy context panel width resizing when a notebook view is open 
