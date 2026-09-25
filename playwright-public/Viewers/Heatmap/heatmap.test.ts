@@ -66,9 +66,7 @@ test('Heat map', async ({page}) => {
     await snapshot(page);
     expect(await v.togglePropertyGridCheckbox(page, 'heatmap-colors')).toBe(false);
 
-    await knownOpenBug('GROK-20619', async () => {
-      await repaint(page, 1000, 4000);
-    });
+    await repaint(page, 1000, 4000);
 
     expect(await v.togglePropertyGridCheckbox(page, 'heatmap-colors')).toBe(true);
   });
@@ -167,10 +165,13 @@ test('Heat map', async ({page}) => {
     }
 
     await expect.poll(() => sliderSpan(page, 'y'), {timeout: 10_000}).toBeLessThan(before);
+    const zoomed = await sliderSpan(page, 'y');
     await repaint(page, 500);
 
+    // the initial span may already be the full range, so the reset only has to widen the zoom back to it
     await page.locator(`${VIEWER} [name="y-slider"]`).first().dblclick();
-    await expect.poll(() => sliderSpan(page, 'y'), {timeout: 10_000}).toBeGreaterThan(before);
+    await expect.poll(() => sliderSpan(page, 'y'), {timeout: 10_000}).toBeGreaterThan(zoomed);
+    expect(await sliderSpan(page, 'y')).toBeGreaterThanOrEqual(before);
   });
 
   await softStep('Filtering the table redraws the heat map', async () => {

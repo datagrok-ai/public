@@ -67,6 +67,7 @@ test.describe.serial('EDA / Control comparisons', () => {
   });
 
   test('GROK-20795: computes on every row, ignoring the active filter', async ({ page }) => {
+    // The title is the dashboard key and stays; the dialog is filter-aware since ece1b639a8.
     test.setTimeout(180_000);
 
     await openDemoCsv(page, 'demog.csv');
@@ -92,9 +93,8 @@ test.describe.serial('EDA / Control comparisons', () => {
     await runControlComparisons(page);
     const sizesFiltered = await readGroupSizes(page, before);
 
-    // GROK-20795: group sizes do not shrink with the filter, and still cover more rows than are
-    // visible. Invert both assertions when the dialog becomes filter-aware.
-    expect(sizesFiltered).toEqual(sizesUnfiltered);
-    expect(sizesFiltered.reduce((a, b) => a + b, 0)).toBeGreaterThan(filteredRows);
+    expect(sizesFiltered, 'GROK-20795: group sizes did not shrink with the filter').not.toEqual(sizesUnfiltered);
+    expect(sizesFiltered.reduce((a, b) => a + b, 0), 'GROK-20795: groups cover more rows than are visible')
+      .toBeLessThanOrEqual(filteredRows);
   });
 });

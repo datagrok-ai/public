@@ -6,6 +6,8 @@ const {bundler, rspack, loaders} = require('@datagrok/build-config');
 module.exports = bundler({
   mode: 'production',
   css: false,
+  // @jupyterlab/codemirror needs its own CodeMirror 5; the platform global is not there when the package loads
+  externals: {codemirror: false},
   resolve: {
     alias: {
       // marked v4 (security override) has no default export; @jupyterlab/rendermime@2.x expects one.
@@ -25,6 +27,6 @@ module.exports = bundler({
   ],
   plugins: [
     new rspack.CssExtractRspackPlugin({filename: 'styles/jupyter-styles.css'}),
-    new rspack.DefinePlugin({'process.argv': '[]'}),
+    new rspack.DefinePlugin({process: {env: {}, argv: []}}),
   ],
 });
