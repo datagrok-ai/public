@@ -330,9 +330,22 @@ export async function chemSubstructureSearchLibrary(
     if (cruxQuery !== null) {
       subscribeToColumnChanges(molStringsColumn);
       return cruxSubstructureSearch(molStringsColumn, cruxQuery, molString, molBlockFailover, awaitAll, searchType,
-        includeMask, () => currentSearchSmiles[filterType][searchKey] !== currentSearch);
+        includeMask, () => currentSearchSmiles[filterType][searchKey] !== currentSearch,
+        (result) => rdkitSubstructureSearch(molStringsColumn, molString, molBlockFailover, filterType,
+          columnIsCanonicalSmiles, awaitAll, searchType, similarityCutOff, fp, includeMask, result));
     }
   }
+  return rdkitSubstructureSearch(molStringsColumn, molString, molBlockFailover, filterType, columnIsCanonicalSmiles,
+    awaitAll, searchType, similarityCutOff, fp, includeMask, new BitArray(molStringsColumn.length));
+}
+
+/** The RDKit search of {@link chemSubstructureSearchLibrary}, filling `matchesBitArray`. */
+async function rdkitSubstructureSearch(molStringsColumn: DG.Column, molString: string, molBlockFailover: string,
+  filterType: FILTER_TYPES, columnIsCanonicalSmiles: boolean, awaitAll: boolean, searchType: SubstructureSearchType,
+  similarityCutOff: number, fp: Fingerprint, includeMask: BitArray | null, matchesBitArray: BitArray,
+): Promise<BitArray> {
+  const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
+  const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   await chemBeginCriticalSection();
   _package.logger.debug(`in chemSubstructureSearchLibrary, began critical section currentSearch: ${currentSearch}`);
   const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
@@ -355,8 +368,6 @@ export async function chemSubstructureSearchLibrary(
       invalidateCacheFlag = true;
       lastColumnInvalidated = currentCol;
     }
-
-    const matchesBitArray = new BitArray(molStringsColumn.length);
 
     const searchProgressEventName =
       getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);

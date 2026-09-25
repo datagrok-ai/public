@@ -7,6 +7,8 @@ const collections = new Map<string, Collection>();
 /** Builds the collection of one index segment; returns the (segment-local) rows crux could not parse. */
 function build(key: string, smiles: string[]): Uint32Array {
   const builder = new CollectionBuilder(true);
+  // what RDKit's default read rejects, the way RDKit reads it without Kekulize (Chem's getMolSafe retry)
+  builder.setLenient(true);
   const failed: number[] = [];
   // one molecule per call: the builder only counts failures, the NOT CONTAINS complement needs their rows
   for (let i = 0; i < smiles.length; i++) {

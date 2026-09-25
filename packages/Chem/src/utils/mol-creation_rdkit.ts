@@ -25,6 +25,14 @@ export function _isSmarts(molString: string): boolean {
     return !!molString.match(/\[.?#\d|\$|&|;|,|!.?]/g);
 }
 
+export function hasRadicals(mol: RDMol): boolean {
+  try {
+    return /"nRad":[1-9]/.test(mol.get_json());
+  } catch {
+    return false;
+  }
+}
+
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule,
   warnOff: boolean = true): IMolContext {
   if (molString && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH)
@@ -94,8 +102,9 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
       if (mol !== null) { // check the qmol is proper
         // for a plain SMILES use the molecule query: its pattern fingerprint and matching are consistent
         // with molblock-derived queries (a SMARTS qmol's pattern fp over-filters and drops valid hits).
-        // keep the qmol only for a real SMARTS, or when the qmol fails to match its own molecule
-        if (!treatAsSmarts || mol.get_substruct_match(queryMol) === '{}') {
+        // keep the qmol for a real SMARTS unless it fails to match its own molecule, and whenever the SMILES
+        // reading has radicals ([OH], [CH3], [F], [N+], c1cc[n+]cc1: meant as SMARTS)
+        if (!hasRadicals(mol) && (!treatAsSmarts || mol.get_substruct_match(queryMol) === '{}')) {
           queryMol.delete(); //remove mol object previously stored in queryMol
           queryMol = mol;
         } else

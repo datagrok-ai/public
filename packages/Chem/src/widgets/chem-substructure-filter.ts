@@ -10,6 +10,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
+import {SubstructureSearchEngine, getSubstructureSearchEngine} from '../crux/crux-searches';
 import {Subject, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import wu from 'wu';
@@ -171,7 +172,9 @@ export class SubstructureFilter extends DG.Filter {
 
   constructor() {
     super();
-    initRdKitService(); // No await
+    // crux runs Contains / Not contains without the RDKit workers; they start with the first search that needs them
+    if (getSubstructureSearchEngine() !== SubstructureSearchEngine.Crux)
+      initRdKitService(); // No await
     this.filterId = chemFilterid++;
     this.root = ui.divV([]);
     this.calculating = false;

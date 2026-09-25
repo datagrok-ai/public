@@ -3,13 +3,14 @@
 //   node parity.mjs [molecules=20000] [sets=smiles,molblock,molblockH,self]
 //
 // sets:       smiles, molblock (sketcher-like molblocks of the smiles set), molblockH (with explicit hydrogens),
-//             self (dataset molecules as queries), bdb-100 / bdb-1k / bdb-3488 (SMARTS sets from crux-bench)
-// DATASET     SMILES csv (default: <reddata>/data/demo/chem/chembl/chembl-100k.csv)
-// CRUX_BENCH  crux-bench checkout, for the bdb-* sets
+//             self (dataset molecules as queries), or any crux-bench query set: bdb-100 / bdb-1k / bdb-3488 (SMARTS),
+//             filtercatalog (RDKit's FilterCatalog SMARTS), zinc-50 (SMILES)
+// DATASET     SMILES csv or .smi (default: <reddata>/data/demo/chem/chembl/chembl-100k.csv)
+// CRUX_BENCH  crux-bench checkout, for its query sets
 // CRUX_WASM   a wasm-pack out dir to test instead of the build vendored in Chem
 // PURE=1      leave out the RDKit verdict Chem gives the molecules crux cannot parse (shows crux's own results)
 // VERBOSE=1   print every query, not only fallbacks and differences
-import {readFileSync} from 'fs';
+import {existsSync, readFileSync} from 'fs';
 import {join} from 'path';
 import {performance} from 'perf_hooks';
 import {DATA_DIR, loadChemQueryCode, loadCrux, loadRdkit, readSmilesCsv} from './node-env.mjs';
@@ -85,6 +86,7 @@ function rdkitSearch(query) {
 // for the molecules crux cannot parse
 t = performance.now();
 const builder = new crux.CollectionBuilder(true);
+builder.setLenient?.(true);
 const unparsed = [];
 for (let i = 0; i < mols.length; i++) {
   const extension = mols[i]?.indexOf(' |') ?? -1;
@@ -158,11 +160,16 @@ if (SETS.includes('self')) {
       queries.push({set: 'self', q: mols[i], label: `row ${i}`});
   }
 }
-for (const set of SETS.filter((s) => s.startsWith('bdb-'))) {
+for (const set of SETS.filter((s) => !['smiles', 'molblock', 'molblockH', 'self'].includes(s))) {
   if (!process.env.CRUX_BENCH)
     throw new Error(`set ${set} needs CRUX_BENCH (a crux-bench checkout)`);
-  const text = readFileSync(join(process.env.CRUX_BENCH, 'queries', set, 'queries.txt'), 'utf8');
-  queries.push(...text.split(/\r?\n/).filter((l) => l.trim()).map((q) => ({set, q, label: q})));
+  const dir = join(process.env.CRUX_BENCH, 'queries', set);
+  const file = ['queries.txt', 'queries.smi', `${set}.smarts`].map((f) => join(dir, f)).find((f) => existsSync(f));
+  if (!file)
+    throw new Error(`no query file in ${dir}`);
+  // one query per line, its first field (the rest is an id or a name)
+  queries.push(...readFileSync(file, 'utf8').split(/\r?\n/).map((l) => l.split(/[\t ]/)[0]).filter((q) => q)
+    .map((q) => ({set, q, label: q})));
 }
 
 let differences = 0;

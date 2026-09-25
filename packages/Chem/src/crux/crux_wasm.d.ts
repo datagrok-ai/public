@@ -72,6 +72,13 @@ export class CollectionBuilder {
      */
     finish(): Collection;
     constructor(build_index: boolean);
+    /**
+     * Read a SMILES RDKit's default read rejects the way RDKit reads it with Kekulize left out
+     * of its sanitization (MinimalLib's `get_mol(smiles, {"kekulize": false})`, the retry
+     * Datagrok's Chem makes): aromatic rings written without their `[nH]`, aromatic
+     * phosphazenes. Off by default.
+     */
+    setLenient(lenient: boolean): void;
 }
 
 /**
@@ -186,9 +193,11 @@ export interface InitOutput {
     readonly collection_size: (a: number) => number;
     readonly collection_substructureSearch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly collectionbuilder_addMany: (a: number, b: number, c: number) => number;
+    readonly collectionbuilder_added: (a: number) => number;
     readonly collectionbuilder_failed: (a: number) => number;
     readonly collectionbuilder_finish: (a: number) => number;
     readonly collectionbuilder_new: (a: number) => number;
+    readonly collectionbuilder_setLenient: (a: number, b: number) => void;
     readonly similarityresult_indices: (a: number) => [number, number];
     readonly similarityresult_scores: (a: number) => [number, number];
     readonly synthoncollection_fromCsv: (a: number, b: number) => [number, number, number];
@@ -204,7 +213,6 @@ export interface InitOutput {
     readonly synthonsimhits_scores: (a: number) => [number, number];
     readonly synthonsimhits_smiles: (a: number) => [number, number];
     readonly start: () => void;
-    readonly collectionbuilder_added: (a: number) => number;
     readonly synthonsimhits_len: (a: number) => number;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

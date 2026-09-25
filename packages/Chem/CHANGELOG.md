@@ -3,6 +3,10 @@
 ## v.next
 
 * Substructure Search: Added the Crux engine (Substructure Search Engine package property) for Contains / Not contains searches; queries it cannot express run on RDKit
+* Substructure Search: Improved Crux parity with RDKit — nitro / N-oxides, perchlorates, elements beyond Rn and aromatic rings RDKit reads only without Kekulize are read as RDKit reads them (Chem datasets: 67 → 0 molecules Crux could not parse, 277 → 7 read differently)
+* Substructure Search: Fixed typed queries such as `[OH]`, `[CH3]`, `[N+]`, `c1cc[n+]cc1` finding almost nothing — a query whose SMILES reading is a radical is now read as SMARTS, by both engines
+* Substructure Search: Added a fallback to RDKit when a Crux search fails (e.g. a worker runs out of memory); Crux restarts to free its memory
+* Improved RDKit start-up: the RDKit wasm is compiled once on the main thread and shared with the workers, and in Crux mode the substructure filter no longer starts the RDKit workers
 * Substructure Search: A second run no longer asks for the molecule column, which offered the hidden canonical SMILES column the first search leaves
 * Reaction renderer: Replaced inter-step arrows with numbered panels and improved scaffold alignment using cached molecular coordinates
 * Substructure filter: Fixed the search progress staying in the task bar at 100% — a search's end closes it, a detached filter terminates every search it started, and the fingerprint precalculation clears its own entry

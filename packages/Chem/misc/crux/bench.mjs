@@ -8,6 +8,7 @@
 // STAND_WEB  the client on the same origin as the API: package web workers cannot start cross-origin, so not the
 //            pub serve port (default http://localhost:8888)
 // DEV_KEY    developer key (default admin)
+// CHROME     a Chrome executable to run instead of Playwright's own browser
 // It sets the user's Substructure Search Engine package property and leaves it on RDKit.
 import {writeFileSync} from 'fs';
 import {loadRdkit, requireFromChem} from './node-env.mjs';
@@ -43,7 +44,7 @@ const QUERIES = [
   {label: 'carboxylic acid (smarts)', q: '[CX3](=O)[OX2H1]'},
   {label: 'amine not amide (smarts)', q: '[NX3;H2,H1;!$(NC=O)]'},
   {label: 'halogen (smarts)', q: '[F,Cl,Br,I]'},
-  {label: '[OH] radical (RDKit either way)', q: '[OH]'},
+  {label: '[OH] (typed, read as SMARTS)', q: '[OH]'},
 ];
 const FILTER_QUERIES = [
   {label: 'benzene', q: molblock('c1ccccc1')},
@@ -55,7 +56,7 @@ const login = await fetch(`${API}/users/login/dev`, {method: 'POST',
   headers: {Authorization: `Dev ${process.env.DEV_KEY ?? 'admin'}`}});
 const {token} = await login.json();
 const {chromium} = requireFromChem('@playwright/test');
-const browser = await chromium.launch({headless: true});
+const browser = await chromium.launch({headless: true, executablePath: process.env.CHROME});
 const page = await browser.newPage({viewport: {width: 1600, height: 1000}});
 page.setDefaultTimeout(1800000);
 page.on('console', (m) => {

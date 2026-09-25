@@ -2,19 +2,30 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {after, awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {first} from 'rxjs/operators';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType,
   getTerminateEventName} from '../constants';
 import {Fingerprint} from '../utils/chem-common';
-import {SubstructureSearchEngine, getCruxQuery, setSubstructureSearchEngine} from '../crux/crux-searches';
+import {SubstructureSearchEngine, getCruxQuery, getCruxService, setSubstructureSearchEngine}
+  from '../crux/crux-searches';
 import {readDataframe} from './utils';
 
 const QUERIES = ['c1ccccc1', 'c1ccncc1', 'C1CC1', 'C(=O)N', 'c1ccc2[nH]ccc2c1', 'C[C@H](N)C(=O)O', 'C/C=C/C',
   '[CX3](=O)[OX2H1]', '[NX3;H2,H1;!$(NC=O)]', '[F,Cl,Br,I]', '[#7;R]', '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1-,=[#8]'];
-// radicals, isotopes and SMARTS primitives crux does not evaluate like RDKit
-const RDKIT_ONLY_QUERIES = ['[OH]', '[N+]', '[13CH3]O', '[C;v4]', '[#6;x2]', '[#6&R2]'];
+// isotopes and SMARTS primitives crux does not evaluate like RDKit
+const RDKIT_ONLY_QUERIES = ['[13CH3]O', '[C;v4]', '[#6;x2]', '[#6&R2]', '[C;r6]'];
+// molecules crux read differently from RDKit before crux-core's rdkit-parity-gaps: nitro / N-oxide / azide /
+// halogen oxide in their neutral hypervalent form, a radium salt, leading spaces, a cyclic iodine
+const SANITIZATION_CASES = ['CC(C)(C)c1ccc(cc1)S(=O)(=O)Nc2ccc(Cl)cc2C(=O)c3ccn(=O)cc3',
+  'O=C1NCCN1c2ncc(s2)N(=O)=O', 'CCOc1ccc(cc1)c2cc(C)[n+](CCO)c(c2)c3ccc(OCC)cc3.[O-]Cl(=O)(=O)=O',
+  'CNS(=O)(=O)CCCCN=N#N', '[Cl-].[Cl-].[Ra+2]', '  CC[C@@H]1OCC[C@H]1C(=O)N1CCOC(C)(CNC(=O)C2=CC(F)=CN2)C1',
+  'I1c2ccccc2c3ccccc13'];
+// molecules only RDKit's read without Kekulize accepts, the one Chem retries with
+const LENIENT_CASES = ['O=C1N(CCc3c1c2ccccc2n3C)Cc4ncnc4C', 'c2ccc1nncc1c2',
+  'Clp1(Cl)np(Cl)(Cl)np2(NNP(=O)(NN2)Oc3ccccc3)n1', 'N1c2ccccc2p3(c4ccccc14)c5ccccc5nc6ccccc36'];
 
 async function search(engine: SubstructureSearchEngine, col: DG.Column, query: string,
   searchType = SubstructureSearchType.CONTAINS, includeMask: BitArray | null = null): Promise<BitArray> {
@@ -30,8 +41,15 @@ async function expectSameAsRdkit(col: DG.Column, queries: string[], searchType =
       expect(await getCruxQuery(query, '') !== null, true, `crux does not search for ${query}`);
     const rdkit = await search(SubstructureSearchEngine.RDKit, col, query, searchType, includeMask);
     const crux = await search(SubstructureSearchEngine.Crux, col, query, searchType, includeMask);
-    expect(crux.toString(), rdkit.toString(), `crux differs from RDKit: ${searchType} ${query}`);
+    expect(crux.equals(rdkit), true, `crux differs from RDKit: ${searchType} ${query} (crux ${crux}, RDKit ${rdkit})`);
   }
+}
+
+function moleculeColumn(smiles: string[]): DG.Column {
+  const col = DG.Column.fromStrings('smiles', smiles);
+  col.semType = DG.SEMTYPE.MOLECULE;
+  DG.DataFrame.fromColumns([col]);
+  return col;
 }
 
 function molblock(smiles: string, explicitHydrogens = false): string {
@@ -92,6 +110,54 @@ category('crux substructure search', () => {
     const mask = await search(SubstructureSearchEngine.RDKit, col, 'c1ccccc1');
     await expectSameAsRdkit(col, ['c1ccncc1', 'C(=O)N'], SubstructureSearchType.CONTAINS, mask);
   });
+
+  test('matchesRdkit.radicalLookingQueries', async () => {
+    // typed, [OH] [CH3] [F] [N+] are read as SMARTS by both engines: the atom as written, whatever its neighbours;
+    // so is c1cc[n+]cc1, which the radical would make a non-aromatic ring
+    expect(await getCruxQuery('[OH]', ''), '[O&H1]');
+    const col = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
+    expect((await search(SubstructureSearchEngine.RDKit, col, '[OH]')).trueCount() > 0, true);
+    await expectSameAsRdkit(col, ['[OH]', '[CH3]', '[NH2]', '[F]', '[N+]', '[O-]', 'c1cc[n+]cc1']);
+    const pyridinium = await search(SubstructureSearchEngine.RDKit,
+      moleculeColumn(['C[n+]1ccccc1', 'c1cc[nH+]cc1', 'c1ccncc1']), 'c1cc[n+]cc1');
+    expect([0, 1, 2].map((i) => pyridinium.getBit(i)).join(), 'true,true,false');
+  });
+
+  test('matchesRdkit.sanitizationCases', async () => {
+    await expectSameAsRdkit(moleculeColumn(SANITIZATION_CASES),
+      ['c1ccncc1', '[N+](=O)[O-]', '[O-]', 'N=[N+]=[N-]', 'Cl', '[Ra]', 'C1CCOC1', 'c1ccccc1', 'I']);
+  });
+
+  test('matchesRdkit.lenientCases', async () => {
+    const col = moleculeColumn(LENIENT_CASES);
+    for (const searchType of [SubstructureSearchType.CONTAINS, SubstructureSearchType.NOT_CONTAINS])
+      await expectSameAsRdkit(col, ['c1ncnc1', 'c1ccccc1', 'P', 'n', 'C(=O)N'], searchType);
+  });
+
+  test('failedCruxFallsBackToRdkit', async () => {
+    const df = grok.data.demo.molecules(20000);
+    const col = df.col('smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    const rdkit = await search(SubstructureSearchEngine.RDKit, col, 'c1ccccc1');
+    setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
+    const service = await getCruxService();
+    const key = getSearchQueryAndType('c1ccccc1', SubstructureSearchType.CONTAINS, '', 0);
+    let ended = false;
+    const subs = [
+      // the workers go away at the search's first update, as when one runs out of memory
+      grok.events.onCustomEvent(getSearchProgressEventName(df.name, col.name)).pipe(first())
+        .subscribe(() => service.restart(service.generation)),
+      grok.events.onCustomEvent(getTerminateEventName(df.name, col.name)).subscribe((k) => ended ||= k === key),
+    ];
+    try {
+      const result = await chemSubstructureSearchLibrary(col, 'c1ccccc1', 'c1ccccc1', FILTER_TYPES.substructure,
+        false, false);
+      await awaitCheck(() => ended, 'search has not ended', 60000);
+      expect(result.equals(rdkit), true, `crux ${result}, RDKit ${rdkit}`);
+    } finally {
+      subs.forEach((s) => s.unsubscribe());
+    }
+  }, {timeout: 90000});
 
   test('fallsBackToRdkit', async () => {
     setSubstructureSearchEngine(SubstructureSearchEngine.Crux);

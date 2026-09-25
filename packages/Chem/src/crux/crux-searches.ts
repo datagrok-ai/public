@@ -32,7 +32,7 @@ export function setSubstructureSearchEngine(engine: SubstructureSearchEngine | n
   engineOverride = engine;
 }
 
-function getSubstructureSearchEngine(): SubstructureSearchEngine {
+export function getSubstructureSearchEngine(): SubstructureSearchEngine {
   if (engineOverride)
     return engineOverride;
   try {
@@ -43,7 +43,7 @@ function getSubstructureSearchEngine(): SubstructureSearchEngine {
   }
 }
 
-function getCruxService(): Promise<CruxService> {
+export function getCruxService(): Promise<CruxService> {
   cruxService ??= CruxService.create(getRdKitWebRoot()!).catch((e) => {
     cruxService = null;
     throw e;
@@ -84,22 +84,28 @@ export async function getCruxQuery(molString: string, molBlockFailover: string):
  * Crux counterpart of chemSubstructureSearchLibrary (Contains / Not contains) with the same contract: the returned
  * bit array fills in as segments are searched, reported by the progress event (at most 7 times per search, the last
  * one at 100%), and the terminate event, keyed by query, both ends the search and cancels it. A search that is not
- * awaited stops, announcing its end, once `isSuperseded` tells a newer search on the column started.
+ * awaited stops, announcing its end, once `isSuperseded` tells a newer search on the column started. If crux fails
+ * (a worker out of memory, say), crux restarts, which frees its memory, and `rdkitSearch` fills the bit array instead.
  */
 export async function cruxSubstructureSearch(col: DG.Column, smarts: string, molString: string,
   molBlockFailover: string, awaitAll: boolean, searchType: SubstructureSearchType,
-  includeMask: BitArray | null, isSuperseded: () => boolean): Promise<BitArray> {
+  includeMask: BitArray | null, isSuperseded: () => boolean,
+  rdkitSearch: (result: BitArray) => Promise<BitArray>): Promise<BitArray> {
   const dfName = col.dataFrame?.name ?? '';
   const terminateEventName = getTerminateEventName(dfName, col.name);
   const progressEventName = getSearchProgressEventName(dfName, col.name);
   const searchKey = getSearchQueryAndType(molBlockFailover, searchType, Fingerprint.Morgan, 0);
   const result = new BitArray(col.length);
+  // the pre-search on filter attach: every row matches, the index gets built in the background
+  if (smarts === '')
+    result.setAll(true);
   let terminated = false;
+  let failed = false;
   const terminateSub = awaitAll ? null : grok.events.onCustomEvent(terminateEventName).subscribe((key: string) => {
     terminated ||= key === searchKey;
   });
   const superseded = () => !awaitAll && smarts !== '' && isSuperseded();
-  const isCancelled = () => terminated || superseded();
+  const isCancelled = () => terminated || failed || superseded();
 
   // molecules crux cannot parse get the verdict of the RDKit search, which parses more leniently
   let rdkitQuery: RDMol | null | undefined;
@@ -113,16 +119,41 @@ export async function cruxSubstructureSearch(col: DG.Column, smarts: string, mol
     }
   };
 
+  let service: CruxService | null = null;
+  let generation = 0;
+  /** Runs the search on RDKit; `restart` when the crux workers failed, which frees their memory. */
+  const fallBack = async (e: any, restart: boolean): Promise<BitArray> => {
+    rdkitQuery?.delete();
+    failed = true;
+    if (restart)
+      service?.restart(generation);
+    if (terminated || superseded() || smarts === '') {
+      terminateSub?.unsubscribe();
+      if (!terminated)
+        grok.events.fireCustomEvent(terminateEventName, searchKey);
+      return result;
+    }
+    console.warn(`Chem | crux substructure search failed, searching with RDKit: ${e?.message ?? e}`);
+    result.setAll(false);
+    try {
+      return await rdkitSearch(result);
+    } finally {
+      // a terminate that came while the RDKit search was starting did not reach it
+      terminateSub?.unsubscribe();
+      if (terminated)
+        grok.events.fireCustomEvent(terminateEventName, searchKey);
+    }
+  };
+
   let index: CruxColumnIndex;
   let search: Promise<void>;
   try {
-    const service = await getCruxService();
+    service = await getCruxService();
+    generation = service.generation;
     index = await service.getIndex(col);
-    if (smarts === '') {
-      // the pre-search on filter attach: every row matches, the index gets built in the background
-      result.setAll(true);
+    if (smarts === '')
       search = service.build(index, isCancelled);
-    } else {
+    else {
       const updates = new FilterUpdateScheduler((fraction) =>
         grok.events.fireCustomEvent(progressEventName, fraction * 100));
       let processed = 0;
@@ -134,9 +165,7 @@ export async function cruxSubstructureSearch(col: DG.Column, smarts: string, mol
       }, isCancelled);
     }
   } catch (e: any) {
-    terminateSub?.unsubscribe();
-    grok.shell.error(e?.message ?? e);
-    throw e;
+    return fallBack(e, false);
   }
 
   const finished = search.then(() => {
@@ -150,14 +179,7 @@ export async function cruxSubstructureSearch(col: DG.Column, smarts: string, mol
         grok.events.fireCustomEvent(progressEventName, 100);
     }
     grok.events.fireCustomEvent(terminateEventName, searchKey);
-  }, (e: any) => {
-    terminateSub?.unsubscribe();
-    rdkitQuery?.delete();
-    grok.shell.error(`Chem | crux substructure search failed: ${e?.message ?? e}`);
-    if (!awaitAll)
-      grok.events.fireCustomEvent(terminateEventName, searchKey);
-    throw e;
-  });
+  }, (e) => fallBack(e, true));
   if (awaitAll)
     await finished;
   else

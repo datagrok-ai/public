@@ -11,7 +11,10 @@ const CRUX_INDEX_TAG = '.crux-index';
 const FIRST_SEGMENT_SIZE = 1000;
 const MIN_SEGMENT_SIZE = 500;
 const MAX_SEGMENT_SIZE = 50000;
-/** crux keeps ~1 KB per indexed molecule; least recently used column indexes are dropped past this many rows. */
+/**
+ * crux keeps ~380 bytes per indexed molecule (~1.1 GB at the limit, spread over the workers); least recently used
+ * column indexes are dropped past this many rows.
+ */
 const MAX_INDEXED_ROWS = 3000000;
 
 class CruxWorkerClient extends WorkerMessageBusClient {
@@ -57,6 +60,8 @@ export interface CruxColumnIndex {
   /** Running searches and builds; segments replaced meanwhile are freed once it drops to zero. */
   users: number;
   released: CruxSegment[];
+  /** Forgotten by a {@link CruxService.restart}: the searches still running on it fail. */
+  lost?: boolean;
 }
 
 /**
@@ -65,7 +70,10 @@ export interface CruxColumnIndex {
  * while the rest of the column is still being indexed.
  */
 export class CruxService {
+  private module: WebAssembly.Module | null = null;
   private workers: CruxWorkerClient[] = [];
+  /** Counts {@link restart}s: a search that failed on older workers does not restart the new ones. */
+  generation = 0;
   private validator: Collection | null = null;
   private indexes = new Map<number, CruxColumnIndex>();
   private lastId = 0;
@@ -80,9 +88,8 @@ export class CruxService {
     const module = await WebAssembly.compile(await response.arrayBuffer());
     await initCrux({module_or_path: module});
     service.validator = new CollectionBuilder(true).finish();
-    const workerCount = Math.max(1, navigator.hardwareConcurrency - 2);
-    service.workers = Array.from({length: workerCount}, () => new CruxWorkerClient());
-    await Promise.all(service.workers.map((w) => w.moduleInit(module)));
+    service.module = module;
+    await service.startWorkers();
     grok.events.onTableRemoved.subscribe((e) => {
       for (const col of e.args.dataFrame.columns) {
         const index = service.indexes.get(col.temp[CRUX_INDEX_TAG]);
@@ -91,6 +98,29 @@ export class CruxService {
       }
     });
     return service;
+  }
+
+  private startWorkers(): Promise<unknown> {
+    const workerCount = Math.max(1, navigator.hardwareConcurrency - 2);
+    this.workers = Array.from({length: workerCount}, () => new CruxWorkerClient());
+    return Promise.all(this.workers.map((w) => w.moduleInit(this.module!)));
+  }
+
+  /**
+   * Replaces the workers of `generation`, which frees all their memory, and forgets every index: the searches still
+   * running on them fail, the next ones index their columns again.
+   */
+  restart(generation: number): void {
+    if (generation !== this.generation)
+      return;
+    this.generation++;
+    for (const worker of this.workers)
+      worker.terminate();
+    for (const index of this.indexes.values())
+      index.lost = true;
+    this.indexes.clear();
+    // a failed worker init is logged by the worker client
+    this.startWorkers().catch(() => {});
   }
 
   isValidSmarts(smarts: string): boolean {
@@ -145,7 +175,10 @@ export class CruxService {
     await this.use(index, (segment) => this.ensureBuilt(segment), isCancelled);
   }
 
-  /** Runs `action` over the index segments, one at a time per worker, in row order, until the index is dropped. */
+  /**
+   * Runs `action` over the index segments, one at a time per worker, in row order, until the index is dropped; fails
+   * if a restart forgets it.
+   */
   private async use(index: CruxColumnIndex, action: (segment: CruxSegment, worker: CruxWorkerClient) => Promise<void>,
     isCancelled: () => boolean): Promise<void> {
     const segments = index.segments;
@@ -155,13 +188,15 @@ export class CruxService {
         for (const segment of segments) {
           if (segment.worker !== w)
             continue;
+          if (index.lost)
+            throw new Error('crux restarted');
           if (isCancelled() || !this.indexes.has(index.id))
             return;
           await action(segment, worker);
         }
       }));
     } finally {
-      if (--index.users === 0)
+      if (--index.users === 0 && !index.lost)
         this.release(index);
     }
   }

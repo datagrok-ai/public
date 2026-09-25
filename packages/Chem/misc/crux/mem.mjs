@@ -20,6 +20,7 @@ let t = performance.now();
 // segments like Chem's largest ones; wasm memory never shrinks, so this also counts the build high-water mark
 for (let start = 0; start < mols.length; start += SEGMENT) {
   const builder = new crux.CollectionBuilder(true);
+  builder.setLenient?.(true);
   mols.slice(start, start + SEGMENT).forEach((smiles, i) => {
     if (builder.addMany([smiles ?? '']) === 0)
       failed.push(start + i);

@@ -1,5 +1,6 @@
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {elementsTable} from '../constants';
+import {hasRadicals} from '../utils/mol-creation_rdkit';
 
 const ELEMENTS = new Set(elementsTable);
 const AROMATIC_SYMBOLS = new Set(['b', 'c', 'n', 'o', 'p', 's', 'se', 'as', 'te', 'si', 'ge', 'sb', 'bi']);
@@ -14,18 +15,10 @@ const NON_QUERY_ATOM = /^(\d*)(#\d+|[A-Z][a-z]?|[a-z]{1,2})(?:@@?(?:TH[12]|AL[12
  *
  * RDKit matches molecule (non-query) atoms by element, charge, isotope and radicals only, and the search runs
  * without chirality, while `get_smarts` also writes H counts and stereo. Those are dropped here; radicals,
- * isotopes and primitives crux does not evaluate like RDKit (v, x, h, Rn, z, ^) make the query unsupported.
+ * isotopes and primitives crux does not evaluate like RDKit (v, x, h, Rn, r, z, ^) make the query unsupported.
  */
 export function getCruxSmarts(queryMol: RDMol): string | null {
   return hasRadicals(queryMol) ? null : normalizeSmarts(queryMol.get_smarts());
-}
-
-function hasRadicals(mol: RDMol): boolean {
-  try {
-    return /"nRad":[1-9]/.test(mol.get_json());
-  } catch {
-    return false;
-  }
 }
 
 function normalizeSmarts(smarts: string): string | null {
@@ -82,7 +75,7 @@ function normalizeQueryAtom(c: string): string | null {
     } else if (pair.length === 2 && (ELEMENTS.has(pair) || AROMATIC_SYMBOLS.has(pair))) {
       out += pair;
       end = i + 2;
-    } else if (ch === '#' || ch === 'H' || ch === 'D' || ch === 'X' || ch === 'r') {
+    } else if (ch === '#' || ch === 'H' || ch === 'D' || ch === 'X') {
       end = readDigits(c, i + 1);
       if (ch === '#' && end === i + 1)
         return null;

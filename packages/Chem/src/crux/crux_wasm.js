@@ -161,6 +161,16 @@ export class CollectionBuilder {
         CollectionBuilderFinalization.register(this, this.__wbg_ptr, this);
         return this;
     }
+    /**
+     * Read a SMILES RDKit's default read rejects the way RDKit reads it with Kekulize left out
+     * of its sanitization (MinimalLib's `get_mol(smiles, {"kekulize": false})`, the retry
+     * Datagrok's Chem makes): aromatic rings written without their `[nH]`, aromatic
+     * phosphazenes. Off by default.
+     * @param {boolean} lenient
+     */
+    setLenient(lenient) {
+        wasm.collectionbuilder_setLenient(this.__wbg_ptr, lenient);
+    }
 }
 if (Symbol.dispose) CollectionBuilder.prototype[Symbol.dispose] = CollectionBuilder.prototype.free;
 

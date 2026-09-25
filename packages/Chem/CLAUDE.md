@@ -92,9 +92,10 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 
 ### Web worker architecture
 
-`RdKitService` manages 2–4 web workers (scaled to CPU cores). Work is distributed in striped batches
+`RdKitService` manages `hardwareConcurrency - 2` web workers (at least one). Work is distributed in striped batches
 (worker 1 gets rows 0, n, 2n…; worker 2 gets rows 1, n+1, 2n+1…). Progress is tracked via events
-with termination signals.
+with termination signals. The RDKit wasm is fetched and compiled once on the main thread and handed to every worker
+(`initRdKitFrom` in `rdkit-service-worker-api.ts`), so workers neither download nor compile it.
 
 ### Crux substructure engine
 
@@ -104,20 +105,25 @@ Not contains searches inside `chemSubstructureSearchLibrary` — every caller (f
 Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust → wasm) indexes a column once, in
 segments that double in size per round over `hardwareConcurrency - 2` workers and are built by the first
 search that reaches them; a changed column rebuilds only the segments whose molecules changed. The query goes
-through `getQueryMolSafe` as for RDKit and is written as SMARTS without H counts of molecule atoms and without
-stereo (RDKit matches neither); radicals, isotopes and `v`/`x`/`h`/`Rn`/`z`/`^` primitives, other search types
-and anything crux fails to parse run on RDKit. Molblock columns are converted to SMILES by RDKit first; the few
-molecules crux cannot parse (RDKit's `kekulize: false` retry accepts more) are matched by RDKit on the main thread.
-Crux searches do not queue on the chem critical section, so a filter search replaced by a newer one on the column
-stops itself (the RDKit path drops it when it gets the section). crux keeps ~1 KB per indexed molecule (mostly
-parsed graphs `crux-wasm` retains after building); indexes are dropped with their table, and past 3M rows the least
+through `getQueryMolSafe` as for RDKit (a typed query whose SMILES reading has radicals, like `[OH]` or `[CH3]`, is
+read as SMARTS by both engines) and is written as SMARTS without H counts of molecule atoms and without stereo (RDKit
+matches neither); molblock radicals, isotopes and `v`/`x`/`h`/`r`/`Rn`/`z`/`^` primitives, other search types and
+anything crux fails to parse run on RDKit. Molblock columns are converted to SMILES by RDKit first. crux reads
+molecules like Chem's RDKit, including its `kekulize: false` retry (`setLenient(true)` in `crux.worker.ts`); rows it
+still cannot parse are matched by RDKit on the main thread. Crux searches do not queue on the chem critical section,
+so a filter search replaced by a newer one on the column stops itself (the RDKit path drops it when it gets the
+section). If a crux search fails (a worker out of memory, say), crux restarts, freeing its memory, and the search runs
+on RDKit. In Crux mode the substructure filter does not start the RDKit worker pool; the first thing that needs it
+does. crux keeps ~380 bytes per indexed molecule; indexes are dropped with their table, and past 3M rows the least
 recently used ones go first.
 
 Working notes — setup on a new machine, verification scripts, measurements, open items with their analysis — are
-in [`misc/crux/README.md`](misc/crux/README.md).
+in [`misc/crux/README.md`](misc/crux/README.md); parity with RDKit, dataset by dataset and query set by query set, in
+[`misc/crux/PARITY.md`](misc/crux/PARITY.md).
 
-`src/crux/crux_wasm*` is the `wasm-pack` build of `crux-core/crates/crux-wasm` (crux-core `43f333e`), done the
-way crux-js does it — into crux-js (wasm-pack writes a `*` `.gitignore` into its out dir), then copied:
+`src/crux/crux_wasm*` is the `wasm-pack` build of `crux-core/crates/crux-wasm` (crux-core `078ca7c`, branch
+`spike/rdkit-parity-gaps` rebased on crux-core main a7e2f26), done the way crux-js does it — into crux-js (wasm-pack
+writes a `*` `.gitignore` into its out dir), then copied:
 
 ```bash
 cd crux/crux-js   # beside crux-core, Rust toolchain from crux-core/rust-toolchain.toml

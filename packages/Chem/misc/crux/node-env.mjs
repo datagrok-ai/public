@@ -49,6 +49,8 @@ export async function loadChemQueryCode() {
   ]);
   const cruxSmarts = await importChemModule('crux/crux-smarts.ts', [
     [/import \{elementsTable\} from '\.\.\/constants';/, `const elementsTable = ${elementsTable};`],
+    [/import \{hasRadicals\} from '\.\.\/utils\/mol-creation_rdkit';/,
+      `import {hasRadicals} from './utils_mol-creation_rdkit.mjs';`],
   ]);
   return {...molCreation, ...cruxSmarts};
 }
@@ -68,9 +70,14 @@ async function importChemModule(path, replacements) {
   return import(pathToFileURL(file).href);
 }
 
-/** First column whose header mentions smiles (else the first one) of a CSV with one molecule per line. */
+/**
+ * First column whose header mentions smiles (else the first one) of a CSV with one molecule per line, or the first
+ * field of each line of a headerless .smi file (crux-bench's corpora).
+ */
 export function readSmilesCsv(path, limit = Infinity) {
   const lines = readFileSync(path, 'utf8').split(/\r?\n/);
+  if (path.endsWith('.smi'))
+    return lines.filter((l) => l.length).slice(0, limit).map((l) => l.split(/[\t ]/)[0]);
   const header = lines[0].split(',');
   const col = Math.max(0, header.findIndex((h) => /smiles/i.test(h)));
   return lines.slice(1).filter((l) => l.length).slice(0, limit).map((l) => l.split(',')[col]);
