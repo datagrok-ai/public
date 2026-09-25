@@ -37,6 +37,16 @@ To reorder the fields in the Forms viewer, go to Forms viewer settings, open the
 
 ![Forms viewer](img/reorder_fields_in_forms_viewer.gif)
 
+To change the font of labels and values, use **Font** in the **Context Panel**. To make molecules
+and other rendered values larger, set **Renderer Size**.
+
+## Pinning rows
+
+To keep a row in view, right-click its form and select **Pin Row**. The pinned form stays in place
+when you scroll, and the layout keeps it. The viewer finds the pinned row by the value of the field
+you right-clicked, so pin it by a field with unique values, such as an ID. To unpin the row,
+select **Unpin Row**.
+
 ## Sorting
 
 The forms viewer displays rows in the following priority order 

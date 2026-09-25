@@ -20,8 +20,12 @@ There are two ways to add a trellis plot, visualized below:
 * create a viewer that you want to eventually become an inner chart, customize it the way you like, and then click
   on `Viewer | Use in Trellis`
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Trellis plot');`
+
+:::
 
 ![Trellis Plot](img/trellis-plot.gif "Trellis Plot")
 

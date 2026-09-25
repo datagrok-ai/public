@@ -159,6 +159,15 @@ Core viewers like [scatterplot](viewers/scatter-plot.md), [box plot](viewers/box
 
 **Numerical columns:** For numerical color columns, the viewer uses a linear color scheme by default to represent the value range. If a custom linear color scheme is defined for the column in the grid, the viewer uses that instead. When conditional coloring is applied to a numerical column, the viewer displays range bins as categorical legend items, allowing you to customize individual bin colors via the legend color picker.
 
+#### Legend
+
+When a viewer colors or shapes markers by a categorical column, the legend shows a section for
+each of these columns. The legend follows the filter: it lists only the categories of the rows the
+viewer shows. In the scatterplot, the markers section has a column selector in its header. To hide the legend or
+move it, use **Legend Visibility** and **Legend Position** in the **Context Panel**.
+
+![The legend follows the filter](viewers/img/legend-follows-filter.gif)
+
 #### Viewer controls font
 
 Many viewers allow you to customize fonts for different elements to match your presentation style. **Controls Font** is used for control elements like column selectors, combo boxes, and other UI controls on the viewer. **Axis Font** is used for axis labels and tick marks in chart viewers. Individual viewers may also provide additional font properties for specialized elements such as labels, formulas, annotations, and statistics.
@@ -225,7 +234,7 @@ Certain viewers include statistical features:
 
 * Box [plots](viewers/box-plot.md) show the [p-value](viewers/box-plot.md#t-test), allowing you to determine
   whether the findings are statistically significant.
-* Scatterplots can show one or more [regression lines](viewers/scatter-plot.md#formula-lines) with
+* Scatterplots can show one or more [regression lines](viewers/scatter-plot.md#regression-line) with
   associated equations and color-coding. [Correlation plots](viewers/correlation-plot.md) highlight the values of
   Pearson's correlation coefficient, making it easy to trace the strength of the
   relationship between given variables.
@@ -534,6 +543,7 @@ Usage:
 | Click            | Jump to column |
 | Shift+drag       | Select multiple columns |
 | Ctrl+click       | Toggle column selection |
+| Drag a row       | Reorder columns in the grid |
 | Esc              | Clear selection |
 | Right-click      | Show popup menu |
 | Popup: Add Stats | Show/hide statistics |
@@ -541,6 +551,8 @@ Usage:
 If a context menu is open when multiple columns are selected, you are
 presented with a choice to apply commands to either the current column or all selected
 columns.
+
+![Reordering columns from the Column Manager](viewers/img/column-manager-reorder.gif)
 
 ## Controls
 
@@ -587,7 +599,7 @@ Many viewers support the following:
 | Alt+drag     | Zoom                                                                                                                                                                                                                                                                                                                       |
 | Mouse drag   | Pan                                                                                                                                                                                                                                                                                                                        |
 | Properties   | Show viewer properties in the [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)                                                                                                                                                                                                                                           |
-| Reset View   | Reset zoom level. Use in: [scatterplot](viewers/scatter-plot.md), [line chart](viewers/line-chart.md), [bar chart](viewers/bar-chart.md), [3D scatterplot](viewers/3d-scatter-plot.md), and [box plot](visualize/viewers/box-plot.md) |
+| Reset View   | Reset zoom level. Use in: [scatterplot](viewers/scatter-plot.md), [line chart](viewers/line-chart.md), [bar chart](viewers/bar-chart.md), [3D scatterplot](viewers/3d-scatter-plot.md), and [box plot](viewers/box-plot.md) |
 
 General commands available under the **General** submenu:
 

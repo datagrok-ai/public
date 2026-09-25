@@ -118,7 +118,7 @@ As a software developer, it is your responsibility to maintain a clean and clear
    **Bad**:
    * Added Elemental Analysis which can analyze the elemental composition of a molecular structure and visualizes the results in a radar viewer. 
      To use Elemental Analysis: 
-     In the Menu Ribbon, open the Chem menu and select Analyze structure > Elemental Analysis... A parameter input dialog opens.
+     In the Menu Ribbon, open the Chem menu and select Analyze > Elemental Analysis... A parameter input dialog opens.
      Select the source table and the molecular column that you want to analyze.
      Select the desired visualization option.
      Click OK to execute the analysis.

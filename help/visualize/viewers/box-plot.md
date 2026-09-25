@@ -5,8 +5,12 @@ title: "Box plot"
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the
 five number summary: minimum, first quartile, median, third quartile, and maximum.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Box plot');`
+
+:::
 
 General:
 
@@ -22,6 +26,12 @@ General:
 When the "category" column contains exactly two categories, press "T" to perform
 [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test). The resulting p-value will then be shown on top of the
 box plot.
+
+## Formula lines
+
+To mark a threshold or a range on the value axis, right-click the box plot and select
+**Tools** > **Formula Lines...**. To learn more, see
+[formula lines](scatter-plot.md#formula-lines) and [annotation regions](scatter-plot.md#annotation-regions).
 
 ## Inverted whiskers
 

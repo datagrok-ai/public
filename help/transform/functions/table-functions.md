@@ -17,7 +17,9 @@ table's columns are offered as you type each argument.
 *Function List:*
 
 - [Column](#column)
+- [ColumnExists](#columnexists)
 - [CumSum](#cumsum)
+- [GetCurrentTable](#getcurrenttable)
 - [IndexOf](#indexof)
 - [Lookup](#lookup)
 - [MovingAvg](#movingavg)
@@ -33,6 +35,16 @@ Returns a column by name. Use it where a whole column is expected, including a c
 Avg(Column("Width"))                  // Same as Avg($[Width])
 Avg(Column("price", "products"))      // Average price in the "products" table
 Column("Width").stats.max             // Column properties are available too
+```
+
+## ColumnExists(`tableName`, `columnName`) {#columnexists}
+
+Returns `true` if the table has a column with this name. Use it in formulas that must work on tables with different
+sets of columns.
+
+```javascript
+ColumnExists("products", "price")
+ColumnExists(GetCurrentTable(), "Weight")   // Checks the table the formula runs on
 ```
 
 ## CumSum(`column`, [`orderBy`], [`descending`], [`by`]) {#cumsum}
@@ -53,6 +65,14 @@ CumSum(${amount}) / Sum($[amount])                  // Cumulative share of the t
 CumSum(${amount}, orderBy=${date})                  // Running total by date, whatever the row order
 CumSum(${amount}, orderBy=${date}, by=${region})    // The same, separately for each region
 CumSum(${amount}, orderBy=${date}, descending=true) // From the latest date back
+```
+
+## GetCurrentTable() {#getcurrenttable}
+
+Returns the name of the table the formula runs on.
+
+```javascript
+GetCurrentTable()                     // For example, "demog"
 ```
 
 ## IndexOf(`column`, `value`) {#indexof}

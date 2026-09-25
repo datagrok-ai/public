@@ -27,8 +27,12 @@ Another variant:
 Initially, the viewer picks up the first string column in the corresponding
 table and builds a word cloud.
 
-> Developers: To add the viewer from the console, use:
- `grok.shell.tv.addViewer('Word cloud');`
+:::note developers
+
+To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Word cloud');`
+
+:::
 
 ## Settings
 

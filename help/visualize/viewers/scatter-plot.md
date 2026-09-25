@@ -69,6 +69,13 @@ to setup basic properties:
 
 ![](img/scatter-plot-colors-sizes-markers-labels.gif)
 
+:::note
+
+Rows with an empty value in the size column are not shown. To show them as small hollow circles,
+check **Show Markers With Empty Size**.
+
+:::
+
 ## Filtering
 
 In addition to visualizing filtered rows, scatter plot can also be used to filter the table, which
@@ -102,12 +109,47 @@ from the context menu.
 
 ![](img/scatter-plot-selection.gif)
 
-## Regression lines
+## Regression line
 
-To show a regression line, press `R` or check the "Show Regression Line" property
-on the context panel. To hide the equation, uncheck "Show Regression Line Equation".
+To show a regression line, press `R` or select **Show Regression Line** in the **Context Panel**.
+
+When the scatterplot is colored by a categorical column, a separate regression line is shown for
+each category, up to 20 categories. To show a single regression line for all points, clear
+**Regression Per Category**.
+
+### Regression statistics
+
+By default, the regression equation and R² are shown in the top-left corner of the scatterplot. To
+hide them, clear **Show Regression Line Equation**.
+
+You can also display additional statistics by selecting:
+
+* **Show Pearson Correlation**
+* **Show Spearman Correlation**
+* **Show Mean Absolute Error**
+* **Show Root Mean Square Error**
 
 ![](img/scatter-plot-regression-line.png)
+
+## Moving average
+
+A moving average line shows the trend in noisy data. Each point of the line is the average of the
+Y values in a window that ends at this point. To show the line, check **Show Moving Average Line**
+in the **Context Panel**. The line chart supports it as well.
+
+To set the window, use **Moving Average Window** (10 by default) and
+**Moving Average Window Unit**:
+
+* **Points**: the number of points in the window
+* **Absolute**: the window width in X axis units
+* **Days**, **Weeks**, **Months**, **Quarters**, or **Years**: a time period, for a date X axis
+
+A larger window gives a smoother line. To show the spread around the trend, check
+**Show Moving Average Deviation**. It shades a band of one standard deviation on each side of the
+line.
+
+When the scatterplot is colored by a categorical column, it draws a line for each category, up to
+20 categories. To draw one line for all points, clear **Moving Average Per Category**.
 
 ## Formula lines
 
@@ -115,9 +157,13 @@ Add reference lines to highlight trends, thresholds, or regions—such as
 regression lines or value bands.
 
 To add one, right-click the scatterplot and select **Tools** > **Formula Lines...**.
-Enter your formula and configure the line settings. Your formula should refer to the
-columns on the **X** and **Y** axes. The syntax for the formula is similar to
-that used to [Add New Column](../../transform/add-new-column.md).
+Enter your formula and configure the line settings. The syntax for the formula is similar to
+that used to [Add New Column](../../transform/add-new-column.md). A formula can refer to the
+columns by name, such as `${HEIGHT} = 2 * ${WEIGHT}`, or use `X` and `Y` for whatever column is
+on the axis. For example, `Y = X + 25` follows the axes as you change them.
+
+By default, lines are drawn above the markers. To draw a line or a band under the markers, set
+**Arrange** to `below markers`.
 
 <img alt="Formula lines" src={require('./img/formula-lines.gif').default}
 width="800px"/>
@@ -141,18 +187,25 @@ Right-click a viewer and select **Tools > Formula Lines…**, then click **ADD N
 - **Region - Formula Lines**: Define the region by entering two formulas that set the upper and lower boundaries.
 - **Region - Draw Rectangle**: Click and drag on the viewer to draw a rectangular region.
 - **Region - Draw Lasso**: Click points or drag freely to draw a polygonal (lasso) region.
+- **Region - Vertical Range** or **Region - Horizontal Range**: Enter the minimum and maximum values on the X or Y axis.
 - **Annotation Regions History**:  Select one of the previously created annotation regions from the history menu.
 
 For **Draw Rectangle** and **Draw Lasso** regions, the viewer enters drawing mode automatically,allowing you to draw directly on the viewer within the **Formula Lines** dialog.
 Alternatively, you can draw a region directly on the viewer by right-clicking and selecting **Tools > Draw Annotation Region**.
 
-To customize a region, provide a description and configure visual properties such as fill color, outline, and transparency.
+To customize a region, provide a description and configure visual properties such as fill color, outline, and transparency. To show the region above or below the markers, use **Arrange**.
 
 ![Annotation Regions](img/annotation-regions.gif)
 
 ### Supported viewers
 
 Formula lines and annotation regions are supported on the [scatter plot](scatter-plot.md), [line chart](line-chart.md), [bar chart](bar-chart.md), [histogram](histogram.md), [box plot](box-plot.md), and [density plot](density-plot.md). When applied to the dataframe, they automatically appear on every viewer with matching axes.
+Box plot, histogram, and bar chart support lines and bands on the value axis only.
+
+If a table has several similar columns, such as measurements at different time points, you can
+define a formula line or a region once for all of them. Put the columns into a
+[column group](grid.md#column-groups). A formula line or a region defined for one column of the
+group also appears when you put another column of the group on the axis.
 
 ![Formula lines and annotation regions across viewers](img/formula-lines-annotation-regions-viewers.png)
 

@@ -19,8 +19,12 @@ Group analysis viewer groups data by one or more columns and analyzes them using
 1. On the menu ribbon, click the **Add viewer** icon. A dialog opens.
 1. In the dialog, select **Group Analysis**.
 
-> Developers: To add the viewer from the console, use:
- `grok.shell.tv.addViewer('Group Analysis');` 
+:::note developers
+
+To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Group Analysis');`
+
+:::
 
 ## Configuring a group analysis viewer
 

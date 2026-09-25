@@ -19,8 +19,12 @@ Sunburst viewer also works with molecules. For example, you can use it to analyz
 
 To add a sunburst, on the **Top Menu**, click the **Add viewer** icon and select **Sunburst**.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Sunburst');`
+
+:::
 
 :::note
 

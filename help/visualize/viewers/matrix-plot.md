@@ -11,8 +11,12 @@ keywords:
 
 Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Matrix plot');`
+
+:::
 
 General:
 

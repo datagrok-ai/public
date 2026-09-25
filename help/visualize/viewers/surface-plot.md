@@ -28,8 +28,12 @@ making it a valuable tool for understanding complex three-dimensional relationsh
 To create a **Surface plot** viewer, navigate to the **Main Menu**
 and select **Add > Javascript Viewers > Surface plot**.
 
-> Developers: To add the viewer from the console, use:
-`grok.shell.tv.addViewer('Surface plot')`
+:::note developers
+
+To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Surface plot');`
+
+:::
 
 When you add a surface plot in Datagrok, the platform automatically detects three
 numerical columns: X and Y as independent variables and Z as the dependent variable.
