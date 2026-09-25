@@ -12,6 +12,7 @@ import './tests/col-panel-tests';
 import './tests/cell-panel-tests';
 
 import './tests/substructure-search-tests';
+import './tests/crux-substructure-search-tests';
 import './tests/rendering-tests';
 import './tests/rendering-scatter-plot-tooltip-tests';
 import './tests/sketcher-tests';

@@ -22,6 +22,7 @@ import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndTyp
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {filter} from 'rxjs/operators';
+import {cruxSubstructureSearch, getCruxQuery, isCruxSearch} from './crux/crux-searches';
 
 
 const enum FING_COL_TAGS {
@@ -324,6 +325,14 @@ export async function chemSubstructureSearchLibrary(
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
   _package.logger.debug(`in chemSubstructureSearchLibrary, filterType: ${filterType}, searchkey: ${searchKey}, currentSearch: ${currentSearch}`);
+  if (isCruxSearch(searchType)) {
+    const cruxQuery = await getCruxQuery(molString, molBlockFailover);
+    if (cruxQuery !== null) {
+      subscribeToColumnChanges(molStringsColumn);
+      return cruxSubstructureSearch(molStringsColumn, cruxQuery, molString, molBlockFailover, awaitAll, searchType,
+        includeMask, () => currentSearchSmiles[filterType][searchKey] !== currentSearch);
+    }
+  }
   await chemBeginCriticalSection();
   _package.logger.debug(`in chemSubstructureSearchLibrary, began critical section currentSearch: ${currentSearch}`);
   const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);

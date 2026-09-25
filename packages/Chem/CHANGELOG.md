@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Substructure Search: Added the Crux engine (Substructure Search Engine package property) for Contains / Not contains searches; queries it cannot express run on RDKit
 * Substructure Search: A second run no longer asks for the molecule column, which offered the hidden canonical SMILES column the first search leaves
 * Reaction renderer: Replaced inter-step arrows with numbered panels and improved scaffold alignment using cached molecular coordinates
 * Substructure filter: Fixed the search progress staying in the task bar at 100% — a search's end closes it, a detached filter terminates every search it started, and the fingerprint precalculation clears its own entry
