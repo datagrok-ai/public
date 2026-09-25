@@ -646,6 +646,18 @@ i.chem-sar-card-twisty:hover {
   flex: 0 0 200px;
   height: 110px;
   margin-left: 12px;
+  overflow: hidden;
+}
+
+/* A viewer lays out at its own height, not its host's, so the strip has to impose one: the root is
+   freed to take the plot area's size, and the host crops whatever chrome does not fit. */
+.chem-sar-editor-histogram > #root {
+  height: unset;
+  width: 100%;
+}
+
+.chem-sar-editor-histogram #center {
+  height: 110px;
 }
 
 .chem-sar-editor-layout {

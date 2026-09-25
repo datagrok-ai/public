@@ -169,9 +169,6 @@ export class SarMatrixEditor extends DG.FuncCallEditor {
       filteringEnabled: false, legendVisibility: 'Never', showXAxis: true,
       showColumnSelector: false, showRangeSlider: false, showBinSelector: false,
     });
-    // A viewer lays out at its own default height, not its host's, and spills over the inputs below
-    // it: the host is a fixed strip beside the form, not a pane the viewer can size itself in.
-    histogram.root.style.height = '100%';
     this.histogramHost.appendChild(histogram.root);
   }
 

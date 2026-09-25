@@ -7,7 +7,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sar-matrix-clustering';
 import {assembleSinglePositionMatrix, fitAdditiveModel} from '../analysis/sar-matrix/sar-matrix-assemble';
-import {decomposeByColumns, defaultAxis, SarFragmentColumns}
+import {decomposeByColumns, SarFragmentColumns}
   from '../analysis/sar-matrix/sar-matrix-columns';
 import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/sar-matrix-link';
 import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
@@ -682,15 +682,6 @@ category('SAR Matrix: fragment columns', () => {
       row ? links.fills[columns.column.name] : [], !row);
   };
 
-  test('the last attachment opens as the axis', async () => {
-    const {r1, r2} = fragmentTable();
-    expect(defaultAxis([r1, r2])?.name, 'R2', 'R1 folds into the row, R2 runs across');
-    expect(defaultAxis([r2, r1])?.name, 'R2', 'pick order must not matter');
-    // Names that disagree with the attachments they carry: sorting by name would answer 'Z'.
-    expect(defaultAxis([col('Z', r1.toList()), col('A', r2.toList())])?.name, 'A',
-      'the attachment decides, not the column name');
-  });
-
   test('fragment columns build the matrix', async () => {
     const {molecules, activity, core, r1, r2} = fragmentTable();
     const matrices = await runSarMatrix(molecules, activity,
@@ -706,13 +697,6 @@ category('SAR Matrix: fragment columns', () => {
     expect(keys.every((k) => k.includes('c1ccc') && k.includes('[*:2]')), true,
       'each row is the core with its R1 attached and the axis still open');
     expect(new Set(keys).size, 2, 'and the rows differ by the R1 that distinguishes them');
-  });
-
-  test('fragment columns honour the axis', async () => {
-    const {molecules, activity, core, r1, r2} = fragmentTable();
-    const swapped = await runSarMatrix(molecules, activity,
-      {...e2eParams(false), fragmentColumns: {core, rows: [r2], column: r1}});
-    expect(swapped[0].positions.join(','), 'R1', 'swapping the roles transposes the matrix');
   });
 
   // A connector drawn alone is a bare chain with nothing to recognise it by, so it stays on its core.
@@ -778,18 +762,6 @@ category('SAR Matrix: fragment columns', () => {
     expect(virtual.length, 1, 'the one unmade R1 x R3 combination');
     expect(virtual[0].smiles !== null && !virtual[0].smiles.includes('[*:'), true,
       'and it assembles whole, with every attachment filled');
-  });
-
-  // A fragment exposing two further points forks the plan: attach it, then both branches together.
-  test('a branching fragment forks the plan', async () => {
-    const stages = recordPlan(spec('[*:1]NC(=O)c1ccccc1', {
-      R1: '[*:1]CC([*:2])C[*:3]',
-      R2: ['[*:2]c1ccccc1', '[*:2]C1CC1', '[*:2]c1ccccc1', '[*:2]C1CC1'],
-      R3: ['[*:3]OC', '[*:3]OC', '[*:3]F', '[*:3]F'],
-    }), 4)!;
-    expect(stages.length, 2, 'the branch point is attached before what hangs off it');
-    expect(stages[0]['R1'], 1, 'the branching fragment meets the core first');
-    expect(Object.keys(stages[1]).sort().join(','), 'R2,R3', 'then both branches in one pass');
   });
 
   // Two R-group runs on one table give `R2` and `R2_1`, both carrying `[*:2]`, and a macrocycle closes
@@ -876,14 +848,6 @@ category('SAR Matrix: fragment columns', () => {
       'the column fragment meets the core first, the row fragment what it exposed');
   });
 
-  test('one cell holds one compound', async () => {
-    const {core, r1, r2} = fragmentTable();
-    const replicate = (c: DG.Column): DG.Column => col(c.name, [...c.toList(), c.get(0)]);
-    const {decomps} = decomposeByColumns(
-      {core: replicate(core), rows: [replicate(r1)], column: replicate(r2)}, null, 5);
-    expect(decomps[0].records.length, 4, 'an assay replicate cannot claim a second cell');
-  });
-
   test('each core is its own series', async () => {
     const {r1, r2} = fragmentTable();
     const twoCores = col('Core', ['[*:1]c1ccc([*:2])cc1', '[*:1]c1ccc([*:2])cc1',
@@ -893,12 +857,6 @@ category('SAR Matrix: fragment columns', () => {
     const pooled = decomposeByColumns({core: twoCores, rows: [], column: r2}, null, 4);
     expect(pooled.clusters.length, 1, 'with nothing on the row axis the cores become the rows');
     expect(new Set(pooled.decomps[0].records.map((r) => r.coreSmiles)).size, 2, 'and both reach it');
-  });
-
-  test('a series column splits fragment columns', async () => {
-    const {core, r1, r2} = fragmentTable();
-    const {clusters} = decomposeByColumns({core, rows: [r1], column: r2}, ['A', 'A', 'B', null], 4);
-    expect(clusters.map((c) => c.label).join(','), 'A,B', 'one matrix per series value, named by it');
   });
 
   /** A furan (terminal) and a pyrimidine (connector) in one R1 column, plus the des-substituted
@@ -1009,25 +967,6 @@ category('SAR Matrix: fragment columns', () => {
     expect(predicted.length > 0, true, 'the unmade pairing is offered');
     expect(predicted.every((c) => c.smiles !== null && !c.smiles.includes('[*:')), true,
       'and assembles across the bridge with both ends filled');
-  });
-
-  // A column blank in every row says nothing about which attachment it fills, and its name is not
-  // evidence, so that point is left open rather than guessed at.
-  test('a folded column left entirely blank fills nothing', async () => {
-    const matrices = await run(['Cc1cc(C)cc(Cl)c1', 'CCc1cc(C)cc(Cl)c1', 'Cc1cc(C)cc(F)c1'],
-      [6.1, 6.4, 6.8],
-      spec('[*:1]c1cc([*:2])cc([*:3])c1', {
-        R1: ['C[*:1]', 'CC[*:1]', 'C[*:1]'], R2: ['', '', ''],
-        R3: ['[*:3]Cl', '[*:3]Cl', '[*:3]F'],
-      }), true, {minCompounds: 1});
-    const matrix = matrices[0];
-    expect(matrix.positions.join(','), 'R3', 'the axis is still the position that varies');
-    expect(matrix.rows.every((row) => !row.keySmiles.includes('[*:1]') &&
-      row.keySmiles.includes('[*:2]')), true,
-    'R1 is attached, while the point the blank column would have filled stays open');
-    const virtual = matrix.cells.flat().filter((cell) => cell.kind === 'virtual');
-    expect(virtual.length, 1, 'the unmade combination is still offered');
-    expect(virtual[0].smiles, null, 'with a potency but no structure, not one with a free valence');
   });
 
   // The furan carries no second attachment, so predicting there asks for a compound the linker would

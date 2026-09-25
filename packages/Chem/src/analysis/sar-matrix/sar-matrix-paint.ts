@@ -103,11 +103,12 @@ export class MatrixPainter {
     } else {
       // A name drawn as a structure comes back as the renderer's failure cross, so it is written out
       // instead; a blank is hydrogen where the axis holds fragments and unnamed where it holds names.
-      g.fillStyle = grey6;
+      const label = column.substSmiles || (state.axisIsChemical ? 'H' : '(none)');
+      // A name or a hydrogen is what the column holds; nothing named is an absence, and reads as one.
+      g.fillStyle = column.substSmiles || state.axisIsChemical ? grey6 : grey5;
       g.font = `600 13px ${GRID_FONT}`;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      const label = column.substSmiles || (state.axisIsChemical ? 'H' : '(none)');
       g.fillText(label, b.x + b.width / 2, b.y + posBandH + depH / 2, b.width - 6);
     }
 
