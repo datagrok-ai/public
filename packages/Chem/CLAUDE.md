@@ -113,6 +113,9 @@ stops itself (the RDKit path drops it when it gets the section). crux keeps ~1 K
 parsed graphs `crux-wasm` retains after building); indexes are dropped with their table, and past 3M rows the least
 recently used ones go first.
 
+Working notes — setup on a new machine, verification scripts, measurements, open items with their analysis — are
+in [`misc/crux/README.md`](misc/crux/README.md).
+
 `src/crux/crux_wasm*` is the `wasm-pack` build of `crux-core/crates/crux-wasm` (crux-core `43f333e`), done the
 way crux-js does it — into crux-js (wasm-pack writes a `*` `.gitignore` into its out dir), then copied:
 
