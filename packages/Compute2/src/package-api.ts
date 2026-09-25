@@ -95,6 +95,20 @@ export namespace funcs {
     return await grok.functions.call('Compute2:MockPipeline2', { params });
   }
 
+  /**
+   * Single-step workflow used for testing the compact Tree Wizard view.
+   */
+  export async function mockSingleStepPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockSingleStepPipeline', { params });
+  }
+
+  /**
+   * Single-step workflow reached through a ref, used for testing the compact Tree Wizard view.
+   */
+  export async function mockSingleStepNested(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockSingleStepNested', { params });
+  }
+
   export async function stressTestPipeline(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:StressTestPipeline', { params });
   }

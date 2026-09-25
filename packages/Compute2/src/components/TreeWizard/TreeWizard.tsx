@@ -29,7 +29,7 @@ import {
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   disposeViewers, findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  pinView, reportTree, resolveChosenUuid, SELECTED_STEP_BACKGROUND,
+  pinView, reportTree, resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
@@ -113,6 +113,8 @@ export const TreeWizard = Vue.defineComponent({
     setHelpService();
 
     const chosenStepUuid = Vue.ref<string | undefined>();
+    // compact mode: a workflow that is a single script gets no tree, no navigation, and one ribbon
+    const singleStep = Vue.computed(() => treeState.value ? resolveSingleStep(treeState.value) : undefined);
     const currentView = useDgView();
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
     const modelName = Vue.computed(() => props.modelName);
@@ -328,7 +330,8 @@ export const TreeWizard = Vue.defineComponent({
         return;
 
       if (pendingStepPath) {
-        setCurrentStepByPath(pendingStepPath, treeState);
+        if (!singleStep.value)
+          setCurrentStepByPath(pendingStepPath, treeState);
         pendingStepPath = null;
         return;
       }
@@ -339,7 +342,7 @@ export const TreeWizard = Vue.defineComponent({
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
       const loadingId = initialRunId ?? startUrl.searchParams.get('id');
-      pendingStepPath = initialRunId ? null : startUrl.searchParams.get('currentStep');
+      pendingStepPath = (initialRunId || singleStep.value) ? null : startUrl.searchParams.get('currentStep');
       initialRunId = undefined;
       globalThis.initialURLHandled = true;
 
@@ -364,6 +367,11 @@ export const TreeWizard = Vue.defineComponent({
     Vue.watch([treeState, chosenStepUuid], ([treeState]) => {
       if (!treeState)
         return;
+      if (singleStep.value) {
+        if (chosenStepUuid.value !== singleStep.value.step.uuid)
+          chosenStepUuid.value = singleStep.value.step.uuid;
+        return;
+      }
       const fallbackPath = searchParams.currentStep ?
         searchParams.currentStep.split(' ').map((segment) => Number.parseInt(segment)) :
         undefined;
@@ -373,7 +381,7 @@ export const TreeWizard = Vue.defineComponent({
     }, {immediate: true});
 
     Vue.watch(chosenStep, (newStep) => {
-      if (newStep)
+      if (newStep && !singleStep.value)
         searchParams.currentStep = newStep.pathSegments.join(' ');
       else
         searchParams.currentStep = undefined;
@@ -502,6 +510,14 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     const shareAction = getShareAction();
+
+    const rfvHistory = Vue.computed(() => {
+      if (singleStep.value && providerFunc.value)
+        return {mode: 'workflow' as const, func: providerFunc.value, version: singleStep.value.chain[0]?.version};
+      if (currentStepHistoryEnabled.value)
+        return {mode: 'step' as const};
+      return undefined;
+    });
 
     const shareStepRun = (fc: DG.FuncCall) => shareAction!.run({
       liveCall: () => fc,
@@ -681,12 +697,12 @@ export const TreeWizard = Vue.defineComponent({
     ////
 
     const ribbonItems = Vue.computed<RibbonPanelItem[]>(() => [
-      {
+      ...(singleStep.value ? [] : [{
         icon: 'folder-tree',
         tooltip: treeHidden.value ? 'Show tree' : 'Hide tree',
         onClick: () => treeHidden.value = !treeHidden.value,
-      },
-      ...(isTreeLoaded.value && treeState.value ?
+      }]),
+      ...(isTreeLoaded.value && treeState.value && !singleStep.value ?
         [hasSubtreeFixableInconsistencies(treeState.value, states.calls, states.consistency) ? {
           icon: 'sync',
           tooltip: 'Update tree with consistent values',
@@ -698,13 +714,13 @@ export const TreeWizard = Vue.defineComponent({
           onClick: () => runSequence(treeState.value!.uuid, false),
           ...busyGuard('running the ready steps'),
         }] : []),
-      ...(isTreeLoaded.value ? [{
+      ...(isTreeLoaded.value && !singleStep.value ? [{
         icon: 'save',
         tooltip: 'Save current state of model',
         onClick: () => saveEntireModelState(),
         ...busyGuard('saving'),
       }] : []),
-      ...(isTreeLoaded.value && shareAction != null ? [{
+      ...(isTreeLoaded.value && shareAction != null && !singleStep.value ? [{
         icon: 'share-alt',
         tooltip: shareAction.tooltip,
         onClick: () => shareCurrentRun(),
@@ -749,7 +765,7 @@ export const TreeWizard = Vue.defineComponent({
     return () => (
       Vue.withDirectives(<div class='w-full h-full'>
         <RibbonPanel items={ribbonItems.value}/>
-        {isTreeLoaded.value && isTreeReportable.value &&
+        {isTreeLoaded.value && isTreeReportable.value && !singleStep.value &&
           <RibbonMenu groupName='Export' items={exportItems.value}/>
         }
         {(reportBugUrl.value || reqFeatureUrl.value) &&
@@ -780,7 +796,7 @@ export const TreeWizard = Vue.defineComponent({
             ></Inspector>
           }
           {
-            treeState.value && !treeHidden.value ?
+            treeState.value && !treeHidden.value && !singleStep.value ?
               Vue.withDirectives(<Draggable
                 class="ui-div mtl-tree p-2 overflow-scroll h-full"
                 style={{paddingLeft: '25px'}}
@@ -859,12 +875,12 @@ export const TreeWizard = Vue.defineComponent({
                 isReadonly={chosenStepState.value.isReadonly}
                 isBlocked={treeMutationsLocked.value || isGlobalLocked.value}
                 skipInit={true}
-                stepHistory={currentStepHistoryEnabled.value}
-                showPublish={shareAction != null && currentStepHistoryEnabled.value}
-                publishTooltip={shareAction?.tooltip}
+                history={rfvHistory.value}
+                hideDefaultExport={!!singleStep.value?.chain[0]?.disableDefaultExport}
                 onUpdate:funcCall={onFuncCallChange}
-                onSaveToHistory={saveStepToHistory}
-                onPublishRun={shareStepRun}
+                onHistoryRunChosen={(call) => loadPipeline(call.id)}
+                onSaveToHistory={singleStep.value ? () => saveEntireModelState() : saveStepToHistory}
+                onPublishRun={singleStep.value ? () => shareCurrentRun() : shareStepRun}
                 onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
@@ -873,7 +889,7 @@ export const TreeWizard = Vue.defineComponent({
                 {{
                   navigation: ({runLabel, allowRerun}: {runLabel: string, allowRerun: boolean}) => (
                     <>
-                      {
+                      { !singleStep.value &&
                         <Button onClick={goBack}>
                           Back
                         </Button>
@@ -896,7 +912,8 @@ export const TreeWizard = Vue.defineComponent({
                           </BigButton>
                       }
                       {
-                        !isOutputOutdated.value && !hasInconsistencies(states.consistency[chosenStepUuid.value!]) &&
+                        !singleStep.value && !isOutputOutdated.value &&
+                          !hasInconsistencies(states.consistency[chosenStepUuid.value!]) &&
                           <BigButton
                             onClick={goNextStep}
                           >

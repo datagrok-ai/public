@@ -17,6 +17,7 @@ import {getShareAction} from '../sharing/sharing';
 import {useDgView} from '@datagrok-libraries/webcomponents-vue';
 
 const RUN_DEBOUNCE_TIME = 250;
+const FUNCTION_HISTORY = {mode: 'function'} as const;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 
 export const RFVApp = Vue.defineComponent({
@@ -285,10 +286,8 @@ export const RFVApp = Vue.defineComponent({
           onFormValidationChanged={(val) => isFormValid$.next(val)}
           onFormInputChanged={onInputChanged}
           onSaveToHistory={() => saveRunWithDialog()}
-          showPublish={shareAction != null}
-          publishTooltip={shareAction?.tooltip}
           onPublishRun={() => shareRun()}
-          historyEnabled={true}
+          history={FUNCTION_HISTORY}
           localValidation={true}
           skipInit={false}
           showRunButton={!isRunningOnInput.value}

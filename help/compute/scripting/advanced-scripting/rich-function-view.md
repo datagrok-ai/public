@@ -31,6 +31,11 @@ It has all the features of the [basic scripting](../scripting-features/scripting
   without a single line of the code.
 * Integrate into [workflows](../../workflows)
 
+To add input validators, actions or restrictions to a single script without
+building a multi-step workflow, wrap it in a one-step
+[workflow](../../workflows/configuration#single-step-workflows): it opens in
+the same compact layout with the workflow features enabled.
+
 :::caution Package dependency
 
 Ensure that the `Compute2` and `WebComponents` packages are installed
