@@ -384,6 +384,7 @@ export class MakeListPanel {
       if (all.length === 0)
         return;
       block.appendChild(this.cpSection(title, `${all.length}`));
+      block.appendChild(this.cpStrip(all.map((e) => e.cell.value ?? 0), self.value, matrix));
       block.appendChild(ui.divH(all.map((e) => this.cpFragment(e.cell.smiles, e.cell.value ?? 0)),
         'chem-sar-cp-decomp'));
     };
@@ -391,10 +392,32 @@ export class MakeListPanel {
     section('Measured with this substituent', collect((_ri, ci) => ci === colIdx));
     return block;
   }
+  /** The values behind a section as one strip, over the matrix's own range, so every strip and the
+   *  cell tints behind them read against one scale. The tiles carry the numbers; this carries the shape. */
+  private cpStrip(values: number[], self: number | null, matrix: SarMatrix): HTMLElement {
+    const lo = matrix.minActivity;
+    const hi = matrix.maxActivity;
+    const span = hi - lo;
+    const track = ui.div([], 'chem-sar-cp-strip-track');
+    const tick = (value: number, cls: string): void => {
+      const mark = ui.div([], cls);
+      mark.style.left = `${span > 0 ? Math.min(100, Math.max(0, ((value - lo) / span) * 100)) : 50}%`;
+      track.appendChild(mark);
+    };
+    for (const value of values)
+      tick(value, 'chem-sar-cp-tick');
+    // Drawn last so it sits over its peers rather than under them.
+    if (self !== null)
+      tick(self, 'chem-sar-cp-tick chem-sar-cp-tick-self');
+    return ui.divV([track, ui.divH([ui.divText(this.host.formatActivity(lo)),
+      ui.divText(this.host.formatActivity(hi))], 'chem-sar-cp-strip-scale')], 'chem-sar-cp-strip');
+  }
   /** A framed fragment tile: the structure with the compound's value beneath; structure omitted for
    *  an empty SMILES. */
-  private cpFragment(smiles: string | null, value?: number): HTMLElement {
+  private cpFragment(smiles: string | null, value?: number, caption?: string): HTMLElement {
     const parts: HTMLElement[] = [];
+    if (caption !== undefined)
+      parts.push(ui.divText(caption, 'chem-sar-cp-frag-role'));
     if (smiles)
       parts.push(ui.div([renderMolecule(smiles, {width: 78, height: 52, popupMenu: false})], 'chem-sar-cp-frag-box'));
     if (value !== undefined)
@@ -442,12 +465,13 @@ export class MakeListPanel {
       panel.appendChild(this.cpReferences(matrix, rowIdx, colIdx));
 
     panel.appendChild(this.cpSection('Decomposition', 'R-group'));
-    const parts = [this.cpFragment(row.keySmiles)];
-    matrix.positions.forEach((position) => {
-      const v = position === column.position ? column.substSmiles : matrix.refValues[position];
-      if (v)
-        parts.push(this.cpFragment(v));
-    });
+    const parts = [this.cpFragment(row.coreSmiles, undefined, 'Core')];
+    for (const [position, fragment] of Object.entries(row.foldedValues)) {
+      if (fragment)
+        parts.push(this.cpFragment(fragment, undefined, position));
+    }
+    if (column.substSmiles)
+      parts.push(this.cpFragment(column.substSmiles, undefined, column.position));
     panel.appendChild(ui.divH(parts, 'chem-sar-cp-decomp'));
 
     if (cell.smiles) {

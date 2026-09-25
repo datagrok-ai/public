@@ -67,6 +67,7 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {SarMatrixEditor} from './analysis/sar-matrix/sar-matrix-editor';
 import {dockSarMatrixTabs, SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
@@ -2586,10 +2587,21 @@ export class PackageFunctions {
     return ['', ...(grok.shell.t?.columns.names() ?? [])];
   }
 
+  @grok.decorators.editor({
+    name: 'SarMatrixEditor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static sarMatrixEditor(call: DG.FuncCall): DG.Widget {
+    if (!call.inputs['table'] && !grok.shell.tv?.dataFrame)
+      return new MessageFuncCallEditor('SAR Matrix requires an open table');
+    return new SarMatrixEditor(call);
+  }
+
   @grok.decorators.func({
     'name': 'SAR Matrix',
     'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
     'top-menu': 'Chem | Analyze | SAR Matrix...',
+    'editor': 'Chem:SarMatrixEditor',
   })
   static async sarMatrixAnalysis(
     table: DG.DataFrame,
@@ -2634,6 +2646,21 @@ export class PackageFunctions {
         choices: 'Chem:sarSeriesColumnChoices()',
         description: 'Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure'},
     }) seriesColumn: string = '',
+    @grok.decorators.param({
+      type: 'column',
+      options: {nullable: true, caption: 'Core column',
+        description: 'Optional. The scaffold every row is drawn from. Given this and its R-groups, the structures are not fragmented'},
+    }) coreColumn: DG.Column | null = null,
+    @grok.decorators.param({
+      type: 'column_list',
+      options: {nullable: true, caption: 'R-group columns',
+        description: 'The substituent columns that hang off the core'},
+    }) fragmentColumns: DG.Column[] = [],
+    @grok.decorators.param({
+      type: 'string',
+      options: {nullable: true, caption: 'Columns axis',
+        description: 'The R-group the matrix enumerates across. The rest fold into the row'},
+    }) columnAxis: string = '',
   ): Promise<void> {
     // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
     // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
@@ -2653,11 +2680,24 @@ export class PackageFunctions {
         'Pick a series column from that table, or leave it empty to group by structure.');
       return;
     }
+    // Omitted by a programmatic caller arrives as null.
+    const rgroups = fragmentColumns ?? [];
+    const axis = columnAxis ?? '';
+    const named = coreColumn !== null || rgroups.length > 0;
+    if (named && (coreColumn === null || coreColumn.name === axis ||
+      !rgroups.some((c) => c.name === axis))) {
+      grok.shell.error('SAR Matrix: name the core column and which R-group runs across the top — ' +
+        'the scaffold every row is drawn from, and a different fragment for the matrix to enumerate ' +
+        'across.');
+      return;
+    }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
     const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
       seriesColumnName: seriesName,
+      coreColumnName: named ? coreColumn!.name : '', columnColumnName: named ? axis : '',
+      fragmentColumnNames: named ? rgroups.map((c) => c.name) : [],
       scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
     dockSarMatrixTabs(view, viewer);
   }

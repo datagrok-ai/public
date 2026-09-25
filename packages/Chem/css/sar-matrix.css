@@ -639,3 +639,72 @@ i.chem-sar-card-twisty:hover {
   height: calc(100% - 50px);
   min-height: 0;
 }
+
+/* Launch dialog. The histogram sits beside the inputs rather than under them, so changing the scaling
+   and seeing what it did to the distribution is one glance. */
+.chem-sar-editor-histogram {
+  flex: 0 0 200px;
+  height: 110px;
+  margin-left: 12px;
+  overflow: hidden;
+}
+
+/* A viewer lays out at its own height, not its host's, so the strip has to impose one: the root is
+   freed to take the plot area's size, and the host crops whatever chrome does not fit. */
+.chem-sar-editor-histogram > #root {
+  height: unset;
+  width: 100%;
+}
+
+.chem-sar-editor-histogram #center {
+  height: 110px;
+}
+
+.chem-sar-editor-layout {
+  color: var(--grey-5);
+  font-size: 12px;
+  padding: 2px 0 6px 12px;
+  min-height: 18px;
+}
+
+/* Evidence strip: a section's values over the matrix's own activity range, so the ticks, the range
+   labels and the cell tints behind them all read against one scale. */
+.chem-sar-cp-strip {
+  padding: 3px 6px 7px 6px;
+}
+
+.chem-sar-cp-strip-track {
+  position: relative;
+  height: 14px;
+  border-bottom: 1px solid var(--grey-3);
+}
+
+.chem-sar-cp-tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  height: 9px;
+  margin-left: -1px;
+  background: var(--grey-5);
+}
+
+/* The selected compound stands out: where it falls inside the spread is what the section is for. */
+.chem-sar-cp-tick-self {
+  width: 3px;
+  height: 14px;
+  margin-left: -2px;
+  background: var(--blue-1);
+}
+
+.chem-sar-cp-strip-scale {
+  justify-content: space-between;
+  color: var(--grey-4);
+  font-size: 10px;
+}
+
+.chem-sar-cp-frag-role {
+  font-size: 10px;
+  color: var(--grey-5);
+  text-align: center;
+  padding-bottom: 2px;
+}
