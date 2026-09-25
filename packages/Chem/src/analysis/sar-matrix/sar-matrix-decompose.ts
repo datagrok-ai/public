@@ -1,5 +1,6 @@
 import {getRdKitModule, getRdKitService} from '../../utils/chem-common-rdkit';
 import {IRGroupAnalysisResult} from '../../rdkit-service/rdkit-service-worker-substructure';
+import {FragmentLinks} from './sar-matrix-link';
 import {logSarTime} from './sar-matrix-types';
 
 const MIN_ANCHOR_HEAVY_ATOMS = 4;
@@ -30,9 +31,12 @@ export interface PositionRecord {
 export interface ClusterDecomposition {
   records: PositionRecord[];
   positions: string[];
+  /** Present where the decomposition was read off columns the table already held: each row and each
+   *  proposed cell is then planned from its own pieces. */
+  links?: FragmentLinks;
 }
 
-function positionNumber(position: string): number {
+export function positionNumber(position: string): number {
   return Number.parseInt(position.replace(/^\D+/, ''), 10);
 }
 

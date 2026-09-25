@@ -51,7 +51,17 @@ function moveStartRLabelToBranch(smi: string): string {
   const m = smi.match(/^(\[\*:\d+\])([-=#:/\\])?(\[[^\]]+\]|Br|Cl|[BCNOPSFIbcnops])(.*)$/);
   if (!m)
     return smi;
-  const [, rlab, bond, atom, rest] = m;
+  const [, rlab, bondRaw, atomRaw, rest] = m;
+  // The label keeps neighbour slot 1, but an implicit H in the bracket does not: with an atom before
+  // it, it is written second; once the atom opens the string, it is written first. That single
+  // transposition inverts the centre, so the tag has to absorb it. A bracket with no implicit H keeps
+  // its neighbour order — flipping `[C@](C)(F)Cl` or `[S@](C)=O` would invert a correct centre.
+  const chiral = /^\[[0-9]*[A-Za-z][a-z]?@{1,2}H/.test(atomRaw);
+  const atom = !chiral ? atomRaw :
+    atomRaw.includes('@@') ? atomRaw.replace('@@', '@') : atomRaw.replace('@', '@@');
+  // A directional bond names a direction between its two endpoints, and moving the label into a
+  // branch exchanges them.
+  const bond = bondRaw === '/' ? '\\' : bondRaw === '\\' ? '/' : bondRaw;
   return `${atom}(${bond ?? ''}${rlab})${rest}`;
 }
 

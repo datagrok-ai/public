@@ -8,6 +8,7 @@ import {getRdKitModule, getRdKitService} from '../../utils/chem-common-rdkit';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {nestByContainment, rankMatrices, SarRankScheme} from './sar-matrix-ranking';
 import {DEFAULT_TRANSFER_SIMILARITY} from './sar-matrix-transfer';
+import {SarFragmentColumns} from './sar-matrix-columns';
 import {MAX_SERIES_LEVELS, runSarMatrix, SarGrouping, SarMatrixParams} from './sar-matrix-run';
 import {closeGridQuietly, finiteOrNaN, observedMolecules, SarMatrix, SarMatrixCell} from './sar-matrix-types';
 import {CARD_CORE_H, CARD_CORE_W, CELL_H, CELL_W, CELL_W_MAX,
@@ -47,6 +48,10 @@ const RENDER_ONLY_PROPS = ['columnCaption', 'idColumnName'];
 
 /** Properties only the transfer scan reads; matrices are untouched. */
 const TRANSFER_ONLY_PROPS = ['transferSimilarity'];
+/** Read only by the fragmenter. A named decomposition replaces fragmenting outright, so changing one
+ *  of these cannot alter the result — and rebuilding anyway costs minutes and drops the selection. */
+const FRAGMENT_ONLY_PROPS = ['fragmentCutoff', 'grouping', 'fragmentationLevels', 'threshold',
+  'useMcsAnchors'];
 
 
 /** Auto derives from scaling (only −lg is higher-is-better); explicit options cover precomputed pIC50 etc. */
@@ -117,6 +122,11 @@ export class SarMatrixViewer extends DG.JsViewer {
   activityColumnName: string;
   /** Optional column captioning each observed cell. */
   idColumnName: string;
+  /** Empty unless the table already holds the decomposition. The rows are `fragmentColumnNames` bar
+   *  the axis, so transposing is one edit rather than three that can disagree. */
+  coreColumnName: string;
+  fragmentColumnNames: string[];
+  columnColumnName: string;
   scaling: string;
   activityDirection: string;
   fragmentCutoff: number;
@@ -159,6 +169,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** A recompute was requested mid-compute; re-queued when the running one finishes. */
   private dirty = false;
   private computeTimer = 0;
+  private reported = '';
   /** Set in `detach`, so an in-flight compute can't render into a closed viewer. */
   detached = false;
   private cellW = CELL_W;
@@ -235,6 +246,21 @@ export class SarMatrixViewer extends DG.JsViewer {
       {nullable: true, category: 'Data', friendlyName: 'Series column',
         description: 'Optional: series you have assigned yourself. Compounds sharing a value make one ' +
           'matrix, named with that value. Leave empty to group by structure instead'});
+    this.coreColumnName = this.addProperty('coreColumnName', DG.TYPE.COLUMN, '',
+      {nullable: true, category: 'Data', friendlyName: 'Core column',
+        description: 'Scaffold every row of a series is drawn from. Set it, with a column fragment, ' +
+          'to build the matrices from columns that already hold a decomposition instead of fragmenting'});
+    this.fragmentColumnNames = this.columnList('fragmentColumnNames', [],
+      // DG.TYPE, not DG.COLUMN_TYPE_FILTER: a package runs against the server's js-api, which on an
+      // older server does not carry that enum, and reading a member off it stops the viewer loading.
+      {nullable: true, columnTypeFilter: DG.TYPE.CATEGORICAL, category: 'Data',
+        friendlyName: 'R-group columns',
+        description: 'The R-group columns of the decomposition. Every one but the column fragment ' +
+          'folds into the row identity'});
+    this.columnColumnName = this.addProperty('columnColumnName', DG.TYPE.COLUMN, '',
+      {nullable: true, category: 'Data', friendlyName: 'Columns axis',
+        description: 'Which of the fragment columns runs across the top. The rest become the rows, so ' +
+          'this one setting transposes the matrix'});
     this.scaling = this.string('scaling', SCALING_METHODS.MINUS_LG, {choices: Object.values(SCALING_METHODS),
       friendlyName: 'Scaling',
       description: 'Activity transform before the additive model: none, log (lg) or −log (-lg)'});
@@ -446,6 +472,12 @@ export class SarMatrixViewer extends DG.JsViewer {
         this.transferPanel.activateTransferTab();
       return;
     }
+    // Named by the property values alone: nothing here may touch the data frame, which a property
+    // can be written before the viewer has one.
+    if (property !== null && FRAGMENT_ONLY_PROPS.includes(property.name) && this.dataFrame &&
+      this.coreColumnName && this.columnColumnName &&
+      this.dataFrame.col(this.coreColumnName) !== null && this.dataFrame.col(this.columnColumnName) !== null)
+      return;
     this.scheduleCompute();
   }
 
@@ -471,6 +503,57 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.render();
   }
 
+  /** Why the named decomposition cannot build a matrix, or null when it can — or when none is named,
+   *  which is the request to fragment. A pairing is named by a core and an axis; the R-group columns
+   *  only refine it, so half a pairing is an edit in progress rather than a decomposition. */
+  private decompositionFault(): string | null {
+    const core = this.coreColumnName;
+    const axis = this.columnColumnName;
+    if (!core && !axis)
+      return null;
+    if (!core || !axis)
+      return `the ${core ? 'column' : 'core'} fragment is not named yet`;
+    return core === axis ? 'the core fragment and the column fragment name the same column' : null;
+  }
+
+  /** The decomposition the table already holds, or null to fragment instead. A name that no longer
+   *  resolves drops the whole pairing rather than building a different matrix from what is left. */
+  private readFragmentColumns(): SarFragmentColumns | null {
+    const core = this.coreColumnName ? this.dataFrame.col(this.coreColumnName) : null;
+    const column = this.columnColumnName ? this.dataFrame.col(this.columnColumnName) : null;
+    if (core === null || column === null || core.name === column.name)
+      return this.reportUnresolved();
+    // Everything but the axis and the core folds into the row, so naming another axis transposes it.
+    const rows = (this.fragmentColumnNames ?? [])
+      .filter((name) => name !== column.name && name !== core.name)
+      .map((name) => this.dataFrame.col(name));
+    if (rows.some((c) => c === null))
+      return this.reportUnresolved();
+    this.reported = '';
+    return {core, rows: rows as DG.Column[], column};
+  }
+
+  /** Null, having named what went missing — otherwise the fall back to fragmenting whole molecules
+   *  looks like the settings were ignored. */
+  private reportUnresolved(): null {
+    const missing = [this.coreColumnName, this.columnColumnName, ...(this.fragmentColumnNames ?? [])]
+      .filter((name) => name && this.dataFrame.col(name) === null);
+    if (missing.length > 0) {
+      this.report(`${missing.map((name) => `"${name}"`).join(', ')} ` +
+        `${missing.length === 1 ? 'is not a column' : 'are not columns'} of this table, so the ` +
+        'fragment columns no longer apply and the structures are being fragmented instead');
+    }
+    return null;
+  }
+
+  /** Say it once: the property panel fires on every keystroke of an edit. */
+  private report(message: string): void {
+    if (message === this.reported)
+      return;
+    this.reported = message;
+    grok.shell.warning(`SAR Matrix: ${message}.`);
+  }
+
   /** Coalesce rapid property changes (e.g. from setOptions) into a single compute. */
   private scheduleCompute(): void {
     window.clearTimeout(this.computeTimer);
@@ -487,6 +570,20 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Change arrived mid-compute: re-queue when the running one finishes.
     if (this.computing) {
       this.dirty = true;
+      return;
+    }
+    // Half a pairing is an edit in progress, and fragmenting a whole table on the way through one
+    // costs minutes that cannot be called back and discards the selection, filters and transfers of
+    // the analysis on screen. A serialized set still restores: it runs nothing to restore it.
+    const fault = this.decompositionFault();
+    // An empty serialization is nothing to restore, and `[]` is still a truthy string.
+    const restorable = !this.matrices.length && this.matricesData !== '' && this.matricesData !== '[]';
+    if (fault !== null && !restorable) {
+      this.report(fault);
+      if (!this.matrices.length) {
+        ui.empty(this.host);
+        this.host.appendChild(ui.divText(`SAR Matrix: ${fault}.`));
+      }
       return;
     }
 
@@ -517,6 +614,7 @@ export class SarMatrixViewer extends DG.JsViewer {
         threshold: this.threshold,
         rankScheme: this.rankScheme as SarRankScheme,
         seriesColumn: this.seriesColumnName ? this.dataFrame.col(this.seriesColumnName) : null,
+        fragmentColumns: this.readFragmentColumns(),
       };
       // A set carried in by a layout is the analysis already; rebuilding it would cost minutes. An
       // empty one is not a set: restoring it would leave the settings that produced it unable to run.
@@ -1357,6 +1455,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (i === 0 || columns[i - 1].position !== column.position)
         firstOfGroup.add(i);
     });
+    const axisIsChemical = columns.some((column) => column.substSmiles.includes('[*:'));
 
     const df = DG.DataFrame.create(rows.length);
     df.columns.addNewString('Core');
@@ -1384,13 +1483,12 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Cap attachment points off the header so it names the shared scaffold without labelling filled sites.
     const headerCore = sharedCore === null ? null : sharedCore.replace(/\[\*:\d+\]/g, '[H]');
     const paneTemplate = headerCore !== null ? buildAlignmentTemplate(headerCore) : null;
-    // A matrix's rows are different cores by construction, so the strict shared core is almost never
-    // found and the header would caption a column while showing nothing. The matrix's key is the
-    // scaffold those rows do share, exact because it comes from the fragmentation, not an anchor.
     const onlyMatrix = rows.length > 0 && rows.every((row) => row.matrix === rows[0].matrix) ?
       rows[0].matrix : null;
-    const headerDepiction = headerCore ?? (onlyMatrix === null ? null : matrixCore(onlyMatrix));
-    const state: MatrixGridState = {grid, df, rows, columns, colKeyToIdx, firstOfGroup,
+    // `headerCore` caps the attachment points to hydrogen, which renders as nothing at all, so it
+    // only stands in where rows span several matrices and there is no one core to mark up.
+    const headerDepiction = onlyMatrix !== null ? matrixCore(onlyMatrix) : headerCore;
+    const state: MatrixGridState = {grid, df, rows, columns, colKeyToIdx, firstOfGroup, axisIsChemical,
       headerDepiction, paneTemplate, rowTemplates: new Array(rows.length).fill(null)};
 
     // Owned by this grid instance; unsubscribed when replaced or on detach so renders don't leak handlers.
@@ -1597,6 +1695,11 @@ export class SarMatrixViewer extends DG.JsViewer {
       return false;
     const {paneRow, ci} = resolved;
     const cell = paneRow.matrix.cells[paneRow.rowIndex][ci];
+    if (cell.kind === 'impossible') {
+      ui.tooltip.show(ui.divText('No attachment point — this row\'s fragments leave nowhere for ' +
+        'this substituent to go.'), x, y);
+      return true;
+    }
     // A threshold-blanked cell must hover as empty too, or the hidden value returns under the cursor.
     if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(paneRow.matrix, paneRow.rowIndex, ci))
       return false;

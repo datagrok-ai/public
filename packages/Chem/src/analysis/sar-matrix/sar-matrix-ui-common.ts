@@ -85,8 +85,11 @@ export interface MatrixGridState {
   colKeyToIdx: Map<string, number>;
   /** Indices into `columns` that begin an R-position group — only those draw the position label. */
   firstOfGroup: Set<number>;
-  /** What the Core header draws: the shared core where the rows have one, else the matrix's own key,
-   *  which is the usual case since a matrix's rows are different cores by construction. */
+  /** Whether the axis carries chemistry. A column of component names carries none, and there a blank
+   *  means nobody named one rather than hydrogen. */
+  axisIsChemical: boolean;
+  /** What the Core header draws: the marked-up core of the one matrix the rows come from, else the
+   *  core they all share, with its attachment points capped. */
   headerDepiction: string | null;
   /** One alignment template for the whole pane so an attachment point sits in the same place
    *  everywhere. Null when rows span several matrices and share no core. */

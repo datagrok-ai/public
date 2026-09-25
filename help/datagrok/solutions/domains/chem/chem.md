@@ -961,10 +961,13 @@ To run SAR Matrix analysis:
     * **Molecules**: the column containing molecules
     * **Activity**: a numerical column representing activity or property values
     * **Scaling**: _none_, _log10_, or _-log10_. Use _-log10_ for raw IC50 or Ki values so that higher
-      numbers mean more potent; for pre-computed pIC50 use _none_ and set **Activity direction**
-      explicitly
+      numbers mean more potent; for pre-computed pIC50 use _none_ and set **Direction** explicitly
+    * **Direction**: which end of the scaled activity counts as more potent
+    * **Fragment structures**: on by default. The gear beside it holds **Fragment cutoff**,
+      **Series levels** and **Group leftovers by MCS**. Turn it off to name columns that already hold
+      a decomposition — see [Using your own fragment columns](#using-your-own-fragment-columns)
     * **Series column** (optional): group by your own series instead of by structure
-    * **Group leftovers by MCS** (optional): also cover compounds no shared core could group
+    * **Predict analogs**: fill the combinations nobody has made with Free-Wilson predictions
 3. Click **OK**. The analysis opens with three tabs:
 
 ![SAR Matrix walkthrough](img/sar_matrix_demo.gif)
@@ -1017,6 +1020,76 @@ selected compound, and **Clear** empties the list.
 
 </TabItem>
 </Tabs>
+
+#### Using your own fragment columns
+
+When the table already holds a decomposition — a core column and its R-group columns, as
+[R-Groups Analysis](#r-groups-analysis) writes them — turn **Fragment structures** off and name those
+columns. Three pickers appear:
+
+| Picker | What it takes |
+|--------|---------------|
+| **Core column** | The scaffold every row is drawn from |
+| **R-group columns** | The substituent columns that hang off it |
+| **Columns axis** | Which of those R-groups runs along the top. The rest fold into the row |
+
+The core and the folded R-groups together identify a row, so `Core + R1` down the side against `R2`
+along the top is `R2` on the axis. To transpose the matrix, name a different axis. A line under the
+pickers states the layout you have described.
+
+The axis opens on the attachment point each fragment fills, not on the order you picked the columns
+in: the one filling the last attachment runs along the top, so a core with `R1` and `R2` opens as `R1`
+down the side and `R2` across.
+
+This is how to lay out a compound built from more than two parts. Put the part you want to compare on
+the axis and the rest fold into the row, so each row is one fixed combination of the others and the
+columns show what changes.
+
+Each distinct value of the **Core column** is its own series, so three linkers give three matrices
+rather than one of three times the height. Two things override that: a **Series column**, which is
+your own grouping and replaces this one, and having no folded R-group — a matrix per core would then
+hold a single row, so the cores become the rows instead, and the **Aligned core** beside the grid is
+then only the first of them.
+
+Each row draws the core carrying its own folded fragments, with an `R` where the substituent goes, so
+you can see what the row fixes and where the columns vary it. The **Aligned core** beside the grid is
+the scaffold the series shares, marked the same way: an `R` at the point the columns attach and a `*`
+at each point the rows differ at. Where the axis is not on the core at all — a substituent reached
+through a connector — nothing is marked on it. A folded column of names joins onto nothing, so those
+rows come out as the bare core, and a warning tells you when a series has drawn all its rows alike.
+
+Three things differ from fragmenting the structures:
+
+* There are no series tiers. A fragment-column analysis is a flat list of matrices, since the tiers
+  exist to relate splits that were discovered rather than given.
+* A **Series column** splits the analysis into one matrix per value, rather than re-bucketing series
+  that fragmentation already found.
+* Which attachment point each fragment fills is read from the fragment itself, not from the column
+  name, so `E3 ligand` works as well as `R2`. A fragment carrying two of them is a connector: it joins
+  one component to another rather than both to the core. Rows and proposals are therefore built from
+  the core outwards, one pass per link, in whatever order the fragments allow — where the core sits at
+  one end of a chain the connector goes on first and the rest hangs off what it exposes, even when the
+  connector is the column fragment. Where a fragment can never be reached, carries one attachment
+  point twice, is text rather than a structure, or where the core carries a point none of the picked
+  columns fills, nothing is recombined: cells keep their predicted potency but show no structure,
+  since a partial or self-closed join would draw a molecule that is not the one it claims to be. With
+  a column of names on the axis that is every predicted cell; the measured compounds are unaffected.
+
+Two kinds of cell carry no structure, and they mean opposite things. A cell struck through on grey is
+a combination the decomposition cannot express — the row's fragments leave no attachment point this
+substituent could fill — so it has no potency and is never proposed. A cell that keeps its tint and
+its `~value` but draws no molecule is the case above: the potency stands, only the structure could
+not be assembled.
+
+A blank fragment cell is hydrogen wherever the column holds structures. The row it sits in keeps its
+structure, and a blank on the axis is the unsubstituted parent — the reference the substituted columns
+read against — so it takes a column of its own rather than dropping out of the matrix. A blank heads
+its column with an `H` on a fragment axis, whether it stands for hydrogen or for a position that
+fragment does not have at all. On an axis of names it heads the column `(none)`: nothing was named.
+
+Two compounds that share a core, the same folded fragments and the same axis fragment describe one
+cell. Only the first is shown, and the rest are reported: add the column that tells them apart to the
+R-group columns.
 
 #### Group leftovers by MCS
 
