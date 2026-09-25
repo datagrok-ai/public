@@ -62,6 +62,9 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
       catch (e) {
         if (!options?.knownFailure)
           failed.push({name, error: e});
+        // a scenario that stopped midway leaves its dialog or menu over the viewers the next one uses
+        if (page)
+          await closeOverlays(page);
         return;
       }
       if (options?.knownFailure)
@@ -115,7 +118,8 @@ export function atFeatureEnd(page: Page, cleanup: () => Promise<void>): void {
 
 /** The two console errors the browser raises about something that is not the platform's code.
  * Both are matched on the message AND on where it came from — a broad pattern here is how a
- * suite ends up silencing the failures it exists to catch. */
+ * suite ends up silencing the failures it exists to catch. An ignored error takes its translated
+ * stack trace ("Stack trace X") with it. */
 function ignoredError(text: string, url: string): boolean {
   // a resource the stand does not serve (a help page), logged by the browser rather than raised
   if (text.startsWith('Failed to load resource'))
@@ -123,6 +127,20 @@ function ignoredError(text: string, url: string): boolean {
   // an embedded third-party player refusing a feature policy of the page it is framed in:
   // a card of the Projects gallery carries a YouTube iframe, and its complaint is not ours
   return text.startsWith('Permissions policy violation') && /^https:\/\/(www\.)?youtube\.com\//.test(url);
+}
+
+const saveWindows = new WeakSet<Page>();
+
+/** The Save project dialog draws its preview of the view with html2canvas, which logs "Unable to
+ * find element in cloned iframe" for an element its clone of the page lacks — during the save or
+ * seconds after it. A step that saves a project opens this window; the step that opens a project and
+ * the shell reset after the test close it, so the message is ignored after a save and reported
+ * everywhere else. */
+export function projectSaveWindow(page: Page, open: boolean): void {
+  if (open)
+    saveWindows.add(page);
+  else
+    saveWindows.delete(page);
 }
 
 /** Starts collecting the page's console errors and uncaught exceptions. */
@@ -133,11 +151,20 @@ export function watchErrors(page: Page): void {
   errors.set(page, list);
   // "Stack trace X" arrives seconds after its "Look below, ID = X" error: joined while unreported, else dropped
   const announced = new Set<string>();
+  const ignored = new Set<string>();
   page.on('console', (m) => {
     const text = m.text();
-    if (m.type() !== 'error' || ignoredError(text, m.location().url))
+    if (m.type() !== 'error')
       return;
     const continuation = /^Stack trace (\S+)/.exec(text);
+    if (continuation && ignored.has(continuation[1]))
+      return;
+    if (ignoredError(text, m.location().url) || (saveWindows.has(page) && text.startsWith('Unable to find element in cloned iframe'))) {
+      const id = /Look below, ID = (\S+)/.exec(text);
+      if (id)
+        ignored.add(id[1]);
+      return;
+    }
     if (continuation && announced.has(continuation[1])) {
       const parent = list.findIndex((e) => new RegExp(`Look below, ID = ${continuation[1]}(\\s|$)`).test(e));
       if (parent >= 0)
@@ -163,10 +190,30 @@ export function takeErrors(page: Page): string[] {
 /** One page per worker: every feature the worker runs uses the page the first one opened (the
  * shell boots once, ~4 s, and a package initializes once; the next feature starts from `user is
  * logged in` on the shell it finds, reset). A page that closed (a crash, a failed test restarting
- * the worker) is replaced in the same context, which keeps the storage state and the HTTP cache.
+ * the worker) is replaced in the same context, which keeps the storage state and the HTTP cache; a
+ * page past its age limit goes with its context (below).
  * The browser fixture closes the context with the worker. */
 let shared: Page | undefined;
 let lastTime = 0;
+
+/** The page's renderer keeps the memory every feature it ran took — the shell's reset closes views
+ * and tables, the process does not shrink — at about 2 GB a minute of work, outside the JS heap
+ * (a feature's heap stays under 0.5 GB), so no page reading tells it. A page that has lived longer
+ * than `BDD_PAGE_MAX_MIN` minutes (2 by default) is closed with its context after its feature, and
+ * the next feature opens a new one: a new page of the same context would share the old renderer. */
+const PAGE_MAX_MS = Number(process.env.BDD_PAGE_MAX_MIN ?? 2) * 60000;
+const pageBorn = new WeakMap<Page, number>();
+
+async function recycleIfHeavy(page: Page): Promise<void> {
+  const born = pageBorn.get(page) ?? Date.now();
+  if (Date.now() - born < PAGE_MAX_MS)
+    return;
+  console.warn(`bdd: the page has lived ${Math.round((Date.now() - born) / 60000)} min, past ${PAGE_MAX_MS / 60000}: the next feature opens a new page`);
+  // a new page of the same context lands in the same renderer process, which keeps its memory
+  await page.context().close().catch(() => undefined);
+  if (shared === page)
+    shared = undefined;
+}
 
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
@@ -194,6 +241,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         }
       }
       cleanups.delete(page);
+      await recycleIfHeavy(page);
     }
     page = undefined;
     if (failures.length)
@@ -210,6 +258,8 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         if (shared && shared.isClosed())
           shared = await shared.context().newPage();
         shared ??= await (await browser.newContext()).newPage();
+        if (!pageBorn.has(shared))
+          pageBorn.set(shared, Date.now());
         watchErrors(shared);
         await guide.attach(shared);
         page = shared;
@@ -269,6 +319,13 @@ async function settleWork(page: Page): Promise<void> {
   }
 }
 
+/** Dialogs and menus closed the platform's way: Escape, as many times as there are open ones. */
+async function closeOverlays(page: Page): Promise<void> {
+  const open = (): Promise<number> => page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
+  for (let i = 0; i < 3 && await open() > 0; i++)
+    await page.keyboard.press('Escape').catch(() => undefined);
+}
+
 /** Everything closed and the Home view current — the state the next scenario starts from. A page
  * that is not in the shell (about:blank, the login page) is left alone. Work the scenario left
  * running is waited out first; then dialogs and menus are closed the platform's way (Escape, as
@@ -277,13 +334,12 @@ async function settleWork(page: Page): Promise<void> {
  * of the DOM behind the platform's back. Errors the teardown itself raises (work cancelled by
  * `closeAll`) are dropped. */
 export async function resetShell(page: Page): Promise<void> {
+  saveWindows.delete(page);
   const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)
     return;
   await settleWork(page);
-  const open = (): Promise<number> => page.locator(CLOSABLE).filter({visible: true}).count().catch(() => 0);
-  for (let i = 0; i < 3 && await open() > 0; i++)
-    await page.keyboard.press('Escape').catch(() => undefined);
+  await closeOverlays(page);
   const left: string = await page.evaluate((notices) => {
     const w = window as any;
     w.ui?.tooltip?.hide?.();

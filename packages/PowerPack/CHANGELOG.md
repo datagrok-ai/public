@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Tests: Added the `bdd/` project: the TestTrack PowerPack section translated into features — Add New Column (the dialog, the formula editor, the functions panel, formula refreshing, persistence over a file and over Northwind query results), the Home widgets, Enter in the Home search, a project opened by its direct link, XLSX opened five ways, data enrichment; the annotation regions and formula lines features moved here from UsageAnalysis, plus the Formula Lines regressions #2487, #671 and #2747
+* Formula Lines: The dialog's preview reports the item it was handed as current in its widget status (`current item`)
+* Home: Widget hosts are named `widget-<name>`, and the search results report `aria-busy` until every search path has answered
 * GROK-20931: Add New Column: Resizing the dialog now widens only the formula and preview pane; the column and function lists keep their width
 * GROK-20931: Add New Column: Clicking a function in the formula makes it the current object, so its help shows in the context panel
 * GROK-20931: Add New Column: Table-name and column-name selectors pop up automatically for parameters that take a table or a column, or for string parameters with the `TableName` / `ColumnName` semantic type; a column argument is offered from the table named by the parameter's `options.table` sibling (else the call's table argument), filtered by the parameter's column type filter

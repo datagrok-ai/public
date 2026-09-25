@@ -9,6 +9,7 @@ sub_features_covered: [viewers.tile-viewer]
 import {test} from '@playwright/test';
 import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
+import '../../../bindings/nx.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
