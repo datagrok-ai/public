@@ -109,6 +109,47 @@ category('Dapi: domain authoring', () => {
       'deleted schema must not be listed');
   });
 
+  test('the registry follows a delete and a re-create without a manual invalidate', async () => {
+    if (skipped())
+      return;
+    const name = `auth_${Math.random().toString(36).slice(2, 8)}`;
+    const columns = async () => (await grok.dapi.domains.registry.rowProperties(`${name}.orders`)).map((p) => p.name);
+    const manifest = draft!.manifest;
+    await grok.dapi.domains.createSchema(name, {manifest});
+    try {
+      expect((await columns()).includes('freight'), true, JSON.stringify(await columns()));
+      await grok.dapi.domains.schema(name).delete();
+      const gone = await thrown(() => columns());
+      expect(gone instanceof DG.DomainError, true, `a deleted schema's table still answers: ${gone}`);
+
+      const again = JSON.parse(JSON.stringify(manifest));
+      delete again.tables.orders.columns.freight;
+      again.tables.orders.friendlyName = 'Orders v2';
+      await grok.dapi.domains.createSchema(name, {manifest: again});
+      expect((await columns()).includes('freight'), false, JSON.stringify(await columns()));
+      expect((await grok.dapi.domains.registry.tableInfo(`${name}.orders`)).friendlyName, 'Orders v2');
+    } finally {
+      await grok.dapi.domains.schema(name).delete().catch((e) => console.log(`cleanup of ${name} failed: ${e}`));
+    }
+  });
+
+  test('an unknown schema is a not-found, on the schema handle and on its tables', async () => {
+    const name = `auth_nope_${Math.random().toString(36).slice(2, 8)}`;
+    const handle = grok.dapi.domains.schema(name);
+    for (const [what, call] of [
+      ['validate', () => handle.validate()],
+      ['delete', () => handle.delete()],
+      ['manifest', () => handle.manifest()],
+      ['table query', () => grok.dapi.domains.table(`${name}.orders`).query({})],
+      ['table get', () => grok.dapi.domains.table(`${name}.orders`).get('1')],
+    ] as [string, () => Promise<any>][]) {
+      const err = await thrown(call);
+      expect(err instanceof DG.DomainNotFoundError, true, `${what}: ${err?.constructor?.name}: ${err?.message}`);
+      expect(err.status, 404, what);
+      expect(err.message, `Unknown domain schema "${name}"`, what);
+    }
+  });
+
   test('refusals by name, addressed by manifest path', async () => {
     if (skipped())
       return;

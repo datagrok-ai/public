@@ -315,11 +315,11 @@ export interface DomainDraft {
   diagnostics: DomainManifestIssue[];
 }
 
-/** The verdict of a schema dry run ({@link DomainsDataSource.createSchema} with `dryRun`): `'ok'`
- * with no issues — a refused manifest rejects with the typed error instead. */
 /** A binding's recorded verdict (ExternalBinding.STATUS_*). */
 export type DomainBindingStatus = 'ok' | 'unvalidated' | 'drifted' | 'connection-missing';
 
+/** The verdict of a schema dry run ({@link DomainsDataSource.createSchema} with `dryRun`): `'ok'`
+ * with no issues — a refused manifest rejects with the typed error instead. */
 export interface DomainSchemaDryRun { status: 'ok'; issues: DomainManifestIssue[]; }
 
 /** What creating a schema answers: its registry identity, physical schema (`usr_<name>` for a

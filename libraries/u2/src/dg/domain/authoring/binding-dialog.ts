@@ -48,9 +48,10 @@ export interface BindingResult {
   access: AccessOutcome;
 }
 
-/** The event `grok.events` carries once a schema is created and its access applied — for a JS
- * listener; the Dart Domains tree refreshes through its own entry point's return. */
-export const SCHEMA_CREATED_EVENT = 'domain-schema-created';
+/** The platform's Dart client learns of a create from the create itself; a schema confirmed
+ * through the registry after a lost answer is announced to it here (read at call time like
+ * the designer's globals). */
+const api = globalThis as {grok_Dapi_Domains_SchemaCreated?: (dart: unknown, name: string) => void};
 
 /** Opens the dialog; resolves once it closes — to the created schema with its access outcome,
  * null where it was cancelled before the create. Refuses while domain databases are off. */
@@ -525,6 +526,7 @@ export class BindingDialog extends Control {
     } catch (e) {
       if (!await this._landed(plan, e))
         return false;
+      api.grok_Dapi_Domains_SchemaCreated?.(grok.dapi.domains.dart, plan.name);
     }
     this._unanswered = null;
     const ops = BindingDialog._accessOps(plan);
@@ -533,7 +535,6 @@ export class BindingDialog extends Control {
     this._say('Applying access…');
     await this._applyAccess(ops);
     grok.dapi.domains.invalidateUiCaches();
-    grok.events.fireCustomEvent(SCHEMA_CREATED_EVENT, {name: plan.name});
     if (ops.length > 0) {
       this._renderCreated();
       return true;

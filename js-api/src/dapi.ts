@@ -1321,7 +1321,7 @@ export class DomainsDataSource {
       manifest?: {[key: string]: any}; dryRun: true}): Promise<DomainSchemaDryRun>;
   createSchema(name: string, options?: {friendlyName?: string; description?: string;
       manifest?: {[key: string]: any}; dryRun?: false}): Promise<DomainSchemaCreated>;
-  createSchema(name: string, options: {friendlyName?: string; description?: string;
+  createSchema(name: string, options?: {friendlyName?: string; description?: string;
       manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<DomainSchemaDryRun | DomainSchemaCreated>;
   createSchema(name: string, options?: {friendlyName?: string; description?: string;
       manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<any> {
@@ -1393,7 +1393,9 @@ export class DomainRegistryClient {
 /**
  * Lifecycle handle for one registered domain schema (see {@link DomainsDataSource.schema}):
  * manifest export, partial applies with dry-run change plans, whole-schema audit, and full
- * purge. Mutations apply to user-managed schemas only (package schemas deploy on publish). */
+ * purge. Mutations apply to user-managed schemas only (package schemas deploy on publish).
+ * A name the registry does not have (never registered, or deleted since) rejects every call
+ * with a {@link DomainNotFoundError}. */
 export class DomainSchemaClient {
   dart: any;
 

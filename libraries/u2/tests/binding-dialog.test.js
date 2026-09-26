@@ -51,7 +51,7 @@ function scoped(name, body) {
  * named in `failing` refuses with its message. */
 function stub(calls, dryRun, failing = {}) {
   grok.shell.settings = {enableDomainDatabases: true};
-  grok.events.fireCustomEvent = (id, args) => calls.push(['event', id, args]);
+  globalThis.grok_Dapi_Domains_SchemaCreated = (_dart, name) => calls.push(['announce', name]);
   grok.dapi.connections = {list: async () => [CONN, ...NOT_BINDABLE], getSchemas: async () => ['public', 'audit']};
   grok.dapi.permissions = {check: async (_c, right) => right !== 'DataConnection.RemoveRows'};
   grok.dapi.groups = {getGroupsLookup: async (query) => [{id: 'g-sales', friendlyName: 'Sales', personal: false},
@@ -223,9 +223,8 @@ scoped('connection › design › review › created: draft, dry run, create, re
   assert.equal(document.querySelector('.u2-binding-created-failed'), null);
   assert.equal(buttonNamed('RETRY ACCESS').disabled, true, 'nothing to retry');
   assert.equal(buttonNamed('CANCEL').style.display, 'none');
-  assert.deepEqual(calls.filter((c) => c[0] === 'event').map((c) => [c[1], c[2].name]),
-    [['domain-schema-created', 'northwind_sales']]);
   assert.equal(grok.dapi.domains.invalidated > 0, true);
+  assert.deepEqual(calls.filter((c) => c[0] === 'announce'), [], 'an answered create needs no announcement');
   buttonNamed('CLOSE').click();
   await flush();
   const result = await done;
@@ -317,13 +316,14 @@ scoped('a validation is bound to the exact payload: a change since is not valida
   assert.equal(buttonNamed('CREATE').disabled, false);
 
   // no access rows: the short way — a toast, the app, the promise, no Created step
+  const invalidated = grok.dapi.domains.invalidated;
   buttonNamed('CREATE').click();
   await flush();
   const result = await done;
   assert.equal(result.name, 'nw');
   assert.deepEqual(result.access, {applied: [], failed: []});
   assert.equal(document.querySelector('.u2-dialog'), null);
-  assert.deepEqual(calls.filter((c) => c[0] === 'event').length, 1);
+  assert.equal(grok.dapi.domains.invalidated, invalidated + 1, 'the completion boundary, once');
 });
 
 scoped('a refused create keeps the dialog open with the refusal named; cancel resolves null', async () => {
@@ -636,7 +636,8 @@ scoped('WO-A5.1 #6 (P0): a create whose answer was lost but which registered goe
   await flush();
   assert.equal(dialog.wizard.currentStep.value, 'created');
   assert.deepEqual(accessCalls(calls), ['table.grant nw.orders g-sales View', 'table.grant nw.order_details g-sales View']);
-  assert.deepEqual(calls.filter((c) => c[0] === 'event').map((c) => c[2].name), ['nw'], 'the created event fires');
+  assert.deepEqual(calls.filter((c) => c[0] === 'announce').map((c) => c[1]), ['nw'],
+    'the recovered schema is announced to the platform');
   assert.deepEqual(dialog.editor.diagnostics.value, [], 'the timeout is no finding');
   buttonNamed('CLOSE').click();
   await flush();
@@ -657,6 +658,7 @@ scoped('WO-A5.1 #6 (P0): a create the registry does not know yet stays offered; 
   await flush();
   assert.equal(dialog.wizard.currentStep.value, 'review');
   assert.equal(status().textContent, 'Gateway Timeout — nw is not registered as this binding; CREATE again');
+  assert.deepEqual(calls.filter((c) => c[0] === 'announce'), [], 'nothing registered, nothing announced');
   assert.equal(status().classList.contains('u2-wizard-status-error'), true);
   assert.equal(document.querySelectorAll('.u2-binding-issue').length, 0, 'on the status line, not a finding');
   assert.equal(buttonNamed('CREATE').disabled, false, 'CREATE stays available');
@@ -667,7 +669,8 @@ scoped('WO-A5.1 #6 (P0): a create the registry does not know yet stays offered; 
   const result = await done;
   assert.equal(result.name, 'nw', 'the "taken" was our own create landing late');
   assert.equal(creates(calls).length, 2);
-  assert.equal(calls.filter((c) => c[0] === 'event').length, 1);
+  assert.deepEqual(calls.filter((c) => c[0] === 'announce').map((c) => c[1]), ['nw'],
+    'the schema our retry found registered is announced once');
 });
 
 scoped('WO-A5.1 #6 (P0): after a lost create, a schema someone else registered under the name is not claimed', async () => {
