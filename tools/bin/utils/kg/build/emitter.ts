@@ -136,7 +136,7 @@ export class Emitter {
       this.reject(row, problems);
       return;
     }
-    const key = [type, r.from, r.to, r.name ?? '', ...edgeType.identity.map((p) => String(r[p] ?? ''))].join('\u0000');
+    const key = this.edgeKey(type, r.from, r.to, r.name, edgeType.identity.map((p) => String(r[p] ?? '')));
     const existing = this.edges.get(key);
     if (!existing) {
       this.edges.set(key, r);
@@ -198,7 +198,11 @@ export class Emitter {
 
   /** Whether an edge of [type] between these two nodes was emitted, whatever derived it (an edge type without identity properties). */
   hasEdge(type: string, from: string, to: string): boolean {
-    return this.edges.has([type, from, to, ''].join(' '));
+    return this.edges.has(this.edgeKey(type, from, to, ''));
+  }
+
+  private edgeKey(type: string, from: unknown, to: unknown, name: unknown, identity: string[] = []): string {
+    return [type, from, to, name ?? '', ...identity].join('\u0000');
   }
 
   /** The rows emitted so far whose type is [type] or narrows it; membership resolution reads files and tests this way. */

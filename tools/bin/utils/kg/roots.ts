@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export const LANDING_PREFIX = 'landing:';
-const LANDING_FALLBACK = 'C:/dg/landing';
 export const SITE = 'https://datagrok.ai';
 const HELP_DIR = 'public/help/';
 const DOCUSAURUS_STATIC = 'public/docusaurus/static/';
@@ -19,12 +18,12 @@ export interface Roots {
   landingDir?: string;
 }
 
-/** `--landing <dir>`, else `<repo>/../landing`, else the dev-box clone; `--landing false` (the tests) reads no site at all.
+/** `--landing <dir>`, else `KG_LANDING_DIR`, else `<repo>/../landing`; `--landing false` (the tests) reads no site at all.
  * A folder is the site only when it has `web/`. */
 export function landingRoot(repoRoot: string, flag?: unknown): string | undefined {
   if (flag === false || flag === 'false' || flag === 'none') return undefined;
   if (flag !== undefined) return path.resolve(String(flag));
-  return [path.resolve(repoRoot, '..', 'landing'), LANDING_FALLBACK].find((d) => fs.existsSync(path.join(d, 'web')));
+  return [process.env.KG_LANDING_DIR ?? '', path.resolve(repoRoot, '..', 'landing')].find((d) => d && fs.existsSync(path.join(d, 'web')));
 }
 
 /** Where a repo path (posix, `landing:` prefixed for the site) is on disk; undefined for a site path when no site was given. */

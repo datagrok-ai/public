@@ -15,9 +15,11 @@ import {kg} from '../commands/kg';
 import {copyFixture, buildFixture as buildGraph, fixtureTypes} from './kg-fixture';
 
 const questionsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'core', 'docs', 'knowledge-graph');
+/** The question set lives in the private monorepo: a checkout of public/ alone (CI) has none. */
+const withQuestions = fs.existsSync(questionsRoot) ? it : it.skip;
 
 describe('the question set (questions/README.md)', () => {
-  it('loads every file, each with its id, cypher and used parameters', () => {
+  withQuestions('loads every file, each with its id, cypher and used parameters', () => {
     const {questions, errors} = loadQuestions(questionsRoot);
     expect(errors).toEqual([]);
     expect(questions.length).toBeGreaterThanOrEqual(30);
@@ -28,7 +30,7 @@ describe('the question set (questions/README.md)', () => {
     }
   });
 
-  it('resolves parameters over the defaults and relative dates to midnight UTC', () => {
+  withQuestions('resolves parameters over the defaults and relative dates to midnight UTC', () => {
     const {questions} = loadQuestions(questionsRoot);
     const since = questions.find((q) => q.id === 'tickets-since')!;
     const now = new Date('2026-09-15T13:45:00Z');
@@ -129,6 +131,7 @@ describe('the render tier (vis/plan.md WO-2)', () => {
 });
 
 const withKuzu = loadKuzu() ? it : it.skip;
+const withKuzuAndQuestions = loadKuzu() && fs.existsSync(questionsRoot) ? it : it.skip;
 
 describe('the server (vis/plan.md WO-3)', () => {
   let kgDir: string;
@@ -197,7 +200,7 @@ describe('the server (vis/plan.md WO-3)', () => {
     expect(find.body.sections[0].rows.some((row: any) => row.id === 'platform/caching')).toBe(true);
   });
 
-  withKuzu('lists the questions and answers one with its parameters bound', async () => {
+  withKuzuAndQuestions('lists the questions and answers one with its parameters bound', async () => {
     const list = await get('/api/questions');
     expect(list.body.length).toBeGreaterThanOrEqual(30);
     expect(list.body[0].file).toBeUndefined();

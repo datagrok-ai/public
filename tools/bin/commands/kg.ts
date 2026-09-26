@@ -32,7 +32,6 @@ const VERBS = ['check', 'gen', 'build', 'report', 'gc', 'serve', 'ask', 'enrich'
 const SERVE_PORT = 7475;
 /** How many generations `grok kg gc` keeps beside the current one. */
 const KEEP_GENERATIONS = 2;
-const BACKLOG_FALLBACK = 'C:/dg/backlog';
 /** How far back `report replay` looks by default. */
 const REPLAY_COMMITS = 200;
 
@@ -425,11 +424,11 @@ async function askVerb(argv: any, kgRoot: string, repoRoot: string, id: string |
 }
 
 /** Full mode: `.kg` beside the type files. Public mode: the nearest committed `.kg` snapshot. */
-/** The backlog snapshot every consumer reads: `--backlog`, else `<repo>/../backlog`, else the dev-box clone; none of
+/** The backlog snapshot every consumer reads: `--backlog`, else `KG_BACKLOG_DIR`, else `<repo>/../backlog`; none of
  * the three means no ticket layer and no taxonomy. Resolved once, so the batch identity and the extractors agree. */
 function backlogRoot(repoRoot: string, flag: unknown): string | undefined {
   if (flag !== undefined) return path.resolve(String(flag));
-  return [path.resolve(repoRoot, '..', 'backlog'), BACKLOG_FALLBACK].find((d) => fs.existsSync(path.join(d, 'index.jsonl')));
+  return [process.env.KG_BACKLOG_DIR ?? '', path.resolve(repoRoot, '..', 'backlog')].find((d) => d && fs.existsSync(path.join(d, 'index.jsonl')));
 }
 
 function findOutRoot(argv: any): string | null {

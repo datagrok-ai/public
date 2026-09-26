@@ -2,6 +2,7 @@
 
 ## v.next
 
+* grok kg: `kuzu` is a devDependency rather than an optional one (525 MB unpacked, a cmake build when no prebuilt binary fits): an installed `grok` gets it on demand with `npm install kuzu@0.11.3`, which the build and the operations say when it is missing; `--backlog` and `--landing` fall back to `$KG_BACKLOG_DIR` / `$KG_LANDING_DIR` and the sibling checkouts, no longer to a dev-box path
 * grok kg: the people roster is read from the ops-agents checkout ($OPS_AGENTS_DIR, else ../ops-agents) now that autofix left the monorepo; a repo-local copy still wins
 * grok kg: the Dart pass reads the heritage a class header spells: `extends` and `implements` (mixins included) between the types of a package and the ones it imports, resolved by name through the same table lexical `uses` reads, a base two files declare left as an `ambiguous_extends` problem; every class whose chain reaches d4's Widget is a `widget` node (`widget:<ClassName>`, a new type under component) that its file declares
 

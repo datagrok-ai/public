@@ -127,6 +127,7 @@ code, .kgv-mono { font-family: var(--mono); font-size: 12px; }
 .kgv-center { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--canvas); }
 .kgv-graph { flex: 1; min-height: 0; position: relative; }
 .kgv-graph canvas { display: block; }
+.kgv-graph-missing { padding: 24px; color: var(--warn); }
 
 .kgv-toolbar {
   display: flex;

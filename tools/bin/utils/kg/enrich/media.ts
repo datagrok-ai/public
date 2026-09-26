@@ -116,6 +116,7 @@ export interface Outcome {
 }
 
 export async function enrichMedia(o: EnrichOptions): Promise<{items: Prepared[], outcomes: Outcome[], notes: string[], usage: Usage}> {
+  if (!/^[\w.-]+$/.test(o.model)) throw new Error(`--model ${o.model}: not a model id`);
   if (REFUSED_MODELS.test(o.model)) throw new Error(`--model ${o.model}: the describer is a cheaper model; a frontier model is refused`);
   const roots: Roots = {repoRoot: o.repoRoot, landingDir: o.landingDir};
   const genDir = o.outRoot;

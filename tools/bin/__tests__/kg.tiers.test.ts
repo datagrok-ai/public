@@ -19,6 +19,8 @@ const TESTS = '@datagrok-libraries/utils/src/test';
 const TEST_LIB = 'file:public/libraries/utils/src/test.ts';
 const questionsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'core', 'docs', 'knowledge-graph');
 const withKuzu = loadKuzu() ? it : it.skip;
+/** The question set lives in the private monorepo: a checkout of public/ alone (CI) has none. */
+const withKuzuAndQuestions = loadKuzu() && fs.existsSync(questionsRoot) ? it : it.skip;
 
 /** The fixture with a test file importing a source file, a mirror test file, an import chain of three hops, one
  * that only passes through an entry file, a test using a JS API declaration, and a playwright config. */
@@ -139,7 +141,7 @@ describe('the tiers of tests-for and impact (change-tests/plan.md)', () => {
     expect(rows(answer, 'reachable').every((r) => String(r.path).startsWith('public/packages/'))).toBe(true);
   });
 
-  withKuzu('answers the tests-for-change question with the four links as one table', async () => {
+  withKuzuAndQuestions('answers the tests-for-change question with the four links as one table', async () => {
     const question = loadQuestions(questionsRoot).questions.find((q) => q.id === 'tests-for-change')!;
     expect(question.params.file.default).toBe('core/shared/ddt/lib/src/data_frame/data_frame.dart');
     const base = await ask(conn(), question, {file: 'public/packages/Demo/src/base.ts'});
@@ -254,6 +256,7 @@ describe('the run rows', () => {
     expect(runRows([dg('one'), dg('two'), dg('three', 'Chem: B')]).rows.map((r) => r.command)).toEqual(['grok test --category "Chem: A"', 'grok test --category "Chem: B" --test "three"']);
     expect(runRows([dg('template…', 'Chem: A', true)]).rows[0].command).toBe('grok test --category "Chem: A"');
     expect(runRows([dg('say "hi"')]).rows[0].command).toBe('grok test --category "Chem: A" --test "say \\"hi\\""');
+    expect(runRows([dg('drops $(rm) and `x` | y > z')]).rows[0].command).toBe('grok test --category "Chem: A" --test "drops rm and x  y > z"');
   });
 
   it('sends client tests to DevTools, Dart tests to their package, and vitest cases to the nearest package.json', () => {

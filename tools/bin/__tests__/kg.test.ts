@@ -9,7 +9,7 @@ import {Project} from 'ts-morph';
 import {parseMember, loadTypeSystem, graphLabel, edgeOrder, TypeSystem} from '../utils/kg/types';
 import {splitFrontmatter} from '../utils/kg/frontmatter';
 import {extractCitations, proseLines} from '../utils/kg/citations';
-import {loadHomes, makeReport, HomeSet} from '../utils/kg/homes';
+import {loadHomes, makeReport, HomeSet, HOME_ROOTS} from '../utils/kg/homes';
 import {generate, generateDts, spliceGlossary, generateFeatures, writeOutputs} from '../utils/kg/gen';
 import {kg} from '../commands/kg';
 import {HELP_KG} from '../commands/help';
@@ -556,6 +556,10 @@ describe('grok kg command', () => {
       expect(HELP_KG, e.name).toContain(e.name);
       expect(Object.keys(e.describes), e.name).toContain(e.name);
     }
+  });
+
+  it('help spells the home roots homes.ts walks', () => {
+    expect(HELP_KG).toContain(HOME_ROOTS.join('\n    '));
   });
 
   it('check --output json prints the report and nothing else', async () => {

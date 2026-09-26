@@ -3,7 +3,7 @@
 /// sections of `answer.ts`.
 import * as fs from 'fs';
 import * as path from 'path';
-import {KuzuConnection, run, quote} from './kuzu';
+import {KuzuConnection, run, quote, literal} from './kuzu';
 import {Section, Answer, EdgeGroup, section} from './answer';
 import {unitOf, testUnitsOf} from './ids';
 
@@ -123,7 +123,7 @@ async function nodeTables(conn: KuzuConnection): Promise<string[]> {
 }
 
 async function columnsOf(conn: KuzuConnection, table: string): Promise<string[]> {
-  const {rows} = await run(conn, `CALL table_info('${table}') RETURN name`);
+  const {rows} = await run(conn, `CALL table_info(${literal(table)}) RETURN name`);
   return rows.map((r) => String(r.name));
 }
 
@@ -551,9 +551,11 @@ export async function testsFor(conn: KuzuConnection, target: Target | Target[], 
   return answer;
 }
 
-/** A shell argument: double-quoted, with the quotes inside escaped. */
+/** A shell argument: double-quoted, the quotes inside escaped, the shell's own characters dropped (the rows run through
+ * a shell on Windows; a name is matched by substring or regex, so it is still found without them). `>` stays: it is
+ * the separator of a Playwright title path, and literal inside the quotes. */
 function arg(text: string): string {
-  return `"${text.replace(/"/g, '\\"')}"`;
+  return `"${text.replace(/[`$&|;<()^%]/g, '').replace(/"/g, '\\"')}"`;
 }
 
 /** The folder holding [file] up from the test's folder, inside [repoRoot]; none when the checkout is not at hand. */
@@ -603,7 +605,7 @@ export function runRows(tests: Record<string, unknown>[], repoRoot?: string, sui
     else if (framework === 'node') cwd = nearest(repoRoot, p, 'package.json') ?? unitOf(p);
     if (cwd === undefined) notes.add(RUNNERS.includes(framework) ? `run: no package folder for ${p}` : `run: no runner known for framework '${framework}'`);
     const suite = whole.get(`${framework} ${unitOf(p)}`);
-    const key = [framework, cwd ?? '', suite ? '' : category].join(' ');
+    const key = [framework, cwd ?? '', suite ? '' : category].join('\u0000');
     let group = groups.get(key);
     if (!group) groups.set(key, group = {framework, cwd: cwd ?? '', category, files: [], names: [], dynamic: false, skipped: 0, whole: suite});
     if (framework === 'xamgle' && t.dynamic === true) {

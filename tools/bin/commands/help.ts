@@ -1,7 +1,14 @@
 import { migrate } from "./migrate";
 import { HELP_SERVER } from "./server";
 import { testAll } from "./test-all";
-import { HOME_ROOTS } from "../utils/kg/homes";
+
+/** HOME_ROOTS of utils/kg/homes.ts spelled out, so --help does not load the kg modules; kg.test.ts keeps the two equal. */
+const HOME_GLOBS = `core/**/*.{md,mdx}
+    public/**/*.{md,mdx}
+    infra/**/*.{md,mdx}
+    landing/**/*.{md,mdx}
+    core/docs/knowledge-graph/**/*.yaml
+    {core,public,infra,landing}/**/{media,videos}.yaml`;
 
 const HELP = `
 Usage: grok <command>
@@ -510,7 +517,7 @@ A home is a markdown document with frontmatter when the thing is a document
 record (concepts, people, teams, customers); YAML homes live inside
 core/docs/knowledge-graph (concepts/, internal/), put the prose in \`description:\`
 and must set \`name:\`. Homes are looked for in
-    ${HOME_ROOTS.join('\n    ')}
+    ${HOME_GLOBS}
 skipping nodes/, edges/ and schema.yaml, node_modules, dist, build, .dart_tool,
 .claude, .git, fixtures and __tests__ folders, and the Test Track files
 (packages/UsageAnalysis/files and playwright-public: their \`feature:\` key still
@@ -610,7 +617,7 @@ Verbs:
                 described before the file changed, awaiting review, shown nowhere, broken
                 embeds, images without alt text, duplicates, the largest, unfit but shown,
                 untracked; the marketing site counts when the build had --landing <dir>, the
-                checkout of github datagrok-ai/landing, else <repo>/../landing or C:/dg/landing)
+                checkout of github datagrok-ai/landing, else $KG_LANDING_DIR or <repo>/../landing)
                 and diff (the features a branch touches and
                 the tests that cover them, \`--diff <ref>\`; the public baseline is the
                 gitlink that revision recorded, deleted files keep the owner the graph
@@ -674,8 +681,8 @@ Options:
     --public            With build: the public projection (public node types, visibility
                         public, no home or owner, edges with both ends public) into public/.kg/
     --only <a,b>        With build: run only the named extractors
-    --backlog <dir>     With build: the backlog snapshot repo (used by the process layer)
-    --landing <dir>     With build, check, serve: the checkout of the marketing site (github datagrok-ai/landing), whose pages and media carry the landing: prefix; else <repo>/../landing or C:/dg/landing
+    --backlog <dir>     With build: the backlog snapshot repo (used by the process layer); else $KG_BACKLOG_DIR or <repo>/../backlog
+    --landing <dir>     With build, check, serve: the checkout of the marketing site (github datagrok-ai/landing), whose pages and media carry the landing: prefix; else $KG_LANDING_DIR or <repo>/../landing
     --no-db             With build: write the JSONL only, do not load the graph index
     --out <dir>         With build, report and gc: write (or read) under <dir> instead of .kg/
     --keep <n>          With gc: generations to keep besides the current one (default 2)

@@ -13,6 +13,9 @@ const LABEL_MS = 250;
 /** How much faster than d3-zoom's default a wheel notch zooms. */
 const WHEEL_GAIN = 4;
 const AMPLIFIED = Symbol('kgv-wheel');
+/** Stands for cosmos.gl when its script did not load: every call a no-op, so the tables and the panes still work. */
+const NO_GRAPH = new Proxy({ready: Promise.resolve(), isSimulationRunning: false, getPointPositions: () => [], getZoomLevel: () => 1,
+  getNeighboringPointIndices: () => [], getTrackedPointPositionsMap: () => new Map()}, {get: (t, k) => k in t ? t[k] : () => undefined});
 
 /** cosmos forces are per pair: what spreads 100k nodes into a readable cloud flings 7 nodes off the screen. */
 function forcesFor(n) {
@@ -37,6 +40,13 @@ export class GraphView {
     this.labelsOn = true;
     this.labelOrder = [];
     this.userMoved = false;
+    this.shown = new Set();
+    if (!window.Cosmos) {
+      container.classList.add('kgv-graph-missing');
+      container.textContent = 'The graph renderer did not load (cosmos.gl from jsdelivr.net); the tables and the panes still work.';
+      this.graph = NO_GRAPH;
+      return;
+    }
     const {Graph} = window.Cosmos;
     this.graph = new Graph(container, {
       spaceSize: SPACE,
@@ -86,7 +96,6 @@ export class GraphView {
       canvas.dispatchEvent(replay);
       this.userMoved = true;
     }, {capture: true, passive: false});
-    this.shown = new Set();
     let lastLabels = 0;
     this.tick = (now) => {
       if (this.graph.isSimulationRunning && now - lastLabels > LABEL_MS) {
