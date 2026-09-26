@@ -1,0 +1,16 @@
+idea-markdownlint.png:
+  caption: Configuring the MarkdownLint external tool in IntelliJ IDEA
+  described_blob: 8c16554cc592295f3234d722020be120aeabfc4e
+  described_by: claude-sonnet-5
+  description: >-
+    This is the IntelliJ IDEA "Edit Tool" dialog for an External Tool named MarkdownLint, described
+    as "MarkdownLint CLI with enabled fix". The Program field runs `markdownlint-cli2 --fix` with
+    argument `$FilePath$` and working directory `$Projectpath$`. Under Advanced Options,
+    "Synchronize files after execution" and "Open console for tool output" are checked, along with
+    "Make console active on message in stderr", and an output filter `$FILE_PATH$:$LINE$:$COLUMN$
+    .*` is set to parse tool output into clickable file locations.
+  height: 1078
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 1152

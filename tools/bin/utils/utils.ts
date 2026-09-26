@@ -2,6 +2,7 @@ import fs from 'fs';
 import path, {sep} from 'path';
 import {exec} from 'child_process';
 import {promisify} from 'util';
+import * as color from './color-utils';
 
 const execAsync = promisify(exec);
 
@@ -9,6 +10,14 @@ const execAsync = promisify(exec);
 /* Waits [ms] milliseconds */
 export async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
+}
+
+/** Opens [url] in the default browser; a failure is a warning, never an error. */
+export function openBrowser(url: string): void {
+  const command = process.platform === 'darwin' ? `open "${url}"` : process.platform === 'win32' ? `start "" "${url}"` : `xdg-open "${url}"`;
+  exec(command, (err) => {
+    if (err) color.warn(`Could not open browser: ${err.message}`);
+  });
 }
 
 export function isEmpty(dir: string): boolean {

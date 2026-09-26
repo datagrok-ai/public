@@ -1,0 +1,9 @@
+type: defines-concept
+from: Declaration
+to: Concept
+key: defined_by
+key_side: to
+derived_by: [annotation]
+description: The class or classes that define a concept, listed as `defined_by:` in the concept's home doc.
+properties:
+  language?:     "'dart' | 'ts'"

@@ -1,4 +1,6 @@
 ---
+feature: explore/ai
+owner: P:askalkin
 title: "AI"
 description: Overview of Datagrok's AI capabilities, including the smart assistant, natural-language queries, and agents.
 keywords:

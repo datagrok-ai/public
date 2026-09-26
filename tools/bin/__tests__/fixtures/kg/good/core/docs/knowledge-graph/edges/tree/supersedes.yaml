@@ -1,0 +1,10 @@
+type: supersedes
+from: Feature
+to: Feature
+key: superseded_by
+key_side: to
+acyclic: true
+derived_by: [annotation]
+description: A removed feature names its successor; the edge runs from the successor to the tombstone.
+properties:
+  release?:      Version

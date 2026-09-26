@@ -1,0 +1,9 @@
+aggregate.gif:
+  kind: animation
+  caption: Aggregating a table
+  description: The user opens the Aggregate dialog, drags Age into rows and Weight into measures, and the pivot table appears.
+  actions: [opens Aggregate, drags Age into rows, drags Weight into measures]
+  illustrates: [visualize/viewers]
+  quality: marketing
+  reviewed: true
+  described_by: person

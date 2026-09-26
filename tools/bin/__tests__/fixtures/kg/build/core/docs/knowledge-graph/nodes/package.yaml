@@ -1,0 +1,16 @@
+type: package
+extends: component
+description: >
+  A Datagrok plugin under public/packages: a deployable unit with functions, scripts,
+  queries, connections, files and resources, described by its package.json. Id pkg:<Name>.
+  `package.json` is its record: `description`, `author` and, through the author's email, `owner`.
+properties:
+  language:      "'ts' | 'js'"
+  friendly_name?: string
+  version:       Version
+  category?:     string
+  author?:       string
+  service?:      boolean = false
+  settings?:     string[]               # names of package.json properties[]
+  sources?:      string[]
+  npm?:          string

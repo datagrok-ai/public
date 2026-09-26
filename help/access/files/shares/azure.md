@@ -1,4 +1,5 @@
 ---
+documents: [access/files/shares]
 title: "Azure Blob"
 description: Connect Datagrok to Azure Blob Storage as a file share using shared tokens or SAS authorization.
 keywords:

@@ -1,0 +1,111 @@
+blocks.png:
+  caption: Block layout width variations
+  described_blob: b85f8a65d1931b9c12cd46cd113c950becc4ee85
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram shows four rows of dashed-outline rectangles labeled by width percentage: a full-width
+    block labeled 100%, a row split into 75% and 25%, a row split into 50%, 25%, and 25%, and a row
+    of four equal 25% blocks. It illustrates how the block layout can combine differently sized
+    elements side by side.
+  height: 540
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    flat schematic mockup, not a real UI screenshot, so it stands on its own only alongside the
+    explanatory text
+  reviewed: true
+  width: 1200
+box-container.png:
+  caption: Fixed-size box container
+  described_blob: df2c180f527f5b0063f59fc905d46524802e8d44
+  described_by: claude-sonnet-5
+  description: >-
+    A rectangular container labeled "BOX CONTAINER" in its top-left corner, outlined with a dashed
+    red border and filled with a light blue background. The box is empty aside from the label,
+    illustrating a fixed-size layout container that clips or shrinks its child elements to fit
+    within its bounds.
+  height: 400
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    plain placeholder mockup with no real content, useful only as a layout illustration alongside
+    the surrounding text
+  reviewed: true
+  width: 1200
+container.png:
+  caption: Creating a container
+  described_blob: 3b8b633b8673a866a46e5b0a9996dc3064c12cc6
+  described_by: claude-sonnet-5
+  description: >-
+    A dashed red outline marks the boundary of a simple container element, containing a light blue
+    box labeled "CONTAINER" in its top-left corner. The rest of the container area is empty,
+    illustrating that a container's height is determined by its children rather than a fixed size.
+  height: 400
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    minimal placeholder-like image with mostly empty space, mainly useful as inline illustration
+    next to the code sample rather than standalone
+  reviewed: true
+  width: 1200
+flexbox.png:
+  caption: Flexbox grid layout directions
+  described_blob: 7970f3b652e2b8762dc90185ec6e1a35a03409dc
+  described_by: claude-sonnet-5
+  description: >-
+    The diagram shows three flexbox containers stacked vertically, each outlined with a dashed red
+    border. The top container arranges three items (Item 1, Item 2, Item 3) side by side in a row.
+    The middle container stacks three full-width rows, each labeled Item 1. The bottom container
+    combines both: a full-width row labeled Item 1, followed by a nested row containing Item 2 and
+    Item 3 side by side.
+  height: 600
+  kind: diagram
+  quality: docs
+  quality_notes: Clear and legible but a generic schematic illustration, not a real captured UI screenshot
+  reviewed: true
+  width: 1200
+git-publishing.png:
+  caption: Publishing a package from a Git repository
+  described_blob: 5f354a4cb87b9d1a2abac6df069e77cde5057799
+  described_by: claude-sonnet-5
+  description: >-
+    The "Add new package" dialog with Source type set to Git, showing fields for the repository Url
+    and the package Dir, checkboxes for Index files and Private Repo, a Load Package Metadata link,
+    auto-filled Name and Description fields, and a Publish On Startup checkbox. Cancel and OK
+    buttons are at the bottom.
+  height: 506
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 590
+panel.png:
+  caption: Panel container layout
+  described_blob: 992ac90115e9b293d72cc55551e9e377bcb4cdbb
+  described_by: claude-sonnet-5
+  description: >-
+    A simple UI panel labeled "PANEL" is shown with a light blue content area inside a dashed red
+    outline marking its boundary. The panel spans the full available width, illustrating that it
+    takes 10px padding on all sides while its height adapts to its children.
+  height: 400
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    minimal placeholder content with no real children rendered (no header, paragraph, or scatter
+    plot as described in the surrounding code sample), and a debug-style dashed outline overlay
+  reviewed: true
+  width: 1200
+splitters.png:
+  caption: Splitting the layout horizontally and vertically
+  described_blob: b38eb14eea1efb18dbcd98f8bc5b4625089e9b40
+  described_by: claude-sonnet-5
+  description: >-
+    The diagram shows three stacked example panels illustrating splitter layouts. The top panel
+    splits three items side by side (horizontal split), the middle panel stacks three items top to
+    bottom (vertical split), and the bottom panel nests a horizontal split within a vertical one,
+    showing Item 1 beside a column containing Item 2 and Item 3.
+  height: 760
+  kind: diagram
+  quality: docs
+  quality_notes: Placeholder-style mockup with generic 'ITEM' labels rather than a real UI screenshot
+  reviewed: true
+  width: 1200

@@ -1,4 +1,6 @@
 ---
+feature: explore/dim-reduction
+owner: P:askalkin
 title: "Dimensionality reduction"
 sidebar_position: 4
 description: Reduce a dataset's feature count using UMAP, t-SNE, or PCA while preserving key structure for visualization.

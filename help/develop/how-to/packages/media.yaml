@@ -1,0 +1,69 @@
+docker.png:
+  caption: Viewing docker container logs in Grok Spawner
+  described_blob: d4f1f079d01fd1729bd0e85d5af283a3b326f998
+  described_by: claude-sonnet-5
+  description: >-
+    The Dockers management screen lists running containers and images in cards, grouped under a
+    Platform tree with a Dockers node selected. The chem-chem container card is selected, and its
+    context panel on the right shows Details, Sharing, Activity, and an expanded Logs section with
+    timestamped log lines and an Add to Workspace option. A right-click context menu on another
+    container card shows Run and Stop options.
+  height: 359
+  illustrates:
+    - platform/spawner
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    dense UI with small text and debug-style log data, appropriate for the how-to page but not a
+    standalone answer
+  reviewed: true
+  width: 800
+github-actions-publish-status.png:
+  caption: GitHub Actions package publish workflow
+  described_blob: 2ad79c48adece623c4aea54c3ed4469fbda30175
+  described_by: claude-sonnet-5
+  description: >-
+    A GitHub Actions run log titled "Test and publish to npm (Demo, true, true)", shown succeeded
+    after 1m 26s. The left panel lists jobs "Check changes" and "Test and publish to npm", both
+    green; the right panel expands the steps of the publish job in order: checkout, Datagrok stand,
+    Node setup, npm upgrade and install, js-api dependencies, package build, Datagrok tools install,
+    waiting for Datagrok availability, grok CLI configuration, publishing the package to Datagrok,
+    testing the package, error notification, artifact upload, and publish to npm.
+  height: 1638
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 2876
+home-page-widgets.png:
+  caption: 'Home page widgets: Recent projects and Usage'
+  described_blob: a20dc439130a1483f971aa7e4b41d5bc1b974378
+  described_by: claude-sonnet-5
+  description: >-
+    Screenshot of the Datagrok Home page showing two dashboard widgets side by side. The left
+    "Recent projects" widget lists recently opened projects with thumbnails and names. The right
+    "Usage" widget shows Users and Errors sparkline charts over time plus a System status list
+    (Datlas, Datlas DB, Grok Connect, Grok Spawner, Jupyter) with color-coded labels, alongside a
+    link to open Usage Analysis.
+  height: 390
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear and readable but shown only as an illustrative example within the how-to text, not a
+    standalone answer to building a widget
+  reviewed: true
+  width: 767
+share-package.png:
+  caption: Sharing a package with a group
+  described_blob: d438ac9202cc83c2b207d5529338e21d1def2475
+  described_by: claude-sonnet-5
+  description: >-
+    The image shows a package browser with entity icons (Demo, Ngl Viewer, DevTools, etc.) and an
+    open right-click context menu listing Details, Publish, Edit..., Delete, Download, Share..., and
+    Credentials..., with Share... highlighted. It illustrates where to find the sharing option for a
+    package.
+  height: 464
+  kind: screenshot
+  quality: docs
+  quality_notes: cropped context menu with several package names truncated at the frame edge
+  reviewed: true
+  width: 596

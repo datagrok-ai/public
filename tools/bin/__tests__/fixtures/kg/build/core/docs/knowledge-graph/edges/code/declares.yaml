@@ -1,0 +1,8 @@
+type: declares
+from: Package | Library | SourceFile | Declaration
+to: Component | Test | TestSuite
+derived_by: [ast, lexical, registry, filesystem]
+description: >
+  Ownership inside code: a package declares its functions, scripts, queries,
+  connections, containers and source files; a source file declares its declarations
+  and the tests it holds; a class declares its members.

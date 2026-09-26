@@ -1,0 +1,16 @@
+type: initiative
+extends: work
+prefix: Init
+hierarchical: true
+authored: true
+visibility: dev
+description: >
+  A program of work that delivers features: ems, ui2, saas, and the feature folders
+  under them. Never a feature itself. Ids follow the folder: Init:ems/autonumber.
+  Reaches the product tree through delivers.
+home: core/docs/features/<group>/README.md and core/docs/features/<group>/<feature>/README.md
+properties:
+  state:         "'proposed' | 'design' | 'in-flight' | 'shipped' | 'closed' | 'abandoned'"
+  record?:       Path
+notes:
+  - "edge keys accepted in the home doc: tickets, delivers, owner"

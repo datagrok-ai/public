@@ -1,4 +1,6 @@
 ---
+feature: explore/cluster-data
+owner: P:askalkin
 title: "Cluster data"
 sidebar_position: 5
 description: Group similar rows together using k-means clustering on numerical feature columns.

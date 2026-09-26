@@ -1,4 +1,7 @@
 ---
+feature: client/table-manager
+name: Table manager
+owner: P:askalkin
 title: "Table Manager"
 unlisted: true
 sidebar_position: 3

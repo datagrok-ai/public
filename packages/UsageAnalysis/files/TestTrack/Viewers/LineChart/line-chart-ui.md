@@ -1,5 +1,6 @@
 ---
-feature: linechart
+id: TS:viewers/line-chart/ui
+covers: [visualize/viewers/line-chart]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |

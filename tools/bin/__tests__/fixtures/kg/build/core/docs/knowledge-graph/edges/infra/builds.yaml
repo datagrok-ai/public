@@ -1,0 +1,5 @@
+type: builds
+from: Job
+to: Image | Package | Library
+derived_by: [annotation]
+description: A pipeline builds an image or publishes a package.

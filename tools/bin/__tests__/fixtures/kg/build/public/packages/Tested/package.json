@@ -1,0 +1,7 @@
+{
+  "name": "@datagrok/tested",
+  "friendlyName": "Tested",
+  "version": "0.1.0",
+  "author": {"name": "Sam Newcomer", "email": "snewcomer@example.com"},
+  "description": "The fixture package with tests, a playwright folder and a changelog."
+}

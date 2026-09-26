@@ -1,4 +1,6 @@
 ---
+feature: explore
+owner: P:askalkin
 title: "Explore data"
 mdx:
   format: mdx

@@ -1,0 +1,3 @@
+class LegendCache {
+  final cache = {};
+}

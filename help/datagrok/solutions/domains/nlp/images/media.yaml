@@ -1,0 +1,69 @@
+nlp-machine-translation.gif:
+  actions:
+    - scroll through the translated text
+    - open the target language dropdown
+    - select Bulgarian
+    - select Czech
+  caption: Translating a text file in the context panel
+  described_blob: 34ab859cfa862a94c41ec5f1a3148adc38c07b61
+  described_by: claude-sonnet-5
+  description: >-
+    A Spanish-language text file about UN Sustainable Development Goals is open in the file browser,
+    with a Translation panel expanded on the right alongside Summary, Text Statistics, Tika, and
+    Text Extractor sections. The user scrolls through the English translation output, then opens the
+    target-language dropdown and switches it from English to Bulgarian, then to Czech, and the
+    translated text updates accordingly.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 15.9
+  width: 800
+nlp-text-extraction.gif:
+  actions:
+    - select a PDF file in the file browser (it-sdg.pdf)
+    - wait for the Text Extractor panel to process the file
+    - view the extracted text for that file
+    - select another PDF file (es-sdg-agenda.pdf)
+    - wait for the Text Extractor panel to process the file
+    - view the extracted text for that file
+  caption: Extracting text from PDFs with the Text Extractor panel
+  described_blob: 550adeaaca1d96bd0747433458c4c01c507dd4fe
+  described_by: claude-sonnet-5
+  description: >-
+    The file browser shows a list of PDF files (SDG agenda documents in several languages plus a
+    research paper). Clicking each file in turn triggers the Text Extractor info panel to load a
+    spinner and then display the extracted plain text content of that PDF, with the extracted
+    language matching the selected file (Italian, then Spanish).
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 10.1
+  width: 800
+nlp-text-statistics.gif:
+  actions:
+    - hover over a file in the list
+    - view a tooltip with file details
+    - >-
+      view the Text Statistics panel update with language, word/sentence/long-word counts,
+      readability score, education level, and comment
+  caption: Calculating text statistics for a document
+  described_blob: e4865bd96e06e3321267125d65d6987729a8e587
+  described_by: claude-sonnet-5
+  description: >-
+    A file browser on the left lists PDF documents (SDG reports, guides, a research paper) while an
+    info panel on the right shows a collapsible Text Statistics section. Selecting different files
+    updates the panel with language, word count, sentence count, long-word count, a readability test
+    (LIX), score, education level, and a difficulty comment. The animation shows the user hovering
+    over research-paper.pdf, which briefly shows a file details tooltip before the Text Statistics
+    values update to reflect French-language stats for that document.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small crop of the UI with no visible headers/toolbar; readable but minimal context for a
+    standalone viewer
+  reviewed: true
+  seconds: 8.2
+  width: 800

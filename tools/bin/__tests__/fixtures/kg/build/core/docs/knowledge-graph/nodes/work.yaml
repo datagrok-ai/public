@@ -1,0 +1,11 @@
+# Root. Something that tracks intent or change over time.
+type: work
+extends: node
+abstract: true
+description: >
+  Tickets, pull requests, commits, releases, sprints and initiatives. Each subtype
+  carries its own state model; the root only knows when it was created and touched.
+properties:
+  url?:         Url
+  created?:     Date
+  updated?:     Date

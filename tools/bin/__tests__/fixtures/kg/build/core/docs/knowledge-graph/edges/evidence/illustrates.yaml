@@ -1,0 +1,12 @@
+type: illustrates
+from: Media
+to: Feature | Concept
+key: illustrates
+derived_by: [annotation, llm]
+description: >
+  A media file or video shows a feature or concept in use, as its record asserts: a reviewed
+  record at annotation 1.0, an unreviewed model proposal at llm 0.6 with status proposed.
+  Nothing derives it from where the media is embedded; "shown on a page that documents F" is a
+  traversal over embeds and documents, reported with the page as evidence.
+properties:
+  proposed?:      boolean

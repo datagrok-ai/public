@@ -1,0 +1,201 @@
+LST.gif:
+  actions:
+    - hover over the distribution/pie cell for cluster 1
+    - >-
+      hover over cluster 1's row to show its statistics tooltip and highlight its nodes in the MCL
+      network
+    - hover over cluster 3's row, highlighting a different node cluster
+    - hover over cluster 4's row, showing its statistics tooltip and highlighting its nodes
+    - hover over cluster 4's row label, highlighting its nodes in orange
+    - hover over cluster 3's row label, showing its statistics tooltip
+  caption: Logo Summary Table clustering and tooltips
+  described_blob: 4dc5f18e033ea18c1996d46014b5527911d08e7b
+  described_by: claude-sonnet-5
+  description: >-
+    The Logo Summary Table lists peptide clusters with member counts, WebLogo motifs, distribution
+    pie charts, mean difference, p-value, and ratio, alongside an MCL network diagram colored by
+    cluster. As the cursor moves down the rows, hovering over each cluster's distribution chart pops
+    up a tooltip with count, mean difference, mean activity, and p-value, while the corresponding
+    cluster's nodes highlight in orange in the network diagram on the right.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded tooltips and dense table text are hard to read at full size; useful in-page but
+    not self-explanatory alone
+  reviewed: true
+  seconds: 9.2
+  width: 1600
+SAR-menu.png:
+  caption: Analyze Peptides SAR dialog
+  described_blob: f5f93bcc93f6bf906d9ba1a48a3fb2ce9afced12
+  described_by: claude-sonnet-5
+  description: >-
+    A dataset grid of cyclic peptide sequences (HELM notation) sits behind the Analyze Peptides
+    dialog, which is open on top. The dialog shows a monomer position bar (1-21) with WebLogo-style
+    frequency plots per position, dropdowns for Sequence, Activity, Scaling, and Clusters columns, a
+    Generate clusters checkbox, and clustering parameters (Similarity Threshold, Inflation Factor,
+    Max Iterations, Min Cluster Size, Distance Function, Fingerprint Type, Gap Open/Extend Penalty,
+    Use WebGPU). A tooltip for the O-Benzyl-L-serine monomer is also visible, overlapping the grid.
+  height: 1006
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    a stray monomer tooltip overlaps the grid, and OK/Cancel buttons are partly cut by the dialog
+    edge, adding clutter not essential to the dialog's purpose
+  reviewed: true
+  width: 1613
+context-panel.gif:
+  actions:
+    - select rows in the peptides table to change the context panel selection
+    - check Monomers, Positions, and Clusters checkboxes to enable distribution breakdowns
+    - expand the Mutation Cliffs Pairs list to full screen
+  caption: Peptides SAR context panel
+  described_blob: f4adf619b8820aff9eda0a3f871aa11694b025cd
+  described_by: claude-sonnet-5
+  description: >-
+    The screen shows the Peptides SAR viewers (MSA, MCL cluster network, Logo Summary Table,
+    Sequence Variability Map) on the left, with a context panel on the right that updates as rows
+    are selected. As selection grows from 77 to 212 rows, the panel adds Mutation Cliffs Pairs, Most
+    Potent Residues stats, and a Distribution section with Monomers/Positions/Clusters breakdowns
+    and charts. The final frame expands the Mutation Cliffs Pairs list to full screen, showing
+    mutated sequence pairs with their activity delta and an MSA/Activity table on the right.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    dense, small text and many overlapping viewers make it hard to read standalone; useful alongside
+    the surrounding explanation
+  reviewed: true
+  seconds: 27.1
+  width: 1600
+invariant-map.gif:
+  actions:
+    - hover over a cell to preview its tooltip
+    - click a cell to select the corresponding sequences
+    - click another cell to change/expand the selection
+    - click a third cell, further expanding the selection
+  caption: Exploring mutation cliffs with the Invariant Map
+  described_blob: ca626b4a4611c812297e0f8da34cedb3924958f0
+  described_by: claude-sonnet-5
+  description: >-
+    The Invariant Map viewer shows a grid of amino-acid monomers by sequence position, with cell
+    numbers giving counts and background color showing aggregated activity. As the user hovers and
+    clicks different cells (Trp_Ome at position 3, Thr_PO3H2 at position 12, Q at position 7), a
+    tooltip reports selection statistics such as count, mean difference, mean activity and p-value,
+    while the row count in the top-right panel and the sequence logo below update to reflect the
+    growing selection, from 8 selected rows up to 294.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense grid are hard to read at reduced size, and the animation loops through
+    several near-duplicate states quickly
+  reviewed: true
+  seconds: 7.5
+  width: 1600
+mpr.png:
+  caption: Most Potent Residues viewer
+  described_blob: dab76c1a8aefa5673ed6d2fcbd2577dda72b78ea
+  described_by: claude-sonnet-5
+  description: >-
+    The Most Potent Residues table lists sequence positions with their most impactful monomer (AAR),
+    along with Diff, Mean, P-value, Count, Ratio, and MCL cluster statistics. A tooltip popup for a
+    selected row overlays the table, showing an All-vs-Selection line chart plus detail values for
+    count, mean difference, mean activity, p-value, and cluster/connectivity averages.
+  height: 887
+  kind: screenshot
+  quality: docs
+  quality_notes: tooltip popup obscures several underlying table rows, so not all data is readable at once
+  reviewed: true
+  width: 1566
+mutation-cliffs.gif:
+  actions:
+    - click a cell in the Sequence Variability Map to select mutation cliffs at one position
+    - click another cell to select a different mutation cliff
+    - click another cell to select a third mutation cliff
+    - open the Mutation Cliffs pairs dialog
+    - select a mutation pair row to view its aligned MSA sequences
+    - select another mutation pair row to compare a different aligned pair
+  caption: Exploring mutation cliffs in the sequence variability map
+  described_blob: 183bf6ffbec6db821b1d13237746569774529532
+  described_by: claude-sonnet-5
+  description: >-
+    The Sequence Variability Map shows amino acid positions across columns and monomer values down
+    rows, with dots marking mutation-cliff counts in each cell; a context panel on the right lists
+    the selected mutation cliffs and their delta activity values. Clicking successive cells in the
+    map updates the selection and the Mutation Cliffs pairs list, and opening the Mutation Cliffs
+    pairs dialog shows the full list of mutated sequences with their MSA alignment and activity
+    values. Selecting different mutation rows in that dialog updates the paired MSA view on the
+    right to show the two aligned sequences and their activity difference.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    dense grid with small text and overlapping tooltip readable only at full size; fine within the
+    page but not self-explanatory alone
+  reviewed: true
+  seconds: 13
+  width: 1600
+pep-analysis-view.png:
+  caption: Peptide SAR analysis view
+  described_blob: f54e90cbf67c95d3895cc39da409315865c43447
+  described_by: claude-sonnet-5
+  description: >-
+    A multi-panel table view of a peptide sequence dataset with 540 rows, showing sequence logos by
+    position, a Most Potent Residues table with mean activity and p-values per monomer, a Mutation
+    Cliffs scatter/heatmap of amino acid substitutions across positions, an MCL cluster network, and
+    a Logo Summary Table with dist and distribution columns. A right-hand panel shows 26 selected
+    rows with mutation cliff pairs and their activity deltas.
+  height: 939
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Dense, small text across many panels is hard to read at this resolution; usable within the page
+    but not as a standalone answer.
+  reviewed: true
+  width: 1867
+peptide-generation.png:
+  caption: Generated peptides ranked by predicted activity
+  described_blob: b7a8683c429b857fa50ec37e625c849389124a33
+  described_by: claude-sonnet-5
+  description: >-
+    A table lists 625 generated peptides sorted by predicted activity, with columns for Predicted
+    activity, Confidence, Min support, Mean p-value, Significant positions, and a Novel checkbox,
+    followed by per-position amino acid cells sized and colored by effect magnitude. A tooltip over
+    a selected position cell shows an activity distribution chart comparing the selection to the
+    whole set, along with circle size, circle color, count, mean difference, mean activity, and
+    p-value statistics.
+  height: 891
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    dense table with a tooltip overlay obscuring part of the grid; not self-explanatory without
+    surrounding text
+  reviewed: true
+  width: 1706
+table-view.gif:
+  actions:
+    - hover a monomer cell in the grid to show its chemical structure tooltip
+    - hover a monomer in the WebLogo to show its selection statistics popup
+    - hover a different WebLogo monomer to update the statistics and highlighted rows
+    - repeat hovering across several monomers, each re-coloring the grid selection
+  caption: Monomer-Position Table Viewer in Peptides SAR
+  described_blob: e582f4bdc9e87af9d756511166254ecf66e2e704
+  described_by: claude-sonnet-5
+  description: >-
+    A grid shows peptide sequences with color-coded monomer cells in each position column, alongside
+    a WebLogo panel with a selection-statistics popup (count, mean difference, mean activity,
+    p-value). The user hovers a monomer cell to reveal a structure tooltip for glutamic acid, then
+    hovers different monomers in the WebLogo, each time updating the selection popup and re-coloring
+    the highlighted rows in the grid and the WebLogo distribution chart to reflect the newly
+    selected monomer's statistics.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense grid are hard to read at this resolution; useful within the page but not
+    clear enough to stand alone
+  reviewed: true
+  seconds: 6.3
+  width: 1600

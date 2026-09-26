@@ -1,0 +1,8 @@
+type: targets-release
+from: Ticket | Feature | PullRequest
+to: Release
+identity: [kind]
+derived_by: [external, annotation, git]
+description: A ticket's fix version, a feature's first shipping release, a PR's release branch.
+properties:
+  kind:          "'fix-version' | 'shipped-in' | 'picked'"

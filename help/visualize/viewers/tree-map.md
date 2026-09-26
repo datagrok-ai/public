@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/tree-map]
 title: "Treemap"
 description: Show hierarchical data as nested rectangles sized by a chosen aggregation, useful for spotting patterns and outliers.
 keywords:

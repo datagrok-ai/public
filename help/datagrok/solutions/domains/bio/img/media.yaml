@@ -1,0 +1,647 @@
+Cluster_sequence_results-800.png:
+  caption: Hierarchical clustering of sequence data
+  described_blob: 084b37c4ecc7a6b31adafac99af2fd7ba23e0b33
+  described_by: claude-sonnet-5
+  description: >-
+    A macromolecule sequence table is shown with a dendrogram in the left panel grouping rows into
+    clusters, one branch highlighted in orange and a selected leaf highlighted in green with its
+    cluster ID shown in the adjoining column. To the right, a sequence space scatter plot shows the
+    same sequences positioned by similarity, with a tooltip displaying the embedding coordinates,
+    cluster, activity, and is_cliff values for a hovered point.
+  height: 500
+  illustrates:
+    - explore/dim-reduction
+  kind: screenshot
+  quality: docs
+  quality_notes: small UI text and dense tooltip data reduce standalone clarity
+  reviewed: true
+  width: 800
+Oligotoolkit-pattern-edit.gif:
+  actions:
+    - enable the anti-sense strand checkbox and set its length
+    - open Edit pattern
+    - change position 1 modification from RNA to DNA
+    - change position 2 modification to 2'-Fluoro
+    - click OK to save the pattern
+    - select part of the generated sense strand sequence
+  caption: Editing an oligo modification pattern
+  described_blob: c63dd280ab548e4ecdf1b4a0dcd70350c28ba39c
+  described_by: claude-sonnet-5
+  description: >-
+    The Oligo Toolkit Pattern tab shows a sense/anti-sense strand diagram with numbered nucleotide
+    positions and a resulting Axolabs-format sequence below. The user enables the anti-sense strand
+    and sets its length, then opens the Edit pattern dialog and changes the modification type of the
+    first sense-strand positions from RNA to DNA and 2'-Fluoro. After saving, the strand diagram
+    updates to show colored markers (blue for DNA, cyan for 2'-Fluoro) at those positions, and the
+    sense strand sequence text updates accordingly with a "Saved" confirmation.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI at 1600x1000 with dense unlabeled controls; useful in context of the surrounding steps
+    but not self-explanatory alone
+  reviewed: true
+  seconds: 40.5
+  width: 1600
+Oligotoolkit-structure.gif:
+  actions:
+    - type a sequence into the Anti Sense field
+    - watch the corresponding chemical structure render below
+    - type a sequence into the Anti Sense 2 field
+    - watch its chemical structure render
+    - click SAVE SDF
+  caption: Generating oligonucleotide structures in Oligo Toolkit
+  described_blob: 15508aa87cb60e215a10e6c9f0d37cc0087a282b
+  described_by: claude-sonnet-5
+  description: >-
+    The Oligo Structure tab of the Oligo Toolkit shows Sense Strand, Anti Sense, and Anti Sense 2
+    text fields alongside strand-direction dropdowns and a Save SDF button. As the user types
+    nucleotide sequences into the Anti Sense and Anti Sense 2 fields, chemical structure diagrams
+    for each strand are generated and rendered live below the inputs.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 53.9
+  width: 1600
+Oligotoolkit-translator.gif:
+  actions:
+    - typing the sequence into the input field one character at a time
+    - watching the structure and format fields update live
+    - clicking Copy SMILES
+    - downloading the generated SDF files
+  caption: Translating an oligonucleotide sequence between notations
+  described_blob: 0b6eef5695b985a524275ebd2432be4686aa6d88
+  described_by: claude-sonnet-5
+  description: >-
+    The Oligo Toolkit's Translator tab shows a sequence input field (Axolabs pattern) with a
+    molecular structure rendered below as a chain of connected nucleotide monomers. As the user
+    types the sequence character by character, the structure grows monomer by monomer and the
+    BioSpring, HELM, Mermade12, and Nucleotides format fields update in real time. Once the full
+    sequence is entered, the user copies the SMILES and downloads the result as SDF files.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small, low-resolution chemical structure diagrams are hard to read at this scale; UI chrome and
+    browser download popups add clutter
+  reviewed: true
+  seconds: 29.1
+  width: 1600
+PDB_viewer-800.gif:
+  actions:
+    - select a row in the pdb column
+    - open the large 3D viewer for the selected structure
+    - rotate the structure
+    - zoom in on a region
+    - hover a residue to show its label
+    - select a different row and inspect its bound ligand
+  caption: Previewing and rotating a PDB 3D structure
+  described_blob: ca67957c8488c0aad60321835990166a92680375
+  described_by: claude-sonnet-5
+  description: >-
+    A spreadsheet grid shows a column of small PDB structure thumbnails next to selected rows.
+    Clicking a row opens a large 3D viewer on the right showing the protein's ribbon structure with
+    ligand/water dots. The user rotates and zooms into the structure, revealing hovered residue
+    details (e.g. "PROTO-ONCOGENE TYROSINE-PROTEIN KINASE SRC") and, on a different row, zooms into
+    another structure ("cAMP-dependent protein kinase catalytic subunit alpha") to inspect a bound
+    ligand and highlighted chain segment.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    cell/grid area is cropped and small text is illegible at this resolution; usable to illustrate
+    the workflow but not detailed enough to stand alone as a full how-to
+  reviewed: true
+  seconds: 43.9
+  width: 800
+add-new-monomer.gif:
+  actions:
+    - draw a molecular structure in the sketcher
+    - add R1 and R2 attachment points to the structure
+    - enter a Monomer Symbol and Monomer Name
+    - switch to the Colors tab and set background/text colors
+    - click Add/Save Monomer
+    - view the new monomer highlighted in the table
+  caption: Adding a new monomer in Manage Monomers
+  described_blob: e4526ace1cd5ec37a92e81182f9b1cfbe292b745
+  described_by: claude-sonnet-5
+  description: >-
+    The Manage Monomers dialog shows a molecule sketcher next to a table of existing monomers with
+    their symbol, name, and R-group substituents. A user draws a benzene ring, adds R1 and R2
+    attachment points, sets the Monomer Symbol and Name to "TestMon", adjusts the background and
+    text colors, and saves it. The new monomer then appears as a highlighted row in the monomer
+    table.
+  height: 1001
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 58.4
+  width: 1600
+biln.png:
+  caption: Rendering BILN sequences as HELM and molfile
+  described_blob: 5d6bc58da0faaf1cae918e09df3c3c63f34ff667
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows a BILN column of macromolecule notations alongside computed helm(BILN) and
+    molfile(BILN) columns. The helm column renders each sequence as a linked chain of monomer nodes
+    with chain and cyclic connections drawn between them, while the molfile column shows the
+    corresponding 2D chemical structure with rings for cyclic peptides. Rows include linear,
+    branched, and cyclic multi-chain sequences with non-canonical monomers.
+  height: 981
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    grid columns are cut off on the right and BILN text is truncated, but the rendering is clear and
+    readable
+  reviewed: true
+  width: 1720
+edit-monomer.gif:
+  actions:
+    - open the monomer editor for the Aca monomer
+    - draw/attach a cyclohexyl ring to the R2 substituent using the sketcher
+    - switch to the Colors tab
+    - click Save Monomer
+    - hover over an Aca residue in the sequence table to preview the updated structure
+  caption: Editing a monomer in the monomer library
+  described_blob: c919c9623438b4975e156e9eef91a854e7abbf6f
+  described_by: claude-sonnet-5
+  description: >-
+    A monomer grid lists library entries such as Aca (2-Aminocapric acid) with symbol, name, and
+    R-group substituents, alongside a structure editor showing the selected monomer's skeletal
+    formula. The user opens the Aca monomer, draws a cyclohexyl ring onto its R2 substituent using
+    the sketcher, switches to the Colors tab to review the monomer's line/background/text colors,
+    and saves the change. Back in the macromolecule sequence table, hovering over an Aca residue in
+    a peptide row shows a tooltip with the monomer's updated structure and library source.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded UI at low effective resolution for the sketcher details; readable but
+    dense/cluttered grid text
+  reviewed: true
+  seconds: 49
+  width: 1600
+enumeration.gif:
+  actions:
+    - right-click a molfile cell and select PolyTool > Enumerate
+    - add a placeholder at position 15 and enter monomers A,C,D,E
+    - add a placeholder at position 5 and enter monomers A,C,D,E
+    - change enumerator type from single to matrix
+    - confirm to generate the enumerated variants table
+  caption: Using the PolyTool Enumeration dialog
+  described_blob: 433bd23c38b2955631bdd2cff1a9dfd64e436e39
+  described_by: claude-sonnet-5
+  description: >-
+    In a cyclized macromolecule sequence table, the user right-clicks a molfile cell and chooses
+    PolyTool > Enumerate from the context menu, opening the Poly Tool Enumeration dialog. In the
+    dialog, they add placeholder positions on the cyclic peptide structure (position 5 and position
+    15) and enter candidate monomers (A,C,D,E) for each, then switch the enumerator type from single
+    to matrix. After clicking OK, a new results table appears with one row per generated variant,
+    each showing the substituted macromolecule structure and its corresponding molfile.
+  height: 1714
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 14
+  width: 3087
+fasta-format-0.png:
+  caption: Color-coded FASTA sequence rendering
+  described_blob: 22f9dc79444f0b4a297d4b19ab9a21e226d63ebe
+  described_by: claude-sonnet-5
+  description: >-
+    A spreadsheet shows a macromolecule column named "sequence" with FASTA-formatted protein
+    sequences, each monomer letter color-coded by residue properties. The context panel on the right
+    shows the column's Details, including units (fasta), aligned status, alphabet (PT), data type
+    (string), and semantic type (Macromolecule), along with a zoomed-in preview of the colored
+    sequence.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    informative but plain grid screenshot with a busy context panel; not polished enough for
+    marketing use alone
+  reviewed: true
+  width: 1601
+helm-editor-0.png:
+  caption: Editing a HELM macromolecule structure
+  described_blob: 72f69dee3eeafc1e038824e0146cd531c3c9ce52
+  described_by: claude-sonnet-5
+  description: >-
+    The HELM editor shows a circular macromolecule made of numbered monomers (peptide, chem, and
+    nucleotide types color-coded as hexagons) connected in a ring, with three linear branches
+    extending from ring positions. The left sidebar offers a monomer palette (Favorite, Chem,
+    Peptide, RNA tabs) and a filter box, while the top toolbar provides editing tools like Single,
+    Undo/Redo, Eraser, Select, Find/Replace, and Clean. Tabs below the canvas let the user switch
+    between Sequence, HELM, Properties, and Structure View representations.
+  height: 1000
+  kind: screenshot
+  quality: docs
+  quality_notes: small monomer labels are hard to read at this resolution; otherwise clear
+  reviewed: true
+  width: 1601
+helm-format.png:
+  caption: Rendering HELM macromolecule sequences in a grid
+  described_blob: 3dc220f7b45b40a10846dc15a4f9f02c4305b29b
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok spreadsheet shows a column of peptide sequences rendered as HELM structures: chains
+    of colored hexagonal monomer nodes connected by lines, including linear, circular, and branched
+    topologies. Numbered residue positions and monomer abbreviations (e.g., dS, meM, Thz, Hyp) label
+    each node, colored by monomer type. An activity column and an is_cliff checkbox column sit
+    alongside, and the context panel on the right shows column details identifying the semantic type
+    as Macromolecule with HELM units.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    informative but cluttered with unrelated UI chrome (context panel, toolbar, other columns) not
+    focused solely on the HELM rendering itself
+  reviewed: true
+  width: 1601
+helm-mol-highlight.png:
+  caption: Converting non-linear HELM/BILN sequences to molecules
+  described_blob: 57a156f38c14f02dab246270846743d54f1018de
+  described_by: claude-sonnet-5
+  description: >-
+    A three-column table compares BILN notation, its rendered HELM diagram, and the resulting 2D
+    molecular structure for several non-linear (cyclic/branched) macromolecule sequences. A tooltip
+    over one HELM diagram shows detail for a highlighted monomer (Glutamine, from the HELMCore
+    Library) with its R-group structure, and the corresponding substructure is highlighted in red
+    within the full molfile rendering in that row.
+  height: 1602
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Tooltip overlaps and obscures part of the table; BILN text is truncated with ellipses; bottom
+    row is cropped at the image edge; dense, small text throughout.
+  reviewed: true
+  width: 2486
+linear-seq-highlight.png:
+  caption: Converting linear sequences to atomic-level structures
+  described_blob: b82eed8663ce510ced045c65248072d1f0b5fa44
+  described_by: claude-sonnet-5
+  description: >-
+    A grid shows nucleotide sequences in the Seq column and their corresponding molfile(Seq) column
+    rendering each sequence as a full atomic-level chemical structure. A tooltip over one monomer in
+    the first row identifies it as Guanine, sourced from the HELMCore Library, with its atomic
+    structure and R1 attachment point shown.
+  height: 963
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    dense grid with small text and overlapping structures makes individual atoms hard to read at
+    full zoom
+  reviewed: true
+  width: 1397
+macromol-activity-cliffs-0.png:
+  caption: Activity cliffs in a macromolecule sequence set
+  described_blob: 2c8ada2c56934d83fdbec268f6286cdccc03c182
+  described_by: claude-sonnet-5
+  description: >-
+    A dataframe of peptide sequences with an activity column is shown next to an Activity Cliffs
+    scatter plot of the embedding, colored by cluster, with two detected cliffs highlighted. Below,
+    a table lists the cliff pairs with their activity difference, similarity, and sequence
+    difference (aligned residues) for each pair.
+  height: 1001
+  illustrates:
+    - explore/dim-reduction
+  kind: screenshot
+  quality: docs
+  quality_notes: small UI text and dense grid make it hard to read at a glance
+  reviewed: true
+  width: 1601
+macromol-cliffs-pairs-0.png:
+  caption: Activity cliff pair at high zoom
+  described_blob: 7753e0327db35f55b9066573646034f210bc2776
+  described_by: claude-sonnet-5
+  description: >-
+    A macromolecule sequences table is shown next to an Activity cliffs scatterplot, with two point
+    pairs connected by lines marking activity cliffs. Below, a detail panel lists the cliff pairs
+    with their activity difference, SALI score, similarity, and the aligned sequence difference
+    highlighted per pair.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: small UI text and dense panels are hard to read at this crop
+  reviewed: true
+  width: 1601
+macromol-viewers-scatterplot.gif:
+  actions:
+    - >-
+      hover over scatterplot points to inspect tooltip details (embedding coordinates, cluster,
+      sequence, activity, is_cliff)
+    - drag a range in the activity histogram filter
+    - release the filter to update the highlighted rows and scatterplot points
+  caption: Activity Cliffs Analysis with a Scatterplot
+  described_blob: e3441bf4be99be83a669761349891c71a0141a64
+  described_by: claude-sonnet-5
+  description: >-
+    A macromolecule sequence table is shown alongside an activity cliffs scatterplot colored by
+    cluster. The user hovers over points near the boundary between two clusters, opening a tooltip
+    with embedding coordinates, cluster id, sequence, activity, and is_cliff values. A histogram
+    filter under the sequence panel is then adjusted, filtering and highlighting the corresponding
+    rows and points across the table and scatterplot.
+  height: 1001
+  illustrates:
+    - explore/dim-reduction
+  kind: animation
+  quality: docs
+  quality_notes: small embedded UI text and dense grid make some labels hard to read at this resolution
+  reviewed: true
+  seconds: 10.6
+  width: 1601
+manage-duplicate-monomers.gif:
+  actions:
+    - select the correct monomer structure for a duplicate symbol
+    - open the Merge selected libraries dialog
+    - enter a name for the new library
+    - save the merge
+    - see the new merged library added and enabled in the library list
+  caption: Resolving duplicate monomer symbols across libraries
+  described_blob: 3ee7420e1519b80cf5149a76b27a9690281157ae
+  described_by: claude-sonnet-5
+  description: >-
+    The Manage Monomer Libraries panel lists loaded HELM libraries with checkboxes, next to a Manage
+    Duplicate Monomer Symbols panel showing two conflicting structures for the same symbol side by
+    side. The user selects the correct structure for the duplicate symbol, then opens the Merge
+    selected libraries dialog, names the merged library, and saves it, after which the new merged
+    library appears checked in the library list.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    cropped to the panel only, no surrounding app chrome; molecule and label text is small and hard
+    to read at this resolution
+  reviewed: true
+  seconds: 26.2
+  width: 1600
+manage-monomers-view.gif:
+  actions:
+    - hover over a monomer library checkbox in Manage Monomer Libraries
+    - select a monomer row in the Manage Monomers grid to preview its structure
+    - click a monomer row (D-Arginine) to view its Meta info tooltip
+    - open the R-groups tab to view R1/R2 SMILES and cap group names
+    - open the Colors tab and launch the color picker for line/background/text
+  caption: Managing monomer libraries and editing monomers
+  described_blob: 861ded6991de0af0a1d82a6d4ef9f6f1fd6d90f0
+  described_by: claude-sonnet-5
+  description: >-
+    The Manage Monomer Libraries panel lists loaded libraries with checkboxes, edit and delete
+    icons, plus Add and Merge buttons; a duplicate-symbol resolution grid is shown alongside it.
+    Switching to the Manage Monomers view opens a grid of monomers (symbol, name, R-groups) next to
+    a molecular sketcher and property editors for Monomer, R-groups, Meta and Colors. The user
+    hovers over library rows, selects a monomer row to preview its structure in a tooltip, inspects
+    the D-Arginine entry's Meta details, opens its R-groups tab showing R1/R2 SMILES and cap groups,
+    then opens the Colors tab and a color picker for the line/background/text colors.
+  height: 1001
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 27.1
+  width: 1600
+marcomol-explore.png:
+  caption: Exploring macromolecules with the Bio menu
+  described_blob: 8d702f5f119a112042abcef5a5a3d3f81680c3a6
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of a biological sequence dataset shows a Sequence column with color-coded amino acids, an
+    Activity column with heat-mapped values, and split monomer columns 1-6. The top menu includes a
+    highlighted Bio item, a sequence filter panel on the left, and the context panel on the right
+    shows sequence details (units, alphabet, data type, semantic type Macromolecule) with a monomer
+    tooltip displaying a molecular structure.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    dense, cluttered layout with overlapping panels and a stray tooltip mid-frame; informative but
+    not clean enough to stand alone
+  reviewed: true
+  width: 1601
+mol-to-helm.gif:
+  actions:
+    - open the Bio menu and navigate to Transform > Molecules to HELM
+    - confirm the source table and molecule column in the dialog and click OK
+    - review the generated HELM sequence column
+    - hover over monomers in the sequence to inspect their identity
+  caption: Converting molecules to HELM notation
+  described_blob: b3e2cca19e7b719b6314bce34c268c56fae956c0
+  described_by: claude-sonnet-5
+  description: >-
+    In the Bio menu of the molecule grid, the user opens Transform > Molecules to HELM and runs it
+    on a column of peptide structures. A new "regenerated sequences" column appears showing each
+    molecule as a colored monomer chain, and hovering over individual monomers reveals tooltips
+    identifying them by name (e.g. Glutamine, 2-Aminocapric acid) from the HELMCore Library.
+  height: 1763
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 21.8
+  width: 3180
+monomer-library-manager.png:
+  caption: Managing monomer libraries and duplicate symbols
+  described_blob: cdb832c2e7aff36728966803a558003412e20054
+  described_by: claude-sonnet-5
+  description: >-
+    The Manage Monomer Libraries panel lists loaded libraries (HELMCoreLibrary.json,
+    polytool-lib.json, sample-lib-Aca-colored.json) with checkboxes to enable each, plus edit and
+    delete icons and Add/Merge buttons. To its right, the Manage Duplicate Monomer Symbols panel
+    shows two conflicting monomer definitions sharing the symbol "Aca", each with its structure,
+    monomer name, source library, and polymer type, side by side for comparison.
+  height: 1084
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Two side-by-side panels captured together; readable but busy, and the merge/duplicate-resolution
+    panel isn't explained in the surrounding text, so it's docs-tier rather than a clean standalone
+    answer.
+  reviewed: true
+  width: 1832
+msa_dialog.png:
+  caption: Configuring the MSA dialog
+  described_blob: 054891c12e2376e51904456259559c58227b3422
+  described_by: claude-sonnet-5
+  description: >-
+    The MSA dialog is open over a grid of HELM molecule structures, with fields for Sequence,
+    Clusters, and Engine (set to Datagrok MSA). Below the engine description, an Alignment
+    Parameters section shows Gap Open, Gap Extend, Term Gap Open, and Term Gap Extend values, plus
+    checkboxes for Align All Chains (checked) and Selected Rows Only (unchecked). Cancel and OK
+    buttons are at the bottom of the dialog.
+  height: 1177
+  kind: screenshot
+  quality: docs
+  quality_notes: dialog partially overlaps the underlying grid, obscuring some cell content
+  reviewed: true
+  width: 1933
+protein-weblogo-header.gif:
+  actions:
+    - click a position in the WebLogo header
+    - view highlighted column across rows
+    - view Sequence Position Statistics panel with per-monomer violin plots
+    - hover a position to see a monomer-frequency tooltip
+  caption: Exploring positions in a protein sequence WebLogo
+  described_blob: 9daca6a1d1adcf9104a2ea94a1182a8f761e90e0
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of antibody heavy-chain sequences is shown with a WebLogo consensus header above it,
+    where colored bars mark amino acid frequency per position. The user clicks different positions
+    in the header, which highlights the corresponding column in every row and opens a 'Sequence
+    Position Statistics' panel below showing monomer distributions and violin plots of reported IC50
+    values for each amino acid at that position. A tooltip also appears showing the percentage
+    breakdown of monomers at a hovered position.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense grid are hard to read at reduced size; useful as an illustration but not
+    self-explanatory without the surrounding text
+  reviewed: true
+  seconds: 44
+  width: 1600
+remove-monomers.gif:
+  actions:
+    - select multiple monomer rows in the grid
+    - right-click to open the context menu
+    - choose Remove Selected Monomers
+    - review the confirmation dialog listing the monomers
+    - click Remove
+  caption: Removing monomers from a monomer library
+  described_blob: 520e6e70f542ecebe736749ee823c0f3594f46db
+  described_by: claude-sonnet-5
+  description: >-
+    The Manage Monomers grid lists monomers with their structures, symbols, and names. The user
+    selects several rows (Aspartic acid, Glutamic acid, Phenylalanine, Glycine, Histidine,
+    Isoleucine), right-clicks and chooses Remove Selected Monomers, then confirms in a dialog
+    listing each monomer's structure, name, author and creation date. After clicking Remove, a
+    confirmation message reports the monomers were successfully removed from the library.
+  height: 1001
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 28.4
+  width: 1600
+rules-conversion.gif:
+  actions:
+    - open the Bio menu and select PolyTool > Conversion
+    - review the Poly Tool Conversion dialog (column, options, rules file) and click OK
+    - hover over monomers in the sequence to view their structure tooltips
+  caption: Converting rule-based monomer sequences with PolyTool
+  described_blob: 2363afd26ad9bf6a5830649ff2d3830a3e014eef
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows a SequenceTranslator grid of monomeric sequences containing custom
+    rule-defined monomers. From the Bio menu, the user opens PolyTool > Conversion, which shows a
+    dialog listing the sequence column and a rules_example.json rule file, then runs it. The grid
+    gains "transformed" and "molfile" columns showing the sequences rendered as cyclic monomer
+    diagrams and full atomic-level chemical structures, with monomer tooltips (e.g. Phenylalanine,
+    Cysteine) shown on hover.
+  height: 1714
+  kind: animation
+  quality: docs
+  quality_notes: small text and dense grid at low resolution make details hard to read without zooming
+  reviewed: true
+  seconds: 8.7
+  width: 3087
+rules-management.gif:
+  actions:
+    - open the PolyTool Conversion dialog and select rules files
+    - open the Manage PolyTool Rules editor
+    - add a new link rule specifying code, first/second monomers, and linking groups
+    - switch to the Reactions tab
+    - select a reaction rule row
+    - open the Edit Reaction Rule dialog to view a rule's reactants and product
+  caption: Managing PolyTool rules
+  described_blob: feabac3f3aa946f6edbfc5df50a3a57234a95656
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the PolyTool Conversion dialog on a sequence table, then opens the Manage
+    PolyTool Rules editor. It walks through the Links tab (adding a new link rule with first/second
+    monomers and linking groups) and the Reactions tab (a list of reaction rules such as GGaz, DARR,
+    ODARR, PHAR_CIS, PHAR_TRANS, each showing first/second reactant, product structure, and example
+    monomers/HELM/molfile output), ending on an Edit Reaction Rule dialog showing the GGaz rule's
+    reactants and product structures.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small dense grid UI with many small labels and structures, readable but cluttered for a
+    standalone answer
+  reviewed: true
+  seconds: 30
+  width: 1600
+sequence-GetRegion.gif:
+  actions:
+    - expand the Get Region panel and set Start/End/Region/Name
+    - click GET REGION to add the extracted-region column
+    - open the Bio menu
+    - open the Get Region dialog, choose the aligned (msa) sequence as input
+    - pick a Start position from the dropdown
+    - run Get Region again to add a second extracted-region column and inspect it via tooltip
+  caption: Extracting a region from a macromolecule column
+  described_blob: cb6e3c2605f9a11aaeac5694e01a416ed394baf5
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows a macromolecule column of DNA sequences. The user opens the Bio > Get
+    Region panel/dialog, sets Start, End, and a named region, and runs it to add a new column with
+    just the extracted subsequence for each row. The process is repeated on an MSA-aligned column,
+    choosing a start position from a dropdown, and the resulting extracted-region column appears
+    alongside the original and aligned sequences, with a tooltip showing the new column's sequence
+    metadata.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and a mid-animation dropdown menu occupy much of the frame, more like a
+    walkthrough than a single clean answer shot
+  reviewed: true
+  seconds: 41
+  width: 800
+sequence-filter-search.gif:
+  actions:
+    - type a substructure query into the sequence filter box
+    - 'watch the match columns (Matches: AA, Matches: ETL) populate for each row'
+    - 'toggle the Matches: AA "true" checkbox in the filter panel'
+    - watch the grid filter down to only the matching rows
+  caption: Filtering sequences by substructure search
+  described_blob: 6d7bd2badcf1e031a21b3a75349e13b1fb22f786
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of macromolecule sequences is shown with columns for cluster, sequence ID, sequence,
+    activity, is_cliff, and two search-match columns ("Matches: AA", "Matches: ETL"). The user types
+    a substructure query into a sequence search box in the filter panel, and the grid narrows from
+    the full set of sequences down to only the rows matching the query, with a histogram and
+    checkbox counters in the filter panel updating live as the match columns fill in and the row
+    count drops.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI, dense grid text not fully legible at this resolution, but the filter panel interaction
+    is clear
+  reviewed: true
+  seconds: 36.8
+  width: 1601
+split-to-monomers.gif:
+  actions:
+    - open the Bio menu on a linear-sequence table
+    - select "Split to Monomers"
+    - view the resulting per-position monomer columns
+    - open the Bio > Split to Monomers dialog on a HELM (cyclic/branched) peptide table
+    - confirm with OK
+    - view the resulting per-position monomer columns for the branched sequences
+  caption: Splitting sequences into per-position monomer columns
+  described_blob: e289d5ba5fd4a1e7d47636de7e6f4ac1b2836895
+  described_by: claude-sonnet-5
+  description: >-
+    A table of linear peptide sequences is shown, and the Bio menu is opened to reveal a "Split to
+    Monomers" command among other bioinformatics tools. After running it, one new column appears for
+    each sequence position, each cell holding the single-letter monomer at that position. The
+    animation then repeats the operation on a table of HELM-notation macromolecules, including
+    cyclic and branched peptides, producing position columns with full monomer names (e.g. Thr, Phe,
+    NMe, meQ) instead of single letters.
+  height: 1001
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 26.8
+  width: 1601

@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/calendar]
 title: "Calendar"
 description: Analyze longitudinal data by browsing and filtering rows on a calendar laid out by day, week, month, or year.
 keywords:

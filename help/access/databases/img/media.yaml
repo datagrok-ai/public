@@ -1,0 +1,370 @@
+Debug.gif:
+  actions:
+    - Open the Debug tab for a saved query
+    - Fill in and confirm the query input parameter
+    - Run the query and watch client/server debug log lines stream in
+    - View the resulting dataframe alongside the logs
+    - View the process summary table grouped by component
+    - Access download logs and clear logs options
+  caption: Debugging a query execution
+  described_blob: 39df7451ff08a99043caad8369f4e2ceb2bd23f9
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the Query Editor's Debug tab for a parameterized query named "stores in
+    @state". After opening the query and entering a state parameter, the debug panel streams client
+    and server log lines (call duration, gzip compression, dataframe conversion, credential receive)
+    alongside the query's result grid of Starbucks store records. It ends with a summary table of
+    process steps by component and options to download or clear the logs.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: docs
+  quality_notes: Debug log text is mostly cut off/truncated in the narrow panel and not fully readable
+  reviewed: true
+  seconds: 30.4
+  width: 1600
+browse-schema.gif:
+  actions:
+    - open the Schema Browser for a database
+    - zoom out on the schema canvas
+    - click the categories table to view it in the Context Panel
+    - click the employees table and view its content preview
+    - right-click a table to open its context menu
+    - click a column (employeeid) to inspect its stats
+  caption: Browsing a database schema
+  described_blob: 3510d3a5242bb834a34d061cbec7ec8880987733
+  described_by: claude-sonnet-5
+  description: >-
+    The Schema Browser shows a database (Northwind) as a set of table cards with their columns, laid
+    out on a canvas that can be panned and zoomed. Clicking a table or column selects it and updates
+    the Context Panel on the right with its properties, such as general info and column statistics
+    like min, max, average, and standard deviation. The sequence shows opening the schema view,
+    zooming out on the canvas, selecting the categories table, then the employees table and its
+    content, and finally inspecting a single column (employeeid).
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 57.2
+  width: 1600
+database-connection.gif:
+  actions:
+    - Open the Add new connection dialog
+    - Select Postgres as the data source
+    - Enter a connection name
+    - Enter the server address and port
+    - Enter the database name
+    - Choose Manual credentials and enter login
+    - Save the connection with OK
+    - Browse the new connection's details and schema in the tree
+  caption: Adding a new database connection
+  described_blob: cc2907d15374a6ea15e3d00752e7da6e8a648b15
+  described_by: claude-sonnet-5
+  description: >-
+    The Add new connection dialog is filled out for a Postgres data source: name, server address and
+    port, database name, and manual login credentials are entered step by step. After clicking OK,
+    the new connection ('Test') appears in the tree under Postgres, and its context panel shows the
+    connection details and schema, including the public schema expanded in the tree.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 68.8
+  width: 1600
+db-data-enrichment.gif:
+  actions:
+    - Open the Enrich dialog for the molregno column
+    - Browse the database schema tree to find a table
+    - Select the compound_records table and its compound_name column to join on molregno
+    - Click Enrich to run the join
+  caption: Enriching a table via database join
+  described_blob: fc7166484f0b477ec144fc356457f8eb0eca55c6
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows ChEMBL compound structures with molregno IDs. The user opens the Enrich
+    dialog, browses the schema to select the compound_records table, joins it to compound_structures
+    on molregno, and picks the compound_name column to add. Clicking Enrich adds the compound name
+    text alongside each molecule's structure in the grid.
+  height: 768
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 27.1
+  width: 1025
+db-explorer.gif:
+  actions:
+    - Click a CHEMBL identifier cell in the table
+    - Open the resulting compound detail panel
+    - Expand Links > molregno > activities > IC50
+    - Expand a linked record's own Links to reveal further related tables
+  caption: Drilling into a detected identifier
+  described_blob: c591664805ef6c08e62a98dfc80704d651b6caf8
+  described_by: claude-sonnet-5
+  description: >-
+    A data table lists compounds with a CHEMBL identifier column. Clicking one identifier opens a
+    context panel with the compound's structure and properties, then expanding its Links section
+    reveals linked records — molregno, activities, and IC50 values. Drilling further into a record's
+    own links surfaces related tables such as drug_indication, drug_mechanism, drug_warning,
+    formulations, and metabolism.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  quality_notes: >-
+    functional context-panel UI with default styling and dense database field names, not polished
+    for external marketing
+  reviewed: true
+  seconds: 41.8
+  width: 1600
+db-hierarchy-browser.gif:
+  actions:
+    - Expand a database connection in the tree
+    - Drill into a schema and select a table
+    - Open a column to inspect its type and value distribution
+    - Switch to the Content tab to preview table data
+    - Open the Actions menu on the table
+  caption: Browsing the Database Explorer tree
+  described_blob: c7391f35c89ae96e1cb2760421422d6924d50fe1
+  described_by: claude-sonnet-5
+  description: >-
+    The left panel lists database connections such as AWS, Access, Athena, BigQuery, ClickHouse and
+    others under Databases, while the context panel on the right shows details. The animation
+    expands a connection (Northwind) to reveal its schema and tables, selects the categories table
+    to show its columns, opens a column (categoryname) to inspect its type and value counts,
+    switches to the table's Content tab to preview rows, and finally opens the Actions menu showing
+    options like Get All, New SQL Query and Join DB Tables.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 80.4
+  width: 1600
+dynamic-dashboards.gif:
+  actions:
+    - Run a parameterized query with a country input
+    - Add a pie chart viewer to the resulting grid
+    - Save and upload the project
+    - Open the Share dialog for the project
+    - Edit the country parameter in the project's URL
+    - Reload the page to see the dashboard refresh with new data
+  caption: Creating a dynamic dashboard from query results
+  described_blob: a40f75c1775fe181f0e43867c77a8e5e120e4293
+  described_by: claude-sonnet-5
+  description: >-
+    In Datagrok's browse panel, a parameterized Northwind query (Customers in @country) is run and
+    its results open as a grid with a pie chart viewer of contact titles by percentage. The project
+    is saved and uploaded, then a share dialog is opened to invite a user or group. Finally the
+    query parameter in the project's URL is edited from one country to another, showing the
+    dashboard update dynamically without republishing.
+  height: 500
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 82.8
+  width: 800
+layout.gif:
+  actions:
+    - Right-click the grid and open Add > Column submenu
+    - Choose a numeric format (significant digits) for a column
+    - Apply grid color coding to the city column
+    - Add a bar chart viewer stacked by ownership_type
+    - View the assembled layout with the State filter in the platform browse panel
+  caption: Customizing and saving a query layout
+  described_blob: 4be630cbe8192ee066fa01376490b254d10625e4
+  described_by: claude-sonnet-5
+  description: >-
+    In the Layout tab of a database query editor, a user right-clicks the results grid to open the
+    Add menu (Column, Summary Columns, Linked Tables, Top, Column Stats) and adjusts a numeric
+    column's format using a significant-digits picker. Color coding is then applied to the city
+    column, and a bar chart viewer showing store counts by brand, stacked by ownership type, is
+    added beside the grid. The final frames show the completed layout embedded in the platform with
+    the query's State input and filters visible.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    context menus are small and partially cropped, text is hard to read at full resolution, and the
+    UI is busy with overlapping panels
+  reviewed: true
+  seconds: 84.9
+  width: 1600
+parameterized-queries.png:
+  caption: Filling parameters in a query dialog
+  described_blob: 8a4feaa5907cf930c6690bbab68ed0d936191a2f
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "Orders" shows a form with input fields generated from query parameters:
+    Employee Id, Ship Via (with a comparison operator), Freight, Ship Country (dropdown set to
+    France), Ship City (a "starts with" pattern), a Freight Less 1000 checkbox, Required Date, and
+    Order Date (an "after" comparison). Cancel and OK buttons appear at the bottom.
+  height: 364
+  illustrates:
+    - access/databases
+  kind: screenshot
+  quality: docs
+  quality_notes: small, cropped dialog with no surrounding context; readable but minimal on its own
+  reviewed: true
+  width: 289
+post-process.gif:
+  actions:
+    - open the query parameter dialog
+    - change the State input value
+    - run the query
+    - view the updated row count and results grid
+  caption: Editing the Post-Process script of a query
+  described_blob: 0c152b923571b80cde0d2d00f4dd16323b0f1312
+  described_by: claude-sonnet-5
+  description: >-
+    The Query Builder shows a saved query "stores in @state" with its Post-Process tab open,
+    containing a JavaScript snippet that logs and passes through the result dataframe. The user
+    opens the query's parameter dialog, changes the State value, and runs it, and the results grid
+    below updates with a new row count and different store rows for the new state.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: docs
+  quality_notes: small cropped panel, right edge of the results grid is cut off
+  reviewed: true
+  seconds: 45.2
+  width: 1600
+query-add.gif:
+  actions:
+    - Right-click a database node and choose Add query
+    - Type a SQL SELECT statement in the query editor
+    - Enter a name for the query
+    - Click Run to preview the query results
+    - Click Save to save the query on the server
+  caption: Creating and saving a database query
+  described_blob: f67e341e49865fb26624f946511d4152b07553bf
+  described_by: claude-sonnet-5
+  description: >-
+    The animation begins with the right-click context menu on a Postgres database node showing
+    options like Add query, Delete, Edit, and Browse schema. It then shows the New query editor
+    where the user types a SQL statement, names the query, runs it to preview results in a grid, and
+    finally saves it to the server.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 16.1
+  width: 1600
+query-editor-ai.gif:
+  actions:
+    - type a request in the chat asking for available target ChEMBL IDs
+    - AI generates and runs a query, returning a results table
+    - type a follow-up request to add sequences from target components
+    - AI builds a joined SQL query across three tables and tests it
+    - AI adds a description/component_name column and reruns the query
+    - type a follow-up request filtering results to thrombin
+    - AI adds a WHERE clause with ILIKE conditions on pref_name and description
+    - results table updates with thrombin- and antithrombin-related rows
+  caption: AI Query Builder in the database editor
+  described_blob: 467b689bf16be8f21ededbe4465cb4b4dc4d0191
+  described_by: claude-sonnet-5
+  description: >-
+    In the query editor, a Chat panel lets a user ask for data in plain English while the Query tab
+    shows the SQL and results building up live. The assistant lists target ChEMBL IDs, then adds
+    sequences by joining target_dictionary, target_components, and component_sequences, running and
+    testing the SQL, and refining the query with a thrombin filter as new columns and rows appear in
+    the results grid.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 32.6
+  width: 1600
+sharing-database-connections.gif:
+  actions:
+    - Open the context panel for the connection and click Share
+    - Type a name into the User, group, or email field and pick Elena Ahadzhanian
+    - Set the permission dropdown to Can edit
+    - Confirm the share, adding Elena Ahadzhanian to the Sharing list
+  caption: Sharing a database connection
+  described_blob: 11f9a56512823fdbf62a81be07a012c1288bfc89
+  described_by: claude-sonnet-5
+  description: >-
+    The context panel for a Postgres connection under Test_sharing shows Activity and Sharing
+    sections with a Share button. Clicking Share opens a dialog where the user types a name into the
+    User, group, or email field, selects Elena Ahadzhanian, sets the permission to Can edit, and the
+    Sharing entry then lists Elena Ahadzhanian with edit access.
+  height: 1000
+  illustrates:
+    - access/databases
+    - govern/access-control
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 48.5
+  width: 1600
+transformations.gif:
+  actions:
+    - check the 'transform' category checkbox
+    - select the Delete Columns function and apply it
+    - select the Subset function
+    - in the Subset dialog choose columns (customerid, shipvia, freight, shipcity)
+    - open the 'Where rows' dropdown and select 'Cell Equals'
+    - run the transformation to produce a filtered result
+  caption: Applying a query transformation
+  described_blob: f6ca6352d7585a954c8160970c7a7edf7297d66a
+  described_by: claude-sonnet-5
+  description: >-
+    The Transformations tab of the Query editor shows the 'orders' table with a searchable list of
+    transformation functions grouped by category (enrich, transform, geo, cleanse, chem, math). The
+    user checks 'transform', picks Delete Columns to drop several fields, then applies a Subset
+    transform, choosing four named columns and a 'Cell Equals' row filter, producing a filtered
+    255-row, 4-column result added as a new transformation step.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 70.7
+  width: 1600
+visual-query-editor.gif:
+  actions:
+    - expand table/column picker and pick columns
+    - add a join between orders and employees on employeeid
+    - add a Where condition filtering shippeddate before 1/1/1998
+    - add Group by on employees.lastname
+    - add Aggregate sum(orders.freight)
+    - add Pivot on orders.shipcountry
+    - save the query
+    - open the saved query from the database tree to view results
+  caption: Building a query in the visual query editor
+  described_blob: a273b8d0adbcf61c997f7d2a9cddcd9d6903802b
+  described_by: claude-sonnet-5
+  description: >-
+    The visual query editor shows a query named "orders" with panels for Data, Join, Where, Group
+    by, Aggregate, Pivot, and Order by. The user adds a join between orders and employees, adds a
+    Where filter on shippeddate before 1/1/1998, sets Group by to lastname, Aggregate to
+    sum(freight), and Pivot to shipcountry, producing a pivoted result table of freight totals by
+    employee and country. The final frame shows the saved query listed under a Postgres Northwind
+    connection in the databases browse tree, opened as a results grid.
+  height: 1000
+  illustrates:
+    - access/databases
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 104.6
+  width: 1600

@@ -1,0 +1,25 @@
+type: ticket
+extends: work
+description: >
+  An issue in Jira (GROK) or GitHub (datagrok-ai/public). Ids are the tracker's own:
+  GROK-20861 for Jira, gh:public#4062 for a GitHub issue. Bugs are tickets with kind bug; there is no separate
+  known-issue type. Epics are tickets too, and their children hang off part-of.
+properties:
+  tracker:       "'jira' | 'github'"
+  key:           string
+  kind:          "'bug' | 'improvement' | 'task' | 'feature' | 'subtask' | 'epic' | 'story' | 'unknown'"
+  state:         "'open' | 'in-progress' | 'review' | 'done' | 'wontfix'"
+  raw_status?:   string
+  priority?:     "'blocker' | 'high' | 'medium' | 'low' | 'lowest'"
+  components?:   string[]
+  labels?:       string[]
+  resolution?:   string
+  closed?:       Date
+  area?:         string                 # backlog taxonomy area, until affects covers it
+  assignee?:     Person
+  reporter?:     Person
+  parent?:       Ticket                 # epic or parent issue; the only source of ticket part-of, and nothing propagates along it
+notes:
+  - id is the tracker key, no prefix
+  - fix versions become targets-release, the Jira Client field becomes requested-by, the
+    Feature field becomes affects; assignee, reporter and parent are reference properties

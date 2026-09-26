@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/filters]
 mdx:
   format: mdx
 title: "Filters"

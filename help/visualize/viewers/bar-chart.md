@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/bar-chart]
 title: "Bar chart"
 description: Display grouped categorical data as rectangular bars with lengths proportional to their values.
 keywords:

@@ -1,0 +1,8 @@
+type: host
+extends: infra
+prefix: Host
+visibility: internal
+description: A machine in the Ansible inventory. Groups are the inventory's children groups.
+properties:
+  groups:        string[]
+  inventory:     Path

@@ -1,0 +1,9 @@
+type: cell-renderer
+extends: function
+description: >
+  A grid cell renderer bound to a cell type or semantic type.
+properties:
+  cell_type:     string               # //meta.cellType
+  column_tags?:  string[]
+notes:
+  - roles contains 'cellRenderer'

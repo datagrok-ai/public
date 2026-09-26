@@ -1,0 +1,34 @@
+gitflow-general.png:
+  caption: Git flow for general contributors
+  described_blob: 0bc93e0c8e4f5dd56122aa92c58068f51465fe31
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram shows the branch flow: a contributor creates a development branch (e.g.
+    jdoe/GROK-123/description) off the main branch, commits changes to it across several commits,
+    periodically merges master into it to stay current, then opens a pull request from the
+    development branch to master. The pull request requires code review from the codeowner before it
+    is merged into the main branch.
+  height: 954
+  kind: diagram
+  quality: docs
+  quality_notes: clear and legible but a generic schematic diagram, not polished enough for marketing
+  reviewed: true
+  width: 1284
+gitflow-release.png:
+  caption: Release branch git flow
+  described_blob: 72989c6149e922c5eef9ca1e32274b50968f74d3
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram shows a main branch and a release branch as parallel commit lines connected by arrows.
+    A release branch 'release/X.Y.Z' is created from the main branch, then a fix is cherry-picked
+    from main into the release branch, then a commit adds a new version of the JS API and generated
+    release notes to the release branch, and finally the release branch is merged back into the main
+    branch.
+  height: 542
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    clear and legible, but a generic process diagram rather than something distinctive enough for
+    marketing
+  reviewed: true
+  width: 1504

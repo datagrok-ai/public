@@ -1,4 +1,14 @@
 ---
+feature: visualize/viewers
+name: Viewers
+owner: P:askalkin
+developer_help: core/client/d4/CLAUDE.md
+code:
+  - core/client/d4/lib/src/viewers/**
+  - core/client/d4/lib/src/viewer_base/**
+  - core/client/d4/lib/src/common/viewer_descriptor.dart
+  - public/js-api/src/viewer.ts
+concepts: [viewer, dataframe, layout]
 mdx:
   format: mdx
 title: "Supported viewers"

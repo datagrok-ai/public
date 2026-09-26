@@ -1,0 +1,15 @@
+# Root. A node or edge type definition: the schema, stored as nodes.
+type: type
+extends: node
+abstract: true
+visibility: public
+description: >
+  One instance per file under nodes/ and edges/. Lets the graph answer questions
+  about itself: which properties a customer has, which edges may leave a feature.
+  Described and validated by schema.yaml.
+properties:
+  file:         Path
+  extends?:     Type
+  abstract:     boolean
+  schema_version: number
+  members?:     string[]              # "name?: type = default" lines, so the graph can list a type's properties

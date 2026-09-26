@@ -1,0 +1,11 @@
+# Root. Where the platform runs and what builds it.
+type: infra
+extends: node
+abstract: true
+visibility: dev
+description: >
+  Environments, hosts, jobs, pipelines and images. Mostly extracted from ENVS.md,
+  the Ansible inventory, Jenkins pipelines and the deploy folder.
+properties:
+  url?:         Url
+  host?:        string

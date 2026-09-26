@@ -1,0 +1,84 @@
+ai-function-chaining.png:
+  caption: AI function chaining across a search plan
+  described_blob: a909ce313f17206dc22d071e7e735c72505c4a85
+  described_by: claude-sonnet-5
+  description: >-
+    An AI search box shows the query "gasteiger partial charges for chembl1235" above a generated
+    plan that breaks the request into two chained function calls: converting the ChEMBL ID to a
+    SMILES string, then computing Gasteiger partial charges from that SMILES. Below the plan, the
+    result shows a molecule structure with atoms highlighted by partial charge magnitude and sign.
+  height: 500
+  illustrates:
+    - explore/ai
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop with a lot of empty white space around a narrow content column; molecule rendering is
+    small and charge highlighting is hard to read at this size
+  reviewed: true
+  width: 800
+ai-visualizations.gif:
+  actions:
+    - typed "scatter plot" to add a scatter plot viewer
+    - typed "size by age" to scale point size by the age column
+    - typed "color by height" to color points by height
+    - typed "hist" to add a regression line and a histogram
+    - typed "filters" to add a filter panel
+    - closed the filters panel
+  caption: Building a chart with natural-language AI commands
+  described_blob: 3e43929b28d3a8c91334f479172eff280d31a0fa
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of patient demographics is turned into visualizations by typing plain-English prompts
+    into a smart-assistant panel on the right. Successive prompts add a scatter plot, size points by
+    age, color by height, add a regression line, add a histogram, and open filters, with each
+    command logged in a running history list above the input box. The chart updates live after each
+    command without any manual configuration.
+  height: 500
+  illustrates:
+    - explore/ai
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 14.3
+  width: 800
+search-integrated-queries-1.png:
+  caption: AI-generated SQL search results with bar chart
+  described_blob: 0af2d558e6c46d88e5a022194a33d954caf44a4f
+  described_by: claude-sonnet-5
+  description: >-
+    A search box shows the natural-language query "Shigella bioactivity" translated into a browse
+    view titled "Bioactivity for bacterial targets for @organism". Below it, a results grid lists
+    compound_chembl_id, canonical_smiles, and standard_type columns with molecule structures for
+    several ChEMBL compounds. To the right, a bar chart titled "Average Standard Value" breaks down
+    results by standard_type (MIC, MBC, Log2 MIC).
+  height: 500
+  illustrates:
+    - explore/ai
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    grid is cropped on the right (standard_value column truncated), and the auto-generated bar chart
+    axis/labels are cluttered
+  reviewed: true
+  width: 800
+search-integrated-queries-2.png:
+  caption: Querying data with natural language search
+  described_blob: 3d94cbba26083d73c89b56ef275f0a858628df74
+  described_by: claude-sonnet-5
+  description: >-
+    A search bar reads "CHO assay data" above a results grid titled assaysByOrganism. Columns
+    include assay_type, result_value, units, a glyph icon of an antibody, antibody_sequence
+    (color-coded amino acid letters), drug_smiles (rendered chemical structures), and adc_identifier
+    (linked IDs like GROKADC-002089). The top row is highlighted, showing a Cell binding constant
+    (KD / EC50) result of 47.030 nM.
+  height: 500
+  illustrates:
+    - explore/ai
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Domain-specific assay data may be unfamiliar out of context; fine as a supporting illustration
+    within the AI page.
+  reviewed: true
+  width: 800

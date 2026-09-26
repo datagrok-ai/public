@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/box-plot]
 title: "Box plot"
 ---
 

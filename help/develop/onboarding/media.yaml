@@ -1,0 +1,80 @@
+exercises-add-new-column.png:
+  caption: Adding a new column with a custom function
+  described_blob: 8c089a991abac2bfc33770ee55767c5ba96995cd
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok grid shows the sars-cov-2 table with GenBank and Sequence columns, and an open Add
+    New Column dialog. The dialog's formula field contains the expression
+    Aufarz:Subcounter(${Sequence}, 'acc'), with the Sequence column highlighted in the Search column
+    list and a function list (Abs, Acos, Add, And, Asin, Atan...) shown on the right for building
+    the expression.
+  height: 712
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear and on-topic for its step, but a single dialog screenshot with a user-specific namespace
+    in the formula, not polished enough to stand alone
+  reviewed: true
+  width: 902
+exercises-complement-data-panel.png:
+  caption: Complement widget in the context panel
+  described_blob: 633bc86c6a4518fd3eced3c49bb80d8fd9ec3d6e
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows a DNA sequence table with columns sequence and id, three rows of
+    nucleotide strings selected on the first row. The context panel on the right lists Actions, Dev,
+    and an expanded complement section showing the computed complement string CTAATGT for the
+    selected sequence.
+  height: 268
+  kind: screenshot
+  quality: docs
+  quality_notes: clear and on-topic but a plain data-panel crop with no annotation of what to look at
+  reviewed: true
+  width: 1374
+exercises-scripting-viewer.png:
+  caption: Configuring a Python scripting viewer
+  described_blob: 78ae53bc761947749bc272e479e658d645a97e3d
+  described_by: claude-sonnet-5
+  description: >-
+    A grid on the left shows demographics data with a script editor overlay containing Python code
+    that builds a matplotlib scatter plot. In the middle, the resulting Scripting Viewer renders
+    WEIGHT against HEIGHT colored by AGE. The context panel on the right shows the viewer's
+    properties, including the Script field and Data mappings for X, Y, and Color.
+  height: 749
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear and readable but composed of three cropped panes (grid, script editor, viewer, properties)
+    rather than a single clean shot
+  reviewed: true
+  width: 1684
+exercises-semantic-tooltip.png:
+  caption: Semantic type tooltip on a column header
+  described_blob: 9fa49c339cfe81b5981f2d607f6fe00ca042de8b
+  described_by: claude-sonnet-5
+  description: >-
+    A grid shows a three-row table with sequence and id columns. Hovering the sequence column header
+    opens a tooltip listing its three category values (ATTCGGA, GATTACA, TTTAGGC, each 33.3%) and,
+    at the bottom, the detected semantic type: quality: dna_nucleotide.
+  height: 224
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 306
+exercises-transforming-dataframes.png:
+  caption: Fuzzy-joining two DNA sequence datasets
+  described_blob: 19444c1877fc266793cb7c389d17b5ea6621fa59
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows a joined table titled "a-h1n1 (2)", with columns GenBank, Sequence, and
+    Counts. The rows list GenBank accession IDs alongside DNA sequences and count values, the result
+    of running the fuzzyJoin function on the sars-cov-2 and a-h1n1 demo files.
+  height: 386
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    cropped to just the grid with no surrounding context; fine as an inline exercise result
+    reference but not self-explanatory on its own
+  reviewed: true
+  seconds: 0
+  width: 593

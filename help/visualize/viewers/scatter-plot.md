@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/scatter-plot]
 title: "Scatterplot"
 mdx:
   format: mdx

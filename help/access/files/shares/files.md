@@ -1,4 +1,5 @@
 ---
+documents: [access/files/shares]
 title: "Files"
 description: Mount a network drive or server folder as a Datagrok file share with automatic indexing.
 keywords:

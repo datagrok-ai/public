@@ -1,0 +1,5 @@
+type: runs-on
+from: Environment
+to: Host
+derived_by: [annotation]
+description: The hosts an environment is deployed to, from the Ansible inventory and ENVS.md.

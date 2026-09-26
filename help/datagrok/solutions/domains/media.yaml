@@ -1,0 +1,19 @@
+sendex-architecture.png:
+  caption: 'SENDEX architecture: TUNE, EXPAND, OVERRIDE'
+  described_blob: fe47c865d6efc3a90b2975464b97f05d6511005e
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram shows immutable Data DB and reference HCD DB, plus TUNE (compute knobs, data
+    inclusion) and EXPAND (rule catalog, KG facts) feeding an Analytical Engine. The engine emits
+    analytical atoms (per finding x sex x dose: TR, adversity, class, NOAEL per sex, syndromes,
+    recovery/WoE) into an Atoms DB. Any atom can be overridden by a human judgment call, which
+    records to an Overrides DB for audit and provenance and triggers a re-run cascade back through
+    the engine.
+  height: 1500
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    clean vector diagram but dense with domain-specific abbreviations (TR, NOAEL, WoE) that need
+    surrounding text to fully parse
+  reviewed: true
+  width: 2400

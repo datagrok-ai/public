@@ -84,6 +84,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^9.39.0",
     "globals": "^17.6.0",
+    "kuzu": "0.11.3",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.61.1",
     "vitest": "^3.2.6",

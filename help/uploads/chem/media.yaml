@@ -1,0 +1,196 @@
+drug-likeness-panel.png:
+  caption: Drug likeness sub-structure fragments
+  described_blob: 615ca025b2af6dac6db8814d8313f8154fe188aa
+  described_by: claude-sonnet-5
+  description: >-
+    The Drug Likeness info panel shows a score of -1.06 for the selected molecule, alongside a list
+    of found sub-structure fragments and their individual contributions to the score. Each fragment
+    is drawn as a small ring diagram with yellow atoms marking positions that carry at least one
+    more substituent, paired with its numeric contribution value.
+  height: 596
+  kind: screenshot
+  quality: docs
+  quality_notes: small ring-fragment diagrams and their yellow-atom annotation are hard to read at this size
+  reviewed: true
+  width: 473
+gasteiger-charges.png:
+  caption: Visualizing Gasteiger partial charges on a molecule
+  described_blob: 2fd4cd50638713491469e51025a97814d5da5b38
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled 'Gasteiger Partial Charges' shows a molecule input field and a 'Contours'
+    parameter set to 10. Below it, the rendered molecule structure is overlaid with colored contour
+    clouds around nitrogen and oxygen atoms, indicating regions of positive (blue) and negative
+    (red/purple) partial charge computed by the Gasteiger method.
+  height: 480
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    plain functional UI screenshot, small dialog crop plus structure render, not polished for
+    standalone use
+  reviewed: true
+  width: 800
+murcko-scaffolds.png:
+  caption: Murcko scaffold results table
+  described_blob: 5d9297298602745a421cdc3eba46f3b5c743cadc
+  described_by: claude-sonnet-5
+  description: >-
+    A results grid shows molecule structures alongside computed columns logP, logS, and
+    acceptorCount, with a final scaffolds column showing the Murcko scaffold extracted from each
+    molecule. Rows include a phenyl scaffold, a naphthyridine-like fused bicyclic scaffold, and a
+    pyridine ring scaffold, illustrating how the function reduces varied molecules to their core
+    ring systems.
+  height: 619
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    cropped mid-table with no header row numbering context or column headers fully explained;
+    functional but plain grid view
+  reviewed: true
+  width: 662
+r-group-analysis.png:
+  caption: Setting up R-Group Analysis on a molecule set
+  described_blob: 72ee07ac3f1d7a27ba152682e206e4a540f6ad3c
+  described_by: claude-sonnet-5
+  description: >-
+    A trellis plot breaks out a chemical structure dataset by two R-group substituents, R1 on the X
+    axis and R2 on the Y axis, with each cell showing a pie-chart summary and the structural
+    fragments (R3 variants) listed along the rows. An R-Group Analysis dialog is open on top,
+    showing a core scaffold with attachment points, an MCS option, and a configurable column prefix
+    before running the decomposition.
+  height: 973
+  illustrates:
+    - visualize/viewers/trellis-plot
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small text and dense pie-chart grid make it hard to read at a glance; useful in context but not
+    self-explanatory alone
+  reviewed: true
+  width: 748
+reactions.png:
+  caption: Two Component Reaction dialog
+  described_blob: 178c697a1bec7df918bb5a9182bb9f388396fa06
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok table with reactants1 and reactants2 columns of molecule structures is open behind
+    the Two Component Reaction dialog. The dialog lets the user pick the data table and reactant
+    columns for each reactant set, enter a reaction template in SMARTS format, and toggle Matrix
+    Expansion and Randomize options. Below the dialog, a result grid shows the product molecules
+    generated for each reactant1/reactant2 pair.
+  height: 1035
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: small dialog text and dense molecule grid are hard to read at this resolution
+  reviewed: true
+  width: 1079
+sim-maps.png:
+  caption: Similarity maps using fingerprints
+  described_blob: 3332b1ca7df9bd2ebc929c514446b16cd8f2ad11
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled "Similarity Maps Using Fingerprints" with two molecule inputs (Mol and Refmol)
+    and a Radius parameter set to 2, alongside the rendered output: a molecule structure overlaid
+    with colored contour maps showing atomic contributions to similarity, with green and pink/purple
+    regions highlighting different substructures.
+  height: 444
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    composite of a dialog and a result image side by side, small text in the dialog is hard to read
+    at full resolution
+  reviewed: true
+  width: 800
+sketcher.png:
+  caption: Sketching a molecule with the structure editor
+  described_blob: 9033fe0d8b1a567adaf8e80e52778e32a5895914
+  described_by: claude-sonnet-5
+  description: >-
+    Screenshot of the Datagrok molecule Sketcher dialog. A search field at the top holds the query
+    "aspirin", a column of drawing tools runs down the left side, and the canvas on the right shows
+    the resulting aspirin skeletal structure with a benzene ring, ester group, and carboxylic acid
+    group.
+  height: 408
+  kind: screenshot
+  quality: docs
+  quality_notes: small, low-resolution crop of the dialog; toolbar icons are hard to make out at this size
+  reviewed: true
+  width: 332
+structural-alerts.png:
+  caption: Structural alerts in the context panel
+  described_blob: 4b30d2b6172f4e83584a13c06b1270a18cfdf966
+  described_by: claude-sonnet-5
+  description: >-
+    A spreadsheet of molecules is open with a highlighted row selected, and the context panel on the
+    right shows an expanded Structural Alerts section under Chem. It lists several matched alert
+    names (N1 Quinones, aniline, Ketone, Dye 4, quinone, quinones), each paired with a rendered
+    structure diagram where the matched substructure is highlighted in red.
+  height: 846
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 1321
+toxicity-panel.png:
+  caption: Toxicity risk info panel
+  described_blob: d5b2eb9f7354c2dfdd89832dcab0d260f569abbc
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule structure diagram sits beside a "Toxicity" info panel listing four predicted risk
+    categories with color-coded verdicts: Mutagenicity (None), Tumorigenicity (None), Irritating
+    effects (None), and Reproductive effects (High, shown in red). The panel illustrates how
+    OpenChemLib's fragment-based toxicity prediction is displayed for a compound.
+  height: 132
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 419
+tsne.png:
+  caption: Chemical space using tSNE
+  described_blob: ba65259e36929b699dd381c0a71bb06f5a01b48c
+  described_by: claude-sonnet-5
+  description: >-
+    A four-panel dashboard analyzes a set of molecules. Top left shows a grid of molecular
+    structures with SMILES, ID, and molecular weight columns, with one row selected and highlighted.
+    Top right and bottom right show a SpanningTree and a LinkageTree (dendrogram) colored by
+    distance. Bottom left shows the ChemSpace scatter plot, produced with tSNE, where molecules are
+    grouped into colored clusters based on chemical similarity.
+  height: 670
+  kind: screenshot
+  quality: docs
+  quality_notes: small text and cramped four-panel layout make individual chart labels hard to read at a glance
+  reviewed: true
+  width: 800
+umap.png:
+  caption: Chemical Space Using UMAP
+  described_blob: a0441ef00d6afec7e39640e0689dcfa030532589
+  described_by: claude-sonnet-5
+  description: >-
+    A four-panel Datagrok layout for chemical space analysis: a grid of molecules with SMILES, ID,
+    and Mol Wt columns on the top left; a SpanningTree viewer with molecule clusters connected by
+    colored edges on the top right; a ChemSpace scatter plot with points colored by cluster on the
+    bottom left; and a LinkageTree dendrogram colored by cluster size on the bottom right.
+  height: 672
+  kind: screenshot
+  quality: docs
+  quality_notes: small chart labels and axis text are hard to read at this resolution
+  reviewed: true
+  width: 800
+usrcat.png:
+  caption: USRCAT shape similarity scoring results
+  described_blob: 8170727bf6584a466f067a1b5443fec732c1d271
+  described_by: claude-sonnet-5
+  description: >-
+    A grid on the left lists molecules by SMILES structure with computed x and y coordinates, the
+    first row highlighted in green. On the right, a 2x2 scatterplot/histogram matrix titled "Scores"
+    compares Tanimoto similarity against USRCAT score, showing histograms of each score's
+    distribution and their correlation.
+  height: 492
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, dense screenshot with unlabeled highlighted row; readable but not self-explanatory
+    without surrounding text
+  reviewed: true
+  width: 800

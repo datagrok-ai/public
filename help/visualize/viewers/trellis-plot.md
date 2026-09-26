@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/trellis-plot]
 title: "Trellis plot"
 description: Show a grid of smaller charts split by category, each sharing consistent scales, for comparing subsets of data.
 keywords:

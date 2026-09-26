@@ -2,6 +2,14 @@ import { migrate } from "./migrate";
 import { HELP_SERVER } from "./server";
 import { testAll } from "./test-all";
 
+/** HOME_ROOTS of utils/kg/homes.ts spelled out, so --help does not load the kg modules; kg.test.ts keeps the two equal. */
+const HOME_GLOBS = `core/**/*.{md,mdx}
+    public/**/*.{md,mdx}
+    infra/**/*.{md,mdx}
+    landing/**/*.{md,mdx}
+    core/docs/knowledge-graph/**/*.yaml
+    {core,public,infra,landing}/**/{media,videos}.yaml`;
+
 const HELP = `
 Usage: grok <command>
 
@@ -28,6 +36,7 @@ Commands:
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
+    kg          Check and generate the knowledge graph (type files, home documents)
 
 To get help on a particular command, use:
     grok <command> --help
@@ -247,7 +256,7 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all] [-r | --recursive] [--filter] [--parallel N]
+[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all] [-r | --recursive] [--filter] [--parallel N] [--recent[=<base>]] [--tier] [--framework] [--dry-run] [--plan]
 
 --package           Specify a package name to run tests for
 --category          Specify a category name to run tests for
@@ -275,6 +284,13 @@ Options:
 --recursive         Test all packages in the current directory (parallel, table output)
 --filter            Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
 --parallel N        Max parallel test jobs (default: 4)
+--recent[=<base>]   Run the tests the knowledge graph links to the changes since <base> (default: the
+                    merge base with master, working tree included), across every runner; needs grok kg build
+--tier <tiers>      With --recent: immediate (default: the tests in the changed files' units), reachable,
+                    feature, linked (immediate,reachable), all, or a comma list of the first three
+--framework <a,b>   With --recent: keep the runner rows of these frameworks (dg, xamgle, dart, playwright, node)
+--dry-run           With --recent: print the plan, run nothing
+--plan <file>       With --recent: read the tests-for JSON from <file> instead of asking the graph (debugging)
 
 Run package tests
 
@@ -485,6 +501,218 @@ The instance name must match a server alias in ~/.grok/config.yaml.
 `;
 
 
+export const HELP_KG = `
+Usage: grok kg <verb> [options]
+
+Validate and generate the knowledge graph: the type files under
+core/docs/knowledge-graph (schema.yaml, nodes/*.yaml, edges/*.yaml) and the
+home documents, the markdown files whose frontmatter carries a \`feature:\` or a
+prefixed \`id:\` key. A home needs a name: \`name:\`, \`title:\`, or the first
+\`#\` heading of the body. Type names and files are lower-dash-case (\`part-of\`,
+\`customer-contact\`); graph labels are the upper-snake rendering (\`PART_OF\`),
+derived by the build and never authored.
+
+A home is a markdown document with frontmatter when the thing is a document
+(features, scenarios, initiatives) and a YAML file with the same keys when it is a
+record (concepts, people, teams, customers); YAML homes live inside
+core/docs/knowledge-graph (concepts/, internal/), put the prose in \`description:\`
+and must set \`name:\`. Homes are looked for in
+    ${HOME_GLOBS}
+skipping nodes/, edges/ and schema.yaml, node_modules, dist, build, .dart_tool,
+.claude, .git, fixtures and __tests__ folders, and the Test Track files
+(packages/UsageAnalysis/files and playwright-public: their \`feature:\` key still
+means the area, until it migrates to \`covers:\`).
+
+Verbs:
+    check       The validation gate: type files against schema.yaml, home documents
+                against their types, frontmatter references (edge keys, reference
+                properties) against the other homes, and repo paths cited in
+                frontmatter or in the body. Prose \`~id\` mentions and code markers
+                are not read yet; they arrive with \`build\`. Exit 1 on errors.
+    gen         Write kg.d.ts, the glossary.md tables and feature-tree.md, all inside
+                core/docs/knowledge-graph. Refuses while check reports errors.
+    build       Run the extractors and write the graph as JSONL into one immutable
+                generation, .kg/gen/<batch>-<suffix>/: data/nodes/<type>.jsonl,
+                data/edges/<type|property>.jsonl, reports/ (claims.jsonl for membership,
+                invalid.jsonl, problems.json), the index as kg.kuzu, and manifest.json
+                last of all. Only when the generation is complete does .kg/current, one
+                line naming the generation, start pointing at it, so a build that is
+                interrupted or fails to load the index leaves the previous one queryable.
+                Earlier generations are never removed by build; grok kg gc removes them.
+                Lines are deterministic: two builds of the same inputs are byte-identical
+                and share a content-addressed batch id over both revisions, the dirty tree
+                of both repositories, the schema and builder versions, the mode, the
+                extractor selection and the backlog snapshot; only the
+                manifest carries the time.
+                Problems are counted in the manifest, never thrown. Extractors today:
+                homes (the home-document layer), ts-packages (packages, libraries,
+                semantic types and depends-on from package.json) and ts-functions
+                (registered functions, scripts, queries, connections, environments,
+                containers and by-name calls under public/packages), ts-declarations,
+                ts-imports and ts-uses (source files, declarations, extends/implements,
+                resolved imports and JS API usage over js-api, packages, libraries and
+                the CLI under public/tools), ts-tests (DG and Playwright tests in their
+                suites), ts-node-tests (vitest, jest and node:test cases in *.test.ts and
+                *.spec.ts sources, one suite per file), ts-samples (ApiSamples),
+                ts-changelog (CHANGELOG.md bullets), ts-markers (the //feature: markers
+                in source files), docs (markdown pages, headings,
+                mentions, legacy Test Track scenarios, tutorials), dart (a lexical pass
+                over core/**/*.dart: files, top-level declarations, tests and ~id
+                markers), process (backlog
+                tickets, release records with their picked commits, and people) and
+                membership (which feature owns each file, conventions.md §8; reports
+                ownership.json).
+                Loading the index is part of build: the JSONL is copied into a Kuzu
+                database at .kg/gen/<batch>-<suffix>/kg.kuzu (one node table per root, one rel
+                table per edge type and per reference property), and the manifest records
+                it as indexed_batch with the memory the load needed (index_memory_mb) and
+                the platform it was written on (index_platform). The binding is optional —
+                without it build says so in one line and still succeeds. With --no-db the
+                generation carries no index, and current stays where it is rather than
+                take the index away from query.
+    query       Cypher over the built index: grok kg query "MATCH (n:Feature) RETURN n.id",
+                or --file q.cypher. Exit 2 when kuzu is not installed.
+    impact      What a change reaches: the features that own or take part in a file,
+                declaration or feature, their owners, tests, the documents citing the
+                target itself (cites) and those documenting its features, and tickets;
+                for a file, its direct importers and everything reaching it through
+                them (reachable), for a declaration its callers. The target is first
+                expanded through containment — a package or a file through what it
+                declares, a declaration through the file or package that declares it and
+                the functions it implements — so a package answers for the code it holds
+                and a file for the declarations inside it. Every feature row carries the
+                chain that produced it (\`via\` in a table, \`path\` in json).
+    tests-for   The tests for one target or several — files, declarations or features —
+                or for the change set (--changed), in tiers: immediate (tests in the
+                changed files, in the files importing them, in their mirror test files,
+                and in the files using what they declare, when the test file lies in the
+                unit of the changed file), reachable (the same links from another unit,
+                and tests whose file reaches a changed file through up to four import
+                hops, never through an entry file), and feature (every test of the owning features
+                and their subtrees, the same containment expansion as impact), then the
+                scenarios and automations of those features and one run row per runner
+                invocation (framework, cwd, command, tests, names). With several targets
+                or --changed a changes section leads, saying which paths the index knows.
+    explain     One node: its properties, then every one-hop edge by type and direction
+                with how it was derived, its confidence and the first evidence path. A
+                release also gets three sections of its own: targeted (the tickets whose
+                fix version it is), included (its commits and the tickets it picked) and
+                shipped (the features those tickets affect), the last only when the
+                record is released and not a dry run, and a line saying why when it is not.
+    find        The vocabulary search over ids, names, aliases, descriptions and keywords
+                of all eight tables; features and concepts first. An exact id, name or
+                alias is asked for in a query of its own, so the scan cap on the substring
+                search cannot drop it.
+    report      One maintainer report over the JSONL a build already wrote, never the
+                index: orphans (files with no owner, grouped by package or core
+                sub-project, with the owned and participating files beside them and the
+                inventory the build observed as the denominator), stale (citations,
+                tickets, help-urls, specs and declarations the graph can no longer reach;
+                a ticket is \`unknown\` rather than absent when the backlog snapshot was
+                not read), coverage (one row per feature: owner, runnable, skipped and
+                dynamic tests, the tests it inherits from the features under it,
+                scenarios and their automations, documents, description, and whether it
+                is a stub), proposed (folders ranked by the code in them no feature owns,
+                with the id they would take), media (the media backlog: shown but undescribed,
+                described before the file changed, awaiting review, shown nowhere, broken
+                embeds, images without alt text, duplicates, the largest, unfit but shown,
+                untracked; the marketing site counts when the build had --landing <dir>, the
+                checkout of github datagrok-ai/landing, else $KG_LANDING_DIR or <repo>/../landing)
+                and diff (the features a branch touches and
+                the tests that cover them, \`--diff <ref>\`; the public baseline is the
+                gitlink that revision recorded, deleted files keep the owner the graph
+                still has, and a graph built from other commits than the working tree
+                says so; the md output is the PR comment) and replay (the last --commits
+                of each repository that changed a source and a test file, scored against
+                the immediate and reachable tiers the index computes for the source files:
+                hit rates, per framework, and the misses; the only report that reads the
+                index). \`build\` writes the first four to .kg/reports/ as both .json and .md.
+    gc          Remove older generations under .kg/gen/, keeping the current one and
+                the --keep newest (default 2), and every interrupted build older than an
+                hour. A generation whose index a reader holds open is reported and left
+                alone.
+    serve       The graph browser: a loopback page over the current generation with the
+                type trees as filters on the left, the graph in the middle (every node of
+                the generation renders) and the clicked node or edge on the right, with
+                Cypher and the four operations. The render tier (<gen>/vis/) is exported on
+                first start. --port (default 7475), --open to launch the browser; Ctrl-C stops.
+    enrich media  Proposals for the media files the current generation shows but no record
+                describes: frames sampled with ffmpeg (winget Gyan.FFmpeg is found), a cheaper
+                model asked through claude -p (a Sonnet id; Opus and Fable are refused) what
+                each shows, the answer validated against the media type and merged into the
+                folder's media.yaml as a proposal (reviewed: false, described_by, described_blob);
+                a reviewed entry is never overwritten; answers are cached under .kg/enrich/.
+                --limit N (20), --only <path prefix|glob>, --stale (refresh descriptions older
+                than the file), --dry-run (list only), --model <id>, --show-prompt.
+    ask         One of the questions under core/docs/knowledge-graph/questions/ against the
+                index: grok kg ask tests-for-feature --set feature=visualize/viewers, or
+                grok kg ask alone to list them with their parameters and status. A blocked
+                question runs and says what blocks a real answer.
+    help        Show this help
+
+The four operations and query read the generation .kg/current names, next to the type
+files, and refuse an index that was loaded from another batch; each of them leads with
+one line per source the manifest does not report as \`ok\` — \`Dart coverage partial
+(some markers did not resolve)\` when a Dart marker names no home, and the same for a
+missing backlog or a partial docs, people or samples pass. Ids may be written with or without
+the \`~\` sigil.
+
+\`check\` gates the sources; \`gen --check\` gates the generated files, failing when
+kg.d.ts, glossary.md or feature-tree.md on disk differ from what gen would write.
+
+Options:
+    --kg <dir>          The knowledge-graph folder (default: found by walking up from
+                        the current directory to the monorepo root)
+    --types-only        Check the type files only, skip the home documents (check only)
+    --check             With gen: fail if the generated files differ from disk, write nothing
+    --output <format>   table (default) or json (the check report, or the build manifest);
+                        query and the operations also take csv, report takes md
+    --file <path>       With query: read the Cypher from a file
+    --limit <n>         With the operations: rows per section (default 50)
+    --changed[=<ref>]   With tests-for: the targets are the files changed against <ref>
+                        (default: the merge base with master) in the monorepo and in
+                        public/, working tree and untracked files included; public/'s
+                        base is the gitlink <ref> recorded when it resolves
+    --tier <tiers>      With tests-for: immediate, reachable, feature, linked (immediate,reachable),
+                        all (default) or a comma list of the first three; the run rows follow the choice
+    --commits <n>       With report replay: how many commits to read per repository (default 200)
+    --repo <r>          With report replay: core, public or both (default)
+    --quiet             Print errors only: no warnings, no summary line (check, gen)
+    --public            With build: the public projection (public node types, visibility
+                        public, no home or owner, edges with both ends public) into public/.kg/
+    --only <a,b>        With build: run only the named extractors
+    --backlog <dir>     With build: the backlog snapshot repo (used by the process layer); else $KG_BACKLOG_DIR or <repo>/../backlog
+    --landing <dir>     With build, check, serve: the checkout of the marketing site (github datagrok-ai/landing), whose pages and media carry the landing: prefix; else $KG_LANDING_DIR or <repo>/../landing
+    --no-db             With build: write the JSONL only, do not load the graph index
+    --out <dir>         With build, report and gc: write (or read) under <dir> instead of .kg/
+    --keep <n>          With gc: generations to keep besides the current one (default 2)
+    --memory <mb>       Kuzu buffer pool in MB: the load takes 2048, a reader 512 or what
+                        the manifest says the load needed. KG_KUZU_MEMORY does the same.
+    --diff <ref>        With report diff: the revision HEAD is compared against
+    --port <n>          With serve: the port to listen on (default 7475; 0 picks a free one)
+    --open              With serve: open the page in the default browser
+    --set <name=value>  With ask: a parameter (repeatable); relative dates like -7d are accepted
+
+Examples:
+  grok kg check
+  grok kg check --types-only --output json
+  grok kg gen
+  grok kg gen --check
+  grok kg build --only homes --no-db
+  grok kg build --public --output json
+  grok kg gc --keep 1
+  grok kg query "MATCH (f:Feature)-[:owner]->(p:Actor) RETURN f.id, p.id"
+  grok kg impact core/server/datlas/lib/src/services/spaces_service.dart
+  grok kg tests-for ~visualize/viewers/scatter-plot --output json
+  grok kg explain ~govern/spaces
+  grok kg find scatter
+  grok kg report coverage --output json
+  grok kg report diff --diff master --output md
+  grok kg report replay --commits 200
+
+The contract is core/docs/knowledge-graph/conventions.md.
+`;
+
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
@@ -506,6 +734,7 @@ export const help = {
   migrate: HELP_MIGRATE,
   server: HELP_SERVER,
   s: HELP_SERVER,
+  kg: HELP_KG,
   setup: HELP_SETUP,
   help: HELP,
 };

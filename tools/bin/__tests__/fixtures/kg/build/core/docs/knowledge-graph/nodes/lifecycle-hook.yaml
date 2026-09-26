@@ -1,0 +1,9 @@
+type: lifecycle-hook
+extends: function
+description: >
+  A function run when the package loads (init) or when the platform starts (autostart).
+properties:
+  phase:         "'init' | 'autostart'"
+  immediate?:    boolean
+notes:
+  - roles includes one of [init, autostart]

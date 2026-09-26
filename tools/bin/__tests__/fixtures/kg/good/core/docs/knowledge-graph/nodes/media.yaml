@@ -1,0 +1,32 @@
+type: media
+extends: artifact
+description: >
+  An image, animation, clip or hosted video a page shows: a file committed in help, a README,
+  core/docs or the marketing site, or a YouTube video. Id media:<path> for a file,
+  media:<provider>:<id> for a hosted video. The description says what happens in it; a
+  media.yaml beside the files (videos.yaml for hosted ones) carries it, and url is where a
+  reader can see it.
+properties:
+  format:          "'png' | 'jpg' | 'gif' | 'svg' | 'webp' | 'mp4' | 'webm' | 'pdf' | 'youtube' | 'other'"
+  blob?:           string
+  bytes?:          number
+  provider?:       string
+  external_id?:    string
+  kind?:           "'screenshot' | 'animation' | 'clip' | 'diagram' | 'icon' | 'logo' | 'thumbnail' | 'badge' | 'photo' | 'lesson'"
+  animated?:       boolean
+  width?:          number
+  height?:         number
+  seconds?:        number
+  caption?:        string
+  actions?:        string[]
+  thumbnail?:      Media
+  quality?:        "'unfit' | 'docs' | 'answer' | 'marketing'"
+  quality_notes?:  string
+  reviewed?:       boolean
+  described_by?:   string
+  described_blob?: string
+notes:
+  - "path, format, blob (the git blob id), bytes, url and thumbnail come from the file, its repository and its roots; provider and external_id from the embed; everything else from the record; caption names the concept the page describes, description says what a reader sees"
+  - "quality is an ordered fitness tier: unfit (do not show: outdated UI, placeholder, broken, too small), docs (fine inside its page, not alone), answer (clear enough to be shown alone to a user), marketing (polished; fit for presentations and the site); unset is unassessed; a question that selects answers or marketing material also requires reviewed"
+  - "actions keeps its order (the user actions an animation shows); described_by is 'person' or the model id that wrote the proposal; a record whose described_blob differs from blob is stale, and report media lists it"
+  - "alt text belongs to the embedding, not the file: it is a property of the embeds edge"

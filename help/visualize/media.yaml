@@ -1,0 +1,67 @@
+cell-renderer-molecule.png:
+  caption: Molecule cell renderer in the grid
+  described_blob: 98f960c99ed52403910d626ff7545512a77cbb56
+  described_by: claude-sonnet-5
+  description: >-
+    A small standalone image of a chemical structure (a chloro-substituted isoquinoline linked to a
+    pyridine ring) rendered in 2D, as it would appear inside a grid cell. This is the example image
+    for the Molecule cell renderer in the supported cell renderers reference table.
+  height: 150
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    cropped to just the molecule with no surrounding grid chrome, so it reads as generic chemistry
+    clip art rather than a labeled example of the renderer in context
+  reviewed: true
+  width: 294
+view-layout.gif:
+  actions:
+    - opened the viewer gallery and added a line chart viewer
+    - colored the scatter plot and pie chart by the DIS_POP column
+    - dragged a panel divider to resize the viewer layout
+    - saved the table view
+    - browsed files in the Home folder in the sidebar
+    - opened a new copy of the table and viewed layout/viewer suggestions
+  caption: Cloning and reapplying a view layout
+  described_blob: 1954ea16eae6bf61786c2e4b6bdc598d40030731
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok table view shows a scatter plot, pie chart, and histogram arranged together. The user
+    adds a viewer from the gallery, colors the scatter plot and pie chart by the DIS_POP category,
+    then drags a panel divider to resize the layout and saves the view. The scene switches to
+    browsing files in a user's Home folder, then back to a new copy of the table where the saved
+    layout is reapplied and a viewer/layout suggestions panel opens.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear UI walkthrough but multiple unrelated actions (coloring, resizing, file browsing,
+    suggestions) are bundled into one long clip rather than isolating the layout-clone workflow
+    named in the surrounding text
+  reviewed: true
+  seconds: 52.3
+  width: 1601
+viewer-event-scripts.gif:
+  actions:
+    - open the demog project's scatter plot
+    - hover a data point to show its tooltip
+    - open the scatter plot's context/property panel
+    - expand the Events section showing the On Rendered, On Point Clicked, and other event handlers
+  caption: Viewer event scripts trigger notifications
+  described_blob: e8a906f8bb8bba342d643580a8985ec2f8fa42a7
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot viewer is opened with a project, and a green "foo!" toast notification pops up
+    automatically as points render, showing an On Rendered event script firing. Hovering a point
+    shows its details tooltip, and the viewer's property panel is expanded to the Events section,
+    revealing scripts wired to On Table Attached, On Closed, On Point Clicked, and On Rendered, each
+    calling grok.shell.info(...).
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small viewport crops the panels tightly and the UI chrome (sidebar, grid) is cut off, fine for
+    the page but not self-explanatory alone
+  reviewed: true
+  seconds: 16.2
+  width: 800

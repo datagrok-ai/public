@@ -1,4 +1,5 @@
 ---
+documents: [platform/encryption]
 title: "Configure authentication"
 sidebar_position: 1
 description: Set up login-password, LDAP, OAuth, OpenID, SAML, or IAP authentication for a Datagrok server.

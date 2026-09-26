@@ -1,0 +1,59 @@
+compare-tables.png:
+  caption: Compare tables result grid
+  described_blob: 557adf4cb22df5e68d0cb89bb18cc5584b80796a
+  described_by: claude-sonnet-5
+  description: >-
+    A spreadsheet-style grid compares two tables by the subj key, with height and weight columns.
+    Rows are color-coded: orange cells mark changed values, pink rows mark deleted rows, and green
+    rows mark added rows; unlabeled white rows are unmodified.
+  height: 292
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 406
+embed-viewer-dialog.png:
+  caption: Embedding a viewer with an iframe
+  described_blob: 3117e587838dcd37921b2e1474df0e78a9e3729d
+  described_by: claude-sonnet-5
+  description: >-
+    The Embed viewer dialog shows a generated iframe code snippet pointing to a scatter plot view,
+    ready to copy for use on an external site. Below the snippet, a live preview renders the scatter
+    plot itself, colored by SEX and sized by AGE, with a Cancel button at the bottom.
+  height: 610
+  illustrates:
+    - visualize/viewers
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 645
+go-to-row-dialog.png:
+  caption: Jumping to a row by number
+  described_blob: 8cd19cdec9972dfea1478bbcf9492602ea4d388d
+  described_by: claude-sonnet-5
+  description: >-
+    A small "Go to" dialog box with a single "Row #" input field containing the value 345, and
+    Cancel and OK buttons below it. It appears when the user presses Ctrl+G in a Table View to
+    navigate directly to a specific row.
+  height: 244
+  illustrates:
+    - visualize/viewers
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Small, tightly cropped dialog with no surrounding table context; fine as an inline illustration
+    but too minimal to stand alone.
+  reviewed: true
+  width: 325
+join-tables-types.png:
+  caption: 'Join types: left, right, outer, inner'
+  described_blob: 59065c044bd89c450f60d207aed47e6912d0c434
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram shows four pairs of overlapping circles labeled A and B, one pair per join type: LEFT,
+    RIGHT, OUTER, and INNER. Each diagram shades the portion of the circles that the join type
+    returns, illustrating how much of table A and table B is kept for each join.
+  height: 479
+  kind: diagram
+  quality: answer
+  reviewed: true
+  width: 269

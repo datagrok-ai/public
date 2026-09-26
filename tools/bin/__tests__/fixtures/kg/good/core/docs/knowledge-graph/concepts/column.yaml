@@ -1,0 +1,3 @@
+id: C:column
+name: Column
+description: A typed vector inside a dataframe.

@@ -1,0 +1,834 @@
+1.18-sticky-meta.png:
+  caption: Adding sticky metadata to a grid row
+  described_blob: 401504aec4e8c440497df3d60492652bdb435ee5
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid shows a highlighted row with a tooltip popup labeled "Sticky meta" displaying
+    Comment, Author, and a checkbox field attached to that row. The context panel on the right shows
+    the same Sticky meta section expanded, with editable Date and Comment fields including an Author
+    field and a Checkbox control.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small UI text is hard to read at full resolution and the row highlight/cursor suggest an
+    in-progress interaction rather than a clean static state
+  reviewed: true
+  width: 1601
+1.25-file-viewer-xlsx-format.gif:
+  actions:
+    - hover over TSLA.xlsx to preview its file info
+    - click plate.xlsx
+    - view the plate reader preview with well grid and dose-response curve columns
+  caption: Smarter file viewer selection by content
+  described_blob: 38b6989b4e2acd337714e02125e7f4c7257c18c5
+  described_by: claude-sonnet-5
+  description: >-
+    The Files browser shows two spreadsheet files, TSLA.xlsx and plate.xlsx, both with the .xlsx
+    extension. Hovering TSLA.xlsx shows its metadata tooltip and a preview of ordinary tabular stock
+    data (Date, Open, High, Low, Close, Volume). Clicking plate.xlsx instead opens a plate reader
+    preview, rendering the file's plate-like content as a 384-well grid colored by concentration,
+    with Z Prime and Signal-to-background stats and curve-fit columns alongside it.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: clear demonstration but modest resolution and a small dead-space pause mid-clip
+  reviewed: true
+  seconds: 13.9
+  width: 1601
+1.27-annotation-regions.gif:
+  actions:
+    - open the viewer context menu and toggle Show Annotation Regions
+    - hover over the formula region on the scatterplot to see its tooltip and highlighted points
+    - hover over the drawn region on the scatterplot to see its tooltip and highlighted points
+    - hover over the annotation region on the line chart to see its tooltip
+  caption: Adding annotation regions to scatterplot and line chart
+  described_blob: fbce67346229f7f4fb209782586eb72b24572b01
+  described_by: claude-sonnet-5
+  description: >-
+    A chemical-space scatterplot and three aligned line charts show two kinds of annotation regions:
+    a manually drawn region and a formula-defined region, each labeled directly on the scatterplot.
+    Opening the context menu toggles "Show Annotation Regions" on and off. Hovering over a region on
+    the scatterplot highlights the matching data points across all three line charts below, and
+    hovering over the line chart's region shows a tooltip with its formula condition and row count;
+    a tooltip on the scatterplot region explains that drawn regions are created manually while
+    formula regions are defined using formulas.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 21.5
+  width: 800
+1.27-blur.gif:
+  actions:
+    - open the Structure column's Settings panel
+    - scroll down to the 'Blur content' checkbox
+    - check 'Blur content', which blurs the Structure column's cells
+    - uncheck 'Blur content', restoring the visible structures
+  caption: Blurring sensitive grid content
+  described_blob: a3f0bed14ffd51ddd95d6c18d099c6d92cc9c4a6
+  described_by: claude-sonnet-5
+  description: >-
+    A grid column named Structure shows chemical structure drawings alongside numeric Chemical Space
+    X/Y values, with a column property panel open on the right showing its Settings, including a
+    'Blur content' checkbox. Checking 'Blur content' turns the Structure cell renderings into
+    blurred, unreadable thumbnails while the rest of the row's data stays visible; unchecking it
+    restores the sharp structure images.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    cropped to a grid + property panel with no window chrome; mouse cursor visible; clear enough for
+    its own page but not polished for marketing
+  reviewed: true
+  seconds: 14.6
+  width: 800
+1.27-color-coding-linked.gif:
+  actions:
+    - 'open Color-coding dialog for the AGE column (Type: Linked)'
+    - change Source column from USUBJID to SEX
+    - change Source column from SEX to SEVERITY
+    - 'open Color-coding dialog for the RACE column (Type: Linked)'
+    - change Source column from USUBJID to AGE
+    - change Source column from AGE to HEIGHT
+  caption: Linked color-coding across columns
+  described_blob: 7cf0314cba7f020bee0276918b4baa5d2769fab7
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of clinical trial demographics data shows a Color-coding dialog for the AGE column set to
+    Type Linked. The user changes the Source column dropdown from USUBJID to SEX, then to SEVERITY,
+    and each time the AGE column's background colors update to reflect the newly chosen source
+    column's values. The same is then repeated by opening a Color-coding dialog for the RACE column
+    and switching its source column through AGE and HEIGHT, again seeing RACE's colors change to
+    match.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded UI dialog with default grid data; clear but purely functional, not polished for
+    marketing
+  reviewed: true
+  seconds: 73.6
+  width: 800
+1.27-confidence-interval.gif:
+  actions:
+    - open column header context menu
+    - select Add > Summary Columns > Confidence Interval
+    - change Renderer Type to Value + Margin
+    - choose Estimate column
+    - choose Margin column
+    - change Scale option
+    - change Center Mark from Dot to Line
+  caption: Adding a confidence interval summary column
+  described_blob: 5b6ed7fb4c88bc7c8c63e674d18a2d1fe616d5b7
+  described_by: claude-sonnet-5
+  description: >-
+    In a Datagrok grid of compound data, the user opens the column header context menu and chooses
+    Add > Summary Columns > Confidence Interval, adding a new sparkline-style column showing value
+    plus min/max range. In the renderer settings panel on the right, the user then switches the
+    interval type from Value + Min Max to Value + Margin, picks the Estimate and Margin columns,
+    changes Scale from Global to Custom and back, and finally switches the Center Mark style from
+    Dot to Line.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: small cropped UI region, no visible pointer path between steps, hard to follow without narration
+  reviewed: true
+  seconds: 55.4
+  width: 800
+1.27-edit-formula.gif:
+  actions:
+    - type a column reference and build a boolean expression combining AGE, SEX, and RACE conditions
+    - >-
+      search for and select a column/function from the autocomplete lists while formula validation
+      errors appear and resolve
+    - confirm the formula to filter the scatter plot
+    - open the context panel and expand the Data properties section
+  caption: Editing a row filter formula on a scatter plot
+  described_blob: 510bbdd242c449d71185e7df5fc339858834cd17
+  described_by: claude-sonnet-5
+  description: >-
+    The Edit Formula dialog is used to build a filter expression against the 'demog' table,
+    referencing columns like AGE, SEX, and RACE and using autocomplete for columns and functions.
+    The finished formula (age over 50, sex is female, race containing a string) is applied, then the
+    dialog is closed to reveal a scatter plot colored and shaped by RACE and SEX, first showing only
+    the matching filtered points and then the full unfiltered dataset with the context panel's Data
+    properties expanded.
+  height: 550
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small dialog text and dense autocomplete list are hard to read at this resolution; otherwise
+    clear current UI
+  reviewed: true
+  seconds: 82.7
+  width: 800
+1.27-heatmap-color-customization.gif:
+  actions:
+    - open column context menu and choose Color Coding > Linear
+    - pick a custom color for a bin in the color-coding editor
+    - open the Heatmap viewer's property panel
+    - change the Color Scheme property to a red gradient
+    - change the Color Scheme property to a rainbow scheme
+  caption: Customizing heatmap cell color coding
+  described_blob: d47914974a789b901b8fb1f598dd5305e8298a42
+  described_by: claude-sonnet-5
+  description: >-
+    A Grid with a trellis layout of small heatmap cells is shown on the left, with the column
+    context menu open to Color Coding > Linear for the HEIGHT column. The color-coding editor sets a
+    custom gradient (magenta to orange), then the view switches to the Heatmap viewer's property
+    panel, where the Color Scheme property under Style is changed from an orange/green scheme to a
+    red gradient, then to a blue/green/orange rainbow scheme, updating all cells live.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: small embedded GIF with dense, low-resolution UI text; readable in context but not on its own
+  reviewed: true
+  seconds: 33.9
+  width: 800
+1.27-lines-by.gif:
+  actions:
+    - open the Lines By dropdown
+    - select line_group from the list of columns
+    - hover over the X property to view its tooltip
+  caption: Splitting line chart series with Lines By
+  described_blob: 8a0bfd1c7d3520af99326d024bb8fdf18c664b5f
+  described_by: claude-sonnet-5
+  description: >-
+    A line chart property panel shows a line chart with two color groups, A (blue) and B (orange),
+    each currently drawn as a single connected line per group even though points don't form a clean
+    sequence. The user changes the "Lines By" property from "color_group" to "line_group" in a
+    dropdown list, which splits the lines into separate series based on that categorical column
+    instead of the color column, and a tooltip confirms this behavior. The chart lines rearrange so
+    each color group's points are grouped into clearer sub-series. The user also hovers over the X
+    property, showing a tooltip that X accepts a numerical or categorical column.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small property-panel crop with tooltips shown mid-hover, illustrates a single control rather
+    than a complete workflow
+  reviewed: true
+  seconds: 28.5
+  width: 800
+1.27-multi-value-filter.gif:
+  actions:
+    - open the multi-value filter dialog and pick the Attributes column and ";" separator
+    - click OK to generate the tag list filter
+    - check/uncheck individual attribute tags (amber, citrus, fresh, green) to combine them with AND
+    - reset the filter to restore all rows
+  caption: Filtering rows by multiple values in a column
+  described_blob: 211a7d6305e85f9f5ec16b0b601968195da94e93
+  described_by: claude-sonnet-5
+  description: >-
+    A grid shows Name, Category, Price, and Attributes columns, where Attributes holds
+    semicolon-separated tags like "amber;citrus;earthy". The user opens a dialog to select the
+    Attributes column and a ";" separator, generating a multi-value filter panel that lists each
+    distinct tag with a checkbox and row count. Checking and unchecking tags such as amber, citrus,
+    fresh, green combines them under an AND condition to narrow the grid down to a single matching
+    row, then the filter is reset to restore all 100 rows.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 33
+  width: 800
+1.27-pie-chart-labels.gif:
+  actions:
+    - hover over a pie slice to reveal its row-count tooltip
+    - hover over another slice
+    - click a slice to highlight and outline it
+    - right-click the chart and open Properties > Misc to show label/percentage/value toggles
+  caption: Adding labels and hover values to pie chart slices
+  described_blob: f61ef914864fafed56340fe6312030b201acb688
+  described_by: claude-sonnet-5
+  description: >-
+    A pie chart breaks down rows by year-month, with each slice already labeled by category,
+    percentage, and row count. The cursor hovers over slices in turn, showing a tooltip with the
+    exact row count for that segment, then a slice is highlighted in teal and outlined in black.
+    Finally a right-click context menu opens to Properties > Misc, showing pie chart options like
+    Show Label, Show Percentage, and Show Value with a tooltip explaining the Show Value option.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: small size and dense, low-contrast slice labels make the chart hard to read at a glance
+  reviewed: true
+  seconds: 41.6
+  width: 800
+1.27-scatter-plot-histograms.gif:
+  actions:
+    - Open the scatterplot property panel
+    - Enable Show Y Histogram
+    - Enable Show X Histogram
+    - Resize the viewer
+    - Hover over plot points to inspect filtered row counts
+  caption: Adding axis histograms to a scatterplot
+  described_blob: e4e63bcab212b24821668b75408043b7c5d1b077
+  described_by: claude-sonnet-5
+  description: >-
+    A scatterplot of weight versus height shows an orange rectangular selection over part of the
+    point cloud. The user opens the scatterplot's context panel and enables Show X Histogram and
+    Show Y Histogram under Axes, which adds small bar-chart histograms along the top and right edges
+    of the plot, split by the current blue/orange selection. The view is then resized, and the
+    filtered row count and selection ranges update in the panel as the cursor moves over the plot.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small crop cuts off the right edge of the property panel, and the last frames show a stray
+    drag-selection ring, but the UI itself is current and readable
+  reviewed: true
+  seconds: 9.9
+  width: 800
+1.27-show-selected-rows.gif:
+  actions:
+    - open the viewer's property panel
+    - expand the Data section
+    - expand the Selection section and hover the Show Selected Rows Color checkbox
+    - open the Row Source dropdown
+    - change Row Source from Selected to SelectedOrCurrent
+  caption: Showing only selected rows on a scatterplot
+  described_blob: 3a86e4a552df113643c912747e5408a1e7660fb9
+  described_by: claude-sonnet-5
+  description: >-
+    A scatterplot of height vs. weight, colored by sex, sits next to the property panel with the
+    viewer's Data and Selection settings expanded. The user opens the Row Source dropdown under Data
+    and switches it from "Selected" to "SelectedOrCurrent", which changes the plot from showing only
+    the selected (orange) subset of points to showing the selected and current rows together. A
+    tooltip explains the Show Selected Rows Color option, which highlights selected markers with the
+    selection color instead of their regular series color.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small property-panel text is hard to read at this resolution; useful mainly alongside the
+    surrounding release-notes text
+  reviewed: true
+  seconds: 46.2
+  width: 800
+1.27-stars.gif:
+  actions:
+    - Open the column's properties panel
+    - Type "Stars" into the Semantic type field
+    - Column display switches from numbers to star icons
+  caption: Setting a Stars semantic type on a numeric column
+  described_blob: 04d112ca53b2d90eb64463fa9edf52229697b41e
+  described_by: claude-sonnet-5
+  description: >-
+    In the Grid, an integer Rate column (values 0-4, computed via a formula) is edited in the column
+    properties panel. The user types "Stars" into the Semantic type field, and the column's numeric
+    values immediately render as star-rating icons instead of numbers.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: clear single-purpose demo but tightly cropped to the grid and property panel, no page chrome
+  reviewed: true
+  seconds: 16.5
+  width: 800
+1.27-statistics.gif:
+  actions:
+    - Hover over the r2 value in a series' equation to reveal its definition tooltip
+    - Hover over the regression equation text to reveal its definition tooltip
+  caption: Reading regression statistics on a scatterplot
+  described_blob: f156c54743a7b739755f34eebc614f31975e0460
+  described_by: claude-sonnet-5
+  description: >-
+    A scatterplot shows several clusters of colored points (R_ONE, S_ABS, S_ACHIR, S_PART, S_UNKN)
+    plotted in a chemical space, each with its own colored trend line and a legend in the top-left
+    listing the regression equation and r² value per series. The cursor hovers over the r2 label in
+    the R_ONE equation, opening a tooltip that defines the coefficient of determination (r²) and its
+    interpretation, then moves to hover over the regression equation text itself, which opens a
+    tooltip defining the regression equation (fitted line describing how y relates to x).
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: small UI text is hard to read at this resolution and one captured frame is blank/transitional
+  reviewed: true
+  seconds: 14.7
+  width: 800
+1.27-switch-filter-type.gif:
+  actions:
+    - check individual date checkboxes in the STARTED filter to add them to the selection
+    - type into the filter search box to narrow the checkbox list
+    - switch the STARTED filter from checkbox-list mode to a range slider
+    - drag the range slider handles to adjust the selected date range
+    - click Reset filter to clear the filter
+  caption: Switching between checkbox and range filter types
+  described_blob: f87173760989b25dd11bb3240407c53f319910cc
+  described_by: claude-sonnet-5
+  description: >-
+    In the Filters panel, the STARTED date filter starts as a checkbox list of individual dates,
+    which the user checks one by one to add more dates to the selection while the scatter plot on
+    the right updates with matching rows. The filter is then switched to a slider/histogram range
+    control, letting the user drag both ends to select a continuous date range instead, and finally
+    reset via the Reset filter button so the full dataset is shown again.
+  height: 501
+  kind: animation
+  quality: docs
+  quality_notes: small viewport crops the data table to a few columns, so cell contents are partly cut off
+  reviewed: true
+  seconds: 27.3
+  width: 800
+column-preview-filter-by-type.gif:
+  actions:
+    - open the Column Manager column list
+    - hover/select a column to scroll the grid to it
+    - open the Types filter submenu
+    - toggle type checkboxes (int, string, double)
+    - open the Semantic types filter submenu
+    - toggle semantic type checkboxes (molregno, Molecule)
+  caption: Filtering grid columns by type
+  described_blob: b7a3466186dd1e8299008ca6175aeb43c8e58522
+  described_by: claude-sonnet-5
+  description: >-
+    A large molecule grid is shown with a Column Manager panel open on the right. The animation
+    opens the column list, hovers a column to scroll the grid and highlight it, then opens the Types
+    and Semantic types filter menus, checking and unchecking entries like int, string, double, and
+    Molecule to filter which columns are visible in the grid.
+  height: 1001
+  illustrates:
+    - visualize/viewers/grid
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small UI text is hard to read at this resolution and the column filter menus overlap the grid,
+    but the flow is followable for reference inside its page.
+  reviewed: true
+  seconds: 35.4
+  width: 1601
+column-selection.gif:
+  actions:
+    - hover over a column header
+    - hold Shift and drag across adjacent column headers
+    - scroll the grid horizontally to reveal more columns
+  caption: Selecting multiple grid columns with Shift-drag
+  described_blob: 54c31855f9f134792a7ae6651d4a04e10e66d570
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid displays a pharmacology screening dataset (columns like LE-MDCK, RLM CLint, HLM
+    CLint, hERG, and BSEP classifications) with roughly 3,624 rows. The cursor moves across the
+    column headers from left to right while holding Shift, and the view scrolls to reveal additional
+    columns such as Idea Synthesizer, Idea Comment, Idea Name, and Idea Status further to the right.
+  height: 750
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    cursor position over the headers is visible but no clear column-highlight/selection state is
+    shown in the sampled frames; the dataset looks like real customer screening data rather than a
+    generic demo dataset
+  reviewed: true
+  seconds: 8.3
+  width: 1200
+content-info-pane.gif:
+  actions:
+    - click a bar in the diagnosis bar chart to select matching rows
+    - open/expand the Content section of the context panel
+    - scroll through the resulting spreadsheet-format table of selected rows
+  caption: Content info pane for selected rows
+  described_blob: b2fb91d69e08a4f89bb224a0df6443375f355222
+  described_by: claude-sonnet-5
+  description: >-
+    A grid shows patient records with a scatterplot of height vs. weight and a bar chart of
+    diagnosis counts below it. The user clicks a bar in the chart, which selects 277 rows and
+    highlights the corresponding points orange in the scatterplot; the right-hand context panel
+    switches to a "277 selected rows" view with an expanded Content section. The Content section
+    displays the selected rows in a spreadsheet-like table, and the user scrolls through it,
+    revealing columns such as USUBJID, AGE, SEX, RACE, and further right WEIGHT, DEMOG, CONTROL,
+    STARTED, and SEVER.
+  height: 1001
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 15
+  width: 1601
+grid-column-groups.gif:
+  actions:
+    - open the filter panel via the toggle-filters icon
+    - >-
+      uncheck column groups in the panel (Absorption, Metabolism, Excretion, Toxicity) to hide their
+      columns
+    - leave only the Distribution group checked, isolating its columns
+    - switch to leave only the Absorption group checked, isolating its columns
+  caption: Grid column groups
+  described_blob: 2e4c876bf547e401b30af6cbf8aec2ae02ff6944
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of chemical ADME/Tox data is organized into column groups such as Absorption,
+    Distribution, Metabolism, Excretion, and Toxicity, shown as merged headers above their member
+    columns. The user opens the filter panel, which lists these column groups as checkboxes, then
+    toggles them off one by one so only the Distribution columns (PPBR, VDss) and then only the
+    Absorption columns (Caco2, Lipophilicity, Solubility) remain visible in the grid.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small crop (800x500) and dense data table reduce legibility at a glance, but the interaction is
+    clear
+  reviewed: true
+  seconds: 18.6
+  width: 800
+grid-dynamic-column-widths.gif:
+  actions:
+    - drag the row divider of the first row downward to increase row height
+    - >-
+      release to let columns and cell content (molecule structures, ADME donut charts) scale up
+      proportionally
+    - reduce the row height back down
+  caption: Grid rows and columns resize together (zoom effect)
+  described_blob: 4463807b16e84cbe5806a6d4d3b28100970c6139
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of chemical compound data shows columns for ChemBL ID, SMILES structure, an ADME donut
+    chart, and several numeric ADME/CYP property columns. As the user drags the top row's height
+    taller, all rows and columns scale up together, enlarging the molecule drawings and the ADME
+    donut charts so their detail becomes readable, then the view returns to the original compact row
+    height.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small crop cuts off right-hand columns (PPBR, VDss, CYP columns) so full table width isn't
+    visible
+  reviewed: true
+  seconds: 10.1
+  width: 800
+grid-files-in-cells.gif:
+  actions:
+    - expand grid row height to reveal in-cell previews
+    - scroll through file rows
+    - view a rotating 3D molecule preview inside a cell
+  caption: Rendering files in grid cells
+  described_blob: 45bfdbaa8ae30bd7a1d05221f83ec9471b2dad15
+  described_by: claude-sonnet-5
+  description: >-
+    A Files grid lists demo files from System:DemoFiles, such as beer.csv, car1.jpg, 1bdq.pdb, and
+    ijms-21-05576-v2.pdf. The grid rows are expanded to a taller height, and each cell renders a
+    live preview of its file's content in place: a data table with an image thumbnail for beer.csv,
+    a car photo for car1.jpg, and a rotating 3D molecule viewer for the .pdb structure file.
+  height: 848
+  kind: animation
+  quality: docs
+  quality_notes: dense, low-contrast UI with small text; demo/test data rather than a real-world scenario
+  reviewed: true
+  seconds: 23.4
+  width: 781
+grid-mouse-pan-content.gif:
+  actions:
+    - press and hold the mouse button on a grid cell
+    - drag left and right to pan the visible columns
+    - release to stop panning
+  caption: Panning grid content with the mouse
+  described_blob: 466c60aa55342c6c98dcff8b6f57d5ea19ed8d4f
+  described_by: claude-sonnet-5
+  description: >-
+    A wide data grid filled with chemical structure columns (Series, Scaffold Names, Core, R1–R3,
+    solubility and other property columns) fills the screen with no visible scrollbar. The cursor
+    presses down on a cell and drags, and the whole column layout slides left and right in response,
+    bringing previously off-screen columns like R100, R101 and the solubility properties into view
+    and back again.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    dense chemistry data with small, hard-to-read text and no surrounding UI chrome, so the panning
+    gesture is only clear with the accompanying release-note text
+  reviewed: true
+  seconds: 10.3
+  width: 800
+grid-nested-linked-tables.gif:
+  actions:
+    - Open a file picker and select orders.csv
+    - Open the Data menu and choose Link Tables
+    - >-
+      Scroll through the orders grid showing the linked order-details table nested in each row's
+      cell
+  caption: Linking tables and viewing nested data in cells
+  described_blob: 9a511edd30c90aa12e14b5d1042f72e7cec6d975
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows a Datagrok grid opening the Northwind orders.csv file, then using the Data
+    menu's Link Tables option to connect the orders and order-details tables. After linking, each
+    row in the orders grid shows a small nested order-details table in a cell, listing the
+    ProductID, UnitPrice, Quantity, and Discount of the line items for that order.
+  height: 500
+  illustrates:
+    - visualize/viewers/grid
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Long screen capture with visible OS file dialog and small text; useful for following the
+    workflow but not polished enough to stand alone
+  reviewed: true
+  seconds: 42.9
+  width: 800
+grid-tags-renderer.gif:
+  actions:
+    - open the bar column header menu
+    - check/select tag values in the search list
+    - click OK to apply
+    - drag to resize/reorder the plate column
+    - scroll through rows to view more tag values
+  caption: Rendering tags as colored labels in grid cells
+  described_blob: 6588e4051f9f0d961baef130b41b8a795eed5199
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows a text column named plate whose cells display multiple tags (control, bar,
+    foo) as colored pill labels, alongside checkbox columns for bar, foo, and control. The user
+    opens the column header context menu for the bar column, uses a search dropdown to check which
+    tag values are shown, and the tag renderer updates so cells display only the selected tags. The
+    tags column is then dragged to reposition it, and rows scroll to show many more entries with
+    varying tag combinations rendered as compact colored dots when the column is narrow.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI details (tag colors, checkboxes) are legible but the clip mixes several unrelated
+    interactions (renderer settings, column resize, scrolling) without clear focus
+  reviewed: true
+  seconds: 23.9
+  width: 800
+grid-unhide-columns.gif:
+  actions:
+    - hover near the collapsed column boundary to reveal the hidden-columns tooltip
+    - double-click to unhide the RACE and DIS_POP columns
+  caption: Unhiding grid columns via right-click header menu
+  described_blob: 19356b51a5e069e99e0781957cb85c13f2c79a50
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows patient trial data with the RACE and DIS_POP columns hidden. The cursor
+    hovers over the column header area, a tooltip reads "Double-click to unhide RACE, DIS_POP", and
+    after the action both columns reappear between SEX and HEIGHT.
+  height: 200
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small cropped clip of a single grid interaction, no surrounding chrome, only legible as a
+    supporting illustration next to release-notes text
+  reviewed: true
+  seconds: 9.2
+  width: 800
+line-chart-split-by-columns.gif:
+  actions:
+    - open the line chart's context/property panel
+    - open the Data section and set the Split property to a categorical column (SEX)
+    - hover the M legend marker to highlight/filter that category
+    - hover the F legend marker to highlight/filter that category
+  caption: Splitting a line chart by categorical columns
+  described_blob: 8efbc741ee27d34467a48c1ebc778ef349589c33
+  described_by: claude-sonnet-5
+  description: >-
+    A line chart viewer shows AGE, HEIGHT, and WEIGHT trend lines over time in the demog table. The
+    user opens the viewer's Data properties and sets Split to the SEX column, which redraws each
+    line chart as two overlaid series (one per SEX value) instead of one aggregate line; hovering a
+    legend entry (M, then F) highlights and isolates that category's line and shows its filtered row
+    count in the grid.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small property-panel text and dense line traces are hard to read at a glance; adequate for the
+    release-notes page but not a standalone answer
+  reviewed: true
+  seconds: 32.1
+  width: 1601
+pinned-rows.gif:
+  actions:
+    - select a row in the grid, pinning it (shown highlighted in green)
+    - open the context panel and expand various sections
+    - save the layout via View > Layout > Save to Gallery
+    - view the saved layout confirmation and its details
+  caption: Pinning rows in the grid
+  described_blob: e0ea78c81fbdbceafe1a94169354923023c9b5bd
+  described_by: claude-sonnet-5
+  description: >-
+    A row of chemical structures is selected in the grid and highlighted in green among other rows.
+    The context panel on the right is opened and its sections (Actions, Properties, Columns,
+    Chemistry, Structure, Biology, Databases) are browsed, then the current layout is saved, showing
+    a confirmation message "Layout saved. See its details on the context panel."
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    frames show general grid/context-panel browsing rather than a clear, focused demonstration of
+    pinning and unpinning rows specifically
+  reviewed: true
+  seconds: 42.1
+  width: 1601
+plots-info-pane.gif:
+  actions:
+    - Click the SEX column header to select it
+    - Click the HEIGHT column header to select it
+    - Ctrl-click the RACE column header to add it to the selection
+    - Ctrl-click the WEIGHT column header to add it to the selection
+    - Reselect RACE together with AGE/SEX to compare distributions
+    - Click RACE alone again to show its category bar chart
+  caption: Plots info pane for quick column profiling
+  described_blob: 21d1784f74671c12852b832935c86cf194dcfa92
+  described_by: claude-sonnet-5
+  description: >-
+    In a grid of demographic data, the user clicks different column headers one by one (SEX, HEIGHT,
+    RACE, WEIGHT). Each time, the Context Panel's Plots section on the right updates automatically:
+    selecting a single categorical column shows a bar chart of category counts, selecting a numeric
+    column shows a histogram/distribution curve, and selecting multiple columns together shows a
+    combined chart such as a scatter plot or grouped box plots comparing them. No manual chart
+    configuration is needed — the visualization is generated purely from the current column
+    selection.
+  height: 1001
+  illustrates:
+    - visualize/viewers/grid
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Clear and functional but plain demo data ("demog") with default styling; not polished enough for
+    standalone marketing use
+  reviewed: true
+  seconds: 49.7
+  width: 1601
+register-idenitifiers.gif:
+  actions:
+    - start on the home page
+    - type a list of ChEMBL IDs into the search box
+    - view the returned entity cards with structures and identifier fields
+    - open a side panel for one result to inspect its Links/Molecule/ChemblInfo details
+  caption: Registering custom identifiers for compound search
+  described_blob: ca5d28b49ab46e52d66378185c28a3084614f7d4
+  described_by: claude-sonnet-5
+  description: >-
+    The clip starts on the Datagrok home page, then shows a search for a comma-separated list of
+    ChEMBL compound IDs (CHEMBL1235, CHEMBL123, CHEMBL32145). The search returns matching entity
+    cards, each showing the molecule structure alongside fields like standard_inchi, molregno,
+    pref_name, chembl_id, structure_type, molecule_type and chirality. The user then opens a details
+    panel for one compound (CHEMBL1235) that exposes Links, Molecule and ChemblInfo sections,
+    showing how the registered identifier connects the compound to related platform data.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense property panels are hard to read at normal size; fine as an in-page
+    walkthrough but not self-explanatory on its own
+  reviewed: true
+  seconds: 18.4
+  width: 1601
+release1.18-browse.gif:
+  actions:
+    - Browse the Apps list in the tree and toggle to brief view
+    - Expand Files and navigate into nested folders (Home > Demo > bio > cif)
+    - Scroll through file listings under a Chem folder (CSV, SDF, zip files)
+    - Expand Databases > Postgres > CHEMBL, drilling into schemas and the activities table columns
+    - Open a ChEMBL table (CbAllChemblStructures) showing a canonical_smiles column preview
+    - Open the Connections list showing configured database/API connections
+  caption: 'Browse view: navigating apps, files, and databases'
+  described_blob: 3b1079abd04f974130dcec7f96cce3fef805361a
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the new Browse view's tree panel on the left used to navigate between
+    different resource types — Apps, Files, and Databases — while a preview pane on the right shows
+    context help and a data preview for the selected item. It walks through browsing installed apps,
+    drilling into files and folders (CIF structures, CSV datasets), expanding a Postgres ChEMBL
+    database schema down to its tables and columns, previewing a query result grid of canonical
+    SMILES, and finally viewing the list of configured database connections.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Screen capture at native resolution with readable UI, but shows an older/pre-1.18 look of a few
+    panels; fine for illustrating the feature on its own page, not polished enough for standalone
+    marketing use.
+  reviewed: true
+  seconds: 240.9
+  width: 1601
+release1.18-cellrend-tags-multichoice-dropdown.gif:
+  actions:
+    - Rename a column to CellRenderers
+    - Open the column properties panel and add a choices tag with a list of options
+    - Pick an option from the per-cell dropdown/checklist for each row
+    - Switch a cell to show selections as colored tag pills
+    - Type a new value directly into a cell to add it as a tag
+  caption: Multichoice, dropdown, and tags cell renderers
+  described_blob: acb22e4419926cf403e535d2425bf5b248111492
+  described_by: claude-sonnet-5
+  description: >-
+    A grid column is renamed to "CellRenderers" and its tags are edited to add a "choices" list
+    (Option 1, Option2, Option3) via the column properties panel. The column then renders as a
+    dropdown/checklist for picking one or more options per cell, then as colored tag pills, and
+    finally an inline text field lets the user type a new tag directly into a cell.
+  height: 1001
+  illustrates:
+    - visualize/viewers/grid
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small cropped grid with placeholder Product A/B/C data, no surrounding UI chrome explaining the
+    setup
+  reviewed: true
+  seconds: 103.4
+  width: 1601
+release1.18-trellis-sparklines.gif:
+  actions:
+    - opened the sparkline type dropdown
+    - selected Radar
+    - selected Sparklines (line)
+    - selected Bar Chart
+    - selected Pie Chart
+  caption: Trellis plot with sparkline cells
+  described_blob: 280985f99b32ca159a2819867fbf538abe69892f
+  described_by: claude-sonnet-5
+  description: >-
+    A trellis plot groups patient records into a grid by severity (rows) and disease population
+    (columns). Within each cell, the user cycles the sparkline type through radar charts, line
+    sparklines, bar charts, and pie charts, showing the mini-chart options available for summarizing
+    each cell's data.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: small window crop of the full app; UI chrome dominates most frames, cell charts are small
+  reviewed: true
+  seconds: 26.4
+  width: 1601
+smart-forms.gif:
+  actions:
+    - open the Add Form dialog and choose columns (DIS_POP, HEIGHT, WEIGHT)
+    - confirm to create the Form summary column
+    - resize/inspect the new Form column showing stacked values
+    - select a row to see its values highlighted in the form and in the distributions panel
+  caption: Combining columns into a smart form cell
+  described_blob: 5f90581b8898cc12ea408816358be2de9f5f0484
+  described_by: claude-sonnet-5
+  description: >-
+    In a grid of clinical demographics data, the user right-clicks a column header and adds a Form
+    summary column combining DIS_POP, HEIGHT, and WEIGHT into one cell per row. The new Form column
+    then renders those three values stacked together, each with its own color-coding preserved from
+    the source columns. The user selects a row, showing the summary form update alongside a
+    distributions panel for AGE, HEIGHT, and WEIGHT on the right.
+  height: 500
+  illustrates:
+    - visualize/viewers/grid
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear demonstration but shows raw demo/test data (USUBJID codes) and a busy context panel not
+    central to the concept
+  reviewed: true
+  seconds: 30.8
+  width: 800
+sparklines-normalization-demo.gif:
+  actions:
+    - open the Normalization dropdown
+    - select Row
+    - reopen the Normalization dropdown
+    - select Global
+  caption: Choosing sparkline normalization mode
+  described_blob: 2429f1fca88e343ee45bdbfd0c70640b4204e881
+  described_by: claude-sonnet-5
+  description: >-
+    A grid column shows sparklines plotting AGE, HEIGHT, and WEIGHT for each row, with a properties
+    panel on the right for the sparkline column renderer. The user opens the Normalization dropdown
+    and switches from Column to Row, which reshapes every sparkline into a shared peak-in-the-middle
+    pattern, then reopens the dropdown and selects Global, after which the sparklines return to
+    varied per-row shapes reflecting each row's actual values across the three columns.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 12.8
+  width: 800

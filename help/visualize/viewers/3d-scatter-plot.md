@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/3d-scatter-plot]
 title: "3D Scatter plot"
 description: Plot data points on X, Y, and Z axes to explore relationships between three variables.
 keywords:

@@ -1,5 +1,6 @@
 ---
-feature: trellisplot
+id: TS:viewers/trellis-plot/ui
+covers: [visualize/viewers/trellis-plot]
 target_layer: manual-only
 coverage_type: smoke
 ---

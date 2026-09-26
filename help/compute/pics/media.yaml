@@ -1,0 +1,491 @@
+diff-studio-acid-production.gif:
+  actions:
+    - 'open the model''s code editor and inspect the #update section'
+    - switch to the input form and drag the Final duration slider
+    - drag the Overall duration slider further right, extending the simulated time range
+  caption: Multistage simulation with the update block
+  described_blob: 4d81bcae02df0572cbf35b350efe6ad182552069
+  described_by: claude-sonnet-5
+  description: >-
+    The GA-production Diff Studio model simulates gluconic acid production, with the timeline split
+    into a purple first stage and a pink second stage. The user drags the Final and Overall duration
+    sliders in the input panel, and the plot of biomass, glucose, oxygen, and acid curves redraws
+    live, extending the second-stage segment further to the right as the overall duration grows.
+    This demonstrates how the #update block re-triggers a second simulation stage from the state
+    reached at the end of the first.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear and functional but tightly cropped to the app window with small text; fine to illustrate
+    the multistage-update feature but not polished enough for marketing
+  reviewed: true
+  seconds: 15.1
+  width: 1600
+diff-studio-bioreactor.png:
+  caption: Bioreactor model reaction scheme
+  described_blob: aa05fb3dc9898841f29a8c27697fb5d49e383dec
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram shows the kinetic mechanism of controlled Fab-arm exchange used in the Bioreactor
+    DiffStudio example. Antibody species (oxidized and reduced homodimers FF and KK, free
+    half-antibodies F and K, and the resulting heterodimers FK) are drawn as green and blue Y-shaped
+    antibody icons connected by reversible reaction arrows.
+  height: 300
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    Small, low-resolution schematic image with no axis labels or scale; useful only as a supporting
+    illustration within the page, not a standalone answer.
+  reviewed: true
+  width: 400
+diff-studio-chem-react-network.png:
+  caption: Chemical reaction network for a mass-action kinetics model
+  described_blob: 550c3eb34d7ecdade3bb117de4963d104d37ab49
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram shows a chemical reaction network with five species (X1 through X4) linked by six
+    reversible and irreversible reactions, each labeled with a rate constant k1 through k6. It
+    illustrates the reaction scheme used as input for a Diff Studio deterministic mass-action
+    kinetics simulation.
+  height: 309
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    small, low-resolution rendering of a formula/diagram with plain black-on-white styling and no
+    visual polish
+  reviewed: true
+  width: 400
+diff-studio-edit-model.gif:
+  actions:
+    - click Edit toggle to open the equations editor
+    - modify the differential equation formula
+    - change a parameter value (final)
+    - click Refresh to apply the changes and recompute the plot
+  caption: Editing a Diff Studio model's equations
+  described_blob: 527ce721fb4ebfc4649583aa48c1ae86d7238023
+  described_by: claude-sonnet-5
+  description: >-
+    The Diff Studio app shows a differential equation model with a plotted solution curve, parameter
+    inputs, and a results table. The user clicks Edit to open a code editor with the model
+    definition (equations, arguments, initial values), types changes into the equation and parameter
+    fields, then clicks Refresh to recompute and redraw the solution with the updated model.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 12.8
+  width: 1600
+diff-studio-fermentation.gif:
+  actions:
+    - drag the Final time slider to change the simulation duration
+    - drag the Q parameter slider
+    - drag the V parameter slider
+  caption: Exploring the Fermentation Diff Studio model
+  described_blob: 4decf8c1c1951a3fcbd1eb952d61418bcb1462b3
+  described_by: claude-sonnet-5
+  description: >-
+    The DiffStudio app opens the Fermentation example, showing three linked line charts of product
+    (P), substrate (S), and biomass (X) over time, plus a data grid of computed values. The user
+    drags the time-range slider, then adjusts the Q and V kinetic parameters, watching the biomass
+    curve's peak and collapse shift shape and timing in response.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded UI screenshot at low fidelity, readable only at full size; no cropping or clutter
+    otherwise
+  reviewed: true
+  seconds: 9.7
+  width: 1600
+diff-studio-input-annotations.gif:
+  actions:
+    - Select an annotated parameter line in the script editor
+    - Switch to the model input/plot view
+    - Change the Dose value
+    - Adjust the Count stepper
+    - Switch chart layout from Multiaxis to a combined view
+  caption: Using input annotations
+  described_blob: f93f81527ab6e1caff738b01882ec7ac0b15b2c5
+  described_by: claude-sonnet-5
+  description: >-
+    The Diff Studio script editor shows model parameters annotated with `caption`, `category`,
+    `min`, and `max` metadata (e.g. Dosing, Initial values, Parameters). Switching to the input
+    panel view, those annotations turn plain variable names into grouped, human-readable controls
+    with friendly labels and sliders. The user adjusts the Dose and Count inputs and toggles the
+    chart layout to see the simulation update.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small embedded text (code and axis labels) is hard to read at this resolution outside its page
+    context.
+  reviewed: true
+  seconds: 32.6
+  width: 1600
+diff-studio-loop.gif:
+  actions:
+    - Type a `#loop:` block with `count = 10` and `y += 0.3` under the `#inits:` section
+    - Click Refresh / Apply changes
+    - Hover over the resulting chart to inspect a point value
+  caption: Adding a loop block to a Diff Studio model
+  described_blob: 44c42b0fe7ce10ab46d441d4e68f6302b885bb83
+  described_by: claude-sonnet-5
+  description: >-
+    In Diff Studio's model editor, a user extends a single differential equation model by adding a
+    `#loop:` block below the existing `#inits:` section, setting `count = 10` and an update
+    statement `y += 0.3`. After applying the change, the line chart on the right recalculates:
+    instead of one smooth damped-oscillation curve, it now shows the equation solved repeatedly
+    across an extended time range, producing a repeating sawtooth-like pattern of ten stacked
+    stages. The user then hovers over the chart to inspect a data point via a tooltip.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 13
+  width: 1600
+diff-studio-model-hub.gif:
+  actions:
+    - Click the Save to Library icon
+    - Confirm the save-to-Library notification
+    - Open the Diff Studio app browser showing Library models
+    - Right-click the saved model tile to open its context menu (Run, Copy link, Help, Settings)
+    - Run the model and drag the Finish time slider to extend the simulation range
+  caption: Saving a Diff Studio model to the Library
+  described_blob: cd300e002dac88bd70bcd2a335b009688eb08f85
+  described_by: claude-sonnet-5
+  description: >-
+    In the Diff Studio editor for a Lotka-Volterra model, the user clicks the Save-to-Library icon
+    on the top panel and confirms the model is saved to the Library. The view then switches to the
+    Diff Studio app browser, which lists template and Library models as icon tiles, including the
+    newly saved Lotka-Volterra entry. A right-click context menu on that tile shows Run, Copy link,
+    Help, and Settings options, and choosing Run reopens the model where the Finish time parameter
+    is dragged higher, extending the predator-prey plot with more oscillation cycles.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 23.6
+  width: 1600
+diff-studio-nimotuzumab.gif:
+  actions:
+    - 'hover over the #output section of the model script'
+    - click a cell in the results grid, opening a selection tooltip
+    - click the dropdown arrow next to the "Central" chart caption
+    - open the "Line chart" type selector for the output
+  caption: Specifying output display options for a Diff Studio model
+  described_blob: 75ebe7263cfe22cebd976f412c8fb3c4eebf939c
+  described_by: claude-sonnet-5
+  description: >-
+    The screen shows the Diff Studio editor for the Nimotuzumab pharmacokinetic model: script on the
+    left, two line charts (Central, Periferal) top right, and a results grid below. The user hovers
+    over the #output block in the script, then clicks into the grid, which pops up a context tooltip
+    showing row/column selection counts. They then open the dropdown next to the "Central" chart
+    title, revealing a "Line chart" selector for changing how that output is displayed.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dropdown menus are hard to read at this resolution; useful in context but not
+    clear enough to stand alone
+  reviewed: true
+  seconds: 12.2
+  width: 1600
+diff-studio-output.gif:
+  actions:
+    - 'place cursor in the script editor below #inits'
+    - 'type an #output: block with caption annotations for t, x, and E1'
+    - >-
+      observe the chart axis titles and grid column headers change from t/x/E1 to Time,
+      sec/Function/Expression
+  caption: Customizing Diff Studio output with captions
+  described_blob: 18f138783f124c40b01138141ad03728f8386d27
+  described_by: claude-sonnet-5
+  description: >-
+    In Diff Studio's script editor, the user adds an `#output:` block that assigns display captions
+    to the argument and equations to be shown — `t` as "Time, sec", `x` as "Function", and `E1` as
+    "Expression". After the block is added, the line chart axes and the results grid column headers
+    update from the raw variable names to these custom captions, and a tooltip shows summary stats
+    for the "Expression" column.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 17.7
+  width: 1600
+diff-studio-pk-pd.gif:
+  actions:
+    - click Edit to open the input panel
+    - drag the Dose slider to change its value
+    - decrease the Count value
+  caption: Adjusting dosing parameters in the PK-PD model
+  described_blob: 49b200d5e14d28f74a883add3923425bdfc8ebcf
+  described_by: claude-sonnet-5
+  description: >-
+    The PK-PD example is open in Diff Studio, showing the differential-equation script for a
+    pharmacokinetic-pharmacodynamic model on the left and a chart of depot, centr, peri, and eff
+    curves against time on the right, with a repeating dosing loop producing periodic spikes. The
+    user clicks Edit to switch into an input panel with Dosing, Initial values, and Parameters
+    sections, then drags the Dose slider down from 13000 to 9000 and back up to 14000, watching the
+    depot/centr/peri/eff curves and the underlying data table update live. Finally the user
+    decreases the Count field from 8 to 7, which redraws the chart with one fewer dosing cycle.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 15.5
+  width: 1600
+diff-studio-pk.png:
+  caption: PK compartment model structure
+  described_blob: 9a12bc1a12a5b33b4f9f07fb60f77f3a38e608b0
+  described_by: claude-sonnet-5
+  description: >-
+    A block diagram shows a two-compartment pharmacokinetic model: a "depo" box connected by an
+    arrow labeled "KA" to a "centr" (central) box, which has an outgoing arrow labeled "CL/V"
+    representing clearance over volume of distribution. It illustrates the structure of the Diff
+    Studio PK example used to simulate drug absorption and elimination.
+  height: 300
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    simple schematic diagram, plain black-and-white boxes and arrows with minimal styling, adequate
+    for illustrating the model structure but not polished enough for marketing use
+  reviewed: true
+  width: 400
+diff-studio-pollution.png:
+  caption: Chemical reaction system for the Pollution stiff ODE example
+  described_blob: a774fddadd9bef5f4e99014c62eb43a92cb54459
+  described_by: claude-sonnet-5
+  description: >-
+    A reference list of chemical reaction equations from the air pollution model, showing 25
+    reactions among species like NO2, NO, O3, HCHO, ALD, PAN, and SO2. Each line gives reactants on
+    the left and products on the right, connected by an arrow. It illustrates the system of stiff
+    equations that the Diff Studio Pollution example solves.
+  height: 255
+  kind: diagram
+  quality: docs
+  quality_notes: plain text list with no styling or platform UI, low visual interest outside its page
+  reviewed: true
+  width: 530
+diff-studio-robertson-network.png:
+  caption: Robertson's stiff reaction network
+  described_blob: 063eb1943aa5ed5c0bb01c0a74277eb0d73793df
+  described_by: claude-sonnet-5
+  description: >-
+    The image shows the three chemical reaction equations of the Robertson problem, a classic stiff
+    ODE system. Each line pairs a reaction with its rate constant and relative speed: A to B at rate
+    0.04 (slow), B+B to C+B at rate 3·10^7 (very fast), and B+C to A+C at rate 10^4 (fast).
+  height: 300
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    small, low-resolution rendering of typeset equations; fine as inline illustration but not
+    polished enough for marketing use
+  reviewed: true
+  width: 400
+diff-studio-run-fitting.gif:
+  actions:
+    - adjust input sliders and initial concentration values
+    - open the Fitting tab
+    - click the Run fitting icon
+    - wait for fitting to complete
+    - >-
+      review the resulting grid of fitted parameter sets with simulation-vs-target charts and loss
+      curves
+  caption: Fitting model parameters to experimental data
+  described_blob: d56348196539851aed82d5e61a5fe350d47bc097
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows Diff Studio's Fitting view for a GA-production model. It starts by adjusting
+    sliders and initial concentration values on the model input panel, then switches to a Fitting
+    tab with instructions and a Run fitting button. Clicking Run starts an in-progress fit, and the
+    result is a grid of found parameter sets, each row showing simulation curves overlaid on target
+    data for biomass, oxygen, and acid, plus an RMSE-by-iterations loss chart.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    UI is legible but dense with small text and multiple panels, typical of a feature walkthrough
+    rather than a polished marketing shot
+  reviewed: true
+  seconds: 30.4
+  width: 1600
+diff-studio-run.gif:
+  actions:
+    - open the Apps browser and click Diff Studio
+    - drag the Final time slider on the Extended template
+    - open the model menu and browse Recent/Templates/Library entries
+    - select the PK-PD template and view its multi-panel output
+    - return to the Diff Studio home screen
+    - select the Acid production library model and view its output
+  caption: Launching and exploring Diff Studio
+  described_blob: 1dac88300cf73efbe3e1432c2728724ad81ac7dd
+  described_by: claude-sonnet-5
+  description: >-
+    The animation opens the Apps browser and launches Diff Studio, then shows the Extended template
+    with sliders for the final time and parameters updating a solution chart and data grid live. It
+    continues by opening the model menu to load a PK-PD template, whose multi-panel chart grid
+    (depot, centr, peri, eff) is shown, then returns to the Diff Studio home screen listing template
+    and library models, and finally opens the Acid production library model with its four-panel
+    staged chart output.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded thumbnail size (1600x1000 scaled down in page) and long runtime make fine UI
+    details hard to read at a glance; otherwise clear and representative of the current UI
+  reviewed: true
+  seconds: 42.3
+  width: 1600
+diff-studio-table-lookups.gif:
+  actions:
+    - Selected "Mode 1" from the Process mode dropdown
+    - Selected "Mode 2" from the Process mode dropdown
+    - >-
+      Switched the results view from Facet (grid of small charts) to Multiaxis (single combined
+      chart)
+    - Switched Process mode back through Mode 1 to Default while viewing the combined chart
+  caption: Using table lookups to switch process modes
+  described_blob: 1ef7552291d9980600adecad26e7097fe6a71978
+  described_by: claude-sonnet-5
+  description: >-
+    The Bioreactor model in Diff Studio shows a grid of small charts for each variable (FFox, KKox,
+    FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, CYST) alongside a data table, with
+    a "Process mode" dropdown in the left parameter panel. As the user switches the dropdown from
+    Default to Mode 1 and then Mode 2, the initial values and the switch time update from the
+    corresponding lookup table row and the curves change shape accordingly. The user also toggles
+    the results view from the faceted small-chart grid to a single combined multi-axis chart
+    overlaying all variables.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small UI text and dense multi-panel charts are hard to read at reduced size; adequate to
+    illustrate the workflow within the page but not self-explanatory alone.
+  reviewed: true
+  seconds: 12.6
+  width: 1600
+diff-studio-update.gif:
+  actions:
+    - label the initial argument stage
+    - 'add a #update block for the 2-nd stage with duration and parameter change'
+    - 'add a #update block for the 3-rd stage with duration and parameter change'
+    - click Refresh to apply changes
+    - view the resulting chart split into colored stage bands
+  caption: Adding update blocks for multi-stage simulation
+  described_blob: 476f005dd1345cb2c0adf5d17bf227aaf30c44e7
+  described_by: claude-sonnet-5
+  description: >-
+    In the Diff Studio script editor, the user types ", 1-st stage" after the argument declaration,
+    then adds two #update blocks labeled "2-nd stage" and "3-rd stage", each with a duration and a
+    change to parameter p. After refreshing, the line chart splits into three colored background
+    bands (1-st, 2-nd, 3-rd stage) over the extended time range, with the curve's oscillation
+    pattern changing in each band.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: small UI text and code are only legible when paused; otherwise clear and on-topic
+  reviewed: true
+  seconds: 17.4
+  width: 1600
+fitting-run.gif:
+  actions:
+    - toggle min/max switches for param 1 and param 2 in the Fit block
+    - toggle a switch for output 1 in the Target block and set its target value to 0
+    - click Run fitting
+    - review the resulting grid of fitted inputs, obtained vs. target output, and loss line charts
+    - toggle output 2 as an additional target and click Run fitting again
+  caption: Running parameter optimization (fitting)
+  described_blob: 01c274a17afce73543605e635a4e367980cd434e
+  described_by: claude-sonnet-5
+  description: >-
+    In the Fitting panel, the user enables min/max ranges for two input parameters and a target
+    output, sets the target to 0, and clicks Run. A grid appears showing fitted parameter values,
+    the obtained vs. target output, and a per-row loss-by-iterations line chart. Running fitting
+    again with a second output enabled produces additional result rows, each with its own
+    loss-minimization chart converging to zero.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense grid are hard to read at a glance; useful in context but not
+    self-explanatory as a standalone answer
+  reviewed: true
+  seconds: 25.4
+  width: 1600
+fitting-table.gif:
+  actions:
+    - toggle on min/max range for Velocity
+    - toggle on min/max range for Angle
+    - toggle on the Trajectory target and pick the ball-flight-trajectory function
+    - set argument to Distance and function to Height
+    - click Run to perform the fit
+  caption: Fitting model parameters to a target trajectory
+  described_blob: 245539895f1c164d8ec9c57db1a47703626b9601
+  described_by: claude-sonnet-5
+  description: >-
+    In the ballFlight app's Fitting panel, the user enables min/max switchers for Velocity and Angle
+    inputs under Throw parameters, then turns on the Trajectory target and selects the
+    ball-flight-trajectory function with Distance as the argument and Height as the fitted function.
+    Clicking Run generates a results grid with the loss value and fitted Velocity/Angle, alongside a
+    chart comparing the simulated trajectory to the target curve and a chart of RMSE decreasing over
+    iterations.
+  height: 1000
+  illustrates:
+    - compute/functions
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 16.4
+  width: 1600
+sens-analysis-run.gif:
+  actions:
+    - click the Run sensitivity analysis icon on the top panel
+    - select Sobol as the method and set Samples to 10
+    - toggle on inputs to vary and set their min/max ranges
+    - click Run to execute the analysis
+    - review the resulting correlation plot, PC plot, and Sobol' index panels
+  caption: Running sensitivity analysis on a model
+  described_blob: 4447866a3d0d686aa936e924577710514eda255e
+  described_by: claude-sonnet-5
+  description: >-
+    In the Bioreactor model view, the user opens the Sensitivity Analysis panel, sets the method to
+    Sobol and samples to 10, then enables varying-input toggles and adjusts the min/max ranges for
+    several initial values (FF oxidized, KK oxidized, FF reduced). Clicking Run executes the model
+    50 times with varied inputs, after which a correlation plot, PC plot, and first-/total-order
+    Sobol' index panels appear showing how each input affects the outputs.
+  height: 1000
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 21.6
+  width: 1600
+sensitivity-analysis.gif:
+  actions:
+    - open the Sensitivity Analysis panel for a function
+    - choose the Sobol method from the dropdown
+    - set the sample count and enable/configure varied inputs (velocity, angle ranges)
+    - click Run
+    - hover a point in the PC Plot to inspect its values and filter the table/scatter plot
+  caption: Running Sensitivity Analysis with the Sobol method
+  described_blob: 102836ae45371d9625064f7fad77881bba4ba546
+  described_by: claude-sonnet-5
+  description: >-
+    The Model Hub loads a ballFlight model, then the Sensitivity Analysis panel opens with a Method
+    dropdown offering Monte Carlo, Sobol, and Grid, alongside help text describing each method.
+    Sobol is selected with 50 samples, velocity and angle ranges are set as varied inputs, and Run
+    is pressed. The results show a parallel-coordinates plot, a data table of runs, a scatter plot
+    of velocity vs. angle colored by max distance, and bar charts of first-order and total-order
+    Sobol indices for each input; hovering a point in the PC plot highlights and filters the
+    corresponding row.
+  height: 1000
+  illustrates:
+    - compute/functions
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense multi-panel layout are hard to read at reduced size; first frame is a
+    near-blank loading state
+  reviewed: true
+  seconds: 32.5
+  width: 1600

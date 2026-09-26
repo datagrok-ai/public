@@ -1,0 +1,7 @@
+type: component
+extends: node
+abstract: true
+description: An extracted code unit. Never hand-written.
+properties:
+  language:     "'dart' | 'ts' | 'js' | 'other'"
+  path?:        Path

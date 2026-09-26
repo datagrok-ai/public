@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/pie-chart]
 title: "Pie chart"
 description: Show numerical proportions across categories as slices of a circle, with segment size, angle, and length options.
 keywords:

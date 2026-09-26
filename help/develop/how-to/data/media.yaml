@@ -1,0 +1,17 @@
+upload-data-layout.png:
+  caption: Finding a layout's ID for a query parameter
+  described_blob: 5ceb4920a41d1442f6f0618eb3f70fe48669471c
+  described_by: claude-sonnet-5
+  description: >-
+    The Manage panel's Layouts list shows saved grid layouts as thumbnail cards with Author,
+    Created, and Updated fields. A red-annotated walkthrough highlights the wrench icon and Layouts
+    menu entry, a card's Links... action, and the resulting Links dialog listing the layout's ID,
+    Grok markup, Markup, and URL, with a copy icon next to the ID.
+  height: 623
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    annotated with numbered red callout marks for a tutorial rather than a clean standalone
+    screenshot
+  reviewed: true
+  width: 876

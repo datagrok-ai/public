@@ -1,4 +1,6 @@
 ---
+feature: access/files/shares
+name: File shares
 title: "Supported shares"
 description: Overview of the file storage sources Datagrok can connect to as file shares, with links to their parameters.
 keywords:

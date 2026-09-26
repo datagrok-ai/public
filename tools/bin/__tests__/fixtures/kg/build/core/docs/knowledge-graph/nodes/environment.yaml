@@ -1,0 +1,12 @@
+type: environment
+extends: infra
+prefix: Env
+description: >
+  A running Datagrok instance or stand: dev, test, release, public, sandbox, the
+  customer and evaluation stands. From ENVS.md and the ArgoCD app list. Deploys
+  releases through runs, serves customers through serves, receives reports.
+properties:
+  platform:      "'swarm' | 'k8s' | 'eks' | 'ec2' | 'local'"
+  hosted_by?:    "'datagrok' | 'customer' = 'datagrok'"
+  purpose:       "'dev' | 'test' | 'release' | 'public' | 'demo' | 'help' | 'sandbox' | 'eval' | 'customer' | 'ops'"
+  cluster?:      string

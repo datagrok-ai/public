@@ -1,0 +1,1074 @@
+3d-scatter-plot.gif:
+  actions:
+    - click and drag to rotate the 3D view
+    - zoom in on the point cloud
+    - hover over a point to highlight it
+  caption: Rotating a 3D scatter plot
+  described_blob: 189735c0dae7d580414233ff25501b6cdf96a307
+  described_by: claude-sonnet-5
+  description: >-
+    A dense cluster of blue diamond-shaped points forms a cloud in 3D space against a white
+    background. The cursor drags the plot, and the whole point cloud rotates and zooms, changing
+    viewing angle and point shape (from flat diamonds to shaded cubes) as the camera moves closer,
+    with one point highlighted in a different color as the cursor hovers over it.
+  height: 480
+  illustrates:
+    - visualize/viewers/3d-scatter-plot
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    no axes, labels, or UI chrome visible, so it shows the interaction but not how to set up or read
+    the viewer
+  reviewed: true
+  seconds: 11.1
+  width: 480
+aggregate.gif:
+  actions:
+    - drag SEX into Rows
+    - drag RACE into Rows
+    - open the Measures column picker and select HEIGHT
+    - open the aggregation-function menu and choose med
+    - view the resulting grouped table with med(HEIGHT) per SEX/RACE combination
+  caption: Aggregating rows into a summary table
+  described_blob: 9986d05eb727fb2239802ad1cb073f68ca5ba748
+  described_by: claude-sonnet-5
+  description: >-
+    The demog table is shown in the grid with columns like USUBJID, AGE, SEX, RACE, and HEIGHT. The
+    user drags SEX and then RACE into the Rows section of the Aggregate Rows panel, opens the
+    Measures dropdown to pick the HEIGHT column, and chooses the "med" (median) aggregation from a
+    list of functions (count, unique, min, max, sum, avg, stdev, etc.). The result is a grid grouped
+    by SEX and RACE showing med(HEIGHT) for each combination, with a tooltip confirming the values
+    for one row.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 13.7
+  width: 800
+batch-edit.gif:
+  actions:
+    - open Tools menu
+    - select Batch Edit...
+    - change Rows dropdown from Filtered to Selected
+    - type a new value into the RACE field
+    - value applied to all selected rows
+  caption: Opening and using the batch editor
+  described_blob: 4cd6ae92c02e1bf78de594dd41301cb8eaed1967
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows a Datagrok grid with clinical demographic data (USUBJID, AGE, SEX, RACE,
+    DIS_POP, HEIGHT, WEIGHT). The user opens the Tools menu and selects Batch Edit..., then changes
+    the Rows scope in the batch edit panel from Filtered to Selected. With rows selected, the user
+    edits the RACE field in the batch editor to "Other", which updates the RACE value across all
+    selected rows in the grid at once.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 14.5
+  width: 800
+biostructure-viewer-pdb-data.gif:
+  actions:
+    - open the pdb_data table
+    - click a molecule cell in the pdb column to open the Biostructure Viewer panel
+    - select a different row's cell to update the viewer with that structure
+  caption: Opening structure data in Biostructure Viewer
+  described_blob: 927e99f2542a3f9f5df2e728ba55ad03b34829d7
+  described_by: claude-sonnet-5
+  description: >-
+    A pdb_data.csv file in App Data's BiostructureViewer folder is opened as a grid, showing columns
+    pdb_id, pdb, prop1, prop2, and desc, where the pdb column renders each row's structure as a
+    small 3D ribbon thumbnail. Clicking a cell in the first row opens a larger Biostructure Viewer
+    panel on the right showing the same molecule (PDB 1QBS) rendered with NGL, colored by chain.
+    Selecting the second row's cell updates the viewer panel to render its structure (PDB 1ZP8)
+    instead.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small cropped grid view with narrow columns cutting off the desc text; functional but not a
+    polished standalone shot
+  reviewed: true
+  seconds: 14.5
+  width: 799
+biostructure-viewer-preview-view-PDB-mmcif.gif:
+  actions:
+    - navigate to the BiostructureViewer/samples folder
+    - click the 1RQ9.mmcif file to preview it
+    - >-
+      hover over/select the 1bdq.pdb file, showing its file info tooltip and updating the 3D
+      structure preview
+  caption: Previewing a PDB/mmCIF file in Files browser
+  described_blob: 3d9fd8ea2bd5797207651496764798d353db2077
+  described_by: claude-sonnet-5
+  description: >-
+    In the Files app, the user browses to the BiostructureViewer sample folder and clicks on the
+    file '1bdq.pdb'. A live 3D preview panel opens below the file list, rendering the protein's
+    ribbon structure directly in the browser without opening a separate view.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded preview pane crops the molecule view; fine as an in-page illustration but not
+    detailed enough to stand alone
+  reviewed: true
+  seconds: 11.8
+  width: 799
+bool-combined.gif:
+  actions:
+    - Check the boolean filter checkbox for the 20-40 column
+    - Check the boolean filter checkbox for the 40-50 column while combine mode is OR
+    - Select a bar in the age histogram to see filtered/selected counts
+    - Switch the Flags combine toggle from OR to AND
+    - Drag the age histogram range sliders to add a numeric filter
+  caption: Combined boolean filter for multiple flag columns
+  described_blob: cfa93fe08e77b75b54c684a36505ec518e5dc7a1
+  described_by: claude-sonnet-5
+  description: >-
+    A dataframe with three boolean flag columns (<20, 20-40, 40-50) shows a combined boolean filter
+    panel labeled "Flags" in the Filters pane, with a mini age histogram beneath it. The user checks
+    the checkboxes for 20-40 and 40-50 with OR logic, watching the row list, the selection counts,
+    and the histogram update to highlight matching rows, then switches the combine mode to AND,
+    narrowing the result to rows where all checked flags are true, and finally drags the age
+    histogram's range sliders to add a numeric range filter on top of the boolean condition.
+  height: 501
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 43.6
+  width: 800
+chem-apply-model.gif:
+  actions:
+    - open the Chem descriptors dialog on a molecule column
+    - open the context panel Actions list for the column
+    - search the Models gallery for a solubility model
+    - open the Solubility Prediction model and view its performance stats
+    - apply the model to the smiles table
+    - view the resulting descriptor and predicted outcome columns with stats
+  caption: Applying a solubility model to new compounds
+  described_blob: 36f8b9fc7b0c959f5a58b5290f1090ec8ab16071
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok table of molecules is opened alongside a Chem descriptors dialog and a Models
+    gallery. The user browses available predictive models, opens a 'Solubility Prediction' model
+    showing its performance metrics (r2, mae, etc.), and applies it to the smiles table of 170 rows.
+    The table then displays computed descriptor columns (TPSA, MolLogP, NumRotatableBonds) plus a
+    new predicted outcome column with per-row values and summary statistics.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text at 800x500 is hard to read and the flow crosses several dialogs/panels quickly,
+    fine as an inline illustration but not clear enough to follow standalone
+  reviewed: true
+  seconds: 36.1
+  width: 800
+chem-model-augment.gif:
+  actions:
+    - click a row in the molecule grid
+    - click the next row down
+    - click the next row down
+    - click the next row down
+    - click the next row down
+  caption: Predicting toxicity and properties as you select molecules
+  described_blob: 8c338a2e2cf74b205c63a76b5da241a3a124de7d
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid shows SMILES structures with computed logP, logS, and acceptor count columns. As
+    the user clicks through successive rows, the info panel on the right updates in real time,
+    showing Toxicity predictions (Mutagenicity, Tumorigenicity, Irritating and Reproductive
+    effects), a Gasteiger Partial Charges diagram on the molecule, and a Solubility Prediction
+    value. Each selected row highlights green and its computed values appear instantly in the panel.
+  height: 500
+  illustrates:
+    - domains/chem
+    - explore/data-augmentation
+  kind: animation
+  quality: docs
+  quality_notes: small crop of the grid and panel only, no page chrome; clear but narrow in scope
+  reviewed: true
+  seconds: 16.3
+  width: 800
+chem-train-model.gif:
+  actions:
+    - open Tools > Predictive Modeling > Train
+    - set model name and choose the column to predict
+    - select feature columns to use as model inputs
+    - choose the modeling method
+    - click Train
+    - view the trained model's performance report
+  caption: Training a predictive model for solubility
+  described_blob: 72ac1a200f69f788c63bacc4ccca536b2641f6f6
+  described_by: claude-sonnet-5
+  description: >-
+    In Datagrok's grid, the user opens Tools > Predictive Modeling > Train on a table of molecules
+    with solubility classes. In the Predictive model view, they name the model, pick a table column
+    to predict, select feature columns (molecular descriptors like TPSA, Ipc, NumHAcceptors), and
+    choose a modeling method. After clicking Train, a progress indicator appears, then a performance
+    report is shown with metrics like R2, RMSE, and MAE for the trained model.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  quality_notes: clear step-by-step UI walkthrough but not polished enough for marketing use
+  reviewed: true
+  seconds: 34.5
+  width: 800
+clustering-2000-seq.gif:
+  actions:
+    - open the Hierarchical Clustering dialog on a sequence table
+    - select distance and linkage settings and confirm with OK
+    - scroll through the resulting dendrogram-annotated grid
+    - hover/select rows to see corresponding tree branches highlighted
+  caption: Hierarchical clustering of a large sequence set
+  described_blob: 108e2eee34425bcb0729e0c02a1209ae7474c2f7
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of peptide sequences with activity values is opened in Datagrok, and the Hierarchical
+    Clustering dialog is used to configure Features (sequence), Distance (euclidean) and Linkage
+    (ward, then average), then run with OK. The result is a dendrogram injected as the leftmost grid
+    column, showing nested cluster trees next to thousands of sequence rows grouped by cluster
+    number, with matching rows highlighted as the tree is scrolled and browsed.
+  height: 781
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded UI text is hard to read at this resolution, and the keyboard-shortcut panel on
+    the right is irrelevant clutter that distracts from the clustering result
+  reviewed: true
+  seconds: 26.5
+  width: 1599
+compare-tables.gif:
+  actions:
+    - edit a cell value in the duplicated table
+    - filter/remove rows from the duplicated table
+    - open Table > Compare Tables and select key columns
+    - run the comparison to view the color-coded diff table
+  caption: Compare Tables
+  described_blob: caa604b628e54706cf45f5ab5b4e13868949965e
+  described_by: claude-sonnet-5
+  description: >-
+    In the Datagrok table view, a duplicated dmv_offices table has one cell edited from "DISTRICT
+    OFFICE" to "fooo" and rows filtered down before the Compare Tables dialog opens, letting the
+    user pick key and value columns between the two tables. Running the comparison opens a new
+    "diff" table with the changed and removed rows highlighted in orange and green, showing the
+    edited office type value and the rows missing from the second table.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    uses synthetic demo data (dmv_offices) with an unrealistic edited value ("fooo"), fine for
+    illustrating the workflow but not polished enough to stand alone
+  reviewed: true
+  seconds: 31.8
+  width: 800
+correlation-plot.gif:
+  actions:
+    - hover over a diagonal cell to reveal a histogram tooltip
+    - hover over several off-diagonal cells in turn to reveal scatter-plot tooltips with Pearson R
+  caption: 'Correlation plot: hovering matrix cells for details'
+  described_blob: 8bbf7881fc1f27989019aeec48405ffa14011e4c
+  described_by: claude-sonnet-5
+  description: >-
+    A correlation plot viewer shows a grid of numeric columns (fixed acidity, volatile acidity,
+    citric acid, residual sugar, chlorides, free/total sulfur dioxide, density), with diagonal
+    histograms and off-diagonal cells colored and labeled by correlation coefficient. As the cursor
+    moves over different cells, a tooltip pops up showing either a histogram summary
+    (min/avg/max/std) for a diagonal cell or a scatter plot of the two variables with its Pearson R
+    value for an off-diagonal cell.
+  height: 480
+  illustrates:
+    - visualize/viewers/correlation-plot
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 7.5
+  width: 480
+db-substructure-similarity-search.gif:
+  actions:
+    - open a similarity search data query under a database connection
+    - sketch a molecular pattern in the query's structure editor
+    - click Run and wait for the query to finish
+    - view the returned grid of molecules with rendered structures
+    - open a substructure search query and enter a pattern (aspirin) in the sketcher
+    - click Run and view the resulting grid of matching structures
+  caption: Database substructure and similarity search
+  described_blob: 4ba680d98ab10bbacac83a99c558261394a63aa6
+  described_by: claude-sonnet-5
+  description: >-
+    In the Datagrok Chem menu, the user opens a similarity search query in the ChEMBL data
+    connection, sketches a naphthalene-like pattern in the molecule sketcher, and clicks Run; the
+    query executes against the database and returns a results grid of molecules with molregno and
+    SMILES columns, each row showing a chemical structure rendered as an image. The user then
+    switches to a substructure search query, types "aspirin" to build a pattern (an acetylated
+    benzoic acid structure appears in the sketcher), and runs it, again returning a grid of matching
+    structures from the database.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small non-maximized app window with visible sidebar/tree clutter; UI chrome and menus are
+    legible but the capture is not a clean, cropped shot suitable for marketing use
+  reviewed: true
+  seconds: 30.6
+  width: 800
+default-sketcher.gif:
+  actions:
+    - open the Sketcher dropdown in Settings
+    - select Marvin from the list
+    - field shows Marvin as the selected sketcher
+  caption: Setting the default molecule sketcher
+  described_blob: 6d95bd14aee641ac710b04dd22b6e65701bb74d2
+  described_by: claude-sonnet-5
+  description: >-
+    The Packages browser shows the Chem package's Context Pane with the Settings section expanded,
+    listing Renderer and Sketcher dropdowns. The user clicks the Sketcher dropdown, which opens a
+    list of options (OpenChemLib, Ketcher, Marvin, ChemDraw), selects Marvin, and the field updates
+    to show Marvin as the chosen sketcher next to a Save button.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 5.3
+  width: 800
+dendrogram-hierarchical-clustering-interactivity.gif:
+  actions:
+    - >-
+      Open the ML | Hierarchical Clustering dialog and choose table, features, distance metric
+      (euclidean) and linkage (ward), then run it
+    - Hover over a row to see its tooltip and the corresponding branch highlighted in the tree
+    - Select a cluster of rows, highlighting both the tree branch and the grid rows
+    - Open the Viewers gallery from the side panel
+    - >-
+      Open a filter panel and adjust the Age range slider, filtering both grid and dendrogram
+      together
+  caption: Injecting a dendrogram into the grid
+  described_blob: fa04a46e98d90bc413d19ecdb20dec85e70750ac
+  described_by: claude-sonnet-5
+  description: >-
+    The ML | Hierarchical Clustering dialog runs on a grid of subject records, then a dendrogram
+    tree appears docked to the left of the grid rows. Hovering and selecting rows in the tree
+    highlights the matching branches and rows in orange/green, and opening a filter panel with an
+    Age histogram filters both the grid rows and the tree in sync.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: clear but dense multi-step capture; text/tooltips are small at this resolution
+  reviewed: true
+  seconds: 68.2
+  width: 799
+dendrogram-large-tree-selections-current-fixed.gif:
+  actions:
+    - hover over a tree branch to see its tooltip
+    - click a branch to select it, highlighting 42 rows
+    - hover over another branch
+    - click a larger branch to select 147 rows
+    - scroll/pan the tree while the selection remains highlighted
+  caption: Selecting branches in a large dendrogram
+  described_blob: 8d4a6302b6b933b8a0a3d7397c1b43840b73032b
+  described_by: claude-sonnet-5
+  description: >-
+    A Dendrogram viewer renders a tree of about 100,000 nodes loaded from a DataFrame with node and
+    parent columns. Hovering over a branch shows a tooltip with the node name and description, and
+    clicking selects that branch and its descendants, highlighting them in orange and updating the
+    selected-row count and Actions panel (Delete Rows, Keep Rows, Filter Rows, Extract Rows, Save As
+    Column).
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small window crop and faint low-contrast tree lines make individual branches hard to read at a
+    glance
+  reviewed: true
+  seconds: 30.9
+  width: 799
+dendrogram-newick-file-handler-with-interactivity.gif:
+  actions:
+    - open a .nwk file from the file browser
+    - view the generated node/parent/leaf/distance table with the dendrogram docked beside it
+    - click a row in the table to highlight the matching branch in the dendrogram
+    - hover over a dendrogram branch to show a node tooltip
+    - select multiple rows to highlight multiple branch paths
+  caption: Opening a Newick file as a linked dendrogram
+  described_blob: d6cae6d51b1bae52c0c4bbaf26c1358f45defbcc
+  described_by: claude-sonnet-5
+  description: >-
+    A file browser shows a tree95.nwk file opened alongside a data table, which produces a grid of
+    tree nodes (node, parent, leaf, distance) with a dendrogram rendered on the right. As the user
+    clicks and hovers over rows in the grid, the corresponding branches highlight in green in the
+    dendrogram, and hovering over a dendrogram branch shows a tooltip with node details; clicking
+    rows also drives multi-row selection, highlighting an orange branch path together with the green
+    one.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 20.9
+  width: 799
+dendrogram-properties-1.gif:
+  actions:
+    - increase the Line Width value
+    - increase the Node Size value
+    - enable Show Grid
+    - change Stroke Color to red
+    - change Fill Color to blue
+  caption: Configuring Dendrogram viewer appearance properties
+  described_blob: bdc674eaed57c0b46578d1b9ff742040a1fab751
+  described_by: claude-sonnet-5
+  description: >-
+    A dendrogram tree viewer is shown next to its Appearance property panel, rendering a tree built
+    from a table with node/parent columns. As the animation proceeds, the user increases Line Width
+    and Node Size, enables Show Grid to reveal leaf dots, and changes Stroke Color from dark gray to
+    red and Fill Color from dark gray to blue, with the tree redrawing after each change.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 27.8
+  width: 799
+dendrogram-sorting.gif:
+  actions:
+    - open the cluster column header context menu
+    - choose Sort > Ascending
+    - view the message replacing the hidden tree
+    - click REVERT SORT to restore the dendrogram
+  caption: Restoring sorting on a clustered dendrogram grid
+  described_blob: 91ef94c477c90022d4d189ac86a8b9d9f4024ec6
+  described_by: claude-sonnet-5
+  description: >-
+    A dendrogram tree is attached to a grid of clustered peptide sequences. The user opens the
+    cluster column's context menu and applies ascending sort, which hides the tree and replaces it
+    with a message: "Revert columns sort order to see Dendrogram Tree" and a REVERT SORT link.
+    Clicking REVERT SORT restores the original row order and brings the hierarchical clustering tree
+    back into view.
+  height: 781
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small window crop with cursor and menu clutter typical of a docs walkthrough, not polished
+    enough for marketing
+  reviewed: true
+  seconds: 13.9
+  width: 1599
+expression-filter.gif:
+  actions:
+    - Open the column dropdown and choose a column (age)
+    - Choose a value and add the expression "${age} > 20"
+    - Add a second expression "${age} < 40"
+    - Open the column dropdown again showing available columns with a hover preview (sex categories)
+    - Add expression "${site} starts with New"
+    - Uncheck the other expressions, leaving only the site expression active
+  caption: Building an expression filter
+  described_blob: ffbae878bf23ec5eae8ec936506ae30ac237cd5b
+  described_by: claude-sonnet-5
+  description: >-
+    The Filters panel's Expression filter is used to build a compound query against a clinical data
+    table. The user picks a column, an operation, and a value to add expressions such as "${age} >
+    20", "${age} < 40", and "${sex} contains M", each combined with OR/AND, and the grid updates its
+    row counts live. A final expression, "${site} starts with New", is added and the others are
+    unchecked, filtering the grid down to New York rows only.
+  height: 501
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 52.3
+  width: 800
+filter-checkbox.gif:
+  actions:
+    - Click into the filter search box
+    - Type a search term to narrow the checkbox list
+    - Right-click to open the Select all / Deselect all / Invert all context menu
+    - Clear the search and type a new search term, with matching checkboxes auto-selected
+  caption: Selecting only searched values in a filter
+  described_blob: 327bdd92478be54a5df730eee23ecadbc558d69e
+  described_by: claude-sonnet-5
+  description: >-
+    The screenshot shows a categorical filter panel for a "city" column next to a data grid with
+    country, city, street, and other columns. The user types a search term into the filter's search
+    box, which narrows the checkbox list to matching cities; because the "select filtered values
+    only" option is enabled, only those matching checkboxes end up checked and the grid updates to
+    show just those rows. A right-click context menu with Select all / Deselect all / Invert all is
+    also shown, and the sequence repeats with different search terms.
+  height: 501
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Column named 'something else' and placeholder values like 'someOtherThing'/'anotherThing' are
+    test/dummy data, making it look unpolished for anything beyond illustrating the mechanic on this
+    page.
+  reviewed: true
+  seconds: 32.6
+  width: 800
+filter.gif:
+  actions:
+    - 'check SEX: F'
+    - 'click RACE: Black (shows ''157 rows'' tooltip)'
+    - 'click RACE: Caucasian'
+    - drag the AGE histogram range slider
+    - 'click RACE: Black again'
+    - 'check SEX: M and additional RACE categories'
+  caption: Filtering a table with categorical and numeric filters
+  described_blob: 23fb9e12dc96c6f32ff1b87b9e7dc47abd7c66d3
+  described_by: claude-sonnet-5
+  description: >-
+    The filter panel on the left lists SEX, RACE, and CONTROL as checkbox groups and AGE as a
+    histogram slider, next to a data grid of AGE, SEX, RACE, and HEIGHT columns. The user selects
+    SEX = F, then clicks RACE values (Black, then back to Caucasian) with a tooltip showing the
+    matching row count, drags the AGE histogram range handles, and finally re-checks SEX = M and
+    RACE = Black/Asian/Other to broaden the selection again.
+  height: 480
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 20.1
+  width: 480
+form.gif:
+  actions:
+    - select a row in the grid
+    - click the next-row arrow to advance the form
+    - click the previous-row arrow to go back
+    - click the edit (pencil) icon to enable edit mode
+    - edit field values directly in the form
+    - advance to the next row again
+  caption: Editing values with the Form viewer
+  described_blob: 86ea8ff4b04a850548253b1a9742d5bbe36b4952
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecules with computed properties (LC/MS, LD(50), efficacy, half-life, cLogP, pKa,
+    R-group formulas) is shown next to a Form viewer that displays the details of the selected row.
+    The user steps through rows with the next/previous arrows, then switches the form into edit
+    mode, turning each field into an editable text box so values like LC/MS, LD(50) and the R-group
+    formulas can be changed directly from the form.
+  height: 480
+  illustrates:
+    - visualize/viewers/form
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI chrome and cursor tooltip ('Next row') are visible, and the dense chemistry dataset is
+    domain-specific rather than a generic example
+  reviewed: true
+  seconds: 39.5
+  width: 480
+free-text-filter.gif:
+  actions:
+    - click the expression-mode icon on a filter row
+    - type "age > 20" into the expression field
+    - type "age < 50" into a new expression field
+    - type "site contains ne" into a new expression field
+    - type "disease contains anxi" into a new expression field
+    - click the switch-to-expression-mode icon on a new filter row
+    - type "${sex} starts with m" into the expression field
+  caption: Filtering with free-text expressions
+  described_blob: 87e7d98f929c56d65de4ccd39d167339e24553c2
+  described_by: claude-sonnet-5
+  description: >-
+    The Filters panel shows a dataset of patient visits with columns for site, age, sex, race,
+    disease, and start date. The user switches a filter row into expression mode and types a series
+    of free-text expressions — age > 20, age < 50, site contains new, disease contains anxi, and
+    ${sex} starts with m — each one adding as a new filter condition and narrowing the row counts
+    shown next to the category filters below.
+  height: 501
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 50.7
+  width: 800
+globe.gif:
+  actions:
+    - drag the Point Radius slider up
+    - drag the Point Altitude slider up
+    - open the Color By dropdown and select a different column (RMS)
+  caption: Configuring the Globe viewer
+  described_blob: 008cc1092624d63008fc4163f205fb8665be1a0e
+  described_by: claude-sonnet-5
+  description: >-
+    The Globe viewer shows earthquake data plotted on a rotating 3D Earth, with bars rising from
+    each location scaled by magnitude. Using the settings panel on the right, the user increases
+    Point Radius and Point Altitude, making the bars thicker and taller, then switches Color By from
+    Magnitude to RMS, which recolors the bars in orange and red tones.
+  height: 700
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 18.4
+  width: 1120
+heat-map.gif:
+  actions:
+    - zoom into the heat map to reveal underlying row values
+    - edit a cell in the SEX column
+    - edit a cell in the AGE column, changing the heat color
+  caption: Heatmap responds to row selection and filtering
+  described_blob: 52b2c49cae502d1829bbb3d6004695ced996a01d
+  described_by: claude-sonnet-5
+  description: >-
+    A heat map viewer shows clinical trial demographic columns (AGE, SEX, RACE, DIS_POP, HEIGHT,
+    WEIGHT, DEMOG) color-coded by value across many rows. The view zooms in to reveal the underlying
+    data values in each cell, then a user edits a cell's SEX value and an AGE value, with the
+    corresponding heat map colors updating in response to the edits.
+  height: 480
+  illustrates:
+    - visualize/viewers
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small viewport crops most of the grid, and the color legend/context for what selection or
+    filtering actually looks like isn't shown in these frames
+  reviewed: true
+  seconds: 20.2
+  width: 480
+hierarchical-filter.gif:
+  actions:
+    - Expand the "ger" country node in the tree
+    - Toggle checkboxes for streets under Hamburg to filter the grid
+    - Open the column picker and add "city" to the hierarchy
+    - Rearrange the hierarchy to start with city
+    - Expand a city node (borjomi) to show its streets
+    - Expand "uk" > "london" to show its streets
+  caption: Filtering data with the hierarchical filter
+  described_blob: 723b16fd9624893c1d77e1cb33f20fa85d295678
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of city/street/country records sits next to a Hierarchical Filter panel showing nested
+    country, city, and street levels with row counts. The user expands the "ger" country node to
+    reveal cities and streets underneath, checks and unchecks category checkboxes to narrow the grid
+    to Hamburg streets, opens a column-chooser dialog to add a "city" facet, then rebuilds the
+    hierarchy as city → street and drills into London under the uk country.
+  height: 501
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    placeholder data ("someOtherThing", "lastThing") makes it clearly a synthetic demo dataset
+    rather than real content
+  reviewed: true
+  seconds: 61.2
+  width: 800
+histogram.gif:
+  actions:
+    - hover a bar to view the column summary tooltip
+    - drag the bins slider to change bin count
+    - click a bar to select it
+    - drag the range filter handles to filter rows
+  caption: Interacting with the histogram viewer
+  described_blob: 2612275c4097c5c2acf2a3535f3f644ae6c39eec
+  described_by: claude-sonnet-5
+  description: >-
+    A histogram of a numeric column (first HEIGHT, then WEIGHT) is shown with a summary tooltip
+    listing min, average, max, and standard deviation. The user drags the bin-count slider above the
+    chart to change the number of bins, then clicks a bar to select it (highlighted orange) and
+    drags the range handles below the axis to filter the data, dimming the bars outside the selected
+    range.
+  height: 480
+  illustrates:
+    - visualize/viewers/histogram
+  kind: animation
+  quality: docs
+  quality_notes: small viewer chrome, cursor and slider handles are hard to read at this resolution
+  reviewed: true
+  seconds: 29.5
+  width: 480
+jupyter-notebooks.gif:
+  actions:
+    - open the Tools menu
+    - hover Notebooks to reveal the submenu
+    - click Browse Notebooks
+    - select and apply the Reactions notebook
+    - scroll through the opened notebook's cells (text, molecule grid, code)
+  caption: Creating a new Jupyter Notebook
+  described_blob: 6b74cc1f30ecca876c30a58d2b171dada2aa9af6
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok table view shows a chemical dataset with molecule structures and ZINC IDs. The user
+    opens the Tools menu, navigates to Notebooks, and clicks Browse Notebooks, which opens a
+    Notebooks tab. A notebook named Reactions is then applied and opens as a new tab, displaying its
+    cells with reaction functional-group definitions, molecule grids, and Python code for
+    preprocessing reactions.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: small 800x500 capture with tiny text, hard to read menu labels and code at full resolution
+  reviewed: true
+  seconds: 44
+  width: 800
+line-chart.gif:
+  actions:
+    - Hover the SEX row to show its category tooltip
+    - Hover the RACE row to show its category tooltip
+    - Open the context menu and expand Segments to reveal aggregation options
+    - Drag the overview selection box to zoom into a range of the x-axis
+    - Drag the selection box sideways to pan across the chart
+  caption: 'Line chart: split by category, tooltips, zoom'
+  described_blob: 3a8d83c90a3dacd630ed1a6a8a86582e14833643
+  described_by: claude-sonnet-5
+  description: >-
+    A line chart plots average HEIGHT and WEIGHT against AGE, split by SEX (red/blue lines) with a
+    mini overview bar beneath. The user hovers the SEX and RACE fields to show category-breakdown
+    tooltips, opens the right-click Segments submenu (count, min, max, avg, sum, stdev), then drags
+    a selection handle on the overview strip to zoom into and pan across a narrower age range.
+  height: 480
+  illustrates:
+    - visualize/viewers/line-chart
+    - visualize/viewers
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Cluttered by an overlapping data-table panel and tooltip popups that obscure part of the chart;
+    demonstrates several unrelated features in one clip rather than a single focused workflow
+  reviewed: true
+  seconds: 22.1
+  width: 480
+ngl-viewer-open-PDB.gif:
+  actions:
+    - browse to a folder with PDB-related files
+    - open the Add Viewer dialog and search for "ngl"
+    - add the NGL viewer, which renders the protein structure
+    - select different rows in the grid to highlight the corresponding ligand in the viewer
+  caption: Opening a PDB structure in the NGL viewer
+  described_blob: 4665023d55f5dd46679093b6f115f0d54b265ab9
+  described_by: claude-sonnet-5
+  description: >-
+    In the Files browser, the user opens a data folder containing PDB-related files (an SDF, CSV,
+    and PDB entry) and adds an NGL viewer via the Add Viewer dialog by searching for "ngl". A
+    protein structure (1bdq) loads as a red ribbon/cartoon render next to its data grid, and
+    selecting different rows in the grid highlights the corresponding ligand pose inside the 3D
+    structure.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    informational side panels and file-open menus clutter much of the frame, leaving the 3D
+    structure small and off to one side
+  reviewed: true
+  seconds: 28.3
+  width: 799
+pc-plot.gif:
+  actions:
+    - drag the lower range handle on the Age axis upward to narrow the age range
+    - drag a filter marker on the Height axis to narrow the height range
+    - drag a filter marker on the Weight axis to narrow the weight range
+  caption: Filtering rows with a parallel coordinates plot
+  described_blob: 91af2c59d5f0d36b403438c817ebd9e56097cbfc
+  described_by: claude-sonnet-5
+  description: >-
+    A parallel coordinates plot shows three linked axes—Age, Height, and Weight—with rows drawn as
+    translucent lines connecting their values across the axes. The user drags the range filter
+    handle at the bottom of the Age axis upward, then drags a filter marker on the Height axis and
+    on the Weight axis, each time greying out rows that fall outside the selected range while the
+    remaining rows stay highlighted in blue.
+  height: 480
+  illustrates:
+    - visualize/viewers/pc-plot
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 24.7
+  width: 480
+phylocanvas-gl-viewer-tree-types.gif:
+  actions:
+    - open the Tree Type dropdown
+    - select Radial
+    - select Polar
+    - select Orthogonal
+    - select Rectangular
+  caption: Phylocanvas.gl tree types
+  described_blob: 70c62a1033692829ddb55445a5d7a836f0bce791
+  described_by: claude-sonnet-5
+  description: >-
+    A phylogenetic tree viewer displaying a dataset in a spreadsheet grid alongside the tree plot,
+    with a Tree Type property panel on the right. The Tree Type dropdown is opened and cycled
+    through Radial, Rectangular, Polar, Diagonal, and Orthogonal, redrawing the same tree in each
+    layout, before settling back on Rectangular.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 17
+  width: 800
+pickupstyle.gif:
+  actions:
+    - open the second scatter plot's context menu
+    - choose Style > Pick Up
+    - open the first scatter plot's context menu
+    - choose Style > Apply Data Settings
+  caption: Picking up style from another viewer
+  described_blob: 82774180c2fab4db57bd4fbd4f33451c05ad8b16
+  described_by: claude-sonnet-5
+  description: >-
+    A multi-viewer layout shows a grid, a scatter plot, a trellis of colored scatter plots, and a
+    second scatter plot. The user right-clicks the second scatter plot, opens Style > Pick Up from
+    its context menu, then right-clicks the first scatter plot and selects Apply Data Settings so
+    the two scatter plots end up with matching visual style.
+  height: 600
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded context menus and dense multi-viewer layout make the exact target of each click
+    hard to follow without the surrounding text
+  reviewed: true
+  seconds: 20.3
+  width: 800
+query-transform-1.gif:
+  actions:
+    - click Transformations tab
+    - open Add New Column dialog
+    - type a column name
+    - enter a formula using ${column} references
+    - click OK
+    - save the query
+  caption: Adding a New Column with a formula
+  described_blob: 5361ca6d917b0d7df53e70e23ca7b5acabd9450c
+  described_by: claude-sonnet-5
+  description: >-
+    In the Query view's Transformations tab, the user opens the Add New Column dialog on a Starbucks
+    store dataset, names the new column and enters a formula referencing the street_address, city,
+    and state columns with the ${...} syntax. Clicking OK adds the computed column to the grid, and
+    the transformation step appears in the Transformations panel as the query is saved.
+  height: 480
+  kind: animation
+  quality: docs
+  quality_notes: clear UI walkthrough but tightly cropped to the dialog and grid, low context on its own
+  reviewed: true
+  seconds: 9.4
+  width: 850
+query-transform-1a.gif:
+  actions:
+    - open the grid cell popup menu to add a new column
+    - type the column name "Address"
+    - enter a formula combining ${street_address}, ${city}, ${state}
+    - click OK to apply the transformation
+    - save the result
+  caption: Adding a computed column with a formula
+  described_blob: e9bf777c7e8e47f64a128cc18a50402aec49de46
+  described_by: claude-sonnet-5
+  description: >-
+    In the Transformations panel of a query result grid, the user opens the "Add New Column" dialog,
+    names the new column "Address", and enters a formula referencing the street_address, city, and
+    state columns. The preview pane shows the resulting combined address strings, and after clicking
+    OK the new AddNewColumn step appears listed under Transformations while the grid updates and
+    saves.
+  height: 480
+  kind: animation
+  quality: answer
+  quality_notes: clear step-by-step UI capture, but plain app chrome with no branding, so not marketing-grade
+  reviewed: true
+  seconds: 7.1
+  width: 850
+query-transform-2a.gif:
+  actions:
+    - click EDIT on the AddNewColumn step
+    - edit the expression field
+    - confirm with OK
+    - reopen the dialog and change the expression again
+    - confirm with OK
+  caption: Editing an AddNewColumn transformation step
+  described_blob: b9cbd0a55d56b4797410ab64860472d07d19be97
+  described_by: claude-sonnet-5
+  description: >-
+    The Recipe Editor shows a query result grid with HEIGHT, WEIGHT, and INDEX columns, and a
+    Transformations panel listing steps including KeepColumns and AddNewColumn. The user opens the
+    Add New Column dialog and edits the INDEX expression, first from HEIGHT/WEIGHT to
+    HEIGHT/WEIGHT*100, then swaps it to WEIGHT/HEIGHT*100, watching the grid and the live preview
+    panel update after each change.
+  height: 480
+  kind: animation
+  quality: docs
+  quality_notes: small dialog text and dense numeric grid read poorly at this resolution outside its page context
+  reviewed: true
+  seconds: 12.3
+  width: 850
+query-transform-3a.gif:
+  actions:
+    - Click Edit on the AddNewColumn transformation step
+    - View the INDEX column added to the query results grid
+  caption: Adding a query transformation step
+  described_blob: 463cb5eec8d1d32ea5995556b76ca91e670100a8
+  described_by: claude-sonnet-5
+  description: >-
+    The Transformations panel next to a query results grid shows a KeepColumns step followed by an
+    AddNewColumn step configured with the expression ${WEIGHT}/${HEIGHT}, name INDEX, type auto.
+    After clicking Edit, the new INDEX column appears in the results grid populated with computed
+    values.
+  height: 480
+  kind: animation
+  quality: docs
+  quality_notes: small cropped panel, low information density per frame, generic sample data
+  reviewed: true
+  seconds: 2.9
+  width: 850
+search-commands.gif:
+  actions:
+    - Click the search icon in the toolbar to open the smart bar
+    - Type "sca" and view matching commands/viewers in the dropdown
+    - Select a scatter plot command, opening a scatter plot viewer
+    - Type "mole" and view matching help topics in the dropdown
+    - Select "Cheminformatics", opening the Cheminformatics help page
+  caption: Searching commands and help from the smart bar
+  described_blob: b31bb27d365bb9d5b11bce282965a6afab7d8c61
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the Datagrok smart bar at the top of the app, opened from a data grid with a
+    demographics table loaded. The user types "sca", and a dropdown lists matching viewers,
+    commands, and functions like Scatter plot and 3d scatter plot; picking one opens a scatter plot
+    of the data. The user then types "mole" and the dropdown shows matching help topics such as
+    Molecular Descriptors and Molecular Fingerprints, and selecting one opens the Cheminformatics
+    help page in a new tab.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 19.1
+  width: 800
+search-data.gif:
+  actions:
+    - typed "cauca" into the search field
+    - cleared the search field
+    - typed "age > 40" into the search field and applied the filter
+    - hovered over a filtered row to show its tooltip
+  caption: Filtering a grid with the smart search bar
+  described_blob: 299b0ab6ada7ed77d635c73dba147ece9d3cd567
+  described_by: claude-sonnet-5
+  description: >-
+    The grid shows a demographic table with columns like Age, Sex, Race, Height, Weight, and Demog.
+    The user types "cauca" into the search box, which autocompletes to filter rows, then clears it
+    and types "age > 40" instead, which filters the row count down from 5850 to 3715 matching rows.
+    Hovering over a row afterward shows a tooltip with that row's full field values.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 17.9
+  width: 800
+select-random-rows.gif:
+  actions:
+    - open the Select menu
+    - choose Random...
+    - drag the percentage slider to 50%
+    - view the randomly selected rows highlighted in the scatter plot and grid
+  caption: Selecting random rows via Select menu
+  described_blob: b3eadba2a3b670c58853cd17e5c4667d673b390a
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot and linked grid of a crime dataset are shown in Datagrok. The user opens the
+    Select menu and chooses Random..., which opens a Select Random Rows dialog with a # rows field
+    and a percentage slider. Dragging the slider to 50% sets the row count to 315 and highlights
+    that random subset of points orange in the scatter plot and rows in the grid.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 6.3
+  width: 800
+sp-hist.gif:
+  actions:
+    - drag the left range slider under the histogram to narrow the age range
+    - drag the range further to a different age band
+    - click/hover a histogram bar to show a selected-bin tooltip with row counts
+  caption: Filtering a histogram cross-filters a scatter plot
+  described_blob: 3f7ffbeda791b541128d37213498ba250e92df78
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot of weight versus height (points colored by age) sits above an age histogram. As
+    the user drags the histogram's range sliders and clicks through age bins, the selected age range
+    highlights in the histogram and the scatter plot points update their color and set to reflect
+    only the filtered rows, showing the two viewers are linked.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small 500x500 crop with no surrounding UI chrome, but clear and legible for illustrating viewer
+    interaction
+  reviewed: true
+  seconds: 17.9
+  width: 500
+text-filter.gif:
+  actions:
+    - type a search term into the Text Filter search box
+    - check additional matched terms (malty, sweet, fruity) as OR conditions
+    - drag the fuzziness slider away from 0 (exact match) toward fuzzier matching
+    - observe the highlighted matches and updated row counts in the grid
+  caption: Text Filter with fuzzy search and And/Or toggle
+  described_blob: a9331944f7606e82261e25ad936994eb7b71c1cc
+  described_by: claude-sonnet-5
+  description: >-
+    A beer-review grid is filtered by the Text Filter panel on the left. The user types "malt" into
+    the search box, which surfaces matching terms (malty, sweet, fruity) with checkboxes and result
+    counts; checking several terms combines them with the OR toggle. The user then drags the
+    fuzziness slider up from 0.00, and the match counts for each term grow as the search becomes
+    less exact. Matched words like "malty" and "sweet" are highlighted in orange within the Flavor
+    column text.
+  height: 501
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 40.9
+  width: 800
+tile-viewer.gif:
+  actions:
+    - viewed the tile grid of molecule records
+    - opened the record's form in an editable "Summary" tab
+    - dragged the "smiles" field to reorder it in the form
+    - returned to the tile grid to see the updated layout
+  caption: Editing the tile viewer's form layout
+  described_blob: 7ff01783450dc7e6c10d99033f3e2c759029884e
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of tiles shows molecule records, each tile rendering fields like smiles, logP, logS,
+    inchi, lpc, PMI3, qed and PMI1 alongside a rendered structure. The user opens a "Summary" tab
+    that presents one record as an editable form, then drags the "smiles" field to reposition it
+    among the other fields. The view returns to the tile grid with the reordered layout applied to
+    all tiles.
+  height: 480
+  illustrates:
+    - visualize/viewers/tile-viewer
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI crop with truncated numeric values and no visible toolbar chrome for full context; fine
+    within its help page but not self-explanatory alone
+  reviewed: true
+  seconds: 35.6
+  width: 480
+viewers-interaction.gif:
+  actions:
+    - hover over a pie chart segment
+    - drag-select points on the scatter plot
+    - drag the histogram range sliders to filter
+    - hover over a filtered histogram bar to see row counts
+    - hover over the filtered pie chart segment to see row counts
+  caption: Cross-filtering across linked viewers
+  described_blob: d6e253633d7c65735967c2d9419711e0bf6d4720
+  described_by: claude-sonnet-5
+  description: >-
+    A four-viewer dashboard (histogram, line chart, scatter plot, pie chart) shows how the viewers
+    stay linked. Hovering over a pie slice highlights the corresponding rows in every other viewer,
+    dragging a selection lasso on the scatter plot colors the matching points and pie segment, and
+    dragging the range handles on the histogram filters all viewers down to a narrow height range,
+    shrinking the row counts shown in the tooltips.
+  height: 500
+  illustrates:
+    - visualize/viewers
+    - visualize/viewers/filters
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 43.4
+  width: 800

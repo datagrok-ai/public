@@ -1,4 +1,5 @@
 ---
+documents: [access/files/shares]
 title: "SharePoint"
 description: Connect Datagrok to SharePoint or OneDrive as a file share using Microsoft Entra ID OAuth.
 keywords:

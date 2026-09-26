@@ -1,0 +1,9 @@
+type: mirrors
+from: SourceFile
+to: SourceFile
+derived_by: [filesystem]
+description: >
+  A test file named after a source file tests it: `<x>_test.dart` or `<x>_<suffix>_test.dart` in `<pkg>/` for
+  `<pkg>/lib/**/<x>.dart`; `<x>-tests.ts`, `<x>.test.ts`, `<x>-test.ts` or `<x>-<suffix>-tests.ts` for `<x>.ts` outside
+  a tests folder of the same package or library. Only when the base name resolves to exactly one source file in the
+  unit; the exact name is 0.9, the name before a suffix 0.8.

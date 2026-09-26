@@ -1,0 +1,9 @@
+type: filter
+extends: function
+description: >
+  A custom filter registered for a semantic type.
+properties:
+  primary?:      boolean
+  columnless?:   boolean
+notes:
+  - roles contains 'filter'

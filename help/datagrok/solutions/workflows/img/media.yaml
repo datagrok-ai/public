@@ -1,0 +1,46 @@
+custom-identifier-patterns.gif:
+  actions:
+    - open the search/context panel for the Datagrok home view
+    - view a table with a CHEMBL_ID value recognized and highlighted by the custom pattern
+    - expand the context panel Links section for the identifier
+    - drill into the linked molecule's activities to an IC50 record
+    - expand the IC50 record's linked assay to view its details
+  caption: Custom identifier patterns for external data linking
+  described_blob: 11d89851d927a9045534de0051d90307abcc4ae8
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok table contains a single CHEMBL_ID column with the value CHEMBL483900, highlighted
+    green to show it was recognized by a registered identifier pattern. Opening the context panel
+    reveals a Links section that drills from the identifier into its linked ChEMBL molecule, then
+    into its activities, showing an IC50 record with assay and potency fields, and finally the
+    underlying assay's full details (organism, cell type, confidence score).
+  height: 1001
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    functional but plain default UI with placeholder-like single-cell table; illustrates the
+    mechanism rather than a polished end-to-end workflow
+  reviewed: true
+  seconds: 24.5
+  width: 1601
+func-annotations-gasteiger-0.png:
+  caption: Gasteiger partial charges via function annotations
+  described_blob: f4ccfd2cbc52354cf5c5b7e69f5819b88fd086a9
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows a molecules table with a canonical_smil column, one row selected and
+    highlighted. The context panel on the right lists Actions and Chemistry categories, with a
+    Gasteiger Partial Charges info panel expanded showing a rendered structure with colored charge
+    highlights. Below, the source of the underlying RDKit-based script is open, showing its #name,
+    #description, #tags, #meta.cache, #condition, and #input/#output annotations that register it as
+    an automatic info panel.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    two overlapping panes (script source over the grid) crowd the frame, and the cursor/selection
+    state is incidental to the annotation concept being taught
+  reviewed: true
+  width: 1601

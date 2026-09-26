@@ -1,0 +1,108 @@
+context-help.gif:
+  actions:
+    - click a viewer (histogram) to make it the current object, showing its help
+    - click another viewer (scatterplot) to switch the current object and its help
+    - use the back/forward arrows to revisit previously shown help topics
+    - click the home icon to open the wiki home page
+    - hover the panel header to reveal the 'Open in new tab' icon
+    - hover a link within the help text
+  caption: Viewing Context Help for the current object
+  described_blob: 7893d638a97e1083aef5702172574564a724e09c
+  described_by: claude-sonnet-5
+  description: >-
+    The Context Help panel in the bottom-right corner shows documentation for whichever object is
+    currently selected. Clicking a viewer such as the histogram or the scatterplot in the main grid
+    updates the panel to that viewer's help topic, including its description and control shortcuts.
+    The panel's header also offers back/forward navigation between previously viewed topics, a home
+    button that opens Datagrok's wiki landing page, and an 'Open in new tab' icon; hovering a link
+    inside the text (e.g. '3D Scatterplot') shows it's clickable.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Large overlaid captions ('Scroll to zoom', 'Drag to pan') from an unrelated control-reference
+    animation bleed into several frames, and the demo data grid on the left is unrelated clutter to
+    the Context Help feature being demonstrated.
+  reviewed: true
+  seconds: 23.7
+  width: 1601
+context-panel-controls.gif:
+  actions:
+    - select a query in the sidebar to view its Context Panel
+    - select a row in a molecule grid and expand Actions, Chemistry, and Descriptors sections
+    - view the Gasteiger Partial Charges visualization for the selected molecule
+    - clone the Context Panel into a separate window
+    - select a different row and observe the live panel update while the cloned panel remains static
+  caption: Cloning the Context Panel
+  described_blob: 6a6d89e5299c5d44548da2451242943bf0127ccc
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the Context Panel on the right side of the Datagrok UI, first displaying
+    details for a selected query, then switching to show info for a molecule grid with Actions,
+    Chemistry, and Descriptors sections including a Gasteiger Partial Charges visualization. The
+    user clones the panel into a second, separate panel shown side by side with the original.
+    Selecting a different row in the grid updates the live Context Panel while the cloned copy stays
+    fixed on the molecule it was cloned from.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear UI capture but busy with multiple nested panels and small text, best understood alongside
+    the surrounding page text
+  reviewed: true
+  seconds: 82.9
+  width: 1601
+context-panel-functions.gif:
+  actions:
+    - select a query in the Queries browser
+    - view its Details and Run info panes
+    - enter and change a query parameter value
+    - open a data table and inspect its General info pane
+    - expand a viewer's Properties pane
+    - change the viewer's color-by column
+    - select multiple columns and view their commands and plots
+  caption: Context Panel for functions and columns
+  described_blob: f3f86b80f50cbad6136b977de4549a6f1ae4c5c4
+  described_by: claude-sonnet-5
+  description: >-
+    The animation opens in the Queries browser with the Products query selected; the Context Panel
+    shows its Details (creator, connection, tags, params) and a Run section where a Product ID
+    parameter is entered and changed before running the query. It then switches to a data table
+    (demog) with a scatter plot, where the Context Panel shows General table info, expands viewer
+    Properties (Data, Color, Size, Marker...), and recolors the plot by the AGE column. Finally two
+    columns are selected, and the panel lists column commands (Remove, Extract, Hide, Derive column,
+    Smart form) alongside summary plots.
+  height: 1001
+  kind: animation
+  quality: answer
+  quality_notes: dense, small UI text typical of a docs capture; no marketing polish
+  reviewed: true
+  seconds: 86.9
+  width: 1601
+info-panes-mini-app.gif:
+  actions:
+    - open a saved Pattern Similarity query
+    - click to edit the Pattern field, opening the molecule sketcher
+    - draw a fused-ring (naphthalene-like) structure as the pattern
+    - set Max Rows and click OK/RUN
+    - view the query progress and info panes (Gasteiger partial charges) in the context panel
+    - view the resulting table of molecules ranked by similarity
+  caption: Running a pattern similarity search on molecules
+  described_blob: b59b9717a2602e4da25e398bd45f01de799cf457
+  described_by: claude-sonnet-5
+  description: >-
+    The screen shows a Queries browser with saved 'Search | Pattern Similarity' queries and a
+    context panel on the right. A user opens the query, sketches a naphthalene-like ring structure
+    in the molecule editor as the search pattern, sets Max Rows, and runs it. The context panel
+    shows a Gasteiger partial charges heatmap for the pattern while the query runs, then a results
+    grid appears listing matching molecules ranked by similarity score, with structure thumbnails
+    and a MolregnoInfo panel available in the context panel.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text is hard to read at this resolution and the SMILES sketcher panel briefly obscures
+    the query form
+  reviewed: true
+  seconds: 26.3
+  width: 1601

@@ -1,0 +1,15 @@
+# Root. An extracted code unit. Never hand-written.
+type: component
+extends: node
+abstract: true
+visibility: public
+description: >
+  A unit of code the extractors find: package, library, module, class, function,
+  registered function, endpoint, table, container. Ids keep the extractor scheme
+  (pkg:Chem, func:Chem:detectMolecules). Components reach features through touches
+  edges and are never authored.
+properties:
+  language:     "'dart' | 'ts' | 'js' | 'java' | 'python' | 'r' | 'sql' | 'julia' | 'octave' | 'grok' | 'other'"
+  path?:        Path
+  line?:        number
+  package?:     Package

@@ -1,0 +1,10 @@
+type: requested-by
+from: Feature | Ticket
+to: Customer
+key: requested_by
+derived_by: [annotation, external]
+description: A customer asked for a feature or raised a ticket; from the Jira Client field or the feature's home doc.
+properties:
+  asked_on?:     Date
+  weight?:       "'low' | 'normal' | 'high' = 'normal'"
+  note?:         Text

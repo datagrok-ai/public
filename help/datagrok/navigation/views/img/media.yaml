@@ -1,0 +1,520 @@
+browse-entity-gallery.gif:
+  actions:
+    - Toggle the Scripts browser from list view to card/gallery view
+    - Type a tag query (#chem) into the search box to filter the gallery
+    - Open the Predictive models browser
+    - Type a name query into its search box to filter the gallery
+  caption: Browsing and searching entities in gallery view
+  described_blob: c547e12a143d091e91cb92d91bdd9b7b273bdcec
+  described_by: claude-sonnet-5
+  description: >-
+    The Scripts browser opens in a list, then switches through card and grid gallery layouts showing
+    each script's name, language, and description. The user filters the gallery by typing a tag
+    (#chem) into the search box, narrowing hundreds of scripts down to a handful. The same pattern
+    is then shown in the Predictive models browser, searching by name to filter down to a single
+    matching model.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear and on-topic but narrowly scoped to Scripts/Predictive models rather than a general entity
+    gallery, so best kept in context on the page
+  reviewed: true
+  seconds: 37.4
+  width: 1601
+browse-tree.png:
+  caption: Browse tree structure
+  described_blob: a57f73da31ea943aaaa2bf6a0900bfc2b9423ad3
+  described_by: claude-sonnet-5
+  description: >-
+    The Browse panel's tree view is shown with top-level nodes for a user's home: Scratchpad with an
+    open New Project, then My stuff, Dashboards, Apps, Namespaces, Files, Databases, and Platform. A
+    sidebar with Home, Browse, and Favorites icons sits to the left of the tree.
+  height: 421
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Clear and legible, but a plain tree snippet with no surrounding context beyond the Browse page
+    it illustrates.
+  reviewed: true
+  width: 444
+browse-view-apps.gif:
+  actions:
+    - Click Demo app to open its landing view with a Run button
+    - Click Diff Studio to open its model/run interface with a live plot
+    - Click Hit Design to open its landing view with a campaign list and description panel
+    - Click Hit Triage to open its landing view with a campaign list and description panel
+    - Click Oligo Toolkit to open its app tooltip/preview
+    - Click Peptides to open its landing view with demo links
+  caption: Opening apps from the Browse tree
+  described_blob: 99571c111b47dfc30fd1f23d877560100e7032d0
+  described_by: claude-sonnet-5
+  description: >-
+    The Browse panel's Apps folder lists installed applications such as Diff Studio, Hit Design, Hit
+    Triage, Oligo Toolkit, and Peptides. Clicking each app in turn opens its app-specific view in
+    the main area: some show an interactive tool (Diff Studio's ODE editor and plot), others show a
+    landing page or README with a description, screenshots, and links to campaigns or demos.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Long silent UI walkthrough with no annotations; clear and current UI but relies on the
+    surrounding text for context.
+  reviewed: true
+  seconds: 61
+  width: 1601
+browse-view-dashboard.gif:
+  actions:
+    - Browse the namespace/project tree in the Browse panel
+    - Open the "PA Income by County" dashboard from Locust716/ProjectABC
+    - View the dashboard as a Table View with a grid and a Shape Map viewer
+    - Click a row in the grid, highlighting the corresponding county on the map
+    - Hover over a county on the map to see its tooltip
+    - Change the Shape Map color scheme
+  caption: Opening a dashboard as an interactive Table View
+  described_blob: 6f2267b5ee9d4735be13bd32c4ba1e11d9e13472
+  described_by: claude-sonnet-5
+  description: >-
+    The Browse tree is used to navigate into a project namespace (Locust716 / ProjectABC) and open
+    the "PA Income by County" dashboard. It opens as a full Table View with a data grid on top and a
+    Shape Map viewer below. Clicking a row in the grid highlights the matching county on the map,
+    and hovering over the map shows a tooltip with the county's value; the map's color scheme is
+    then switched from an orange sequential scale to a red-blue diverging one.
+  height: 1001
+  illustrates:
+    - govern/spaces
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    first frame shows an unrelated help panel (Namespaces sharing text) before the dashboard opens,
+    and UI chrome/cursor add clutter
+  reviewed: true
+  seconds: 19.9
+  width: 1601
+browse-view-databases.gif:
+  actions:
+    - Expand the Postgres > Northwind connection in the Databases tree
+    - Expand Schemas to show public, pg_catalog, information_schema
+    - Expand pg_catalog to show system tables (pg_class, pg_collation, pg_cast, etc.)
+    - Open the customers table to preview its rows in a grid
+    - Select the employeeid column under employees to inspect its type and computed statistics
+    - Select the customers table/query to show its details and run history panel
+  caption: Browsing database schemas and tables
+  described_blob: aaf4bb20f2f6a5f1ae59f73ca78d1479585ea15b
+  described_by: claude-sonnet-5
+  description: >-
+    In the Browse tree under Databases, the user expands a Postgres connection to Northwind,
+    revealing its schemas (public, pg_catalog, information_schema) and system tables like pg_class
+    and pg_collation. They drill into the public schema's tables, open the customers table to view
+    its row data in a grid, then open an employees column (employeeid) to inspect its type and
+    min/max/avg/stddev statistics, and finally select the customers query context showing its run
+    details and connection info.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Clear and on-topic but table text is small/truncated at this resolution, and it packs several
+    sub-flows (schemas, tables, columns, queries) into one long clip rather than one focused action.
+  reviewed: true
+  seconds: 55.4
+  width: 1601
+current-rows-2.gif:
+  actions:
+    - move the current row down through the grid, one row at a time
+    - observe the properties panel update to the newly selected molecule
+    - observe the highlighted circle move to the corresponding point on the scatter plot
+  caption: Current row synced between grid and scatter plot
+  described_blob: 01b5edf78a7eda20ffb901c58d63d178f178304f
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid of molecules with a properties panel on the right and a scatter plot
+    (HeavyAtomCount vs FractionCSP3) below. As the current row moves down through the grid, the row
+    highlights green, the properties panel updates to show that molecule's SMILES, formula, and
+    descriptors, and a circle marker moves on the scatter plot to the point representing the current
+    row.
+  height: 600
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    cropped to the grid, side panel, and plot with no visible toolbar/cursor context; dense
+    chemistry-specific panel content reduces general legibility
+  reviewed: true
+  seconds: 13.6
+  width: 800
+filters-viewer.gif:
+  actions:
+    - click the Toggle filters icon to open the Filters panel
+    - uncheck a category (Psoriasis) in the DIS_POP filter to exclude it
+    - open the Select columns dialog from the grid header
+    - check the SEVERITY column to add it to the grid
+    - hover a filter header to view category counts and percentages
+  caption: Toggling and configuring the filters viewer
+  described_blob: 312a42f518baace8d0046d8a338a52e0d10e6695
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of clinical trial data is shown next to a scatter plot of height versus weight colored by
+    sex. Clicking the funnel icon opens a Filters panel with checkbox lists for DIS_POP, RACE and
+    SEVERITY plus histogram sliders for AGE, WEIGHT and HEIGHT; unchecking a category like Psoriasis
+    narrows the grid, scatter plot and row count together. A column-selection dialog is then opened
+    via the header icon to add the SEVERITY column, and a tooltip shows category breakdowns (counts
+    and percentages) for DIS_POP and RACE.
+  height: 1001
+  illustrates:
+    - visualize/viewers/filters
+    - visualize/viewers
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 57.3
+  width: 1601
+filters.gif:
+  actions:
+    - click the funnel icon to open the filter panel
+    - click a blue bar to filter by that category
+    - click another bar to filter by a different category only
+    - press Esc to clear the filter
+    - click a second column's bar to make a selection alongside the filter
+    - drag the slider handles on a numeric filter to filter by range
+  caption: Filtering rows with the column filter panel
+  described_blob: 8e83be4073166311cfcef37ca7058399582612eb
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the filter panel on the left of a table/scatter plot view, with categorical
+    filters (SEX, RACE, DIS_POP) shown as colored bar histograms and a numeric filter (AGE) shown as
+    a slider with a histogram. Clicking a category's bar filters the table and scatter plot to just
+    that category, and clicking again or pressing Esc clears the filter. Selecting a second category
+    highlights it in orange (selection) alongside the blue filter, and dragging the AGE slider
+    handles filters rows to a numeric range.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 31.9
+  width: 800
+namespaces-drag-and-drop.gif:
+  actions:
+    - Drag a script entity from its source location toward the target project/namespace
+    - Choose Link (vs. Clone/Move) in the Move entity dialog and confirm
+    - View the entity now nested under the destination namespace
+    - Open the entity's details via a hover/info card
+    - Browse another namespace to see the linked entity listed there
+    - Add an entity to favorites
+  caption: Moving an entity between spaces by drag-and-drop
+  described_blob: db2d572b42f38ca6f384a1f3379a9d801c854856
+  described_by: claude-sonnet-5
+  description: >-
+    The Browse tree shows a gallery of scripts tagged #chem. The user drags the "Butina Molecules
+    Clustering" script from the Scripts area toward the "Project ABC" namespace, which opens a "Move
+    entity" dialog offering to Link, Clone, or Move it into the target project. After confirming,
+    the script appears nested under Project ABC as a linked entity, and its details (inputs,
+    outputs, tags) can be inspected via a hover card. The recording then switches to another user's
+    namespace tree, where the same linked entities are visible and one is added to favorites.
+  height: 1001
+  illustrates:
+    - govern/spaces
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Cropped to a small viewport with placeholder demo data (chem scripts, generic project/user
+    names); functional but not polished enough to stand alone as marketing material.
+  reviewed: true
+  seconds: 27.4
+  width: 1601
+scratchpad-open-entities.gif:
+  actions:
+    - click the Scratchpad/entity icon to view an open, unsaved table
+    - click Save to open the Save project dialog
+    - name the project and confirm with OK
+    - browse the saved project's files in the tree under My stuff > Home
+    - switch to a second open Scratchpad table (smiles - mmp)
+  caption: Saving Scratchpad entities into a project
+  described_blob: 4523a191e39f98f00cf54e04de0ede44664c5756
+  described_by: claude-sonnet-5
+  description: >-
+    The screen shows a Datagrok table view of an opened CSV ("demog") with an entity icon in the
+    sidebar marking it as an unsaved Scratchpad item. The user opens the Save project dialog, names
+    it, and confirms, after which the browse tree under My stuff > Home lists the saved CSV files
+    alongside a second open table ("smiles - mmp", a chemical structures grid) that was also sitting
+    in the Scratchpad.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear and on-topic but shows real/sample clinical and chemical data with dense grids, more a
+    walkthrough than a single clean answer shot
+  reviewed: true
+  seconds: 50.2
+  width: 1601
+search-in-table.gif:
+  actions:
+    - type a numeric condition (age> 55) into the grid's search box
+    - matching rows are auto-selected and highlighted in the grid and linked scatter plot
+    - >-
+      open the search context menu to inspect Prev/Next match, Select matching, Filter matching,
+      Auto-select, Auto-filter options
+    - clear the search and type a new text condition matching "Black" values
+    - the grid and scatter plot filter down to only the matching rows
+  caption: Searching, selecting, and filtering matching rows in the grid
+  described_blob: 09e1806245b9fa81c0327b471c997fe96e8e2c52
+  described_by: claude-sonnet-5
+  description: >-
+    A data table with linked histograms and a scatter plot is filtered live by typing a condition
+    into the grid's search box; matching rows are highlighted in orange across the grid and the
+    linked viewers. A context menu shows the search options (Prev/Next match, Select matching,
+    Filter matching, Auto-select, Auto-filter). After trying an age condition, the user types a text
+    search that matches only rows where race is "Black"; with auto-select and auto-filter active,
+    the grid and scatter plot narrow down to just those 157 matching rows.
+  height: 992
+  illustrates:
+    - visualize/viewers/grid
+    - visualize/viewers
+  kind: animation
+  quality: answer
+  quality_notes: >-
+    functional product UI captured at good resolution, but plain demo data ("demog") and default
+    styling, not polished for marketing
+  reviewed: true
+  seconds: 63
+  width: 1601
+table-view-add-viewers-dock.gif:
+  actions:
+    - click the Histogram/viewer icon in the sidebar
+    - open Add Viewer and search for "bar"
+    - add the Bar Chart viewer
+    - drag the Bar Chart viewer's header over the scatter plot
+    - drop it using the drop-zone indicator to dock it into the layout
+  caption: Adding and docking viewers in a table view
+  described_blob: 40704ab1f1df3cc7d53043b85be1d89fd369d7fa
+  described_by: claude-sonnet-5
+  description: >-
+    A table view of a clinical demographics dataset starts with a scatter plot docked on the right.
+    The user opens the Add Viewer dialog, searches for and adds a Bar Chart, then drags the new bar
+    chart's header into the scatter plot area, using drop-zone indicators to dock it below as a
+    stacked viewer alongside a histogram. The final layout shows the scatter plot, histogram, and
+    bar chart docked together on the right side of the grid.
+  height: 1001
+  illustrates:
+    - visualize/viewers
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 75.4
+  width: 1601
+tabs-mode-navigation.gif:
+  actions:
+    - click the Windows icon on the status bar to enable tabs mode
+    - click the demog tab header to switch to the demog view
+    - click the curves-demo tab header to switch back
+  caption: Navigating between views in tabs mode
+  described_blob: d0fa63f227472e31f89ceb5520b4e9bd549df644
+  described_by: claude-sonnet-5
+  description: >-
+    The interface starts in a compact single-view layout showing the curves-demo table. After the
+    Windows icon on the status bar is clicked, a tab bar appears at the top with entries for each
+    open view (Browse, demog, curves-demo). Clicking the demog tab switches the main panel to the
+    demog data table, and clicking back on the curves-demo tab restores the curve-fitting view.
+  height: 1001
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 8.9
+  width: 1601
+text-manager.gif:
+  actions:
+    - duplicate and edit a row of pasted text
+    - toggle off Auto sync
+    - click Sync to refresh the preview
+    - click DONE to open the resulting table
+  caption: Importing delimiter-separated text into a table
+  described_blob: 374da8a9f897b02a5684ddf7b422538c677160cc
+  described_by: claude-sonnet-5
+  description: >-
+    The Import text panel shows a code editor with comma-separated mtcars-style data (model, mpg,
+    cyl, disp, ...) on the left and a live preview grid on the right. The user duplicates the last
+    row, edits it, then turns off Auto sync and clicks the Sync button to manually refresh the
+    preview. The final frame shows the resulting Table opened with the parsed columns and rows.
+  height: 999
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 25.9
+  width: 1600
+toolbox-table-view.png:
+  caption: Toolbox panel for navigating open tables
+  described_blob: ca3821b30d074d0a85e6a0a7b2ab9118ba92d676
+  described_by: claude-sonnet-5
+  description: >-
+    A table view with the Toolbox panel open on the left, highlighted with a red border. At the top,
+    the Toolbox lists the open table 'demog' with an 'Open table' tooltip, followed by collapsible
+    File, Search, Viewers, Columns, Layouts, Actions, and Models sections showing viewer-type icons.
+    The main area shows the demog table grid alongside a pie chart and scatter plot viewer.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    red highlight box and cursor annotation added for the doc page; not a clean standalone
+    screenshot
+  reviewed: true
+  width: 1601
+toolbox-user-profile-view.png:
+  caption: Toolbox in the User Profile View
+  described_blob: 8823abee10b69cbc27796649a0cda966af5a221b
+  described_by: claude-sonnet-5
+  description: >-
+    A User Profile view for user Mary Smith, with the left Toolbox panel outlined in red listing
+    profile-related sections: Summary, Activity, Projects, Connections, Queries, Models, Scripts,
+    Jobs, and Notebooks. Summary is selected, showing the user's photo, name, login, email, and
+    links for Groups and Set password on the left, plus a Misc/Description property panel on the
+    right.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: annotated with a red box for callout emphasis, not a clean standalone screenshot
+  reviewed: true
+  width: 1601
+view-splitting.gif:
+  actions:
+    - opened the tab menu on a table view
+    - split the view to show a second table side by side
+    - opened a file browser panel in a new split
+    - replaced the file browser panel with another table view
+    - split again to add a scatter plot alongside the tables
+  caption: Splitting the workspace into multiple views
+  described_blob: 8242fa6400c6ece3023d471714d4c19db189a4de
+  described_by: claude-sonnet-5
+  description: >-
+    A table view with a molecule grid is split into two side-by-side views, showing two different
+    data tables next to each other. The layout is then split further: a file browser panel is added,
+    then replaced with another table, and finally a scatter plot is added alongside the tables,
+    building up a multi-panel view arrangement within the same window.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small, dense UI text typical of a full-window capture; readable but not a clean standalone
+    answer without the surrounding page text
+  reviewed: true
+  seconds: 29.2
+  width: 1601
+viewer-property-panel.gif:
+  actions:
+    - open the property panel search field
+    - select the X property and change it to RACE
+    - hover a category to show its tooltip breakdown
+    - set the Color property to SEX
+    - open the Back Color color picker and pick a color
+    - toggle off Show Horizontal Grid Lines and other Misc checkboxes
+    - clear the search field
+  caption: Editing viewer properties in the property panel
+  described_blob: a436ff0079158e0da836b81b87c98dfe40df6bd8
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot of WEIGHT vs HEIGHT is shown with its property panel open on the right. The user
+    searches the panel for the X property, switches it to RACE producing a categorical scatter with
+    a tooltip breakdown, then sets Color to SEX so points split into two colors, opens the Back
+    Color color picker and changes the background, and finally toggles off grid-line and selector
+    checkboxes under Misc while clearing the property search box.
+  height: 500
+  illustrates:
+    - visualize/viewers
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded panel text is hard to read at full size, but the UI is current and the actions
+    are clear
+  reviewed: true
+  seconds: 26.5
+  width: 800
+viewers-as-filters.gif:
+  actions:
+    - click a pie chart slice to highlight matching rows in the scatter plot
+    - click the filter/gear icon at the top of the scatter plot
+    - click another pie chart slice to change the filtered subset
+    - observe the table rows update to the filtered data
+  caption: Using a viewer as a row filter
+  described_blob: 278ce1f0e76419e82ba69e414332034b1b86f9ca
+  described_by: claude-sonnet-5
+  description: >-
+    A data table is shown alongside a scatter plot and a pie chart of the same dataset. Clicking a
+    slice in the pie chart highlights and enlarges the matching points in the scatter plot, and a
+    filter icon at the top of the scatter plot toggles between filtering rows and just
+    selecting/highlighting them. The rows in the table update to show only the filtered subset as
+    different chart segments are chosen.
+  height: 500
+  illustrates:
+    - visualize/viewers/filters
+  kind: animation
+  quality: docs
+  quality_notes: small viewport crops the pie chart legend and right edge of the table, some UI chrome cut off
+  reviewed: true
+  seconds: 23.6
+  width: 800
+viewers-interaction-main.gif:
+  actions:
+    - open the Viewers panel and add a scatter plot viewer
+    - color the scatter plot by SEX
+    - select a RACE category in the filter panel, splitting the line charts by race
+    - check/uncheck DIS_POP and CONTROL categories in the filter panel
+    - drag the AGE range slider to narrow the filtered range
+  caption: Filtering and cross-linking viewers in a dashboard
+  described_blob: 732857fc5f027d22ee2f4d4ff230899336939069
+  described_by: claude-sonnet-5
+  description: >-
+    A dashboard of linked viewers (grid, scatter plot, histogram, line charts, bar chart) built from
+    a clinical demographics dataset. The user adds a scatter plot viewer from the Viewers panel,
+    colors its points by sex, then uses the filter panel to select race and diagnosis categories and
+    drags an age range slider, with every other viewer updating live to reflect the filtered subset.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    sampled frames show viewer filtering/coloring/splitting rather than the docking-and-resizing
+    interaction the surrounding text describes; modest 800x500 resolution
+  reviewed: true
+  seconds: 54.1
+  width: 800
+viewers-selection.gif:
+  actions:
+    - drag-select a region of points in the scatter plot
+    - drag-select a range of bars in the histogram
+    - observe matching rows highlighted in the grid
+  caption: Selecting rows across linked viewers
+  described_blob: 373707f2765f88d0bd1e9d20a6a562687a5169d9
+  described_by: claude-sonnet-5
+  description: >-
+    A grid with demographics data is shown alongside a scatter plot of weight versus height and a
+    histogram of age. As the mouse drags a lasso/box over points in the scatter plot and bars in the
+    histogram, the corresponding rows highlight in the grid, and selected points turn orange while a
+    semi-transparent overlay marks the drag area. A "Hold shift to select" hint appears, and a range
+    slider under the histogram also reflects the current selection.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small embedded viewers with cluttered demo data and a stray cursor icon; illustrates the
+    mechanic clearly but is a low-resolution crop of the app, not a clean standalone answer
+  reviewed: true
+  seconds: 16.3
+  width: 800
+windows-mode-navigation.gif:
+  actions:
+    - open a file from the tree to create a table view
+    - open a second file to create another view
+    - click the navigation control at the top left
+    - select a view from the dropdown list of open views
+  caption: Switching between views with the Windows navigation control
+  described_blob: 38c32cc9972e24180b27e51dcf679d83231eb4da
+  described_by: claude-sonnet-5
+  description: >-
+    A user browses files in the sidebar and opens a CSV as a table view, then opens a second CSV
+    (curves-demo) as another view showing molecule structures and dose-response curve plots.
+    Clicking the navigation control at the top left of the window opens a dropdown listing the open
+    views (Browse, demog, curves-demo). Selecting an entry in this list switches the active view
+    without closing the others.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: informative for the page but the dropdown interaction is brief and small within the frame
+  reviewed: true
+  seconds: 26.4
+  width: 1601

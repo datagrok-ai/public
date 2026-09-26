@@ -1,0 +1,122 @@
+# Meta-schema for the knowledge graph type files.
+#
+# Validates nodes/<type>.yaml and edges/<TYPE>.yaml. Every "properties" block here, and
+# in every type file, uses TypeScript class-member syntax (conventions.md §7.1):
+#
+#     <name>[?]: <ts-type> [= <default>]
+#
+# A trailing "?" means nullable. A bare node type name (PascalCase) is a reference by
+# id. Values containing "|" or starting with a quote are double-quoted for YAML.
+
+version: 1
+
+# ---------------------------------------------------------------------------------
+# What a node type file may contain
+# ---------------------------------------------------------------------------------
+node_type:
+  type:          string                       # lowercase kebab, unique across nodes/
+  extends?:      string                       # another node type; absent only on `node`, the base; the eight roots extend it
+  prefix?:       string                       # id prefix; declared by exactly one type in a chain, inherited below it, never redeclared
+  abstract?:     boolean = false              # true: no instances, only subtypes
+  hierarchical?: boolean = false              # true: ids are paths and part-of is derived from them
+  authored?:     boolean = false              # true: instances have home documents written by people
+  visibility?:   "'public' | 'dev' | 'internal'"   # default for instances; instances may only narrow
+  description:   Text                         # first sentence becomes the glossary line
+  properties?:   Record<string, Member>       # declared properties; a child may add or narrow, never remove or loosen
+  inherit?:      string[]                     # property names that flow down part-of unless a child sets them
+  home?:         Text                         # where instances' home documents live, for people; not enforced
+  notes?:        Text[]                       # what a reader should know beyond the property types, in words; nothing here is enforced
+
+# ---------------------------------------------------------------------------------
+# What an edge type file may contain
+# ---------------------------------------------------------------------------------
+edge_type:
+  type:          string                       # lowercase kebab, unique across edges/; the graph label is its UPPER_SNAKE rendering (part-of -> PART_OF)
+  extends?:      string                       # another edge type; children may narrow from/to and add properties
+  abstract?:     boolean = false
+  from:          TypeUnion                    # node types accepted as source, subtypes included: "Feature | Ticket"
+  to:            TypeUnion
+  key?:          string                       # frontmatter key that spells this edge in a home doc ("requested_by")
+  key_side?:     "'from' | 'to' = 'from'"   # which end's home doc carries the key (`defined_by` sits on the concept, the target)
+  symmetric?:    boolean = false              # a related-to style edge; stored once, matched both ways
+  identity?:     string[]                     # properties that discriminate one assertion from another and so join type, from and to in the edge key; each must be a declared property
+  cardinality?:  "'one' | 'many' = 'many'"    # max out-degree per source node
+  same_type?:    boolean = false              # source and target must share a concrete type
+  acyclic?:      boolean = false
+  derived_by:    Provenance[]                 # how instances may come to exist; "annotation" makes the key authorable
+  description:   Text
+  properties?:   Record<string, Member>
+  inherits?:     string[]                     # node properties this edge propagates from target to source (part-of only)
+
+# ---------------------------------------------------------------------------------
+# Member syntax and the type vocabulary
+# ---------------------------------------------------------------------------------
+member:
+  grammar:       "<name>[?]: <ts-type> [= <default>]"
+  parsed_as:     TypeScript class property declaration, via the TypeScript compiler
+  nullable:      trailing "?" on the name; required otherwise
+  default:       allowed only on nullable members; must type-check against the member type
+  scalars:       [string, number, boolean, Date]
+  aliases:
+    Text:        string that may be long; rendered as a paragraph
+    Version:     string of dot-separated integers, compared numerically
+    Path:        repo-relative path or glob; must resolve at build time; "<repo>:" prefix for landing/ and infra/
+    Url:         absolute URL
+    Provenance:  "'annotation' | 'filesystem' | 'ast' | 'lexical' | 'name' | 'registry' | 'git' | 'external' | 'llm' | 'manual'"
+    TypeUnion:   union of node type names, e.g. "Feature | Ticket"
+  references:    a node type name in a type position is a reference by id to that type or any subtype
+  lists:         "T[]"
+  enums:         string literal unions
+  reference_rule: >
+    a single-valued relation without properties of its own is a reference property
+    (owner: Person | Team) and materializes as an edge whose predicate is the property
+    name; a multi-valued relation, or one with properties, is an edge type file
+  nullability:   "`name?` means the value may be absent; an explicit null is the same as absent and does not block inheritance"
+  records:       Record<string, string> only, for open key-value bags that mirror an external grammar (function meta.*)
+
+# ---------------------------------------------------------------------------------
+# Fields the build writes on every instance; never authored
+# ---------------------------------------------------------------------------------
+build_fields:
+  node:
+    source_layer: "'public' | 'core' | 'infra' | 'process' | 'synthetic'"
+    home?:       Path                         # the home document, when there is one
+    provenance:  Provenance                   # how the node came to exist
+    batch:       string                       # id of the build batch that last asserted it (see manifest)
+  edge:
+    derived_by:  Provenance
+    confidence:  number                       # 0..1; 1 for deterministic facts, below 1 for llm
+    evidence?:   Path[]                       # where the relation is visible
+    batch:       string
+
+# Every build writes one manifest beside the JSONL. Consumers read completeness from
+# it: a missing Dart batch means unknown Dart coverage, not "no dependencies".
+manifest:
+  built_at:      Date
+  schema_version: number
+  builder:       Version                      # grok kg version
+  revisions:     Record<string, string>       # repo -> sha, for reddata, public (actual checkout) and the submodule pin
+  sources:       Record<string, string>       # source -> ok | partial | missing | stale, with a watermark for external ones
+  reserved_fields: [id, name, description, status, visibility, owner, aliases, source_layer, home, provenance, batch]
+
+# ---------------------------------------------------------------------------------
+# Constraints checked by `grok kg check`
+# ---------------------------------------------------------------------------------
+constraints:
+  node_type_name:   "^[a-z][a-z0-9-]*$"
+  edge_type_name:   "^[a-z][a-z0-9-]*$"        # graph label = upper-snake of the name
+  prefix:           "^[A-Z][A-Za-z]{0,5}$"
+  max_depth:        3                         # levels below a root
+  single_parent:    true                      # one `extends` per type
+  narrowing_only:   a child may make a nullable member required, restrict a union, or tighten a reference target; nothing else
+  prefix_unique:    true
+  key_unique:       true                      # one edge type per frontmatter key
+  from_to_resolve:  every name in from/to is a node type
+  endpoint_narrowing: a child edge's from and to are subsets of its parent's
+  member_narrowing:   a redeclared member's type is a subset of every ancestor's declaration of it
+  reserved_fields:    a type may not declare a member named like a build or base field
+  owner_required:     a second-level feature node sets owner
+  base:             node
+  roots:            [feature, concept, component, artifact, work, actor, infra, type]
+  edge_groups:      [tree, ownership, code, evidence, work, people, infra]   # the edges/ subfolders, in the order the glossary and `kg explain` show them; edges/ref.yaml is in no group
+  feature_roots:    [access, transform, explore, visualize, compute, govern, collaborate, develop, deploy, domains, platform, client, server, infra, ops, saas]   # first segment of a feature id (conventions.md 2.3)

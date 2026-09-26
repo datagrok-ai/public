@@ -1,0 +1,8 @@
+type: uses-concept
+from: Feature
+to: Concept
+key: concepts
+derived_by: [annotation, ast]
+description: A feature is built from a concept; authored in the home doc or inferred from type references in its code roots.
+properties:
+  role?:         "'central' | 'supporting'"

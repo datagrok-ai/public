@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/histogram]
 title: "Histogram"
 description: Show the distribution of numerical data as binned bars, with optional split-by-category overlays.
 keywords:

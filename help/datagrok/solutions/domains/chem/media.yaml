@@ -1,0 +1,241 @@
+activity-cliffs-0.png:
+  caption: Detecting activity cliffs with a scatterplot
+  described_blob: d42b68eb8cd3ce17a80c48231137e0083fa7dff3
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok table with molecule structures and activity values is shown alongside an "Activity
+    cliffs" scatterplot titled with a count of 92 detected cliffs, points colored by activity and
+    sized by cliff count. Below the table, a molecule-pair viewer lists cliff pairs side by side
+    with their activity difference, SALI score, and structural similarity.
+  height: 1001
+  illustrates:
+    - domains/chem
+    - explore/dim-reduction
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Dense, small text and overlapping scatterplot points reduce readability at a glance; fine as an
+    in-page illustration but not a standalone answer.
+  reviewed: true
+  width: 1601
+chem_curation_demo.gif:
+  actions:
+    - Open the Chem menu and navigate to Transform > Curate
+    - Select curation options (e.g., Normalization) in the Curate dialog
+    - Click OK to run curation
+    - View the resulting curated_molecule column with standardized structures
+  caption: Curating chemical structures with CurateChemStructures
+  described_blob: 84fad2c3d25c8df76c10193931222f683832909b
+  described_by: claude-sonnet-5
+  description: >-
+    A grid named chem_standards has Name and smiles columns showing molecules such as sodium salts
+    and their neutral forms. The user opens Chem > Transform > Curate, which shows a Curate dialog
+    with options like Kekulization, Normalization, Reionization, Neutralization, Tautomerization,
+    and Main Fragment, then clicks OK. The dialog closes and the curation task runs, after which a
+    new curated_molecule column appears with standardized structures (e.g., salts converted to their
+    acid or neutral forms).
+  height: 1000
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 25.2
+  width: 1600
+chemprop-predict.gif:
+  actions:
+    - open the ML menu and navigate to Models
+    - select Apply Predictive Model
+    - choose the trained model to use for predictions
+    - click OK to run the model
+    - view the resulting predicted-value column
+    - open a scatter plot comparing actual and predicted values
+  caption: Applying a trained Chemprop model
+  described_blob: 06e338b5568a077b688870e749bae214adac477f
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid with structures, molregno, and NOCount columns is shown in Datagrok. From the ML
+    menu the user opens Models and runs Apply Predictive Model, picking a previously trained model
+    that predicts NOCount, then clicks OK to run predictions in batches of 10000. A new NOCount (2)
+    column of predicted values appears, and a scatter plot comparing actual versus predicted NOCount
+    shows the two roughly correlated.
+  height: 879
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 26.6
+  width: 1854
+chemprop-train.gif:
+  actions:
+    - Open the ML menu and select Models from a molecule table
+    - In the Predictive model dialog, check canonical_smiles as the Features column
+    - >-
+      Set Predict to NOCount and Model Engine to Chem: Chemprop, with regression dataset type and
+      default General/Model parameters
+    - Click Train and enter a model name ("predict NoCount") in the save dialog
+    - Confirm with OK to start training
+  caption: Training a Chemprop predictive model
+  described_blob: fd3d25ced0db96bab3dfc86ea6ff593dc8906b05
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule table with a canonical_smiles structure column and a NOCount property is used to open
+    the ML > Models menu and launch the Predictive model dialog. The user selects canonical_smiles
+    as the feature and NOCount as the property to predict, chooses the Chemprop model engine with
+    regression settings (RMSE metric, split sizes, network parameters), then names the model
+    "predict NoCount" and confirms to start training.
+  height: 879
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Static-looking dialog screenshots stitched into a gif; low information density per frame and
+    small UI text, fine as inline documentation but not a standalone answer.
+  reviewed: true
+  seconds: 31.9
+  width: 1854
+mpo-desirability-functions.png:
+  caption: Setting desirability functions for MPO scoring
+  described_blob: 785533dbe82d0e0fd53e06f8118dd4defb0ac513
+  described_by: claude-sonnet-5
+  description: >-
+    The MPO Score dialog is open with the "pfizer-cns.json" template loaded. A table lists
+    properties (ClogP, ClogD, MW) each with an editable weight of 1 and a desirability curve plotted
+    as connected red control points on a blue line, mapping property values to a 0.0-1.0
+    desirability score.
+  height: 728
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear and readable but crops off the right edge of the desirability charts and only shows part
+    of the property list
+  reviewed: true
+  width: 1064
+mpo-pareto-front.png:
+  caption: Pareto front for multiparameter optimization
+  described_blob: 34ee46e30300d1d74f24cc21d99bfdf45d373650
+  described_by: claude-sonnet-5
+  description: >-
+    A scatterplot of molecules by QED (x-axis) versus MolLogP (y-axis), colored gray for non-optimal
+    and green for optimal points forming the Pareto front along the upper-right edge. Callout boxes
+    show the 2D structures of several highlighted molecules, connecting specific points to their
+    chemical structures.
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 800
+mpo-probabilistic.png:
+  caption: Training a probabilistic MPO desirability model
+  described_blob: 8eef7facf1a7e124c51d6c0f4416cb2ec80ca5e4
+  described_by: claude-sonnet-5
+  description: >-
+    The pMPO app shows a ranked table of drugs with their SMILES structures and computed pMPO
+    scores, with top-scoring compounds highlighted in green and a CNS checkbox column. Below it, a
+    panel lists the descriptors used in the model (e.g. cLogD_ACD_v15, cLogP_Biobyte) each with its
+    desirability curve and weight. A left sidebar lets the user pick training data, descriptors, the
+    desirability target, and significance thresholds (p-value, R², q-cutoff).
+  height: 500
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: clear but cropped to two stacked panels, no full app chrome visible
+  reviewed: true
+  width: 800
+scaffold-tree-anatomy.png:
+  caption: Anatomy of a scaffold tree node
+  described_blob: c70bdbc77f1ee550b56fde62f55f908eecba49c4
+  described_by: claude-sonnet-5
+  description: >-
+    An annotated Scaffold Tree panel shows naphthalene as a root node matching 86 molecules, a child
+    scaffold with a methoxy substituent that is more specific and matches only 26, and a sibling
+    thiazole-fused scaffold matching 30. A special orphans folder, holding 56 molecules, collects
+    molecules that match the parent but none of the sibling scaffolds.
+  height: 1590
+  illustrates:
+    - domains/chem
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Callout text is overlaid outside the actual app chrome, so it reads as an annotated diagram
+    rather than a captured UI state a user would see live.
+  reviewed: true
+  width: 2092
+scaffold-tree-coloring.gif:
+  actions:
+    - open the color picker on a root scaffold node
+    - pick a custom color and confirm
+    - observe the color propagate to child nodes as inherited
+    - open the color picker on a child node
+    - assign it a distinct custom color, overriding inheritance
+  caption: Coloring scaffold tree nodes with inheritance
+  described_blob: bfc95bbfb4ba45b3948e22e79f0e2746855a89b1
+  described_by: claude-sonnet-5
+  description: >-
+    A Scaffold Tree panel lists chemical scaffolds as a hierarchy, with a linked molecule grid on
+    the left highlighting matching rows. The user opens the color picker for a root scaffold node
+    and assigns it a custom color, which then propagates down to its child scaffold nodes (shown by
+    a tooltip reading 'color inherited from parent'). Selecting a child node's own color picker and
+    assigning it a new color overrides the inherited color, shown with a 'Color picked by user'
+    tooltip, while sibling nodes keep the inherited shade.
+  height: 822
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 26.2
+  width: 1158
+scaffold-tree-generate-edit.gif:
+  actions:
+    - click Generate to build the scaffold tree
+    - expand and select scaffold nodes to highlight matches in the grid
+    - open the Add new scaffold dialog
+    - sketch a new scaffold with the structure editor
+  caption: Generating and editing scaffolds in the scaffold tree
+  described_blob: a87e3cb6d2a205c9f1b582114336af2e475a5480
+  described_by: claude-sonnet-5
+  description: >-
+    The Scaffold Tree viewer is docked next to a molecule grid with a highlighted row. Clicking
+    Generate builds a hierarchical tree of scaffolds extracted from the dataset, shown as nested,
+    checkable nodes with match counts, and selecting a node highlights the matching substructure in
+    the molecules on the left. The user then opens the Add new scaffold dialog and sketches a new
+    fused-ring scaffold using the structure editor toolbar.
+  height: 858
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small viewer panel and dense structures are hard to read at this size, but the workflow steps
+    are clear
+  reviewed: true
+  seconds: 48.7
+  width: 1200
+similarity-and-diversity-search.gif:
+  actions:
+    - open the Chem > Search menu
+    - choose Similarity Search...
+    - >-
+      select different reference molecules in the grid to update the similarity and diversity
+      results
+  caption: Similarity and diversity search on molecules
+  described_blob: ba23faf704555ee3e7cc926b9f0ee2a09b9ea461
+  described_by: claude-sonnet-5
+  description: >-
+    A molecule grid is shown with the Chem > Search menu open, revealing Similarity Search,
+    Diversity Search, and Substructure Search options. After choosing Similarity Search, a panel
+    opens showing the reference molecule alongside the most similar and most diverse structures with
+    their Tanimoto scores. As the user selects different rows in the grid, the reference molecule
+    updates and the panel recalculates the most similar and most diverse structures accordingly.
+  height: 1000
+  illustrates:
+    - domains/chem
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 20.2
+  width: 1600

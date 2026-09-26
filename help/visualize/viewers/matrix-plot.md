@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/matrix-plot]
 title: "Matrix plot"
 description: Assess relationships among many pairs of columns at once using a grid of small inner plots.
 keywords:

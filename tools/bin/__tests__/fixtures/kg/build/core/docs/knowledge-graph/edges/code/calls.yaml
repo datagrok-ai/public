@@ -1,0 +1,11 @@
+type: calls
+from: Declaration | Function | SourceFile
+to: Function | Declaration | Endpoint
+derived_by: [ast]
+description: >
+  A call resolved statically: a direct call between declarations, a cross-package
+  call by string name (grok.functions.call('Pkg:fn'), DG.Func.byName), or a client
+  call to a Datlas endpoint.
+properties:
+  kind:          "'direct' | 'by-name' | 'dapi'"
+  count?:        number

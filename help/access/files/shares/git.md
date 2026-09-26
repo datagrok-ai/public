@@ -1,4 +1,5 @@
 ---
+documents: [access/files/shares]
 title: "Git"
 description: Connect Datagrok to a Git repository as a file share, including private repositories.
 keywords:

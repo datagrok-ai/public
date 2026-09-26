@@ -1,0 +1,324 @@
+apply-model.gif:
+  actions:
+    - open Models Browser
+    - select a predictive model
+    - open Apply predictive model dialog and set table/model/inputs/batch size
+    - click OK to apply the model
+    - view resulting predicted columns in the table
+    - view applied model listed in the context panel
+  caption: Applying a predictive model to a table
+  described_blob: a8f0c134635d1dca55cc33e4ab3f54540af273ec
+  described_by: claude-sonnet-5
+  description: >-
+    The animation starts on the Datagrok home page, then opens the Models Browser showing a grid of
+    predictive models such as "Predict crime region" and "Predict race by basic demographics".
+    Clicking a model opens the "Apply predictive model" dialog, where the user picks the table,
+    model, inputs, and batch size and clicks OK. New predicted columns (e.g. RACE (2), SEX (2))
+    appear appended to the demog table, and the model is also listed for reuse under the table's
+    context panel Models section.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    long recording with mostly redundant browsing frames before the actual apply-model action; small
+    resolution UI text is hard to read
+  reviewed: true
+  seconds: 27.5
+  width: 1600
+interactive-confusion-matrix.png:
+  caption: Confusion matrix for classification results
+  described_blob: fe5f37082be679143cd3525cb96cb28c6e8a0aa5
+  described_by: claude-sonnet-5
+  description: >-
+    A confusion matrix table comparing actual versus predicted binary classes F and M. Rows show
+    actual class counts (F: 612/52, M: 230/106) and columns show predicted class counts, with
+    per-class accuracy ratios (0.922, 0.315, 0.727, 0.671) and overall accuracy (0.718) shown along
+    the margins.
+  height: 181
+  kind: screenshot
+  quality: docs
+  quality_notes: small, low-resolution crop with no axis labels beyond row/column headers; readable but plain
+  reviewed: true
+  width: 283
+interactive-corrplot.png:
+  caption: Correlation matrix of numerical columns
+  described_blob: cbc083a35447c5d960cb64668bcd5fb66765b97c
+  described_by: claude-sonnet-5
+  description: >-
+    A correlation plot titled "Features correlation" shows a symmetric matrix for the columns age,
+    height, and weight. Each cell displays either a mini histogram (diagonal), a correlation
+    coefficient with a blue-to-red color scale for negative to positive values, or a scatter-like
+    distribution thumbnail. Age vs. height and age vs. weight show weak negative correlations
+    (-0.03, -0.06), while height vs. weight shows a strong positive correlation (0.79).
+  height: 218
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small cropped widget screenshot, no surrounding context, minor UI (column headers wrap
+    awkwardly)
+  reviewed: true
+  width: 328
+interactive-distributions.png:
+  caption: Comparing predicted and actual distributions
+  described_blob: 722465618047137619d66a517a409e19223b185a
+  described_by: claude-sonnet-5
+  description: >-
+    A line chart titled "Distributions of predicted and actual HEIGHT" overlays two curves: a blue
+    PREDICTION distribution and an orange TARGET distribution, both plotted over the height value
+    range. Controls above the chart include a "targets" dropdown with a slider, and "split"/"stack"
+    options on the right. The two curves peak near the same central value but the target
+    distribution is wider and more spread out than the tighter, more peaked prediction distribution.
+  height: 417
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop of a single widget with no surrounding context; fine to illustrate the distributions
+    viewer within its page but not distinctive enough to stand alone
+  reviewed: true
+  width: 526
+interactive-mismatches.png:
+  caption: Wrong predictions table
+  described_blob: 43518e5e9ceda45f75e0268ca9075e33a9e1b2f0
+  described_by: claude-sonnet-5
+  description: >-
+    A grid titled "Wrong predictions" lists model prediction errors as rows, with columns for
+    disease, started (timestamp), height, weight, actual sex, and predicted sex. Each row is a case
+    where the actual and predicted sex values differ, illustrating misclassified records from an
+    interactive model.
+  height: 419
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    plain data grid with generic synthetic data (dates, disease names), no distinguishing platform
+    chrome visible
+  reviewed: true
+  width: 595
+interactive-modeling.gif:
+  actions:
+    - choose the iris table
+    - set Predict to Species
+    - check feature columns (Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+    - 'select model engine Eda: XGBoost'
+    - drag the Rate slider
+    - drag the Lambda slider
+    - add another model run and inspect features correlation and a row tooltip
+  caption: Building a predictive model interactively
+  described_blob: a8bd4d894f1cd64a21c7645edf5c9e2a52cd22ef
+  described_by: claude-sonnet-5
+  description: >-
+    The Predictive Model tool starts with an empty setup panel where the user picks the iris table,
+    a Species column to predict, and feature columns. As features and an XGBoost model engine are
+    selected, a scatter plot of predicted vs. actual species, a confusion matrix, and correlation
+    insights appear and update live while the user adjusts iterations, learning rate, max depth, and
+    other model parameters. The animation ends on a parallel-coordinates feature view with a
+    correlation matrix and a row-level tooltip showing predicted vs. actual species and correctness.
+  height: 720
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text and dense panels are hard to read at a glance; fine as an in-page walkthrough but
+    not self-explanatory without the surrounding text
+  reviewed: true
+  seconds: 54.8
+  width: 1280
+interactive-pcplot.png:
+  caption: Parallel coordinate plot of predicted classes
+  described_blob: f8d0c9bb6872d5141fad0bec20cb06950cd5d67c
+  described_by: claude-sonnet-5
+  description: >-
+    A parallel coordinate plot titled "Features" shows three numeric axes—age, height, and
+    weight—each with min and max values labeled. Lines connecting the axes are colored orange or
+    blue by predicted class, letting the viewer see how the two classes separate across the feature
+    ranges.
+  height: 476
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    cursor visible in the frame; axis labels are small and the plot is cropped tightly with no
+    surrounding context
+  reviewed: true
+  width: 426
+interactive-performance.png:
+  caption: 'Model performance metrics: train vs cross-validation'
+  described_blob: 1e26792dcfae667cc088ad328be6a0d31d626f06
+  described_by: claude-sonnet-5
+  description: >-
+    A small results panel titled 'Performance' lists five classification metrics — Specificity,
+    Sensitivity, Accuracy, Precision, and Negative Predicted Value — each with a numeric value for
+    'Train data' and for 'CV' (cross-validation). It summarizes how well a predictive model
+    generalizes beyond its training set.
+  height: 234
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Small, tightly cropped table with no surrounding UI chrome; understandable but not
+    self-explanatory without page context.
+  reviewed: true
+  width: 374
+interactive-residuals.png:
+  caption: Residuals plot for a regression model
+  described_blob: fbf82e25a818fd52268335ba770916985cfeefa9
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot titled "Residuals" shows predicted HEIGHT values on the x-axis and residuals on
+    the y-axis, with a flat black reference line at zero. Most points cluster tightly around zero
+    across the predicted range of roughly 160 to 193, with a regression equation and r2 value
+    displayed at the top.
+  height: 408
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, low-resolution chart crop with tiny text; illustrative example rather than a polished
+    standalone visual
+  reviewed: true
+  width: 612
+interactive-roc-curve.png:
+  caption: Interactive ROC curve viewer
+  described_blob: c6353b623174be70b0a8e113c237015212779e6e
+  described_by: claude-sonnet-5
+  description: >-
+    A ROC Curve chart plots True Positive Rate against False Positive Rate as a blue line of points
+    rising from the origin to the top-right corner, with an orange line overlaid showing
+    classification thresholds on a secondary right-hand axis. The axes are labeled "True Positive
+    Rate for predicted SEX" and "Thresholds for predicted SEX", both with dropdown selectors,
+    indicating the curve is generated interactively for a chosen predicted column.
+  height: 394
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Clean and readable, but a small inline crop with no surrounding UI context, appropriate for
+    illustrating this table row rather than standing alone
+  reviewed: true
+  width: 701
+interactive-scatterplot-categorical.png:
+  caption: Interactive scatter plot for a categorical prediction
+  described_blob: 0a643637e4b91e6a959e31ba5177f547472e9853
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot titled "Predicted sex vs Actual" plots weight against height, with points colored
+    by sex: blue for F and orange for M, forming two mostly separate diagonal clusters. A few blue
+    points near the orange cluster are marked with an X to flag misclassifications, and a tooltip
+    reads "false, 4 rows" next to a legend showing false (X) and true (circle) markers.
+  height: 562
+  kind: screenshot
+  quality: docs
+  quality_notes: small tooltip and cursor mid-interaction slightly clutter the view
+  reviewed: true
+  width: 1000
+interactive-scatterplot-numerical.png:
+  caption: Scatter plot for a regression model
+  described_blob: 3e4861642bb9ead1cb78638b7a7b5ada9c0f6092
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot titled "Predicted HEIGHT vs Actual" plots predicted HEIGHT against actual HEIGHT
+    for a regression model. A linear trend line is overlaid with the fitted equation y = 134 + 0.208
+    * x and r2 = 0.208 shown above the chart.
+  height: 414
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, cropped chart image with low r2 example data; fine as a table example but not polished
+    enough to stand alone
+  reviewed: true
+  width: 689
+interactive-statistics.png:
+  caption: Statistics for target vs. predicted distributions
+  described_blob: 4ce04faeec9797ca09fc176fd599712de4b67e3c
+  described_by: claude-sonnet-5
+  description: >-
+    A table titled "Statistics" compares descriptive statistics for the target distribution and the
+    predicted distribution side by side. Rows list min, max, median, average, standard deviation,
+    variance, skew, kurtosis, q1, q2, and q3 for each column.
+  height: 370
+  kind: screenshot
+  quality: docs
+  quality_notes: cropped table with no surrounding chart or context, plain numeric output
+  reviewed: true
+  width: 407
+mlflow-tags.png:
+  caption: MLFlow model tags for Datagrok integration
+  described_blob: dc9c847ffac59efb924bf985bca20a5072e919d9
+  described_by: claude-sonnet-5
+  description: >-
+    The MLFlow Models page shows the registered model "chemprop-test" with its creation and
+    modification timestamps. Below, an expanded Tags section lists a table of tag names and values,
+    including a bare "datagrok" tag and "datagrok-inputs-0-semtype" set to "Molecule", used to
+    configure how Datagrok interprets the model's inputs and outputs.
+  height: 497
+  kind: screenshot
+  quality: docs
+  quality_notes: cropped mid-table, only two tag rows visible
+  reviewed: true
+  width: 1131
+predictive-modeling.gif:
+  actions:
+    - choose table and column to predict
+    - select model engine (XGBoost) and set hyperparameters
+    - view predicted-vs-actual scatter plot
+    - review wrong predictions table
+    - name and save the model
+    - view predicted column added to the table
+  caption: Building a predictive model
+  described_blob: 1f2e3147d953ace88d6bee39caac16e68aa245d2
+  described_by: claude-sonnet-5
+  description: >-
+    In the Predictive model dialog, the user picks a table and column to predict (SEX), then selects
+    an XGBoost model engine and tunes hyperparameters like iterations, learning rate, max depth, and
+    lambda. A scatter plot of predicted vs. actual SEX by height and weight updates, along with a
+    wrong-predictions table. The user names and saves the trained model as "predict_sex", which then
+    appears as a new predicted column in the data table.
+  height: 1000
+  kind: animation
+  quality: docs
+  quality_notes: small UI text and dense tables are hard to read at reduced size; otherwise clear and current UI
+  reviewed: true
+  seconds: 79.9
+  width: 1600
+tip-class-imbalance.png:
+  caption: 'Insights & Tips: highly correlated columns'
+  described_blob: d4dfd5c1b681feb2ebcb13a1f8873870194ea91d
+  described_by: claude-sonnet-5
+  description: >-
+    A small "Insights & Tips" card shown in the interactive modeling workflow. It flags that two
+    columns are highly correlated, listing the example pair Petal.Length and Petal.Width.
+  height: 190
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    tightly cropped UI fragment with no surrounding context; fine as one of three tip thumbnails in
+    a table but not meaningful alone
+  reviewed: true
+  width: 317
+tip-impute-missing.png:
+  caption: Ignoring rows with missing values
+  described_blob: fb05e8a041fec679f28f31d752cc65b699b0b93f
+  described_by: claude-sonnet-5
+  description: >-
+    A predictive-modeling setup panel with Table set to "demog", Predict set to AGE, and Features
+    set to (2) HEIGHT, WEIGHT. The cursor hovers over the unchecked "Ignore missing" checkbox,
+    showing a tooltip that reads "Ignore rows with missing values", while the "Impute missing"
+    checkbox sits below it.
+  height: 273
+  kind: screenshot
+  quality: docs
+  quality_notes: small cropped UI panel with a hover tooltip; clear but minor and context-dependent
+  reviewed: true
+  width: 499
+tip-low_accuracy.png:
+  caption: Reading model precision from a confusion matrix
+  described_blob: a3dba636b79b4ff1a5c69b9d438d85a5578181ad
+  described_by: claude-sonnet-5
+  description: >-
+    A confusion matrix titled 'Confusions' cross-tabulates actual vs. predicted F/M classes with
+    counts and per-row/column accuracy ratios. The cursor hovers over the bottom-left ratio (0.419,
+    highlighted in red), triggering a tooltip explaining that precision measures the proportion of
+    true positives among all positive predictions, with higher values indicating fewer false
+    positives.
+  height: 373
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    cropped to a single small widget with no surrounding context; only legible as a supporting
+    thumbnail in a tips table
+  reviewed: true
+  width: 498

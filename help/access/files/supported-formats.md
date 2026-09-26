@@ -1,4 +1,5 @@
 ---
+documents: [access/files]
 title: "Supported formats"
 description: Reference of file formats Datagrok can open, including domain-specific chemistry, biology, and scientific formats.
 keywords:

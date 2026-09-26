@@ -1,0 +1,12 @@
+# Root. A non-code thing that vouches for, explains or exercises a feature.
+type: artifact
+extends: node
+abstract: true
+visibility: public
+description: >
+  Documentation pages and anchors, tests, scenarios, samples, tutorials, changelog
+  entries, videos and announcements. Most are extracted; scenarios are authored.
+  Artifacts reach features through evidences edges.
+properties:
+  path?:        Path
+  url?:         Url

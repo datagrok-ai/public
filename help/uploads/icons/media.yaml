@@ -1,0 +1,115 @@
+add-new-column.png:
+  caption: Add new column icon
+  described_blob: 07c04b680b30b7ba448d05bf80e0939cfda8d1dc
+  described_by: claude-sonnet-5
+  description: >-
+    A small 24x24 toolbar icon showing a plus sign over a grid-like column glyph, used to represent
+    the Add new column action in the Top Menu.
+  height: 24
+  illustrates:
+    - visualize/viewers/grid
+  kind: icon
+  quality: docs
+  quality_notes: >-
+    Tiny toolbar icon, only legible in context alongside its label; too small and generic to stand
+    alone.
+  reviewed: true
+  width: 24
+add-viewer-icon-temp.png:
+  caption: Add viewer icon
+  described_blob: bfbfba9f3d88fbdde6a52d368c1e2eef65ee60e3
+  described_by: claude-sonnet-5
+  description: >-
+    A small circular icon, a stylized plus-in-circle symbol used as the toolbar button for adding a
+    viewer to a table view. It is a tiny 24x25 pixel image with a low-resolution, placeholder look,
+    matching its 'temp' file name.
+  height: 25
+  illustrates:
+    - visualize/viewers
+  kind: icon
+  quality: unfit
+  quality_notes: >-
+    Blurry, low-resolution placeholder icon (file name and small pixel dimensions confirm it is a
+    temporary asset, not a finished UI icon); unusable on its own or blown up in docs.
+  reviewed: true
+  width: 24
+download-icon.png:
+  caption: Download icon
+  described_blob: 7ad2e09e35fc8bc9c707558de1699f673fc91529
+  described_by: claude-sonnet-5
+  description: >-
+    A small down-arrow icon used inline in the Basic tasks documentation to mark the Download
+    command. It represents the icon shown at the top of the screen for downloading an open table as
+    a file or set of files.
+  height: 33
+  kind: icon
+  quality: docs
+  quality_notes: >-
+    Tiny inline UI icon, not meant to stand alone; too small and generic to answer a question by
+    itself.
+  reviewed: true
+  width: 26
+funnel.png:
+  caption: Funnel icon for filters
+  described_blob: e6a57b7bfd2f2b413ff52ef4661730bb58e5c2a9
+  described_by: claude-sonnet-5
+  description: >-
+    A small funnel-shaped icon used as a toolbar button. Clicking it toggles the Filters panel in
+    the Table View, either from the Toolbox or from the top of the Table View itself.
+  height: 28
+  illustrates:
+    - visualize/viewers/filters
+  kind: icon
+  quality: docs
+  quality_notes: Tiny (25x28) UI glyph, only meaningful as an inline icon reference, not as a standalone image
+  reviewed: true
+  width: 25
+gear-icon.png:
+  caption: Gear icon for viewer settings
+  described_blob: e7f1e0538345ccbda61a050440c4b49420b4226d
+  described_by: claude-sonnet-5
+  description: >-
+    A small circular gear icon used inline in the documentation to mark the settings control on a
+    viewer's toolbar. Clicking this icon opens the viewer's settings in the Context Panel, where
+    users can adjust properties like Row Source, On Click actions, and other appearance or data
+    options.
+  height: 25
+  illustrates:
+    - visualize/viewers
+  kind: icon
+  quality: docs
+  quality_notes: Tiny UI icon (28x25px) with no standalone informational value outside inline text references.
+  reviewed: true
+  width: 28
+hamburger-menu.png:
+  caption: Hamburger menu icon
+  described_blob: c8398d1d3e40d732c5605a95348cd8c26d656296
+  described_by: claude-sonnet-5
+  description: >-
+    A small square icon showing three horizontal lines stacked vertically, the standard hamburger
+    menu glyph. It appears throughout the docs next to instructions to open a context menu on a
+    column header, viewer header, or panel toolbar.
+  height: 20
+  illustrates:
+    - visualize/viewers
+    - visualize/viewers/filters
+  kind: icon
+  quality: docs
+  quality_notes: >-
+    Tiny inline UI glyph (20x20), meaningful only as an icon reference inside surrounding text, not
+    as a standalone visual.
+  reviewed: true
+  width: 20
+remove-column.png:
+  caption: Removing selected columns
+  described_blob: 20de0bc7fe30de1c8a740a832d1a9071189dee00
+  described_by: claude-sonnet-5
+  description: >-
+    A small toolbar icon showing an X over a column glyph, used to indicate the action of deleting
+    the currently selected columns from a table.
+  height: 24
+  kind: icon
+  quality: docs
+  quality_notes: Tiny 25x24 toolbar icon, only legible in context next to the surrounding instructions.
+  reviewed: true
+  width: 25

@@ -1,0 +1,68 @@
+add-to-favorites.gif:
+  actions:
+    - open a project's context panel
+    - hover/click the star "Add to favorites" icon in the panel header
+    - observe the project now listed under Favorites in the sidebar tree
+    - select a query entity and open its context panel
+    - click its star icon to add it to favorites
+    - expand the Activity section to view its run history
+  caption: Adding an entity to favorites
+  described_blob: d4090c7076775357a9600772dd34520a4976b8e6
+  described_by: claude-sonnet-5
+  description: >-
+    The context panel for a project shows a star icon labeled "Add to favorites" in its header;
+    clicking it marks the entity as a favorite, and it then appears under the Favorites node in the
+    sidebar tree. The same action is repeated for a query entity ("employees"), whose context panel
+    also shows its run usage stats and activity log.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    several transition frames are blurred mid-animation, and the demo uses placeholder/test project
+    and query names rather than realistic content
+  reviewed: true
+  seconds: 20.2
+  width: 1601
+layout-drag-and-drop.gif:
+  actions:
+    - Open View > Layout > Download to save the layout
+    - Switch to another table without a matching layout
+    - Drag the downloaded layout file from the Downloads folder
+    - Drop it onto the table view to apply the layout
+  caption: Applying a downloaded layout via drag and drop
+  described_blob: a267b5b92badd4a4de78af66bbd32ab64bda1510
+  described_by: claude-sonnet-5
+  description: >-
+    A demog (2) table view shows a scatter plot and bar chart. The user opens View > Layout >
+    Download to save the current layout as a file, then switches to a different table (demog (4))
+    shown as a plain grid without any viewers. A Downloads file-explorer window is dragged onto the
+    table, and the scatter plot and bar chart layout is applied to the new table.
+  height: 1001
+  illustrates:
+    - govern/dashboards
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small viewport crops some columns and the drag cursor isn't fully visible, but the sequence is
+    legible
+  reviewed: true
+  seconds: 13.3
+  width: 1601
+project-upload-data-sync.png:
+  caption: Enabling data sync on project upload
+  described_blob: bfd2fb9db650651b0c3479a4eb6a5d59b1da4b92
+  described_by: claude-sonnet-5
+  description: >-
+    This is the Upload project dialog for a local project named 'Log Actions', containing one table
+    and one view. On the right, a circled toggle labeled 'Data sync' is shown in its off position,
+    next to Cancel and OK buttons.
+  height: 472
+  illustrates:
+    - govern/dashboards
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    manual annotation (blue circle) added over a real dialog screenshot; toggle is shown off rather
+    than on, so it only shows where the control is, not the enabled state
+  reviewed: true
+  width: 718

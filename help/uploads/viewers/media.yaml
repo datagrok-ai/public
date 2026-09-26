@@ -1,0 +1,339 @@
+bar-chart-molecules.png:
+  caption: Bar chart of molecules by R-group
+  described_blob: b2983e1d25b09354ac60ca7b92abb131a9fb2e95
+  described_by: claude-sonnet-5
+  description: >-
+    A bar chart viewer shows average In-vivo Activity for a series of molecules, each row labeled by
+    an R-group structure fragment (R2) instead of a text category. Horizontal green bars extend from
+    0 with numeric value labels, ranging from about 24 to 65.
+  height: 448
+  kind: screenshot
+  quality: docs
+  quality_notes: small, cropped viewer-only screenshot with no surrounding UI chrome
+  reviewed: true
+  width: 370
+box-plot.png:
+  caption: Box plot with category grouping
+  described_blob: 516f8c2484cff4b9f59593dc1e7b25c3a5b71611
+  described_by: claude-sonnet-5
+  description: >-
+    A box plot viewer shows HEIGHT distributions across five disease categories (AS, Indigestion,
+    PsA, Psoriasis, RA), with individual data points jittered behind each box and a sixth empty
+    category (UC). Below the chart, a summary table lists min, max, avg, and med values per
+    category, with a "Category: DIS_POP" selector at the bottom.
+  height: 480
+  illustrates:
+    - visualize/viewers/box-plot
+    - explore/group-comparison
+  kind: screenshot
+  quality: docs
+  quality_notes: clear and readable but a plain default-styled screenshot, not polished for marketing
+  reviewed: true
+  width: 480
+calendar.png:
+  caption: Calendar viewer showing December 1989–1991
+  described_blob: 56b91486ec74353e8d549cb968b94a9032d6211e
+  described_by: claude-sonnet-5
+  description: >-
+    A calendar viewer displays a monthly grid for December, spanning years 1989 through 1991, with
+    weekday headers Sunday through Saturday. Weekend dates are shown in red, and blue circles of
+    varying sizes are overlaid on many days to indicate aggregated values, with the largest circle
+    on December 21.
+  height: 480
+  illustrates:
+    - visualize/viewers/calendar
+  kind: screenshot
+  quality: docs
+  quality_notes: small icon-sized crop with no context panel or surrounding UI visible
+  reviewed: true
+  width: 480
+density-plot.png:
+  caption: Density plot viewer
+  described_blob: 6d8888fc039c9a02837703c7800b62384cbe5ce9
+  described_by: claude-sonnet-5
+  description: >-
+    A density plot shows a scatter of Age on the x-axis against Height on the y-axis, with points
+    shaded from light to dark gray based on local point density. Darker cells in the middle of the
+    chart indicate where more data points overlap, giving a heatmap-like view of the two-dimensional
+    distribution.
+  height: 480
+  illustrates:
+    - visualize/viewers/density-plot
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    plain grayscale rendering with no legend or context chrome, sufficient to illustrate the concept
+    but not polished enough to stand alone
+  reviewed: true
+  width: 480
+embedding.png:
+  caption: Embedding a viewer as an iframe
+  described_blob: ddf7825877f6b7d458b87bc4decdff0c0221c981
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot's right-click context menu is open with Viewer > Embed selected, pointed by a red
+    arrow to an Embed Viewer dialog. The dialog shows a generated iframe code snippet with a src URL
+    pointing to the hosted project and mode=embed, plus a live preview of the same scatter plot
+    rendered below it with a "Powered by datagrok" watermark.
+  height: 609
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 1300
+form-molecules.png:
+  caption: Molecules in the Form viewer
+  described_blob: 611e09d9570beb7e9232532f690426826cf8d594
+  described_by: claude-sonnet-5
+  description: >-
+    A Form viewer panel titled "Form" with navigation arrows and layout icons at the top. Below, it
+    displays one record: a structure field labeled "smiles" showing a rendered molecule diagram,
+    followed by numeric fields logP (0.52), logS (-1.12), and acceptorCount (2).
+  height: 224
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, cropped panel with limited context; fine as an inline illustration but not
+    self-explanatory on its own
+  reviewed: true
+  width: 221
+formula-lines-example.png:
+  caption: Formula lines on a scatter plot
+  described_blob: 1ca058a144acaecf90c71435504ea3ec37bec287
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot of height versus weight in the Datagrok grid viewer, overlaid with several
+    formula-defined reference lines and shapes: a red vertical line, a blue vertical line, a dashed
+    red horizontal line, a green horizontal line, a diagonal line, a sine wave, a parabola, a circle
+    with an annotated tooltip reading "Circle Top: Description of circle," shaded vertical color
+    bands, and arch-like hatched curves. The Properties panel on the right shows the viewer's Data,
+    Colors, and Axes settings for this Scatter Plot.
+  height: 1786
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    dense and cluttered with many overlapping formula lines, making individual line types hard to
+    distinguish at a glance
+  reviewed: true
+  width: 2508
+google-map.png:
+  caption: Google Map viewer with markers and tooltips
+  described_blob: 3ae7d5323130f5fd55929216f84e640e059d7db5
+  described_by: claude-sonnet-5
+  description: >-
+    A Google Map of New York City is shown in the Datagrok Google Map viewer, with red circular and
+    pin markers clustered over Manhattan, Brooklyn, and Queens. Two markers have open tooltips
+    displaying demographic values such as us_population_asian, us_housing_units_owner_occupied, and
+    us_housing_units_occupied. Map/Satellite toggle, zoom controls, and a Street View icon are
+    visible.
+  height: 580
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    functional but cluttered with overlapping markers and two open tooltips obscuring part of the
+    map
+  reviewed: true
+  width: 767
+grid-molecules.png:
+  caption: Molecules rendered in a grid
+  described_blob: 34576ad4d8c529557e158bb93c813a13e3101107
+  described_by: claude-sonnet-5
+  description: >-
+    A grid viewer displays two rows of chemical structures in a 'smiles' column alongside numeric
+    'donors' and 'acceptors' columns. Row 25 shows a small benzamide-like molecule with 0 donors and
+    2 acceptors; row 26 shows a larger triphenyl compound with 0 donors and 0 acceptors.
+  height: 221
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small crop showing only two rows, no visible column headers styling beyond basics, low
+    resolution (400x221)
+  reviewed: true
+  width: 400
+grid-summary-columns.png:
+  caption: Grid summary columns with sparklines and charts
+  described_blob: d848fe85c122efd87cd18cf25dd3618e63190084
+  described_by: claude-sonnet-5
+  description: >-
+    A data grid shows WEIGHT, SITEID, and SUBJID columns alongside four summary columns: sparkline
+    (a red line chart per row), bar chart, radar, and pie bar chart, each rendering a small inline
+    visualization for that row's data. The summary columns let a viewer scan trends and
+    distributions per row without opening a separate chart.
+  height: 208
+  illustrates:
+    - visualize/viewers/grid
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 519
+matrix-plot.png:
+  caption: Matrix plot viewer
+  described_blob: a81d315e8816b15beed25e23216e823110be7637
+  described_by: claude-sonnet-5
+  description: >-
+    A matrix plot arranges pairwise scatter plots and histograms of several numeric columns
+    (RadiusOfGyration, PMI2, PMI3, PMI1) in a grid. The diagonal cells show histograms of each
+    column's distribution, while the off-diagonal cells show scatter plots of each column pair
+    against the other.
+  height: 480
+  illustrates:
+    - visualize/viewers/matrix-plot
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small (480x480), scatter plot points are dense and hard to distinguish at this resolution, no
+    axis labels or legend
+  reviewed: true
+  width: 480
+network-diagram-molecules.png:
+  caption: Network diagram viewer with molecules
+  described_blob: 33996430ce3f6dfdd8d51764869b7a79c138b5ba
+  described_by: claude-sonnet-5
+  description: >-
+    A network diagram viewer shows molecule structures as nodes connected by edges, grouped into
+    clusters labeled None, High, and Low based on a mutagenicity toxicity category. One large
+    cluster labeled None radiates many molecule nodes from a central hub, while smaller High and Low
+    clusters sit apart with a few connected molecules each. Column selector dropdowns for Toxicity:
+    Mutagenicity(smiles) and smiles appear at the top left.
+  height: 910
+  kind: screenshot
+  quality: docs
+  quality_notes: small, dense node labels and structures are hard to read at this resolution
+  reviewed: true
+  width: 938
+network-diagram.png:
+  caption: Network diagram viewer
+  described_blob: 1de48f41f2b15d4de248edea58369c4f0f1b4a2c
+  described_by: claude-sonnet-5
+  description: >-
+    A network diagram viewer shows nodes for disease categories (Psoriasis, RA, PsA, AS, UC,
+    Indigestion) and race categories (Caucasian, Asian, Black, Other), connected by curved edges.
+    Node size varies to encode a value, with larger circles for Caucasian, Asian, Black, and Other.
+    Two column selectors, DIS_POP and RACE, appear at the top left for configuring the diagram.
+  height: 480
+  illustrates:
+    - visualize/viewers/network-diagram
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small (480x480), low resolution, edge labels and legend are not visible, making the
+    relationships hard to interpret standalone
+  reviewed: true
+  width: 480
+scatter-plot-molecules.png:
+  caption: Rendering molecules on scatter plot axes
+  described_blob: df5d45cb399884e04945f3e769e7b2c661589dee
+  described_by: claude-sonnet-5
+  description: >-
+    A scatter plot shows R-group analysis with molecular R2 fragments on the y-axis and R3 fragments
+    on the x-axis, bubble size mapped to in-vivo activity, and color split between pass and fail. A
+    tooltip on a hovered point displays the full rendered molecule structure along with its in-vivo
+    activity value.
+  height: 509
+  illustrates:
+    - visualize/viewers/scatter-plot
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 675
+shape-map-pa-counties.png:
+  caption: Shape map of Pennsylvania counties
+  described_blob: 70c23c67d8702bbf3eadf5947164fab25ec16cab
+  described_by: claude-sonnet-5
+  description: >-
+    A shape map viewer titled "Median income in Pennsylvania" showing Pennsylvania divided into
+    county-level regions, each shaded on a beige-to-dark-brown gradient by median income. A legend
+    at the bottom maps color to values from 43,750.00 to 101,760.00.
+  height: 465
+  illustrates:
+    - visualize/viewers/shape-map
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 738
+shape-map-plate.png:
+  caption: Shape Map plate layout
+  described_blob: dc59c7c93dfc1380be1519a932059070d39bff92
+  described_by: claude-sonnet-5
+  description: >-
+    A 384-well microplate rendered as a shape map, with columns 1-24 and rows A-P. Each well is a
+    colored circle whose hue and intensity encode a value, ranging from deep blue through white to
+    deep red, with the outer border wells colored solid black or blue to mark plate edges or
+    controls.
+  height: 467
+  illustrates:
+    - visualize/viewers/shape-map
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Clean render but shown as a cropped plate widget with no surrounding viewer chrome or context
+    for how it was configured
+  reviewed: true
+  width: 674
+tile-viewer-molecules.png:
+  caption: Tile viewer showing molecule properties
+  described_blob: e9c76e217eab03421b8231439113360f4a549971
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecule tiles arranged in three columns, each tile showing a rendered chemical
+    structure labeled "smiles" with computed properties logP, logS, and acceptors listed below it.
+    One tile, a polycyclic aromatic structure, is highlighted with a selection box.
+  height: 548
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small size and plain unstyled layout make it look more like a debug render than a polished
+    product screenshot
+  reviewed: true
+  width: 639
+tree-map.png:
+  caption: Treemap viewer of clinical trial data
+  described_blob: d791d1858ca165d1c04fa0c562bc80e5347c3d18
+  described_by: claude-sonnet-5
+  description: >-
+    A treemap viewer showing nested rectangles sized and colored by count, grouped by categories
+    such as disease (Psoriasis, Indigestion, RA, UC, PsA, AS), with smaller cells labeled by age and
+    sex codes. Rectangle shading encodes the count aggregation as set in the panel above the chart.
+  height: 480
+  illustrates:
+    - visualize/viewers/tree-map
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    cropped to a square thumbnail cutting off the right and bottom edges of the viewer, and the
+    dense small-cell labels are hard to read at this resolution
+  reviewed: true
+  width: 480
+trellis-plot-molecules.png:
+  caption: R-group analysis with a trellis plot
+  described_blob: 3faec4aae26c9369af4d24899cc471e79a91eae3
+  described_by: claude-sonnet-5
+  description: >-
+    A trellis plot organizes molecules from an R-group analysis into a grid, with rows for R2
+    substituent structures and columns for R0/R1 categories chosen via dropdowns. Each cell shows a
+    pie-chart-style circle summarizing pass/fail results (red for fail, blue for pass) for molecules
+    in that R-group combination. A legend in the top-right labels the fail and pass colors.
+  height: 603
+  kind: screenshot
+  quality: docs
+  quality_notes: small crop of a single viewer with no surrounding app chrome for context
+  reviewed: true
+  width: 645
+viewer-group-tooltip.png:
+  caption: Setting a group tooltip on a viewer
+  described_blob: cfb0ed6be4a820ff28e16f957de1e49bcfca0499
+  described_by: claude-sonnet-5
+  description: >-
+    An annotated screenshot shows a bar chart of disease population with the cursor over the "AS"
+    bar, triggering a tooltip that embeds a scatter plot of the 277 rows falling into that bar.
+    Below it, the same scatter plot is shown as a standalone viewer with its mouse-over points
+    highlighted, illustrating that this scatter plot is the one configured as the group tooltip.
+  height: 692
+  illustrates:
+    - visualize/viewers
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    annotated with arrows and callout text rather than a clean UI capture, so it reads as a diagram
+    more than a straight screenshot
+  reviewed: true
+  width: 615

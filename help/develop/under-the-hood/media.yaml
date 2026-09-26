@@ -1,0 +1,61 @@
+architecture-diagram.drawio.png:
+  caption: Datagrok platform architecture and service topology
+  described_blob: ec06d9360e6b9afb5c803f2121779ea3b441ee17
+  described_by: claude-sonnet-5
+  description: >-
+    A component diagram of the Datagrok platform. It shows Datlas as the central service connected
+    via Nginx to a web client, and integrating a Credentials Manager, a PostgreSQL metadata
+    database, Scripting Workers (Jupyter-based and custom workers) reached through an AMQP message
+    queue and Grok Pipe data transfer, Grok Spawner managing Plugins Docker Containers (AI,
+    Cheminformatics, Machine Learning, Bioinformatics, Jupyter Notebooks, Predictive Modeling), and
+    Grok Connect providing connectivity to external and enterprise databases. It also depicts file
+    storage (S3/Google Cloud Storage/local file system) and enterprise authentication, with port
+    numbers labeling each connection.
+  height: 1061
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    dense technical diagram with many small labels and port numbers, clear but cluttered for
+    standalone marketing use
+  reviewed: true
+  width: 1451
+queue-node.png:
+  caption: Queue-based computation node architecture
+  described_blob: 7cf761a4f09898db668e6a69c873a07466894a4f
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram shows a Datagrok App server node (dotted box) containing Datlas and a compute
+    application, communicating with a Queue on the left and a Jupyter Kernel Gateway on the right,
+    plus S3 common file storage below. Numbered arrows trace the flow: (1) queue event to Datlas,
+    (2) FuncCall handed back, (3) Datlas executes the script on the Jupyter Kernel Gateway, (4) data
+    requests flow to the gateway and to S3, (5) data posts return from the gateway and S3, and (6)
+    the completed FuncCall goes back to the queue.
+  height: 636
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    clear technical diagram but plain black-and-white styling with dense labels, more
+    reference-grade than polished marketing material
+  reviewed: true
+  width: 1139
+queue-overview.png:
+  caption: Queue-based function execution architecture
+  described_blob: 74f2f3a68afa36044243bb5ba78f3510b387607b
+  described_by: claude-sonnet-5
+  description: >-
+    A diagram traces a numbered request flow from a Chrome browser through a Datagrok App server
+    node, an AWS S3 common file storage icon, a Datagrok Database with an internal Queue, and a
+    second Datagrok App server node running Python. Numbered arrows 1-8 show the browser starting a
+    function over a websocket, the first node queuing the FuncCall and pushing table/file data to
+    S3, queue events reaching the second node, which fetches the FuncCall and input data, computes,
+    writes results back to S3 and marks the FuncCall complete, and the first node retrieving the
+    result and returning it to the browser. A legend distinguishes data-flow arrows from
+    request-direction arrows.
+  height: 1114
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    clear vector diagram but plain/utilitarian styling and dense labeling keep it below marketing
+    polish
+  reviewed: true
+  width: 1332

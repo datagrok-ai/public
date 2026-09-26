@@ -1,0 +1,10 @@
+type: library
+extends: component
+description: >
+  A shared TypeScript library under public/libraries (@datagrok-libraries/*), the
+  JS API itself (datagrok-api) or the grok CLI under public/tools (datagrok-tools). Id lib:<name>.
+  `package.json` is its record: `description`, `author` and, through the author's email, `owner`.
+properties:
+  language:      "'ts'"
+  npm:           string
+  version:       Version

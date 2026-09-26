@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/line-chart]
 title: "Line chart"
 ---
 

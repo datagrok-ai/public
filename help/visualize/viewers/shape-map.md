@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/shape-map]
 title: "Shape map"
 unlisted: true
 description: Visualize geographical or custom shape data such as countries, states, counties, floor plans, or EEG electrodes.

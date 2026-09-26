@@ -1,0 +1,380 @@
+add-to-favorites.gif:
+  actions:
+    - Open the Projects browser and select an entity (e.g. "Chembl Targets by organism")
+    - Star the entity from the context panel to mark it as a favorite
+    - Expand the sidebar tree and open the Favorites tab
+    - See the newly favorited items listed under Favorites
+  caption: Adding an Item to Favorites
+  described_blob: 6ff457770bbd15ecdac85926ac852c4c41abd3a4
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows a Datagrok user browsing entities such as a ChEMBL query and the
+    seq_space_demo project in the sidebar and Projects browser, then marking them as favorites. The
+    starred items subsequently appear listed under the Favorites tab in the sidebar, alongside the
+    existing Tutorials shortcut, confirming they were added.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Long, loosely-paced capture that wanders through unrelated panels (Apps tree, Databases tree)
+    between the relevant steps, so the favoriting action itself is not tightly framed
+  reviewed: true
+  seconds: 60.3
+  width: 1601
+browse.gif:
+  actions:
+    - Expand the Apps node in the tree
+    - Click Platform > Plugins
+    - Expand My stuff > My files to reveal a personal folder with CSV files
+    - Open demog.csv as a data table
+    - Open smiles_only.csv showing rendered molecule structures
+    - Open peptides_helm_mixed showing rendered peptide sequences
+  caption: Browsing the platform tree and data catalog
+  described_blob: 314758085ec2497e04747d8d52e9149bf2c4f0c0
+  described_by: claude-sonnet-5
+  description: >-
+    The left Browse tree lists top-level groups such as My stuff, Spaces, Apps, and Platform, and
+    the animation shows clicking through it to open different item types in the center. Selected
+    items open as working documents: an apps gallery, an empty Plugins list, a personal file folder
+    with CSV files, a tabular demographic dataset, a SMILES column rendered as chemical structures,
+    and a peptide sequence table with HELM visualization.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    clear UI capture but shows many unrelated app/data examples rather than focusing narrowly on the
+    browse-and-access-rights concept the surrounding text describes
+  reviewed: true
+  seconds: 55.5
+  width: 1601
+console-autocomplete.gif:
+  actions:
+    - Type a partial command name into the console input
+    - View the autocomplete suggestion list appear below
+    - Type additional characters to narrow the suggestions
+    - Select a suggested, namespaced function name
+    - Type another command name to see new suggestions
+  caption: Autocompleting commands in the console
+  described_blob: 5172a9f75fa034a3c1801443ecd26b5820b6c154
+  described_by: claude-sonnet-5
+  description: >-
+    The Console shows an input box below a history of entered commands (CmdContextHelp(),
+    CmdConsole()). As the user types, a dropdown list of matching function names appears below the
+    input, and typing further narrows the suggestions, including namespaced entries like
+    "core:ReplaceValues". One suggestion is selected and expanded into the full command
+    "core:ReplaceValues", then a new query "Viewers:sankeyViewer" is typed.
+  height: 217
+  kind: animation
+  quality: docs
+  quality_notes: cropped tightly to the console input and suggestion list, no surrounding chrome for context
+  reviewed: true
+  seconds: 17.5
+  width: 452
+context-panel-stats.gif:
+  actions:
+    - expand the Stats info pane in the context panel
+    - select the AGE column and view its numeric statistics
+    - select the RACE column and view its categorical statistics
+    - select the HEIGHT column and view its numeric statistics
+    - hover over the HEIGHT column header to preview its distribution tooltip
+  caption: Viewing column summary statistics in Stats
+  described_blob: 18ee97c6cfef38e70567399c5ede0bfa25b61eae
+  described_by: claude-sonnet-5
+  description: >-
+    A grid shows clinical trial data with columns for subject ID, age, sex, race, height, weight,
+    and demographics. The Stats info pane is expanded in the context panel on the right, and the
+    user clicks through different columns (AGE, RACE, HEIGHT) to see its numeric or categorical
+    summary statistics update, including count, unique, nulls, min, max, mean, median, and
+    quartiles. Hovering over the HEIGHT column header also shows a tooltip with a mini histogram and
+    quick stats.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small crop of the app focused only on the grid and context panel; column headers partially cut
+    off on the right
+  reviewed: true
+  seconds: 14.3
+  width: 1601
+drag-and-drop-columns.gif:
+  actions:
+    - hover over the DIS_POP column header to preview its category breakdown
+    - open the filter panel and drag a column in to add a SEX filter
+    - open the Add New Column dialog from the toolbar
+    - open the viewers gallery and add a scatter plot
+    - drag columns to build DIS_POP and AGE filters and a faceted scatter plot
+  caption: Drag-and-drop columns onto filters and viewers
+  described_blob: 8cd4a88a5096d3cad443e6e5cd80cb1874cf0c78
+  described_by: claude-sonnet-5
+  description: >-
+    In a grid of clinical demographics data, the user hovers a column header to preview a category
+    breakdown, then drags columns from the grid onto the left-hand panel to add filters, including a
+    bar-chart filter for DIS_POP and a histogram filter for AGE. The user also opens the Add New
+    Column dialog and the viewer gallery, adding a scatter plot of HEIGHT vs WEIGHT that ends up
+    faceted by the DIS_POP categories alongside the new filters.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small popups and toolbar icons are hard to read at this resolution and the demo dataset/UI
+    chrome look a bit dated
+  reviewed: true
+  seconds: 38.8
+  width: 1601
+home-page.png:
+  caption: The Browse home page layout
+  described_blob: 758a7f1aad37274e9a17462db43cb4abe3afed09
+  described_by: claude-sonnet-5
+  description: >-
+    Screenshot of the Datagrok Browse view's home page, with a search ribbon at top and a grid of
+    widgets below: Recent projects with thumbnails, a Usage chart (Users, Events, Errors over time),
+    a Why Datagrok? platform description panel, and a Learn panel with video links. A collapsible
+    tree sidebar on the left lists My stuff, Dashboards, Apps, Namespaces, Files, Databases,
+    Plugins, Functions, and Platform.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: Standard product screenshot, not polished for marketing use; readable but dense with UI chrome.
+  reviewed: true
+  width: 1601
+info-pane-distributions-0.png:
+  caption: Distributions info pane for selected rows
+  described_blob: 6cc85b9c096acfbf5a62e0097e062172faffd299
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of chemical structures with Activity, Permeability, and Toxicity columns has five rows
+    selected, shown highlighted in yellow. The context panel on the right shows an expanded
+    Distributions section with Selected and Others checkboxes both checked, displaying overlaid
+    sparkline-style distribution charts for Activity, Permeability, and Toxicity comparing the
+    selected rows against the rest.
+  height: 1000
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small sparkline charts are hard to read at this scale and lack axis labels, but the layout is
+    otherwise clear and current
+  reviewed: true
+  width: 1601
+info-pane-models-0.png:
+  caption: Models info pane with a context menu
+  described_blob: 53eb3681e78973510eee7fca85b084b981c74411
+  described_by: claude-sonnet-5
+  description: >-
+    The context panel's Models section for a demog table lists two trained models, "Predict race by
+    basic demographics" and "Predict sex by basic demographics", plus a Train button. A right-click
+    context menu is open over one model entry, showing Run, Share..., Edit..., Delete, and Save as
+    Zip options.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear UI screenshot but shows a narrow slice (one info pane and its menu) without surrounding
+    context
+  reviewed: true
+  width: 1601
+info-pane-sticky-meta-0.png:
+  caption: Sticky meta info pane on a molecule
+  described_blob: 440baeb99c50f3f027cd2576961d1663073d5652
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of molecule structures is shown on the left with the first row selected. The context
+    panel on the right shows a Sticky meta info pane for the selected molecule, listing its semantic
+    type (Molecule) and SMILES value, followed by editable fields grouped under a 'Test Schema1'
+    schema (Rating, Notes, Verified checkbox, Review_date) and an 'Activity' schema (Activity, Is
+    Active checkbox), with a Save button.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Cropped at both edges (grid columns and panel cut off) and shows internal test schema field
+    names ('Test Schema1') rather than a realistic production example.
+  reviewed: true
+  width: 1601
+info-panes-colors.gif:
+  actions:
+    - select a column
+    - open the Colors info pane
+    - open the Type dropdown and choose Conditional, then Linear
+    - open the Scheme dropdown and pick a different color gradient
+    - change Apply to from background to text
+  caption: Coloring a column by value
+  described_blob: 027c5f1190c509056732bd5f637b8ca5582e7ae1
+  described_by: claude-sonnet-5
+  description: >-
+    A grid column named AGE is selected, opening the context panel's Colors section on the right.
+    The user opens the Type dropdown and switches it from Off to Conditional, then to Linear, which
+    shades each cell's background from dark to light orange based on its age value. The user then
+    opens the color Scheme dropdown and picks a blue-to-red gradient with a min/max range of 18-89,
+    and finally changes Apply to from background to text, so the numbers themselves are colored
+    instead of the cell background.
+  height: 1001
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 14.1
+  width: 1601
+table-view-marked-up.gif:
+  caption: 'Table View layout: Toolbox and Top Menu'
+  described_blob: 733390e7289092ca749e706cd401b5a2bfb84902
+  described_by: claude-sonnet-5
+  description: >-
+    A Table View shows a data grid of patient records (age, sex, race, severity, disease population)
+    alongside a pie chart and a scatter plot. Two areas are outlined in red: the Toolbox on the
+    left, which lists panels for File, Search, Viewers, Columns, Layouts, Actions, and Models, and
+    the Top Menu above the grid, which holds data-related commands like Edit, View, Select, Data,
+    and ML.
+  height: 1001
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    single static frame despite .gif extension; clear and readable but is an annotated screenshot
+    rather than a polished marketing image
+  reviewed: true
+  seconds: 0.1
+  width: 1601
+table-view.png:
+  caption: Table View layout
+  described_blob: 43628e256ca4c86c2334987b92863e1f18f50c45
+  described_by: claude-sonnet-5
+  description: >-
+    A Table View of the demog dataset, showing the sidebar with Viewers icons, a grid with columns
+    including AGE, SEX, RACE, SEVERITY, DIS_POP, HEIGHT, WEIGHT, and a Sparklines column, plus a pie
+    chart and scatter plot docked below the grid. The status bar at the bottom shows the table name,
+    column count, and row count.
+  height: 1001
+  illustrates:
+    - visualize/viewers
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear full-window capture but dense with UI chrome and data, not a focused answer to one
+    question
+  reviewed: true
+  width: 1601
+ui-docking.gif:
+  actions:
+    - open a CSV file from the file browser
+    - open the file as a table view
+    - add a histogram viewer and dock it within the view
+    - add a scatter plot viewer and drag it into a docked position next to the histogram
+  caption: Docking viewers within a table view
+  described_blob: 4180d8d7beba4172308deea85deb305a3d44ab31
+  described_by: claude-sonnet-5
+  description: >-
+    The animation starts in a file browser, opening a demog.csv preview and then the full table view
+    with patient demographic data. A histogram viewer for AGE is added and dragged into a docked
+    position, followed by a scatter plot of WEIGHT vs. HEIGHT, which is then dragged and docked
+    alongside the histogram inside the table view. The panels resize and snap into place using
+    docking handles, showing how viewers can be arranged within a view's internal docking manager.
+  height: 1001
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    long, multi-stage clip mixing file browsing and viewer docking; docking handles and drag targets
+    are small and hard to follow as a still reference
+  reviewed: true
+  seconds: 87.6
+  width: 1601
+variables.png:
+  caption: Inspecting variables in the Variables panel
+  described_blob: cb4dd8bb141543457b4f985a47e9270f612b984c
+  described_by: claude-sonnet-5
+  description: >-
+    A Variables panel lists declared variables in a table with columns name, value, type, and
+    semantics. Three example rows are shown: AGE (a column reference, type column), ans with value
+    42.51 (type double), and date with value 01/01/2021 (type string).
+  height: 199
+  kind: screenshot
+  quality: docs
+  quality_notes: cropped to just the panel table, no surrounding UI chrome for context
+  reviewed: true
+  width: 405
+view-query-editor-0.png:
+  caption: Query Editor top menu and toolbox
+  described_blob: eb8d80a45b087ece48ddb8b2d16f1912fc6dfe9b
+  described_by: claude-sonnet-5
+  description: >-
+    The Query Editor view for a SQL query named "Chembl Targets by organism," with red annotation
+    boxes highlighting the Top Menu (Edit, View, Select, Data, ML, Chem, Bio, Save, Run) and the
+    Toolbox panel on the left with a Run query action. Below the menu are Query, Transformations,
+    Post-Process, Layout, and Debug tabs showing the SQL editor with a parameterized query, and the
+    results grid displaying compound data with molecule structures.
+  height: 1000
+  kind: screenshot
+  quality: docs
+  quality_notes: red annotation boxes and arrows are add-on markup rather than a clean UI capture
+  reviewed: true
+  width: 1600
+workspace-browse-toolbox.gif:
+  actions:
+    - hover over the sidebar Browse icon to open the pinned Browse tree
+    - hover over the sidebar Toolbox icon to switch to the pinned Toolbox panel
+    - click the Toolbox tab at the bottom of the panel
+    - click the Browse icon in the sidebar to switch back
+  caption: Toggling Browse and Toolbox from the sidebar
+  described_blob: abb747a40bdbe70eff4cafa616354f24c7c62530
+  described_by: claude-sonnet-5
+  description: >-
+    A dataframe of chemical structures fills the main grid while the left sidebar cycles between two
+    panels. First the Browse tree is shown pinned open, labeled with an overlay explaining that
+    while browsing you only see the tree. Then the Toolbox panel appears with its Viewers icon grid
+    and Layouts section, labeled to explain it appears when you pin a view, and that tabs at the
+    bottom (Browse/Toolbox) or the sidebar icons let you switch or toggle either panel.
+  height: 1003
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    callout text overlaps the underlying dataframe and sidebar icons are small, so it reads well
+    only alongside the surrounding page text
+  reviewed: true
+  seconds: 29.6
+  width: 1604
+workspace-sidebar-0.png:
+  caption: Workspace sidebar overview
+  described_blob: 97fba7431f289390c2b063f177ae266501120cd0
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok workspace with the left sidebar highlighted and labeled 'Sidebar'. The sidebar shows
+    icons for commands, Browse, Toolbox, dashboards, favorites, a user profile, help, and settings,
+    stacked vertically along the far left edge. Behind it, faded out, is a data table of chemical
+    structures with a context panel of chemistry-related sections open on the right.
+  height: 1000
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    main content is dimmed and overlaid with a large annotation label, so it only makes sense
+    alongside the surrounding page text
+  reviewed: true
+  width: 1600
+workspace-status-bar-0.png:
+  caption: Locating the workspace status bar
+  described_blob: 1d096c6819e7b4c83b85b792b70b1293bb841ec0
+  described_by: claude-sonnet-5
+  description: >-
+    A dimmed screenshot of the Datagrok workspace, with the bottom status bar highlighted by a red
+    box and labeled "Status Bar" with a downward arrow. The bar shows the current table name, column
+    count, and row count on the left, and a row of toggle icons on the right for view options and
+    panels.
+  height: 1000
+  kind: screenshot
+  quality: docs
+  quality_notes: heavily dimmed overlay with an annotation graphic, not a clean UI capture
+  reviewed: true
+  width: 1600
+workspace-view-0.png:
+  caption: The current view within the workspace
+  described_blob: 46c85b08be961df1f24771150aa76feecb69c867
+  described_by: claude-sonnet-5
+  description: >-
+    A grid view named 'smiles_only' displays a table of chemical structures rendered from canonical
+    SMILES, with 1,000 rows and one column. The view occupies the main working surface, highlighted
+    with a red border, flanked by the left sidebar (navigation tree of files and connections) and
+    the right context panel (Actions, Chemistry, Databases, etc.).
+  height: 1000
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    annotated with a red highlight box calling out the view area, so it's tied to its page rather
+    than standalone
+  reviewed: true
+  width: 1600

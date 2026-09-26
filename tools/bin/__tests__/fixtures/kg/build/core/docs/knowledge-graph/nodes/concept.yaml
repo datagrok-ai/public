@@ -1,0 +1,19 @@
+# Root. A noun users and developers must learn. Features use concepts.
+type: concept
+extends: node
+prefix: C
+hierarchical: true
+authored: true
+visibility: public
+description: >
+  A platform noun such as dataframe, view, entity or semantic type. Concepts are what
+  features are built from and what documentation must define once. Kept shallow: a
+  concept rarely has children, and never more than one level.
+home: core/docs/knowledge-graph/concepts/<name>.yaml
+properties:
+  area?:           "'data' | 'entity' | 'function' | 'ui' | 'service' | 'security' | 'domain'"
+  user_help?:      DocPage
+  developer_help?: DocPage
+notes:
+  - description is the glossary definition
+  - edge keys accepted in the home doc are declared by edge files (defined_by, related)

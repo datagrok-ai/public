@@ -1,0 +1,22 @@
+manually-setting-semantic-type.gif:
+  actions:
+    - open the Details tab in the Context Panel for the column
+    - view the column's detected categories
+    - open column properties / change type dialog
+    - set the quality and cell.renderer tags to ChemicalReaction
+    - close the dialog to see the column rendered with the new semantic type
+  caption: Manually setting a column's semantic type
+  described_blob: e6be985f928de68900be7e280800e9cbd6875edc
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of chemical reaction SMILES strings is shown with the Context Panel open on a 'Reaction'
+    column, first in the Details tab and then rendering the reactions as structures. A dialog
+    labeled 'Reaction' opens showing the column's tags, with 'quality' and 'cell.renderer' both set
+    to 'ChemicalReaction'. After closing the dialog, the column displays rendered reaction diagrams
+    in the grid.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 20.4
+  width: 800

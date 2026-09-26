@@ -1,0 +1,54 @@
+credentials-entities-diagram.png:
+  caption: Credential entity relationships
+  described_blob: 46ce52ca438622dc7bbb073d734644701159a279
+  described_by: claude-sonnet-5
+  description: >-
+    An entity-relationship diagram shows how credentials are modeled: a Group links to a User and
+    can nest within other Groups, a Credentials ID links to a Group and to a DataConnection, and it
+    references a separate Credentials entity holding the actual secret. This illustrates how the
+    system associates each credential with a group and a connection or plugin.
+  height: 199
+  illustrates:
+    - govern/access-control/credentials
+    - govern/access-control
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    plain box-and-line ER diagram with no styling, understandable only alongside the surrounding
+    explanatory text
+  reviewed: true
+  width: 651
+credentials-fetch-diagram.png:
+  caption: How Datagrok fetches credentials from a vault
+  described_blob: cd64dc08438eefb4b37e46648954a0f43ddd0e6f
+  described_by: claude-sonnet-5
+  description: >-
+    A flowchart with three boxes: Client side, Server side, and Credentials server. The client side
+    executes a query against the server side, which in turn sends a request for credentials to the
+    credentials server, signed with a master key. The credentials server passes the credentials back
+    to the server side encrypted with the master key.
+  height: 206
+  illustrates:
+    - govern/access-control/credentials
+  kind: diagram
+  quality: docs
+  quality_notes: plain black-and-white boxes-and-arrows sketch, unstyled default fonts
+  reviewed: true
+  width: 527
+role-based-model.png:
+  caption: RBAC entity relationship model
+  described_blob: 554099f48b0facfd62059e2fd3b789a3644d085e
+  described_by: claude-sonnet-5
+  description: >-
+    An entity-relationship diagram shows the core objects of Datagrok's role-based access control:
+    Group, Permission, Action, Entity, User, and Session. Group connects to Permission, which links
+    to both Action and Entity; User connects to Group and to Session; and Group has a
+    self-referencing relationship for nested groups.
+  height: 229
+  illustrates:
+    - govern/access-control
+  kind: diagram
+  quality: docs
+  quality_notes: plain schematic boxes-and-arrows diagram with no styling, generic labels only
+  reviewed: true
+  width: 549

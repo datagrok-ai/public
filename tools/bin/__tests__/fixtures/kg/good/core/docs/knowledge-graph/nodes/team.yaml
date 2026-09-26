@@ -1,0 +1,7 @@
+type: team
+extends: actor
+prefix: Team
+authored: true
+description: An internal team. Owns feature areas.
+properties:
+  lead?:         Person

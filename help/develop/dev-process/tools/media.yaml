@@ -1,0 +1,311 @@
+inspector-client-events.png:
+  caption: Inspecting client events with the Dev panel
+  described_blob: 7b42bb0b5e59daddff8072d8c642584c01fb5b74
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector's Client events tab lists a stream of client-side events (d4-current-cell-changed,
+    d4-help-request, d4-current-object-changing) captured in a demog. table view. A selected
+    d4-help-request event shows its details (object, url, html, id, isDefaultPrevented) in the
+    context panel, with a Dev section below providing a JavaScript snippet using
+    grok.events.onEvent('d4-help-request').subscribe(...) to handle it, plus Copy and Edit actions.
+  height: 508
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    heavy red annotation circles/arrows overlay the UI, which suit an instructional doc page but are
+    too marked-up to stand alone or serve as marketing material
+  reviewed: true
+  width: 804
+inspector-current-column.png:
+  caption: Inspecting the current column with the Inspector tool
+  described_blob: c1eaf83b4cb5f444ac362266aa6ee7d9d1fa8dd4
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel is open on the Current Column tab, listing internal properties of the
+    selected grid column as name-value pairs: format, source-precision, id, color-coding-type, and
+    semantic-detection-duration, each with an edit icon. The data grid above shows a clinical
+    demographics table with columns like USUBJID, AGE, SEX, RACE, and WEIGHT.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    shows internal/debug metadata (raw ids, precision values) rather than a typical end-user
+    workflow, so it's more useful in context than standalone
+  reviewed: true
+  width: 800
+inspector-debug.png:
+  caption: Debug tab in the Inspector panel
+  described_blob: fbc74ff9c0579cba017adce177ea34a1dae846b1
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector's sidebar shows the Debug tab selected, listing toggles such as Show Properties
+    Serialization Panel, Save Semantic Type Detection Duration, Hide Menus On Mouse Out, Hide
+    Tooltips On Mouse Out, Show Render Stats, Use Default Encoders, Selenium, and Debug Queries. A
+    Get View Layout link sits below the checkboxes. No values are being changed in the screenshot.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small, dense checkbox list with no annotation; needs the surrounding page text to make sense of
+    each option
+  reviewed: true
+  width: 800
+inspector-events.png:
+  caption: Inspecting events with the Inspector panel
+  described_blob: 1c5d59c40991da14173e55a94911efffb15124fb
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector's Client Log tab lists captured events such as d4-help-request,
+    grok-panels-changed, and d4-current-object-changed. Selecting an event shows its details,
+    including id and isDefaultPrevented, plus generated JavaScript code that subscribes to the event
+    and displays its arguments via grok.balloon.info.
+  height: 324
+  kind: screenshot
+  quality: docs
+  quality_notes: clear and legible but scoped to one panel of a larger workflow, not meaningful on its own
+  reviewed: true
+  width: 936
+inspector-local-storage.png:
+  caption: 'Inspector: local storage panel'
+  described_blob: 428869d47825d2233345c79ae799055c6d79663a
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel's Local Storage tab is open, showing a list of stored key names such as
+    Accordion:Columns correlation, Accordion:DataConnection, and Accordion:column popup on the left,
+    paired with their JSON values on the right (e.g. {"Scatter plot":true},
+    {"Details":true,"Run":true,...}). A RESET link and edit icons for each row let the values be
+    cleared or modified.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    dense, low-level internal keys with truncated JSON values are cluttered and not self-explanatory
+    without the surrounding text
+  reviewed: true
+  width: 800
+inspector-markup.png:
+  caption: Inspector panel markup bindings
+  described_blob: c44fe108ccac1c85d1faefb037fbf7b54b8c1390
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel is docked on the left of a data grid, listing available data bindings such
+    as Table name, Column tag, Row count, Current cell, Row value, Row value color, Formula, and
+    Value editor. Each entry shows its binding expression (for example t.name, t.currentCell,
+    formula($(AGE) * 2)) alongside the live evaluated value from the current table. One binding,
+    Column tag, is highlighted in red with an "error" badge because its tag lookup failed.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    small UI panel crop with dense text; readable but not polished enough to stand alone as a
+    marketing image
+  reviewed: true
+  width: 800
+inspector-project-json.png:
+  caption: Viewing the project JSON in Inspector
+  described_blob: fba967cd3165a5fbe376ddde563ab8a610f8facd
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel is open with "Project JSON" selected in its left-hand list, showing Save and
+    Load buttons above a pretty-printed JSON representation of the current project. The visible JSON
+    describes the layout structure, starting with a vertical container and its width/height state,
+    followed by a nested fill container and its children.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    grid data above is cropped mid-row and the JSON panel is truncated, so the full structure isn't
+    visible
+  reviewed: true
+  width: 800
+inspector-recent-events.gif:
+  actions:
+    - hover a column header to see its tooltip stats
+    - select rows via the scatter plot to trigger selection events
+    - hover a table cell to see its tooltip
+    - click a listed event to view its args
+  caption: Recent events panel in the Inspector
+  described_blob: 0081da69d218e02f06caeb80eaf631d2b02096f4
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel's "Recent events" tab is open next to a data table, scatter plot, and
+    histogram. It lists event types such as d4-run-command, d4-window-closed, d4-tooltip-shown,
+    d4-current-cell-changed, and d4-help-request as the user works with the table and viewers. As
+    rows and points get selected and hovered, new entries like d4-current-object-changed,
+    d4-accordion-pane-added, and d4-accordion-constructed appear in the list, and clicking one of
+    the events shows its args in a small popup.
+  height: 750
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI details (event names, args popup) are legible but low-drama; useful within the page,
+    not compelling standalone
+  reviewed: true
+  seconds: 9.5
+  width: 1200
+inspector-serialization.png:
+  caption: 'Inspector: serialization tab'
+  described_blob: 32ad8bf7e5c0c2220d2b5284de98db6ecaab065d
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel is open on the "Serialization" tab for the "demog (4)" table, showing
+    summary metrics such as raw bytes, encoded bytes, zip-compressed bytes, estimated bytes, CSV
+    bytes, encode/decode ratios, and encode/decode times. Below the summary, a per-column table
+    lists each column's file, name, encoder, raw byte size, and encoded byte size.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    table is cropped at the bottom row and the panel sidebar takes up significant width, but the
+    content is legible
+  reviewed: true
+  width: 800
+inspector-view-json.png:
+  caption: Viewing the current view as JSON
+  described_blob: cd2d510dabb74f24388c4ed1a96cc6dd2696f393
+  described_by: claude-sonnet-5
+  description: >-
+    A table view ("demog" dataset) is shown with the Inspector panel open on the left, listing
+    entries such as Recent events, Client events, and View JSON, with View JSON selected. To its
+    right, a JSON panel displays the serialized ViewLayout, including its type, container layout
+    state (width, height, containerType), and nested children such as a grid element.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    readable but shows raw serialized JSON with internal IDs, useful mainly alongside the
+    surrounding explanation
+  reviewed: true
+  width: 800
+inspector-viewer-json.png:
+  caption: Viewer JSON in the Inspector panel
+  described_blob: 3830cefa690ca78d4f501949c286266b75bdc092
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel's Viewer JSON entry is selected in a data-view window showing a scatter plot
+    next to a grid. The panel displays the JSON representation of the current viewer, including its
+    id, type ("Scatter plot"), and look properties such as xColumnName, yColumnName, markerMinSize,
+    and markerMaxSize.
+  height: 500
+  kind: screenshot
+  quality: docs
+  quality_notes: small UI crop with dense text, readable only at full size
+  reviewed: true
+  width: 800
+inspector-widgets.gif:
+  actions:
+    - open the Inspector's Widgets tab
+    - scroll through the list of live widgets
+    - hover over individual widget entries to identify them
+  caption: Inspecting live widgets for memory leaks
+  described_blob: 32963297ff1fbe6c9a9a2b655e8ed5fe9e51ff08
+  described_by: claude-sonnet-5
+  description: >-
+    The Inspector panel's Widgets tab lists every widget currently alive in the running application,
+    showing icons, types (ColumnComboBox, HtmlTable, HtmlList, viewer, VirtualItemView, grid) and
+    values for each. As the user hovers over entries, the corresponding widget highlights, letting
+    them trace which UI element an entry refers to across open table views such as demog and crime.
+  height: 750
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small UI text is hard to read at this resolution and the panel is dense with debug data, but it
+    clearly demonstrates the workflow
+  reviewed: true
+  seconds: 32.5
+  width: 1200
+tm-debug-usage.gif:
+  actions:
+    - Right-click the page and choose Inspect to open DevTools
+    - Switch to the Sources tab
+    - Hit a debugger breakpoint inside the running test
+    - Inspect the Scope panel showing local variables
+    - Step Into a function call to follow execution into it
+  caption: Debugging a test with Step Into
+  described_blob: 2262cc92d8ef5ca68203eb6690033ad70fb4d7eb
+  described_by: claude-sonnet-5
+  description: >-
+    In Test Manager's Dev Tools > FSE section, the user opens the browser's DevTools panel and
+    inspects page elements via the right-click Inspect menu. The view then switches to the Sources
+    tab, where a test script (test.ts) is paused at a debugger statement inside an async test
+    function, with the Scope and Call Stack panels showing local variables and the execution stack.
+    Stepping through the code (Step Into) moves the paused line forward into a called function,
+    letting the user follow execution step by step.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Shows raw DevTools debug data (variable scopes, call stack) alongside a small captured browser
+    window; useful in context but not self-explanatory as a standalone answer.
+  reviewed: true
+  seconds: 24.9
+  width: 800
+tm-open.gif:
+  actions:
+    - expand the Apps node in the Browser tree
+    - expand the Admin folder under Apps
+    - click Test Manager
+    - open the context panel showing Test Manager details
+  caption: Opening Test Manager
+  described_blob: 3d69ed8366ef1f9a473b8d9e6943cb611a5b3fde
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the Datagrok Browser tree on the left with root nodes like My stuff, Spaces,
+    Apps, Files, Dashboards, Databases, and Platform. The user expands Apps, then expands the Admin
+    folder to reveal Reports, Service Logs, Test Manager, Test Track, and Usage Analysis. Clicking
+    Test Manager opens it as a tab showing its package (DevTools.ssavenko), repository
+    (DatagrokPublic), and an Updated on date, and the context panel on the right shows the same
+    details with a Run button.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: small UI chrome, no cropping, but low information density for a page on its own
+  reviewed: true
+  seconds: 12.7
+  width: 800
+tm-profiling.gif:
+  actions:
+    - Right-click the page and choose Inspect to open DevTools
+    - Switch to the Performance panel and start a recording
+    - Run the test while the recording captures the CPU timeline
+    - Open the Summary tab to view total and scripting time
+    - Expand the Call Tree to inspect individual function timings
+  caption: Profiling test execution with DevTools Performance
+  described_blob: 9bd228ce9d801af287d240ca0a918ea7ac2a36d7
+  described_by: claude-sonnet-5
+  description: >-
+    Chrome DevTools is opened alongside the Test Manager panel to record a performance profile of a
+    running test. The Performance tab shows a captured timeline with a Summary panel reporting
+    scripting and total time, and expanding into a Call Tree that breaks down the recorded
+    JavaScript function calls and their self time.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Cluttered DevTools UI with dense, small text and a generic package tree in the background;
+    informative but not clean enough to stand alone as an answer.
+  reviewed: true
+  seconds: 23.2
+  width: 800
+tm-test-execution.gif:
+  actions:
+    - expand the Admin > Test Manager tree and select a test
+    - open the test's details panel
+    - click Run
+    - view the results table with timing, widgetsDelta, and owner columns
+  caption: Running a test in Test Manager
+  described_blob: 0340e3e70ca618d7d00788d7ca676766823743d1
+  described_by: claude-sonnet-5
+  description: >-
+    The Datagrok Test Manager panel is open with the Admin app tree expanded to Test Manager and
+    Test Track. The right-side details panel shows an 'exist' test in the FSE category with its last
+    success/failure history, then the user clicks Run and the results table appears showing
+    pass/fail counts and per-run metrics including execution time (ms), UI impact (widgetsDelta),
+    and test owner.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: small UI text and dense tree/table are hard to read at this resolution
+  reviewed: true
+  seconds: 15.8
+  width: 800

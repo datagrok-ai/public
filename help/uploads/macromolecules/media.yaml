@@ -1,0 +1,257 @@
+activity_cliffs_open-800.gif:
+  actions:
+    - open the Bio | SAR | Activity Cliffs menu
+    - >-
+      configure sequence and activity columns, similarity cutoff, method and similarity in the
+      dialog and click OK
+    - view the resulting activity cliffs scatter plot next to the grid
+    - select a cliff point to highlight it and inspect the sequence differences panel below
+  caption: Running Sequence Activity Cliffs analysis
+  described_blob: c6d3ae5ff12837c586955d1e59548f1d3dea2829
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of macromolecule sequences with an activity value is shown, and the user opens Bio | SAR
+    | Activity Cliffs from the top menu. In the dialog they set the sequence and activity columns,
+    similarity cutoff, UMAP method and Hamming similarity, then click OK. A scatter plot titled
+    "Activity cliffs" appears next to the grid showing three clusters of points, with cliff pairs
+    connected by lines; clicking a point highlights its connected cliff and opens a panel below
+    listing sequence differences and activity deltas between the paired rows.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 28.1
+  width: 800
+diversity_search-800.gif:
+  actions:
+    - Open the Bio menu
+    - Select Search > Diversity Search
+    - Review the resulting diverse-sequences subgrid
+    - Click through rows in the sequence and diverse-sequence grids to inspect composition analysis
+  caption: Running a diversity search on sequences
+  described_blob: f6c64976606361bf70f1d61c0ac586c056e39b6b
+  described_by: claude-sonnet-5
+  description: >-
+    A macromolecule grid shows a column of aligned peptide sequences with an activity score, and a
+    details panel on the right describing the sequence semantic type. The user opens the Bio menu
+    and selects Search > Diversity Search, which adds a new "diverse (sequence)" subgrid below the
+    main table listing the most diverse sequences found. The user then clicks through several rows
+    in both grids, each selection highlighting the corresponding sequence and showing its
+    composition analysis (amino acid percentages) and, for one row, a molecule structure tooltip in
+    the side panel.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small text and dense grid detail are hard to read at this resolution; useful within the page but
+    not clear enough to stand alone
+  reviewed: true
+  seconds: 19.9
+  width: 800
+identity_scoring-800.gif:
+  actions:
+    - open the Identity Scoring dialog
+    - select the macromolecules column
+    - enter a reference sequence
+    - confirm to add the Identity column
+  caption: Calculating identity scoring for macromolecules
+  described_blob: f7550aa9d251d22cee11ae5fd3d6cf5f804720ef
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of HELM macromolecule sequences is shown in the Bio table. The user opens the Identity
+    Scoring dialog from the Bio menu, selects the Macromolecules column, types a reference sequence,
+    and clicks OK. The grid then displays a new Identity column with a score for each row, ranging
+    from 1.00 for an exact match down to 0.13 for dissimilar sequences.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 20.6
+  width: 800
+macromolecules-12.png:
+  caption: Analyzing peptide activity cliffs in sequence space
+  described_blob: 18c2c0368c5d2aef86290d7d78fd9f843d85fe15
+  described_by: claude-sonnet-5
+  description: >-
+    A Peptides Analysis view shows a monomer-position grid colored by mutation cliffs, a logo
+    summary table clustering sequence motifs, a sequence space scatter plot, and a
+    most-potent-residues table. A tooltip on a selected mutation cliff cell shows its count, mean
+    activity difference, and p-value, while the right panel lists selected mutation pairs and their
+    activity deltas.
+  height: 404
+  illustrates:
+    - explore/dim-reduction
+  kind: screenshot
+  quality: docs
+  quality_notes: dense, small text and many panels crowd the screenshot, hard to read at a glance without zooming
+  reviewed: true
+  width: 800
+macromolecules-7.png:
+  caption: Atomic-level structure of a nucleotide sequence
+  described_blob: 049709bd0c8fffdc95a975f5dec0168685e2c738
+  described_by: claude-sonnet-5
+  description: >-
+    A row of six linked nucleotide units drawn as full atomic chemical structures, connected by
+    phosphate-sugar backbone linkages. Each unit shows a ribose/deoxyribose ring with
+    stereochemistry annotations, a phosphate group, and a distinct nitrogenous base (adenine,
+    cytosine, guanine, and others) with modified sugar substituents varying across the chain.
+  height: 225
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    Small text labels and stereochemistry annotations are hard to read at this resolution;
+    functional as a supporting illustration but not eye-catching on its own
+  reviewed: true
+  width: 800
+macromolecules-bar-chart-800.gif:
+  actions:
+    - Drag the left handle of the IC50Scaled histogram filter rightward to narrow the selected range
+    - Drag the right handle further to shrink the range to a single point
+    - Observe the sequence table and position bar charts update to the filtered peptides
+    - Widen the filter range back out
+  caption: Composition analysis for MSA
+  described_blob: b8eaefd9ee89a352195694a60f7303a6bf4f8d98
+  described_by: claude-sonnet-5
+  description: >-
+    A PeptidesView shows a multiple sequence alignment as a grid of colored single-letter amino acid
+    codes alongside a Log10(IC50) column, with WebLogo-style stacked bar charts above each position
+    summarizing residue frequency. A histogram filter on IC50Scaled slides across its range, and as
+    the range narrows the sequence rows, the stacked bar charts, and the IC50 values update to
+    reflect only the filtered subset.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    Small UI text and dense grid are hard to read at 800x500; useful within the bio page context but
+    not self-explanatory alone.
+  reviewed: true
+  seconds: 25.2
+  width: 800
+macromolecules-notation-converter-800.gif:
+  actions:
+    - Open the Bio menu and choose Convert > Notation...
+    - Convert the Sequence column from FASTA to separator notation
+    - Convert the separator column to HELM notation, rendering colored monomer chains
+    - Convert the HELM column back to FASTA notation and compare it to the original
+  caption: Converting macromolecule sequence notation
+  described_blob: 6e91fdcd7a2751ff3fe482cb8582ff90905353bf
+  described_by: claude-sonnet-5
+  description: >-
+    A Datagrok grid shows a FASTA Sequence column of macromolecules. Using the Bio > Convert >
+    Notation menu, the sequences are converted first to separator notation (dash-delimited
+    monomers), then to HELM (shown as a colored monomer chain), and finally back to FASTA, with
+    arrows highlighting that the original and reconverted FASTA columns match.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 37.6
+  width: 800
+restore-structures-800.gif:
+  actions:
+    - hover over a monomer cell to preview its structure
+    - open Bio > Convert > To Atomic Level
+    - select the macromolecule column in the dialog
+    - click OK
+    - view the generated molfile column with atomic-level structures per row
+  caption: Getting atomic-level structures from sequences
+  described_blob: 50a3b91c918bd36248785d4c730f4a979c3ed52d
+  described_by: claude-sonnet-5
+  description: >-
+    A grid shows a macromolecule (peptide sequence) table with monomer columns and an Activity
+    column, with a molfile structure preview popping up over a cell. From the Bio menu, the user
+    opens Convert > To Atomic Level, picks the MSA column as the Macro Molecule in the dialog, and
+    clicks OK. A new molfile(MSA) column then appears in the grid, showing the full atomic-level
+    chemical structure rendered for each sequence row.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 18.2
+  width: 800
+sequence_space-800.gif:
+  actions:
+    - open the Bio menu and choose Sequence Space
+    - confirm the Method and Similarity settings in the dialog and click OK
+    - hover a point in the resulting scatter plot to inspect its tooltip
+  caption: Running Sequence Space analysis on a Bio table
+  described_blob: b719779d0cdaa6b47117e6c29ee556c84114d53b
+  described_by: claude-sonnet-5
+  description: >-
+    A macromolecule table with a sequence column and an activity column is shown with the Bio menu
+    open, and Sequence Space is selected from it. In the Sequence Space dialog the user leaves
+    Method set to UMAP and Similarity set to Hamming, then clicks OK. A Sequence space scatter plot
+    appears docked beside the table showing three clusters of points colored by activity, and
+    hovering a point in the top-right cluster shows a tooltip with its embedding coordinates,
+    sequence, and activity value.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 21.5
+  width: 800
+similarity_scoring-800.gif:
+  actions:
+    - Open Bio > Calculate > Similarity...
+    - Select the HELM column in the Macromolecules field
+    - Select a reference sequence
+    - Click OK
+    - View the resulting Similarity column with computed scores
+  caption: Running similarity scoring on macromolecules
+  described_blob: eb292149ba2f8832038fc95a3e581cf94bd73808
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of monomer sequences is shown with the Bio > Calculate > Similarity... menu open. The
+    Similarity Scoring dialog appears, where the user selects the HELM column as the macromolecules
+    source and picks the first row's sequence as the reference. After clicking OK, a new Similarity
+    column is added to the grid, showing a score of 1.00 for the reference row and values like 0.80
+    and 0.76 for the others.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 20.9
+  width: 800
+similarity_search-800.gif:
+  actions:
+    - Open the Bio menu
+    - Hover Search, then select Similarity Search
+    - Review the similar-sequences grid with scores
+    - Select a similar sequence
+    - View its differences from the target sequence in the context panel
+  caption: Running Similarity Search on macromolecules
+  described_blob: 3bf151d548ccdbd75f751f03d5558a346f453847
+  described_by: claude-sonnet-5
+  description: >-
+    In a Bio-enabled grid of macromolecule sequences with an activity column, the user opens the Bio
+    menu, goes to Search, and selects Similarity Search. A results panel appears below the grid
+    listing similar sequences ranked by score, and selecting a sequence pair opens a context panel
+    showing the position-by-position differences between the target and the selected similar
+    sequence.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 17.7
+  width: 800
+splitting-to-monomers-800.gif:
+  actions:
+    - open the Bio menu
+    - navigate to Convert > Split to Monomers
+    - confirm table and sequence column in the dialog and click OK
+    - hover a monomer cell to preview its structure
+  caption: Splitting aligned sequences into monomers
+  described_blob: f808e99246af32f647890a24dcc719bc69f837c4
+  described_by: claude-sonnet-5
+  description: >-
+    A macromolecules table (MSA) shows peptide sequences as color-coded monomer abbreviations. The
+    user opens the Bio menu, goes to Convert, and selects Split to Monomers, then confirms the
+    sequence column in a dialog. The table then gains one new column per position, each showing the
+    individual monomer for that sequence, with a tooltip revealing the chemical structure of one
+    monomer.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 17.7
+  width: 800

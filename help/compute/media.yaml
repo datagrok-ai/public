@@ -1,0 +1,269 @@
+add-to-workspace.gif:
+  actions:
+    - Run the model to produce output
+    - Add the output dataframe to the workspace
+    - Open the viewers gallery and switch to grid view
+    - Add a correlation plot viewer
+    - Add a line chart of concentration over time
+    - Hover a correlation plot cell to preview a scatter plot
+  caption: Adding a model's output dataframe to the workspace
+  described_blob: 2b217b34239136afa2f1d4ff0602522945ee6859
+  described_by: claude-sonnet-5
+  description: >-
+    The animation starts on the Heat Exchange model's input form with concentration, temp, and
+    saturation curves plotted after running the model. The user opens the table panel and adds the
+    resulting dataframe to the workspace, then opens the Viewers gallery and switches to a grid
+    layout showing the data columns. From there they add a correlation plot and a line chart of
+    concentration over time, and hover over a cell in the correlation plot to preview a scatter plot
+    of temp vs. time as a tooltip.
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: small embedded frame size and dense UI make some labels hard to read at a glance
+  reviewed: true
+  seconds: 22.5
+  width: 800
+auto-ui-queries.png:
+  caption: Auto-generating a UI from a query and script
+  described_blob: bdb2f90037e8f89dd17528168958a5cdee8ce971
+  described_by: claude-sonnet-5
+  description: >-
+    The image shows three panels: a parameterized SQL query named GetByPowderAndMetal with powder
+    and metal string inputs whose choices come from other queries, an R computation script named
+    Brooks that takes the query's dataframe output plus unit and ratio inputs and produces a result
+    dataframe and a plot, and the automatically generated app below combining both into a form with
+    Powder, Metal, Unit, and Ratio inputs, a Run button, and a line chart output.
+  height: 1800
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    flat text-only mockup rather than an actual application screenshot; small chart thumbnail is low
+    detail
+  reviewed: true
+  width: 2777
+chem-space.gif:
+  actions:
+    - Open Chem > Analyze > Chemical Space menu
+    - Configure encoding function, method (UMAP), and similarity metric in the dialog
+    - Set clustering epsilon and minimum points, click OK
+    - View resulting scatterplot of clustered molecules
+    - Hover over a cluster point to see molecule details
+    - Drag-select points to select corresponding grid rows
+  caption: Mapping chemical space with UMAP
+  described_blob: 3c7862a19d6718d511036cbc62dbaa24edb33ffc
+  described_by: claude-sonnet-5
+  description: >-
+    In the molecule grid, the user opens Chem > Analyze > Chemical Space to map the dataset to a 2D
+    plot based on similarity. A dialog configures the encoding function (Fingerprints), the
+    dimensionality-reduction method (UMAP), similarity metric (Tanimoto), and clustering options
+    (epsilon, minimum points), then a scatterplot appears showing molecules as color-coded clusters
+    of points. Hovering over a point shows a tooltip with the molecule's structure and properties
+    (IDDB, pIC50, activity, cluster), and dragging over an area selects the corresponding rows in
+    the grid.
+  height: 998
+  illustrates:
+    - domains/chem
+    - explore/dim-reduction
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 35.2
+  width: 1608
+dim-reduction-dialog.png:
+  caption: Dimensionality reduction dialog options
+  described_blob: 8cad801bcd1409f9898ef6eff0018830dd6484f6
+  described_by: claude-sonnet-5
+  description: >-
+    A dialog titled Dimensionality Reduction lets the user pick a table and columns, then configure
+    per-column encoding function, similarity metric, and weight (e.g. Hamming for a sequence column,
+    Tanimoto for a molecule fingerprint column). Below the column options, it sets aggregation
+    method, embedding method (UMAP), whether to plot embeddings, and an optional postprocessing step
+    (DBSCAN clustering).
+  height: 712
+  illustrates:
+    - explore/dim-reduction
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 817
+dim-reduction-webgpu.gif:
+  actions:
+    - open the Dimensionality Reduction dialog
+    - expand the UMAP method options
+    - enable the 'Use WebGPU' checkbox
+    - confirm the long-running analysis warning
+    - view the resulting embedding scatter plot with clusters
+  caption: Enabling WebGPU-accelerated dimensionality reduction
+  described_blob: 44fc62c2ca394c82fee92f020c075b7339157a4b
+  described_by: claude-sonnet-5
+  description: >-
+    A dataset of sequences is opened with a UMAP dimensionality reduction dialog, where a similarity
+    metric and encoding function are configured for the sequence column. The advanced UMAP settings
+    are expanded and the 'Use WebGPU' checkbox is enabled, with a tooltip showing it will use the
+    GPU for KNN computations. After confirming a warning about analysis taking several minutes, the
+    computation runs and produces a scatter plot of distinct clustered points colored by group.
+  height: 998
+  illustrates:
+    - explore/dim-reduction
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    UI text and controls are legible, but low frame rate and static holds make it read more like a
+    click-through walkthrough than a polished demo
+  reviewed: true
+  seconds: 28.6
+  width: 1608
+dim-reduction.gif:
+  actions:
+    - open the Dimensionality Reduction dialog
+    - select the sequence and molecule columns
+    - choose an encoding function and similarity metric for each column
+    - select UMAP as the method and DBSCAN as postprocessing
+    - run the analysis
+    - hover a point in the resulting scatter plot to inspect its row data
+    - select a cluster of points in the scatter plot
+  caption: Running dimensionality reduction on multiple columns
+  described_blob: 3e3777f1e6edd5fce2cb2099b4c985dcb5d345ee
+  described_by: claude-sonnet-5
+  description: >-
+    A grid with demographic, sequence, and molecule columns opens the Dimensionality Reduction
+    dialog. The user picks the sequence and molecule columns, sets per-column encoding functions and
+    similarity metrics (Hamming for sequences, Tanimoto for molecule fingerprints), chooses UMAP as
+    the method and DBSCAN as postprocessing, then runs it. A scatter plot of the resulting embedding
+    appears next to the grid, with points colored by DBSCAN cluster and a tooltip showing a selected
+    point's original row data.
+  height: 998
+  illustrates:
+    - explore/dim-reduction
+    - explore/multivariate-analysis
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 34.8
+  width: 1608
+img.png:
+  caption: Script entity details in the context panel
+  described_blob: 08e67d0ef20173cf91a0e5f566ef9708ea1da276
+  described_by: claude-sonnet-5
+  description: >-
+    The context panel shows the entity page for an R script named survivalPlot, with sections for
+    Details, Script, Run, Usage, Activity, Sharing, and Impact. The Details section lists metadata
+    such as creator, creation and update dates, language, inputs (inputStrata, confInt, survivalDf),
+    and outputs (plot, diagnostics). The Sharing section shows the current user as owner with a
+    Share button, and Impact lists System and Admin.
+  height: 641
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    narrow crop of a side panel with generic placeholder data (Admin, Sep 2, 2021), not
+    self-explanatory about logging/audit without surrounding text
+  reviewed: true
+  width: 327
+model-browser.png:
+  caption: Browsing models in the Models gallery
+  described_blob: 26aa94069d24c15b161580d9e46be0bc6f41f8a3
+  described_by: claude-sonnet-5
+  description: >-
+    The Models view lists computational models as cards in a grid, each showing a name, icon,
+    author, and last-modified date; some cards include a short description. A left sidebar offers
+    filters by favorites, usage, creation date, language, and tags, plus a search bar for finding
+    models by name or tag.
+  height: 633
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    clear and readable but a plain gallery listing with no annotation of the interaction it
+    illustrates (double-click to open)
+  reviewed: true
+  width: 991
+separators-option.gif:
+  actions:
+    - open the run dialog for the OrdersByEmployee query
+    - select Ship Country, Ship City, and Customer Id values
+    - type employee last names into the Employee text area
+    - run the query and view the results grid
+  caption: Using the separators option for a list parameter
+  described_blob: e6017d818d3a4f1a96e5f0aece0b51fce7035c95
+  described_by: claude-sonnet-5
+  description: >-
+    The query editor shows a parameterized SQL query with an `employee` input declared as
+    `list<string>` using `{inputType: TextArea; separators: ,}`. The animation opens the query's run
+    dialog, where Ship Country, Ship City, and Customer Id are filled in, then the Employee text
+    area is typed into with employee last names, and finally the query runs and returns a result
+    grid of matching orders.
+  height: 756
+  illustrates:
+    - compute/functions
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    mid-typing frames briefly show a transient "Can't be empty" validation tooltip, which could
+    confuse a viewer skimming only a few frames
+  reviewed: true
+  seconds: 11.1
+  width: 1483
+seq-space.gif:
+  actions:
+    - open Bio > Analyze > Sequence Space menu
+    - >-
+      configure encoding, fingerprint, similarity/distance method and dimensionality-reduction
+      method in the dialog
+    - click OK to run the computation
+    - view the resulting scatterplot with colored clusters
+    - select a cluster of points on the scatterplot
+    - inspect the selected rows' sequences and activity in the side panel
+  caption: Running sequence space analysis on peptides
+  described_blob: c13b0021e9e68fa22c2f3a8d7a9e981f6f9545b8
+  described_by: claude-sonnet-5
+  description: >-
+    A grid of peptide sequences is shown in a Datagrok table. The user opens the Bio > Analyze menu
+    and selects Sequence Space, then configures the dialog by choosing a fingerprint type,
+    distance/similarity method (Levenshtein, Hamming, monomer chemical distance, Needleman-Wunsch)
+    and dimensionality-reduction method (UMAP). After running, a scatterplot titled Sequence space
+    appears docked to the table, showing colored clusters of sequences positioned by pairwise
+    distance. The user then lasso-selects a cluster of points, and a panel lists the 100 selected
+    rows with their sequences and activity values.
+  height: 998
+  illustrates:
+    - explore/dim-reduction
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 49
+  width: 1608
+ui-auto-generation.png:
+  caption: Auto-generated UI for a compute script
+  described_blob: a9528fc25d164471fd36329ef846e487f98e6bfb
+  described_by: claude-sonnet-5
+  description: >-
+    A three-panel layout shows how a Datagrok compute script becomes an interactive app: on the left
+    is the R script with #input and #output annotations, in the middle the auto-generated Inputs
+    panel (Dosing options, PK model, PK/PD parameters) with a Run button, and on the right the
+    Outputs panel showing a PKPD chart and the Cmax value. Red arrows connect the #input line to the
+    generated input fields and the #output line to the generated chart and output value.
+  height: 1780
+  kind: screenshot
+  quality: docs
+  quality_notes: >-
+    Annotated diagram with overlaid arrows rather than a plain screenshot; code text is small and
+    only partially legible at normal viewing size.
+  reviewed: true
+  width: 3240
+ui-mobile.jpg:
+  caption: Running a model on a mobile device
+  described_blob: bb950afcf6633261b01950bfac535bed60bc36f5
+  described_by: claude-sonnet-5
+  description: >-
+    A photo of a hand holding an Android tablet browser showing the Datagrok Lotka-Volterra Model
+    function page at dev.datagrok.ai. The left panel lists input parameters (X0, Y0, Alpha, Beta,
+    Gamma, Sigma, H, Time Start, Time Stop) with a Run button, and the center shows a line chart
+    output; the right panel lists Details, Usage, Dev, and REST sections.
+  height: 3024
+  kind: photo
+  quality: docs
+  quality_notes: >-
+    photo of a physical device screen with glare and a finger obscuring part of the frame; chart
+    area mostly blank/still rendering
+  reviewed: true
+  seconds: 0
+  width: 4032

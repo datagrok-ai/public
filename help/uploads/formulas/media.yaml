@@ -1,0 +1,18 @@
+drug-score-formula.png:
+  caption: Drug score formula
+  described_blob: b6dbb9e866776dce98dcac146e321fba96226aa8
+  described_by: claude-sonnet-5
+  description: >-
+    Two mathematical equations on a plain white background. The first defines the drug score ds as a
+    product of per-property contribution terms si (each weighted as 1/2 + 1/2 si) multiplied by ti
+    factors. The second equation defines si as a sigmoid function, 1 divided by (1 plus e to the
+    power of ap+b), describing the spline curve used to convert a property value into a 0-to-1
+    contribution.
+  height: 142
+  kind: diagram
+  quality: docs
+  quality_notes: >-
+    small, low-resolution rendered equation image typical of inline math in docs; fine as an inline
+    formula but not polished enough to stand alone
+  reviewed: true
+  width: 222

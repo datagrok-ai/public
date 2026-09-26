@@ -1,0 +1,14 @@
+smtp.png:
+  caption: SMTP email service configuration
+  described_blob: 1da6f6ec074830028a64bd6f4eeef9e607d44a1f
+  described_by: claude-sonnet-5
+  description: >-
+    A settings form for configuring the SMTP email service, with fields for Email Service (set to
+    SMTP), Sender Email, SMTP Server, SMTP Port, SMTP User, and a masked SMTP Password. Below are
+    checkboxes for SMTP Anonymous (unchecked) and SMTP Secured (checked), followed by Web Root and
+    Api Root URLs, an Always Use Web Root checkbox (checked), and an empty Agreement Date field.
+  height: 1148
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 1334

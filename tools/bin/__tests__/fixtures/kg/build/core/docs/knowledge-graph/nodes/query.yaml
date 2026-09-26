@@ -1,0 +1,11 @@
+type: query
+extends: function
+description: >
+  A function whose body is SQL (or a connector call) under a package's queries/ folder,
+  run against a data connection.
+properties:
+  language:      "'sql'"
+  path:          Path
+  connection:    Connection
+  test?:         boolean = false
+  expected_rows?: number

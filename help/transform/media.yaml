@@ -1,0 +1,133 @@
+add_function_to_editor.gif:
+  actions:
+    - drag the Abs function from the function list into the formula editor
+    - view the AGE column info tooltip
+    - type $(AGE) as the function argument
+    - view the computed preview column and function metadata popup
+  caption: Adding a function to a formula in Add New Column
+  described_blob: 59ea6d820fca7c6d54b61646d4254dd13313c7ca
+  described_by: claude-sonnet-5
+  description: >-
+    The Add New Column dialog is open over a clinical demographics table. The user drags the Abs
+    function from the function registry into the expression editor, which inserts "Abs()" with the
+    cursor between the parentheses; a tooltip shows the AGE column's stats (min, max, average,
+    histogram). The user then types "$(AGE)" inside the parentheses to reference the AGE column, and
+    a preview column showing the absolute value of AGE appears in the panel below, with a popup
+    listing the Abs function's metadata (author, tags, inputs, outputs).
+  height: 500
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small dialog crop of a real workflow, legible but busy with background grid data; not a
+    standalone marketing asset
+  reviewed: true
+  seconds: 26.6
+  width: 800
+add_new_column_functions_suggestions.gif:
+  actions:
+    - select a column in the registry
+    - observe functions re-sorted by relevance
+    - drag a function into the editor field
+    - edit/complete the function argument
+    - view the live preview of computed results
+  caption: Function suggestions in Add New Column
+  described_blob: a56a41b8cf380f08896e7e7a71724b08b5d3278b
+  described_by: claude-sonnet-5
+  description: >-
+    In the Add New Column dialog, functions in the right-hand registry panel are sorted 'By
+    relevance' after a column is selected, bringing matching functions to the top. The user drags
+    Chem:getMolProperty into the editor field, where the parameter is prefilled with the selected
+    canonical_smiles column, then types a 'MW' argument. Syntax highlighting distinguishes column
+    references from other tokens, and a live preview column of computed values appears below as the
+    formula is completed.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 37.1
+  width: 800
+categorize.gif:
+  actions:
+    - Switch Categorize dropdown from subj to age
+    - Enter four range patterns as categories with assigned colors
+    - Click Apply Color Coding to color the age column and add a category column
+    - Click Save Matrix to add per-category boolean columns and a combined filter
+    - Use the new boolean columns in the Filters panel to filter by category
+  caption: Categorizing data with Save Matrix
+  described_blob: 9717d6731a45608135f93499b1345d024c7702de
+  described_by: claude-sonnet-5
+  description: >-
+    In the Categorize Data dialog, the user switches the Categorize field from "subj" to "age" and
+    defines four numeric-range patterns as categories (19-31.75, 31.75-44.50, 44.50-57.25,
+    57.25-70), each assigned a color. All 1000 rows match. Clicking Apply Color Coding colors the
+    age column and adds a category column to the grid, and Save Matrix adds one boolean column per
+    category plus a combined filter, which is then used in the Filters panel to select rows by
+    category.
+  height: 501
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 43.9
+  width: 800
+find-and-replace-dialog.png:
+  caption: Find and Replace dialog options
+  described_blob: ae23df03534fefceef8c52d1fd6e034c2411ebbb
+  described_by: claude-sonnet-5
+  description: >-
+    The Find and replace dialog has Find what and Replace with text fields, an In columns dropdown
+    set to Current, and checkboxes for Match case, Match whole word, Use regular expressions,
+    Selected rows only, Filtered rows only (checked), and Filter matching rows. The bottom bar has a
+    history/undo icon and Cancel, Replace, and OK buttons.
+  height: 718
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 493
+link-tables.gif:
+  actions:
+    - open the Link Tables dialog
+    - >-
+      create a new link between orders and order-details, choosing key column OrderID and link type
+      row to filter, then click LINK
+    - >-
+      create a new link between order-details and products, choosing key column ProductID and link
+      type filter to filter, then click LINK
+    - close the dialog
+    - click a row in the orders table to filter order-details and products accordingly
+  caption: Linking tables with Link Tables dialog
+  described_blob: 6c85858d67950fb9b3d72f8de4b7312369f96458
+  described_by: claude-sonnet-5
+  description: >-
+    The animation shows the Link Tables dialog used to connect the orders, order-details, and
+    products tables in a grid layout. The user creates a link from orders to order-details on
+    OrderID with link type "row to filter", then a second link from order-details to products on
+    ProductID with link type "filter to filter". After closing the dialog, clicking a row in orders
+    filters order-details, which in turn filters products, with a tooltip showing the selected
+    order's details.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 39.2
+  width: 800
+unpivot.gif:
+  actions:
+    - Open the Data menu and choose Unpivot
+    - Set the student column role to Copy
+    - Set the math, english, history, and science columns to Merge one by one
+    - Confirm the Category and Value column names
+    - Click OK to generate the unpivoted result table
+  caption: Unpivoting a table with the Data menu
+  described_blob: ac4fcdc33a66bb0427cd060486ee0b732b56c1c3
+  described_by: claude-sonnet-5
+  description: >-
+    A wide table of student scores with columns student, math, english, history, and science is
+    unpivoted using Data > Unpivot. In the Unpivot dialog, student is set to Copy and the score
+    columns are each set to Merge, with Category and Value as the output column names. Clicking OK
+    produces a new tall table with columns student, Category, and Value, one row per original score.
+  height: 500
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 14
+  width: 800

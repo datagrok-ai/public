@@ -1,4 +1,5 @@
 ---
+documents: [visualize/viewers/correlation-plot]
 title: "Correlation plot"
 description: Assess correlations between all numeric columns at once using a color-coded correlation matrix.
 keywords:

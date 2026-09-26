@@ -1,5 +1,6 @@
 ---
-feature: treemap
+id: TS:viewers/tree-map/ui
+covers: [visualize/viewers/tree-map]
 target_layer: manual-only
 coverage_type: smoke
 ---

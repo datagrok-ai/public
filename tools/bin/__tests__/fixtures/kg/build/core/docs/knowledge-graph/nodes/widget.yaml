@@ -1,0 +1,14 @@
+type: widget
+extends: component
+description: >
+  A UI component of the client: a Dart class under d4's widgets that descends from `Widget`
+  (inputs, dialogs, menus, tooltips, tree views, ...), the building blocks viewers, the shell
+  and plugins compose. Id widget:<ClassName>; name is the class name.
+properties:
+  path:          Path
+  declaration:   Declaration           # the class; a ref edge (defined_by is the defines-concept key, a name a property may not share)
+  base?:         string                # the direct superclass
+  builtin?:      boolean = true
+  abstract?:     boolean = false
+notes:
+  - a class anywhere the Dart pass walks whose extends chain reaches Widget (widgets/widget.dart), not only under widgets/

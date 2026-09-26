@@ -1,0 +1,85 @@
+additional-properties.gif:
+  actions:
+    - hover over the plus icon next to intermolecular (1)
+    - click to add intermolecular (1) as a column
+    - hover over the plus icon next to electrostatic
+    - click to add electrostatic as a column
+    - hover over the plus icon next to ligand fixed
+    - click to add ligand fixed as a column
+  caption: Adding docking score properties as columns
+  described_blob: 1ca1bc8f16f9fb8dcb432e3be06f481e53ada388
+  described_by: claude-sonnet-5
+  description: >-
+    A docking results grid lists compounds with their pose thumbnails and binding energy, next to a
+    3D viewer showing an orange docked ligand pose inside a green protein structure. Below the 3D
+    view, a breakdown of Autodock score components (intermolecular, electrostatic, ligand fixed,
+    ligand moving, total internal, torsional free) is listed with a plus icon next to each. The user
+    hovers and clicks the plus icons in turn for intermolecular, electrostatic, and ligand fixed,
+    and each time a tooltip reads "Calculate ... for the whole table" and a new column with that
+    score is added to the grid.
+  height: 701
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 8.4
+  width: 1542
+docking-results.png:
+  caption: Interpreting docking results by binding energy
+  described_blob: 5153aaf31fd79b03c0770fe631c54ff43e7c7eee
+  described_by: claude-sonnet-5
+  description: >-
+    A results grid lists docked compounds with columns for Cmpd_ID, SMILES structure, 3D pose, and
+    binding energy. Binding energy values are color-coded, with green for the strongest (most
+    negative) values and red/orange for weaker ones, sorted so the top-ranked compound (BACE_4,
+    -11.67) appears first. A highlighted row shows the selected compound (BACE_1) with its structure
+    and docked pose.
+  height: 666
+  kind: screenshot
+  quality: answer
+  reviewed: true
+  width: 1154
+docking-simulations.gif:
+  actions:
+    - open the Chem menu and select Autodock...
+    - choose the target macromolecule and set the number of conformations
+    - click OK to run the docking calculation
+    - review the resulting pose and binding energy columns
+  caption: Running an Autodock docking simulation
+  described_blob: b1fce7752e179a4ed93a5b955798be4d2de7201a
+  described_by: claude-sonnet-5
+  description: >-
+    In the Datagrok grid, a molecule row is selected and the Chem > Autodock menu is opened. The
+    Autodock dialog lets the user pick the ligands column, choose a target macromolecule (1pbq), and
+    set the number of conformations, then click OK to run. After the calculation, the grid gains a
+    pose column with docked poses and a binding energy column, sorted to show the best-scoring
+    compound on top.
+  height: 701
+  kind: animation
+  quality: answer
+  reviewed: true
+  seconds: 17.8
+  width: 1542
+zoom-into-pocket.gif:
+  actions:
+    - select a docked compound row
+    - open the pose cell
+    - expand the Docking section in the context panel
+    - zoom the 3D viewer into the binding pocket
+  caption: Zooming into the binding pocket after docking
+  described_blob: 41abc7f2046eecf48bbdf92ed93e2b9cc343058f
+  described_by: claude-sonnet-5
+  description: >-
+    A dataframe of docked compounds shows structure, docking pose thumbnail, and binding energy
+    columns, with the top-scoring pose selected. The context panel opens a Docking section with a 3D
+    Molstar viewer, and clicking the pose thumbnail zooms the viewer in to show the ligand nestled
+    inside the protein's binding pocket alongside computed energy terms like intermolecular,
+    electrostatic, and torsional free energy.
+  height: 701
+  kind: animation
+  quality: docs
+  quality_notes: >-
+    small viewport crops the grid and viewer tightly; fine for illustrating the workflow but not
+    polished enough to stand alone
+  reviewed: true
+  seconds: 12.8
+  width: 1542

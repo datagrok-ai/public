@@ -1,0 +1,8 @@
+type: node-type
+extends: type
+prefix: T
+description: A node type; one per nodes/<type>.yaml.
+properties:
+  hierarchical: boolean
+  authored:     boolean
+  id_prefix?:   string

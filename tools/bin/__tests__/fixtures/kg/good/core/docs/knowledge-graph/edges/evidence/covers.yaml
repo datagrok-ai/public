@@ -1,0 +1,8 @@
+type: covers
+from: Scenario
+to: Feature
+key: covers
+derived_by: [annotation]
+description: A manual scenario covers a feature.
+properties:
+  level?:        "'exercised' | 'asserted' = 'exercised'"
