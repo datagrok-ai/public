@@ -633,7 +633,7 @@ scoped('an access-conflict reloads and replays like a version conflict; a confli
   assert.equal(await second.done, null);
 });
 
-scoped('an unrestriction names the state it was made from', async () => {
+scoped('an unrestriction names the state and the ACL revision it was made from', async () => {
   const calls = [];
   stub(calls);
   const {dialog, done} = await opened();
@@ -642,7 +642,7 @@ scoped('an unrestriction names the state it was made from', async () => {
   await flush();
   await validated();
   assert.deepEqual(applies(calls, true)[0][2].access, {grant: [], revoke: [], restrict: [],
-    unrestrict: [{table: 'orders', column: 'freight', from: 'restricted'}]});
+    unrestrict: [{table: 'orders', column: 'freight', from: 'restricted', revision: 'rev-freight'}]});
   buttonNamed('CANCEL').click();
   await flush();
   assert.equal(await done, null);

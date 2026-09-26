@@ -175,7 +175,7 @@ const CONJUNCTIONS = new Set(['and', 'or', 'than', 'if', 'but', 'so', 'as', 'tha
 
 /** prop_gen's `camelCaseToWords` (`prop_gen_annotation.dart:89-112`): all-caps and already-spaced
  * names pass through, humps split, first word capitalized, conjunctions lowercased. */
-function camelCaseToWords(name: string): string {
+export function camelCaseToWords(name: string): string {
   if (name === name.toUpperCase() || name.includes(' '))
     return name;
   const words = name.match(/[A-Z]+(?![a-z])|[A-Z]?[^A-Z]+/g) ?? [name];

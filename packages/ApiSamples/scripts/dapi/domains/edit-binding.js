@@ -43,6 +43,12 @@ try {
   const applied = await handle.apply({...await tokens(), access: delta});
   grok.shell.info(`applied: ${applied.applied}, secret is now ${(await handle.access()).columns['note.secret'].state}`);
 
+  //    Making a column visible to everyone again is no delta: the op names the state and the ACL
+  //    revision the snapshot answered, so a grant or revoke made since is an 'access-conflict'.
+  const secret = (await handle.access()).columns['note.secret'];
+  await handle.apply({...await tokens(), access: {unrestrict: [{table: 'note', column: 'secret',
+    from: 'restricted', revision: secret.revision}]}});
+
   // 5. A stale token: the conflict names both versions and both incarnations (present whenever
   //    the apply sent ifIncarnation; they differ only after a delete and a re-create of the name).
   const stale = await tokens();
@@ -72,5 +78,6 @@ try {
   const drop = await handle.apply({...await tokens(), dropTables: ['note']}, {dryRun: true});
   grok.shell.info(`dropping note loses ${JSON.stringify(drop.lost.tables.note)}`);
 } finally {
-  await handle.delete();
+  // A delete pinned to the incarnation you looked at never removes a schema re-created since.
+  await handle.delete({ifIncarnation: (await handle.manifest()).incarnation});
 }

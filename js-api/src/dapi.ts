@@ -1506,9 +1506,12 @@ export class DomainSchemaClient {
     return domainCall(api.grok_Dapi_Domains_SchemaAudit(this.dart, this.name, options?.limit ?? null));
   }
 
-  /** Fully purges a user-managed schema: data, audit partition, registry, entities, permissions. */
-  delete(): Promise<void> {
-    return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name));
+  /** Fully purges a user-managed schema: data, audit partition, registry, entities, permissions.
+   * Requires Delete on the schema. `ifIncarnation` (the `incarnation` of {@link manifest} or
+   * {@link access}) pins the delete to the schema the caller reviewed: a name deleted and
+   * re-created since rejects with a {@link DomainVersionConflictError} and the new schema is kept. */
+  delete(options?: {ifIncarnation?: string}): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name, options?.ifIncarnation ?? null));
   }
 
   /** Direct permission rows on this schema's registry entity (schema-level operation

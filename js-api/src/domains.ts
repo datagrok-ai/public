@@ -544,6 +544,10 @@ export interface DomainColumnAccess {
   canShare: boolean;
   /** The per-column schema id of a restricted column the caller may Share. */
   schemaId?: string;
+  /** The ACL revision of a restricted column the caller may Share: it moves with every grant,
+   * revoke and re-restriction, so an unrestriction sent with it
+   * ({@link DomainColumnUnrestriction.revision}) cannot undo a change made after the snapshot. */
+  revision?: string;
   /** Groups holding View on a restricted column. */
   view?: DomainGroupRef[] | null;
   /** Groups holding Edit on a restricted column. */
@@ -604,6 +608,9 @@ export interface DomainColumnRestriction extends DomainColumnTarget {
    * (`'access-conflict'`, naming the column and both states) when the column's state differs;
    * omitted, the op applies whatever the state. */
   from?: 'restricted' | 'unrestricted';
+  /** The {@link DomainColumnAccess.revision} the edit was made from; sent, the apply is refused
+   * (`'access-conflict'`) when the column's grants changed since. */
+  revision?: string;
   /** Permissions to grant on the per-column schema. */
   grant?: DomainGroupPermission[];
   /** Permissions to revoke from the per-column schema. */
@@ -615,6 +622,10 @@ export interface DomainColumnUnrestriction extends DomainColumnTarget {
   /** `'restricted'`, the state the edit was made from; refused (`'access-conflict'`) when the
    * column is not restricted any more. Omitted, the op is idempotent. */
   from?: 'restricted';
+  /** The {@link DomainColumnAccess.revision} the edit was made from: refused (`'access-conflict'`)
+   * when anyone granted, revoked, or re-restricted the column since — an unrestriction is not a
+   * delta, so a stale one would otherwise restore access revoked meanwhile. */
+  revision?: string;
 }
 
 /** The access changes an apply carries ({@link DomainApplyBody.access}): exact permission-triple

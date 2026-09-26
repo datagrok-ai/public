@@ -800,15 +800,17 @@ scoped('WO-A5.1 #5 (P2): the same connection and schema picked again keep the ed
   assert.equal(await done, null);
 });
 
-/** A registry the stubbed create writes to; `lose` loses the answer of the next create: 'after'
- * commits it first, 'before' commits it only once `land()` is called; `foreign(name)` registers
- * a schema of someone else's under that name. */
+/** A registry the stubbed create writes to, at version 1 like the server's; `lose` loses the
+ * answer of the next create: 'after' commits it first, 'before' commits it only once `land()` is
+ * called; `foreign(name)` registers a schema of someone else's under that name, `alter(name, f)`
+ * changes a registered one as `f` says. */
 function registry(calls) {
   const manifests = new Map([['postgresnorthwind_public', {storage: {kind: 'external'}, tables: {}}]]);
   const names = {has: (name) => manifests.has(name)};
   const state = {lose: null, land: () => {},
-    foreign: (name) => manifests.set(name, {storage: {kind: 'external', connection: 'Other:Conn', schema: 'x'},
-      tables: {t: {}}})};
+    foreign: (name) => manifests.set(name, {version: '1', storage: {kind: 'external', connection: 'Other:Conn', schema: 'x'},
+      tables: {t: {columns: {}}}}),
+    alter: (name, f) => manifests.set(name, f(JSON.parse(JSON.stringify(manifests.get(name)))))};
   const schema = grok.dapi.domains.schema;
   grok.dapi.domains.schema = (name) => ({...schema(name), manifest: async () => {
     calls.push(['registry', name]);
@@ -824,7 +826,7 @@ function registry(calls) {
       throw Object.assign(new Error(`Domain schema "${name}" is already registered`), {code: 'schema-name-taken'});
     const lose = state.lose;
     state.lose = null;
-    const add = () => manifests.set(name, options.manifest);
+    const add = () => manifests.set(name, {...JSON.parse(JSON.stringify(options.manifest)), version: '1'});
     if (lose === 'after')
       add();
     if (lose === 'before')
@@ -872,7 +874,7 @@ scoped('WO-A5.1 #6 (P0): a create the registry does not know yet stays offered; 
   buttonNamed('CREATE').click();
   await flush();
   assert.equal(dialog.wizard.currentStep.value, 'review');
-  assert.equal(status().textContent, 'Gateway Timeout — nw is not registered as this binding; CREATE again');
+  assert.equal(status().textContent, 'Gateway Timeout — nw is not registered; CREATE again');
   assert.deepEqual(calls.filter((c) => c[0] === 'announce'), [], 'nothing registered, nothing announced');
   assert.equal(status().classList.contains('u2-wizard-status-error'), true);
   assert.equal(document.querySelectorAll('.u2-binding-issue').length, 0, 'on the status line, not a finding');
@@ -904,13 +906,83 @@ scoped('WO-A5.1 #6 (P0): after a lost create, a schema someone else registered u
   server.foreign('nw');
   buttonNamed('CREATE').click();
   await flush();
-  assert.equal(dialog.wizard.currentStep.value, 'review', 'not taken for ours');
   assert.deepEqual(accessCalls(calls), [], 'no grant lands on the other schema');
-  assert.match(document.querySelector('.u2-binding-issue').textContent, /already registered/, 'an ordinary refusal');
-  assert.equal(buttonNamed('CREATE').disabled, true, 'no loop: the refusal stands until the author renames');
+  assert.equal(dialog.wizard.currentStep.value, 'created', 'the outcome of the lost create is unknown');
+  assert.match(document.querySelector('.u2-binding-created-unknown').textContent,
+    /nw is registered at version 1 over Other:Conn · x, 1 table \(t\) — not as this dialog sent it/);
   assert.equal(creates(calls).length, 2);
-  buttonNamed('CANCEL').click();
-  assert.equal(await done, null);
+  buttonNamed('CLOSE').click();
+  await flush();
+  assert.deepEqual(await done, {name: 'nw', access: {applied: [], failed: []}, unknown: true});
+});
+
+/** A lost create, the registry then read with `change` applied to what landed. */
+async function lostCreate(change) {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const server = registry(calls);
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  dialog.editor.access.addGroup(SCHEMA, SALES);
+  dialog.editor.access.setVisibility('orders', 'freight', [SALES]);
+  await validated();
+  server.lose = 'after';
+  const createSchema = grok.dapi.domains.createSchema;
+  grok.dapi.domains.createSchema = async (name, options) => {
+    try {
+      return await createSchema(name, options);
+    } finally {
+      if (!options.dryRun)
+        server.alter(name, change);
+    }
+  };
+  buttonNamed('CREATE').click();
+  await flush();
+  return {calls, dialog, done};
+}
+
+scoped('a lost create is ours only at version 1 with every table descriptor as sent: a later apply is an unknown outcome, nothing granted', async () => {
+  const {calls, dialog, done} = await lostCreate((m) => ({...m, version: '2'}));
+  assert.equal(dialog.wizard.currentStep.value, 'created');
+  assert.deepEqual(accessCalls(calls), [], 'no restriction, no grant');
+  assert.deepEqual(calls.filter((c) => c[0] === 'announce'), []);
+  assert.equal(document.querySelector('.u2-binding-created-head').textContent, 'Outcome unknownA schema nw is registered');
+  assert.deepEqual([...document.querySelectorAll('.u2-binding-created-unknown span')].map((s) => s.textContent), [
+    'No answer to the create (Gateway Timeout) — whether it landed is unknown',
+    'nw is registered at version 2 over NorthwindBinding:PostgresNorthwind · public, 2 tables (orders, order_details) — not as this dialog sent it',
+    'No access was applied: grant it from the schema\'s page once you know the binding is yours']);
+  assert.equal(status().textContent, 'Outcome unknown — no access was applied');
+  assert.equal(buttonNamed('RETRY ACCESS').style.display, 'none');
+  assert.notEqual(buttonNamed('OPEN'), undefined);
+  buttonNamed('CLOSE').click();
+  await flush();
+  assert.equal((await done).unknown, true);
+});
+
+scoped('a lost create whose registered column differs at version 1 is not claimed; one the registry writes back without a derived friendly name is', async () => {
+  let run = await lostCreate((m) => {
+    m.tables.orders.columns.freight = {...m.tables.orders.columns.freight, required: true};
+    return m;
+  });
+  assert.deepEqual(accessCalls(run.calls), []);
+  assert.ok(document.querySelector('.u2-binding-created-unknown'), 'a changed descriptor: outcome unknown');
+  buttonNamed('CLOSE').click();
+  await flush();
+  assert.equal((await run.done).unknown, true);
+  resetDom();
+
+  run = await lostCreate((m) => {
+    m.tables.orders.friendlyName = undefined;
+    m.tables.orders = JSON.parse(JSON.stringify(m.tables.orders));
+    return m;
+  });
+  assert.equal(document.querySelector('.u2-binding-created-unknown'), null);
+  assert.deepEqual(accessCalls(run.calls), ['shareColumn nw.orders freight g-sales View',
+    'table.grant nw.orders g-sales View', 'table.grant nw.order_details g-sales View'], 'our own create: the access goes on');
+  buttonNamed('CLOSE').click();
+  await flush();
+  assert.equal((await run.done).unknown, undefined);
 });
 
 scoped('WO-A5.1 #7 (P1): a group gone since the pick refuses the create on Review by its label; nothing is created', async () => {

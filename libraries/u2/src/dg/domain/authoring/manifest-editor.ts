@@ -70,14 +70,14 @@ export interface ManifestPlan {
 }
 
 /** The `access` section of the apply body: exact permission triples by logical names, group ids;
- * a column op names the restriction state it was made from, which the server checks under the
- * lock (`access-conflict`). */
+ * a column op names the restriction state it was made from, and an unrestriction the ACL revision
+ * too, which the server checks under the lock (`access-conflict`). */
 export interface ApplyAccess {
   grant: {table: string, group: string, permission: string}[];
   revoke: {table: string, group: string, permission: string}[];
   restrict: {table: string, column: string, from: 'restricted' | 'unrestricted', grant: {group: string, permission: string}[],
     revoke: {group: string, permission: string}[]}[];
-  unrestrict: {table: string, column: string, from: 'restricted'}[];
+  unrestrict: {table: string, column: string, from: 'restricted', revision?: string}[];
 }
 
 /** `POST /domains/schemas/{s}/apply` — the edit tokens, the manifest patch and the access deltas;
@@ -216,7 +216,8 @@ export class ManifestEditor extends Control {
       changes.push(op.change);
     }
     for (const op of delta.unrestrict.filter((o) => included(o.table) && restrictable(o.table, o.column))) {
-      access.unrestrict.push({table: op.change.table!, column: op.change.column!, from: op.from});
+      access.unrestrict.push({table: op.change.table!, column: op.change.column!, from: op.from,
+        ...(op.revision === undefined ? {} : {revision: op.revision})});
       changes.push(op.change);
     }
     if (access.grant.length + access.revoke.length + access.restrict.length + access.unrestrict.length > 0)

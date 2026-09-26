@@ -335,7 +335,8 @@ test('column access: restrict with the groups let in (Edit where they may edit t
     'orders.freight: View revoked from Sales', 'orders.shipcountry restricted — visible to nobody else']);
   access.setVisibility('orders', 'freight', null);
   plan = e.editPlan();
-  assert.deepEqual(plan.payload.access.unrestrict, [{table: 'orders', column: 'freight', from: 'restricted'}]);
+  assert.deepEqual(plan.payload.access.unrestrict, [{table: 'orders', column: 'freight', from: 'restricted', revision: 'rev-freight'}],
+    'an unrestriction is no delta: it carries the ACL revision it was made from');
   assert.equal(plan.changes.find((c) => c.id === 'access:unrestrict:orders.freight').text, 'orders.freight visible to everyone again');
   e.model.includeColumn('orders', 'shipname', false);
   assert.equal(e.editPlan().payload.access.restrict.some((r) => r.column === 'shipname'), false, 'a column that is out gets no op');

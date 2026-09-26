@@ -1389,6 +1389,7 @@ export interface AccessSnapshotColumn {
   state: 'unrestricted' | 'restricted';
   canShare: boolean;
   schemaId?: string;
+  revision?: string;
   view?: AccessSnapshotGroup[] | null;
   edit?: AccessSnapshotGroup[] | null;
   other?: {group: AccessSnapshotGroup, permission: string}[] | null;
@@ -1426,7 +1427,9 @@ export interface AccessDelta {
   grant: AccessTriple[];
   revoke: AccessTriple[];
   restrict: AccessRestriction[];
-  unrestrict: {table: string, column: string, from: 'restricted', change: ManifestChange}[];
+  /** `revision` is the column's ACL revision as loaded: an unrestriction is no delta, so the
+   * apply refuses it once anyone changed the column's grants since. */
+  unrestrict: {table: string, column: string, from: 'restricted', revision?: string, change: ManifestChange}[];
 }
 
 export interface AccessEditOptions {
@@ -1458,6 +1461,7 @@ export class AccessModel {
   private readonly _entities = new Map<string, string>();
   private readonly _principals = new Map<string, AccessPrincipal>();
   private readonly _logical = new Map<string, string>();
+  private readonly _revisions = new Map<string, string>();
   private _names: ((table: string, column?: string) => string | undefined) | undefined;
   private _author: AccessPrincipal | undefined;
 
@@ -1684,7 +1688,7 @@ export class AccessModel {
       if (was?.unknown === true || is?.unknown === true)
         continue;
       if (is === undefined) {
-        out.unrestrict.push({table: c.table, column: c.column, from: 'restricted',
+        out.unrestrict.push({table: c.table, column: c.column, from: 'restricted', revision: this._revisions.get(key),
           change: this._columnChange('unrestrict', c.table, c.column, ' visible to everyone again')});
         continue;
       }
@@ -1889,6 +1893,7 @@ export class AccessModel {
     const visibility: ColumnVisibility[] = [];
     this._entities.clear();
     this._logical.clear();
+    this._revisions.clear();
     for (const [logical, t] of Object.entries(manifest.tables)) {
       const remote = t.table ?? logical;
       this._logical.set(remote, logical);
@@ -1929,6 +1934,8 @@ export class AccessModel {
           locked.add(`${table}${SEP}${column}`);
         if (c.state !== 'restricted')
           continue;
+        if (c.revision !== undefined)
+          this._revisions.set(`${table}${SEP}${column}`, c.revision);
         const entry: ColumnVisibility = {table, column, groups: (c.view ?? []).map(principal),
           edit: (c.edit ?? []).map(principal)};
         if (c.other !== undefined && c.other !== null && c.other.length > 0)

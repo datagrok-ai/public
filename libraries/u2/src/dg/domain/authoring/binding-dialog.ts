@@ -24,9 +24,12 @@ import {notify} from '../../../components/display/notify.js';
 import {DomainErrors} from '../errors.js';
 import {route} from '../routes.js';
 import {groupInput} from '../../inputs/group-input.js';
+import {camelCaseToWords} from '../../funcs/func-form.js';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
-import type {AccessPrincipal, DraftEnvelope, ManifestDiagnostic, ManifestJson, ManifestModel} from './manifest-model.js';
+import {ManifestModel} from './manifest-model.js';
+import type {AccessPrincipal, DraftEnvelope, ManifestColumnJson, ManifestDiagnostic, ManifestJson,
+  ManifestTableJson} from './manifest-model.js';
 
 export interface CreateBindingOptions {
   connection?: DG.DataConnection;
@@ -48,6 +51,9 @@ export interface AccessOutcome {
 export interface BindingResult {
   name: string;
   access: AccessOutcome;
+  /** A create that got no answer, with a schema under the name that could not be proven its own:
+   * no access was applied. */
+  unknown?: boolean;
 }
 
 /** The platform's Dart client learns of a create from the create itself; a schema confirmed
@@ -254,6 +260,8 @@ export class BindingDialog extends BindingWizard<BindingResult> {
   /** Why the editor could not be built over the draft. */
   private readonly _designProblem = signal<string | null>(null);
   private readonly _failed = signal(0);
+  /** The create's outcome could not be established: the Created step says what is registered. */
+  private readonly _unknown = signal(false);
   private readonly _facts = span('Only database connections are offered', 'u2-binding-facts');
   private readonly _access = span('', 'u2-binding-access');
   private readonly _designHost = div([], 'u2-binding-design');
@@ -301,7 +309,8 @@ export class BindingDialog extends BindingWizard<BindingResult> {
           onActivate: () => this._review(), actions: [{text: 'VALIDATE', run: () => this._validate()}],
           canProceed: () => this._reviewGate(), commit: () => this._create()},
         {id: 'created', title: 'Created', content: () => this._createdHost, done: true, actions: [
-          {text: 'RETRY ACCESS', run: () => this._retry(), enabled: computed(() => this._failed.value > 0)},
+          {text: 'RETRY ACCESS', run: () => this._retry(), enabled: computed(() => this._failed.value > 0),
+            visible: computed(() => !this._unknown.value)},
           {text: 'OPEN', run: () => this._openAndClose()},
         ]},
       ],
@@ -656,8 +665,9 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       await grok.dapi.domains.createSchema(plan.name, {friendlyName: plan.friendlyName || undefined,
         manifest: plan.manifest});
     } catch (e) {
-      if (!await this._landed(plan, e))
-        return false;
+      const landed = await this._landed(plan, e);
+      if (landed !== true)
+        return landed === 'unknown';
       api.grok_Dapi_Domains_SchemaCreated?.(grok.dapi.domains.dart, plan.name);
     }
     this._unanswered = null;
@@ -677,21 +687,36 @@ export class BindingDialog extends BindingWizard<BindingResult> {
   }
 
   /** Whether a create that failed registered the schema all the same — its answer lost, or a
-   * create of ours after such a loss refused as taken: the registry says. A refusal lands on the
-   * findings; a failure the registry does not explain on the status line, CREATE still offered. */
-  private async _landed(plan: ManifestPlan, e: unknown): Promise<boolean> {
+   * create of ours after such a loss refused as taken: the registry says. A schema under the name
+   * that cannot be proven this create's own ends the dialog with the outcome unknown
+   * (`'unknown'`), no access applied. A refusal lands on the findings; a failure the registry does
+   * not explain on the status line, CREATE still offered. */
+  private async _landed(plan: ManifestPlan, e: unknown): Promise<boolean | 'unknown'> {
     const name = plan.name;
     const ours = DomainErrors.codeOf(e) === 'schema-name-taken' && this._unanswered === name;
     if (!BindingDialog._answered(e) || ours) {
       this._unanswered = name;
       this._say('No answer to the create — reading the registry…');
-      if (await BindingDialog._registered(plan))
-        return true;
+      let registered: DG.DomainRegisteredManifest | null = null;
+      try {
+        registered = await grok.dapi.domains.schema(name).manifest();
+      } catch (x) {
+        if (!BindingDialog._notFound(x)) {
+          this._say(`${BindingDialog._failure(e)} — the registry could not be read (${BindingDialog._failure(x)}); CREATE again`, true);
+          return false;
+        }
+      }
+      if (registered !== null) {
+        if (BindingDialog._isOwn(plan, registered))
+          return true;
+        this._outcomeUnknown(plan, e, registered);
+        return 'unknown';
+      }
       if (!ours) {
-        this._say(`${BindingDialog._failure(e)} — ${name} is not registered as this binding; CREATE again`, true);
+        this._say(`${BindingDialog._failure(e)} — ${name} is not registered; CREATE again`, true);
         return false;
       }
-      // taken by a schema that is not this binding: an ordinary refusal
+      // taken, yet gone by the time the registry was read: an ordinary refusal
       this._unanswered = null;
     }
     const editor = this.editor!;
@@ -703,13 +728,51 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return false;
   }
 
-  /** Whether the registry holds this binding under its name — the same storage and tables, not
-   * merely the name, so a schema someone else registered meanwhile is never taken for ours. */
-  private static async _registered(plan: ManifestPlan): Promise<boolean> {
-    const shape = (m: {storage?: unknown, tables?: object}) =>
-      BindingDialog._canonical({storage: m.storage, tables: Object.keys(m.tables ?? {}).sort()});
-    return grok.dapi.domains.schema(plan.name).manifest()
-      .then((m) => shape(m) === shape(plan.manifest), () => false);
+  /** Whether the registered schema is this create's own: at version 1 — nothing applied since —
+   * and holding exactly what was sent, the storage and every table descriptor, read the way the
+   * registry writes a declaration back. A schema changed, or registered by someone else, since is
+   * never taken for it. */
+  private static _isOwn(plan: ManifestPlan, registered: DG.DomainRegisteredManifest): boolean {
+    const shape = (m: {storage?: unknown, tables?: Record<string, ManifestTableJson>}): string =>
+      BindingDialog._canonical({storage: m.storage, tables: Object.fromEntries(Object.entries(m.tables ?? {})
+        .map(([logical, decl]) => [logical, BindingDialog._declared(ManifestModel.canonicalTable(decl, logical), logical)]))});
+    return String(registered.version) === '1' &&
+      shape(registered as {storage?: unknown, tables?: Record<string, ManifestTableJson>}) === shape(plan.manifest);
+  }
+
+  /** A declaration as the registry writes it back: a friendly name that is the table's name or
+   * the name's own words, or the column name's words, goes unsaid. */
+  private static _declared(decl: ManifestTableJson, logical: string): ManifestTableJson {
+    const {friendlyName, columns, ...rest} = decl;
+    const table: ManifestTableJson = friendlyName === undefined || friendlyName === logical ||
+      friendlyName === camelCaseToWords(logical) ? {...rest, columns: {}} : {...rest, friendlyName, columns: {}};
+    for (const [name, c] of Object.entries(columns)) {
+      const {friendlyName: words, ...cRest} = c;
+      table.columns[name] = words === undefined || words === camelCaseToWords(name) ? cRest as ManifestColumnJson : c;
+    }
+    return table;
+  }
+
+  /** The create's outcome could not be established: nothing more is sent — no access — and the
+   * Created step says what is registered under the name, OPEN over it. */
+  private _outcomeUnknown(plan: ManifestPlan, e: unknown, registered: DG.DomainRegisteredManifest): void {
+    const tables = Object.keys(registered.tables ?? {});
+    const storage = registered.storage as {connection?: string, schema?: string} | undefined;
+    this._unanswered = null;
+    this._unknown.value = true;
+    this._result = {name: plan.name, access: {applied: [], failed: []}, unknown: true};
+    this._firstTable = tables[0] ?? '';
+    const facts = [
+      `No answer to the create (${BindingDialog._failure(e)}) — whether it landed is unknown`,
+      `${plan.name} is registered at version ${registered.version}` +
+        `${storage?.connection === undefined ? '' : ` over ${storage.connection} · ${storage.schema ?? ''}`}, ` +
+        `${plural(tables.length, 'table', 'tables')}${tables.length > 0 ? ` (${tables.join(', ')})` : ''} — not as this dialog sent it`,
+      'No access was applied: grant it from the schema\'s page once you know the binding is yours',
+    ];
+    this._createdHost.replaceChildren(
+      div([badge('Outcome unknown', {variant: 'warning'}), span(`A schema ${plan.name} is registered`)], 'u2-binding-created-head'),
+      divV(facts.map((f) => span(f)), 'u2-binding-created-list u2-binding-created-unknown'));
+    this._say('Outcome unknown — no access was applied', true);
   }
 
   /** The groups of the access rows the platform no longer knows, by label, found in one look-up. */

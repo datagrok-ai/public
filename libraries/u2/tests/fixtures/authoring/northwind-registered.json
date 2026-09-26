@@ -153,7 +153,7 @@
       "orders.customerid": {"state": "unrestricted", "canShare": true},
       "orders.employeeid": {"state": "unrestricted", "canShare": true},
       "orders.orderdate": {"state": "unrestricted", "canShare": true},
-      "orders.freight": {"state": "restricted", "canShare": true, "schemaId": "s-freight",
+      "orders.freight": {"state": "restricted", "canShare": true, "schemaId": "s-freight", "revision": "rev-freight",
         "view": [{"id": "g-sales", "friendlyName": "Sales", "personal": false}, {"id": "g-me", "friendlyName": "askalkin", "personal": true}],
         "edit": [{"id": "g-me", "friendlyName": "askalkin", "personal": true}],
         "other": [{"group": {"id": "g-me", "friendlyName": "askalkin", "personal": true}, "permission": "Share"}]},

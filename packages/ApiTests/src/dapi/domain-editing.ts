@@ -159,6 +159,46 @@ category('Dapi: domain editing', () => {
     expect((await handle.manifest()).incarnation, created.incarnation);
   });
 
+  test('a delete pinned to an incarnation is a conflict once the name was re-created, and keeps the schema', async () => {
+    if (skipped())
+      return;
+    const old = (await handle.manifest()).incarnation;
+    await handle.delete({ifIncarnation: old});
+    const created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Editing probe', manifest});
+    const stale = await thrown(() => handle.delete({ifIncarnation: old}));
+    expect(stale instanceof DG.DomainVersionConflictError, true,
+      `expected DomainVersionConflictError, got ${stale?.constructor?.name}: ${stale?.message}`);
+    expect(stale.status, 409);
+    expect(stale.expectedIncarnation, old);
+    expect(stale.currentIncarnation, created.incarnation);
+    expect((await handle.manifest()).incarnation, created.incarnation, 'the schema re-created since is kept');
+  });
+
+  test('an unrestriction carries the ACL revision it was made from: a revoke since is a conflict', async () => {
+    if (skipped())
+      return;
+    const group = (await allUsers()).id;
+    await handle.apply({...await tokens(), access: {restrict: [{table: 'thing', column: 'secret',
+      grant: [{group, permission: 'View'}]}]}});
+    const loaded = (await handle.access()).columns['thing.secret'];
+    expect(loaded.state, 'restricted');
+    expect(typeof loaded.revision, 'string', JSON.stringify(loaded));
+    await handle.apply({...await tokens(), access: {restrict: [{table: 'thing', column: 'secret',
+      revoke: [{group, permission: 'View'}]}]}});
+    const current = (await handle.access()).columns['thing.secret'];
+    expect(current.revision !== loaded.revision, true, 'a revoke moves the revision');
+    const t = await tokens();
+    const stale = await thrown(() => handle.apply({...t, access: {unrestrict: [{table: 'thing', column: 'secret',
+      from: 'restricted', revision: loaded.revision}]}}));
+    expect(stale instanceof DG.DomainError, true, `expected DomainError, got ${stale?.constructor?.name}: ${stale?.message}`);
+    expect(stale.status, 409);
+    expect(stale.code, 'access-conflict');
+    expect((await handle.access()).columns['thing.secret'].state, 'restricted', 'the stale unrestriction wrote nothing');
+    const back = await handle.apply({...t, access: {unrestrict: [{table: 'thing', column: 'secret',
+      from: 'restricted', revision: current.revision}]}});
+    expect(back.access!.unrestrict[0].effect, 'unrestrict');
+  });
+
   test('an editor without Share on a table reads its grants as unknown and cannot change them', async () => {
     if (skipped())
       return;
