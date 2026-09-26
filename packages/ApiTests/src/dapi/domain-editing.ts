@@ -113,8 +113,10 @@ category('Dapi: domain editing', () => {
     expect(secret.view!.map((g) => g.id).includes(group), true, JSON.stringify(secret));
     expect(secret.edit!.length, 0);
 
-    // The same delta again: every op a no-op, the apply still counts.
+    // The same delta again: every op a no-op, so the apply writes nothing.
     const again = await handle.apply({...await tokens(), access: delta});
+    expect(again.applied, false);
+    expect(again.noop, true);
     expect(again.access!.grant[0].effect, 'none');
     expect(again.access!.restrict[0].effect, 'none');
     expect(again.access!.restrict[0].grants[0].effect, 'none');

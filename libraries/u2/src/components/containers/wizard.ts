@@ -40,6 +40,8 @@ export interface WizardAction {
   run: () => void | Promise<void>;
   /** Follows the signal; enabled otherwise. */
   enabled?: ReadonlySignal<boolean>;
+  /** Follows the signal; shown on its step otherwise. */
+  visible?: ReadonlySignal<boolean>;
 }
 
 export interface WizardOptions {
@@ -236,9 +238,11 @@ export class Wizard extends Control {
     const lazy = typeof step.content === 'function' ? step.content : undefined;
     if (!lazy)
       panel.append(step.content as HTMLElement);
+    const stepIndex = this._steps.length;
     const actions = (step.actions ?? []).map((action) => {
       const b = this._button(action.text, () => this._run(action.run()));
-      b.style.display = 'none';
+      this.effect(() => b.style.display =
+        this._index.value === stepIndex && action.visible?.value !== false ? '' : 'none');
       this._footer.insertBefore(b, this._next);
       return b;
     });
@@ -271,8 +275,6 @@ export class Wizard extends Control {
       step.marker.tabIndex = on ? 0 : -1;
       step.circle.textContent = done ? '✓' : String(i + 1);
       step.panel.style.display = on ? '' : 'none';
-      for (const b of step.actions)
-        b.style.display = on ? '' : 'none';
       if (on)
         step.marker.setAttribute('aria-current', 'step');
       else

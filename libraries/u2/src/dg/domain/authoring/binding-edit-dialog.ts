@@ -33,8 +33,9 @@ const api = globalThis as {grok_Dapi_Domains_SchemaAltered?: (dart: unknown, nam
 
 export interface EditBindingResult {
   name: string;
-  /** The apply's answer — the plan with the access effects as resolved under the lock; null where
-   * the answer was lost and the registry confirmed the save. */
+  /** The apply's answer — the plan with the access effects as resolved under the lock, `applied:
+   * false` with `noop: true` where the server found nothing to change; null where the answer was
+   * lost and the registry confirmed the save. */
   applied: DG.DomainApplied | null;
 }
 
@@ -112,7 +113,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
           nextText: computed(() => this._ended.value === null ? 'SAVE' : 'REOPEN'),
           onActivate: () => this._review(), canProceed: () => this._reviewGate(),
           commit: () => this._ended.peek() === null ? this._save() : this._reopen(),
-          actions: [{text: 'VALIDATE', run: () => this._validate(),
+          actions: [{text: 'VALIDATE', run: () => this._validate(), visible: computed(() => this._ended.value === null),
             enabled: computed(() => this._ended.value === null && this._editor.value !== undefined &&
               this._editor.value.model.blockers.value.length === 0)}]},
         {id: 'saved', title: 'Saved', content: () => this._savedHost, done: true,
@@ -299,13 +300,15 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     const validated = this._isValidated();
     const plan = validated ? this._plan.peek() : null;
     this._body.textContent = JSON.stringify(payload, null, 2);
-    this._renderChanges(this._changes, changes, plan, validated ? 'Changes, as validated' : 'Changes, not validated');
+    const ended = this._ended.peek();
+    this._renderChanges(this._changes, changes, plan,
+      ended !== null ? 'Changes' : validated ? 'Changes, as validated' : 'Changes, not validated');
     this._confirm.root.style.display = plan?.destructive === true ? '' : 'none';
     this._renderOutcome();
     this._renderReloaded();
-    const ended = this._ended.peek();
     this._say(ended !== null ? `${ended.why} — see Review` : validated ? badge('Validated', {variant: 'success'}) : '', ended !== null);
     this._renderIssues();
+    this._issues.style.display = ended !== null ? 'none' : '';
   }
 
   private _renderOutcome(): void {

@@ -271,6 +271,31 @@ wizard('a step\'s actions stand before NEXT on that step only, and the footer wa
   w.dispose();
 });
 
+wizard('an action follows its visible signal on its own step, without re-activating the step', async () => {
+  const shown = signal(true);
+  let activated = 0;
+  const w = new Wizard({steps: [
+    {id: 'one', title: 'One', content: content('One', 'free'),
+      actions: [{text: 'CHECK', run: () => undefined}]},
+    {id: 'two', title: 'Two', content: content('Two', 'last'), onActivate: () => activated++,
+      actions: [{text: 'VALIDATE', run: () => undefined, visible: shown}]},
+  ]});
+  document.body.append(w.root);
+  assert.equal(footer(w, 'CHECK').style.display, '', 'no visible signal: shown');
+  shown.value = false;
+  assert.equal(footer(w, 'VALIDATE').style.display, 'none', 'off its step whatever the signal');
+  w.next();
+  const after = activated;
+  assert.equal(footer(w, 'VALIDATE').style.display, 'none');
+  shown.value = true;
+  assert.equal(footer(w, 'VALIDATE').style.display, '');
+  shown.value = false;
+  assert.equal(footer(w, 'VALIDATE').style.display, 'none');
+  assert.equal(activated, after, 'flipping the signal does not re-activate the step');
+  assert.equal(footer(w, 'CHECK').style.display, 'none', 'the other step\'s action stays hidden');
+  w.dispose();
+});
+
 wizard('an async finish answering false keeps the dialog open; true closes it', async () => {
   const scope = new Scope();
   let answer = false;

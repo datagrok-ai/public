@@ -493,7 +493,9 @@ scoped('a lost answer the registry cannot confirm ends the edit: the outcome is 
   assert.deepEqual(dialog.editor.diagnostics.value, [], 'the timeout is no finding');
   assert.equal(buttonNamed('SAVE'), undefined, 'SAVE is gone');
   assert.equal(buttonNamed('REOPEN').disabled, false);
-  assert.equal(buttonNamed('VALIDATE').disabled, true);
+  assert.equal(buttonNamed('VALIDATE').style.display, 'none', 'nothing left to validate');
+  assert.equal(document.querySelector('.u2-binding-changes-title').textContent, 'Changes');
+  assert.equal(document.querySelector('.u2-binding-issues').style.display, 'none');
   assert.deepEqual(rows('.u2-binding-outcome'), [['No answer to the save (Gateway Timeout) — whether it landed is unknown'],
     ['northwind_sales is at version 3 (this edit was made against 3)']]);
   assert.match(outcome().textContent, /^Outcome unknown/);
@@ -506,6 +508,8 @@ scoped('a lost answer the registry cannot confirm ends the edit: the outcome is 
   dialog.wizard.next();
   await flush();
   assert.equal(buttonNamed('REOPEN').disabled, false, 'a look at Design changes nothing: the edit ended');
+  assert.equal(buttonNamed('VALIDATE').style.display, 'none');
+  assert.equal(document.querySelector('.u2-binding-changes-title').textContent, 'Changes');
   assert.equal(applies(calls, false).length, 1);
 
   // REOPEN reads the registry first: a failed read leaves this dialog standing, and says so
