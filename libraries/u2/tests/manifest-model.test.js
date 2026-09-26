@@ -222,6 +222,13 @@ test('the identifier follows the friendly name, harmonized and free of the regis
   assert.equal(ManifestRules.identifier('x'.repeat(70)).length, ManifestRules.MAX_SCHEMA_NAME_LENGTH);
   const model = new ManifestModel(draft(), {takenNames: ['northwind_public', 'northwind_public_2']});
   assert.equal(model.name.value, 'northwind', 'the draft name until a friendly name is given');
+  assert.equal(model.proposeFriendlyName('Northwind public'), 'Northwind public 3');
+  assert.equal(model.proposeFriendlyName('Sales'), 'Sales');
+  assert.equal(ManifestRules.identifier('Northwind public 3'), 'northwind_public_3');
+  const long = 'x'.repeat(70);
+  const capped = new ManifestModel(draft(), {takenNames: [ManifestRules.identifier(long)]});
+  capped.setSchemaFriendlyName(capped.proposeFriendlyName(long));
+  assert.equal(capped.name.value, capped.proposeName(long), 'at the length cap the numbered friendly name keeps the identifier');
   model.setSchemaFriendlyName('Northwind public');
   assert.equal(model.name.value, 'northwind_public_3');
   model.setSchemaFriendlyName('Grants');

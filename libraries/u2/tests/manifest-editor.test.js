@@ -60,7 +60,8 @@ ui('the tree: schema › tables › columns, the first included table open; chec
   const box = (name) => rowOf(e, name).querySelector('.u2-tree-check');
   assert.equal(rowOf(e, 'northwind').querySelector('.u2-tree-check'), null, 'the schema has no checkbox');
   assert.deepEqual([box('orders').checked, box('orders').disabled], [true, false]);
-  assert.deepEqual([box('orderid').checked, box('orderid').disabled], [true, true], 'a key column is locked');
+  assert.deepEqual([box('orderid').checked, box('orderid').disabled, box('orderid').getAttribute('aria-disabled')],
+    [true, false, 'true'], 'a key column is locked, painted checked');
   assert.deepEqual([box('tracking_number').checked, box('tracking_number').disabled], [false, true], 'unsupported');
   assert.deepEqual([box('order_summary').checked, box('order_summary').disabled], [false, true], 'a view');
   assert.deepEqual([box('audit_log').checked, box('audit_log').disabled], [false, true], 'keyless');
@@ -264,7 +265,7 @@ ui('view mode: every field is text, the checkboxes are locked, the access grid c
   assert.equal(panel(e).querySelector('[data-u2-name="name"] .u2-form-readonly-value .u2-manifest-panel-hint').textContent,
     'registered as ext_northwind');
   assert.equal(panel(e).querySelector('.u2-access-grid-add').disabled, true);
-  assert.equal(rowOf(e, 'orders').querySelector('.u2-tree-check').disabled, true);
+  assert.equal(rowOf(e, 'orders').querySelector('.u2-tree-check').getAttribute('aria-disabled'), 'true');
   assert.equal(e.tree.root.querySelector('.u2-manifest-tree-header .u2-link'), null, 'no Check all / Clear');
   await select(e, 'shipname');
   assert.deepEqual(inputNames(e), []);
@@ -287,6 +288,7 @@ ui('plan() fans a schema row out over every included table, merges it with the t
   e.model.renameColumn('orders', 'freight', 'freight_cost');
   e.model.includeColumn('orders', 'shipcity', false);
   e.model.name.value = 'northwind_sales';
+  e.model.setWritable(true);
   let plan = e.plan();
   assert.equal(plan.name, 'northwind_sales');
   assert.equal(plan.friendlyName, 'Northwind sales');
@@ -328,4 +330,20 @@ ui('the editor tag is registered next to the other domain controls; the panes al
   built.dispose();
   const {domains} = await import('../src/dg/domain/index.js');
   assert.equal(domains.authoring, authoring);
+});
+
+ui('WO-A5.1 #9: plan() grants no Edit or Delete on a read-only binding or a read-only table — the lock the panel shows', async () => {
+  const e = await editor();
+  const sales = {id: 'g-sales', label: 'Sales'};
+  e.access.addGroup({kind: 'schema'}, sales);
+  e.access.setGrant({kind: 'schema'}, 'g-sales', 'edit', true);
+  e.access.setGrant({kind: 'schema'}, 'g-sales', 'delete', true);
+  const rights = () => e.plan().grants.map((g) => [g.table, g.view, g.edit, g.delete]);
+  assert.deepEqual(rights(), [['orders', true, false, false], ['order_details', true, false, false]],
+    'a read-only binding: View only');
+  e.model.setWritable(true);
+  e.model.setReadOnly('order_details', true);
+  assert.deepEqual(rights(), [['orders', true, true, true], ['order_details', true, false, false]],
+    'a writable binding: Edit and Delete where the table is not read-only');
+  e.dispose();
 });

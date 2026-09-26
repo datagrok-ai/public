@@ -1,4 +1,4 @@
-/* VirtualTree checkboxes: a node with `checked` carries a box, `locked` disables it, `disabled`
+/* VirtualTree checkboxes: a node with `checked` carries a box, `locked` refuses the toggle, `disabled`
    greys the row; a click on the box reports the flipped state through `onCheck` without moving
    the selection, and Space toggles the selected row. Every test leaves the live-scope count
    where it found it. */
@@ -40,12 +40,13 @@ function mount(checks) {
 const row = (tree, index) => tree.root.querySelector(`.u2-list-row[data-index="${index}"]`);
 const box = (tree, index) => row(tree, index).querySelector('.u2-tree-check');
 
-ui('a node with `checked` carries a box; locked disables it; disabled greys the row; no state, no box', () => {
+ui('a node with `checked` carries a box; locked refuses the toggle (greyed only when unchecked); disabled greys the row; no state, no box', () => {
   const tree = mount([]);
   assert.equal(box(tree, 0).checked, true);
   assert.equal(box(tree, 0).disabled, false);
   assert.equal(box(tree, 1).checked, true);
-  assert.equal(box(tree, 1).disabled, true, 'locked');
+  assert.equal(box(tree, 1).disabled, false, 'locked and checked: painted as checked, not greyed');
+  assert.equal(box(tree, 1).getAttribute('aria-disabled'), 'true');
   assert.equal(box(tree, 2).checked, false);
   assert.equal(row(tree, 2).querySelector('.u2-tree-row').classList.contains('u2-tree-row-disabled'), true);
   assert.equal(row(tree, 2).getAttribute('aria-disabled'), 'true');

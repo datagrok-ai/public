@@ -102,7 +102,8 @@ export class ManifestEditor extends Control {
   }
 
   /** The create envelope plus the access to apply, resolved to the manifest's logical names. A
-   * schema-scope row and a table row for the same group merge into one grant per table. */
+   * schema-scope row and a table row for the same group merge into one grant per table; Edit and
+   * Delete only where the binding and the table are writable — the lock the panel shows. */
   plan(): ManifestPlan {
     const model = this.model;
     const manifest = model.toJSON();
@@ -110,14 +111,14 @@ export class ManifestEditor extends Control {
     const logicalOf = (remote: string): string | null => included.find((t) => t.remote === remote)?.logical ?? null;
     const grants = new Map<string, PlannedGrant>();
     for (const g of this.access.grants.peek()) {
-      const tables = g.scope.kind === 'schema' ? included.map((t) => t.logical) : [logicalOf(g.scope.table)];
-      for (const table of tables) {
-        if (table === null)
-          continue;
-        const key = `${table}\u0000${g.group.id}`;
-        const merged = grants.get(key) ?? {table, group: g.group, view: false, edit: false, delete: false};
-        grants.set(key, {...merged, view: merged.view || g.view, edit: merged.edit || g.edit,
-          delete: merged.delete || g.delete});
+      const scope = g.scope;
+      const tables = scope.kind === 'schema' ? included : included.filter((t) => t.remote === scope.table);
+      for (const t of tables) {
+        const writes = model.writes(t);
+        const key = `${t.logical}\u0000${g.group.id}`;
+        const merged = grants.get(key) ?? {table: t.logical, group: g.group, view: false, edit: false, delete: false};
+        grants.set(key, {...merged, view: merged.view || g.view, edit: merged.edit || writes && g.edit,
+          delete: merged.delete || writes && g.delete});
       }
     }
     const restrictions: PlannedRestriction[] = [];

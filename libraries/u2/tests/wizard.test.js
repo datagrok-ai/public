@@ -350,3 +350,84 @@ wizard('a step\'s commit runs on NEXT (reading nextText): false keeps the step; 
   assert.equal(w.completed.value, true);
   scope.dispose();
 });
+
+wizard('WO-A5.1 #1: goTo forward passes the gate of every step on the way; back is free; a done step stays reachable', () => {
+  const gate = signal(null);
+  const w = new Wizard({steps: [
+    {id: 'one', title: 'One', content: content('One', 'free')},
+    {id: 'two', title: 'Two', content: content('Two', 'gated'), canProceed: gate},
+    {id: 'three', title: 'Three', content: content('Three', 'free')},
+    {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+  ]});
+  document.body.append(w.root);
+  w.next();
+  w.next();
+  w.goTo('one');
+  assert.equal(w.currentStep.value, 'one', 'back to a visited step');
+  gate.value = 'Fix step two first';
+  w.goTo('three');
+  assert.equal(w.currentStep.value, 'one', 'the gate of two stands between');
+  fire(markers(w)[2], 'click');
+  assert.equal(w.currentStep.value, 'one', 'the rail as well');
+  gate.value = null;
+  w.goTo('three');
+  assert.equal(w.currentStep.value, 'three');
+  w.next();
+  assert.equal(w.currentStep.value, 'report');
+  w.goTo('one');
+  assert.equal(w.currentStep.value, 'one', 'a done step goes back to the start (the import report does)');
+  w.goTo('report');
+  assert.equal(w.currentStep.value, 'report', 'and a visited done step is reached through open gates');
+  w.dispose();
+});
+
+wizard('WO-A5.1 #13: a plain Enter does not close a done step, and NEXT pressed into it lets go of the focus', () => {
+  const scope = new Scope();
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'one', title: 'One', content: content('One', 'free')},
+      {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+    ],
+    onFinish: () => outcome.push('finish'),
+  }));
+  w.openInDialog('Import');
+  footer(w, 'NEXT').focus();
+  footer(w, 'NEXT').click();
+  assert.equal(w.currentStep.value, 'report');
+  assert.notEqual(document.activeElement, footer(w, 'CLOSE'), 'a second Enter does not land on CLOSE');
+  assert.ok(w.root.contains(document.activeElement), 'focus stays inside the dialog (Esc, Tab trap)');
+  const panel = w.root.querySelectorAll('.u2-wizard-panel')[1];
+  fire(panel, 'keydown', {key: 'Enter'});
+  assert.deepEqual(outcome, [], 'Enter leaves the report open');
+  fire(panel, 'keydown', {key: 'Enter', ctrlKey: true});
+  assert.deepEqual(outcome, ['finish'], 'Ctrl+Enter is the explicit close');
+  scope.dispose();
+});
+
+wizard('A5 re-verify: nothing goes back to a step whose commit went through; a focus dropped on the body comes back', async () => {
+  const scope = new Scope();
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'design', title: 'Design', content: content('Design', 'free')},
+      {id: 'review', title: 'Review', content: content('Review', 'last'), nextText: 'CREATE',
+        commit: () => Promise.resolve(true)},
+      {id: 'created', title: 'Created', content: content('Created', 'written'), done: true},
+    ],
+  }));
+  w.openInDialog('Create');
+  w.next();
+  assert.equal(w.currentStep.value, 'review');
+  footer(w, 'CREATE').focus();
+  footer(w, 'CREATE').click();
+  document.activeElement?.blur?.();
+  await flush();
+  assert.equal(w.currentStep.value, 'created');
+  assert.ok(w.root.contains(document.activeElement), 'focus back inside the dialog');
+  w.goTo('review');
+  assert.equal(w.currentStep.value, 'created', 'the committed step stays behind');
+  w.goTo('design');
+  w.back();
+  assert.equal(w.currentStep.value, 'created', 'nor anything before it');
+  scope.dispose();
+});

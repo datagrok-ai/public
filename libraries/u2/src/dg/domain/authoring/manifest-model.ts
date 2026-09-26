@@ -360,6 +360,12 @@ export class ManifestModel {
     return candidate;
   }
 
+  /** A suggested friendly name, numbered like the identifier {@link proposeName} steps it to. */
+  proposeFriendlyName(label: string): string {
+    const name = this.proposeName(label);
+    return name === ManifestRules.identifier(label) ? label : `${label} ${name.slice(name.lastIndexOf('_') + 1)}`;
+  }
+
   checkTableName(remote: string, logical: string): string | null {
     const problem = ManifestRules.checkTableName(logical);
     if (problem !== null)
@@ -433,6 +439,11 @@ export class ManifestModel {
     if (state === undefined || column === undefined || state.key.includes(remote))
       return;
     this._mutate(() => ManifestModel._flag(column.decl, 'required', on));
+  }
+
+  /** Whether rows of the table may be written: a writable storage, the table not opted out. */
+  writes(table: TableView): boolean {
+    return this.writable.peek() && !table.readOnly;
   }
 
   /** Opts one table out of writes under a writable storage. */

@@ -257,6 +257,8 @@ export class VirtualTree<T = unknown> extends Control {
     if (target.closest('.u2-tree-check')) {
       // the checkbox is not the row: toggling it leaves the selection where it is
       e.stopPropagation();
+      if (row.node.locked === true)
+        e.preventDefault();
       this._toggleCheck(row.node);
     } else if (target.closest('.u2-tree-twistie')) {
       e.stopPropagation();
@@ -396,7 +398,10 @@ export class VirtualTree<T = unknown> extends Control {
     box.type = 'checkbox';
     box.className = 'u2-tree-check';
     box.checked = node.checked === true;
-    box.disabled = node.locked === true;
+    // a natively disabled box paints grey even when checked: a locked checked one only refuses the click
+    box.disabled = node.locked === true && node.checked !== true;
+    if (node.locked === true && node.checked === true)
+      box.setAttribute('aria-disabled', 'true');
     box.tabIndex = -1;
     box.setAttribute('aria-label', `Include ${node.label}`);
     return box;

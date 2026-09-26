@@ -71,6 +71,17 @@ export async function domainRouteView(address: string) : Promise<any> {
   return await PackageFunctions.domainRouteView(address);
 }
 
+//description: The "Create domain schema" dialog over an external database: Connection › Design › Review (u2)
+//tags: domainAuthoring
+//input: dynamic connection { optional: true }
+//input: string schema { optional: true }
+//input: string table { optional: true }
+//input: string catalog { optional: true }
+//output: string result
+export async function createDomainBinding(connection?: any, schema?: string, table?: string, catalog?: string) : Promise<any> {
+  return await PackageFunctions.createDomainBinding(connection, schema, table, catalog);
+}
+
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {

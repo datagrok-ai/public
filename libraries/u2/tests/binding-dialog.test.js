@@ -28,6 +28,8 @@ const NOT_BINDABLE = [{id: 'c-s3', friendlyName: 'Bucket', dataSource: 'S3', isD
   {id: 'c-dom', friendlyName: 'Domains', dataSource: 'Domain', isDatabase: true}];
 const SALES = {id: 'g-sales', label: 'Sales'};
 const DEV = {id: 'g-dev', label: 'Developers'};
+/** The groups the platform knows; a test takes one out to model a group deleted since the pick. */
+const GROUPS = ['g-sales', 'g-dev', 'u-sam'];
 const SCHEMA = {kind: 'schema'};
 const ORDERS = {kind: 'table', table: 'orders'};
 
@@ -53,7 +55,11 @@ function stub(calls, dryRun, failing = {}) {
   grok.dapi.connections = {list: async () => [CONN, ...NOT_BINDABLE], getSchemas: async () => ['public', 'audit']};
   grok.dapi.permissions = {check: async (_c, right) => right !== 'DataConnection.RemoveRows'};
   grok.dapi.groups = {getGroupsLookup: async (query) => [{id: 'g-sales', friendlyName: 'Sales', personal: false},
-    {id: 'u-sam', friendlyName: 'Sam Sales', personal: true}].filter((g) => g.friendlyName.toLowerCase().includes(query))};
+    {id: 'u-sam', friendlyName: 'Sam Sales', personal: true}].filter((g) => g.friendlyName.toLowerCase().includes(query)),
+  list: async ({filter}) => {
+    calls.push(['groups', filter]);
+    return GROUPS.filter((id) => filter.includes(`"${id}"`)).map((id) => ({id}));
+  }};
   const refuse = (step) => {
     if (failing[step])
       throw new Error(failing[step]);
@@ -131,7 +137,7 @@ scoped('connection › design › review › created: draft, dry run, create, re
   assert.ok(editor, 'the editor is built over the draft');
   assert.deepEqual(editor.model.tables.value.filter((t) => t.included).map((t) => t.remote), ['orders'],
     'only the named table starts included');
-  assert.equal(editor.model.friendlyName.value, 'PostgresNorthwind public', 'the connection and the remote schema');
+  assert.equal(editor.model.friendlyName.value, 'PostgresNorthwind public 2', 'the connection and the remote schema, numbered like the identifier');
   assert.equal(editor.model.name.value, 'postgresnorthwind_public_2', 'harmonized, past the registered one');
   const panel = editor.panel.root;
   assert.equal(panel.querySelector('[data-u2-name="name"] input').value, 'postgresnorthwind_public_2');
@@ -207,13 +213,13 @@ scoped('connection › design › review › created: draft, dry run, create, re
   assert.equal(create[1], 'northwind_sales');
   assert.deepEqual(Object.keys(create[2].manifest.tables), ['orders']);
   // the restriction first, then the grants: the schema row is a grant on every included table
-  // (orders alone here), the table row another — by group id, never through schema.grant
+  // (orders alone here), the table row another — by group id, never through schema.grant; the
+  // binding is read-only, so the Edit the Developers row asked for is not granted
   assert.deepEqual(accessCalls(calls), ['shareColumn northwind_sales.orders freight g-sales View',
-    'table.grant northwind_sales.orders g-sales View', 'table.grant northwind_sales.orders g-dev View',
-    'table.grant northwind_sales.orders g-dev Edit']);
+    'table.grant northwind_sales.orders g-sales View', 'table.grant northwind_sales.orders g-dev View']);
   assert.equal(dialog.wizard.currentStep.value, 'created', 'access rows: the dialog stays on the report');
   assert.match(document.querySelector('.u2-binding-created').textContent, /northwind_sales is registered/);
-  assert.equal(document.querySelectorAll('.u2-binding-created-applied span').length, 5, 'a title and four lines');
+  assert.equal(document.querySelectorAll('.u2-binding-created-applied span').length, 4, 'a title and three lines');
   assert.equal(document.querySelector('.u2-binding-created-failed'), null);
   assert.equal(buttonNamed('RETRY ACCESS').disabled, true, 'nothing to retry');
   assert.equal(buttonNamed('CANCEL').style.display, 'none');
@@ -225,7 +231,7 @@ scoped('connection › design › review › created: draft, dry run, create, re
   const result = await done;
   assert.equal(result.name, 'northwind_sales');
   assert.deepEqual(result.access, {applied: ['orders.freight visible to Sales', 'orders: View for Sales',
-    'orders: View for Developers', 'orders: Edit for Developers'], failed: []});
+    'orders: View for Developers'], failed: []});
   assert.equal(document.querySelector('.u2-dialog'), null, 'the dialog is gone');
 });
 
@@ -387,4 +393,473 @@ scoped('createBinding refuses while domain databases are off', async () => {
   grok.shell.settings = {enableDomainDatabases: false};
   await assert.rejects(domains.authoring.createBinding({connection: CONN}), /Beta feature/);
   assert.equal(document.querySelector('.u2-dialog'), null);
+});
+
+const rail = async (id) => {
+  fire(document.querySelector(`.u2-wizard-step[data-id="${id}"]`), 'click');
+  await flush();
+};
+const creates = (calls) => calls.filter((c) => c[0] === 'create' && c[2].dryRun === undefined);
+
+async function validated() {
+  buttonNamed('VALIDATE').click();
+  await flush();
+  assert.equal(status().textContent, 'Validated');
+}
+
+scoped('WO-A5.1 #1 (P0): the validation and the editor belong to the draft picked now; the rail passes every gate on the way', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  const first = dialog.editor;
+  await validated();
+
+  await rail('connection');
+  const draft = grok.dapi.domains.draft;
+  let release;
+  grok.dapi.domains.draft = (body) => new Promise((r) => release = () => r(draft(body)));
+  dialog.schema.value.value = 'audit';
+  await flush();
+  assert.equal(status().textContent, '', 'the Validated badge of the other draft is gone');
+  await rail('design');
+  assert.equal(dialog.wizard.currentStep.value, 'connection', 'the draft is still being read: its gate holds the rail');
+  release();
+  await flush();
+  await rail('review');
+  assert.equal(dialog.wizard.currentStep.value, 'connection', 'Design still holds the editor over the other draft');
+  assert.equal(dialog._reviewGate(), 'Validate before creating', 'the validation was of the other draft');
+  await rail('design');
+  assert.equal(dialog.wizard.currentStep.value, 'design');
+  assert.notEqual(dialog.editor, first, 'rebuilt over the new draft');
+  dialog.editor.model.setSchemaName('nw');
+  await rail('review');
+  assert.equal(dialog.wizard.currentStep.value, 'review');
+  assert.equal(buttonNamed('CREATE').disabled, true, 'the same name, but never validated over this draft');
+
+  await rail('design');
+  dialog.editor.model.includeTables(false);
+  await rail('review');
+  assert.equal(dialog.wizard.currentStep.value, 'design', 'no table: the Design gate holds the rail');
+  dialog.editor.model.includeTables(true);
+  dialog.editor.model.setSchemaName('Bad Name');
+  await rail('review');
+  assert.equal(dialog.wizard.currentStep.value, 'design', 'a bad name: the Design gate holds the rail');
+  assert.equal(creates(calls).length, 0);
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
+scoped('WO-A5.1 #2 (P1): findings belong to the payload they were found in; a transport failure is no finding', async () => {
+  const calls = [];
+  stub(calls, () => {
+    throw Object.assign(new Error('Manifest refused'), {code: 'manifest-validation',
+      errors: [{path: 'tables.orders.columns.shipcity', code: 'external-column-type', message: 'bad shipcity'}]});
+  });
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  buttonNamed('VALIDATE').click();
+  await flush();
+  assert.equal(document.querySelectorAll('.u2-binding-issue').length, 1);
+  dialog.wizard.back();
+  dialog.editor.tree.tree.root.querySelector('.u2-list').clientHeight = 800;
+  await dialog.editor.select({kind: 'column', table: 'orders', column: 'shipcity'});
+  await flush();
+  assert.equal(document.querySelectorAll('.u2-manifest-node-problem').length, 1, 'the row is marked');
+  assert.equal(document.querySelectorAll('.u2-manifest-panel-diagnostic').length, 1, 'and the panel');
+  dialog.editor.model.includeColumn('orders', 'shipcity', false);
+  await flush();
+  assert.deepEqual(dialog.editor.diagnostics.value, [], 'the edit makes them history');
+  assert.equal(document.querySelectorAll('.u2-manifest-node-problem').length, 0, 'no row stays marked');
+  assert.equal(document.querySelectorAll('.u2-manifest-panel-diagnostic').length, 0);
+  dialog.wizard.next();
+  await flush();
+  assert.equal(document.querySelectorAll('.u2-binding-issue').length, 0);
+  assert.equal(document.querySelector('.u2-binding-issues-title').textContent, 'Not validated');
+
+  grok.dapi.domains.createSchema = async () => {
+    throw new Error('Failed to fetch');
+  };
+  buttonNamed('VALIDATE').click();
+  await flush();
+  assert.equal(status().textContent, 'Failed to fetch');
+  assert.equal(status().classList.contains('u2-wizard-status-error'), true);
+  assert.deepEqual(dialog.editor.diagnostics.value, [], 'the transport error is on the status line only');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
+scoped('WO-A5.1 #3 (P2): a change and the change back is still validated, whatever order the keys come back in', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  await validated();
+  const model = dialog.editor.model;
+  dialog.wizard.back();
+  await flush();
+  model.setFriendlyName('orders', '');
+  model.setFriendlyName('orders', 'Orders');
+  model.setNameColumn('orders', 'shipcity');
+  model.setNameColumn('orders', 'shipname');
+  model.setRequired('orders', 'shipcity', true);
+  model.setRequired('orders', 'shipcity', false);
+  dialog.wizard.next();
+  await flush();
+  assert.equal(status().textContent, 'Validated');
+  assert.equal(buttonNamed('CREATE').disabled, false);
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
+scoped('WO-A5.1 #4 (P2): validations are numbered — an older answer landing last never overrides a newer one', async () => {
+  const calls = [];
+  const pending = [];
+  stub(calls, () => new Promise((ok, no) => pending.push({ok, no})));
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  const older = dialog._validate();
+  const newer = dialog._validate();
+  await flush();
+  pending[1].ok({status: 'ok', issues: []});
+  await newer;
+  pending[0].no(Object.assign(new Error('late refusal'), {code: 'manifest-validation'}));
+  await older;
+  await flush();
+  assert.equal(status().textContent, 'Validated', 'the newer answer stands');
+  assert.deepEqual(dialog.editor.diagnostics.value, []);
+  assert.equal(buttonNamed('CREATE').disabled, false);
+
+  const third = dialog._validate();
+  const fourth = dialog._validate();
+  await flush();
+  pending[3].no(Object.assign(new Error('refused'), {code: 'manifest-validation'}));
+  await fourth;
+  pending[2].ok({status: 'ok', issues: []});
+  await third;
+  await flush();
+  assert.equal(buttonNamed('CREATE').disabled, true, 'a late older OK does not revive the refused payload');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
+scoped('WO-A5.1 #5 (P2): the same connection and schema picked again keep the editor; another draft resets it and says so', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await flush();
+  const editor = dialog.editor;
+  editor.model.includeColumn('orders', 'shipcity', false);
+  dialog.wizard.back();
+  await flush();
+  dialog.schema.value.value = 'audit';
+  await flush();
+  dialog.schema.value.value = 'public';
+  await flush();
+  dialog.wizard.next();
+  await flush();
+  assert.equal(dialog.editor, editor, 'the editor is kept');
+  assert.equal(dialog.editor.model.column('orders', 'shipcity').included, false, 'the edit stands');
+  assert.equal(status().textContent, '');
+
+  dialog.wizard.back();
+  await flush();
+  dialog.schema.value.value = 'audit';
+  await flush();
+  dialog.wizard.next();
+  await flush();
+  assert.notEqual(dialog.editor, editor);
+  assert.equal(dialog.editor.model.column('orders', 'shipcity').included, true);
+  assert.equal(status().textContent, 'The design was reset: PostgresNorthwind · audit is a new draft');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
+/** A registry the stubbed create writes to; `lose` loses the answer of the next create: 'after'
+ * commits it first, 'before' commits it only once `land()` is called; `foreign(name)` registers
+ * a schema of someone else's under that name. */
+function registry(calls) {
+  const manifests = new Map([['postgresnorthwind_public', {storage: {kind: 'external'}, tables: {}}]]);
+  const names = {has: (name) => manifests.has(name)};
+  const state = {lose: null, land: () => {},
+    foreign: (name) => manifests.set(name, {storage: {kind: 'external', connection: 'Other:Conn', schema: 'x'},
+      tables: {t: {}}})};
+  const schema = grok.dapi.domains.schema;
+  grok.dapi.domains.schema = (name) => ({...schema(name), manifest: async () => {
+    calls.push(['registry', name]);
+    if (!manifests.has(name))
+      throw Object.assign(new Error(`Unknown domain schema "${name}"`), {code: 'unknown-schema'});
+    return manifests.get(name);
+  }});
+  grok.dapi.domains.createSchema = async (name, options) => {
+    calls.push(['create', name, options]);
+    if (options.dryRun)
+      return {status: 'ok', issues: []};
+    if (names.has(name))
+      throw Object.assign(new Error(`Domain schema "${name}" is already registered`), {code: 'schema-name-taken'});
+    const lose = state.lose;
+    state.lose = null;
+    const add = () => manifests.set(name, options.manifest);
+    if (lose === 'after')
+      add();
+    if (lose === 'before')
+      state.land = add;
+    if (lose !== null)
+      throw Object.assign(new Error('Gateway Timeout'), {status: 504, code: ''});
+    add();
+    return {id: 'id-1', name, pgSchema: `ext_${name}`, version: '1'};
+  };
+  return state;
+}
+
+scoped('WO-A5.1 #6 (P0): a create whose answer was lost but which registered goes on to the access and Created', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const server = registry(calls);
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  dialog.editor.access.addGroup(SCHEMA, SALES);
+  await validated();
+  server.lose = 'after';
+  buttonNamed('CREATE').click();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'created');
+  assert.deepEqual(accessCalls(calls), ['table.grant nw.orders g-sales View', 'table.grant nw.order_details g-sales View']);
+  assert.deepEqual(calls.filter((c) => c[0] === 'event').map((c) => c[2].name), ['nw'], 'the created event fires');
+  assert.deepEqual(dialog.editor.diagnostics.value, [], 'the timeout is no finding');
+  buttonNamed('CLOSE').click();
+  await flush();
+  const result = await done;
+  assert.equal(result.name, 'nw', 'a committed schema is never reported cancelled');
+});
+
+scoped('WO-A5.1 #6 (P0): a create the registry does not know yet stays offered; a "taken" answering our retry reads the registry again', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const server = registry(calls);
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  await validated();
+  server.lose = 'before';
+  buttonNamed('CREATE').click();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'review');
+  assert.equal(status().textContent, 'Gateway Timeout — nw is not registered as this binding; CREATE again');
+  assert.equal(status().classList.contains('u2-wizard-status-error'), true);
+  assert.equal(document.querySelectorAll('.u2-binding-issue').length, 0, 'on the status line, not a finding');
+  assert.equal(buttonNamed('CREATE').disabled, false, 'CREATE stays available');
+
+  server.land();
+  buttonNamed('CREATE').click();
+  await flush();
+  const result = await done;
+  assert.equal(result.name, 'nw', 'the "taken" was our own create landing late');
+  assert.equal(creates(calls).length, 2);
+  assert.equal(calls.filter((c) => c[0] === 'event').length, 1);
+});
+
+scoped('WO-A5.1 #6 (P0): after a lost create, a schema someone else registered under the name is not claimed', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const server = registry(calls);
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  dialog.editor.access.addGroup(SCHEMA, SALES);
+  await validated();
+  server.lose = 'before';
+  buttonNamed('CREATE').click();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'review');
+  server.foreign('nw');
+  buttonNamed('CREATE').click();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'review', 'not taken for ours');
+  assert.deepEqual(accessCalls(calls), [], 'no grant lands on the other schema');
+  assert.match(document.querySelector('.u2-binding-issue').textContent, /already registered/, 'an ordinary refusal');
+  assert.equal(buttonNamed('CREATE').disabled, true, 'no loop: the refusal stands until the author renames');
+  assert.equal(creates(calls).length, 2);
+  buttonNamed('CANCEL').click();
+  assert.equal(await done, null);
+});
+
+scoped('WO-A5.1 #7 (P1): a group gone since the pick refuses the create on Review by its label; nothing is created', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  grok.dapi.groups.list = async ({filter}) => {
+    calls.push(['groups', filter]);
+    return [{id: 'g-sales'}];
+  };
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  dialog.editor.access.addGroup(SCHEMA, SALES);
+  dialog.editor.access.addGroup(ORDERS, DEV);
+  dialog.editor.access.setVisibility('orders', 'freight', [DEV, SALES]);
+  await validated();
+  buttonNamed('CREATE').click();
+  await flush();
+  assert.deepEqual(calls.filter((c) => c[0] === 'groups').map((c) => c[1]), ['id in ("g-sales", "g-dev")'],
+    'every distinct group in one look-up');
+  assert.equal(creates(calls).length, 0);
+  assert.equal(dialog.wizard.currentStep.value, 'review');
+  assert.equal(status().textContent, 'Group Developers no longer exists — take it out of the access rows');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
+scoped('WO-A5.1 #8 (P1): OPEN on a registered schema no route opens says so', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const table = domains.table;
+  domains.table = async () => {
+    throw new Error('Unknown domain table nw.orders');
+  };
+  try {
+    const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+    const done = dialog.open();
+    await toReview(dialog, 'nw');
+    dialog.editor.access.addGroup(SCHEMA, SALES);
+    await validated();
+    buttonNamed('CREATE').click();
+    await flush();
+    buttonNamed('OPEN').click();
+    assert.equal((await done).name, 'nw');
+    await flush();
+    assert.equal(document.querySelector('.u2-notify-error .u2-notify-content').textContent,
+      'Domain schema nw is registered but could not be opened');
+  } finally {
+    domains.table = table;
+  }
+});
+
+scoped('WO-A5.1 #10 (P1): a column visible only to some is shared with View, and with Edit too once the plan lets anyone edit the table', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  grok.dapi.permissions.check = async () => true;
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  const editor = dialog.editor;
+  editor.model.setWritable(true);
+  editor.access.addGroup(ORDERS, SALES);
+  editor.access.addGroup(ORDERS, DEV);
+  editor.access.setGrant(ORDERS, 'g-dev', 'edit', true);
+  editor.access.setVisibility('orders', 'freight', [SALES, DEV]);
+  await validated();
+  buttonNamed('CREATE').click();
+  await flush();
+  assert.deepEqual(accessCalls(calls), ['shareColumn nw.orders freight g-sales View',
+    'shareColumn nw.orders freight g-sales Edit', 'shareColumn nw.orders freight g-dev View',
+    'shareColumn nw.orders freight g-dev Edit', 'table.grant nw.orders g-sales View', 'table.grant nw.orders g-dev View',
+    'table.grant nw.orders g-dev Edit'], 'an Edit share alone hides the column: View always comes with it');
+  assert.deepEqual([...document.querySelectorAll('.u2-binding-created-applied span')].slice(1, 5).map((s) => s.textContent),
+    ['orders.freight visible to Sales', 'orders.freight editable by Sales', 'orders.freight visible to Developers',
+      'orders.freight editable by Developers']);
+  buttonNamed('CLOSE').click();
+  await flush();
+  await done;
+});
+
+/** The access calls of the groups in `failing` fail with `message` while they are listed. */
+function failFor(failing, message) {
+  const table = grok.dapi.domains.table;
+  grok.dapi.domains.table = (address) => {
+    const client = table(address);
+    const refuse = (group) => {
+      if (failing.includes(group))
+        throw Object.assign(new Error(message(group)), {code: 'validation'});
+    };
+    return {...client,
+      grant: async (group, permission) => {
+        await client.grant(group, permission);
+        refuse(group);
+      },
+      shareColumn: async (column, group, permission) => {
+        await client.shareColumn(column, group, permission);
+        refuse(group);
+      }};
+  };
+}
+
+scoped('WO-A5.1 #11 (P2): a group gone since the look-up is named and not offered for retry', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  failFor(['g-dev'], (group) => `Unknown group "${group}"`);
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  dialog.editor.access.addGroup(SCHEMA, SALES);
+  dialog.editor.access.addGroup({kind: 'table', table: 'order_details'}, DEV);
+  dialog.editor.access.setVisibility('orders', 'freight', [DEV]);
+  await validated();
+  buttonNamed('CREATE').click();
+  await flush();
+  assert.deepEqual([...document.querySelectorAll('.u2-binding-created-failed span')].map((s) => s.textContent), [
+    '3 access steps failed — redo them from the schema\'s page',
+    'orders.freight visible to Developers: group Developers no longer exists',
+    'orders: View for Sales: withheld — a column restriction of orders failed',
+    'order_details: View for Developers: group Developers no longer exists',
+  ]);
+  assert.equal(buttonNamed('RETRY ACCESS').disabled, true, 'no retry brings a group back');
+  buttonNamed('CLOSE').click();
+  await flush();
+  assert.equal((await done).access.failed.length, 3);
+});
+
+scoped('WO-A5.1 #12 (P2): one restriction step per column and group — a retry repeats no share that went through', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const failing = ['g-dev'];
+  failFor(failing, () => 'column schemas are locked');
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  dialog.editor.access.setVisibility('orders', 'freight', [SALES, DEV]);
+  await validated();
+  buttonNamed('CREATE').click();
+  await flush();
+  assert.deepEqual(accessCalls(calls), ['shareColumn nw.orders freight g-sales View', 'shareColumn nw.orders freight g-dev View']);
+  failing.length = 0;
+  calls.length = 0;
+  buttonNamed('RETRY ACCESS').click();
+  await flush();
+  assert.deepEqual(accessCalls(calls), ['shareColumn nw.orders freight g-dev View'], 'the Sales share is not repeated');
+  buttonNamed('CLOSE').click();
+  await flush();
+  assert.deepEqual((await done).access, {applied: ['orders.freight visible to Sales', 'orders.freight visible to Developers'],
+    failed: []});
+});
+
+scoped('WO-A5.1 #13 (P2): a stray Enter does not close the Created report; CLOSE does', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}), {grant: 'refused'});
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  dialog.editor.access.addGroup(SCHEMA, SALES);
+  await validated();
+  const content = document.querySelector('.u2-wizard-content');
+  fire(content, 'keydown', {key: 'Enter'});
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'created');
+  fire(content, 'keydown', {key: 'Enter'});
+  await flush();
+  assert.notEqual(document.querySelector('.u2-dialog'), null, 'the report with its failures stays');
+  buttonNamed('CLOSE').click();
+  await flush();
+  assert.equal((await done).access.failed.length, 2);
 });

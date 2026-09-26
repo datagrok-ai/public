@@ -19,7 +19,7 @@ export interface WizardStep {
   canProceed?: ReadonlySignal<boolean> | ReadonlySignal<string | null> | (() => boolean | string | null);
   /** A step reached only once the work is done — a report over what was written. There is
    * nothing to go back to and nothing to cancel, so only the closing button stands, reading
-   * CLOSE. */
+   * CLOSE; a plain Enter does not press it. */
   done?: boolean;
   /** What the closing button reads on the last step (FINISH by default). */
   finishText?: string;
@@ -85,6 +85,8 @@ export class Wizard extends Control {
   private readonly _completed = signal(false);
   private readonly _recheck = signal(0);
   private readonly _busy = signal(false);
+  /** The last step whose commit went through: what it registered stands, so nothing goes back to it. */
+  private _committed = -1;
   private readonly _blockReason: ReadonlySignal<string | null>;
   private _dialog: Dialog | undefined;
 
@@ -142,8 +144,11 @@ export class Wizard extends Control {
     }
     const commit = this._steps[index].options.commit;
     const advance = (ok: unknown): void => {
-      if (ok !== false && !this.scope.isDisposed && this._index.peek() === index)
-        this._index.value = index + 1;
+      if (ok === false || this.scope.isDisposed || this._index.peek() !== index)
+        return;
+      if (commit)
+        this._committed = index;
+      this._index.value = index + 1;
     };
     if (commit)
       void this._run(commit()).then(advance);
@@ -153,17 +158,20 @@ export class Wizard extends Control {
 
   back(): void {
     const index = this._index.peek();
-    if (index > 0 && !this._busy.peek())
+    if (index - 1 > this._committed && !this._busy.peek())
       this._index.value = index - 1;
   }
 
-  /** A visited step, or the next one through its gate; nothing moves while the wizard is busy. */
+  /** Back to a visited step after the last committed one; forward to a visited one only through the
+   * gate of every step on the way and past no committing step, or to the next one through {@link next}.
+   * Nothing moves while the wizard is busy. */
   goTo(id: string): void {
     const target = this._steps.findIndex((s) => s.options.id === id);
     const index = this._index.peek();
-    if (target < 0 || target === index || this._busy.peek())
+    if (target < 0 || target === index || target <= this._committed || this._busy.peek())
       return;
-    if (this._visited.has(id))
+    if (this._visited.has(id) && (target < index ||
+        this._steps.slice(index, target).every((s) => !s.options.commit && Wizard._gate(s.options.canProceed) === null)))
       this._index.value = target;
     else if (target === index + 1)
       this.next();
@@ -257,7 +265,7 @@ export class Wizard extends Control {
       const done = visited && i < index;
       step.marker.classList.toggle('u2-wizard-step-current', on);
       step.marker.classList.toggle('u2-wizard-step-done', done);
-      step.marker.setAttribute('aria-disabled', String(!on && !visited));
+      step.marker.setAttribute('aria-disabled', String(!on && (!visited || i <= this._committed)));
       step.marker.tabIndex = on ? 0 : -1;
       step.circle.textContent = done ? '✓' : String(i + 1);
       step.panel.style.display = on ? '' : 'none';
@@ -269,6 +277,11 @@ export class Wizard extends Control {
         step.marker.removeAttribute('aria-current');
     }
     const done = current.options.done === true;
+    // NEXT reads CLOSE now, so a second Enter must not land on it; focus stays inside the dialog (Esc,
+    // the Tab trap) — Chrome drops a button disabled while its commit ran onto the body
+    const active = document.activeElement;
+    if (done && (active === this._next || active === null || active === document.body))
+      current.marker.focus();
     this._back.style.display = index === 0 || done ? 'none' : '';
     if (this._cancel !== undefined)
       this._cancel.style.display = done ? 'none' : '';
@@ -352,11 +365,12 @@ export class Wizard extends Control {
   private _onContentKeyDown(e: KeyboardEvent): void {
     if (e.key !== 'Enter' || e.defaultPrevented)
       return;
-    const last = this._index.peek() === this._steps.length - 1;
+    const current = this._steps[this._index.peek()];
+    const last = current === this._steps[this._steps.length - 1];
     if (e.ctrlKey || e.metaKey) {
       if (!last)
         return;
-    } else if (e.target instanceof HTMLTextAreaElement)
+    } else if (e.target instanceof HTMLTextAreaElement || current.options.done === true)
       return;
     e.preventDefault();
     this.next();

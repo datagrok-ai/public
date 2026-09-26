@@ -186,7 +186,7 @@ export class ManifestContextPanel extends Control {
       relations.add(this._relation(r, `${r.column} → ${r.targetTable}`));
     const schemaRows = this._access.grantsOf(SCHEMA).peek()
       .map((g): InheritedAccessRow => ({...ManifestContextPanel._row(g), from: '(every table)'}));
-    const locked = !model.writable.peek() || table.readOnly ? ['edit', 'delete'] : [];
+    const locked = model.writes(table) ? [] : ['edit', 'delete'];
     const access = new Section({title: 'Access — this table', collapsible: false});
     access.add(this._accessGrid({kind: 'table', table: remote}, [ManifestContextPanel._creator(), ...schemaRows],
       locked));

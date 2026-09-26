@@ -209,6 +209,10 @@ textarea.u2-input-editor {
   border-bottom: none;
 }
 
+.u2-input-root[data-u2='bool-input'] .u2-input-postfix {
+  padding-left: var(--dg-space-s);
+}
+
 .u2-input-postfix {
   overflow: hidden;
   order: -1;

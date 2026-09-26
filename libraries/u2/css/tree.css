@@ -85,6 +85,11 @@
   opacity: 0.5;
 }
 
+/* a locked box that is checked (a key column) reads as included, not as unavailable */
+.u2-tree-check[aria-disabled='true'] {
+  cursor: default;
+}
+
 /* a greyed row: a view, a keyless table, an unsupported column — still selectable, its reason in
    the tooltip and the detail */
 .u2-tree-row-disabled .u2-tree-label {

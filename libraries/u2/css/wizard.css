@@ -43,7 +43,8 @@
   background: var(--dg-border);
 }
 
-.u2-wizard-step:focus-visible {
+/* the ring goes on the circle: the step element also carries the connector line before it */
+.u2-wizard-step:focus-visible .u2-wizard-marker {
   outline: var(--dg-focus-ring);
   outline-offset: var(--dg-space-xs);
 }
@@ -72,6 +73,11 @@
 .u2-wizard-step-done {
   color: var(--dg-text-color);
   cursor: pointer;
+}
+
+/* a committed step stays behind: what it registered cannot be undone from the rail */
+.u2-wizard-step-done[aria-disabled='true'] {
+  cursor: default;
 }
 
 .u2-wizard-step-done .u2-wizard-marker {

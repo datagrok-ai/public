@@ -78,6 +78,13 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:DomainRouteView', { address });
   }
 
+  /**
+   * The "Create domain schema" dialog over an external database: Connection › Design › Review (u2)
+   */
+  export async function createDomainBinding(connection?: any , schema?: string , table?: string , catalog?: string ): Promise<string> {
+    return await grok.functions.call('PowerPack:CreateDomainBinding', { connection, schema, table, catalog });
+  }
+
   export async function isFormulaColumn(col: DG.Column ): Promise<boolean> {
     return await grok.functions.call('PowerPack:IsFormulaColumn', { col });
   }
