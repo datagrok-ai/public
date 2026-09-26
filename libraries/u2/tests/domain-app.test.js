@@ -1287,7 +1287,7 @@ scoped('live by default (R-b): an app polls unless it is told not to', async () 
 
 scoped('defaults (R-d): every draft the app opens starts with the values the view preset', async () => {
   const {app: a} = await app({defaults: {project_id: 'p1'}});
-  assert.equal(await a.goTo('entity', DomainApp.NEW), true);
+  assert.equal(await a.create(), true);
   await flush();
   assert.equal(a.entitySource.value.currentRow.value.project_id, 'p1');
   assert.equal(a.form.value.input('project_id').value.value, 'p1');
@@ -1319,6 +1319,85 @@ scoped('rowAddress "id": the segment is the row id as given — a comma, a hyphe
     assert.equal(encodeURIComponent(ids[2][0]), '2026-09-18T07%3A08%3A09.123Z', 'the datetime key as the URL spells it');
     a.dispose();
   });
+
+scoped('a key equal to a route word, a dot segment, the draft sentinel or led by ~ is escaped in the path and read back; /new stays the draft',
+  async () => {
+    const ids = [['version', 'Version'], ['..', 'Dots'], ['~x', 'Tilde'], ['new', 'New'], ['a%2Fb', 'Slash']];
+    const memory = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+      issue: ids.map(([id, title], at) => ({id, project_id: 'p1', number: at + 1, title}))}});
+    memory.tableSync('grit.issue').info.rowAddress = 'id';
+    backends.domain = memory;
+    const table = await domains.table('grit.issue');
+    const a = domains.app({table, base: '/domains/grit/issue', children: false});
+    document.body.append(a.root);
+    await flush();
+    const segments = {version: '~version', '..': '~..', '~x': '~~x', new: '~new', 'a%2Fb': 'a%252Fb'};
+    for (const [id, title] of ids) {
+      assert.equal(a.keyOf(a.listSource.rows.byKey(id)), id, `${id}: keyOf is the raw id`);
+      assert.equal(await a.open(`/domains/grit/issue/${segments[id]}`), true);
+      await flush();
+      assert.equal(a.entity.value, id, `${id}: the segment reads back as the id`);
+      assert.equal(a.entitySource.value.isDraft, false, `${id}: a row, not the draft`);
+      assert.equal(a.form.value.input('title').value.value, title, `${id}: opened by the escaped segment`);
+      assert.equal(a.path.value, `/domains/grit/issue/${segments[id]}`, `${id}: the path is written escaped`);
+    }
+    assert.equal(await a.open('/domains/grit/issue/new'), true);
+    await flush();
+    assert.equal(a.entity.value, DomainApp.NEW);
+    assert.equal(a.entitySource.value.isDraft, true, 'the raw sentinel is the draft');
+    assert.equal(a.path.value, '/domains/grit/issue/new', 'and is spelled as is');
+    assert.equal(await a.goTo('list'), true);
+    assert.equal(await a.goTo('entity', 'version'), true);
+    await flush();
+    assert.equal(a.path.value, '/domains/grit/issue/~version', 'a move by id is written escaped too');
+    assert.equal(await a.goTo('entity', 'new'), true);
+    await flush();
+    assert.equal(a.entitySource.value.isDraft, false, 'goTo by id is never the create page');
+    assert.equal(a.form.value.input('title').value.value, 'New', 'the row keyed "new", from the list or find-or-activate');
+    assert.equal(a.path.value, '/domains/grit/issue/~new');
+    a.dispose();
+  });
+
+scoped('?entity= is escaped and read back the same way; ?entity=new stays the draft', async () => {
+  const memory = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+    issue: [{id: 'version', project_id: 'p1', number: 1, title: 'Version'}]}});
+  memory.tableSync('grit.issue').info.rowAddress = 'id';
+  backends.domain = memory;
+  const a = domains.app({table: await domains.table('grit.issue'), base: BASE, children: false});
+  document.body.append(a.root);
+  await flush();
+  assert.equal(await a.open(`${BASE}?entity=~version`), true);
+  await flush();
+  assert.equal(a.entity.value, 'version');
+  assert.equal(a.form.value.input('title').value.value, 'Version');
+  assert.equal(a.path.value, `${BASE}?entity=~version`);
+  assert.equal(await a.open(`${BASE}?entity=new`), true);
+  await flush();
+  assert.equal(a.entity.value, DomainApp.NEW);
+  assert.equal(a.entitySource.value.isDraft, true);
+  assert.equal(a.path.value, `${BASE}?entity=new`);
+  a.dispose();
+});
+
+scoped('a draft saved under a key that is reserved or led by ~ is addressed escaped from then on', async () => {
+  backends.domain = backend();
+  const a = domains.app({table: await domains.table('grit.project'), base: '/domains/grit/project', children: false});
+  document.body.append(a.root);
+  await flush();
+  for (const [key, segment] of [['new', '~new'], ['~x', '~~x']]) {
+    assert.equal(await a.create(), true);
+    await flush();
+    assert.equal(a.path.value, '/domains/grit/project/new', 'the draft is spelled as is');
+    a.form.value.input('key').value.value = key;
+    a.form.value.input('name').value.value = `Row ${key}`;
+    await flush();
+    assert.equal(await a.session.save(), true);
+    await flush();
+    assert.equal(a.path.value, `/domains/grit/project/${segment}`, `${key}: once saved, the page is the row's and its key is spelled like any other`);
+    assert.equal(await a.goTo('list'), true);
+  }
+  a.dispose();
+});
 
 scoped('support ⇒ absent: Bulk edit goes with updateWhere, the History pane with audit', async () => {
   const memory = backend();

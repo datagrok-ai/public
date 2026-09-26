@@ -767,11 +767,54 @@ scoped('WO-A5.1 #10 (P1): a column visible only to some is shared with View, and
     'shareColumn nw.orders freight g-dev Edit', 'table.grant nw.orders g-sales View', 'table.grant nw.orders g-dev View',
     'table.grant nw.orders g-dev Edit'], 'an Edit share alone hides the column: View always comes with it');
   assert.deepEqual([...document.querySelectorAll('.u2-binding-created-applied span')].slice(1, 5).map((s) => s.textContent),
-    ['orders.freight visible to Sales', 'orders.freight editable by Sales', 'orders.freight visible to Developers',
-      'orders.freight editable by Developers']);
+    ['orders.freight visible to Sales', 'orders.freight editable by Sales (with table Edit)',
+      'orders.freight visible to Developers', 'orders.freight editable by Developers (with table Edit)']);
   buttonNamed('CLOSE').click();
   await flush();
   await done;
+});
+
+scoped('Review lists the planned access by the Created labels, in apply order, and follows the Design edits', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  grok.dapi.permissions.check = async () => true;
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await flush();
+  const editor = dialog.editor;
+  editor.model.setSchemaName('nw');
+  editor.model.setWritable(true);
+  editor.access.addGroup(ORDERS, DEV);
+  editor.access.setGrant(ORDERS, 'g-dev', 'edit', true);
+  editor.access.setVisibility('orders', 'freight', [SALES]);
+  const planned = () => [...document.querySelectorAll('.u2-binding-planned-op')].map((s) => s.textContent);
+  const note = () => document.querySelector('.u2-binding-planned-note').textContent;
+  dialog.wizard.next();
+  await flush();
+  assert.equal(document.querySelector('.u2-binding-planned .u2-section-title').textContent, 'Planned access');
+  assert.deepEqual(planned(), ['orders.freight visible to Sales', 'orders.freight editable by Sales (with table Edit)',
+    'orders: View for Developers', 'orders: Edit for Developers'], 'restrictions first, then the grants — as CREATE applies them');
+  assert.equal(note(), 'Applied after CREATE, in this order. Not covered by Validate.');
+
+  dialog.wizard.back();
+  await flush();
+  editor.access.removeGroup(ORDERS, 'g-dev');
+  dialog.wizard.next();
+  await flush();
+  assert.deepEqual(planned(), ['orders.freight visible to Sales'],
+    'the grant is gone from Review, and with it the column Edit share that rode on the table Edit');
+
+  dialog.wizard.back();
+  await flush();
+  editor.access.setVisibility('orders', 'freight', null);
+  dialog.wizard.next();
+  await flush();
+  assert.deepEqual(planned(), []);
+  assert.equal(note(), 'No additional table or column grants planned');
+  assert.equal(buttonNamed('CREATE').disabled, true, 'access is no part of the validation');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
 });
 
 /** The access calls of the groups in `failing` fail with `message` while they are listed. */

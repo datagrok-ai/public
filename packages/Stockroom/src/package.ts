@@ -32,7 +32,7 @@ export function newContainerAt(containers: DomainTable, location: string,
     // (`location_id.filter: site = $site`); the picked node carries it, so the draft starts with both
     defaults: {location_id: location, ...(options.site === undefined ? {} : {site: options.site})}});
   grok.shell.addView(view);
-  void DomainApp.of(view)!.goTo('entity', DomainApp.NEW);
+  void DomainApp.of(view)!.create();
   return view;
 }
 

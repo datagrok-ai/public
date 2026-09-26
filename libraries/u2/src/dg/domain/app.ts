@@ -261,8 +261,9 @@ export class DomainApp extends Control {
     });
     // the entity page over a draft: once saved, the page is the row's
     this.effect(() => {
-      const row = this._entitySource.value?.currentRow.value ?? null;
-      if (row !== null && this._entity.peek() === DomainApp.NEW && !Rows.isDraft(row))
+      const source = this._entitySource.value;
+      const row = source?.currentRow.value ?? null;
+      if (row !== null && source!.isDraft && this._entity.peek() === DomainApp.NEW && !Rows.isDraft(row))
         this._entity.value = row.id;
     });
     // and once the draft is discarded — by the Discard button or by a gate's DISCARD — the page
@@ -286,8 +287,11 @@ export class DomainApp extends Control {
       const entity = this._entity.value;
       if (this._page.value === 'entity' && entity !== null) {
         const address = this._entityAddress(entity);
-        return this.entityPath ? `${this.base}/${encodeURIComponent(address)}` :
-          `${this.base}?entity=${encodeURIComponent(address)}`;
+        const source = this._entitySource.value;
+        // the draft sentinel is spelled as is; a row's key is escaped so `~new` is the row "new"
+        const segment = DomainApp._isDraft(source, source?.currentRow.value ?? null) ? address :
+          DomainAddress.segment(address);
+        return this.entityPath ? `${this.base}/${segment}` : `${this.base}?entity=${segment}`;
       }
       const q = this.listSource.query.value;
       const search = this.listSource.search.value;
@@ -380,13 +384,19 @@ export class DomainApp extends Control {
     return this._goTo(page, entity);
   }
 
+  /** The create page — a pristine draft; `goTo('entity', 'new')` is the row keyed "new". */
+  async create(): Promise<boolean> {
+    return this._goTo('entity', DomainApp.NEW, null, true);
+  }
+
   /** {@link DomainAddress.entityPath} over the app's base. */
   get entityPath(): boolean {
     return DomainAddress.entityPath(this.base);
   }
 
-  /** How the row is spelled in a `/domains` path: its id as one opaque segment where the table
-   * addresses rows by id (`info.rowAddress`), else {@link DomainAddress.keyOf} over the business key. */
+  /** How the row is addressed in a `/domains` path: its id where the table addresses rows by id
+   * (`info.rowAddress`), else {@link DomainAddress.keyOf} over the business key — the raw key, which
+   * {@link DomainAddress.segment} spells in the path. */
   keyOf(row: RowView): string {
     const info = this.table.info;
     return info.rowAddress === 'id' ? row.id : DomainAddress.keyOf(row, info.businessKey);
@@ -398,7 +408,7 @@ export class DomainApp extends Control {
   ribbon(): DomainRibbon {
     if (this._ribbon !== undefined)
       return this._ribbon;
-    const add = new Control(button('New', () => void this.goTo('entity', DomainApp.NEW)));
+    const add = new Control(button('New', () => void this.create()));
     add.root.dataset.u2 = 'new-button';
     add.effect(() => add.root.hidden = !this.listSource.access.value.can('insert'));
     const save = domains.saveButton(this.session);
@@ -746,12 +756,16 @@ export class DomainApp extends Control {
     // trash mode is the list's own view of the table, and a path is authoritative about it
     this._mode.value = params.get('trash') === '1' ? 'trash' : 'live';
     const segment = DomainAddress.segmentOf(at < 0 ? address : address.slice(0, at), this._bases);
-    const entity = segment ?? params.get('entity');
+    // the draft sentinel is read off the raw spelling, before the escape comes off: `~new` is the
+    // row keyed "new" in a segment and in `?entity=` alike
+    const raw = segment ?? params.get('entity');
+    const draft = raw === DomainApp.NEW;
+    const entity = raw === null ? null : DomainAddress.unescape(raw);
     if (entity !== null && entity !== '') {
       // a table addressing rows by id never has its segment split: the segment IS the id
       const info = this.table.info;
-      return this._goTo('entity', entity, segment === null || info.rowAddress === 'id' ? null :
-        DomainAddress.keyQuery(segment, info.businessKey, this.listSource.schema));
+      return this._goTo('entity', entity, segment === null || draft || info.rowAddress === 'id' ? null :
+        DomainAddress.keyQuery(entity, info.businessKey, this.listSource.schema), draft);
     }
     if (!await this._goTo('list', null))
       return false;
@@ -772,14 +786,14 @@ export class DomainApp extends Control {
   }
 
   /** `query` is how the row was addressed when it was not by its id — the business key an address
-   * segment spelled. */
+   * segment spelled. `draft` is the create page; an entity of "new" without it is the row so keyed. */
   private async _goTo(page: DomainAppPage, entity: string | null,
-    query: FilterGroup | null = null): Promise<boolean> {
+    query: FilterGroup | null = null, draft = false): Promise<boolean> {
     if (page === this._page.peek() && (page === 'list' || entity === this._entity.peek()))
       return true;
     if (!await confirmDiscard(this.session, {action: 'leave this page'}))
       return false;
-    this._show(page, entity, query);
+    this._show(page, entity, query, draft);
     return true;
   }
 
@@ -801,14 +815,25 @@ export class DomainApp extends Control {
 
   private _state(): ViewState {
     const q = this.listSource.query.peek();
-    return {page: this._page.peek(), entity: this._entity.peek(), search: this.listSource.search.peek(),
-      query: typeof q === 'string' ? q : Filters.format(q), mode: this._mode.peek()};
+    const entity = this._entity.peek();
+    const source = this._entitySource.peek();
+    // the row keyed "new" is not the draft: spelled as its segment, it stays a move of its own
+    const draft = DomainApp._isDraft(source, source?.currentRow.peek() ?? null);
+    return {page: this._page.peek(), entity: entity === null || draft ? entity : DomainAddress.escape(entity),
+      search: this.listSource.search.peek(), query: typeof q === 'string' ? q : Filters.format(q),
+      mode: this._mode.peek()};
   }
 
-  private _show(page: DomainAppPage, entity: string | null, query: FilterGroup | null = null): void {
+  /** The create page: a draft source whose row is still a draft, or not in yet — once saved, the
+   * page is the row's and its key is spelled like any other. */
+  private static _isDraft(source: DomainSource | null, row: RowView | null): boolean {
+    return source !== null && source.isDraft && (row === null || Rows.isDraft(row));
+  }
+
+  private _show(page: DomainAppPage, entity: string | null, query: FilterGroup | null = null,
+    draft = false): void {
     this._close();
     if (page === 'entity' && entity !== null) {
-      const draft = entity === DomainApp.NEW;
       const source = draft ? this._source({draft: true, defaults: this._options.defaults}) :
         this._source({query: query ?? Filters.group('and', [Filters.cond('id', '=', entity)]), pageSize: 1});
       // a source of one has no list to make its row current

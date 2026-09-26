@@ -874,6 +874,11 @@ export interface DomainBatchOptions {
   errorOnDuplicate?: boolean;
 }
 
+/** Every literal a `/domains/{schema}/{table}/{id}` route registers at the id position, the dot
+ * segments a proxy folds away, and the u2 draft sentinel — the Dart `DomainRowKey.reserved` list. */
+const RESERVED_ROW_KEYS = ['access', 'aggregate', 'audit', 'batch', 'delete', 'facets', 'filters', 'query',
+  'update', 'version', 'watch', 'new', '.', '..'];
+
 /**
  * Client for entity-mapped domain tables (`/domains/...`, DomainsRouter). Rows are plain
  * JSON objects; the server validates, permission-checks and audits every write. Errors
@@ -885,6 +890,13 @@ export class NodeDomainsDataSource {
 
   private rows(schema: string, table: string): string {
     return `/domains/${encodeURIComponent(schema)}/${encodeURIComponent(table)}`;
+  }
+
+  /** The row-id segment as the Dart `DomainRowKey` spells it (grok_shared domain_manifest_rules.dart):
+   * escaped, then percent-encoded once more so an external key's own `%2C` survives the proxy. */
+  private row(schema: string, table: string, id: string): string {
+    const escaped = RESERVED_ROW_KEYS.includes(id) || id.startsWith('~') ? `~${id}` : id;
+    return `${this.rows(schema, table)}/${encodeURIComponent(escaped)}`;
   }
 
   /** Registered schemas with their tables (`GET /domains/schemas`); [text] is a smart filter. */
@@ -934,7 +946,7 @@ export class NodeDomainsDataSource {
   }
 
   rowAudit(schema: string, table: string, id: string): Promise<any[]> {
-    return this.client.get(`${this.rows(schema, table)}/${encodeURIComponent(id)}/audit`);
+    return this.client.get(`${this.row(schema, table, id)}/audit`);
   }
 
   grants(entityId: string): Promise<any[]> {
@@ -978,7 +990,7 @@ export class NodeDomainsDataSource {
   /** One row, or null when it does not exist or is not visible (the server answers 404). */
   async getRow(schema: string, table: string, id: string): Promise<any> {
     try {
-      return await this.client.get(`${this.rows(schema, table)}/${encodeURIComponent(id)}`);
+      return await this.client.get(this.row(schema, table, id));
     } catch (err: any) {
       if (err?.apiError?.errorCode === 404) return null;
       throw err;
@@ -995,11 +1007,11 @@ export class NodeDomainsDataSource {
   update(schema: string, table: string, id: string, values: any, version?: number): Promise<any> {
     const body: Record<string, any> = {values};
     if (version !== undefined) body.version = version;
-    return this.client.request('PATCH', `${this.rows(schema, table)}/${encodeURIComponent(id)}`, body);
+    return this.client.request('PATCH', this.row(schema, table, id), body);
   }
 
   deleteRow(schema: string, table: string, id: string): Promise<any> {
-    return this.client.del(`${this.rows(schema, table)}/${encodeURIComponent(id)}`);
+    return this.client.del(this.row(schema, table, id));
   }
 
   /** Soft-deletes up to [limit] (≤1000) matching rows in one transaction; `{deleted, hasMore}`. */

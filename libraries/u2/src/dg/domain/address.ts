@@ -14,6 +14,31 @@ export class DomainAddress {
    * {@link DomainApp.open}'s to read. */
   static readonly ROUTE = /^\/domains\/(\w+)\/(\w+)(\/[^/?#]*)?$/i;
 
+  /** Every literal the platform's row routes register at the key position (`GET …/<table>/version`
+   * answers the table version, never a row), the dot segments a browser folds away, and the app's
+   * draft sentinel — the one list the Dart `DomainRowKey` and the Node dapi keep too. */
+  static readonly RESERVED = ['access', 'aggregate', 'audit', 'batch', 'delete', 'facets', 'filters', 'query',
+    'update', 'version', 'watch', 'new', '.', '..'];
+
+  /** A key as a path segment spells it, before percent-encoding: a reserved one, or one led by `~`,
+   * gets a `~` in front — `watch` ↔ `~watch`, `~x` ↔ `~~x`, a uuid never changes — so a segment
+   * names one row and never a route. The key is the row's canonical id (an external table's is its
+   * business key, components percent-encoded and comma-joined) or its business-key spelling. */
+  static escape(key: string): string {
+    return DomainAddress.RESERVED.includes(key) || key.startsWith('~') ? `~${key}` : key;
+  }
+
+  /** {@link escape}'s inverse: one leading `~` off a percent-decoded segment. */
+  static unescape(segment: string): string {
+    return segment.startsWith('~') ? segment.slice(1) : segment;
+  }
+
+  /** The path segment of a key: escaped, then percent-encoded — the write twin of
+   * {@link segmentOf} + {@link unescape}. */
+  static segment(key: string): string {
+    return encodeURIComponent(DomainAddress.escape(key));
+  }
+
   /** Whether `base` addresses rows by a path segment (`${base}/${key}`) rather than by
    * `?entity=`: the platform's own `/domains/…` routes are, an app mounted at `/apps/…` is not
    * (ruling R2). */
@@ -62,8 +87,9 @@ export class DomainAddress {
     return null;
   }
 
-  /** The trailing segment of an address under `bases` — the row it names; null when the address
-   * is a base itself, or another view's. */
+  /** The trailing segment of an address under `bases`, percent-decoded but still escaped — the
+   * draft sentinel is read off it as is, {@link unescape} gives the row's key; null when the
+   * address is a base itself, or another view's. */
   static segmentOf(path: string, bases: readonly string[]): string | null {
     const rest = DomainAddress.restOf(path, bases);
     if (rest === null || rest === '')

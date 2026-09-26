@@ -191,6 +191,27 @@ test('DomainAddress: the platform\'s row route, and what an address carries unde
   assert.equal(DomainAddress.under('/apps/grit_labs', '/apps/grit'), false);
 });
 
+test('DomainAddress: a key equal to a route word, a dot segment, "new" or led by ~ round-trips a segment escaped', () => {
+  // RESERVED is checked against a literal copy of the Dart DomainRowKey.reserved list (the Datlas suite
+  // domain_row_key_test pins that list to the router's route table)
+  assert.deepEqual(DomainAddress.RESERVED, ['access', 'aggregate', 'audit', 'batch', 'delete', 'facets', 'filters',
+    'query', 'update', 'version', 'watch', 'new', '.', '..']);
+  const bases = ['/domains/grit/issue'];
+  for (const key of [...DomainAddress.RESERVED, '~x', '~~', '~', 'a/b', 'a%2Fb', '1,a%2Cb', 'p.q', 'GRIT', UUID]) {
+    const segment = DomainAddress.segment(key);
+    assert.equal(DomainAddress.unescape(DomainAddress.segmentOf(`/domains/grit/issue/${segment}`, bases)), key,
+      `${key} → ${segment} → back`);
+  }
+  assert.equal(DomainAddress.segment('watch'), '~watch');
+  assert.equal(DomainAddress.segment('~watch'), '~~watch');
+  assert.equal(DomainAddress.segment('..'), '~..', 'a browser folds a bare dot segment away');
+  assert.equal(DomainAddress.segment('a%2Fb'), 'a%252Fb', 'the canonical id is percent-encoded once more');
+  assert.equal(DomainAddress.segment(UUID), UUID);
+  assert.equal(DomainAddress.segment('Version'), 'Version', 'exact and case-sensitive');
+  assert.equal(DomainAddress.segmentOf('/domains/grit/issue/~new', bases), '~new', 'segmentOf keeps the escape: the draft sentinel is read off the raw segment');
+  assert.equal(DomainAddress.unescape('new'), 'new');
+});
+
 test('DomainAddress: how a row is spelled in a path, and read back out of one', () => {
   assert.equal(DomainAddress.keyOf({id: 'x', code: 'A-1'}, ['code']), 'A-1',
     'a single-column key keeps its dashes');

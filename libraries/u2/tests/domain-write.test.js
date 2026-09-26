@@ -78,7 +78,7 @@ scoped('a draft is observable only stamped: its id and its state are there at th
   const seen = [];
   backends.domain = watched(backend(), seen);
   const a = await app();
-  assert.equal(await a.goTo('entity', DomainApp.NEW), true);
+  assert.equal(await a.create(), true);
   await flush();
   assert.equal(seen.some((row) => row.startsWith(Rows.DRAFT_PREFIX)), true, 'the draft was observed');
   assert.deepEqual(seen.filter((row) => row.startsWith(Rows.DRAFT_PREFIX) && !row.endsWith(':new')), [],

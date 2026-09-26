@@ -100,7 +100,7 @@ category('U2: domain external write', () => {
     const newTid = tid + 3;
     try {
       expect(table.table.support.concurrency, 'expected');
-      expect(await app.goTo('entity', DomainApp.NEW), true);
+      expect(await app.create(), true);
       await until(() => app.form.value?.input('tid') !== undefined, 'the draft form');
       app.form.value!.input('tid')!.value.value = newTid;
       app.form.value!.input('note')!.value.value = `u2 new ${newTid}`;

@@ -14,6 +14,7 @@ import {Control} from '../../../core/component.js';
 import {div, divV, link, span} from '../../../core/elements.js';
 import {plural} from '../../../core/text.js';
 import {Wizard} from '../../../components/containers/wizard.js';
+import {Section} from '../../../components/containers/section.js';
 import {ChoiceInput} from '../../../components/inputs/choice-input.js';
 import {Form} from '../../../components/forms/form.js';
 import {badge} from '../../../components/display/badge.js';
@@ -112,6 +113,7 @@ export class BindingDialog extends Control {
   private readonly _designHost = div([], 'u2-binding-design');
   private readonly _json = document.createElement('pre');
   private readonly _issues = divV([], 'u2-binding-issues');
+  private readonly _planned: Section;
   private readonly _createdHost = divV([], 'u2-binding-created');
   private _built: DraftEnvelope | null = null;
   /** The connection and the remote schema the built draft was read over. */
@@ -142,6 +144,8 @@ export class BindingDialog extends Control {
     this.schema = this.runInScope(() => new ChoiceInput({label: 'Schema', name: 'schema', items: [],
       nullable: false, emptyText: 'Pick a connection first'}));
     this._json.className = 'u2-binding-json';
+    this._planned = this.runInScope(() => new Section({title: 'Planned access', collapsible: false}));
+    this._planned.root.classList.add('u2-binding-planned');
     // the connection step is built up front: it starts the reads, whichever step opens first
     const connection = this.runInScope(() => this._connectionStep());
     this.wizard = this.runInScope(() => new Wizard({
@@ -394,7 +398,7 @@ export class BindingDialog extends Control {
   }
 
   private _reviewStep(): HTMLElement {
-    return div([this._json, this._issues], 'u2-binding-review');
+    return div([this._json, divV([this._planned.root, this._issues], 'u2-binding-review-side')], 'u2-binding-review');
   }
 
   /** The create payload as one string, keys sorted — what a validation is bound to. */
@@ -425,11 +429,25 @@ export class BindingDialog extends Control {
     return draft !== null && draft === this._built && this._isValidated() ? null : 'Validate before creating';
   }
 
+  /** Rebuilt on every activation — the step's content is built once, and Design may have changed
+   * since. */
   private _review(): void {
     const editor = this.editor!;
     this._json.textContent = JSON.stringify(editor.model.toJSON(), null, 2);
     this._say(this._isValidated() ? badge('Validated', {variant: 'success'}) : '');
+    this._renderPlanned();
     this._renderIssues();
+  }
+
+  /** What CREATE applies after the create, in the order it applies it, by the labels the Created
+   * step reports — the dry run checks the manifest alone. */
+  private _renderPlanned(): void {
+    const ops = BindingDialog._accessOps(this.editor!.plan());
+    this._planned.body.replaceChildren(
+      span(ops.length === 0 ? 'No additional table or column grants planned' :
+        'Applied after CREATE, in this order. Not covered by Validate.',
+      'u2-binding-planned-note'),
+      ...ops.map((op) => span(op.label, 'u2-binding-planned-op')));
   }
 
   private _renderIssues(): void {
@@ -640,7 +658,8 @@ export class BindingDialog extends Control {
   }
 
   /** One step per column, group and permission, so a retry repeats no share that went through; a
-   * visibility group gets View, and Edit too where the table is editable, or it could not write it. */
+   * visibility group gets View, and Edit too where the table is editable, or it could not write it.
+   * The labels are what Review previews and Created reports. */
   private static _accessOps(plan: ManifestPlan): AccessOp[] {
     const table = (t: string): DG.DomainTableClient => grok.dapi.domains.table(`${plan.name}.${t}`);
     const ops: AccessOp[] = [];
@@ -655,7 +674,8 @@ export class BindingDialog extends Control {
       for (const g of r.groups) {
         for (const permission of edit ? ['View', 'Edit'] : ['View']) {
           ops.push({kind: 'restrict', table: r.table, group: g,
-            label: `${column} ${permission === 'Edit' ? 'editable by' : 'visible to'} ${g.label}`,
+            label: permission === 'Edit' ? `${column} editable by ${g.label} (with table Edit)` :
+              `${column} visible to ${g.label}`,
             run: () => table(r.table).shareColumn(r.column, g.id, permission)});
         }
       }
