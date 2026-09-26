@@ -318,7 +318,7 @@ test('column access: restrict with the groups let in (Edit where they may edit t
   const access = e.access;
   access.setVisibility('orders', 'shipname', [SALES]);
   assert.deepEqual(access.columnOf('orders', 'shipname'), {table: 'orders', column: 'shipname', groups: [SALES], edit: [SALES]});
-  assert.deepEqual(bare(access.delta().restrict), [{table: 'orders', column: 'shipname',
+  assert.deepEqual(bare(access.delta().restrict), [{table: 'orders', column: 'shipname', from: 'unrestricted',
     grant: [{group: SALES, permission: 'View'}, {group: SALES, permission: 'Edit'}], revoke: []}]);
   access.setVisibility('orders', 'freight', [ME]);
   assert.deepEqual(access.columnOf('orders', 'freight').edit, [ME]);
@@ -327,15 +327,15 @@ test('column access: restrict with the groups let in (Edit where they may edit t
   access.setVisibility('order_details', 'unitprice', [SALES]);
   let plan = e.editPlan();
   assert.deepEqual(plan.payload.access, {grant: [], revoke: [], unrestrict: [], restrict: [
-    {table: 'orders', column: 'shipname', grant: [{group: 'g-sales', permission: 'View'}, {group: 'g-sales', permission: 'Edit'}], revoke: []},
-    {table: 'orders', column: 'freight', grant: [], revoke: [{group: 'g-sales', permission: 'View'}]},
-    {table: 'orders', column: 'shipcountry', grant: [], revoke: []},
-  ]}, 'a key column and a column the caller cannot share are left out');
+    {table: 'orders', column: 'shipname', from: 'unrestricted', grant: [{group: 'g-sales', permission: 'View'}, {group: 'g-sales', permission: 'Edit'}], revoke: []},
+    {table: 'orders', column: 'freight', from: 'restricted', grant: [], revoke: [{group: 'g-sales', permission: 'View'}]},
+    {table: 'orders', column: 'shipcountry', from: 'unrestricted', grant: [], revoke: []},
+  ]}, 'a key column and a column the caller cannot share are left out; each op names the state it was made from');
   assert.deepEqual(plan.changes.map((c) => c.text), ['orders.shipname restricted — visible to Sales; Edit for Sales',
     'orders.freight: View revoked from Sales', 'orders.shipcountry restricted — visible to nobody else']);
   access.setVisibility('orders', 'freight', null);
   plan = e.editPlan();
-  assert.deepEqual(plan.payload.access.unrestrict, [{table: 'orders', column: 'freight'}]);
+  assert.deepEqual(plan.payload.access.unrestrict, [{table: 'orders', column: 'freight', from: 'restricted'}]);
   assert.equal(plan.changes.find((c) => c.id === 'access:unrestrict:orders.freight').text, 'orders.freight visible to everyone again');
   e.model.includeColumn('orders', 'shipname', false);
   assert.equal(e.editPlan().payload.access.restrict.some((r) => r.column === 'shipname'), false, 'a column that is out gets no op');
@@ -347,10 +347,10 @@ test('column access: restrict with the groups let in (Edit where they may edit t
   mine.access.setVisibility('orders', 'freight', [SALES]);
   const kept = mine.editPlan();
   assert.deepEqual(kept.payload.access.restrict, [
-    {table: 'orders', column: 'shipname', grant: [{group: 'g-sales', permission: 'View'}, {group: 'g-sales', permission: 'Edit'},
+    {table: 'orders', column: 'shipname', from: 'unrestricted', grant: [{group: 'g-sales', permission: 'View'}, {group: 'g-sales', permission: 'Edit'},
       {group: 'g-me', permission: 'View'}, {group: 'g-me', permission: 'Edit'}], revoke: []},
-    {table: 'orders', column: 'shipcountry', grant: [{group: 'g-me', permission: 'View'}, {group: 'g-me', permission: 'Edit'}], revoke: []},
-    {table: 'orders', column: 'freight', grant: [], revoke: [{group: 'g-me', permission: 'View'}, {group: 'g-me', permission: 'Edit'}]},
+    {table: 'orders', column: 'shipcountry', from: 'unrestricted', grant: [{group: 'g-me', permission: 'View'}, {group: 'g-me', permission: 'Edit'}], revoke: []},
+    {table: 'orders', column: 'freight', from: 'restricted', grant: [], revoke: [{group: 'g-me', permission: 'View'}, {group: 'g-me', permission: 'Edit'}]},
   ], 'the author keeps a first-restricted column explicitly unless already on it; narrowing an existing restriction adds nobody');
   assert.deepEqual(kept.changes.map((c) => c.text), ['orders.shipname restricted — visible to Sales and you; Edit for Sales and you',
     'orders.shipcountry restricted — visible to askalkin; Edit for askalkin', 'orders.freight: View revoked from askalkin, Edit revoked from askalkin']);
@@ -406,7 +406,8 @@ test('rebase: disjoint edits kept on both sides, a same-field change is a confli
   assert.deepEqual(report.conflicts, [{id: 'table:orders:friendlyName', table: 'orders', removes: false,
     text: 'Table orders: friendly name "Sales orders"', from: 'Orders', to: 'Sales orders', server: 'Orders (EU)'}]);
   assert.deepEqual(report.dropped.map((d) => [d.id, d.to]), [['column:shippers.companyname:required', true],
-    ['access:grant:shippers:g-dev:View', true], ['access:restrict:orders.shipname', ['g-sales']]],
+    ['access:restrict:orders.shipname', true], ['access:grant:shippers:g-dev:View', true],
+    ['access:restrict:orders.shipname:g-sales:View', true]],
     'an edit on a table that is a candidate again, and one on columns the caller can no longer share');
   assert.equal(e.model.table('shippers').registered, false);
   assert.equal(e.model.table('orders').friendlyName, 'Orders (EU)', 'the server\'s value stands on a conflict');
@@ -432,6 +433,155 @@ test('rebase: disjoint edits kept on both sides, a same-field change is a confli
   const behind = editor({snapshot: later});
   assert.equal(behind.stale, true, 'the snapshot was read at another version than the manifest');
   behind.dispose();
+});
+
+test('editing a column\'s readers never touches an editor the snapshot holds apart from them; a reader taken out edits it no more', () => {
+  const ns = snapshot();
+  ns.columns['orders.freight'] = {state: 'restricted', canShare: true, schemaId: 's-freight',
+    view: [{id: 'g-sales', friendlyName: 'Sales'}], edit: [{id: 'g-dev', friendlyName: 'Developers'}]};
+  const e = editor({snapshot: ns});
+  const access = e.access;
+  assert.deepEqual(access.columnOf('orders', 'freight'), {table: 'orders', column: 'freight', groups: [SALES], edit: [DEV]},
+    'Developers edit it, reading it through a parent');
+  access.setVisibility('orders', 'freight', [SALES, ME]);
+  assert.deepEqual(access.columnOf('orders', 'freight').edit, [ME, DEV], 'the author may edit the table; Developers keep their Edit');
+  assert.deepEqual(bare(access.delta().restrict), [{table: 'orders', column: 'freight', from: 'restricted',
+    grant: [{group: ME, permission: 'View'}, {group: ME, permission: 'Edit'}], revoke: []}], 'a reader let in revokes nothing');
+  access.setVisibility('orders', 'freight', [ME]);
+  assert.deepEqual(bare(access.delta().restrict)[0].revoke, [{group: SALES, permission: 'View'}]);
+  assert.deepEqual(access.columnOf('orders', 'freight').edit, [ME, DEV]);
+  access.setVisibility('orders', 'freight', [ME, DEV]);
+  assert.deepEqual(access.columnOf('orders', 'freight').edit, [ME, DEV], 'let in as a reader, it keeps the Edit it had');
+  assert.deepEqual(bare(access.delta().restrict)[0].grant, [{group: ME, permission: 'View'}, {group: DEV, permission: 'View'},
+    {group: ME, permission: 'Edit'}]);
+  access.setVisibility('orders', 'freight', [ME]);
+  assert.deepEqual(access.columnOf('orders', 'freight').edit, [ME, DEV], 'taken out of the readers again, it edits it as it did');
+  assert.deepEqual(bare(access.delta().restrict)[0].grant, [{group: ME, permission: 'View'}, {group: ME, permission: 'Edit'}]);
+  access.setVisibility('orders', 'freight', []);
+  assert.deepEqual(access.columnOf('orders', 'freight').edit, [DEV]);
+  assert.deepEqual(bare(access.delta().restrict)[0].revoke, [{group: SALES, permission: 'View'}], 'Developers\' Edit is never on the wire');
+  e.dispose();
+});
+
+test('the name column and the searchable one are the table\'s choices: one line each, and competing picks conflict on rebase', () => {
+  const e = editor();
+  e.model.setNameColumn('orders', 'shipcountry');
+  e.model.setSearchable('orders', 'shipcountry');
+  assert.deepEqual(e.model.changes().map((c) => [c.id, c.text]), [['table:orders:nameColumn', 'Table orders: name column shipcountry'],
+    ['table:orders:searchable', 'Table orders: searchable shipcountry']]);
+  const orders = e.model.toJSON().tables.orders.columns;
+  assert.deepEqual([orders.shipname.isName, orders.shipname.searchable, orders.shipcountry.isName, orders.shipcountry.searchable],
+    [undefined, undefined, true, true]);
+  e.model.setNameColumn('orders', null);
+  assert.equal(e.model.changes()[0].text, 'Table orders: name column cleared');
+  e.model.setNameColumn('orders', 'shipcountry');
+  // meanwhile: someone made shipcity the name column; the searchable one they left alone
+  const nb = baseline();
+  nb.version = '4';
+  delete nb.tables.orders.columns.shipname.isName;
+  nb.tables.orders.columns.shipcity.isName = true;
+  const ns = snapshot();
+  ns.version = '4';
+  const report = e.rebase(nb, ns, draft(), {friendlyName: 'Northwind sales', description: 'Sales data'});
+  assert.deepEqual(report.conflicts.map((c) => [c.id, c.from, c.to, c.server]),
+    [['table:orders:nameColumn', 'shipname', 'shipcountry', 'shipcity']]);
+  assert.deepEqual(ids(report.applied), ['table:orders:searchable']);
+  const after = e.model.toJSON().tables.orders.columns;
+  assert.deepEqual([after.shipcity.isName, after.shipcountry.isName, after.shipcountry.searchable, after.shipname.searchable],
+    [true, undefined, true, undefined], 'the server\'s pick stands; the searchable pick went through');
+  e.dispose();
+
+  const h = editor();
+  h.model.setNameColumn('orders', 'nope');
+  h.model.setNameColumn('orders', 'tracking_number');
+  assert.deepEqual(h.model.changes(), [], 'a column that is not there, or not included, is no pick');
+  h.model.setNameColumn('orders', 'shipcountry');
+  const gone = baseline();
+  gone.version = '4';
+  delete gone.tables.orders.columns.shipcountry;
+  const dropped = h.rebase(gone, ns, draft(), {friendlyName: 'Northwind sales', description: 'Sales data'});
+  assert.deepEqual(dropped.dropped.map((op) => op.id), ['table:orders:nameColumn'], 'the picked column is a candidate again');
+  assert.equal(h.model.toJSON().tables.orders.columns.shipname.isName, true, 'the server\'s pick stays');
+  h.dispose();
+});
+
+test('column readers merge per group on rebase: two editors\' additions combine, a removal both made is absorbed, a reader edit on a column whose restriction moved is a conflict by name', () => {
+  const OPS = {id: 'g-ops', friendlyName: 'Ops'};
+  const meta = {friendlyName: 'Northwind sales', description: 'Sales data'};
+  const nb = baseline();
+  nb.version = '4';
+  const e = editor();
+  e.access.setVisibility('orders', 'freight', [SALES, ME, DEV]);
+  e.access.setVisibility('orders', 'shipname', [DEV]);
+  // meanwhile: Ops joined freight's readers; shipname was restricted, to Sales
+  const ns = snapshot();
+  ns.version = '4';
+  ns.columns['orders.freight'].view.push(OPS);
+  ns.columns['orders.shipname'] = {state: 'restricted', canShare: true, schemaId: 's-shipname', view: [{id: 'g-sales', friendlyName: 'Sales'}], edit: []};
+  let report = e.rebase(nb, ns, draft(), meta);
+  assert.deepEqual(report.applied.map((op) => [op.id, op.text]),
+    [['access:restrict:orders.freight:g-dev:View', 'orders.freight: View for Developers']], 'by group, named');
+  assert.deepEqual(report.conflicts.map((op) => [op.id, op.text, op.note]), [
+    ['access:restrict:orders.shipname', 'orders.shipname restricted', 'the column was restricted meanwhile, to other readers'],
+    ['access:restrict:orders.shipname:g-dev:View', 'orders.shipname: View for Developers', 'the column was restricted meanwhile, to other readers']],
+    'two restrictions do not pool their readers');
+  assert.deepEqual(report.dropped, []);
+  assert.deepEqual(e.access.visibilityOf('orders', 'freight').map((g) => g.id), ['g-sales', 'g-me', 'g-ops', 'g-dev']);
+  assert.deepEqual(e.access.visibilityOf('orders', 'shipname').map((g) => g.id), ['g-sales'], 'as the server has it');
+  assert.deepEqual(bare(e.access.delta().restrict), [{table: 'orders', column: 'freight', from: 'restricted',
+    grant: [{group: DEV, permission: 'View'}], revoke: []}], 'made from the restriction the server has now');
+  e.dispose();
+
+  const u = editor();
+  u.access.setVisibility('orders', 'freight', null);
+  const joined = snapshot();
+  joined.version = '4';
+  joined.columns['orders.freight'].view.push(OPS);
+  report = u.rebase(nb, joined, draft(), meta);
+  assert.deepEqual(report.applied, []);
+  assert.deepEqual(report.conflicts.map((op) => [op.id, op.note]), [
+    ['access:unrestrict:orders.freight', 'the column\'s readers changed meanwhile'],
+    ['access:restrict:orders.freight:g-sales:View', 'the column\'s readers changed meanwhile'],
+    ['access:restrict:orders.freight:g-me:View', 'the column\'s readers changed meanwhile']],
+    'an unrestrict does not override a colleague\'s reader change');
+  assert.deepEqual(u.access.visibilityOf('orders', 'freight').map((g) => g.id), ['g-sales', 'g-me', 'g-ops']);
+  assert.deepEqual(u.editPlan().payload, {ifVersion: '4', ifIncarnation: TOKENS.ifIncarnation});
+  u.dispose();
+
+  const both = editor();
+  both.access.setVisibility('orders', 'freight', null);
+  const lifted2 = snapshot();
+  lifted2.version = '4';
+  lifted2.columns['orders.freight'] = {state: 'unrestricted', canShare: true};
+  report = both.rebase(nb, lifted2, draft(), meta);
+  assert.deepEqual(ids(report.applied), ['access:unrestrict:orders.freight', 'access:restrict:orders.freight:g-sales:View',
+    'access:restrict:orders.freight:g-me:View'], 'the server unrestricted it too: absorbed');
+  assert.deepEqual(report.conflicts, []);
+  both.dispose();
+
+  const f = editor();
+  f.access.setVisibility('orders', 'freight', [SALES, ME, DEV]);
+  const lifted = snapshot();
+  lifted.version = '4';
+  lifted.columns['orders.freight'] = {state: 'unrestricted', canShare: true};
+  report = f.rebase(nb, lifted, draft(), meta);
+  assert.deepEqual(report.applied, []);
+  assert.deepEqual(report.conflicts.map((op) => [op.id, op.text, op.note]),
+    [['access:restrict:orders.freight:g-dev:View', 'orders.freight: View for Developers', 'the column was made visible to everyone meanwhile']],
+    'replayed, "let Developers in" would restrict the column to them alone');
+  assert.equal(f.access.columnOf('orders', 'freight'), undefined, 'as the server has it');
+  assert.equal(f.editPlan().payload.access, undefined);
+  f.dispose();
+
+  const g = editor();
+  g.access.setVisibility('orders', 'freight', [ME]);
+  const same = snapshot();
+  same.version = '4';
+  same.columns['orders.freight'].view = [{id: 'g-me', friendlyName: 'askalkin', personal: true}];
+  report = g.rebase(nb, same, draft(), meta);
+  assert.deepEqual(report.applied.map((op) => op.text), ['orders.freight: View revoked from Sales'], 'absorbed: the server did the same');
+  assert.deepEqual(g.editPlan().payload, {ifVersion: '4', ifIncarnation: TOKENS.ifIncarnation});
+  g.dispose();
 });
 
 function ui(name, body) {
@@ -524,5 +674,21 @@ ui('edit mode rows and panels: drift badges with their reasons, "new" candidates
   await flush();
   assert.equal(e.model.column('orders', 'employeeid').type, 'ref');
   assert.equal(panel(e).querySelector('.u2-manifest-relation .u2-link').textContent, 'keep it a plain value');
+  e.dispose();
+});
+
+ui('a registered table taken out is read, not edited: its fields as text and its grid disabled until it is checked back', async () => {
+  const e = await shown();
+  fire(rowOf(e, 'shippers').querySelector('.u2-tree-check'), 'click');
+  await flush();
+  await select(e, 'shippers');
+  assert.deepEqual(panel(e).querySelectorAll('.u2-manifest-panel-title .u2-badge').map((b) => b.textContent), ['removed']);
+  assert.deepEqual(inputNames(e).filter((n) => !n.startsWith('access-')), []);
+  assert.deepEqual(readonlyNames(e), ['logical', 'friendlyName', 'key', 'nameColumn', 'searchable']);
+  assert.equal(panel(e).querySelector('.u2-access-grid-add').disabled, true);
+  fire(rowOf(e, 'shippers').querySelector('.u2-tree-check'), 'click');
+  await flush();
+  assert.deepEqual(inputNames(e).filter((n) => !n.startsWith('access-')), ['friendlyName', 'nameColumn', 'searchable']);
+  assert.equal(panel(e).querySelector('.u2-access-grid-add').disabled, false);
   e.dispose();
 });

@@ -26,6 +26,8 @@ const ENTER_OWNERS = 'button, a, input[type="checkbox"], input[type="radio"], se
 
 export class Dialog extends Control {
   private static _seq = 0;
+  /** The open dialogs, the last one on top. */
+  private static readonly _shown: Dialog[] = [];
 
   readonly isOpen: ReadonlySignal<boolean>;
 
@@ -42,6 +44,7 @@ export class Dialog extends Control {
   private _scope: Scope | undefined;
   private _restore: HTMLElement | undefined;
   private _drag: {dx: number, dy: number} | undefined;
+  private _modal = false;
 
   constructor(title: string, options?: {name?: string}) {
     super();
@@ -146,6 +149,7 @@ export class Dialog extends Control {
       this.root.style.width = `${options.width}px`;
     if (options.height !== undefined)
       this.root.style.height = `${options.height}px`;
+    this._modal = options.modal === true;
     if (options.modal) {
       this._backdrop.style.zIndex = String(backdropLayer);
       this.root.setAttribute('aria-modal', 'true');
@@ -154,9 +158,11 @@ export class Dialog extends Control {
       this.root.removeAttribute('aria-modal');
 
     Overlay.host.append(this.root);
+    Dialog._shown.push(this);
     this._open.value = true;
     this._place(options.x, options.y);
     this._listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent), scope);
+    this._listen(document, 'keydown', (e) => this._onDocumentKeyDown(e as KeyboardEvent), scope);
     const first = Dialog._focusable(this._content)[0];
     (first ?? this._ok ?? this.root).focus();
     return this;
@@ -171,6 +177,7 @@ export class Dialog extends Control {
     scope.dispose();
     this._backdrop.remove();
     this.root.remove();
+    Dialog._shown.splice(Dialog._shown.indexOf(this), 1);
     this._open.value = false;
     const restore = this._restore;
     this._restore = undefined;
@@ -231,6 +238,28 @@ export class Dialog extends Control {
       this._finish(this._onOK);
     } else if (e.key === 'Tab')
       this._trapTab(e);
+  }
+
+  /** Escape reaches the modal dialog on top even once focus fell out of it — a control that
+   * rebuilt its DOM under the focused element lands the keyboard on the body. Nothing above
+   * it may be open: a u2 popup in the overlay host, or a platform dialog opened later. */
+  private _onDocumentKeyDown(e: KeyboardEvent): void {
+    const target = e.target;
+    const lost = target === document.body || target === document.documentElement || target === document;
+    if (e.key !== 'Escape' || e.defaultPrevented || !this._modal || !lost || Dialog._shown[Dialog._shown.length - 1] !== this)
+      return;
+    const host = Overlay.host;
+    if (host.children[host.children.length - 1] !== this.root)
+      return;
+    const mounted = [...document.body.children];
+    const level = (el: Element): number => {
+      let top = el;
+      while (top.parentElement !== null && top.parentElement !== document.body)
+        top = top.parentElement;
+      return mounted.indexOf(top);
+    };
+    if (![...document.querySelectorAll('.d4-dialog')].some((d) => level(d) > level(host)))
+      this._onKeyDown(e);
   }
 
   private _trapTab(e: KeyboardEvent): void {

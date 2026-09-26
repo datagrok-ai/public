@@ -230,9 +230,12 @@ export abstract class BindingWizard<TResult> extends Control {
   }
 
   /** A failure for the status line: a domain call nothing answered (status 0, no code — the
-   * transport's own words) says so around them; anything else is the refusal as worded. */
+   * transport's own words) says so around them, the bare transport failure of the platform's
+   * client says so alone; anything else is the refusal as worded. */
   protected static _failure(e: unknown): string {
     const message = DomainErrors.message(e);
+    if (/^XMLHttpRequest error\.?$/.test(message))
+      return 'The connection to the server failed';
     return (e as {status?: unknown} | null)?.status === 0 && DomainErrors.codeOf(e) === '' ?
       `Could not reach the server (${message})` : message;
   }

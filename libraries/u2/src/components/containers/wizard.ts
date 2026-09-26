@@ -23,8 +23,9 @@ export interface WizardStep {
   done?: boolean;
   /** What the closing button reads on the last step (FINISH by default). */
   finishText?: string;
-  /** What NEXT reads on this step (NEXT by default) — CREATE on a step whose commit registers. */
-  nextText?: string;
+  /** What NEXT reads on this step (NEXT by default) — CREATE on a step whose commit registers; a
+   * signal where the wording follows the state (SAVE, then REOPEN once a save's outcome is unknown). */
+  nextText?: string | ReadonlySignal<string>;
   /** Work NEXT runs before leaving this step: the wizard waits on it and nothing closes meanwhile;
    * `false` keeps the step (a commit the server refused). */
   commit?: () => void | boolean | Promise<void | boolean>;
@@ -130,6 +131,7 @@ export class Wizard extends Control {
     this._index.value = start;
 
     this.effect(() => this._applyStep());
+    this.effect(() => this._applyNextText());
     this.effect(() => this._applyGate());
   }
 
@@ -285,8 +287,6 @@ export class Wizard extends Control {
     this._back.style.display = index === 0 || done ? 'none' : '';
     if (this._cancel !== undefined)
       this._cancel.style.display = done ? 'none' : '';
-    this._next.textContent = index < this._steps.length - 1 ? current.options.nextText ?? 'NEXT' : done ? 'CLOSE' :
-      current.options.finishText ?? 'FINISH';
 
     const builder = current.builder;
     if (builder) {
@@ -296,6 +296,14 @@ export class Wizard extends Control {
     const onActivate = current.options.onActivate;
     if (onActivate)
       untracked(() => onActivate(current.options));
+  }
+
+  private _applyNextText(): void {
+    const index = this._index.value;
+    const current = this._steps[index].options;
+    const next = typeof current.nextText === 'string' ? current.nextText : current.nextText?.value;
+    this._next.textContent = index < this._steps.length - 1 ? next ?? 'NEXT' : current.done === true ? 'CLOSE' :
+      current.finishText ?? 'FINISH';
   }
 
   private _applyGate(): void {

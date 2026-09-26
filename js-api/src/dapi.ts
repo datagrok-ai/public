@@ -1491,7 +1491,8 @@ export class DomainSchemaClient {
    * with the exception of raw PostgreSQL error text that quotes an identifier verbatim
    * (a constraint violation naming `fk_<table>_x_<column>`, say). */
   apply(body: DomainApplyBody, options: {dryRun: true}): Promise<DomainApplyPlan>;
-  /** The apply itself: the plan with `applied: true` and the access effects as resolved under the lock. */
+  /** The apply itself: the plan with `applied: true` and the access effects as resolved under the lock;
+   * an apply that changes nothing writes nothing and answers `applied: false`, `noop: true`. */
   apply(body: DomainApplyBody, options?: {dryRun?: false}): Promise<DomainApplied>;
   /** `dryRun` decided at run time: the plan, or the applied answer. */
   apply(body: DomainApplyBody, options?: {dryRun?: boolean}): Promise<DomainApplyPlan | DomainApplied>;

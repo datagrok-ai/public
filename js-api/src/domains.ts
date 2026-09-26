@@ -599,10 +599,22 @@ export interface DomainColumnTarget {
  * else made meanwhile survives an edit that never named it. A key column of an external table
  * cannot be restricted (`'key-column'`). */
 export interface DomainColumnRestriction extends DomainColumnTarget {
+  /** The restriction state the edit was made from. A standalone unrestriction moves no schema
+   * version, so this is what catches it: sent, the apply is refused under the lock
+   * (`'access-conflict'`, naming the column and both states) when the column's state differs;
+   * omitted, the op applies whatever the state. */
+  from?: 'restricted' | 'unrestricted';
   /** Permissions to grant on the per-column schema. */
   grant?: DomainGroupPermission[];
   /** Permissions to revoke from the per-column schema. */
   revoke?: DomainGroupPermission[];
+}
+
+/** Makes a column visible to everyone again: its per-column schema and the grants on it go. */
+export interface DomainColumnUnrestriction extends DomainColumnTarget {
+  /** `'restricted'`, the state the edit was made from; refused (`'access-conflict'`) when the
+   * column is not restricted any more. Omitted, the op is idempotent. */
+  from?: 'restricted';
 }
 
 /** The access changes an apply carries ({@link DomainApplyBody.access}): exact permission-triple
@@ -621,7 +633,7 @@ export interface DomainAccessDelta {
   /** Columns to restrict, with the deltas on their readers and editors. */
   restrict?: DomainColumnRestriction[];
   /** Columns to make visible to everyone again (their per-column schema and its grants go). */
-  unrestrict?: DomainColumnTarget[];
+  unrestrict?: DomainColumnUnrestriction[];
 }
 
 /** What {@link DomainSchemaClient.apply} takes: a partial manifest — named tables replace their
@@ -742,14 +754,18 @@ export interface DomainLostColumn {
 }
 
 /** What a user-schema apply loses ({@link DomainApplyPlan.lost}): per dropped table, per dropped
- * column, and per re-pointed ref (`'<table>.<column>'`) the saved filters travelling through it. */
+ * column, and per re-pointed or demoted ref (`'<table>.<column>'`) the saved filters travelling
+ * through it, however many refs the path crosses (up to four). Each entry counts a filter once, but
+ * the entries overlap: a filter travelling through a demoted ref into a dropped table counts under
+ * both `refs` and `tables`. */
 export interface DomainApplyLost {
   /** Per dropped table, by logical name. */
   tables: {[table: string]: DomainLostTable};
   /** Per dropped column, by `'<table>.<column>'`. */
   columns: {[address: string]: DomainLostColumn};
-  /** Per ref column whose type changed, by `'<table>.<column>'`. */
-  refs: {[address: string]: {affectedFilters: number}};
+  /** Per ref column whose type changed, by `'<table>.<column>'`; `demoted` when it becomes a plain
+   * value — its own values stay, only the paths through it break. */
+  refs: {[address: string]: {affectedFilters: number; demoted?: true}};
 }
 
 /** The change plan of {@link DomainSchemaClient.apply}: what a dry run answers, and what a commit
@@ -798,15 +814,20 @@ export interface DomainApplyPlan {
   metadata?: {[key: string]: {from: string | null; to: string | null}};
   /** The access effects, present when the body carried `access`. */
   access?: DomainAccessEffects;
-  /** Set on the answer of a commit; absent on a dry run. */
-  applied?: true;
+  /** Set on the answer of a commit; absent on a dry run. `false` with {@link noop}: the apply
+   * changed nothing, so nothing was written. */
+  applied?: boolean;
+  /** Set on the answer of a commit that found nothing to change — the schema already holds what
+   * the body declares: nothing is written and `version` stays the one the apply was made against. */
+  noop?: true;
   /** Package-managed schema: the extension version the apply moved to. */
   extVersion?: number;
 }
 
 /** The answer of a committed {@link DomainSchemaClient.apply}: the plan, `applied`, with the
- * access effects as resolved under the lock. */
-export type DomainApplied = DomainApplyPlan & {applied: true};
+ * access effects as resolved under the lock — or, when the apply changed nothing, `applied: false`
+ * with `noop: true` and the version unchanged. */
+export type DomainApplied = DomainApplyPlan & ({applied: true} | {applied: false; noop: true});
 
 /** Effective access of the CURRENT user on one domain table
  * (see `DomainTableClient.access`). Composed by the SERVER
@@ -955,7 +976,7 @@ export class DomainError extends Error {
     super(message);
     this.name = new.target.name;
   }
-  /** Server discriminant: 'validation' | 'version-conflict' | 'restrict' | 'filter' |
+  /** Server discriminant: 'validation' | 'version-conflict' | 'access-conflict' | 'restrict' | 'filter' |
    * 'forbidden' | 'not-found' | 'unsupported' | 'manifest-validation' | 'invalid-mode' | 'id-collision' |
    * 'destructive-confirmation-required' | schema-mgmt codes | '' (transport). */
   get code(): string { return `${this.body['error'] ?? ''}`; }

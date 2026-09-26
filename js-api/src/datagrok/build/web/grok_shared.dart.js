@@ -108950,20 +108950,36 @@
         return new Q.DomainRowsDataSource(schema, table, new Q.DomainsClient(C.Map_794C7, null), null, null, "exclude", null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
       }, "call$2", "get$rows", 4, 0, 557, 159, 15],
       _decodeError$1: function(response) {
-        var err, t1, exception, message;
+        var err, inner, t1, exception, $status, message;
         err = null;
         try {
           t1 = J.getInterceptor$x(response);
           err = J.get$isEmpty$asx(t1.get$body(response)) === true ? P.LinkedHashMap__makeEmpty() : C.JsonCodec_null_null.decode$1(t1.get$body(response));
+          if (J.$index$asx(err, "error") == null) {
+            t1 = J.$index$asx(err, "message");
+            t1 = typeof t1 === "string" && J.startsWith$1$s(J.$index$asx(err, "message"), "{") === true;
+          } else
+            t1 = false;
+          if (t1) {
+            inner = C.JsonCodec_null_null.decode$1(J.$index$asx(err, "message"));
+            if (!!J.getInterceptor(inner).$isMap && J.$index$asx(inner, "error") != null)
+              err = inner;
+          }
         } catch (exception) {
           H.unwrapException(exception);
-          err = P.LinkedHashMap__makeEmpty();
+          t1 = err;
+          if (t1 == null)
+            err = P.LinkedHashMap__makeEmpty();
         }
+        t1 = J.$index$asx(J.get$headers$x(response), $.DapiHttpHeaders_API_ERROR_CODE);
+        if (t1 == null)
+          t1 = "";
+        $status = H.Primitives_parseInt(t1, null, new Q.DomainsClient__decodeError_closure(response));
         t1 = J.$index$asx(err, "message");
-        message = H.S(t1 == null ? "Request failed with status " + H.S(J.get$statusCode$x(response)) : t1);
+        message = H.S(t1 == null ? "Request failed with status " + H.S($status) : t1);
         if (J.$index$asx(err, "innerMessage") != null)
           message = message + " (" + H.S(J.$index$asx(err, "innerMessage")) + ")";
-        return new Q.DomainWriteException(err, null, J.get$statusCode$x(response), message, null);
+        return new Q.DomainWriteException(err, null, $status, message, null);
       },
       _decodeWrite$1: function(response) {
         var t1 = J.getInterceptor$x(response);
@@ -109597,7 +109613,7 @@
               case 3:
                 // returning from await.
                 res = $async$temp1._decodeWrite$1($async$result);
-                if (!t3)
+                if (!t3 && J.$eq$(J.$index$asx(res, "applied"), true) === true)
                   $async$self.schemaAltered$1(schema);
                 $async$returnValue = res;
                 // goto return
@@ -109610,9 +109626,9 @@
         });
         return P._asyncStart($async$applySchema$3$dryRun, $async$completer);
       },
-      deleteSchema$1: function(schema) {
+      deleteSchema$2$ifIncarnation: function(schema, ifIncarnation) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$next = [], $async$self = this, response, res, e, t1, t2, exception;
-        var $async$deleteSchema$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
+        var $async$deleteSchema$2$ifIncarnation = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1)
             return P._asyncRethrow($async$result, $async$completer);
           while (true)
@@ -109623,8 +109639,9 @@
                 if (t1 == null)
                   t1 = $.$get$GrokClientBase__http();
                 t2 = J.$index$asx($.Zone__current, C.Symbol_IKb);
+                t2 = H.S(t2 == null ? $._root : t2) + "/domains/schemas/" + H.S(schema);
                 $async$goto = 3;
-                return P._asyncAwait(t1.delete$2$suppressException(0, H.S(t2 == null ? $._root : t2) + "/domains/schemas/" + H.S(schema), true), $async$deleteSchema$1);
+                return P._asyncAwait(t1.delete$2$suppressException(0, t2, true), $async$deleteSchema$2$ifIncarnation);
               case 3:
                 // returning from await.
                 response = $async$result;
@@ -109651,7 +109668,10 @@
                 return P._asyncReturn($async$returnValue, $async$completer);
             }
         });
-        return P._asyncStart($async$deleteSchema$1, $async$completer);
+        return P._asyncStart($async$deleteSchema$2$ifIncarnation, $async$completer);
+      },
+      deleteSchema$1: function(schema) {
+        return this.deleteSchema$2$ifIncarnation(schema, null);
       },
       grants$1: function(entityId) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
@@ -110418,6 +110438,12 @@
             }
         });
         return P._asyncStart($async$unwatch$3$id, $async$completer);
+      }
+    },
+    DomainsClient__decodeError_closure: {
+      "^": "Closure:0;response",
+      call$1: function(_) {
+        return J.get$statusCode$x(this.response);
       }
     },
     DomainsClient__registryEntityId_closure: {

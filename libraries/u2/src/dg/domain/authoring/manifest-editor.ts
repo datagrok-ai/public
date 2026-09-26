@@ -69,13 +69,15 @@ export interface ManifestPlan {
   restrictions: PlannedRestriction[];
 }
 
-/** The `access` section of the apply body: exact permission triples by logical names, group ids. */
+/** The `access` section of the apply body: exact permission triples by logical names, group ids;
+ * a column op names the restriction state it was made from, which the server checks under the
+ * lock (`access-conflict`). */
 export interface ApplyAccess {
   grant: {table: string, group: string, permission: string}[];
   revoke: {table: string, group: string, permission: string}[];
-  restrict: {table: string, column: string, grant: {group: string, permission: string}[],
+  restrict: {table: string, column: string, from: 'restricted' | 'unrestricted', grant: {group: string, permission: string}[],
     revoke: {group: string, permission: string}[]}[];
-  unrestrict: {table: string, column: string}[];
+  unrestrict: {table: string, column: string, from: 'restricted'}[];
 }
 
 /** `POST /domains/schemas/{s}/apply` — the edit tokens, the manifest patch and the access deltas;
@@ -209,12 +211,12 @@ export class ManifestEditor extends Control {
     const triple = (t: {group: AccessPrincipal, permission: string}): {group: string, permission: string} =>
       ({group: t.group.id, permission: t.permission});
     for (const op of delta.restrict.filter((o) => included(o.table) && restrictable(o.table, o.column))) {
-      access.restrict.push({table: op.change.table!, column: op.change.column!, grant: op.grant.map(triple),
+      access.restrict.push({table: op.change.table!, column: op.change.column!, from: op.from, grant: op.grant.map(triple),
         revoke: op.revoke.map(triple)});
       changes.push(op.change);
     }
     for (const op of delta.unrestrict.filter((o) => included(o.table) && restrictable(o.table, o.column))) {
-      access.unrestrict.push({table: op.change.table!, column: op.change.column!});
+      access.unrestrict.push({table: op.change.table!, column: op.change.column!, from: op.from});
       changes.push(op.change);
     }
     if (access.grant.length + access.revoke.length + access.restrict.length + access.unrestrict.length > 0)

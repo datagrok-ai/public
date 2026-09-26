@@ -4,10 +4,12 @@
    the access snapshot and a fresh draft of the warehouse), **Review** (the change list, each line
    annotated from the dry run — what a removal takes with it, what is already so; VALIDATE is the
    dry run bound to the exact apply body it checked, SAVE the one apply, access changes included)
-   and **Saved** (what was applied, OPEN). A `version-conflict` reloads the binding and replays the
-   edits over it, conflicts and drops reported for an explicit look on Design; a save whose answer
-   was lost is confirmed through the registry, never replayed. The server owns every rule — the
-   dialog names its refusals. */
+   and **Saved** (what was applied — or that the server found nothing to change — OPEN). A `version-conflict` (an `access-conflict` too) reloads
+   the binding and replays the edits over it, conflicts and drops reported for an explicit look on
+   Design; a save whose answer was lost is confirmed through the registry, never replayed — one
+   the registry cannot confirm ends the edit, as does a binding deleted and re-created under the
+   name: REOPEN starts over from the server's version. The server owns every rule — the dialog
+   names its refusals. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {computed, signal} from '../../../core/signals.js';
@@ -56,6 +58,12 @@ interface Loaded {
   problems: string[];
 }
 
+/** The registry read the dialog waits for before it shows, and the reads that go on behind it. */
+interface Read {
+  manifest: ManifestJson;
+  rest: Promise<Omit<Loaded, 'manifest'>>;
+}
+
 export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   private readonly _name: string;
   private readonly _handle: DG.DomainSchemaClient;
@@ -63,10 +71,14 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   private readonly _problem = signal<string | null>(null);
   /** The dry run's plan of the validated payload — what annotates the change list. */
   private readonly _plan = signal<DG.DomainApplyPlan | null>(null);
+  /** Why the edit ended short of a save — its outcome unknown, or the binding another schema
+   * now — with the facts; REOPEN is the one way on. */
+  private readonly _ended = signal<{why: string, facts: string[]} | null>(null);
   private readonly _facts = divV([], 'u2-binding-connection u2-binding-edit-facts');
   private readonly _designHost = div([], 'u2-binding-design');
   private readonly _changes = divV([], 'u2-binding-changes');
   private readonly _body = document.createElement('pre');
+  private readonly _outcome = divV([], 'u2-binding-reloaded u2-binding-outcome');
   private readonly _reloaded = divV([], 'u2-binding-reloaded');
   private readonly _confirm: BoolInput;
   private readonly _applied = divV([], 'u2-binding-changes');
@@ -75,6 +87,8 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   private _looked = true;
   private _report: RebaseReport | null = null;
   private _result: EditBindingResult | undefined;
+  /** The dialog REOPEN started over: what the caller gets is its outcome. */
+  private _reopened: Promise<EditBindingResult | null> | undefined;
   private _saved: ManifestChange[] = [];
   private _savedVersion = '';
   private _firstTable = '';
@@ -94,10 +108,13 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
         {id: 'connection', title: 'Connection', content: this._facts},
         {id: 'design', title: 'Design', content: () => this._designHost, canProceed: () => this._designGate(),
           onActivate: () => this._looked = true},
-        {id: 'review', title: 'Review', content: () => this._reviewStep(), nextText: 'SAVE',
-          onActivate: () => this._review(), canProceed: () => this._reviewGate(), commit: () => this._save(),
+        {id: 'review', title: 'Review', content: () => this._reviewStep(),
+          nextText: computed(() => this._ended.value === null ? 'SAVE' : 'REOPEN'),
+          onActivate: () => this._review(), canProceed: () => this._reviewGate(),
+          commit: () => this._ended.peek() === null ? this._save() : this._reopen(),
           actions: [{text: 'VALIDATE', run: () => this._validate(),
-            enabled: computed(() => this._editor.value !== undefined && this._editor.value.model.blockers.value.length === 0)}]},
+            enabled: computed(() => this._ended.value === null && this._editor.value !== undefined &&
+              this._editor.value.model.blockers.value.length === 0)}]},
         {id: 'saved', title: 'Saved', content: () => this._savedHost, done: true,
           actions: [{text: 'OPEN', run: () => this._openAndClose()}]},
       ],
@@ -107,18 +124,26 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   }
 
   /** The registry is read before the dialog shows: a schema it refuses is a refusal here, by
-   * name. The other reads go on behind Design, which waits on them. */
+   * name. The other reads go on behind Design, which waits on them. A dialog REOPEN started
+   * over answers for this one. */
   async open(): Promise<EditBindingResult | null> {
+    return this._show(await this._read());
+  }
+
+  private async _read(): Promise<Read> {
     const {manifest, rest} = this._start();
     try {
-      await manifest;
+      return {manifest: await manifest, rest};
     } catch (e) {
       this.dispose();
       throw new Error(`Binding ${this._name} could not be read: ${BindingEditDialog._failure(e)}`);
     }
+  }
+
+  private _show(read: Read): Promise<EditBindingResult | null> {
     const settled = this._open(`Edit binding ${this._name}`);
-    void this._build(manifest.then(async (m) => ({manifest: m, ...await rest})));
-    return settled;
+    void this._build(read.rest.then((rest) => ({manifest: read.manifest, ...rest})));
+    return settled.then((result) => this._reopened ?? result);
   }
 
   /** The apply body as one string, keys sorted — what a validation is bound to; the access deltas
@@ -252,10 +277,12 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     body.root.classList.add('u2-binding-body');
     body.body.append(this._body);
     return div([divV([this._changes, body.root], 'u2-binding-changes-pane'),
-      divV([this._reloaded, this._confirm.root, this._issues], 'u2-binding-review-side')], 'u2-binding-review');
+      divV([this._outcome, this._reloaded, this._confirm.root, this._issues], 'u2-binding-review-side')], 'u2-binding-review');
   }
 
   private _reviewGate(): string | null {
+    if (this._ended.value !== null)
+      return null;
     if (!this._looked)
       return 'Look over the reloaded edits on Design';
     if (!this._isValidated())
@@ -264,7 +291,8 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   }
 
   /** Rebuilt on every activation and after every validation: the change list annotated from the
-   * plan while the validation holds, the findings, the reload report, the confirmation. */
+   * plan while the validation holds, the findings, the reload report, the confirmation — or,
+   * once the edit ended, why. */
   private _review(): void {
     const editor = this.editor!;
     const {payload, changes} = editor.editPlan();
@@ -273,9 +301,50 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     this._body.textContent = JSON.stringify(payload, null, 2);
     this._renderChanges(this._changes, changes, plan, validated ? 'Changes, as validated' : 'Changes, not validated');
     this._confirm.root.style.display = plan?.destructive === true ? '' : 'none';
+    this._renderOutcome();
     this._renderReloaded();
-    this._say(validated ? badge('Validated', {variant: 'success'}) : '');
+    const ended = this._ended.peek();
+    this._say(ended !== null ? `${ended.why} — see Review` : validated ? badge('Validated', {variant: 'success'}) : '', ended !== null);
     this._renderIssues();
+  }
+
+  private _renderOutcome(): void {
+    const ended = this._ended.peek();
+    if (ended === null) {
+      this._outcome.replaceChildren();
+      return;
+    }
+    this._outcome.replaceChildren(span(ended.why, 'u2-binding-changes-title'),
+      ...ended.facts.map((fact) => div([span(fact)], 'u2-binding-change')),
+      span('Nothing was replayed. REOPEN starts over from the server\'s version; the edits above are not carried over.',
+        'u2-binding-change-note'));
+  }
+
+  /** Ends the edit: no save, no rebase; REOPEN in place of SAVE, and Design says so. */
+  private _end(why: string, facts: string[]): void {
+    this._ended.value = {why, facts};
+    this._setPlan(null);
+    this._validated.value = null;
+    this._designHost.prepend(div([span(`${why}: nothing here will be saved — REOPEN on Review starts over from the server's version`)],
+      'u2-manifest-panel-note u2-binding-ended'));
+    this._review();
+  }
+
+  /** The dialog over the server's version takes this one's place once it has read the registry;
+   * a read that fails leaves this one standing, and says why. */
+  private async _reopen(): Promise<false> {
+    this._say('Reading the binding again…');
+    const next = new BindingEditDialog(this._name);
+    let read: Read;
+    try {
+      read = await next._read();
+    } catch (e) {
+      this._say(`${(e as Error).message} — REOPEN again`, true);
+      return false;
+    }
+    this._reopened = next._show(read);
+    this._settle(null);
+    return false;
   }
 
   private _renderChanges(host: HTMLElement, changes: ManifestChange[], plan: DG.DomainApplyPlan | null, title: string): void {
@@ -392,7 +461,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     this._reloaded.replaceChildren(
       span(`Reloaded: ${plural(report.applied.length, 'edit', 'edits')} kept, ` +
         `${plural(report.conflicts.length, 'conflict', 'conflicts')}, ${report.dropped.length} dropped`, 'u2-binding-changes-title'),
-      ...report.conflicts.map((op) => line(op, `the server's ${value(op.server)} stands; yours was ${value(op.to)}`)),
+      ...report.conflicts.map((op) => line(op, op.note ?? `the server's ${value(op.server)} stands; yours was ${value(op.to)}`)),
       ...report.dropped.map((op) => line(op, 'no longer there')));
   }
 
@@ -448,8 +517,9 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     try {
       answer = await this._handle.apply(body);
     } catch (e) {
-      if (DomainErrors.codeOf(e) === 'version-conflict') {
-        await this._rebase();
+      const code = DomainErrors.codeOf(e);
+      if (code === 'version-conflict' || code === 'access-conflict') {
+        await this._rebase(payload, e);
         return false;
       }
       if (BindingEditDialog._answered(e)) {
@@ -473,38 +543,37 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return true;
   }
 
-  /** Whether an apply that got no answer landed all the same: the registry is one version past
-   * the edited one, in the same incarnation, AND holds this edit — the next version may be
-   * someone else's save. Anything else keeps SAVE offered, and says why. */
+  /** Whether an apply that got no answer landed cleanly: the registry is one version past the
+   * edited one, in the same incarnation, AND holds this edit. Anything else — the version moved
+   * on, the next version is someone else's, the name is another schema's, the reads fail — is an
+   * outcome nobody saw, and ends the edit rather than replay it. */
   private async _landed(payload: ApplyPayload, e: unknown): Promise<boolean> {
     this._say('No answer to the save — reading the registry…');
     const next = String(Number(payload.ifVersion) + 1);
-    const lost = BindingEditDialog._failure(e);
-    let manifest: DG.DomainRegisteredManifest;
-    let ours: boolean;
+    let fact: string;
     try {
-      manifest = await this._handle.manifest();
+      const manifest = await this._handle.manifest();
       const same = payload.ifIncarnation === undefined || manifest.incarnation === payload.ifIncarnation;
-      if (manifest.version !== next || !same) {
-        this._say(`${lost} — ${this._name} is ${same ? `at version ${manifest.version}, not ${next}` :
-          'another schema now (deleted and re-created since)'}; SAVE again`, true);
-        return false;
+      if (same && manifest.version === next && await this._holds(payload, manifest)) {
+        this._savedVersion = next;
+        return true;
       }
-      ours = await this._holds(payload, manifest);
+      fact = !same ? BindingEditDialog._recreated(this._name, manifest.version) :
+        manifest.version === next ? `version ${next} of ${this._name} holds someone else's save, not this edit` :
+          `${this._name} is at version ${manifest.version} (this edit was made against ${payload.ifVersion})`;
     } catch (x) {
-      this._say(`${lost} — the registry could not be read (${BindingEditDialog._failure(x)}); SAVE again`, true);
-      return false;
+      fact = `the registry could not be read (${BindingEditDialog._failure(x)})`;
     }
-    if (!ours) {
-      this._say(`${lost} — version ${next} of ${this._name} is someone else's save; SAVE again to reload`, true);
-      return false;
-    }
-    this._savedVersion = next;
-    return true;
+    // it may have landed: whoever shows the binding reads it again
+    grok.dapi.domains.invalidateUiCaches();
+    api.grok_Dapi_Domains_SchemaAltered?.(grok.dapi.domains.dart, this._name);
+    this._end('Outcome unknown', [`No answer to the save (${BindingEditDialog._failure(e)}) — whether it landed is unknown`, fact]);
+    return false;
   }
 
   /** Whether the registry holds this edit: every table sent as registered, none dropped still
-   * there, the metadata and writability as sent, and every access op's effect in place. */
+   * there, the metadata and writability as sent, and every access op's effect in place — read
+   * at the manifest's version; a grant the snapshot cannot show proves nothing. */
   private async _holds(payload: ApplyPayload, manifest: DG.DomainRegisteredManifest): Promise<boolean> {
     const canonical = (decl: ManifestTableJson, logical: string): string =>
       BindingEditDialog._canonical(ManifestModel.canonicalTable(decl, logical));
@@ -527,35 +596,52 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     if (access === undefined)
       return true;
     const snapshot = await this._handle.access();
-    const held = (table: string, group: string, permission: string): boolean =>
-      snapshot.tables[table]?.grants?.some((g) => g.group.id === group && g.permissions.includes(permission as DG.DomainPermission)) === true;
-    if (access.grant.some((op) => !held(op.table, op.group, op.permission)) ||
-        access.revoke.some((op) => held(op.table, op.group, op.permission)))
+    if (snapshot.version !== manifest.version || snapshot.incarnation !== manifest.incarnation)
+      return false;
+    const held = (table: string, group: string, permission: string): boolean | null => {
+      const grants = snapshot.tables[table]?.grants;
+      return grants == null ? null : grants.some((g) => g.group.id === group && g.permissions.includes(permission as DG.DomainPermission));
+    };
+    if (access.grant.some((op) => held(op.table, op.group, op.permission) !== true) ||
+        access.revoke.some((op) => held(op.table, op.group, op.permission) !== false))
       return false;
     for (const op of access.restrict) {
       const column = snapshot.columns[`${op.table}.${op.column}`];
       if (column?.state !== 'restricted')
         return false;
-      const on = (t: {group: string, permission: string}): boolean =>
-        (t.permission === 'Edit' ? column.edit : column.view)?.some((g) => g.id === t.group) === true;
-      if (op.grant.some((t) => !on(t)) || op.revoke.some((t) => on(t)))
+      const on = (t: {group: string, permission: string}): boolean | null => {
+        const groups = t.permission === 'Edit' ? column.edit : column.view;
+        return groups == null ? null : groups.some((g) => g.id === t.group);
+      };
+      if (op.grant.some((t) => on(t) !== true) || op.revoke.some((t) => on(t) !== false))
         return false;
     }
     return access.unrestrict.every((op) => snapshot.columns[`${op.table}.${op.column}`]?.state === 'unrestricted');
   }
 
+  private static _recreated(name: string, version: string | undefined): string {
+    return `${name} was deleted and re-created since — another schema is registered under the name now, at version ${version ?? '?'}`;
+  }
+
   /** After a `version-conflict`: the binding as it is now, the edits replayed over it. What
-   * conflicted or vanished is reported on Review and wants a look at Design before a save. */
-  private async _rebase(): Promise<void> {
+   * conflicted or vanished is reported on Review and wants a look at Design before a save. A
+   * name that is another schema's now (deleted and re-created since) takes no replay. */
+  private async _rebase(payload: ApplyPayload, e: unknown): Promise<void> {
     const editor = this.editor!;
+    const conflict = e as {currentIncarnation?: unknown, currentVersion?: unknown};
+    if (typeof conflict.currentIncarnation === 'string' && payload.ifIncarnation !== undefined &&
+        conflict.currentIncarnation !== payload.ifIncarnation)
+      return this._end('The binding you edited is gone', [BindingEditDialog._recreated(this._name, String(conflict.currentVersion ?? '?'))]);
     this._say('The binding changed meanwhile — reloading…');
     let loaded: Loaded;
     try {
       loaded = await this._reload();
-    } catch (e) {
-      this._say(`The binding changed meanwhile, and could not be re-read: ${BindingEditDialog._failure(e)} — SAVE again`, true);
+    } catch (x) {
+      this._say(`The binding changed meanwhile, and could not be re-read: ${BindingEditDialog._failure(x)} — SAVE again`, true);
       return;
     }
+    if (loaded.manifest.incarnation !== editor.model.incarnation)
+      return this._end('The binding you edited is gone', [BindingEditDialog._recreated(this._name, loaded.manifest.version)]);
     const report = editor.rebase(loaded.manifest, loaded.snapshot, loaded.draft,
       {friendlyName: loaded.friendlyName, description: loaded.description});
     this._report = report;
@@ -572,6 +658,13 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
 
   private _renderSaved(): void {
     const answer = this._result!.applied;
+    if (answer?.noop === true) {
+      const nothing = 'Nothing to save — the binding already holds this';
+      this._savedHost.replaceChildren(div([badge('Unchanged'),
+        span(`${nothing}; domain schema ${this._name} stays at version ${answer.version}`)], 'u2-binding-created-head'));
+      this._say(nothing);
+      return;
+    }
     const version = answer?.version ?? this._savedVersion;
     const head = div([badge('Saved', {variant: 'success'}),
       span(answer === null ? `Domain schema ${this._name} is at version ${version} — the answer was lost, the registry confirms it` :

@@ -219,9 +219,9 @@ scoped('design › review › saved: a no-op is gated, the changes are listed in
     tables: {employees: {businessKey: ['employeeid'], columns: {employeeid: {type: 'int', required: true}, lastname: {type: 'string'}}}},
     access: {grant: [{table: 'orders', group: 'g-dev', permission: 'View'}],
       revoke: [{table: 'orders', group: 'g-sales', permission: 'Edit'}],
-      restrict: [{table: 'orders', column: 'shipname', revoke: [], grant: [{group: 'g-sales', permission: 'View'},
+      restrict: [{table: 'orders', column: 'shipname', from: 'unrestricted', revoke: [], grant: [{group: 'g-sales', permission: 'View'},
         {group: 'g-me', permission: 'View'}, {group: 'g-me', permission: 'Edit'}]}],
-      unrestrict: []}}, 'the apply body verbatim, the author kept on the restricted column');
+      unrestrict: []}}, 'the apply body verbatim, the author kept on the restricted column, the state each column op was made from');
   assert.equal(document.querySelector('.u2-binding-changes-title').textContent, 'Changes, as validated');
   assert.deepEqual(rows(), [['Friendly name: "NW"', 'was "Northwind sales"'], ['Table employees added'],
     ['orders: View for Developers'], ['orders: Edit revoked from Sales'],
@@ -280,6 +280,29 @@ scoped('a validation is bound to the exact apply body: an access edit since is n
   buttonNamed('CANCEL').click();
   await flush();
   assert.equal(await done, null);
+});
+
+scoped('an apply the server finds already held is not a save: nothing to save, the version unchanged', async () => {
+  const calls = [];
+  const server = stub(calls);
+  server.apply = () => ({...PLAN({version: '3'}), applied: false, noop: true});
+  const {dialog, done} = await opened();
+  dialog.editor.model.setDescription('Sales data, revised');
+  dialog.wizard.next();
+  await flush();
+  await validated();
+  buttonNamed('SAVE').click();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'saved');
+  assert.equal(document.querySelector('.u2-binding-created-head').textContent,
+    'UnchangedNothing to save — the binding already holds this; domain schema northwind_sales stays at version 3');
+  assert.equal(status().textContent, 'Nothing to save — the binding already holds this');
+  assert.equal(document.querySelectorAll('.u2-binding-saved .u2-binding-change').length, 0, 'nothing listed as applied');
+  buttonNamed('CLOSE').click();
+  await flush();
+  const result = await done;
+  assert.equal(result.applied.noop, true);
+  assert.equal(result.applied.version, '3');
 });
 
 scoped('a removal is annotated with what goes with it; a destructive plan wants the confirmation, and SAVE sends it', async () => {
@@ -421,45 +444,31 @@ scoped('a version conflict reloads the binding and replays the edits: conflicts 
   assert.equal((await done).applied.version, '5');
 });
 
-scoped('a save whose answer was lost is confirmed through the registry — one version on, the same incarnation, this edit in it — never replayed', async () => {
-  const calls = [];
-  const server = stub(calls);
-  server.apply = () => {
-    throw Object.assign(new Error('Gateway Timeout'), {status: 504, code: ''});
-  };
+const timeout = () => {
+  throw Object.assign(new Error('Gateway Timeout'), {status: 504, code: ''});
+};
+
+/** The dialog on Review with the description edited and validated. */
+async function edited() {
   const {dialog, done} = await opened();
   dialog.editor.model.setDescription('Moved');
   dialog.wizard.next();
   await flush();
   await validated();
-  buttonNamed('SAVE').click();
-  await flush();
-  assert.equal(dialog.wizard.currentStep.value, 'review');
-  assert.equal(status().textContent, 'Gateway Timeout — northwind_sales is at version 3, not 4; SAVE again');
-  assert.equal(status().classList.contains('u2-wizard-status-error'), true);
-  assert.deepEqual(dialog.editor.diagnostics.value, [], 'the timeout is no finding');
-  assert.equal(buttonNamed('SAVE').disabled, false, 'still validated: SAVE stays offered');
+  return {dialog, done};
+}
 
-  server.manifest = {...copy(FIXTURE.manifest), version: '4', incarnation: '2026-09-25T00:00:00.000Z'};
-  buttonNamed('SAVE').click();
-  await flush();
-  assert.equal(dialog.wizard.currentStep.value, 'review');
-  assert.equal(status().textContent, 'Gateway Timeout — northwind_sales is another schema now (deleted and re-created since); SAVE again');
+const outcome = () => document.querySelector('.u2-binding-outcome');
 
-  // the tokens agree, the content does not: version 4 is someone else's save
-  server.manifest = {...copy(FIXTURE.manifest), version: '4'};
-  buttonNamed('SAVE').click();
-  await flush();
-  assert.equal(dialog.wizard.currentStep.value, 'review');
-  assert.equal(status().textContent, 'Gateway Timeout — version 4 of northwind_sales is someone else\'s save; SAVE again to reload');
-  assert.equal(buttonNamed('SAVE').disabled, false);
-  assert.deepEqual(calls.filter((c) => c[0] === 'altered'), []);
-
-  server.entity = {...ENTITY, description: 'Moved'};
+scoped('a save whose answer was lost is confirmed through the registry — one version on, the same incarnation, this edit in it — never replayed', async () => {
+  const calls = [];
+  const server = stub(calls, {apply: timeout});
+  const {dialog, done} = await edited();
+  Object.assign(server, {manifest: {...copy(FIXTURE.manifest), version: '4'}, entity: {...ENTITY, description: 'Moved'}});
   buttonNamed('SAVE').click();
   await flush();
   assert.equal(dialog.wizard.currentStep.value, 'saved');
-  assert.equal(applies(calls, false).length, 4, 'each SAVE is one apply; nothing is replayed by the dialog');
+  assert.equal(applies(calls, false).length, 1, 'one apply; nothing is replayed by the dialog');
   assert.deepEqual(calls.filter((c) => c[0] === 'altered'), [['altered', NAME]], 'the confirmed save is announced to the platform once');
   assert.equal(document.querySelector('.u2-binding-created-head').textContent,
     'SavedDomain schema northwind_sales is at version 4 — the answer was lost, the registry confirms it');
@@ -469,6 +478,183 @@ scoped('a save whose answer was lost is confirmed through the registry — one v
   const result = await done;
   assert.equal(result.name, NAME);
   assert.equal(result.applied, null);
+});
+
+scoped('a lost answer the registry cannot confirm ends the edit: the outcome is named, nothing is replayed, and REOPEN starts over from the server\'s version', async () => {
+  const calls = [];
+  const server = stub(calls, {apply: timeout});
+  const {dialog, done} = await edited();
+  // the registry did not move: nobody saw the save land
+  buttonNamed('SAVE').click();
+  await flush();
+  assert.equal(dialog.wizard.currentStep.value, 'review');
+  assert.equal(status().textContent, 'Outcome unknown — see Review');
+  assert.equal(status().classList.contains('u2-wizard-status-error'), true);
+  assert.deepEqual(dialog.editor.diagnostics.value, [], 'the timeout is no finding');
+  assert.equal(buttonNamed('SAVE'), undefined, 'SAVE is gone');
+  assert.equal(buttonNamed('REOPEN').disabled, false);
+  assert.equal(buttonNamed('VALIDATE').disabled, true);
+  assert.deepEqual(rows('.u2-binding-outcome'), [['No answer to the save (Gateway Timeout) — whether it landed is unknown'],
+    ['northwind_sales is at version 3 (this edit was made against 3)']]);
+  assert.match(outcome().textContent, /^Outcome unknown/);
+  assert.match(outcome().textContent, /Nothing was replayed\. REOPEN starts over/);
+  assert.deepEqual(calls.filter((c) => c[0] === 'altered'), [['altered', NAME]], 'it may have landed: the platform reads the binding again');
+  assert.equal(grok.dapi.domains.invalidated > 0, true);
+  dialog.wizard.back();
+  await flush();
+  assert.match(document.querySelector('.u2-binding-design .u2-binding-ended').textContent, /^Outcome unknown: nothing here will be saved/);
+  dialog.wizard.next();
+  await flush();
+  assert.equal(buttonNamed('REOPEN').disabled, false, 'a look at Design changes nothing: the edit ended');
+  assert.equal(applies(calls, false).length, 1);
+
+  // REOPEN reads the registry first: a failed read leaves this dialog standing, and says so
+  calls.length = 0;
+  server.manifest = Object.assign(new Error('boom'), {status: 500, code: ''});
+  buttonNamed('REOPEN').click();
+  await flush();
+  await flush();
+  assert.equal(document.querySelectorAll('.u2-dialog').length, 1);
+  assert.equal(dialog.wizard.currentStep.value, 'review', 'the same dialog');
+  assert.deepEqual(calls.map((c) => c[0]), ['manifest', 'access', 'schemas'], 'the registry reads, no warehouse read');
+  assert.equal(status().textContent, 'Binding northwind_sales could not be read: boom — REOPEN again');
+  assert.equal(buttonNamed('REOPEN').disabled, false);
+
+  server.manifest = copy(FIXTURE.manifest);
+  calls.length = 0;
+  buttonNamed('REOPEN').click();
+  await flush();
+  await flush();
+  assert.equal(document.querySelectorAll('.u2-dialog').length, 1, 'one dialog: the new one');
+  assert.deepEqual(calls.map((c) => c[0]), ['manifest', 'access', 'schemas', 'draft'], 'read afresh');
+  assert.equal(reason(), 'Nothing changed', 'nothing carried over');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null, 'the caller gets the reopened dialog\'s outcome');
+});
+
+scoped('a lost answer is unknown too when the next version is someone else\'s save, or the name another schema\'s', async () => {
+  const calls = [];
+  const server = stub(calls, {apply: timeout});
+  const first = await edited();
+  server.manifest = {...copy(FIXTURE.manifest), version: '4'};
+  buttonNamed('SAVE').click();
+  await flush();
+  assert.equal(status().textContent, 'Outcome unknown — see Review');
+  assert.deepEqual(rows('.u2-binding-outcome')[1], ['version 4 of northwind_sales holds someone else\'s save, not this edit']);
+  assert.equal(buttonNamed('REOPEN').disabled, false);
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await first.done, null);
+
+  server.manifest = copy(FIXTURE.manifest);
+  const second = await edited();
+  Object.assign(server, {manifest: {...copy(FIXTURE.manifest), version: '4', incarnation: '2026-09-25T00:00:00.000Z'},
+    entity: {...ENTITY, description: 'Moved'}});
+  buttonNamed('SAVE').click();
+  await flush();
+  assert.equal(status().textContent, 'Outcome unknown — see Review');
+  assert.deepEqual(rows('.u2-binding-outcome')[1],
+    ['northwind_sales was deleted and re-created since — another schema is registered under the name now, at version 4']);
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await second.done, null);
+});
+
+scoped('an access-conflict reloads and replays like a version conflict; a conflict from another incarnation, or a reload that finds one, ends the edit without a replay', async () => {
+  const calls = [];
+  const server = stub(calls);
+  let answer = () => {
+    throw Object.assign(new Error('orders.freight is unrestricted now'), {status: 409, code: 'access-conflict'});
+  };
+  server.apply = () => answer();
+  const {dialog, done} = await opened();
+  dialog.editor.access.setVisibility('orders', 'freight', [SALES, {id: 'g-me', label: 'askalkin'}, DEV]);
+  dialog.wizard.next();
+  await flush();
+  await validated();
+  assert.equal(applies(calls, true)[0][2].access.restrict[0].from, 'restricted');
+  const nb = copy(FIXTURE.manifest);
+  nb.version = '4';
+  const ns = copy(FIXTURE.snapshot);
+  ns.version = '4';
+  ns.columns['orders.freight'] = {state: 'unrestricted', canShare: true};
+  Object.assign(server, {manifest: nb, snapshot: ns});
+  calls.length = 0;
+  buttonNamed('SAVE').click();
+  await flush();
+  assert.deepEqual(calls.map((c) => c[0]), ['apply', 'manifest', 'access', 'schemas', 'draft']);
+  assert.equal(status().textContent, 'Reloaded at version 4: 0 edits kept, 1 conflict, 0 dropped — validate again');
+  assert.deepEqual(rows('.u2-binding-reloaded'),
+    [['orders.freight: View for Developers', 'the column was made visible to everyone meanwhile']], 'by name');
+  assert.equal(reason(), 'Look over the reloaded edits on Design');
+
+  answer = () => {
+    throw Object.assign(new Error('Schema version conflict'), {status: 409, code: 'version-conflict', currentVersion: '1',
+      expectedVersion: '4', currentIncarnation: '2026-09-25T00:00:00.000Z', expectedIncarnation: INCARNATION});
+  };
+  dialog.wizard.back();
+  await flush();
+  dialog.editor.model.setDescription('again');
+  dialog.wizard.next();
+  await flush();
+  await validated();
+  calls.length = 0;
+  buttonNamed('SAVE').click();
+  await flush();
+  assert.deepEqual(calls.map((c) => c[0]), ['apply'], 'no reload, no replay');
+  assert.equal(status().textContent, 'The binding you edited is gone — see Review');
+  assert.deepEqual(rows('.u2-binding-outcome'),
+    [['northwind_sales was deleted and re-created since — another schema is registered under the name now, at version 1']]);
+  assert.equal(buttonNamed('REOPEN').disabled, false);
+  assert.equal(buttonNamed('SAVE'), undefined);
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+
+  // a conflict without the incarnations, whose reload finds another one
+  answer = () => {
+    throw Object.assign(new Error('Schema version conflict'), {status: 409, code: 'version-conflict', currentVersion: '1', expectedVersion: '4'});
+  };
+  const second = await edited();
+  server.manifest = {...nb, version: '1', incarnation: '2026-09-25T00:00:00.000Z'};
+  calls.length = 0;
+  buttonNamed('SAVE').click();
+  await flush();
+  assert.deepEqual(calls.map((c) => c[0]), ['apply', 'manifest', 'access', 'schemas', 'draft']);
+  assert.equal(status().textContent, 'The binding you edited is gone — see Review');
+  assert.equal(second.dialog.editor.model.version, '4', 'the editor was not rebased onto the other schema');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await second.done, null);
+});
+
+scoped('an unrestriction names the state it was made from', async () => {
+  const calls = [];
+  stub(calls);
+  const {dialog, done} = await opened();
+  dialog.editor.access.setVisibility('orders', 'freight', null);
+  dialog.wizard.next();
+  await flush();
+  await validated();
+  assert.deepEqual(applies(calls, true)[0][2].access, {grant: [], revoke: [], restrict: [],
+    unrestrict: [{table: 'orders', column: 'freight', from: 'restricted'}]});
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
+scoped('Escape cancels the dialog even once focus fell out of it onto the body', async () => {
+  const calls = [];
+  stub(calls);
+  const {dialog, done} = await opened();
+  dialog.editor.model.setDescription('never saved');
+  document.body.focus();
+  fire(document.body, 'keydown', {key: 'Escape'});
+  await flush();
+  assert.equal(document.querySelector('.u2-dialog'), null);
+  assert.equal(await done, null);
+  assert.deepEqual(applies(calls, false), []);
 });
 
 scoped('blockers gate Design and VALIDATE until the items the warehouse no longer binds are taken out', async () => {

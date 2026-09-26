@@ -7,6 +7,7 @@ import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
 import {Wizard} from '../src/components/containers/wizard.js';
 import {Dialog} from '../src/components/containers/dialog.js';
+import {Overlay} from '../src/core/overlay.js';
 
 test('an unknown start step is refused', () => {
   assert.throws(() => new Wizard({steps: [{id: 'a', title: 'A', content: document.createElement('div')}],
@@ -476,4 +477,55 @@ wizard('in a dialog, Enter on a content button does not press OK; from a text in
   assert.equal(ok, 1);
   assert.equal(dialog.isOpen.value, false);
   dialog.dispose();
+});
+
+wizard('NEXT follows a nextText signal: the wording moves with the state, and the last step keeps its own', () => {
+  const text = signal('SAVE');
+  const w = new Wizard({steps: [
+    {id: 'one', title: 'One', content: content('One', 'free'), nextText: text},
+    {id: 'two', title: 'Two', content: content('Two', 'last')}]});
+  document.body.append(w.root);
+  assert.equal(footer(w, 'SAVE').textContent, 'SAVE');
+  text.value = 'REOPEN';
+  assert.equal(footer(w, 'SAVE'), undefined);
+  assert.equal(footer(w, 'REOPEN').textContent, 'REOPEN');
+  w.next();
+  assert.equal(footer(w, 'FINISH').textContent, 'FINISH');
+  w.back();
+  assert.equal(footer(w, 'REOPEN').textContent, 'REOPEN');
+  w.dispose();
+});
+
+wizard('Esc reaches the modal dialog on top once focus fell out of it onto the body; a dialog underneath waits its turn', () => {
+  const scope = new Scope();
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({steps: steps(undefined), onCancel: () => outcome.push('cancel')}));
+  const dialog = w.openInDialog('Set up');
+  const inner = Scope.runWith(scope, () => Dialog.create('Pick').show({modal: true}));
+  document.body.focus();
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.deepEqual([inner.isOpen.value, dialog.isOpen.value], [false, true], 'the one on top closes');
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(dialog.isOpen.value, false);
+  assert.deepEqual(outcome, ['cancel']);
+  const plain = Scope.runWith(scope, () => Dialog.create('Aside').show());
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(plain.isOpen.value, true, 'a modeless dialog takes no stray Escape');
+  plain.close();
+  const again = Scope.runWith(scope, () => Dialog.create('Pick').show({modal: true}));
+  const popup = document.createElement('div');
+  popup.className = 'u2-popup';
+  Overlay.host.append(popup);
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(again.isOpen.value, true, 'a popup above the dialog owns the Escape');
+  popup.remove();
+  const platform = document.createElement('div');
+  platform.className = 'd4-dialog';
+  document.body.append(platform);
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(again.isOpen.value, true, 'a platform dialog opened above it does too');
+  platform.remove();
+  fire(document.body, 'keydown', {key: 'Escape'});
+  assert.equal(again.isOpen.value, false);
+  scope.dispose();
 });

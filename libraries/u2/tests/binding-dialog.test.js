@@ -596,7 +596,7 @@ scoped('a probe the registry did not answer keeps the proposed name and says so,
   await flush();
   assert.equal(dialog.editor.model.name.value, 'postgresnorthwind_audit');
   assert.equal(status().textContent, 'Table nope is not in audit — every table starts included; ' +
-    'Registered schemas could not be checked: Could not reach the server (XMLHttpRequest error.)');
+    'Registered schemas could not be checked: The connection to the server failed');
   assert.equal(status().classList.contains('u2-wizard-status-error'), true);
   assert.equal(buttonNamed('NEXT').disabled, false, 'a taken name is refused at CREATE all the same');
   buttonNamed('CANCEL').click();

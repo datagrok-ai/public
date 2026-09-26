@@ -172,6 +172,8 @@ export class ManifestContextPanel extends Control {
       ManifestContextPanel._drift(title, table.drift);
     const columns = model.columns(remote).peek();
     const form = new Form({layout: 'wide'});
+    // a registered table taken out is on its way to the purge: its fields are read, not edited
+    const live = table.included || !table.registered;
     this._field(form, 'Logical name', 'logical', table.logical, () => {
       const input = new TextInput({label: 'Logical name', name: 'logical', value: table.logical, commitOn: 'change',
         onChanged: (v) => model.renameTable(remote, v)});
@@ -180,7 +182,7 @@ export class ManifestContextPanel extends Control {
     }, table.registered ? 'registered — a logical name is for life' : undefined, !table.registered);
     this._field(form, 'Friendly name', 'friendlyName', table.friendlyName, () => new TextInput({label: 'Friendly name',
       name: 'friendlyName', value: table.friendlyName, commitOn: 'change',
-      onChanged: (v) => model.setFriendlyName(remote, v)}));
+      onChanged: (v) => model.setFriendlyName(remote, v)}), undefined, live);
     const key = table.key.map((k) => columns.find((c) => c.remote === k)?.logical ?? k).join(', ');
     const keyField = ObjectForm.readonlyField('Key', 'key', key);
     keyField.value.append(ManifestContextPanel._hint('the primary key; the row id encodes it'));
@@ -190,7 +192,7 @@ export class ManifestContextPanel extends Control {
     const pick = (label: string, name: string, current: ColumnView | undefined,
       apply: (remote: string | null) => void): void => {
       this._field(form, label, name, current?.logical ?? NONE, () => new ChoiceInput({label, name, items: strings,
-        value: current?.remote ?? null, onChanged: apply}));
+        value: current?.remote ?? null, onChanged: apply}), undefined, live);
     };
     if (this.offer.nameColumn)
       pick('Name column', 'nameColumn', columns.find((c) => c.isName), (r) => model.setNameColumn(remote, r));
@@ -200,7 +202,7 @@ export class ManifestContextPanel extends Control {
       this._field(form, 'Read-only', 'readOnly', table.readOnly ? 'Yes' : 'No', (hint) => new BoolInput({
         label: 'Read-only', name: 'readOnly', value: table.readOnly, onChanged: (v) => model.setReadOnly(remote, v),
         ...hint}),
-      'opt this table out of writes');
+      'opt this table out of writes', live);
     }
     const relations = new Section({title: 'Relationships', collapsible: false});
     const rels = model.relations.peek().filter((r) => r.table === remote);
@@ -219,7 +221,7 @@ export class ManifestContextPanel extends Control {
     if (this._access.editing) {
       const editable = this._access.canEdit(scope);
       access.add(this._accessGrid(remote, rows, [], locked, (changed) => this._access.setGrants(scope, changed),
-        {enabled: editable}));
+        {enabled: editable && live}));
       if (!editable) {
         access.add(ManifestContextPanel._note(table.registered ?
           'You cannot share this table: its grants cannot be read here and stay as they are.' :

@@ -207,6 +207,9 @@ export interface RebaseOp extends ManifestChange {
   from: unknown;
   to: unknown;
   server?: unknown;
+  /** How a conflict reads where the values are not worth showing (a reader edit on a column
+   * whose restriction the server lifted meanwhile). */
+  note?: string;
 }
 
 export interface RebaseReport {
@@ -298,7 +301,8 @@ class Fields {
   /** Replays [ops], made against [before], over a state reloaded to [after]: an op on a field
    * that no longer `exists` is dropped; one whose field the server changed to another value is
    * a conflict; the rest go through `apply` and count as applied once the surface agrees.
-   * Inclusion goes first — a demotion or a promotion follows its target's inclusion. */
+   * Inclusion and restriction go first — a demotion or a promotion follows its target's
+   * inclusion, a reader its column's restriction. */
   static replay(ops: FieldDiff[], before: Map<string, unknown>, after: Map<string, unknown>, io: {
     exists: (key: string) => boolean,
     /** The value a field reads as where the reloaded state holds no row for it. */
@@ -308,12 +312,12 @@ class Fields {
     describe: (d: FieldDiff) => ManifestChange,
   }): RebaseReport {
     const report: RebaseReport = {applied: [], conflicts: [], dropped: []};
-    const inclusion = (d: FieldDiff): boolean => d.key.endsWith('].included');
+    const leads = (d: FieldDiff): boolean => /\]\.(included|restricted)$/.test(d.key);
     const now = (key: string): unknown => {
       const s = io.surface();
       return s.has(key) ? s.get(key) : io.fallback(key);
     };
-    for (const d of [...ops.filter(inclusion), ...ops.filter((d) => !inclusion(d))]) {
+    for (const d of [...ops.filter(leads), ...ops.filter((d) => !leads(d))]) {
       const op = {...io.describe(d), from: d.from, to: d.to};
       if (!io.exists(d.key)) {
         report.dropped.push(op);
@@ -796,6 +800,10 @@ export class ManifestModel {
         this.setFriendlyName(f.table, to as string);
       else if (f.name === 'readOnly')
         this.setReadOnly(f.table, to as boolean);
+      else if (f.name === 'nameColumn')
+        this.setNameColumn(f.table, to as string | null);
+      else if (f.name === 'searchable')
+        this.setSearchable(f.table, to as string | null);
       return;
     }
     const column = f.column;
@@ -805,13 +813,7 @@ export class ManifestModel {
       this.renameColumn(f.table, column, to as string);
     else if (f.name === 'required')
       this.setRequired(f.table, column, to as boolean);
-    else if (f.name === 'isName' || f.name === 'searchable') {
-      const flagged = this._tables.get(f.table)?.columns.get(column)?.decl[f.name] === true;
-      if (to === true)
-        this._setSingle(f.table, column, f.name);
-      else if (flagged)
-        this._setSingle(f.table, null, f.name);
-    } else if (f.name === 'ref')
+    else if (f.name === 'ref')
       this.setRef(f.table, column, to !== null);
   }
 
@@ -828,10 +830,12 @@ export class ManifestModel {
     const table = state?.logical ?? f.table;
     if (f.column === undefined) {
       const id = f.name === 'included' ? `table:${table}` : `table:${table}:${f.name}`;
+      const pick = d.to === null ? 'cleared' : state?.columns.get(String(d.to))?.logical ?? String(d.to);
       const text = f.name === 'included' ? (d.to === true ? `Table ${table} added` : `Table ${table} removed`) :
         f.name === 'logical' ? `Table ${String(d.from)} renamed to ${String(d.to)}` :
           f.name === 'friendlyName' ? `Table ${table}: friendly name "${String(d.to)}"` :
-            `Table ${table}: read-only ${onOff(d.to)}`;
+            f.name === 'readOnly' ? `Table ${table}: read-only ${onOff(d.to)}` :
+              `Table ${table}: ${f.name === 'nameColumn' ? 'name column' : 'searchable'} ${pick}`;
       return {id, text, table, removes: f.name === 'included' && d.to === false && state?.registered === true};
     }
     const cs = state?.columns.get(f.column);
@@ -847,15 +851,14 @@ export class ManifestModel {
       const target = (remote: unknown): string => this._tables.get(String(remote))?.logical ?? String(remote);
       text = d.to === null ? `Column ${at}: ref to ${target(d.from)} demoted to a plain ${cs?.type ?? 'value'}` :
         `Column ${at}: now a ref to ${target(d.to)}`;
-    } else {
-      const flag = f.name === 'isName' ? 'name column' : f.name;
-      text = `Column ${at}: ${flag} ${onOff(d.to)}`;
-    }
+    } else
+      text = `Column ${at}: required ${onOff(d.to)}`;
     return {id, text, table, column, removes: f.name === 'included' && d.to === false && cs?.registered === true};
   }
 
   /** Every editable field as one flat map — what the change list, the dirty check and the rebase
-   * compare. Remote names key the tables and columns; values are JSON scalars. */
+   * compare. Remote names key the tables and columns; values are JSON scalars. The name column
+   * and the searchable one are the table's choices, one each, not flags of their columns. */
   private _surface(): Map<string, unknown> {
     const s = new Map<string, unknown>();
     s.set('schema.friendlyName', this.friendlyName.peek());
@@ -870,17 +873,25 @@ export class ManifestModel {
       s.set(`${t}.logical`, state.logical);
       s.set(`${t}.friendlyName`, state.decl.friendlyName ?? '');
       s.set(`${t}.readOnly`, state.decl.writable === false);
+      s.set(`${t}.nameColumn`, ManifestModel._flagged(state, 'isName'));
+      s.set(`${t}.searchable`, ManifestModel._flagged(state, 'searchable'));
       for (const column of state.columns.values()) {
         const c = `column[${remote}${SEP}${column.remote}]`;
         s.set(`${c}.included`, column.included);
         s.set(`${c}.logical`, column.logical);
         s.set(`${c}.required`, column.decl.required === true);
-        s.set(`${c}.isName`, column.decl.isName === true);
-        s.set(`${c}.searchable`, column.decl.searchable === true);
         s.set(`${c}.ref`, column.type === 'ref' ? column.target ?? null : null);
       }
     }
     return s;
+  }
+
+  private static _flagged(state: TableState, flag: 'isName' | 'searchable'): string | null {
+    for (const column of state.columns.values()) {
+      if (column.decl[flag] === true)
+        return column.remote;
+    }
+    return null;
   }
 
   private static _field(key: string): {table?: string, column?: string, name: string} {
@@ -1161,7 +1172,7 @@ export class ManifestModel {
     if (state === undefined)
       return;
     const target = remote === null ? undefined : state.columns.get(remote);
-    if (target !== undefined && this._columnView(state, target).type !== 'string')
+    if (remote !== null && (target === undefined || !target.included || this._columnView(state, target).type !== 'string'))
       return;
     this._mutate(() => {
       for (const column of state.columns.values())
@@ -1402,6 +1413,9 @@ export interface AccessTriple {
 export interface AccessRestriction {
   table: string;
   column: string;
+  /** The restriction state as loaded — what the apply checks under the lock, since a standalone
+   * unrestriction moves no version. */
+  from: 'restricted' | 'unrestricted';
   grant: {group: AccessPrincipal, permission: string}[];
   revoke: {group: AccessPrincipal, permission: string}[];
   change: ManifestChange;
@@ -1412,7 +1426,7 @@ export interface AccessDelta {
   grant: AccessTriple[];
   revoke: AccessTriple[];
   restrict: AccessRestriction[];
-  unrestrict: {table: string, column: string, change: ManifestChange}[];
+  unrestrict: {table: string, column: string, from: 'restricted', change: ManifestChange}[];
 }
 
 export interface AccessEditOptions {
@@ -1586,7 +1600,9 @@ export class AccessModel {
 
   /** Who may see the column; in edit mode a group newly let in may also edit it where it holds
    * Edit on the table, one the snapshot or this edit already knew keeps the Edit it had, one
-   * taken out edits it no more, and the rest is kept as loaded. */
+   * taken out of the readers edits it no more, an editor the snapshot holds apart from the
+   * readers (its View comes through a parent) keeps its Edit whatever the readers do, and the
+   * rest is kept as loaded. */
   setVisibility(table: string, column: string, groups: (string | AccessPrincipal)[] | null): void {
     const previous = this.columnOf(table, column);
     const rest = this.visibility.peek().filter((v) => !(v.table === table && v.column === column));
@@ -1604,9 +1620,13 @@ export class AccessModel {
       for (const v of [loaded, previous]) {
         for (const g of v?.groups ?? [])
           known.set(g.id, (v!.edit ?? []).some((e) => e.id === g.id));
+        for (const g of v?.edit ?? [])
+          known.set(g.id, true);
       }
       const writes = new Set(this.grantsOf({kind: 'table', table}).peek().filter((g) => g.edit).map((g) => g.group.id));
-      entry.edit = principals.filter((p) => known.get(p.id) ?? writes.has(p.id));
+      const apart = (loaded?.edit ?? []).filter((e) => !loaded!.groups!.some((g) => g.id === e.id));
+      entry.edit = [...principals.filter((p) => known.get(p.id) ?? writes.has(p.id)),
+        ...apart.filter((e) => !principals.some((p) => p.id === e.id))];
       const other = previous?.other ?? loaded?.other;
       if (other !== undefined)
         entry.other = other;
@@ -1664,7 +1684,7 @@ export class AccessModel {
       if (was?.unknown === true || is?.unknown === true)
         continue;
       if (is === undefined) {
-        out.unrestrict.push({table: c.table, column: c.column,
+        out.unrestrict.push({table: c.table, column: c.column, from: 'restricted',
           change: this._columnChange('unrestrict', c.table, c.column, ' visible to everyone again')});
         continue;
       }
@@ -1696,7 +1716,7 @@ export class AccessModel {
         ` restricted — visible to ${who('View')}${wanted.some((t) => t.permission === 'Edit') ? `; Edit for ${who('Edit')}` : ''}` :
         `: ${[...grant.map((t) => `${t.permission} for ${t.group.label}`),
           ...revoke.map((t) => `${t.permission} revoked from ${t.group.label}`)].join(', ')}`;
-      out.restrict.push({table: c.table, column: c.column, grant, revoke,
+      out.restrict.push({table: c.table, column: c.column, from: was === undefined ? 'unrestricted' : 'restricted', grant, revoke,
         change: this._columnChange('restrict', c.table, c.column, tail)});
     }
     return out;
@@ -1709,10 +1729,10 @@ export class AccessModel {
       text: kind === 'grant' ? `${t}: ${permission} for ${group.label}` : `${t}: ${permission} revoked from ${group.label}`};
   }
 
-  private _columnChange(kind: 'restrict' | 'unrestrict', table: string, column: string, tail: string): ManifestChange {
+  private _columnChange(kind: 'restrict' | 'unrestrict', table: string, column: string, tail: string, suffix = ''): ManifestChange {
     const t = this._name(table);
     const c = this._name(table, column);
-    return {id: `access:${kind}:${t}.${c}`, table: t, column: c, removes: false, text: `${t}.${c}${tail}`};
+    return {id: `access:${kind}:${t}.${c}${suffix}`, table: t, column: c, removes: false, text: `${t}.${c}${tail}`};
   }
 
   private _name(table: string, column?: string): string {
@@ -1734,21 +1754,48 @@ export class AccessModel {
       const f = AccessModel._field(key);
       return after.has(key) || known(f.table, f.column);
     };
-    return Fields.replay(ops, before, after, {exists: stillThere, fallback: AccessModel._default,
+    // a column whose restriction the server lifted or made while this edit only touched its readers,
+    // or whose readers the server changed while this edit restricted or unrestricted it, takes no
+    // replay: "let K in" would restrict a public column to K alone, an unrestrict would undo a
+    // colleague's revoke, two restrictions would pool their readers. Its every op is a conflict.
+    const contested = new Map<string, string>();
+    const keys = [...new Set([...before.keys(), ...after.keys()])];
+    const at = (s: Map<string, unknown>, key: string): unknown => s.get(key) ?? false;
+    for (const d of ops) {
+      const f = AccessModel._field(d.key);
+      const column = f.column === undefined ? null : `visibility[${f.table}${SEP}${f.column}]`;
+      if (column === null || contested.has(column))
+        continue;
+      const state = `${column}.restricted`;
+      const flipped = !Fields.same(at(before, state), at(after, state));
+      const mine = ops.some((o) => o.key === state);
+      const readersMoved = keys.some((k) => k.startsWith(`${column}[`) && !Fields.same(at(before, k), at(after, k)));
+      if (flipped && !mine)
+        contested.set(column, at(after, state) === true ? 'the column was restricted meanwhile' : 'the column was made visible to everyone meanwhile');
+      else if (mine && at(after, state) === true && readersMoved)
+        contested.set(column, flipped ? 'the column was restricted meanwhile, to other readers' : 'the column\'s readers changed meanwhile');
+    }
+    const columnOf = (d: FieldDiff): string | null => {
+      const f = AccessModel._field(d.key);
+      return f.column === undefined ? null : `visibility[${f.table}${SEP}${f.column}]`;
+    };
+    const held = (d: FieldDiff): boolean => contested.has(columnOf(d) ?? '');
+    const report = Fields.replay(ops.filter((d) => !held(d)), before, after, {exists: stillThere, fallback: () => false,
       apply: (d) => this._apply(d), surface: () => this._surface(), describe: (d) => this._describe(d)});
-  }
-
-  /** What a field reads as with no row behind it: no grant, visible to everyone. */
-  private static _default(key: string): unknown {
-    return key.startsWith('grant[') ? false : null;
+    for (const d of ops.filter(held))
+      report.conflicts.push({...this._describe(d), from: d.from, to: d.to, server: at(after, d.key), note: contested.get(columnOf(d)!)});
+    return report;
   }
 
   private _apply(d: FieldDiff): void {
     const f = AccessModel._field(d.key);
     if (f.column !== undefined) {
-      const ids = d.to as string[] | null;
-      if (this.canEditColumn(f.table, f.column))
-        this.setVisibility(f.table, f.column, ids === null ? null : ids.map((id) => this._principal(id)));
+      if (!this.canEditColumn(f.table, f.column))
+        return;
+      const groups = this.visibilityOf(f.table, f.column) ?? [];
+      const next = f.group === undefined ? (d.to === true ? groups : null) :
+        d.to === true ? [...groups, this._principal(f.group)] : groups.filter((g) => g.id !== f.group);
+      this.setVisibility(f.table, f.column, next);
       return;
     }
     const scope: AccessScope = {kind: 'table', table: f.table};
@@ -1763,10 +1810,11 @@ export class AccessModel {
       this.removeGroup(scope, group);
   }
 
-  /** `grant[<table>][<group>].<capability>` and `visibility[<table>\0<column>].view` (sorted ids,
-   * or null for everyone) — the fields the rebase compares. The current rows, plus every loaded
-   * row that is gone at its default; {@link _loadedSurface} is the mirror image, so the two
-   * share one key set and a removed row is a change like any other. */
+  /** `grant[<table>][<group>].<capability>`, `visibility[<table>\0<column>].restricted` and
+   * `visibility[<table>\0<column>][<group>].view` — the fields the rebase compares, one reader
+   * per field so two editors' additions combine. The current rows, plus every loaded row that is
+   * gone at its default (false); {@link _loadedSurface} is the mirror image, so the two share one
+   * key set and a removed row is a change like any other. */
   private _surface(): Map<string, unknown> {
     const loaded = this._loaded ?? {grants: [], visibility: []};
     return AccessModel._fill(AccessModel._rows(this.grants.peek(), this.visibility.peek()),
@@ -1787,15 +1835,19 @@ export class AccessModel {
       for (const [capability] of TABLE_PERMISSIONS)
         s.set(`grant[${g.scope.table}][${g.group.id}].${capability}`, g[capability]);
     }
-    for (const v of visibility)
-      s.set(`visibility[${v.table}${SEP}${v.column}].view`, v.unknown === true ? 'unknown' : v.groups!.map((g) => g.id).sort());
+    for (const v of visibility) {
+      const c = `visibility[${v.table}${SEP}${v.column}]`;
+      s.set(`${c}.restricted`, v.unknown === true ? 'unknown' : true);
+      for (const g of v.groups ?? [])
+        s.set(`${c}[${g.id}].view`, true);
+    }
     return s;
   }
 
   private static _fill(s: Map<string, unknown>, keys: Map<string, unknown>): Map<string, unknown> {
     for (const key of keys.keys()) {
       if (!s.has(key))
-        s.set(key, AccessModel._default(key));
+        s.set(key, false);
     }
     return s;
   }
@@ -1808,17 +1860,21 @@ export class AccessModel {
       const [table, group] = item.slice(6, -1).split('][');
       return {table, group, name};
     }
-    const [table, column] = item.slice(11, -1).split(SEP);
-    return {table, column, name};
+    const [target, group] = item.slice(11, -1).split('][');
+    const [table, column] = target.split(SEP);
+    return {table, column, group, name};
   }
 
   private _describe(d: FieldDiff): ManifestChange {
     const f = AccessModel._field(d.key);
     if (f.column !== undefined) {
-      const to = d.to as string[] | null;
-      return to === null ? this._columnChange('unrestrict', f.table, f.column, ' visible to everyone again') :
-        this._columnChange('restrict', f.table, f.column,
-          ` restricted — visible to ${to.length === 0 ? 'nobody else' : to.map((id) => this._principal(id).label).join(', ')}`);
+      if (f.group === undefined) {
+        return d.to === true ? this._columnChange('restrict', f.table, f.column, ' restricted') :
+          this._columnChange('unrestrict', f.table, f.column, ' visible to everyone again');
+      }
+      const group = this._principal(f.group);
+      return this._columnChange('restrict', f.table, f.column,
+        d.to === true ? `: View for ${group.label}` : `: View revoked from ${group.label}`, `:${group.id}:View`);
     }
     const permission = TABLE_PERMISSIONS.find(([c]) => c === f.name)![1];
     return this._tableChange(d.to === true ? 'grant' : 'revoke', f.table, this._principal(f.group!), permission);
