@@ -9,6 +9,7 @@
    server owns every rule — the dialog names its refusals. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
+import {Permission} from 'datagrok-api/dg';
 import {computed, signal} from '../../../core/signals.js';
 import {Control} from '../../../core/component.js';
 import {div, divV, link, span} from '../../../core/elements.js';
@@ -24,7 +25,7 @@ import {route} from '../routes.js';
 import {groupInput} from '../../inputs/group-input.js';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
-import type {AccessPrincipal, DraftEnvelope, ManifestDiagnostic, ManifestJson} from './manifest-model.js';
+import type {AccessPrincipal, DraftEnvelope, ManifestDiagnostic, ManifestJson, ManifestModel} from './manifest-model.js';
 
 export interface CreateBindingOptions {
   connection?: DG.DataConnection;
@@ -54,10 +55,13 @@ export interface BindingResult {
 const api = globalThis as {grok_Dapi_Domains_SchemaCreated?: (dart: unknown, name: string) => void};
 
 /** Opens the dialog; resolves once it closes — to the created schema with its access outcome,
- * null where it was cancelled before the create. Refuses while domain databases are off. */
-export function createBinding(options: CreateBindingOptions = {}): Promise<BindingResult | null> {
+ * null where it was cancelled before the create. Refuses while domain databases are off, and
+ * without the privilege the create needs — by name, before anything is read. */
+export async function createBinding(options: CreateBindingOptions = {}): Promise<BindingResult | null> {
   if (grok.shell.settings.enableDomainDatabases !== true)
-    return Promise.reject(new Error('Domain databases are a Beta feature — enable them in Settings > Beta'));
+    throw new Error('Domain databases are a Beta feature — enable them in Settings > Beta');
+  if (!await grok.dapi.permissions.checkGlobal(Permission.CREATE_DOMAIN_SCHEMA))
+    throw new Error(`Requires the ${Permission.CREATE_DOMAIN_SCHEMA} privilege`);
   return new BindingDialog(options).open();
 }
 
@@ -65,6 +69,11 @@ export function createBinding(options: CreateBindingOptions = {}): Promise<Bindi
 const DOMAIN_SOURCE = 'Domain';
 
 const DML = ['AddRows', 'ChangeValues', 'RemoveRows'];
+
+const PAGE = 500;
+
+/** How long a warehouse read (the schemas, the draft) may take before the dialog says so. */
+const READ_TIMEOUT = 30_000;
 
 /** One access step after the create: a column restriction or share to one group, or one
  * permission on one table. */
@@ -84,6 +93,8 @@ interface AccessFailure {
 }
 
 export class BindingDialog extends Control {
+  static readTimeout = READ_TIMEOUT;
+
   readonly wizard: Wizard;
   readonly connection: ChoiceInput;
   readonly schema: ChoiceInput;
@@ -91,7 +102,6 @@ export class BindingDialog extends Control {
   private readonly _options: CreateBindingOptions;
   private readonly _editor = signal<ManifestEditor | undefined>(undefined);
   private _connections: DG.DataConnection[] = [];
-  private _takenNames: string[] = [];
   private readonly _draft = signal<DraftEnvelope | null>(null);
   /** What stands between the connection step and Design: the read in progress, or its refusal. */
   private readonly _reading = signal<string | null>(null);
@@ -124,6 +134,8 @@ export class BindingDialog extends Control {
   /** The name of a create that got no answer: a later "name taken" may be that create's own. */
   private _unanswered: string | null = null;
   private _writeHint: string | undefined;
+  /** A failed draft read is on the status line, to be cleared by the next read. */
+  private _readProblem = false;
   private _describeGen = 0;
   private _readGen = 0;
   private _validateGen = 0;
@@ -265,21 +277,29 @@ export class BindingDialog extends Control {
       this.connection.value.value = preset.id;
   }
 
+  /** Every connection, page by page: the list is not capped. */
   private async _load(preset: DG.DataConnection | undefined): Promise<void> {
-    let stage = 'Connections';
     try {
-      const list = (await grok.dapi.connections.list({pageSize: 500}))
-        .filter((c) => c.isDatabase && c.dataSource !== DOMAIN_SOURCE);
+      const list: DG.DataConnection[] = [];
+      for (let page = 1; ; page++) {
+        const batch = await grok.dapi.connections.list({pageSize: PAGE, pageNumber: page, order: 'id'});
+        list.push(...batch.filter((c) => c.isDatabase && c.dataSource !== DOMAIN_SOURCE));
+        if (batch.length < PAGE)
+          break;
+      }
       list.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
       this._offerConnections(list);
-      stage = 'Registered schemas';
-      this._takenNames = (await grok.dapi.domains.schemas.list({pageSize: 500})).map((s) => s.name);
     } catch (e) {
-      if (stage === 'Connections' && preset === undefined)
+      if (preset === undefined)
         this.connection.setItems([]);
-      this._facts.textContent = `${stage} could not be listed: ${DomainErrors.message(e)}`;
+      this._facts.textContent = `Connections could not be listed: ${BindingDialog._failure(e)}`;
       this._facts.classList.add('u2-binding-problem');
     }
+  }
+
+  /** The catalog preset belongs to the preset connection; another one picked is read whole. */
+  private _catalogOf(conn: DG.DataConnection): string | undefined {
+    return conn.id === this._options.connection?.id ? this._options.catalog : undefined;
   }
 
   private async _describe(conn: DG.DataConnection, gen: number): Promise<void> {
@@ -288,7 +308,8 @@ export class BindingDialog extends Control {
     this._writeHint = undefined;
     let stage = 'The schemas';
     try {
-      const schemas = await grok.dapi.connections.getSchemas(conn, this._options.catalog ?? null);
+      const schemas = [...await BindingDialog._within(grok.dapi.connections.getSchemas(conn, this._catalogOf(conn) ?? null),
+        'The connection')].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
       if (gen !== this._describeGen)
         return;
       this._facts.textContent = `${conn.dataSource} · ${plural(schemas.length, 'schema', 'schemas')}`;
@@ -316,15 +337,26 @@ export class BindingDialog extends Control {
       if (gen !== this._describeGen)
         return;
       this._writeHint = 'your rights on the connection could not be read';
-      this._facts.textContent = `${conn.dataSource} · ${stage} could not be read: ${DomainErrors.message(e)}`;
+      this._facts.textContent = `${conn.dataSource} · ${stage} could not be read: ${BindingDialog._failure(e)}`;
       this._facts.classList.add('u2-binding-problem');
+      // a preset schema is still worth a draft: the read names its own failure, the picker stays
+      const preset = this._options.schema;
+      if (stage === 'The schemas' && preset !== undefined && this.schema.value.peek() === null) {
+        this.schema.setItems([{value: preset, label: preset}]);
+        this.schema.value.value = preset;
+      }
     }
   }
 
   private async _read(conn: DG.DataConnection, schema: string, gen: number): Promise<void> {
     this._reading.value = 'Reading the schema…';
+    if (this._readProblem) {
+      this._readProblem = false;
+      this._say('');
+    }
     try {
-      const answer = await grok.dapi.domains.draft({connection: conn.nqName, schema, catalog: this._options.catalog});
+      const answer = await BindingDialog._within(
+        grok.dapi.domains.draft({connection: conn.nqName, schema, catalog: this._catalogOf(conn)}), 'The draft');
       if (gen !== this._readGen)
         return;
       const draft: DraftEnvelope = {...answer, manifest: answer.manifest as ManifestJson};
@@ -338,7 +370,12 @@ export class BindingDialog extends Control {
     } catch (e) {
       if (gen !== this._readGen)
         return;
-      this._reading.value = DomainErrors.message(e);
+      this._reading.value = BindingDialog._failure(e);
+      // Design opened on the preset shows the gate's reason under NEXT; the failure belongs on the line too
+      if (this.wizard.currentStep.peek() === 'design') {
+        this._readProblem = true;
+        this._say(this._reading.value, true);
+      }
     }
   }
 
@@ -355,33 +392,71 @@ export class BindingDialog extends Control {
         return;
       const conn = this._picked()!;
       const schema = this.schema.value.peek()!;
-      const reset = this._editor.peek();
-      reset?.dispose();
       const wanted = this._options.groups;
       const editor = this.runInScope(() => new ManifestEditor(draft, {
-        context: {mode: 'create', storage: 'external'}, takenNames: this._takenNames, writableDisabled: this._writeHint,
+        context: {mode: 'create', storage: 'external'}, writableDisabled: this._writeHint,
         principalPicker: (onPick) => groupInput({
           accept: wanted === undefined ? undefined : (g) => wanted.includes(g.friendlyName),
           onPick: (g, label) => onPick({id: g.id, label}),
         }).root,
       }));
-      editor.model.setSchemaFriendlyName(editor.model.proposeFriendlyName(`${conn.friendlyName} ${schema}`));
+      const label = `${conn.friendlyName} ${schema}`;
+      const unchecked = await this._clearName(editor.model, label);
+      if (this.scope.isDisposed || this._draft.peek() !== draft) {
+        editor.dispose();
+        return;
+      }
+      editor.model.setSchemaFriendlyName(editor.model.proposeFriendlyName(label));
       const only = this._options.table;
-      if (only !== undefined && editor.model.table(only) !== undefined) {
+      // the remote name as the catalog reports it, whatever case the caller had it in
+      const table = only === undefined ? undefined :
+        editor.model.tables.peek().find((t) => t.remote.toLowerCase() === only.toLowerCase());
+      if (table !== undefined) {
         editor.model.includeTables(false);
-        editor.model.includeTable(only, true);
+        editor.model.includeTable(table.remote, true);
       }
       this._diagnosed = BindingDialog._payload(editor);
+      const reset = this._editor.peek();
+      reset?.dispose();
       this._designHost.replaceChildren(editor.root);
       this._built = draft;
       this._builtKey = BindingDialog._key(conn, schema);
       this._editor.value = editor;
+      const notes: string[] = [];
       if (reset !== undefined)
-        this._say(`The design was reset: ${conn.friendlyName} · ${schema} is a new draft`);
+        notes.push(`The design was reset: ${conn.friendlyName} · ${schema} is a new draft`);
+      if (only !== undefined && table === undefined)
+        notes.push(`Table ${only} is not in ${schema} — every table starts included`);
+      if (unchecked !== null)
+        notes.push(unchecked);
+      if (notes.length > 0)
+        this._say(notes.join('; '), unchecked !== null);
     } catch (e) {
-      this._designProblem.value = DomainErrors.message(e);
+      this._designProblem.value = BindingDialog._failure(e);
       this._say(this._designProblem.value, true);
     }
+  }
+
+  /** The registry is not listed — it may hold thousands of schemas: the proposed identifier is
+   * probed by name and stepped past every registered one. Answers why the probe stopped short,
+   * null when it settled: an unanswered probe leaves the name as proposed (a taken one is
+   * refused at CREATE all the same). */
+  private async _clearName(model: ManifestModel, label: string): Promise<string | null> {
+    for (;;) {
+      const name = model.proposeName(label);
+      if (name === '')
+        return null;
+      try {
+        await grok.dapi.domains.schema(name).manifest();
+      } catch (e) {
+        return BindingDialog._notFound(e) ? null : `Registered schemas could not be checked: ${BindingDialog._failure(e)}`;
+      }
+      model.markTaken(name);
+    }
+  }
+
+  private static _notFound(e: unknown): boolean {
+    return (e as {status?: unknown} | null)?.status === 404 || DomainErrors.codeOf(e) === 'not-found';
   }
 
   private _designGate(): string | null {
@@ -486,7 +561,7 @@ export class BindingDialog extends Control {
     if (this.editor !== editor || BindingDialog._payload(editor) !== payload)
       return this._say('Changed while validating — validate again');
     if (refusal !== null && !BindingDialog._answered(refusal))
-      return this._say(DomainErrors.message(refusal), true);
+      return this._say(BindingDialog._failure(refusal), true);
     this._diagnosed = payload;
     editor.diagnostics.value = refusal === null ? [] : BindingDialog.issues(refusal);
     this._validated.value = refusal === null ? payload : null;
@@ -501,6 +576,24 @@ export class BindingDialog extends Control {
     return DomainErrors.codeOf(e) !== '' && !(typeof status === 'number' && status >= 500);
   }
 
+  /** A warehouse read that outlasts {@link readTimeout} fails by name — a connector that never
+   * answers (a catalog it cannot open) must not hold the dialog. */
+  private static _within<T>(read: Promise<T>, what: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout>;
+    const late = new Promise<never>((_, reject) => timer = setTimeout(() =>
+      reject(new Error(`${what} did not answer within ${BindingDialog.readTimeout / 1000} s`)),
+    BindingDialog.readTimeout));
+    return Promise.race([read, late]).finally(() => clearTimeout(timer));
+  }
+
+  /** A failure for the status line: a domain call nothing answered (status 0, no code — the
+   * transport's own words) says so around them; anything else is the refusal as worded. */
+  private static _failure(e: unknown): string {
+    const message = DomainErrors.message(e);
+    return (e as {status?: unknown} | null)?.status === 0 && DomainErrors.codeOf(e) === '' ?
+      `Could not reach the server (${message})` : message;
+  }
+
   /** The create, then the access rows; the schema exists once the create answered, and the
    * dialog reports it as created whatever the access rows say: without any, today's short way
    * (a toast, the app, the promise); with some, the Created step. */
@@ -511,7 +604,7 @@ export class BindingDialog extends Control {
     try {
       missing = await BindingDialog._missingGroups(plan);
     } catch (e) {
-      this._say(`The access groups could not be checked: ${DomainErrors.message(e)}`, true);
+      this._say(`The access groups could not be checked: ${BindingDialog._failure(e)}`, true);
       return false;
     }
     if (missing.length > 0) {
@@ -556,7 +649,7 @@ export class BindingDialog extends Control {
       if (await BindingDialog._registered(plan))
         return true;
       if (!ours) {
-        this._say(`${DomainErrors.message(e)} — ${name} is not registered as this binding; CREATE again`, true);
+        this._say(`${BindingDialog._failure(e)} — ${name} is not registered as this binding; CREATE again`, true);
         return false;
       }
       // taken by a schema that is not this binding: an ordinary refusal

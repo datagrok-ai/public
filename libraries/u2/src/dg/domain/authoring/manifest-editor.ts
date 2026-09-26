@@ -22,8 +22,6 @@ export interface ManifestEditorOptions {
   principalPicker?: PrincipalPicker;
   /** The schema's friendly name, carried beside the manifest. */
   friendlyName?: string;
-  /** The registered schema names, which `ManifestModel.proposeName` steers clear of. */
-  takenNames?: string[];
   /** Access rows to start from (an editor reopened on what it produced). */
   access?: Partial<AccessJson>;
   /** The left pane's share of the width (0.42 by default). */
@@ -74,7 +72,7 @@ export class ManifestEditor extends Control {
   constructor(draft: DraftEnvelope, options: ManifestEditorOptions) {
     super();
     this.context = options.context;
-    this.model = new ManifestModel(draft, {friendlyName: options.friendlyName, takenNames: options.takenNames});
+    this.model = new ManifestModel(draft, {friendlyName: options.friendlyName});
     this.access = new AccessModel(options.access);
     this.diagnostics = signal<ManifestDiagnostic[]>(draft.diagnostics ?? []);
     this.root.classList.add('u2-manifest-editor');

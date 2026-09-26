@@ -28,6 +28,8 @@ export type {UtcParts} from './core/dates.js';
 export {Input} from './core/input-base.js';
 export type {InputOptions} from './core/input-base.js';
 export {Tooltip} from './core/tooltip.js';
+export {focusPath, focusMark, refocus, keepFocus} from './core/focus.js';
+export type {FocusMark} from './core/focus.js';
 export {TextInput, TextArea} from './components/inputs/text-input.js';
 export {BoolInput} from './components/inputs/bool-input.js';
 export {Splitter} from './components/containers/splitter.js';

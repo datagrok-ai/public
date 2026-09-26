@@ -53,6 +53,22 @@ ui('setItems prunes a pick whose item vanished as a system write; an empty list 
   input.dispose();
 });
 
+ui('the pressed chip stays focused across the re-render, so a second Space toggles it back', () => {
+  const input = new ChipsInput({label: 'Visible to', items: ['Sales', 'Developers'], value: []});
+  document.body.append(input.root);
+  const chip = chips(input)[1];
+  chip.focus();
+  fire(chip, 'click');
+  assert.deepEqual(input.value.value, ['Developers']);
+  const again = chips(input)[1];
+  assert.equal(again !== chip, true, 'the chips were rebuilt');
+  assert.equal(document.activeElement === again, true);
+  fire(again, 'click');
+  assert.deepEqual(input.value.value, []);
+  assert.equal(document.activeElement === chips(input)[1], true);
+  input.dispose();
+});
+
 ui('a disabled input ignores clicks', () => {
   const input = new ChipsInput({label: 'Visible to', items: ['Sales'], enabled: false});
   fire(chips(input)[0], 'click');

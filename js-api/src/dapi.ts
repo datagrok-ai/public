@@ -41,6 +41,7 @@ import {
   DomainBatchValidation,
   DomainDatetimeColumns,
   DomainDeleteReport,
+  DomainCreateSchemaOptions,
   DomainDraft,
   DomainDraftRequest,
   DomainError,
@@ -951,6 +952,8 @@ export class ViewsDataSource extends HttpDataSource<ViewInfo> {
   }
 }
 
+/** Permissions API: checking, granting and revoking permissions on entities, and checking the
+ * global ones (`grok.dapi.permissions`). */
 export class PermissionsDataSource {
   constructor() {
   };
@@ -972,17 +975,25 @@ export class PermissionsDataSource {
     return api.grok_Dapi_Check_Permissions(e.dart, permission);
   }
 
+  /** Checks if the current user holds a global permission — one granted on no entity, such as
+   * `DG.Permission.CREATE_DOMAIN_SCHEMA`. Asks the server every time: a grant since login
+   * counts, and an impersonated call answers for the impersonated user. */
+  checkGlobal(permission: string): Promise<boolean> {
+    return api.grok_Dapi_Check_Global_Permission(permission);
+  }
+
   /** Grants permission on entity to the group
    * @param edit - allow to edit entity */
-  grant(e: Entity, g: Group, edit: boolean): Promise<any> {
+  grant(e: Entity, g: Group, edit: boolean): Promise<void> {
     return api.grok_Dapi_Set_Permission(e.dart, g.dart, edit);
   }
 
   /** Revokes the group's permission on the entity. */
-  revoke(e: Entity, g: Group): Promise<any>;
+  revoke(e: Entity, g: Group): Promise<void>;
   /** @deprecated Use `revoke(entity, group)`, matching {@link grant}. Removed in 1.30. */
-  revoke(g: Group, e: Entity): Promise<any>;
-  revoke(a: Entity | Group, b: Group | Entity): Promise<any> {
+  revoke(g: Group, e: Entity): Promise<void>;
+  /** @hidden */
+  revoke(a: Entity | Group, b: Group | Entity): Promise<void> {
     // Both orders reach here; when both arguments are groups the legacy (group, entity) reading wins.
     const [e, g] = b instanceof Group && !(a instanceof Group) ? [a, b] : [b, a];
     return api.grok_Dapi_Delete_Permission(e.dart, g.dart);
@@ -1317,14 +1328,13 @@ export class DomainsDataSource {
    * addressed by manifest path, a DomainError code `'schema-name-taken'` / `'invalid-storage'`
    * / `'external-unreachable'`. A literal `true` / `false` / omitted `dryRun` types the answer
    * precisely; a boolean variable answers the union. */
-  createSchema(name: string, options: {friendlyName?: string; description?: string;
-      manifest?: {[key: string]: any}; dryRun: true}): Promise<DomainSchemaDryRun>;
-  createSchema(name: string, options?: {friendlyName?: string; description?: string;
-      manifest?: {[key: string]: any}; dryRun?: false}): Promise<DomainSchemaCreated>;
-  createSchema(name: string, options?: {friendlyName?: string; description?: string;
-      manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<DomainSchemaDryRun | DomainSchemaCreated>;
-  createSchema(name: string, options?: {friendlyName?: string; description?: string;
-      manifest?: {[key: string]: any}; dryRun?: boolean}): Promise<any> {
+  createSchema(name: string, options: DomainCreateSchemaOptions & {dryRun: true}): Promise<DomainSchemaDryRun>;
+  /** The create itself: the schema registered, with its binding's verdict where it is external. */
+  createSchema(name: string, options?: DomainCreateSchemaOptions & {dryRun?: false}): Promise<DomainSchemaCreated>;
+  /** `dryRun` decided at run time: the dry-run verdict or the created schema. */
+  createSchema(name: string, options?: DomainCreateSchemaOptions): Promise<DomainSchemaDryRun | DomainSchemaCreated>;
+  /** @hidden */
+  createSchema(name: string, options?: DomainCreateSchemaOptions): Promise<DomainSchemaDryRun | DomainSchemaCreated> {
     return domainCall(api.grok_Dapi_Domains_CreateSchema(this.dart, name,
       options?.friendlyName ?? null, options?.description ?? null,
       {manifest: options?.manifest ?? null, dryRun: options?.dryRun ?? false}));

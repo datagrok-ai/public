@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
 import {Wizard} from '../src/components/containers/wizard.js';
+import {Dialog} from '../src/components/containers/dialog.js';
 
 test('an unknown start step is refused', () => {
   assert.throws(() => new Wizard({steps: [{id: 'a', title: 'A', content: document.createElement('div')}],
@@ -430,4 +431,49 @@ wizard('A5 re-verify: nothing goes back to a step whose commit went through; a f
   w.back();
   assert.equal(w.currentStep.value, 'created', 'nor anything before it');
   scope.dispose();
+});
+
+wizard('Enter on a control inside the content is the control\'s own; from a text input or the panel it advances', () => {
+  const panel = document.createElement('div');
+  const input = document.createElement('input');
+  input.type = 'text';
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  const chip = document.createElement('button');
+  chip.className = 'u2-chip';
+  const option = document.createElement('div');
+  option.setAttribute('role', 'option');
+  panel.append(input, remove, box, chip, option);
+  const w = new Wizard({steps: [{id: 'one', title: 'One', content: panel}, {id: 'two', title: 'Two', content: content('Two', 'x')},
+    {id: 'three', title: 'Three', content: content('Three', 'y')}]});
+  document.body.append(w.root);
+  for (const el of [remove, box, chip, option]) {
+    const handled = fire(el, 'keydown', {key: 'Enter'});
+    assert.equal(w.currentStep.value, 'one', `${el.className || el.getAttribute('role') || el.type}: not advanced`);
+    assert.equal(handled, true, 'left to the control (not defaultPrevented)');
+  }
+  assert.equal(fire(input, 'keydown', {key: 'Enter'}), false, 'a text input: the default action');
+  assert.equal(w.currentStep.value, 'two');
+  fire(w.root.querySelectorAll('.u2-wizard-panel')[1], 'keydown', {key: 'Enter'});
+  assert.equal(w.currentStep.value, 'three', 'the panel itself too');
+  w.dispose();
+});
+
+wizard('in a dialog, Enter on a content button does not press OK; from a text input it does', () => {
+  let ok = 0;
+  const dialog = new Dialog('Pick').onOK(() => ok++);
+  const input = document.createElement('input');
+  input.type = 'text';
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  dialog.add(input).add(remove).show();
+  assert.equal(fire(remove, 'keydown', {key: 'Enter'}), true);
+  assert.equal(ok, 0, 'the button keeps its Enter');
+  assert.equal(dialog.isOpen.value, true);
+  assert.equal(fire(input, 'keydown', {key: 'Enter'}), false);
+  assert.equal(ok, 1);
+  assert.equal(dialog.isOpen.value, false);
+  dialog.dispose();
 });

@@ -39,11 +39,11 @@ category('Dapi: domain authoring', () => {
       return;
     const d = draft!;
     expect(Object.keys(d.manifest.tables).sort().join(','), 'order_details,orders', JSON.stringify(d.manifest));
-    expect(d.manifest.storage.kind, 'external');
-    expect(d.manifest.storage.connection, connection);
-    expect(d.manifest.storage.schema, 'public');
-    expect(d.manifest.tables.orders.businessKey.join(','), 'orderid');
-    expect(d.manifest.tables.order_details.businessKey.join(','), 'orderid,productid');
+    expect(d.manifest.storage!.kind, 'external');
+    expect(d.manifest.storage!.connection, connection);
+    expect(d.manifest.storage!.schema, 'public');
+    expect(d.manifest.tables.orders.businessKey!.join(','), 'orderid');
+    expect(d.manifest.tables.order_details.businessKey!.join(','), 'orderid,productid');
     expect(d.manifest.tables.order_details.columns.orderid.type, 'ref');
     expect(d.manifest.tables.order_details.columns.orderid.ref, 'orders');
     expect(d.manifest.tables.orders.columns.orderid.required, true, 'a key column is required');
@@ -164,10 +164,12 @@ category('Dapi: domain authoring', () => {
     expect(platform.code, 'invalid-storage', JSON.stringify(platform?.body));
   });
 
-  test('a user without CreateDomainSchema cannot draft', async () => {
+  test('a user without CreateDomainSchema cannot draft; the global check says so by name', async () => {
     if (skipped())
       return;
+    expect(await grok.dapi.permissions.checkGlobal(DG.Permission.CREATE_DOMAIN_SCHEMA), true, 'the author holds it');
     await withRestrictedUser('auth', async (probe) => {
+      expect(await probe.asUser(() => grok.dapi.permissions.checkGlobal(DG.Permission.CREATE_DOMAIN_SCHEMA)), false);
       const err = await thrown(() => probe.asUser(() => grok.dapi.domains.draft(request)));
       expect(err instanceof DG.DomainForbiddenError, true, `${err?.constructor?.name}: ${err?.message}`);
       expect(err.status, 403);

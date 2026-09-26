@@ -49,8 +49,11 @@ export type DomainFilterValue =
  * leaf the same shapes ask about the link SET (`!=` excludes owners linked to any of the
  * ids) — see {@link DomainRelationLink}. */
 export interface DomainCondition<TColumn extends string = string> {
+  /** The column tested, by name or dotted FK path. */
   property: DomainColumnRef<TColumn>;
+  /** The comparison. */
   operator: DomainConditionOperator;
+  /** The operand, where the operator takes one. */
   value?: DomainFilterValue;
 }
 
@@ -110,7 +113,14 @@ export interface DomainColumnError { column: string; code: string; message: stri
 /** One manifest issue, addressed by the manifest path it belongs to (`'tables.orders.businessKey'`,
  * `'storage.connection'`, `'schema'`) — what {@link DomainManifestValidationError.errors}, a dry-run
  * and a live validation answer. */
-export interface DomainManifestIssue { path?: string; code: string; message: string; }
+export interface DomainManifestIssue {
+  /** The manifest path the issue is about; absent for a schema-wide one. */
+  path?: string;
+  /** The server's discriminant (`'external-column-type'`, `'schema-name-taken'`, …). */
+  code: string;
+  /** The issue as worded for the author. */
+  message: string;
+}
 /** Per-row failure list of a validation-failed write ({@link DomainValidationError.rows}). */
 export interface DomainRowErrors { index: number; id?: string | null; errors: DomainColumnError[]; }
 
@@ -139,13 +149,20 @@ export interface DomainAuditEntry {
   id: number;
   /** PG transaction id grouping multi-op writes (bigint). */
   tx_id: number | null;
-  row_id?: string | null;    // present on table- and schema-wide audits
-  table_id?: string | null;  // present on schema audits ('ddl' rows carry null)
+  /** The row written; present on table- and schema-wide audits. */
+  row_id?: string | null;
+  /** The table written; present on schema audits (`'ddl'` rows carry null). */
+  table_id?: string | null;
+  /** What the write did. */
   op: 'insert' | 'update' | 'delete' | 'undelete' | 'promote' | 'ddl';
+  /** The user who wrote; null for the system. */
   actor_id: string | null;
+  /** The session the write came through. */
   session_id: string | null;
+  /** Where the write came from (`'api'`, a package, a job). */
   source: string;
-  ts: string;                // ISO-8601
+  /** When the write happened (ISO 8601). */
+  ts: string;
   /** Column-value map before the write; null on 'insert' ops (typed `any` so existing
    * unguarded consumers compile — guard before dereferencing). */
   before: any;
@@ -170,7 +187,9 @@ export type DomainPermission = 'View' | 'Edit' | 'Delete' | 'Share' | 'Extend' |
 
 /** One direct permission row on a domain registry entity (see `DomainTableClient.grants`). */
 export interface DomainGrant {
+  /** The group granted; `personal` for a user's own group. */
   group: {id: string; friendlyName: string; personal: boolean};
+  /** The permission granted. */
   permission: DomainPermission;
 }
 
@@ -257,10 +276,90 @@ export interface DomainSupport {
  * introspect and query (`connection` is its nqName or id), one remote schema (and catalog where
  * the warehouse has them), and optionally the remote tables to draft — absent, every bindable one. */
 export interface DomainDraftRequest {
+  /** The DataConnection to draft over: its nqName or id. */
   connection: string;
+  /** The remote schema whose tables are drafted. */
   schema: string;
+  /** The remote catalog (database) holding the schema, where the warehouse has catalogs. */
   catalog?: string;
+  /** The remote tables to draft; absent, every bindable table of the schema. */
   tables?: string[];
+}
+
+/** Where a manifest's rows live — its root `storage` key; absent, the platform's own store. */
+export interface DomainManifestStorage {
+  /** `'domain'` for the platform's own store, `'external'` for a bound warehouse. */
+  kind: 'domain' | 'external';
+  /** The bound DataConnection's nqName (external). */
+  connection?: string;
+  /** The remote schema (external). */
+  schema?: string;
+  /** The remote catalog (external, where the warehouse has catalogs). */
+  catalog?: string;
+  /** Whether rows may be inserted, updated and deleted through the connection (external). */
+  writable?: boolean;
+}
+
+/** One column of a manifest table: its platform type and the keys the manifest vocabulary
+ * allows (`required`, `ref`, `friendlyName`, `semType`, …). */
+export interface DomainManifestColumn {
+  /** The platform type (`string`, `int`, `ref`, …). */
+  type?: string;
+  /** The target table of a `ref` column. */
+  ref?: string;
+  /** Whether a row must carry a value. */
+  required?: boolean;
+  /** The caption shown for the column. */
+  friendlyName?: string;
+  /** The remote column name where it differs from the key (external). */
+  column?: string;
+  /** Any other key of the column vocabulary, kept as written. */
+  [key: string]: unknown;
+}
+
+/** One table of a manifest, keyed by its logical name: its columns, business key and the
+ * table-level keys of the manifest vocabulary. */
+export interface DomainManifestTable {
+  /** The columns by logical name. */
+  columns: {[name: string]: DomainManifestColumn};
+  /** The columns that identify a row — a bound table's primary key. */
+  businessKey?: string[];
+  /** The caption shown for the table. */
+  friendlyName?: string;
+  /** The remote table name where it differs from the logical one (external). */
+  table?: string;
+  /** Opted out of writes under a writable binding (external). */
+  readOnly?: boolean;
+  /** Any other key of the table vocabulary, kept as written. */
+  [key: string]: unknown;
+}
+
+/** A domain manifest as JSON — the `domain.json` a package ships, or what {@link DomainsDataSource.draft}
+ * answers and {@link DomainsDataSource.createSchema} takes; keyed by the manifest vocabulary,
+ * with the root keys the platform reads named here. */
+export interface DomainManifest {
+  /** The schema name; the create takes it from its own argument. */
+  name?: string;
+  /** The manifest version, server-managed for user schemas. */
+  version?: string;
+  /** Where the rows live; absent, the platform's own store. */
+  storage?: DomainManifestStorage;
+  /** The tables by logical name. */
+  tables: {[logical: string]: DomainManifestTable};
+  /** Any other root key of the manifest vocabulary (`extensible`, `propertySchemas`, `migrations`, …), kept as written. */
+  [key: string]: unknown;
+}
+
+/** What {@link DomainsDataSource.createSchema} takes beside the name. */
+export interface DomainCreateSchemaOptions {
+  /** The caption shown for the schema. */
+  friendlyName?: string;
+  /** A description kept on the registry entry. */
+  description?: string;
+  /** The manifest to register; absent, an empty platform-stored schema. */
+  manifest?: DomainManifest;
+  /** Every check, nothing registered. */
+  dryRun?: boolean;
 }
 
 /** One remote table of the schema — the inventory lists EVERY table, requested or not, so an
@@ -269,11 +368,17 @@ export interface DomainDraftRequest {
  * `key`; the others say why not (`external-table-view`, `external-key-missing`,
  * `external-column-type`; `external-table-missing` for a requested name the schema lacks). */
 export interface DomainDraftTable {
+  /** The table name as the warehouse reports it. */
   remote: string;
+  /** Its logical name in the manifest; absent while it is not drafted. */
   logical?: string;
+  /** Whether a binding can carry it — a primary key of supported types, not a view. */
   bindable: boolean;
+  /** The primary key columns, the manifest's business key. */
   key?: string[];
+  /** Why it is not bindable. */
   code?: string;
+  /** The reason as worded for the author. */
   message?: string;
 }
 
@@ -281,11 +386,17 @@ export interface DomainDraftTable {
  * `type` the draft maps it to; `code` and `message` only on one the draft left out (a type the binding
  * cannot carry — `bytea`, `bigint` …, a malformed name, a `@param` name another column takes). */
 export interface DomainDraftColumn {
+  /** The remote table the column belongs to. */
   table: string;
+  /** The column name as the warehouse reports it. */
   remote: string;
+  /** The warehouse type (`varchar`, `int4`, …). */
   dbType: string;
+  /** The platform type the draft maps it to; absent where none serves it. */
   type?: string;
+  /** Why the draft left it out. */
   code?: string;
+  /** The reason as worded for the author. */
   message?: string;
 }
 
@@ -293,12 +404,19 @@ export interface DomainDraftColumn {
  * `'plain'` stayed a scalar and `code` says why (`external-ref-out` — the target is not in the
  * draft, `external-ref-composite`, `external-ref-key`, `external-ref-type`, `external-ref-ambiguous`). */
 export interface DomainDraftRelation {
+  /** The remote table holding the foreign key. */
   table: string;
+  /** The foreign-key column. */
   column: string;
+  /** The remote table the key points at. */
   targetTable: string;
+  /** The column it points at. */
   targetColumn: string;
+  /** `'ref'` where the column became a ref, `'plain'` where it stayed a scalar. */
   status: 'ref' | 'plain';
+  /** Why it stayed a scalar. */
   code?: string;
+  /** The reason as worded for the author. */
   message?: string;
 }
 
@@ -310,8 +428,11 @@ export interface DomainDraftRelation {
  * `external-schema-unlisted` (no table, and the schema list could not be read). Nothing is
  * registered until {@link DomainsDataSource.createSchema}. */
 export interface DomainDraft {
-  manifest: {[key: string]: any};
+  /** The drafted manifest, the author's starting point. */
+  manifest: DomainManifest;
+  /** Every table, column and foreign key the warehouse has, with what the draft did with it. */
   inventory: {tables: DomainDraftTable[]; columns: DomainDraftColumn[]; relations: DomainDraftRelation[]};
+  /** Warehouse-level findings, by code. */
   diagnostics: DomainManifestIssue[];
 }
 
@@ -320,25 +441,39 @@ export type DomainBindingStatus = 'ok' | 'unvalidated' | 'drifted' | 'connection
 
 /** The verdict of a schema dry run ({@link DomainsDataSource.createSchema} with `dryRun`): `'ok'`
  * with no issues — a refused manifest rejects with the typed error instead. */
-export interface DomainSchemaDryRun { status: 'ok'; issues: DomainManifestIssue[]; }
+export interface DomainSchemaDryRun {
+  /** Always `'ok'` — a refusal rejects instead. */
+  status: 'ok';
+  /** Empty: the checks that would have failed reject the dry run. */
+  issues: DomainManifestIssue[];
+}
 
 /** What creating a schema answers: its registry identity, physical schema (`usr_<name>` for a
  * platform-stored one, `ext_<name>` for an external binding) and, for a binding, the live
  * validation it passed. */
 export interface DomainSchemaCreated {
+  /** The registry id of the schema. */
   id: string;
+  /** The schema name, the registry key. */
   name: string;
+  /** The physical PostgreSQL schema: `usr_<name>` or `ext_<name>`. */
   pgSchema: string;
+  /** The manifest version registered: `'1'` for a new schema. */
   version: string;
+  /** The live validation an external binding passed on create. */
   binding?: {status: DomainBindingStatus; validatedOn: string};
 }
 
 /** The recorded outcome of validating an external schema's binding against its warehouse
  * ({@link DomainSchemaClient.validate}). */
 export interface DomainSchemaValidation {
+  /** The schema validated. */
   schema: string;
+  /** The verdict recorded on the binding. */
   status: DomainBindingStatus;
+  /** When the validation ran (ISO 8601). */
   validatedOn: string;
+  /** What drifted, by manifest path; empty when `status` is `'ok'`. */
   issues: DomainManifestIssue[];
 }
 
@@ -360,6 +495,7 @@ export interface DomainSchemaValidation {
  * (platform tables exposed through the `Core` schema) answer every write flag false
  * and every field `readonly` for everyone, admins included. */
 export interface DomainAccess {
+  /** What the caller may do, capability by capability. */
   can: {
     /** View grant on the securing entity. Row-mode tables may still expose
      * individually granted rows when false. */
@@ -397,9 +533,11 @@ export interface DomainAccess {
   /** The FINAL securing table (`<schema>.<table>`) every grant above is evaluated on:
    * the table itself, or the end of its master delegate chain. */
   securingTable: string;
+  /** How rows are secured: by the table's own grants, a master row's, or each row's. */
   securityMode: 'table' | 'master' | 'row';
   /** Whether writes leave an in-transaction audit trail. */
   audit: boolean;
+  /** Whether the table declares a natural key, which upserts match on. */
   hasBusinessKey: boolean;
   /** What the TABLE can do, independent of this caller — computed once on the server from the
    * registration, so a client never guesses an affordance from the table's shape. */
@@ -409,7 +547,9 @@ export interface DomainAccess {
 /** FK-inverted reference to a child (detail) table — drives detail-table links
  * and entity-view child tabs (see `DomainRegistryClient.tableInfo`). */
 export interface DomainChildTableRef {
+  /** The child table's schema. */
   schema: string;
+  /** The child table. */
   table: string;
   /** The child table's FK column referencing this table. */
   fkColumn: string;
@@ -437,7 +577,9 @@ export interface DomainTableInfo {
   singularName: string;
   /** Effective plural display name (declared, else derived from the table name). */
   pluralName: string;
+  /** How rows are secured: by the table's own grants, a master row's, or each row's. */
   securityMode: 'table' | 'master' | 'row';
+  /** Whether writes leave an in-transaction audit trail. */
   audit: boolean;
   /** The table declares a tree (`hierarchy` in schema.json): exactly one ref column
    * targets the table itself, and {@link DomainTableClient.pathTo} / the `under`
@@ -447,6 +589,7 @@ export interface DomainTableInfo {
   parentColumn: string | null;
   /** What the table holds, as declared in schema.json; null when undeclared. */
   description: string | null;
+  /** The tables whose foreign keys point at this one. */
   childTables: DomainChildTableRef[];
   /** The columns {@link DomainQuerySpec.search} matches: those declared
    * `searchable: true`, else the name column, else none. */
@@ -462,11 +605,15 @@ export interface DomainTableInfo {
 
 /** Per-row outcome inside a {@link DomainBatchReport}. */
 export interface DomainBatchRowResult {
+  /** The row's position in the batch. */
   index: number;
+  /** The row's id; null where nothing landed. */
   id: string | null;
   /** `'merged'`: an upsert landed on a storage that cannot tell an insert from an update. */
   status: 'inserted' | 'updated' | 'merged' | 'duplicate' | 'error';
+  /** The id of the row a `'duplicate'` matched. */
   existingId?: string;
+  /** The per-column failures of an `'error'` row. */
   errors?: DomainColumnError[];
 }
 
@@ -563,7 +710,9 @@ export async function domainCall<T>(p: Promise<T>): Promise<T> {
  * Aggregate mode (non-empty `aggregations`/`groupBy`) REJECTS `columns` and `offset`
  * with a 400 — they are select-mode parameters, not ignored ones. */
 export interface DomainQueryParams {
+  /** The queried table's schema. */
   schema: string;
+  /** The queried table. */
   table: string;
   /** Projection; omit for all viewable columns (select mode only). */
   columns?: string[];
@@ -619,7 +768,9 @@ export interface DomainQuerySpec<TColumn extends string = string, TExpandKey ext
    * `queryDf`); `'<relation>'` (a declared many-to-many) returns the link array — see
    * {@link DomainRelationLink}. */
   expand?: TExpandKey[];
+  /** The row cap. */
   limit?: number;
+  /** Rows skipped before the first returned. */
   offset?: number;
   /** Adds the per-row {@link DOMAIN_ACCESS_COLUMNS} (`~can_edit`, `~can_delete`, `~can_share`,
    * plus `~can_<name>` per declared custom permission): JSON rows carry them as boolean keys,
@@ -646,8 +797,11 @@ export interface DomainQuerySpec<TColumn extends string = string, TExpandKey ext
 /** One measure of {@link DomainAggregateSpec}: `fn` over `column` (`count` needs no column);
  * the output name is `as` (defaults to `fn` or `<fn>_<column>`). */
 export interface DomainAggregateMeasure<TColumn extends string = string, TAlias extends string = string> {
+  /** The aggregate function. */
   fn: 'count' | 'sum' | 'avg' | 'min' | 'max';
+  /** The column aggregated; `count` needs none. */
   column?: DomainColumnRef<TColumn>;
+  /** The output name; `fn` or `fn_column` by default. */
   as?: TAlias;
 }
 
@@ -659,9 +813,11 @@ export interface DomainAggregateSpec<TColumn extends string = string,
     extends DomainReadScope<TColumn> {
   /** Column names to group by; omit for a single-row grand total. */
   groupBy?: (DomainColumnRef<TColumn> & TGroup)[];
+  /** The measures computed per group. */
   measures: DomainAggregateMeasure<TColumn, TAlias>[];
   /** Comma-separated output names (group columns or measure aliases); `!` prefix for descending. */
   sort?: string;
+  /** The group-row cap. */
   limit?: number;
   /** Master-FK expands ('<fk_column>'); groupBy/measures may then use '<fk>.<col>' (§13.2). */
   expand?: string[];
@@ -678,6 +834,7 @@ export interface DomainFacetSpec<TColumn extends string = string,
     TId extends string = string, TKind extends DomainFacetKind = DomainFacetKind> {
   /** Response key for this facet's result. */
   id: TId;
+  /** The facet kind, which decides the result shape ({@link DomainFacetResultOf}). */
   kind: TKind;
   /** Column name; `'categories'` also accepts a dotted FK path (e.g. `'category_id.name'`, up to
    * 3 hops — the counts respect the referenced table's row predicate) and a declared
@@ -712,26 +869,58 @@ export interface DomainFacetsSpec<TColumn extends string = string,
     TId extends string = string, TKind extends DomainFacetKind = DomainFacetKind> {
   /** Smart string, single condition, or condition tree; omit for unfiltered counts. */
   filter?: DomainFilter<TColumn>;
+  /** The facets computed in one round, each answered under its `id`. */
   facets: DomainFacetSpec<TColumn, TId, TKind>[];
 }
 
 /** One category bucket of a `'categories'` facet: `total` ignores the filter, `filtered` respects
  * it (minus the facet's own column); ref columns group by id and carry the referenced row's
  * display name in `display`. */
-export interface DomainFacetCategory { value: any; display?: string; total: number; filtered: number; }
+export interface DomainFacetCategory {
+  /** The category's value as stored. */
+  value: any;
+  /** The value's display name, where the column has one (a ref's name column). */
+  display?: string;
+  /** Rows in the category, the filter ignored. */
+  total: number;
+  /** Rows in the category under the filter. */
+  filtered: number;
+}
 /** Result of a `'categories'` facet; `hasMore` set when the category cap was hit. */
-export interface DomainFacetCategoriesResult { categories: DomainFacetCategory[]; hasMore?: boolean; }
+export interface DomainFacetCategoriesResult {
+  /** The categories, most frequent first. */
+  categories: DomainFacetCategory[];
+  /** Whether categories past the cap were left out. */
+  hasMore?: boolean;
+}
 /** Result of a `'histogram'` facet: `buckets` respect the filter, `totalBuckets` ignore it. */
 export interface DomainFacetHistogramResult {
-  min: number | string | null; max: number | string | null;
-  buckets: number[]; totalBuckets: number[]; nulls: number;
+  /** The axis start, the filter ignored. */
+  min: number | string | null;
+  /** The axis end, the filter ignored. */
+  max: number | string | null;
+  /** Row counts per bucket under the filter. */
+  buckets: number[];
+  /** Row counts per bucket, the filter ignored. */
+  totalBuckets: number[];
+  /** Rows without a value. */
+  nulls: number;
 }
 /** Result of a `'minMax'` facet (row predicate only — the stable-axis rule ignores the filter). */
-export interface DomainFacetMinMaxResult { min: number | string | null; max: number | string | null; }
+export interface DomainFacetMinMaxResult {
+  /** The smallest value. */
+  min: number | string | null;
+  /** The largest value. */
+  max: number | string | null;
+}
 /** Result of a `'count'` facet: the filtered row count. */
-export interface DomainFacetCountResult { count: number; }
+export interface DomainFacetCountResult {
+  /** Rows under the filter. */
+  count: number;
+}
 /** Result of a `'plan'` facet: per-column profile for choosing filter-control types. */
 export interface DomainFacetPlanResult {
+  /** One profile per column asked for: the distinct count (capped) and the range of a numeric or datetime one. */
   columns: {name: string; distinct: number; min?: number | string; max?: number | string}[];
 }
 /** Maps a facet `kind` to its result type (keys the typed `facets()` response). */

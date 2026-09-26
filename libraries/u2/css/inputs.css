@@ -309,10 +309,13 @@ textarea.u2-input-editor {
   display: none;
 }
 
-/* bool variants */
-.u2-input-editor.u2-input-bool {
+/* bool variants — the editor keeps its own width whatever a form stretches (the wide form gives
+   every editor `flex: 1`): shrunk to nothing, the box sits under the postfix that follows it and
+   a click on it lands there */
+.u2-input-box > .u2-input-editor.u2-input-bool {
   display: inline-flex;
   align-items: center;
+  flex: none;
   padding: 0 var(--dg-space-s);
 }
 

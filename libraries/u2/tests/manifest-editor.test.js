@@ -120,6 +120,77 @@ ui('the schema panel: name, friendly name, writable, the access grid with the cr
   e.dispose();
 });
 
+ui('a schema row inherited by a table is labelled, with no group list offered up front', async () => {
+  const e = await editor({groups: undefined});
+  e.access.addGroup({kind: 'schema'}, {id: 'g-sales', label: 'Sales'});
+  await select(e, 'order_details');
+  assert.deepEqual(panel(e).querySelectorAll('.u2-access-grid-principal').map((p) => p.textContent),
+    ['You (creator)', 'Sales']);
+  e.dispose();
+});
+
+ui('the locked boxes show what the plan grants: nothing beyond View on a read-only binding, the creator row included', async () => {
+  const e = await editor();
+  e.access.addGroup({kind: 'schema'}, {id: 'g-sales', label: 'Sales'});
+  e.access.setGrant({kind: 'schema'}, 'g-sales', 'edit', true);
+  await select(e, 'orders');
+  const checked = () => panel(e).querySelectorAll('.u2-access-grid tbody tr')
+    .map((r) => r.querySelectorAll('.u2-access-grid-check').map((b) => b.checked));
+  assert.deepEqual(checked(), [[true, false, false], [true, false, false]],
+    'the creator and the inherited Sales row, as plan() grants');
+  assert.deepEqual(e.plan().grants.map((g) => [g.table, g.edit]), [['orders', false], ['order_details', false]]);
+  e.model.setWritable(true);
+  await flush();
+  assert.deepEqual(checked(), [[true, true, true], [true, true, false]]);
+  assert.deepEqual(e.plan().grants.map((g) => [g.table, g.edit]), [['orders', true], ['order_details', true]]);
+  e.dispose();
+});
+
+ui('the Writable toggle rebuilds the panel with focus kept: the box itself, or a grid cell', async () => {
+  const e = await editor();
+  e.access.addGroup({kind: 'schema'}, {id: 'g-sales', label: 'Sales'});
+  await flush();
+  const writable = () => panel(e).querySelector('[data-u2-name="writable"] .u2-input-checkbox');
+  const box = writable();
+  box.focus();
+  box.click();
+  await flush();
+  assert.equal(e.model.writable.value, true);
+  assert.equal(writable() !== box, true, 'the panel was rebuilt');
+  assert.equal(document.activeElement === writable(), true, 'a second Space toggles it back');
+  const cells = () => panel(e).querySelectorAll('.u2-access-grid tbody tr')[1].querySelectorAll('.u2-access-grid-check');
+  cells()[0].focus();
+  e.model.setWritable(false);
+  await flush();
+  assert.equal(document.activeElement === cells()[0], true, 'Sales › View, in the rebuilt grid');
+  cells()[1].focus();
+  e.model.setWritable(true);
+  await flush();
+  assert.equal(document.activeElement === cells()[1], true, 'Sales › Edit, unlocked again');
+  e.dispose();
+});
+
+ui('Tab out of a field that commits on change: the rebuild waits for the Tab to land, then keeps its target', async () => {
+  const e = await editor();
+  await select(e, 'orders');
+  const friendly = panel(e).querySelector('[data-u2-name="friendlyName"] input');
+  friendly.focus();
+  fire(friendly, 'keydown', {key: 'Tab'});
+  // what the browser reports inside `change` on a Tab: nothing focused yet
+  document.activeElement = document.body;
+  friendly.value = 'Sales orders';
+  fire(friendly, 'change');
+  assert.equal(e.model.table('orders').friendlyName, 'Sales orders', 'committed');
+  assert.equal(panel(e).querySelector('[data-u2-name="friendlyName"] input') === friendly, true, 'not rebuilt yet');
+  const next = panel(e).querySelector('[data-u2-name="nameColumn"] select');
+  next.focus();
+  await flush();
+  const rebuilt = panel(e).querySelector('[data-u2-name="nameColumn"] select');
+  assert.equal(rebuilt !== next, true, 'rebuilt once the Tab landed');
+  assert.equal(document.activeElement === rebuilt, true, 'on the field the Tab went to');
+  e.dispose();
+});
+
 ui('the table panel: names, the key as text, the pickers, relationships with their status, the inherited access', async () => {
   const e = await editor();
   await select(e, 'order_details');

@@ -47,13 +47,19 @@ function scoped(name, body) {
   });
 }
 
+/** What the registry answers a probe by name: the manifest of a registered schema, a typed
+ * not-found otherwise. */
+const REGISTERED = new Map([['postgresnorthwind_public', {storage: {kind: 'external'}, tables: {}}]]);
+const notFound = (name) => Object.assign(new Error(`Domain schema "${name}" not found`), {status: 404, code: 'not-found'});
+
 /** Every dapi call the dialog makes, recorded; the dry run answers what `dryRun` says; a step
  * named in `failing` refuses with its message. */
 function stub(calls, dryRun, failing = {}) {
   grok.shell.settings = {enableDomainDatabases: true};
   globalThis.grok_Dapi_Domains_SchemaCreated = (_dart, name) => calls.push(['announce', name]);
   grok.dapi.connections = {list: async () => [CONN, ...NOT_BINDABLE], getSchemas: async () => ['public', 'audit']};
-  grok.dapi.permissions = {check: async (_c, right) => right !== 'DataConnection.RemoveRows'};
+  grok.dapi.permissions = {check: async (_c, right) => right !== 'DataConnection.RemoveRows',
+    checkGlobal: async () => true};
   grok.dapi.groups = {getGroupsLookup: async (query) => [{id: 'g-sales', friendlyName: 'Sales', personal: false},
     {id: 'u-sam', friendlyName: 'Sam Sales', personal: true}].filter((g) => g.friendlyName.toLowerCase().includes(query)),
   list: async ({filter}) => {
@@ -65,7 +71,9 @@ function stub(calls, dryRun, failing = {}) {
       throw new Error(failing[step]);
   };
   Object.assign(grok.dapi.domains, {
-    schemas: {list: async () => [{name: 'postgresnorthwind_public'}]},
+    schemas: {list: async () => {
+      throw new Error('the registry is never listed');
+    }},
     draft: async (body) => {
       calls.push(['draft', body]);
       return JSON.parse(JSON.stringify(DRAFT));
@@ -74,7 +82,15 @@ function stub(calls, dryRun, failing = {}) {
       calls.push(['create', name, options]);
       return options.dryRun ? dryRun() : {id: 'id-1', name, pgSchema: `ext_${name}`, version: '1'};
     },
-    schema: (name) => ({grant: async (group, permission) => calls.push(['schema.grant', name, group, permission])}),
+    schema: (name) => ({
+      grant: async (group, permission) => calls.push(['schema.grant', name, group, permission]),
+      manifest: async () => {
+        calls.push(['registry', name]);
+        if (!REGISTERED.has(name))
+          throw notFound(name);
+        return REGISTERED.get(name);
+      },
+    }),
     table: (address) => ({
       grant: async (group, permission) => {
         calls.push(['table.grant', address, group, permission]);
@@ -395,6 +411,199 @@ scoped('createBinding refuses while domain databases are off', async () => {
   assert.equal(document.querySelector('.u2-dialog'), null);
 });
 
+scoped('createBinding refuses by name without the CreateDomainSchema privilege, before anything is read', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  grok.dapi.permissions.checkGlobal = async (permission) => {
+    calls.push(['global', permission]);
+    return false;
+  };
+  await assert.rejects(domains.authoring.createBinding({connection: CONN, schema: 'public'}),
+    /Requires the CreateDomainSchema privilege/);
+  assert.equal(document.querySelector('.u2-dialog'), null);
+  assert.deepEqual(calls, [['global', 'CreateDomainSchema']], 'no draft, no connections');
+});
+
+scoped('the table preset matches the remote name whatever its case; an unmatched one is said on the status line', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const upper = new domains.authoring.BindingDialog({connection: CONN, schema: 'public', table: 'ORDERS'});
+  const first = upper.open();
+  await flush();
+  assert.deepEqual(upper.editor.model.tables.value.filter((t) => t.included).map((t) => t.remote), ['orders'],
+    'the catalog spells it in lowercase; the caller in uppercase');
+  assert.equal(status().textContent, '');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await first, null);
+
+  const unknown = new domains.authoring.BindingDialog({connection: CONN, schema: 'public', table: 'nope'});
+  const second = unknown.open();
+  await flush();
+  assert.deepEqual(unknown.editor.model.tables.value.filter((t) => t.included).map((t) => t.remote),
+    ['orders', 'order_details']);
+  assert.equal(status().textContent, 'Table nope is not in public — every table starts included');
+  assert.equal(status().classList.contains('u2-wizard-status-error'), false);
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await second, null);
+});
+
+scoped('the catalog preset stays with the preset connection; the schemas are offered sorted, case aside', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const OTHER = {id: 'c2', nqName: 'Other:Scratch', friendlyName: 'Scratch', dataSource: 'Postgres', isDatabase: true};
+  grok.dapi.connections.list = async () => [CONN, OTHER];
+  grok.dapi.connections.getSchemas = async (conn, catalog) => {
+    calls.push(['schemas', conn.id, catalog]);
+    return ['public', 'Audit', 'archive'];
+  };
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, catalog: 'Northwind'});
+  const done = dialog.open();
+  await flush();
+  assert.deepEqual(dialog.schema.items.map((i) => i.value), ['archive', 'Audit', 'public']);
+  dialog.schema.value.value = 'public';
+  await flush();
+  dialog.connection.value.value = OTHER.id;
+  await flush();
+  dialog.schema.value.value = 'public';
+  await flush();
+  assert.deepEqual(calls.filter((c) => c[0] === 'schemas'), [['schemas', 'c1', 'Northwind'], ['schemas', 'c2', null]],
+    'the other connection is read whole');
+  assert.deepEqual(calls.filter((c) => c[0] === 'draft').map((c) => [c[1].connection, c[1].catalog]),
+    [[CONN.nqName, 'Northwind'], [OTHER.nqName, undefined]]);
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
+scoped('every connection past the first page is offered; the identifier is probed by name past every registered one', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const many = Array.from({length: 510}, (_, i) => ({id: `c${i}`, nqName: `P:c${i}`, isDatabase: true,
+    friendlyName: `conn ${String(i).padStart(3, '0')}`, dataSource: 'Postgres'}));
+  grok.dapi.connections.list = async ({pageSize, pageNumber, order}) => {
+    calls.push(['connections', pageSize, pageNumber, order]);
+    return many.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+  };
+  REGISTERED.set('conn_000_public', {});
+  REGISTERED.set('conn_000_public_2', {});
+  try {
+    const dialog = new domains.authoring.BindingDialog({connection: many[0], schema: 'public'});
+    const done = dialog.open();
+    await flush();
+    assert.deepEqual(calls.filter((c) => c[0] === 'connections'), [['connections', 500, 1, 'id'], ['connections', 500, 2, 'id']],
+      'pages in a stable order');
+    assert.equal(dialog.connection.items.length, 510);
+    assert.deepEqual(calls.filter((c) => c[0] === 'registry').map((c) => c[1]),
+      ['conn_000_public', 'conn_000_public_2', 'conn_000_public_3'], 'probed until a name is free');
+    assert.equal(dialog.editor.model.name.value, 'conn_000_public_3');
+    assert.equal(dialog.editor.model.friendlyName.value, 'conn 000 public 3');
+    assert.equal(status().textContent, '');
+    buttonNamed('CANCEL').click();
+    await flush();
+    assert.equal(await done, null);
+  } finally {
+    REGISTERED.delete('conn_000_public');
+    REGISTERED.delete('conn_000_public_2');
+  }
+});
+
+scoped('a warehouse read that never answers fails by name after the timeout; the dialog stays usable', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const never = () => new Promise(() => {});
+  grok.dapi.connections.getSchemas = never;
+  const {BindingDialog} = domains.authoring;
+  BindingDialog.readTimeout = 20;
+  try {
+    const dialog = new BindingDialog({connection: CONN, catalog: 'bogus'});
+    const done = dialog.open();
+    await new Promise((r) => setTimeout(r, 40));
+    await flush();
+    assert.equal(document.querySelector('.u2-binding-facts').textContent,
+      'Postgres · The schemas could not be read: The connection did not answer within 0.02 s');
+    assert.equal(dialog.connection.enabled, true);
+    grok.dapi.connections.getSchemas = async () => ['public'];
+    grok.dapi.domains.draft = never;
+    dialog.connection.value.value = null;
+    await flush();
+    dialog.connection.value.value = CONN.id;
+    await flush();
+    dialog.schema.value.value = 'public';
+    await new Promise((r) => setTimeout(r, 40));
+    await flush();
+    assert.equal(reason(), 'The draft did not answer within 0.02 s');
+    assert.equal(buttonNamed('NEXT').disabled, true);
+    buttonNamed('CANCEL').click();
+    await flush();
+    assert.equal(await done, null);
+  } finally {
+    BindingDialog.readTimeout = 30000;
+  }
+});
+
+scoped('opened on Design over a preset whose reads never answer: the draft fails by name on the status line, BACK works', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const never = () => new Promise(() => {});
+  grok.dapi.connections.getSchemas = never;
+  grok.dapi.domains.draft = never;
+  const {BindingDialog} = domains.authoring;
+  BindingDialog.readTimeout = 20;
+  try {
+    const dialog = new BindingDialog({connection: CONN, schema: 'public', catalog: 'bogus'});
+    const done = dialog.open();
+    await new Promise((r) => setTimeout(r, 60));
+    await flush();
+    assert.equal(dialog.wizard.currentStep.value, 'design');
+    assert.equal(dialog.schema.value.value, 'public', 'the preset schema is still picked');
+    assert.equal(status().textContent, 'The draft did not answer within 0.02 s');
+    assert.equal(status().classList.contains('u2-wizard-status-error'), true);
+    assert.equal(reason(), 'The draft did not answer within 0.02 s');
+    assert.equal(buttonNamed('NEXT').disabled, true);
+    dialog.wizard.back();
+    await flush();
+    assert.equal(dialog.wizard.currentStep.value, 'connection');
+    assert.equal(document.querySelector('.u2-binding-facts').textContent,
+      'Postgres · The schemas could not be read: The connection did not answer within 0.02 s');
+    grok.dapi.domains.draft = async (body) => {
+      calls.push(['draft', body]);
+      return JSON.parse(JSON.stringify(DRAFT));
+    };
+    dialog.schema.value.value = null;
+    await flush();
+    dialog.schema.value.value = 'public';
+    await flush();
+    assert.equal(status().textContent, '', 'a new read clears the failure');
+    assert.equal(buttonNamed('NEXT').disabled, false);
+    buttonNamed('CANCEL').click();
+    await flush();
+    assert.equal(await done, null);
+  } finally {
+    BindingDialog.readTimeout = 30000;
+  }
+});
+
+scoped('a probe the registry did not answer keeps the proposed name and says so, beside the table note', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  grok.dapi.domains.schema = () => ({manifest: async () => {
+    throw Object.assign(new Error('XMLHttpRequest error.'), {status: 0, code: ''});
+  }});
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'audit', table: 'nope'});
+  const done = dialog.open();
+  await flush();
+  assert.equal(dialog.editor.model.name.value, 'postgresnorthwind_audit');
+  assert.equal(status().textContent, 'Table nope is not in audit — every table starts included; ' +
+    'Registered schemas could not be checked: Could not reach the server (XMLHttpRequest error.)');
+  assert.equal(status().classList.contains('u2-wizard-status-error'), true);
+  assert.equal(buttonNamed('NEXT').disabled, false, 'a taken name is refused at CREATE all the same');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
 const rail = async (id) => {
   fire(document.querySelector(`.u2-wizard-step[data-id="${id}"]`), 'click');
   await flush();
@@ -481,13 +690,19 @@ scoped('WO-A5.1 #2 (P1): findings belong to the payload they were found in; a tr
   assert.equal(document.querySelector('.u2-binding-issues-title').textContent, 'Not validated');
 
   grok.dapi.domains.createSchema = async () => {
-    throw new Error('Failed to fetch');
+    throw Object.assign(new Error('Failed to fetch'), {status: 0, code: ''});
   };
   buttonNamed('VALIDATE').click();
   await flush();
-  assert.equal(status().textContent, 'Failed to fetch');
+  assert.equal(status().textContent, 'Could not reach the server (Failed to fetch)', 'a domain call nothing answered');
   assert.equal(status().classList.contains('u2-wizard-status-error'), true);
   assert.deepEqual(dialog.editor.diagnostics.value, [], 'the transport error is on the status line only');
+  grok.dapi.domains.createSchema = async () => {
+    throw new Error('Internal error');
+  };
+  buttonNamed('VALIDATE').click();
+  await flush();
+  assert.equal(status().textContent, 'Internal error', 'a refusal without the domain shape is worded as it came');
   buttonNamed('CANCEL').click();
   await flush();
   assert.equal(await done, null);
@@ -598,7 +813,7 @@ function registry(calls) {
   grok.dapi.domains.schema = (name) => ({...schema(name), manifest: async () => {
     calls.push(['registry', name]);
     if (!manifests.has(name))
-      throw Object.assign(new Error(`Unknown domain schema "${name}"`), {code: 'unknown-schema'});
+      throw notFound(name);
     return manifests.get(name);
   }});
   grok.dapi.domains.createSchema = async (name, options) => {

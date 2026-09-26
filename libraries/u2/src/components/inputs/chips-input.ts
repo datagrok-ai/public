@@ -4,6 +4,7 @@
    Not a `ButtonGroup({toggle: 'multi'})`: that is a segmented Control with fixed items, this is an
    `Input` (label, enabled, validation, `setItems`) whose chips wrap. */
 import {Input, InputOptions} from '../../core/input-base.js';
+import {keepFocus} from '../../core/focus.js';
 import {ChoiceItem} from './choice-input.js';
 
 export interface ChipsInputOptions extends InputOptions<string[]> {
@@ -75,25 +76,28 @@ export class ChipsInput extends Input<string[], ChipsInputOptions> {
 
   private _render(): void {
     const picked = new Set(this.value.peek());
-    this._host.textContent = '';
     if (this._items.length === 0) {
       const empty = document.createElement('span');
       empty.className = 'u2-chips-empty';
       empty.textContent = this.options.emptyText ?? 'No items';
-      this._host.append(empty);
+      this._host.replaceChildren(empty);
       return;
     }
-    for (const item of this._items) {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'u2-chip';
-      chip.dataset.value = itemValue(item);
-      chip.textContent = itemLabel(item);
-      const on = picked.has(itemValue(item));
-      chip.classList.toggle('u2-chip-on', on);
-      chip.setAttribute('aria-pressed', String(on));
-      this._host.append(chip);
-    }
+    keepFocus(this._host, () => {
+      this._host.textContent = '';
+      for (const item of this._items) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'u2-chip';
+        chip.dataset.value = itemValue(item);
+        chip.dataset.u2Key = itemValue(item);
+        chip.textContent = itemLabel(item);
+        const on = picked.has(itemValue(item));
+        chip.classList.toggle('u2-chip-on', on);
+        chip.setAttribute('aria-pressed', String(on));
+        this._host.append(chip);
+      }
+    });
     this.refreshEnabled();
   }
 }

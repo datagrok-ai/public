@@ -1228,6 +1228,7 @@ export interface IDartApi {
   grok_Dapi_Get_CurrentUserGroups(): Promise<any>;
   grok_Dapi_Get_Permissions(e: any): Promise<any>;
   grok_Dapi_Check_Permissions(e: any, permission: String): Promise<any>;
+  grok_Dapi_Check_Global_Permission(permission: String): Promise<any>;
   grok_Dapi_Set_Permission(e: any, g: any, edit: Bool): Promise<any>;
   grok_Dapi_Delete_Permission(e: any, g: any): Promise<any>;
   grok_LayoutsDataSource_Applicable(s: any, t: any): Promise<any>;

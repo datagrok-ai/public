@@ -12,6 +12,7 @@ import {Control} from '../../../core/component.js';
 import {Scope} from '../../../core/scope.js';
 import {signal, ReadonlySignal} from '../../../core/signals.js';
 import {div, link, span} from '../../../core/elements.js';
+import {keepFocus} from '../../../core/focus.js';
 import type {Input} from '../../../core/input-base.js';
 import {Form} from '../../../components/forms/form.js';
 import {Section} from '../../../components/containers/section.js';
@@ -100,7 +101,7 @@ export class ManifestContextPanel extends Control {
         div([badge(p.code, {variant: 'error'}), span(p.message)], 'u2-manifest-panel-diagnostic')),
       'u2-manifest-panel-diagnostics'));
     }
-    this.root.replaceChildren(...content.map((c) => Control.is(c) ? c.root : c));
+    keepFocus(this.root, () => this.root.replaceChildren(...content.map((c) => Control.is(c) ? c.root : c)));
   }
 
   private _schema(): (HTMLElement | Control)[] {
@@ -189,12 +190,13 @@ export class ManifestContextPanel extends Control {
     }
     for (const r of rels)
       relations.add(this._relation(r, `${r.column} → ${r.targetTable}`));
-    const schemaRows = this._access.grantsOf(SCHEMA).peek()
+    const schemaGrants = this._access.grantsOf(SCHEMA).peek();
+    const schemaRows = schemaGrants
       .map((g): InheritedAccessRow => ({...ManifestContextPanel._row(g), from: '(every table)'}));
     const locked = model.writes(table) ? [] : ['edit', 'delete'];
     const access = new Section({title: 'Access — this table', collapsible: false});
     access.add(this._accessGrid({kind: 'table', table: remote}, [ManifestContextPanel._creator(), ...schemaRows],
-      locked));
+      locked, schemaGrants.map((g) => g.group)));
     return [title, form, relations, access];
   }
 
@@ -302,10 +304,12 @@ export class ManifestContextPanel extends Control {
     return row;
   }
 
-  private _accessGrid(scope: AccessScope, inherited: InheritedAccessRow[], locked: string[]): AccessGrid {
+  /** `inheritedGroups` label the inherited rows, which carry group ids alone. */
+  private _accessGrid(scope: AccessScope, inherited: InheritedAccessRow[], locked: string[],
+    inheritedGroups: AccessPrincipal[] = []): AccessGrid {
     const access = this._access;
     const rows = access.grantsOf(scope).peek();
-    const known = this._known(rows.map((g) => g.group));
+    const known = this._known([...rows.map((g) => g.group), ...inheritedGroups]);
     const picker = this._picker;
     const grid = new AccessGrid({name: `access-${scope.kind === 'schema' ? 'schema' : scope.table}`, inline: true,
       capabilities: CAPABILITIES, principals: known.map(ManifestContextPanel._item), inherited, locked,

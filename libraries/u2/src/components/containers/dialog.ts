@@ -19,6 +19,11 @@ export interface DialogShowOptions {
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
   'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Where an Enter is the control's own — a button, a link, a box, a select, a textarea, a chip, or
+ * anything playing one of those — never the dialog's default action. */
+const ENTER_OWNERS = 'button, a, input[type="checkbox"], input[type="radio"], select, textarea, .u2-chip, ' +
+  '[role="button"], [role="checkbox"], [role="option"]';
+
 export class Dialog extends Control {
   private static _seq = 0;
 
@@ -219,7 +224,7 @@ export class Dialog extends Control {
     if (e.key === 'Escape') {
       e.preventDefault();
       this._finish(this._onCancel);
-    } else if (e.key === 'Enter' && this._ok && target.tagName !== 'TEXTAREA' && target.tagName !== 'BUTTON') {
+    } else if (this._ok && Dialog.entersDefault(e)) {
       e.preventDefault();
       if (this._ok.disabled)
         return;
@@ -245,6 +250,15 @@ export class Dialog extends Control {
   private _listen(target: EventTarget, type: string, handler: (e: Event) => void, scope?: Scope): void {
     target.addEventListener(type, handler);
     (scope ?? this.scope).own(() => target.removeEventListener(type, handler));
+  }
+
+  /** Whether an Enter means the dialog's default action: an unhandled one from a plain text input
+   * or the dialog body, not one on or inside a control that acts on Enter itself. */
+  static entersDefault(e: KeyboardEvent): boolean {
+    if (e.key !== 'Enter' || e.defaultPrevented)
+      return false;
+    const target = e.target;
+    return !(target instanceof Element) || target.closest(ENTER_OWNERS) === null;
   }
 
   private static _focusable(el: HTMLElement): HTMLElement[] {

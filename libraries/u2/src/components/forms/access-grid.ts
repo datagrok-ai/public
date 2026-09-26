@@ -5,6 +5,7 @@
    writable binding) stays visible but cannot be granted. */
 import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {span} from '../../core/elements.js';
+import {keepFocus} from '../../core/focus.js';
 import type {ChoiceItem} from '../inputs/choice-input.js';
 
 export interface AccessRow {
@@ -111,12 +112,16 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
     return table;
   }
 
+  /** Kept over the whole table: a removed row hands focus to its neighbour's remove button, and
+   * with no editable row left to the add picker. */
   private _render(): void {
-    this._body.textContent = '';
-    for (const row of this._inherited)
-      this._body.append(this._row(row, row.from));
-    for (const row of this.value.peek())
-      this._body.append(this._row(row, null));
+    keepFocus(this._body.parentElement!, () => {
+      this._body.textContent = '';
+      for (const row of this._inherited)
+        this._body.append(this._row(row, row.from));
+      for (const row of this.value.peek())
+        this._body.append(this._row(row, null));
+    });
     this._fillPicker();
     this.refreshEnabled();
   }
@@ -124,7 +129,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
   private _row(row: AccessRow, from: string | null): HTMLElement {
     const tr = document.createElement('tr');
     tr.className = from === null ? 'u2-access-grid-row' : 'u2-access-grid-row u2-access-grid-inherited';
-    tr.dataset.principal = row.principal;
+    tr.dataset.u2Key = row.principal;
     const who = AccessGrid._cell('td', '');
     tr.append(who);
     const item = this._principals.find((p) => itemValue(p) === row.principal);
@@ -135,9 +140,10 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
       const box = document.createElement('input');
       box.type = 'checkbox';
       box.className = 'u2-input-checkbox u2-access-grid-check';
-      box.checked = row.can[c.name] === true;
+      // a locked capability is not granted whatever the row holds: the box shows what applies
+      box.checked = row.can[c.name] === true && !this._locked.has(c.name);
       box.disabled = from !== null || this._locked.has(c.name);
-      box.dataset.capability = c.name;
+      box.dataset.u2Key = c.name;
       box.setAttribute('aria-label', `${c.label} for ${who.textContent}`);
       const cell = AccessGrid._cell('td', '', 'u2-access-grid-cap');
       cell.append(box);
@@ -149,6 +155,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'u2-access-grid-remove';
+      remove.dataset.u2Key = 'remove';
       remove.textContent = '✕';
       remove.setAttribute('aria-label', `Remove ${who.textContent}`);
       last.append(remove);
@@ -182,8 +189,8 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
   }
 
   private _onChange(target: HTMLInputElement): void {
-    const capability = target.dataset.capability;
-    const principal = (target.closest('tr') as HTMLElement | null)?.dataset.principal;
+    const capability = target.dataset.u2Key;
+    const principal = (target.closest('tr') as HTMLElement | null)?.dataset.u2Key;
     if (capability === undefined || principal === undefined)
       return;
     this.value.value = this.value.peek().map((r) =>
@@ -193,7 +200,7 @@ export class AccessGrid extends Input<AccessRow[], AccessGridOptions> {
   private _onClick(target: HTMLElement): void {
     if (!target.closest('.u2-access-grid-remove'))
       return;
-    const principal = (target.closest('tr') as HTMLElement | null)?.dataset.principal;
+    const principal = (target.closest('tr') as HTMLElement | null)?.dataset.u2Key;
     this.value.value = this.value.peek().filter((r) => r.principal !== principal);
   }
 

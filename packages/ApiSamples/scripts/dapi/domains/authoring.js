@@ -1,10 +1,12 @@
-//api: DG.DomainsDataSource.draft, DG.DomainsDataSource.createSchema, DG.DomainSchemaClient.validate, DG.DomainSchemaClient.delete
+//api: DG.DomainsDataSource.draft, DG.DomainsDataSource.createSchema, DG.DomainSchemaClient.validate, DG.DomainSchemaClient.delete, DG.PermissionsDataSource.checkGlobal
 // Authoring an EXTERNAL binding from a script: draft a manifest over a database you may
 // query, dry-run it, create the schema, share it, delete it. Needs the CreateDomainSchema
 // privilege and GetSchema + Query on the connection (here the Northwind demo container,
 // core/docs/features/ems/external-bindings/fixtures/northwind). Nothing below writes the
 // warehouse: the schema is registry-only and its delete leaves the connection untouched.
 
+if (!await grok.dapi.permissions.checkGlobal(DG.Permission.CREATE_DOMAIN_SCHEMA))
+  return grok.shell.info('Authoring needs the CreateDomainSchema privilege');
 if (!(await grok.dapi.domains.schemas.list()).some((s) => s.name === 'northwind'))
   return grok.shell.info('Publish the Northwind binding fixture first (it ships the PostgresNorthwind connection)');
 

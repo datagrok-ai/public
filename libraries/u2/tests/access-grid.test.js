@@ -78,12 +78,39 @@ ui('the picker adds a principal with the default grant and offers only those not
   g.dispose();
 });
 
-ui('a locked capability keeps its box, disabled, and follows its signal', () => {
+ui('a locked capability keeps its box, disabled and unchecked whatever the row holds, and follows its signal', () => {
   const locked = signal(['edit', 'delete']);
-  const g = grid({locked});
-  assert.deepEqual(boxes(rows(g)[1]).map((b) => b.disabled), [false, true, true]);
+  const g = grid({locked, value: [{principal: 'Sales', can: {view: true, edit: true, delete: false}}]});
+  assert.deepEqual(boxes(rows(g)[1]).map((b) => [b.checked, b.disabled]), [[true, false], [false, true], [false, true]]);
+  assert.deepEqual(boxes(rows(g)[0]).map((b) => b.checked), [true, false, false], 'the inherited row too');
+  assert.equal(g.value.value[0].can.edit, true, 'the value keeps what was granted');
   locked.value = [];
-  assert.deepEqual(boxes(rows(g)[1]).map((b) => b.disabled), [false, false, false]);
+  assert.deepEqual(boxes(rows(g)[1]).map((b) => [b.checked, b.disabled]), [[true, false], [true, false], [false, false]]);
+  g.dispose();
+});
+
+ui('the focused cell stays focused across the re-render a change causes', () => {
+  const g = grid({value: [{principal: 'Sales', can: {view: true, edit: false, delete: false}},
+    {principal: 'Developers', can: {view: true, edit: false, delete: false}}]});
+  const edit = boxes(rows(g)[2])[1];
+  edit.focus();
+  edit.click();
+  assert.equal(g.value.value[1].can.edit, true);
+  const again = boxes(rows(g)[2])[1];
+  assert.equal(again !== edit, true, 'the rows were rebuilt');
+  assert.equal(document.activeElement === again, true, 'Developers › Edit is focused again');
+  const remove = rows(g)[1].querySelector('.u2-access-grid-remove');
+  remove.focus();
+  fire(remove, 'click');
+  assert.deepEqual(g.value.value.map((r) => r.principal), ['Developers']);
+  assert.equal(document.activeElement === rows(g)[1].querySelector('.u2-access-grid-remove'), true,
+    'the removed row hands focus to the next row\'s remove');
+  const last = rows(g)[1].querySelector('.u2-access-grid-remove');
+  last.focus();
+  fire(last, 'click');
+  assert.deepEqual(g.value.value, []);
+  assert.equal(document.activeElement === g.root.querySelector('.u2-access-grid-add'), true,
+    'no editable row left (the creator row cannot take focus): the add picker');
   g.dispose();
 });
 

@@ -370,7 +370,7 @@ export class Wizard extends Control {
     if (e.ctrlKey || e.metaKey) {
       if (!last)
         return;
-    } else if (e.target instanceof HTMLTextAreaElement || current.options.done === true)
+    } else if (!Dialog.entersDefault(e) || current.options.done === true)
       return;
     e.preventDefault();
     this.next();

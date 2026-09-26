@@ -41,6 +41,10 @@ export class StringUtils {
 
 export {TYPE, COLUMN_TYPE, SEMTYPE, TAGS} from '${DOUBLES}';
 
+export class Permission {
+  static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
+}
+
 /** A 2-role sample of js-api's \`functionRoles\` (const.ts:456) — what the functions browser's
  * roles pane is fed. */
 export const functionRoles = [

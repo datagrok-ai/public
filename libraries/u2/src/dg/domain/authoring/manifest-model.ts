@@ -34,7 +34,7 @@ export interface ManifestTableJson {
 }
 
 export interface ManifestStorageJson {
-  kind: string;
+  kind: 'domain' | 'external';
   connection?: string;
   schema?: string;
   catalog?: string;
@@ -352,6 +352,12 @@ export class ManifestModel {
       this._rev.value = this._rev.peek() + 1;
     else
       this.name.value = next;
+  }
+
+  /** A registered name {@link proposeName} steps past from now on — found by probing the registry,
+   * which is not listed. */
+  markTaken(name: string): void {
+    this._taken.add(name);
   }
 
   /** The harmonized identifier, free of the registered and the reserved names: `_2`, `_3`… on a collision. */
