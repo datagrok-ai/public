@@ -90,11 +90,49 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/schemas/{schema}/draft:
+    post:
+      operationId: draftBinding
+      summary: draft binding
+      description: "The live catalog of a registered external binding for its editor: the same answer as the draft, over the binding's own connection, remote schema and catalog; body {tables?: [remote names]} (send `{}` for every bindable table). Requires Edit on the schema entity plus GetSchema and Query on the connection — no CreateDomainSchema; a locally stored schema answers 422 `unsupported`."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
   /domains/schemas/{schema}/manifest:
     get:
       operationId: getSchemaManifest
       summary: get schema manifest
       description: "Full manifest of a registered schema, reconstructed from the registry (feeds the schema editor; doubles as export)."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/{schema}/access:
+    get:
+      operationId: getSchemaAccess
+      summary: get schema access
+      description: "The lossless access snapshot of a schema for its editor: {tables: {<logical>: {entityId, remote, canShare, grants, coreSchema: {entityId, canShare, grants}}}, columns: {'<table>.<column>': {state: unrestricted | restricted, schemaId?, canShare, view?, edit?, other?}}, version, incarnation}, read in one transaction. Grants are the DIRECT rows on the entity as [{group: {id, friendlyName, personal}, permissions}] — complete sets, nothing inherited — and are answered only where the caller holds Share on the target (a column's is its table's core schema); elsewhere `canShare: false` and the lists are null (unknown, not empty). The core schema's grants are informational: the apply edits table grants and relational column restrictions only. `version` and `incarnation` are what an edit sends back as ifVersion / ifIncarnation. Requires View or Edit on the schema entity."
       tags:
         - domains
       parameters:
@@ -142,7 +180,7 @@ paths:
     post:
       operationId: applySchema
       summary: apply schema
-      description: "Applies a partial manifest: body {tables?, propertySchemas?, dropTables?, ifVersion?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. On a user-managed schema this requires Edit and ifVersion tracks the schema's apply counter. On a package-managed schema it is the user-extension path instead: it requires Extend, the body additionally accepts `extend: {table: {columns: {...}}}` for tables the plugin opted in, only user-owned objects may be written, and ifVersion tracks ext_version while the plugin's own version stays frozen."
+      description: "Applies a partial manifest: body {tables?, propertySchemas?, dropTables?, friendlyName?, description?, storage?, access?, ifVersion, ifIncarnation?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped; registration-only, with what a drop loses and the filters it leaves broken, for an external binding; `metadata` for a rename) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. `access` = {grant: [{table, group, permission}], revoke: [{table, group, permission}], restrict: [{table, column, grant?: [{group, permission}], revoke?: [{group, permission}]}], unrestrict: [{table, column}]} travels with the manifest change and is executed in the same transaction, after the registry write: a column added and restricted in one apply is never visible to existing readers, and `writable` turned on with an Edit revoked has no window. Every op is a delta by permission triple, idempotent (the answer reports each op's `effect`, `none` for a no-op, as resolved under the lock); `restrict` splits the column out of the everyone-visible core schema and applies its triples to the per-column schema; `unrestrict` merges it back. Every op needs Share on its target (a column's: the table's core schema) or the whole apply is refused (403 `access-forbidden`); a target the same apply drops is refused (`access-target-dropped`), an unknown group `unknown-group`. On a user-managed schema this requires Edit (re-checked under the lock) and ifVersion is required — the schema's apply counter, checked again under the deploy lock together with ifIncarnation (the manifest's `incarnation`: a schema deleted and re-created starts over at version 1, so a token from before answers 409 too). ifIncarnation stays optional on the wire; every client of ours sends it. On a package-managed schema it is the user-extension path instead: it requires Extend, the body additionally accepts `extend: {table: {columns: {...}}}` for tables the plugin opted in, only user-owned objects may be written, and ifVersion tracks ext_version while the plugin's own version stays frozen."
       tags:
         - domains
       parameters:

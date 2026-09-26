@@ -5,7 +5,7 @@ import * as path from 'path';
 import {NodeDapi, DomainAddress, parseDomainAddress} from '../utils/node-dapi';
 import {printOutput, printError, csvCell, OutputFormat} from '../utils/server-output';
 
-const APPLY_KEYS = ['tables', 'extend', 'propertySchemas', 'dropTables', 'ifVersion', 'confirmDestructive'];
+const APPLY_KEYS = ['tables', 'extend', 'propertySchemas', 'dropTables', 'access', 'ifVersion', 'ifIncarnation', 'confirmDestructive'];
 /** Accepted by a user-managed schema's apply only; a package schema refuses them as unknown keys. */
 const USER_APPLY_KEYS = ['friendlyName', 'description', 'storage'];
 const PERMISSIONS = ['View', 'Edit', 'Delete', 'Share', 'Extend'];
@@ -178,8 +178,13 @@ export async function handleDomains(dapi: NodeDapi, verb: string | undefined, re
       const s = argv['if-version'] === undefined || argv['if-version'] === 'current'
         || USER_APPLY_KEYS.some((k) => json?.[k] !== undefined) ? await domains.schema(a.schema) : null;
       const body = applyBody(json, argv, {userManaged: s?.managedBy === 'user'});
-      if (body.ifVersion === 'current')
-        body.ifVersion = String(s!.version ?? '1');
+      if (body.ifVersion === 'current') {
+        // Both halves of the token as registered now: a name deleted and re-created
+        // since the file was written must conflict, not pass as a fresh `1`.
+        const m = await domains.manifest(a.schema);
+        body.ifVersion = String(m?.version ?? s!.version ?? '1');
+        if (m?.incarnation !== undefined) body.ifIncarnation = String(m.incarnation);
+      }
       else if (body.ifVersion === undefined && s!.managedBy === 'user')
         return usage(`apply ${a.schema} --json manifest.json --if-version <v>|current — a user-managed schema ` +
           'requires the version the edit was made against (the "version" of the manifest JSON is used when present)');
@@ -277,6 +282,8 @@ export function applyBody(json: any, argv: any, options: {userManaged?: boolean}
   if (argv['confirm-destructive'] === true) body.confirmDestructive = true;
   if (argv['if-version'] !== undefined) body.ifVersion = String(argv['if-version']);
   else if (json?.version !== undefined) body.ifVersion = String(json.version);
+  // The manifest's `incarnation` rides with its `version` (the server keeps it optional).
+  if (json?.incarnation !== undefined) body.ifIncarnation = String(json.incarnation);
   return body;
 }
 

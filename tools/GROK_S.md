@@ -402,9 +402,11 @@ grok s domains delete inventory --force                          # purge: data, 
 ```
 
 `schema.json` may be a full manifest or a partial apply body — `tables`, `extend`,
-`propertySchemas` and `dropTables` are sent, plus `friendlyName`, `description` and `storage`
-when the schema is user-managed (`name` is dropped; `version` becomes `ifVersion` unless
-`--if-version` says otherwise). Named tables
+`propertySchemas`, `dropTables` and `access` are sent, plus `friendlyName`, `description` and
+`storage` when the schema is user-managed (`name` is dropped; `version` becomes `ifVersion` and
+`incarnation` becomes `ifIncarnation` unless `--if-version` says otherwise — `current` takes
+both from the schema registered right now, so a name deleted and re-created since the file was
+written is a conflict, not a fresh `1`). Named tables
 replace their definition wholesale; untouched tables stay as the registry has them. A plan
 that drops or narrows anything is refused until `--confirm-destructive` is passed, and the
 plan is printed with the refusal. `--if-version` fails the apply when the schema's apply
