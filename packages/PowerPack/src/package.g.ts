@@ -78,8 +78,18 @@ export async function domainRouteView(address: string) : Promise<any> {
 //input: string table { optional: true }
 //input: string catalog { optional: true }
 //output: string result
+//meta.mode: create
 export async function createDomainBinding(connection?: any, schema?: string, table?: string, catalog?: string) : Promise<any> {
   return await PackageFunctions.createDomainBinding(connection, schema, table, catalog);
+}
+
+//description: The "Edit binding" dialog over a registered external binding: Design › Review › Saved (u2)
+//tags: domainAuthoring
+//input: string schema 
+//output: bool result
+//meta.mode: edit
+export async function editDomainBinding(schema: string) : Promise<boolean> {
+  return await PackageFunctions.editDomainBinding(schema);
 }
 
 //input: column col 

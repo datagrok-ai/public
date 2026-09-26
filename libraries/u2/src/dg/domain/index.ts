@@ -53,8 +53,10 @@ import {mountView} from './view-sync.js';
 import {bulkEdit} from './bulk.js';
 import {openImport} from './import.js';
 import {authoring} from './authoring/index.js';
-import {BindingDialog, createBinding} from './authoring/binding-dialog.js';
+import {BindingDialog, BindingWizard, createBinding} from './authoring/binding-dialog.js';
+import {BindingEditDialog, editBinding} from './authoring/binding-edit-dialog.js';
 export type {CreateBindingOptions, BindingResult, AccessOutcome} from './authoring/binding-dialog.js';
+export type {EditBindingResult} from './authoring/binding-edit-dialog.js';
 const REF_ADDRESS = /^\w+\.\w+$/;
 
 /** An action over one row: `requires` names the capability it needs (permission ⇒ hidden),
@@ -408,8 +410,10 @@ export const domains = {
   saveButton,
   discardButton,
   newButton,
-  /** The manifest editor and its models — the Design step of binding authoring — and the
-   * "Create domain schema" dialog over them (Connection › Design › Review › Created; resolves
-   * to `{name, access}`). The editor stays platform-free; the dialog is what talks to `grok.dapi`. */
-  authoring: Object.assign(authoring, {createBinding, BindingDialog}),
+  /** The manifest editor and its models — the Design step of binding authoring — and the two
+   * dialogs over them: "Create domain schema" (Connection › Design › Review › Created; resolves
+   * to `{name, access}`) and "Edit binding" over a registered one (Design › Review › Saved;
+   * resolves to `{name, applied}`). The editor stays platform-free; the dialogs are what talk to
+   * `grok.dapi`. */
+  authoring: Object.assign(authoring, {createBinding, BindingDialog, editBinding, BindingEditDialog, BindingWizard}),
 };

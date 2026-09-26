@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added `editDomainBinding` (`tags: domainAuthoring`, `meta.mode: edit`; `createDomainBinding` is `meta.mode: create`) — the u2 "Edit binding" dialog over a registered external binding (Design › Review › Saved), the function the platform's "Edit binding..." command on a binding's node runs
 * GROK-20298: `createDomainBinding` answers the created schema's name out of the dialog's `{name, access}` result (the dialog now ends on a Created step when access rows were applied)
 * GROK-20298: Added `createDomainBinding` (`tags: domainAuthoring`) — the u2 "Create domain schema" dialog over an external database (Connection › Design › Review), the function the platform's "Create domain schema..." commands on a database schema or table and "New schema over a connection..." on the Domains node run
 * GROK-20753: Added `domainRouteView` (`tags: domainRoutes`) — the platform's `/domains/<schema>/<table>[/<keyOrId>]` addresses resolve to the u2 domain app through it

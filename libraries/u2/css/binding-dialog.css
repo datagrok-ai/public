@@ -1,7 +1,9 @@
-/* The "Create domain schema" dialog (src/dg/domain/authoring/binding-dialog.ts): the wizard fills
-   the dialog so the Design step's editor has a height, the review is the manifest beside the
-   planned access and the findings. Tokens only; css/tokens.css, wizard.css, form.css, section.css
-   and manifest-editor.css must be loaded alongside. */
+/* The "Create domain schema" dialog (src/dg/domain/authoring/binding-dialog.ts) and the "Edit
+   binding" one (binding-edit-dialog.ts): the wizard fills the dialog so the Design step's editor
+   has a height; the review is the manifest beside the planned access and the findings (create),
+   or the annotated change list beside the reload report, the confirmation and the findings (edit).
+   Tokens only; css/tokens.css, wizard.css, form.css, section.css, input.css and
+   manifest-editor.css must be loaded alongside. */
 .u2-wizard.u2-binding-dialog {
   box-sizing: border-box;
   height: 100%;
@@ -103,4 +105,55 @@
 
 .u2-binding-created-failed {
   color: var(--dg-error);
+}
+
+.u2-binding-edit-facts {
+  padding: var(--dg-space-m);
+}
+
+.u2-binding-fact {
+  display: flex;
+  gap: var(--dg-space-m);
+}
+
+.u2-binding-fact-label {
+  flex: 0 0 8em;
+  color: var(--dg-text-color-light);
+}
+
+.u2-binding-changes-pane {
+  flex: 1 1 60%;
+  min-width: 0;
+  gap: var(--dg-space-l);
+  overflow: auto;
+}
+
+.u2-binding-changes,
+.u2-binding-reloaded {
+  gap: var(--dg-space-xs);
+}
+
+.u2-binding-changes-title {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-change {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dg-space-s);
+}
+
+.u2-binding-change-removes {
+  color: var(--dg-error);
+}
+
+.u2-binding-change-note {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-binding-body .u2-binding-json {
+  flex: none;
+  max-height: 16em;
 }

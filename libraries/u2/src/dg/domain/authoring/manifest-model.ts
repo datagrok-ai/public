@@ -737,7 +737,7 @@ export class ManifestModel {
     const tables: Record<string, ManifestTableJson> = {};
     for (const [logical, decl] of Object.entries(json.tables)) {
       const before = baseline.tables[logical];
-      if (before === undefined || !Fields.same(ManifestModel._canonical(before, logical), ManifestModel._canonical(decl, logical)))
+      if (before === undefined || !Fields.same(ManifestModel.canonicalTable(before, logical), ManifestModel.canonicalTable(decl, logical)))
         tables[logical] = decl;
     }
     if (Object.keys(tables).length > 0)
@@ -898,7 +898,9 @@ export class ManifestModel {
 
   /** A descriptor without the remote names that repeat the logical ones — the registry emits
    * them either way; the editor only where they differ. */
-  private static _canonical(decl: ManifestTableJson, logical: string): ManifestTableJson {
+  /** A table descriptor by content: a remote name equal to its logical one is dropped, so a
+   * registered descriptor and a sent one compare alike. */
+  static canonicalTable(decl: ManifestTableJson, logical: string): ManifestTableJson {
     const {table, columns, ...rest} = decl;
     const out: ManifestTableJson = {...rest, columns: {}};
     if (table !== undefined && table !== logical)

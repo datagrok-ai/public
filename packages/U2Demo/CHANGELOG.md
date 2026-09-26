@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added the `U2: domain editing` test category — the PowerPack `editDomainBinding` dialog over a throwaway binding from the Northwind draft: a no-op gated, a candidate table + a column restriction + a grant reviewed, validated and saved in one apply (the snapshot shows it), and a binding moved meanwhile reloaded on SAVE with the conflict report
 * GROK-20298: `U2: domain conformance` sends the required `ifVersion` on its fixture apply
 * GROK-20298: `U2: domain authoring` follows the dialog opening on Design with the proposed identifier
 * GROK-20298: Added the `U2: domain authoring` test category — the PowerPack `createDomainBinding` dialog over the Northwind connection: NEXT › a name › NEXT › VALIDATE › CREATE registers a throwaway schema, opens the u2 app over its `orders`, and deletes it afterwards

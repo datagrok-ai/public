@@ -15,6 +15,7 @@ import {Control} from '../../../core/component.js';
 import {div, divV, link, span} from '../../../core/elements.js';
 import {plural} from '../../../core/text.js';
 import {Wizard} from '../../../components/containers/wizard.js';
+import type {WizardOptions} from '../../../components/containers/wizard.js';
 import {Section} from '../../../components/containers/section.js';
 import {ChoiceInput} from '../../../components/inputs/choice-input.js';
 import {Form} from '../../../components/forms/form.js';
@@ -92,45 +93,173 @@ interface AccessFailure {
   final: boolean;
 }
 
-export class BindingDialog extends Control {
+/** What the create and the edit dialogs share: the wizard in a modal dialog, the status line,
+ * the findings panel with its rows taken to Design, a validation bound to the exact payload it
+ * checked (an edit since is not validated, and takes the findings off the list), the wording of a
+ * failure the server did not answer, the read timeout, and OPEN over a registered schema. */
+export abstract class BindingWizard<TResult> extends Control {
   static readTimeout = READ_TIMEOUT;
 
-  readonly wizard: Wizard;
+  wizard!: Wizard;
+
+  protected readonly _editor = signal<ManifestEditor | undefined>(undefined);
+  /** The exact payload the dry run passed; anything else is not validated. */
+  protected readonly _validated = signal<string | null>(null);
+  protected readonly _current = computed(() => {
+    const editor = this._editor.value;
+    return editor === undefined ? null : this._payloadOf(editor);
+  });
+  protected readonly _issues = divV([], 'u2-binding-issues');
+  /** The payload the editor's diagnostics were found in. */
+  protected _diagnosed: string | null = null;
+  protected _validateGen = 0;
+  private _resolve: ((result: TResult | null) => void) | undefined;
+
+  constructor() {
+    super();
+    this.root.classList.add('u2-binding-dialog-host');
+    // findings belong to the payload they were found in: an edit since takes them off the list,
+    // the rows and the panel
+    this.effect(() => {
+      const payload = this._current.value;
+      const editor = this._editor.peek();
+      if (editor !== undefined && payload !== this._diagnosed && editor.diagnostics.peek().length > 0)
+        editor.diagnostics.value = [];
+    });
+  }
+
+  /** The editor, from the Design step on. */
+  get editor(): ManifestEditor | undefined {
+    return this._editor.value;
+  }
+
+  /** The dry run's findings from a refusal: the manifest-validation errors by path, else the
+   * refusal itself as one schema-wide finding. */
+  static issues(e: unknown): ManifestDiagnostic[] {
+    const errors = (e as {errors?: unknown} | null)?.errors;
+    if (Array.isArray(errors) && errors.length > 0)
+      return errors as ManifestDiagnostic[];
+    return [{code: DomainErrors.codeOf(e) || 'error', message: DomainErrors.message(e)}];
+  }
+
+  /** The payload a validation is bound to, as one string with sorted keys, read so that the
+   * signals it depends on are tracked. */
+  protected abstract _payloadOf(editor: ManifestEditor): string;
+
+  protected _mount(options: WizardOptions): void {
+    this.wizard = this.runInScope(() => new Wizard(options));
+    this.wizard.root.classList.add('u2-binding-dialog');
+    this.root.append(this.wizard.root);
+  }
+
+  protected _open(title: string): Promise<TResult | null> {
+    this.wizard.openInDialog(title, {width: 960, height: 640});
+    return new Promise((resolve) => this._resolve = resolve);
+  }
+
+  protected _settle(result: TResult | null): void {
+    const resolve = this._resolve;
+    this._resolve = undefined;
+    this.wizard.dispose();
+    this.dispose();
+    resolve?.(result);
+  }
+
+  protected _say(content: string | HTMLElement, error = false): void {
+    this.wizard.status.replaceChildren(content);
+    this.wizard.status.classList.toggle('u2-wizard-status-error', error);
+  }
+
+  protected _isValidated(): boolean {
+    const validated = this._validated.value;
+    return validated !== null && validated === this._current.value;
+  }
+
+  protected _renderIssues(): void {
+    const editor = this.editor!;
+    const issues = editor.diagnostics.peek();
+    this._issues.replaceChildren(span(issues.length > 0 ? plural(issues.length, 'finding', 'findings') :
+      this._isValidated() ? 'No findings' : 'Not validated',
+    'u2-binding-issues-title'));
+    for (const issue of issues) {
+      const row = div([link(issue.path ?? 'schema', () => {
+        void editor.select(editor.model.resolvePath(issue.path));
+        this.wizard.goTo('design');
+      }), span(`: ${issue.message}`)], 'u2-binding-issue');
+      this._issues.append(row);
+    }
+  }
+
+  /** The app over the table, once the dialog settled; a route no app answers is said. */
+  protected static async _openApp(name: string, table: string): Promise<void> {
+    try {
+      const view = await route(`/domains/${name}/${table}`);
+      if (view !== null)
+        grok.shell.addView(view);
+      else
+        notify.error(`Domain schema ${name} is registered but could not be opened`);
+    } catch (e) {
+      notify.error(`Domain schema ${name} could not be opened: ${DomainErrors.message(e)}`);
+    }
+  }
+
+  /** JSON with sorted keys: the same value always reads the same. */
+  protected static _canonical(value: unknown): string {
+    return JSON.stringify(value, (_, v) => v === null || typeof v !== 'object' || Array.isArray(v) ? v :
+      Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])));
+  }
+
+  protected static _notFound(e: unknown): boolean {
+    return (e as {status?: unknown} | null)?.status === 404 || DomainErrors.codeOf(e) === 'not-found';
+  }
+
+  /** A refusal the server answered — not a lost connection, a timeout or a 5xx. */
+  protected static _answered(e: unknown): boolean {
+    const status = (e as {status?: unknown} | null)?.status;
+    return DomainErrors.codeOf(e) !== '' && !(typeof status === 'number' && status >= 500);
+  }
+
+  /** A warehouse read that outlasts {@link readTimeout} fails by name — a connector that never
+   * answers (a catalog it cannot open) must not hold the dialog. */
+  protected static _within<T>(read: Promise<T>, what: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout>;
+    const late = new Promise<never>((_, reject) => timer = setTimeout(() =>
+      reject(new Error(`${what} did not answer within ${BindingWizard.readTimeout / 1000} s`)),
+    BindingWizard.readTimeout));
+    return Promise.race([read, late]).finally(() => clearTimeout(timer));
+  }
+
+  /** A failure for the status line: a domain call nothing answered (status 0, no code — the
+   * transport's own words) says so around them; anything else is the refusal as worded. */
+  protected static _failure(e: unknown): string {
+    const message = DomainErrors.message(e);
+    return (e as {status?: unknown} | null)?.status === 0 && DomainErrors.codeOf(e) === '' ?
+      `Could not reach the server (${message})` : message;
+  }
+}
+
+
+export class BindingDialog extends BindingWizard<BindingResult> {
   readonly connection: ChoiceInput;
   readonly schema: ChoiceInput;
 
   private readonly _options: CreateBindingOptions;
-  private readonly _editor = signal<ManifestEditor | undefined>(undefined);
   private _connections: DG.DataConnection[] = [];
   private readonly _draft = signal<DraftEnvelope | null>(null);
   /** What stands between the connection step and Design: the read in progress, or its refusal. */
   private readonly _reading = signal<string | null>(null);
   /** Why the editor could not be built over the draft. */
   private readonly _designProblem = signal<string | null>(null);
-  /** The exact create payload the dry run passed; anything else is not validated. */
-  private readonly _validated = signal<string | null>(null);
-  private readonly _current = computed(() => {
-    const editor = this._editor.value;
-    if (editor === undefined)
-      return null;
-    editor.model.revision.value;
-    editor.model.name.value;
-    editor.model.friendlyName.value;
-    return BindingDialog._payload(editor);
-  });
   private readonly _failed = signal(0);
   private readonly _facts = span('Only database connections are offered', 'u2-binding-facts');
   private readonly _access = span('', 'u2-binding-access');
   private readonly _designHost = div([], 'u2-binding-design');
   private readonly _json = document.createElement('pre');
-  private readonly _issues = divV([], 'u2-binding-issues');
   private readonly _planned: Section;
   private readonly _createdHost = divV([], 'u2-binding-created');
   private _built: DraftEnvelope | null = null;
   /** The connection and the remote schema the built draft was read over. */
   private _builtKey: string | null = null;
-  /** The payload the editor's diagnostics were found in. */
-  private _diagnosed: string | null = null;
   /** The name of a create that got no answer: a later "name taken" may be that create's own. */
   private _unanswered: string | null = null;
   private _writeHint: string | undefined;
@@ -138,19 +267,16 @@ export class BindingDialog extends Control {
   private _readProblem = false;
   private _describeGen = 0;
   private _readGen = 0;
-  private _validateGen = 0;
   private _loaded: Promise<void> = Promise.resolve();
   private _described: Promise<void> = Promise.resolve();
   private _result: BindingResult | undefined;
   private _firstTable = '';
   private _pending: AccessOp[] = [];
   private readonly _final: AccessFailure[] = [];
-  private _resolve: ((result: BindingResult | null) => void) | undefined;
 
   constructor(options: CreateBindingOptions = {}) {
     super();
     this._options = options;
-    this.root.classList.add('u2-binding-dialog-host');
     this.root.dataset.u2 = 'binding-dialog';
     this.connection = this.runInScope(() => new ChoiceInput({label: 'Connection', name: 'connection', items: [],
       nullable: false, emptyText: 'Loading connections…'}));
@@ -161,7 +287,7 @@ export class BindingDialog extends Control {
     this._planned.root.classList.add('u2-binding-planned');
     // the connection step is built up front: it starts the reads, whichever step opens first
     const connection = this.runInScope(() => this._connectionStep());
-    this.wizard = this.runInScope(() => new Wizard({
+    this._mount({
       start: options.connection !== undefined && options.schema !== undefined ? 'design' : undefined,
       steps: [
         {id: 'connection', title: 'Connection', content: connection,
@@ -178,55 +304,17 @@ export class BindingDialog extends Control {
       ],
       onFinish: () => this._settle(this._result ?? null),
       onCancel: () => this._settle(null),
-    }));
-    this.wizard.root.classList.add('u2-binding-dialog');
-    this.root.append(this.wizard.root);
+    });
     // the editor is built once Design is open and the draft is in, whichever comes second
     this.effect(() => {
       this._draft.value;
       if (this.wizard.currentStep.value === 'design')
         void this._design();
     });
-    // findings belong to the payload they were found in: an edit since takes them off the list,
-    // the rows and the panel
-    this.effect(() => {
-      const payload = this._current.value;
-      const editor = this._editor.peek();
-      if (editor !== undefined && payload !== this._diagnosed && editor.diagnostics.peek().length > 0)
-        editor.diagnostics.value = [];
-    });
   }
 
   open(): Promise<BindingResult | null> {
-    this.wizard.openInDialog('Create domain schema', {width: 960, height: 640});
-    return new Promise((resolve) => this._resolve = resolve);
-  }
-
-  /** The editor, from the Design step on; rebuilt when the draft behind it changed. */
-  get editor(): ManifestEditor | undefined {
-    return this._editor.value;
-  }
-
-  /** The dry run's findings from a refusal: the manifest-validation errors by path, else the
-   * refusal itself as one schema-wide finding. */
-  static issues(e: unknown): ManifestDiagnostic[] {
-    const errors = (e as {errors?: unknown} | null)?.errors;
-    if (Array.isArray(errors) && errors.length > 0)
-      return errors as ManifestDiagnostic[];
-    return [{code: DomainErrors.codeOf(e) || 'error', message: DomainErrors.message(e)}];
-  }
-
-  private _settle(result: BindingResult | null): void {
-    const resolve = this._resolve;
-    this._resolve = undefined;
-    this.wizard.dispose();
-    this.dispose();
-    resolve?.(result);
-  }
-
-  private _say(content: string | HTMLElement, error = false): void {
-    this.wizard.status.replaceChildren(content);
-    this.wizard.status.classList.toggle('u2-wizard-status-error', error);
+    return this._open('Create domain schema');
   }
 
   private _picked(): DG.DataConnection | undefined {
@@ -415,7 +503,7 @@ export class BindingDialog extends Control {
         editor.model.includeTables(false);
         editor.model.includeTable(table.remote, true);
       }
-      this._diagnosed = BindingDialog._payload(editor);
+      this._diagnosed = this._payloadOf(editor);
       const reset = this._editor.peek();
       reset?.dispose();
       this._designHost.replaceChildren(editor.root);
@@ -455,10 +543,6 @@ export class BindingDialog extends Control {
     }
   }
 
-  private static _notFound(e: unknown): boolean {
-    return (e as {status?: unknown} | null)?.status === 404 || DomainErrors.codeOf(e) === 'not-found';
-  }
-
   private _designGate(): string | null {
     const problem = this._designProblem.value;
     if (problem !== null)
@@ -477,26 +561,17 @@ export class BindingDialog extends Control {
     return div([this._json, divV([this._planned.root, this._issues], 'u2-binding-review-side')], 'u2-binding-review');
   }
 
-  /** The create payload as one string, keys sorted — what a validation is bound to. */
-  private static _payload(editor: ManifestEditor): string {
+  /** The create envelope: the name, the friendly name and the manifest — the access rows are
+   * applied afterwards and are no part of it. */
+  protected _payloadOf(editor: ManifestEditor): string {
     const model = editor.model;
-    return BindingDialog._canonical({name: model.name.peek(), friendlyName: model.friendlyName.peek(),
+    model.revision.value;
+    return BindingDialog._canonical({name: model.name.value, friendlyName: model.friendlyName.value,
       manifest: model.toJSON()});
-  }
-
-  /** JSON with sorted keys: the same value always reads the same. */
-  private static _canonical(value: unknown): string {
-    return JSON.stringify(value, (_, v) => v === null || typeof v !== 'object' || Array.isArray(v) ? v :
-      Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])));
   }
 
   private static _key(conn: DG.DataConnection, schema: string): string {
     return `${conn.id}\u0000${schema}`;
-  }
-
-  private _isValidated(): boolean {
-    const validated = this._validated.value;
-    return validated !== null && validated === this._current.value;
   }
 
   /** The validation holds for the editor over the draft picked now, nothing older. */
@@ -526,27 +601,12 @@ export class BindingDialog extends Control {
       ...ops.map((op) => span(op.label, 'u2-binding-planned-op')));
   }
 
-  private _renderIssues(): void {
-    const editor = this.editor!;
-    const issues = editor.diagnostics.peek();
-    this._issues.replaceChildren(span(issues.length > 0 ? plural(issues.length, 'finding', 'findings') :
-      this._isValidated() ? 'No findings' : 'Not validated',
-    'u2-binding-issues-title'));
-    for (const issue of issues) {
-      const row = div([link(issue.path ?? 'schema', () => {
-        void editor.select(editor.model.resolvePath(issue.path));
-        this.wizard.goTo('design');
-      }), span(`: ${issue.message}`)], 'u2-binding-issue');
-      this._issues.append(row);
-    }
-  }
-
   /** The dry run over the payload as it stands; an answer to a payload since changed, or to an
    * older run, is dropped. A failure the server did not answer is no finding. */
   private async _validate(): Promise<void> {
     const editor = this.editor!;
     const plan = editor.plan();
-    const payload = BindingDialog._payload(editor);
+    const payload = this._payloadOf(editor);
     const gen = ++this._validateGen;
     this._say('Validating…');
     let refusal: unknown = null;
@@ -558,7 +618,7 @@ export class BindingDialog extends Control {
     }
     if (gen !== this._validateGen)
       return;
-    if (this.editor !== editor || BindingDialog._payload(editor) !== payload)
+    if (this.editor !== editor || this._payloadOf(editor) !== payload)
       return this._say('Changed while validating — validate again');
     if (refusal !== null && !BindingDialog._answered(refusal))
       return this._say(BindingDialog._failure(refusal), true);
@@ -568,30 +628,6 @@ export class BindingDialog extends Control {
     this._say(refusal === null ? badge('Validated', {variant: 'success'}) : DomainErrors.message(refusal),
       refusal !== null);
     this._renderIssues();
-  }
-
-  /** A refusal the server answered — not a lost connection, a timeout or a 5xx. */
-  private static _answered(e: unknown): boolean {
-    const status = (e as {status?: unknown} | null)?.status;
-    return DomainErrors.codeOf(e) !== '' && !(typeof status === 'number' && status >= 500);
-  }
-
-  /** A warehouse read that outlasts {@link readTimeout} fails by name — a connector that never
-   * answers (a catalog it cannot open) must not hold the dialog. */
-  private static _within<T>(read: Promise<T>, what: string): Promise<T> {
-    let timer: ReturnType<typeof setTimeout>;
-    const late = new Promise<never>((_, reject) => timer = setTimeout(() =>
-      reject(new Error(`${what} did not answer within ${BindingDialog.readTimeout / 1000} s`)),
-    BindingDialog.readTimeout));
-    return Promise.race([read, late]).finally(() => clearTimeout(timer));
-  }
-
-  /** A failure for the status line: a domain call nothing answered (status 0, no code — the
-   * transport's own words) says so around them; anything else is the refusal as worded. */
-  private static _failure(e: unknown): string {
-    const message = DomainErrors.message(e);
-    return (e as {status?: unknown} | null)?.status === 0 && DomainErrors.codeOf(e) === '' ?
-      `Could not reach the server (${message})` : message;
   }
 
   /** The create, then the access rows; the schema exists once the create answered, and the
@@ -656,7 +692,7 @@ export class BindingDialog extends Control {
       this._unanswered = null;
     }
     const editor = this.editor!;
-    this._diagnosed = BindingDialog._payload(editor);
+    this._diagnosed = this._payloadOf(editor);
     editor.diagnostics.value = BindingDialog.issues(e);
     this._validated.value = null;
     this._renderIssues();
@@ -695,15 +731,7 @@ export class BindingDialog extends Control {
     const result = this._result!;
     const first = this._firstTable;
     this._settle(result);
-    try {
-      const view = await route(`/domains/${result.name}/${first}`);
-      if (view !== null)
-        grok.shell.addView(view);
-      else
-        notify.error(`Domain schema ${result.name} is registered but could not be opened`);
-    } catch (e) {
-      notify.error(`Domain schema ${result.name} could not be opened: ${DomainErrors.message(e)}`);
-    }
+    await BindingDialog._openApp(result.name, first);
   }
 
   private async _retry(): Promise<void> {

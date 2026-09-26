@@ -515,7 +515,7 @@ scoped('a warehouse read that never answers fails by name after the timeout; the
   const never = () => new Promise(() => {});
   grok.dapi.connections.getSchemas = never;
   const {BindingDialog} = domains.authoring;
-  BindingDialog.readTimeout = 20;
+  domains.authoring.BindingWizard.readTimeout = 20;
   try {
     const dialog = new BindingDialog({connection: CONN, catalog: 'bogus'});
     const done = dialog.open();
@@ -539,7 +539,7 @@ scoped('a warehouse read that never answers fails by name after the timeout; the
     await flush();
     assert.equal(await done, null);
   } finally {
-    BindingDialog.readTimeout = 30000;
+    domains.authoring.BindingWizard.readTimeout = 30000;
   }
 });
 
@@ -550,7 +550,7 @@ scoped('opened on Design over a preset whose reads never answer: the draft fails
   grok.dapi.connections.getSchemas = never;
   grok.dapi.domains.draft = never;
   const {BindingDialog} = domains.authoring;
-  BindingDialog.readTimeout = 20;
+  domains.authoring.BindingWizard.readTimeout = 20;
   try {
     const dialog = new BindingDialog({connection: CONN, schema: 'public', catalog: 'bogus'});
     const done = dialog.open();
@@ -581,7 +581,7 @@ scoped('opened on Design over a preset whose reads never answer: the draft fails
     await flush();
     assert.equal(await done, null);
   } finally {
-    BindingDialog.readTimeout = 30000;
+    domains.authoring.BindingWizard.readTimeout = 30000;
   }
 });
 
