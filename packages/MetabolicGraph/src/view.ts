@@ -17,7 +17,7 @@ export class MetabolicGraphView extends DG.ViewBase {
     super();
     this.name = 'Metabolic Graph';
     this.root.classList.add('d4-escher-container');
-    this.aiDescription = 'Metabolic Graph — an Escher-based metabolic network map backed by a COBRA model, ' +
+    (this as any).aiDescription = 'Metabolic Graph — an Escher-based metabolic network map backed by a COBRA model, ' +
       'for flux analysis (FBA, flux sampling, time-course simulation). Act on it through the view functions ' +
       '(search list_view_functions with "metabolic"): getMetabolicState (call first to see what is loaded), ' +
       'findMetabolicEntities / getMetabolicEntityDetails to explore reactions, metabolites and genes, ' +

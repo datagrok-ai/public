@@ -120,6 +120,24 @@ _Optional_
 Is available only for data link, will force run a link after OnInit
 hook.
 
+While the [init hook](#init-hook) and the `runOnInit` links run, plain
+data links are not yet active, so values written at that stage do not
+propagate through them. A data link that must carry an init value
+further, for example from a [state](configuration.mdx#states) into a
+script input, needs `runOnInit` itself; a chain of such links needs the
+flag on every link. Meta, validator and other derived links react to
+init writes as usual, and plain data links react to every change made
+after init.
+
+#### `params`
+
+_Optional_
+
+A static object attached to the link and readable from the handler with
+[`getParam`](#getparam). Lets one handler serve several links with
+different configuration. [Rules](#rules) use it to pass their condition
+and effects to the built-in handlers.
+
 
 ### Common controller methods
 
@@ -165,6 +183,43 @@ getMatchedOutputs(): Readonly<Set<string>>;
 Same as [`getMatchedInputs`](#getmatchedinputs), but for the `to` query names.
 Use this to find out which optional outputs exist before writing to them.
 
+#### `getMatchedPositions`
+
+```
+type MatchedNodeInfo = {
+  path: Readonly<NodePath>;
+  position: number;
+  ioName?: string;
+};
+
+getMatchedPositions(name: string): MatchedNodeInfo[];
+```
+
+Receives a `from` or `to` query name. Returns the positions of the
+nodes it matched, in the same order as [`getAll`](#getall) values.
+`path` is the node path relative to the node the link is defined on.
+`position` is the index of the matched node among its parent's
+children, or `-1` when the query matched the link's own node (for
+example, a [node meta](#node-meta-links) output targeting the
+pipeline itself). Throws for query names without matches, so check
+[`getMatchedInputs`](#getmatchedinputs) /
+[`getMatchedOutputs`](#getmatchedoutputs) first for optional queries.
+
+Use this in [node meta](#node-meta-links) handlers to produce
+position-aware titles or descriptions, for example
+`` `Step ${controller.getMatchedPositions('in')[0].position + 1}` ``.
+
+#### `getBasePosition`
+
+```
+getBasePosition(): MatchedNodeInfo | undefined;
+```
+
+Returns the position of the matched `base` node for
+base-instantiated links, or `undefined` when the link has no `base`
+query. Each link instance created from a `base` match reports the
+position of its own base node.
+
 #### `getAdditionalParam`
 
 ```
@@ -173,6 +228,14 @@ getAdditionalParam(name: string): any | undefined;
 
 Only used in actions, for passing additional parameters from
 [validators](#validators).
+
+#### `getParam`
+
+```
+getParam(name: string): any | undefined;
+```
+
+Returns a value from the link [`params`](#params) object.
 
 #### `hasCall`
 
@@ -526,7 +589,7 @@ input or output:
 
 | Key | Effect |
 |------|--------|
-| `hidden: true` | Hide the input from the script UI. If the input is a dataframe with one or more `viewer:` panels, those panels are hidden too. The input annotation must include `optional: true`, otherwise the platform requires a value. |
+| `hidden: true` | Hide the input from the script UI. If the input is a dataframe with one or more `viewer:` panels, those panels are hidden too. A hidden input is treated as optional regardless of its annotation: the default missing-value check and any validator link targeting it no longer block the run or show up in the UI, and the function is called with whatever value the input holds, possibly `null`. |
 | `items: string[]` | For choice inputs, replace the dropdown options. Example: `{ items: ['one', 'two', 'three'] }`. |
 
 Any other key/value pair is forwarded to the viewer hook unchanged, so
@@ -594,6 +657,117 @@ setDescriptionItem(name: string, description: any): void;
 ```
 
 Sets description to an output query with the specified name.
+
+
+## Rules
+
+Rules are a declarative shorthand for the most common form logic:
+hiding inputs, replacing dropdown items, emitting validation messages,
+setting or clearing values depending on other inputs. A rule has type
+`rule`, a condition and a list of effects. At config processing time
+it expands into ordinary [meta](#metadata-links), [validator](#io-validators)
+and [data](#data-links) links executed by built-in handlers, so the
+runtime never sees the rule itself.
+
+```
+{
+  id: 'advancedParams',
+  type: 'rule',
+  from: ['mode:solver/mode', 'df:solver/table', 'amb:solver/ambTemp'],
+  to: ['tol:solver/tolerance', 'col:solver/column', 'init:solver/initTemp'],
+  when: {'==': [{var: 'mode'}, 'advanced']},
+  effects: [
+    {effect: 'show', targets: ['tol', 'col']},
+    {effect: 'items', targets: 'col', items: {columns: [{var: 'df'}, 'numerical']}},
+    {effect: 'clear', targets: 'col'},
+    {effect: 'error', targets: 'init', message: {cat: ['Must exceed ambient ', {var: 'amb'}]}},
+  ],
+}
+```
+
+### Expressions
+
+`when` and every value-bearing effect field (`items`, `meta` values,
+`message`, `value`) is a [JSON Logic](https://jsonlogic.com/) expression.
+Plain literals are valid expressions and evaluate to themselves. The data
+available to `var` is:
+
+- `<alias>` — the first matched value of a `from` query;
+- `all.<alias>` — all matched values of a `from` query.
+
+Three extra operations are registered:
+
+- `columns`: a dataframe and an optional filter (`numerical`,
+  `categorical`, a column type or a semantic type); returns the matching
+  column names.
+- `columnsMissing`: a dataframe and a spec list of `[name, filter]` pairs
+  (or bare names); returns a description of every entry with no matching
+  column, such as `smiles (Molecule)`. Empty when the table satisfies the
+  spec, so `{'!!': {columnsMissing: [...]}}` is a schema check and the same
+  expression inside `cat` names the offending columns in the message.
+- `len`: length of a string or array, or the row count of a dataframe.
+
+Truthiness of `when` follows JSON Logic rules. `when` omitted or `null`
+means the rule is always on. All effects of one rule share its `when`;
+split effects with different conditions into separate rules.
+
+JSON Logic reads any object with exactly one key as an operation. To pass
+such an object as a value, wrap it: `{literal: {foo: 1}}` evaluates to
+`{foo: 1}` wherever it appears in an expression.
+
+### Effects
+
+Every effect has an "on" state written while `when` holds and an "off"
+state written otherwise, so a rule fully re-derives its outputs on each
+run. `targets` is a `to` alias or an array of them.
+
+| Effect | Link | On | Off | Fields |
+|---|---|---|---|---|
+| `hide` / `show` | meta | `hidden: true` / `hidden: false` | the inverse | |
+| `items` | meta | `items: <evaluated>` | key omitted | `items` |
+| `meta` | meta | evaluated key/value pairs | keys omitted | `meta` |
+| `error` / `warning` / `notification` | validator | one message per target | cleared | `message` |
+| `set` | data | `setAll(target, value, restriction)` | restores the target's initial restriction | `value`, `restriction` (default `none`) |
+| `clear` | data | `setAll(target, null, restriction)` | no-op | `restriction` (default `none`) |
+
+Like every data link, a rule's data link runs when one of its `from`
+values changes and never when a target changes. So `clear` resets the
+target each time an input changes while `when` holds, and the user can
+edit the target freely in between. `clear` is `set` with a `null` value.
+Rules hold no memory of previous runs: their outputs are always a
+function of the current values.
+
+Rule data effects are defaults, not propagated results, so unlike plain
+[data links](#data-links) they use the `none` restriction unless one is
+given: the value is written directly and no consistency is tracked.
+Pass `restriction: 'restricted'` (or another type) to get the data-link
+behaviour. The [consistency](#consistency) rule for steps that have
+already run still applies: on a step whose outputs are current, an
+effect with `none` does nothing, and an effect with any other
+restriction only records the restriction and leaves the value alone.
+
+### Expansion
+
+A rule with id `r` becomes up to three links: `r::meta`, `r::validator`
+and `r::data`, one per effect family present. Each copies `from`, `not`,
+`base`, `nodePriority` and `dataFrameMutations`, keeps only the `to`
+entries its effects target, and carries `{when, effects}` in
+[`params`](#params). `debounce` is passed to the validator link and
+`runOnInit` to the data link. The `(call)` and `(template)` flags are not
+allowed in rule queries.
+
+Config processing rejects a rule whose effect targets an unknown `to`
+alias, whose `to` alias is targeted by no effect, whose expression
+references an unknown `from` alias (through `var`, `missing` or
+`missing_some`, at any nesting depth), or that applies `hide`/`show`
+twice to the same alias.
+
+Rules are self-contained: two rules writing the same effect to the same
+io is a configuration error, and which value ends up in the merged meta
+is unspecified.
+
+The default missing-value validators the driver adds for non-optional
+inputs are instances of the same built-in validator handler.
 
 
 ## Actions
@@ -797,6 +971,9 @@ the common ancestor, or operate only at the inner level.
 Uses the `onInit` field instead of links and is triggered only once
 when a workflow is created. Usually is used to populate static
 [states](configuration.mdx#states). Otherwise, the same as [data links](#data-links).
+Its writes are visible to [`runOnInit`](#runoninit) links and to derived
+links, but not to plain data links, which become active only after the
+init stage.
 
 
 ### Return hook

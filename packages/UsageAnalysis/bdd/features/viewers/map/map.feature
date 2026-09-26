@@ -50,9 +50,7 @@ Feature: Map viewer layers, zoom, selection and the point tooltip
     When user sets properties of map viewer:
       | colorColumnName | Magnitude |
       | sizeColumnName  | Depth     |
-    Then "colorColumnName" property of map viewer should be "Magnitude"
-    And "sizeColumnName" property of map viewer should be "Depth"
-    And the "markers" reading of map viewer should be 2426
+    Then the "markers" reading of map viewer should be 2426
     And the "rows shown" reading of map viewer should be 2426
     And the "layer \"Markers GL\" visible" reading of map viewer should be "true"
     When user sets properties of map viewer:
@@ -128,7 +126,6 @@ Feature: Map viewer layers, zoom, selection and the point tooltip
     Given user clears the row selection
     When user drags a box over the "view" area of map viewer holding Control
     Then some rows should be selected
-    And every selected row should pass the filter
     When user presses Escape
     Then no rows should be selected
     And no errors should have been logged

@@ -65,16 +65,16 @@ Parameterized commands use the `command(param)` syntax:
 
 ### URL aliases
 
-A URL alias is a stable, readable address on the platform origin — `https://host/sales` —
-that opens a dashboard, any other entity, or another URL. Administrators create and re-point
-aliases under **Browse > Platform > URL Aliases** (or from an entity's context menu,
-**Create URL alias...** — an open dashboard offers it under **Dashboard** in its view menu),
-so a link keeps working after the dashboard behind it is
-republished. Query parameters on an alias URL are passed to the target: `/sales?region=EU`
-opens the dashboard with `region` set. By default the address bar then shows the target's
-own URL; an alias saved with **Preserve URL** keeps `/sales` there and only the query
-parameters change as you work. Platform routes (`/p`, `/files`, `/apps`, ...) and view
-URLs cannot be aliased.
+A URL alias is a stable, readable address under an entity's own URL prefix —
+`https://host/p/sales` for a dashboard, `https://host/func/sales-report` for a query — that
+opens that entity. The prefix (`/p/`, `/func/`, `/files/`, ...) is the entity's own and stays;
+you choose only the name after it. Administrators create and re-point aliases under
+**Browse > Platform > URL Aliases** (or from an entity's context menu, **Create URL alias...** —
+an open dashboard offers it under **Dashboard** in its view menu), so a link keeps working
+after the dashboard behind it is republished. Query parameters on an alias URL are passed to
+the target: `/p/sales?region=EU` opens the dashboard with `region` set. By default the address
+bar then shows the target's own URL; an alias saved with **Preserve URL** keeps `/p/sales`
+there and only the query parameters change as you work.
 
 ## Functions
 

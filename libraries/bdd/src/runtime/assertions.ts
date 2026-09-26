@@ -12,9 +12,10 @@ export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
-// a dock manager's tab says which of its handles is shown with a class of its own, and nothing else
+// a dock manager's tab and a gallery's view-mode icon say which is shown with a class of their own;
+// d4-current elsewhere in a gallery marks the current card, not a selection
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected';
+  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected, .grok-gallery-search-bar .d4-current';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
@@ -32,12 +33,21 @@ export async function expectState(page: Page, target: ElementRef, state: State, 
     case 'partially checked': return expectMixed(loc, !negate);
     case 'invalid': return expectInvalid(loc, !negate);
     case 'valid': return expectInvalid(loc, negate);
+    case 'ready': return expectReady(loc, !negate);
     case 'selected': return expectSelected(page, loc, !negate);
     case 'empty': return (negate ? expect(await editorOf(page, target)).not : expect(await editorOf(page, target))).toHaveValue('');
     case 'expanded': return expectExpanded(loc, !negate);
     case 'collapsed': return expectExpanded(loc, negate);
     case 'focused': return e.toBeFocused();
   }
+}
+
+/** A completed asynchronous widget explicitly clears aria-busy. Missing markup is not readiness,
+ * and a failed computation can stop running but must not count as a ready result. */
+async function expectReady(loc: Locator, ready: boolean): Promise<void> {
+  await expect.poll(() => loc.evaluateAll((all) => all.length > 0 && all.every((el) =>
+    el.getAttribute('aria-busy') === 'false' && el.getAttribute('aria-invalid') !== 'true')),
+  {message: 'a completed, valid result (aria-busy=false)'}).toBe(ready);
 }
 
 /** A parameter form's switch is not inside the input it governs, so this is a claim of its own
@@ -48,10 +58,10 @@ export async function expectSwitched(page: Page, target: ElementRef, on: boolean
 }
 
 /** Several matches (stacked balloons, repeated rows): visible when any is, hidden when none is —
- * one query either way. */
-async function expectVisible(loc: Locator, visible: boolean): Promise<void> {
+ * one query either way. `timeout` is for what a long computation produces (a search's hits). */
+export async function expectVisible(loc: Locator, visible: boolean, timeout?: number): Promise<void> {
   const shown = loc.filter({visible: true});
-  await (visible ? expect(shown, 'visible expected').not.toHaveCount(0) : expect(shown, 'hidden expected').toHaveCount(0));
+  await (visible ? expect(shown, 'visible expected').not.toHaveCount(0, {timeout}) : expect(shown, 'hidden expected').toHaveCount(0, {timeout}));
 }
 
 /** Options and tabs say `aria-selected`, toggles and cards `aria-pressed`, radio-like buttons
@@ -80,7 +90,7 @@ async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
     if (els.length === 0)
       return undefined;
     const marked = (e: Element) => e.getAttribute('aria-disabled') === 'true' ||
-      ['u2-input-disabled', 'd4-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
+      ['u2-input-disabled', 'd4-disabled', 'd4-filter-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
     return els.every((el) => {
       for (let e: Element | null = el; e; e = e.parentElement) {
         if (marked(e))
@@ -120,9 +130,11 @@ async function expectChecked(loc: Locator, checked: boolean): Promise<void> {
  * is shown now: the platform keeps one tooltip element, hidden between hovers. */
 export async function expectText(page: Page, target: ElementRef, text: string, options: {exact?: boolean; negate?: boolean} = {}): Promise<void> {
   const plan = refOf(page, target).plan;
-  const loc = plan.type === 'kind' && plan.kind.name === 'tooltip' ? await locateActionable(page, target) : await locate(page, target);
-  if (await loc.count() > 1) {
-    const matching = loc.filter({hasText: options.exact ? exactText(text) : new RegExp(escapeRegExp(text), 'i')});
+  const tooltip = plan.type === 'kind' && plan.kind.name === 'tooltip';
+  const loc = await locate(page, target);
+  if (tooltip || await loc.count() > 1) {
+    const matching = (tooltip ? loc.filter({visible: true}) : loc)
+      .filter({hasText: options.exact ? exactText(text) : new RegExp(escapeRegExp(text), 'i')});
     await (options.negate ? expect(matching).toHaveCount(0) : expect(matching).not.toHaveCount(0));
     return;
   }
@@ -174,6 +186,20 @@ export async function expectValue(page: Page, target: ElementRef, value: string,
   }
   await expect.poll(() => readValue(page, target), {message: `${message} (something that can hold one)`}).not.toBe(undefined);
   await expect.poll(() => readValue(page, target), {message}).not.toBe(value);
+}
+
+/** The choices a dropdown offers, in order: a native `<select>`'s options, else the element's own
+ * option rows. */
+export async function expectOptions(page: Page, target: ElementRef, list: string): Promise<void> {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  const loc = await locate(page, target);
+  const read = () => loc.first().evaluate((e) => {
+    const select = e.tagName === 'SELECT' ? e as HTMLSelectElement : e.querySelector('select');
+    const items = select ? Array.from(select.options) : Array.from(e.querySelectorAll('[role="option"]'));
+    return items.map((o) => (o.textContent ?? '').trim()).filter(Boolean);
+  }).catch(() => [] as string[]);
+  // the blank option of a nullable dropdown is no choice, and the phrase cannot name it
+  await expect.poll(read, {message: `the choices ${target.phrase} offers`}).toEqual(want);
 }
 
 /** Rows of a collection: the first row vocabulary that has any is the one counted. */

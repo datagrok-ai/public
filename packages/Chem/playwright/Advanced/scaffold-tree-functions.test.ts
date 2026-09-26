@@ -1,10 +1,8 @@
-/* ---
-sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.add, chem.analyze.scaffold-tree.filter, chem.analyze.scaffold-tree.generate, chem.analyze.scaffold-tree.viewer]
---- */
-// Paired scenario: Advanced/scaffold-tree-functions.md
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {waitForChemMenuRoot} from '../chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -12,6 +10,7 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
   test.setTimeout(180_000);
 
   await loginToDatagrok(page);
+  await waitForChemMenuRoot(page);
 
   await softStep('Step 1: Open smiles-50.csv', async () => {
     await page.evaluate(async () => {
@@ -37,13 +36,20 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
   await softStep('Step 2-3: Chem → Analyze → Scaffold Tree → viewer mounted (empty state)', async () => {
     await page.evaluate(() => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
+      // Labels from a previously opened menu stay in the document, so only a node that was not
+      // already there is this menu's leaf; clicking a stale one actuates nothing.
+      (window as any).__staleMenuLabels = new Set(Array.from(document.querySelectorAll('.d4-menu-item-label')));
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
     await page.waitForFunction(() => Array.from(document.querySelectorAll('.d4-menu-item-label'))
       .some(m => m.textContent!.trim() === 'Scaffold Tree'), null, {timeout: 15000});
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      .some(m => !(window as any).__staleMenuLabels.has(m) && m.textContent!.trim() === 'Scaffold Tree'),
+    null, {timeout: 2000}).catch(() => {});
     await page.evaluate(() => {
-      const item = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(m => m.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
+      const labels = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .filter(m => m.textContent!.trim() === 'Scaffold Tree');
+      const item = (labels.find(m => !(window as any).__staleMenuLabels.has(m)) ?? labels[0]) as HTMLElement;
       (item.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
     await page.locator('[name="viewer-Scaffold-Tree"]').waitFor({timeout: 15000});
@@ -81,14 +87,19 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
 
   await softStep('Step 6-7: Click first scaffold node → table filters', async () => {
     const beforeFiltered = await page.evaluate(() => grok.shell.t.filter.trueCount);
-    const click = await page.evaluate(() => {
+    const click = await page.evaluate(async () => {
       const viewer = document.querySelector('[name="viewer-Scaffold-Tree"]');
       const nodes = Array.from(viewer!.querySelectorAll('.d4-tree-view-node'))
         .filter(n => n.querySelector('canvas'));
       if (nodes.length === 0) return {ok: false, reason: 'no visible nodes'};
       const checkbox = nodes[0].querySelector('input[type="checkbox"]') as HTMLInputElement;
       if (!checkbox) return {ok: false, reason: 'no checkbox on first node'};
+      const beforeTrue = grok.shell.t.filter.trueCount;
       checkbox.click();
+      // The caller asserts the row set narrowed; wait for that, capped at the sleep replaced.
+      const filterDeadline = Date.now() + 3000;
+      while (Date.now() < filterDeadline && grok.shell.t.filter.trueCount >= beforeTrue)
+        await new Promise(r => setTimeout(r, 100));
       return {ok: true};
     });
     expect((click as any).ok, (click as any).reason).toBe(true);

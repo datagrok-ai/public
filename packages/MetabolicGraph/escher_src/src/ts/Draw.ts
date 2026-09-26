@@ -679,13 +679,14 @@ export default class Draw {
           if (isNaN(segWidth)) segWidth = no_data_size;
         }
         const dotWidth = Math.max(2, segWidth * 0.8);
-        const period = Math.max(20, dotWidth * 3);
+        // sparse dots stay distinguishable when zoomed out
+        const period = Math.max(40, dotWidth * 6);
 
-        // one period per 0.3s at the top of the scale, easing down to 1.5s
-        let duration = 0.6;
+        // one period per 0.6s at the top of the scale, easing down to 3s
+        let duration = 1.2;
         if (max_abs_domain > 0) {
           const rel = Math.min(1, Math.abs(flux) / max_abs_domain);
-          duration = rel <= 0 ? 1.5 : Math.min(1.5, Math.max(0.3, 0.3 / Math.sqrt(rel)));
+          duration = rel <= 0 ? 3 : Math.min(3, Math.max(0.6, 0.6 / Math.sqrt(rel)));
         }
 
         el.style.display = 'inline';

@@ -82,6 +82,19 @@ PEPTIDE1{meI}$$$$`;
   test('testPickupPaletteAA1', async () => { await _testPickupPaletteAA1(csvDfAA1); });
   test('testPickupPaletteX', async () => { await _testPickupPaletteX(csvDfX); });
 
+  test('serviceGetters', async () => {
+    const services: [string, string[]][] = [
+      ['Bio:getSeqHelper', ['getSeqHandler', 'getSeqMonomers', 'helmToAtomicLevel', 'setUnitsToFastaColumn']],
+      ['Bio:getMonomerLibHelper', ['getMonomerLib', 'awaitLoaded']],
+      ['Bio:getBioLib', ['getMonomer', 'getMonomerSymbolsByType', 'getPolymerTypes']],
+    ];
+    for (const [func, methods] of services) {
+      const service = await grok.functions.call(func, {});
+      const missing = methods.filter((m) => typeof service?.[m] !== 'function');
+      expect(missing.length, 0, `${func} result lacks ${missing.join(', ')}`);
+    }
+  });
+
   function _testGetStats(csvDfN1: string) {
     const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
     const seqCol: DG.Column = dfN1.col('seq')!;

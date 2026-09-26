@@ -31,6 +31,15 @@ import type {BlqRule, BlqStrategy, BlqProcessingResult} from './types';
  * - `missing`       — concentration replaced with `NaN`; downstream
  *                     functions skip `NaN` entries.
  *
+ * This kernel only WRITES the substitution. What each rule then means for
+ * AUC/AUMC, the λz regression, Cmax and Tlag is the contract on {@link BlqRule}
+ * and is implemented by `augmentProfile` through two masks: the substituted
+ * values (`set-zero`, `set-half-lloq`) reach the integrator and the λz
+ * eligibility filter as the values written here; `exclude`d and `NaN` points
+ * form the drop set; Cmax/Tmax and Tlag read the BLQ mask under every rule.
+ * (Before GROK-20960 the integrator read the BLQ mask too, so every rule
+ * integrated as `exclude`.)
+ *
  * `blqMask` marks below-LOQ points with `1`. `lloq` is a per-row array or a
  * scalar applied to all rows, and is read only by `set-half-lloq`.
  *

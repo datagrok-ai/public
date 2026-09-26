@@ -43,19 +43,12 @@ WebComponents/
 
 ## Build
 
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run lint               # ESLint check
-npm run lint-fix           # ESLint auto-fix
-```
-
-## Development
-
-Link local dependencies for development:
+`public/` is one pnpm workspace (see `packages/BUILD.MD`). Run `grok setup` once at the repository root.
 
 ```bash
-npm run link-all           # Links datagrok-api, webcomponents, and dock-spawn-dg
+grok build                 # This package and the libraries it depends on, in order, cached
+grok build --typecheck     # Build and type-check
+pnpm run lint              # ESLint check
 ```
 
 ## See also

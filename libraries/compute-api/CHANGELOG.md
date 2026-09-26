@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.8.0 (2026-09-23)
+
+* Removed `testPipeline` (the Compute test-runner feature was removed)
+
 ## 0.7.6 (2026-06-04)
 
 - Rebuilt against compute-utils 1.46.1

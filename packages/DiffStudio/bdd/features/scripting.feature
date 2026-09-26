@@ -68,6 +68,7 @@ Feature: The equations behind a model, and the script they become
     And no errors should have been logged
 
   Scenario: Refresh re-fetches the catalog, so a model removed behind its back disappears
+    Given user opens the Model Hub
     When the saved script is deleted on the server
     And user clicks on model hub refresh icon
     Then the Model Hub should not list the saved script

@@ -285,7 +285,13 @@ export class Link {
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const baseArgs = {inputs, inputsSet: inputSet, outputsSet: outputSet, callInputs, id: this.matchInfo.spec.id, scopeInfo: scope, inputTemplates, outputTemplates};
+    const baseArgs = {
+      inputs, inputsSet: inputSet, outputsSet: outputSet, callInputs,
+      id: this.matchInfo.spec.id, scopeInfo: scope, inputTemplates, outputTemplates,
+      matchedInputs: this.matchInfo.inputs, matchedOutputs: this.matchInfo.outputs,
+      basePath: this.matchInfo.basePath,
+      params: this.matchInfo.spec.params,
+    };
 
     if (this.isValidator)
       return new ValidatorController({...baseArgs, actions, actionsVisibility, baseNode});

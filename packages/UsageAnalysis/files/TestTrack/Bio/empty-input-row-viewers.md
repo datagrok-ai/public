@@ -7,7 +7,8 @@ realizes_atlas: [bio.int.empty-input-on-row-viewers]
 realizes: [bio.viewer.sequence-similarity-search, bio.viewer.sequence-diversity-search, bio.menu.analyze.activity-cliffs, bio.menu.search.similarity-search, bio.menu.search.diversity-search]
 produced_from: atlas-driven
 related_bugs:
-  - GROK-16111
+  - id: GROK-16111
+    status: open
 realized_as:
   - empty-input-row-viewers-spec.ts
 source_text_fixes: []
@@ -17,7 +18,7 @@ scope_reductions:
   - id: SR-01
     check: E-SCENARIO-RUNTIME-ALIGNMENT
     rationale: |
-      empty-input rejection balloon deferred: GROK-16111 — the three Bio current-row viewers (Sequence Similarity Search, Sequence Diversity Search, Activity Cliffs) do not reject empty/null current-row input; they silently KNN on the empty cell and surface NO rejection balloon (GROK-16111 status: regression-risk, fixed_in: ''). The scenario assertion (Scenario "Expected" Invariant 1: balloon invocation count > 0 on empty input) is correct; the product is broken. Gate B re-fired deterministically [B-RUN-PASS, B-STAB-01] across cycle 2026-06-01-bio-migrate-02 because the hard expect(probe.balloonCount).toBeGreaterThan(0) caught the real, unfixed bug. Per operator Option A (2026-06-02) the proper routing for an assertion on a documented, unfixed product bug is scope reduction (mirrors PowerPack data-enrichment SR-05..08, GROK-20175): replaced the hard expect() with a guarded console.warn (no assertion) so the run is green while GROK-16111 is open. The live no-crash assertion (Invariant 2: the active dataframe row count is unchanged — no silent zero-row result / silent table rewrite) is RETAINED, not softened. Revert this SR + restore the hard balloon assertion when GROK-16111 fixed_in is set.
+      empty-input rejection balloon wrapped as a known open bug: GROK-16111 — the three Bio current-row viewers (Sequence Similarity Search, Sequence Diversity Search, Activity Cliffs) do not reject empty/null current-row input; they silently KNN on the empty cell and surface NO rejection balloon (GROK-16111 status: regression-risk, fixed_in: ''). The scenario assertion (Scenario "Expected" Invariant 1: balloon invocation count > 0 on empty input) is correct; the product is broken. Gate B re-fired deterministically [B-RUN-PASS, B-STAB-01] across cycle 2026-06-01-bio-migrate-02 because the hard expect(probe.balloonCount).toBeGreaterThan(0) caught the real, unfixed bug. 2026-09-17: the guarded console.warn this SR first introduced reported nothing and could never go red once the bug was fixed; it is replaced by knownOpenBug('GROK-16111', ...), which passes while the bug reproduces and FAILS the moment the balloon appears. The live no-crash assertions (Invariant 2: the active dataframe row count is unchanged, and the viewer reacts at all — docks or rejects) are RETAINED as hard expects. Remove the knownOpenBug wrapper and set related_bugs status/fixed_in when GROK-16111 is fixed.
     verdict_status: SCOPE_REDUCTION
 gate_verdicts:
   a:
@@ -65,8 +66,13 @@ positive-path scenarios (`sequence-activity-cliffs.md`,
 ## Setup
 
 - Open `System.AppData/Bio/tests/filter_FASTA.csv` from the
-  Files browser. The Macromolecule detector classifies the
-  sequence column synchronously; the table view opens.
+  Files browser for Scenarios 1 and 2. The Macromolecule
+  detector classifies the sequence column synchronously; the
+  table view opens.
+- Scenario 3 uses `System.AppData/Bio/samples/FASTA.csv`
+  instead: filter_FASTA.csv carries only the sequence column,
+  and Activity Cliffs needs an activity column, so on it the
+  analysis never starts and the scenario tests nothing.
 - Verify the table has ≥ 2 rows so the "empty current cell"
   state can be constructed without an empty-table degenerate.
 - Position the **current row** on a row whose sequence cell
@@ -122,7 +128,8 @@ Expected:
 ### Scenario 3: Activity Cliffs — empty current-row balloon
 
 Steps:
-1. Restore the current row to the empty-sequence cell.
+1. Open `System.AppData/Bio/samples/FASTA.csv` and clear the
+   sequence cell of row 0, leaving the current row on it.
 2. On the menu ribbon open **Bio** > **Analyze** > **Activity
    Cliffs...**
 3. In the `SeqActivityCliffsEditor` dialog, leave defaults and

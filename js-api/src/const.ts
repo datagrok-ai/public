@@ -267,6 +267,8 @@ export const SEMTYPE = {
   Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
 
   FUNCTION_NAME: 'FunctionName',  // namespace-qualified function name, such as 'Chem:SmilesToMw'
+  COLUMN_NAME: 'ColumnName',      // a string parameter that names a column; `options.table` names the parameter that supplies its table
+  TABLE_NAME: 'TableName',        // a string parameter that names an open table
 }
 
 export const UNITS = {
@@ -877,6 +879,10 @@ export enum EVENT_TYPE {
   VIEW_CHANGED = 'grok-view-changed',
   VIEW_CHANGING = 'grok-view-changing',
 
+  // Browse events
+  BROWSE_TREE_REFRESHED = 'd4-browse-tree-refreshed',
+  TREE_NODE_CHILDREN_LOADED = 'd4-tree-view-child-node-children-loaded',
+
   // Object events
   CURRENT_OBJECT_CHANGED = 'd4-current-object-changed',
   CURRENT_CELL_CHANGED = 'd4-current-cell-changed',
@@ -986,7 +992,7 @@ type CSSProperties = Partial<Record<keyof CSSStyleDeclaration, string>>;
 
 /** A handler the platform invokes with no arguments; a parameter, if declared, stays undefined.
  * `Function` is accepted so handlers kept in `Function`-typed fields still pass. */
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 export type Callback = ((...ignored: never[]) => void) | Function;
 
 export type ElementOptions = {

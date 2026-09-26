@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.matrix-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -62,7 +64,7 @@ test.describe("Matrix plot — the viewport over a long column list, and the 250
       await session.step(59, "And user adds a calculated column \"MP_FX_10\" with formula \"${AGE} + 10\"", () => addCalculated(page, "MP_FX_10", "${AGE} + 10"));
       await session.step(60, "And user adds a calculated column \"MP_FX_11\" with formula \"${AGE} + 11\"", () => addCalculated(page, "MP_FX_11", "${AGE} + 11"));
       await session.step(61, "And user adds a calculated column \"MP_FX_12\" with formula \"${AGE} + 12\"", () => addCalculated(page, "MP_FX_12", "${AGE} + 12"));
-      await session.step(62, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED, MP_FX_1, MP_FX_2, MP_FX_3, MP_FX_4, MP_FX_5, MP_FX_6, MP_FX_7, MP_FX_8, MP_FX_9, MP_FX_10, MP_FX_11, MP_FX_12"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED, MP_FX_1, MP_FX_2, MP_FX_3, MP_FX_4, MP_FX_5, MP_FX_6, MP_FX_7, MP_FX_8, MP_FX_9, MP_FX_10, MP_FX_11, MP_FX_12"]]));
+      await session.step(62, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED, MP_FX_1, MP_FX_2, MP_FX_3, MP_FX_4, MP_FX_5, MP_FX_6, MP_FX_7, MP_FX_8, MP_FX_9, MP_FX_10, MP_FX_11, MP_FX_12"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED, MP_FX_1, MP_FX_2, MP_FX_3, MP_FX_4, MP_FX_5, MP_FX_6, MP_FX_7, MP_FX_8, MP_FX_9, MP_FX_10, MP_FX_11, MP_FX_12"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED, MP_FX_1, MP_FX_2, MP_FX_3, MP_FX_4, MP_FX_5, MP_FX_6, MP_FX_7, MP_FX_8, MP_FX_9, MP_FX_10, MP_FX_11, MP_FX_12"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED, MP_FX_1, MP_FX_2, MP_FX_3, MP_FX_4, MP_FX_5, MP_FX_6, MP_FX_7, MP_FX_8, MP_FX_9, MP_FX_10, MP_FX_11, MP_FX_12"]]);
       await session.step(65, "Then the \"x columns\" reading of matrix plot viewer should be 16", () => readingIs(page, "x columns", el("matrix plot viewer"), 16));
       await session.step(66, "And the \"y columns\" reading of matrix plot viewer should be 16", () => readingIs(page, "y columns", el("matrix plot viewer"), 16));
       await session.step(67, "And the cells of matrix plot viewer should be 5 wide and 5 tall", () => cellsWideTall(page, el("matrix plot viewer"), 5, 5));
@@ -86,7 +88,7 @@ test.describe("Matrix plot — the viewport over a long column list, and the 250
       await session.step(90, "And the \"viewport rejected\" reading of matrix plot viewer should be \"true\"", () => readingReads(page, "viewport rejected", el("matrix plot viewer"), "true"));
       await session.step(91, "And the \"cells drawn\" and \"cells\" readings of matrix plot viewer should be the same", () => readingsEqual(page, "cells drawn", "cells", el("matrix plot viewer")));
       await session.step(92, "And the \"error\" reading of matrix plot viewer should be \"\"", () => readingReads(page, "error", el("matrix plot viewer"), ""));
-      await session.step(93, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(93, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(96, "Then the \"cells\" reading of matrix plot viewer should be 16", () => readingIs(page, "cells", el("matrix plot viewer"), 16));
       await session.step(97, "When user removes \"MP_FX_1\" column", () => removeColumn(page, "MP_FX_1"));
       await session.step(98, "And user removes \"MP_FX_2\" column", () => removeColumn(page, "MP_FX_2"));

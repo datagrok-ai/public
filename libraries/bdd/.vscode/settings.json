@@ -1,7 +1,15 @@
 {
-  "cucumber.features": ["features/**/*.feature"],
-  "cucumber.glue": ["bindings/**/*.ts"],
+  "search.followSymlinks": false,
+  "cucumber.features": [
+    "features/**/*.feature"
+  ],
+  "cucumber.glue": [
+    "bindings/**/*.ts"
+  ],
   "cucumber.parameterTypes": [
-    {"name": "state", "regexp": "visible|hidden|present|absent|enabled|disabled|partially checked|checked|unchecked|selected|empty|expanded|collapsed|focused|invalid|valid"}
+    {
+      "name": "state",
+      "regexp": "visible|hidden|present|absent|enabled|disabled|partially checked|checked|unchecked|selected|empty|expanded|collapsed|focused|invalid|valid"
+    }
   ]
 }

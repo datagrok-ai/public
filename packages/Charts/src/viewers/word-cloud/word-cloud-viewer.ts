@@ -9,7 +9,7 @@ import 'echarts-wordcloud';
 import $ from 'cash-dom';
 import {Observable, Subject} from 'rxjs';
 
-import {ERROR_CLASS, MessageHandler, unsubscribeAll} from '../../utils/utils';
+import {ERROR_CLASS, LayoutSettler, MessageHandler, unsubscribeAll} from '../../utils/utils';
 import {laidOutWordCount, wordCloudStatus} from './word-cloud-status';
 
 
@@ -43,6 +43,7 @@ export class WordCloudViewer extends DG.JsViewer {
   private _error: string | null = null;
   private _renderPending = 0;
   private _renderTimer: any = null;
+  private _layout = new LayoutSettler();
   private _sizeWaits = 0;
   private _onRendered = new Subject<void>();
 
@@ -63,6 +64,7 @@ export class WordCloudViewer extends DG.JsViewer {
   constructor() {
     super();
 
+    this.string('columnColumnName', '', {fieldName: 'wordColumnName', userEditable: false, includeInLayout: false});
     this.wordColumnName = this.string('wordColumnName', '', {columnTypeFilter: DG.COLUMN_TYPE.STRING});
 
     this.shape = this.string('shape', 'circle', {
@@ -135,6 +137,7 @@ export class WordCloudViewer extends DG.JsViewer {
     if (this._renderTimer !== null)
       clearTimeout(this._renderTimer);
     this._renderTimer = null;
+    this._layout.cancel();
     this._renderPending = 0;
     super.detach();
   }
@@ -148,22 +151,17 @@ export class WordCloudViewer extends DG.JsViewer {
     this.renderFinished();
   }
 
-  private renderFinished(attempt = 0) {
+  private renderFinished() {
     this._renderTimer = null;
     if (this._renderPending === 0)
       return;
     // The counts are in place before `setOption`, so a status read between the two would report
-    // four words over no picture. The layout that places the words runs in the macrotask
-    // `setOption` queues and zrender paints them on the frame after that, so neither the canvas nor
-    // `finished` says the cloud is there — the boxes it left do.
-    const owed = this._error === null && !!this.wordColumnName &&
-      (this.root.querySelector('canvas') === null || laidOutWordCount(this.chart) === 0);
-    if (owed && attempt < 20) {
-      this._renderTimer = setTimeout(() => requestAnimationFrame(() => this.renderFinished(attempt + 1)));
-      return;
-    }
-    this._renderPending = 0;
-    this._onRendered.next();
+    // four words over no picture — the frame is owed until the layout has placed the words
+    this._layout.settle(() => this._error === null && !!this.wordColumnName &&
+      (this.root.querySelector('canvas') === null || laidOutWordCount(this.chart) === 0), () => {
+      this._renderPending = 0;
+      this._onRendered.next();
+    });
   }
 
   render() {

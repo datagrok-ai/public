@@ -1,0 +1,103 @@
+/* u2 virtualized data table (see src/components/collections/data-table.ts). The root is the
+   scroller: the header sticks to its top, and the rows are absolutely positioned inside a spacer
+   sized to the full row count — their height and column tracks come from inline styles set by JS. */
+.u2-data-table {
+  position: relative;
+  overflow-y: auto;
+  border: var(--dg-border-width) solid var(--dg-border);
+  background: var(--dg-bg);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  outline: none;
+}
+
+/* Keyboard focus only: on the scroller, so a table with nothing selected still shows where the
+   focus is (WCAG 2.4.7), and on the selected row — the list's rule. */
+.u2-data-table:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
+}
+
+.u2-data-table:focus-visible .u2-data-table-row-selected {
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
+}
+
+.u2-data-table-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  align-items: center;
+  box-sizing: border-box;
+  background: var(--dg-bg-secondary);
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-data-table-head {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  font-weight: var(--dg-font-weight-regular);
+}
+
+.u2-data-table-content {
+  position: relative;
+}
+
+.u2-data-table-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  align-items: center;
+  box-sizing: border-box;
+  border-bottom: var(--dg-border-width) solid var(--dg-border-subtle);
+  cursor: pointer;
+}
+
+.u2-data-table-cell {
+  box-sizing: border-box;
+  padding: 0 var(--dg-space-m);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u2-data-table-align-right {
+  text-align: right;
+}
+
+.u2-data-table-align-center {
+  text-align: center;
+}
+
+.u2-data-table-align-left {
+  text-align: left;
+}
+
+.u2-data-table-row:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-data-table-row-selected,
+.u2-data-table-row-selected:hover {
+  background: var(--dg-selection-bg);
+  color: var(--dg-selection-text);
+}
+
+/* the editor's per-cell verdicts, the platform grid's colours in table terms: an unsaved edit is
+   the amber DIRTY_CELL_COLOR, a refusal the red INVALID_CELL_COLOR (its message is the title) */
+.u2-data-table-row .u2-cell-changed {
+  background: var(--dg-orange-1);
+}
+
+.u2-data-table-row .u2-cell-error {
+  background: var(--dg-red-1);
+  color: var(--dg-error);
+}
+
+.u2-data-table-row .u2-cell-readonly {
+  color: var(--dg-text-color-light);
+}

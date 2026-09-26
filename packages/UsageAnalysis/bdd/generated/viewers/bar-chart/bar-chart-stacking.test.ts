@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.bar-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -28,7 +30,7 @@ test.describe("Bar chart stacking and relative values", () => {
     const run = journey(test, 6, page);
     await session.step(10, "Given user is logged in", () => loggedIn(page));
     await session.step(11, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await session.step(12, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","Primary Series Name"],["Value","Chemical Space X"],["Value Aggr Type","sum"]]));
+    await session.step(12, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","Primary Series Name"],["Value","Chemical Space X"],["Value Aggr Type","sum"]]), [["Split","Primary Series Name"],["Value","Chemical Space X"],["Value Aggr Type","sum"]]);
     await session.step(16, "Then the \"bars\" reading of bar chart viewer should be 5", () => readingIs(page, "bars", el("bar chart viewer"), 5));
     await session.step(17, "And the \"stack segments\" reading of bar chart viewer should be 0", () => readingIs(page, "stack segments", el("bar chart viewer"), 0));
     await session.step(18, "And \"Relative Values\" property of bar chart viewer should be \"false\"", () => propertyShouldBe(page, "Relative Values", el("bar chart viewer"), "false"));
@@ -85,7 +87,7 @@ test.describe("Bar chart stacking and relative values", () => {
       await session.step(70, "When user sets \"Stack\" property of bar chart viewer to \"Scaffold Names\"", () => setProperty(page, "Stack", el("bar chart viewer"), "Scaffold Names"));
       await session.step(71, "Then the bars of bar chart viewer should be of equal length", () => barsEqual(page, el("bar chart viewer")));
       await session.step(72, "And legend of bar chart viewer should have 6 items", () => shouldHaveItems(page, el("legend of bar chart viewer"), 6));
-      await session.step(73, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Stack",""],["Relative Values","false"]]));
+      await session.step(73, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Stack",""],["Relative Values","false"]]), [["Stack",""],["Relative Values","false"]]);
       await session.step(76, "Then \"Relative Values\" property of bar chart viewer should be \"false\"", () => propertyShouldBe(page, "Relative Values", el("bar chart viewer"), "false"));
       await session.step(77, "And the bars of bar chart viewer should differ in length", () => barsDiffer(page, el("bar chart viewer")));
       await session.step(78, "And legend of bar chart viewer should be hidden", () => shouldBe(page, el("legend of bar chart viewer"), "hidden"));

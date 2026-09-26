@@ -5,7 +5,6 @@ import {expect, Page} from '@playwright/test';
 import {test} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {knownOpenBug} from '../../helpers/known-open-bug';
 import {
   HOST, ORDINARY, CURRENT, PINNED, PINNED_PANE,
   cardFieldValue, cardIndexByValue, balloonCount, drawnLabelNames, waitForOrderStable,
@@ -165,7 +164,7 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
       .toEqual(['HEIGHT']);
   });
 
-  await softStep('Step 5c — Turning Use Grid Sort OFF stops mirroring the grid sort (GROK-20380 known-red)', async () => {
+  await softStep('Step 5c — Turning Use Grid Sort OFF stops mirroring the grid sort (GROK-20380)', async () => {
     await setForms(page, {sortByColumnName: null});
 
     await expect.poll(async () => {
@@ -173,13 +172,10 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
       return heights.length >= 2 && heights.every((h, i, a) => i === 0 || a[i - 1] <= h);
     }, {timeout: 20_000}).toBe(true);
 
-    const tailBefore = JSON.stringify(await ordinaryUsubjids(page));
     await v.ensurePropertyCategory(page, 'Forms', 'misc', 'use-grid-sort');
     await v.setPropertyGridCheckbox(page, 'use-grid-sort', false, 'misc');
-    // the cards either leave the grid order or (GROK-20380) keep it; a change is waited for, not slept for
-    await v.pollValue(async () => JSON.stringify(await ordinaryUsubjids(page)), (t) => t !== tailBefore, 2000, 100);
 
-    const mirror = JSON.parse(await page.evaluate((sel) => {
+    await expect.poll(() => page.evaluate((sel) => {
       const df = grok.shell.t;
       const grid = grok.shell.tv.grid;
       const selFilter = df.selection.clone().and(df.filter);
@@ -188,13 +184,9 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
       const tail = (Array.from(document.querySelectorAll(sel)).slice(2)
         .map((c) => ((c as HTMLElement).querySelector('[column="USUBJID"]') as HTMLInputElement)?.value ?? null)
         .filter((x) => x !== null)) as string[];
-      return JSON.stringify({expectedLen: mirrored.length, tailLen: tail.length,
+      return JSON.stringify({nonEmpty: mirrored.length > 0 && tail.length > 0,
         mirrors: JSON.stringify(mirrored) === JSON.stringify(tail)});
-    }, ORDINARY)) as {expectedLen: number; tailLen: number; mirrors: boolean};
-
-    expect(mirror.expectedLen).toBeGreaterThan(0);
-    expect(mirror.tailLen).toBeGreaterThan(0);
-    await knownOpenBug('GROK-20380', () => { expect(mirror.mirrors).toBe(false); });
+    }, ORDINARY), {timeout: 20_000}).toBe(JSON.stringify({nonEmpty: true, mirrors: false}));
   });
 
   await softStep('Step 5d — Double-clicking the sort label cycles the indicator; a different label does not move it', async () => {

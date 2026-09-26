@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.network-diagram]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -70,10 +72,10 @@ test.describe("Clicking a network diagram node selects the rows behind it", () =
       await session.step(60, "When user clicks on the \"node \\\"F\\\"\" area of network diagram viewer", () => clickArea(page, "node \"F\"", el("network diagram viewer")));
       await session.step(61, "Then 553 rows should be selected", () => selectedRowCount(page, 553));
       await session.step(62, "When user clears the row selection", () => clearSelection(page));
-      await session.step(63, "And user sets properties of network diagram viewer:", () => setProperties(page, el("network diagram viewer"), [["selectRowsOnClick","false"],["selectEdgesOnClick","false"]]));
+      await session.step(63, "And user sets properties of network diagram viewer:", () => setProperties(page, el("network diagram viewer"), [["selectRowsOnClick","false"],["selectEdgesOnClick","false"]]), [["selectRowsOnClick","false"],["selectEdgesOnClick","false"]]);
       await session.step(66, "And user clicks on the \"node \\\"F\\\"\" area of network diagram viewer", () => clickArea(page, "node \"F\"", el("network diagram viewer")));
       await session.step(67, "Then no rows should be selected", () => noneSelected(page));
-      await session.step(68, "When user sets properties of network diagram viewer:", () => setProperties(page, el("network diagram viewer"), [["selectRowsOnClick","true"],["selectEdgesOnClick","true"]]));
+      await session.step(68, "When user sets properties of network diagram viewer:", () => setProperties(page, el("network diagram viewer"), [["selectRowsOnClick","true"],["selectEdgesOnClick","true"]]), [["selectRowsOnClick","true"],["selectEdgesOnClick","true"]]);
       await session.step(71, "And user clicks on the \"node \\\"F\\\"\" area of network diagram viewer", () => clickArea(page, "node \"F\"", el("network diagram viewer")));
       await session.step(72, "Then 553 rows should be selected", () => selectedRowCount(page, 553));
       await session.step(73, "When user clears the row selection", () => clearSelection(page));

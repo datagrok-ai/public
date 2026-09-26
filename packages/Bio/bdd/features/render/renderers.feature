@@ -3,8 +3,14 @@ Feature: Sequence cell renderers
   A Macromolecule column is painted by the renderer its units tag selects, and the grid reports
   that renderer as the column's cell type: a HELM column by the HELM renderer, a separator column
   by the sequence renderer, each with its monomers in their own colors; a column a transform
-  derives takes the renderer of its own notation, not its source's (GROK-12164); the per-position
-  columns of Split to Monomers take the monomer renderer.
+  derives takes the renderer of its own notation, not its source's (GROK-12164); a BILN column is
+  detected as BILN and painted by the sequence renderer; every per-position column of Split to
+  Monomers takes the monomer renderer.
+
+  Not translated: a column with custom units (the md's fallback case) — the old spec asserted the
+  HELM renderer for it, the opposite of the md, and neither describes what the product does; the
+  registration of the five cellRenderer functions as such — each notation's cell type reading is
+  what a registration is for, and it is claimed on real columns.
 
   Background:
     Given user is logged in
@@ -27,13 +33,20 @@ Feature: Sequence cell renderers
     And the "cell 1 of MSA" area of grid should be painted in at least 3 colors
     And no error or warning balloon should have been shown
 
+  Scenario: A BILN column is detected and renders with the sequence renderer in monomer colors
+    Given user opens BILN dataset
+    Then "biln" column should have semantic type "Macromolecule"
+    And "biln" column should have units "biln"
+    And the "cell type of biln" reading of grid should be "sequence"
+    And the "cell 1 of biln" area of grid should be painted in at least 3 colors
+    And no error or warning balloon should have been shown
+
   Scenario: Converting HELM to separator gives the new column the separator renderer
     Given user opens filter_HELM dataset
     When user picks "Bio > Transform > Convert Sequence Notation..." from the top menu
     And user selects "separator" in "Convert to" input in "Convert Sequence Notation" dialog
     And user clicks on OK button in "Convert Sequence Notation" dialog
-    Then the top menu command should have completed
-    And 1 new column should have been added
+    Then 1 new column should have been added
     And a new column matching "^separator\(HELM string\)" should have been added
     And "separator(HELM string)" column should have units "separator"
     And the "cell type of separator(HELM string)" reading of grid should be "sequence"
@@ -47,7 +60,10 @@ Feature: Sequence cell renderers
     And user clicks on OK button in "Split to Monomers" dialog
     Then the top menu command should have completed
     And 17 new columns should have been added
+    And 17 new columns matching "^[0-9]+$" should have been added
     And "1" column should have semantic type "Monomer"
+    And "17" column should have semantic type "Monomer"
     And the "cell type of 1" reading of grid should be "Monomer"
+    And the "cell type of 9" reading of grid should be "Monomer"
     And the "cell 1 of 1" area of grid should be painted
     And no error or warning balloon should have been shown

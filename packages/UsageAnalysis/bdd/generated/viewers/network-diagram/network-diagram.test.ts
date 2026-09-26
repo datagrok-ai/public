@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.network-diagram, entities.viewer.action.close-viewer]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -109,7 +111,7 @@ test.describe("Network diagram graph shape, node columns, filtering and chrome",
       await session.step(106, "When user sets \"node1ColumnName\" property of network diagram viewer to \"RACE\"", () => setProperty(page, "node1ColumnName", el("network diagram viewer"), "RACE"));
       await session.step(107, "Then the \"nodes\" reading of network diagram viewer should be 6", () => readingIs(page, "nodes", el("network diagram viewer"), 6));
       await session.step(108, "And the \"arrows\" reading of network diagram viewer should be \"to\"", () => readingReads(page, "arrows", el("network diagram viewer"), "to"));
-      await session.step(109, "When user sets properties of network diagram viewer:", () => setProperties(page, el("network diagram viewer"), [["node1ColumnName","SEX"],["showArrows","none"]]));
+      await session.step(109, "When user sets properties of network diagram viewer:", () => setProperties(page, el("network diagram viewer"), [["node1ColumnName","SEX"],["showArrows","none"]]), [["node1ColumnName","SEX"],["showArrows","none"]]);
       await session.step(112, "Then the \"arrows\" reading of network diagram viewer should be \"none\"", () => readingReads(page, "arrows", el("network diagram viewer"), "none"));
       await session.step(113, "And the \"nodes\" reading of network diagram viewer should be 4", () => readingIs(page, "nodes", el("network diagram viewer"), 4));
       await session.step(114, "And no errors should have been logged", () => noErrors(page));

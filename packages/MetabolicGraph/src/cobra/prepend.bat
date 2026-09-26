@@ -1,5 +1,5 @@
 @echo off
-set "file=sampler.js"
+set "file=%~dp0sampler.js"
 set "tempfile=%file%.tmp"
 
 (

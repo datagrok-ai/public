@@ -10,6 +10,7 @@ keywords:
   - openid connect
   - saml provider
   - google identity-aware proxy
+  - entra id group sync
 ---
 
 Datagrok supports many [authentication](../../govern/access-control/access-control.md#authentication) methods, including popular methods such as SSO and OAuth:
@@ -19,6 +20,7 @@ Datagrok supports many [authentication](../../govern/access-control/access-contr
 * [OpenID](#openid-authentication) (Google, Azure AD, Okta, and other OpenID Connect providers)
 * [SAML](#saml-authentication)
 * [IAP](#iap-authentication)
+* [Group synchronization](#group-synchronization) (mirror identity-provider groups into Datagrok groups)
 
 You can enable all methods separately or combined.
 
@@ -126,6 +128,55 @@ Long-lived sessions are supported without exposing privileged credentials, and D
 external systems while preserving user-controlled authorization boundaries.
 
 Right now user OpenID authentication is supported by [BigQuery](../../access/databases/connectors/bigquery.md) and [Databricks](../../access/databases/connectors/databricks.md) providers.
+
+## Group synchronization
+
+Datagrok can mirror the groups a user belongs to in your identity provider into Datagrok groups.
+Synchronization runs on every login: groups are matched by name, missing groups are created, and
+memberships the user no longer has on the provider side are removed. Groups created by the sync are
+owned by the **Administrators** role and are deleted when their last synced member leaves. Groups and
+memberships that an administrator created by hand are never removed, and roles such as
+**Administrators** are never matched.
+
+To enable it, go to **Settings > Users and Sessions > Group Sync** and turn on **Sync Groups**
+(OpenID providers) or **Sync Google Groups** (Google Workspace).
+
+### OpenID providers
+
+With **Sync Groups** enabled, Datagrok reads the `groups` claim from the login token. Providers that
+put group names into that claim, such as Keycloak with a group membership mapper, need nothing else.
+
+Microsoft Entra ID (Azure AD) does not put group names into tokens: cloud groups arrive as object IDs,
+and users with many groups get no claim at all. Datagrok then reads the user's transitive group
+membership from Microsoft Graph with the login access token. To set it up:
+
+1. In the app registration, add the delegated Microsoft Graph permissions `User.Read` and
+   `GroupMember.Read.All`, and grant admin consent.
+2. In Datagrok, append `GroupMember.Read.All` to the OpenID **Scopes**, for example
+   `openid profile email GroupMember.Read.All`.
+3. Set **Login Claim** to `preferred_username`. Entra ID tokens carry no `udn` claim.
+4. Use a configuration endpoint on `login.microsoftonline.com`. Other hosts are treated as generic
+   OpenID providers, and only the token claim is read.
+
+Every group the user belongs to becomes a Datagrok group, so a user in many groups creates many
+groups. Group display names must be unique in the tenant for matching to work.
+
+### Google Workspace
+
+Google tokens never carry group membership, so Datagrok reads it through the Cloud Identity API using
+a service account. This works with Google OpenID login and with [IAP](#iap-authentication).
+
+1. Create a service account, enable domain-wide delegation for the scope
+   `https://www.googleapis.com/auth/cloud-identity.groups.readonly`, and download its key JSON.
+2. In Datagrok, turn on **Sync Google Groups**, paste the key JSON into
+   **Google Group Service Account**, and set **Google Delegated Admin Email** to a Workspace
+   super-admin the service account impersonates.
+
+:::note
+Synchronization happens at login only. A user removed from a group keeps the Datagrok membership until
+the next login. When Keycloak synchronization is enabled on the server, login-time group sync is
+skipped.
+:::
 
 ## SAML authentication
 

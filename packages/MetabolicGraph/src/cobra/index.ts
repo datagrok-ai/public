@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 import type {CobraModelData} from '../../escher_src/src/ts/types';
-import type {PrecomputedExtremePoints} from './sampler-wrapper';
+import type {PrecomputedWarmup} from './sampler-wrapper';
 import {dummy} from './dummy';
 
 export class WorkerCobraSolver {
@@ -36,58 +36,7 @@ export class WorkerCobraSolver {
     return this._lastOptimizationPromise;
   }
 
-  static async get_extreme_points(model_data: CobraModelData | null) {
-    if (!model_data)
-      throw new Error('Cannot run optimization without a model loaded');
-    const reactions = model_data.reactions;
-    const totalRuns = reactions.length * 2;
-    const numWorkers = Math.min(Math.max((navigator.hardwareConcurrency ?? 1) - 2, 1), 20);
-    const workers = new Array(numWorkers).fill(0).map(() => new Worker(new URL('./glpk-js-extreme-worker', import.meta.url)));
-    const runsPerWorker = Math.ceil(totalRuns / numWorkers);
-    const promises: Promise<{fluxes: Float32Array[], reactionNames: string[]} | {error: any}>[] = [];
-
-    for (let w = 0; w < numWorkers; w++) {
-      const start = w * runsPerWorker;
-      const end = Math.min(start + runsPerWorker, totalRuns);
-      if (start >= end)
-        break;
-      const worker = workers[w];
-      const promise = new Promise<{fluxes: Float32Array[], reactionNames: string[]} | {error: any}>((resolve) => {
-        worker.onmessage = (ev: {data: {fluxes: Float32Array[], reactionNames: string[]} | {error: any}}) => {
-          if ('error' in ev.data)
-            resolve({error: ev.data.error});
-          else
-            resolve({fluxes: ev.data.fluxes, reactionNames: ev.data.reactionNames});
-        };
-        worker.postMessage({model: model_data, start, end});
-      });
-      promises.push(promise);
-    }
-    const results = await Promise.all(promises);
-    workers.forEach((worker) => worker.terminate());
-    const allFluxes: Float32Array[] = [];
-    let reactionNames: string[] = [];
-    const errors: any[] = [];
-    for (const res of results) {
-      if ('error' in res)
-        errors.push(res.error);
-      else {
-        allFluxes.push(...res.fluxes);
-        if (reactionNames.length === 0)
-          reactionNames = res.reactionNames; // assuming all workers return the same reaction names
-      }
-    }
-
-    if (errors.length > 0) {
-      if (errors.length === results.length)
-        throw new Error(`All workers failed: ${errors.map((e) => e?.toString()).join('; ')}`);
-      else
-        console.warn(`Some workers failed: ${errors.map((e) => e?.toString()).join('; ')}`);
-    }
-    return {solutions: allFluxes, reactionNames};
-  }
-
-  static async runSampling(model_data: CobraModelData | null, samplesCount: number = 1000, thinning: number = 20, precomputedExtremes?: PrecomputedExtremePoints) {
+  static async runSampling(model_data: CobraModelData | null, samplesCount: number = 1000, thinning: number = 20, precomputedWarmup?: PrecomputedWarmup) {
     if (!model_data)
       throw new Error('Cannot run optimization without a model loaded');
     const worker = new Worker(new URL('./sampler-worker', import.meta.url));
@@ -103,7 +52,12 @@ export class WorkerCobraSolver {
             reject(e);
           }
         };
-        worker.postMessage({model: model_data, samples: samplesCount, thinning, precomputedExtremes});
+        // a crash inside the module (e.g. an abort) never posts a message
+        worker.onerror = (ev) => {
+          worker.terminate();
+          reject(new Error(`Sampling failed: ${ev.message}`));
+        };
+        worker.postMessage({model: model_data, samples: samplesCount, thinning, precomputedWarmup});
       } catch (e) {
         reject(e);
       }

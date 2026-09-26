@@ -13,15 +13,15 @@ export namespace funcs {
   }
 
   /**
-  Inventory over entity-mapped domain schemas — batch upsert by SKU, optimistic stock adjustments, per-department column security
-  */
+   * Inventory over entity-mapped domain schemas — batch upsert by SKU, optimistic stock adjustments, per-department column security
+   */
   export async function inventoryApp(): Promise<DG.View> {
     return await grok.functions.call('Inventory:InventoryApp', {});
   }
 
   /**
-  Column-security demo setup - verifies the department property schemas are registered and creates the Chemists and Procurement groups (see README for the grant step)
-  */
+   * Column-security demo setup - verifies the department property schemas are registered and creates the Chemists and Procurement groups (see README for the grant step)
+   */
   export async function setupInventoryDemo(): Promise<string> {
     return await grok.functions.call('Inventory:SetupInventoryDemo', {});
   }

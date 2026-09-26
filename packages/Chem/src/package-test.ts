@@ -12,6 +12,7 @@ import './tests/col-panel-tests';
 import './tests/cell-panel-tests';
 
 import './tests/substructure-search-tests';
+import './tests/crux-substructure-search-tests';
 import './tests/rendering-tests';
 import './tests/rendering-scatter-plot-tooltip-tests';
 import './tests/sketcher-tests';
@@ -42,6 +43,7 @@ import './tests/synthon-search-tests';
 import './tests/atom-index-mapper-tests';
 import './tests/atom-picker-tests';
 import './tests/reaction-enumeration-tests';
+import './tests/reaction-rendering-tests';
 // import './tests/atom-picker-3d-hover-tests';
 import './tests/atom-picker-escape-tests';
 import './tests/renderer-hover-tests';

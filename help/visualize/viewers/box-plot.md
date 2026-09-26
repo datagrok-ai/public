@@ -18,11 +18,25 @@ General:
 
 ![Box Plot](../../uploads/viewers/box-plot.png "Box Plot")
 
-## T-test
+## Group comparison
 
-When the "category" column contains exactly two categories, press "T" to perform
-[Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test). The resulting p-value will then be shown on top of the
-box plot.
+With a category column set, the box plot tests whether the groups differ and shows the p-value on top
+of the plot: [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test) for two categories,
+Alexander and Govern's test for three or more. Neither test assumes equal variances. Hover over the
+p-value to see which test was used, and press T to hide or show it.
+
+To find out which groups differ:
+
+1. Hover over the p-value and click the chart icon next to it. This turns on **Show Group Comparison**,
+   which runs the test that fits the data and puts its controls on the chart.
+2. To compare every group with one of them, hover over the plot and pick that group in the control
+   selector. Each other group gets its own p-value against it, and a band marks the control group.
+3. To get the results as a table, right-click the comparison and select **Add Control Comparisons
+   Table**. The table lists each group's mean difference, its confidence interval, the raw and
+   adjusted p-values, and a conclusion.
+
+The same analyses are available as dialogs under **ML** > **Analyze** > **Group Comparison**. See
+[Group comparison](../../explore/group-comparison.md).
 
 ## Inverted whiskers
 
@@ -101,7 +115,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Show Values Limit | number | Points are not shown if the number of rows is greater than *Show Values Limit*. |
 | Show Inside Values | boolean | Show points inside the interquartile range (Q3 - Q1). |
 | Show Outside Values | boolean | Show points outside the interquartile range (Q3 - Q1). |
-| Show P Value | boolean | Show p-value. Press T to toggle. Currently works only when there are two categories. Welch's t-test is used for calculating the p-value. |
+| Show P Value | boolean | Show p-value. Press T to toggle. Welch's t-test for two categories, Alexander and Govern's test for three or more. |
 | Show Mouse Over Point | boolean |  |
 | Show Mouse Over Row Group | boolean |  |
 | Statistics | list |  |

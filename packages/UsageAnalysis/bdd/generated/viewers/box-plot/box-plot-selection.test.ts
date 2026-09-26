@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.box-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -29,7 +31,7 @@ test.describe("Box plot selection and highlight", () => {
     const run = journey(test, 9, page);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(14, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["Value","AGE"],["Category 1","RACE"],["Marker Size","10"]]));
+    await session.step(14, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["Value","AGE"],["Category 1","RACE"],["Marker Size","10"]]), [["Value","AGE"],["Category 1","RACE"],["Marker Size","10"]]);
     await run.scenario("A marker click sets the current row", async () => {
       await session.step(20, "Given user listens for \"d4-boxplot-point-click\" event on box plot viewer", () => listenFor(page, "d4-boxplot-point-click", el("box plot viewer")));
       await session.step(21, "When user clicks on the \"marker\" area of box plot viewer", () => clickArea(page, "marker", el("box plot viewer")));
@@ -88,7 +90,7 @@ test.describe("Box plot selection and highlight", () => {
       await session.step(74, "When user sets \"Row Source\" property of box plot viewer to \"Selected\"", () => setProperty(page, "Row Source", el("box plot viewer"), "Selected"));
       await session.step(75, "Then the \"Caucasian values\" area of box plot viewer should be painted", () => areaPainted(page, "Caucasian values", el("box plot viewer")));
       await session.step(76, "And box plot viewer should show no selection highlight", () => noHighlight(page, el("box plot viewer")));
-      await session.step(77, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Row Source","All"],["Marker Color Column",""]]));
+      await session.step(77, "When user sets properties of box plot viewer:", () => setProperties(page, el("box plot viewer"), [["Row Source","All"],["Marker Color Column",""]]), [["Row Source","All"],["Marker Color Column",""]]);
       await session.step(80, "And user clears the row selection", () => clearSelection(page));
     });
     await run.scenario("The hover tooltip and Show Mouse Over Point", async () => {
@@ -102,7 +104,7 @@ test.describe("Box plot selection and highlight", () => {
       await session.step(90, "And user sets \"Show Mouse Over Point\" property of box plot viewer to \"true\"", () => setProperty(page, "Show Mouse Over Point", el("box plot viewer"), "true"));
     });
     await run.scenario("A hover on a bar chart highlights its rows in the box plot only while the row group is shown", async () => {
-      await session.step(93, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"]]));
+      await session.step(93, "When user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"]]), [["Split","RACE"]]);
       await session.step(95, "And user sets \"Marker Color Column\" property of box plot viewer to \"RACE\"", () => setProperty(page, "Marker Color Column", el("box plot viewer"), "RACE"));
       await session.step(96, "And user takes a snapshot of box plot viewer", () => takeSnapshot(page, el("box plot viewer")));
       await session.step(97, "And user hovers over the \"bar Caucasian\" area of bar chart viewer", () => hoverArea(page, "bar Caucasian", el("bar chart viewer")));

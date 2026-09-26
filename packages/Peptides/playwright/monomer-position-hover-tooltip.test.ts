@@ -590,7 +590,7 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
 
   // Scenario 2 — column-header WebLogo hover via showTooltipAt explicit-anchor path.
   await softStep('Scenario 2 (steps 2-4): hover main-grid column-header WebLogo, verify tooltip via showTooltipAt', async () => {
-    // Resolve a VISIBLE position column; hover at its center-x and middle-y of the header strip.
+    // Resolve a VISIBLE populated position column and the inked glyph points in its header strip.
     const target = await page.evaluate(() => {
       const tv = Array.from(grok.shell.tableViews).find((v: any) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = (tv as any).dataFrame.temp['peptidesModel'];
@@ -618,11 +618,27 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
           const b = cell?.bounds;
           if (!b) continue;
           if (b.x >= 0 && (b.x + b.width) <= cv.width) {
+            // The header centre can fall between WebLogo letters, so hover only reachable, inked points.
+            const ctx = canvas.getContext('2d')!;
+            const inked = (x: number, y: number): boolean => {
+              const px = Math.round((x - cv.x) * (canvas!.width / cv.width));
+              const py = Math.round((y - cv.y) * (canvas!.height / cv.height));
+              if (px < 0 || py < 0 || px >= canvas!.width || py >= canvas!.height) return false;
+              const d = ctx.getImageData(px, py, 1, 1).data;
+              return d[3] > 0 && (d[0] < 240 || d[1] < 240 || d[2] < 240);
+            };
+            const points: Array<{x: number; y: number}> = [];
+            for (let x = cv.x + b.x + 3; x < cv.x + b.x + b.width - 3 && points.length < 8; x += 4) {
+              for (let y = cv.y + chh - 6; y > cv.y + 6; y -= 4) {
+                const el = document.elementFromPoint(x, y) as HTMLElement | null;
+                if (el && el.closest('[name="viewer-Grid"]') && inked(x, y)) {
+                  points.push({x, y});
+                  break;
+                }
+              }
+            }
             return {
-              found: true, position: posName,
-              chh,
-              viewportX: cv.x + b.x + b.width / 2,
-              viewportY: cv.y + Math.floor(chh / 2),
+              found: true, position: posName, chh, points,
               canvasX: cv.x, canvasY: cv.y, canvasW: cv.width, canvasH: cv.height,
             };
           }
@@ -637,20 +653,24 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       'main grid column-header height should be enlarged for WebLogo (>=80 px expected)')
       .toBeGreaterThanOrEqual(80);
 
-    const tx = (target as any).viewportX as number;
-    const ty = (target as any).viewportY as number;
-    await page.mouse.move((target as any).canvasX - 50, (target as any).canvasY - 50);
-    await page.waitForTimeout(200);
-    await page.mouse.move(tx, ty, {steps: 6});
-    await page.waitForTimeout(1500);
-
-    const tooltipState = await page.evaluate(() => {
-      const tt = (ui as any).tooltip;
-      const root = tt?.root as HTMLElement | undefined;
-      if (!root) return {ttFound: false};
-      const innerLen = root.innerHTML?.length || 0;
-      return {ttFound: true, innerLen, sample: (root.innerText || '').slice(0, 200)};
-    });
+    const points = (target as any).points as Array<{x: number; y: number}>;
+    expect(points.length, `no inked WebLogo glyph reachable in the header of position ${(target as any).position}`)
+      .toBeGreaterThan(0);
+    let tooltipState: {ttFound: boolean; innerLen?: number; sample?: string} = {ttFound: false};
+    for (const p of points) {
+      await page.mouse.move((target as any).canvasX - 50, (target as any).canvasY - 50);
+      await page.waitForTimeout(200);
+      await page.mouse.move(p.x, p.y, {steps: 6});
+      await page.waitForTimeout(1500);
+      tooltipState = await page.evaluate(() => {
+        const tt = (ui as any).tooltip;
+        const root = tt?.root as HTMLElement | undefined;
+        if (!root) return {ttFound: false};
+        const innerLen = root.innerHTML?.length || 0;
+        return {ttFound: true, innerLen, sample: (root.innerText || '').slice(0, 200)};
+      });
+      if ((tooltipState.innerLen ?? 0) > 0) break;
+    }
     expect(tooltipState.ttFound, 'ui.tooltip.root singleton not found').toBe(true);
     expect(tooltipState.innerLen,
       `Column-header WebLogo hover (position="${(target as any).position}") did not produce tooltip content ` +

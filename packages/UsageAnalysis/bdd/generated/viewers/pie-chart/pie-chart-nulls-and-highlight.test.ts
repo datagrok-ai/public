@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.pie-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -30,7 +32,7 @@ test.describe("Pie chart missing values and the mouse-over row group", () => {
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(17, "And user adds a calculated column \"RACE_GAPS\" with formula \"if(Mod(${AGE}, 10) == 0, null, ${RACE})\"", () => addCalculated(page, "RACE_GAPS", "if(Mod(${AGE}, 10) == 0, null, ${RACE})"));
-    await session.step(18, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE_GAPS"],["Legend Visibility","Always"]]));
+    await session.step(18, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE_GAPS"],["Legend Visibility","Always"]]), [["Category","RACE_GAPS"],["Legend Visibility","Always"]]);
     await session.step(21, "Then the \"slices\" reading of pie chart viewer should be 5", () => readingIs(page, "slices", el("pie chart viewer"), 5));
     await session.step(22, "And pie chart viewer should show 1000 rows", () => showsRows(page, el("pie chart viewer"), 1000));
     await run.scenario("The blank rows get a wedge of their own", async () => {

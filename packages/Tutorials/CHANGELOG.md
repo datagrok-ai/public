@@ -2,6 +2,16 @@
 
 ## v.next
 
+* R-Groups Analysis: The Distributions pane step resolves the pane when it appears instead of when the step is built — it exists only while a RowGroup is the current object
+* GROK-20416: Steps that point at a rebuilt element (the Add viewer ribbon icon, the aggregation tag) now resolve it per tick instead of caching it, so both the click listener and the highlight follow the new node; the icon is found by its `aria-label`, not by its position in the ribbon
+* Sticky Meta: Fixed the tutorial dying at "Save schema" — step 11 looked up the schema section and the property input with strings that disagreed in case with what the steps tell the learner to type, and the miss threw one line later
+* Activity Cliffs: Fixed two steps that could never complete — the scatter plot is added before the step subscribes to `onViewerAdded`, and the tooltip check needed a second mouse move; both now read the state that is already there
+* Compute: Sensitivity Analysis and Parameter Optimization address form inputs by the caption the model declares instead of by child index, and the tour wizard buttons carry `name` / `aria-label` even when the caller passes an empty label
+* Dashboard: Dropped two 1.5 s "UI generation delay" sleeps — the engine now waits for the control it is about to drive
+* Tutorials: Dashboards tutorial follows the dashboard it saved by id — on a shared server its last steps accepted any project named "Coffee sales dashboard", so a project from someone else's run could be opened instead and fail with a connection-permission error
+
+## 1.11.4 (2026-09-11)
+
 * Tutorials: Links to the Tutorials app and to individual tutorials can now be shared and opened directly
 * Demo app: Correlation Plot is offered as a demo again - its `demoPath` was missing a space, so consumers that rebuild the path from the hierarchy never matched it
 * Demo app: The second viewer pane in a viewer demo is titled after the viewer it holds, not always "histogram"
@@ -9,7 +19,6 @@
 * Fixed the package build failing on `TS2416` — the u2 `Component` base introduced `run(fn)`, which every widget now inherits, so `Tutorial`'s own `run()` no longer matched; it is now `start()`
 * GROK-20602: BREAKING regen — `grok api` codegen v2 for the Northwind demo schema: datetime fields are dayjs, typed expand/transaction surface, lazy db.ts clients
 * Demo app: Added a Domain Databases demo (Data Access | Domain Databases) — ships the classic Northwind schema and data as a plugin-declared domain database (databases/northwind) and walks through browsing, security, audit history, and the JS API
-
 * GROK-19337: Peptides-SAR tutorial: Fixed callouts rendering body text as bold headings (`paragraphs()` now emits a bold title only when one is explicitly passed), removed spurious mid-sentence `<br>` line breaks, and narrowed the action panel (~18% narrower dock ratio)
 * Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
 * Demo app: Fixed clipped/misplaced "Updating..." overlay — place it on the tab-content of the active view instead of `tab-content[0]`, so it stays bounded (tab-content is `position: relative`) and lands on the pane that's actually being replaced rather than a sibling (e.g. the home page) when the dock is split

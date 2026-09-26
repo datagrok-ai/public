@@ -1,11 +1,10 @@
-/* ---
-sub_features_covered: [chem.actions.copy-as, chem.actions.copy-molfile-v2000, chem.actions.copy-smiles, chem.sketcher, chem.sketcher.cell-editor, chem.sketcher.ocl]
---- */
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
+import {loginToDatagrok, clipboardTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {waitForChemMenuRoot} from './chem-fast-helpers';
 
-test.use(specTestOptions);
+test.use(clipboardTestOptions);
 
 test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-trip', async ({page}) => {
   test.setTimeout(120_000);
@@ -67,7 +66,7 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
   };
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   // navigator.clipboard is only defined in a secure context (https:// or localhost). CI runs
   // against a plain-http dev host, so the Copy/Paste round-trip steps (8/8b/9/9b) can't read the
@@ -204,10 +203,16 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
     await smilesInput.click();
     await page.keyboard.press('Control+A');
     await page.keyboard.press('Control+V');
-    // MOLBLOCK paste is applied to the sketch canvas (input is not echoed) — verify via a Copy-as-SMILES read-back.
-    await openHamburger();
-    await clickLabel(/Copy as SMILES/);
-    await expect.poll(() => clipboard(), {timeout: 10_000}).toBe(CYCLOHEXANE);
+    // MOLBLOCK paste is applied to the sketch canvas (input is not echoed) — verify via a
+    // Copy-as-SMILES read-back. The sketcher parses the pasted molblock asynchronously, so a
+    // single copy can run before it lands and leave the old molecule on the clipboard for good:
+    // re-copy on every attempt instead of polling a clipboard nothing rewrites.
+    await expect.poll(async () => {
+      await dismissMenu();
+      await openHamburger();
+      await clickLabel(/Copy as SMILES/);
+      return clipboard();
+    }, {timeout: 20_000, intervals: [1000, 2000, 3000]}).toBe(CYCLOHEXANE);
   });
 
   await softStep('Step 10: Close sketcher — no console errors fired', async () => {

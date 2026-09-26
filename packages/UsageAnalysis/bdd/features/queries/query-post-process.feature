@@ -1,0 +1,52 @@
+@journey @serial @realizes:views.queries
+Feature: A query's post-process runs on its result
+  The Post-Process tab of a query holds a script that runs on every result of the query: a line
+  typed there and saved announces the row count whenever the saved query runs. Translated from the
+  TestTrack Queries case query-postprocessing (playwright-public/queries query-postprocessing), on
+  the feature's own query over NorthwindTest's products (77 rows).
+
+  The query is named with the run's time and removed when the feature ends; @serial for the same
+  reason as the other features that save into NorthwindTest.
+
+  Not translated, and why: the case's layout half — two viewers on the Layout tab kept with the
+  query — is query-layout.feature, which owns the layout and its cleanup.
+
+  Background:
+    Given user is logged in
+    And the browse panel is open
+    And no query named "BDD-Q-pp-{time}" is on the server
+
+  Scenario: A line is typed into the Post-Process tab of a new query
+    Given Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user picks "New Query..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    Then the current view should be a DataQueryView view
+    When user enters "BDD-Q-pp-{time}" into Name input
+    And user replaces the code of code editor with "select * from products"
+    And user clicks on play icon
+    Then grid should be visible
+    And the "rows" reading of grid should be 77
+    When user moves the pointer away from play icon
+    And user clicks on Post-Process tab
+    # after the template's body: a line above its "//language: javascript" header invalidates the
+    # script ("Missing or incorrect \"language\" annotation") and the post-process never runs
+    And user appends "grok.shell.info('PP' + result.rowCount);" to code editor
+    Then no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  # The core now saves what the editor holds (it used to send the copy the editor syncs 250 ms
+  # after the last key, so a Save right after typing stored the old template).
+  Scenario: Save right after typing keeps the line
+    When user clicks on Save button
+    Then 1 query named "BDD-Q-pp-{time}" should be on the server
+    And the query "BDD-Q-pp-{time}" on the server should have a post-process containing "grok.shell.info('PP' + result.rowCount);"
+    And no errors should have been logged
+
+  Scenario: The saved query announces its row count when it is run from the tree
+    Given the toolbox pane is hidden
+    And the browse panel is open
+    And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
+    When user clicks on "Refresh" icon inside browse toolbar
+    And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree
+    Then the table should have 77 rows
+    And an info balloon containing "PP77" should have been shown

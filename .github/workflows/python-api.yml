@@ -22,8 +22,17 @@ jobs:
             ./python-api
             ./packages/ApiTests
             ./js-api
+            ./libraries
+            ./build-config
+            ./tools
             ./docker
             ./.github
+            ./package.json
+            ./pnpm-workspace.yaml
+            ./pnpm-lock.yaml
+            ./.pnpmfile.cjs
+            ./turbo.json
+            ./.npmrc
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -39,6 +48,7 @@ jobs:
       - name: Set PYTHONPATH to include python-api
         run: echo "PYTHONPATH=$(pwd)/python-api" >> $GITHUB_ENV
 
+      - uses: pnpm/action-setup@v4
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -78,7 +88,7 @@ jobs:
       - name: Get auth token
         id: auth
         run: |
-          token=$(curl -s -X POST ${{ steps.datagrok.outputs.apiUrl }}/users/login/dev/admin | jq -r .token)
+          token=$(.github/scripts/dev-login.sh "${{ steps.datagrok.outputs.apiUrl }}" admin)
           curl -s -H "Authorization: $token" -H "Content-Type: application/json" \
             '${{ steps.datagrok.outputs.apiUrl }}/admin/plugins/admin/settings' \
             -X POST -d '{"#type":"AdminPluginSettings", "agreementDate":null}'
@@ -88,10 +98,12 @@ jobs:
         run: |
           grok config add --default --alias ci --server '${{ steps.datagrok.outputs.apiUrl }}' --key 'admin'
 
+      - name: Build ApiTests package
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm turbo run build --filter='{./packages/ApiTests}...' --concurrency=4
       - name: Publish ApiTests package
         run: |
-          npm install
-          npm run build
           count=0
           retries=5
           until grok publish ci --release; do

@@ -379,9 +379,12 @@ Supported summary column types:
 * Bar Chart
 * Radar
 * Pie Chart
+* VlaaiVis
 <!--* Markup-->
 
-To add sparklines, right-click a cell and select **Add** > **Summary Columns**, then choose your preferred option from the menu. To change selected columns for the summary column, click its header and choose the columns you want in the **Context Panel** under **Renderer**.
+To add sparklines, right-click a cell and select **Add** > **Summary Columns**, then choose your preferred option from the menu. A new summary column shows the table's first 10 numeric columns. To choose the columns, click its header, and in the **Context Panel** under **Renderer**, click **Columns**.
+
+The same menu has **Confidence Interval**, which draws a value with its interval from two columns (the value and its margin) or three (the value and its bounds).
 
 <br/>
 

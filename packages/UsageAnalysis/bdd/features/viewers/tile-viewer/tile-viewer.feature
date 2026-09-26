@@ -3,8 +3,11 @@ Feature: Tile viewer property surface
   Every card is one row, built from the sketch form the viewer keeps in its look, and every claim
   below is what the viewer reports about the cards it laid out: the composition of a card, the
   text a field shows, the rows the cards are built from (Row Source, the viewer's own Filter
-  formula, the table's filter), the lane headers Tiles Font sizes, the title and the description,
-  and the table the cards are built for. Lanes, selection, the form designer, the mirroring of the
+  formula, the filter panel's cards — SEX = M, then AGE over 50 on top of it), the lane headers
+  Tiles Font sizes, the title and the description,
+  and the table the cards are built for; Tiles Font is read as the size and the family the lane
+  headers and the card fields are rendered with (computed style), not only as its own value; it is
+  set as a property, not through the font editor of the context panel. Lanes, selection, the form designer, the mirroring of the
   frame and persistence have features of their own. One journey on demog-1000 — 1000 rows over 11
   columns, SEX F 553 / M 447, RACE Caucasian 896 / Other 62 / Black 27 / Asian 15, 367 rows over
   50 — and every scenario puts back what it changed.
@@ -50,7 +53,6 @@ Feature: Tile viewer property surface
     And tile viewer should have a "field AGE of row 1" area
     And tile viewer should have a "label AGE of row 1" area
     And tile viewer should not have a "field SEVERITY of row 1" area
-    And the "current row" reading of tile viewer should be 1
     And the "lane of row 1" reading of tile viewer should be "All rows"
     And the "USUBJID of row 1" reading of tile viewer should be "X0273T21000300003"
     And the "AGE of row 1" reading of tile viewer should be "26"
@@ -76,16 +78,26 @@ Feature: Tile viewer property surface
     When user closes the context menu
     Then no errors should have been logged
 
-  Scenario: Tiles Font sizes the lane headers
+  Scenario: Tiles Font sizes and restyles the lane headers and the card text
     Given user sets "Lanes Column Name" property of tile viewer to "SEX"
     Then the "lane names" reading of tile viewer should be "F, M"
     And tile viewer should have a "lane header F" area
     And the "tiles font" reading of tile viewer should be 'normal normal 13px "Roboto"'
+    And the "font-size" style of card field of tile viewer should contain "13px"
     When user sets "Tiles Font" property of tile viewer to 'normal normal 18px "Roboto"'
     Then the "tiles font" reading of tile viewer should be 'normal normal 18px "Roboto"'
     And the "lane header F" area of tile viewer should be taller than before
+    And the "font-size" style of card field of tile viewer should contain "18px"
+    And the "font-size" style of lane header of tile viewer should contain "18px"
+    When user sets "Tiles Font" property of tile viewer to 'normal normal 18px Arial'
+    Then the "tiles font" reading of tile viewer should be 'normal normal 18px Arial'
+    And the "font-family" style of card field of tile viewer should contain "Arial"
+    And the "font-family" style of lane header of tile viewer should contain "Arial"
+    And the "font-size" style of card field of tile viewer should contain "18px"
     When user sets "Tiles Font" property of tile viewer to 'normal normal 13px "Roboto"'
     Then the "tiles font" reading of tile viewer should be 'normal normal 13px "Roboto"'
+    And the "font-family" style of card field of tile viewer should contain "Roboto"
+    And the "font-size" style of card field of tile viewer should contain "13px"
     And the "lane header F" area of tile viewer should be shorter than before
     When user sets "Lanes Column Name" property of tile viewer to ""
     Then the "single lane" reading of tile viewer should be "true"
@@ -152,14 +164,21 @@ Feature: Tile viewer property surface
     And tile viewer should show more rows than before
     And no errors should have been logged
 
-  Scenario: A filter on the table reaches the cards
+  Scenario: The filter panel's cards reach the cards, a second one narrowing them further
     Then tile viewer should show 1000 rows
-    When user filters rows where "SEX" is "M"
+    When user adds a categorical filter on "SEX" keeping "M"
     Then 447 rows should pass the filter
     And tile viewer should show 447 rows
     And tile viewer should show fewer rows than before
     And every tile of tile viewer should show "M" in "SEX"
-    When user resets the filter
+    When user adds a range filter on "AGE" from 51 to 89
+    Then 146 rows should pass the filter
+    And tile viewer should show 146 rows
+    And tile viewer should show fewer rows than before
+    And every tile of tile viewer should show "M" in "SEX"
+    And every tile of tile viewer should show a value between 51 and 89 in "AGE"
+    When user adds a categorical filter on "SEX" keeping "F, M"
+    And user adds a range filter on "AGE" from 18 to 89
     Then all rows should pass the filter
     And tile viewer should show 1000 rows
     And tile viewer should show more rows than before

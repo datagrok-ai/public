@@ -2,15 +2,11 @@
 
 ## v.next
 
+* Sunburst: Added the automation surface — `getWidgetStatus` reports a `segment <path>` hit area per drawn sector (a point the sector confirms it contains, not its bounding box) plus `segments`, `segment names`, `rows of segment <path>`, `hierarchy columns`, `on click`, `include nulls` and `rows shown`; added `isRenderPending` / `onRendered` / `renderError`
 * Word cloud: Fixed two ways the viewer reported a cloud that was not there. A render on a host the dock has not sized yet emptied the root and then threw on the size, leaving no canvas, no message and a render that stayed pending for ever; it now measures the root as well as the host and keeps the picture that is up until a size it can use comes back. And a render declared itself finished on a canvas with no words in it — `echarts.init` creates the canvas, but the layout that places the words runs in the macrotask `setOption` queues — so it now waits for the boxes the layout leaves, which is what the automation surface reports
 * Word cloud: Added the automation surface — `getWidgetStatus` reports a `word "<name>"` hit area per laid-out word plus `words`, `word names`, `rows of word "<name>"`, `column`, `rows shown`, `font` and the message the viewer shows instead of a cloud; added `isRenderPending` / `onRendered`
 * GROK-20800: Timelines, Radar: Fixed the legend container placement — it is now a full-height strip on the right, filled by the legend
 * Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
-* GROK-18695: Forced d3-color >= 3.1.0 (ReDoS fix under circos); kept echarts 5 — the 6.1.0 upgrade (XSS fix GHSA-fgmj-fm8m-jvvx) deterministically breaks the Tree and Surface plot viewers (CI EXECUTION TIMEOUT on two independent runs) and needs a proper migration
-* Moved the Charts Playwright E2E suite into the package (`playwright/`); helpers sourced from `@datagrok-libraries/test/src/playwright`
-* GROK-19683: Charts | Tree viewer: Option to customize molecule label size
-* GROK-20084: Radar, Tree, Timelines: Broken help page
-* GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked
 * Charts | Globe: Fixed crash when columns are removed from the underlying dataframe
 * GROK-20846: Charts: Timelines: X axis labels overlap and are unreadable
 * [3677](https://github.com/datagrok-ai/public/issues/3677): Charts: Radar: Add absolute normalization with configurable min/max per axis
@@ -24,6 +20,15 @@
 * Radar: Fixed clicking the first row (CH-10)
 * Tree, Sunburst: Fixed one bad molecule hiding the remaining structure labels (CH-14)
 * Timelines: Mouse-wheel zoom now works on the time axis (CH-18)
+* GROK-20892: Charts: Word cloud silently loses its column in layouts saved before the columnColumnName to wordColumnName rename
+
+## 1.8.1 (2026-07-13)
+
+* GROK-18695: Forced d3-color >= 3.1.0 (ReDoS fix under circos); kept echarts 5 — the 6.1.0 upgrade (XSS fix GHSA-fgmj-fm8m-jvvx) deterministically breaks the Tree and Surface plot viewers (CI EXECUTION TIMEOUT on two independent runs) and needs a proper migration
+* Moved the Charts Playwright E2E suite into the package (`playwright/`); helpers sourced from `@datagrok-libraries/test/src/playwright`
+* GROK-19683: Charts | Tree viewer: Option to customize molecule label size
+* GROK-20084: Radar, Tree, Timelines: Broken help page
+* GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked
 
 ## 1.7.0 (2026-03-20)
 

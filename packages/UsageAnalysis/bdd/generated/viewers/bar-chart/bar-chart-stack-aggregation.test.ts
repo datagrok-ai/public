@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.bar-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -27,7 +29,7 @@ test.describe("Bar chart stack aggregation and datetime split", () => {
     const run = journey(test, 5, page);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(11, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"],["Value","AGE"],["Value Aggr Type","avg"]]));
+    await session.step(11, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","RACE"],["Value","AGE"],["Value Aggr Type","avg"]]), [["Split","RACE"],["Value","AGE"],["Value Aggr Type","avg"]]);
     await session.step(15, "Then the \"bars\" reading of bar chart viewer should be 4", () => readingIs(page, "bars", el("bar chart viewer"), 4));
     await run.scenario("A Stack under avg draws no segments and no legend", async () => {
       await session.step(18, "When user sets \"Stack\" property of bar chart viewer to \"SEX\"", () => setProperty(page, "Stack", el("bar chart viewer"), "SEX"));
@@ -70,7 +72,7 @@ test.describe("Bar chart stack aggregation and datetime split", () => {
       await session.step(55, "And bar chart viewer should have repainted", () => repainted(page, el("bar chart viewer")));
       await session.step(56, "And \"Split\" property of bar chart viewer should be \"STARTED\"", () => propertyShouldBe(page, "Split", el("bar chart viewer"), "STARTED"));
       await session.step(57, "And no errors should have been logged", () => noErrors(page));
-      await session.step(58, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Split","RACE"],["Value Aggr Type","avg"]]));
+      await session.step(58, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Split","RACE"],["Value Aggr Type","avg"]]), [["Split","RACE"],["Value Aggr Type","avg"]]);
       await session.step(61, "Then the \"bars\" reading of bar chart viewer should be 4", () => readingIs(page, "bars", el("bar chart viewer"), 4));
     });
     run.finish();

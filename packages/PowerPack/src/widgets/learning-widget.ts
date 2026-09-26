@@ -57,13 +57,13 @@ export class LearningWidget extends DG.Widget {
   }
 }
 
-function renderPlaylist(p: PlayItem) {
+export function renderPlaylist(p: PlayItem) {
   const url = `https://www.youtube.com/playlist?list=${p.id}`;
   const listItem = ui.element('li');
   listItem.style.breakInside = 'avoid';
   listItem.style.pageBreakInside = 'avoid';
 
-  const img = ui.iconFA('play-circle');
+  const img = ui.iconFA('play-circle', () => window.open(url, '_blank'), p.description);
   img.style.backgroundColor = p.color;
   img.classList.remove('fal');
   img.classList.add('far');

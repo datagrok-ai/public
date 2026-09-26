@@ -331,9 +331,9 @@ test('Notebooks — Context Menu Smoke (all 7 pcmd flows)', async ({page}) => {
     await page.evaluate(() => (document.querySelector('[name="div-Rename..."]') as HTMLElement)?.click());
 
     // Rename modal: title "Rename Notebook"; input pre-filled with the current name. The input name
-    // carries the dialog-title prefix on public ([name="input-Rename-Notebook---New-name-"]) — live
-    // recon 2026-06-18.
-    const input = page.locator('[name="input-Rename-Notebook---New-name-"]');
+    // carried the dialog-title prefix on public in June ([name="input-Rename-Notebook---New-name-"]);
+    // master names it [name="input-New-name-"] (25 Sep 2026).
+    const input = page.locator('.d4-dialog [name="input-New-name-"], [name="input-Rename-Notebook---New-name-"]').first();
     await input.waitFor({timeout: 30_000});
     await expect(page.locator('.d4-dialog .d4-dialog-title').filter({hasText: 'Rename Notebook'}).first())
       .toBeVisible();

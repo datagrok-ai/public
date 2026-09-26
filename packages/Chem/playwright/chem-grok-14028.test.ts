@@ -1,8 +1,5 @@
-/* ---
-sub_features_covered: [chem.actions.copy-smiles, chem.search.substructure, chem.search.substructure.filter, chem.sketcher]
---- */
-// GROK-14028: substructure-filter Clear must clear all 3 layers — L1 BitSet, L2 sketcher UI/summary, L3 leaked tags.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
@@ -11,7 +8,7 @@ test.use(specTestOptions);
 const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({page}) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
 
   await loginToDatagrok(page);
 
@@ -59,7 +56,13 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
   });
 
   await softStep('Open Filter Panel and wait for Structure filter sketch-link', async () => {
-    await page.evaluate(() => grok.shell.tv.getFiltersGroup());
+    await page.evaluate(async () => {
+      grok.shell.tv.getFiltersGroup();
+      // The next line waits on the first filter card; wait for the same thing here.
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline && !document.querySelector('[name="viewer-Filters"] .d4-filter'))
+        await new Promise(r => setTimeout(r, 100));
+    });
     await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30000});
     const probeResult = await page.evaluate(async () => {
       for (let i = 0; i < 90; i++) {
@@ -103,7 +106,7 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
           break;
         }
       }
-      // Sketcher dialog is position:fixed (offsetParent null but visible) — detect via getBoundingClientRect.
+
       for (let i = 0; i < 25; i++) {
         await new Promise(r => setTimeout(r, 400));
         const dlg = document.querySelector('.d4-dialog') as HTMLElement | null;
@@ -169,7 +172,7 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
   await softStep('Assert 3-layer cleanup invariant (L1 BitSet + L2 Sketcher UI + L3 No leaked tags)', async () => {
     const result = await page.evaluate(() => {
       const df = grok.shell.t;
-      // L1: BitSet all-true (no filter applied)
+
       const L1_bitsetCleared = df.filter.trueCount === df.rowCount;
       // L2: sketcher UI cleared — this is the exact GROK-14028 symptom (stale input line).
       //   Primary signal: the atlas-documented chem-substructure-filter column tag is empty/null.

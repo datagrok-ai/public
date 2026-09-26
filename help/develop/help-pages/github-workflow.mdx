@@ -168,32 +168,13 @@ This section helps you to set up this repository and install all required packag
     npm install
     ```
 
-1. As we use Docusaurus to generate the API documentation,
-you need to repeat the npm installation steps in the `js-api` folder:
-
-```mdx-code-block
-<Tabs>
-<TabItem value="win" label="Windows">
-```
-
-```cmd
-cd ..\js-api
-npm install
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="bash" label="Linux/MacOS" default>
-```
+1. As we use Docusaurus to generate the API documentation, `js-api` must be installed too. It is part of
+the repository's pnpm workspace, so run this once at the repository root (`corepack enable` first if
+pnpm is not installed yet):
 
 ```shell
-cd ../js-api
-npm install
-```
-
-```mdx-code-block
-</TabItem>
-</Tabs>
+cd ..
+pnpm install
 ```
 
 ## Make changes

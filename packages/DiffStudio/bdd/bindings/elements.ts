@@ -13,6 +13,5 @@ element('open model button', {selector: '.diff-studio-ribbon-widget:has(.fa-fold
 element('save to library icon', {selector: '.diff-studio-ribbon-save-to-model-catalog-icon',
   aliases: ['save to model hub icon']});
 
-/* The Refresh icon of the Model Hub ribbon carries no label and no tooltip — only the name of the
-   icon it is drawn with. */
-element('model hub refresh icon', {selector: '[name="icon-sync"]', aliases: ['catalog refresh icon']});
+/* Browse has its own Refresh action outside the current view's ribbon. */
+element('model hub refresh icon', {selector: '.d4-ribbon [name="icon-sync"]', aliases: ['catalog refresh icon']});

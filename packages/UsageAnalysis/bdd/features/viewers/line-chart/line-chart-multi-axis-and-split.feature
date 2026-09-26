@@ -11,7 +11,10 @@ Feature: Line chart multi-axis layout and splitting into series
   91 for Stereo × R1, 94 with R2 and 96 with R3 — the numbers this feature asserts.
   Multi-axis is read the same way: `charts` is the boxes laid out, `y axes` the scales drawn, and
   Y Global Scale is visible as the second scale disappearing and the first one stretching to cover
-  both columns.
+  both columns. Multi Axis with two Y columns and two split columns still draws, and a hover over it
+  logs nothing (github-2904, GROK-17835); the Y column list opened from the context panel, searched
+  and closed with OK, leaves all three Y columns (GROK-18484), and its search box stays inside the
+  dialog (GROK-20033).
 
   Background:
     Given user is logged in
@@ -95,6 +98,64 @@ Feature: Line chart multi-axis layout and splitting into series
     Then no errors should have been logged
     When user sets "splitColumnNames" property of line chart viewer to ""
     Then the "lines" reading of line chart viewer should be 1
+    And no errors should have been logged
+
+  Scenario: Multi Axis with two split columns keeps drawing, and a hover over it logs nothing
+    When user sets properties of line chart viewer:
+      | yColumnNames | Chemical Space X, TPSA |
+      | multiAxis    | true                   |
+    Then the "charts" reading of line chart viewer should be 1
+    And the "y axes" reading of line chart viewer should be 2
+    And no errors should have been logged
+    When user sets "splitColumnNames" property of line chart viewer to "Stereo Category"
+    Then the "split columns" reading of line chart viewer should be 1
+    And the "categories" reading of line chart viewer should be 5
+    And line chart viewer should be painted
+    And line chart viewer should report no error
+    When user sets "splitColumnNames" property of line chart viewer to "Stereo Category, Series"
+    Then the "split columns" reading of line chart viewer should be 2
+    And the "categories" reading of line chart viewer should be 12
+    And the "lines" reading of line chart viewer should be 24
+    And the "charts" reading of line chart viewer should be 1
+    And line chart viewer should be painted
+    And line chart viewer should report no error
+    When user hovers over the "plot" area of line chart viewer
+    Then no errors should have been logged
+    When user sets properties of line chart viewer:
+      | splitColumnNames |                  |
+      | multiAxis        | false            |
+      | yColumnNames     | Chemical Space X |
+    Then the "charts" reading of line chart viewer should be 1
+    And the "lines" reading of line chart viewer should be 1
+    And no errors should have been logged
+
+  Scenario: An edit in the Y column list keeps the three Y columns, and its search box sits inside the list
+    When user sets properties of line chart viewer:
+      | yColumnNames | Chemical Space X, Chemical Space Y, TPSA |
+      | multiAxis    | true                                     |
+    Then the "y columns" reading of line chart viewer should be "Chemical Space X, Chemical Space Y, TPSA"
+    When user clicks on settings icon of line chart viewer
+    Given "Y Axis" category in context panel is expanded
+    When user clicks on "..." button in "Y" property
+    Then "Select columns..." dialog should be visible
+    And the "Chemical Space Y" column should be checked in the column list of "Select columns..." dialog
+    And "Search" input in "Select columns..." dialog should lie within "Select columns..." dialog
+    When user types "TPSA" into "Search" input in "Select columns..." dialog
+    Then the column list of "Select columns..." dialog should start with "TPSA"
+    And the "TPSA" column should be checked in the column list of "Select columns..." dialog
+    When user toggles the "TPSA" column in the column list of "Select columns..." dialog
+    And user toggles the "TPSA" column in the column list of "Select columns..." dialog
+    Then the "TPSA" column should be checked in the column list of "Select columns..." dialog
+    And "Search" input in "Select columns..." dialog should lie within "Select columns..." dialog
+    When user clicks on OK button in "Select columns..." dialog
+    Then "Select columns..." dialog should be absent
+    And the "y columns" reading of line chart viewer should be "Chemical Space X, Chemical Space Y, TPSA"
+    And the "charts" reading of line chart viewer should be 1
+    And the "multi axis" reading of line chart viewer should be "true"
+    When user sets properties of line chart viewer:
+      | multiAxis    | false            |
+      | yColumnNames | Chemical Space X |
+    Then the "y columns" reading of line chart viewer should be "Chemical Space X"
     And no errors should have been logged
 
   Scenario: Every further split column adds only the combinations the rows carry

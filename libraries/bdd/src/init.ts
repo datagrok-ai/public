@@ -2,7 +2,7 @@
    smoke feature that passes on any stand, the manifest entries, the editor settings. Run in the
    package directory (where package.json is). Never overwrites: what exists is reported as such. */
 import {appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
-import {join, relative, sep} from 'node:path';
+import {dirname, join, relative, sep} from 'node:path';
 import {listFiles} from './discover.js';
 import {LIB_ROOT, PACKAGE_NAME} from './project.js';
 
@@ -20,18 +20,53 @@ interface Manifest {
   [key: string]: unknown;
 }
 
-const GITIGNORE = ['bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
+const GITIGNORE = ['bdd/guides/', 'bdd/test-results/', 'bdd/e2e/', 'bdd/.auth.json'];
 import {STATES as STATE_LIST} from './states.js';
 
 const STATES = STATE_LIST.join('|');
 
-/** The library as a dependency: by path when init runs from a checkout of it (the monorepo, until
- * it is on npm — npm links the directory and `npm ci` needs no registry), by version otherwise. */
+/** The library as a dependency: `workspace:^` for a package of its pnpm workspace, by path from any
+ * other checkout (until it is on npm — npm links the directory and `npm ci` needs no registry), by
+ * version otherwise. */
+export function libraryDependency(packageDir: string, libRoot: string, version: string): string {
+  if (libRoot.split(sep).includes('node_modules'))
+    return `^${version}`;
+  const root = workspaceRoot(libRoot);
+  if (root !== null && workspaceGlobs(root).some((g) => g.test(relative(root, packageDir).split(sep).join('/'))))
+    return 'workspace:^';
+  return `file:${relative(packageDir, libRoot).split(sep).join('/')}`;
+}
+
 function libraryVersions(packageDir: string): {bdd: string; playwright: string} {
   const lib = JSON.parse(readFileSync(join(LIB_ROOT, 'package.json'), 'utf8')) as Manifest;
-  const checkout = !LIB_ROOT.split(sep).includes('node_modules');
-  const bdd = checkout ? `file:${relative(packageDir, LIB_ROOT).split(sep).join('/')}` : `^${lib.version as string}`;
-  return {bdd, playwright: lib.devDependencies?.['@playwright/test'] ?? '>=1.40.0'};
+  return {bdd: libraryDependency(packageDir, LIB_ROOT, lib.version as string),
+    playwright: lib.devDependencies?.['@playwright/test'] ?? '>=1.40.0'};
+}
+
+function workspaceRoot(dir: string): string | null {
+  for (let d = dir; ; d = dirname(d)) {
+    if (existsSync(join(d, 'pnpm-workspace.yaml')))
+      return d;
+    if (dirname(d) === d)
+      return null;
+  }
+}
+
+/** The `packages:` globs of a pnpm-workspace.yaml as path tests (`*` one segment, `**` any). A
+ * directory under the root that no glob names is not a workspace package, and `workspace:^` there
+ * would fail the install. */
+function workspaceGlobs(root: string): RegExp[] {
+  const globs: RegExp[] = [];
+  let inPackages = false;
+  for (const line of readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8').split(/\r?\n/)) {
+    if (/^\S/.test(line))
+      inPackages = /^packages:\s*$/.test(line);
+    const item = inPackages ? /^\s+-\s+['"]?([^'"#\s]+)['"]?/.exec(line) : null;
+    if (item && !item[1].startsWith('!'))
+      globs.push(new RegExp('^' + item[1].split('/').map((seg) => seg === '**' ? '.*' :
+        seg.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')).join('/') + '$'));
+  }
+  return globs;
 }
 
 function indentOf(json: string): string {
@@ -98,6 +133,9 @@ const TSCONFIG = `{
 `;
 
 const VSCODE = {
+  // the Cucumber extension re-scans its globs on every file change; following symlinks walks the
+  // pnpm node_modules and the bdd link junctions in circles, and the scans pile up until the CPU is gone
+  'search.followSymlinks': false,
   'cucumber.features': ['bdd/features/**/*.feature'],
   'cucumber.glue': ['bdd/bindings/**/*.ts', `node_modules/${PACKAGE_NAME}/bindings/**/*.ts`],
   'cucumber.parameterTypes': [{name: 'state', regexp: STATES}],

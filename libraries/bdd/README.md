@@ -23,6 +23,17 @@ Nothing in that scenario is a selector. Steps are the verbs, element phrases res
 contract (`data-u2`, `data-u2-name`, `data-u2-part`) and from a small registry of names, and the
 compiler reports every step, element or dataset it cannot resolve, with the line number.
 
+**What is not a feature.** A scenario that runs a server-side Python/R/Julia script, a Jupyter kernel
+or a Docker container, or reaches an outside web service, or that has nothing UI-specific (a
+function called and its result checked),
+is a package test or an `ApiTests` test, never a feature. The same goes for a TestTrack case marked
+`manual-only` or `apitest`. The rule and its reasons are in `CLAUDE.md`, "What never becomes a feature".
+
+**Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
+database rows, the layout or chat the UI makes on the side, a setting or configuration of something
+it does not own — is removed or restored at feature end and swept again at its start, and the
+cleanup proves it is gone. See `CLAUDE.md`, "Everything a feature puts on the server goes".
+
 ## Using it in a package
 
 The library is not on npm yet, so a package depends on it by path — what `grok-bdd init` writes
@@ -30,17 +41,33 @@ when it runs from a checkout — and npm links the directory into `node_modules`
 of `public`, against a local stand on `http://localhost:8888`:
 
 ```bash
-cd public/libraries/bdd && npm ci && npm run build   # the library; dist/ is not committed
-npx playwright install chromium                      # its browser, once per machine (here, not in the package)
-cd ../../packages/<Package> && npm ci                # the package: the library among its dev dependencies
-npx grok-bdd link                                    # ONE Playwright: the library's copy into node_modules (redo after every npm ci)
+cd public && grok setup                              # once per checkout: the pnpm workspace (needs `npm i -g datagrok-tools`)
+cd libraries/bdd && npm run build                    # the library; dist/ is not committed (2 s)
+npx playwright install chromium                      # its browser, once per machine
+cd ../../packages/<Package>/bdd                      # the package's bdd project; the workspace already links the library
 npx grok-bdd run --reporter=list                     # compile --check, then Playwright (4 workers; --workers N, or any Playwright flag)
 ```
+
+Under the pnpm workspace the package and the library resolve to one `@playwright/test`, so
+`grok-bdd link` is only for a package installed outside the workspace with npm.
+
+A slow stand may need longer budgets: `BDD_EXPECT_TIMEOUT` raises what every check waits (15 s)
+and `BDD_COMMAND_TIMEOUT` how long a top-menu command has to add its columns (180 s).
+`BDD_FRESH_PAGE=1` reloads the shell before every feature instead of resetting it, which tells a
+feature that fails on what an earlier one left behind.
 
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
 `node_modules/.bdd-link-backup/` and links the library's in its place (`--undo` puts it back).
 Once the library is published, the dependency becomes a version and `link` goes away.
+
+If `grok-bdd run` reports **`Requiring @playwright/test second time`**, run
+`npx grok-bdd link` from the package directory and retry. Binding discovery imports both
+the library's bindings and the package's bindings, so this can fail during the initial
+compile check, before Playwright starts a browser. Two installations of the **same version**
+also trigger the error: they must resolve to the same physical copy. Repeat the link after
+`npm ci` or another dependency install replaces it; reinstalling the same version alone
+does not fix it.
 
 **What the stand needs**: a platform built from `core` at or after 2026-09-10 (the viewer
 features rely on signals the core gained for them); a login — global setup mints a token from the
@@ -83,8 +110,11 @@ grok-bdd run [--headed] [-g "name"] [--reporter=list] [generated/<folder>]
 Every command runs from the package directory (or from `bdd/`). A feature change needs
 `grok-bdd compile` before `grok-bdd run`: the run starts with the drift check and stops on a stale
 spec. Results land in `bdd/test-results/` (a trace and a screenshot on failure; `--trace on`
-records DOM snapshots too, `--video on` a video); `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json` adds a
-JSON report with a duration per step.
+records DOM snapshots too, `--video on` a video); `PLAYWRIGHT_JSON_OUTPUT_NAME=<absolute path>.json` adds a
+JSON report with a duration per step (a relative name lands in this library's `dist/`, the Playwright
+config directory); `node tool/step-times.cjs <bdd project dir> run1.json [run2.json ...]` aggregates
+the reports by step phrase and binding — count, total, mean, p90, per run — into `step-times.md`
+beside them.
 
 ## How a feature runs
 
@@ -96,6 +126,17 @@ semantic types the first detection found. What a feature leaves on the server it
 (`atFeatureEnd`). Playwright runs and reports one test per scenario (and per outline row), each
 with its own trace; a `Background` runs before every scenario, as Gherkin says.
 
+Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{run}`. The suffix is
+unique per feature instance (including each worker and repeat) and stays the same across its
+scenarios. `{time}` is the feature instance's start in epoch milliseconds, for a name a login must
+accept (`[a-z0-9._-]`) and a reader can sort: the users a creation feature makes cannot be deleted,
+so they are named by it. String arguments, element phrases, data tables and doc strings resolve both
+at runtime;
+generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
+and fails the run if any callback fails; a run that was killed never gets there, so the server
+steps that make or clear a `{run}`- or `{time}`-named fixture, the project save included, also
+delete the ones of the same family left by any run older than an hour.
+
 **`@journey`** on the feature changes that: the feature is one test, the Background runs once, and
 the scenarios run in order on the same shell state, each a soft step — a failing scenario is
 recorded and the next one still runs, and the test fails at the end listing them. Use it for a
@@ -103,9 +144,18 @@ property surface walked section by section, where re-opening the data and the vi
 scenario would cost more than the checks. Each scenario then puts back what it changed, and owns
 its error and balloon floors. `-g` selects the whole journey.
 
+**`@serial`** on the feature runs it one at a time with every other `@serial` feature, while the
+rest of the run stays parallel. Use it where features read what other features change at the same
+time — a fuzzy gallery search that brings up the fixtures other features create and delete.
+
 **`@known-failure`** on a scenario says the product has the defect it describes: its failure does
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
-to stay green.
+to stay green. Outside a journey the tag works on a scenario and on an outline's `Examples` block:
+the Background runs plainly, and only the scenario's own steps are the expected failure.
+
+The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
+removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
+alone does not establish that it failed for the intended reason.
 
 ## Reading a failure
 
@@ -127,6 +177,11 @@ A misspelled menu item gets the visible items, a phrase inside a menu that is no
 `context menu: not open`, a misspelled property the nearest captions. A journey lists every failed
 scenario in that shape. A stack trace appears only for a programming error in a binding.
 
+Every run also leaves Playwright's JSON report in the project's `test-results/report.json`, with
+the stand and the machine it ran on: the failed step of a test is its deepest step with an `error`.
+The run history of UsageAnalysis (`packages/UsageAnalysis/bdd/history`) keeps such reports, when
+asked to, as dated records with a page to follow times, failures and flakes over them.
+
 ## Element phrases
 
 A phrase resolves, in this order, at every level:
@@ -135,7 +190,7 @@ A phrase resolves, in this order, at every level:
 |--------------------------------------------|------------------------------------------------------------------|
 | `results`, `browse tab`                    | a registered element (or alias): the whole phrase wins over everything below |
 | `second item …`, `last row …`, `3rd input` | an ordinal among the matches                                     |
-| `save button in toolbar`                   | composition: `X in|inside|within|on|under Y` — X resolved inside Y (recursively) |
+| `save button in toolbar`                   | composition: `X in\|inside\|within\|on\|under Y` — X resolved inside Y (recursively) |
 | `label of name input`, `viewers section of toolbox` | `of` names a *part* — of a registered element, or of every element of a kind |
 | `sequence column input`                    | a generic **kind** by its longest suffix, qualified by the rest  |
 | `"Run MSA" button`, `"First name" input`   | a quoted qualifier: scope words inside it are kept, and a leading "first"/"last" is not read as an ordinal |
@@ -184,19 +239,31 @@ list is the reference; this is the map:
 
 - **Gestures and outcomes on any element** (`bindings/common/steps.ts`): clicks, hovers, typing
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
-  `should be/become {state}`, text, value and item counts. States: visible, hidden, present,
+  `should be/become {state}`, text, value and item counts, a visible count remembered and then
+  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list). States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
-  collapsed, focused, invalid, valid — each read from the ARIA state the element uses.
+  collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
+  `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
+  markup never counts as a completed result.
 - **The shell** (`bindings/platform/steps.ts`): `user is logged in`, `user opens {dataset}
   dataset` (also `keeping the first N rows [as "name"]`), switching views and table views,
-  projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts.
+  projects saved and reopened (deleted at feature end), apps, the browse panel, autostarts; the
+  server's spaces, models, groups and roles by name (deleted at feature end), a fixture user (made
+  once per stand: users cannot be deleted), its status and who is a (plain or admin) member of a
+  group or holds a role; the gallery's render mode and
+  its counter against a remembered one (lower, not lower, higher — search, then clear). The membership editor behind Groups..., Roles..., Members
+  and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
+  `remove button` and `checkbox` parts, typed into through `membership search`.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
-  filter set and checked row by row, cells, calculated and renamed columns, colour coding,
+  filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
+  equal row by row), calculated and renamed columns, colour coding,
   other open tables, links between tables, the filter panel's cards through its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
-- **Package functions and their results** (`platform/functions.ts`), **custom platform events**
-  (`platform/events.ts`), the clipboard and a file chooser (`common/steps.ts`).
+- **Package functions and their results** (`platform/functions.ts`: empty, text, a number or a
+  range, methods, a list, a table, a returned column's length, rows and prefix), **custom platform events**
+  and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
+  (`common/steps.ts`).
 - **The `viewers` tier** (below).
 
 A step definition is an exported `const`; the generated spec imports it by name:
@@ -212,6 +279,18 @@ Parameter types: `{element}` (any phrase), `{widget}` (a phrase naming a viewer 
 for a package's own steps come from `@datagrok-libraries/bdd/runtime`: `locate`, `gestures.*`,
 `viewers.*` (`hitArea`, `hitAreas`, `readValue`, `settle`, `snapshot`, `onViewer`, …),
 `expectState`, `expectText`, `atFeatureEnd`.
+
+The shared gesture helpers interpret `Control` / `Ctrl` as the platform's primary modifier:
+Control on Windows/Linux, Command on macOS. Existing `user presses Control+C` and
+`… holding Control` steps therefore work on both. This also covers modifier keys held by
+drag and legend helpers, and select-all inside the typing and clearing helpers. Internally,
+Playwright's `ControlOrMeta` resolves the modifier (requires Playwright 1.45+).
+
+`Delete` / `Del` follows Datagrok's command convention: Backspace on macOS, Delete on
+Windows/Linux, so `user presses Shift+Delete` removes selected rows on either platform.
+For a physical key, use `ControlLeft` / `ControlRight`, `ForwardDelete` or `Backspace`.
+The grid's custom current-cell copy specifically checks physical Control, so that one step
+uses `user presses ControlLeft+Shift+C`. `Meta` / `Cmd` and explicit `ControlOrMeta` also work.
 
 ## Tiers, and the `viewers` tier
 
@@ -234,10 +313,13 @@ The `viewers` tier drives viewers the way the platform sees them:
 - **Pixels** — `should have repainted [by at least N pixels]`, `less/more ink than before`, an
   area's own ink and repaint, colours in an area (by hue, a shade of anti-aliasing allowed), two
   areas alike or different, the selection highlight (with a margin the selection warrants), the
-  value range and the colour scale against before.
-- **The legend** (read from its `data-legend-*` attributes), the row tooltip, viewer events,
+  value range and the colour scale against before; an area `painted in no color` (greys only).
+- **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
+  collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
+  against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
-  logged`, `no error or warning balloon should have been shown`.
+  logged`, `no error or warning balloon should have been shown`; a balloon that should have been
+  shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
   inner viewers, card readings, lassos, cross-widget drags.
@@ -250,9 +332,103 @@ lands is reported as the platform failure it is. **Say what the claim is**: `rep
 change detector, one pixel; a shape gets its own evidence (an area's ink, a colour in an area, a
 reading), a chrome toggle takes `by at least N pixels`.
 
+Area hovers also settle before the next step. Grid cell tooltip requests participate in the
+core viewer's pending-work signal, including the nested correlation grid. Tooltip text checks
+consider visible tooltips only; hidden retained text and an absent tooltip satisfy a negative
+check. A served core must include the tracked grid tooltip debounce for these absence checks.
+
 A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWidgetStatus()`
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get
 isRenderPending()` true from the render request to the paint; and an `onRendered` observable.
+
+A package that customizes an existing widget can contribute its own live areas and readings
+through `DG.Widget.addStatusProvider(name, provider)`. For example, Peptides adds the glyphs it
+draws in the native grid's headers:
+
+```ts
+grid.addStatusProvider('peptides-weblogo', () => ({
+  hitAreas: currentGlyphBounds,
+  values: {'highlighted rows': highlightedRowCount},
+}));
+grid.removeStatusProvider('peptides-weblogo');
+```
+
+Names identify the contributing component. Registering the same name replaces that provider in
+place; later providers override earlier entries. Providers run on each status read and contribute
+`parts`, `hitAreas`, and `values`; a JS viewer that overrides `getWidgetStatus()` composes with
+`super.getWidgetStatus()`. Geometry uses the widget's coordinate system and must exclude anything
+no longer drawn. Detach removes providers; a viewer reattached to a different table needs its
+table-specific providers registered again.
+
+## Guides: a scenario as a how-to video
+
+A scenario that answers "how do I …" is also its own demonstration. `grok-bdd guide
+features/guides/<name>.feature` compiles it, runs it on one worker in guide mode and renders each
+scenario into `guides/<feature slug>/<scenario slug>/`:
+
+- `guide.mp4` — the pointer travels to every element a step acts on, the element is lit (the rest
+  of the page dimmed) and rests under the pointer before the click lands; every press is marked
+  where the page received it, under the pointer's tip — a yellow dot and ring for the left button,
+  a green one for the right, twice for a double-click; the pointer never skips, each movement
+  starting where the previous action ended (the renderer refuses to make a video in which it
+  skips); an icon-sized target
+  (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
+  where it is; the page after the step is revealed, and a caption above the page (clear of a
+  player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
+  toolbar"); a caption too long for the strip is set smaller, then on two lines, and the lines of a
+  pasted text (`\n` in the step) read as values separated by commas. A choice is shown being made: a native `<select>` opens its list, the option is typed
+  so the list highlights it, Enter takes it; a column selector opens its picker, the name is typed
+  into the search short of its last letter (a complete unique name is taken on the spot) and the
+  row it leaves is clicked. A `Then` step shows what it checked with a check mark —
+  when a person could see it (a dialog, a column, a row count, a value, a legend item's color);
+  the checks a test needs and a person does not (error and balloon floors, server state, viewer
+  readings and pixels, "than before" claims, property bags, widget counts, task-bar and command
+  bookkeeping, values matched against a regular expression) are left out, by the `HIDDEN_CHECKS`
+  patterns in `src/runtime/guide.ts` — so a guide names a new column exactly, not by a pattern;
+- `step-NN.png` — the lit picture of every step, and `steps.md` — the numbered steps with those
+  pictures, ready to paste into a reply (a filming with fewer steps removes the pictures it no
+  longer has);
+- `audit.png` and `audit.json` — every press as the video shows it, beside the same picture with
+  ticks aimed at where it landed, and how far the mark's centre and the pointer's tip are from it
+  (the renderer prints a press more than 2 px off, or outside the element its stop lit);
+- with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair (the GIF's palette
+  always holds the press colours).
+
+Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
+it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
+element the step located, and what the pointer did — as the page saw it: capture listeners log
+every real press, release and move, whatever sent it (a locator's own click never goes through
+`page.mouse`), each press with its button, its place and the element under it, and a run of moves
+with no button held as the one point it came to rest. A step's presses and moves go to the stop
+they were made at (below). A move with a button held is a
+drag: the page is pictured along the way (`NN-dragK.png`, at most eight per step), so the video
+shows what the drag draws — a selection box, an annotation region — growing under the pointer,
+and the step's still shows it complete at the release point. Tests know nothing of it: without
+the variable no line of it runs. The viewport is 1080p (1920×1080, so the top menu keeps every group on the bar; `BDD_GUIDE_VIEWPORT=<w>x<h>`
+for another) so the video reads without zooming every step — the video itself, caption strip included, is 1600×1000, the frames downsampled from the page (`VIDEO_W`, `VIDEO_H` in the renderer) — and the shell is the full one (simple
+mode off), as a person has it — filmed or in a plain run: every `@guide` scenario carries `And
+simple mode is off` right after the login (the compiler refuses one without it), and the step
+puts simple mode back at feature end. Every step is in the video except the login and that shell
+step (`guide.silent`), other set-up a person does not take (a pinned setting such as `the molecule
+sketcher is …`, a package's own readiness wait, which calls `silent` from
+`@datagrok-libraries/bdd/runtime`), a wait the `HIDDEN_CHECKS` list names (`the package autostarts
+have completed`, `… should have finished updating`), whether it is written as a `Given` or a
+`Then`, and a step that neither
+acted nor changed the page (its before and after pictures are the same file): a table opened
+through the API is shown under its caption. A path walked inside a step — the top menu's group,
+then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as it was
+then, the element's box), and the pointer travels to each with the stop lit; a runtime path that
+does not report its stops jumps from the closed menu to the result, so a new menu walk calls
+`hop` where `pickTopMenu` and `pickMenuPath` do. Rendering is `tool/guide-render.py` (Pillow + ffmpeg: `py -m
+pip install pillow imageio-ffmpeg`, or `FFMPEG=<path>`); `--fps`, `--hold`, `--travel`, `--zoom`
+tune the pace when run by hand on a `steps.json` directory.
+
+A feature tagged `@help:<page dir>` (`@help:access/files`) illustrates a help page:
+`grok-bdd guide --help-pages` films every such feature and copies each scenario's GIF and thumb
+into `<public>/help/<page dir>/img/<scenario slug>.gif` (`BDD_HELP_ROOT` names another tree), so
+the walkthroughs on the docs site are regenerated from features rather than recorded by hand.
+Guides live under `features/guides/` and run with the rest of the suite, in the full shell: an
+answer that stops being true fails a test.
 
 ## Generated specs
 
@@ -272,9 +448,25 @@ The official Cucumber extension needs, in the package's `.vscode/settings.json`:
 custom types are read from the glue). A step shown as undefined while `grok-bdd lint` resolves it
 means the settings file is not valid JSON or the glue globs miss the tier directories.
 
+Settings are relative to the folder opened in VS Code; nested `.vscode/settings.json` files
+are not inherited. With the core repository open, use `public/packages/*/bdd/features/**/*.feature`
+for features, and `public/libraries/bdd/bindings/**/*.ts` plus
+`public/packages/*/bdd/bindings/**/*.ts` for glue in the root `.vscode/settings.json`.
+Include the same `state` parameter type there. With `public/` open, omit the `public/` prefix.
+
+Every settings file that names Cucumber globs also carries `"search.followSymlinks": false`
+(`grok-bdd init` writes it). The extension re-scans its globs on every file change through VS
+Code's file search, which follows symlinks by default: the pnpm `node_modules` forests and the
+junctions `grok-bdd link` makes are circular, so a scan never ends, and they pile up by the dozen
+(64 `rg.exe` at three quarters of a 32-core machine, found 2026-09-21). The setting takes effect
+on Reload Window; `taskkill /F /IM rg.exe` (or `pkill rg`) clears the ones already running.
+
 ## Developing the library
 
-`npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`; `npm run
+`npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`, which is what a
+package's `grok-bdd` loads: while any of those sources is newer than its build (a pull, an edit),
+every command but `init` and `link` stops and names the file, rather than failing a sound feature on
+a kind or a step only the sources have. `npm run
 test:unit` runs the engine tests (nouns, compile, project, init, failure) and the locator test,
 which drives the kinds and the platform names over a static page in the library's Chromium (and
 skips itself where none is installed); the library is a project itself (`features/platform`):

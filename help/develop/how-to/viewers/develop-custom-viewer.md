@@ -95,7 +95,7 @@ look as follows:
 ```
 
 Some libraries, such as [datagrok-api](https://www.npmjs.com/package/datagrok-api), are marked as external modules in a
-package's [webpack configuration](../../develop.md#webpackconfigjs). This means that they will not be included in a
+package's [build configuration](../../develop.md#build-configuration). This means that they will not be included in a
 bundle file of your package. The platform provides them in its environment, so if you use such a library, it will be
 taken from there.
 
@@ -539,7 +539,7 @@ export class AwesomeViewer extends DG.JsViewer {
 ```
 
 This is equivalent to adding a function to `package.ts`. There is no need to add anything other than the class itself.
-When you run the `build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special
+When you run the `build` script for your package, `FuncGeneratorPlugin` (part of the shared rspack configuration) will add a special
 `package.g.ts` file to your project. Note that it is not on the ignore list, so you are supposed to commit this file.
 
 :::

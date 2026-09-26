@@ -38,12 +38,13 @@ import $ from 'cash-dom';
 import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
-import {CanvasRenderer, Grid, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
+import {CanvasRenderer, Grid, GridCell, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
 import {ItemsGrid} from "./src/ui/items-grid";
+import {ITooltipOptions, Tooltip, tooltip} from './src/widgets/tooltip';
 import * as d4 from './src/api/d4.api.g';
 import {IDartApi} from "./src/api/grok_api.g";
 // import {Dictionary, typeaheadConfig} from "typeahead-standalone/dist/types";
@@ -1602,91 +1603,8 @@ export class tools {
   }
 }
 
-/** Options for tooltip display. Future-proof — add fields here as tooltip features grow. */
-export interface ITooltipOptions {
-  /** Delay in milliseconds before the tooltip appears. Defaults to 0 (immediate). */
-  delay?: number;
-}
-
-/** Represents a tooltip. */
-export class Tooltip {
-  private _pendingTimer: ReturnType<typeof setTimeout> | null = null;
-
-  private _cancelPending(): void {
-    if (this._pendingTimer !== null) {
-      clearTimeout(this._pendingTimer);
-      this._pendingTimer = null;
-    }
-  }
-
-  /** Hides the tooltip. Also cancels any pending {@link showDelayed} call. */
-  hide(): void {
-    this._cancelPending();
-    api.grok_Tooltip_Hide();
-  }
-
-  /** Associated the specified visual element with the corresponding item.
-   * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
-  */
-  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null), tooltipPosition?: 'left' | 'right' | 'top' | 'bottom' | undefined | null): HTMLElement {
-    if (tooltip != null)
-      api.grok_Tooltip_SetOn(element, tooltip, tooltipPosition);
-    return element;
-  }
-
-  /** Shows the tooltip at the specified position.
-   *
-   * Any pending delayed show is cancelled first. Passing `null`/`undefined` for `content`
-   * hides the tooltip and cancels any pending show — ideal for hover handlers where a single
-   * call replaces the show+hide+debounce quartet:
-   *
-   * ```ts
-   * onMouseMove(e) {
-   *   const t = getTooltipFor(e);   // string | HTMLElement | null
-   *   ui.tooltip.show(t, e.x + 16, e.y + 16, {delay: 200});
-   * }
-   * ```
-   */
-  show(content: HTMLElement | string | null | undefined, x: number, y: number,
-       options?: ITooltipOptions): void {
-    this._cancelPending();
-    if (content == null) {
-      api.grok_Tooltip_Hide();
-      return;
-    }
-    const delay = options?.delay ?? 0;
-    if (delay <= 0) {
-      api.grok_Tooltip_Show(content, x, y);
-      return;
-    }
-    this._pendingTimer = setTimeout(() => {
-      this._pendingTimer = null;
-      api.grok_Tooltip_Show(content, x, y);
-    }, delay);
-  }
-
-  /** Shows the standard tooltip for the rows of [dataFrame] that satisfy [indexPredicate]. */
-  showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {
-    api.grok_Tooltip_ShowRowGroup(dataFrame.dart, indexPredicate, x, y);
-  }
-
-  /** Returns a tooltip element. */
-  get root(): HTMLElement {
-    return api.grok_Tooltip_Get_Root();
-  }
-
-  /** Whether a tooltip is currently shown. */
-  get isVisible(): boolean { return api.grok_Tooltip_Get_IsVisible(); }
-
-  /** Fires when a tooltip is about to be shown. */
-  get onTooltipRequest(): rxjs.Observable<any> { return __obs('d4-tooltip-request'); }
-  /** Fires after a tooltip is shown. */
-  get onTooltipShown(): rxjs.Observable<any> { return __obs('d4-tooltip-shown'); }
-  /** Fires after the tooltip closes. */
-  get onTooltipClosed(): rxjs.Observable<any> { return __obs('d4-tooltip-closed'); }
-}
-
-export let tooltip = new Tooltip();
+export {Tooltip, tooltip};
+export type {ITooltipOptions};
 
 export class ObjectHandlerResolutionArgs {
   semValue: SemanticValue;
@@ -1754,10 +1672,10 @@ export class ObjectHandler<T = any> {
     throw 'Not defined.';
   }
 
-  /** String representation of the [item], by default item.toString().
+  /** String representation of the [item]: the value of a semantic value or a grid cell, item.toString() otherwise.
    * @param x - item */
   getCaption(x: T): string {
-    return `${x}`;
+    return x instanceof SemanticValue ? `${x.value}` : x instanceof GridCell ? `${x.cell?.value ?? ''}` : `${x}`;
   }
 
 
@@ -2692,35 +2610,54 @@ export namespace hints {
     return root;
   }
 
+  let hintId = 0;
+
+  /** The reposition timer of every live hint, by its `data-target`, so [remove] can stop it. */
+  const _hintIntervals: {[name: string]: any} = {};
+
+  /** Ticks (of 50 ms, so 30 s) a hint waits for a missing target before giving up. A rebuild
+   * replaces a ribbon in a couple of seconds; a target absent this long is gone for good. */
+  const HINT_GRACE_TICKS = 600;
+
   /** Adds a hint indication to the provided element and returns it.
+   *
+   * Pass a function instead of an element when the target is rebuilt while the hint is up — a
+   * ribbon item, a re-rendered toolbar. The blob then re-resolves its target on every tick and
+   * moves with it; bound to a single node, it would be orphaned on the node that was replaced and
+   * the learner would see nothing highlighted.
+   *
+   * Returns the target — or, for a function whose target has not rendered yet, the blob itself;
+   * [remove] takes either.
+   *
    * Example: {@link https://public.datagrok.ai/js/samples/ui/interactivity/hints}
    */
-  export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
-    const id = Math.floor(Math.random() * 1000);
+  export function addHintIndicator(el: HTMLElement | (() => HTMLElement | null),
+    clickToClose: boolean = true, autoClose?: number): HTMLElement {
+    const resolve = typeof el === 'function' ? el : () => el;
+    let target: HTMLElement | null = resolve();
+    const name = 'hint-target-' + ++hintId;
     const hintIndicator = document.createElement('div');
     hintIndicator.className = 'ui-hint-blob';
 
-    hintIndicator.setAttribute('data-target', 'hint-target-' + id);
-    el.setAttribute('data-target', 'hint-target-' + id);
+    hintIndicator.setAttribute('data-target', name);
 
-    el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
 
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
 
     let clippers: HTMLElement[] | null = null;
-    function targetClipped(): boolean {
-      const r = el.getBoundingClientRect();
+    function targetClipped(r: DOMRect): boolean {
       if (r.width === 0 && r.height === 0)
         return true;
       if (r.bottom <= 0 || r.right <= 0 || r.top >= window.innerHeight || r.left >= window.innerWidth)
         return true;
       if (clippers == null) {
         clippers = [];
-        for (let p = el.parentElement; p != null && p !== document.body; p = p.parentElement) {
+        for (let p = target!.parentElement; p != null && p !== document.body; p = p.parentElement) {
           const style = getComputedStyle(p);
-          if (/(auto|scroll)/.test(style.overflowY + style.overflowX))
+          // a collapsed ribbon menu row is `overflow: hidden`: a target on it is off screen just the same
+          if (/(auto|scroll|hidden)/.test(style.overflowY + style.overflowX))
             clippers.push(p);
         }
       }
@@ -2732,28 +2669,51 @@ export namespace hints {
       return false;
     }
 
-    let setPosition = setInterval(function () {
-      if ($('body').has(el).length != 0) {
-        const indicatorNode = el.getBoundingClientRect();
-        hintIndicator.style.left = indicatorNode.left + 'px';
-        hintIndicator.style.top = indicatorNode.top + 'px';
-        hintIndicator.style.display = targetClipped() ? 'none' : '';
-      } else {
-        hintIndicator.remove();
-        clearInterval(setPosition);
+    /** Moves the hint onto [next], which a rebuild may have made a different node than the one the
+     * hint was attached to. The scroll parents are re-read with it. */
+    function attach(next: HTMLElement): void {
+      // `data-target` stays on the node that had it: the caller holds the node it passed in, and
+      // [remove] resolves the blob - and now the class - through that attribute
+      target?.classList.remove('ui-hint-target');
+      target = next;
+      clippers = null;
+      target.setAttribute('data-target', name);
+      target.classList.add('ui-hint-target');
+      if (clickToClose)
+        $(target).off(`click.${name}`).on(`click.${name}`, () => remove(target!));
+    }
+
+    let missedTicks = 0;
+    const setPosition = setInterval(function () {
+      const next = resolve();
+      if (next == null || !document.body.contains(next)) {
+        // nothing to point at right now; a rebuild may bring the target back, and a target that
+        // has not rendered yet may arrive for the first time
+        hintIndicator.style.display = 'none';
+        if (++missedTicks > HINT_GRACE_TICKS)
+          remove(target ?? hintIndicator);
+        return;
       }
-    }, 10);
+      missedTicks = 0;
+      if (next !== target)
+        attach(next);
+      const box = target!.getBoundingClientRect();
+      hintIndicator.style.left = box.left + 'px';
+      hintIndicator.style.top = box.top + 'px';
+      hintIndicator.style.display = targetClipped(box) ? 'none' : '';
+    }, 50);
 
-    if (clickToClose) {
-      $(el).on('click', () => {
-        remove(el);
-      });
-    }
+    _hintIntervals[name] = setPosition;
+    // a resolver whose target has not rendered yet keeps the blob hidden until a tick finds it
+    hintIndicator.setAttribute('data-target', name);
+    if (target != null)
+      attach(target);
+    else
+      hintIndicator.style.display = 'none';
 
-    if (autoClose! > 0) {
-      setTimeout(() => remove(el), autoClose);
-    }
-    return el;
+    if (autoClose! > 0)
+      setTimeout(() => remove(target ?? hintIndicator), autoClose);
+    return target ?? hintIndicator;
   }
 
   /** Describes series of visual components in the wizard. Each wizard page is associated with the
@@ -2836,6 +2796,13 @@ export namespace hints {
     if (el) {
       const id = el.getAttribute('data-target');
       $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
+      if (id != null) {
+        clearInterval(_hintIntervals[id]);
+        delete _hintIntervals[id];
+        // the hint may have followed its target onto a rebuilt node, which is the one wearing the
+        // class now - clearing only `el` would leave the highlight on screen for good
+        $(`[data-target="${id}"]`).removeClass('ui-hint-target ui-text-hint-target');
+      }
       el.classList.remove('ui-hint-target', 'ui-text-hint-target');
     }
     $('div.ui-hint-overlay')?.remove();

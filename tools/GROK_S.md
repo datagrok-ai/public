@@ -52,13 +52,21 @@ servers:
     key: admin
   dev:
     url: https://dev.datagrok.ai/api
-    key: <developer-key>
+    keyFile: /home/me/.grok/keys/dev.json
+    login: me
 ```
 
-- `grok config add --alias <name> --server <url> --key <key>` writes a new entry.
+- `grok login <server>` is the way to add a server: it registers a keypair and writes the
+  entry for you. The private key stays in `~/.grok/keys/<alias>.json`.
+  See [keypair authentication](../help/govern/access-control/keypair-authentication.md).
+- `grok config add --alias <name> --server <url> [--key <developer-key>]` writes an entry by
+  hand. The developer key is deprecated; omit it when the server is reached with a keypair.
 - Add `--default` to make it the active server.
+- In CI, `GROK_PRIVATE_KEY` (the private JWK, raw or base64) overrides the config file.
 - Every `grok s ...` command accepts `--host <alias-or-url>` to override the default. The URL
   is the API base (`https://host/api`, or `http://host:8082` for a bare Datlas).
+- `grok s token` prints a session token for the target server — what a shell script needs
+  when it has to call the API with `curl` itself.
 
 ## Entity operations
 
@@ -328,7 +336,7 @@ grok s domains list grit                            # tables of one schema: secu
 grok s domains get grit                             # the manifest, as JSON (doubles as an export)
 grok s domains get grit.issue                       # the table's columns (--output json: its manifest section)
 grok s domains get grit.issue <row-id>              # one row
-grok s domains capabilities grit.issue              # what the current user may do on the table
+grok s domains access grit.issue                    # can.view/insert/edit/delete/share + editable/readonly column lists
 ```
 
 ### Querying
@@ -525,7 +533,7 @@ Actions the server accepts: `create | get | delete` for `users`, `groups`, `conn
 `functions`, `queries`, `scripts` (`get | delete` for `reports`), `functions.run`
 (`{name, params}`), and `files.list | get | put | delete`. For `files.put`, add
 `"source": "<local-path>"` and the CLI base64-encodes the file into `content` before sending.
-`users.delete` removes the entity record only (see "List / count / get / delete").
+`users.delete` is refused, as is `DELETE /entities/{id}` on a user or its personal group: users are blocked, never deleted (see "List / count / get / delete").
 
 ## Scripting pattern
 

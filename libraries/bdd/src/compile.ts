@@ -39,6 +39,9 @@ export interface CompiledFeature {
 
 /** A feature whose scenarios run in order on one shell state, the Background once (see `journey`). */
 export const JOURNEY_TAG = '@journey';
+/** A guide runs in the full shell, filmed or not: every scenario carries [FULL_SHELL_STEP]. */
+export const GUIDE_TAG = '@guide';
+export const FULL_SHELL_STEP = 'simple mode is off';
 export const GENERATED_DIR = 'generated';
 export const FEATURES_DIR = 'features';
 export const RUNTIME_SPECIFIER = `${PACKAGE_NAME}/runtime`;
@@ -76,6 +79,8 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   const relPath = posix(relative(ctx.root, feature.path));
   const diag = (line: number, level: DiagnosticLevel, message: string) =>
     diagnostics.push({file: relPath, line, level, message});
+  const emitText = (value: unknown): string => Array.isArray(value) ? `[${value.map(emitText).join(',')}]` :
+    typeof value === 'string' && /\{(run|time)\}/.test(value) ? `session.text(${JSON.stringify(value)})` : JSON.stringify(value);
 
   const emitArg = (arg: MatchedArg, step: StepModel, context: ContextEntry | undefined): string => {
     switch (arg.type) {
@@ -93,7 +98,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
           else
             throw e;
         }
-        return `el(${JSON.stringify(phrase)})`;
+        return `el(${emitText(phrase)})`;
       }
       case 'dataset': {
         helpers.add('ds');
@@ -107,7 +112,7 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
       case 'double':
         return String(arg.value);
       default:
-        return JSON.stringify(arg.value);
+        return emitText(arg.value);
     }
   };
 
@@ -135,10 +140,11 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
     named.get(exported.module.specifier)!.add(exported.name);
     const call = [...args.map((a) => emitArg(a, step, state.context))];
     if (step.table)
-      call.push(JSON.stringify(step.table));
+      call.push(emitText(step.table));
     if (step.docString !== undefined)
-      call.push(JSON.stringify(step.docString));
-    const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')}));`];
+      call.push(emitText(step.docString));
+    const detail = step.table ? `, ${emitText(step.table)}` : '';
+    const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')})${detail});`];
     if (def.meta.enters !== undefined) {
       const entered = lookupContext(def.meta.enters);
       if (!entered)
@@ -164,9 +170,14 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
     return n === 1 ? name : `${name} (${n})`;
   };
 
+  for (const scenario of feature.scenarios) {
+    if ([...feature.tags, ...scenario.tags].includes(GUIDE_TAG) && ![...feature.background, ...scenario.steps].some((s) => s.text === FULL_SHELL_STEP))
+      diag(scenario.line, 'error', `a ${GUIDE_TAG} scenario runs in the full shell: add "And ${FULL_SHELL_STEP}" after "Given user is logged in"`);
+  }
+
   const body: string[] = feature.tags.includes(JOURNEY_TAG) ?
     emitJourney(feature, uniqueTitle, emitStep, helpers) :
-    feature.scenarios.flatMap((scenario) => emitScenario(scenario, feature, uniqueTitle, emitStep));
+    feature.scenarios.flatMap((scenario) => emitScenario(scenario, feature, uniqueTitle, emitStep, helpers));
 
   const lines: string[] = [];
   const realizes = [...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)]
@@ -202,13 +213,26 @@ function tagOptions(tags: string[]): string {
   return unique.length > 0 ? `, {tag: [${unique.map((t) => JSON.stringify(t)).join(', ')}]}` : '';
 }
 
-function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep): string[] {
+/** One test for the scenario. A `@known-failure` scenario (an outline's tagged Examples rows too)
+ * runs its own steps as the expected failure; the Background before them fails the test as usual. */
+function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep, helpers: Set<string>): string[] {
   const out: string[] = [];
   const state: ScenarioState = {};
   out.push(`  test(${JSON.stringify(uniqueTitle(scenario.name))}${tagOptions([...feature.tags, ...scenario.tags])}, async ({browser}) => {`);
   out.push('    const page = await session.page(browser);');
-  for (const step of [...feature.background, ...scenario.steps])
+  for (const step of feature.background)
     out.push(...emitStep(step, '    ', state));
+  if (!scenario.tags.includes('@known-failure')) {
+    for (const step of scenario.steps)
+      out.push(...emitStep(step, '    ', state));
+  }
+  else {
+    helpers.add('knownFailure');
+    out.push('    await knownFailure(async () => {');
+    for (const step of scenario.steps)
+      out.push(...emitStep(step, '      ', state));
+    out.push('    });');
+  }
   out.push('  });');
   return out;
 }

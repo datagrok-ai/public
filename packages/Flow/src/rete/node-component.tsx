@@ -385,6 +385,10 @@ export function DgControlComponent(props: {data: InputValueControl}): React.JSX.
       ref={ref}
       onPointerDown={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
+      // The event has already reached the editor by the time this fires, so a
+      // scrollable one still scrolls and an inert one (the sketcher) does
+      // nothing — either way the canvas must not zoom under the cursor.
+      onWheel={(e) => e.stopPropagation()}
     />
   );
 }

@@ -205,6 +205,45 @@ appears as a tab alongside **Browse** (at the bottom of the left panel). You can
 stack, close, or switch between **Browse** and **Toolbox** as needed. Reopen
 both from the **Sidebar**.
 
+##### Show and hide Top Menu sections
+
+The **Top Menu** is organized into sections: menus like **Edit** or **ML**, and
+panels of icons like **Selection**. Datagrok shows all of them by default. To
+hide the ones you don't use, right-click the **Top Menu** and clear their
+checkboxes.
+
+![Show and hide Top Menu sections](img/ribbon-sections.gif)
+
+Datagrok saves your choice with your account and applies it to every view that
+has the section. To bring a section back, right-click the **Top Menu** and
+select it again. To restore all of them, select **Reset to defaults**.
+
+You can edit the same lists on the **Settings** > **Ribbon** page. Administrators
+set them there for a group or for everyone, and lock them so members keep the
+shared value. To learn more, see
+[Managed settings](../../govern/access-control/managed-settings.md).
+
+##### Current object in the Top Menu
+
+The right end of the **Top Menu** shows your _current object_: the column,
+cell, selected rows, viewer, package, connection, or any other object you last
+clicked. Molecules, curves, and other values with their own renderer appear as
+a small drawing rather than text. Clicking a viewer shows that viewer there
+even though it does not become the current object of the
+[Context Panel](panels/panels.md#context-panel).
+
+Click the object to open a dropdown with the same panes the
+**Context Panel** shows for it: details, filters, colors, style, actions,
+viewer settings, and so on. Use them right there, then click the object again
+or anywhere else to close the dropdown. The panes you expand stay expanded the
+next time, in the dropdown and in the **Context Panel** alike.
+
+By default the dropdown is hidden while the **Context Panel** is open, since
+the panel already shows the same content and the **Top Menu** has less room
+then. Change this on the **Settings** > **Ribbon** page: **Context ribbon**
+is **Auto** (hide while the panel is open), **Always**, or **Never**.
+Administrators can set it for a group or for everyone.
+
 ### Browse
 
 **Browse** is your entry point to everything on the platform - projects,

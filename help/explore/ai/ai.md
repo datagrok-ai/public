@@ -275,6 +275,7 @@ You choose the provider that serves them:
 - Anthropic
 - [Amazon Bedrock](https://code.claude.com/docs/en/amazon-bedrock)
 - [Microsoft Foundry](https://code.claude.com/docs/en/microsoft-foundry)
+- [Databricks](https://docs.databricks.com/aws/en/machine-learning/model-serving/query-anthropic-messages)
 
 With this setup, enterprises serve the models from the cloud they already trust, under their
 own governance and billing.

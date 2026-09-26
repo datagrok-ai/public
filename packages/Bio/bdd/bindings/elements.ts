@@ -6,13 +6,16 @@ import {dataset} from '@datagrok-libraries/bdd';
 dataset('filter_FASTA', {path: 'System:AppData/Bio/tests/filter_FASTA.csv', aliases: ['filter-fasta'],
   description: 'one column "fasta" (peptides, fasta notation, 9 sequences + 4 empty cells, 14 rows)'});
 dataset('filter_HELM', {path: 'System:AppData/Bio/tests/filter_HELM.csv', aliases: ['filter-helm'],
-  description: 'one column "HELM string" (helm notation, 3 rows, one bracketed monomer [dV])'});
+  description: 'one column "HELM string" (helm notation, 4 rows, one bracketed monomer [dV])'});
 dataset('filter_MSA', {path: 'System:AppData/Bio/tests/filter_MSA.csv', aliases: ['filter-msa'],
   description: 'columns "MSA" (aligned, separator "/", multichar monomers, width 17) and "Activity"'});
 dataset('antibodies', {path: 'System:AppData/Bio/samples/antibodies.csv',
   description: '493 antibodies: AntibodyHC and AntibodyLC (fasta peptides ~130–215 aa), Antigen, Y'});
-dataset('FASTA_PT_activity', {path: 'System:AppData/Bio/samples/FASTA_PT_activity.csv', aliases: ['fasta-pt-activity', 'peptides with activity'],
-  description: '99 peptides: cluster, sequence_id, sequence (16-mers), activity, is_cliff'});
-dataset('helm_cyclic_cliffs', {path: 'System:AppData/Bio/tests/helm_cyclic_cliffs.csv', aliases: ['helm-cyclic-cliffs']});
 dataset('FASTA_sample', {path: 'System:AppData/Bio/samples/FASTA.csv', aliases: ['fasta-sample'],
   description: '64 UniProt peptides: Entry, Length, UniProtKB, Sequence (fasta), Activity, Cluster'});
+dataset('HELM_sample', {path: 'System:AppData/Bio/samples/HELM.csv', aliases: ['helm-sample'],
+  description: '540 peptides: HELM (helm notation, multichar monomers), Activity'});
+dataset('MSA_sample', {path: 'System:AppData/Bio/samples/MSA.csv', aliases: ['msa-sample'],
+  description: '540 aligned peptides: MSA (separator "/", multichar monomers), Activity'});
+dataset('BILN', {path: 'System:AppData/Bio/samples/BILN.csv', aliases: ['biln-sample'],
+  description: 'column "biln" (BILN notation: "-" between monomers, "(n,m)" ring bonds, "." between chains) and Activity'});

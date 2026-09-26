@@ -17,7 +17,7 @@ public/packages/EDA/playwright/
 ├── playwright.config.ts             # Consumer config over @datagrok-libraries/test base-config
 ├── helpers.ts                       # Shared helpers (menu, dialog, picker, viewer probes)
 ├── anova.test.ts                    # ML > Analyze > Group Comparison > ANOVA on demog.csv
-├── control-comparisons.test.ts      # Control Comparisons dialog + GROK-20795 characterisation
+├── control-comparisons.test.ts      # Control Comparisons dialog + GROK-20795 filter-awareness
 ├── share-model-permissions.test.ts  # Model sharing / permissions round-trip, two-user
 ├── multivariate-analysis.test.ts    # ML > Analyze > Multivariate Analysis on cars.csv
 ├── pca.test.ts                      # ML > Analyze > PCA on cars.csv (+ Center/Scale)

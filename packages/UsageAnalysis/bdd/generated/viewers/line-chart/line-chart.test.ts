@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.line-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -29,7 +31,7 @@ test.describe("Line chart chrome, chart types and the empty chart", () => {
     const run = journey(test, 10, page);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await session.step(19, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]));
+    await session.step(19, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
     await session.step(22, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
     await session.step(23, "And the \"rows shown\" reading of line chart viewer should be 100", () => readingIs(page, "rows shown", el("line chart viewer"), 100));
     await session.step(24, "And the \"x column\" reading of line chart viewer should be \"CAST Idea ID\"", () => readingReads(page, "x column", el("line chart viewer"), "CAST Idea ID"));
@@ -83,7 +85,7 @@ test.describe("Line chart chrome, chart types and the empty chart", () => {
       await session.step(73, "Then line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
       await session.step(74, "When user sets \"lineWidth\" property of line chart viewer to \"5\"", () => setProperty(page, "lineWidth", el("line chart viewer"), "5"));
       await session.step(75, "Then line chart viewer should have more ink than before", () => moreInk(page, el("line chart viewer")));
-      await session.step(76, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lineWidth","1"],["interpolation","None"]]));
+      await session.step(76, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lineWidth","1"],["interpolation","None"]]), [["lineWidth","1"],["interpolation","None"]]);
       await session.step(79, "Then line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
       await session.step(80, "And the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
       await session.step(81, "And no errors should have been logged", () => noErrors(page));
@@ -126,7 +128,7 @@ test.describe("Line chart chrome, chart types and the empty chart", () => {
       await session.step(118, "When user sets \"showYAxis\" property of line chart viewer to \"false\"", () => setProperty(page, "showYAxis", el("line chart viewer"), "false"));
       await session.step(119, "Then line chart viewer should not have a \"y axis\" area", () => hasNoArea(page, el("line chart viewer"), "y axis"));
       await session.step(120, "And the \"y axes\" reading of line chart viewer should be 0", () => readingIs(page, "y axes", el("line chart viewer"), 0));
-      await session.step(121, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showXAxis","true"],["showYAxis","true"]]));
+      await session.step(121, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showXAxis","true"],["showYAxis","true"]]), [["showXAxis","true"],["showYAxis","true"]]);
       await session.step(124, "Then line chart viewer should have an \"x axis\" area", () => hasArea(page, el("line chart viewer"), "x axis"));
       await session.step(125, "And the \"y axes\" reading of line chart viewer should be 1", () => readingIs(page, "y axes", el("line chart viewer"), 1));
       await session.step(126, "And no errors should have been logged", () => noErrors(page));
@@ -143,7 +145,7 @@ test.describe("Line chart chrome, chart types and the empty chart", () => {
       await session.step(137, "Then the \"y selectors shown\" reading of line chart viewer should be \"false\"", () => readingReads(page, "y selectors shown", el("line chart viewer"), "false"));
       await session.step(138, "When user sets \"showSplitSelector\" property of line chart viewer to \"false\"", () => setProperty(page, "showSplitSelector", el("line chart viewer"), "false"));
       await session.step(139, "Then the \"split selector shown\" reading of line chart viewer should be \"false\"", () => readingReads(page, "split selector shown", el("line chart viewer"), "false"));
-      await session.step(140, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showXSelector","true"],["showYSelectors","true"],["showSplitSelector","true"]]));
+      await session.step(140, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["showXSelector","true"],["showYSelectors","true"],["showSplitSelector","true"]]), [["showXSelector","true"],["showYSelectors","true"],["showSplitSelector","true"]]);
       await session.step(144, "Then the \"x selector shown\" reading of line chart viewer should be \"true\"", () => readingReads(page, "x selector shown", el("line chart viewer"), "true"));
       await session.step(145, "And the \"split selector shown\" reading of line chart viewer should be \"true\"", () => readingReads(page, "split selector shown", el("line chart viewer"), "true"));
       await session.step(146, "And no errors should have been logged", () => noErrors(page));
@@ -164,7 +166,7 @@ test.describe("Line chart chrome, chart types and the empty chart", () => {
       await session.step(161, "Then the description of line chart viewer should be below its content", () => descriptionBelow(page, el("line chart viewer")));
       await session.step(162, "When user sets \"descriptionVisibilityMode\" property of line chart viewer to \"Never\"", () => setProperty(page, "descriptionVisibilityMode", el("line chart viewer"), "Never"));
       await session.step(163, "Then the description of line chart viewer should be hidden", () => shouldBe(page, el("the description of line chart viewer"), "hidden"));
-      await session.step(164, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["descriptionVisibilityMode","Always"],["descriptionPosition","Top"],["description",""]]));
+      await session.step(164, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["descriptionVisibilityMode","Always"],["descriptionPosition","Top"],["description",""]]), [["descriptionVisibilityMode","Always"],["descriptionPosition","Top"],["description",""]]);
       await session.step(168, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The chart-area context menu offers the groups the chart is configured through", async () => {

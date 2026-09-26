@@ -2,8 +2,16 @@
 
 ## v.next
 
-* 2207: Answer a missing DataFrame in hierarchical clustering with the no-table warning instead of dereferencing it
-* 2011: Open a table view for an unattached DataFrame in hierarchicalClusteringUI
+* GROK-19595: Fixed centroid linkage attaching no tree: the clustering wasm sorted the centroid merges by height while their cluster references kept the merge order (in `@datagrok-libraries/math`)
+* Automation: The tree injected next to a grid reports `tree leaves`, `tree height`, `tree current node`, `tree mouse over node`, `tree selected leaves`, `tree zoom`, `tree top row`, `cut threshold` and its `tree`, `leaf`, `node` and `cut line` areas through the grid's status
+* Automation: Dendrogram viewer reports the tree it draws (`getWidgetStatus`, `isRenderPending`, `onRendered`)
+* Automation: Named the Phylocanvas GL viewer in the .nwk file preview
+* Added BDD features for hierarchical clustering, Assign Clusters, the tree under a filter and a sort, the newick file preview and handler; in review every clustering run waits for the task bar's "Creating dendrogram" entry to finish (a 120 s budget under four workers) before its tree is read
+* GROK-20828: Answer a missing DataFrame in hierarchical clustering with the no-table warning instead of dereferencing it
+* GROK-20807: Open a table view for an unattached DataFrame in hierarchicalClusteringUI
+
+## 1.4.16 (2026-07-12)
+
 * Moved the Dendrogram Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 
 ## 1.4.15 (2026-06-23)

@@ -1,9 +1,7 @@
-import {WORKER_CALL} from './rdkit-service/rdkit-service-worker-api';
+import {WORKER_CALL, initRdKitFrom} from './rdkit-service/rdkit-service-worker-api';
 import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit-service/rdkit-service-worker';
 // @ts-ignore
 import initRDKitModule from './RDKit_minimal.js';
-//@ts-ignore
-import rdKitLibVersion from './rdkit_lib_version';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 const ctx: Worker = self as any;
@@ -16,8 +14,8 @@ ctx.addEventListener('message', async (e: any) => {
   let result;
   try {
     if (op === 'module::init') {
-      const webRoot = args[0];
-      _rdKitModule = await initRDKitModule({locateFile: () => `${webRoot}/dist/${rdKitLibVersion}.wasm`});
+      const [webRoot, wasm] = args;
+      _rdKitModule = await initRdKitFrom(initRDKitModule, wasm);
       _rdKitModule.use_legacy_stereo_perception(false);
       // console.log('RDKit (worker) initialized');
       _rdKitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);

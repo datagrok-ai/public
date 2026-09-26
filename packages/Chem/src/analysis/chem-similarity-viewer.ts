@@ -148,6 +148,16 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
   }
 
+  protected readings(): {[name: string]: number | string | boolean} {
+    const scores = this.scores ? Array.from({length: this.scores.length}, (_, i) => this.scores!.get(i)) : [];
+    return {
+      'target row': this.targetMoleculeIdx,
+      'cutoff': this.cutoff,
+      'scores': scores.map((s) => s.toFixed(2)).join(', '),
+      'min score': scores.length === 0 ? -1 : Math.min(...scores),
+    };
+  }
+
   async renderInternal(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
@@ -257,6 +267,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
               grid.style.backgroundColor = '#d3f8bd';
           }
           $(grid).addClass(divClass);
+          grid.setAttribute('data-row', `${idx}`);
+          grid.setAttribute('name', `card-${idx}`);
           grid.addEventListener('click', (event: MouseEvent) => {
             if (this.dataFrame && this.idxs) {
               if (event.shiftKey || event.altKey)

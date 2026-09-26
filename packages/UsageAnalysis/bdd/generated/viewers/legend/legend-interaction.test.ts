@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.legend]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -18,7 +20,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {categoricalColorIs, colorCategorical, colorOff, filterPassesAll, filterTo, filterToAnyOf, noColorCoding, noneSelected, resetFilter} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, areaColor, clickLegendCross, clickLegendItem, clickLegendItemHolding, legendDocked, legendFewer, legendItemColor, legendItemsDiffer, legendLists, legendPlacedAsBefore, legendSameItems, legendSide, legendSlot, lessInk, moreInk, noErrors, repainted, setProperties, setProperty, showsFewerRows, showsMoreRows, showsRows, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, areaColor, clickLegendCross, clickLegendItem, clickLegendItemHolding, hasArea, hasNoArea, legendDocked, legendFewer, legendItemColor, legendItemsDiffer, legendLists, legendPlacedAsBefore, legendSameItems, legendSide, legendSlot, lessInk, moreInk, noErrors, repainted, setProperties, setProperty, showsFewerRows, showsMoreRows, showsRows, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Legend interaction", () => {
@@ -28,7 +30,7 @@ test.describe("Legend interaction", () => {
     const run = journey(test, 8, page);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(16, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["X","WEIGHT"],["Y","HEIGHT"],["Color","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]));
+    await session.step(16, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["X","WEIGHT"],["Y","HEIGHT"],["Color","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]), [["X","WEIGHT"],["Y","HEIGHT"],["Color","RACE"],["Legend Visibility","Always"],["Legend Position","Right"]]);
     await session.step(22, "Then legend of scatter plot viewer should be visible", () => shouldBe(page, el("legend of scatter plot viewer"), "visible"));
     await session.step(23, "And the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));
     await session.step(24, "And the legend of scatter plot viewer should be docked", () => legendDocked(page, el("scatter plot viewer")));
@@ -89,7 +91,7 @@ test.describe("Legend interaction", () => {
     });
     await run.scenario("The category colors are the column's, and a recoloring reaches the items", async () => {
       await session.step(82, "Then the \"Caucasian\" and \"Asian\" items in the legend of scatter plot viewer should be colored differently", () => legendItemsDiffer(page, "Caucasian", "Asian", el("scatter plot viewer")));
-      await session.step(83, "When user colors \"RACE\" column categorically:", () => colorCategorical(page, "RACE", [["Caucasian","#FF0000"],["Asian","#0000FF"]]));
+      await session.step(83, "When user colors \"RACE\" column categorically:", () => colorCategorical(page, "RACE", [["Caucasian","#FF0000"],["Asian","#0000FF"]]), [["Caucasian","#FF0000"],["Asian","#0000FF"]]);
       await session.step(86, "Then the \"Caucasian\" item in the legend of scatter plot viewer should be colored \"#FF0000\"", () => legendItemColor(page, "Caucasian", el("scatter plot viewer"), "#FF0000"));
       await session.step(87, "And the \"Asian\" item in the legend of scatter plot viewer should be colored \"#0000FF\"", () => legendItemColor(page, "Asian", el("scatter plot viewer"), "#0000FF"));
       await session.step(88, "And the categorical color of \"Caucasian\" in \"RACE\" column should be \"#FF0000\"", () => categoricalColorIs(page, "Caucasian", "RACE", "#FF0000"));
@@ -107,7 +109,7 @@ test.describe("Legend interaction", () => {
       await session.step(100, "Then the legend of scatter plot viewer should be on the bottom", () => legendSide(page, el("scatter plot viewer"), "bottom"));
       await session.step(101, "When user sets \"Legend Visibility\" property of scatter plot viewer to \"Never\"", () => setProperty(page, "Legend Visibility", el("scatter plot viewer"), "Never"));
       await session.step(102, "Then legend of scatter plot viewer should be hidden", () => shouldBe(page, el("legend of scatter plot viewer"), "hidden"));
-      await session.step(103, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Legend Visibility","Always"],["Legend Position","Right"]]));
+      await session.step(103, "When user sets properties of scatter plot viewer:", () => setProperties(page, el("scatter plot viewer"), [["Legend Visibility","Always"],["Legend Position","Right"]]), [["Legend Visibility","Always"],["Legend Position","Right"]]);
       await session.step(106, "Then the legend of scatter plot viewer should be on the right", () => legendSide(page, el("scatter plot viewer"), "right"));
       await session.step(107, "And the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));
       await session.step(108, "And no errors should have been logged", () => noErrors(page));
@@ -115,10 +117,12 @@ test.describe("Legend interaction", () => {
     await run.scenario("A numerical color column shows a scale instead of items", async () => {
       await session.step(111, "When user sets \"Color\" property of scatter plot viewer to \"AGE\"", () => setProperty(page, "Color", el("scatter plot viewer"), "AGE"));
       await session.step(112, "Then the legend of scatter plot viewer should list 0 items", () => legendLists(page, el("scatter plot viewer"), 0));
-      await session.step(113, "And scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
-      await session.step(114, "When user sets \"Color\" property of scatter plot viewer to \"RACE\"", () => setProperty(page, "Color", el("scatter plot viewer"), "RACE"));
-      await session.step(115, "Then the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));
-      await session.step(116, "And no errors should have been logged", () => noErrors(page));
+      await session.step(113, "And scatter plot viewer should have a \"color scale\" area", () => hasArea(page, el("scatter plot viewer"), "color scale"));
+      await session.step(114, "And scatter plot viewer should have repainted", () => repainted(page, el("scatter plot viewer")));
+      await session.step(115, "When user sets \"Color\" property of scatter plot viewer to \"RACE\"", () => setProperty(page, "Color", el("scatter plot viewer"), "RACE"));
+      await session.step(116, "Then the legend of scatter plot viewer should list 4 items", () => legendLists(page, el("scatter plot viewer"), 4));
+      await session.step(117, "And scatter plot viewer should not have a \"color scale\" area", () => hasNoArea(page, el("scatter plot viewer"), "color scale"));
+      await session.step(118, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

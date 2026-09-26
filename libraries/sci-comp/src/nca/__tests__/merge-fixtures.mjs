@@ -20,9 +20,13 @@ const NEW_KEYS = [
 /**
  * Fields merged into `provenance` rather than `parameters`. `span_ratio` is a
  * lambda_z FIT DIAGNOSTIC, so it belongs beside the existing `lambda_z_*` keys —
- * not with the reported PK parameters.
+ * not with the reported PK parameters. `c0_pknca` (PKNCA's own `c0` PPTESTCD
+ * on the raw IV-bolus profile) and `pct_auc_back_extrap` (the back-extrapolated
+ * share of AUCinf, hand-formula on PKNCA inputs) exist for the IV-bolus dataset
+ * only — a key the R script did not produce for a dataset is left absent, never
+ * written as null, so 01/03 stay byte-identical.
  */
-const NEW_PROVENANCE_KEYS = ['span_ratio'];
+const NEW_PROVENANCE_KEYS = ['span_ratio', 'c0_pknca', 'pct_auc_back_extrap'];
 
 const newParams = JSON.parse(
   readFileSync(join(fixturesDir, '_new_params.json'), 'utf-8'));
@@ -37,7 +41,8 @@ for (const dataset of Object.keys(newParams)) {
     for (const k of NEW_KEYS) profile.parameters[k] = np[k];
     if (NEW_PROVENANCE_KEYS.length > 0) {
       profile.provenance = profile.provenance ?? {};
-      for (const k of NEW_PROVENANCE_KEYS) profile.provenance[k] = np[k];
+      for (const k of NEW_PROVENANCE_KEYS)
+        if (np[k] !== undefined) profile.provenance[k] = np[k];
     }
   }
   writeFileSync(path, JSON.stringify(fx, null, 2) + '\n', 'utf-8');

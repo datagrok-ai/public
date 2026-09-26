@@ -5,7 +5,7 @@
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
-import {baselineAll, settleAll} from '../../src/runtime/viewers.js';
+import {changeAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 
@@ -54,17 +54,26 @@ function columnFacts(page: Page, column: string): Promise<ColumnFacts> {
 
 const filled = (f: ColumnFacts): number[] => f.values.map((_, i) => i).filter((i) => f.values[i] !== '');
 
+/** A fact a poll waits for: a column a computation is about to add is not there yet, and a throw
+ * would end the poll at once — the missing column is kept as the value the failure shows. */
+const factOrAbsence = (read: Promise<string>): Promise<string> => read.catch((e) => `(${e?.message ?? String(e)})`);
+
 export const columnSemType = Then('{string} column should have semantic type {string}', async (page: Page, column: string, semType: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).semType, {message: `semantic type of "${column}"`}).toBe(semType);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.semType)), {message: `semantic type of "${column}"`}).toBe(semType);
 }, {description: 'what the detectors set (Macromolecule, Molecule, Monomer); polled, since detection runs after the column appears'});
 
 export const columnUnits = Then('{string} column should have units {string}', async (page: Page, column: string, units: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).tags['units'] ?? '', {message: `units of "${column}"`}).toBe(units);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.tags['units'] ?? '')), {message: `units of "${column}"`}).toBe(units);
 }, {description: 'the `units` tag — a sequence column\'s notation (fasta, separator, helm), a molecule column\'s molblock'});
 
 export const columnTag = Then('{string} column should have tag {string} equal to {string}', async (page: Page, column: string, tag: string, value: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).tags[tag] ?? '', {message: `tag "${tag}" of "${column}"`}).toBe(value);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.tags[tag] ?? '')), {message: `tag "${tag}" of "${column}"`}).toBe(value);
 });
+
+export const columnTagLists = Then('the {string} tag of {string} column should list at least {int} values', async (page: Page, tag: string, column: string, count: number) => {
+  const values = ((await columnFacts(page, column)).tags[tag] ?? '').split(',').map((s) => s.trim()).filter((s) => s !== '');
+  expect(values.length, `values in the "${tag}" tag of "${column}": ${values.slice(0, 5).join(', ')}${values.length > 5 ? ', …' : ''}`).toBeGreaterThanOrEqual(count);
+}, {description: 'a comma-separated tag (the .positionNames a numbering run writes on the aligned column)'});
 
 export const columnType = Then('{string} column should have type {string}', async (page: Page, column: string, type: string) => {
   expect((await columnFacts(page, column)).type, `type of "${column}"`).toBe(type);
@@ -85,6 +94,23 @@ export const everyValueMatches = Then('every value of {string} column should mat
   expect(bad.map((i) => `row ${i + 1}: ${f.values[i].slice(0, 60)}`), `values of "${column}" not matching /${pattern}/ (missing values skipped)`).toEqual([]);
   expect(filled(f).length, `filled values of "${column}"`).toBeGreaterThan(0);
 }, {description: 'a regular expression over every filled cell; a column with no filled cell fails'});
+
+export const fewerDistinctThanRows = Then('{string} column should have fewer distinct values than the table has rows', async (page: Page, column: string) => {
+  const f = await columnFacts(page, column);
+  const distinct = new Set(filled(f).map((i) => f.values[i])).size;
+  expect(distinct, `distinct values of "${column}" against the ${f.values.length} rows`).toBeLessThan(f.values.length);
+}, {description: 'a column that groups the rows rather than naming each of them'});
+
+export const someValueMatches = Then('some value of {string} column should match {string}', async (page: Page, column: string, pattern: string) => {
+  const f = await columnFacts(page, column);
+  const re = new RegExp(pattern);
+  expect(filled(f).filter((i) => re.test(f.values[i])).length, `values of "${column}" matching /${pattern}/`).toBeGreaterThan(0);
+}, {description: 'a regular expression that at least one filled cell matches'});
+
+export const someValueDiffers = Then('some value of {string} column should differ from {string} column in the same row', async (page: Page, x: string, y: string) => {
+  const [a, b] = [await columnFacts(page, x), await columnFacts(page, y)];
+  expect(a.values.filter((v, i) => v !== b.values[i]).length, `rows where "${x}" and "${y}" hold different text`).toBeGreaterThan(0);
+}, {description: 'the cells\' text, row by row'});
 
 export const everyValueContains = Then('every value of {string} column should contain {string}', async (page: Page, column: string, text: string) => {
   const f = await columnFacts(page, column);
@@ -114,6 +140,26 @@ export const sameLengthPerGroup = Then('every value of {string} column should ha
   const uneven = [...lengths].filter(([, ls]) => ls.size > 1).map(([k, ls]) => `${group} ${k}: ${[...ls].join(', ')}`);
   expect(uneven, `groups of "${group}" whose "${column}" values differ in length`).toEqual([]);
 }, {description: 'an alignment run per cluster: one width per cluster, not one width overall'});
+
+export const distinctLengths = Then('the values of {string} column should have at least {int} distinct lengths', async (page: Page, column: string, count: number) => {
+  const f = await columnFacts(page, column);
+  const lengths = [...new Set(filled(f).map((i) => f.values[i].length))].sort((a, b) => a - b);
+  expect(lengths.length, `distinct lengths of the filled values of "${column}": ${lengths.join(', ') || 'none'}`).toBeGreaterThanOrEqual(count);
+}, {description: 'the filled cells — an alignment run per cluster pads each cluster to its own width, one global alignment to one'});
+
+export const someValueContains = Then('some value of {string} column should contain {string}', async (page: Page, column: string, text: string) => {
+  const f = await columnFacts(page, column);
+  expect(filled(f).some((i) => f.values[i].includes(text)), `a value of "${column}" containing "${text}"`).toBe(true);
+});
+
+export const columnsEqual = Then('{string} column should hold the same values as {string} column', async (page: Page, a: string, b: string) => {
+  const fa = await columnFacts(page, a);
+  const fb = await columnFacts(page, b);
+  expect(fa.rows, 'rows of the current table').toBeGreaterThan(0);
+  const bad = fa.values.map((x, i) => [i, x, fb.values[i]] as const).filter(([, x, y]) => x !== y)
+    .map(([i, x, y]) => `row ${i + 1}: ${x.slice(0, 30)} ≠ ${y.slice(0, 30)}`);
+  expect(bad, `rows where "${a}" and "${b}" differ`).toEqual([]);
+}, {description: 'row by row, as text; a missing value equals only a missing value'});
 
 export const displayedInRow = Then('the {string} cell of row {int} should be displayed as {string}',
   async (page: Page, column: string, row: number, text: string) => {
@@ -163,16 +209,14 @@ export const columnCount = Then('the table should have {int} column(s)', async (
 
 // --- the current row ---------------------------------------------------------------------------------
 
-async function makeCurrent(page: Page, row: number | 'last'): Promise<void> {
-  await baselineAll(page);
-  await page.evaluate((r) => {
+function makeCurrent(page: Page, row: number | 'last'): Promise<void> {
+  return changeAll(page, (r) => {
     const df = grok.shell.t;
     const idx = r === 'last' ? df.rowCount - 1 : r - 1;
     if (idx < 0 || idx >= df.rowCount)
       throw new Error(`row ${r} is outside the table's ${df.rowCount} rows`);
     df.currentRowIdx = idx;
   }, row);
-  await settleAll(page);
 }
 
 export const makeRowCurrent = When('user makes row {int} current', (page: Page, row: number) => makeCurrent(page, row),
@@ -181,8 +225,12 @@ export const makeRowCurrent = When('user makes row {int} current', (page: Page, 
 export const makeLastRowCurrent = When('user makes the last row current', (page: Page) => makeCurrent(page, 'last'), {tier: 'api'});
 
 export const currentRowIs = Then('row {int} should be current', async (page: Page, row: number) => {
-  expect(await page.evaluate(() => grok.shell.t.currentRowIdx + 1), 'the current row').toBe(row);
+  await expect.poll(() => page.evaluate(() => grok.shell.t.currentRowIdx + 1), {message: 'the current row'}).toBe(row);
 });
+
+export const mouseOverRowIs = Then('row {int} should be under the mouse', async (page: Page, row: number) => {
+  await expect.poll(() => page.evaluate(() => grok.shell.t.mouseOverRowIdx + 1), {message: 'the row under the mouse'}).toBe(row);
+}, {description: 'rows count from 1 — the table\'s mouse-over row, which every viewer of the table highlights'});
 
 export const joinedValues = Then('every value of {string} column should be {string} and {string} of the same row joined by {string}', async (page: Page, column: string, a: string, b: string, sep: string) => {
   const bad: string[] = await page.evaluate(([c, x, y, s]) => {
@@ -200,3 +248,12 @@ export const joinedValues = Then('every value of {string} column should be {stri
   }, [column, a, b, sep] as [string, string, string, string]);
   expect(bad, `rows of "${column}" that are not "${a}${sep}${b}"`).toEqual([]);
 }, {description: 'a pairing column: each cell is the two source cells of its row with the separator between'});
+
+export const setColumnSemType = When('user sets the semantic type of {string} column to {string}', async (page: Page, column: string, semType: string) => {
+  await page.evaluate(([c, s]) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}; it has: ${grok.shell.t.columns.names().join(', ')}`);
+    col.semType = s;
+  }, [column, semType] as [string, string]);
+}, {tier: 'api', description: 'the column\'s semantic type written directly — a type the detectors would not give the column, for a claim that something keeps it'});

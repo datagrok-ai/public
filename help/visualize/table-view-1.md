@@ -79,6 +79,27 @@ property of the `View` class.
 
 :::
 
+### Minimized viewers
+
+To get a viewer out of the way without closing it, click the minimize icon
+in its header. The viewer leaves the layout and becomes an icon on the ribbon,
+in the **Minimized** panel. The viewer keeps its settings and stays connected to
+the table: it still follows the current filter and selection.
+
+Hover the icon to see the live viewer. This preview is fully interactive: you
+can change its columns, use its context menu, and edit its properties without
+restoring it. Click the icon to put the viewer back where it was. Right-click
+the icon for **Restore** and **Close**; a closed viewer can be brought back with
+**Ctrl+Z**.
+
+When several viewers of the same type are minimized, their icons are numbered;
+a viewer with a title shows the title instead. Minimized viewers are saved with
+[layouts](view-layout.md) and projects, and come back minimized when the layout
+or project is opened.
+
+To hide the minimize icon, turn off **Settings > General > Allow viewer
+minimization**.
+
 ### Multiple views
 
 You can add multiple views to the same table, each maintaining its own layout configuration while operating over the same underlying data and interaction state. This enables you to apply different visual arrangements or analytical perspectives without duplicating the dataset or losing context continuity.
@@ -256,9 +277,19 @@ This synchronization lets you explore the dataset visually and instantly find pa
 
 To filter, you have these options:
 
-* Use the designated filters viewer
-* Use other viewers as filters
+* Use the designated [filters viewer](#filters-viewer)
+* Use other [viewers as filters](#viewers-as-filters)
 * Filter matching rows using a [free text search](#search)
+
+:::note
+
+The **Status Bar** at the bottom of the **Table View** shows the number of
+**Selected** and **Filtered** rows. Click either counter to open a menu with
+actions for the corresponding rows. Use it to quickly extract selected or
+filtered rows into a new table (**Extract Rows**) or reset all filters
+(**Filtered** > **Reset Filter**).
+
+:::
 
 #### Filters viewer
 

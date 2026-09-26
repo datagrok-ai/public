@@ -264,10 +264,10 @@ function install(): void {
   // a viewer outside a table view (a function view's docked chart, a facet's small multiples) is
   // still a widget the platform knows by its root
   const findViewer = (el: Element): any => {
-    const known = viewers().find((x) => x.root === el || x.root.contains(el) || el.contains(x.root));
+    const root = el.closest('[name^="viewer-"], .d4-viewer') ?? el.querySelector('[name^="viewer-"], .d4-viewer');
+    const known = viewers().find((x) => x.root === root);
     if (known)
       return known;
-    const root = el.closest('[name^="viewer-"], .d4-viewer') ?? el.querySelector('[name^="viewer-"], .d4-viewer');
     const w = root === null ? null : DG.Widget.find(root);
     return w !== null && typeof w?.getWidgetStatus === 'function' ? w : undefined;
   };
@@ -362,10 +362,11 @@ function install(): void {
     return parts.canvas ?? parts.root ?? v.root;
   };
   // a WebGL canvas (the 3D scatter plot) has no 2D context and no pixels to read: its picture is
-  // the viewer's own `scene signature` reading
+  // the viewer's own `scene signature` reading; a canvas not laid out yet (a filter card's, the
+  // moment its panel opens) has no size, and getImageData throws on it
   const pixels = (cv: HTMLCanvasElement): ImageData => {
     const ctx = cv.getContext('2d');
-    return ctx ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
+    return ctx && cv.width > 0 && cv.height > 0 ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
   };
   /** The viewer's picture: its canvas with its `overlay` part composited on top when there is one
    * of the same size (the scatter plot draws regression lines, labels and stats on the overlay,
@@ -408,9 +409,10 @@ function install(): void {
     return {colors, ink, hue};
   };
   const areasOf = (v: any): Record<string, Box> => v.getWidgetStatus()?.hitAreas ?? {};
+  const keyIn = (areas: Record<string, Box>, name: string): string | undefined => Object.keys(areas).find((k) => norm(k) === norm(name));
   const areaKey = (v: any, name: string): string => {
     const areas = areasOf(v);
-    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    const key = keyIn(areas, name);
     if (!key)
       throw new Error(`${v.type} has no "${name}" area right now; it has: ${Object.keys(areas).join(', ') || 'none'}`);
     return key;
@@ -511,7 +513,7 @@ function install(): void {
   const areaRectChange = (el: Element, name: string): {before?: Box; now?: Box; has: string[]} => {
     const v = viewerOf(el);
     const areas = areasOf(v);
-    const key = Object.keys(areas).find((k) => norm(k) === norm(name));
+    const key = keyIn(areas, name);
     const before = snapshots.get(v.root)?.rects ?? {};
     return {before: before[norm(name)], now: key === undefined ? undefined : areas[key], has: Object.keys(areas)};
   };
@@ -678,6 +680,8 @@ function install(): void {
   };
   /** The painted pixels now, without moving the snapshot. */
   const ink = (el: Element): number => histogram(pixelsOf(viewerOf(el))).ink;
+  /** The pixels in the selection color now, without a snapshot. */
+  const hue = (el: Element): number => histogram(pixelsOf(viewerOf(el))).hue;
   const baseline = (el: Element): void => {
     try {
       snapshot(el);
@@ -688,6 +692,16 @@ function install(): void {
   const baselineAll = (): void => {
     for (const v of viewers())
       baseline(v.root);
+  };
+  /** Every viewer has drawn a change that reached them all — the waits share one frame. */
+  const settleAll = async (): Promise<void> => {
+    await Promise.all(viewers().map(quiet));
+  };
+  /** A change every viewer answers, in one call: the baselines, the change, the settle. */
+  const changeAll = (body: (arg: unknown) => void, arg: unknown): Promise<void> => {
+    baselineAll();
+    body(arg);
+    return settleAll();
   };
   const writeProperties = async (el: Element, entries: [string, string][], capMs: number): Promise<number> => {
     const v = viewerOf(el);
@@ -708,19 +722,61 @@ function install(): void {
     const r = anchorOf(v).getBoundingClientRect();
     return {x: r.x, y: r.y, width: r.width, height: r.height};
   };
+  /** "<top|bottom|left|right> edge of <area>": the 16 px strip of the area along that edge, and
+   * "<top|bottom> <left|right> corner of <area>": its 16 px square in that corner — so a gesture
+   * lands next to the edge instead of at the centre: an axis away from the column selector in its
+   * middle, a region above the bars that cover its centre, the overlap two bands share. */
+  const EDGE = /^(?:(top|bottom|left|right) edge|(top|bottom) (left|right) corner) of (.+)$/i;
+  const OVERLAP = /^overlap of (.+) and (.+)$/i;
+  /** A named area, "overlap of <A> and <B>" (the rectangle two bands share), or an edge or
+   * corner of either — the phrases nest, so "left edge of overlap of …" is a strip of the overlap. */
+  const edgeOf = (areas: Record<string, Box>, name: string): Box | undefined => {
+    const key = keyIn(areas, name);
+    if (key !== undefined)
+      return areas[key];
+    const o = OVERLAP.exec(name.trim());
+    if (o) {
+      const [a, b] = [edgeOf(areas, o[1]), edgeOf(areas, o[2])];
+      if (!a || !b)
+        return undefined;
+      const x = Math.max(a.x, b.x), y = Math.max(a.y, b.y);
+      const width = Math.min(a.x + a.width, b.x + b.width) - x, height = Math.min(a.y + a.height, b.y + b.height) - y;
+      return width > 0 && height > 0 ? {x, y, width, height} : undefined;
+    }
+    const m = EDGE.exec(name.trim());
+    if (!m)
+      return undefined;
+    const r = edgeOf(areas, m[4]);
+    if (!r)
+      return undefined;
+    const t = Math.min(16, r.width, r.height);
+    const edge = (m[1] ?? '').toLowerCase();
+    const x = edge === 'right' || m[3]?.toLowerCase() === 'right' ? r.x + r.width - t : r.x;
+    const y = edge === 'bottom' || m[2]?.toLowerCase() === 'bottom' ? r.y + r.height - t : r.y;
+    if (m[1] === undefined)
+      return {x, y, width: t, height: t};
+    return edge === 'top' || edge === 'bottom' ? {x: r.x, y, width: r.width, height: t} : {x, y: r.y, width: t, height: r.height};
+  };
   /** The named hit area in client coordinates, or the names the viewer reports instead. */
   const findArea = (el: Element, name: string, beforeChange = false): {box?: Box; has: string[]} => {
     const v = viewerOf(el);
     if (beforeChange)
       baseline(el);
-    const areas: Record<string, Box> = v.getWidgetStatus()?.hitAreas ?? {};
+    const areas = areasOf(v);
     const has = Object.keys(areas);
-    const key = has.find((k) => norm(k) === norm(name));
-    if (!key)
+    const r = edgeOf(areas, name);
+    if (!r)
       return {has};
-    const r = areas[key];
     const cv = canvasBox(v);
     return {box: {x: cv.x + r.x, y: cv.y + r.y, width: r.width, height: r.height}, has};
+  };
+  /** The named areas from one layout, once the viewer is quiet, in its own coordinates: two areas
+   * compared with each other, or one with where it was, must not straddle a relayout. */
+  const quietAreaRects = async (el: Element, names: string[]): Promise<{boxes: (Box | undefined)[]; has: string[]}> => {
+    const v = viewerOf(el);
+    await quiet(v);
+    const areas = areasOf(v);
+    return {boxes: names.map((n) => edgeOf(areas, n)), has: Object.keys(areas)};
   };
   const hitArea = (el: Element, name: string, beforeChange = false): Box => {
     const found = findArea(el, name, beforeChange);
@@ -738,10 +794,14 @@ function install(): void {
     return result;
   };
   /** Painted pixels inside a hit area (the canvas may be scaled to the device). */
-  const areaInk = (el: Element, name: string): number => {
+  /** `inset` device pixels come off every side first: a grid cell's rectangle holds the row and
+   * column gridlines on its edges, which would make an empty cell "painted". */
+  const areaInk = (el: Element, name: string, inset = 0): number => {
     const v = viewerOf(el);
     const cv = canvasOf(v);
-    return inkIn(pixelsOf(v), deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv)));
+    const r = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv));
+    const i = r.w > 4 * inset && r.h > 4 * inset ? inset : 0;
+    return inkIn(pixelsOf(v), {x: r.x + i, y: r.y + i, w: r.w - 2 * i, h: r.h - 2 * i});
   };
   /** A hit area's ink now against the snapshot's (the area must have been reported then too). */
   const areaChange = (el: Element, name: string): AreaChange => {
@@ -975,9 +1035,9 @@ function install(): void {
     return armEvent('onContextMenuShown', capMs);
   };
   /** Where to right-click an element for its context menu — a named hit area, else the viewer's
-   * `view` area, else the element's centre — with the canvas baseline taken and the menu armed. A
-   * tree node, a card or a list row has no render to wait through and no areas: its own centre
-   * (`settle` and `stableArea` throw for a non-viewer). */
+   * `view` area, else a point of the element's visible part that the page hit-tests to it — with
+   * the canvas baseline taken and the menu armed. A tree node, a card or a list row has no render to
+   * wait through and no areas (`settle` and `stableArea` throw for a non-viewer). */
   const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string}> => {
     const v = findViewer(el);
     if (!v && area !== null)
@@ -993,21 +1053,75 @@ function install(): void {
           throw e;
       }
     }
+    // a tree row wider than the panel that clips it, a gallery link half under a docked panel: the
+    // right-click aims at a point of the element a person can see and the page hit-tests to it.
+    // Only an element with no part in sight is scrolled to — scrollIntoView moves overflow-hidden
+    // ancestors too, and the page with them.
     if (!box) {
-      const r = el.getBoundingClientRect();
-      box = {x: r.x, y: r.y, width: r.width, height: r.height};
+      const reachable = (b: Box): Box | undefined => {
+        for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.5], [0.75, 0.5], [0.5, 0.25], [0.5, 0.75], [0.1, 0.5], [0.9, 0.5]]) {
+          const [x, y] = [b.x + b.width * fx, b.y + b.height * fy];
+          const hit = document.elementFromPoint(x, y);
+          if (hit && (hit === el || el.contains(hit)))
+            return {x: x - 0.5, y: y - 0.5, width: 1, height: 1};
+        }
+        return undefined;
+      };
+      const visible = (): Box | undefined => {
+        const r = el.getBoundingClientRect();
+        let [left, top, right, bottom] = [r.left, r.top, r.right, r.bottom];
+        for (let p = el.parentElement; p; p = p.parentElement) {
+          const s = getComputedStyle(p);
+          const q = p.getBoundingClientRect();
+          if (s.overflowX !== 'visible')
+            [left, right] = [Math.max(left, q.left), Math.min(right, q.right)];
+          if (s.overflowY !== 'visible')
+            [top, bottom] = [Math.max(top, q.top), Math.min(bottom, q.bottom)];
+        }
+        [left, top, right, bottom] = [Math.max(left, 0), Math.max(top, 0), Math.min(right, innerWidth), Math.min(bottom, innerHeight)];
+        return right > left && bottom > top ? {x: left, y: top, width: right - left, height: bottom - top} : undefined;
+      };
+      // a panel docked a moment ago (the console) is still resizing what it pushed aside
+      let last = '';
+      for (let frame = 0; frame < 30; frame++) {
+        const r = el.getBoundingClientRect();
+        const now = `${r.x},${r.y},${r.width},${r.height}`;
+        if (now === last)
+          break;
+        last = now;
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+      const seen = visible();
+      box = seen && reachable(seen);
+      if (!box) {
+        el.scrollIntoView({block: 'nearest'});
+        const r = el.getBoundingClientRect();
+        const now = visible();
+        box = (now && reachable(now)) ?? now ?? {x: r.x, y: r.y, width: r.width, height: r.height};
+      }
     }
     return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
   };
+  let added: any;
   const addViewer = (type: string): void => {
     const types: string[] = DG.Viewer.getViewerTypes();
     const exact = types.find((t) => norm(t) === norm(type));
     if (!exact)
       throw new Error(`no viewer type "${type}"; the platform has: ${types.join(', ')}`);
-    arm(grok.shell.tv.addViewer(exact));
+    added = grok.shell.tv.addViewer(exact);
+    arm(added);
+  };
+  /** The properties under the add step belong to the viewer that step created: a second viewer of
+   * a type the view already held would otherwise silently configure the first one. */
+  const writePropertiesOfAdded = (entries: [string, string][], capMs: number): Promise<number> => {
+    if (!added)
+      throw new Error('no viewer added in this scenario');
+    return writeProperties(added.root, entries, capMs);
   };
   /** The balloons shown since the last read, and clears them. */
   const takeBalloons = (): Balloon[] => balloons.splice(0, balloons.length);
+  /** Puts back what a typed claim read but did not want, so the floor after it still sees them. */
+  const putBalloons = (back: Balloon[]): void => { balloons.unshift(...back); };
   const saveLayout = (): void => { layout = grok.shell.tv.saveLayout(); };
   /** Saves through the server and keeps only the id: "loads the saved layout" then fetches what
    * the server stored, so the round-trip covers the serialization too. */
@@ -1023,7 +1137,12 @@ function install(): void {
     const saved = layout.serverId ? await grok.dapi.layouts.find(layout.serverId) : layout;
     if (!saved)
       throw new Error(`the server has no layout ${layout.serverId}`);
-    grok.shell.tv.loadLayout(saved);
+    const view = grok.shell.tv;
+    view.loadLayout(saved);
+    // Restored viewers can still be laying out their contents after loadLayout returns.
+    // Their pending signal covers this work, including the tile viewer's deferred lane layout.
+    for (const viewer of Array.from(view.viewers ?? []))
+      await quiet(viewer);
   };
   const deleteLayout = async (id: string): Promise<void> => {
     const saved = await grok.dapi.layouts.find(id);
@@ -1035,9 +1154,15 @@ function install(): void {
    * platform announces every call (`onBeforeRunAction` / `onAfterRunAction`), and the one whose
    * function is registered under the picked menu path is the command — its end is when the
    * command is done, whatever dialog it showed in between. */
-  let command: {name: string; done: Promise<void>; started: number} | undefined;
+  let command: {name: string; done: Promise<void>; started: number; ended?: number} | undefined;
   let columnsBefore: {table: any; names: string[]} | undefined;
   let commandArm: any;
+  // the last OK or RUN click in a dialog: a command that had ended before it only opened the dialog
+  let dialogOkAt = 0;
+  document.addEventListener('click', (e) => {
+    if ((e.target as Element | null)?.closest?.('.d4-dialog [name="button-OK"], .d4-dialog [name="button-RUN"]'))
+      dialogOkAt = Date.now();
+  }, true);
   const armCommand = (path: string): void => {
     const t = grok.shell.t;
     columnsBefore = t ? {table: t.dart, names: t.columns.names()} : undefined;
@@ -1053,21 +1178,26 @@ function install(): void {
         commandArm = undefined;
       let resolve!: () => void;
       const done = new Promise<void>((r) => { resolve = r; });
+      const started = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()} as NonNullable<typeof command>;
+      // an unsaved call has no id: two undefined ids are not the same call (a transform the
+      // command runs inside itself ended the wait before the command had docked its result)
       const after = grok.functions.onAfterRunAction.subscribe((ended: any) => {
-        if (ended?.dart === fc.dart || ended?.id === fc.id) {
+        if (ended?.dart === fc.dart || (fc.id != null && ended?.id === fc.id)) {
           after.unsubscribe();
+          started.ended = Date.now();
           resolve();
         }
       });
-      command = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()};
+      command = started;
     });
     commandArm = sub;
-    // a pick that started no call within 5 s is disarmed — this arm only, never a later pick's
+    // a pick that started no call is disarmed after a minute — this arm only, never a later pick's;
+    // the call of a command with a dialog starts on its OK, often well after the pick
     setTimeout(() => {
       sub.unsubscribe();
       if (commandArm === sub)
         commandArm = undefined;
-    }, 5000);
+    }, 60000);
   };
   const waitCommand = async (capMs: number): Promise<string> => {
     // the click's handler may start the call a task or two later
@@ -1077,10 +1207,25 @@ function install(): void {
     if (!command)
       throw new Error('no menu command has started a function call in this scenario (a Dart command, or the menu item ran nothing)');
     const c = command;
+    if (c.ended !== undefined && dialogOkAt > c.ended)
+      throw new Error(`${c.name} ended when its dialog opened, before its OK was clicked, so its end says nothing about the work the OK started: claim what that work leaves (a column, a balloon, a viewer, a dialog that finished updating)`);
     const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), capMs));
     if (await Promise.race([c.done.then(() => 'done'), timeout]) === 'timeout')
       throw new Error(`${c.name} has been running for ${Math.round((Date.now() - c.started) / 1000)} s`);
     return c.name;
+  };
+  /** The shell reset waits here: a command a scenario started and never awaited (a known failure
+   * ends at its first failing claim) would otherwise finish on the next feature's shell. */
+  const settleCommand = async (capMs: number): Promise<boolean> => {
+    const c = command;
+    command = undefined;
+    commandArm?.unsubscribe();
+    commandArm = undefined;
+    if (!c)
+      return true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<false>((r) => { timer = setTimeout(() => r(false), capMs); });
+    return Promise.race([c.done.then(() => true), timeout]).finally(() => clearTimeout(timer));
   };
   /** The current table's columns now and before the last menu command; `same` says whether the
    * table is still the one the command started on. */
@@ -1089,12 +1234,17 @@ function install(): void {
     return {before: columnsBefore?.names ?? null, now: t ? t.columns.names() : [], same: !!t && columnsBefore?.table === t.dart};
   };
 
-  /** Custom platform events (`grok.events.fireCustomEvent`) by id, counted from "listens for"
-   * until the page resets; a read takes the count and the last arguments and zeroes them. */
+  /** Custom platform events (`grok.events.fireCustomEvent`) by id, counted from the last "listens
+   * for" (an event an earlier scenario or feature left unread must not satisfy this one's claim);
+   * a read takes the count and the last arguments and zeroes them. */
   const customEvents = new Map<string, {count: number; last: unknown; sub: any}>();
   const listenCustom = (id: string): void => {
-    if (customEvents.has(id))
+    const known = customEvents.get(id);
+    if (known) {
+      known.count = 0;
+      known.last = undefined;
       return;
+    }
     const entry = {count: 0, last: undefined as unknown, sub: undefined as any};
     entry.sub = grok.events.onCustomEvent(id).subscribe((args: unknown) => { entry.count++; entry.last = args; });
     customEvents.set(id, entry);
@@ -1119,11 +1269,11 @@ function install(): void {
   };
 
   w.__bdd = {table, tableNamed, col, rowFacts, setRows,
-    viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, areaInk, areaChange, areaDelta, areaColors,
+    viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, quietAreaRects, areaInk, areaChange, areaDelta, areaColors,
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
-    snapshot, baselineAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
-    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer,
-    takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, columnsSince, listenCustom, customFired};
+    snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
+    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
+    takeBalloons, putBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, hue, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));

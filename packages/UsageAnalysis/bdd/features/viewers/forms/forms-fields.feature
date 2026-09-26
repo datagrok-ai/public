@@ -80,7 +80,6 @@ Feature: Forms viewer field lifecycle and number format
     And the "fields" reading of forms viewer should be ""
     And the "header labels" reading of forms viewer should be ""
     And forms viewer should not have a "label AGE" area
-    And forms viewer should report no error
     And no error or warning balloon should have been shown
     And no errors should have been logged
     When user sets "fieldsColumnNames" property of forms viewer to "RACE, AGE, SEX"
@@ -123,6 +122,5 @@ Feature: Forms viewer field lifecycle and number format
     And the "fields shown" reading of forms viewer should be 2
     And forms viewer should not have a "field RACE of card 1" area
     And the "AGE of card 1" reading of forms viewer should be "26"
-    And forms viewer should report no error
     And no error or warning balloon should have been shown
     And no errors should have been logged

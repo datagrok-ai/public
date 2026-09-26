@@ -1,7 +1,16 @@
 {
-  "cucumber.features": ["bdd/features/**/*.feature"],
-  "cucumber.glue": ["bdd/bindings/**/*.ts", "node_modules/@datagrok-libraries/bdd/bindings/**/*.ts"],
+  "search.followSymlinks": false,
+  "cucumber.features": [
+    "bdd/features/**/*.feature"
+  ],
+  "cucumber.glue": [
+    "bdd/bindings/**/*.ts",
+    "node_modules/@datagrok-libraries/bdd/bindings/**/*.ts"
+  ],
   "cucumber.parameterTypes": [
-    {"name": "state", "regexp": "visible|hidden|present|absent|enabled|disabled|checked|unchecked|selected|empty|expanded|collapsed|focused"}
+    {
+      "name": "state",
+      "regexp": "visible|hidden|present|absent|enabled|disabled|checked|unchecked|selected|empty|expanded|collapsed|focused"
+    }
   ]
 }

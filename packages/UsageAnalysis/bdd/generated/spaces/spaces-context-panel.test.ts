@@ -7,16 +7,18 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.space]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/connections.js';
+import '../../bindings/grid.js';
+import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {noSpaceOnServer, spacesOnServer} from '../../bindings/spaces.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, enterInto, followingShouldBe, shouldBe, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {browsePanelOpen, contextPanelOpen, contextPanelShows, dialogCloses, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, contextPanelOpen, contextPanelShows, dialogCloses, noSpaceOnServer, spacesOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -55,7 +57,7 @@ test.describe("What the context panel says about a space", () => {
       await session.step(42, "And \"Details\" accordion header in context panel should be visible", () => shouldBe(page, el("\"Details\" accordion header in context panel"), "visible"));
     });
     await run.scenario("The panel carries the sections a space has", async () => {
-      await session.step(49, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]));
+      await session.step(49, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]), [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]);
       await session.step(54, "And \"Activity\" accordion header in context panel should be present", () => shouldBe(page, el("\"Activity\" accordion header in context panel"), "present"));
     });
     await run.scenario("Clicking one child, then the other, switches the panel", async () => {

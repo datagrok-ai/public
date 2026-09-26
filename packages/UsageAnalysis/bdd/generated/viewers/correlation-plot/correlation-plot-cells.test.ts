@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.correlation-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -24,7 +26,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Correlation plot — a cell as a click, hover and menu target", () => {
   const session = feature(test, "features/viewers/correlation-plot/correlation-plot-cells.feature", import.meta.url);
-  test("Correlation plot — a cell as a click, hover and menu target", {tag: ["@journey", "@viewers", "@realizes:viewers.correlation-plot", "@known-failure"]}, async ({browser}) => {
+  test("Correlation plot — a cell as a click, hover and menu target", {tag: ["@journey", "@viewers", "@realizes:viewers.correlation-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 11, page);
     await session.step(17, "Given user is logged in", () => loggedIn(page));
@@ -144,14 +146,14 @@ test.describe("Correlation plot — a cell as a click, hover and menu target", (
       await session.step(138, "When user moves the pointer away from correlation plot viewer", () => pointerAway(page, el("correlation plot viewer")));
       await session.step(139, "Then no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Show Tooltip off still shows the cell tooltip (correlation_plot_core.dart:57)", async () => {
-      await session.step(149, "When user sets \"showTooltip\" property of correlation plot viewer to \"false\"", () => setProperty(page, "showTooltip", el("correlation plot viewer"), "false"));
-      await session.step(150, "And user moves the pointer away from correlation plot viewer", () => pointerAway(page, el("correlation plot viewer")));
-      await session.step(151, "And user hovers over the \"cell HEIGHT x AGE\" area of correlation plot viewer", () => hoverArea(page, "cell HEIGHT x AGE", el("correlation plot viewer")));
-      await session.step(152, "Then tooltip should not contain the text \"Pearson R\"", () => shouldNotContainText(page, el("tooltip"), "Pearson R"));
-      await session.step(153, "When user sets \"showTooltip\" property of correlation plot viewer to \"true\"", () => setProperty(page, "showTooltip", el("correlation plot viewer"), "true"));
-      await session.step(154, "Then no errors should have been logged", () => noErrors(page));
-    }, {knownFailure: true});
+    await run.scenario("Show Tooltip off hides the cell tooltip", async () => {
+      await session.step(144, "When user sets \"showTooltip\" property of correlation plot viewer to \"false\"", () => setProperty(page, "showTooltip", el("correlation plot viewer"), "false"));
+      await session.step(145, "And user moves the pointer away from correlation plot viewer", () => pointerAway(page, el("correlation plot viewer")));
+      await session.step(146, "And user hovers over the \"cell HEIGHT x AGE\" area of correlation plot viewer", () => hoverArea(page, "cell HEIGHT x AGE", el("correlation plot viewer")));
+      await session.step(147, "Then tooltip should not contain the text \"Pearson R\"", () => shouldNotContainText(page, el("tooltip"), "Pearson R"));
+      await session.step(148, "When user sets \"showTooltip\" property of correlation plot viewer to \"true\"", () => setProperty(page, "showTooltip", el("correlation plot viewer"), "true"));
+      await session.step(149, "Then no errors should have been logged", () => noErrors(page));
+    });
     run.finish();
   });
 });

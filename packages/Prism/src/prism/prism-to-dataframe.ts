@@ -121,7 +121,7 @@ export function prismSheetToDataFrame(sheet: PrismSheet): DG.DataFrame {
   // Add Y data columns
   for (let ci = 0; ci < yColNames.length; ci++) {
     const csvIdx = xColCount + ci;
-    const col = df.columns.addNewFloat(yColNames[ci]);
+    const col = df.columns.addNewFloat(df.columns.getUnusedName(yColNames[ci]));
     for (let ri = 0; ri < rowCount; ri++) {
       const row = sheet.data[ri];
       if (csvIdx < row.length) {
@@ -206,18 +206,15 @@ export function prismAnalysisToDataFrame(analysis: PrismAnalysis): DG.DataFrame 
 
   const colCount = analysis.resultData[0].length;
 
-  // First column is typically row labels
+  const titleOffset = analysis.rowTitlesPresent ? 1 : 0;
   if (colCount > 0) {
-    const col = df.columns.addNewString('Parameter');
+    const col = df.columns.addNewString(titleOffset ? 'Parameter' : (analysis.columnTitles[0] || 'Parameter'));
     for (let ri = 0; ri < rowCount; ri++)
       col.set(ri, analysis.resultData[ri][0] ?? '');
   }
 
-  // Remaining columns use titles from analysis metadata
   for (let ci = 1; ci < colCount; ci++) {
-    const title = (ci - 1 < analysis.columnTitles.length)
-      ? (analysis.columnTitles[ci - 1] || `Col ${ci}`)
-      : `Col ${ci}`;
+    const title = analysis.columnTitles[ci - titleOffset] || `Col ${ci}`;
 
     // Try numeric first
     const values = analysis.resultData.map((row) => row[ci] ?? '');

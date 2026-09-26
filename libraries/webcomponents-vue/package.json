@@ -1,42 +1,30 @@
 {
   "name": "@datagrok-libraries/webcomponents-vue",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
   },
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
-    "@datagrok-libraries/dock-spawn-dg": "../dock-spawn-dg",
-    "@datagrok-libraries/utils": "../utils",
-    "@datagrok-libraries/webcomponents": "../webcomponents",
+    "@datagrok-libraries/dock-spawn-dg": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "@datagrok-libraries/webcomponents": "workspace:^",
     "@vueuse/core": "^13.3.0",
     "@vueuse/rxjs": "^13.3.0",
-    "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.27.0",
-    "dayjs": "1.11.19",
-    "rxjs": "^6.6.7",
-    "vue": "^3.4.38",
-    "wu": "^2.1.0"
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:",
+    "vue": "catalog:",
+    "wu": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^25.3.0",
-    "@types/wu": "^2.1.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^5.1.9",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "typescript": "^5.6.3"
+    "@types/wu": "catalog:"
   },
   "scripts": {
-    "link": "npm link",
-    "link-api": "npm link datagrok-api",
-    "link-all": "npm link vue datagrok-api @datagrok-libraries/webcomponents",
-    "build": "grok check --soft && tsc",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint-fix": "eslint . --ext .ts,.tsx --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/webcomponents run build && npm run build"
+    "build": "grok tsc -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src"
   },
   "repository": {
     "type": "git",
@@ -45,5 +33,23 @@
   },
   "sideEffects": [
     "*.css"
-  ]
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

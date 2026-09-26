@@ -3,7 +3,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {toFeather as libToFeather, fromFeather as libFromFeather} from '@datagrok-libraries/arrow';
+import {toFeather as libToFeather, fromFeather as libFromFeather} from '@datagrok-libraries/arrow/src/index';
 
 async function toFeather(table: DG.DataFrame): Promise<Uint8Array> {
   return libToFeather(table, true)!;

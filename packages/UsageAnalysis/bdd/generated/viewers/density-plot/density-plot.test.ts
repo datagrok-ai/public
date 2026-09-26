@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.density-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -29,7 +31,7 @@ test.describe("Density plot chrome, binding and the viewer filter", () => {
     const run = journey(test, 9, page);
     await session.step(16, "Given user is logged in", () => loggedIn(page));
     await session.step(17, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(18, "And user adds a density plot viewer with:", () => addViewerWith(page, "density plot", [["xColumnName","AGE"],["yColumnName","HEIGHT"]]));
+    await session.step(18, "And user adds a density plot viewer with:", () => addViewerWith(page, "density plot", [["xColumnName","AGE"],["yColumnName","HEIGHT"]]), [["xColumnName","AGE"],["yColumnName","HEIGHT"]]);
     await session.step(21, "Then 1000 rows should pass the filter", () => filterPasses(page, 1000));
     await session.step(22, "And the \"rows shown\" reading of density plot viewer should be 872", () => readingIs(page, "rows shown", el("density plot viewer"), 872));
     await session.step(23, "And the \"x column\" reading of density plot viewer should be \"AGE\"", () => readingReads(page, "x column", el("density plot viewer"), "AGE"));
@@ -70,7 +72,7 @@ test.describe("Density plot chrome, binding and the viewer filter", () => {
       await session.step(59, "And density plot viewer should have a \"y axis\" area", () => hasArea(page, el("density plot viewer"), "y axis"));
       await session.step(60, "When user sets \"showYAxis\" property of density plot viewer to \"false\"", () => setProperty(page, "showYAxis", el("density plot viewer"), "false"));
       await session.step(61, "Then density plot viewer should not have a \"y axis\" area", () => hasNoArea(page, el("density plot viewer"), "y axis"));
-      await session.step(62, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["showXAxis","true"],["showYAxis","true"]]));
+      await session.step(62, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["showXAxis","true"],["showYAxis","true"]]), [["showXAxis","true"],["showYAxis","true"]]);
       await session.step(65, "Then density plot viewer should have an \"x axis\" area", () => hasArea(page, el("density plot viewer"), "x axis"));
       await session.step(66, "And density plot viewer should have a \"y axis\" area", () => hasArea(page, el("density plot viewer"), "y axis"));
       await session.step(67, "And no errors should have been logged", () => noErrors(page));
@@ -83,7 +85,7 @@ test.describe("Density plot chrome, binding and the viewer filter", () => {
       await session.step(74, "And the \"y selector shown\" reading of density plot viewer should be \"true\"", () => readingReads(page, "y selector shown", el("density plot viewer"), "true"));
       await session.step(75, "When user sets \"showYSelector\" property of density plot viewer to \"false\"", () => setProperty(page, "showYSelector", el("density plot viewer"), "false"));
       await session.step(76, "Then the \"y selector shown\" reading of density plot viewer should be \"false\"", () => readingReads(page, "y selector shown", el("density plot viewer"), "false"));
-      await session.step(77, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["showXSelector","true"],["showYSelector","true"]]));
+      await session.step(77, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["showXSelector","true"],["showYSelector","true"]]), [["showXSelector","true"],["showYSelector","true"]]);
       await session.step(80, "Then the \"x selector shown\" reading of density plot viewer should be \"true\"", () => readingReads(page, "x selector shown", el("density plot viewer"), "true"));
       await session.step(81, "And no errors should have been logged", () => noErrors(page));
     });
@@ -92,7 +94,7 @@ test.describe("Density plot chrome, binding and the viewer filter", () => {
       await session.step(85, "Then the description of density plot viewer should be above its content", () => descriptionAbove(page, el("density plot viewer")));
       await session.step(86, "When user sets \"descriptionPosition\" property of density plot viewer to \"Bottom\"", () => setProperty(page, "descriptionPosition", el("density plot viewer"), "Bottom"));
       await session.step(87, "Then the description of density plot viewer should be below its content", () => descriptionBelow(page, el("density plot viewer")));
-      await session.step(88, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["descriptionPosition","Top"],["description",""]]));
+      await session.step(88, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["descriptionPosition","Top"],["description",""]]), [["descriptionPosition","Top"],["description",""]]);
       await session.step(91, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The viewer's own filter narrows what it bins and leaves the table alone", async () => {

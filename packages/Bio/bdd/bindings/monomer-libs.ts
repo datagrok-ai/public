@@ -1,14 +1,61 @@
 /* The monomer library as Bio holds it: the selection of libraries in the user's settings, what
    the loaded library knows, and the library and collection files on the server that a feature
    creates and removes. Everything is read through Bio's own helper (`Bio:getMonomerLibHelper`). */
-import {expect, Page} from '@playwright/test';
-import {Given, Then} from '@datagrok-libraries/bdd';
-import {atFeatureEnd} from '@datagrok-libraries/bdd/runtime';
+import type {Page} from '@playwright/test';
+import {Given, Then, When} from '@datagrok-libraries/bdd';
+import {atFeatureEnd, el, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {clickOn, selectIn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 
 declare const grok: any;
 
 const LIB_STORAGE = 'Libraries';
 const LIB_SETTINGS = 'Settings';
+
+export const onlyLibrarySelected = Given('only {string} monomer library is selected',
+  async (page: Page, name: string) => {
+    const before: string | null = await page.evaluate(async ([storage, key, library]) => {
+      const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+      const providers = await helper.getProviders();
+      const names = (await Promise.all(providers.map((provider: any) => provider.listLibraries()))).flat();
+      if (!names.includes(library))
+        throw new Error(`no monomer library "${library}"; available: ${names.join(', ')}`);
+      return grok.userSettings.getValue(storage, key, true) ?? null;
+    }, [LIB_STORAGE, LIB_SETTINGS, name]);
+    atFeatureEnd(page, async () => {
+      await page.evaluate(async ([storage, key, previous]) => {
+        if (previous === null)
+          grok.userSettings.delete(storage, key, true);
+        else
+          grok.userSettings.add(storage, key, previous, true);
+        const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+        await helper.loadMonomerLib(true);
+      }, [LIB_STORAGE, LIB_SETTINGS, before] as [string, string, string | null]);
+    });
+    await page.evaluate(async ([storage, key, library]) => {
+      const settings = JSON.parse(grok.userSettings.getValue(storage, key, true) || '{}');
+      settings.exclude = [];
+      settings.explicit = [library];
+      grok.userSettings.add(storage, key, JSON.stringify(settings), true);
+      const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+      await helper.loadMonomerLib(true);
+    }, [LIB_STORAGE, LIB_SETTINGS, name]);
+  }, {tier: 'api', description: 'loads one library and restores the previous selection when the feature ends'});
+
+export const chooseLibraryStorage = When('user chooses {string} storage for the uploaded monomer library',
+  async (page: Page, name: string) => {
+    const providers: string[] = await page.evaluate(async () => {
+      const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+      return (await helper.getProviders()).map((provider: any) => provider.name);
+    });
+    expect(providers, 'available monomer library storages').toContain(name);
+    // Bio saves directly when there is only one provider; it asks only when there is a choice.
+    if (providers.length === 1)
+      return;
+    const dialog = '"Select storage for new monomer library" dialog';
+    await shouldBe(page, el(dialog), 'visible');
+    await selectIn(page, name, el(`Storage input in ${dialog}`));
+    await clickOn(page, el(`OK button in ${dialog}`));
+  }, {tier: 'ui', description: 'chooses a storage when Bio offers several; a sole provider is automatic'});
 
 /** Every library on the server selected: the settings Bio keeps in user storage with nothing
  * excluded, and the library reloaded from them. */
@@ -58,11 +105,11 @@ function sources(page: Page): Promise<string[]> {
 }
 
 export const loadedFrom = Then('the monomer library should be loaded from {string}', async (page: Page, name: string) => {
-  await expect.poll(() => sources(page), {timeout: 30000, message: 'the sources of the loaded monomers'}).toContain(name);
+  await expect.poll(() => sources(page), {timeout: pollMs(30000), message: 'the sources of the loaded monomers'}).toContain(name);
 }, {description: 'some monomer of the loaded library comes from that source; polls up to 30 s for a reload in flight'});
 
 export const notLoadedFrom = Then('the monomer library should not be loaded from {string}', async (page: Page, name: string) => {
-  await expect.poll(() => sources(page), {timeout: 30000, message: 'the sources of the loaded monomers'}).not.toContain(name);
+  await expect.poll(() => sources(page), {timeout: pollMs(30000), message: 'the sources of the loaded monomers'}).not.toContain(name);
 });
 
 function knows(page: Page, polymerType: string, symbol: string): Promise<boolean> {
@@ -73,11 +120,11 @@ function knows(page: Page, polymerType: string, symbol: string): Promise<boolean
 }
 
 export const knownMonomer = Then('{string} should be a known {string} monomer', async (page: Page, symbol: string, polymerType: string) => {
-  await expect.poll(() => knows(page, polymerType, symbol), {timeout: 30000, message: `the library knows ${polymerType} monomer "${symbol}"`}).toBe(true);
+  await expect.poll(() => knows(page, polymerType, symbol), {timeout: pollMs(30000), message: `the library knows ${polymerType} monomer "${symbol}"`}).toBe(true);
 }, {description: 'the loaded library resolves the symbol for the polymer type (PEPTIDE, RNA, CHEM)'});
 
 export const unknownMonomer = Then('{string} should not be a known {string} monomer', async (page: Page, symbol: string, polymerType: string) => {
-  await expect.poll(() => knows(page, polymerType, symbol), {timeout: 30000, message: `the library knows ${polymerType} monomer "${symbol}"`}).toBe(false);
+  await expect.poll(() => knows(page, polymerType, symbol), {timeout: pollMs(30000), message: `the library knows ${polymerType} monomer "${symbol}"`}).toBe(false);
 });
 
 export const collectionHolds = Then('the {string} monomer collection should hold monomers {string}', async (page: Page, name: string, list: string) => {
@@ -89,8 +136,15 @@ export const collectionHolds = Then('the {string} monomer collection should hold
 }, {description: 'the collection file on the server, its symbols in order, comma-separated'});
 
 export const noSuchCollection = Then('there should be no {string} monomer collection on the server', async (page: Page, name: string) => {
-  await expect.poll(() => page.evaluate(async (n) => {
-    const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
-    return (await helper.listMonomerCollections()).map((f: string) => f.replace(/\.json$/i, ''));
-  }, name), {message: 'the collections on the server'}).not.toContain(name.replace(/\.json$/i, ''));
+  // the file itself, not the folder listing: the listing keeps a deleted file for 15 s and more
+  const file = `System:AppData/Bio/monomer-collections/${name.replace(/\.json$/i, '')}.json`;
+  await expect.poll(() => page.evaluate((f) => grok.dapi.files.exists(f), file),
+    {message: `${file} on the server`}).toBe(false);
 });
+
+export const noSuchLibrary = Then('there should be no {string} monomer library on the server', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(async () => {
+    const helper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+    return (await Promise.all((await helper.getProviders()).map((provider: any) => provider.listLibraries()))).flat();
+  }), {message: 'the libraries every storage lists'}).not.toContain(name);
+}, {description: 'no storage lists the file any more — what Delete promises beyond the checkbox'});

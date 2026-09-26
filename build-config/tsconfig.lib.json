@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "target": "es2020",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "preserveConstEnums": true,
+    "rootDir": "${configDir}",
+    "outDir": "${configDir}/dist"
+  },
+  "exclude": ["${configDir}/node_modules", "${configDir}/dist"]
+}

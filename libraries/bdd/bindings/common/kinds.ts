@@ -46,7 +46,10 @@ kind('input', {
   editorSelector: INPUT_EDITOR,
   parts: INPUT_PARTS,
 });
-inputKind('text input', ['text-input'], '.ui-input-text', ['text field', 'textbox']);
+// a bare <input> outside any input host that names itself (aria-label) is a text input too: the
+// Save project dialog's Name
+inputKind('text input', ['text-input'], '.ui-input-text, input[aria-label]:not(.ui-input-root *)', ['text field', 'textbox'],
+  {match: [...INPUT_MATCH, 'aria']});
 inputKind('text area', ['text-area'], '.ui-input-textarea', ['textarea', 'multiline input']);
 inputKind('choice input', ['choice-input'], '.ui-input-choice', ['dropdown', 'choice', 'select']);
 inputKind('multi choice input', ['multi-choice-input'], '', ['multi choice']);
@@ -121,6 +124,8 @@ kind('property', {
   match: ['label', 'name', 'aria', 'dart'],
   labelSelector: '.u2-propgrid-name, .property-grid-item-name-text',
   dartNames: ['prop-{q}'],
+  parts: {label: '.u2-propgrid-name, .property-grid-item-name', value: '.u2-propgrid-value, .property-grid-item-value',
+    editor: '[name^="prop-view-"]'},
 });
 // the Dart property grid's category is a row of the grid (prop-category-<name>)
 kind('category', {
@@ -200,6 +205,8 @@ kind('tray', {selector: u2('tray'), match: ['name']});
 kind('heading', {aliases: ['header', 'title'], selector: 'h1, h2, h3, h4, h5, h6', match: ['text']});
 kind('text', {aliases: ['label'], selector: '*', match: ['exact-text']});
 kind('link', {selector: 'a, .d4-link-label', match: ['text', 'name', 'aria', 'dart'], dartNames: ['label-{q}']});
+kind('action', {aliases: ['action link'], selector: '.d4-link-action', match: ['exact-text', 'text'],
+  description: 'a function link of the context panel\'s Actions pane ("Convert Notation...")'});
 
 // --- navigation -----------------------------------------------------------------------------------
 kind('toolbar', {selector: u2('toolbar') + ', [role="toolbar"], .d4-ribbon', match: ['name', 'aria']});
@@ -267,8 +274,22 @@ kind('card', {
   match: ['name', 'title', 'text'],
   labelSelector: '.u2-card-title, .card-label',
 });
+/** The entity cards of a Dart gallery (a connection's queries, the scripts browser): named
+ * `div-<Name>` and titled by their own label, not the `.d4-item-card` the card kind knows. */
+kind('gallery card', {
+  selector: '.d4-gallery-card',
+  match: ['dart', 'label', 'text'],
+  labelSelector: '.grok-gallery-grid-item-title',
+  dartNames: ['div-{q}'],
+});
 kind('wizard', {selector: u2('wizard'), match: ['name', 'aria']});
 kind('wizard step', {aliases: ['step'], selector: '.u2-wizard-step', match: ['label', 'text'], labelSelector: '.u2-wizard-title'});
+kind('dock panel', {
+  selector: '.panel-base',
+  match: ['label', 'text'],
+  labelSelector: '.panel-titlebar-text',
+  description: 'a panel of the dock manager by the title its titlebar (or its tab handle) shows — "Activity cliffs"',
+});
 kind('splitter', {aliases: ['split panel'], selector: u2('splitter'), match: ['name']});
 kind('splitter panel', {aliases: ['split pane'], selector: '.u2-splitter-panel', match: ['name']});
 kind('sash', {aliases: ['splitter sash', 'divider'], selector: '.u2-sash, .u2-splitter-sash', match: ['aria', 'name']});
@@ -290,6 +311,8 @@ kind('viewer', {
   parts: {
     title: `${PANEL}//*[contains(@class, "panel-titlebar-text")]`,
     'settings icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-settings"]`,
+    // the "?" of the title bar: its tooltip is the viewer's own summary above "Click for help (F1)"
+    'help icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-help"]`,
     'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
     'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
     description: '.d4-viewer-description',
@@ -312,7 +335,7 @@ kind('legend item', {
   parts: {label: '.d4-legend-value', cross: '.d4-legend-cross', thumbnail: 'canvas.d4-legend-value', marker: '[name="legend-item-marker"]'},
 });
 // a card of the filter panel by its caption: "RACE" filter card, checkbox of "RACE" filter card;
-// aria-disabled while suspended, its own counter as the indicator part
+// aria-disabled on its body while suspended (the header, its checkbox and the mode word stay operable), its own counter as the indicator part
 kind('filter card', {
   selector: '.d4-filter',
   match: ['label', 'dart'],
@@ -321,6 +344,30 @@ kind('filter card', {
   parts: {caption: '.d4-filter-column-name', checkbox: '.d4-filter-bool-input', indicator: '.d4-filter-indicator',
     mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
     close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
+});
+// the membership editor (membership_editor.dart): a member already in is a row, a search match a candidate
+const MEMBERSHIP_PARTS = {checkbox: '.membership-row-admin input', 'checkbox label': '.membership-row-admin'};
+kind('membership row', {
+  aliases: ['member row'],
+  selector: '.membership-row',
+  match: ['label'],
+  labelSelector: '.d4-user-selector-user-name',
+  parts: {...MEMBERSHIP_PARTS, 'remove button': '[name="button-Remove"]'},
+});
+kind('membership candidate', {
+  aliases: ['member candidate'],
+  selector: '.membership-add-row',
+  match: ['label'],
+  labelSelector: '.d4-user-selector-user-name',
+  parts: {...MEMBERSHIP_PARTS, 'add button': '[name="button-Add"]'},
+});
+// a table row of the Save project dialog's entity list (project_entity_move.dart): its action,
+// its Data sync switch and the Creation script block
+kind('project table', {
+  aliases: ['saved table'],
+  selector: '.grok-project-move-entity-row',
+  match: ['dart'],
+  dartNames: ['project-table-{q}'],
 });
 kind('view', {
   selector: '.d4-view-handle, [name^="view-handle: "]',

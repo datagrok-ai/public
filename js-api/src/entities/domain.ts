@@ -7,7 +7,6 @@
 import {toJs} from '../wrappers';
 import {IDartApi} from '../api/grok_api.g';
 import {Entity} from './entity';
-import {domainCall} from '../domains';
 import dayjs from 'dayjs';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -114,15 +113,6 @@ export class DomainRow {
   get updatedOn(): dayjs.Dayjs | null {
     const d = api.grok_DomainRow_Get_UpdatedOn(this.dart);
     return d ? dayjs(d) : null;
-  }
-
-  /** Server-truth effective permissions of the CURRENT user on this row — probes on
-   * the row's securing entity through the master delegate chain, the same predicate
-   * branches the server enforces. Admins get all three. Cached until a grant change
-   * (`grok.dapi.domains.invalidateUiCaches()` after out-of-band changes); unsaved
-   * rows hold no permissions. */
-  permissions(): Promise<{edit: boolean; delete: boolean; share: boolean}> {
-    return domainCall(api.grok_Domains_RowPermissions(this.dart));
   }
 
   toString(): string { return this.semValue; }

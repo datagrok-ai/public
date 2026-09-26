@@ -111,8 +111,8 @@ Table Permissions
 
 
 All permissions are grouped in two categories:
-* **View and Use**: Includes only the **View** permission and all entity-specific use permissions
-* **Full control**: Includes all permissions
+* **View and use**: Includes only the **View** permission and all entity-specific use permissions
+* **Full access**: Includes all permissions
 
 Entity permissions are granted to [groups](users-and-groups.md#groups) rather
 than individual users, which simplifies security administration. For

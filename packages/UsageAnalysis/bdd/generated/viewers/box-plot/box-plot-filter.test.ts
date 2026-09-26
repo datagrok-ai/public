@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.box-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -27,7 +29,7 @@ test.describe("Box plot filter semantics", () => {
     const run = journey(test, 5, page);
     await session.step(9, "Given user is logged in", () => loggedIn(page));
     await session.step(10, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await session.step(11, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["Value","Average Mass"],["Category 1","Series"]]));
+    await session.step(11, "And user adds a box plot viewer with:", () => addViewerWith(page, "box plot", [["Value","Average Mass"],["Category 1","Series"]]), [["Value","Average Mass"],["Category 1","Series"]]);
     await session.step(14, "Then the table should have 100 rows", () => rowCount(page, 100));
     await run.scenario("The value range follows the filter", async () => {
       await session.step(17, "Then all rows should pass the filter", () => filterPassesAll(page));

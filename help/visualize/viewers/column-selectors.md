@@ -20,10 +20,11 @@ A combo box for selecting a column
 
 ## Using a formula instead of a column
 
-Any selector that drives a viewer — an axis, color, size, markers, whiskers, split — can be given a
-formula rather than an existing column. Hover the viewer and click the **plus** icon next to the
-selector to open [Add New Column](../../transform/add-new-column.md), then write an expression such as
-`${AGE} * 2`.
+A column property can be given a formula rather than an existing column. Open the
+[Context Panel](../../datagrok/navigation/panels/panels.md), find the property, and click the
+**plus** icon on its row to open [Add New Column](../../transform/add-new-column.md), then write an
+expression such as `${AGE} * 2`. On a scatter plot the **Color** selector carries the same icon
+directly on the plot.
 
 The result is stored as a hidden column, so it does not clutter the grid, and it is shared: once
 defined, the same formula can be picked from any other selector on that table. To change it, select it

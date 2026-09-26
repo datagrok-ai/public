@@ -11,4 +11,5 @@ export {dfBindings, DF_STEPS} from './df-bindings.js';
 export type {ColumnLike, DataFrameLike} from './df-bindings.js';
 export {BitArray} from './bit-array.js';
 export type {BitPredicate} from './bit-array.js';
+export {uuid4} from './uuid.js';
 export {TYPE, COLUMN_TYPE, SEMTYPE, TYPES_SCALAR} from '../const.js';

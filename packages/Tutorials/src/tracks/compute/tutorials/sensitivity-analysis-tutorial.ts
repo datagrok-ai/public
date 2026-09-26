@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend} from './utils';
+import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend, inputRootByCaption} from './utils';
 import {runDescriber, Tour, DescriptionPage} from './ui-describer';
 import '../../../../css/ui-describer.css';
 
@@ -203,13 +203,15 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     const sensAnFormRoot = await getElement(sensAnView.root, 'div.ui-div.ui-form');
     const children = sensAnFormRoot!.children;
+    // by caption, from the model's own parameter declarations - see DiffStudio ballFlight
+    const input = (caption: string) => inputRootByCaption(sensAnFormRoot!, caption)!;
 
     // switch off trajectory
-    const trajectoryDiv = children[23];
-    const trajectorySwitcherWgt = trajectoryDiv.querySelector('div.ui-input-switch.ui-input-switch-on') as HTMLElement;
+    const trajectorySwitcherWgt = input('Trajectory')
+      .querySelector('div.ui-input-switch.ui-input-switch-on') as HTMLElement;
     trajectorySwitcherWgt.click();
 
-    const samplesInputRoot = children[1] as HTMLElement;
+    const samplesInputRoot = input('Samples');
     const samplesInputEditor = samplesInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const samplesSource = fromEvent(samplesInputEditor, 'input').pipe(map((_) => samplesInputEditor.value), filter((val) => val === '100'));
 
@@ -223,7 +225,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     );
 
     // 7. Switch Angle
-    const angleFitInputRoot = children[16] as HTMLElement;
+    const angleFitInputRoot = input('Angle');
     const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -306,7 +308,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     this.describe(`Explore which of the throw parameters has the most significant impact on
     <b>Max distance</b> and <b>Max height</b>. The ${ui.link('Sobol', LINK.SOBOL).outerHTML} method provides a quantitative assessment of the parameters' impact.`);
 
-    const methodInputRoot = children[0] as HTMLElement;
+    const methodInputRoot = input('Method');
     const methodChoiceRoot = methodInputRoot.querySelector('select.ui-input-editor') as HTMLSelectElement;
     const methodSource = fromEvent(methodChoiceRoot, 'input').pipe(map((_) => methodChoiceRoot.value), filter((val) => val === 'Sobol'));
 
@@ -317,7 +319,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     );
 
     // 13. Switch Velocity
-    const velocityFitInputRoot = children[12] as HTMLElement;
+    const velocityFitInputRoot = input('Velocity');
     const velocitySwitcher = velocityFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -359,7 +361,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     // 16. The Grid  method note
     panelRoot.style.width = '300px';
-    const methodLabelRoot = children[0] as HTMLElement;//.querySelector('label.ui-label') as HTMLElement;
+    const methodLabelRoot = input('Method');
     btnToClick = runDescriber({
       pages: [{
         root: methodLabelRoot,

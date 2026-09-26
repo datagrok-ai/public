@@ -378,8 +378,14 @@ async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idma
   const spec = TYPES[op.type];
   const payload = stripPrivate(JSON.parse(JSON.stringify(op.json)));
   const targetId = payload.id ?? op.id;
-  if (payload.metaParams && typeof payload.metaParams === 'object')
+  if (payload.metaParams && typeof payload.metaParams === 'object') {
     payload.metaParams.sync_id = op.id;
+    const from = bundle.manifest?.source?.url;
+    if (from) {
+      payload.metaParams.migrated_from = from;
+      payload.metaParams.migrated_on = new Date().toISOString();
+    }
+  }
 
   // The server encrypts and masks password-class parameters itself, so target-side
   // secrets go in as plain parameters and never touch the bundle.

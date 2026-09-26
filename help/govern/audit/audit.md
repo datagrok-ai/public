@@ -100,8 +100,23 @@ Each event is associated with a fixed type and the user session that triggered i
 * viewer-rendered
 * log
 * package-tested
+* server-started
+* user-logged-in
+* user-logged-out
+* user-login-failed
+* user-impersonated
+* impersonation-failed
+* admin-session-started
+* admin-session-ended
+* dev-key-generated
+* settings-changed
+* log-settings-changed
 
 </details>
+
+The last eleven are the platform's own security trail — who logged in and out, whose login
+failed and why, impersonation, admin sessions, developer keys, settings changes, and server
+starts. They are listed on the **System Activity** tab of [Usage Analysis](usage-analysis.md).
 
 ## Accessing audit logs
 

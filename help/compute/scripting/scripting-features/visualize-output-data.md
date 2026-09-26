@@ -3,14 +3,16 @@ title: "Visualize output data"
 sidebar_position: 2
 mdx:
   format: mdx
-description: Attach and customize viewers such as scatter plots and line charts for script output dataframes.
+description: Attach, customize, and arrange viewers such as scatter plots and line charts for script input and output dataframes.
 keywords:
   - output dataframe viewer
+  - input dataframe viewer
   - scatter plot annotation
   - line chart annotation
   - viewer properties
   - camelCase viewer options
   - regression line
+  - viewer block layout
 ---
 
 ```mdx-code-block
@@ -67,13 +69,24 @@ outputDF = inputDF.copy()
 </Tabs>
 ```
 
-:::tip
+## Where viewers appear
 
-The default script view supports viewers for *output* dataframes only.
-You can specify viewers for *input* dataframes using
-[advanced UI editor](../advanced-scripting/rich-function-view.md#visualize-input-data)
+The viewers appear wherever the result opens:
 
-:::
+* In the function view, with the results, after you run the function.
+* In the table view that opens for the result, for example when you run a script from the
+  **Scripts** browser.
+* In the workspace, when you add a result table with **Add to workspace** (**+**) in the function
+  view.
+
+Input dataframes can have viewers too. In the function view, they appear above the results, so the
+page reads as the form, the table it received, and what came out of it:
+
+```python
+#input: dataframe inputDF { viewer: Scatter plot | Grid }
+```
+
+If you close a viewer in the results, press <kbd>Ctrl+Z</kbd> to bring it back to the same place.
 
 ## Customize viewers for dataframe
 
@@ -126,11 +139,38 @@ outputDF = inputDF.copy()
 </Tabs>
 ```
 
-:::tip More customization
+A few shortcuts and rules apply to the values:
 
-The default script view shows all viewers at once.
-You can divide viewers into separate tabs using
-[advanced UI editor](../advanced-scripting/rich-function-view.md#group-scalar-outputs).
+* Column properties take the short name: `x: time` sets the X column (`xColumnName`), and
+  `y: temperature` sets the Y column.
+* `title` sets the viewer title: `Scatter plot(title: Growth over time)`.
+* Numbers and booleans are written as is, including decimals and negatives: `xMax: 25.5`,
+  `yMin: -1`, `showRegressionLine: true`.
+* Quote a value that contains a comma, a semicolon, parentheses, or a vertical bar:
+  `title: "Growth (mg/L)"`.
+* Viewers from packages take options the same way, for example `Forms(colorCode: false)`.
+
+## Arrange viewers
+
+By default, the viewers are docked next to the table's grid. To lay them out yourself, give each
+viewer a `block`: its share of a row, in percent. A row fills up to 100, and the next viewer starts
+a new row. Rows share the height equally.
+
+```python
+#output: dataframe result { viewer: Line chart(block: 60) | Scatter plot(block: 40) | Bar chart(block: 50) | Grid(block: 50) }
+```
+
+This puts the line chart and the scatter plot in the first row, 60/40, and the bar chart and the
+grid in the second row, 50/50.
+
+To place the grid, list it like any other viewer, as in the example above. If you leave it out,
+the grid takes the rest of the last row, or a row of its own when the last row is full.
+
+:::note
+
+`block` applies to the platform's function view and table views. The
+[rich function view](../advanced-scripting/rich-function-view.md) editor arranges viewers with its
+own options.
 
 :::
 
