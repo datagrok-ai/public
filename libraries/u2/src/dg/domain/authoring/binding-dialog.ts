@@ -278,7 +278,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
   /** The connection and the remote schema the built draft was read over. */
   private _builtKey: string | null = null;
   /** The name of a create that got no answer: a later "name taken" may be that create's own. */
-  private _unanswered: string | null = null;
   private _writeHint: string | undefined;
   /** A failed draft read is on the status line, to be cleared by the next read. */
   private _readProblem = false;
@@ -673,7 +672,6 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     } catch (e) {
       return await this._lost(plan, e);
     }
-    this._unanswered = null;
     const ops = BindingDialog._accessOps(plan);
     this._result = {name: plan.name, access: {applied: [], failed: []}};
     this._firstTable = Object.keys(plan.manifest.tables)[0];
@@ -689,36 +687,22 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return false;
   }
 
-  /** Whether a create that failed ends the dialog with the outcome unknown: its answer lost, or a
-   * create of ours after such a loss refused as taken, and a schema registered under the name —
-   * whatever it holds, nothing proves it this create's own, so no access is applied. A refusal
-   * lands on the findings; a failure the registry does not explain on the status line, CREATE
-   * still offered. */
+  /** A refusal lands on the findings. A create left unanswered ends the dialog with the outcome
+   * unknown, whatever the registry then says: nothing proves a registered schema this create's own,
+   * and a missing one may still be on its way, so no access is applied and nothing is sent again. */
   private async _lost(plan: ManifestPlan, e: unknown): Promise<boolean> {
-    const name = plan.name;
-    const ours = DomainErrors.codeOf(e) === 'schema-name-taken' && this._unanswered === name;
-    if (!BindingDialog._answered(e) || ours) {
-      this._unanswered = name;
+    if (!BindingDialog._answered(e)) {
       this._say('No answer to the create — reading the registry…');
       let registered: DG.DomainRegisteredManifest | null = null;
+      let unread: string | null = null;
       try {
-        registered = await grok.dapi.domains.schema(name).manifest();
+        registered = await grok.dapi.domains.schema(plan.name).manifest();
       } catch (x) {
-        if (!BindingDialog._notFound(x)) {
-          this._say(`${BindingDialog._failure(e)} — the registry could not be read (${BindingDialog._failure(x)}); CREATE again`, true);
-          return false;
-        }
+        if (!BindingDialog._notFound(x))
+          unread = BindingDialog._failure(x);
       }
-      if (registered !== null) {
-        this._outcomeUnknown(plan, e, registered);
-        return true;
-      }
-      if (!ours) {
-        this._say(`${BindingDialog._failure(e)} — ${name} is not registered; CREATE again`, true);
-        return false;
-      }
-      // taken, yet gone by the time the registry was read: an ordinary refusal
-      this._unanswered = null;
+      this._outcomeUnknown(plan, e, registered, unread);
+      return true;
     }
     const editor = this.editor!;
     this._diagnosed = this._payloadOf(editor);
@@ -729,26 +713,32 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return false;
   }
 
-  /** No access is sent; the Created step says what is registered under the name. */
-  private _outcomeUnknown(plan: ManifestPlan, e: unknown, registered: DG.DomainRegisteredManifest): void {
-    const tables = Object.keys(registered.tables ?? {});
-    const storage = registered.storage as {connection?: string, schema?: string} | undefined;
-    this._unanswered = null;
+  /** No access is sent; the Created step says what the registry holds under the name, if anything. */
+  private _outcomeUnknown(plan: ManifestPlan, e: unknown, registered: DG.DomainRegisteredManifest | null,
+    unread: string | null): void {
+    const tables = Object.keys(registered?.tables ?? {});
+    const storage = registered?.storage as {connection?: string, schema?: string} | undefined;
     grok.dapi.domains.invalidateUiCaches();
     api.grok_Dapi_Domains_SchemaAltered?.(grok.dapi.domains.dart, plan.name);
     this._unknown.value = true;
     this._openable.value = tables.length > 0;
     this._result = {name: plan.name, access: {applied: [], failed: []}, unknown: true};
     this._firstTable = tables[0] ?? '';
-    const facts = [
-      `No answer to the create (${BindingDialog._failure(e)}) — whether it landed is unknown`,
+    const held = registered !== null ?
       `${plan.name} is registered at version ${registered.version}` +
         `${storage?.connection === undefined ? '' : ` over ${storage.connection} · ${storage.schema ?? ''}`}, ` +
-        `${plural(tables.length, 'table', 'tables')}${tables.length > 0 ? ` (${tables.join(', ')})` : ''}`,
+        `${plural(tables.length, 'table', 'tables')}${tables.length > 0 ? ` (${tables.join(', ')})` : ''}` :
+      unread !== null ? `The registry could not be read (${unread})` :
+        `${plan.name} is not registered yet — the create may still be on its way; check Browse › Domains before creating again`;
+    const facts = [
+      `No answer to the create (${BindingDialog._failure(e)}) — whether it landed is unknown`,
+      held,
       'Access was not applied — once you know the binding is yours, use Edit binding… to set it',
     ];
     this._createdHost.replaceChildren(
-      div([badge('Outcome unknown', {variant: 'warning'}), span(`A schema ${plan.name} is registered`)], 'u2-binding-created-head'),
+      div([badge('Outcome unknown', {variant: 'warning'}),
+        span(registered !== null ? `A schema ${plan.name} is registered` : `No schema ${plan.name} seen yet`)],
+      'u2-binding-created-head'),
       divV(facts.map((f) => span(f)), 'u2-binding-created-list u2-binding-created-unknown'));
     this._say('Outcome unknown — no access was applied', true);
   }

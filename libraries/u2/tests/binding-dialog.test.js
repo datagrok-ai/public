@@ -881,7 +881,7 @@ scoped('a create whose answer was lost but which registered exactly as sent ends
     'a registered schema is never reported cancelled');
 });
 
-scoped('a create the registry does not know yet stays offered; a "taken" answering our retry reads the registry and ends unknown', async () => {
+scoped('a create left unanswered that the registry does not know yet ends unknown: one create, nothing sent again, no access', async () => {
   const calls = [];
   stub(calls, () => ({status: 'ok', issues: []}));
   const server = registry(calls);
@@ -893,25 +893,55 @@ scoped('a create the registry does not know yet stays offered; a "taken" answeri
   server.lose = 'before';
   buttonNamed('CREATE').click();
   await flush();
-  assert.equal(dialog.wizard.currentStep.value, 'review');
-  assert.equal(status().textContent, 'Gateway Timeout — nw is not registered; CREATE again');
-  assert.deepEqual(calls.filter((c) => c[0] === 'announce' || c[0] === 'altered'), [], 'nothing registered, nothing announced');
-  assert.equal(status().classList.contains('u2-wizard-status-error'), true);
-  assert.equal(document.querySelectorAll('.u2-binding-issue').length, 0, 'on the status line, not a finding');
-  assert.equal(buttonNamed('CREATE').disabled, false, 'CREATE stays available');
+  assert.equal(dialog.wizard.currentStep.value, 'created', 'the dialog does not offer CREATE again');
+  assert.equal(creates(calls).length, 1);
+  assert.deepEqual(accessCalls(calls), []);
+  assert.equal(document.querySelector('.u2-binding-created-head').textContent, 'Outcome unknownNo schema nw seen yet');
+  assert.equal(unknownFacts()[1],
+    'nw is not registered yet — the create may still be on its way; check Browse › Domains before creating again');
+  assert.equal(buttonNamed('OPEN').style.display, 'none');
+  assert.equal(status().textContent, 'Outcome unknown — no access was applied');
+  buttonNamed('CLOSE').click();
+  await flush();
+  assert.deepEqual(await done, {name: 'nw', access: {applied: [], failed: []}, unknown: true});
+});
 
-  server.land();
+scoped('a create left unanswered whose registry read fails ends unknown and says the registry could not be read', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const server = registry(calls);
+  const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
+  const done = dialog.open();
+  await toReview(dialog, 'nw');
+  await validated();
+  server.lose = 'before';
+  const schema = grok.dapi.domains.schema;
+  grok.dapi.domains.schema = (name) => ({...schema(name),
+    manifest: async () => { throw Object.assign(new Error('Bad Gateway'), {status: 502, code: ''}); }});
   buttonNamed('CREATE').click();
   await flush();
-  assert.equal(creates(calls).length, 2);
+  grok.dapi.domains.schema = schema;
   assert.equal(dialog.wizard.currentStep.value, 'created');
-  assert.deepEqual(accessCalls(calls), [], 'the late landing is not provably ours: nothing granted');
-  assert.equal(unknownFacts()[0], 'No answer to the create (Domain schema "nw" is already registered) — whether it landed is unknown');
-  assert.deepEqual(calls.filter((c) => c[0] === 'altered').map((c) => c[1]), ['nw'], 'announced once');
+  assert.equal(creates(calls).length, 1);
+  assert.match(unknownFacts()[1], /^The registry could not be read \(/);
   buttonNamed('CLOSE').click();
   await flush();
   assert.equal((await done).unknown, true);
 });
+
+/** Makes the create fail unanswered and leaves [register] holding the name by the time the registry is read. */
+function loseThen(server, register) {
+  server.lose = 'before';
+  const createSchema = grok.dapi.domains.createSchema;
+  grok.dapi.domains.createSchema = async (name, options) => {
+    try {
+      return await createSchema(name, options);
+    } finally {
+      if (!options.dryRun)
+        register(name);
+    }
+  };
+}
 
 scoped('after a lost create, a schema someone else registered under the name is not claimed', async () => {
   const calls = [];
@@ -922,17 +952,13 @@ scoped('after a lost create, a schema someone else registered under the name is 
   await toReview(dialog, 'nw');
   dialog.editor.access.addGroup(SCHEMA, SALES);
   await validated();
-  server.lose = 'before';
-  buttonNamed('CREATE').click();
-  await flush();
-  assert.equal(dialog.wizard.currentStep.value, 'review');
-  server.foreign('nw');
+  loseThen(server, (name) => server.foreign(name));
   buttonNamed('CREATE').click();
   await flush();
   assert.deepEqual(accessCalls(calls), [], 'no grant lands on the other schema');
   assert.equal(dialog.wizard.currentStep.value, 'created', 'the outcome of the lost create is unknown');
   assert.equal(unknownFacts()[1], 'nw is registered at version 1 over Other:Conn · x, 1 table (t)');
-  assert.equal(creates(calls).length, 2);
+  assert.equal(creates(calls).length, 1);
   buttonNamed('CLOSE').click();
   await flush();
   assert.deepEqual(await done, {name: 'nw', access: {applied: [], failed: []}, unknown: true});
@@ -974,10 +1000,7 @@ scoped('an unknown outcome over a schema with no tables offers nothing to open',
   const done = dialog.open();
   await toReview(dialog, 'nw');
   await validated();
-  server.lose = 'before';
-  buttonNamed('CREATE').click();
-  await flush();
-  server.foreign('nw', {});
+  loseThen(server, (name) => server.foreign(name, {}));
   buttonNamed('CREATE').click();
   await flush();
   assert.equal(dialog.wizard.currentStep.value, 'created');
