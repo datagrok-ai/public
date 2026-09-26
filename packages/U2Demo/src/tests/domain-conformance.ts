@@ -28,8 +28,9 @@ category('U2: domain conformance', () => {
   let skip: string | null = null;
 
   before(async () => {
+    let created: DG.DomainSchemaCreated;
     try {
-      await grok.dapi.domains.createSchema(name, {friendlyName: 'Conformance probe'});
+      created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Conformance probe'});
     } catch (e: any) {
       if (e instanceof DG.DomainError && (e.code === 'forbidden' || e.status === 403)) {
         skip = 'no CreateDomainSchema privilege';
@@ -37,7 +38,7 @@ category('U2: domain conformance', () => {
       }
       throw e;
     }
-    const tables: {[table: string]: object} = {};
+    const tables: {[table: string]: DG.DomainManifestTable} = {};
     for (let index = 0; index < scenarios.length; index++)
       tables[TABLE(index)] = {
         hierarchy: true,
@@ -49,7 +50,7 @@ category('U2: domain conformance', () => {
           parent_id: {type: 'ref', ref: TABLE(index)},
         },
       };
-    await grok.dapi.domains.schema(name).apply({tables});
+    await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables});
   });
 
   after(async () => {

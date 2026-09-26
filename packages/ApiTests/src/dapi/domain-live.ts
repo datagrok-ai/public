@@ -19,8 +19,9 @@ category('Dapi: domain live', () => {
   let skip: string | null = null;
 
   before(async () => {
+    let created: _DG.DomainSchemaCreated;
     try {
-      await grok.dapi.domains.createSchema(name, {friendlyName: 'Live probe'});
+      created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Live probe'});
     } catch (e: any) {
       if (e instanceof DG.DomainError && (e.code === 'forbidden' || e.status === 403)) {
         skip = 'no CreateDomainSchema privilege';
@@ -28,7 +29,7 @@ category('Dapi: domain live', () => {
       }
       throw e;
     }
-    await grok.dapi.domains.schema(name).apply({tables: {
+    await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables: {
       item: {
         businessKey: ['sku'],
         columns: {

@@ -1288,6 +1288,8 @@ export interface IDartApi {
   grok_Dapi_Domains_IsWatching(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_CreateSchema(c: any, name: String, friendlyName: String, description: String, options: any): Promise<any>;
   grok_Dapi_Domains_DraftSchema(c: any, body: any): Promise<any>;
+  grok_Dapi_Domains_DraftFor(c: any, schema: String, tables: any): Promise<any>;
+  grok_Dapi_Domains_SchemaAccess(c: any, schema: String): Promise<any>;
   grok_Dapi_Domains_ValidateSchema(c: any, schema: String): Promise<any>;
   grok_Dapi_Domains_GetManifest(c: any, schema: String): Promise<any>;
   grok_Dapi_Domains_ApplySchema(c: any, schema: String, body: any, dryRun: Bool): Promise<any>;

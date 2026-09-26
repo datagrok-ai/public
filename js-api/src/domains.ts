@@ -460,6 +460,9 @@ export interface DomainSchemaCreated {
   pgSchema: string;
   /** The manifest version registered: `'1'` for a new schema. */
   version: string;
+  /** The schema's incarnation ({@link DomainRegisteredManifest.incarnation}): new on every create of
+   * the name. */
+  incarnation: string;
   /** The live validation an external binding passed on create. */
   binding?: {status: DomainBindingStatus; validatedOn: string};
 }
@@ -476,6 +479,334 @@ export interface DomainSchemaValidation {
   /** What drifted, by manifest path; empty when `status` is `'ok'`. */
   issues: DomainManifestIssue[];
 }
+
+/** A registered schema's manifest as {@link DomainSchemaClient.manifest} answers it: the manifest
+ * vocabulary reconstructed from the registry, plus the two tokens an apply sends back as
+ * `ifVersion` / `ifIncarnation`. */
+export interface DomainRegisteredManifest extends DomainManifest {
+  /** The schema name. */
+  name: string;
+  /** The apply counter: what {@link DomainApplyBody.ifVersion} names. */
+  version: string;
+  /** The schema row's creation instant (ISO 8601): what {@link DomainApplyBody.ifIncarnation} names.
+   * A name deleted and re-created starts at version `'1'` again with a new incarnation. */
+  incarnation: string;
+}
+
+/** A group as the access surfaces name it. */
+export interface DomainGroupRef {
+  /** The group id — what a grant is addressed to. */
+  id: string;
+  /** The group's caption; a user's name for a personal group. */
+  friendlyName: string;
+  /** Whether it is a user's own group. */
+  personal: boolean;
+}
+
+/** One group's COMPLETE direct permission set on a registry entity, as the access snapshot
+ * lists it — Share and custom permissions included, nothing inherited. */
+export interface DomainGrantSet {
+  /** The group granted. */
+  group: DomainGroupRef;
+  /** Every permission the group holds directly on the entity. */
+  permissions: DomainPermission[];
+}
+
+/** The direct grants on one registry entity in the access snapshot. Answered only where the
+ * caller holds Share on it — elsewhere `canShare` is false and `grants` is `null`: unknown, not
+ * empty. */
+export interface DomainEntityAccess {
+  /** The registry entity id. */
+  entityId: string;
+  /** Whether the caller may change the entity's grants (Share on it). */
+  canShare: boolean;
+  /** The direct grants, complete per group; `null` when the caller may not read them. */
+  grants: DomainGrantSet[] | null;
+}
+
+/** One table of the access snapshot: its own grants and its core schema's (the
+ * everyone-visible property schema its unrestricted columns belong to — informational: an apply
+ * edits table grants and column restrictions only). */
+export interface DomainTableAccess extends DomainEntityAccess {
+  /** The physical (remote, for a binding) table name. */
+  remote: string;
+  /** The table's core property schema — the Share target of its column restrictions. */
+  coreSchema: DomainEntityAccess;
+}
+
+/** One relational column of the access snapshot: whether it is split out of the core schema and,
+ * when it is, who reads and edits it. The lists are `null` (unknown) where the caller may not
+ * Share the table's core schema. */
+export interface DomainColumnAccess {
+  /** `'restricted'` when the column has its own per-column schema. */
+  state: 'unrestricted' | 'restricted';
+  /** Whether the caller may restrict or unrestrict the column (Share on the core schema). */
+  canShare: boolean;
+  /** The per-column schema id of a restricted column the caller may Share. */
+  schemaId?: string;
+  /** Groups holding View on a restricted column. */
+  view?: DomainGroupRef[] | null;
+  /** Groups holding Edit on a restricted column. */
+  edit?: DomainGroupRef[] | null;
+  /** Any other permission held on a restricted column, per group. */
+  other?: {group: DomainGroupRef; permission: DomainPermission}[] | null;
+}
+
+/** The lossless access snapshot of a schema for its editor ({@link DomainSchemaClient.access}),
+ * read in one transaction with the tokens it stands for: per table the direct grants, per column
+ * the restriction state. `null` anywhere means the caller may not read that part (no Share on the
+ * target), never that it is empty. */
+export interface DomainSchemaAccess {
+  /** Per table, by logical name. */
+  tables: {[logical: string]: DomainTableAccess};
+  /** Per relational column, by `'<table>.<column>'`. */
+  columns: {[address: string]: DomainColumnAccess};
+  /** The apply counter the snapshot was read at ({@link DomainApplyBody.ifVersion}). */
+  version: string;
+  /** The schema's incarnation ({@link DomainApplyBody.ifIncarnation}). */
+  incarnation: string;
+}
+
+/** One permission of one group on one table — the unit of {@link DomainAccessDelta.grant} and
+ * {@link DomainAccessDelta.revoke}. */
+export interface DomainGrantTriple {
+  /** The table's logical name. */
+  table: string;
+  /** The group id. */
+  group: string;
+  /** The permission granted or revoked. */
+  permission: DomainPermission;
+}
+
+/** One permission of one group, inside a column restriction. */
+export interface DomainGroupPermission {
+  /** The group id. */
+  group: string;
+  /** `'View'` or `'Edit'` — what a column restriction grants. */
+  permission: DomainPermission;
+}
+
+/** A column addressed by table and column name. */
+export interface DomainColumnTarget {
+  /** The table's logical name. */
+  table: string;
+  /** The column's logical name. */
+  column: string;
+}
+
+/** Restricts a column (splits it out of the everyone-visible core schema, idempotently) and
+ * applies grant/revoke DELTAS on its per-column schema — never a full list, so a grant somebody
+ * else made meanwhile survives an edit that never named it. A key column of an external table
+ * cannot be restricted (`'key-column'`). */
+export interface DomainColumnRestriction extends DomainColumnTarget {
+  /** Permissions to grant on the per-column schema. */
+  grant?: DomainGroupPermission[];
+  /** Permissions to revoke from the per-column schema. */
+  revoke?: DomainGroupPermission[];
+}
+
+/** The access changes an apply carries ({@link DomainApplyBody.access}): exact permission-triple
+ * deltas, executed in the registry transaction under the deploy lock AFTER the manifest change,
+ * so a column added and restricted in one apply is never visible to today's readers and
+ * `writable` turned on never activates a grant the same apply revokes. Every op needs Share on
+ * its target (a column's: the table's core schema), or the whole apply is refused
+ * (`'access-forbidden'`, naming the targets); a target the same apply drops is refused too
+ * (`'access-target-dropped'` — the purge owns it). A triple both granted and revoked, or a column
+ * named by two restriction ops, is `'invalid-access'`. */
+export interface DomainAccessDelta {
+  /** Table grants to add. */
+  grant?: DomainGrantTriple[];
+  /** Table grants to remove. */
+  revoke?: DomainGrantTriple[];
+  /** Columns to restrict, with the deltas on their readers and editors. */
+  restrict?: DomainColumnRestriction[];
+  /** Columns to make visible to everyone again (their per-column schema and its grants go). */
+  unrestrict?: DomainColumnTarget[];
+}
+
+/** What {@link DomainSchemaClient.apply} takes: a partial manifest — named tables replace their
+ * registered definition WHOLESALE, everything omitted stays as registered — with the two tokens
+ * the edit was made against, the schema-level metadata, and the access deltas. */
+export interface DomainApplyBody {
+  /** The apply counter the edit was made against ({@link DomainRegisteredManifest.version}):
+   * REQUIRED on a user-managed schema (`'version-required'` without it), checked under the deploy
+   * lock — of two concurrent applies exactly one commits, the other rejects with a
+   * {@link DomainVersionConflictError}. On a package-managed schema (the extension path) it is
+   * optional and tracks `ext_version`. */
+  ifVersion?: string;
+  /** The incarnation the edit was made against ({@link DomainRegisteredManifest.incarnation}): a
+   * token from another life of the name (deleted and re-created since) rejects with a
+   * {@link DomainVersionConflictError} carrying both incarnations. Optional on the wire; send it. */
+  ifIncarnation?: string;
+  /** Tables to create or replace, whole descriptors by logical name. */
+  tables?: {[logical: string]: DomainManifestTable};
+  /** Tables to unregister (a destructive plan: needs `confirmDestructive`, and Delete on each). */
+  dropTables?: string[];
+  /** Package-managed schemas only: your own columns on plugin tables that opted in, as the full
+   * state of YOUR columns of each table. */
+  extend?: {[table: string]: {columns: {[column: string]: DomainManifestColumn}}};
+  /** Property schemas to merge by name. */
+  propertySchemas?: {[name: string]: unknown};
+  /** The schema's caption (user-managed schemas). */
+  friendlyName?: string;
+  /** The schema's description (user-managed schemas). */
+  description?: string;
+  /** `writable` is the one storage key an apply may change, and only on an external binding;
+   * any other key must repeat the registered value (`'storage-immutable'`; the kind cannot flip,
+   * `'storage-conversion'`). */
+  storage?: {writable?: boolean};
+  /** Access changes executed with the manifest change, atomically. */
+  access?: DomainAccessDelta;
+  /** Required when the plan is destructive (`'destructive-confirmation-required'` otherwise, the
+   * plan riding in the error's body). */
+  confirmDestructive?: boolean;
+}
+
+/** The effect one access op had, or would have: `'none'` where the triple was already there, or
+ * already gone. */
+export interface DomainGrantEffect {
+  /** The group, resolved. */
+  group: DomainGroupRef;
+  /** The permission the op named. */
+  permission: DomainPermission;
+  /** What the op does to the permission row. */
+  effect: 'grant' | 'revoke' | 'none';
+}
+
+/** The effect of a table grant or revoke. */
+export interface DomainTableGrantEffect extends DomainGrantEffect {
+  /** The table's logical name. */
+  table: string;
+}
+
+/** The effect of a column restriction: the split itself, then each grant and revoke on the
+ * per-column schema. */
+export interface DomainRestrictEffect extends DomainColumnTarget {
+  /** `'restrict'` when the column is split out by this apply; `'none'` when it already was. */
+  effect: 'restrict' | 'none';
+  /** The effect of each grant named. */
+  grants: DomainGrantEffect[];
+  /** The effect of each revoke named. */
+  revokes: DomainGrantEffect[];
+}
+
+/** The effect of making a column visible to everyone again. */
+export interface DomainUnrestrictEffect extends DomainColumnTarget {
+  /** `'unrestrict'` when the per-column schema goes; `'none'` when there was none. */
+  effect: 'unrestrict' | 'none';
+}
+
+/** The access section of a plan ({@link DomainApplyPlan.access}): every op with its effect — in a
+ * dry run as planned against the rows as they are now plus what the apply bootstraps, in an
+ * applied answer as resolved under the lock. */
+export interface DomainAccessEffects {
+  /** The table grants. */
+  grant: DomainTableGrantEffect[];
+  /** The table revokes. */
+  revoke: DomainTableGrantEffect[];
+  /** The column restrictions. */
+  restrict: DomainRestrictEffect[];
+  /** The columns made visible again. */
+  unrestrict: DomainUnrestrictEffect[];
+}
+
+/** What the purge of a dropped table takes with it, as counts — names would leak what the
+ * reviewer may not see. */
+export interface DomainLostTable {
+  /** Direct grants on the table. */
+  grants: number;
+  /** Grants on the table's core property schema. */
+  coreSchemaGrants: number;
+  /** Per restricted column, the grants on its per-column schema. */
+  restrictions: {[column: string]: number};
+  /** Rows promoted to entities (individually shareable). */
+  promotedRows: number;
+  /** Grants on those promoted rows. */
+  rowGrants: number;
+  /** Saved filters of the table — DELETED with it. */
+  savedFilters: number;
+  /** Saved filters of other tables that travel into this one through a ref — kept, but no
+   * longer resolving. */
+  affectedFilters: number;
+}
+
+/** What dropping a column takes with it. */
+export interface DomainLostColumn {
+  /** Whether the column had its own per-column schema. */
+  restricted: boolean;
+  /** Grants on that per-column schema. */
+  grants: number;
+  /** Saved filters naming the column (by column, by FK path, inside an expression) — kept, but
+   * no longer resolving. */
+  affectedFilters: number;
+}
+
+/** What a user-schema apply loses ({@link DomainApplyPlan.lost}): per dropped table, per dropped
+ * column, and per re-pointed ref (`'<table>.<column>'`) the saved filters travelling through it. */
+export interface DomainApplyLost {
+  /** Per dropped table, by logical name. */
+  tables: {[table: string]: DomainLostTable};
+  /** Per dropped column, by `'<table>.<column>'`. */
+  columns: {[address: string]: DomainLostColumn};
+  /** Per ref column whose type changed, by `'<table>.<column>'`. */
+  refs: {[address: string]: {affectedFilters: number}};
+}
+
+/** The change plan of {@link DomainSchemaClient.apply}: what a dry run answers, and what a commit
+ * answers with `applied: true` (and the access effects as resolved under the lock). On an
+ * external binding the plan is `registrationOnly` — registry rows move, the warehouse is never
+ * touched, no live counts. */
+export interface DomainApplyPlan {
+  /** The manifest version the apply registers. */
+  version: string;
+  /** Whether the plan drops data, constraints or registrations — `confirmDestructive` needed. */
+  destructive: boolean;
+  /** What the apply creates: tables by name, and per table its new columns, uniques and constraints. */
+  creates: {tables: string[]; columns: {[table: string]: string[]}; uniques: {[table: string]: string[]};
+    constraints: {[table: string]: string[]}};
+  /** What the apply drops; `liveRows` / `nonNullValues` on a platform-stored schema only. */
+  drops: {tables: {name: string; liveRows?: number}[]; columns: {table: string; column: string; nonNullValues?: number}[]};
+  /** Columns whose type changes. */
+  typeChanges: {table: string; column: string; to: string}[];
+  /** Unique constraints dropped. */
+  uniqueDrops: {table: string; column: string}[];
+  /** Columns turned required or optional, with the rows a NOT NULL would refuse. */
+  requiredToggles: {table: string; column: string; required: boolean; violatingRows: number}[];
+  /** Tables whose business key changes. */
+  businessKeyChanges: {table: string; businessKey: string[]}[];
+  /** Per table, the columns whose autonumbering changes. */
+  autoNumberChanges: {[table: string]: string[]};
+  /** Table-level toggles (audit, name column, relations, permissions), per kind. */
+  alters: {[kind: string]: unknown};
+  /** Declared constraints dropped. */
+  constraintDrops: unknown;
+  /** Data pre-checks a destructive change would violate. */
+  violations: unknown[];
+  /** Manifest issues that refuse the plan (empty on an answered plan — a refusal rejects). */
+  refusals: DomainManifestIssue[];
+  /** Restricted columns of an external target that are now key columns — visible to everyone
+   * again, since the row id encodes them. */
+  keyColumnsUnrestricted: DomainColumnTarget[];
+  /** The registered-snapshot transition with its migration scaffold; null when none applies. */
+  migration: {from: string; to: string; changes: unknown[]; up: string; down: string} | null;
+  /** External binding: registry rows only, no warehouse DDL and no row counts. */
+  registrationOnly?: true;
+  /** User-managed schema: what the drops purge or break. */
+  lost?: DomainApplyLost;
+  /** User-managed schema: the schema-level metadata that changes, `{from, to}` per key
+   * (`friendlyName`, `description`), so a rename-only plan is not empty. */
+  metadata?: {[key: string]: {from: string | null; to: string | null}};
+  /** The access effects, present when the body carried `access`. */
+  access?: DomainAccessEffects;
+  /** Set on the answer of a commit; absent on a dry run. */
+  applied?: true;
+  /** Package-managed schema: the extension version the apply moved to. */
+  extVersion?: number;
+}
+
+/** The answer of a committed {@link DomainSchemaClient.apply}: the plan, `applied`, with the
+ * access effects as resolved under the lock. */
+export type DomainApplied = DomainApplyPlan & {applied: true};
 
 /** Effective access of the CURRENT user on one domain table
  * (see `DomainTableClient.access`). Composed by the SERVER
@@ -642,8 +973,17 @@ export class DomainValidationError extends DomainError {          // code 'valid
 }
 export class DomainVersionConflictError extends DomainError {     // code 'version-conflict'
   get id(): string { return this.body['id']; }
-  get currentVersion(): number { return this.body['currentVersion']; }
-  get expectedVersion(): number { return this.body['expectedVersion']; }
+  /** The row's version as the server holds it; a schema apply's conflict carries the schema's
+   * apply counter, a string. */
+  get currentVersion(): number | string { return this.body['currentVersion']; }
+  /** The version the write named. */
+  get expectedVersion(): number | string { return this.body['expectedVersion']; }
+  /** The `ifIncarnation` a schema apply sent; present whenever the apply sent one, undefined on a
+   * row conflict. It differs from {@link currentIncarnation} only when the name was deleted and
+   * re-created since the edit was made. */
+  get expectedIncarnation(): string | undefined { return this.body['expectedIncarnation']; }
+  /** The schema's current incarnation, beside {@link expectedIncarnation}. */
+  get currentIncarnation(): string | undefined { return this.body['currentIncarnation']; }
   /** The old-value guard the write carried ({@link DomainTransactionOp.expected}), per column;
    * undefined when the conflict is a version one. */
   get expected(): {[column: string]: unknown} | undefined { return this.body['expected']; }

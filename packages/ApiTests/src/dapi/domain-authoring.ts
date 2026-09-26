@@ -87,7 +87,7 @@ category('Dapi: domain authoring', () => {
 
       const stored = await handle.manifest();
       expect(stored.name, name);
-      expect(stored.storage.kind, 'external');
+      expect(stored.storage!.kind, 'external');
       expect(Object.keys(stored.tables).sort().join(','), 'order_details,orders', JSON.stringify(stored));
       expect(stored.tables.order_details.columns.orderid.ref, 'orders');
 

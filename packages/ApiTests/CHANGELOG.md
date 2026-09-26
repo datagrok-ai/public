@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+Domains: new `Dapi: domain editing` (6 cases over a throwaway binding cloned from the `extwlive` fixture — the access snapshot's shape and tokens; access deltas in a dry run and a commit, idempotent on repeat, restrict and unrestrict; a stale `ifVersion` and a stale `ifIncarnation` after delete + re-create as typed conflicts; an Edit-only editor's `null` snapshot and `access-forbidden`; the schema-scoped `draft()` gated by the connection share; self-skipping without the fixture or the privilege); `Dapi: domain live` and `Dapi: domain hierarchy` send the required `ifVersion` on their fixture apply
+
 Domains: `Dapi: domain lifecycle` sends the required `ifVersion` on every user-schema apply, pins the `version-required` refusal without it, and edits a throwaway external binding over the extwlive tables (friendlyName, description, `storage.writable`; `storage-immutable` / `storage-conversion` refusals)
 
 Domains: new `Dapi: domain authoring` (4 cases over the stand's `NorthwindBinding:PostgresNorthwind` connection, a throwaway `auth_<random>` schema — the draft's names, keys and one ref; dry run → create → `manifest()` → `validate()` → `delete()` with `schema-name-taken` on a second dry run; `external-identifier` and `invalid-storage` refusals by path; a restricted user's 403 from `draft`; self-skipping without the connection or the privilege)

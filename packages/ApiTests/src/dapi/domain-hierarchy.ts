@@ -21,8 +21,9 @@ category('Dapi: domain hierarchy', () => {
   let skip: string | null = null;
 
   before(async () => {
+    let created: _DG.DomainSchemaCreated;
     try {
-      await grok.dapi.domains.createSchema(name, {friendlyName: 'Hierarchy probe'});
+      created = await grok.dapi.domains.createSchema(name, {friendlyName: 'Hierarchy probe'});
     } catch (e: any) {
       if (e instanceof DG.DomainError && (e.code === 'forbidden' || e.status === 403)) {
         skip = 'no CreateDomainSchema privilege';
@@ -30,7 +31,7 @@ category('Dapi: domain hierarchy', () => {
       }
       throw e;
     }
-    await grok.dapi.domains.schema(name).apply({tables: {
+    await grok.dapi.domains.schema(name).apply({ifVersion: created.version, tables: {
       folder: {
         hierarchy: true,
         businessKey: ['code'],

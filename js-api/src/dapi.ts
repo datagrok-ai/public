@@ -35,6 +35,9 @@ import {
   DOMAIN_SYSTEM_COLUMNS,
   DomainAggregateRow,
   DomainAggregateSpec,
+  DomainApplied,
+  DomainApplyBody,
+  DomainApplyPlan,
   DomainAuditEntry,
   DomainBatchOptions,
   DomainBatchReport,
@@ -58,11 +61,13 @@ import {
   DomainQueryBuilder,
   DomainQuerySpec,
   DomainReadScope,
+  DomainRegisteredManifest,
   DomainRestoreResult,
   DomainRestrictError,
   DomainRowInsert,
   DomainAccess,
   DomainSavedFilterInfo,
+  DomainSchemaAccess,
   DomainSchemaCreated,
   DomainSchemaDryRun,
   DomainSchemaValidation,
@@ -1413,9 +1418,30 @@ export class DomainSchemaClient {
     this.dart = dart;
   }
 
-  /** Full manifest reconstructed from the registry (feeds editors; doubles as export). */
-  manifest(): Promise<{[key: string]: any}> {
+  /** Full manifest reconstructed from the registry (feeds editors; doubles as export), with the
+   * `version` and `incarnation` an {@link apply} sends back ({@link DomainRegisteredManifest}). */
+  manifest(): Promise<DomainRegisteredManifest> {
     return domainCall(api.grok_Dapi_Domains_GetManifest(this.dart, this.name));
+  }
+
+  /** The lossless access snapshot of the schema for its editor ({@link DomainSchemaAccess}): per
+   * table its direct grants and its core schema's, per relational column whether it is restricted
+   * and to whom, plus the `version` and `incarnation` the snapshot was read at — all from one
+   * transaction, so the tokens and the ACLs they stand for agree. What the caller may not Share
+   * reads `null` (unknown), never empty. Requires View or Edit on the schema. The deltas an edit
+   * derives from it travel in {@link apply} as {@link DomainApplyBody.access}. */
+  access(): Promise<DomainSchemaAccess> {
+    return domainCall(api.grok_Dapi_Domains_SchemaAccess(this.dart, this.name));
+  }
+
+  /** The live catalog of this EXTERNAL binding, shaped like {@link DomainsDataSource.draft}'s
+   * answer ({@link DomainDraft}) over the binding's own connection and remote schema — what an
+   * editor compares the registered manifest with (tables and columns to add, drift on what is
+   * registered); `options.tables` narrows it to those remote tables. Needs Edit on the schema plus
+   * GetSchema and Query on the connection — no CreateDomainSchema: an editor need not be able to
+   * create. A platform-stored schema has no catalog to draft ({@link DomainUnsupportedError}). */
+  draft(options?: {tables?: string[]}): Promise<DomainDraft> {
+    return domainCall(api.grok_Dapi_Domains_DraftFor(this.dart, this.name, options?.tables ?? null));
   }
 
   /** Re-validates an external schema's binding against its warehouse and records the
@@ -1425,27 +1451,32 @@ export class DomainSchemaClient {
     return domainCall(api.grok_Dapi_Domains_ValidateSchema(this.dart, this.name));
   }
 
-  /** Applies a partial manifest; dryRun returns the change plan. Named tables replace
-   * their current definition wholesale — everything omitted comes from the registry.
-   * Destructive plans require confirmDestructive; stale ifVersion → DomainVersionConflictError;
-   * a destructive plan without confirmation → DomainError code 'destructive-confirmation-required'
-   * (the plan rides in error.body.plan).
+  /** Applies a partial manifest ({@link DomainApplyBody}); `dryRun` answers the change plan
+   * ({@link DomainApplyPlan}) and moves nothing. Named tables replace their current definition
+   * wholesale — everything omitted comes from the registry. A destructive plan requires
+   * `confirmDestructive` (else DomainError code 'destructive-confirmation-required', the plan
+   * riding in `error.body.plan`); a stale `ifVersion`, or an `ifIncarnation` from another life of
+   * the name, rejects with a {@link DomainVersionConflictError}. A literal `true` / `false` /
+   * omitted `dryRun` types the answer precisely; a boolean variable answers the union.
    *
    * On a USER-managed schema this requires Edit and `ifVersion` is REQUIRED: the `version` of
    * the manifest the edit was made against (missing → DomainError code 'version-required'); it is
    * checked again under the server's deploy lock, so of two concurrent applies exactly one commits.
    * Such an apply may also change the schema's `friendlyName` and `description`, and — on an
    * external binding — `storage.writable`; any other storage key must repeat the registered value
-   * ('storage-immutable'; the kind cannot flip, 'storage-conversion'). A dry run on a binding runs
+   * ('storage-immutable'; the kind cannot flip, 'storage-conversion'). Access changes travel in
+   * the same apply ({@link DomainAccessDelta}) and are executed in the same transaction, after the
+   * manifest change: the answer's `access` reports each op's effect. A dry run on a binding runs
    * the privilege proof and the live validation the commit runs, and answers with the same
    * refusals; its plan is `registrationOnly` (no row counts). A user-schema plan carries `lost`
-   * (counts): per dropped table its direct grants, core-schema grants, restricted columns with
-   * their grants, promoted rows with their grants and saved filters — all purged with it; per
-   * dropped column its restriction and the saved filters naming it (kept as they are). Dropping a
-   * table requires Delete on that table, dropping its columns Edit on it ('forbidden', naming the
-   * tables). Bootstrap grants go only to what an apply creates — a retained table keeps its ACL,
-   * so a custom permission newly declared on one is granted to nobody until someone with Share
-   * grants it. On a PACKAGE-managed schema it is the user-extension path: it requires
+   * ({@link DomainApplyLost}, counts): per dropped table its direct grants, core-schema grants,
+   * restricted columns with their grants, promoted rows with their grants and saved filters — all
+   * purged with it; per dropped column its restriction and the saved filters naming it (kept as
+   * they are) — and `metadata`, the `{from, to}` of a renamed schema. Dropping a table requires
+   * Delete on that table, dropping its columns Edit on it ('forbidden', naming the tables).
+   * Bootstrap grants go only to what an apply creates — a retained table keeps its ACL, so a
+   * custom permission newly declared on one is granted to nobody until someone with Share grants
+   * it. On a PACKAGE-managed schema it is the user-extension path: it requires
    * 'Extend' on the schema entity, `ifVersion` tracks `ext_version` (the plan echoes it as
    * `extVersion`) while the plugin's own version stays frozen, and the writable surface is
    * limited to objects you own — your own tables through `tables` (needs the schema's
@@ -1459,11 +1490,13 @@ export class DomainSchemaClient {
    * API surface — reads, writes, filters, and the audit trail — keeps using the logical name,
    * with the exception of raw PostgreSQL error text that quotes an identifier verbatim
    * (a constraint violation naming `fk_<table>_x_<column>`, say). */
-  apply(body: {tables?: object; extend?: {[table: string]: {columns: {[column: string]: object}}};
-               propertySchemas?: object; dropTables?: string[];
-               friendlyName?: string; description?: string; storage?: {writable?: boolean};
-               ifVersion?: string; confirmDestructive?: boolean},
-        options?: {dryRun?: boolean}): Promise<{[key: string]: any}> {
+  apply(body: DomainApplyBody, options: {dryRun: true}): Promise<DomainApplyPlan>;
+  /** The apply itself: the plan with `applied: true` and the access effects as resolved under the lock. */
+  apply(body: DomainApplyBody, options?: {dryRun?: false}): Promise<DomainApplied>;
+  /** `dryRun` decided at run time: the plan, or the applied answer. */
+  apply(body: DomainApplyBody, options?: {dryRun?: boolean}): Promise<DomainApplyPlan | DomainApplied>;
+  /** @hidden */
+  apply(body: DomainApplyBody, options?: {dryRun?: boolean}): Promise<DomainApplyPlan | DomainApplied> {
     return domainCall(api.grok_Dapi_Domains_ApplySchema(this.dart, this.name, body, options?.dryRun ?? false));
   }
 

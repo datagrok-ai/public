@@ -200,7 +200,7 @@ category('Dapi: domain lifecycle', () => {
       const edited: any = (await grok.dapi.domains.schemas.list()).find((s) => s.name === name)!;
       expect(edited.friendlyName, 'Binding renamed');
       expect(edited.description, 'edited');
-      expect((await handle.manifest())['storage']['writable'], true);
+      expect((await handle.manifest()).storage!.writable, true);
 
       // Off-vocabulary storage keys on purpose: the identity of a binding is not editable.
       const current = await version();
@@ -210,7 +210,7 @@ category('Dapi: domain lifecycle', () => {
       expect(rebind.code, 'storage-immutable');
       const flip = await thrown(() => handle.apply({storage: {kind: 'domain'}, ifVersion: current} as any));
       expect(flip.code, 'storage-conversion');
-      expect((await handle.manifest())['storage']['writable'], true);
+      expect((await handle.manifest()).storage!.writable, true);
     } finally {
       await handle.delete();
     }
