@@ -9,10 +9,15 @@ import {ManifestRules} from './manifest-rules.js';
 import {fieldOffer} from './editor-context.js';
 
 export {ManifestEditor, ManifestModel, AccessModel, ManifestTree, ManifestContextPanel, ManifestRules, fieldOffer};
-export type {ManifestEditorOptions, ManifestPlan, PlannedGrant, PlannedRestriction} from './manifest-editor.js';
+export type {ManifestEditorOptions, ManifestPlan, PlannedGrant, PlannedRestriction, ApplyPayload, ApplyAccess,
+  EditPlan} from './manifest-editor.js';
 export type {DraftEnvelope, DraftInventory, InventoryTable, InventoryColumn, InventoryRelation, ManifestJson,
   ManifestTableJson, ManifestColumnJson, ManifestStorageJson, ManifestDiagnostic, ManifestSelection, TableView,
-  ColumnView, RelationView, AccessGrant, AccessCapability, ColumnVisibility, AccessJson} from './manifest-model.js';
+  ColumnView, RelationView, DriftView, ManifestChange, ManifestPatch, RebaseOp, RebaseReport, ManifestModelOptions,
+  AccessGrant, AccessCapability, ColumnVisibility, AccessJson, AccessSnapshot, AccessSnapshotTable,
+  AccessSnapshotColumn, AccessSnapshotGrant, AccessSnapshotGroup, AccessDelta, AccessTriple, AccessRestriction,
+  AccessEditOptions}
+  from './manifest-model.js';
 export type {ManifestTreeOptions, ManifestNode} from './manifest-tree.js';
 export type {ManifestContextPanelOptions, PrincipalPicker} from './manifest-panel.js';
 export type {EditorContext, EditorMode, EditorStorage, FieldOffer} from './editor-context.js';

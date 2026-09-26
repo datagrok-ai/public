@@ -206,7 +206,9 @@ export function sectionsPage(): HTMLElement {
       {id: 'review', title: 'Review', content: () => divV([span(computed(() =>
         `Creating "${project.value.value}" for ${targets.value.value.join(', ') || 'no target'}.`))])},
     ],
-    onFinish: () => finished.value = 'finished',
+    onFinish: () => {
+      finished.value = 'finished';
+    },
   });
 
   return divV([

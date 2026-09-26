@@ -28,7 +28,7 @@ import {ObjectForm} from '../../forms/object-form.js';
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {fieldOffer} from './editor-context.js';
 import {AccessModel, ManifestModel} from './manifest-model.js';
-import type {AccessGrant, AccessPrincipal, AccessScope, ColumnView, ManifestDiagnostic, ManifestSelection,
+import type {AccessGrant, AccessPrincipal, AccessScope, ColumnView, DriftView, ManifestDiagnostic, ManifestSelection,
   RelationView} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 
@@ -116,7 +116,12 @@ export class ManifestContextPanel extends Control {
         onChanged: (v) => model.setSchemaName(v), ...hint});
       input.addValidator((v) => model.checkSchemaName(v));
       return input;
-    }, `registered as ext_${name}`);
+    }, `registered as ext_${name}`, this.offer.identifier);
+    if (this.offer.description) {
+      const description = model.description.peek();
+      this._field(form, 'Description', 'description', description, () => new TextInput({label: 'Description',
+        name: 'description', value: description, commitOn: 'change', onChanged: (v) => model.setDescription(v)}));
+    }
     const writable = model.writable.peek();
     if (this.offer.writable) {
       const hint = this._writableDisabled;
@@ -127,10 +132,24 @@ export class ManifestContextPanel extends Control {
     }
     form.addElement(ManifestContextPanel._note('Queries run as the platform service with the connection\'s ' +
       'stored credentials; users need View on a table, nothing on the connection.'));
+    if (model.editing && model.catalog === 'unknown') {
+      form.addElement(ManifestContextPanel._note('The warehouse catalog could not be read: the registered tables ' +
+        'and columns are shown as they were, nothing is marked missing, and no new table is offered.'));
+    }
     const access = new Section({title: 'Access — every table', collapsible: false});
-    access.add(this._accessGrid(SCHEMA, [ManifestContextPanel._creator()], writable ? [] : ['edit', 'delete']));
-    access.add(ManifestContextPanel._note('Applied after Create as the same grant on every included table — ' +
-      'there is no schema-wide row access. Edit and Delete need a writable binding.'));
+    const locked = writable ? [] : ['edit', 'delete'];
+    if (this._access.editing) {
+      const tables = model.tables.peek().filter((t) => t.included).map((t) => t.remote);
+      access.add(this._accessGrid('schema', this._access.everyTable(tables), [], locked,
+        (rows) => this._access.setEveryTable(tables, rows)));
+      access.add(ManifestContextPanel._note('What every included table you may share grants alike; a change here ' +
+        'is written on each of them, and a table\'s own rows are edited on its panel.'));
+    } else {
+      access.add(this._accessGrid('schema', this._access.grantsOf(SCHEMA).peek(), [ManifestContextPanel._creator()],
+        locked, (rows) => this._access.setGrants(SCHEMA, rows)));
+      access.add(ManifestContextPanel._note('Applied after Create as the same grant on every included table — ' +
+        'there is no schema-wide row access. Edit and Delete need a writable binding.'));
+    }
     return [ManifestContextPanel._title('Schema', name), form, access];
   }
 
@@ -142,12 +161,15 @@ export class ManifestContextPanel extends Control {
     const title = ManifestContextPanel._title('Table', remote);
     if (!table.included) {
       const status = !table.bindable ? ManifestTree.shortReason(table.code) :
-        table.drafted ? 'not included' : 'not in this draft';
+        table.drafted ? (table.registered ? 'removed' : 'not included') : 'not in this draft';
       title.append(badge(status, {variant: table.bindable ? 'warning' : 'error'}),
-        span(table.reason ?? 'check it in the tree to expose it', 'u2-manifest-node-hint'));
+        span(!table.bindable || !table.drafted ? table.reason ?? '' :
+          table.registered ? 'unregistered on Save — its grants, restrictions and saved filters go with it' :
+            'check it in the tree to expose it', 'u2-manifest-node-hint'));
       if (!table.bindable || !table.drafted)
         return [title];
-    }
+    } else
+      ManifestContextPanel._drift(title, table.drift);
     const columns = model.columns(remote).peek();
     const form = new Form({layout: 'wide'});
     this._field(form, 'Logical name', 'logical', table.logical, () => {
@@ -155,7 +177,7 @@ export class ManifestContextPanel extends Control {
         onChanged: (v) => model.renameTable(remote, v)});
       input.addValidator((v) => model.checkTableName(remote, v));
       return input;
-    });
+    }, table.registered ? 'registered — a logical name is for life' : undefined, !table.registered);
     this._field(form, 'Friendly name', 'friendlyName', table.friendlyName, () => new TextInput({label: 'Friendly name',
       name: 'friendlyName', value: table.friendlyName, commitOn: 'change',
       onChanged: (v) => model.setFriendlyName(remote, v)}));
@@ -190,13 +212,28 @@ export class ManifestContextPanel extends Control {
     }
     for (const r of rels)
       relations.add(this._relation(r, `${r.column} → ${r.targetTable}`));
-    const schemaGrants = this._access.grantsOf(SCHEMA).peek();
-    const schemaRows = schemaGrants
-      .map((g): InheritedAccessRow => ({...ManifestContextPanel._row(g), from: '(every table)'}));
+    const scope: AccessScope = {kind: 'table', table: remote};
+    const rows = this._access.grantsOf(scope).peek();
     const locked = model.writes(table) ? [] : ['edit', 'delete'];
     const access = new Section({title: 'Access — this table', collapsible: false});
-    access.add(this._accessGrid({kind: 'table', table: remote}, [ManifestContextPanel._creator(), ...schemaRows],
-      locked, schemaGrants.map((g) => g.group)));
+    if (this._access.editing) {
+      const editable = this._access.canEdit(scope);
+      access.add(this._accessGrid(remote, rows, [], locked, (changed) => this._access.setGrants(scope, changed),
+        {enabled: editable}));
+      if (!editable) {
+        access.add(ManifestContextPanel._note(table.registered ?
+          'You cannot share this table: its grants cannot be read here and stay as they are.' :
+          'Access cannot be read — it stays as it is.'));
+      }
+      for (const g of rows.filter((g) => (g.other ?? []).length > 0))
+        access.add(ManifestContextPanel._note(`${g.group.label} also holds ${g.other!.join(', ')} — kept as is.`));
+    } else {
+      const schemaGrants = this._access.grantsOf(SCHEMA).peek();
+      const schemaRows = schemaGrants
+        .map((g): InheritedAccessRow => ({...ManifestContextPanel._row(g), from: '(every table)'}));
+      access.add(this._accessGrid(remote, rows, [ManifestContextPanel._creator(), ...schemaRows], locked,
+        (changed) => this._access.setGrants(scope, changed), {inheritedGroups: schemaGrants.map((g) => g.group)}));
+    }
     return [title, form, relations, access];
   }
 
@@ -210,17 +247,21 @@ export class ManifestContextPanel extends Control {
       title.append(badge('not bindable', {variant: 'error'}), span(column.reason ?? '', 'u2-manifest-node-hint'));
       return [title];
     }
+    ManifestContextPanel._drift(title, column.drift);
     const form = new Form({layout: 'wide'});
     this._field(form, 'Logical name', 'logical', column.logical, () => {
       const input = new TextInput({label: 'Logical name', name: 'logical', value: column.logical, commitOn: 'change',
         onChanged: (v) => model.renameColumn(table, remote, v)});
       input.addValidator((v) => model.checkColumnName(table, remote, v));
       return input;
-    });
+    }, column.registered ? 'registered — a logical name is for life' : undefined, !column.registered);
     const type = column.type === 'ref' ? `ref → ${column.relations.find((r) => r.ref)?.targetLogical ?? ''}` :
       column.type;
-    form.addElement(ObjectForm.readonlyField('Type', 'type',
-      column.dbType === undefined ? type : `${type} ← ${column.dbType}`).row);
+    const typeField = ObjectForm.readonlyField('Type', 'type',
+      column.dbType === undefined ? type : `${type} ← ${column.dbType}`);
+    if (column.drift !== undefined && column.drift.kind !== 'unknown')
+      typeField.value.append(ManifestContextPanel._hint(column.drift.reason));
+    form.addElement(typeField.row);
     if (this.offer.required) {
       this._field(form, 'Required', 'required', column.required ? 'Yes' : 'No', (hint) => new BoolInput({
         label: 'Required', name: 'required', value: column.required, enabled: !column.isKey,
@@ -259,12 +300,19 @@ export class ManifestContextPanel extends Control {
       return section;
     }
     const access = this._access;
-    const current = access.visibilityOf(table, remote);
-    if (!this.offer.editable) {
-      section.add(ManifestContextPanel._note(current === null ? EVERYONE :
-        `${SOME}: ${current.length === 0 ? 'none yet' : current.map((g) => g.label).join(', ')}`));
+    const entry = access.columnOf(table, remote);
+    const current = entry?.groups ?? null;
+    if (!this.offer.editable || !access.canEditColumn(table, remote) || entry?.unknown === true) {
+      section.add(ManifestContextPanel._note(entry?.unknown === true ?
+        `${SOME} — which ones cannot be read here; it stays as it is` :
+        current === null ? EVERYONE :
+          `${SOME}: ${current.length === 0 ? 'none yet' : current.map((g) => g.label).join(', ')}`));
+      if (this.offer.editable && !access.canEditColumn(table, remote))
+        section.add(ManifestContextPanel._note('You cannot share this table\'s columns: the visibility stays as it is.'));
       return section;
     }
+    if (entry?.edit !== undefined && entry.edit.length > 0)
+      section.add(ManifestContextPanel._note(`May also edit it: ${entry.edit.map((g) => g.label).join(', ')}.`));
     const some = signal(current !== null);
     const radio = new RadioInput({label: 'Visible to', name: 'visibility', items: [EVERYONE, SOME],
       value: current === null ? EVERYONE : SOME, nullable: false,
@@ -291,38 +339,46 @@ export class ManifestContextPanel extends Control {
       chips.box.append(picker);
       chips.effect(() => picker.style.display = some.value ? '' : 'none');
     }
-    section.add(form, ManifestContextPanel._note('Applied after Create as a column restriction; a restricted ' +
-      'column is absent from every other user\'s reads, filters and forms.'));
+    section.add(form, ManifestContextPanel._note(access.editing ?
+      'A restricted column is absent from every other user\'s reads, filters and forms; a group let in gets View, ' +
+      'and Edit where it may edit the table.' :
+      'Applied after Create as a column restriction; a restricted column is absent from every other user\'s ' +
+      'reads, filters and forms.'));
     return section;
   }
 
   private _relation(r: RelationView, caption: string): HTMLElement {
     const row = div([span(caption), badge(r.ref ? 'ref' : 'plain value', {variant: r.ref ? 'accent' : 'warning'}),
       span(r.reason, 'u2-manifest-relation-why')], 'u2-manifest-relation');
-    if (r.canFix && this.offer.editable)
+    if (!this.offer.editable)
+      return row;
+    if (r.canFix)
       row.append(link(`include ${r.targetTable}`, () => this.model.includeTable(r.targetTable, true)));
+    else if (r.suggested)
+      row.append(link('make it a ref', () => this.model.setRef(r.table, r.column, true)));
+    else if (r.promoted)
+      row.append(link('keep it a plain value', () => this.model.setRef(r.table, r.column, false)));
     return row;
   }
 
-  /** `inheritedGroups` label the inherited rows, which carry group ids alone. */
-  private _accessGrid(scope: AccessScope, inherited: InheritedAccessRow[], locked: string[],
-    inheritedGroups: AccessPrincipal[] = []): AccessGrid {
-    const access = this._access;
-    const rows = access.grantsOf(scope).peek();
-    const known = this._known([...rows.map((g) => g.group), ...inheritedGroups]);
+  /** The grid over [rows], handing every change to [onChanged] with the groups resolved;
+   * `inheritedGroups` label the inherited rows, which carry group ids alone. */
+  private _accessGrid(name: string, rows: Omit<AccessGrant, 'scope'>[], inherited: InheritedAccessRow[],
+    locked: string[], onChanged: (rows: Omit<AccessGrant, 'scope'>[]) => void,
+    options: {inheritedGroups?: AccessPrincipal[], enabled?: boolean} = {}): AccessGrid {
+    const known = this._known([...rows.map((g) => g.group), ...(options.inheritedGroups ?? [])]);
     const picker = this._picker;
-    const grid = new AccessGrid({name: `access-${scope.kind === 'schema' ? 'schema' : scope.table}`, inline: true,
+    return new AccessGrid({name: `access-${name}`, inline: true,
       capabilities: CAPABILITIES, principals: known.map(ManifestContextPanel._item), inherited, locked,
-      enabled: this.offer.editable, value: rows.map((g) => ManifestContextPanel._row(g)),
+      enabled: this.offer.editable && options.enabled !== false, value: rows.map((g) => ManifestContextPanel._row(g)),
       picker: picker === undefined ? undefined : (add) => picker((principal) => {
         if (!known.some((g) => g.id === principal.id))
           known.push(principal);
         add({value: principal.id, label: principal.label});
       }),
-      onChanged: (changed) => access.setGrants(scope, changed.map((r) => ({
+      onChanged: (changed) => onChanged(changed.map((r) => ({
         group: known.find((g) => g.id === r.principal)!,
         view: r.can.view === true, edit: r.can.edit === true, delete: r.can.delete === true})))});
-    return grid;
   }
 
   /** The offered groups plus the ones already granted — a row reopened from elsewhere keeps its label. */
@@ -334,11 +390,12 @@ export class ManifestContextPanel extends Control {
     return {value: g.id, label: g.label};
   }
 
-  /** An editor where the offer allows an edit, the value as text otherwise; the hint sits on the
-   * same line, after the editor — the input's postfix, or a span after the text. */
+  /** An editor where the offer allows an edit — and the field is not `locked` for this item — the
+   * value as text otherwise; the hint sits on the same line, after the editor — the input's
+   * postfix, or a span after the text. */
   private _field(form: Form, label: string, name: string, text: string,
-    build: (hint: {postfix?: string}) => Input<any>, hint?: string): void {
-    if (this.offer.editable)
+    build: (hint: {postfix?: string}) => Input<any>, hint?: string, editable = true): void {
+    if (this.offer.editable && editable)
       form.add(build(hint === undefined ? {} : {postfix: hint}));
     else {
       const field = ObjectForm.readonlyField(label, name, text);
@@ -352,8 +409,15 @@ export class ManifestContextPanel extends Control {
     return span(text, 'u2-manifest-panel-hint');
   }
 
-  private static _row(g: AccessGrant): AccessRow {
+  private static _row(g: Omit<AccessGrant, 'scope'>): AccessRow {
     return {principal: g.group.id, can: {view: g.view, edit: g.edit, delete: g.delete}};
+  }
+
+  /** The catalog's verdict on a registered item, on its title, with its reason. */
+  private static _drift(title: HTMLElement, drift: DriftView | undefined): void {
+    const label = ManifestTree.driftLabel(drift);
+    if (label !== null)
+      title.append(badge(label, {variant: drift!.blocks ? 'error' : 'warning'}), span(drift!.reason, 'u2-manifest-node-hint'));
   }
 
   private static _creator(): InheritedAccessRow {

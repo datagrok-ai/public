@@ -11,7 +11,7 @@ import {VirtualTree} from '../../../components/collections/tree.js';
 import type {TreeNode} from '../../../components/collections/tree.js';
 import {badge} from '../../../components/display/badge.js';
 import {ManifestModel} from './manifest-model.js';
-import type {ColumnView, ManifestDiagnostic, ManifestSelection, TableView} from './manifest-model.js';
+import type {ColumnView, DriftView, ManifestDiagnostic, ManifestSelection, TableView} from './manifest-model.js';
 
 export interface ManifestNode {
   selection: ManifestSelection;
@@ -143,6 +143,7 @@ export class ManifestTree extends Control {
     const table = data.table;
     if (table !== undefined && (!table.included || column?.included === false))
       el.classList.add('u2-manifest-node-excluded');
+    const editing = this.model.editing;
     if (column !== undefined) {
       el.append(span(column.supported ? column.type : `${column.dbType ?? ''} · not bindable`,
         'u2-manifest-node-hint'));
@@ -152,6 +153,9 @@ export class ManifestTree extends Control {
         el.append(badge(`→ ${relation.targetTable}`, {variant: relation.ref ? 'accent' : 'warning'}));
       if (column.isName)
         el.append(badge('name', {variant: 'success'}));
+      if (editing && column.supported && !column.registered)
+        el.append(badge('new', {variant: 'accent'}));
+      ManifestTree._drift(el, column.drift);
     } else if (table !== undefined) {
       if (table.included && table.logical !== table.remote)
         el.append(span(`· ${table.logical}`, 'u2-manifest-node-hint'));
@@ -161,9 +165,30 @@ export class ManifestTree extends Control {
         el.append(badge('not in this draft', {variant: 'warning'}));
       else if (table.included)
         el.append(badge(table.key.join(', ')));
-    } else
+      if (editing && table.drafted && !table.registered)
+        el.append(badge('new', {variant: 'accent'}));
+      ManifestTree._drift(el, table.drift);
+    } else {
       el.append(span(`over ${this.model.storage?.schema ?? ''}`, 'u2-manifest-node-hint'));
+      if (editing && this.model.catalog === 'unknown')
+        el.append(badge('catalog not read', {variant: 'warning'}));
+    }
     return el;
+  }
+
+  /** What the catalog says about a registered item, as a badge label; null for "unknown", which is
+   * said once, on the schema. */
+  static driftLabel(drift: DriftView | undefined): string | null {
+    if (drift === undefined || drift.kind === 'unknown')
+      return null;
+    return drift.kind === 'missing' ? 'missing remotely' : drift.kind === 'unbindable' ? 'not bindable' :
+      drift.kind === 'key' ? 'key changed' : 'type changed';
+  }
+
+  private static _drift(el: HTMLElement, drift: DriftView | undefined): void {
+    const label = ManifestTree.driftLabel(drift);
+    if (label !== null)
+      el.append(badge(label, {variant: drift!.blocks ? 'error' : 'warning'}));
   }
 
   private _check(node: ManifestNode, checked: boolean): void {

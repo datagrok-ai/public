@@ -113,13 +113,14 @@ test('an excluded column is dropped; a key column stays; required, writable and 
   assert.equal(column(model, 'orders', 'shipaddress').included, false, 'still shown, unchecked');
 
   model.setReadOnly('order_details', true);
-  assert.equal(model.toJSON().tables.order_details.writable, undefined, 'no opt-out under a read-only storage');
+  assert.equal(model.toJSON().tables.order_details.writable, false, 'a dormant opt-out is kept under a read-only storage');
   model.setWritable(true);
   json = model.toJSON();
   assert.equal(json.storage.writable, true);
   assert.equal(json.tables.order_details.writable, false);
   model.setWritable(false);
   assert.deepEqual(model.toJSON().storage, DRAFT.manifest.storage);
+  assert.equal(model.toJSON().tables.order_details.writable, false, 'and survives writable off');
 });
 
 test('the inventory is shown, never submitted: unsupported columns, unbindable tables, warehouse types', () => {
@@ -246,8 +247,11 @@ test('the field offer: the external vocabulary under create and view; the other 
   assert.deepEqual([create.defaultValue, create.autoNumber, create.immutable, create.unique, create.choices],
     [false, false, false, false, false]);
   assert.equal(fieldOffer({mode: 'view', storage: 'external'}).editable, false);
+  assert.deepEqual([create.identifier, create.description], [true, false]);
+  const edit = fieldOffer({mode: 'edit', storage: 'external'});
+  assert.deepEqual([edit.editable, edit.identifier, edit.description, edit.type, edit.writable], [true, false, true, 'readonly', true]);
   assert.throws(() => fieldOffer({mode: 'create', storage: 'domain'}), /not built yet/);
-  assert.throws(() => fieldOffer({mode: 'edit', storage: 'external'}), /"edit" mode is not built yet/);
+  assert.throws(() => fieldOffer({mode: 'extend', storage: 'external'}), /"extend" mode is not built yet/);
 });
 
 test('the identifier follows the friendly name, harmonized and free of the registered names, until set by hand', () => {

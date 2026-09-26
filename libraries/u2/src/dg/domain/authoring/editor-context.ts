@@ -2,7 +2,9 @@
    vocabulary — what the parser accepts for a table and a column — and the editor CONTEXT decides
    what may be changed here: create, edit, view, extend. Nothing in the editor branches on who
    made the schema. Only the arms this feature ships are built; the others refuse by name so a
-   later feature fills them in rather than inheriting a wrong offer silently. */
+   later feature fills them in rather than inheriting a wrong offer silently. What edit mode locks
+   per item — the logical names and remote mappings of registered tables and columns — the model
+   decides by baseline membership; the offer holds only the schema-wide locks. */
 
 export type EditorMode = 'create' | 'edit' | 'view' | 'extend';
 export type EditorStorage = 'external' | 'domain';
@@ -15,6 +17,10 @@ export interface EditorContext {
 export interface FieldOffer {
   /** Whether anything may be changed at all — `view` shows every field as text. */
   editable: boolean;
+  /** The schema identifier may be set (a registered one is locked). */
+  identifier: boolean;
+  /** The schema description travels with the change (the entity's, beside the friendly name). */
+  description: boolean;
   /** The mapped type is read-only (external: the draft owns the mapping). */
   type: 'readonly' | 'editable';
   /** Refs come from the warehouse's foreign keys, never from an edit. */
@@ -35,7 +41,7 @@ export interface FieldOffer {
 }
 
 export function fieldOffer(context: EditorContext): FieldOffer {
-  let vocabulary: Omit<FieldOffer, 'editable'>;
+  let vocabulary: Omit<FieldOffer, 'editable' | 'identifier' | 'description'>;
   switch (context.storage) {
   case 'external':
     vocabulary = {type: 'readonly', refs: 'relations', remoteNames: true, writable: true, required: true,
@@ -49,10 +55,11 @@ export function fieldOffer(context: EditorContext): FieldOffer {
   }
   switch (context.mode) {
   case 'create':
-    return {editable: true, ...vocabulary};
-  case 'view':
-    return {editable: false, ...vocabulary};
+    return {editable: true, identifier: true, description: false, ...vocabulary};
   case 'edit':
+    return {editable: true, identifier: false, description: true, ...vocabulary};
+  case 'view':
+    return {editable: false, identifier: false, description: false, ...vocabulary};
   case 'extend':
     throw new Error(`u2: the manifest editor's "${context.mode}" mode is not built yet`);
   default:
