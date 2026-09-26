@@ -401,12 +401,17 @@ grok s domains audit inventory --limit 50                        # DDL and row e
 grok s domains delete inventory --force                          # purge: data, audit, registry, grants
 ```
 
-`schema.json` may be a full manifest or a partial apply body — only `tables`, `extend`,
-`propertySchemas` and `dropTables` are sent; `name`, `version` and `description` are dropped.
-Named tables replace their definition wholesale; untouched tables stay as the registry has
-them. A plan that drops or narrows anything is refused until `--confirm-destructive` is
-passed, and the plan is printed with the refusal. `--if-version` fails the apply when the
-schema's apply counter (or `ext_version` on a package schema) has moved. Package-deployed
+`schema.json` may be a full manifest or a partial apply body — `tables`, `extend`,
+`propertySchemas` and `dropTables` are sent, plus `friendlyName`, `description` and `storage`
+when the schema is user-managed (`name` is dropped; `version` becomes `ifVersion` unless
+`--if-version` says otherwise). Named tables
+replace their definition wholesale; untouched tables stay as the registry has them. A plan
+that drops or narrows anything is refused until `--confirm-destructive` is passed, and the
+plan is printed with the refusal. `--if-version` fails the apply when the schema's apply
+counter (or `ext_version` on a package schema) has moved; a user-managed schema REQUIRES the
+token (the server answers `version-required` without it) — pass the version the edit was made
+against, or `--if-version current` to take the one registered right now. Dropping a table
+needs Delete on that table, dropping its columns Edit on it. Package-deployed
 schemas cannot be applied to or deleted here — `apply` on one is the user-extension path
 (needs `Extend`), and the manifest is owned by `grok publish`. `delete <schema>` requires
 `--force` because it takes every row with it.

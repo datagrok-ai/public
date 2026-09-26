@@ -1431,8 +1431,21 @@ export class DomainSchemaClient {
    * a destructive plan without confirmation → DomainError code 'destructive-confirmation-required'
    * (the plan rides in error.body.plan).
    *
-   * On a USER-managed schema this requires Edit and `ifVersion` tracks the schema's apply
-   * counter. On a PACKAGE-managed schema it is the user-extension path: it requires
+   * On a USER-managed schema this requires Edit and `ifVersion` is REQUIRED: the `version` of
+   * the manifest the edit was made against (missing → DomainError code 'version-required'); it is
+   * checked again under the server's deploy lock, so of two concurrent applies exactly one commits.
+   * Such an apply may also change the schema's `friendlyName` and `description`, and — on an
+   * external binding — `storage.writable`; any other storage key must repeat the registered value
+   * ('storage-immutable'; the kind cannot flip, 'storage-conversion'). A dry run on a binding runs
+   * the privilege proof and the live validation the commit runs, and answers with the same
+   * refusals; its plan is `registrationOnly` (no row counts). A user-schema plan carries `lost`
+   * (counts): per dropped table its direct grants, core-schema grants, restricted columns with
+   * their grants, promoted rows with their grants and saved filters — all purged with it; per
+   * dropped column its restriction and the saved filters naming it (kept as they are). Dropping a
+   * table requires Delete on that table, dropping its columns Edit on it ('forbidden', naming the
+   * tables). Bootstrap grants go only to what an apply creates — a retained table keeps its ACL,
+   * so a custom permission newly declared on one is granted to nobody until someone with Share
+   * grants it. On a PACKAGE-managed schema it is the user-extension path: it requires
    * 'Extend' on the schema entity, `ifVersion` tracks `ext_version` (the plan echoes it as
    * `extVersion`) while the plugin's own version stays frozen, and the writable surface is
    * limited to objects you own — your own tables through `tables` (needs the schema's
@@ -1448,6 +1461,7 @@ export class DomainSchemaClient {
    * (a constraint violation naming `fk_<table>_x_<column>`, say). */
   apply(body: {tables?: object; extend?: {[table: string]: {columns: {[column: string]: object}}};
                propertySchemas?: object; dropTables?: string[];
+               friendlyName?: string; description?: string; storage?: {writable?: boolean};
                ifVersion?: string; confirmDestructive?: boolean},
         options?: {dryRun?: boolean}): Promise<{[key: string]: any}> {
     return domainCall(api.grok_Dapi_Domains_ApplySchema(this.dart, this.name, body, options?.dryRun ?? false));

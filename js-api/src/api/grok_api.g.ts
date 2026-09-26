@@ -1310,6 +1310,7 @@ export interface IDartApi {
   grok_DomainSchema_Get_PgSchema(s: any): any;
   grok_DomainSchema_Get_ManagedBy(s: any): any;
   grok_DomainSchema_Get_Version(s: any): any;
+  grok_DomainSchema_Get_Description(s: any): any;
   grok_DomainSchema_Get_Tables(s: any): any;
   grok_DomainTable_Get_Schema(t: any): any;
   grok_DomainTable_Get_SecurityMode(t: any): any;

@@ -123,9 +123,15 @@ category('Dapi: domain lifecycle', () => {
     const handle = grok.dapi.domains.schema(name);
     try {
       const tables = {things: {columns: {name: {type: 'string', required: true}, qty: {type: 'int'}}}};
-      const plan = await handle.apply({tables}, {dryRun: true});
+      // A user-schema apply names the version it was edited against.
+      const version = async () => `${(await handle.manifest())['version']}`;
+      const missing = await thrown(() => handle.apply({tables}, {dryRun: true}));
+      expect(missing instanceof DG.DomainError, true,
+        `expected DomainError, got ${missing?.constructor?.name}: ${missing?.message}`);
+      expect(missing.code, 'version-required');
+      const plan = await handle.apply({tables, ifVersion: await version()}, {dryRun: true});
       expect(plan != null, true, 'dryRun must return the change plan');
-      await handle.apply({tables});
+      await handle.apply({tables, ifVersion: await version()});
 
       const manifest = await handle.manifest();
       expect(manifest['tables']?.['things'] != null, true, JSON.stringify(manifest));
@@ -147,7 +153,8 @@ category('Dapi: domain lifecycle', () => {
         `expected DomainVersionConflictError, got ${stale?.constructor?.name}: ${stale?.message}`);
 
       // Destructive apply without confirmation → typed error carrying the plan.
-      const destructive = await thrown(() => handle.apply({dropTables: ['things']}));
+      const current = await version();
+      const destructive = await thrown(() => handle.apply({dropTables: ['things'], ifVersion: current}));
       expect(destructive instanceof DG.DomainError, true,
         `expected DomainError, got ${destructive?.constructor?.name}: ${destructive?.message}`);
       expect(destructive.code, 'destructive-confirmation-required');
@@ -157,6 +164,56 @@ category('Dapi: domain lifecycle', () => {
     }
     const schemas = await grok.dapi.domains.schemas.list();
     expect(schemas.some((s) => s.name === name), false, 'deleted schema must not be listed');
+  });
+
+  test('external binding apply: friendlyName, description and storage.writable; the identity is immutable', async () => {
+    // A throwaway binding over the same scratch tables the extwlive fixture binds
+    // (test_db; nothing below writes them) — skips without the fixture or the privilege.
+    const schemas = await grok.dapi.domains.schemas.list();
+    if (!schemas.some((s) => s.name === 'extwlive')) {
+      console.log('skipped: the extwlive fixture is not registered');
+      return;
+    }
+    const manifest: any = await grok.dapi.domains.schema('extwlive').manifest();
+    delete manifest['storage']['writable'];
+    for (const t of Object.values(manifest['tables'] as {[name: string]: any}))
+      delete t['writable'];
+    const name = `zzeb${`${Date.now()}`.slice(-8)}`;
+    try {
+      await grok.dapi.domains.createSchema(name, {friendlyName: 'Binding probe', manifest});
+    } catch (e: any) {
+      if (e instanceof DG.DomainError && (e.code === 'forbidden' || e.status === 403)) {
+        console.log('skipped: no CreateDomainSchema privilege');
+        return;
+      }
+      throw e;
+    }
+    const handle = grok.dapi.domains.schema(name);
+    try {
+      const version = async () => `${(await handle.manifest())['version']}`;
+      const plan = await handle.apply({friendlyName: 'Binding renamed', description: 'edited',
+        storage: {writable: true}, ifVersion: await version()}, {dryRun: true});
+      expect(plan['registrationOnly'], true);
+      expect(plan['lost'] != null, true, JSON.stringify(plan));
+      await handle.apply({friendlyName: 'Binding renamed', description: 'edited',
+        storage: {writable: true}, ifVersion: await version()});
+      const edited: any = (await grok.dapi.domains.schemas.list()).find((s) => s.name === name)!;
+      expect(edited.friendlyName, 'Binding renamed');
+      expect(edited.description, 'edited');
+      expect((await handle.manifest())['storage']['writable'], true);
+
+      // Off-vocabulary storage keys on purpose: the identity of a binding is not editable.
+      const current = await version();
+      const rebind = await thrown(() => handle.apply({storage: {schema: 'elsewhere'}, ifVersion: current} as any));
+      expect(rebind instanceof DG.DomainError, true,
+        `expected DomainError, got ${rebind?.constructor?.name}: ${rebind?.message}`);
+      expect(rebind.code, 'storage-immutable');
+      const flip = await thrown(() => handle.apply({storage: {kind: 'domain'}, ifVersion: current} as any));
+      expect(flip.code, 'storage-conversion');
+      expect((await handle.manifest())['storage']['writable'], true);
+    } finally {
+      await handle.delete();
+    }
   });
 
   test('table grants: list, grant, revoke round-trip', async () => {

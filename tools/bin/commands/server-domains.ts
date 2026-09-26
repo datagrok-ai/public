@@ -6,6 +6,8 @@ import {NodeDapi, DomainAddress, parseDomainAddress} from '../utils/node-dapi';
 import {printOutput, printError, csvCell, OutputFormat} from '../utils/server-output';
 
 const APPLY_KEYS = ['tables', 'extend', 'propertySchemas', 'dropTables', 'ifVersion', 'confirmDestructive'];
+/** Accepted by a user-managed schema's apply only; a package schema refuses them as unknown keys. */
+const USER_APPLY_KEYS = ['friendlyName', 'description', 'storage'];
 const PERMISSIONS = ['View', 'Edit', 'Delete', 'Share', 'Extend'];
 
 const USAGE = `Usage: grok s domains <verb> [args]
@@ -169,9 +171,18 @@ export async function handleDomains(dapi: NodeDapi, verb: string | undefined, re
       return true;
     }
     case 'apply': {
-      if (!args[0] || !argv.json) return usage('apply <schema> --json manifest.json [--dry-run] [--confirm-destructive] [--if-version <v>]');
+      if (!args[0] || !argv.json) return usage('apply <schema> --json manifest.json [--dry-run] [--confirm-destructive] [--if-version <v>|current]');
       const a = parseDomainAddress(args[0], {table: false});
-      const body = applyBody(readJson(argv.json), argv);
+      const json = readJson(argv.json);
+      // One registry read, only when the token or the metadata keys depend on who manages the schema.
+      const s = argv['if-version'] === undefined || argv['if-version'] === 'current'
+        || USER_APPLY_KEYS.some((k) => json?.[k] !== undefined) ? await domains.schema(a.schema) : null;
+      const body = applyBody(json, argv, {userManaged: s?.managedBy === 'user'});
+      if (body.ifVersion === 'current')
+        body.ifVersion = String(s!.version ?? '1');
+      else if (body.ifVersion === undefined && s!.managedBy === 'user')
+        return usage(`apply ${a.schema} --json manifest.json --if-version <v>|current — a user-managed schema ` +
+          'requires the version the edit was made against (the "version" of the manifest JSON is used when present)');
       printJson(await domains.applySchema(a.schema, body, argv['dry-run'] === true), output, (r) => r?.version);
       return true;
     }
@@ -257,13 +268,15 @@ function aggregateSpec(argv: any, filter: string, limit: number | undefined): Re
   return spec;
 }
 
-/** The apply payload from a schema.json (or a partial body): only the keys the server accepts, flags folded in. */
-export function applyBody(json: any, argv: any): Record<string, any> {
+/** The apply payload from a schema.json (or a partial body): only the keys the server accepts
+ * (the schema's metadata and storage keys for a user-managed schema only), flags folded in. */
+export function applyBody(json: any, argv: any, options: {userManaged?: boolean} = {}): Record<string, any> {
   const body: Record<string, any> = {};
-  for (const k of APPLY_KEYS)
+  for (const k of options.userManaged ? [...APPLY_KEYS, ...USER_APPLY_KEYS] : APPLY_KEYS)
     if (json?.[k] !== undefined) body[k] = json[k];
   if (argv['confirm-destructive'] === true) body.confirmDestructive = true;
   if (argv['if-version'] !== undefined) body.ifVersion = String(argv['if-version']);
+  else if (json?.version !== undefined) body.ifVersion = String(json.version);
   return body;
 }
 

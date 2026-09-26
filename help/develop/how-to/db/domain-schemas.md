@@ -755,11 +755,18 @@ the whole call with a `DomainRestrictError`. Never write per-row delete loops.
 ```ts
 await grok.dapi.domains.createSchema('inv', {friendlyName: 'Inventory'});
 const handle = grok.dapi.domains.schema('inv');
-await handle.apply({tables: {/* manifest fragment */}}, {dryRun: true}); // change plan
-await handle.apply({tables: {/* manifest fragment */}});
+const {version} = await handle.manifest();       // the version the edit is made against
+await handle.apply({tables: {/* manifest fragment */}, ifVersion: version}, {dryRun: true}); // change plan
+await handle.apply({tables: {/* manifest fragment */}, ifVersion: version});
 const events = await handle.audit({limit: 50});  // row + ddl history, newest first
 await handle.delete();                           // full purge
 ```
+
+`ifVersion` is required on a user-managed schema (a `DomainError` with code
+`version-required` without it) and is checked under the server's deploy lock: of two applies
+made against the same version exactly one commits, the other gets a
+`DomainVersionConflictError` and writes nothing. The same apply may change the schema's
+`friendlyName` and `description`, and `storage: {writable}` of an external binding.
 
 Table-scoped access control lives on the table client: `grants()`,
 `grant(group, permission)`, `revoke(group)`, and column security via
