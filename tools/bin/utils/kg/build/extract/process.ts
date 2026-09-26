@@ -15,6 +15,13 @@ import {homesOf, idTokens, ticketTokens, ticketStub, resolveMention} from './mar
 /** The snapshot repo beside the monorepo, then the place it is cloned to on the dev boxes (build-plan.md WO-5). */
 const RELEASE_DIR = 'core/docs/release';
 const OWNERS = 'autofix/cfg/owners.json';
+/** The roster moved to the ops-agents repo (root CLAUDE.md): `$OPS_AGENTS_DIR`, else a sibling checkout; a copy in
+ * the repo still wins, which is what the fixtures use. */
+function rosterPath(repoRoot: string): string {
+  const candidates = [path.join(repoRoot, ...OWNERS.split('/')),
+    path.join(process.env.OPS_AGENTS_DIR ?? path.resolve(repoRoot, '..', 'ops-agents'), ...OWNERS.split('/'))];
+  return candidates.find((c) => fs.existsSync(c)) ?? candidates[0];
+}
 /** A fix version that names a release rather than a bucket such as `v1` or `Next patch version`. */
 const VERSION = /^\d+(\.\d+)*$/;
 const GENERATED = /generated\s+(\d{4}-\d{2}-\d{2})/i;
@@ -259,7 +266,7 @@ export class People {
   load(): void {
     if (this.loaded) return;
     this.loaded = true;
-    const owners = path.join(this.ctx.repoRoot, ...OWNERS.split('/'));
+    const owners = rosterPath(this.ctx.repoRoot);
     this.rosterFile = fs.existsSync(owners);
     if (this.rosterFile) this.roster = JSON.parse(fs.readFileSync(owners, 'utf8')).people ?? {};
     for (const [key, person] of Object.entries(this.roster))

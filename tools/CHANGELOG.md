@@ -2,6 +2,7 @@
 
 ## v.next
 
+* grok kg: the people roster is read from the ops-agents checkout ($OPS_AGENTS_DIR, else ../ops-agents) now that autofix left the monorepo; a repo-local copy still wins
 * grok kg: the Dart pass reads the heritage a class header spells: `extends` and `implements` (mixins included) between the types of a package and the ones it imports, resolved by name through the same table lexical `uses` reads, a base two files declare left as an `ambiguous_extends` problem; every class whose chain reaches d4's Widget is a `widget` node (`widget:<ClassName>`, a new type under component) that its file declares
 
 * grok kg: media records drop ui_text; enrich media asks for a caption that names the concept the page teaches (from the text around the embed and the file name) and reports the tokens and cost of the run
