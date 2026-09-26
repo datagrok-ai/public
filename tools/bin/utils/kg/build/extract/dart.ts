@@ -1,7 +1,7 @@
 /// The Dart sources of `core/` (build-plan.md WO-6): one lexical pass per file — the file itself, its
-/// top-level declarations, its import directives, the tests of a test file (`test()` or the client's
-/// `regTest()`) and the `~id` markers of conventions.md §6. No analyzer and no AST: no members, no calls,
-/// no heritage, and nothing a regex cannot see.
+/// top-level declarations with the heritage their class headers spell, its import directives, the tests of a
+/// test file (`test()` or the client's `regTest()`) and the `~id` markers of conventions.md §6. No analyzer
+/// and no AST: no members, no calls, and nothing a regex cannot see.
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
@@ -21,6 +21,18 @@ const TYPE_DECL = /^(?:abstract\s+)?(class|mixin|enum)\s+([A-Za-z_$][\w$]*)/;
 /** Dart 1 spells an alias `typedef void Action(x)` and Dart 2 `typedef Action = ...`: the name precedes the parameters. */
 const TYPEDEF = /^typedef\s+.*?([A-Za-z_$][\w$]*)\s*(?:<[^(]*>)?\s*[(=]/;
 const KINDS: Record<string, string> = {class: 'class', mixin: 'mixin', enum: 'enum'};
+/** The clauses of a class header, read after its type arguments are stripped. */
+const EXTENDS = /\bextends\s+([A-Za-z_$][\w$]*)/;
+const WITH = /\bwith\s+((?:[\w$]+\s*,\s*)*[\w$]+)/;
+const IMPLEMENTS = /\bimplements\s+((?:[\w$]+\s*,\s*)*[\w$]+)/;
+const TYPE_ARGS = /<[^<>]*>/;
+const HEADER_LINES = 8;
+/** The base every widget descends from (d4-features.md §4 item A). */
+const WIDGET_FILE = 'core/client/d4/lib/src/widgets/widget.dart';
+/** The platform's vocabulary: a widget descends from `Widget` or `InputBase` and is neither a view nor a viewer. */
+const WIDGET_ROOTS = [`decl:${WIDGET_FILE}#Widget`, 'decl:core/client/d4/lib/src/widgets/inputs/input_base.dart#InputBase'];
+const WIDGET_STOPS = ['decl:core/client/d4/lib/src/widgets/view_base.dart#ViewBase', 'decl:core/client/d4/lib/src/viewer_base/viewer_base.dart#ViewerBase'];
+const HERITAGE_CONFIDENCE = 0.9;
 /** `/// ~id` opening a doc comment: the ownership marker of §6 in its Dart spelling. */
 const OWN_MARKER = /^\/\/\/\s*~((?:[A-Z][A-Za-z]{0,5}:)?[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)(?:#[\w-]+)?\s*$/;
 const ANNOTATION = /^@/;
@@ -59,7 +71,8 @@ export const dartExtractor: Extractor = {
     const known = new Set(files);
     const perPackage = new Map<string, number>();
     const declared = new Map<string, Map<string, string[]>>();
-    const testFiles: {file: string, text: string, packages: string[]}[] = [];
+    const testFiles: {file: string, text: string, pkg?: string}[] = [];
+    const typed: {file: string, pkg?: string, types: Declared[]}[] = [];
     const libraryOf = new Map<string, string>();
     const packagesOf = new Map<string, string[]>();
     let unresolved = 0;
@@ -73,35 +86,51 @@ export const dartExtractor: Extractor = {
       if (!emitter.node(sourceFileRow(file, {loc: countLines(text), generated: generated ? true : undefined, entry: entry ? true : undefined})).accepted) continue;
       const pkg = packageOf(file);
       if (pkg) perPackage.set(pkg, (perPackage.get(pkg) ?? 0) + 1);
-      const names = declarations(emitter, file, lines, generated);
-      if (pkg && names.length) {
+      const types = declarations(emitter, file, lines, generated);
+      if (pkg && types.length) {
         const index = declared.get(pkg) ?? new Map<string, string[]>();
-        for (const name of names) index.set(name, [...index.get(name) ?? [], file]);
+        for (const t of types) index.set(t.name, [...index.get(t.name) ?? [], file]);
         declared.set(pkg, index);
       }
-      const packages = imports(emitter, file, directives, known);
-      packagesOf.set(file, packages);
+      if (types.length) typed.push({file, pkg, types});
+      packagesOf.set(file, imports(emitter, file, directives, known));
       for (const m of directives)
         if (m[1] === 'part' && importTarget(file, m[3]) !== undefined) libraryOf.set(importTarget(file, m[3])!, file);
       const testing = file.startsWith(REG_TEST_DIR) ? regTests(emitter, file, text) : TEST_FILE.test(file) && tests(emitter, file, text);
       // a helper of a test folder (a server setup, a fixture) uses types the tests importing it never name
-      if (testing || TEST_DIR.test(file)) testFiles.push({file, text, packages: [...new Set([pkg, ...packages])].filter((p): p is string => p !== undefined)});
+      if (testing || TEST_DIR.test(file)) testFiles.push({file, text, pkg});
       unresolved += markers(emitter, homes, file, lines);
       helpRefs(emitter, ctx.repoRoot, file, text, lines, helpUrls);
     }
-    for (const t of testFiles)
-      lexicalUses(emitter, t.file, t.text, [...new Set([...t.packages, ...packagesOf.get(libraryOf.get(t.file) ?? '') ?? []])], declared);
+    // a part's imports are its library's
+    const reach = (file: string, pkg?: string) => [...new Set([pkg, ...packagesOf.get(file) ?? [], ...packagesOf.get(libraryOf.get(file) ?? '') ?? []])].filter((p): p is string => p !== undefined);
+    for (const t of testFiles) lexicalUses(emitter, t.file, t.text, reach(t.file, t.pkg), declared);
+    const bases = new Map<string, string>();
+    for (const t of typed) heritage(emitter, t.file, t.types, reach(t.file, t.pkg), declared, bases);
+    for (const t of typed) widgets(emitter, t.file, t.types, bases);
     emitter.manifest('dart_packages', coverage(ctx.repoRoot, perPackage));
     emitter.manifest('dart_depth', 'lexical');
     emitter.source('dart', unresolved ? 'partial' : 'ok');
   },
 };
 
-/** The top-level types of a file, with the doc comment and the annotations above each of them; returns their names. */
-function declarations(emitter: Emitter, file: string, lines: string[], generated: boolean): string[] {
-  const names: string[] = [];
+interface Declared {
+  id: string;
+  name: string;
+  kind: string;
+  line: number;
+  abstract: boolean;
+  /** The superclass name, and the mixin and interface names, as the header spells them without type arguments. */
+  base?: string;
+  mixes: string[];
+}
+
+/** The top-level types of a file, with the doc comment and the annotations above each of them, and the heritage
+ * a class header spells up to its brace. */
+function declarations(emitter: Emitter, file: string, lines: string[], generated: boolean): Declared[] {
+  const out: Declared[] = [];
   for (let i = 0; i < lines.length; i++) {
-    const declared = declarationOf(lines[i]);
+    const declared = declarationOf(lines, i);
     if (!declared) continue;
     const {name, kind} = declared;
     const id = declId(file, name);
@@ -110,16 +139,79 @@ function declarations(emitter: Emitter, file: string, lines: string[], generated
       generated: generated ? true : undefined, documented, deprecated: deprecated ? true : undefined,
       line: i + 1, language: 'dart', path: file, provenance: 'ast', source_layer: 'core'}).accepted) continue;
     emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'ast', confidence: 1, evidence: [file]});
-    names.push(name);
+    out.push({id, line: i + 1, ...declared});
   }
-  return names;
+  return out;
 }
 
-function declarationOf(line: string): {name: string, kind: string} | undefined {
-  const type = TYPE_DECL.exec(line);
-  if (type) return {name: type[2], kind: KINDS[type[1]]};
-  const alias = TYPEDEF.exec(line);
-  return alias ? {name: alias[1], kind: 'type'} : undefined;
+function declarationOf(lines: string[], at: number): Omit<Declared, 'id' | 'line'> | undefined {
+  const type = TYPE_DECL.exec(lines[at]);
+  if (type) {
+    let header = '';
+    for (let i = at; i < Math.min(lines.length, at + HEADER_LINES) && !header.includes('{'); i++) header += ` ${lines[i]}`;
+    header = header.split('{')[0];
+    while (TYPE_ARGS.test(header)) header = header.replace(TYPE_ARGS, '');
+    const names = (m: RegExpExecArray | null) => (m?.[1].split(',') ?? []).map((s) => s.trim()).filter(Boolean);
+    return {name: type[2], kind: KINDS[type[1]], abstract: lines[at].startsWith('abstract'), base: EXTENDS.exec(header)?.[1],
+      mixes: [...names(WITH.exec(header)), ...names(IMPLEMENTS.exec(header))]};
+  }
+  const alias = TYPEDEF.exec(lines[at]);
+  return alias ? {name: alias[1], kind: 'type', abstract: false, mixes: []} : undefined;
+}
+
+/** The types of the packages a file reaches, by name, with the files declaring each; [except] leaves a file out. */
+function candidates(packages: string[], declared: Map<string, Map<string, string[]>>, except?: string): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const pkg of packages)
+    for (const [name, files] of declared.get(pkg) ?? [])
+      out.set(name, [...out.get(name) ?? [], ...files.filter((f) => f !== except)]);
+  return out;
+}
+
+/** `extends` and `implements` (mixins included) from each class of a file to the one type of its package or an imported
+ * one that the header names; a name several files declare is counted as ambiguous and drawn for nothing, and one
+ * nobody walked (a pub package, dart:html) is not a relation. Records each resolved superclass in [bases]. */
+function heritage(emitter: Emitter, file: string, types: Declared[], packages: string[], declared: Map<string, Map<string, string[]>>, bases: Map<string, string>): void {
+  const known = candidates(packages, declared);
+  const resolve = (clause: string, name: string): string | undefined => {
+    const files = known.get(name);
+    if (!files?.length) return undefined;
+    if (files.length === 1) return declId(files[0], name);
+    emitter.problem('ambiguous_extends', `${file}: ${clause} ${name} is declared in ${files.join(' and ')}`);
+    return undefined;
+  };
+  for (const t of types) {
+    const base = t.base === undefined ? undefined : resolve(`${t.name} extends`, t.base);
+    if (base !== undefined) {
+      bases.set(t.id, base);
+      emitter.edge({type: 'extends', from: t.id, to: base, derived_by: 'lexical', confidence: HERITAGE_CONFIDENCE, evidence: [file]});
+    }
+    for (const name of t.mixes) {
+      const to = resolve(`${t.name} implements`, name);
+      if (to !== undefined) emitter.edge({type: 'implements', from: t.id, to, derived_by: 'lexical', confidence: HERITAGE_CONFIDENCE, evidence: [file]});
+    }
+  }
+}
+
+/** One widget node per class whose extends chain reaches a widget root without passing a view or viewer base, declared
+ * by its file. */
+function widgets(emitter: Emitter, file: string, types: Declared[], bases: Map<string, string>): void {
+  const descends = (id: string): boolean => {
+    const seen = new Set<string>();
+    for (let base = bases.get(id); base !== undefined && !seen.has(base); base = bases.get(base)) {
+      if (WIDGET_STOPS.includes(base)) return false;
+      if (WIDGET_ROOTS.includes(base)) return true;
+      seen.add(base);
+    }
+    return false;
+  };
+  for (const t of types) {
+    if (t.kind !== 'class' || WIDGET_STOPS.includes(t.id) || !descends(t.id)) continue;
+    const id = `widget:${t.name}`;
+    if (emitter.node({type: 'widget', id, name: t.name, path: file, line: t.line, declaration: t.id, base: t.base, abstract: t.abstract ? true : undefined,
+      language: 'dart', provenance: 'lexical', source_layer: 'core'}).accepted)
+      emitter.edge({type: 'declares', from: fileId(file), to: id, derived_by: 'lexical', confidence: HERITAGE_CONFIDENCE, evidence: [file]});
+  }
 }
 
 /** What sits above a declaration: whether its annotations deprecate it, and whether the line before them documents it. */
@@ -159,16 +251,13 @@ function imports(emitter: Emitter, file: string, directives: RegExpExecArray[], 
 /** §8.1 uses, lexically: a capitalized word of a test file that exactly one type of its own package or of a package it
  * imports declares; a name several files declare is counted as ambiguous and drawn for nothing. */
 function lexicalUses(emitter: Emitter, file: string, text: string, packages: string[], declared: Map<string, Map<string, string[]>>): void {
-  const candidates = new Map<string, string[]>();
-  for (const pkg of packages)
-    for (const [name, files] of declared.get(pkg) ?? [])
-      candidates.set(name, [...candidates.get(name) ?? [], ...files.filter((f) => f !== file)]);
+  const known = candidates(packages, declared, file);
   const seen = new Set<string>();
   for (const m of blankComments(text).replace(STRING_LITERAL, (s) => ' '.repeat(s.length)).matchAll(TYPE_TOKEN)) {
     const name = m[0];
     if (name.length < MIN_TOKEN || seen.has(name)) continue;
     seen.add(name);
-    const files = candidates.get(name);
+    const files = known.get(name);
     if (!files?.length) continue;
     if (files.length > 1) emitter.problem('ambiguous_uses', `${file}: ${name} is declared in ${files.join(' and ')}`);
     else emitter.edge({type: 'uses', from: fileId(file), to: declId(files[0], name), kind: 'type', derived_by: 'lexical', confidence: LEXICAL_CONFIDENCE, evidence: [file]});

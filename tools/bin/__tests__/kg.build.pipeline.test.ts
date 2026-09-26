@@ -96,10 +96,10 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
     });
     // the CLI fixture (lib:tools: 4 files, 2 types, 5 vitest cases) and the vitest suite of the utils library (1 file, 1 case) account for
     // the +1 library, +5 source-file, +2 declaration, +6 test, +2 test-suite; the two Test Track cases under Viewers/ScatterPlot test the
-    // scatter plot by folder name (+2 tests)
+    // scatter plot by folder name (+2 tests); the two Dart viewers extend Viewer (+2 extends)
     expect(manifest.counts.edges).toEqual({
       affects: 2, assignee: 3, automates: 3, base: 1, calls: 6, changes: 2, connection: 3, covers: 1,
-      declares: 199, demonstrates: 1, 'depends-on': 7, documents: 5, embeds: 5, environment: 1, extends: 4,
+      declares: 199, demonstrates: 1, 'depends-on': 7, documents: 5, embeds: 5, environment: 1, extends: 6,
       illustrates: 3, implements: 1, imports: 36, includes: 2, 'is-implemented-in': 20, mentions: 19, mirrors: 2, owner: 9,
       package: 75, page: 22, 'part-of': 11, 'participates-in': 5, reporter: 4, 'requested-by': 2, resolves: 1,
       suite: 22, 'targets-release': 5, 'targets-semtype': 13, tests: 15, thumbnail: 2, 'tracked-in': 2, user_help: 1, uses: 19,

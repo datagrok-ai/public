@@ -11,7 +11,7 @@ export const SCHEME_TYPES: Record<string, string[]> = {
   ep: ['endpoint'], table: ['db-table'], semtype: ['semantic-type'], doc: ['doc-page'], test: ['test'],
   suite: ['test-suite'], sample: ['sample'], pr: ['pull-request'], gh: ['ticket'], commit: ['commit'],
   report: ['report'], img: ['image'], chg: ['changelog-entry'], conn: ['connection'], env: ['script-environment'],
-  container: ['container'], mig: ['migration'], tutorial: ['tutorial'], query: ['query'], script: ['script'], media: ['media'], video: ['media'],
+  container: ['container'], widget: ['widget'], mig: ['migration'], tutorial: ['tutorial'], query: ['query'], script: ['script'], media: ['media'], video: ['media'],
 };
 export const PREFIXED_ID = /^([A-Z][A-Za-z]{0,5}):(.+)$/;
 export const SCHEMED_ID = /^([a-z][a-z0-9-]*):(.+)$/;
