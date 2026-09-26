@@ -22,6 +22,7 @@ import type {IProperty} from '../../core/property-like.js';
 import {Input} from '../../core/input-base.js';
 import type {InputOptions, LiveOption} from '../../core/input-base.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
+import {camelCaseToWords} from '../../core/text.js';
 import {Form} from '../../components/forms/form.js';
 import type {FormLayout} from '../../components/forms/form.js';
 import {Section} from '../../components/containers/section.js';
@@ -171,21 +172,6 @@ const SCALARS = new Set(['string', 'int', 'double', 'float', 'num', 'bigint', 'q
  * errors on them (it evals them as function editors), so honoring them here is a documented W1
  * divergence, not a compatibility break. */
 const HINTS = new Set(['textarea', 'password', 'switch', 'slider']);
-const CONJUNCTIONS = new Set(['and', 'or', 'than', 'if', 'but', 'so', 'as', 'that']);
-
-/** prop_gen's `camelCaseToWords` (`prop_gen_annotation.dart:89-112`): all-caps and already-spaced
- * names pass through, humps split, first word capitalized, conjunctions lowercased. */
-export function camelCaseToWords(name: string): string {
-  if (name === name.toUpperCase() || name.includes(' '))
-    return name;
-  const words = name.match(/[A-Z]+(?![a-z])|[A-Z]?[^A-Z]+/g) ?? [name];
-  return words
-    .map((w, i) => {
-      const word = CONJUNCTIONS.has(w.toLowerCase()) ? w.toLowerCase() : w;
-      return i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word;
-    })
-    .join(' ');
-}
 
 /** A {@link Form} over a FuncCall's input params, kept in sync with the call both ways: an edit
  * runs `setParamValue`, a `param.onChanged` refreshes the field (echo-suppressed by value in both

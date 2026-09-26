@@ -166,7 +166,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     const manifest = this._handle.manifest() as Promise<ManifestJson>;
     const snapshot = BindingEditDialog._within(this._handle.access(), 'The access snapshot');
     const draft = manifest.then(() => BindingEditDialog._within(this._handle.draft(), 'The warehouse catalog'), () => null);
-    const entity = this._entity();
+    const entity = BindingEditDialog._entity(this._name);
     const problems: string[] = [];
     const settle = async <T>(read: Promise<T>, what: string): Promise<T | null> => {
       try {
@@ -183,14 +183,6 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
         friendlyName: e?.friendlyName ?? '', description: e?.description ?? '', problems};
     })();
     return {manifest, rest};
-  }
-
-  /** The `DomainSchema` entity (caption, description). The smart filter's `name` is the caption
-   * and its free text searches the caption too, so the binding is found by its physical schema,
-   * `ext_<name>`, which is exact. */
-  private _entity(): Promise<DG.DomainSchema | null> {
-    return grok.dapi.domains.schemas.filter(`pgSchema = "ext_${this._name}"`).list()
-      .then((list) => list.find((s) => s.name === this._name) ?? null);
   }
 
   private async _reload(): Promise<Loaded> {
@@ -400,8 +392,9 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   }
 
   private static _lostColumn(lost: DG.DomainLostColumn): string {
-    let text = !lost.restricted ? 'nothing else goes with it' :
-      `its restriction${lost.grants > 0 ? ` with ${plural(lost.grants, 'grant', 'grants')}` : ''} goes with it`;
+    let text = !lost.restricted ? 'nothing else goes with it' : lost.grants === 0 ? 'its restriction goes with it' :
+      lost.grants === 1 ? 'its restriction and the 1 grant on it go with it, whoever holds it' :
+        `its restriction and all ${lost.grants} grants on it go with it, whoever holds them`;
     if (lost.affectedFilters > 0)
       text += `; ${BindingEditDialog._unresolved(lost.affectedFilters, 'naming it')}`;
     return `${text}; the warehouse is untouched`;
@@ -590,7 +583,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     if (payload.storage !== undefined && (manifest.storage?.writable ?? false) !== payload.storage.writable)
       return false;
     if (payload.friendlyName !== undefined || payload.description !== undefined) {
-      const entity = await this._entity();
+      const entity = await BindingEditDialog._entity(this._name);
       if (entity === null || (payload.friendlyName !== undefined && entity.friendlyName !== payload.friendlyName) ||
           (payload.description !== undefined && (entity.description ?? '') !== payload.description))
         return false;

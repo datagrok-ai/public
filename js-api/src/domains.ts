@@ -609,7 +609,8 @@ export interface DomainColumnRestriction extends DomainColumnTarget {
    * omitted, the op applies whatever the state. */
   from?: 'restricted' | 'unrestricted';
   /** The {@link DomainColumnAccess.revision} the edit was made from; sent, the apply is refused
-   * (`'access-conflict'`) when the column's grants changed since. */
+   * (`'access-conflict'`, with `expectedRevision` and `currentRevision`) when the column's grants
+   * changed since. */
   revision?: string;
   /** Permissions to grant on the per-column schema. */
   grant?: DomainGroupPermission[];
@@ -622,9 +623,10 @@ export interface DomainColumnUnrestriction extends DomainColumnTarget {
   /** `'restricted'`, the state the edit was made from; refused (`'access-conflict'`) when the
    * column is not restricted any more. Omitted, the op is idempotent. */
   from?: 'restricted';
-  /** The {@link DomainColumnAccess.revision} the edit was made from: refused (`'access-conflict'`)
-   * when anyone granted, revoked, or re-restricted the column since — an unrestriction is not a
-   * delta, so a stale one would otherwise restore access revoked meanwhile. */
+  /** The {@link DomainColumnAccess.revision} the edit was made from: refused (`'access-conflict'`,
+   * with `expectedRevision` and `currentRevision`) when anyone granted, revoked, or re-restricted
+   * the column since — an unrestriction is not a delta, so a stale one would otherwise restore
+   * access revoked meanwhile. */
   revision?: string;
 }
 

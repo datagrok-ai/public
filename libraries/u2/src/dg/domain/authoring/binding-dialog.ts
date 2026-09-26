@@ -13,7 +13,7 @@ import {Permission} from 'datagrok-api/dg';
 import {computed, signal} from '../../../core/signals.js';
 import {Control} from '../../../core/component.js';
 import {div, divV, link, span} from '../../../core/elements.js';
-import {plural} from '../../../core/text.js';
+import {camelCaseToWords, plural} from '../../../core/text.js';
 import {Wizard} from '../../../components/containers/wizard.js';
 import type {WizardOptions} from '../../../components/containers/wizard.js';
 import {Section} from '../../../components/containers/section.js';
@@ -24,7 +24,6 @@ import {notify} from '../../../components/display/notify.js';
 import {DomainErrors} from '../errors.js';
 import {route} from '../routes.js';
 import {groupInput} from '../../inputs/group-input.js';
-import {camelCaseToWords} from '../../funcs/func-form.js';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ManifestPlan} from './manifest-editor.js';
 import {ManifestModel} from './manifest-model.js';
@@ -57,9 +56,10 @@ export interface BindingResult {
 }
 
 /** The platform's Dart client learns of a create from the create itself; a schema confirmed
- * through the registry after a lost answer is announced to it here (read at call time like
- * the designer's globals). */
-const api = globalThis as {grok_Dapi_Domains_SchemaCreated?: (dart: unknown, name: string) => void};
+ * through the registry after a lost answer is announced to it here, one whose outcome is unknown
+ * as altered (read at call time like the designer's globals). */
+const api = globalThis as {grok_Dapi_Domains_SchemaCreated?: (dart: unknown, name: string) => void,
+  grok_Dapi_Domains_SchemaAltered?: (dart: unknown, name: string) => void};
 
 /** Opens the dialog; resolves once it closes — to the created schema with its access outcome,
  * null where it was cancelled before the create. Refuses while domain databases are off, and
@@ -196,6 +196,14 @@ export abstract class BindingWizard<TResult> extends Control {
     }
   }
 
+  /** The `DomainSchema` entity of a binding (caption, description, author). The smart filter's
+   * `name` is the caption and its free text searches the caption too, so the binding is found by
+   * its physical schema, `ext_<name>`, which is exact. */
+  protected static _entity(name: string): Promise<DG.DomainSchema | null> {
+    return grok.dapi.domains.schemas.filter(`pgSchema = "ext_${name}"`).list()
+      .then((list) => list.find((s) => s.name === name) ?? null);
+  }
+
   /** The app over the table, once the dialog settled; a route no app answers is said. */
   protected static async _openApp(name: string, table: string): Promise<void> {
     try {
@@ -262,6 +270,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
   private readonly _failed = signal(0);
   /** The create's outcome could not be established: the Created step says what is registered. */
   private readonly _unknown = signal(false);
+  private readonly _openable = signal(true);
   private readonly _facts = span('Only database connections are offered', 'u2-binding-facts');
   private readonly _access = span('', 'u2-binding-access');
   private readonly _designHost = div([], 'u2-binding-design');
@@ -311,7 +320,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
         {id: 'created', title: 'Created', content: () => this._createdHost, done: true, actions: [
           {text: 'RETRY ACCESS', run: () => this._retry(), enabled: computed(() => this._failed.value > 0),
             visible: computed(() => !this._unknown.value)},
-          {text: 'OPEN', run: () => this._openAndClose()},
+          {text: 'OPEN', run: () => this._openAndClose(), visible: this._openable},
         ]},
       ],
       onFinish: () => this._settle(this._result ?? null),
@@ -698,8 +707,10 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       this._unanswered = name;
       this._say('No answer to the create — reading the registry…');
       let registered: DG.DomainRegisteredManifest | null = null;
+      let author: string | undefined;
       try {
         registered = await grok.dapi.domains.schema(name).manifest();
+        author = await BindingDialog._entity(name).then((s) => s?.author?.id, () => undefined);
       } catch (x) {
         if (!BindingDialog._notFound(x)) {
           this._say(`${BindingDialog._failure(e)} — the registry could not be read (${BindingDialog._failure(x)}); CREATE again`, true);
@@ -707,7 +718,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
         }
       }
       if (registered !== null) {
-        if (BindingDialog._isOwn(plan, registered))
+        if (BindingDialog._isOwn(plan, registered, author))
           return true;
         this._outcomeUnknown(plan, e, registered);
         return 'unknown';
@@ -728,20 +739,17 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return false;
   }
 
-  /** Whether the registered schema is this create's own: at version 1 — nothing applied since —
-   * and holding exactly what was sent, the storage and every table descriptor, read the way the
-   * registry writes a declaration back. A schema changed, or registered by someone else, since is
-   * never taken for it. */
-  private static _isOwn(plan: ManifestPlan, registered: DG.DomainRegisteredManifest): boolean {
+  /** Ours: authored by the caller, at version 1, holding exactly what was sent as the registry writes it back. */
+  private static _isOwn(plan: ManifestPlan, registered: DG.DomainRegisteredManifest,
+    author: string | undefined): boolean {
     const shape = (m: {storage?: unknown, tables?: Record<string, ManifestTableJson>}): string =>
       BindingDialog._canonical({storage: m.storage, tables: Object.fromEntries(Object.entries(m.tables ?? {})
         .map(([logical, decl]) => [logical, BindingDialog._declared(ManifestModel.canonicalTable(decl, logical), logical)]))});
-    return String(registered.version) === '1' &&
+    return author !== undefined && author === grok.shell.user?.id && String(registered.version) === '1' &&
       shape(registered as {storage?: unknown, tables?: Record<string, ManifestTableJson>}) === shape(plan.manifest);
   }
 
-  /** A declaration as the registry writes it back: a friendly name that is the table's name or
-   * the name's own words, or the column name's words, goes unsaid. */
+  /** A declaration as the registry writes it back: a friendly name equal to the derived one goes unsaid. */
   private static _declared(decl: ManifestTableJson, logical: string): ManifestTableJson {
     const {friendlyName, columns, ...rest} = decl;
     const table: ManifestTableJson = friendlyName === undefined || friendlyName === logical ||
@@ -753,20 +761,22 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     return table;
   }
 
-  /** The create's outcome could not be established: nothing more is sent — no access — and the
-   * Created step says what is registered under the name, OPEN over it. */
+  /** No access is sent; the Created step says what is registered under the name. */
   private _outcomeUnknown(plan: ManifestPlan, e: unknown, registered: DG.DomainRegisteredManifest): void {
     const tables = Object.keys(registered.tables ?? {});
     const storage = registered.storage as {connection?: string, schema?: string} | undefined;
     this._unanswered = null;
+    grok.dapi.domains.invalidateUiCaches();
+    api.grok_Dapi_Domains_SchemaAltered?.(grok.dapi.domains.dart, plan.name);
     this._unknown.value = true;
+    this._openable.value = tables.length > 0;
     this._result = {name: plan.name, access: {applied: [], failed: []}, unknown: true};
     this._firstTable = tables[0] ?? '';
     const facts = [
       `No answer to the create (${BindingDialog._failure(e)}) — whether it landed is unknown`,
       `${plan.name} is registered at version ${registered.version}` +
         `${storage?.connection === undefined ? '' : ` over ${storage.connection} · ${storage.schema ?? ''}`}, ` +
-        `${plural(tables.length, 'table', 'tables')}${tables.length > 0 ? ` (${tables.join(', ')})` : ''} — not as this dialog sent it`,
+        `${plural(tables.length, 'table', 'tables')}${tables.length > 0 ? ` (${tables.join(', ')})` : ''} — not provably this dialog's create`,
       'No access was applied: grant it from the schema\'s page once you know the binding is yours',
     ];
     this._createdHost.replaceChildren(

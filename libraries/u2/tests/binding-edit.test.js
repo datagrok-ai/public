@@ -311,7 +311,7 @@ scoped('a removal is annotated with what goes with it; a destructive plan wants 
   server.plan = () => PLAN({destructive: true, drops: {tables: [{name: 'shippers'}], columns: [{table: 'orders', column: 'shipcountry'}]},
     lost: {tables: {shippers: {grants: 3, coreSchemaGrants: 0, restrictions: {companyname: 1}, promotedRows: 0, rowGrants: 0,
       savedFilters: 2, affectedFilters: 0}},
-    columns: {'orders.shipcountry': {restricted: false, grants: 0, affectedFilters: 1}}, refs: {}}});
+    columns: {'orders.shipcountry': {restricted: true, grants: 2, affectedFilters: 1}}, refs: {}}});
   const {dialog, done} = await opened();
   const editor = dialog.editor;
   editor.model.includeTable('shippers', false);
@@ -322,7 +322,8 @@ scoped('a removal is annotated with what goes with it; a destructive plan wants 
   assert.equal(document.querySelectorAll('.u2-binding-change-removes').length, 2);
   await validated();
   assert.deepEqual(rows(), [
-    ['Column orders.shipcountry removed', 'nothing else goes with it; 1 saved filter naming it no longer resolves; the warehouse is untouched'],
+    ['Column orders.shipcountry removed', 'its restriction and all 2 grants on it go with it, whoever holds them; ' +
+      '1 saved filter naming it no longer resolves; the warehouse is untouched'],
     ['Table shippers removed', '3 grants, 1 restricted column, 2 saved filters go with it; the warehouse is untouched']]);
   assert.equal(applies(calls, true)[0][2].confirmDestructive, undefined, 'the dry run is the body as it stands');
   const confirm = document.querySelector('.u2-binding-confirm');

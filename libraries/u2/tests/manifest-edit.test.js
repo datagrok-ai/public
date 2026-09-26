@@ -653,6 +653,8 @@ ui('edit mode rows and panels: drift badges with their reasons, "new" candidates
   assert.match(notes(e).join(' '), /askalkin also holds Share/);
   await select(e, 'shippers');
   assert.deepEqual(panel(e).querySelectorAll('.u2-manifest-panel-title .u2-badge').map((b) => b.textContent), ['missing remotely']);
+  const friendly = panel(e).querySelector('.u2-input-root[data-u2-name="friendlyName"] input');
+  assert.deepEqual([friendly.value, friendly.placeholder], ['', 'Shippers'], 'the derived friendly name is shown, not set');
   await select(e, 'employees');
   assert.equal(inputNames(e).includes('logical'), true, 'a candidate renames');
   await select(e, 'order_details');

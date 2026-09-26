@@ -140,8 +140,8 @@
 
 .u2-binding-change {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--dg-space-s);
+  flex-direction: column;
+  gap: var(--dg-space-xs);
 }
 
 .u2-binding-change-removes {

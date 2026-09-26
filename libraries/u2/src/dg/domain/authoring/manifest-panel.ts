@@ -25,6 +25,7 @@ import {AccessGrid} from '../../../components/forms/access-grid.js';
 import type {AccessRow, InheritedAccessRow} from '../../../components/forms/access-grid.js';
 import {badge} from '../../../components/display/badge.js';
 import {ObjectForm} from '../../forms/object-form.js';
+import {camelCaseToWords} from '../../../core/text.js';
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {fieldOffer} from './editor-context.js';
 import {AccessModel, ManifestModel} from './manifest-model.js';
@@ -180,8 +181,10 @@ export class ManifestContextPanel extends Control {
       input.addValidator((v) => model.checkTableName(remote, v));
       return input;
     }, table.registered ? 'registered — a logical name is for life' : undefined, !table.registered);
-    this._field(form, 'Friendly name', 'friendlyName', table.friendlyName, () => new TextInput({label: 'Friendly name',
-      name: 'friendlyName', value: table.friendlyName, commitOn: 'change',
+    // an unsaid friendly name is the derived one: shown, not sent
+    const derived = camelCaseToWords(table.logical);
+    this._field(form, 'Friendly name', 'friendlyName', table.friendlyName || derived, () => new TextInput({
+      label: 'Friendly name', name: 'friendlyName', value: table.friendlyName, placeholder: derived, commitOn: 'change',
       onChanged: (v) => model.setFriendlyName(remote, v)}), undefined, live);
     const key = table.key.map((k) => columns.find((c) => c.remote === k)?.logical ?? k).join(', ');
     const keyField = ObjectForm.readonlyField('Key', 'key', key);
