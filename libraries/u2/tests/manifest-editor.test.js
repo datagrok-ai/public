@@ -27,8 +27,8 @@ function ui(name, body) {
   });
 }
 
-async function editor(options = {}) {
-  const e = new ManifestEditor(draft(), {context: {mode: 'create', storage: 'external'},
+async function editor(options = {}, env = draft()) {
+  const e = new ManifestEditor(env, {context: {mode: 'create', storage: 'external'},
     groups: ['Sales', 'Developers'], friendlyName: 'Northwind sales', ...options});
   document.body.append(e.root);
   e.tree.tree.root.querySelector('.u2-list').clientHeight = 800;
@@ -330,6 +330,42 @@ ui('the editor tag is registered next to the other domain controls; the panes al
   built.dispose();
   const {domains} = await import('../src/dg/domain/index.js');
   assert.equal(domains.authoring, authoring);
+});
+
+ui('a bindable table the draft did not request: counted in the header, badged "not in this draft", locked', async () => {
+  const env = draft();
+  env.inventory.tables.push({remote: 'customers', logical: 'customers', bindable: true, key: ['customerid']});
+  const e = await editor({}, env);
+  assert.equal(e.tree.root.querySelector('.u2-manifest-tree-count').textContent, '2 of 3 bindable tables');
+  const row = rowOf(e, 'customers');
+  assert.deepEqual(badges(row), ['not in this draft']);
+  assert.deepEqual([row.querySelector('.u2-tree-check').checked, row.querySelector('.u2-tree-check').disabled], [false, true]);
+  assert.match(row.title, /not in this draft/);
+  await select(e, 'customers');
+  assert.match(title(e), /Tablecustomersnot in this draft/);
+  assert.deepEqual(inputNames(e), []);
+  e.dispose();
+});
+
+ui('a column with two foreign keys lists both; when the foreign keys could not be read the table panel says so', async () => {
+  const env = draft();
+  env.inventory.relations.push({table: 'orders', column: 'shipvia', targetTable: 'carriers', targetColumn: 'carrierid',
+    status: 'plain', code: 'external-ref-ambiguous', message: 'two foreign keys'});
+  const e = await editor({}, env);
+  assert.deepEqual(badges(rowOf(e, 'shipvia')), ['→ shippers', '→ carriers']);
+  await select(e, 'shipvia');
+  assert.deepEqual(panel(e).querySelectorAll('.u2-manifest-relation').map((r) => r.textContent),
+    ['foreign key to shippersplain valueshippers is not in the draft', 'foreign key to carriersplain valuetwo foreign keys']);
+  e.dispose();
+
+  const unread = draft();
+  unread.inventory.relations = [];
+  unread.diagnostics = [{code: 'external-relations-unavailable', message: 'The foreign keys of "public" could not be read'}];
+  const e2 = await editor({}, unread);
+  await select(e2, 'orders');
+  assert.match(panel(e2).querySelector('.u2-manifest-panel-note').textContent, /foreign keys of this schema could not be read/);
+  assert.equal(panel(e2).querySelector('.u2-manifest-relation'), null);
+  e2.dispose();
 });
 
 ui('WO-A5.1 #9: plan() grants no Edit or Delete on a read-only binding or a read-only table — the lock the panel shows', async () => {

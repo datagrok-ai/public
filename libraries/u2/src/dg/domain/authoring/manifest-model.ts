@@ -111,9 +111,11 @@ export interface TableView {
   logical: string;
   friendlyName: string;
   included: boolean;
-  /** False for a view, a keyless table, a table whose key the platform cannot hold — or one the
-   * draft holds no declaration for. */
+  /** False for a view, a keyless table, a table whose key the platform cannot hold. */
   bindable: boolean;
+  /** False for a bindable table the draft holds no declaration for — it was read over other
+   * tables; nothing here can include it. */
+  drafted: boolean;
   reason?: string;
   code?: string;
   /** The key's remote column names. */
@@ -154,7 +156,8 @@ export interface ColumnView {
   /** Why the column cannot be included: unsupported, or a demoted ref no plain type serves. */
   reason?: string;
   code?: string;
-  relation?: RelationView;
+  /** Every foreign key the warehouse reported on the column. */
+  relations: RelationView[];
 }
 
 interface ColumnState {
@@ -530,9 +533,12 @@ export class ManifestModel {
             column.included = true;
           }
         } else if (column.type === 'ref') {
-          const plain = this._plainType(state, column);
-          column.type = plain ?? '';
-          if (plain === null) {
+          const plain = this._plainType(state, column, target);
+          if (plain !== null)
+            column.type = plain;
+          // a key column has no type to drop out with: the ref stands, and the dry run names it
+          else if (!state.key.includes(column.remote)) {
+            column.type = '';
             column.demoted = `${target.remote} is not included and the draft names no plain type for this column`;
             column.included = false;
           }
@@ -542,14 +548,16 @@ export class ManifestModel {
   }
 
   /** The type a ref carries as a plain value: what the inventory mapped the column to, else the
-   * type of the key the inventory's relation points at; null where the inventory is silent. */
-  private _plainType(state: TableState, column: ColumnState): string | null {
+   * type of the key column it points at — the relation's, or the target's one-column key; null
+   * where neither says. */
+  private _plainType(state: TableState, column: ColumnState, target: TableState): string | null {
     const mapped = this._plainTypes.get(ManifestModel._key(state.remote, column.remote));
     if (mapped !== undefined)
       return mapped;
-    const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote);
-    const key = relation === undefined ? undefined :
-      this._tables.get(relation.targetTable)?.columns.get(relation.targetColumn);
+    const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote &&
+      r.targetTable === target.remote);
+    const keyColumn = relation?.targetColumn ?? (target.key.length === 1 ? target.key[0] : undefined);
+    const key = keyColumn === undefined ? undefined : target.columns.get(keyColumn);
     return key === undefined || key.decl.type === 'ref' ? null : key.decl.type;
   }
 
@@ -574,14 +582,16 @@ export class ManifestModel {
   }
 
   private _tableView(state: TableState): TableView {
-    const bindable = state.decl !== null;
+    const drafted = state.decl !== null;
     const inventory = state.inventory;
+    const bindable = drafted || inventory?.bindable === true;
     return {
       remote: state.remote, logical: state.logical,
       friendlyName: state.decl?.friendlyName ?? '',
-      included: bindable && state.included, bindable,
-      reason: bindable ? undefined : inventory?.message ?? 'the draft holds no declaration for this table',
-      code: bindable ? undefined : inventory?.code,
+      included: drafted && state.included, bindable, drafted,
+      reason: !bindable ? inventory?.message ?? 'the draft holds no declaration for this table' :
+        drafted ? undefined : 'not in this draft — it was read over other tables',
+      code: !bindable ? inventory?.code : drafted ? undefined : 'external-table-not-drafted',
       key: state.key, readOnly: state.decl?.writable === false,
     };
   }
@@ -601,8 +611,8 @@ export class ManifestModel {
   }
 
   private _columnView(state: TableState, column: ColumnState): ColumnView {
-    const relation = this._relations.find((r) => r.table === state.remote && r.column === column.remote);
-    const view = relation === undefined ? undefined : this._relationView(relation);
+    const relations = this._relations.filter((r) => r.table === state.remote && r.column === column.remote)
+      .map((r) => this._relationView(r));
     const isKey = state.key.includes(column.remote);
     return {
       table: state.remote, remote: column.remote, logical: column.logical, type: column.type,
@@ -610,7 +620,7 @@ export class ManifestModel {
       included: column.included, isKey,
       required: isKey || column.decl.required === true,
       isName: column.decl.isName === true, searchable: column.decl.searchable === true,
-      supported: true, reason: column.demoted, relation: view,
+      supported: true, reason: column.demoted, relations,
     };
   }
 
@@ -618,7 +628,7 @@ export class ManifestModel {
     return {
       table: state.remote, remote: u.remote, logical: u.remote, type: u.dbType ?? '',
       dbType: u.dbType, included: false, isKey: false, required: false, isName: false, searchable: false,
-      supported: false, reason: u.message, code: u.code,
+      supported: false, reason: u.message, code: u.code, relations: [],
     };
   }
 

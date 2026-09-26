@@ -17,10 +17,14 @@ export class ManifestRules {
   static readonly RESERVED_COLUMN_PREFIX = 'x_';
   /** `DomainManifestRules.maxUserSchemaNameLength`: room for the registry prefix within 63 chars. */
   static readonly MAX_SCHEMA_NAME_LENGTH = 59;
+  /** The parser's cap on a schema, table or column name: PostgreSQL's identifier limit. */
+  static readonly MAX_IDENTIFIER_LENGTH = 63;
 
   static checkIdentifier(name: string, what: string): string | null {
     if (name === '')
       return `${what} name is required`;
+    if (name.length > ManifestRules.MAX_IDENTIFIER_LENGTH)
+      return `${what} name is longer than ${ManifestRules.MAX_IDENTIFIER_LENGTH} characters`;
     return ManifestRules.IDENTIFIER.test(name) ? null :
       `${what} name must be lowercase letters, digits and underscores, starting with a letter`;
   }

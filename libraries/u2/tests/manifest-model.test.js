@@ -31,15 +31,15 @@ test('excluding a table flips the dependent relation to plain; including it back
   const model = new ManifestModel(draft());
   const before = column(model, 'order_details', 'orderid');
   assert.equal(before.type, 'ref');
-  assert.equal(before.relation.ref, true);
-  assert.equal(before.relation.reason, 'ref: orders');
+  assert.equal(before.relations[0].ref, true);
+  assert.equal(before.relations[0].reason, 'ref: orders');
 
   model.includeTable('orders', false);
   const plain = column(model, 'order_details', 'orderid');
   assert.equal(plain.type, 'int', 'the scalar type of the key it pointed at');
-  assert.equal(plain.relation.ref, false);
-  assert.equal(plain.relation.canFix, true);
-  assert.equal(plain.relation.reason, 'target not included — stays a plain value');
+  assert.equal(plain.relations[0].ref, false);
+  assert.equal(plain.relations[0].canFix, true);
+  assert.equal(plain.relations[0].reason, 'target not included — stays a plain value');
   const json = model.toJSON();
   assert.equal(json.tables.orders, undefined);
   assert.deepEqual(json.tables.order_details.columns.orderid, {type: 'int', required: true});
@@ -49,8 +49,8 @@ test('excluding a table flips the dependent relation to plain; including it back
   // a relation the warehouse reported but the draft did not qualify stays plain whatever is included
   const customer = column(model, 'orders', 'customerid');
   assert.equal(customer.type, 'string');
-  assert.equal(customer.relation.canFix, false);
-  assert.equal(customer.relation.reason, 'customers is not in the draft');
+  assert.equal(customer.relations[0].canFix, false);
+  assert.equal(customer.relations[0].reason, 'customers is not in the draft');
 });
 
 test('a rename is checked with the mirrored rules; a refused name keeps the old one', () => {
@@ -63,6 +63,9 @@ test('a rename is checked with the mirrored rules; a refused name keeps the old 
   assert.match(model.renameColumn('orders', 'shipvia', 'x_ship'), /reserved prefix/);
   assert.match(model.renameColumn('orders', 'shipvia', 'freight'), /already named/);
   assert.match(model.renameColumn('orders', 'shipvia', ''), /required/);
+  assert.match(model.renameTable('orders', 'a'.repeat(64)), /63 characters/, 'the parser\'s identifier cap');
+  assert.match(model.renameColumn('orders', 'shipvia', 'a'.repeat(64)), /63 characters/);
+  assert.equal(model.table('orders').logical, 'orders');
   assert.equal(column(model, 'orders', 'shipvia').logical, 'shipvia');
   assert.match(model.checkSchemaName('schemas'), /reserved/);
   assert.equal(model.checkSchemaName('northwind_sales'), null);
@@ -154,16 +157,47 @@ test('a registered manifest opened without an inventory round-trips: declared re
   model.renameTable('orders', 'order');
   assert.equal(model.toJSON().tables.order_details.columns.orderid.ref, 'order', 'the ref follows the rename');
   model.renameTable('orders', 'orders');
-  // with no inventory to name a plain type, excluding the target drops the ref column with a reason
+  // with no inventory, excluding the target demotes the ref to the type of the key it points at
   model.includeTable('orders', false);
-  const dropped = column(model, 'order_details', 'orderid');
-  assert.equal(dropped.included, false);
-  assert.match(dropped.reason, /orders is not included/);
-  assert.equal(model.toJSON().tables.order_details.columns.orderid, undefined);
-  model.includeColumn('order_details', 'orderid', true);
-  assert.equal(column(model, 'order_details', 'orderid').included, false, 'no type to come back with');
+  const plain = column(model, 'order_details', 'orderid');
+  assert.equal(plain.included, true);
+  assert.equal(plain.type, 'int');
+  let json = model.toJSON();
+  assert.deepEqual(json.tables.order_details.columns.orderid, {type: 'int', required: true});
+  assert.deepEqual(json.tables.order_details.businessKey, ['orderid', 'productid']);
   model.includeTable('orders', true);
   assert.deepEqual(model.toJSON(), DRAFT.manifest, 'including the target restores the ref');
+
+  // a key column is never dropped: where no plain type serves it, the ref stands for the dry run to name
+  const storage = {kind: 'external', connection: 'A:B', schema: 's'};
+  const pairs = new ManifestModel({manifest: {name: 'lab', storage, tables: {
+    pair: {businessKey: ['a', 'b'], columns: {a: {type: 'int'}, b: {type: 'int'}}},
+    line: {businessKey: ['pair_id'], columns: {pair_id: {type: 'ref', ref: 'pair'}, n: {type: 'int'}}},
+    note: {businessKey: ['id'], columns: {id: {type: 'int'}, pair_id: {type: 'ref', ref: 'pair'}}},
+  }}});
+  pairs.includeTable('pair', false);
+  json = pairs.toJSON();
+  assert.deepEqual(json.tables.line.businessKey, ['pair_id']);
+  assert.deepEqual(json.tables.line.columns.pair_id, {type: 'ref', ref: 'pair'});
+  assert.equal(column(pairs, 'line', 'pair_id').included, true);
+  assert.equal(json.tables.note.columns.pair_id, undefined, 'a plain ref with no type drops out');
+  assert.match(column(pairs, 'note', 'pair_id').reason, /pair is not included/);
+});
+
+test('a bindable table the draft did not request is "not in this draft", never unbindable, and cannot be included here', () => {
+  const env = draft();
+  env.inventory.tables.push({remote: 'customers', logical: 'customers', bindable: true, key: ['customerid']});
+  const model = new ManifestModel(env);
+  const customers = model.table('customers');
+  assert.deepEqual([customers.bindable, customers.drafted, customers.included], [true, false, false]);
+  assert.equal(customers.code, 'external-table-not-drafted');
+  assert.match(customers.reason, /not in this draft/);
+  assert.equal(model.tables.value.filter((t) => t.bindable).length, 3);
+  model.includeTable('customers', true);
+  model.includeTables(true);
+  assert.equal(model.table('customers').included, false);
+  assert.equal(model.toJSON().tables.customers, undefined);
+  assert.deepEqual([model.table('order_summary').bindable, model.table('order_summary').drafted], [false, false]);
 });
 
 test('remote names are the external storage\'s vocabulary: a platform storage emits none', () => {

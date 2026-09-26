@@ -114,9 +114,9 @@ export class ManifestTree extends Control {
       id: ManifestTree.tableId(t.remote), label: t.remote,
       tooltip: ManifestTree._tooltip(t.reason ?? t.remote, problems),
       data: {selection, table: t, problems},
-      checked: t.bindable ? t.included : false,
-      locked: !t.bindable || !this._editable,
-      disabled: !t.bindable,
+      checked: t.included,
+      locked: !t.drafted || !this._editable,
+      disabled: !t.drafted,
       children: columns.map((c) => this._columnNode(t, c)),
     };
   }
@@ -126,7 +126,7 @@ export class ManifestTree extends Control {
     const problems = this._problemsOf(selection);
     return {
       id: ManifestTree.columnId(t.remote, c.remote), label: c.remote,
-      tooltip: ManifestTree._tooltip(c.reason ?? c.relation?.reason ?? c.remote, problems),
+      tooltip: ManifestTree._tooltip(c.reason ?? c.relations[0]?.reason ?? c.remote, problems),
       data: {selection, table: t, column: c, problems},
       checked: c.supported && t.included && (c.isKey || c.included),
       locked: c.isKey || !c.supported || !t.included || !this._editable,
@@ -148,10 +148,8 @@ export class ManifestTree extends Control {
         'u2-manifest-node-hint'));
       if (column.isKey)
         el.append(badge('key'));
-      const relation = column.relation;
-      if (relation !== undefined)
+      for (const relation of column.relations)
         el.append(badge(`→ ${relation.targetTable}`, {variant: relation.ref ? 'accent' : 'warning'}));
-
       if (column.isName)
         el.append(badge('name', {variant: 'success'}));
     } else if (table !== undefined) {
@@ -159,6 +157,8 @@ export class ManifestTree extends Control {
         el.append(span(`· ${table.logical}`, 'u2-manifest-node-hint'));
       if (!table.bindable)
         el.append(badge(ManifestTree.shortReason(table.code), {variant: 'error'}));
+      else if (!table.drafted)
+        el.append(badge('not in this draft', {variant: 'warning'}));
       else if (table.included)
         el.append(badge(table.key.join(', ')));
     } else

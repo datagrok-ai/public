@@ -277,9 +277,17 @@ export interface DomainDraftTable {
   message?: string;
 }
 
-/** A remote column of a drafted table with its warehouse type; `code` and `message` only on one
- * the draft left out (a type the binding cannot carry — `bytea`, `bigint` …, a malformed name). */
-export interface DomainDraftColumn { table: string; remote: string; dbType: string; code?: string; message?: string; }
+/** A remote column of a drafted table with its warehouse type and, where one serves it, the platform
+ * `type` the draft maps it to; `code` and `message` only on one the draft left out (a type the binding
+ * cannot carry — `bytea`, `bigint` …, a malformed name, a `@param` name another column takes). */
+export interface DomainDraftColumn {
+  table: string;
+  remote: string;
+  dbType: string;
+  type?: string;
+  code?: string;
+  message?: string;
+}
 
 /** One foreign key touching a drafted table: `status: 'ref'` became a ref column in the manifest,
  * `'plain'` stayed a scalar and `code` says why (`external-ref-out` — the target is not in the
@@ -296,8 +304,11 @@ export interface DomainDraftRelation {
 
 /** A manifest drafted over an external database ({@link DomainsDataSource.draft}): the manifest as
  * the author's starting point, the inventory of what the warehouse has and what the draft did with
- * it, and warehouse-level diagnostics (`external-relations-unavailable` when the foreign keys
- * could not be read). Nothing is registered until {@link DomainsDataSource.createSchema}. */
+ * it, and warehouse-level diagnostics: `external-relations-unavailable` (the foreign keys could not
+ * be read), `external-schema-empty` (the schema is listed but holds no table), `external-schema-missing`
+ * (the connection does not list it — on PostgreSQL an empty schema reads as missing too),
+ * `external-schema-unlisted` (no table, and the schema list could not be read). Nothing is
+ * registered until {@link DomainsDataSource.createSchema}. */
 export interface DomainDraft {
   manifest: {[key: string]: any};
   inventory: {tables: DomainDraftTable[]; columns: DomainDraftColumn[]; relations: DomainDraftRelation[]};

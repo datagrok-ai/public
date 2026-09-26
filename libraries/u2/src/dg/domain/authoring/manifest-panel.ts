@@ -140,10 +140,11 @@ export class ManifestContextPanel extends Control {
       return [ManifestContextPanel._title('Table', remote)];
     const title = ManifestContextPanel._title('Table', remote);
     if (!table.included) {
-      const status = table.bindable ? 'not included' : ManifestTree.shortReason(table.code);
+      const status = !table.bindable ? ManifestTree.shortReason(table.code) :
+        table.drafted ? 'not included' : 'not in this draft';
       title.append(badge(status, {variant: table.bindable ? 'warning' : 'error'}),
         span(table.reason ?? 'check it in the tree to expose it', 'u2-manifest-node-hint'));
-      if (!table.bindable)
+      if (!table.bindable || !table.drafted)
         return [title];
     }
     const columns = model.columns(remote).peek();
@@ -180,8 +181,12 @@ export class ManifestContextPanel extends Control {
     }
     const relations = new Section({title: 'Relationships', collapsible: false});
     const rels = model.relations.peek().filter((r) => r.table === remote);
-    if (rels.length === 0)
-      relations.add(ManifestContextPanel._note('The warehouse reports no foreign keys on this table.'));
+    if (rels.length === 0) {
+      const unread = (this._diagnostics?.value ?? []).some((d) => d.code === 'external-relations-unavailable');
+      relations.add(ManifestContextPanel._note(unread ?
+        'The foreign keys of this schema could not be read — every column stays a plain value.' :
+        'The warehouse reports no foreign keys on this table.'));
+    }
     for (const r of rels)
       relations.add(this._relation(r, `${r.column} → ${r.targetTable}`));
     const schemaRows = this._access.grantsOf(SCHEMA).peek()
@@ -210,7 +215,8 @@ export class ManifestContextPanel extends Control {
       input.addValidator((v) => model.checkColumnName(table, remote, v));
       return input;
     });
-    const type = column.type === 'ref' ? `ref → ${column.relation?.targetLogical ?? ''}` : column.type;
+    const type = column.type === 'ref' ? `ref → ${column.relations.find((r) => r.ref)?.targetLogical ?? ''}` :
+      column.type;
     form.addElement(ObjectForm.readonlyField('Type', 'type',
       column.dbType === undefined ? type : `${type} ← ${column.dbType}`).row);
     if (this.offer.required) {
@@ -233,10 +239,10 @@ export class ManifestContextPanel extends Control {
         onChanged: (v) => model.setSearchable(table, v ? remote : null), ...hint}), 'one per table');
     }
     const content: (HTMLElement | Control)[] = [title, form];
-    const relation = column.relation;
-    if (relation !== undefined) {
+    if (column.relations.length > 0) {
       const reference = new Section({title: 'Reference', collapsible: false});
-      reference.add(this._relation(relation, `foreign key to ${relation.targetTable}`));
+      for (const r of column.relations)
+        reference.add(this._relation(r, `foreign key to ${r.targetTable}`));
       content.push(reference);
     }
     content.push(this._visibility(table, remote, column));
