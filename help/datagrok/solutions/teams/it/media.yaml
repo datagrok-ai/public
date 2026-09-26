@@ -20,7 +20,6 @@ log-export-cw.gif:
   quality_notes: >-
     small UI region against a mostly empty settings panel; useful within the page but not
     self-explanatory alone
-  reviewed: true
   seconds: 9.5
   width: 2870
 test-tracking-system.png:
@@ -41,5 +40,4 @@ test-tracking-system.png:
   quality_notes: >-
     test data with 2019 dates and internal file/entity names makes it feel dated and cluttered
     rather than a clean generic example
-  reviewed: true
   width: 1072

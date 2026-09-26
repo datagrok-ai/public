@@ -12,7 +12,6 @@ pls-expl-vars.png:
   kind: screenshot
   quality: docs
   quality_notes: small, cropped chart-only capture with no surrounding UI chrome for context
-  reviewed: true
   width: 400
 pls-formula.gif:
   actions:
@@ -36,7 +35,6 @@ pls-formula.gif:
   quality_notes: >-
     small text in the formula tooltip is hard to read at full frame size, and the cursor position
     makes the flow slightly unclear
-  reviewed: true
   seconds: 4.1
   width: 1601
 pls-loadings.png:
@@ -55,7 +53,6 @@ pls-loadings.png:
   kind: screenshot
   quality: docs
   quality_notes: some point labels overlap and are hard to read (symbol/num.doors/wheel.base cluster)
-  reviewed: true
   width: 800
 pls-model-n-scores.gif:
   actions:
@@ -80,7 +77,6 @@ pls-model-n-scores.gif:
   quality_notes: >-
     small embedded viewer panels with dense labels are legible but busy; not a clean standalone
     marketing shot
-  reviewed: true
   seconds: 7.3
   width: 1601
 pls-predicted-vs-reference.png:
@@ -97,7 +93,6 @@ pls-predicted-vs-reference.png:
   kind: screenshot
   quality: docs
   quality_notes: small dataset with cluttered overlapping point labels in the lower-left cluster
-  reviewed: true
   width: 800
 pls-regr-coeffs.png:
   caption: Regression coefficients bar chart
@@ -115,7 +110,6 @@ pls-regr-coeffs.png:
     - explore/multivariate-analysis
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 800
 pls-run.gif:
   actions:
@@ -137,7 +131,6 @@ pls-run.gif:
     - explore/multivariate-analysis
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 14
   width: 1601
 pls-scores.png:
@@ -156,7 +149,6 @@ pls-scores.png:
     - explore/multivariate-analysis
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 800
 pls-vip.png:
   caption: PLS variable importance in projection (VIP)
@@ -174,7 +166,6 @@ pls-vip.png:
     - explore/multivariate-analysis
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 800
 pls_vs_pca.png:
   caption: PLS components compared with PCA components
@@ -191,5 +182,4 @@ pls_vs_pca.png:
   kind: screenshot
   quality: docs
   quality_notes: small data-point labels are hard to read at full size
-  reviewed: true
   width: 800

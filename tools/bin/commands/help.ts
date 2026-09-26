@@ -614,7 +614,7 @@ Verbs:
                 scenarios and their automations, documents, description, and whether it
                 is a stub), proposed (folders ranked by the code in them no feature owns,
                 with the id they would take), media (the media backlog: shown but undescribed,
-                described before the file changed, awaiting review, shown nowhere, broken
+                described before the file changed, described by a model, shown nowhere, broken
                 embeds, images without alt text, duplicates, the largest, unfit but shown,
                 untracked; the marketing site counts when the build had --landing <dir>, the
                 checkout of github datagrok-ai/landing, else $KG_LANDING_DIR or <repo>/../landing)
@@ -640,8 +640,8 @@ Verbs:
                 describes: frames sampled with ffmpeg (winget Gyan.FFmpeg is found), a cheaper
                 model asked through claude -p (a Sonnet id; Opus and Fable are refused) what
                 each shows, the answer validated against the media type and merged into the
-                folder's media.yaml as a proposal (reviewed: false, described_by, described_blob);
-                a reviewed entry is never overwritten; answers are cached under .kg/enrich/.
+                folder's media.yaml (described_by, described_blob); an entry is touched only when
+                undescribed or, with --stale, older than the file; answers are cached under .kg/enrich/.
                 --limit N (20), --only <path prefix|glob>, --stale (refresh descriptions older
                 than the file), --dry-run (list only), --model <id>, --show-prompt.
     ask         One of the questions under core/docs/knowledge-graph/questions/ against the

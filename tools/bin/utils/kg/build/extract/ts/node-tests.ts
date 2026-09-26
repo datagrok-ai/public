@@ -1,4 +1,4 @@
-/// vitest, jest and node:test cases (change-tests/plan.md): `describe`/`test`/`it` titles in the `*.test.ts` and
+/// vitest, jest and node:test cases: `describe`/`test`/`it` titles in the `*.test.ts` and
 /// `*.spec.ts` sources the ts pass parses (the CLI, the libraries, the packages), one suite per file, run by
 /// `npx vitest run <file>`. A spec the Playwright or the DG runner owns is left to its own extractor.
 import * as fs from 'fs';

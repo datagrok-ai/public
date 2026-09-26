@@ -1,4 +1,4 @@
-/// TypeScript source files and their declarations (build-plan.md WO-3b): one compiler-API parse per file
+/// TypeScript source files and their declarations: one compiler-API parse per file
 /// (`ts.createSourceFile`, no Program) shared by the ts-declarations, ts-imports and ts-uses extractors;
 /// `source-file` and `declaration` nodes, `declares` file->declaration and class->member, `extends` and
 /// `implements` resolved by name in the same file, through the imports, then the same package or library.
@@ -143,7 +143,7 @@ export class TsSources {
     return declId(file.path, decl.name, decl.accessor);
   }
 
-  /** The node an import specifier names (build-plan.md WO-3b, ts_imports.py rules). */
+  /** The node an import specifier names. */
   resolveImport(file: TsFile, specifier: string): ImportTarget {
     if (specifier.startsWith('.')) {
       const base = path.posix.normalize(path.posix.join(path.posix.dirname(file.path), specifier));

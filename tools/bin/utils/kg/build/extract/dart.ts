@@ -1,4 +1,4 @@
-/// The Dart sources of `core/` (build-plan.md WO-6): one lexical pass per file — the file itself, its
+/// The Dart sources of `core/`: one lexical pass per file — the file itself, its
 /// top-level declarations with the heritage their class headers spell, its import directives, the tests of a
 /// test file (`test()` or the client's `regTest()`) and the `~id` markers of conventions.md §6. No analyzer
 /// and no AST: no members, no calls, and nothing a regex cannot see.
@@ -9,7 +9,7 @@ import {Emitter} from '../emitter';
 import {BuildContext, Extractor} from '../context';
 import {HomeSet} from '../../homes';
 import {fileId, declId, testId, suiteId, docId, docKind, HELP_DIR, DART_PACKAGES, REG_TEST_DIR, helpPage, countLines, sourceFileRow} from '../../ids';
-import {homesOf, resolveMention, MARKER_LINE} from './markers';
+import {homesOf, resolveMention, testsHeader, MARKER_LINE} from './markers';
 import {blankComments, matchBrace} from './ts/tests';
 
 const SOURCES = 'core/**/*.dart';
@@ -27,7 +27,7 @@ const WITH = /\bwith\s+((?:[\w$]+\s*,\s*)*[\w$]+)/;
 const IMPLEMENTS = /\bimplements\s+((?:[\w$]+\s*,\s*)*[\w$]+)/;
 const TYPE_ARGS = /<[^<>]*>/;
 const HEADER_LINES = 8;
-/** The base every widget descends from (d4-features.md §4 item A). */
+/** The base every widget descends from. */
 const WIDGET_FILE = 'core/client/d4/lib/src/widgets/widget.dart';
 /** The platform's vocabulary: a widget descends from `Widget` or `InputBase` and is neither a view nor a viewer. */
 const WIDGET_ROOTS = [`decl:${WIDGET_FILE}#Widget`, 'decl:core/client/d4/lib/src/widgets/inputs/input_base.dart#InputBase'];
@@ -248,20 +248,24 @@ function imports(emitter: Emitter, file: string, directives: RegExpExecArray[], 
   return [...packages];
 }
 
-/** §8.1 uses, lexically: a capitalized word of a test file that exactly one type of its own package or of a package it
- * imports declares; a name several files declare is counted as ambiguous and drawn for nothing. */
+/** §8.1 uses: the types a `/// Tests:` header names (annotation), then, lexically, every capitalized word of a test file;
+ * either resolves to the one type of its own package or of a package it imports that has the name, and a name several
+ * files declare is counted as ambiguous and drawn for nothing. */
 function lexicalUses(emitter: Emitter, file: string, text: string, packages: string[], declared: Map<string, Map<string, string[]>>): void {
   const known = candidates(packages, declared, file);
   const seen = new Set<string>();
-  for (const m of blankComments(text).replace(STRING_LITERAL, (s) => ' '.repeat(s.length)).matchAll(TYPE_TOKEN)) {
-    const name = m[0];
-    if (name.length < MIN_TOKEN || seen.has(name)) continue;
+  const use = (name: string, derived_by: string, confidence: number): boolean => {
     seen.add(name);
     const files = known.get(name);
-    if (!files?.length) continue;
+    if (!files?.length) return false;
     if (files.length > 1) emitter.problem('ambiguous_uses', `${file}: ${name} is declared in ${files.join(' and ')}`);
-    else emitter.edge({type: 'uses', from: fileId(file), to: declId(files[0], name), kind: 'type', derived_by: 'lexical', confidence: LEXICAL_CONFIDENCE, evidence: [file]});
-  }
+    else emitter.edge({type: 'uses', from: fileId(file), to: declId(files[0], name), kind: 'type', derived_by, confidence, evidence: [file]});
+    return true;
+  };
+  for (const name of testsHeader(text))
+    if (!seen.has(name) && !use(name, 'annotation', 1)) emitter.problem('unresolved_ids', `${file}: Tests: ${name} names no type of its package or an imported one`);
+  for (const m of blankComments(text).replace(STRING_LITERAL, (s) => ' '.repeat(s.length)).matchAll(TYPE_TOKEN))
+    if (m[0].length >= MIN_TOKEN && !seen.has(m[0])) use(m[0], 'lexical', LEXICAL_CONFIDENCE);
 }
 
 /** `package:<pkg>/<path>` through the package table into `<dir>/lib/<path>`; a relative specifier against the file. */

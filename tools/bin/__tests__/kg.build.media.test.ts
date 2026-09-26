@@ -33,14 +33,14 @@ describe('media extractor (notation.md §3.7)', () => {
     expect(gif).toEqual({id: GIF, type: 'media', name: 'histogram.gif', batch: expect.any(String), blob: git(repo, 'hash-object', `${IMG}/histogram.gif`), bytes: 43,
       format: 'gif', kind: 'animation', path: `${IMG}/histogram.gif`, url: `https://datagrok.ai/help/visualize/viewers/img/histogram.gif`,
       thumbnail: `media:${IMG}/histogram-thumb.png`, caption: 'Changing the bin count', description: expect.stringContaining('drags the Bins slider'),
-      actions: ['opens the histogram', 'drags the Bins slider left', 'drags it back'], quality: 'answer', reviewed: true,
+      actions: ['opens the histogram', 'drags the Bins slider left', 'drags it back'], quality: 'answer',
       described_by: 'person', described_blob: gif.blob, width: 800, height: 500, seconds: 6, provenance: 'annotation', source_layer: 'public', status: 'active', visibility: 'public'});
     const unused = media.find((m) => m.id === `media:${IMG}/unused.png`);
     expect(unused).toMatchObject({provenance: 'filesystem', format: 'png', bytes: 70});
-    expect(Object.keys(unused)).not.toContain('reviewed');
+    expect(Object.keys(unused)).not.toContain('described_by');
     expect(Object.keys(unused)).not.toContain('thumbnail');
     expect(media.find((m) => m.id === VIDEO)).toMatchObject({name: 'Histograms in five minutes', format: 'youtube', provider: 'youtube', external_id: 'abc123def45',
-      url: 'https://www.youtube.com/watch?v=abc123def45', thumbnail: `media:${IMG}/histogram-thumb.png`, quality: 'marketing', reviewed: true, seconds: 300, provenance: 'annotation'});
+      url: 'https://www.youtube.com/watch?v=abc123def45', thumbnail: `media:${IMG}/histogram-thumb.png`, quality: 'marketing', seconds: 300, provenance: 'annotation'});
     expect(rows('edges/thumbnail').map((e) => [e.from, e.to])).toEqual([[GIF, `media:${IMG}/histogram-thumb.png`], [VIDEO, `media:${IMG}/histogram-thumb.png`]]);
   });
 
@@ -57,7 +57,8 @@ describe('media extractor (notation.md §3.7)', () => {
     expect(embeds[0]).toMatchObject({derived_by: 'ast', confidence: 1, evidence: [PAGE]});
   });
 
-  it('asserts illustrates from the records only: annotation 1.0 when reviewed, an llm proposal at 0.6 otherwise', async () => {
+  // described_by alone says who asserts the edge: a model id is an llm proposal, a person or nothing an annotation
+  it('asserts illustrates from the records only: an llm proposal at 0.6 when a model described the file, annotation 1.0 otherwise', async () => {
     const {rows} = await graph;
     expect(rows('edges/illustrates').map((e) => [e.from, e.to, e.derived_by, e.confidence, e.proposed, e.evidence])).toEqual([
       [`media:${IMG}/bins.png`, 'visualize/viewers/histogram', 'llm', 0.6, true, [`${IMG}/media.yaml`]],
@@ -151,7 +152,7 @@ describe('the marketing site as an external root (--landing)', () => {
     const {rows} = await site;
     const gif = rows('nodes/media').find((m) => m.id === 'media:landing:web/img/slides/aggregate.gif');
     expect(gif).toMatchObject({path: 'landing:web/img/slides/aggregate.gif', url: 'https://datagrok.ai/img/slides/aggregate.gif', format: 'gif', bytes: 43,
-      caption: 'Aggregating a table', quality: 'marketing', reviewed: true, provenance: 'annotation', source_layer: 'public', visibility: 'public'});
+      caption: 'Aggregating a table', quality: 'marketing', provenance: 'annotation', source_layer: 'public', visibility: 'public'});
     expect(rows('edges/illustrates').find((e) => e.from === gif.id)).toMatchObject({to: 'visualize/viewers', derived_by: 'annotation', confidence: 1, evidence: ['landing:web/img/slides/media.yaml']});
     // the fixture site is no repository of its own, so its files count as untracked: indexed when shown or described, reported otherwise
     expect(rows('nodes/media').filter((m) => m.path?.startsWith('landing:')).map((m) => m.id)).toEqual([
@@ -177,14 +178,15 @@ describe('the marketing site as an external root (--landing)', () => {
 });
 
 describe('report media', () => {
-  it('lists the backlog: undescribed, stale, awaiting review, unreferenced, broken, no alt, duplicates, largest, unfit', async () => {
+  it('lists the backlog: undescribed, stale, described by a model, unreferenced, broken, no alt, duplicates, largest, unfit', async () => {
     const {report} = await graph;
     const media = report('media');
-    expect(media.summary).toBe('5 media (0 MB): 0 shown but undescribed, 1 described before the file changed, 1 awaiting review, 1 shown nowhere, 1 broken embeds, ' +
+    expect(media.summary).toBe('5 media (0 MB): 0 shown but undescribed, 1 described before the file changed, 1 described by a model, 1 shown nowhere, 1 broken embeds, ' +
       '0 images without alt text, 1 files committed more than once, 0 rated unfit and still shown.');
     const rows = (title: string) => media.sections.find((s: any) => s.title === title).rows;
     expect(rows('stale')).toEqual([{id: `media:${IMG}/bins.png`, format: 'png', bytes: 70, pages: 1, described_blob: 'deadbeefdead', blob: expect.any(String)}]);
-    expect(rows('awaiting review')).toEqual([{id: `media:${IMG}/bins.png`, format: 'png', bytes: 70, pages: 1, described_by: 'claude-sonnet-5', quality: 'docs'}]);
+    // the section that was "awaiting review" now lists what a model described; a person's record is not in it
+    expect(rows('described by a model')).toEqual([{id: `media:${IMG}/bins.png`, format: 'png', bytes: 70, pages: 1, described_by: 'claude-sonnet-5', quality: 'docs'}]);
     // the thumbnail some gif names is not unreferenced; the png nothing shows is
     expect(rows('unreferenced')).toEqual([{id: `media:${IMG}/unused.png`, format: 'png', bytes: 70, path: `${IMG}/unused.png`}]);
     expect(rows('broken embeds')).toEqual([{embed: `${PAGE}:20: ![gone](img/gone.png)`}]);

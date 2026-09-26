@@ -22,7 +22,6 @@ apply-model.gif:
   quality_notes: >-
     long recording with mostly redundant browsing frames before the actual apply-model action; small
     resolution UI text is hard to read
-  reviewed: true
   seconds: 27.5
   width: 1600
 interactive-confusion-matrix.png:
@@ -38,7 +37,6 @@ interactive-confusion-matrix.png:
   kind: screenshot
   quality: docs
   quality_notes: small, low-resolution crop with no axis labels beyond row/column headers; readable but plain
-  reviewed: true
   width: 283
 interactive-corrplot.png:
   caption: Correlation matrix of numerical columns
@@ -56,7 +54,6 @@ interactive-corrplot.png:
   quality_notes: >-
     small cropped widget screenshot, no surrounding context, minor UI (column headers wrap
     awkwardly)
-  reviewed: true
   width: 328
 interactive-distributions.png:
   caption: Comparing predicted and actual distributions
@@ -74,7 +71,6 @@ interactive-distributions.png:
   quality_notes: >-
     small crop of a single widget with no surrounding context; fine to illustrate the distributions
     viewer within its page but not distinctive enough to stand alone
-  reviewed: true
   width: 526
 interactive-mismatches.png:
   caption: Wrong predictions table
@@ -91,7 +87,6 @@ interactive-mismatches.png:
   quality_notes: >-
     plain data grid with generic synthetic data (dates, disease names), no distinguishing platform
     chrome visible
-  reviewed: true
   width: 595
 interactive-modeling.gif:
   actions:
@@ -118,7 +113,6 @@ interactive-modeling.gif:
   quality_notes: >-
     small UI text and dense panels are hard to read at a glance; fine as an in-page walkthrough but
     not self-explanatory without the surrounding text
-  reviewed: true
   seconds: 54.8
   width: 1280
 interactive-pcplot.png:
@@ -136,7 +130,6 @@ interactive-pcplot.png:
   quality_notes: >-
     cursor visible in the frame; axis labels are small and the plot is cropped tightly with no
     surrounding context
-  reviewed: true
   width: 426
 interactive-performance.png:
   caption: 'Model performance metrics: train vs cross-validation'
@@ -153,7 +146,6 @@ interactive-performance.png:
   quality_notes: >-
     Small, tightly cropped table with no surrounding UI chrome; understandable but not
     self-explanatory without page context.
-  reviewed: true
   width: 374
 interactive-residuals.png:
   caption: Residuals plot for a regression model
@@ -170,7 +162,6 @@ interactive-residuals.png:
   quality_notes: >-
     small, low-resolution chart crop with tiny text; illustrative example rather than a polished
     standalone visual
-  reviewed: true
   width: 612
 interactive-roc-curve.png:
   caption: Interactive ROC curve viewer
@@ -188,7 +179,6 @@ interactive-roc-curve.png:
   quality_notes: >-
     Clean and readable, but a small inline crop with no surrounding UI context, appropriate for
     illustrating this table row rather than standing alone
-  reviewed: true
   width: 701
 interactive-scatterplot-categorical.png:
   caption: Interactive scatter plot for a categorical prediction
@@ -203,7 +193,6 @@ interactive-scatterplot-categorical.png:
   kind: screenshot
   quality: docs
   quality_notes: small tooltip and cursor mid-interaction slightly clutter the view
-  reviewed: true
   width: 1000
 interactive-scatterplot-numerical.png:
   caption: Scatter plot for a regression model
@@ -219,7 +208,6 @@ interactive-scatterplot-numerical.png:
   quality_notes: >-
     small, cropped chart image with low r2 example data; fine as a table example but not polished
     enough to stand alone
-  reviewed: true
   width: 689
 interactive-statistics.png:
   caption: Statistics for target vs. predicted distributions
@@ -233,7 +221,6 @@ interactive-statistics.png:
   kind: screenshot
   quality: docs
   quality_notes: cropped table with no surrounding chart or context, plain numeric output
-  reviewed: true
   width: 407
 mlflow-tags.png:
   caption: MLFlow model tags for Datagrok integration
@@ -248,7 +235,6 @@ mlflow-tags.png:
   kind: screenshot
   quality: docs
   quality_notes: cropped mid-table, only two tag rows visible
-  reviewed: true
   width: 1131
 predictive-modeling.gif:
   actions:
@@ -271,7 +257,6 @@ predictive-modeling.gif:
   kind: animation
   quality: docs
   quality_notes: small UI text and dense tables are hard to read at reduced size; otherwise clear and current UI
-  reviewed: true
   seconds: 79.9
   width: 1600
 tip-class-imbalance.png:
@@ -287,7 +272,6 @@ tip-class-imbalance.png:
   quality_notes: >-
     tightly cropped UI fragment with no surrounding context; fine as one of three tip thumbnails in
     a table but not meaningful alone
-  reviewed: true
   width: 317
 tip-impute-missing.png:
   caption: Ignoring rows with missing values
@@ -302,7 +286,6 @@ tip-impute-missing.png:
   kind: screenshot
   quality: docs
   quality_notes: small cropped UI panel with a hover tooltip; clear but minor and context-dependent
-  reviewed: true
   width: 499
 tip-low_accuracy.png:
   caption: Reading model precision from a confusion matrix
@@ -320,5 +303,4 @@ tip-low_accuracy.png:
   quality_notes: >-
     cropped to a single small widget with no surrounding context; only legible as a supporting
     thumbnail in a tips table
-  reviewed: true
   width: 498

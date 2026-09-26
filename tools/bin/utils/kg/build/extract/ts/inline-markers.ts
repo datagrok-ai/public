@@ -1,6 +1,6 @@
-/// Inline feature markers in TypeScript sources (conventions.md §6, build-plan.md WO-4): `// ~id` on a line of its
+/// Inline feature markers in TypeScript sources (conventions.md §6): `// ~id` on a line of its
 /// own makes the file participate in that feature, never own it. The id resolves through the home documents like
-/// every other marker, and one no home declares is counted under `unresolved_ids` and draws nothing (review 3 #8).
+/// every other marker, and one no home declares is counted under `unresolved_ids` and draws nothing.
 import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter} from '../../emitter';

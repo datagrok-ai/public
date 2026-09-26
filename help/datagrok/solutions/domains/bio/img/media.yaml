@@ -14,7 +14,6 @@ Cluster_sequence_results-800.png:
   kind: screenshot
   quality: docs
   quality_notes: small UI text and dense tooltip data reduce standalone clarity
-  reviewed: true
   width: 800
 Oligotoolkit-pattern-edit.gif:
   actions:
@@ -40,7 +39,6 @@ Oligotoolkit-pattern-edit.gif:
   quality_notes: >-
     small UI at 1600x1000 with dense unlabeled controls; useful in context of the surrounding steps
     but not self-explanatory alone
-  reviewed: true
   seconds: 40.5
   width: 1600
 Oligotoolkit-structure.gif:
@@ -61,7 +59,6 @@ Oligotoolkit-structure.gif:
   height: 1000
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 53.9
   width: 1600
 Oligotoolkit-translator.gif:
@@ -85,7 +82,6 @@ Oligotoolkit-translator.gif:
   quality_notes: >-
     small, low-resolution chemical structure diagrams are hard to read at this scale; UI chrome and
     browser download popups add clutter
-  reviewed: true
   seconds: 29.1
   width: 1600
 PDB_viewer-800.gif:
@@ -112,7 +108,6 @@ PDB_viewer-800.gif:
   quality_notes: >-
     cell/grid area is cropped and small text is illegible at this resolution; usable to illustrate
     the workflow but not detailed enough to stand alone as a full how-to
-  reviewed: true
   seconds: 43.9
   width: 800
 add-new-monomer.gif:
@@ -135,7 +130,6 @@ add-new-monomer.gif:
   height: 1001
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 58.4
   width: 1600
 biln.png:
@@ -154,7 +148,6 @@ biln.png:
   quality_notes: >-
     grid columns are cut off on the right and BILN text is truncated, but the rendering is clear and
     readable
-  reviewed: true
   width: 1720
 edit-monomer.gif:
   actions:
@@ -179,7 +172,6 @@ edit-monomer.gif:
   quality_notes: >-
     small embedded UI at low effective resolution for the sketcher details; readable but
     dense/cluttered grid text
-  reviewed: true
   seconds: 49
   width: 1600
 enumeration.gif:
@@ -202,7 +194,6 @@ enumeration.gif:
   height: 1714
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 14
   width: 3087
 fasta-format-0.png:
@@ -221,7 +212,6 @@ fasta-format-0.png:
   quality_notes: >-
     informative but plain grid screenshot with a busy context panel; not polished enough for
     marketing use alone
-  reviewed: true
   width: 1601
 helm-editor-0.png:
   caption: Editing a HELM macromolecule structure
@@ -238,7 +228,6 @@ helm-editor-0.png:
   kind: screenshot
   quality: docs
   quality_notes: small monomer labels are hard to read at this resolution; otherwise clear
-  reviewed: true
   width: 1601
 helm-format.png:
   caption: Rendering HELM macromolecule sequences in a grid
@@ -257,7 +246,6 @@ helm-format.png:
   quality_notes: >-
     informative but cluttered with unrelated UI chrome (context panel, toolbar, other columns) not
     focused solely on the HELM rendering itself
-  reviewed: true
   width: 1601
 helm-mol-highlight.png:
   caption: Converting non-linear HELM/BILN sequences to molecules
@@ -275,7 +263,6 @@ helm-mol-highlight.png:
   quality_notes: >-
     Tooltip overlaps and obscures part of the table; BILN text is truncated with ellipses; bottom
     row is cropped at the image edge; dense, small text throughout.
-  reviewed: true
   width: 2486
 linear-seq-highlight.png:
   caption: Converting linear sequences to atomic-level structures
@@ -292,7 +279,6 @@ linear-seq-highlight.png:
   quality_notes: >-
     dense grid with small text and overlapping structures makes individual atoms hard to read at
     full zoom
-  reviewed: true
   width: 1397
 macromol-activity-cliffs-0.png:
   caption: Activity cliffs in a macromolecule sequence set
@@ -309,7 +295,6 @@ macromol-activity-cliffs-0.png:
   kind: screenshot
   quality: docs
   quality_notes: small UI text and dense grid make it hard to read at a glance
-  reviewed: true
   width: 1601
 macromol-cliffs-pairs-0.png:
   caption: Activity cliff pair at high zoom
@@ -324,7 +309,6 @@ macromol-cliffs-pairs-0.png:
   kind: screenshot
   quality: docs
   quality_notes: small UI text and dense panels are hard to read at this crop
-  reviewed: true
   width: 1601
 macromol-viewers-scatterplot.gif:
   actions:
@@ -348,7 +332,6 @@ macromol-viewers-scatterplot.gif:
   kind: animation
   quality: docs
   quality_notes: small embedded UI text and dense grid make some labels hard to read at this resolution
-  reviewed: true
   seconds: 10.6
   width: 1601
 manage-duplicate-monomers.gif:
@@ -373,7 +356,6 @@ manage-duplicate-monomers.gif:
   quality_notes: >-
     cropped to the panel only, no surrounding app chrome; molecule and label text is small and hard
     to read at this resolution
-  reviewed: true
   seconds: 26.2
   width: 1600
 manage-monomers-view.gif:
@@ -397,7 +379,6 @@ manage-monomers-view.gif:
   height: 1001
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 27.1
   width: 1600
 marcomol-explore.png:
@@ -416,7 +397,6 @@ marcomol-explore.png:
   quality_notes: >-
     dense, cluttered layout with overlapping panels and a stray tooltip mid-frame; informative but
     not clean enough to stand alone
-  reviewed: true
   width: 1601
 mol-to-helm.gif:
   actions:
@@ -435,7 +415,6 @@ mol-to-helm.gif:
   height: 1763
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21.8
   width: 3180
 monomer-library-manager.png:
@@ -455,7 +434,6 @@ monomer-library-manager.png:
     Two side-by-side panels captured together; readable but busy, and the merge/duplicate-resolution
     panel isn't explained in the surrounding text, so it's docs-tier rather than a clean standalone
     answer.
-  reviewed: true
   width: 1832
 msa_dialog.png:
   caption: Configuring the MSA dialog
@@ -471,7 +449,6 @@ msa_dialog.png:
   kind: screenshot
   quality: docs
   quality_notes: dialog partially overlaps the underlying grid, obscuring some cell content
-  reviewed: true
   width: 1933
 protein-weblogo-header.gif:
   actions:
@@ -495,7 +472,6 @@ protein-weblogo-header.gif:
   quality_notes: >-
     small UI text and dense grid are hard to read at reduced size; useful as an illustration but not
     self-explanatory without the surrounding text
-  reviewed: true
   seconds: 44
   width: 1600
 remove-monomers.gif:
@@ -517,7 +493,6 @@ remove-monomers.gif:
   height: 1001
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 28.4
   width: 1600
 rules-conversion.gif:
@@ -539,7 +514,6 @@ rules-conversion.gif:
   kind: animation
   quality: docs
   quality_notes: small text and dense grid at low resolution make details hard to read without zooming
-  reviewed: true
   seconds: 8.7
   width: 3087
 rules-management.gif:
@@ -566,7 +540,6 @@ rules-management.gif:
   quality_notes: >-
     small dense grid UI with many small labels and structures, readable but cluttered for a
     standalone answer
-  reviewed: true
   seconds: 30
   width: 1600
 sequence-GetRegion.gif:
@@ -593,7 +566,6 @@ sequence-GetRegion.gif:
   quality_notes: >-
     small UI text and a mid-animation dropdown menu occupy much of the frame, more like a
     walkthrough than a single clean answer shot
-  reviewed: true
   seconds: 41
   width: 800
 sequence-filter-search.gif:
@@ -618,7 +590,6 @@ sequence-filter-search.gif:
   quality_notes: >-
     small UI, dense grid text not fully legible at this resolution, but the filter panel interaction
     is clear
-  reviewed: true
   seconds: 36.8
   width: 1601
 split-to-monomers.gif:
@@ -642,6 +613,5 @@ split-to-monomers.gif:
   height: 1001
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 26.8
   width: 1601

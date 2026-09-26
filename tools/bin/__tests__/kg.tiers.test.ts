@@ -1,4 +1,4 @@
-/// The tiers of `tests-for` and `impact`, the change set and the runner rows (change-tests/plan.md WO-B).
+/// The tiers of `tests-for` and `impact`, the change set and the runner rows.
 import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 import fs from 'fs';
 import os from 'os';
@@ -46,7 +46,7 @@ function prepare(repo: string): void {
     `category('Tested: Setup', () => {\n  test('boots', async () => { console.log(df, lib); });\n});\n`);
 }
 
-describe('the tiers of tests-for and impact (change-tests/plan.md)', () => {
+describe('the tiers of tests-for and impact', () => {
   let index: {repo: string, opened: Awaited<ReturnType<typeof open>>};
 
   beforeAll(async () => {

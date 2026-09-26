@@ -1,4 +1,4 @@
-/// Where the extractors put what they find (build-plan.md WO-1). Rows are normalized and shape-checked
+/// Where the extractors put what they find. Rows are normalized and shape-checked
 /// on the way in, merged by id (nodes) or by type/from/to/name (edges), and `finalize()` derives the
 /// hierarchy, inherits down it, materializes reference properties, checks endpoints, enforces required
 /// members once and settles visibility.
@@ -159,7 +159,7 @@ export class Emitter {
     this.claims.push(c);
   }
 
-  /** What membership resolution (WO-4) reads: every claim made so far. */
+  /** What membership resolution reads: every claim made so far. */
   get claimed(): Claim[] {
     return this.claims;
   }

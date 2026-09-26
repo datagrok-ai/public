@@ -1,4 +1,4 @@
-/// The maintainer reports (build-plan.md WO-8, conventions.md §10, §11.2): what has no owner, what a
+/// The maintainer reports (conventions.md §10, §11.2): what has no owner, what a
 /// home still cites that is gone, which features have no test or document, which folders want a feature
 /// of their own, and what a branch touches. They read the JSONL, the manifest and the build's own
 /// reports — never the index — so they answer wherever a build ran, with or without `kuzu`. The one
@@ -9,6 +9,7 @@ import {spawnSync} from 'child_process';
 import {TypeSystem, Issue, isSubtype} from './types';
 import {Row, compare} from './normalize';
 import {helpPage, kebab} from './ids';
+import {describedByModel} from './media';
 import {Graph} from './build/emitter';
 import {readJsonl, dataFile, readManifest} from './generation';
 import {Section, coverageNote} from './answer';
@@ -33,7 +34,7 @@ const STALE_CODES = ['missing-cited-path', 'missing-doc-link', 'citation-escape'
 const HELP_LINK = /^(?:https?:\/\/(?:[\w-]+\.)*datagrok\.ai)?\/help\//;
 const ORPHAN_GROUPS = 50;
 const ORPHAN_FILES = 5;
-/** A test file by its path, for the files the index holds no test of (change-tests/plan.md § Validation); a fixture
+/** A test file by its path, for the files the index holds no test of; a fixture
  * under a test folder is neither a test nor a source. */
 const TEST_PATH = /(?:^|\/)(?:tests?|__tests__)\/|\.test\.ts$|_test\.dart$/;
 const FIXTURE_PATH = /\/fixtures?\//;
@@ -163,7 +164,7 @@ export function writeReports(kgDir: string, data: GraphData, options: ReportOpti
 /**
  * Files no feature owns, grouped by the package or the core sub-project they sit in. A group's orphan count means
  * nothing on its own, so each row carries the files that are owned and the files that only take part, and the
- * summary carries the inventory this build observed — the denominator the numbers are a fraction of (review 3 #10).
+ * summary carries the inventory this build observed — the denominator the numbers are a fraction of.
  * The `owner` column is the group's own owner, from the `package.json` author: no feature is not no owner.
  */
 function orphans(data: GraphData): Report {
@@ -213,7 +214,7 @@ function orphans(data: GraphData): Report {
 
 /**
  * The media backlog (conventions.md §5.7): what pages show that nothing describes, descriptions the file has outgrown,
- * proposals a person has not reviewed, files no page shows, embeds of files that are gone, embeds with no alt text,
+ * records a model wrote, files no page shows, embeds of files that are gone, embeds with no alt text,
  * one file committed under several paths, the largest files, and what is rated unfit and still shown.
  */
 function media(data: GraphData): Report {
@@ -232,7 +233,7 @@ function media(data: GraphData): Report {
   const byBytes = (a: Row, b: Row) => bytes(b) - bytes(a) || compare(String(a.id), String(b.id));
   const undescribed = items.filter((m) => m.description === undefined && shown.has(String(m.id))).sort(byPages);
   const stale = items.filter((m) => typeof m.described_blob === 'string' && m.blob !== undefined && m.described_blob !== m.blob).sort(byPages);
-  const proposals = items.filter((m) => m.description !== undefined && m.reviewed !== true).sort(byPages);
+  const byModel = items.filter(describedByModel).sort(byPages);
   const unreferenced = items.filter((m) => m.path !== undefined && !shown.has(String(m.id)) && !thumbnails.has(String(m.id))).sort(byBytes);
   const noAlt = [...shown.values()].flat().filter((e) => e.form === 'image' && !e.alt).map((e) => ({page: e.from, line: e.line, media: e.to}))
     .sort((a, b) => compare(String(a.page), String(b.page)) || Number(a.line) - Number(b.line));
@@ -251,7 +252,7 @@ function media(data: GraphData): Report {
   return {
     name: 'media', title: 'Media backlog',
     summary: `${items.length} media (${Math.round(total / 1048576)} MB): ${undescribed.length} shown but undescribed, ${stale.length} described before the file changed, ` +
-      `${proposals.length} awaiting review, ${unreferenced.length} shown nowhere, ${(data.problems.broken_embeds ?? []).length} broken embeds, ${noAlt.length} images without alt text, ` +
+      `${byModel.length} described by a model, ${unreferenced.length} shown nowhere, ${(data.problems.broken_embeds ?? []).length} broken embeds, ${noAlt.length} images without alt text, ` +
       `${duplicates.length} files committed more than once, ${unfit.length} rated unfit and still shown.`,
     notes: [
       ...((data.problems.untracked_media ?? []).length ? [`${data.problems.untracked_media.length} media files under the roots are not tracked by git; they are listed, not indexed`] : []),
@@ -260,7 +261,7 @@ function media(data: GraphData): Report {
     sections: [
       section('undescribed', undescribed.map(file)),
       section('stale', stale.map((m) => ({...file(m), described_blob: String(m.described_blob).slice(0, 12), blob: String(m.blob).slice(0, 12)}))),
-      section('awaiting review', proposals.map((m) => ({...file(m), described_by: m.described_by, quality: m.quality}))),
+      section('described by a model', byModel.map((m) => ({...file(m), described_by: m.described_by, quality: m.quality}))),
       section('unreferenced', unreferenced.map((m) => ({id: m.id, format: m.format, bytes: bytes(m), path: m.path}))),
       section('broken embeds', (data.problems.broken_embeds ?? []).map((line) => ({embed: line}))),
       section('images without alt text', noAlt),
@@ -329,7 +330,7 @@ function stale(data: GraphData, options: ReportOptions): Report {
 /**
  * One row per feature: who owns it, what really runs against it, what documents it, and whether it says what it is.
  * A test count that mixes a skipped test, a test whose name is built at run time and a test that runs is not a
- * coverage number (review 3 #10), so each of them is its own column, and so is the coverage a feature only inherits
+ * coverage number, so each of them is its own column, and so is the coverage a feature only inherits
  * from the features under it. A stub — a feature with no home of its own — is marked rather than counted as a gap.
  */
 function coverage(data: GraphData, options: ReportOptions): Report {
@@ -393,8 +394,8 @@ function descendants(id: string, children: Map<string, string[]>): string[] {
 
 /**
  * Folders that carry code no feature claims: candidates for a home of their own (conventions.md §10). One owned file
- * used to hide a whole folder, so a partly claimed area never appeared; the ranking is the unowned remainder instead
- * (review 3 #10), and a folder already fully owned is the only one that drops out.
+ * used to hide a whole folder, so a partly claimed area never appeared; the ranking is the unowned remainder
+ * instead, and a folder already fully owned is the only one that drops out.
  */
 function proposed(data: GraphData): Report {
   const owned = new Set((data.edges.get('is-implemented-in') ?? []).map((e) => String(e.to)));
@@ -541,8 +542,8 @@ const CHANGES: Record<string, Change['change']> = {A: 'added', M: 'modified', D:
 /**
  * The changed files of both repositories, the public ones under the `public/` prefix the graph gives them. A monorepo
  * revision means nothing inside the submodule, so the public baseline is the gitlink that revision recorded
- * (`git rev-parse <base>:public`) and only falls back to the same string when the gitlink cannot be read (review 3
- * #10). Output is NUL-delimited: a path may contain anything but a NUL, quoting included.
+ * (`git rev-parse <base>:public`) and only falls back to the same string when the gitlink cannot be read. Output
+ * is NUL-delimited: a path may contain anything but a NUL, quoting included.
  */
 function changedFiles(repoRoot: string, base: string): {files: Change[], problems: string[]} {
   const found = new Map<string, Change>();
@@ -623,7 +624,7 @@ export function readLog(repoRoot: string, n: number, repo: Repo): Commit[] {
 }
 
 /**
- * The yardstick of the notation (change-tests/plan.md § Validation): for each commit that changed a source file and
+ * The yardstick of the notation: for each commit that changed a source file and
  * a test file, the immediate and reachable tiers of its source files against the current index, and whether the
  * test files it changed are in them. A test file is one the index holds a test of, or one named like one; a commit
  * none of whose source files the index knows cannot be scored and is counted in the notes instead.

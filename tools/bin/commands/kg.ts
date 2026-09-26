@@ -1,6 +1,6 @@
 /// `grok kg check|gen|build|report|query|impact|tests-for|explain|find` — the knowledge-graph type
 /// files, home documents, the built graph, the maintainer reports and the index over it
-/// (conventions.md §11.1, build-plan.md).
+/// (conventions.md §11.1).
 import * as fs from 'fs';
 import * as path from 'path';
 import {loadTypeSystem, edgeGroups, Issue, TypeSystem} from '../utils/kg/types';
@@ -13,7 +13,7 @@ import {writeBuild, writeManifest, projectPublic, gitRevisions, buildInputs, bat
 import {landingRoot} from '../utils/kg/roots';
 import {enrichMedia} from '../utils/kg/enrich/media';
 import {readManifest, generationDir, newGeneration, currentDir, readCurrent, publish, generations, gc, Manifest} from '../utils/kg/generation';
-import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_MEMORY_MB, LoadResult, TableRows} from '../utils/kg/kuzu';
+import {loadKuzu, load as loadIndex, open, run, memoryMb, MISSING_KUZU, BUILD_MEMORY_MB, LoadResult, TableRows, KuzuDatabase, KuzuConnection} from '../utils/kg/kuzu';
 import {impact, testsFor, explain, find, resolveTarget, resolveTargets, parseTiers, DEFAULT_LIMIT, TIER_CHOICES, Change} from '../utils/kg/ops';
 import {changeSet} from '../utils/kg/changes';
 import {Answer, caveatNotes} from '../utils/kg/answer';
@@ -23,7 +23,8 @@ import {OutputFormat, printOutput} from '../utils/server-output';
 import {exportVis, hasVis} from '../utils/kg/vis';
 import {serve as listen} from '../utils/kg/serve';
 import {loadQuestions, ask, Question} from '../utils/kg/questions';
-import {openBrowser} from '../utils/utils';
+import {openBrowser, findUp} from '../utils/utils';
+import {posix} from '../utils/kg/ids';
 import {HELP_KG} from './help';
 
 const KG_DIR = path.join('core', 'docs', 'knowledge-graph');
@@ -62,7 +63,7 @@ export async function kg(argv: any): Promise<boolean> {
 
   const kgRoot = argv.kg ? path.resolve(String(argv.kg)) : findKgRoot(process.cwd());
   if (!kgRoot || !fs.existsSync(path.join(kgRoot, 'schema.yaml')))
-    return fail(kgRoot ? `${slashes(kgRoot)}: no schema.yaml` : 'grok kg currently needs the monorepo: run it inside a checkout with core/docs/knowledge-graph/schema.yaml and public/, or pass --kg <dir>');
+    return fail(kgRoot ? `${posix(kgRoot)}: no schema.yaml` : 'grok kg currently needs the monorepo: run it inside a checkout with core/docs/knowledge-graph/schema.yaml and public/, or pass --kg <dir>');
   const repoRoot = path.resolve(kgRoot, '..', '..', '..');
   if (verb === 'build') return build(argv, kgRoot, repoRoot, output);
   if (verb === 'report') return reportVerb(argv, kgRoot, repoRoot, args[1], output as ReportFormat);
@@ -122,9 +123,9 @@ async function build(argv: any, kgRoot: string, repoRoot: string, output: string
   const manifest = writeBuild(graph, genDir, {mode, batch, builder, schemaVersion: system.schemaVersion, revisions});
   if (mode !== 'public') writeReports(genDir, fromGraph(graph, repoRoot, manifest.sources, manifest.revisions), {system, repoRoot});
   const failure = await index(argv, system, genDir, repoRoot, manifest);
-  if (failure) return fail(`index not built: ${failure}; ${slashes(genDir)} stays unpublished`);
+  if (failure) return fail(`index not built: ${failure}; ${posix(genDir)} stays unpublished`);
   writeManifest(genDir, manifest);
-  if (output === 'json') console.log(JSON.stringify(manifest, null, 2));
+  if (output === 'json') printOutput(manifest, 'json');
   else console.log(summary(manifest, rel(genDir, repoRoot)));
   return promote(root, path.basename(genDir), manifest);
 }
@@ -150,16 +151,16 @@ function collect(argv: any, output: string): boolean {
   const keep = Number(argv.keep) > 0 ? Math.round(Number(argv.keep)) : KEEP_GENERATIONS;
   const before = generations(root).length;
   const result = gc(root, keep);
-  if (output === 'json') console.log(JSON.stringify(result, null, 2));
+  if (output === 'json') printOutput(result, 'json');
   else {
-    console.log(`${slashes(root)}: ${before} generation${before === 1 ? '' : 's'}, kept ${result.kept.join(', ') || 'none'}` +
+    console.log(`${posix(root)}: ${before} generation${before === 1 ? '' : 's'}, kept ${result.kept.join(', ') || 'none'}` +
       `${result.removed.length ? `, removed ${result.removed.join(', ')}` : ', removed none'}`);
     for (const batch of result.locked) console.log(`${batch}: in use, left alone`);
   }
   return true;
 }
 
-/** `grok kg report <name>`: one maintainer report over the JSONL a build already wrote (build-plan.md WO-8); `replay`
+/** `grok kg report <name>`: one maintainer report over the JSONL a build already wrote; `replay`
  * alone reads the index, since it scores the tiers of `tests-for` against the history. */
 async function reportVerb(argv: any, kgRoot: string, repoRoot: string, name: string | undefined, output: ReportFormat): Promise<boolean> {
   if (!name) return fail(`grok kg report needs a report name: ${REPORT_NAMES.join(', ')}`);
@@ -167,12 +168,12 @@ async function reportVerb(argv: any, kgRoot: string, repoRoot: string, name: str
   const base = argv.diff === undefined ? undefined : String(argv.diff);
   if ((name === 'diff') !== (base !== undefined))
     return fail(name === 'diff' ? 'grok kg report diff needs the revision to compare against: --diff <ref>' : `--diff is for grok kg report diff, not ${name}`);
-  const root = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
-  const outRoot = currentDir(root);
-  if (!outRoot) return fail(`${slashes(root)}: nothing built yet; run grok kg build`);
-  if (name === 'replay') return replayVerb(argv, outRoot, repoRoot, output);
+  const root = outRoot(argv, repoRoot);
+  const dir = currentDir(root);
+  if (!dir) return fail(`${posix(root)}: nothing built yet; run grok kg build`);
+  if (name === 'replay') return replayVerb(argv, dir, repoRoot, output);
   const system = loadTypeSystem(kgRoot);
-  const data = readGraph(outRoot, repoRoot, system, name as ReportName);
+  const data = readGraph(dir, repoRoot, system, name as ReportName);
   printReport(buildReport(name as ReportName, data, {system, repoRoot, base}), output);
   return true;
 }
@@ -181,14 +182,14 @@ async function reportVerb(argv: any, kgRoot: string, repoRoot: string, name: str
  * undescribed media of the current generation, written into their media.yaml (enrich/media.ts). */
 async function enrichVerb(argv: any, kgRoot: string, repoRoot: string, subject: string | undefined, output: string): Promise<boolean> {
   if (subject !== 'media') return fail(`grok kg enrich takes the subject 'media'${subject ? `, not '${subject}'` : ''}`);
-  const root = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
-  const outRoot = currentDir(root);
-  if (!outRoot) return fail(`${slashes(root)}: nothing built yet; run grok kg build`);
+  const root = outRoot(argv, repoRoot);
+  const dir = currentDir(root);
+  if (!dir) return fail(`${posix(root)}: nothing built yet; run grok kg build`);
   const limit = argv.limit === undefined ? 20 : Number(argv.limit);
   if (!Number.isInteger(limit) || limit < 1) return fail('--limit must be a positive integer');
   let result;
   try {
-    result = await enrichMedia({kgRoot, repoRoot, landingDir: landingRoot(repoRoot, argv.landing), outRoot, system: loadTypeSystem(kgRoot), limit,
+    result = await enrichMedia({kgRoot, repoRoot, landingDir: landingRoot(repoRoot, argv.landing), outRoot: dir, system: loadTypeSystem(kgRoot), limit,
       only: argv.only === undefined ? undefined : String(argv.only), stale: argv.stale === true, dryRun: argv['dry-run'] === true, model: String(argv.model ?? 'claude-sonnet-5')});
   } catch (e: any) {
     return fail(e.message);
@@ -203,7 +204,7 @@ async function enrichVerb(argv: any, kgRoot: string, repoRoot: string, subject: 
   if (argv['show-prompt'] === true && result.items.length) console.log(`\n${result.items[0].prompt}`);
   const failed = result.outcomes.filter((r) => r.status === 'failed').length;
   console.log(`${result.outcomes.length} media: ${result.outcomes.filter((r) => r.status === 'described').length} described, ${result.outcomes.filter((r) => r.status === 'cached').length} from the cache, ` +
-    `${result.outcomes.filter((r) => r.status === 'skipped').length} skipped, ${failed} failed${result.outcomes.some((r) => r.status === 'dry-run') ? ' (dry run: nothing written)' : ''}`);
+    `${failed} failed${result.outcomes.some((r) => r.status === 'dry-run') ? ' (dry run: nothing written)' : ''}`);
   const u = result.usage;
   if (u.input || u.output || u.cache_read)
     console.log(`tokens: ${u.input.toLocaleString('en-US')} input, ${u.output.toLocaleString('en-US')} output, ${u.cache_read.toLocaleString('en-US')} cache read, ${u.cache_write.toLocaleString('en-US')} cache written; $${u.cost_usd.toFixed(2)}`);
@@ -218,15 +219,10 @@ async function replayVerb(argv: any, dir: string, repoRoot: string, output: Repo
   if (!Number.isInteger(commits) || commits < 1) return fail(`--commits must be a positive integer, got '${argv.commits}'`);
   const repo = argv.repo === undefined ? 'both' : String(argv.repo);
   if (!REPOS.includes(repo as Repo)) return fail(`--repo must be ${REPOS.join(', ')}, got '${repo}'`);
-  if (!fs.existsSync(path.join(dir, 'kg.kuzu'))) return fail(`${slashes(path.join(dir, 'kg.kuzu'))}: no index yet; run grok kg build`);
-  const mismatch = indexMismatch(dir);
-  if (mismatch) return fail(mismatch);
-  const opened = await open(dir, true, argv.memory);
-  if (!opened) {
-    console.error(MISSING_KUZU);
-    process.exitCode = 2;
-    return true;
-  }
+  const problem = indexProblem(dir);
+  if (problem) return fail(problem);
+  const opened = await openIndex(dir, argv);
+  if (!opened) return true;
   try {
     printReport(await replay(opened.conn, readLog(repoRoot, commits, repo as Repo), readManifest(dir)?.sources), output);
     return true;
@@ -274,15 +270,10 @@ async function graph(verb: string, args: string[], argv: any, output: OutputForm
   if (verb !== 'query' && !text && !changed) return fail(`grok kg ${verb} needs ${verb === 'find' ? 'a text to search for' : 'a path or a ~id'}`);
   if (argv.tier !== undefined && !tiers) return fail(`--tier must be ${TIER_CHOICES}, got '${argv.tier}'`);
   const repoRoot = path.dirname(root);
-  if (!fs.existsSync(path.join(dir, 'kg.kuzu'))) return fail(`${slashes(path.join(dir, 'kg.kuzu'))}: no index yet; run grok kg build`);
-  const mismatch = indexMismatch(dir);
-  if (mismatch) return fail(mismatch);
-  const opened = await open(dir, true, argv.memory);
-  if (!opened) {
-    console.error(MISSING_KUZU);
-    process.exitCode = 2;
-    return true;
-  }
+  const problem = indexProblem(dir);
+  if (problem) return fail(problem);
+  const opened = await openIndex(dir, argv);
+  if (!opened) return true;
   try {
     if (verb === 'query') {
       const {rows} = await run(opened.conn, cypher);
@@ -337,12 +328,11 @@ async function graph(verb: string, args: string[], argv: any, output: OutputForm
 /** `grok kg serve`: the browser over the current generation; the render tier is exported into `<gen>/vis/` on
  * first start and kept there (a derived cache, never part of the batch). Runs until Ctrl-C. */
 async function serve(argv: any, kgRoot: string, repoRoot: string): Promise<boolean> {
-  const root = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
+  const root = outRoot(argv, repoRoot);
   const dir = currentDir(root);
-  if (!dir) return fail(`${slashes(root)}: nothing built yet; run grok kg build`);
-  if (!fs.existsSync(path.join(dir, 'kg.kuzu'))) return fail(`${slashes(path.join(dir, 'kg.kuzu'))}: no index yet; run grok kg build`);
-  const mismatch = indexMismatch(dir);
-  if (mismatch) return fail(mismatch);
+  if (!dir) return fail(`${posix(root)}: nothing built yet; run grok kg build`);
+  const problem = indexProblem(dir);
+  if (problem) return fail(problem);
   const manifest = readManifest(dir)!;
   const system = loadTypeSystem(kgRoot);
   if (system.errors.length) return fail(`${system.errors.length} type-system error${system.errors.length === 1 ? '' : 's'}; run grok kg check`);
@@ -354,12 +344,8 @@ async function serve(argv: any, kgRoot: string, repoRoot: string): Promise<boole
     console.log(`exported ${rel(summary.dir, repoRoot)}: ${summary.nodes} nodes, ${summary.edges} edges` +
       `${summary.dropped ? `, ${summary.dropped} dangling dropped` : ''}, ${(summary.bytes / 1048576).toFixed(1)} MB in ${((Date.now() - started) / 1000).toFixed(1)}s`);
   }
-  const opened = await open(dir, true, argv.memory);
-  if (!opened) {
-    console.error(MISSING_KUZU);
-    process.exitCode = 2;
-    return true;
-  }
+  const opened = await openIndex(dir, argv);
+  if (!opened) return true;
   const port = argv.port === undefined ? SERVE_PORT : Number(argv.port);
   if (!Number.isInteger(port) || port < 0 || port > 65535) return fail(`--port must be a port number, got '${argv.port}'`);
   const served = await listen({genDir: dir, repoRoot, landingDir: landingRoot(repoRoot, argv.landing), manifest, system, questions: loaded.questions, db: opened.db, conn: opened.conn, port});
@@ -392,20 +378,15 @@ async function askVerb(argv: any, kgRoot: string, repoRoot: string, id: string |
     if (at < 1) return fail(`--set takes name=value, got '${pair}'`);
     given[pair.slice(0, at)] = pair.slice(at + 1);
   }
-  const root = argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
-  const dir = currentDir(root);
-  if (!dir || !fs.existsSync(path.join(dir, 'kg.kuzu'))) return fail('no index yet; run grok kg build');
-  const mismatch = indexMismatch(dir);
-  if (mismatch) return fail(mismatch);
-  const opened = await open(dir, true, argv.memory);
-  if (!opened) {
-    console.error(MISSING_KUZU);
-    process.exitCode = 2;
-    return true;
-  }
+  const dir = currentDir(outRoot(argv, repoRoot));
+  if (!dir) return fail('no index yet; run grok kg build');
+  const problem = indexProblem(dir);
+  if (problem) return fail(problem);
+  const opened = await openIndex(dir, argv);
+  if (!opened) return true;
   try {
     const answer = await ask(opened.conn, question, given, readManifest(dir));
-    if (output === 'json') console.log(JSON.stringify({id: question.id, question: question.question, params: answer.params, notes: answer.notes, columns: answer.columns, rows: answer.rows, ms: answer.ms}, null, 2));
+    if (output === 'json') printOutput({id: question.id, question: question.question, params: answer.params, notes: answer.notes, columns: answer.columns, rows: answer.rows, ms: answer.ms}, 'json');
     else {
       for (const note of answer.notes) console.log(`note: ${note}`);
       printOutput(answer.rows, output);
@@ -431,25 +412,37 @@ function backlogRoot(repoRoot: string, flag: unknown): string | undefined {
   return [process.env.KG_BACKLOG_DIR ?? '', path.resolve(repoRoot, '..', 'backlog')].find((d) => d && fs.existsSync(path.join(d, 'index.jsonl')));
 }
 
+/** `--out`, else `<repo>/.kg`. */
+function outRoot(argv: any, repoRoot: string): string {
+  return argv.out === undefined ? path.join(repoRoot, '.kg') : path.resolve(String(argv.out));
+}
+
 function findOutRoot(argv: any): string | null {
   if (argv.out !== undefined) return path.resolve(String(argv.out));
   const kgRoot = argv.kg ? path.resolve(String(argv.kg)) : findKgRoot(process.cwd());
   if (kgRoot) return path.join(path.resolve(kgRoot, '..', '..', '..'), '.kg');
-  let dir = path.resolve(process.cwd());
-  for (;;) {
-    if (currentDir(path.join(dir, '.kg'))) return path.join(dir, '.kg');
-    const parent = path.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
+  const dir = findUp(process.cwd(), (d) => !!currentDir(path.join(d, '.kg')));
+  return dir && path.join(dir, '.kg');
 }
 
-/** The index in a generation must have been loaded from that generation; anything else is a mixed graph. */
-function indexMismatch(dir: string): string | undefined {
+/** Why a generation's index cannot be read: none yet, or one loaded from another generation, which is a mixed graph. */
+function indexProblem(dir: string): string | undefined {
+  const db = posix(path.join(dir, 'kg.kuzu'));
+  if (!fs.existsSync(db)) return `${db}: no index yet; run grok kg build`;
   const manifest = readManifest(dir);
   if (manifest?.indexed_batch === manifest?.batch) return undefined;
-  return `${slashes(path.join(dir, 'kg.kuzu'))}: this index was loaded from batch ${manifest?.indexed_batch ?? 'unknown'}, ` +
+  return `${db}: this index was loaded from batch ${manifest?.indexed_batch ?? 'unknown'}, ` +
     `and the data beside it is ${manifest?.batch ?? 'unknown'}; run grok kg build`;
+}
+
+/** The index opened read-only, or null once the missing binding has been reported (exit code 2). */
+async function openIndex(dir: string, argv: any): Promise<{db: KuzuDatabase, conn: KuzuConnection} | null> {
+  const opened = await open(dir, true, argv.memory);
+  if (!opened) {
+    console.error(MISSING_KUZU);
+    process.exitCode = 2;
+  }
+  return opened;
 }
 
 function indexSummary(r: LoadResult, db: string): string {
@@ -476,19 +469,13 @@ function fail(message: string): boolean {
 }
 
 function findKgRoot(from: string): string | null {
-  let dir = path.resolve(from);
-  for (;;) {
-    if (fs.existsSync(path.join(dir, KG_DIR, 'schema.yaml')) && fs.existsSync(path.join(dir, 'public')))
-      return path.join(dir, KG_DIR);
-    const parent = path.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
+  const dir = findUp(from, (d) => fs.existsSync(path.join(d, KG_DIR, 'schema.yaml')) && fs.existsSync(path.join(d, 'public')));
+  return dir && path.join(dir, KG_DIR);
 }
 
 function print(report: CheckReport, output: string, quiet: boolean): void {
   if (output === 'json') {
-    console.log(JSON.stringify(report, null, 2));
+    printOutput(report, 'json');
     return;
   }
   const where = (issue: Issue) => `${issue.file}${issue.line ? `:${issue.line}` : ''}`;
@@ -509,9 +496,5 @@ function print(report: CheckReport, output: string, quiet: boolean): void {
 
 function rel(file: string, repoRoot: string): string {
   const r = path.isAbsolute(file) ? path.relative(repoRoot, file) : file;
-  return slashes(r.startsWith('..') || path.isAbsolute(r) ? file : r);
-}
-
-function slashes(p: string): string {
-  return p.replace(/\\/g, '/');
+  return posix(r.startsWith('..') || path.isAbsolute(r) ? file : r);
 }

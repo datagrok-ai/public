@@ -9,7 +9,6 @@ compare-tables.png:
   height: 292
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 406
 embed-viewer-dialog.png:
   caption: Embedding a viewer with an iframe
@@ -24,7 +23,6 @@ embed-viewer-dialog.png:
     - visualize/viewers
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 645
 go-to-row-dialog.png:
   caption: Jumping to a row by number
@@ -42,7 +40,6 @@ go-to-row-dialog.png:
   quality_notes: >-
     Small, tightly cropped dialog with no surrounding table context; fine as an inline illustration
     but too minimal to stand alone.
-  reviewed: true
   width: 325
 join-tables-types.png:
   caption: 'Join types: left, right, outer, inner'
@@ -55,5 +52,4 @@ join-tables-types.png:
   height: 479
   kind: diagram
   quality: answer
-  reviewed: true
   width: 269

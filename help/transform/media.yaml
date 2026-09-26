@@ -20,7 +20,6 @@ add_function_to_editor.gif:
   quality_notes: >-
     small dialog crop of a real workflow, legible but busy with background grid data; not a
     standalone marketing asset
-  reviewed: true
   seconds: 26.6
   width: 800
 add_new_column_functions_suggestions.gif:
@@ -43,7 +42,6 @@ add_new_column_functions_suggestions.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 37.1
   width: 800
 categorize.gif:
@@ -66,7 +64,6 @@ categorize.gif:
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 43.9
   width: 800
 find-and-replace-dialog.png:
@@ -81,7 +78,6 @@ find-and-replace-dialog.png:
   height: 718
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 493
 link-tables.gif:
   actions:
@@ -107,7 +103,6 @@ link-tables.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 39.2
   width: 800
 unpivot.gif:
@@ -128,6 +123,5 @@ unpivot.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 14
   width: 800

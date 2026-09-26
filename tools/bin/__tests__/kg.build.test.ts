@@ -1,4 +1,4 @@
-/// `grok kg build` (build-plan.md WO-1, WO-2): the emitter's merge rules and finalize passes, the
+/// `grok kg build`: the emitter's merge rules and finalize passes, the
 /// deterministic writer and manifest, the public projection, and the home-document layer's rows
 /// against the mini monorepo under fixtures/kg/good.
 import {describe, it, expect} from 'vitest';
@@ -72,7 +72,7 @@ describe('normalizeRow (shared by check and build)', () => {
   });
 });
 
-describe('emitter merge rules (build-plan.md WO-1)', () => {
+describe('emitter merge rules', () => {
   it('resolves conflicting scalars by provenance rank whatever the order, fills missing fields and unions lists', () => {
     for (const order of [['annotation', 'filesystem'], ['filesystem', 'annotation']]) {
       const e = new Emitter(system, BATCH);
@@ -151,7 +151,7 @@ describe('emitter merge rules (build-plan.md WO-1)', () => {
   });
 });
 
-describe('emitter finalize (build-plan.md WO-1)', () => {
+describe('emitter finalize', () => {
   it('derives part-of from id paths with title-cased stub parents, inherits owner and status, writes reference members as ref lines', () => {
     const e = new Emitter(system, BATCH);
     e.node(person('P:a'));
@@ -200,7 +200,7 @@ describe('emitter finalize (build-plan.md WO-1)', () => {
   });
 });
 
-describe('ids (build-plan.md "Common contracts")', () => {
+describe('ids', () => {
   it('constructs and parses the extracted id forms', () => {
     expect(declId('public\\js-api\\src\\viewer.ts', 'Viewer.root', 'get')).toBe('decl:public/js-api/src/viewer.ts#Viewer.root:get');
     expect(parseId('decl:public/js-api/src/viewer.ts#Viewer.root:get')).toMatchObject({form: 'scheme', scheme: 'decl', path: 'public/js-api/src/viewer.ts', anchor: 'Viewer.root:get'});
@@ -245,7 +245,7 @@ describe('ids (build-plan.md "Common contracts")', () => {
   });
 });
 
-describe('grok kg build: writer, manifest and public projection (build-plan.md WO-1)', () => {
+describe('grok kg build: writer, manifest and public projection', () => {
   it('writes JSONL sorted with fixed key order, byte-identical across two builds; the manifest has the schema.yaml shape', async () => {
     const first = await build();
     const snapshot = (dir: string) => Object.fromEntries(['nodes', 'edges'].flatMap((d) => fs.readdirSync(path.join(dir, 'data', d)).map((f) => [`${d}/${f}`, fs.readFileSync(path.join(dir, 'data', d, f), 'utf8')])));
@@ -336,7 +336,7 @@ describe('grok kg build: writer, manifest and public projection (build-plan.md W
   });
 });
 
-describe('homes extractor (build-plan.md WO-2)', () => {
+describe('homes extractor', () => {
   it('emits one node per home with its members, the description, the home path and the layer', async () => {
     const {rows} = await build();
     const features = rows('nodes/feature');

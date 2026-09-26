@@ -1,5 +1,5 @@
 /**
- * The one harness the `grok kg` tests share (kg-codex-review-5.md step 4): a throwaway copy of a fixture
+ * The one harness the `grok kg` tests share: a throwaway copy of a fixture
  * monorepo, the command run with its console captured, and readers over the generation a build wrote.
  * Not a test file itself, so the include glob skips it.
  */
@@ -12,6 +12,9 @@ import {fileURLToPath} from 'url';
 import {kg} from '../commands/kg';
 import {currentDir} from '../utils/kg/generation';
 import {loadTypeSystem, TypeSystem} from '../utils/kg/types';
+
+// a `grok kg build` over a fixture monorepo takes seconds and the box is often loaded; every kg suite imports this file
+vi.setConfig({testTimeout: 120_000, hookTimeout: 120_000});
 
 export const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg');
 export const KG_DIR = path.join('core', 'docs', 'knowledge-graph');

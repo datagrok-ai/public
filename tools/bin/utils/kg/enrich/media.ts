@@ -1,8 +1,8 @@
 /// `grok kg enrich media` (conventions.md §11.1, the prepare-then-apply contract): for the media files the current
 /// generation shows but no record describes (or describes for an older blob, `--stale`), sample frames with ffmpeg,
 /// ask a cheaper model through `claude -p` what the file shows, validate the answer against the media type and merge
-/// it into the folder's `media.yaml` as a proposal (`reviewed: false`, `described_by: <model>`, `described_blob`).
-/// The build never runs this; a person reviews what it wrote.
+/// it into the folder's `media.yaml` (`described_by: <model>`, `described_blob`). The build never runs this; a re-run
+/// touches an entry only when it has no description or, with `--stale`, the file changed since.
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -16,7 +16,7 @@ import {readJsonl, dataFile} from '../generation';
 import {Roots, localPath} from '../roots';
 import {proseLines} from '../citations';
 
-/** The keys a proposal may set; `reviewed`, `described_by` and `described_blob` are the tool's, never the model's. */
+/** The keys a proposal may set; `described_by` and `described_blob` are the tool's, never the model's. */
 export const PROPOSAL_KEYS = ['caption', 'description', 'actions', 'kind', 'quality', 'quality_notes', 'illustrates'];
 /** Bumped when the prompt or the answer shape changes, so cached answers to the old prompt are not reused. */
 export const PROMPT_VERSION = 2;
@@ -108,7 +108,7 @@ export interface Outcome {
   id: string;
   pages: number;
   frames: number;
-  status: 'described' | 'cached' | 'failed' | 'dry-run' | 'skipped';
+  status: 'described' | 'cached' | 'failed' | 'dry-run';
   caption?: string;
   detail?: string;
   record?: string;
@@ -130,7 +130,7 @@ export async function enrichMedia(o: EnrichOptions): Promise<{items: Prepared[],
   for (const e of embeds) (shownBy.get(String(e.to)) ?? shownBy.set(String(e.to), []).get(String(e.to))!).push(e);
   const notes: string[] = [];
   const sampler = o.frames ?? ffmpegFrames;
-  const work = media.filter((m) => typeof m.path === 'string' && DESCRIBABLE.has(String(m.format)) && m.reviewed !== true && shownBy.has(String(m.id)))
+  const work = media.filter((m) => typeof m.path === 'string' && DESCRIBABLE.has(String(m.format)) && shownBy.has(String(m.id)))
     .filter((m) => m.description === undefined || o.stale && typeof m.described_blob === 'string' && m.described_blob !== m.blob)
     .filter((m) => matches(String(m.path), o.only))
     .sort((a, b) => (shownBy.get(String(b.id))?.length ?? 0) - (shownBy.get(String(a.id))?.length ?? 0) || compare(String(a.id), String(b.id)))
@@ -188,9 +188,8 @@ export async function enrichMedia(o: EnrichOptions): Promise<{items: Prepared[],
       continue;
     }
     if (status === 'described') fs.writeFileSync(cached, `${JSON.stringify({key: item.cacheKey, id: item.id, model: o.model, at: new Date().toISOString(), usage, proposal}, null, 2)}\n`);
-    const applied = apply(roots, item, checked.proposal!, o.model);
-    outcomes.push({id: item.id, pages: item.pages.length, frames: item.frames.length, status: applied.skipped ? 'skipped' : status, caption: checked.proposal!.caption,
-      detail: applied.skipped, record: applied.record, usage});
+    outcomes.push({id: item.id, pages: item.pages.length, frames: item.frames.length, status, caption: checked.proposal!.caption,
+      record: apply(roots, item, checked.proposal!, o.model), usage});
   }
   return {items, outcomes, notes, usage: total};
 }
@@ -311,24 +310,21 @@ export function validate(system: TypeSystem, proposal: Proposal, item: Prepared)
   return {proposal: {...rest, ...(shows.length ? {illustrates: shows} : {})} as Proposal};
 }
 
-/** Merges the proposal into the folder's media.yaml: a reviewed entry is left alone, every other entry is replaced by the proposal
- * with the tool's own fields; keys sorted, the blob quoted so YAML never reads it as a number. */
-export function apply(roots: Roots, item: Prepared, proposal: Proposal, model: string): {record: string, skipped?: string} {
+/** Merges the proposal into the folder's media.yaml: the entry is replaced by the proposal with the tool's own fields;
+ * keys sorted, the blob quoted so YAML never reads it as a number. Returns the record's repo path. */
+export function apply(roots: Roots, item: Prepared, proposal: Proposal, model: string): string {
   const dir = path.posix.dirname(item.path);
   const record = `${dir}/media.yaml`;
   const local = localPath(roots, record)!;
   const existing = fs.existsSync(local) ? (yaml.load(fs.readFileSync(local, 'utf8')) as Record<string, unknown> | null) ?? {} : {};
-  const key = path.posix.basename(item.path);
-  const current = existing[key];
-  if (current && typeof current === 'object' && (current as Record<string, unknown>).reviewed === true) return {record, skipped: 'reviewed record kept'};
-  const entry: Record<string, unknown> = {...proposal, reviewed: false, described_by: model, described_blob: item.blob};
+  const entry: Record<string, unknown> = {...proposal, described_by: model, described_blob: item.blob};
   if (item.probe?.width) entry.width = item.probe.width;
   if (item.probe?.height) entry.height = item.probe.height;
   if (item.probe?.seconds) entry.seconds = Math.round(item.probe.seconds * 10) / 10;
-  existing[key] = entry;
+  existing[path.posix.basename(item.path)] = entry;
   const sorted = Object.fromEntries(Object.entries(existing).sort(([a], [b]) => compare(a, b)));
   fs.writeFileSync(local, yaml.dump(sorted, {lineWidth: 100, sortKeys: true, noRefs: true}));
-  return {record};
+  return record;
 }
 
 /** Six frames spread over the clip (ffmpeg), or the still itself; without ffmpeg an animation falls back to its thumbnail or first frame. */

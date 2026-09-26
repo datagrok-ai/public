@@ -20,7 +20,6 @@ add-to-favorites.gif:
   quality_notes: >-
     several transition frames are blurred mid-animation, and the demo uses placeholder/test project
     and query names rather than realistic content
-  reviewed: true
   seconds: 20.2
   width: 1601
 layout-drag-and-drop.gif:
@@ -45,7 +44,6 @@ layout-drag-and-drop.gif:
   quality_notes: >-
     Small viewport crops some columns and the drag cursor isn't fully visible, but the sequence is
     legible
-  reviewed: true
   seconds: 13.3
   width: 1601
 project-upload-data-sync.png:
@@ -64,5 +62,4 @@ project-upload-data-sync.png:
   quality_notes: >-
     manual annotation (blue circle) added over a real dialog screenshot; toggle is shown off rather
     than on, so it only shows where the control is, not the enabled state
-  reviewed: true
   width: 718

@@ -17,7 +17,6 @@ custom-filters.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21.8
   width: 800
 dev-tools-viewer.gif:
@@ -42,7 +41,6 @@ dev-tools-viewer.gif:
   quality_notes: >-
     clear UI walkthrough but console/dev-tools clutter and small property-grid text limit it to
     in-page use
-  reviewed: true
   seconds: 31.9
   width: 1815
 top-menu-add-viewer.gif:
@@ -64,6 +62,5 @@ top-menu-add-viewer.gif:
   quality_notes: >-
     small crop of the toolbar area, viewer list is generic and not tied to a specific highlighted
     item
-  reviewed: true
   seconds: 4.3
   width: 800

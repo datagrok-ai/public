@@ -1,4 +1,4 @@
-/// Ids of extracted nodes (conventions.md §2.2, build-plan.md "Common contracts"): one constructor per
+/// Ids of extracted nodes (conventions.md §2.2): one constructor per
 /// scheme, the inverse `parseId`, and the path-derived conventions the extractors share (language,
 /// source layer, location visibility, doc kind), and the `source-file` row every extractor emits for a file.
 import * as fs from 'fs';
@@ -262,7 +262,7 @@ export function testUnitsOf(testPath: string, category?: string): string[] {
   return unit === undefined ? [] : [unit];
 }
 
-/** `source_layer` of a node by the location of its file (build-plan.md Decisions "Layers"). */
+/** `source_layer` of a node by the location of its file. */
 export function sourceLayerOf(file: string): string {
   const p = posix(file);
   return p.startsWith('core/') ? 'core' : p.startsWith('infra/') ? 'infra' : 'public';
@@ -275,7 +275,7 @@ export function locationVisibility(file: string): string {
   return p.startsWith('public/') || p.startsWith('landing/') || p.startsWith('landing:') ? 'public' : 'dev';
 }
 
-/** `doc-page.kind` by folder (build-plan.md WO-3c). */
+/** `doc-page.kind` by folder. */
 export function docKind(file: string): string {
   const p = posix(file);
   const base = path.posix.basename(p);

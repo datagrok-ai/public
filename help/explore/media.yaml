@@ -17,7 +17,6 @@ anova.gif:
     - explore/group-comparison
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 14.1
   width: 800
 cluster-data.gif:
@@ -42,7 +41,6 @@ cluster-data.gif:
     - explore/cluster-data
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 26
   width: 800
 control-comparisons.gif:
@@ -66,7 +64,6 @@ control-comparisons.gif:
     - explore/group-comparison
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 18.5
   width: 800
 missing-values-imputation.gif:
@@ -89,7 +86,6 @@ missing-values-imputation.gif:
     - explore/missing-values-imputation
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 13
   width: 1600
 pca.gif:
@@ -111,7 +107,6 @@ pca.gif:
     - explore/dim-reduction
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 22.9
   width: 1536
 t-test.gif:
@@ -135,6 +130,5 @@ t-test.gif:
     - explore/group-comparison
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 12.3
   width: 800

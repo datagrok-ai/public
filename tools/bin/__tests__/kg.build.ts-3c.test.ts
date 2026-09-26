@@ -1,4 +1,4 @@
-/// `grok kg build` WO-3c (build-plan.md): the ts-tests, ts-samples, ts-changelog and docs extractors against the mini
+/// `grok kg build`: the ts-tests, ts-samples, ts-changelog and docs extractors against the mini
 /// monorepo under fixtures/kg/build, and the text parsers they share.
 import {describe, it, expect} from 'vitest';
 import fs from 'fs';
@@ -28,7 +28,7 @@ const graph = buildFixture(copyFixture('build'), 'homes,ts-packages,ts-declarati
 const byId = (rows: any[], id: string) => rows.find((r) => r.id === id);
 const edges = (rows: any[], from?: string, to?: string) => rows.filter((e) => (from === undefined || e.from === from) && (to === undefined || e.to === to));
 
-describe('text parsers (build-plan.md WO-3c)', () => {
+describe('text parsers', () => {
   it('reads DG tests in order under the last category, the trailing options object, a run-time title and a conditional skip', () => {
     const tests = parseDgTests([
       'test(\'unregistered\', async () => {});', '// test(\'out\', async () => {});', '/* test(\'out too\', async () => {}); */',
@@ -92,7 +92,7 @@ describe('text parsers (build-plan.md WO-3c)', () => {
   });
 });
 
-describe('ts-tests extractor (build-plan.md WO-3c)', () => {
+describe('ts-tests extractor', () => {
   it('emits DG tests with ids, levels, options and suites; a test before any category or in a comment is not one', async () => {
     const {rows} = await graph;
     const tests = rows('nodes/test').filter((t) => t.framework === 'dg');
@@ -166,7 +166,7 @@ describe('ts-tests extractor (build-plan.md WO-3c)', () => {
   });
 });
 
-describe('ts-samples extractor (build-plan.md WO-3c)', () => {
+describe('ts-samples extractor', () => {
   it('reads api_members from an //api: header, else from DG./ui./grok. usages, as a set', async () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/sample'), 'sample:dapi/projects-list')).toEqual({
@@ -207,7 +207,7 @@ describe('ts-samples extractor (build-plan.md WO-3c)', () => {
   });
 });
 
-describe('ts-changelog extractor (build-plan.md WO-3c)', () => {
+describe('ts-changelog extractor', () => {
   it('emits one entry per bullet with package, version, date and text; v.next is version 0', async () => {
     const {rows} = await graph;
     expect(rows('nodes/changelog-entry').map((e) => [e.id, e.version, e.date])).toEqual([
@@ -236,7 +236,7 @@ describe('ts-changelog extractor (build-plan.md WO-3c)', () => {
   });
 });
 
-describe('docs extractor (build-plan.md WO-3c)', () => {
+describe('docs extractor', () => {
   it('emits a doc-page per markdown file with kind by folder, title, keywords, mdx and unlisted', async () => {
     const {rows} = await graph;
     expect(rows('nodes/doc-page').map((d) => [d.id, d.kind, d.provenance])).toEqual([

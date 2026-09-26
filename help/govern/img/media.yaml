@@ -19,7 +19,6 @@ connection-credentials-by-group.gif:
     - govern/access-control/credentials
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 23.4
   width: 1601
 create-new-service-user-dialog.png:
@@ -35,7 +34,6 @@ create-new-service-user-dialog.png:
     - govern/access-control
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 331
 create-new-user-dialog.png:
   caption: Creating a new user manually
@@ -53,7 +51,6 @@ create-new-user-dialog.png:
   quality_notes: >-
     Small, cropped dialog screenshot with no surrounding context; fine as an inline illustration but
     not detailed enough to stand alone.
-  reviewed: true
   width: 292
 feedback.gif:
   actions:
@@ -73,7 +70,6 @@ feedback.gif:
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 11.1
   width: 800
 group-all-users.png:
@@ -90,7 +86,6 @@ group-all-users.png:
   quality_notes: >-
     small, cropped dialog with generic placeholder group name ("Demo Group"); fine as an inline
     illustration but not clear enough to stand alone
-  reviewed: true
   width: 630
 group-membership.gif:
   actions:
@@ -121,7 +116,6 @@ group-membership.gif:
     Small UI text and cursor actions are hard to follow at this resolution, and the middle frames
     show generic browser chrome (Google new-tab page) rather than the Datagrok UI, diluting the
     demonstration.
-  reviewed: true
   seconds: 51.9
   width: 800
 groups.png:
@@ -138,7 +132,6 @@ groups.png:
     - govern/access-control
   kind: diagram
   quality: answer
-  reviewed: true
   width: 361
 handled_exception.gif:
   actions:
@@ -158,7 +151,6 @@ handled_exception.gif:
   quality_notes: >-
     shows only the error box in isolation, cropped from the surrounding app UI, useful in context
     but not as a standalone answer
-  reviewed: true
   seconds: 2.7
   width: 595
 invite-a-friend-dialog.png:
@@ -176,7 +168,6 @@ invite-a-friend-dialog.png:
   quality_notes: >-
     Small, low-resolution crop with mostly empty space; fine embedded in the page but too sparse to
     stand alone as a full answer.
-  reviewed: true
   width: 250
 red-exclamation-mark-icon.gif:
   actions:
@@ -198,7 +189,6 @@ red-exclamation-mark-icon.gif:
   quality_notes: >-
     small cropped UI region with a partially obscured panel appearing briefly behind the tooltip;
     useful in context but not self-explanatory on its own
-  reviewed: true
   seconds: 2.8
   width: 800
 report-an-error.gif:
@@ -223,7 +213,6 @@ report-an-error.gif:
   height: 722
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 48.2
   width: 800
 settings-internal-auth.png:
@@ -242,7 +231,6 @@ settings-internal-auth.png:
   quality_notes: >-
     small crop of a settings panel with a red highlight box overlay; not resolution-limited but too
     narrow a fragment to stand alone
-  reviewed: true
   width: 322
 ua-context-panel.gif:
   actions:
@@ -265,7 +253,6 @@ ua-context-panel.gif:
   kind: animation
   quality: docs
   quality_notes: small text in the context panel and user list is hard to read at this resolution
-  reviewed: true
   seconds: 11.6
   width: 1600
 ua-drilldown.gif:
@@ -289,7 +276,6 @@ ua-drilldown.gif:
   quality_notes: >-
     small text and dense right-side panel are hard to read at reduced size; otherwise clear and
     on-topic
-  reviewed: true
   seconds: 14.2
   width: 1600
 ua-filters.gif:
@@ -313,7 +299,6 @@ ua-filters.gif:
   quality_notes: >-
     small embedded UI text is hard to read at this resolution; right-side user list is truncated
     off-screen
-  reviewed: true
   seconds: 25.7
   width: 1600
 сonfiguring-reporting-system.gif:
@@ -336,6 +321,5 @@ ua-filters.gif:
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 16.1
   width: 800

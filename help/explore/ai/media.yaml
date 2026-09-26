@@ -15,7 +15,6 @@ ai-function-chaining.png:
   quality_notes: >-
     small crop with a lot of empty white space around a narrow content column; molecule rendering is
     small and charge highlighting is hard to read at this size
-  reviewed: true
   width: 800
 ai-visualizations.gif:
   actions:
@@ -39,7 +38,6 @@ ai-visualizations.gif:
     - explore/ai
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 14.3
   width: 800
 search-integrated-queries-1.png:
@@ -60,7 +58,6 @@ search-integrated-queries-1.png:
   quality_notes: >-
     grid is cropped on the right (standard_value column truncated), and the auto-generated bar chart
     axis/labels are cluttered
-  reviewed: true
   width: 800
 search-integrated-queries-2.png:
   caption: Querying data with natural language search
@@ -80,5 +77,4 @@ search-integrated-queries-2.png:
   quality_notes: >-
     Domain-specific assay data may be unfamiliar out of context; fine as a supporting illustration
     within the AI page.
-  reviewed: true
   width: 800

@@ -1,4 +1,4 @@
-/// `grok kg build` WO-3b (build-plan.md): the ts-declarations, ts-imports and ts-uses extractors against the
+/// `grok kg build`: the ts-declarations, ts-imports and ts-uses extractors against the
 /// mini monorepo under fixtures/kg/build, with ts-packages and ts-functions for the owners they attach to.
 import {describe, it, expect} from 'vitest';
 import fs from 'fs';
@@ -7,18 +7,21 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 import {apiTokens} from '../utils/kg/build/extract/ts/uses';
 import {kg} from '../commands/kg';
-import {copyFixture, buildFixture} from './kg-fixture';
+import {copyFixture, buildFixture, write} from './kg-fixture';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'kg', 'build');
 const API = 'public/js-api';
+const ENDPOINT_TESTS = 'public/packages/Demo/src/tests/endpoint-tests.ts';
 const VIEWER = 'public/packages/Demo/src/viewer.ts';
 
 
-const graph = buildFixture(copyFixture('build'), 'ts-packages,ts-functions,ts-declarations,ts-imports,ts-uses');
+const graph = buildFixture(copyFixture('build', (repo) => write(repo, ENDPOINT_TESTS, ['// Tests: DemoViewer, Nowhere',
+  "import {category, test} from '@datagrok-libraries/utils/src/test';", '', "category('Demo: endpoint', () => {", "  test('answers', async () => {});", '});', ''].join('\n'))),
+'ts-packages,ts-functions,ts-declarations,ts-imports,ts-uses');
 const byId = (rows: any[], id: string) => rows.find((r) => r.id === id);
 const pairs = (rows: any[], from: string) => rows.filter((e) => e.from === from).map((e) => e.to);
 
-describe('ts-declarations extractor (build-plan.md WO-3b)', () => {
+describe('ts-declarations extractor', () => {
   it('walks js-api, packages and libraries into source-file nodes with loc, language and generated, declared by their owner', async () => {
     const {rows, manifest} = await graph;
     expect(manifest.sources).toMatchObject({'ts-declarations': 'ok', 'ts-imports': 'ok', 'ts-uses': 'ok'});
@@ -140,7 +143,7 @@ describe('ts-declarations extractor (build-plan.md WO-3b)', () => {
   });
 });
 
-describe('ts-imports extractor (build-plan.md WO-3b)', () => {
+describe('ts-imports extractor', () => {
   it('resolves every specifier form to a file, a library or a package with the symbols named; bare names and assets stay out', async () => {
     const {rows, problems} = await graph;
     const imports = rows('edges/imports').filter((e) => e.from === `file:${VIEWER}`).map((e) => [e.to, e.symbols]);
@@ -168,7 +171,7 @@ describe('ts-imports extractor (build-plan.md WO-3b)', () => {
   });
 });
 
-describe('ts-uses extractor (build-plan.md WO-3b)', () => {
+describe('ts-uses extractor', () => {
   it('counts qualified DG, ui and grok tokens outside comments', () => {
     expect([...apiTokens("// DG.Column\n/* ui.span */ DG.DataFrame.fromCsv('x'); grok.shell.info(DG.DataFrame); ui.div(); const s = 'grok.shell.error'; grokery.x; DG.a.b.c.d")]).toEqual([
       ['DG.DataFrame.fromCsv', 1], ['grok.shell.info', 1], ['DG.DataFrame', 1], ['ui.div', 1], ['grok.shell.error', 1], ['DG.a.b.c', 1],
@@ -197,6 +200,14 @@ describe('ts-uses extractor (build-plan.md WO-3b)', () => {
     // a token scan cannot tell a binding from a shadowed name or a string, so the edge claims less than certainty
     expect(rows('edges/uses').find((e) => e.from === `file:${VIEWER}` && e.to === `decl:${API}/src/shell.ts#Shell.info`)).toMatchObject({derived_by: 'ast', confidence: 0.8, evidence: [VIEWER]});
     expect(rows('edges/uses').filter((e) => e.from === 'file:public/packages/Demo/src/package.g.ts').map((e) => e.to)).toEqual([`decl:${API}/src/dataframe.ts#DataFrame`]);
+  });
+
+  it('draws uses at confidence 1 from the types a `// Tests:` header names, resolved like a heritage name, and reports one nothing declares', async () => {
+    const {rows, problems} = await graph;
+    expect(rows('edges/uses').filter((e) => e.from === `file:${ENDPOINT_TESTS}`)).toEqual([expect.objectContaining({
+      to: `decl:${VIEWER}#DemoViewer`, kind: 'type', derived_by: 'annotation', confidence: 1, evidence: [ENDPOINT_TESTS],
+    })]);
+    expect(problems.unresolved_ids).toContain(`${ENDPOINT_TESTS}: Tests: Nowhere names no type of its file, its imports or its package`);
   });
 
   it('counts unresolved tokens once per token in the manifest problems, with the number of files', async () => {

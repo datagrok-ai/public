@@ -16,7 +16,6 @@ activity-cliffs-0.png:
   quality_notes: >-
     Dense, small text and overlapping scatterplot points reduce readability at a glance; fine as an
     in-page illustration but not a standalone answer.
-  reviewed: true
   width: 1601
 chem_curation_demo.gif:
   actions:
@@ -39,7 +38,6 @@ chem_curation_demo.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 25.2
   width: 1600
 chemprop-predict.gif:
@@ -62,7 +60,6 @@ chemprop-predict.gif:
   height: 879
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 26.6
   width: 1854
 chemprop-train.gif:
@@ -89,7 +86,6 @@ chemprop-train.gif:
   quality_notes: >-
     Static-looking dialog screenshots stitched into a gif; low information density per frame and
     small UI text, fine as inline documentation but not a standalone answer.
-  reviewed: true
   seconds: 31.9
   width: 1854
 mpo-desirability-functions.png:
@@ -109,7 +105,6 @@ mpo-desirability-functions.png:
   quality_notes: >-
     clear and readable but crops off the right edge of the desirability charts and only shows part
     of the property list
-  reviewed: true
   width: 1064
 mpo-pareto-front.png:
   caption: Pareto front for multiparameter optimization
@@ -125,7 +120,6 @@ mpo-pareto-front.png:
     - domains/chem
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 800
 mpo-probabilistic.png:
   caption: Training a probabilistic MPO desirability model
@@ -143,7 +137,6 @@ mpo-probabilistic.png:
   kind: screenshot
   quality: docs
   quality_notes: clear but cropped to two stacked panels, no full app chrome visible
-  reviewed: true
   width: 800
 scaffold-tree-anatomy.png:
   caption: Anatomy of a scaffold tree node
@@ -162,7 +155,6 @@ scaffold-tree-anatomy.png:
   quality_notes: >-
     Callout text is overlaid outside the actual app chrome, so it reads as an annotated diagram
     rather than a captured UI state a user would see live.
-  reviewed: true
   width: 2092
 scaffold-tree-coloring.gif:
   actions:
@@ -186,7 +178,6 @@ scaffold-tree-coloring.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 26.2
   width: 1158
 scaffold-tree-generate-edit.gif:
@@ -212,7 +203,6 @@ scaffold-tree-generate-edit.gif:
   quality_notes: >-
     small viewer panel and dense structures are hard to read at this size, but the workflow steps
     are clear
-  reviewed: true
   seconds: 48.7
   width: 1200
 similarity-and-diversity-search.gif:
@@ -236,6 +226,5 @@ similarity-and-diversity-search.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 20.2
   width: 1600

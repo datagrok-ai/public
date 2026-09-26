@@ -1,4 +1,4 @@
-/// What the artifact extractors share (build-plan.md WO-3c): the `~id` and `GROK-n` tokens of a text,
+/// What the artifact extractors share: the `~id` and `GROK-n` tokens of a text,
 /// their resolution against the home documents, the ticket stubs a mention needs, and the mentions
 /// themselves counted per target.
 import {loadHomes, lookupHome, HomeSet} from '../../homes';
@@ -13,6 +13,9 @@ export const ID_TOKEN = /(?<![\w~/.\\-])~((?:[A-Z][A-Za-z]{0,5}:)?[a-z][a-z0-9]*
  * the same line is prose, and `// ~id` in a doc comment above a declaration is the ownership marker, not this one. */
 export const MARKER_LINE = /^\s*\/\/\s*~((?:[A-Z][A-Za-z]{0,5}:)?[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)(?:#[\w-]+)?\s*$/;
 export const JIRA_TOKEN = /\bGROK-\d+\b/g;
+/** `/// Tests: A, B` (Dart) or `// Tests: A` (TS) opening a test file: the types it drives without naming them (§8.1). */
+const TESTS_HEADER = /^\s*\/{2,3}\s*Tests:\s*(.+)$/;
+const HEADER_LINES = 10;
 /** `[#4062](https://github.com/datagrok-ai/public/issues/4062)`: the number named twice, the link decides. */
 export const GITHUB_ISSUE_LINK = /\[#(\d+)\]\(https?:\/\/github\.com\/[^)]*\/issues\/\1\)/g;
 
@@ -36,13 +39,21 @@ export function resolveMention(emitter: Emitter, homes: HomeSet, token: string, 
   return undefined;
 }
 
-/** The stub a mentioned ticket needs until the process layer (WO-5) fills it. */
+/** The stub a mentioned ticket needs until the process layer fills it. */
 export function ticketStub(emitter: Emitter, id: string): void {
   const github = /^gh:public#(\d+)$/.exec(id);
   emitter.stub(id, 'ticket', id, 'annotation', {tracker: github ? 'github' : 'jira', key: github ? `#${github[1]}` : id, kind: 'unknown', state: 'open'});
 }
 
 /** `GROK-n` keys and linked GitHub issues of [text] as ticket ids, each with how often it appears. */
+export function testsHeader(text: string): string[] {
+  for (const line of text.split(/\r?\n/, HEADER_LINES)) {
+    const m = TESTS_HEADER.exec(line);
+    if (m) return m[1].split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 export function ticketTokens(text: string): Map<string, number> {
   const out = new Map<string, number>();
   for (const m of text.matchAll(JIRA_TOKEN)) out.set(m[0], (out.get(m[0]) ?? 0) + 1);

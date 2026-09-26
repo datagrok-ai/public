@@ -1,4 +1,4 @@
-/// Heritage from the lexical Dart pass and the widget nodes it yields (d4-features.md §4 item A): `extends` and
+/// Heritage from the lexical Dart pass and the widget nodes it yields: `extends` and
 /// `implements` between the types of a package and the ones it imports, an ambiguous base drawn for nothing, and
 /// one `widget` node per class whose chain reaches d4's Widget, wherever the class sits.
 import {describe, it, expect} from 'vitest';

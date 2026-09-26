@@ -22,7 +22,6 @@ custom-identifier-patterns.gif:
   quality_notes: >-
     functional but plain default UI with placeholder-like single-cell table; illustrates the
     mechanism rather than a polished end-to-end workflow
-  reviewed: true
   seconds: 24.5
   width: 1601
 func-annotations-gasteiger-0.png:
@@ -42,5 +41,4 @@ func-annotations-gasteiger-0.png:
   quality_notes: >-
     two overlapping panes (script source over the grid) crowd the frame, and the cursor/selection
     state is incidental to the annotation concept being taught
-  reviewed: true
   width: 1601

@@ -68,7 +68,7 @@ function lines(file: string): number {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).length : 0;
 }
 
-describe('the render tier (vis/plan.md WO-2)', () => {
+describe('the render tier', () => {
   let kgDir: string;
   beforeAll(async () => {
     kgDir = (await buildFixture()).kgDir;
@@ -133,7 +133,7 @@ describe('the render tier (vis/plan.md WO-2)', () => {
 const withKuzu = loadKuzu() ? it : it.skip;
 const withKuzuAndQuestions = loadKuzu() && fs.existsSync(questionsRoot) ? it : it.skip;
 
-describe('the server (vis/plan.md WO-3)', () => {
+describe('the server', () => {
   let kgDir: string;
   let repo: string;
   let served: Served;

@@ -22,7 +22,6 @@ admetica-column.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 38.2
   width: 800
 cdd_collections.png:
@@ -40,7 +39,6 @@ cdd_collections.png:
   kind: screenshot
   quality: docs
   quality_notes: table is cropped on the right (created_at column cut off) and only a few rows are visible
-  reviewed: true
   width: 800
 cdd_context_panel.png:
   caption: CDD Vault context panel
@@ -60,7 +58,6 @@ cdd_context_panel.png:
   quality_notes: >-
     informative but dense with small text and a long field list; not polished enough to stand alone
     as marketing
-  reviewed: true
   width: 800
 cdd_molecules.png:
   caption: Browsing molecules in a CDD Vault
@@ -77,7 +74,6 @@ cdd_molecules.png:
   kind: screenshot
   quality: docs
   quality_notes: Sidebar and toolbar clutter typical of a full app screenshot rather than a focused crop.
-  reviewed: true
   width: 800
 cdd_protocols.png:
   caption: Browsing CDD Vault protocols
@@ -95,7 +91,6 @@ cdd_protocols.png:
   quality_notes: >-
     Small UI details (row highlight, column widths) are only legible at full resolution; fine
     standalone but needs the surrounding text for context.
-  reviewed: true
   width: 800
 cdd_saved_search.png:
   caption: Browsing a saved search in CDD Vault
@@ -112,7 +107,6 @@ cdd_saved_search.png:
   kind: screenshot
   quality: docs
   quality_notes: clear and readable but shows a narrow internal test vault view rather than a generalized example
-  reviewed: true
   width: 800
 cdd_search.png:
   caption: Searching CDD Vault by substructure
@@ -132,7 +126,6 @@ cdd_search.png:
   quality_notes: >-
     clear and readable, but shows internal test-vault data (protocol names like "Ba/F3_EGFR [WT]
     CTGlo", "DataGrok test vault") rather than a generic example
-  reviewed: true
   width: 800
 chem-exploration.png:
   caption: Exploring a chemical dataset
@@ -150,7 +143,6 @@ chem-exploration.png:
   kind: screenshot
   quality: docs
   quality_notes: annotated with red highlight boxes and callout labels rather than a clean UI capture
-  reviewed: true
   width: 1601
 chem-spreadsheet-0.png:
   caption: Chemically-aware spreadsheet grid
@@ -171,7 +163,6 @@ chem-spreadsheet-0.png:
   quality_notes: >-
     Dense UI with overlapping tooltip and many small panels crowds the frame, better suited
     alongside explanatory text than standalone.
-  reviewed: true
   width: 1601
 filter-substructure.gif:
   actions:
@@ -194,7 +185,6 @@ filter-substructure.gif:
   kind: animation
   quality: docs
   quality_notes: readable UI but small/dense text and cropped viewer panel on the right edge
-  reviewed: true
   seconds: 29.6
   width: 1601
 interactive-panes.gif:
@@ -217,7 +207,6 @@ interactive-panes.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 25.8
   width: 1601
 match-r-groups.gif:
@@ -242,7 +231,6 @@ match-r-groups.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 33
   width: 800
 mixtures_components.gif:
@@ -266,7 +254,6 @@ mixtures_components.gif:
   kind: animation
   quality: docs
   quality_notes: small embedded grid/panel view, text and labels are low resolution when viewed at full size
-  reviewed: true
   seconds: 12.6
   width: 800
 mixtures_context_panel.gif:
@@ -294,7 +281,6 @@ mixtures_context_panel.gif:
   quality_notes: >-
     Small UI region cropped from a browser window; text and structures are legible but low visual
     polish, functional documentation capture rather than a curated shot.
-  reviewed: true
   seconds: 8.4
   width: 800
 mmp-activity-cells.png:
@@ -314,7 +300,6 @@ mmp-activity-cells.png:
   quality_notes: >-
     Small crop of a wider grid, some columns cut off at the edges; readable but not a polished
     standalone image
-  reviewed: true
   width: 872
 mmp_fragments_modes.gif:
   actions:
@@ -343,7 +328,6 @@ mmp_fragments_modes.gif:
   quality_notes: >-
     small embedded UI recording; legible at normal size but text and grid values are tiny when
     viewed standalone
-  reviewed: true
   seconds: 15.8
   width: 800
 mmp_molecule_pairs_navigation.gif:
@@ -367,7 +351,6 @@ mmp_molecule_pairs_navigation.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 12.3
   width: 800
 mmp_start.gif:
@@ -398,7 +381,6 @@ mmp_start.gif:
   quality_notes: >-
     small/cropped panel text is hard to read at this resolution, and menu tooltips overlap; adequate
     for illustrating the workflow within its page but not standalone
-  reviewed: true
   seconds: 16.4
   width: 800
 mmp_substitutions_context_panel.gif:
@@ -425,7 +407,6 @@ mmp_substitutions_context_panel.gif:
   quality_notes: >-
     small UI text and dense grid are hard to read at reduced size; informative for someone following
     the docs page but not self-explanatory alone
-  reviewed: true
   seconds: 9.9
   width: 800
 mmp_tab_cliffs.gif:
@@ -449,7 +430,6 @@ mmp_tab_cliffs.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 14.9
   width: 800
 mmp_tab_fragments.gif:
@@ -475,7 +455,6 @@ mmp_tab_fragments.gif:
   kind: animation
   quality: docs
   quality_notes: small dense UI text and numeric labels are hard to read at this resolution
-  reviewed: true
   seconds: 20.6
   width: 800
 mmp_tab_generations.gif:
@@ -504,7 +483,6 @@ mmp_tab_generations.gif:
   quality_notes: >-
     small embedded panel view with dense tabular/chemical data, legible but busy for a standalone
     image
-  reviewed: true
   seconds: 9.7
   width: 800
 mpo-data-driven.gif:
@@ -530,7 +508,6 @@ mpo-data-driven.gif:
   quality_notes: >-
     small UI text and dense tables are hard to read at this resolution, and cursor movement is
     somewhat aimless; useful within the page but not self-explanatory alone
-  reviewed: true
   seconds: 23.2
   width: 1178
 mpo-desirability-settings.gif:
@@ -558,7 +535,6 @@ mpo-desirability-settings.gif:
   quality_notes: >-
     clear and on-topic but tightly cropped to the dialog workflow with small chart text, and the
     final aggregation-dropdown action is a tangent from the desirability-curve topic it illustrates
-  reviewed: true
   seconds: 42.3
   width: 1178
 mpo-profile-creation.gif:
@@ -581,7 +557,6 @@ mpo-profile-creation.gif:
   height: 834
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 29.5
   width: 1178
 mpo-profiles.gif:
@@ -607,7 +582,6 @@ mpo-profiles.gif:
   quality_notes: >-
     small UI text and low-motion capture; adequate to illustrate the list/menu/editor but not
     polished enough for marketing
-  reviewed: true
   seconds: 30.4
   width: 800
 mpo-scoring.gif:
@@ -634,7 +608,6 @@ mpo-scoring.gif:
   quality_notes: >-
     Long screen-capture with dense, small UI text and overlapping dialog/grid content; informative
     but not polished enough for marketing use.
-  reviewed: true
   seconds: 40.7
   width: 1178
 new-r-groups-analysis.gif:
@@ -658,7 +631,6 @@ new-r-groups-analysis.gif:
     - domains/chem
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 33.7
   width: 800
 retrosynthesis-panel.png:
@@ -677,7 +649,6 @@ retrosynthesis-panel.png:
   kind: screenshot
   quality: docs
   quality_notes: score tabs are cut off at the right edge of the panel
-  reviewed: true
   width: 680
 sar_matrix_demo.gif:
   actions:
@@ -705,7 +676,6 @@ sar_matrix_demo.gif:
   quality_notes: >-
     Small UI text is hard to read at this resolution and several intermediate menu/panel states pass
     quickly.
-  reviewed: true
   seconds: 20.7
   width: 1600
 sar_matrix_make_list.png:
@@ -726,7 +696,6 @@ sar_matrix_make_list.png:
   quality_notes: >-
     small UI text and dense table read fine embedded in the page but are cropped tight around the
     grid, with no surrounding context on their own
-  reviewed: true
   width: 1226
 sar_matrix_overview.png:
   caption: Exploring SAR with the SAR Matrix
@@ -746,7 +715,6 @@ sar_matrix_overview.png:
   quality_notes: >-
     dense, small text and many overlapping labels make it hard to read at a glance; fine as an
     in-page illustration but not something to send alone
-  reviewed: true
   width: 2469
 sar_matrix_transfer.png:
   caption: 'SAR Transfer: predicting analogs across cores'
@@ -763,7 +731,6 @@ sar_matrix_transfer.png:
     - domains/chem
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 2454
 scaffold-tree-annotated.gif:
   actions:
@@ -785,7 +752,6 @@ scaffold-tree-annotated.gif:
   kind: animation
   quality: docs
   quality_notes: on-screen caption text and cursor obscure part of the grid; UI chrome crowds the frame
-  reviewed: true
   seconds: 24.7
   width: 1188
 scaffold-tree-toolbar-actions-1.png:
@@ -804,7 +770,6 @@ scaffold-tree-toolbar-actions-1.png:
   quality_notes: >-
     Annotated with a red box and arrow label pointing to the toolbar, which is helpful for docs but
     not polished enough for standalone marketing use.
-  reviewed: true
   width: 2830
 script-gasteiger-part-charges-0.png:
   caption: Gasteiger partial charges script
@@ -821,7 +786,6 @@ script-gasteiger-part-charges-0.png:
   kind: screenshot
   quality: docs
   quality_notes: code editor and dialog both visible in one cluttered screenshot; small text
-  reviewed: true
   width: 1600
 script-output-gasteiger-part-charges-0.png:
   caption: Gasteiger partial charges script output
@@ -840,7 +804,6 @@ script-output-gasteiger-part-charges-0.png:
   quality_notes: >-
     small floating panel cropped from a larger UI, low information density, charge legend/scale not
     shown
-  reviewed: true
   width: 1600
 script-output-info-pane-0.png:
   caption: Script-based info pane for molecules
@@ -859,7 +822,6 @@ script-output-info-pane-0.png:
   quality_notes: >-
     context panel section header repeats ('Chemistry' and 'Gasteiger Partial Charges' both nested
     and top-level), and descriptor columns are cut off at the right edge
-  reviewed: true
   width: 1600
 simsearch-colors.gif:
   actions:
@@ -886,7 +848,6 @@ simsearch-colors.gif:
   quality_notes: >-
     small viewer panel and dense side property grid make some labels truncated and hard to read at
     this resolution
-  reviewed: true
   seconds: 30.9
   width: 1600
 sketcher-menu-0.png:
@@ -906,7 +867,6 @@ sketcher-menu-0.png:
   quality_notes: >-
     Background grid and other UI chrome are visible and slightly distracting, but the menu and
     dialog are clear and readable.
-  reviewed: true
   width: 1601
 surechembl_search_results.gif:
   actions:
@@ -928,6 +888,5 @@ surechembl_search_results.gif:
   quality_notes: >-
     small UI text at 800x500 is hard to read (patent titles, table headers), and the panel is
     cropped against a generic chemical dataset rather than a curated example
-  reviewed: true
   seconds: 21.3
   width: 800

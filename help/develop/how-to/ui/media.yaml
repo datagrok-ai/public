@@ -13,5 +13,4 @@ context-actions.png:
   quality_notes: >-
     Clear and readable, but it is a narrow developer-feature illustration (a custom menu action)
     cropped from a larger workflow, not a general standalone how-to.
-  reviewed: true
   width: 800

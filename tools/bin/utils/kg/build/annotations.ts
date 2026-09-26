@@ -1,5 +1,5 @@
-/// The Datagrok function annotation grammar (`//name:`, `#input:`, `--connection:`) as `grok kg build` reads it
-/// (build-plan.md WO-3a): check.ts `getFuncMetadata` ported with every key kept verbatim, class-method starts
+/// The Datagrok function annotation grammar (`//name:`, `#input:`, `--connection:`) as `grok kg build` reads
+/// it: check.ts `getFuncMetadata` ported with every key kept verbatim, class-method starts
 /// accepted (`detectMolecules(col) {` in detectors.js) and a comment prefix per language.
 import {headerTags} from '../../utils';
 

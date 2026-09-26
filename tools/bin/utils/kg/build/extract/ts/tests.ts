@@ -1,4 +1,4 @@
-/// Automated tests under `public/` (build-plan.md WO-3c): DG `category()`/`test()` calls in package sources
+/// Automated tests under `public/`: DG `category()`/`test()` calls in package sources
 /// and Playwright `describe`/`test` titles in playwright-public, package playwright folders and Test Track
 /// specs, each in its suite, with a `tests` edge when a category, tag or title names a feature.
 import * as fs from 'fs';

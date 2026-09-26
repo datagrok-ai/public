@@ -19,7 +19,6 @@
   quality_notes: >-
     no axes, labels, or UI chrome visible, so it shows the interaction but not how to set up or read
     the viewer
-  reviewed: true
   seconds: 11.1
   width: 480
 aggregate.gif:
@@ -42,7 +41,6 @@ aggregate.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 13.7
   width: 800
 batch-edit.gif:
@@ -64,7 +62,6 @@ batch-edit.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 14.5
   width: 800
 biostructure-viewer-pdb-data.gif:
@@ -88,7 +85,6 @@ biostructure-viewer-pdb-data.gif:
   quality_notes: >-
     small cropped grid view with narrow columns cutting off the desc text; functional but not a
     polished standalone shot
-  reviewed: true
   seconds: 14.5
   width: 799
 biostructure-viewer-preview-view-PDB-mmcif.gif:
@@ -111,7 +107,6 @@ biostructure-viewer-preview-view-PDB-mmcif.gif:
   quality_notes: >-
     small embedded preview pane crops the molecule view; fine as an in-page illustration but not
     detailed enough to stand alone
-  reviewed: true
   seconds: 11.8
   width: 799
 bool-combined.gif:
@@ -136,7 +131,6 @@ bool-combined.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 43.6
   width: 800
 chem-apply-model.gif:
@@ -164,7 +158,6 @@ chem-apply-model.gif:
   quality_notes: >-
     small UI text at 800x500 is hard to read and the flow crosses several dialogs/panels quickly,
     fine as an inline illustration but not clear enough to follow standalone
-  reviewed: true
   seconds: 36.1
   width: 800
 chem-model-augment.gif:
@@ -190,7 +183,6 @@ chem-model-augment.gif:
   kind: animation
   quality: docs
   quality_notes: small crop of the grid and panel only, no page chrome; clear but narrow in scope
-  reviewed: true
   seconds: 16.3
   width: 800
 chem-train-model.gif:
@@ -216,7 +208,6 @@ chem-train-model.gif:
   kind: animation
   quality: answer
   quality_notes: clear step-by-step UI walkthrough but not polished enough for marketing use
-  reviewed: true
   seconds: 34.5
   width: 800
 clustering-2000-seq.gif:
@@ -240,7 +231,6 @@ clustering-2000-seq.gif:
   quality_notes: >-
     small embedded UI text is hard to read at this resolution, and the keyboard-shortcut panel on
     the right is irrelevant clutter that distracts from the clustering result
-  reviewed: true
   seconds: 26.5
   width: 1599
 compare-tables.gif:
@@ -264,7 +254,6 @@ compare-tables.gif:
   quality_notes: >-
     uses synthetic demo data (dmv_offices) with an unrealistic edited value ("fooo"), fine for
     illustrating the workflow but not polished enough to stand alone
-  reviewed: true
   seconds: 31.8
   width: 800
 correlation-plot.gif:
@@ -286,7 +275,6 @@ correlation-plot.gif:
     - visualize/viewers/correlation-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 7.5
   width: 480
 db-substructure-similarity-search.gif:
@@ -316,7 +304,6 @@ db-substructure-similarity-search.gif:
   quality_notes: >-
     small non-maximized app window with visible sidebar/tree clutter; UI chrome and menus are
     legible but the capture is not a clean, cropped shot suitable for marketing use
-  reviewed: true
   seconds: 30.6
   width: 800
 default-sketcher.gif:
@@ -335,7 +322,6 @@ default-sketcher.gif:
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 5.3
   width: 800
 dendrogram-hierarchical-clustering-interactivity.gif:
@@ -361,7 +347,6 @@ dendrogram-hierarchical-clustering-interactivity.gif:
   kind: animation
   quality: docs
   quality_notes: clear but dense multi-step capture; text/tooltips are small at this resolution
-  reviewed: true
   seconds: 68.2
   width: 799
 dendrogram-large-tree-selections-current-fixed.gif:
@@ -386,7 +371,6 @@ dendrogram-large-tree-selections-current-fixed.gif:
   quality_notes: >-
     small window crop and faint low-contrast tree lines make individual branches hard to read at a
     glance
-  reviewed: true
   seconds: 30.9
   width: 799
 dendrogram-newick-file-handler-with-interactivity.gif:
@@ -409,7 +393,6 @@ dendrogram-newick-file-handler-with-interactivity.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 20.9
   width: 799
 dendrogram-properties-1.gif:
@@ -430,7 +413,6 @@ dendrogram-properties-1.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 27.8
   width: 799
 dendrogram-sorting.gif:
@@ -454,7 +436,6 @@ dendrogram-sorting.gif:
   quality_notes: >-
     small window crop with cursor and menu clutter typical of a docs walkthrough, not polished
     enough for marketing
-  reviewed: true
   seconds: 13.9
   width: 1599
 expression-filter.gif:
@@ -479,7 +460,6 @@ expression-filter.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 52.3
   width: 800
 filter-checkbox.gif:
@@ -507,7 +487,6 @@ filter-checkbox.gif:
     Column named 'something else' and placeholder values like 'someOtherThing'/'anotherThing' are
     test/dummy data, making it look unpolished for anything beyond illustrating the mechanic on this
     page.
-  reviewed: true
   seconds: 32.6
   width: 800
 filter.gif:
@@ -532,7 +511,6 @@ filter.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 20.1
   width: 480
 form.gif:
@@ -560,7 +538,6 @@ form.gif:
   quality_notes: >-
     small UI chrome and cursor tooltip ('Next row') are visible, and the dense chemistry dataset is
     domain-specific rather than a generic example
-  reviewed: true
   seconds: 39.5
   width: 480
 free-text-filter.gif:
@@ -586,7 +563,6 @@ free-text-filter.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 50.7
   width: 800
 globe.gif:
@@ -605,7 +581,6 @@ globe.gif:
   height: 700
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 18.4
   width: 1120
 heat-map.gif:
@@ -629,7 +604,6 @@ heat-map.gif:
   quality_notes: >-
     small viewport crops most of the grid, and the color legend/context for what selection or
     filtering actually looks like isn't shown in these frames
-  reviewed: true
   seconds: 20.2
   width: 480
 hierarchical-filter.gif:
@@ -657,7 +631,6 @@ hierarchical-filter.gif:
   quality_notes: >-
     placeholder data ("someOtherThing", "lastThing") makes it clearly a synthetic demo dataset
     rather than real content
-  reviewed: true
   seconds: 61.2
   width: 800
 histogram.gif:
@@ -681,7 +654,6 @@ histogram.gif:
   kind: animation
   quality: docs
   quality_notes: small viewer chrome, cursor and slider handles are hard to read at this resolution
-  reviewed: true
   seconds: 29.5
   width: 480
 jupyter-notebooks.gif:
@@ -704,7 +676,6 @@ jupyter-notebooks.gif:
   kind: animation
   quality: docs
   quality_notes: small 800x500 capture with tiny text, hard to read menu labels and code at full resolution
-  reviewed: true
   seconds: 44
   width: 800
 line-chart.gif:
@@ -731,7 +702,6 @@ line-chart.gif:
   quality_notes: >-
     Cluttered by an overlapping data-table panel and tooltip popups that obscure part of the chart;
     demonstrates several unrelated features in one clip rather than a single focused workflow
-  reviewed: true
   seconds: 22.1
   width: 480
 ngl-viewer-open-PDB.gif:
@@ -755,7 +725,6 @@ ngl-viewer-open-PDB.gif:
   quality_notes: >-
     informational side panels and file-open menus clutter much of the frame, leaving the 3D
     structure small and off to one side
-  reviewed: true
   seconds: 28.3
   width: 799
 pc-plot.gif:
@@ -777,7 +746,6 @@ pc-plot.gif:
     - visualize/viewers/pc-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 24.7
   width: 480
 phylocanvas-gl-viewer-tree-types.gif:
@@ -798,7 +766,6 @@ phylocanvas-gl-viewer-tree-types.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 17
   width: 800
 pickupstyle.gif:
@@ -821,7 +788,6 @@ pickupstyle.gif:
   quality_notes: >-
     small embedded context menus and dense multi-viewer layout make the exact target of each click
     hard to follow without the surrounding text
-  reviewed: true
   seconds: 20.3
   width: 800
 query-transform-1.gif:
@@ -844,7 +810,6 @@ query-transform-1.gif:
   kind: animation
   quality: docs
   quality_notes: clear UI walkthrough but tightly cropped to the dialog and grid, low context on its own
-  reviewed: true
   seconds: 9.4
   width: 850
 query-transform-1a.gif:
@@ -867,7 +832,6 @@ query-transform-1a.gif:
   kind: animation
   quality: answer
   quality_notes: clear step-by-step UI capture, but plain app chrome with no branding, so not marketing-grade
-  reviewed: true
   seconds: 7.1
   width: 850
 query-transform-2a.gif:
@@ -890,7 +854,6 @@ query-transform-2a.gif:
   kind: animation
   quality: docs
   quality_notes: small dialog text and dense numeric grid read poorly at this resolution outside its page context
-  reviewed: true
   seconds: 12.3
   width: 850
 query-transform-3a.gif:
@@ -909,7 +872,6 @@ query-transform-3a.gif:
   kind: animation
   quality: docs
   quality_notes: small cropped panel, low information density per frame, generic sample data
-  reviewed: true
   seconds: 2.9
   width: 850
 search-commands.gif:
@@ -932,7 +894,6 @@ search-commands.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 19.1
   width: 800
 search-data.gif:
@@ -952,7 +913,6 @@ search-data.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 17.9
   width: 800
 select-random-rows.gif:
@@ -972,7 +932,6 @@ select-random-rows.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 6.3
   width: 800
 sp-hist.gif:
@@ -994,7 +953,6 @@ sp-hist.gif:
   quality_notes: >-
     small 500x500 crop with no surrounding UI chrome, but clear and legible for illustrating viewer
     interaction
-  reviewed: true
   seconds: 17.9
   width: 500
 text-filter.gif:
@@ -1018,7 +976,6 @@ text-filter.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 40.9
   width: 800
 tile-viewer.gif:
@@ -1044,7 +1001,6 @@ tile-viewer.gif:
   quality_notes: >-
     small UI crop with truncated numeric values and no visible toolbar chrome for full context; fine
     within its help page but not self-explanatory alone
-  reviewed: true
   seconds: 35.6
   width: 480
 viewers-interaction.gif:
@@ -1069,6 +1025,5 @@ viewers-interaction.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 43.4
   width: 800

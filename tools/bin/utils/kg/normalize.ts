@@ -1,4 +1,4 @@
-/// One row normalizer for `check` and `build` (build-plan.md WO-1): nulls dropped, defaults applied,
+/// One row normalizer for `check` and `build`: nulls dropped, defaults applied,
 /// dates canonical, lists deduplicated and scalars coerced into lists, then every present member
 /// shape-checked. Required members are not checked here: a node may still be assembled from
 /// several extractors and stubs before `finalize()` decides.

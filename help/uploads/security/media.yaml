@@ -16,7 +16,6 @@ credentials-entities-diagram.png:
   quality_notes: >-
     plain box-and-line ER diagram with no styling, understandable only alongside the surrounding
     explanatory text
-  reviewed: true
   width: 651
 credentials-fetch-diagram.png:
   caption: How Datagrok fetches credentials from a vault
@@ -33,7 +32,6 @@ credentials-fetch-diagram.png:
   kind: diagram
   quality: docs
   quality_notes: plain black-and-white boxes-and-arrows sketch, unstyled default fonts
-  reviewed: true
   width: 527
 role-based-model.png:
   caption: RBAC entity relationship model
@@ -50,5 +48,4 @@ role-based-model.png:
   kind: diagram
   quality: docs
   quality_notes: plain schematic boxes-and-arrows diagram with no styling, generic labels only
-  reviewed: true
   width: 549

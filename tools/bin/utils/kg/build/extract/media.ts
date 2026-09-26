@@ -1,7 +1,7 @@
 /// Media (conventions.md §5.7, notation.md §3.7): every media file under the media roots and every file a page
 /// embeds as a `media` node with its blob, bytes, delivery url, thumbnail and record fields; every hosted video a
 /// page embeds or a record describes; one `embeds` edge per occurrence the docs extractor collected; `illustrates`
-/// from the records, at annotation 1.0 when reviewed and as an llm proposal at 0.6 otherwise.
+/// from the records, as an llm proposal at 0.6 when a model wrote the record and at annotation 1.0 otherwise.
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';
@@ -9,7 +9,7 @@ import {Emitter} from '../emitter';
 import {Row, compare} from '../../normalize';
 import {BuildContext, Extractor} from '../context';
 import {HOME_IGNORE, HomeSet} from '../../homes';
-import {isMedia, formatOf, hashBlob, MediaRecord} from '../../media';
+import {isMedia, formatOf, hashBlob, describedByModel, MediaRecord} from '../../media';
 import {Embed, targetKey} from '../../embeds';
 import {mediaId, hostedMediaId, docId, sourceLayerOf, locationVisibility} from '../../ids';
 import {Roots, LANDING_PREFIX, localPath, existsAt, deliveryUrl} from '../../roots';
@@ -120,13 +120,13 @@ class MediaLayer {
     this.emitter.source('media', this.broken || !inventory.ok ? 'partial' : 'ok');
   }
 
-  /** What the record asserts (its targets already canonical): a reviewed record is authored fact, an unreviewed one a
-   * proposal below the review line, marked as such (conventions.md §8). */
+  /** What the record asserts (its targets already canonical): a person's record is authored fact, a model's a proposal
+   * below the review line, marked as such (conventions.md §8). */
   private illustrates(record: MediaRecord): void {
-    const reviewed = record.data.reviewed === true;
+    const llm = describedByModel(record.data);
     for (const target of record.illustrates)
-      this.emitter.edge({type: 'illustrates', from: record.id, to: target, derived_by: reviewed ? 'annotation' : 'llm',
-        confidence: reviewed ? 1 : PROPOSAL_CONFIDENCE, proposed: reviewed ? undefined : true, evidence: [record.file]});
+      this.emitter.edge({type: 'illustrates', from: record.id, to: target, derived_by: llm ? 'llm' : 'annotation',
+        confidence: llm ? PROPOSAL_CONFIDENCE : 1, proposed: llm ? true : undefined, evidence: [record.file]});
   }
 
   private exists(file: string): boolean {

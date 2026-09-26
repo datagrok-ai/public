@@ -1,12 +1,13 @@
-/// JS API usage per source file (build-plan.md WO-3b): the `DG.X`, `ui.x` and `grok.a.b` tokens of the
+/// JS API usage per source file: the `DG.X`, `ui.x` and `grok.a.b` tokens of the
 /// comment-stripped text, resolved through the exported JS API declarations into `uses` edges with a kind
-/// and a count. `UsesLayer` is shared with the samples of WO-3c, where the sample is the `from`.
+/// and a count. `UsesLayer` is shared with the samples extractor, where the sample is the `from`.
 import * as fs from 'fs';
 import * as path from 'path';
 import {Emitter} from '../../emitter';
 import {BuildContext, Extractor} from '../../context';
 import {fileId, declId} from '../../../ids';
 import {tsSources, isNode, ApiEntry, TsSources} from './declarations';
+import {testsHeader} from '../markers';
 
 const API_TOKEN = /\b(DG|ui|grok)((?:\.[A-Za-z_$][\w$]*){1,3})/g;
 const COMMENT_OR_STRING = /\/\/.*|\/\*[\s\S]*?\*\/|(["'`])(?:\\[\s\S]|(?!\1)[^\\])*\1/g;
@@ -117,8 +118,16 @@ export const usesExtractor: Extractor = {
   run(ctx: BuildContext, emitter: Emitter): void {
     const sources = tsSources(ctx, emitter);
     const layer = new UsesLayer(emitter, sources);
-    for (const file of sources.files)
-      layer.emit(fileId(file.path), fs.readFileSync(path.join(ctx.repoRoot, file.path), 'utf8'), file.path);
+    for (const file of sources.files) {
+      const text = fs.readFileSync(path.join(ctx.repoRoot, file.path), 'utf8');
+      layer.emit(fileId(file.path), text, file.path);
+      // a `// Tests: A, B` header: the types the file drives without naming them, each the one its file, imports or package declares
+      for (const name of testsHeader(text)) {
+        const to = sources.resolveHeritage(file, name);
+        if (to) emitter.edge({type: 'uses', from: fileId(file.path), to, kind: 'type', derived_by: 'annotation', confidence: 1, evidence: [file.path]});
+        else emitter.problem('unresolved_ids', `${file.path}: Tests: ${name} names no type of its file, its imports or its package`);
+      }
+    }
     layer.finish();
     emitter.source('ts-uses', sources.failed ? 'partial' : 'ok');
   },

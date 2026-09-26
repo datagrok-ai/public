@@ -12,7 +12,6 @@ add-identifier.png:
   kind: screenshot
   quality: docs
   quality_notes: dense with unrelated UI chrome (sidebar, molecule fields) around the relevant dialog
-  reviewed: true
   width: 1599
 chembl-hover.png:
   caption: CHEMBL identifier hover tooltip
@@ -28,7 +27,6 @@ chembl-hover.png:
   kind: screenshot
   quality: docs
   quality_notes: small crop, grid text behind the tooltip is partly obscured
-  reviewed: true
   width: 562
 chembl-ids.png:
   caption: Highlighted CHEMBL IDs in a grid
@@ -46,7 +44,6 @@ chembl-ids.png:
   quality_notes: >-
     Info column text is cut off by the panel width, and the table content (beer-related compound
     descriptions) isn't explained, so it reads as an isolated crop without the surrounding page.
-  reviewed: true
   width: 610
 chembl-search-everywhere.png:
   caption: Searching for a CHEMBL identifier everywhere
@@ -65,7 +62,6 @@ chembl-search-everywhere.png:
   quality_notes: >-
     duplicate result cards and a busy sidebar of unrelated apps clutter the frame; not cropped
     tightly to the relevant search bar and results
-  reviewed: true
   width: 828
 configure-joins.png:
   caption: Configuring an explicit join with the Add Join Option dialog
@@ -84,7 +80,6 @@ configure-joins.png:
     A cropped dialog screenshot with domain-specific (ChEMBL) sample data rather than a generic
     example, so it documents the dialog fields well but isn't self-explanatory enough to stand
     alone.
-  reviewed: true
   width: 1600
 configured-editor.png:
   caption: Configuring an identifier-exploration editor
@@ -102,7 +97,6 @@ configured-editor.png:
   quality_notes: >-
     Dense, small text and many table rows make it hard to read at a glance without zooming; fine as
     an illustration next to the how-to text but not self-explanatory alone.
-  reviewed: true
   width: 1602
 connection-path-5.png:
   caption: Viewing a connection's link path
@@ -119,7 +113,6 @@ connection-path-5.png:
   quality_notes: >-
     clear UI capture but scoped narrowly to one connection's details panel, not self-explanatory
     without surrounding text
-  reviewed: true
   width: 1600
 laucnh-configurator.gif:
   actions:
@@ -138,6 +131,5 @@ laucnh-configurator.gif:
   height: 1000
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 8.5
   width: 1600

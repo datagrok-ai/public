@@ -1,4 +1,4 @@
-/// Import statements resolved to files, libraries and packages (build-plan.md WO-3b): one `imports` edge per
+/// Import statements resolved to files, libraries and packages: one `imports` edge per
 /// (file, target) with the union of the symbols named; bare npm specifiers and asset files stay out of the graph.
 import {Emitter} from '../../emitter';
 import {BuildContext, Extractor} from '../../context';

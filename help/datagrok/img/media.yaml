@@ -19,7 +19,6 @@ drag-csv-save-project.gif:
   quality_notes: >-
     long, busy animation with small text and dense grid content that is hard to follow as a still;
     fine embedded in the tutorial page but not self-explanatory alone
-  reviewed: true
   seconds: 51.1
   width: 1600
 install_package.png:
@@ -38,5 +37,4 @@ install_package.png:
   quality_notes: >-
     Cluttered with multiple unrelated red arrows pointing to different UI elements (sidebar icons,
     Plugins node, install icon), which spreads focus rather than isolating the install action.
-  reviewed: true
   width: 2551

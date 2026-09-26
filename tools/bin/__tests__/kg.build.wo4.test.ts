@@ -1,4 +1,4 @@
-/// `grok kg build` WO-4 (build-plan.md): membership resolution over the mini monorepo under
+/// `grok kg build`: membership resolution over the mini monorepo under
 /// fixtures/kg/build — which feature owns each file (conventions.md §8), which ones only
 /// participate, the tests that follow an owned file, and reports/ownership.json.
 import {describe, it, expect} from 'vitest';
@@ -45,7 +45,7 @@ function resolveClaims(claims: any[], file = SCATTER): Graph {
   return emitter.finalize();
 }
 
-describe('membership resolution: the rungs of conventions.md §8 (build-plan.md WO-4)', () => {
+describe('membership resolution: the rungs of conventions.md §8', () => {
   it('lets a marker beat the code: root that also claims the file, which then only participates', async () => {
     const {rows} = await graph;
     expect(owners(rows('edges/is-implemented-in'), RUN)).toEqual([expect.objectContaining({
@@ -120,7 +120,7 @@ describe('membership resolution: the rungs of conventions.md §8 (build-plan.md 
   });
 });
 
-describe('membership resolution: claims that no extractor makes yet (build-plan.md WO-4, WO-6)', () => {
+describe('membership resolution: claims that no extractor makes yet', () => {
   it('takes an inline // ~id marker as participation only, leaving the code: root the owner', () => {
     const graph = resolveClaims([
       {feature: 'platform/caching', rung: 1, mode: 'participates'},

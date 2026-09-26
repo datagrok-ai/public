@@ -1,4 +1,4 @@
-/// The ordered extractors `grok kg build` runs (build-plan.md WO-1); what they share is `context.ts`.
+/// The ordered extractors `grok kg build` runs; what they share is `context.ts`.
 import {Emitter} from './emitter';
 import {homesExtractor} from './extract/homes';
 import {packagesExtractor} from './extract/ts/packages';

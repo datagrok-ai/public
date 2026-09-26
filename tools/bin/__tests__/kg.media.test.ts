@@ -31,7 +31,7 @@ describe('media records (conventions.md §5.7)', () => {
     expect(homes.media.get(`media:${PNG}`)).toEqual({id: `media:${PNG}`, path: PNG, file: RECORD, line: 1,
       illustrates: ['visualize/viewers/scatter-plot', 'C:dataframe'],
       data: {kind: 'screenshot', caption: 'A scatter plot of two columns', description: 'Points of the demo table plotted by age and weight, coloured by sex.',
-        quality: 'answer', reviewed: true, described_by: 'person'}});
+        quality: 'answer', described_by: 'person'}});
     expect(makeReport(system, homes).media).toBe(1);
     const run = await runKg({_: ['kg', 'check'], kg: kgRoot(repo), landing: false});
     expect(run.ok).toBe(true);
@@ -63,11 +63,11 @@ describe('media records (conventions.md §5.7)', () => {
 
   it('reads a hosted video from videos.yaml by its youtube key, with a title for its name, and refuses any other key shape', () => {
     const repo = copyFixture('good');
-    write(repo, 'public/help/videos.yaml', 'youtube:abcdefghijk:\n  title: Scatter plots\n  caption: A lesson\n  illustrates: [visualize/viewers/scatter-plot]\n  reviewed: true\nvimeo:123:\n  caption: no\n');
+    write(repo, 'public/help/videos.yaml', 'youtube:abcdefghijk:\n  title: Scatter plots\n  caption: A lesson\n  illustrates: [visualize/viewers/scatter-plot]\n  described_by: person\nvimeo:123:\n  caption: no\n');
     const {homes} = load(repo);
     expect(homes.errors.map((e) => `${e.code} ${e.line}: ${e.message}`)).toEqual(["unknown-media 6: 'vimeo:123' is not a hosted video key (youtube:<id>)"]);
     expect(homes.media.get('video:youtube:abcdefghijk')).toEqual({id: 'video:youtube:abcdefghijk', provider: 'youtube', externalId: 'abcdefghijk',
-      file: 'public/help/videos.yaml', line: 1, illustrates: ['visualize/viewers/scatter-plot'], data: {name: 'Scatter plots', caption: 'A lesson', reviewed: true}});
+      file: 'public/help/videos.yaml', line: 1, illustrates: ['visualize/viewers/scatter-plot'], data: {name: 'Scatter plots', caption: 'A lesson', described_by: 'person'}});
   });
 
   it('refuses two records for one file and a record that is not a map', () => {

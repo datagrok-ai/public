@@ -1,4 +1,4 @@
-/// `grok kg build` over the CLI (change-tests/plan.md, work order D1): public/tools as a source root the ts pass
+/// `grok kg build` over the CLI: public/tools as a source root the ts pass
 /// walks, and the ts-node-tests extractor over the vitest and jest suites of the fixture.
 import {describe, it, expect} from 'vitest';
 import {parseNodeTests} from '../utils/kg/build/extract/ts/node-tests';

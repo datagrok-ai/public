@@ -1,4 +1,4 @@
-/// A generation is one build's output directory (build-plan.md WO-11): `<out>/gen/<batch>-<suffix>/` holding
+/// A generation is one build's output directory: `<out>/gen/<batch>-<suffix>/` holding
 /// `manifest.json`, `data/nodes/<type>.jsonl`, `data/edges/<name>.jsonl` and `reports/`, and `<out>/current`
 /// naming the one readers open. The layout is spelled here and nowhere else; `build/write.ts` fills it, the
 /// index, the reports and the browser read it.

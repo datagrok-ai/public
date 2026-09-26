@@ -11,7 +11,6 @@ ColumnSelectorDemo.png:
   kind: screenshot
   quality: docs
   quality_notes: clear but generic dialog crop with no surrounding page context
-  reviewed: true
   width: 529
 Scripting-FileIO-connectors.png:
   caption: Selecting a file connector source
@@ -25,7 +24,6 @@ Scripting-FileIO-connectors.png:
   kind: screenshot
   quality: docs
   quality_notes: small, tightly cropped dialog with no surrounding context
-  reviewed: true
   width: 173
 Scripting-FileIO-load.png:
   caption: Loading a file into a script input
@@ -39,7 +37,6 @@ Scripting-FileIO-load.png:
   kind: screenshot
   quality: docs
   quality_notes: small, tightly cropped dialog with no surrounding context
-  reviewed: true
   width: 441
 Scripting-FileIO-save.png:
   caption: Downloading a saved file from FileIO
@@ -53,7 +50,6 @@ Scripting-FileIO-save.png:
   kind: screenshot
   quality: docs
   quality_notes: Small, cropped screenshot showing only a context menu with no surrounding page chrome
-  reviewed: true
   width: 360
 Scripting-Integration-TopMenu.png:
   caption: Adding a script to the Bio top menu
@@ -69,7 +65,6 @@ Scripting-Integration-TopMenu.png:
   kind: screenshot
   quality: docs
   quality_notes: small crop focused on menu and script header, useful only alongside the surrounding explanation
-  reviewed: true
   width: 743
 Scripting-Semtypes-support-UI.png:
   caption: Semantic type detected in a script parameter dialog
@@ -86,7 +81,6 @@ Scripting-Semtypes-support-UI.png:
   quality_notes: >-
     small, cropped dialog with a partially cut-off tooltip; illustrative but not self-explanatory
     without surrounding text
-  reviewed: true
   width: 438
 auto-complete-sql.png:
   caption: Autocomplete suggestions from a lookup query
@@ -104,7 +98,6 @@ auto-complete-sql.png:
   quality_notes: >-
     small UI crop with overlapping panels and no visible chrome, clear enough for its page but not a
     standalone answer
-  reviewed: true
   width: 704
 builtin-viewers.png:
   caption: Built-in viewers for script output
@@ -121,7 +114,6 @@ builtin-viewers.png:
   quality_notes: >-
     small UI chrome and dense text are hard to read at full size, but layout and viewer types are
     clear
-  reviewed: true
   width: 1337
 call-compare.png:
   caption: Comparing historical function call runs
@@ -138,7 +130,6 @@ call-compare.png:
   quality_notes: >-
     small crop showing only the run list and one tooltip, no surrounding context of the comparison
     view itself
-  reviewed: true
   width: 304
 captions-hints.png:
   caption: Captions and hints for script inputs
@@ -153,7 +144,6 @@ captions-hints.png:
   kind: screenshot
   quality: docs
   quality_notes: Tightly cropped to the panel with surrounding UI cut off; no visible chrome for context
-  reviewed: true
   width: 1126
 comparsion-view.png:
   caption: Comparing historical function runs
@@ -170,7 +160,6 @@ comparsion-view.png:
   quality_notes: >-
     Clear and readable, but legend run labels are truncated on the right edge, so it reads as a page
     illustration rather than a standalone answer.
-  reviewed: true
   width: 1548
 customized-forms.png:
   caption: Customized script input form
@@ -184,7 +173,6 @@ customized-forms.png:
   kind: screenshot
   quality: docs
   quality_notes: small, low-resolution crop of a single dialog with minimal context
-  reviewed: true
   width: 263
 dataframeiddemo-input.png:
   caption: Script input dialog for a DataFrame ID column
@@ -201,7 +189,6 @@ dataframeiddemo-input.png:
   quality_notes: >-
     small crop showing only the dialog, with a stray cursor and partially cut-off tooltip
     overlapping the left edge
-  reviewed: true
   width: 353
 default-script.gif:
   actions:
@@ -223,7 +210,6 @@ default-script.gif:
   quality_notes: >-
     small cropped view of just the toolbar and editor pane, low visual polish, generic hello-world
     example
-  reviewed: true
   seconds: 4.8
   width: 1280
 embed-as-iframe.png:
@@ -240,7 +226,6 @@ embed-as-iframe.png:
   kind: screenshot
   quality: docs
   quality_notes: clear and readable but a static code+result pairing rather than a full standalone walkthrough
-  reviewed: true
   width: 625
 export-demo.gif:
   actions:
@@ -264,7 +249,6 @@ export-demo.gif:
   quality_notes: >-
     small, cropped view of the spreadsheet with truncated columns and a visible cursor; readable but
     not polished enough to stand alone
-  reviewed: true
   seconds: 10
   width: 1280
 history.png:
@@ -282,7 +266,6 @@ history.png:
   quality_notes: >-
     cropped panel fragment with no surrounding context; readable but not self-explanatory enough to
     stand alone
-  reviewed: true
   width: 355
 input-categories.png:
   caption: Grouping inputs into categories
@@ -299,7 +282,6 @@ input-categories.png:
   quality_notes: >-
     small, cropped dialog with no surrounding context; fine as an inline illustration but not
     self-explanatory alone
-  reviewed: true
   width: 352
 input-form.png:
   caption: Auto-generated input form for a script
@@ -313,7 +295,6 @@ input-form.png:
   kind: screenshot
   quality: docs
   quality_notes: small, tightly cropped panel with no surrounding context
-  reviewed: true
   width: 181
 input-viewers.gif:
   actions:
@@ -333,7 +314,6 @@ input-viewers.gif:
   kind: animation
   quality: docs
   quality_notes: small UI, text barely legible at this resolution
-  reviewed: true
   seconds: 10.3
   width: 1264
 output-categories.gif:
@@ -357,7 +337,6 @@ output-categories.gif:
   kind: animation
   quality: docs
   quality_notes: small UI, low information density in most frames, useful mainly alongside the surrounding text
-  reviewed: true
   seconds: 12.9
   width: 1258
 python-script-error-log.png:
@@ -375,7 +354,6 @@ python-script-error-log.png:
     Tightly cropped log strip with a raw traceback and stray layout artifacts (e.g. 'Cell' and
     'Traceback (most recent call last)' text overlapping at the right edge), not legible as a
     standalone answer.
-  reviewed: true
   width: 1177
 python-script-error.png:
   caption: Script error balloon for a bad attribute
@@ -389,7 +367,6 @@ python-script-error.png:
   kind: screenshot
   quality: docs
   quality_notes: Tightly cropped to just the error balloon text, no surrounding UI context visible
-  reviewed: true
   width: 289
 rfv-help.png:
   caption: Viewing a script's custom readme
@@ -406,7 +383,6 @@ rfv-help.png:
   quality_notes: >-
     annotated with a red highlight box around the info icon and the readme panel rather than a clean
     capture
-  reviewed: true
   width: 1335
 rich-function-demo.gif:
   actions:
@@ -433,7 +409,6 @@ rich-function-demo.gif:
   quality_notes: >-
     small UI text is hard to read at this resolution and the tooltip "My lovely caption" looks like
     leftover placeholder/test content rather than a polished example
-  reviewed: true
   seconds: 10
   width: 1280
 run-on-input.gif:
@@ -457,7 +432,6 @@ run-on-input.gif:
   quality_notes: >-
     raw UI capture at small scale with default cursor visible; clear enough to confirm the
     runOnInput behavior on its own but not polished for marketing
-  reviewed: true
   seconds: 6.6
   width: 1280
 script-debud-output-enable.png:
@@ -472,7 +446,6 @@ script-debud-output-enable.png:
   kind: screenshot
   quality: docs
   quality_notes: tightly cropped UI fragment with no surrounding context
-  reviewed: true
   width: 323
 script-outputs.gif:
   actions:
@@ -492,7 +465,6 @@ script-outputs.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21
   width: 800
 script-rest.png:
@@ -511,7 +483,6 @@ script-rest.png:
   quality_notes: >-
     sample bearer token and endpoint are illustrative rather than a real credential, but the arrow
     overlay and dense header text make it more of a guided reference than a clean standalone answer
-  reviewed: true
   width: 1556
 scripts.png:
   caption: Creating a JavaScript script
@@ -525,7 +496,6 @@ scripts.png:
   kind: screenshot
   quality: docs
   quality_notes: annotated with red boxes for tutorial guidance, not a clean marketing shot
-  reviewed: true
   width: 1005
 sens-analysis.png:
   caption: Sensitivity Analysis with Monte Carlo method
@@ -543,7 +513,6 @@ sens-analysis.png:
   quality_notes: >-
     context help text panel dominates the right half, cropping the actual sensitivity analysis
     input/results UI to a narrow left strip
-  reviewed: true
   width: 1326
 sharing.gif:
   actions:
@@ -565,7 +534,6 @@ sharing.gif:
   kind: animation
   quality: docs
   quality_notes: small cropped capture area with visible dotted crop border; low information density per frame
-  reviewed: true
   seconds: 29.6
   width: 1186
 template-script-output.png:
@@ -580,7 +548,6 @@ template-script-output.png:
   kind: screenshot
   quality: docs
   quality_notes: tightly cropped to a single table with no surrounding context
-  reviewed: true
   width: 431
 template-script-run.png:
   caption: Running a template script on a dataframe
@@ -594,7 +561,6 @@ template-script-run.png:
   kind: screenshot
   quality: docs
   quality_notes: very small, tightly cropped dialog with no surrounding context
-  reviewed: true
   width: 201
 units-example.png:
   caption: Adding a unit label to a script input
@@ -607,7 +573,6 @@ units-example.png:
   kind: screenshot
   quality: docs
   quality_notes: cropped to a single input row with no surrounding form context
-  reviewed: true
   width: 281
 viewers-block.png:
   caption: Visualizing input data with viewer blocks
@@ -625,7 +590,6 @@ viewers-block.png:
   quality_notes: >-
     clear and readable but a narrow feature-specific example, not a general answer to a broader
     question
-  reviewed: true
   width: 1334
 viewers-customization.png:
   caption: Customizing viewers for a scripting dataframe
@@ -640,7 +604,6 @@ viewers-customization.png:
   kind: screenshot
   quality: docs
   quality_notes: clear UI capture but shows only the result state, not the customization steps that produced it
-  reviewed: true
   width: 1334
 viewers-toolbox.png:
   caption: The Viewers toolbox in the sidebar
@@ -655,5 +618,4 @@ viewers-toolbox.png:
   kind: screenshot
   quality: docs
   quality_notes: annotated with a red highlight box rather than a clean native screenshot
-  reviewed: true
   width: 909

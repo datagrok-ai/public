@@ -17,7 +17,6 @@ login-signup.png:
   quality_notes: >-
     dense flowchart with small text, not readable at a glance without zooming; useful as a technical
     reference alongside the page but not standalone
-  reviewed: true
   width: 5602
 open-api-weather-map-connection.png:
   caption: Webservices Manager tree for an imported connection
@@ -33,7 +32,6 @@ open-api-weather-map-connection.png:
   kind: screenshot
   quality: docs
   quality_notes: small, tightly cropped tree view with no surrounding chrome for context
-  reviewed: true
   width: 612
 open-api-weathermap-query.png:
   caption: Context panel for an OpenWeatherMap query
@@ -48,7 +46,6 @@ open-api-weathermap-query.png:
   kind: screenshot
   quality: docs
   quality_notes: cropped to just the panel, no surrounding app chrome for orientation
-  reviewed: true
   width: 465
 open-api-weathermap-results.png:
   caption: Query results in an interactive grid
@@ -65,7 +62,6 @@ open-api-weathermap-results.png:
   quality_notes: >-
     Cropped to just the grid with no surrounding chrome, so it reads as a generic data table rather
     than showing the webservice query workflow it illustrates.
-  reviewed: true
   width: 2395
 recipe-editor.png:
   caption: Building a data transformation pipeline in the job editor
@@ -82,7 +78,6 @@ recipe-editor.png:
   quality_notes: >-
     clear diagram but a specific, domain-tied example (health summary/Jira) rather than a generic
     illustration
-  reviewed: true
   width: 716
 script-param-choices.gif:
   actions:
@@ -101,7 +96,6 @@ script-param-choices.gif:
   kind: animation
   quality: docs
   quality_notes: small cropped dialog, no surrounding page context
-  reviewed: true
   seconds: 3.6
   width: 221
 script-param-suggestions.gif:
@@ -126,7 +120,6 @@ script-param-suggestions.gif:
   quality_notes: >-
     small cropped UI snippet with no surrounding context; fine to illustrate the specific feature
     but not self-explanatory alone
-  reviewed: true
   seconds: 13.4
   width: 278
 script-param-validators.gif:
@@ -152,7 +145,6 @@ script-param-validators.gif:
   quality_notes: >-
     small, cropped view of a single dialog with no surrounding context; generic placeholder field
     names (Count1-3) rather than a real-world example
-  reviewed: true
   seconds: 12.4
   width: 248
 swagger-security-definitions.png:
@@ -170,5 +162,4 @@ swagger-security-definitions.png:
   quality_notes: >-
     annotated with a red box and arrow rather than a clean capture, and combines two overlapping UI
     states in one image
-  reviewed: true
   width: 794

@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {TypeSystem, NodeType, Member, Issue, pascal, graphLabel, firstSentence, nodeOrder, edgeOrder} from './types';
 import {HomeSet, Home, Stub} from './homes';
+import {literal} from './kuzu';
+import {posix} from './ids';
 
 export interface Output {
   /** Absolute path. */
@@ -21,7 +23,7 @@ export function generate(system: TypeSystem, kgRoot: string, repoRoot: string, h
     else outputs.push({file: glossaryFile, content: spliceGlossary(fs.readFileSync(glossaryFile, 'utf8'), system, homes)});
   }
   if (homes) {
-    const treeDir = path.relative(repoRoot, kgRoot).replace(/\\/g, '/');
+    const treeDir = posix(path.relative(repoRoot, kgRoot));
     outputs.push({file: path.join(kgRoot, 'feature-tree.md'), content: generateFeatures(system, homes, treeDir)});
   }
   return {outputs, errors};
@@ -89,10 +91,6 @@ export function generateDts(system: TypeSystem): string {
   for (const edge of concreteEdges) lines.push(`  ${literal(edge.name)}: ${literal(edge.group)};`);
   lines.push('}', '');
   return lines.join('\n');
-}
-
-function literal(text: string): string {
-  return `'${text.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 }
 
 function union(literals: string[]): string {

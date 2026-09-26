@@ -23,7 +23,6 @@ LST.gif:
   quality_notes: >-
     small embedded tooltips and dense table text are hard to read at full size; useful in-page but
     not self-explanatory alone
-  reviewed: true
   seconds: 9.2
   width: 1600
 SAR-menu.png:
@@ -43,7 +42,6 @@ SAR-menu.png:
   quality_notes: >-
     a stray monomer tooltip overlaps the grid, and OK/Cancel buttons are partly cut by the dialog
     edge, adding clutter not essential to the dialog's purpose
-  reviewed: true
   width: 1613
 context-panel.gif:
   actions:
@@ -66,7 +64,6 @@ context-panel.gif:
   quality_notes: >-
     dense, small text and many overlapping viewers make it hard to read standalone; useful alongside
     the surrounding explanation
-  reviewed: true
   seconds: 27.1
   width: 1600
 invariant-map.gif:
@@ -91,7 +88,6 @@ invariant-map.gif:
   quality_notes: >-
     small UI text and dense grid are hard to read at reduced size, and the animation loops through
     several near-duplicate states quickly
-  reviewed: true
   seconds: 7.5
   width: 1600
 mpr.png:
@@ -107,7 +103,6 @@ mpr.png:
   kind: screenshot
   quality: docs
   quality_notes: tooltip popup obscures several underlying table rows, so not all data is readable at once
-  reviewed: true
   width: 1566
 mutation-cliffs.gif:
   actions:
@@ -134,7 +129,6 @@ mutation-cliffs.gif:
   quality_notes: >-
     dense grid with small text and overlapping tooltip readable only at full size; fine within the
     page but not self-explanatory alone
-  reviewed: true
   seconds: 13
   width: 1600
 pep-analysis-view.png:
@@ -153,7 +147,6 @@ pep-analysis-view.png:
   quality_notes: >-
     Dense, small text across many panels is hard to read at this resolution; usable within the page
     but not as a standalone answer.
-  reviewed: true
   width: 1867
 peptide-generation.png:
   caption: Generated peptides ranked by predicted activity
@@ -172,7 +165,6 @@ peptide-generation.png:
   quality_notes: >-
     dense table with a tooltip overlay obscuring part of the grid; not self-explanatory without
     surrounding text
-  reviewed: true
   width: 1706
 table-view.gif:
   actions:
@@ -196,6 +188,5 @@ table-view.gif:
   quality_notes: >-
     small UI text and dense grid are hard to read at this resolution; useful within the page but not
     clear enough to stand alone
-  reviewed: true
   seconds: 6.3
   width: 1600

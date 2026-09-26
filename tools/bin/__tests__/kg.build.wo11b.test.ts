@@ -1,4 +1,4 @@
-/// WO-11b, ingestion correctness (build-plan.md, kg-codex-review-3.md #3 to #8): what the build may assert
+/// Ingestion correctness: what the build may assert
 /// about a row it refused, about two assertions that differ only in a property, about a release record's
 /// word, about a test whose name it cannot know, and about the files it never saw. Every case here
 /// fails on the pipeline as the third review found it.
@@ -29,7 +29,7 @@ function build(repo: string, only: string): Promise<Built> {
 
 
 
-describe('admission: a refused row asserts nothing (review 3 #3)', () => {
+describe('admission: a refused row asserts nothing', () => {
   it('tells an extractor whether the node was taken, and names the reason', () => {
     const e = new Emitter(system, 'b-test');
     const at = (line: number, extra: Record<string, unknown> = {}) => ({type: 'function', id: 'func:Demo:X', name: 'X', language: 'ts',
@@ -62,7 +62,7 @@ describe('admission: a refused row asserts nothing (review 3 #3)', () => {
   });
 });
 
-describe('edge identity and ordered lists (review 3 #4)', () => {
+describe('edge identity and ordered lists', () => {
   it('keeps one edge per discriminator and merges only within it', () => {
     const e = new Emitter(system, 'b-test');
     e.node({type: 'function', id: 'func:Demo:F', name: 'F', language: 'ts', package: 'pkg:Demo', provenance: 'annotation', source_layer: 'public'});
@@ -94,7 +94,7 @@ describe('edge identity and ordered lists (review 3 #4)', () => {
   });
 });
 
-describe('a release record speaks for itself (review 3 #5)', () => {
+describe('a release record speaks for itself', () => {
   it('carries the dry run onto every edge the record produces, and never onto the backlog\'s own', async () => {
     const {rows} = await build(copy(), 'homes,process');
     expect(rows('edges/targets-release').filter((e) => e.evidence?.includes('core/docs/release/1.0.1.yaml')).every((e) => e.confidence === 0.7)).toBe(true);
@@ -102,7 +102,7 @@ describe('a release record speaks for itself (review 3 #5)', () => {
   });
 });
 
-describe('text extraction says what it cannot know (review 3 #7)', () => {
+describe('text extraction says what it cannot know', () => {
   it('counts a test whose name is built at run time and marks the row dynamic', async () => {
     const {rows, problems} = await build(copy(), 'homes,ts-tests');
     const dynamic = rows('nodes/test').filter((t) => t.dynamic);
@@ -111,7 +111,7 @@ describe('text extraction says what it cannot know (review 3 #7)', () => {
   });
 });
 
-describe('membership: the inputs and the denominator (review 3 #8)', () => {
+describe('membership: the inputs and the denominator', () => {
   it('inherits a folder that belongs to one feature, however many roots that feature has', async () => {
     // VIEWERS.md has two code: roots; `build/` is outside what its globs expand to, so only rung 4 can reach this file
     const repo = copy((r) => write(r, `${TESTED}/build/helper.ts`, 'export const helper = 1;\n'));

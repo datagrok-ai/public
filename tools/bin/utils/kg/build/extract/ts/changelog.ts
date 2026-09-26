@@ -1,4 +1,4 @@
-/// Package changelogs (build-plan.md WO-3c): one `changelog-entry` per bullet under a `## <version> (<date>)` or
+/// Package changelogs: one `changelog-entry` per bullet under a `## <version> (<date>)` or
 /// `## v.next` heading, the tickets it names as mentions, and a `~id` that resolves to a feature as `changes`.
 import * as fs from 'fs';
 import * as path from 'path';

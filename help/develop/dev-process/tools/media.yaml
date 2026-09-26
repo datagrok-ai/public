@@ -14,7 +14,6 @@ inspector-client-events.png:
   quality_notes: >-
     heavy red annotation circles/arrows overlay the UI, which suit an instructional doc page but are
     too marked-up to stand alone or serve as marketing material
-  reviewed: true
   width: 804
 inspector-current-column.png:
   caption: Inspecting the current column with the Inspector tool
@@ -31,7 +30,6 @@ inspector-current-column.png:
   quality_notes: >-
     shows internal/debug metadata (raw ids, precision values) rather than a typical end-user
     workflow, so it's more useful in context than standalone
-  reviewed: true
   width: 800
 inspector-debug.png:
   caption: Debug tab in the Inspector panel
@@ -48,7 +46,6 @@ inspector-debug.png:
   quality_notes: >-
     small, dense checkbox list with no annotation; needs the surrounding page text to make sense of
     each option
-  reviewed: true
   width: 800
 inspector-events.png:
   caption: Inspecting events with the Inspector panel
@@ -63,7 +60,6 @@ inspector-events.png:
   kind: screenshot
   quality: docs
   quality_notes: clear and legible but scoped to one panel of a larger workflow, not meaningful on its own
-  reviewed: true
   width: 936
 inspector-local-storage.png:
   caption: 'Inspector: local storage panel'
@@ -81,7 +77,6 @@ inspector-local-storage.png:
   quality_notes: >-
     dense, low-level internal keys with truncated JSON values are cluttered and not self-explanatory
     without the surrounding text
-  reviewed: true
   width: 800
 inspector-markup.png:
   caption: Inspector panel markup bindings
@@ -99,7 +94,6 @@ inspector-markup.png:
   quality_notes: >-
     small UI panel crop with dense text; readable but not polished enough to stand alone as a
     marketing image
-  reviewed: true
   width: 800
 inspector-project-json.png:
   caption: Viewing the project JSON in Inspector
@@ -116,7 +110,6 @@ inspector-project-json.png:
   quality_notes: >-
     grid data above is cropped mid-row and the JSON panel is truncated, so the full structure isn't
     visible
-  reviewed: true
   width: 800
 inspector-recent-events.gif:
   actions:
@@ -140,7 +133,6 @@ inspector-recent-events.gif:
   quality_notes: >-
     small UI details (event names, args popup) are legible but low-drama; useful within the page,
     not compelling standalone
-  reviewed: true
   seconds: 9.5
   width: 1200
 inspector-serialization.png:
@@ -158,7 +150,6 @@ inspector-serialization.png:
   quality_notes: >-
     table is cropped at the bottom row and the panel sidebar takes up significant width, but the
     content is legible
-  reviewed: true
   width: 800
 inspector-view-json.png:
   caption: Viewing the current view as JSON
@@ -175,7 +166,6 @@ inspector-view-json.png:
   quality_notes: >-
     readable but shows raw serialized JSON with internal IDs, useful mainly alongside the
     surrounding explanation
-  reviewed: true
   width: 800
 inspector-viewer-json.png:
   caption: Viewer JSON in the Inspector panel
@@ -190,7 +180,6 @@ inspector-viewer-json.png:
   kind: screenshot
   quality: docs
   quality_notes: small UI crop with dense text, readable only at full size
-  reviewed: true
   width: 800
 inspector-widgets.gif:
   actions:
@@ -211,7 +200,6 @@ inspector-widgets.gif:
   quality_notes: >-
     small UI text is hard to read at this resolution and the panel is dense with debug data, but it
     clearly demonstrates the workflow
-  reviewed: true
   seconds: 32.5
   width: 1200
 tm-debug-usage.gif:
@@ -237,7 +225,6 @@ tm-debug-usage.gif:
   quality_notes: >-
     Shows raw DevTools debug data (variable scopes, call stack) alongside a small captured browser
     window; useful in context but not self-explanatory as a standalone answer.
-  reviewed: true
   seconds: 24.9
   width: 800
 tm-open.gif:
@@ -260,7 +247,6 @@ tm-open.gif:
   kind: animation
   quality: docs
   quality_notes: small UI chrome, no cropping, but low information density for a page on its own
-  reviewed: true
   seconds: 12.7
   width: 800
 tm-profiling.gif:
@@ -284,7 +270,6 @@ tm-profiling.gif:
   quality_notes: >-
     Cluttered DevTools UI with dense, small text and a generic package tree in the background;
     informative but not clean enough to stand alone as an answer.
-  reviewed: true
   seconds: 23.2
   width: 800
 tm-test-execution.gif:
@@ -306,6 +291,5 @@ tm-test-execution.gif:
   kind: animation
   quality: docs
   quality_notes: small UI text and dense tree/table are hard to read at this resolution
-  reviewed: true
   seconds: 15.8
   width: 800

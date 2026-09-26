@@ -1,4 +1,4 @@
-/// Packages and libraries from their package.json (build-plan.md WO-3a): `package` and `library` nodes,
+/// Packages and libraries from their package.json: `package` and `library` nodes,
 /// `depends-on` between them, and the semantic types a package.json declares.
 import * as fs from 'fs';
 import * as path from 'path';

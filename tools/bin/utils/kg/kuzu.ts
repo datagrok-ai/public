@@ -1,6 +1,5 @@
-/// The one seam between the canonical JSONL and the graph index (conventions.md §11.1, build-plan.md
-/// WO-7): the optional `kuzu` binding, the DDL derived from the type system, and the bulk load through
-/// temporary CSVs. Nothing else in `grok kg` may import `kuzu`, and nothing here may be needed to build:
+/// The one seam between the canonical JSONL and the graph index (conventions.md §11.1): the optional `kuzu`
+/// binding, the DDL derived from the type system, and the bulk load through temporary CSVs. Nothing else in `grok kg` may import `kuzu`, and nothing here may be needed to build:
 /// when the binding is absent `loadKuzu()` returns null and the caller says so.
 ///
 /// One rule the 0.11.3 binding imposes on every caller, and it takes the whole process down: **close every
@@ -13,6 +12,7 @@ import * as path from 'path';
 import {createRequire} from 'module';
 import {TypeSystem, Member, NodeType, pascal, graphLabel} from './types';
 import {readJsonl, dataFile} from './generation';
+import {posix} from './ids';
 
 export interface KuzuQueryResult {
   getAll(): Promise<Record<string, unknown>[]>;
@@ -475,10 +475,6 @@ function csvCell(value: unknown): string | null {
 /** RFC 4180 quoting; the reader runs with PARALLEL=false, so a newline inside a value is fine. */
 function text(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
-}
-
-function posix(p: string): string {
-  return p.split(path.sep).join('/');
 }
 
 function sizeOf(p: string): number {

@@ -11,7 +11,6 @@ drug-likeness-panel.png:
   kind: screenshot
   quality: docs
   quality_notes: small ring-fragment diagrams and their yellow-atom annotation are hard to read at this size
-  reviewed: true
   width: 473
 gasteiger-charges.png:
   caption: Visualizing Gasteiger partial charges on a molecule
@@ -28,7 +27,6 @@ gasteiger-charges.png:
   quality_notes: >-
     plain functional UI screenshot, small dialog crop plus structure render, not polished for
     standalone use
-  reviewed: true
   width: 800
 murcko-scaffolds.png:
   caption: Murcko scaffold results table
@@ -46,7 +44,6 @@ murcko-scaffolds.png:
   quality_notes: >-
     cropped mid-table with no header row numbering context or column headers fully explained;
     functional but plain grid view
-  reviewed: true
   width: 662
 r-group-analysis.png:
   caption: Setting up R-Group Analysis on a molecule set
@@ -66,7 +63,6 @@ r-group-analysis.png:
   quality_notes: >-
     small text and dense pie-chart grid make it hard to read at a glance; useful in context but not
     self-explanatory alone
-  reviewed: true
   width: 748
 reactions.png:
   caption: Two Component Reaction dialog
@@ -84,7 +80,6 @@ reactions.png:
   kind: screenshot
   quality: docs
   quality_notes: small dialog text and dense molecule grid are hard to read at this resolution
-  reviewed: true
   width: 1079
 sim-maps.png:
   caption: Similarity maps using fingerprints
@@ -101,7 +96,6 @@ sim-maps.png:
   quality_notes: >-
     composite of a dialog and a result image side by side, small text in the dialog is hard to read
     at full resolution
-  reviewed: true
   width: 800
 sketcher.png:
   caption: Sketching a molecule with the structure editor
@@ -116,7 +110,6 @@ sketcher.png:
   kind: screenshot
   quality: docs
   quality_notes: small, low-resolution crop of the dialog; toolbar icons are hard to make out at this size
-  reviewed: true
   width: 332
 structural-alerts.png:
   caption: Structural alerts in the context panel
@@ -130,7 +123,6 @@ structural-alerts.png:
   height: 846
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 1321
 toxicity-panel.png:
   caption: Toxicity risk info panel
@@ -144,7 +136,6 @@ toxicity-panel.png:
   height: 132
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 419
 tsne.png:
   caption: Chemical space using tSNE
@@ -160,7 +151,6 @@ tsne.png:
   kind: screenshot
   quality: docs
   quality_notes: small text and cramped four-panel layout make individual chart labels hard to read at a glance
-  reviewed: true
   width: 800
 umap.png:
   caption: Chemical Space Using UMAP
@@ -175,7 +165,6 @@ umap.png:
   kind: screenshot
   quality: docs
   quality_notes: small chart labels and axis text are hard to read at this resolution
-  reviewed: true
   width: 800
 usrcat.png:
   caption: USRCAT shape similarity scoring results
@@ -192,5 +181,4 @@ usrcat.png:
   quality_notes: >-
     small, dense screenshot with unlabeled highlighted row; readable but not self-explanatory
     without surrounding text
-  reviewed: true
   width: 800

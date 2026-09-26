@@ -10,7 +10,6 @@ bar-chart-molecules.png:
   kind: screenshot
   quality: docs
   quality_notes: small, cropped viewer-only screenshot with no surrounding UI chrome
-  reviewed: true
   width: 370
 box-plot.png:
   caption: Box plot with category grouping
@@ -28,7 +27,6 @@ box-plot.png:
   kind: screenshot
   quality: docs
   quality_notes: clear and readable but a plain default-styled screenshot, not polished for marketing
-  reviewed: true
   width: 480
 calendar.png:
   caption: Calendar viewer showing December 1989–1991
@@ -45,7 +43,6 @@ calendar.png:
   kind: screenshot
   quality: docs
   quality_notes: small icon-sized crop with no context panel or surrounding UI visible
-  reviewed: true
   width: 480
 density-plot.png:
   caption: Density plot viewer
@@ -64,7 +61,6 @@ density-plot.png:
   quality_notes: >-
     plain grayscale rendering with no legend or context chrome, sufficient to illustrate the concept
     but not polished enough to stand alone
-  reviewed: true
   width: 480
 embedding.png:
   caption: Embedding a viewer as an iframe
@@ -78,7 +74,6 @@ embedding.png:
   height: 609
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 1300
 form-molecules.png:
   caption: Molecules in the Form viewer
@@ -94,7 +89,6 @@ form-molecules.png:
   quality_notes: >-
     small, cropped panel with limited context; fine as an inline illustration but not
     self-explanatory on its own
-  reviewed: true
   width: 221
 formula-lines-example.png:
   caption: Formula lines on a scatter plot
@@ -113,7 +107,6 @@ formula-lines-example.png:
   quality_notes: >-
     dense and cluttered with many overlapping formula lines, making individual line types hard to
     distinguish at a glance
-  reviewed: true
   width: 2508
 google-map.png:
   caption: Google Map viewer with markers and tooltips
@@ -131,7 +124,6 @@ google-map.png:
   quality_notes: >-
     functional but cluttered with overlapping markers and two open tooltips obscuring part of the
     map
-  reviewed: true
   width: 767
 grid-molecules.png:
   caption: Molecules rendered in a grid
@@ -147,7 +139,6 @@ grid-molecules.png:
   quality_notes: >-
     small crop showing only two rows, no visible column headers styling beyond basics, low
     resolution (400x221)
-  reviewed: true
   width: 400
 grid-summary-columns.png:
   caption: Grid summary columns with sparklines and charts
@@ -163,7 +154,6 @@ grid-summary-columns.png:
     - visualize/viewers/grid
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 519
 matrix-plot.png:
   caption: Matrix plot viewer
@@ -182,7 +172,6 @@ matrix-plot.png:
   quality_notes: >-
     small (480x480), scatter plot points are dense and hard to distinguish at this resolution, no
     axis labels or legend
-  reviewed: true
   width: 480
 network-diagram-molecules.png:
   caption: Network diagram viewer with molecules
@@ -198,7 +187,6 @@ network-diagram-molecules.png:
   kind: screenshot
   quality: docs
   quality_notes: small, dense node labels and structures are hard to read at this resolution
-  reviewed: true
   width: 938
 network-diagram.png:
   caption: Network diagram viewer
@@ -217,7 +205,6 @@ network-diagram.png:
   quality_notes: >-
     small (480x480), low resolution, edge labels and legend are not visible, making the
     relationships hard to interpret standalone
-  reviewed: true
   width: 480
 scatter-plot-molecules.png:
   caption: Rendering molecules on scatter plot axes
@@ -233,7 +220,6 @@ scatter-plot-molecules.png:
     - visualize/viewers/scatter-plot
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 675
 shape-map-pa-counties.png:
   caption: Shape map of Pennsylvania counties
@@ -248,7 +234,6 @@ shape-map-pa-counties.png:
     - visualize/viewers/shape-map
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 738
 shape-map-plate.png:
   caption: Shape Map plate layout
@@ -267,7 +252,6 @@ shape-map-plate.png:
   quality_notes: >-
     Clean render but shown as a cropped plate widget with no surrounding viewer chrome or context
     for how it was configured
-  reviewed: true
   width: 674
 tile-viewer-molecules.png:
   caption: Tile viewer showing molecule properties
@@ -283,7 +267,6 @@ tile-viewer-molecules.png:
   quality_notes: >-
     small size and plain unstyled layout make it look more like a debug render than a polished
     product screenshot
-  reviewed: true
   width: 639
 tree-map.png:
   caption: Treemap viewer of clinical trial data
@@ -301,7 +284,6 @@ tree-map.png:
   quality_notes: >-
     cropped to a square thumbnail cutting off the right and bottom edges of the viewer, and the
     dense small-cell labels are hard to read at this resolution
-  reviewed: true
   width: 480
 trellis-plot-molecules.png:
   caption: R-group analysis with a trellis plot
@@ -316,7 +298,6 @@ trellis-plot-molecules.png:
   kind: screenshot
   quality: docs
   quality_notes: small crop of a single viewer with no surrounding app chrome for context
-  reviewed: true
   width: 645
 viewer-group-tooltip.png:
   caption: Setting a group tooltip on a viewer
@@ -335,5 +316,4 @@ viewer-group-tooltip.png:
   quality_notes: >-
     annotated with arrows and callout text rather than a clean UI capture, so it reads as a diagram
     more than a straight screenshot
-  reviewed: true
   width: 615

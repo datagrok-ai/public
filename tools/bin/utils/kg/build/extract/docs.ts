@@ -1,4 +1,4 @@
-/// Documents (build-plan.md WO-3c): every markdown page the home discovery walks as a `doc-page` with a `doc-anchor`
+/// Documents: every markdown page the home discovery walks as a `doc-page` with a `doc-anchor`
 /// per heading, its `~id` and ticket mentions, the legacy Test Track scenarios (a `feature:` area tag and no `id:`) as
 /// `scenario` nodes automated by their sibling specs, and the tutorials of the Tutorials package.
 import * as fs from 'fs';

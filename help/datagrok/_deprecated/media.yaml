@@ -13,7 +13,6 @@ property-panel-share.png:
   quality_notes: >-
     small, tightly cropped panel image from a deprecated help page; shows an older context-panel
     layout
-  reviewed: true
   width: 294
 share-connection.gif:
   actions:
@@ -37,6 +36,5 @@ share-connection.gif:
   quality_notes: >-
     old UI styling (dated context menu and dialog look, small low-contrast screenshot); page itself
     is filed under _deprecated
-  reviewed: true
   seconds: 19
   width: 800

@@ -17,7 +17,6 @@ architecture-diagram.drawio.png:
   quality_notes: >-
     dense technical diagram with many small labels and port numbers, clear but cluttered for
     standalone marketing use
-  reviewed: true
   width: 1451
 queue-node.png:
   caption: Queue-based computation node architecture
@@ -36,7 +35,6 @@ queue-node.png:
   quality_notes: >-
     clear technical diagram but plain black-and-white styling with dense labels, more
     reference-grade than polished marketing material
-  reviewed: true
   width: 1139
 queue-overview.png:
   caption: Queue-based function execution architecture
@@ -57,5 +55,4 @@ queue-overview.png:
   quality_notes: >-
     clear vector diagram but plain/utilitarian styling and dense labeling keep it below marketing
     polish
-  reviewed: true
   width: 1332

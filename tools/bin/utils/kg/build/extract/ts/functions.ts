@@ -1,4 +1,4 @@
-/// Registered functions of every package (build-plan.md WO-3a): annotation headers in every entry file
+/// Registered functions of every package: annotation headers in every entry file
 /// (`src/package.g.ts`, `src/package.ts`, `src/package-test.ts`, `package.js`) and `detectors.js`, scripts,
 /// queries, connections, environments and containers as their own node types, `targets-semtype` per role,
 /// and by-name `calls` per source file.
@@ -29,7 +29,7 @@ const SCRIPT_LANGUAGES: Record<string, string> = {javascript: 'js', nodejs: 'js'
 const SCRIPT_LANGUAGE_ENUM = ['python', 'r', 'julia', 'octave', 'js', 'grok'];
 const SCRIPT_GLOB = 'scripts/**/*.{py,R,r,jl,m,js,grok}';
 const SOURCE_IGNORE = ['**/node_modules/**', '**/dist/**'];
-/** Its scripts/ folder holds API samples (WO-3c), not scripts. */
+/** Its scripts/ folder holds API samples, not scripts. */
 const SAMPLES_PACKAGE = 'ApiSamples';
 const URL = /^[a-z][a-z0-9+.-]*:\/\//i;
 const CALL_PATTERNS = [
@@ -271,7 +271,7 @@ class FunctionLayer {
       if (!this.exists(`${path.posix.dirname(file)}/Dockerfile`)) this.emitContainer(pkg, path.posix.basename(path.posix.dirname(file)), file);
   }
 
-  /** `base` is left out: it references an image node no extractor produces yet (build-plan.md WO-3a). */
+  /** `base` is left out: it references an image node no extractor produces yet. */
   private emitContainer(pkg: PackageFolder, name: string, file: string): void {
     const id = containerId(pkg.folder, name);
     if (this.emitter.node({type: 'container', id, name, language: 'other', path: file, package: pkgId(pkg.folder), provenance: 'filesystem', source_layer: 'public'}).accepted)
@@ -391,7 +391,7 @@ class FunctionLayer {
   }
 
   /** Whether the registration was admitted. A rejected one contributes nothing: its facts would otherwise land on the
-   * retained registration of the same name (kg-codex-review-3.md #3). */
+   * retained registration of the same name. */
   private emitFunction(row: Row, uses: SemtypeUse[], header: Header, pkg: PackageFolder, file: string): boolean {
     const id = row.id as string;
     if (!this.emitter.node(row).accepted) return false;

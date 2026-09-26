@@ -619,7 +619,7 @@ function homeErrors(file: string, text: string, mutate?: (repo: string) => void)
 
 const PERMISSIONS = '---\nfeature: govern/permissions\nowner: askalkin\n';
 
-describe('reference resolution: parse, expand, type-check, look up (review 2 #1)', () => {
+describe('reference resolution: parse, expand, type-check, look up', () => {
   it('rejects ids whose kind cannot be of the expected type instead of calling them external', () => {
     expect(homeErrors('core/docs/broken.md', `${PERMISSIONS}owner: GROK-123\n---\n# P\n`.replace('owner: askalkin\n', '')))
       .toEqual(["unresolved-ref core/docs/broken.md:3: owner: 'GROK-123' is a Ticket; expected Person | Team"]);
@@ -679,7 +679,7 @@ describe('reference resolution: parse, expand, type-check, look up (review 2 #1)
   });
 });
 
-describe('annotated pages and migrated scenarios (review 2 #2)', () => {
+describe('annotated pages and migrated scenarios', () => {
   it('validates a page that only carries documents: and counts it', () => {
     const repo = makeRepo();
     write(repo, 'public/help/visualize/viewers/more-tips.md', '---\ntitle: More\ndocuments:\n  - nosuch\n  - {to: visualize/viewers/scatter-plot, audience: robot}\ncovers: [visualize]\n---\nText.\n');
@@ -703,7 +703,7 @@ describe('annotated pages and migrated scenarios (review 2 #2)', () => {
   });
 });
 
-describe('citations as records (review 2 #4)', () => {
+describe('citations as records', () => {
   it('extracts backticks, inline links relative to the document, reference-style links and in-page anchors', () => {
     const body = [
       'See `core/client/d4/lib/scatter.dart:12` and [tips](scatter-plot-tips.md#tips) and [root](/core/docs/CACHING.md).',
@@ -758,7 +758,7 @@ describe('citations as records (review 2 #4)', () => {
   });
 });
 
-describe('visibility ceiling (review 2 #5)', () => {
+describe('visibility ceiling', () => {
   it('refuses a wider visibility than the internal folder allows, accepts narrowing elsewhere', () => {
     expect(homeErrors('core/docs/knowledge-graph/internal/people/bob.yaml', 'id: P:bob\nname: Bob\nemail: b@x\nvisibility: public\n'))
       .toEqual(["visibility-ceiling core/docs/knowledge-graph/internal/people/bob.yaml:4: visibility 'public' exceeds the ceiling 'internal' of core/docs/knowledge-graph/internal/; a home there can only be internal"]);
@@ -767,7 +767,7 @@ describe('visibility ceiling (review 2 #5)', () => {
   });
 });
 
-describe('hierarchy and edge instances (review 2 #7)', () => {
+describe('hierarchy and edge instances', () => {
   it('checks feature roots from schema.yaml, concept depth and the area home of a level-3 feature', () => {
     expect(homeErrors('core/docs/broken.md', '---\nfeature: bogus/thing\nowner: askalkin\n---\n# B\n'))
       .toEqual([expect.stringMatching(/^bad-root core\/docs\/broken.md:2: ~bogus\/thing: feature root 'bogus' is not one of access, transform, .*\(schema.yaml feature_roots\)$/)]);
@@ -820,7 +820,7 @@ describe('duplicate edge-key items', () => {
   });
 });
 
-describe('member parser shapes and defaults (review 2 #8)', () => {
+describe('member parser shapes and defaults', () => {
   it('rejects unions of lists and mixed unions, accepts the parenthesized form', () => {
     expect(parseMember('m?', 'Person[] | Team[]', {types: TYPES}).error).toBe("m: a union of lists is not allowed; write '(Person | Team)[]' instead of 'Person[] | Team[]'");
     expect(parseMember('m?', 'string | string[]').error).toMatch(/may not mix lists and single values/);
@@ -843,7 +843,7 @@ describe('member parser shapes and defaults (review 2 #8)', () => {
   });
 });
 
-describe('type-file namespaces (review 2 #9)', () => {
+describe('type-file namespaces', () => {
   it('reserves edge row fields, rejects keys that shadow node properties, requires prefixes and known inherit names', () => {
     expect(typeErrors((kg) => append(kg, 'edges/evidence/covers.yaml', '  from?:         string\n')))
       .toEqual(['edge covers.from: reserved field name, part of every edge row (from, to, type, id)']);
@@ -860,7 +860,7 @@ describe('type-file namespaces (review 2 #9)', () => {
   });
 });
 
-describe('kg.d.ts as an API (review 2 #14)', () => {
+describe('kg.d.ts as an API', () => {
   it('escapes literals, carries the build fields and compiles under strict TypeScript', () => {
     const repo = makeRepo();
     fs.appendFileSync(path.join(repo, KG_DIR, 'nodes/team.yaml'), "  mood?:         \"'don\\\\'t' | 'ok'\"\n");
@@ -874,7 +874,7 @@ describe('kg.d.ts as an API (review 2 #14)', () => {
   });
 });
 
-describe('report boundaries (review 2 #15)', () => {
+describe('report boundaries', () => {
   it('turns unreadable files, unclosed frontmatter and malformed YAML into coded errors', () => {
     const repo = makeRepo();
     write(repo, 'core/docs/open.md', '---\nfeature: govern/x\n# never closed\n');

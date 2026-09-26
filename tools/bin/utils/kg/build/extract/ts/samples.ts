@@ -1,7 +1,7 @@
-/// API samples (build-plan.md WO-3c): every script under packages/ApiSamples/scripts as a `sample` with the API
+/// API samples: every script under packages/ApiSamples/scripts as a `sample` with the API
 /// members its `//api:` header names, else the `DG.` / `ui.` / `grok.` members its text uses (js-api/scripts/inventory.cjs),
 /// the help page a `//help-url:` names as a mention, a `demonstrates` edge for a `~id` in the header, and the
-/// `uses` edges of the JS API members it calls, resolved the way WO-3b resolves them for a source file.
+/// `uses` edges of the JS API members it calls, resolved the way the ts-uses pass resolves them for a source file.
 import * as fs from 'fs';
 import * as path from 'path';
 import {globSync} from 'glob';

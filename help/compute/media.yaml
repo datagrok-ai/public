@@ -20,7 +20,6 @@ add-to-workspace.gif:
   kind: animation
   quality: docs
   quality_notes: small embedded frame size and dense UI make some labels hard to read at a glance
-  reviewed: true
   seconds: 22.5
   width: 800
 auto-ui-queries.png:
@@ -39,7 +38,6 @@ auto-ui-queries.png:
   quality_notes: >-
     flat text-only mockup rather than an actual application screenshot; small chart thumbnail is low
     detail
-  reviewed: true
   width: 2777
 chem-space.gif:
   actions:
@@ -66,7 +64,6 @@ chem-space.gif:
     - explore/dim-reduction
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 35.2
   width: 1608
 dim-reduction-dialog.png:
@@ -84,7 +81,6 @@ dim-reduction-dialog.png:
     - explore/dim-reduction
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 817
 dim-reduction-webgpu.gif:
   actions:
@@ -110,7 +106,6 @@ dim-reduction-webgpu.gif:
   quality_notes: >-
     UI text and controls are legible, but low frame rate and static holds make it read more like a
     click-through walkthrough than a polished demo
-  reviewed: true
   seconds: 28.6
   width: 1608
 dim-reduction.gif:
@@ -138,7 +133,6 @@ dim-reduction.gif:
     - explore/multivariate-analysis
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 34.8
   width: 1608
 img.png:
@@ -157,7 +151,6 @@ img.png:
   quality_notes: >-
     narrow crop of a side panel with generic placeholder data (Admin, Sep 2, 2021), not
     self-explanatory about logging/audit without surrounding text
-  reviewed: true
   width: 327
 model-browser.png:
   caption: Browsing models in the Models gallery
@@ -174,7 +167,6 @@ model-browser.png:
   quality_notes: >-
     clear and readable but a plain gallery listing with no annotation of the interaction it
     illustrates (double-click to open)
-  reviewed: true
   width: 991
 separators-option.gif:
   actions:
@@ -199,7 +191,6 @@ separators-option.gif:
   quality_notes: >-
     mid-typing frames briefly show a transient "Can't be empty" validation tooltip, which could
     confuse a viewer skimming only a few frames
-  reviewed: true
   seconds: 11.1
   width: 1483
 seq-space.gif:
@@ -228,7 +219,6 @@ seq-space.gif:
     - explore/dim-reduction
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 49
   width: 1608
 ui-auto-generation.png:
@@ -247,7 +237,6 @@ ui-auto-generation.png:
   quality_notes: >-
     Annotated diagram with overlaid arrows rather than a plain screenshot; code text is small and
     only partially legible at normal viewing size.
-  reviewed: true
   width: 3240
 ui-mobile.jpg:
   caption: Running a model on a mobile device
@@ -264,6 +253,5 @@ ui-mobile.jpg:
   quality_notes: >-
     photo of a physical device screen with glare and a finger obscuring part of the frame; chart
     area mostly blank/still rendering
-  reviewed: true
   seconds: 0
   width: 4032

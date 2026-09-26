@@ -14,7 +14,6 @@ main-page.png:
   quality_notes: >-
     small text and dense multi-panel layout reduce readability at a glance; fine as an inline
     illustration but not strong enough to stand alone
-  reviewed: true
   width: 1152
 user-settings-formatting.png:
   caption: Setting default date and number formats
@@ -28,5 +27,4 @@ user-settings-formatting.png:
   height: 490
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 811

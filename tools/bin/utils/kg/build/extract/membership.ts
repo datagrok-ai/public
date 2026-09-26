@@ -1,4 +1,4 @@
-/// Membership resolution (conventions.md §8, build-plan.md WO-4): the one feature that owns each
+/// Membership resolution (conventions.md §8): the one feature that owns each
 /// file, the features that only participate in it, the tests that follow an owned file, and the
 /// report of what stayed ambiguous or orphaned. Runs after every extractor has made its claims.
 import * as fs from 'fs';

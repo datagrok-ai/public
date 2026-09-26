@@ -16,7 +16,6 @@ docker.png:
   quality_notes: >-
     dense UI with small text and debug-style log data, appropriate for the how-to page but not a
     standalone answer
-  reviewed: true
   width: 800
 github-actions-publish-status.png:
   caption: GitHub Actions package publish workflow
@@ -32,7 +31,6 @@ github-actions-publish-status.png:
   height: 1638
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 2876
 home-page-widgets.png:
   caption: 'Home page widgets: Recent projects and Usage'
@@ -50,7 +48,6 @@ home-page-widgets.png:
   quality_notes: >-
     clear and readable but shown only as an illustrative example within the how-to text, not a
     standalone answer to building a widget
-  reviewed: true
   width: 767
 share-package.png:
   caption: Sharing a package with a group
@@ -65,5 +62,4 @@ share-package.png:
   kind: screenshot
   quality: docs
   quality_notes: cropped context menu with several package names truncated at the frame edge
-  reviewed: true
   width: 596

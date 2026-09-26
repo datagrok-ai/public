@@ -7,7 +7,6 @@ histogram.gif:
   actions: [opens the histogram, drags the Bins slider left, drags it back]
   illustrates: [visualize/viewers/histogram]
   quality: answer
-  reviewed: true
   described_by: person
   described_blob: 35d42e808f0a8017b8d52a06be2f8fec0b466a66
   width: 800
@@ -19,6 +18,5 @@ bins.png:
   description: The context panel of a histogram with the Bins slider at 12.
   illustrates: [visualize/viewers/histogram]
   quality: docs
-  reviewed: false
   described_by: claude-sonnet-5
   described_blob: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef

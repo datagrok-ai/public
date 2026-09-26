@@ -14,7 +14,6 @@ exercises-add-new-column.png:
   quality_notes: >-
     clear and on-topic for its step, but a single dialog screenshot with a user-specific namespace
     in the formula, not polished enough to stand alone
-  reviewed: true
   width: 902
 exercises-complement-data-panel.png:
   caption: Complement widget in the context panel
@@ -29,7 +28,6 @@ exercises-complement-data-panel.png:
   kind: screenshot
   quality: docs
   quality_notes: clear and on-topic but a plain data-panel crop with no annotation of what to look at
-  reviewed: true
   width: 1374
 exercises-scripting-viewer.png:
   caption: Configuring a Python scripting viewer
@@ -46,7 +44,6 @@ exercises-scripting-viewer.png:
   quality_notes: >-
     clear and readable but composed of three cropped panes (grid, script editor, viewer, properties)
     rather than a single clean shot
-  reviewed: true
   width: 1684
 exercises-semantic-tooltip.png:
   caption: Semantic type tooltip on a column header
@@ -59,7 +56,6 @@ exercises-semantic-tooltip.png:
   height: 224
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 306
 exercises-transforming-dataframes.png:
   caption: Fuzzy-joining two DNA sequence datasets
@@ -75,6 +71,5 @@ exercises-transforming-dataframes.png:
   quality_notes: >-
     cropped to just the grid with no surrounding context; fine as an inline exercise result
     reference but not self-explanatory on its own
-  reviewed: true
   seconds: 0
   width: 593

@@ -13,7 +13,6 @@
   quality_notes: >-
     small UI text is hard to read at full resolution and the row highlight/cursor suggest an
     in-progress interaction rather than a clean static state
-  reviewed: true
   width: 1601
 1.25-file-viewer-xlsx-format.gif:
   actions:
@@ -33,7 +32,6 @@
   kind: animation
   quality: docs
   quality_notes: clear demonstration but modest resolution and a small dead-space pause mid-clip
-  reviewed: true
   seconds: 13.9
   width: 1601
 1.27-annotation-regions.gif:
@@ -56,7 +54,6 @@
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21.5
   width: 800
 1.27-blur.gif:
@@ -80,7 +77,6 @@
   quality_notes: >-
     cropped to a grid + property panel with no window chrome; mouse cursor visible; clear enough for
     its own page but not polished for marketing
-  reviewed: true
   seconds: 14.6
   width: 800
 1.27-color-coding-linked.gif:
@@ -107,7 +103,6 @@
   quality_notes: >-
     small embedded UI dialog with default grid data; clear but purely functional, not polished for
     marketing
-  reviewed: true
   seconds: 73.6
   width: 800
 1.27-confidence-interval.gif:
@@ -133,7 +128,6 @@
   kind: animation
   quality: docs
   quality_notes: small cropped UI region, no visible pointer path between steps, hard to follow without narration
-  reviewed: true
   seconds: 55.4
   width: 800
 1.27-edit-formula.gif:
@@ -160,7 +154,6 @@
   quality_notes: >-
     small dialog text and dense autocomplete list are hard to read at this resolution; otherwise
     clear current UI
-  reviewed: true
   seconds: 82.7
   width: 800
 1.27-heatmap-color-customization.gif:
@@ -183,7 +176,6 @@
   kind: animation
   quality: docs
   quality_notes: small embedded GIF with dense, low-resolution UI text; readable in context but not on its own
-  reviewed: true
   seconds: 33.9
   width: 800
 1.27-lines-by.gif:
@@ -208,7 +200,6 @@
   quality_notes: >-
     small property-panel crop with tooltips shown mid-hover, illustrates a single control rather
     than a complete workflow
-  reviewed: true
   seconds: 28.5
   width: 800
 1.27-multi-value-filter.gif:
@@ -230,7 +221,6 @@
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 33
   width: 800
 1.27-pie-chart-labels.gif:
@@ -252,7 +242,6 @@
   kind: animation
   quality: docs
   quality_notes: small size and dense, low-contrast slice labels make the chart hard to read at a glance
-  reviewed: true
   seconds: 41.6
   width: 800
 1.27-scatter-plot-histograms.gif:
@@ -277,7 +266,6 @@
   quality_notes: >-
     small crop cuts off the right edge of the property panel, and the last frames show a stray
     drag-selection ring, but the UI itself is current and readable
-  reviewed: true
   seconds: 9.9
   width: 800
 1.27-show-selected-rows.gif:
@@ -303,7 +291,6 @@
   quality_notes: >-
     small property-panel text is hard to read at this resolution; useful mainly alongside the
     surrounding release-notes text
-  reviewed: true
   seconds: 46.2
   width: 800
 1.27-stars.gif:
@@ -322,7 +309,6 @@
   kind: animation
   quality: docs
   quality_notes: clear single-purpose demo but tightly cropped to the grid and property panel, no page chrome
-  reviewed: true
   seconds: 16.5
   width: 800
 1.27-statistics.gif:
@@ -343,7 +329,6 @@
   kind: animation
   quality: docs
   quality_notes: small UI text is hard to read at this resolution and one captured frame is blank/transitional
-  reviewed: true
   seconds: 14.7
   width: 800
 1.27-switch-filter-type.gif:
@@ -366,7 +351,6 @@
   kind: animation
   quality: docs
   quality_notes: small viewport crops the data table to a few columns, so cell contents are partly cut off
-  reviewed: true
   seconds: 27.3
   width: 800
 column-preview-filter-by-type.gif:
@@ -393,7 +377,6 @@ column-preview-filter-by-type.gif:
   quality_notes: >-
     Small UI text is hard to read at this resolution and the column filter menus overlap the grid,
     but the flow is followable for reference inside its page.
-  reviewed: true
   seconds: 35.4
   width: 1601
 column-selection.gif:
@@ -416,7 +399,6 @@ column-selection.gif:
     cursor position over the headers is visible but no clear column-highlight/selection state is
     shown in the sampled frames; the dataset looks like real customer screening data rather than a
     generic demo dataset
-  reviewed: true
   seconds: 8.3
   width: 1200
 content-info-pane.gif:
@@ -438,7 +420,6 @@ content-info-pane.gif:
   height: 1001
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 15
   width: 1601
 grid-column-groups.gif:
@@ -464,7 +445,6 @@ grid-column-groups.gif:
   quality_notes: >-
     small crop (800x500) and dense data table reduce legibility at a glance, but the interaction is
     clear
-  reviewed: true
   seconds: 18.6
   width: 800
 grid-dynamic-column-widths.gif:
@@ -489,7 +469,6 @@ grid-dynamic-column-widths.gif:
   quality_notes: >-
     small crop cuts off right-hand columns (PPBR, VDss, CYP columns) so full table width isn't
     visible
-  reviewed: true
   seconds: 10.1
   width: 800
 grid-files-in-cells.gif:
@@ -509,7 +488,6 @@ grid-files-in-cells.gif:
   kind: animation
   quality: docs
   quality_notes: dense, low-contrast UI with small text; demo/test data rather than a real-world scenario
-  reviewed: true
   seconds: 23.4
   width: 781
 grid-mouse-pan-content.gif:
@@ -532,7 +510,6 @@ grid-mouse-pan-content.gif:
   quality_notes: >-
     dense chemistry data with small, hard-to-read text and no surrounding UI chrome, so the panning
     gesture is only clear with the accompanying release-note text
-  reviewed: true
   seconds: 10.3
   width: 800
 grid-nested-linked-tables.gif:
@@ -558,7 +535,6 @@ grid-nested-linked-tables.gif:
   quality_notes: >-
     Long screen capture with visible OS file dialog and small text; useful for following the
     workflow but not polished enough to stand alone
-  reviewed: true
   seconds: 42.9
   width: 800
 grid-tags-renderer.gif:
@@ -584,7 +560,6 @@ grid-tags-renderer.gif:
   quality_notes: >-
     small UI details (tag colors, checkboxes) are legible but the clip mixes several unrelated
     interactions (renderer settings, column resize, scrolling) without clear focus
-  reviewed: true
   seconds: 23.9
   width: 800
 grid-unhide-columns.gif:
@@ -604,7 +579,6 @@ grid-unhide-columns.gif:
   quality_notes: >-
     small cropped clip of a single grid interaction, no surrounding chrome, only legible as a
     supporting illustration next to release-notes text
-  reviewed: true
   seconds: 9.2
   width: 800
 line-chart-split-by-columns.gif:
@@ -628,7 +602,6 @@ line-chart-split-by-columns.gif:
   quality_notes: >-
     small property-panel text and dense line traces are hard to read at a glance; adequate for the
     release-notes page but not a standalone answer
-  reviewed: true
   seconds: 32.1
   width: 1601
 pinned-rows.gif:
@@ -651,7 +624,6 @@ pinned-rows.gif:
   quality_notes: >-
     frames show general grid/context-panel browsing rather than a clear, focused demonstration of
     pinning and unpinning rows specifically
-  reviewed: true
   seconds: 42.1
   width: 1601
 plots-info-pane.gif:
@@ -681,7 +653,6 @@ plots-info-pane.gif:
   quality_notes: >-
     Clear and functional but plain demo data ("demog") with default styling; not polished enough for
     standalone marketing use
-  reviewed: true
   seconds: 49.7
   width: 1601
 register-idenitifiers.gif:
@@ -706,7 +677,6 @@ register-idenitifiers.gif:
   quality_notes: >-
     small UI text and dense property panels are hard to read at normal size; fine as an in-page
     walkthrough but not self-explanatory on its own
-  reviewed: true
   seconds: 18.4
   width: 1601
 release1.18-browse.gif:
@@ -734,7 +704,6 @@ release1.18-browse.gif:
     Screen capture at native resolution with readable UI, but shows an older/pre-1.18 look of a few
     panels; fine for illustrating the feature on its own page, not polished enough for standalone
     marketing use.
-  reviewed: true
   seconds: 240.9
   width: 1601
 release1.18-cellrend-tags-multichoice-dropdown.gif:
@@ -760,7 +729,6 @@ release1.18-cellrend-tags-multichoice-dropdown.gif:
   quality_notes: >-
     small cropped grid with placeholder Product A/B/C data, no surrounding UI chrome explaining the
     setup
-  reviewed: true
   seconds: 103.4
   width: 1601
 release1.18-trellis-sparklines.gif:
@@ -782,7 +750,6 @@ release1.18-trellis-sparklines.gif:
   kind: animation
   quality: docs
   quality_notes: small window crop of the full app; UI chrome dominates most frames, cell charts are small
-  reviewed: true
   seconds: 26.4
   width: 1601
 smart-forms.gif:
@@ -808,7 +775,6 @@ smart-forms.gif:
   quality_notes: >-
     clear demonstration but shows raw demo/test data (USUBJID codes) and a busy context panel not
     central to the concept
-  reviewed: true
   seconds: 30.8
   width: 800
 sparklines-normalization-demo.gif:
@@ -829,6 +795,5 @@ sparklines-normalization-demo.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 12.8
   width: 800

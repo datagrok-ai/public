@@ -17,7 +17,6 @@ file-exporter.gif:
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 13
   width: 800
 folder-content-preview.png:
@@ -37,5 +36,4 @@ folder-content-preview.png:
   quality_notes: >-
     clean UI capture but the preview list is cropped and the folder tree obscures much of the
     demonstrated custom preview panel
-  reviewed: true
   width: 800

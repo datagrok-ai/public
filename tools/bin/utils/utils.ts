@@ -28,6 +28,14 @@ export function isPackageDir(dir: string): boolean {
   return fs.existsSync(path.join(dir, 'package.json'));
 }
 
+/** The nearest directory at or above [from] that [test] accepts, or null at the root of the drive. */
+export function findUp(from: string, test: (dir: string) => boolean): string | null {
+  for (let dir = path.resolve(from); ; dir = path.dirname(dir)) {
+    if (test(dir)) return dir;
+    if (path.dirname(dir) === dir) return null;
+  }
+}
+
 export function kebabToCamelCase(s: string, firstUpper: boolean = true): string {
   s = s.replace(/-./g, (x) => x.toUpperCase()[1]);
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);

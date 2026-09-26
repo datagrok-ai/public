@@ -1,4 +1,4 @@
-/// `grok kg build` end to end (build-plan.md WO-10): the whole pipeline over the mini monorepo under
+/// `grok kg build` end to end: the whole pipeline over the mini monorepo under
 /// fixtures/kg/build — every extractor, the row counts each of them produces, byte-identical repeats,
 /// the Dart pass over the fixture's sources, the public projection and the five reports; then, where the
 /// optional `kuzu` binding is installed, the index, `query`, the four operations and a CSV round-trip
@@ -77,7 +77,7 @@ function build(repo: string, extra: Record<string, unknown> = {}): Promise<Built
 const built = makeRepo();
 const graph = build(built);
 
-describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => {
+describe('grok kg build over the fixture monorepo', () => {
   it('runs every extractor and writes the rows the fixture calls for', async () => {
     const {manifest} = await graph;
     expect(manifest.mode).toBe('full');
@@ -155,7 +155,7 @@ describe('grok kg build over the fixture monorepo (build-plan.md WO-10)', () => 
   });
 });
 
-describe('the reports build writes and the report verb prints (build-plan.md WO-8, WO-10)', () => {
+describe('the reports build writes and the report verb prints', () => {
   it('writes json and md for the four reports a build can answer on its own', async () => {
     const {out} = await graph;
     for (const name of BUILD_REPORTS)
@@ -351,7 +351,7 @@ function csv(result: Answer): string {
   return render(result, 'csv').join('\n');
 }
 
-describe('what an op prints (slice-results.md §10)', () => {
+describe('what an op prints', () => {
   it('prints a list cell as its items and says how many it left out, and marks a cut object', () => {
     const long = 'x'.repeat(100);
     const lines = render({op: 'explain', target: {id: 'pkg:Chem'}, sections: [{title: 'properties', total: 2, rows: [
@@ -373,7 +373,7 @@ describe('what an op prints (slice-results.md §10)', () => {
   });
 });
 
-/** The fixture graph with one feature carrying values a CSV cannot express (build-plan.md WO-7 "List cells"). */
+/** The fixture graph with one feature carrying values a CSV cannot express. */
 async function unloadable(): Promise<{out: string, feature: Record<string, unknown>}> {
   const {out} = await graph;
   const file = path.join(out, 'data', 'nodes', 'feature.jsonl');
@@ -387,7 +387,7 @@ async function unloadable(): Promise<{out: string, feature: Record<string, unkno
 
 const withKuzu = loadKuzu() ? it : it.skip;
 
-describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
+describe('the index over the fixture graph', () => {
   /** One index for the whole block: a kuzu database reserves its buffer pool, and two at once exhaust a worker. */
   let index: {out: string, feature: Record<string, unknown>, system: TypeSystem, opened: Awaited<ReturnType<typeof open>>};
 
@@ -424,7 +424,7 @@ describe('the index over the fixture graph (build-plan.md WO-7, WO-10)', () => {
     expect(explained.sections[0].rows).toContainEqual({property: 'home', value: 'public/help/domains/bio/bio.md'});
     expect(explained.sections[1].rows).toContainEqual(expect.objectContaining({edge: 'owner', direction: 'out', targets: [expect.objectContaining({id: 'P:jane'})]}));
 
-    // the feature-level tests are the `feature` tier since change-tests/plan.md added the immediate and reachable tiers
+    // the feature-level tests are the `feature` tier since the immediate and reachable tiers were added
     const tests = await testsFor(conn, bio, LIMIT);
     expect(tests.sections.find((s) => s.title === 'feature')!.rows.length).toBe(5);
     expect(tests.sections.find((s) => s.title === 'scenarios')!.rows).toMatchObject([{scenario: 'TS:viewers/scatter-plot/ui', manual_only: true}]);

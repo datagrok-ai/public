@@ -25,10 +25,15 @@ export const MEDIA_EXT = Object.keys(FORMATS);
 export const RECORD_FILES = ['media.yaml', 'videos.yaml'];
 /** What a record may say about a media node; everything else on the node comes from the file, the page or the build. */
 export const RECORD_KEYS = ['kind', 'animated', 'width', 'height', 'seconds', 'caption', 'description', 'actions',
-  'quality', 'quality_notes', 'reviewed', 'described_by', 'described_blob', 'illustrates'];
+  'quality', 'quality_notes', 'described_by', 'described_blob', 'illustrates'];
 /** A hosted video has no file name to take its name from, so its record may carry a title. */
 const HOSTED_KEYS = [...RECORD_KEYS, 'title'];
 const HOSTED_KEY = /^(youtube):([\w-]{11})$/;
+
+/** A record a model wrote (`described_by` a model id) asserts proposals; a person's, or one that says nothing, asserts fact. */
+export function describedByModel(data: Row): boolean {
+  return data.described_by !== undefined && data.described_by !== 'person';
+}
 
 
 export function isMedia(file: string): boolean {

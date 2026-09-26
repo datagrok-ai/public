@@ -5,5 +5,4 @@ aggregate.gif:
   actions: [opens Aggregate, drags Age into rows, drags Weight into measures]
   illustrates: [visualize/viewers]
   quality: marketing
-  reviewed: true
   described_by: person

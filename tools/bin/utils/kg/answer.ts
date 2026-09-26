@@ -1,4 +1,4 @@
-/// What an operation answers (conventions.md §11.1, build-plan.md WO-7): sections of rows over a resolved target,
+/// What an operation answers (conventions.md §11.1): sections of rows over a resolved target,
 /// led by the caveats of the sources the manifest could not read. Data only, shaped once: the CLI prints it
 /// (`print.ts`), the browser and an MCP server serialize it as it is.
 

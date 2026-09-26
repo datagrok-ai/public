@@ -13,7 +13,6 @@ blocks.png:
   quality_notes: >-
     flat schematic mockup, not a real UI screenshot, so it stands on its own only alongside the
     explanatory text
-  reviewed: true
   width: 1200
 box-container.png:
   caption: Fixed-size box container
@@ -30,7 +29,6 @@ box-container.png:
   quality_notes: >-
     plain placeholder mockup with no real content, useful only as a layout illustration alongside
     the surrounding text
-  reviewed: true
   width: 1200
 container.png:
   caption: Creating a container
@@ -46,7 +44,6 @@ container.png:
   quality_notes: >-
     minimal placeholder-like image with mostly empty space, mainly useful as inline illustration
     next to the code sample rather than standalone
-  reviewed: true
   width: 1200
 flexbox.png:
   caption: Flexbox grid layout directions
@@ -62,7 +59,6 @@ flexbox.png:
   kind: diagram
   quality: docs
   quality_notes: Clear and legible but a generic schematic illustration, not a real captured UI screenshot
-  reviewed: true
   width: 1200
 git-publishing.png:
   caption: Publishing a package from a Git repository
@@ -76,7 +72,6 @@ git-publishing.png:
   height: 506
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 590
 panel.png:
   caption: Panel container layout
@@ -92,7 +87,6 @@ panel.png:
   quality_notes: >-
     minimal placeholder content with no real children rendered (no header, paragraph, or scatter
     plot as described in the surrounding code sample), and a debug-style dashed outline overlay
-  reviewed: true
   width: 1200
 splitters.png:
   caption: Splitting the layout horizontally and vertically
@@ -107,5 +101,4 @@ splitters.png:
   kind: diagram
   quality: docs
   quality_notes: Placeholder-style mockup with generic 'ITEM' labels rather than a real UI screenshot
-  reviewed: true
   width: 1200

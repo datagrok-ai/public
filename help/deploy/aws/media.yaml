@@ -15,7 +15,6 @@ marketplace-get-pass.gif:
   height: 796
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 12.3
   width: 1458
 marketplace.gif:
@@ -41,6 +40,5 @@ marketplace.gif:
   quality_notes: >-
     Small text and dense CloudFormation console UI are hard to read at a glance; useful walkthrough
     but not clear enough to stand alone without the surrounding steps.
-  reviewed: true
   seconds: 4.7
   width: 1920

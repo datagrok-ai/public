@@ -13,7 +13,6 @@ add-new-column.png:
   quality_notes: >-
     Tiny toolbar icon, only legible in context alongside its label; too small and generic to stand
     alone.
-  reviewed: true
   width: 24
 add-viewer-icon-temp.png:
   caption: Add viewer icon
@@ -31,7 +30,6 @@ add-viewer-icon-temp.png:
   quality_notes: >-
     Blurry, low-resolution placeholder icon (file name and small pixel dimensions confirm it is a
     temporary asset, not a finished UI icon); unusable on its own or blown up in docs.
-  reviewed: true
   width: 24
 download-icon.png:
   caption: Download icon
@@ -47,7 +45,6 @@ download-icon.png:
   quality_notes: >-
     Tiny inline UI icon, not meant to stand alone; too small and generic to answer a question by
     itself.
-  reviewed: true
   width: 26
 funnel.png:
   caption: Funnel icon for filters
@@ -62,7 +59,6 @@ funnel.png:
   kind: icon
   quality: docs
   quality_notes: Tiny (25x28) UI glyph, only meaningful as an inline icon reference, not as a standalone image
-  reviewed: true
   width: 25
 gear-icon.png:
   caption: Gear icon for viewer settings
@@ -79,7 +75,6 @@ gear-icon.png:
   kind: icon
   quality: docs
   quality_notes: Tiny UI icon (28x25px) with no standalone informational value outside inline text references.
-  reviewed: true
   width: 28
 hamburger-menu.png:
   caption: Hamburger menu icon
@@ -98,7 +93,6 @@ hamburger-menu.png:
   quality_notes: >-
     Tiny inline UI glyph (20x20), meaningful only as an icon reference inside surrounding text, not
     as a standalone visual.
-  reviewed: true
   width: 20
 remove-column.png:
   caption: Removing selected columns
@@ -111,5 +105,4 @@ remove-column.png:
   kind: icon
   quality: docs
   quality_notes: Tiny 25x24 toolbar icon, only legible in context next to the surrounding instructions.
-  reviewed: true
   width: 25

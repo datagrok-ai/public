@@ -1,4 +1,4 @@
-/// The graph index (build-plan.md WO-7): the DDL the type system dictates, and — when the optional
+/// The graph index: the DDL the type system dictates, and — when the optional
 /// `kuzu` binding is installed — a load of the fixture graph with `query` and the four operations over it.
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import fs from 'fs';
@@ -27,7 +27,7 @@ function table(name: string): string {
   return found!;
 }
 
-describe('the index DDL (build-plan.md WO-7)', () => {
+describe('the index DDL', () => {
   it('gives every root one node table with the union of its subtree, typed lists and quoted identifiers', () => {
     expect(schema.nodes.map((t) => t.name)).toEqual(['Feature', 'Concept', 'Component', 'Artifact', 'Work', 'Actor', 'Infra', 'Type']);
     expect(table('Feature')).toBe('CREATE NODE TABLE `Feature`(`id` STRING PRIMARY KEY, `type` STRING, `types` STRING[], `name` STRING, ' +
@@ -111,7 +111,7 @@ function keep(results: KuzuQueryResult[], result: KuzuQueryResult | KuzuQueryRes
 
 const withKuzu = loadKuzu() ? it : it.skip;
 
-describe('the index itself (build-plan.md WO-7, WO-10)', () => {
+describe('the index itself', () => {
   /** One index for both tests: a kuzu database reserves its whole buffer pool, and two at once exhaust a test worker. */
   let index: {kgDir: string, feature: Record<string, unknown>, result: Awaited<ReturnType<typeof load>>, opened: Awaited<ReturnType<typeof open>>};
 
@@ -195,7 +195,7 @@ describe('the index itself (build-plan.md WO-7, WO-10)', () => {
       const bio = (await resolveTarget(conn, 'domains/bio'))!;
       const tests = await testsFor(conn, bio, LIMIT);
       expect(tests.sections.find((s) => s.title === 'scenarios')!.rows).toMatchObject([{scenario: 'TS:viewers/scatter-plot/ui', feature: 'domains/bio', manual_only: true}]);
-      // the feature-level tests are the `feature` tier since change-tests/plan.md added the immediate and reachable tiers
+      // the feature-level tests are the `feature` tier since the immediate and reachable tiers were added
       expect(tests.sections.find((s) => s.title === 'feature')!.rows).toEqual([]);
       expect(coverageNote({dart: 'partial'})).toBe('Dart coverage partial (some markers did not resolve)');
       expect(coverageNote(undefined)).toBe('Dart coverage unknown (the dart extractor did not run)');

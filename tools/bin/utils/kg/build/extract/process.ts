@@ -1,4 +1,4 @@
-/// The process layer (build-plan.md WO-5): tickets from the backlog snapshot, the releases recorded
+/// The process layer: tickets from the backlog snapshot, the releases recorded
 /// under core/docs/release with the commits they picked, and the people all three name, resolved
 /// through the person homes and the autofix roster.
 import * as fs from 'fs';
@@ -12,7 +12,7 @@ import {HomeSet} from '../../homes';
 import {ticketId, relId, custId, commitId} from '../../ids';
 import {homesOf, idTokens, ticketTokens, ticketStub, resolveMention} from './markers';
 
-/** The snapshot repo beside the monorepo, then the place it is cloned to on the dev boxes (build-plan.md WO-5). */
+/** The snapshot repo beside the monorepo, then the place it is cloned to on the dev boxes. */
 const RELEASE_DIR = 'core/docs/release';
 const OWNERS = 'autofix/cfg/owners.json';
 /** The roster moved to the ops-agents repo (root CLAUDE.md): `$OPS_AGENTS_DIR`, else a sibling checkout; a copy in
@@ -202,7 +202,7 @@ class ProcessLayer {
   /**
    * One line of `picks:`: the commit it names, what the release includes, and how the record relates it to a ticket.
    * The association itself is the record's word, not git's, so it is an annotation; resolution is claimed only by the
-   * commit message or by an explicit `claim: resolves` on the pick, and anything else is a mention (review 3 #5).
+   * commit message or by an explicit `claim: resolves` on the pick, and anything else is a mention.
    */
   private pick(release: string, pick: Record<string, unknown>, record: string, confidence: number): void {
     const repo = pick.repo === 'public' ? 'public' : 'reddata';

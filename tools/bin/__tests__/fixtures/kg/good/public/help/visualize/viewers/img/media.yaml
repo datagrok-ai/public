@@ -4,5 +4,4 @@ scatter-plot.png:
   description: Points of the demo table plotted by age and weight, coloured by sex.
   illustrates: [visualize/viewers/scatter-plot, C:dataframe]
   quality: answer
-  reviewed: true
   described_by: person

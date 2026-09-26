@@ -17,6 +17,5 @@ app-data.gif:
   kind: animation
   quality: docs
   quality_notes: small cropped viewport showing only sidebar and tree, no visible file preview content
-  reviewed: true
   seconds: 10.5
   width: 800

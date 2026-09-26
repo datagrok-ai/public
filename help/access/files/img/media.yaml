@@ -17,7 +17,6 @@ Cell-image-segmentation.gif:
     - explore/data-augmentation
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 39.3
   width: 1600
 Smiles-renderer.png:
@@ -37,7 +36,6 @@ Smiles-renderer.png:
   quality_notes: >-
     small overlapping Excel window and dense grid add clutter, but the rendered structures are
     clearly readable
-  reviewed: true
   width: 804
 add-a-file-share.gif:
   actions:
@@ -64,7 +62,6 @@ add-a-file-share.gif:
     - access/files/shares
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 33.9
   width: 800
 clinical-case-file-manager.gif:
@@ -89,7 +86,6 @@ clinical-case-file-manager.gif:
   kind: animation
   quality: docs
   quality_notes: small UI text (labels, axis ticks) is not legible at this resolution
-  reviewed: true
   seconds: 12.4
   width: 800
 file-manager-details.gif:
@@ -116,7 +112,6 @@ file-manager-details.gif:
     long, low-signal animation (639 frames) whose sampled frames show generic panel exploration
     rather than a focused single task; fine for the files.md context but not self-explanatory enough
     to stand alone
-  reviewed: true
   seconds: 60.7
   width: 800
 file-manager-file-browsing.gif:
@@ -142,7 +137,6 @@ file-manager-file-browsing.gif:
     - access/files
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 60.2
   width: 800
 preview-with-custom-viewer.gif:
@@ -162,7 +156,6 @@ preview-with-custom-viewer.gif:
     - access/files
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 7
   width: 800
 share-the-folder.gif:
@@ -186,7 +179,6 @@ share-the-folder.gif:
     - access/files/shares
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 53
   width: 1600
 sharepoint-parameters.png:
@@ -203,5 +195,4 @@ sharepoint-parameters.png:
   kind: screenshot
   quality: docs
   quality_notes: small crop of the dialog only, minor UI chrome cut off
-  reviewed: true
   width: 378

@@ -1,4 +1,4 @@
-/// What every extractor sees (build-plan.md WO-1): the context a build shares and the descriptor an extractor is.
+/// What every extractor sees: the context a build shares and the descriptor an extractor is.
 /// Type-only imports, so that no extractor pulls the registry that lists it.
 import type {TypeSystem} from '../types';
 import type {HomeSet} from '../homes';

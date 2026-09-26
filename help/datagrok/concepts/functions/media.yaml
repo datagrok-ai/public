@@ -22,7 +22,6 @@ autocomplete.gif:
   quality_notes: >-
     small, cropped dialog screenshot with no surrounding app chrome; fine for illustrating the
     annotation but not self-explanatory out of context
-  reviewed: true
   seconds: 12.2
   width: 337
 console-macros.gif:
@@ -47,7 +46,6 @@ console-macros.gif:
   quality_notes: >-
     small UI text is barely legible at this resolution and the demo data table is cluttered; fine
     within its page but not strong enough to stand alone
-  reviewed: true
   seconds: 20.1
   width: 800
 default-values-from-file.gif:
@@ -70,7 +68,6 @@ default-values-from-file.gif:
     - compute/functions
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 4.7
   width: 800
 dependent-parameters.gif:
@@ -98,7 +95,6 @@ dependent-parameters.gif:
   quality_notes: >-
     Tightly cropped to a small dialog with no surrounding app chrome, and cursor/selection changes
     are easy to miss at this resolution
-  reviewed: true
   seconds: 10.2
   width: 292
 function-input.png:
@@ -118,7 +114,6 @@ function-input.png:
   quality_notes: >-
     clear standalone UI capture, but the surrounding page gives no context for what these specific
     fields do without the accompanying text
-  reviewed: true
   width: 331
 input-types.png:
   caption: All function input types
@@ -137,7 +132,6 @@ input-types.png:
   quality_notes: >-
     small crop showing only code and dialog, no surrounding context; fine to illustrate the
     annotation syntax but not self-explanatory alone
-  reviewed: true
   width: 671
 molecule-input.png:
   caption: Molecule input for a semantic-type parameter
@@ -156,7 +150,6 @@ molecule-input.png:
   quality_notes: >-
     Tightly cropped to just the one input control with no surrounding context or labels beyond the
     field name.
-  reviewed: true
   width: 195
 multiple-choice-input.png:
   caption: Choice input example dialog
@@ -175,7 +168,6 @@ multiple-choice-input.png:
   quality_notes: >-
     small, cropped dialog screenshot with no surrounding context; clear enough to illustrate the
     control but not polished for standalone marketing use
-  reviewed: true
   width: 287
 param-visible-enabled-expressions.gif:
   actions:
@@ -204,7 +196,6 @@ param-visible-enabled-expressions.gif:
     shows the raw annotation code and a debug alert() call alongside a minimal dev-console dialog
     rather than a real application, so it's clear in context but not self-contained enough to stand
     alone
-  reviewed: true
   seconds: 9.1
   width: 642
 search-integrated-queries.gif:
@@ -232,7 +223,6 @@ search-integrated-queries.gif:
   quality_notes: >-
     final frame captured mid-transition with a faded, still-loading viewer, but the preceding frames
     clearly demonstrate the flow end to end
-  reviewed: true
   seconds: 23.4
   width: 1600
 single-choice-input.png:
@@ -249,5 +239,4 @@ single-choice-input.png:
   kind: screenshot
   quality: docs
   quality_notes: small, tightly cropped dialog screenshot with no surrounding context
-  reviewed: true
   width: 289

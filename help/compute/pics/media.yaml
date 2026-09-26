@@ -19,7 +19,6 @@ diff-studio-acid-production.gif:
   quality_notes: >-
     clear and functional but tightly cropped to the app window with small text; fine to illustrate
     the multistage-update feature but not polished enough for marketing
-  reviewed: true
   seconds: 15.1
   width: 1600
 diff-studio-bioreactor.png:
@@ -37,7 +36,6 @@ diff-studio-bioreactor.png:
   quality_notes: >-
     Small, low-resolution schematic image with no axis labels or scale; useful only as a supporting
     illustration within the page, not a standalone answer.
-  reviewed: true
   width: 400
 diff-studio-chem-react-network.png:
   caption: Chemical reaction network for a mass-action kinetics model
@@ -54,7 +52,6 @@ diff-studio-chem-react-network.png:
   quality_notes: >-
     small, low-resolution rendering of a formula/diagram with plain black-on-white styling and no
     visual polish
-  reviewed: true
   width: 400
 diff-studio-edit-model.gif:
   actions:
@@ -73,7 +70,6 @@ diff-studio-edit-model.gif:
   height: 1000
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 12.8
   width: 1600
 diff-studio-fermentation.gif:
@@ -95,7 +91,6 @@ diff-studio-fermentation.gif:
   quality_notes: >-
     small embedded UI screenshot at low fidelity, readable only at full size; no cropping or clutter
     otherwise
-  reviewed: true
   seconds: 9.7
   width: 1600
 diff-studio-input-annotations.gif:
@@ -120,7 +115,6 @@ diff-studio-input-annotations.gif:
   quality_notes: >-
     Small embedded text (code and axis labels) is hard to read at this resolution outside its page
     context.
-  reviewed: true
   seconds: 32.6
   width: 1600
 diff-studio-loop.gif:
@@ -141,7 +135,6 @@ diff-studio-loop.gif:
   height: 1000
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 13
   width: 1600
 diff-studio-model-hub.gif:
@@ -164,7 +157,6 @@ diff-studio-model-hub.gif:
   height: 1000
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 23.6
   width: 1600
 diff-studio-nimotuzumab.gif:
@@ -188,7 +180,6 @@ diff-studio-nimotuzumab.gif:
   quality_notes: >-
     small UI text and dropdown menus are hard to read at this resolution; useful in context but not
     clear enough to stand alone
-  reviewed: true
   seconds: 12.2
   width: 1600
 diff-studio-output.gif:
@@ -210,7 +201,6 @@ diff-studio-output.gif:
   height: 1000
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 17.7
   width: 1600
 diff-studio-pk-pd.gif:
@@ -232,7 +222,6 @@ diff-studio-pk-pd.gif:
   height: 1000
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 15.5
   width: 1600
 diff-studio-pk.png:
@@ -250,7 +239,6 @@ diff-studio-pk.png:
   quality_notes: >-
     simple schematic diagram, plain black-and-white boxes and arrows with minimal styling, adequate
     for illustrating the model structure but not polished enough for marketing use
-  reviewed: true
   width: 400
 diff-studio-pollution.png:
   caption: Chemical reaction system for the Pollution stiff ODE example
@@ -265,7 +253,6 @@ diff-studio-pollution.png:
   kind: diagram
   quality: docs
   quality_notes: plain text list with no styling or platform UI, low visual interest outside its page
-  reviewed: true
   width: 530
 diff-studio-robertson-network.png:
   caption: Robertson's stiff reaction network
@@ -281,7 +268,6 @@ diff-studio-robertson-network.png:
   quality_notes: >-
     small, low-resolution rendering of typeset equations; fine as inline illustration but not
     polished enough for marketing use
-  reviewed: true
   width: 400
 diff-studio-run-fitting.gif:
   actions:
@@ -307,7 +293,6 @@ diff-studio-run-fitting.gif:
   quality_notes: >-
     UI is legible but dense with small text and multiple panels, typical of a feature walkthrough
     rather than a polished marketing shot
-  reviewed: true
   seconds: 30.4
   width: 1600
 diff-studio-run.gif:
@@ -334,7 +319,6 @@ diff-studio-run.gif:
   quality_notes: >-
     small embedded thumbnail size (1600x1000 scaled down in page) and long runtime make fine UI
     details hard to read at a glance; otherwise clear and representative of the current UI
-  reviewed: true
   seconds: 42.3
   width: 1600
 diff-studio-table-lookups.gif:
@@ -362,7 +346,6 @@ diff-studio-table-lookups.gif:
   quality_notes: >-
     Small UI text and dense multi-panel charts are hard to read at reduced size; adequate to
     illustrate the workflow within the page but not self-explanatory alone.
-  reviewed: true
   seconds: 12.6
   width: 1600
 diff-studio-update.gif:
@@ -385,7 +368,6 @@ diff-studio-update.gif:
   kind: animation
   quality: docs
   quality_notes: small UI text and code are only legible when paused; otherwise clear and on-topic
-  reviewed: true
   seconds: 17.4
   width: 1600
 fitting-run.gif:
@@ -410,7 +392,6 @@ fitting-run.gif:
   quality_notes: >-
     small UI text and dense grid are hard to read at a glance; useful in context but not
     self-explanatory as a standalone answer
-  reviewed: true
   seconds: 25.4
   width: 1600
 fitting-table.gif:
@@ -435,7 +416,6 @@ fitting-table.gif:
     - compute/functions
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 16.4
   width: 1600
 sens-analysis-run.gif:
@@ -457,7 +437,6 @@ sens-analysis-run.gif:
   height: 1000
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21.6
   width: 1600
 sensitivity-analysis.gif:
@@ -486,6 +465,5 @@ sensitivity-analysis.gif:
   quality_notes: >-
     small UI text and dense multi-panel layout are hard to read at reduced size; first frame is a
     near-blank loading state
-  reviewed: true
   seconds: 32.5
   width: 1600

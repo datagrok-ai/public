@@ -4,6 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: []
+realizes: []
 realized_as:
   - sketcher-spec.ts
 produced_from: migrated

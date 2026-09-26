@@ -16,7 +16,6 @@ binary-cell-renderer.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 9.2
   width: 801
 custom-cell-renderers-add-summary-column.gif:
@@ -41,7 +40,6 @@ custom-cell-renderers-add-summary-column.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21.8
   width: 1388
 custom-column-sorting.png:
@@ -57,7 +55,6 @@ custom-column-sorting.png:
   kind: screenshot
   quality: docs
   quality_notes: small sample dataset, no annotation highlighting the sort control itself
-  reviewed: true
   width: 800
 custom-column-tooltip.gif:
   actions:
@@ -74,6 +71,5 @@ custom-column-tooltip.gif:
   kind: animation
   quality: docs
   quality_notes: column is cropped on the left, cursor obscures part of the header text
-  reviewed: true
   seconds: 2.5
   width: 800

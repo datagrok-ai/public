@@ -10,7 +10,6 @@ WineQFetch_workflow.png:
   kind: screenshot
   quality: docs
   quality_notes: URL input values are truncated so the full parameter values aren't visible
-  reviewed: true
   width: 730
 WineQ_regression.png:
   caption: Reviewing the regression step's scatter plot
@@ -27,7 +26,6 @@ WineQ_regression.png:
   quality_notes: >-
     small UI chrome and text are hard to read at this resolution; useful in context but not detailed
     enough to stand alone
-  reviewed: true
   width: 1291
 WineQ_two_steps_connection.png:
   caption: Reviewing an auto-connected workflow step input
@@ -44,7 +42,6 @@ WineQ_two_steps_connection.png:
   quality_notes: >-
     small crop showing only the relevant UI region, adequate for illustrating the point in context
     but not self-explanatory alone
-  reviewed: true
   width: 598
 WineQ_two_steps_step_input.png:
   caption: Adding an input parameter step to a workflow
@@ -61,7 +58,6 @@ WineQ_two_steps_step_input.png:
   quality_notes: >-
     functional but dense UI screenshot with small text; adequate for its page but not
     self-explanatory alone
-  reviewed: true
   width: 1295
 WineQ_two_steps_visualization.png:
   caption: Two-step workflow output visualization
@@ -79,7 +75,6 @@ WineQ_two_steps_visualization.png:
   quality_notes: >-
     Legend cluster labels (1, 3) render in near-white/light text that is hard to read against the
     panel background.
-  reviewed: true
   width: 1292
 example-workflow.png:
   caption: Running a workflow model in ModelHub
@@ -96,7 +91,6 @@ example-workflow.png:
   quality_notes: >-
     small crop of the interface showing only the step review panel; inputs are unfilled placeholders
     rather than a completed run
-  reviewed: true
   width: 712
 wineQ_full_workflow.png:
   caption: Multi-step workflow tree with completed steps
@@ -113,7 +107,6 @@ wineQ_full_workflow.png:
   quality_notes: >-
     cropped tightly to the steps panel; step names are truncated and no results or connecting arrows
     between steps are visible
-  reviewed: true
   width: 495
 wineQ_full_workflow_analysis_done.png:
   caption: Wine quality workflow ready for final merge step
@@ -129,7 +122,6 @@ wineQ_full_workflow_analysis_done.png:
   kind: screenshot
   quality: docs
   quality_notes: small UI crop with default zoom, plain scatter plot; clear but not polished enough for marketing
-  reviewed: true
   width: 1291
 wineQ_full_workflow_consistency_check.png:
   caption: Consistency check across a full workflow
@@ -145,7 +137,6 @@ wineQ_full_workflow_consistency_check.png:
   kind: screenshot
   quality: docs
   quality_notes: small UI text and dense panel labels reduce standalone clarity
-  reviewed: true
   width: 1289
 wineQ_full_workflow_data_fetched.png:
   caption: Analysis steps ready for execution
@@ -160,7 +151,6 @@ wineQ_full_workflow_data_fetched.png:
   kind: screenshot
   quality: docs
   quality_notes: small crop of the workflow panel, URLs truncated, no wider context of the full page
-  reviewed: true
   width: 493
 wineQ_full_workflow_done.png:
   caption: 'Wine quality workflow: merged prediction and clustering results'
@@ -178,7 +168,6 @@ wineQ_full_workflow_done.png:
   quality_notes: >-
     small UI text at this resolution and dense overlapping scatter points reduce readability outside
     the page's context
-  reviewed: true
   width: 1288
 workflow-intro.png:
   caption: Anatomy of a workflow page
@@ -193,5 +182,4 @@ workflow-intro.png:
   height: 744
   kind: screenshot
   quality: docs
-  reviewed: true
   width: 1288

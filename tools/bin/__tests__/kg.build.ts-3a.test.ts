@@ -1,4 +1,4 @@
-/// `grok kg build` WO-3a (build-plan.md): the annotation parser, and the ts-packages / ts-functions
+/// `grok kg build`: the annotation parser, and the ts-packages / ts-functions
 /// extractors against the mini monorepo under fixtures/kg/build, whose type files copy the real ones.
 import {describe, it, expect} from 'vitest';
 import fs from 'fs';
@@ -19,7 +19,7 @@ const realKg = path.resolve(fixture, '..', '..', '..', '..', '..', '..', '..', '
 const graph = buildFixture(copyFixture('build'), 'ts-packages,ts-functions');
 const byId = (rows: any[], id: string) => rows.find((r) => r.id === id);
 
-describe('annotation parser (build-plan.md WO-3a)', () => {
+describe('annotation parser', () => {
   it('keeps every key verbatim: meta.* into meta, the rest under keys, repeated keys as lists', () => {
     const h = parseHeaderLines([
       '//name: Recalculate Coordinates [x]', '//description: Recalculates 2D coordinates', '//help-url: /help/chem', '//top-menu: Chem | Transform',
@@ -101,7 +101,7 @@ describe('annotation parser (build-plan.md WO-3a)', () => {
   });
 });
 
-describe('ts-packages extractor (build-plan.md WO-3a)', () => {
+describe('ts-packages extractor', () => {
   it('copies the fixture type files from the real ones, or skips when the monorepo is not around', () => {
     if (!fs.existsSync(path.join(realKg, 'schema.yaml'))) return;
     const under = (dir: string, prefix: string): string[] => fs.readdirSync(dir, {withFileTypes: true})
@@ -169,7 +169,7 @@ describe('ts-packages extractor (build-plan.md WO-3a)', () => {
   });
 });
 
-describe('ts-functions extractor (build-plan.md WO-3a)', () => {
+describe('ts-functions extractor', () => {
   it('picks the subtype by role precedence: widgets,panel is a panel; viewer,panel a viewer; adminApp,app an app; every role stays in roles', async () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/panel'), 'func:Demo:Molecule Panel')).toMatchObject({type: 'panel', roles: ['panel', 'widgets']});
@@ -318,7 +318,7 @@ describe('ts-functions extractor (build-plan.md WO-3a)', () => {
   });
 });
 
-describe('ts-functions extractor, the defects of the WO-3a review', () => {
+describe('ts-functions extractor, the defects the review found', () => {
   it('D1 reads package.g.ts, package.ts and package-test.ts: the generated file takes a name from package.ts silently, any other pair is shadowed', async () => {
     const {rows, problems} = await graph;
     expect(byId(rows('nodes/function'), 'func:Demo:info')).toMatchObject({path: 'public/packages/Demo/src/package.ts', line: 7});

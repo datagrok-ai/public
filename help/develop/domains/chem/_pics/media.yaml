@@ -20,7 +20,6 @@ additional-properties.gif:
   height: 701
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 8.4
   width: 1542
 docking-results.png:
@@ -36,7 +35,6 @@ docking-results.png:
   height: 666
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 1154
 docking-simulations.gif:
   actions:
@@ -56,7 +54,6 @@ docking-simulations.gif:
   height: 701
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 17.8
   width: 1542
 zoom-into-pocket.gif:
@@ -80,6 +77,5 @@ zoom-into-pocket.gif:
   quality_notes: >-
     small viewport crops the grid and viewer tightly; fine for illustrating the workflow but not
     polished enough to stand alone
-  reviewed: true
   seconds: 12.8
   width: 1542

@@ -7,7 +7,9 @@ import path from 'path';
 import {spawn} from 'child_process';
 import * as color from './color-utils';
 import {printOutput} from './server-output';
+import {findUp} from './utils';
 import {TIERS, LINKED, Tier} from './kg/ops';
+import {posix} from './kg/ids';
 
 export {parseTiers, TIER_CHOICES} from './kg/ops';
 /** The tests of the changed files' own units are the point of the command; `--tier linked` adds the other units and the
@@ -65,15 +67,7 @@ export type Spawner = (file: string, args: string[], options: {cwd: string, shel
 
 /** The monorepo root is the nearest ancestor holding both `core/` and `public/`. */
 export function findMonorepoRoot(from: string): string | undefined {
-  let dir = path.resolve(from);
-  for (;;) {
-    if (fs.existsSync(path.join(dir, 'core')) && fs.existsSync(path.join(dir, 'public')))
-      return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir)
-      return undefined;
-    dir = parent;
-  }
+  return findUp(from, (dir) => fs.existsSync(path.join(dir, 'core')) && fs.existsSync(path.join(dir, 'public'))) ?? undefined;
 }
 
 /** The worktree's own grok.js carries the build the graph was made with; a globally installed grok falls back to itself. */
@@ -145,8 +139,8 @@ export function filterRuns(runs: RunRow[], filter: {framework?: string, package?
       return false;
     if (!pkg)
       return true;
-    const cwd = row.cwd.replace(/\\/g, '/').toLowerCase();
-    const command = row.command.replace(/\\/g, '/').toLowerCase();
+    const cwd = posix(row.cwd).toLowerCase();
+    const command = posix(row.command).toLowerCase();
     return new RegExp(`/packages/${pkg}(/|$)`).test(`/${cwd}`) || command.includes(`packages/${pkg}/`) ||
       new RegExp(`--package[= ]"?${pkg}"?(\\s|$)`).test(command);
   });

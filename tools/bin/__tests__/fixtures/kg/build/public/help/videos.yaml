@@ -5,6 +5,5 @@ youtube:abc123def45:
   actions: [opens a histogram, picks the column, changes the bins, colours by category]
   illustrates: [visualize/viewers/histogram]
   quality: marketing
-  reviewed: true
   described_by: person
   seconds: 300

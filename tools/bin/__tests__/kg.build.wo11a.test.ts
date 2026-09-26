@@ -1,4 +1,4 @@
-/// Publication safety (build-plan.md WO-11a, kg-codex-review-3.md #1, #2, #11, #12): the closure of the
+/// Publication safety: the closure of the
 /// public projection, the immutable generations a build publishes through `current`, the Kuzu seam's path
 /// escaping, identifier validation and buffer pool, and the batch id over every effective input.
 /// Each test here fails against the code as the third review found it.
@@ -41,7 +41,7 @@ function node(row: Row): Row {
   return {visibility: 'public', provenance: 'annotation', source_layer: 'public', batch: BATCH, ...row};
 }
 
-describe('the public projection is closed (kg-codex-review-3.md #1)', () => {
+describe('the public projection is closed', () => {
   const page = (id: string, kind: string, visibility = 'public') =>
     node({type: 'doc-page', id: `doc:${id}`, name: id, path: id, kind, visibility});
   const anchor = (id: string, slug: string, visibility = 'public') =>
@@ -104,7 +104,7 @@ describe('the public projection is closed (kg-codex-review-3.md #1)', () => {
   });
 });
 
-describe('a build publishes an immutable generation (kg-codex-review-3.md #2)', () => {
+describe('a build publishes an immutable generation', () => {
   it('writes a fresh generation whole before current names it, and never removes the one before', async () => {
     const repo = copyFixture('build');
     const root = path.join(scratch('gen'), '.kg');
@@ -196,7 +196,7 @@ describe('a build publishes an immutable generation (kg-codex-review-3.md #2)', 
   });
 });
 
-describe('the Kuzu seam (kg-codex-review-3.md #11)', () => {
+describe('the Kuzu seam', () => {
   it('escapes a path with an apostrophe and refuses an identifier that is not a schema name', () => {
     // kuzu 0.11.3 reads \' inside a string literal and takes '' for the end of it
     expect(kuzu.literal("/tmp/o'brien/.kg/tmp/Feature.csv")).toBe("'/tmp/o\\'brien/.kg/tmp/Feature.csv'");
@@ -256,7 +256,7 @@ function reader(db: string): Promise<{code: number | null, out: string}> {
   return new Promise((resolve) => child.on('close', (code) => resolve({code, out: out.trim()})));
 }
 
-describe('the index of a generation (kg-codex-review-3.md #2, #11)', () => {
+describe('the index of a generation', () => {
   withKuzu('loads from a path with an apostrophe, records what it needed, and answers two other processes at once', async () => {
     const repo = copyFixture('build');
     const root = path.join(scratch("o'brien"), '.kg');
@@ -314,7 +314,7 @@ describe('the index of a generation (kg-codex-review-3.md #2, #11)', () => {
   }, 300_000);
 });
 
-describe('determinism of the written rows (kg-codex-review-3.md #12)', () => {
+describe('determinism of the written rows', () => {
   it('writes a set-valued member sorted, whatever order its rows arrived in', () => {
     const dir = path.join(scratch('sorted'), 'gen');
     const graph: Graph = {

@@ -18,7 +18,6 @@
   kind: animation
   quality: docs
   quality_notes: small size and busy overlapping markers make individual points hard to read
-  reviewed: true
   seconds: 18.9
   width: 400
 add-vew-clone-vew.gif:
@@ -46,7 +45,6 @@ add-vew-clone-vew.gif:
   quality_notes: >-
     small 800x501 capture with cramped, partly cut-off panels (viewer property list and viewers
     gallery run past the frame edge), readable but not polished enough to stand alone
-  reviewed: true
   seconds: 29.7
   width: 800
 annotation-regions.gif:
@@ -73,7 +71,6 @@ annotation-regions.gif:
     - visualize/viewers/scatter-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 91.5
   width: 800
 bar-chart-dates.gif:
@@ -101,7 +98,6 @@ bar-chart-dates.gif:
   quality_notes: >-
     small embedded viewer crop within the full app window rather than a focused close-up; property
     panel text is small
-  reviewed: true
   seconds: 24
   width: 1600
 bar-chart-relative-values.gif:
@@ -123,7 +119,6 @@ bar-chart-relative-values.gif:
     - visualize/viewers/bar-chart
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 15.8
   width: 800
 bar-chart-small.gif:
@@ -148,7 +143,6 @@ bar-chart-small.gif:
   kind: animation
   quality: docs
   quality_notes: small size and cropped viewport hide chart chrome/axes; tooltips slightly obscure bars
-  reviewed: true
   seconds: 10.7
   width: 400
 biostructure-small.gif:
@@ -175,7 +169,6 @@ biostructure-small.gif:
   quality_notes: >-
     small cropped viewer panel with visible UI chrome (gallery list, toolbar) rather than a
     full-window shot; readable but not clean enough to stand alone
-  reviewed: true
   seconds: 34.6
   width: 400
 biostructure-viewer.png:
@@ -195,7 +188,6 @@ biostructure-viewer.png:
   quality_notes: >-
     Property panel is dense and mostly default/unset values, illustrating configuration options
     rather than a typical end-user view
-  reviewed: true
   width: 800
 box-plot-small.gif:
   actions:
@@ -219,7 +211,6 @@ box-plot-small.gif:
   quality_notes: >-
     small/low-resolution (400x300) thumbnail-style capture; fine as a viewer-gallery preview but too
     small to read labels clearly on its own
-  reviewed: true
   seconds: 17.8
   width: 400
 calendar-small.gif:
@@ -236,7 +227,6 @@ calendar-small.gif:
   quality_notes: >-
     generic decorative thumbnail with no connection to viewers or files functionality; single static
     frame with no informational content about the product
-  reviewed: true
   seconds: 0.3
   width: 400
 cell-renderers-examples.gif:
@@ -267,7 +257,6 @@ cell-renderers-examples.gif:
   quality_notes: >-
     informative but a long unguided horizontal scroll through many columns with no callouts; small
     text at some points is hard to read
-  reviewed: true
   seconds: 81.3
   width: 1601
 charts-in-cells.gif:
@@ -294,7 +283,6 @@ charts-in-cells.gif:
   quality_notes: >-
     menu clutter and small text typical of a UI walkthrough gif; adequate for the page it sits on
     but not self-explanatory alone
-  reviewed: true
   seconds: 47.7
   width: 1600
 chem-scaffold-tree-filter.gif:
@@ -317,7 +305,6 @@ chem-scaffold-tree-filter.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 43.9
   width: 800
 chem-structure-filter.gif:
@@ -348,7 +335,6 @@ chem-structure-filter.gif:
   quality_notes: >-
     one frame shows a "Valid license cannot be found" warning in the sketcher dialog, which is UI
     clutter/debug noise not meant for an end user
-  reviewed: true
   seconds: 67.1
   width: 800
 chord-viewer.png:
@@ -364,7 +350,6 @@ chord-viewer.png:
   kind: screenshot
   quality: docs
   quality_notes: many arc labels are truncated with ellipses, making some categories unreadable
-  reviewed: true
   width: 1510
 color-coding.gif:
   actions:
@@ -390,7 +375,6 @@ color-coding.gif:
   quality_notes: >-
     long, dense screencast mixing several unrelated datasets and menus without in-image labeling;
     clear as a page illustration but too much to stand alone as a single answer
-  reviewed: true
   seconds: 90.9
   width: 800
 confusion-matrix.gif:
@@ -420,7 +404,6 @@ confusion-matrix.gif:
     - visualize/viewers/confusion-matrix
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21.4
   width: 800
 corr-plot-small.gif:
@@ -444,7 +427,6 @@ corr-plot-small.gif:
   kind: animation
   quality: docs
   quality_notes: small thumbnail size and low resolution make row/column labels hard to read
-  reviewed: true
   seconds: 5.8
   width: 400
 custom-formatting-dates.gif:
@@ -467,7 +449,6 @@ custom-formatting-dates.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 33.1
   width: 1601
 density-plot-small.gif:
@@ -490,7 +471,6 @@ density-plot-small.gif:
   quality_notes: >-
     small (400x300), grayscale-only thumbnail with no legend or axis units visible beyond tick
     labels; fine as a gallery preview but not detailed enough to stand alone
-  reviewed: true
   seconds: 6.4
   width: 400
 fasta-filtering.gif:
@@ -514,7 +494,6 @@ fasta-filtering.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 14.5
   width: 800
 filter-radio-mode.gif:
@@ -539,7 +518,6 @@ filter-radio-mode.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 22.2
   width: 800
 filters-drag-and-drop.gif:
@@ -563,7 +541,6 @@ filters-drag-and-drop.gif:
   quality_notes: >-
     cluttered mid-drag state with overlapping tooltips and a dimmed filter panel makes single frames
     hard to read in isolation
-  reviewed: true
   seconds: 11.5
   width: 800
 filters-drag-column.gif:
@@ -586,7 +563,6 @@ filters-drag-column.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 8.6
   width: 800
 filters-multi-values.gif:
@@ -613,7 +589,6 @@ filters-multi-values.gif:
     hover tooltip exposes raw internal property names (category/total/selected/filtered/filter by
     category) rather than polished UI copy, and it sits inside a collapsed example block rather than
     the main page flow
-  reviewed: true
   seconds: 9.3
   width: 800
 filters-small.gif:
@@ -637,7 +612,6 @@ filters-small.gif:
   quality_notes: >-
     cropped tightly to the filter panel with no table/grid context visible, and the frame is a small
     thumbnail-resolution embed
-  reviewed: true
   seconds: 17.5
   width: 400
 form-small.gif:
@@ -663,7 +637,6 @@ form-small.gif:
   quality_notes: >-
     Small 400x300 thumbnail with low-resolution, hard-to-read field labels and icons; adequate as an
     inline illustration but not sharp enough to stand alone.
-  reviewed: true
   seconds: 21
   width: 400
 forms-small.gif:
@@ -687,7 +660,6 @@ forms-small.gif:
   quality_notes: >-
     small thumbnail size (400x301) and partially cropped left panel limit it to illustrating the
     viewer within its page, not standing alone as a full walkthrough
-  reviewed: true
   seconds: 17.6
   width: 400
 forms-sorting.gif:
@@ -711,7 +683,6 @@ forms-sorting.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 26.3
   width: 800
 forms.gif:
@@ -737,7 +708,6 @@ forms.gif:
   quality_notes: >-
     small, dense multi-panel layout (grid + scatter plot + forms table) with text too small to read
     clearly at this resolution
-  reviewed: true
   seconds: 18.1
   width: 800
 formula-lines-annotation-regions-viewers.png:
@@ -761,7 +731,6 @@ formula-lines-annotation-regions-viewers.png:
   quality_notes: >-
     composite of six cropped screenshots at reduced size, clean current UI but dense and busy for a
     standalone answer
-  reviewed: true
   width: 800
 formula-lines.gif:
   actions:
@@ -783,7 +752,6 @@ formula-lines.gif:
     - visualize/viewers/scatter-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 25.3
   width: 1600
 google-map-city-perf.gif:
@@ -806,7 +774,6 @@ google-map-city-perf.gif:
   quality_notes: >-
     clear and functional but heavily cropped to the map corner, no cursor/context chrome, city
     labels are small
-  reviewed: true
   seconds: 15.6
   width: 800
 grid-adaptive-number-formatting.gif:
@@ -827,7 +794,6 @@ grid-adaptive-number-formatting.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 13.3
   width: 800
 grid-add-data-info-panes.gif:
@@ -850,7 +816,6 @@ grid-add-data-info-panes.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 29.9
   width: 1601
 grid-add-new-rows-columns.gif:
@@ -874,7 +839,6 @@ grid-add-new-rows-columns.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 70
   width: 1601
 grid-color-coding-new.gif:
@@ -905,7 +869,6 @@ grid-color-coding-new.gif:
   quality_notes: >-
     clear UI but busy with real study data and overlapping dialogs/menus across frames, more suited
     to illustrating the feature in context than standing alone
-  reviewed: true
   seconds: 101.9
   width: 800
 grid-column-groups.gif:
@@ -929,7 +892,6 @@ grid-column-groups.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 18.6
   width: 800
 grid-column-hide-reorder.gif:
@@ -956,7 +918,6 @@ grid-column-hide-reorder.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 27.6
   width: 1601
 grid-column-reordering.gif:
@@ -979,7 +940,6 @@ grid-column-reordering.gif:
   kind: animation
   quality: docs
   quality_notes: small cropped view of the grid with dense tabular data and hover tooltips, readable but busy
-  reviewed: true
   seconds: 15.1
   width: 800
 grid-columns-preview.gif:
@@ -1009,7 +969,6 @@ grid-columns-preview.gif:
     grid contains real customer-looking chemistry data (compound IDs, structures) rather than a
     generic sample dataset, and columns are quite narrow/cramped, which limits reuse outside this
     page
-  reviewed: true
   seconds: 15.5
   width: 800
 grid-custom-form-in-cell.gif:
@@ -1033,7 +992,6 @@ grid-custom-form-in-cell.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 56
   width: 800
 grid-custom-format.gif:
@@ -1058,7 +1016,6 @@ grid-custom-format.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 22.3
   width: 800
 grid-custom-html-form.gif:
@@ -1083,7 +1040,6 @@ grid-custom-html-form.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 58.9
   width: 800
 grid-dynamic-column-widths.gif:
@@ -1109,7 +1065,6 @@ grid-dynamic-column-widths.gif:
   quality_notes: >-
     dense scientific dataset with small text is hard to read at normal size; illustrates the
     zoom/pan behavior but not usable alone as a how-to without surrounding text
-  reviewed: true
   seconds: 10.1
   width: 800
 grid-filtering.gif:
@@ -1131,7 +1086,6 @@ grid-filtering.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 7.9
   width: 1601
 grid-forms.gif:
@@ -1156,7 +1110,6 @@ grid-forms.gif:
   kind: animation
   quality: docs
   quality_notes: small UI text at 1601x1001 gets soft/hard to read on some frames; otherwise clear
-  reviewed: true
   seconds: 37.5
   width: 1601
 grid-grouped-columns.gif:
@@ -1184,7 +1137,6 @@ grid-grouped-columns.gif:
   quality_notes: >-
     long, low-signal animation mixing two separate actions (grouping columns, then unrelated header
     text styling) without clear pacing cues; readable but busy for a standalone answer
-  reviewed: true
   seconds: 52.6
   width: 1601
 grid-mouse-pan-content.gif:
@@ -1208,7 +1160,6 @@ grid-mouse-pan-content.gif:
   quality_notes: >-
     Dense, small-scale spreadsheet content is hard to read at this resolution; useful to show the
     panning motion but not legible as a standalone answer.
-  reviewed: true
   seconds: 10.3
   width: 800
 grid-resize-multiple-columns.gif:
@@ -1232,7 +1183,6 @@ grid-resize-multiple-columns.gif:
   quality_notes: >-
     clear and on-topic but plain sample data with no annotations or callouts; only useful alongside
     the surrounding text
-  reviewed: true
   seconds: 13.6
   width: 800
 grid-rows-interactivity.gif:
@@ -1258,7 +1208,6 @@ grid-rows-interactivity.gif:
   quality_notes: >-
     clear feature demonstration but dense with cheminformatics UI detail not explained by the
     surrounding text
-  reviewed: true
   seconds: 82
   width: 1601
 grid-search-highlights.gif:
@@ -1279,7 +1228,6 @@ grid-search-highlights.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 17.4
   width: 800
 grid-small.gif:
@@ -1302,7 +1250,6 @@ grid-small.gif:
   quality_notes: >-
     small thumbnail-sized capture (400x300) with dense, small cell content that is hard to read at
     this resolution
-  reviewed: true
   seconds: 6.4
   width: 400
 grid-unhide-columns.gif:
@@ -1321,7 +1268,6 @@ grid-unhide-columns.gif:
     - visualize/viewers/grid
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 9.2
   width: 800
 group-analysis.gif:
@@ -1343,7 +1289,6 @@ group-analysis.gif:
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 47.3
   width: 800
 group-tooltip.gif:
@@ -1367,7 +1312,6 @@ group-tooltip.gif:
     - visualize/viewers/scatter-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 12.2
   width: 800
 heatmap-small.gif:
@@ -1390,7 +1334,6 @@ heatmap-small.gif:
   quality_notes: >-
     small thumbnail resolution, column headers get cut off, and cell values are hard to read at this
     size
-  reviewed: true
   seconds: 18.9
   width: 400
 helm-filtering.gif:
@@ -1416,7 +1359,6 @@ helm-filtering.gif:
   quality_notes: >-
     capture is cropped on the left, cutting off the monomer list and the filter panel itself, so the
     surrounding filter UI that motivates the dialog isn't visible
-  reviewed: true
   seconds: 17
   width: 800
 histogram-bin-values.gif:
@@ -1439,7 +1381,6 @@ histogram-bin-values.gif:
     - visualize/viewers/histogram
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 12.6
   width: 800
 histogram-distribution-lines.gif:
@@ -1465,7 +1406,6 @@ histogram-distribution-lines.gif:
   kind: animation
   quality: docs
   quality_notes: small/cramped viewer with dense menu overlay in early frames; legend and axis labels are tiny
-  reviewed: true
   seconds: 16.6
   width: 800
 histogram-small.gif:
@@ -1491,7 +1431,6 @@ histogram-small.gif:
   quality_notes: >-
     small size and cursor artifacts make it a supporting illustration rather than a standalone
     answer
-  reviewed: true
   seconds: 20.7
   width: 400
 line-chart-aggregated-tooltip.gif:
@@ -1516,7 +1455,6 @@ line-chart-aggregated-tooltip.gif:
     - visualize/viewers/line-chart
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 45.9
   width: 800
 line-chart-small.gif:
@@ -1543,7 +1481,6 @@ line-chart-small.gif:
   quality_notes: >-
     small size and low resolution make axis labels and menu text hard to read; shows an older/dense
     UI without surrounding context
-  reviewed: true
   seconds: 45.9
   width: 400
 line-chart-spc.gif:
@@ -1570,7 +1507,6 @@ line-chart-spc.gif:
     - visualize/viewers/line-chart
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 18.4
   width: 800
 map-custom-file-viewer.gif:
@@ -1593,7 +1529,6 @@ map-custom-file-viewer.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 28.6
   width: 800
 map-viewer.gif:
@@ -1619,7 +1554,6 @@ map-viewer.gif:
   quality_notes: >-
     clear and readable but shows a dense options panel and a brief tooltip overlay mid-transition;
     fine within the page, not polished enough alone
-  reviewed: true
   seconds: 95.5
   width: 800
 markup-iframe-embedding.gif:
@@ -1642,7 +1576,6 @@ markup-iframe-embedding.gif:
     - visualize/viewers/markup
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 13.2
   width: 800
 markup-viewer.png:
@@ -1662,7 +1595,6 @@ markup-viewer.png:
   quality_notes: >-
     Small, cropped panel with no surrounding app chrome; only demonstrates rendered output, not the
     editing workflow described in the surrounding text.
-  reviewed: true
   width: 456
 matrix-plot-small.png:
   caption: Matrix plot viewer
@@ -1678,7 +1610,6 @@ matrix-plot-small.png:
   kind: screenshot
   quality: docs
   quality_notes: small thumbnail size limits legibility of axis labels and point density
-  reviewed: true
   width: 400
 multi-curve-small.gif:
   actions:
@@ -1697,7 +1628,6 @@ multi-curve-small.gif:
   kind: animation
   quality: docs
   quality_notes: small size and animation make the growing set of overlapping curves hard to read clearly
-  reviewed: true
   seconds: 14.3
   width: 400
 multi-curve-viewer.gif:
@@ -1725,7 +1655,6 @@ multi-curve-viewer.gif:
   quality_notes: >-
     small viewport crops the grid and viewer, and cursor/UI chrome are visible, fine for the page
     context but not polished enough to stand alone
-  reviewed: true
   seconds: 43.9
   width: 800
 multi-value-filter.gif:
@@ -1751,7 +1680,6 @@ multi-value-filter.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 33
   width: 800
 network-diagram-small.gif:
@@ -1775,7 +1703,6 @@ network-diagram-small.gif:
   kind: animation
   quality: docs
   quality_notes: small size and dense node cluster make most node labels unreadable except when hovered
-  reviewed: true
   seconds: 18.5
   width: 400
 ngl-small.gif:
@@ -1798,7 +1725,6 @@ ngl-small.gif:
   quality_notes: >-
     small cropped preview at 400x301 with visible cursor overlay artifact; adequate to show the
     rotating 3D effect but not polished enough for standalone marketing use
-  reviewed: true
   seconds: 23.2
   width: 400
 ngl-viewer-ligand-interactivity.gif:
@@ -1823,7 +1749,6 @@ ngl-viewer-ligand-interactivity.gif:
   quality_notes: >-
     small embedded viewer panel and dense side panel controls make some UI text hard to read at this
     resolution
-  reviewed: true
   seconds: 58.3
   width: 799
 ngl-viewer-representations.gif:
@@ -1848,7 +1773,6 @@ ngl-viewer-representations.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 31.1
   width: 800
 ngl-viewer.png:
@@ -1868,7 +1792,6 @@ ngl-viewer.png:
   quality_notes: >-
     Right side of the 800x500 canvas is mostly empty whitespace, giving the screenshot low
     information density.
-  reviewed: true
   width: 800
 pareto-front-app.gif:
   actions:
@@ -1892,7 +1815,6 @@ pareto-front-app.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 29.4
   width: 800
 pareto-front-small.png:
@@ -1914,7 +1836,6 @@ pareto-front-small.png:
     Small (400x301) thumbnail-style crop with no axis labels or legend beyond the
     non-optimal/optimal color key; clear enough for its role in a comparison table but not
     self-explanatory on its own.
-  reviewed: true
   width: 400
 pareto-front-viewer.gif:
   actions:
@@ -1938,7 +1859,6 @@ pareto-front-viewer.gif:
   quality_notes: >-
     small viewer with dense molecular structure thumbnails is hard to read at a glance, fine as
     inline page illustration
-  reviewed: true
   seconds: 13
   width: 800
 pareto-front.png:
@@ -1958,7 +1878,6 @@ pareto-front.png:
   quality_notes: >-
     small font and dense overlapping molecule-structure tooltips make some labels hard to read at a
     glance
-  reviewed: true
   width: 800
 pc-plot-small.gif:
   actions:
@@ -1980,7 +1899,6 @@ pc-plot-small.gif:
   kind: animation
   quality: docs
   quality_notes: small size and low resolution obscure axis labels and tooltip text
-  reviewed: true
   seconds: 13
   width: 400
 phylocanvas-gl-viewer.gif:
@@ -2007,7 +1925,6 @@ phylocanvas-gl-viewer.gif:
     small property-panel text and dense overlapping tree labels are hard to read at this resolution,
     and the fast succession of style changes is more of a feature tour than a clear step-by-step
     task
-  reviewed: true
   seconds: 69
   width: 799
 pie-chart-small.gif:
@@ -2031,7 +1948,6 @@ pie-chart-small.gif:
   kind: animation
   quality: docs
   quality_notes: small size and low resolution obscure fine text; cursor and tooltip clutter parts of the frame
-  reviewed: true
   seconds: 12.6
   width: 400
 pie-chart.gif:
@@ -2059,7 +1975,6 @@ pie-chart.gif:
   quality_notes: >-
     small embedded viewer with dense, low-contrast slice labels; menu and legend text are tiny and
     hard to read at this crop
-  reviewed: true
   seconds: 49.2
   width: 800
 pinned-rows.gif:
@@ -2086,7 +2001,6 @@ pinned-rows.gif:
   quality_notes: >-
     demo dataset with generic placeholder-looking data (sar_small) and no visible Pin/Unpin menu
     item in the captured frames, so the pinning action itself isn't directly shown
-  reviewed: true
   seconds: 25.9
   width: 800
 pivot-small.gif:
@@ -2108,7 +2022,6 @@ pivot-small.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21.6
   width: 400
 pivot-table.gif:
@@ -2131,7 +2044,6 @@ pivot-table.gif:
     - visualize/viewers/pivot-table
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 32.1
   width: 1601
 position-statistics-viewer.gif:
@@ -2159,7 +2071,6 @@ position-statistics-viewer.gif:
   quality_notes: >-
     Dense multi-panel layout with small text and overlapping context menu/tooltip; informative but
     cluttered for a standalone answer.
-  reviewed: true
   seconds: 15.4
   width: 1600
 radar-small.gif:
@@ -2184,7 +2095,6 @@ radar-small.gif:
   quality_notes: >-
     small thumbnail size and dense overlapping background lines make individual rows hard to
     distinguish
-  reviewed: true
   seconds: 18.9
   width: 400
 radar-viewer.gif:
@@ -2213,7 +2123,6 @@ radar-viewer.gif:
   quality_notes: >-
     long screen-capture with visible property panel and color picker UI clutter, not a clean
     standalone shot
-  reviewed: true
   seconds: 64.6
   width: 800
 radar-viewer.png:
@@ -2234,7 +2143,6 @@ radar-viewer.png:
   quality_notes: >-
     dense overplotted fan makes individual rows hard to read; illustrates the summary-column and
     standalone modes together rather than one clean example
-  reviewed: true
   width: 1684
 reorder_fields_in_forms_viewer.gif:
   actions:
@@ -2257,7 +2165,6 @@ reorder_fields_in_forms_viewer.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 18.7
   width: 1639
 sankey-viewer.png:
@@ -2272,7 +2179,6 @@ sankey-viewer.png:
   height: 977
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 1166
 scaffold-tree-small.gif:
   actions:
@@ -2296,7 +2202,6 @@ scaffold-tree-small.gif:
   kind: animation
   quality: docs
   quality_notes: small size and cropped card edges make some UI elements (icons, counts) hard to read clearly
-  reviewed: true
   seconds: 30
   width: 400
 scatter-plot-colors-sizes-markers-labels.gif:
@@ -2318,7 +2223,6 @@ scatter-plot-colors-sizes-markers-labels.gif:
     - visualize/viewers/scatter-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 41
   width: 800
 scatter-plot-jitter.gif:
@@ -2342,7 +2246,6 @@ scatter-plot-jitter.gif:
     - visualize/viewers/scatter-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 8.5
   width: 800
 scatter-plot-labels.gif:
@@ -2370,7 +2273,6 @@ scatter-plot-labels.gif:
   quality_notes: >-
     context menu and search panel obscure part of the plot in several frames, and the
     domain-specific molecule content narrows its general applicability
-  reviewed: true
   seconds: 21.8
   width: 800
 scatter-plot-lines.png:
@@ -2390,7 +2292,6 @@ scatter-plot-lines.png:
   quality_notes: >-
     legend/property panel crowds the chart and the red circle annotation is a documentation callout
     rather than a clean shot
-  reviewed: true
   width: 713
 scatter-plot-regression-line.png:
   caption: Regression lines on a scatterplot
@@ -2405,7 +2306,6 @@ scatter-plot-regression-line.png:
     - visualize/viewers/scatter-plot
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 470
 scatter-plot-selection.gif:
   actions:
@@ -2426,7 +2326,6 @@ scatter-plot-selection.gif:
     - visualize/viewers/scatter-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 15.8
   width: 800
 scatter-plot-small.gif:
@@ -2449,7 +2348,6 @@ scatter-plot-small.gif:
   kind: animation
   quality: docs
   quality_notes: small 400x300 resolution makes point colors and tooltip text hard to read clearly
-  reviewed: true
   seconds: 37.1
   width: 400
 scatter-plot-zoom-and-pack.gif:
@@ -2472,7 +2370,6 @@ scatter-plot-zoom-and-pack.gif:
     - visualize/viewers/scatter-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 42.2
   width: 800
 scatterplot-custom-tooltip.gif:
@@ -2499,7 +2396,6 @@ scatterplot-custom-tooltip.gif:
     - visualize/viewers/scatter-plot
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 39.4
   width: 800
 scripting-viewer-small.gif:
@@ -2524,7 +2420,6 @@ scripting-viewer-small.gif:
   kind: animation
   quality: docs
   quality_notes: small size and low resolution make the code text hard to read in detail
-  reviewed: true
   seconds: 9.7
   width: 400
 separator-filtering.gif:
@@ -2550,7 +2445,6 @@ separator-filtering.gif:
   quality_notes: >-
     small viewport crop, column labels truncated, no visible pointer/typing indicator beyond a text
     caret
-  reviewed: true
   seconds: 26.9
   width: 800
 sequence-mut-clifs.gif:
@@ -2576,7 +2470,6 @@ sequence-mut-clifs.gif:
   quality_notes: >-
     Dense multi-panel analysis layout with small text throughout; informative in context of the page
     but too cluttered to stand alone as a how-to image.
-  reviewed: true
   seconds: 31.6
   width: 2486
 sequence-variability-map-small.gif:
@@ -2600,7 +2493,6 @@ sequence-variability-map-small.gif:
   kind: animation
   quality: docs
   quality_notes: small/cropped viewer chrome, no surrounding table or context visible, text quite small
-  reviewed: true
   seconds: 14.9
   width: 400
 statistics-small.gif:
@@ -2621,7 +2513,6 @@ statistics-small.gif:
   kind: animation
   quality: docs
   quality_notes: small cropped view, mid-scroll frames show partially cut-off column headers
-  reviewed: true
   seconds: 8.3
   width: 400
 sunburst-categories-selection.gif:
@@ -2647,7 +2538,6 @@ sunburst-categories-selection.gif:
   quality_notes: >-
     small UI text and thin sunburst labels are hard to read at this resolution, but the interaction
     and cross-viewer highlighting are clear
-  reviewed: true
   seconds: 14.6
   width: 1200
 sunburst-config.gif:
@@ -2673,7 +2563,6 @@ sunburst-config.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 70.9
   width: 1601
 sunburst-interactive.gif:
@@ -2700,7 +2589,6 @@ sunburst-interactive.gif:
   quality_notes: >-
     labels overlap and become unreadable at several zoom levels, and axis/category text is faint
     against the pastel fill
-  reviewed: true
   seconds: 36.8
   width: 800
 sunburst-small.gif:
@@ -2728,7 +2616,6 @@ sunburst-small.gif:
   quality_notes: >-
     small, low-resolution capture with visible cursor and tooltip clutter typical of a compact
     inline demo gif
-  reviewed: true
   seconds: 24.6
   width: 400
 surface-plot.png:
@@ -2745,7 +2632,6 @@ surface-plot.png:
   quality_notes: >-
     clear but plain default styling and cropped grid on the left; not polished enough for marketing
     use
-  reviewed: true
   width: 1161
 switch-filter-type.gif:
   actions:
@@ -2767,7 +2653,6 @@ switch-filter-type.gif:
     - visualize/viewers/filters
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 27.3
   width: 800
 tile-viewer-small.gif:
@@ -2790,7 +2675,6 @@ tile-viewer-small.gif:
   quality_notes: >-
     small 400x300 preview clip meant as a thumbnail in a viewers comparison table; too small and
     low-detail to stand alone as a how-to answer
-  reviewed: true
   seconds: 7.2
   width: 400
 timelines.gif:
@@ -2818,7 +2702,6 @@ timelines.gif:
   quality_notes: >-
     Right-side property panel text is small and screen is cropped at 800px width, fine for the docs
     page but not standalone-clear at a glance
-  reviewed: true
   seconds: 42
   width: 800
 tree-map-small.gif:
@@ -2840,7 +2723,6 @@ tree-map-small.gif:
   kind: animation
   quality: docs
   quality_notes: small thumbnail size, dated UI styling
-  reviewed: true
   seconds: 5.6
   width: 400
 tree-map.gif:
@@ -2868,7 +2750,6 @@ tree-map.gif:
   quality_notes: >-
     small embedded UI text is hard to read at this resolution and the clip mixes several unrelated
     settings changes rather than one focused interaction
-  reviewed: true
   seconds: 59.7
   width: 800
 tree-small.gif:
@@ -2892,7 +2773,6 @@ tree-small.gif:
   quality_notes: >-
     small size and plain node/edge rendering with no surrounding UI chrome make it clear enough for
     its own page but not polished enough to stand alone
-  reviewed: true
   seconds: 23.6
   width: 400
 tree-viewer.gif:
@@ -2920,7 +2800,6 @@ tree-viewer.gif:
   quality_notes: >-
     small UI text and dense node labels are hard to read at this resolution; property panel is
     cluttered with many settings visible at once
-  reviewed: true
   seconds: 75.8
   width: 800
 tree-viewer.png:
@@ -2939,7 +2818,6 @@ tree-viewer.png:
   quality_notes: >-
     small crop with no visible menus or panels, adequate for illustrating the concept but not
     polished enough to stand alone
-  reviewed: true
   width: 633
 trellis-inner-axes.gif:
   actions:
@@ -2962,7 +2840,6 @@ trellis-inner-axes.gif:
   quality_notes: >-
     small crop of the full app window and no cursor/callout highlighting the slider control, so the
     zoom mechanic isn't obvious without the surrounding text
-  reviewed: true
   seconds: 11
   width: 800
 trellis-plot-small.gif:
@@ -2985,7 +2862,6 @@ trellis-plot-small.gif:
   kind: animation
   quality: docs
   quality_notes: small resolution and dense UI controls make labels hard to read at a glance
-  reviewed: true
   seconds: 29.3
   width: 400
 trellis-plot.gif:
@@ -3014,7 +2890,6 @@ trellis-plot.gif:
   quality_notes: >-
     clear UI walkthrough but cursor and dropdown obscure some column headers, and it only
     demonstrates viewer switching, not the split/combo-box workflow the surrounding text describes
-  reviewed: true
   seconds: 26.4
   width: 800
 viewers-as-trellis.gif:
@@ -3039,7 +2914,6 @@ viewers-as-trellis.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 10.3
   width: 800
 viewers-font.gif:
@@ -3067,7 +2941,6 @@ viewers-font.gif:
   quality_notes: >-
     dense chemistry data crowds the plot and small context-menu text is hard to read at full frame
     size
-  reviewed: true
   seconds: 16.1
   width: 800
 viewers-interaction-main.gif:
@@ -3091,7 +2964,6 @@ viewers-interaction-main.gif:
   kind: animation
   quality: docs
   quality_notes: small viewer labels and dense numeric grid are hard to read at this resolution
-  reviewed: true
   seconds: 54.1
   width: 800
 web-logo-small.gif:
@@ -3117,7 +2989,6 @@ web-logo-small.gif:
   kind: animation
   quality: docs
   quality_notes: small size and cropped tooltip in the first frame; otherwise clear and on-topic
-  reviewed: true
   seconds: 14.5
   width: 400
 web-viewer.gif:
@@ -3142,7 +3013,6 @@ web-viewer.gif:
     - visualize/viewers/web-viewer
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 19.7
   width: 800
 webgpu-scatterplot.gif:
@@ -3167,7 +3037,6 @@ webgpu-scatterplot.gif:
   quality_notes: >-
     clear demonstration of the interaction, but no on-screen indication that WebGPU/beta
     acceleration specifically is active versus normal zoom
-  reviewed: true
   seconds: 8.4
   width: 852
 weblogo.gif:
@@ -3193,7 +3062,6 @@ weblogo.gif:
   quality_notes: >-
     dense grid of technical monomer/activity data and a cluttered property panel make it hard to
     follow without the surrounding page text
-  reviewed: true
   seconds: 18.9
   width: 1600
 word-cloud-small.png:
@@ -3213,7 +3081,6 @@ word-cloud-small.png:
   quality_notes: >-
     small thumbnail-sized icon image used as a gallery preview; no context panel or surrounding UI
     shown
-  reviewed: true
   width: 400
 word-cloud.gif:
   actions:
@@ -3239,7 +3106,6 @@ word-cloud.gif:
   quality_notes: >-
     small viewport crops the word cloud tightly and the underlying data (jargon financial/tech
     terms) is generic sample data, not a realistic end-user dataset
-  reviewed: true
   seconds: 22.6
   width: 1628
 word-cloud.png:
@@ -3258,6 +3124,5 @@ word-cloud.png:
   quality_notes: >-
     Cropped screenshot showing raw source data table alongside the viewer rather than a clean
     standalone view
-  reviewed: true
   seconds: 0
   width: 1221

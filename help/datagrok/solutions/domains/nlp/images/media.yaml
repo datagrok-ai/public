@@ -16,7 +16,6 @@ nlp-machine-translation.gif:
   height: 501
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 15.9
   width: 800
 nlp-text-extraction.gif:
@@ -38,7 +37,6 @@ nlp-text-extraction.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 10.1
   width: 800
 nlp-text-statistics.gif:
@@ -64,6 +62,5 @@ nlp-text-statistics.gif:
   quality_notes: >-
     small crop of the UI with no visible headers/toolbar; readable but minimal context for a
     standalone viewer
-  reviewed: true
   seconds: 8.2
   width: 800

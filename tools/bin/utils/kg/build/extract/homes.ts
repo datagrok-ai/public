@@ -1,5 +1,5 @@
-/// The home-document layer (build-plan.md WO-2): one node per home with its members, the edges its
-/// frontmatter keys spell, `code:` roots and body citations as ownership claims for WO-4, and the
+/// The home-document layer: one node per home with its members, the edges its
+/// frontmatter keys spell, `code:` roots and body citations as ownership claims for membership resolution, and the
 /// stubs the references need (tickets, declarations, cited pages).
 import * as fs from 'fs';
 import * as path from 'path';

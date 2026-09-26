@@ -19,7 +19,6 @@ activity_cliffs_open-800.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 28.1
   width: 800
 diversity_search-800.gif:
@@ -45,7 +44,6 @@ diversity_search-800.gif:
   quality_notes: >-
     small text and dense grid detail are hard to read at this resolution; useful within the page but
     not clear enough to stand alone
-  reviewed: true
   seconds: 19.9
   width: 800
 identity_scoring-800.gif:
@@ -65,7 +63,6 @@ identity_scoring-800.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 20.6
   width: 800
 macromolecules-12.png:
@@ -84,7 +81,6 @@ macromolecules-12.png:
   kind: screenshot
   quality: docs
   quality_notes: dense, small text and many panels crowd the screenshot, hard to read at a glance without zooming
-  reviewed: true
   width: 800
 macromolecules-7.png:
   caption: Atomic-level structure of a nucleotide sequence
@@ -101,7 +97,6 @@ macromolecules-7.png:
   quality_notes: >-
     Small text labels and stereochemistry annotations are hard to read at this resolution;
     functional as a supporting illustration but not eye-catching on its own
-  reviewed: true
   width: 800
 macromolecules-bar-chart-800.gif:
   actions:
@@ -124,7 +119,6 @@ macromolecules-bar-chart-800.gif:
   quality_notes: >-
     Small UI text and dense grid are hard to read at 800x500; useful within the bio page context but
     not self-explanatory alone.
-  reviewed: true
   seconds: 25.2
   width: 800
 macromolecules-notation-converter-800.gif:
@@ -144,7 +138,6 @@ macromolecules-notation-converter-800.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 37.6
   width: 800
 restore-structures-800.gif:
@@ -166,7 +159,6 @@ restore-structures-800.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 18.2
   width: 800
 sequence_space-800.gif:
@@ -187,7 +179,6 @@ sequence_space-800.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 21.5
   width: 800
 similarity_scoring-800.gif:
@@ -209,7 +200,6 @@ similarity_scoring-800.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 20.9
   width: 800
 similarity_search-800.gif:
@@ -231,7 +221,6 @@ similarity_search-800.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 17.7
   width: 800
 splitting-to-monomers-800.gif:
@@ -252,6 +241,5 @@ splitting-to-monomers-800.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 17.7
   width: 800

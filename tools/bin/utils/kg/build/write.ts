@@ -1,4 +1,4 @@
-/// The build outputs (build-plan.md WO-1, Decisions): `data/nodes/<type>.jsonl`, `data/edges/<type|refname>.jsonl`,
+/// The build outputs: `data/nodes/<type>.jsonl`, `data/edges/<type|refname>.jsonl`,
 /// `manifest.json` and `reports/`, deterministic line by line; the public projection of a graph.
 import * as fs from 'fs';
 import * as path from 'path';
@@ -45,7 +45,7 @@ export function gitRevisions(repoRoot: string, landingDir?: string): Record<stri
   return out;
 }
 
-/** What a build actually reads, so that two graphs cannot share a batch (kg-codex-review-3 #12). */
+/** What a build actually reads, so that two graphs cannot share a batch. */
 export interface BuildInputs {
   repoRoot: string;
   mode: string;
@@ -161,7 +161,7 @@ export function projectPublic(graph: Graph, system: TypeSystem): Graph {
   const pages = new Map<string, Row>();
   for (const row of graph.nodes)
     if (isSubtype(system, String(row.type), 'doc-page')) pages.set(String(row.id), row);
-  /** A heading is no more public than the page that carries it, and never outlives it (kg-codex-review-3 #1). */
+  /** A heading is no more public than the page that carries it, and never outlives it. */
   const keep = (row: Row): boolean => {
     const type = String(row.type);
     if (row.visibility !== 'public' || !PUBLIC_TYPES.some((t) => isSubtype(system, type, t))) return false;

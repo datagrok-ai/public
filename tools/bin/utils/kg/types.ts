@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import {ts} from 'ts-morph';
+import {posix} from './ids';
 
 export type Scalar = 'string' | 'number' | 'boolean' | 'Date' | 'Text' | 'Version' | 'Path' | 'Url' |
   'Provenance' | 'TypeUnion' | 'Member';
@@ -492,7 +493,7 @@ function loadFolder(folder: string, namePattern: RegExp, kind: string, error: Re
       error('type-name', file, `duplicate ${kind} type '${name}', declared in both ${out.get(name)!.file} and ${file}; a type name is unique across every folder under ${path.basename(folder)}/`);
       continue;
     }
-    out.set(name, {file, group: slashes(path.dirname(entry)) === '.' ? '' : slashes(path.dirname(entry)), data});
+    out.set(name, {file, group: posix(path.dirname(entry)) === '.' ? '' : posix(path.dirname(entry)), data});
   }
   return out;
 }
@@ -506,10 +507,6 @@ function yamlFiles(folder: string, prefix = ''): string[] {
     else if (entry.name.endsWith('.yaml')) out.push(relative);
   }
   return out;
-}
-
-function slashes(p: string): string {
-  return p.replace(/\\/g, '/');
 }
 
 function unreadableTypes(folder: string, loaded: Map<string, RawType>): string[] {

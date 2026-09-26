@@ -12,7 +12,6 @@ gitflow-general.png:
   kind: diagram
   quality: docs
   quality_notes: clear and legible but a generic schematic diagram, not polished enough for marketing
-  reviewed: true
   width: 1284
 gitflow-release.png:
   caption: Release branch git flow
@@ -30,5 +29,4 @@ gitflow-release.png:
   quality_notes: >-
     clear and legible, but a generic process diagram rather than something distinctive enough for
     marketing
-  reviewed: true
   width: 1504

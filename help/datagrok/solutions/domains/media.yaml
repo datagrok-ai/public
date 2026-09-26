@@ -15,5 +15,4 @@ sendex-architecture.png:
   quality_notes: >-
     clean vector diagram but dense with domain-specific abbreviations (TR, NOAEL, WoE) that need
     surrounding text to fully parse
-  reviewed: true
   width: 2400

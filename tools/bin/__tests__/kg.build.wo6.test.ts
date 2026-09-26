@@ -1,4 +1,4 @@
-/// The lexical Dart extractor (build-plan.md WO-6): the source files, top-level declarations, tests and
+/// The lexical Dart extractor: the source files, top-level declarations, tests and
 /// `~id` markers a regex pass over `core/**/*.dart` finds, and what the markers make of the ownership
 /// the other rungs would have given those files.
 import {describe, it, expect} from 'vitest';
@@ -30,7 +30,7 @@ function build(repo: string, only = 'homes,dart,membership'): Promise<Built> {
 }
 const graph = build(copy());
 
-describe('the lexical Dart pass (build-plan.md WO-6)', () => {
+describe('the lexical Dart pass', () => {
   it('emits one source file per Dart file, generated ones marked, and counts them per package', async () => {
     const {manifest, rows} = await graph;
     expect(manifest.sources.dart).toBe('ok');

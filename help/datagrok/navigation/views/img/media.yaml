@@ -19,7 +19,6 @@ browse-entity-gallery.gif:
   quality_notes: >-
     clear and on-topic but narrowly scoped to Scripts/Predictive models rather than a general entity
     gallery, so best kept in context on the page
-  reviewed: true
   seconds: 37.4
   width: 1601
 browse-tree.png:
@@ -36,7 +35,6 @@ browse-tree.png:
   quality_notes: >-
     Clear and legible, but a plain tree snippet with no surrounding context beyond the Browse page
     it illustrates.
-  reviewed: true
   width: 444
 browse-view-apps.gif:
   actions:
@@ -60,7 +58,6 @@ browse-view-apps.gif:
   quality_notes: >-
     Long silent UI walkthrough with no annotations; clear and current UI but relies on the
     surrounding text for context.
-  reviewed: true
   seconds: 61
   width: 1601
 browse-view-dashboard.gif:
@@ -88,7 +85,6 @@ browse-view-dashboard.gif:
   quality_notes: >-
     first frame shows an unrelated help panel (Namespaces sharing text) before the dashboard opens,
     and UI chrome/cursor add clutter
-  reviewed: true
   seconds: 19.9
   width: 1601
 browse-view-databases.gif:
@@ -115,7 +111,6 @@ browse-view-databases.gif:
   quality_notes: >-
     Clear and on-topic but table text is small/truncated at this resolution, and it packs several
     sub-flows (schemas, tables, columns, queries) into one long clip rather than one focused action.
-  reviewed: true
   seconds: 55.4
   width: 1601
 current-rows-2.gif:
@@ -138,7 +133,6 @@ current-rows-2.gif:
   quality_notes: >-
     cropped to the grid, side panel, and plot with no visible toolbar/cursor context; dense
     chemistry-specific panel content reduces general legibility
-  reviewed: true
   seconds: 13.6
   width: 800
 filters-viewer.gif:
@@ -164,7 +158,6 @@ filters-viewer.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 57.3
   width: 1601
 filters.gif:
@@ -188,7 +181,6 @@ filters.gif:
   height: 500
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 31.9
   width: 800
 namespaces-drag-and-drop.gif:
@@ -217,7 +209,6 @@ namespaces-drag-and-drop.gif:
   quality_notes: >-
     Cropped to a small viewport with placeholder demo data (chem scripts, generic project/user
     names); functional but not polished enough to stand alone as marketing material.
-  reviewed: true
   seconds: 27.4
   width: 1601
 scratchpad-open-entities.gif:
@@ -242,7 +233,6 @@ scratchpad-open-entities.gif:
   quality_notes: >-
     clear and on-topic but shows real/sample clinical and chemical data with dense grids, more a
     walkthrough than a single clean answer shot
-  reviewed: true
   seconds: 50.2
   width: 1601
 search-in-table.gif:
@@ -273,7 +263,6 @@ search-in-table.gif:
   quality_notes: >-
     functional product UI captured at good resolution, but plain demo data ("demog") and default
     styling, not polished for marketing
-  reviewed: true
   seconds: 63
   width: 1601
 table-view-add-viewers-dock.gif:
@@ -297,7 +286,6 @@ table-view-add-viewers-dock.gif:
     - visualize/viewers
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 75.4
   width: 1601
 tabs-mode-navigation.gif:
@@ -316,7 +304,6 @@ tabs-mode-navigation.gif:
   height: 1001
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 8.9
   width: 1601
 text-manager.gif:
@@ -336,7 +323,6 @@ text-manager.gif:
   height: 999
   kind: animation
   quality: answer
-  reviewed: true
   seconds: 25.9
   width: 1600
 toolbox-table-view.png:
@@ -354,7 +340,6 @@ toolbox-table-view.png:
   quality_notes: >-
     red highlight box and cursor annotation added for the doc page; not a clean standalone
     screenshot
-  reviewed: true
   width: 1601
 toolbox-user-profile-view.png:
   caption: Toolbox in the User Profile View
@@ -370,7 +355,6 @@ toolbox-user-profile-view.png:
   kind: screenshot
   quality: docs
   quality_notes: annotated with a red box for callout emphasis, not a clean standalone screenshot
-  reviewed: true
   width: 1601
 view-splitting.gif:
   actions:
@@ -393,7 +377,6 @@ view-splitting.gif:
   quality_notes: >-
     small, dense UI text typical of a full-window capture; readable but not a clean standalone
     answer without the surrounding page text
-  reviewed: true
   seconds: 29.2
   width: 1601
 viewer-property-panel.gif:
@@ -422,7 +405,6 @@ viewer-property-panel.gif:
   quality_notes: >-
     small embedded panel text is hard to read at full size, but the UI is current and the actions
     are clear
-  reviewed: true
   seconds: 26.5
   width: 800
 viewers-as-filters.gif:
@@ -446,7 +428,6 @@ viewers-as-filters.gif:
   kind: animation
   quality: docs
   quality_notes: small viewport crops the pie chart legend and right edge of the table, some UI chrome cut off
-  reviewed: true
   seconds: 23.6
   width: 800
 viewers-interaction-main.gif:
@@ -470,7 +451,6 @@ viewers-interaction-main.gif:
   quality_notes: >-
     sampled frames show viewer filtering/coloring/splitting rather than the docking-and-resizing
     interaction the surrounding text describes; modest 800x500 resolution
-  reviewed: true
   seconds: 54.1
   width: 800
 viewers-selection.gif:
@@ -493,7 +473,6 @@ viewers-selection.gif:
   quality_notes: >-
     small embedded viewers with cluttered demo data and a stray cursor icon; illustrates the
     mechanic clearly but is a low-resolution crop of the app, not a clean standalone answer
-  reviewed: true
   seconds: 16.3
   width: 800
 windows-mode-navigation.gif:
@@ -515,6 +494,5 @@ windows-mode-navigation.gif:
   kind: animation
   quality: docs
   quality_notes: informative for the page but the dropdown interaction is brief and small within the frame
-  reviewed: true
   seconds: 26.4
   width: 1601

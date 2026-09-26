@@ -13,7 +13,6 @@ dendrogram-close-button.png:
   quality_notes: >-
     annotated with a red arrow, cropped mid-table, useful in context but not a clean standalone
     answer
-  reviewed: true
   width: 2034
 export-csv.png:
   caption: Save as CSV export options
@@ -27,7 +26,6 @@ export-csv.png:
   height: 402
   kind: screenshot
   quality: answer
-  reviewed: true
   width: 358
 export.png:
   caption: Data export format menu
@@ -43,5 +41,4 @@ export.png:
   quality_notes: >-
     small, tightly cropped dropdown with no surrounding context; fine as an inline illustration but
     not self-explanatory on its own
-  reviewed: true
   width: 181

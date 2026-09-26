@@ -1,4 +1,4 @@
-/// The change set `tests-for --changed` answers about (change-tests/plan.md § Ops): what git says differs from a
+/// The change set `tests-for --changed` answers about: what git says differs from a
 /// base in the monorepo and in the `public/` submodule, working tree and untracked files included, the public
 /// paths under the prefix the graph gives them.
 import * as path from 'path';

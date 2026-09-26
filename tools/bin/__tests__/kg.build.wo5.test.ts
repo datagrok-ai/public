@@ -1,4 +1,4 @@
-/// `grok kg build` WO-5 (build-plan.md): the process layer over the mini monorepo under
+/// `grok kg build`: the process layer over the mini monorepo under
 /// fixtures/kg/build — tickets from the backlog snapshot, the release record with its picked
 /// commits, and the people the two of them name.
 import {describe, it, expect} from 'vitest';
@@ -35,7 +35,7 @@ const graph = build();
 const byId = (rows: any[], id: string) => rows.find((r) => r.id === id);
 const edges = (rows: any[], from?: string, to?: string) => rows.filter((e) => (from === undefined || e.from === from) && (to === undefined || e.to === to));
 
-describe('tickets from the backlog snapshot (build-plan.md WO-5)', () => {
+describe('tickets from the backlog snapshot', () => {
   it('copies the tracker columns, maps status to state and the markdown status to raw_status', async () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/ticket'), 'GROK-100')).toMatchObject({
@@ -90,7 +90,7 @@ describe('tickets from the backlog snapshot (build-plan.md WO-5)', () => {
   });
 });
 
-describe('people resolution (build-plan.md WO-5)', () => {
+describe('people resolution', () => {
   it('resolves a handle a home declares, a roster identity a home matches, and the roster itself as a stub', async () => {
     const {rows} = await graph;
     expect(edges(rows('edges/assignee'), 'GROK-102')).toEqual([expect.objectContaining({type: 'ref', name: 'assignee', to: 'P:jane', derived_by: 'external'})]);
@@ -108,7 +108,7 @@ describe('people resolution (build-plan.md WO-5)', () => {
   });
 });
 
-describe('releases and their picks (build-plan.md WO-5)', () => {
+describe('releases and their picks', () => {
   it('reads the record into a release with its branch and base, a dry run being a proposal', async () => {
     const {rows} = await graph;
     expect(byId(rows('nodes/release'), 'Rel:1.0.1')).toMatchObject({

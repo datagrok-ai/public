@@ -1,11 +1,11 @@
-/// The bounded operations agents get before raw Cypher (conventions.md §11.1, build-plan.md WO-7):
+/// The bounded operations agents get before raw Cypher (conventions.md §11.1):
 /// impact, tests-for, explain and find, each a read-only template over the index, answering with the
 /// sections of `answer.ts`.
 import * as fs from 'fs';
 import * as path from 'path';
 import {KuzuConnection, run, quote, literal} from './kuzu';
 import {Section, Answer, EdgeGroup, section} from './answer';
-import {unitOf, testUnitsOf} from './ids';
+import {unitOf, testUnitsOf, posix} from './ids';
 
 export type Tier = 'immediate' | 'reachable' | 'feature';
 export const TIERS: Tier[] = ['immediate', 'reachable', 'feature'];
@@ -36,7 +36,7 @@ type Chain = string[];
 type Target = Record<string, unknown>;
 
 export const DEFAULT_LIMIT = 50;
-/** How far the importer walk goes beyond the direct importers (plan.md § Tiers). */
+/** How far the importer walk goes beyond the direct importers. */
 const REACH_DEPTH = 4;
 /** An entry file until the packages extractor marks them (`entry`): every test imports it, so the walk stops there. */
 const ENTRY = /\/(?:package|package-test|package-api)\.ts$/;
@@ -106,7 +106,7 @@ export async function resolveTarget(conn: KuzuConnection, arg: string): Promise<
 export async function resolveTargets(conn: KuzuConnection, args: string[]): Promise<Map<string, Target | null>> {
   const candidates = (arg: string) => {
     const id = bareId(arg);
-    const p = id.replace(/\\/g, '/');
+    const p = posix(id);
     return [id, `file:${p}`, `doc:${p}`];
   };
   const {rows} = await run(conn, `MATCH (n) WHERE n.${quote('id')} IN $ids ` +
@@ -122,9 +122,19 @@ async function nodeTables(conn: KuzuConnection): Promise<string[]> {
   return rows.filter((r) => r.type === 'NODE').map((r) => String(r.name));
 }
 
-async function columnsOf(conn: KuzuConnection, table: string): Promise<string[]> {
-  const {rows} = await run(conn, `CALL table_info(${literal(table)}) RETURN name`);
-  return rows.map((r) => String(r.name));
+/** What a connection was already asked, so `replay` over hundreds of commits reads the table columns and the suite sizes once. */
+const ASKED = new WeakMap<KuzuConnection, Map<string, Promise<unknown>>>();
+
+function once<T>(conn: KuzuConnection, key: string, ask: () => Promise<T>): Promise<T> {
+  let asked = ASKED.get(conn);
+  if (!asked) ASKED.set(conn, asked = new Map());
+  let pending = asked.get(key) as Promise<T> | undefined;
+  if (!pending) asked.set(key, pending = ask());
+  return pending;
+}
+
+function columnsOf(conn: KuzuConnection, table: string): Promise<string[]> {
+  return once(conn, `columns ${table}`, async () => (await run(conn, `CALL table_info(${literal(table)}) RETURN name`)).rows.map((r) => String(r.name)));
 }
 
 /** One step of a reasoning path, rendered the way it is read: `→ declares →` out of a node, `→ owner ←` into it. */
@@ -133,7 +143,7 @@ function hop(edge: string, direction: 'in' | 'out'): string {
 }
 
 /**
- * The target, what it contains and what contains it — one bounded step each way (review 3 #9). A package or a file
+ * The target, what it contains and what contains it — one bounded step each way. A package or a file
  * declares its functions, files and declarations; anything declared belongs to the file or package that declares it
  * and to the functions it implements. Features are then looked for over the whole set, so a change to a declaration
  * reaches the feature that claims it and a package answers for the code it holds.
@@ -163,11 +173,11 @@ async function contained(conn: KuzuConnection, target: Record<string, unknown>):
  * anything it contains, the one whose home it is, the ones it documents, and the ones it takes part in. Each row
  * carries the chain that produced it, so the answer can be checked rather than trusted.
  */
-async function featuresOf(conn: KuzuConnection, target: Record<string, unknown>): Promise<Record<string, unknown>[]> {
+async function featuresOf(conn: KuzuConnection, target: Record<string, unknown>, known?: Map<string, string[]>): Promise<Record<string, unknown>[]> {
   const id = String(target.id);
   if (target.root === 'Feature')
     return [{feature: id, relation: 'self', name: target.name, status: target.status ?? null, via: id, path: [id]}];
-  const reached = await contained(conn, target);
+  const reached = known ?? await contained(conn, target);
   const ids = [...reached.keys()];
   const select = (anchor: string) => `RETURN ${anchor} AS anchor, f.${quote('id')} AS feature, f.${quote('name')} AS name, f.${quote('status')} AS status`;
   const owns = await run(conn, `MATCH (f:Feature)-[:${quote('IS_IMPLEMENTED_IN')}]->(n) WHERE n.${quote('id')} IN $ids ${select(`n.${quote('id')}`)}`, {ids});
@@ -209,15 +219,16 @@ function stronger(a: Record<string, unknown>, b: Record<string, unknown>): boole
 /**
  * What a change to this file, declaration or feature reaches: the features that own it, their evidence and their
  * work, the documents citing it (immediate) and documenting its features, and who imports or calls it — the direct
- * importers of a file and everything that reaches it through them (plan.md § Tiers).
+ * importers of a file and everything that reaches it through them.
  */
 export async function impact(conn: KuzuConnection, target: Record<string, unknown>, options: OpsOptions): Promise<Answer> {
   const id = String(target.id);
   const sections: Section[] = [];
-  const features = await featuresOf(conn, target);
+  const reached = await contained(conn, target);
+  const features = await featuresOf(conn, target, reached);
   sections.push(section('features', features, options.limit, NODE_PATH.test(id) ? UNOWNED : undefined));
   const ids = features.map((f) => String(f.feature));
-  const contents = [...(await contained(conn, target)).keys()];
+  const contents = [...reached.keys()];
   const cites = await run(conn, `MATCH (d)-[:${quote('MENTIONS')}]->(n) WHERE n.${quote('id')} IN $ids ` +
     `RETURN d.${quote('id')} AS document, d.${quote('type')} AS type, n.${quote('id')} AS target ORDER BY document, target`, {ids: contents});
   if (ids.length) {
@@ -327,7 +338,7 @@ async function barrels(conn: KuzuConnection, files: Map<string, Chain>): Promise
 
 /**
  * Who imports these files, hop by hop: the direct importers, then everything that reaches them within REACH_DEPTH
- * hops without passing through an entry file (plan.md § Tiers). Breadth first, so the chain kept is the shortest.
+ * hops without passing through an entry file. Breadth first, so the chain kept is the shortest.
  */
 async function importers(conn: KuzuConnection, files: Map<string, Chain>): Promise<{direct: Map<string, Chain>, reachable: Map<string, Chain>}> {
   const flagged = (await columnsOf(conn, 'Component')).includes('entry');
@@ -433,7 +444,7 @@ async function testsIn(conn: KuzuConnection, files: Map<string, Chain>, tier?: T
   });
 }
 
-/** The tests the changed files declare through the `declares` edge, once the build emits it (plan.md § Graph changes);
+/** The tests the changed files declare through the `declares` edge, once the build emits it;
  * until then the table has no file → test pair and the path match in `testsIn` is the whole answer. */
 async function declaredTests(conn: KuzuConnection, files: Map<string, Chain>): Promise<Record<string, unknown>[]> {
   const pairs = await run(conn, `CALL show_connection('DECLARES') RETURN *`);
@@ -444,7 +455,7 @@ async function declaredTests(conn: KuzuConnection, files: Map<string, Chain>): P
   return rows.map(({file, ...r}) => ({...r, feature: r.feature ?? null, via: [...files.get(String(file))!, hop('declares', 'out'), String(r.test)].join(' '), tier: 'immediate'}));
 }
 
-/** The immediate and reachable tiers of these targets (plan.md § Tiers): the tests in the source files, in the files
+/** The immediate and reachable tiers of these targets: the tests in the source files, in the files
  * importing them, in their mirror test files and in the files using what they declare — immediate in the unit of the
  * changed file, reachable from another unit — then the tests reached through the import walk; a test met twice keeps
  * its first chain unless a later link lifts it to immediate. `seen` holds every test id met, so the feature tier can
@@ -469,18 +480,20 @@ export async function linkedTests(conn: KuzuConnection, targets: Target[], seen 
 }
 
 /** How many test files each unit holds per framework, so the run rows know when a selection is most of a suite. */
-async function suiteSizes(conn: KuzuConnection): Promise<Map<string, number>> {
-  const {rows} = await run(conn, `MATCH (t:Artifact) WHERE t.${quote('type')} = 'test' RETURN DISTINCT t.${quote('framework')} AS framework, t.${quote('path')} AS path`);
-  const out = new Map<string, number>();
-  for (const r of rows) {
-    const unit = unitOf(String(r.path));
-    if (unit) out.set(`${r.framework} ${unit}`, (out.get(`${r.framework} ${unit}`) ?? 0) + 1);
-  }
-  return out;
+function suiteSizes(conn: KuzuConnection): Promise<Map<string, number>> {
+  return once(conn, 'suites', async () => {
+    const {rows} = await run(conn, `MATCH (t:Artifact) WHERE t.${quote('type')} = 'test' RETURN DISTINCT t.${quote('framework')} AS framework, t.${quote('path')} AS path`);
+    const out = new Map<string, number>();
+    for (const r of rows) {
+      const unit = unitOf(String(r.path));
+      if (unit) out.set(`${r.framework} ${unit}`, (out.get(`${r.framework} ${unit}`) ?? 0) + 1);
+    }
+    return out;
+  });
 }
 
 /**
- * The tests for one target or several (plan.md § Tiers): the immediate tier — tests in the changed files, in the
+ * The tests for one target or several: the immediate tier — tests in the changed files, in the
  * files importing them, in their mirror test files and in the files using what they declare — then the reachable
  * tier through the import walk, then everything the owning features and their subtrees carry, with the scenarios
  * and automations of those features, and one `run` row per runner invocation over the tests the `tiers` select.
@@ -567,7 +580,7 @@ function nearest(repoRoot: string | undefined, testPath: string, file: string): 
 }
 
 /**
- * One row per runner invocation over the selected tests (plan.md § `grok test --recent`): the DG runner takes one
+ * One row per runner invocation over the selected tests: the DG runner takes one
  * category with one `--test` name or the whole category, the Dart runner (`pub run test`: core is Dart 1.x, which
  * has no `dart test`) takes files and one `-n`, Playwright its spec files and one `--grep`, vitest its files. A client
  * test runs in DevTools under `Core: <its category segments>`. A dynamic test has no runnable name: a DG category runs
@@ -662,7 +675,7 @@ export async function explain(conn: KuzuConnection, target: Record<string, unkno
 }
 
 /**
- * A release answers three different questions and used to answer them as one (review 3 #5): what was planned for it
+ * A release answers three different questions and used to answer them as one: what was planned for it
  * (`fix-version`), what it actually carries (its commits and the tickets whose fixes were picked), and what it shipped
  * in features — which only a released, non-dry-run record can support.
  */
@@ -722,7 +735,7 @@ function group(rows: Record<string, unknown>[], direction: 'in' | 'out', groups?
 
 /**
  * The vocabulary search. An exact id, name or alias is asked for in its own unbounded query, so that the scan cap on
- * the substring query can no longer drop it (review 3 #9); both sets are then ranked together — authored types first,
+ * the substring query can no longer drop it; both sets are then ranked together — authored types first,
  * exact before prefix before substring — and only the ranked whole is paged.
  */
 export async function find(conn: KuzuConnection, text: string, options: OpsOptions): Promise<Answer> {

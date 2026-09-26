@@ -1,4 +1,4 @@
-/// What `grok test --recent` walks (change-tests/plan.md, work order A): Dart `imports`, the client's `regTest`
+/// What `grok test --recent` walks: Dart `imports`, the client's `regTest`
 /// cases, `declares` from every test file to its tests, `mentions` from a page to the files it cites, the
 /// `entry` flag on package entry points, and headings inside a fence left alone.
 import {describe, it, expect} from 'vitest';
@@ -21,6 +21,8 @@ const DATA_FRAME_TEST = `${DDT}/test/data_frame_test.dart`;
 const SORT_TEST = `${DDT}/test/data_frame_sort_test.dart`;
 const ROWS_TEST = `${DDT}/test/rows_test.dart`;
 const SETUP = `${DDT}/test/setup.dart`;
+const PROVIDER = `${DDT}/lib/src/external_data_provider.dart`;
+const ENDPOINT_TEST = `${DDT}/test/endpoint_test.dart`;
 const HISTOGRAM_TESTS = 'public/packages/Tested/src/tests/histogram-tests.ts';
 const TEST_TRACK = 'public/packages/UsageAnalysis/files/TestTrack/Viewers';
 
@@ -37,6 +39,8 @@ function writeDdt(repo: string): void {
   write(repo, SORT_TEST, ["import 'package:ddt/ddt.dart';", '', 'void main() {', "  test('sorts', () {});", '}', ''].join('\n'));
   write(repo, ROWS_TEST, ['void main() {', "  test('rows', () {});", '}', ''].join('\n'));
   write(repo, SETUP, ["import 'package:ddt/ddt.dart';", '', 'DataFrame frame;', ''].join('\n'));
+  write(repo, PROVIDER, 'part of ddt;\n\nclass ExternalDataProvider {}\n');
+  write(repo, ENDPOINT_TEST, ['/// Tests: ExternalDataProvider, Stats, Nowhere', "import 'package:ddt/ddt.dart';", '', 'void main() {', "  test('answers', () {});", '}', ''].join('\n'));
   write(repo, `${DDT}/README.md`, ['---', 'feature: platform/toolkit', 'name: Toolkit', 'owner: P:jane', 'code:', `  - ${DDT}/lib/**`, '---', '', '# Toolkit', ''].join('\n'));
   write(repo, `${DDT}/lib/src/grid/README.md`, ['---', 'feature: compute/toolkit-grid', 'name: Toolkit grid', 'owner: P:jane', 'code:', `  - ${DDT}/lib/src/grid/**`, '---', '', '# Toolkit grid', ''].join('\n'));
 }
@@ -64,7 +68,7 @@ const graph = buildFixture(copyFixture('build', (repo) => {
 }), 'homes,ts-packages,ts-declarations,ts-tests,docs,dart,membership');
 const edges = (rows: any[], from?: string, to?: string) => rows.filter((e) => (from === undefined || e.from === from) && (to === undefined || e.to === to));
 
-describe('the graph rows a change walk needs (change-tests/plan.md, work order A)', () => {
+describe('the graph rows a change walk needs', () => {
   it('resolves Dart import, export and part directives to the files the pass walked, with the names a show clause lists', async () => {
     const {rows} = await graph;
     const imports = rows('edges/imports').filter((e) => e.from.startsWith('file:core/client/'));
@@ -151,7 +155,16 @@ describe('the graph rows a change walk needs (change-tests/plan.md, work order A
     expect(rows('nodes/test').some((t) => t.path === SETUP)).toBe(false);
     expect(uses[0]).toMatchObject({kind: 'type', confidence: 0.7, evidence: [DATA_FRAME_TEST]});
     // Stats is declared twice, Row is too short, Nowhere is declared nowhere, Named appears only inside string literals
-    expect(problems.ambiguous_uses).toEqual([`${DATA_FRAME_TEST}: Stats is declared in ${COLUMN} and ${DATA_FRAME}`]);
+    expect(problems.ambiguous_uses).toEqual([`${DATA_FRAME_TEST}: Stats is declared in ${COLUMN} and ${DATA_FRAME}`, `${ENDPOINT_TEST}: Stats is declared in ${COLUMN} and ${DATA_FRAME}`]);
+  });
+
+  it('draws uses at confidence 1 from the types a `/// Tests:` header names, through the same one-declaration gate as a word of the body', async () => {
+    const {rows, problems} = await graph;
+    expect(rows('edges/uses').filter((e) => e.derived_by === 'annotation')).toEqual([expect.objectContaining({
+      from: `file:${ENDPOINT_TEST}`, to: `decl:${PROVIDER}#ExternalDataProvider`, kind: 'type', confidence: 1, evidence: [ENDPOINT_TEST],
+    })]);
+    expect(rows('edges/uses').some((e) => e.from === `file:${ENDPOINT_TEST}` && e.derived_by === 'lexical')).toBe(false);
+    expect(problems.unresolved_ids).toContain(`${ENDPOINT_TEST}: Tests: Nowhere names no type of its package or an imported one`);
   });
 
   it('draws tests by name: a file base name, a category segment or a Test Track folder that spells one feature, never one two features share', async () => {

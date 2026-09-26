@@ -12,7 +12,6 @@ cell-renderer-molecule.png:
   quality_notes: >-
     cropped to just the molecule with no surrounding grid chrome, so it reads as generic chemistry
     clip art rather than a labeled example of the renderer in context
-  reviewed: true
   width: 294
 view-layout.gif:
   actions:
@@ -38,7 +37,6 @@ view-layout.gif:
     clear UI walkthrough but multiple unrelated actions (coloring, resizing, file browsing,
     suggestions) are bundled into one long clip rather than isolating the layout-clone workflow
     named in the surrounding text
-  reviewed: true
   seconds: 52.3
   width: 1601
 viewer-event-scripts.gif:
@@ -62,6 +60,5 @@ viewer-event-scripts.gif:
   quality_notes: >-
     small viewport crops the panels tightly and the UI chrome (sidebar, grid) is cut off, fine for
     the page but not self-explanatory alone
-  reviewed: true
   seconds: 16.2
   width: 800

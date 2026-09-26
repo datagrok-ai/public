@@ -21,7 +21,6 @@ running_tests.gif:
   quality_notes: >-
     small UI region, no visible progress bar or fail-icon state despite the surrounding text
     describing those; low information density for a standalone answer
-  reviewed: true
   seconds: 17.1
   width: 799
 test-mngr-start.png:
@@ -37,7 +36,6 @@ test-mngr-start.png:
   kind: screenshot
   quality: docs
   quality_notes: small crop of a menu only, low resolution (300x241), no surrounding context or window chrome
-  reviewed: true
   width: 300
 test-mngr-tests-list.png:
   caption: Test Manager tests list
@@ -54,7 +52,6 @@ test-mngr-tests-list.png:
   quality_notes: >-
     small, cropped panel view with no surrounding context; fine to illustrate the test tree
     structure but not self-explanatory alone
-  reviewed: true
   width: 500
 test_manager_progress_bar.png:
   caption: Tracking test run progress
@@ -68,7 +65,6 @@ test_manager_progress_bar.png:
   kind: screenshot
   quality: docs
   quality_notes: cropped to a small panel with no surrounding UI chrome for context
-  reviewed: true
   width: 736
 test_results.gif:
   actions:
@@ -92,6 +88,5 @@ test_results.gif:
   quality_notes: >-
     small UI region with truncated columns; useful in context but not self-explanatory as a
     standalone answer
-  reviewed: true
   seconds: 12.9
   width: 800
