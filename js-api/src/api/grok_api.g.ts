@@ -1391,7 +1391,11 @@ export interface IDartApi {
   grok_DataFrame_FireValuesChanged(t: any): any;
   grok_DataFrame_ChangeColumnsType(t: any, columns: any, newType: String, format: String): any;
   grok_DataFrame_Append(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): any;
+  grok_DataFrame_AppendAsync(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): Promise<any>;
   grok_DataFrame_Append_Merge(parent: any, t: any): any;
+  grok_DataFrame_AppendMergeAsync(parent: any, t: any): Promise<any>;
+  grok_DataFrame_RecalculateFormulaColumns(t: any): Promise<any>;
+  grok_AppendTables(tables: any): Promise<any>;
   grok_DataFrame_Get_Temp(t: any): any;
   grok_DataFrame_Get_Tags(t: any): any;
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
