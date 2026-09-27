@@ -56,7 +56,7 @@ These are the common parameters for all functions:
 * `name`: shows up in the user interface
 * `description`: shows up in a function tooltip
 * `tags`: comma-separated tags that you can use in search
-* `help-url`: help that shows up when you click on the "?" in the function dialog
+* `help-url`: a help page such as `/help/explore/dim-reduction`. It opens from the "?" in the function dialog. For scripts and package functions it also opens from the "?" on the function view's ribbon, and an open Help panel keeps showing it on that view until you pick something else
 * `reference`: Reference to a research paper, Wikipedia article, Git repository, etc.
 * `top-menu`: Top menu path separated with pipes (`|`), such as `Chem | Gasteiger Charges`
 
