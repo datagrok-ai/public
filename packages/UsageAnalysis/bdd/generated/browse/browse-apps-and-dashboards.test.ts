@@ -17,9 +17,9 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clearField, clickOn, collapse, doubleClickOn, expand, hoverOver, isExpanded, shouldBe, shouldBecomeVisibleWithin, shouldContainText, shouldNotContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clearField, clickOn, collapse, doubleClickOn, expand, hoverOver, isExpanded, rightClickOn, shouldBe, shouldBecomeVisibleWithin, shouldContainText, shouldNotContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen, closeAllViews, contextPanelOpen, contextPanelShows, openDataset, openProject, saveAsProject, scriptOnServer, urlShouldContain, viewHoldsViewers, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, closeContextMenu, menuLists, noBalloons, noErrors, openContextMenu, pointerAway} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, closeContextMenu, menuLists, noBalloons, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The Apps and Dashboards sections of the Browse tree", () => {
@@ -142,10 +142,10 @@ test.describe("The Apps and Dashboards sections of the Browse tree", () => {
     await session.step(134, "And Apps---Compute tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute tree node inside browse tree")));
     await session.step(137, "When user clicks on Apps---Compute---Model-Hub tree node inside browse tree", () => clickOn(page, el("Apps---Compute---Model-Hub tree node inside browse tree")));
     await session.step(138, "Then the \"Model Hub\" view should be current", () => viewIsCurrent(page, "Model Hub"));
-    await session.step(139, "And \"BddModel{time}\" gallery card should be visible", () => shouldBe(page, el(session.text("\"BddModel{time}\" gallery card")), "visible"));
+    await session.step(139, "And \"BddModel{time}\" link should be visible", () => shouldBe(page, el(session.text("\"BddModel{time}\" link")), "visible"));
     await session.step(140, "And no errors should have been logged", () => noErrors(page));
   });
-  test("Uncategorized opens to the model, a click previews it and a hover explains it", {tag: ["@browse", "@realizes:views.browse", "@compute"]}, async ({browser}) => {
+  test("Uncategorized opens to the model, a hover explains it and a click previews it", {tag: ["@browse", "@realizes:views.browse", "@compute"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(28, "Given user is logged in", () => loggedIn(page));
     await session.step(29, "And the browse panel is open", () => browsePanelOpen(page));
@@ -155,13 +155,12 @@ test.describe("The Apps and Dashboards sections of the Browse tree", () => {
     await session.step(143, "Given Apps---Compute---Model-Hub tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute---Model-Hub tree node inside browse tree")));
     await session.step(144, "When user expands Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree", () => expand(page, el("Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree")));
     await session.step(145, "Then Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree")), "visible"));
-    await session.step(146, "When user clicks on Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => clickOn(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
-    await session.step(147, "Then the \"BddModel{time} preview\" view should be current", () => viewIsCurrent(page, session.text("BddModel{time} preview")));
-    await session.step(149, "When user moves the pointer away from Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => pointerAway(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
-    await session.step(150, "And user hovers over Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => hoverOver(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
-    await session.step(151, "Then tooltip should contain text \"A model a BDD feature saved\"", () => shouldContainText(page, el("tooltip"), "A model a BDD feature saved"));
-    await session.step(152, "And no errors should have been logged", () => noErrors(page));
-    await session.step(153, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(146, "When user hovers over Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => hoverOver(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
+    await session.step(147, "Then tooltip should contain text \"A model a BDD feature saved\"", () => shouldContainText(page, el("tooltip"), "A model a BDD feature saved"));
+    await session.step(148, "When user clicks on Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => clickOn(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
+    await session.step(149, "Then the \"BddModel{time} preview\" view should be current", () => viewIsCurrent(page, session.text("BddModel{time} preview")));
+    await session.step(150, "And no errors should have been logged", () => noErrors(page));
+    await session.step(151, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
   test("A double click keeps the model's view and its menu offers Run", {tag: ["@browse", "@realizes:views.browse", "@compute"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -170,19 +169,19 @@ test.describe("The Apps and Dashboards sections of the Browse tree", () => {
     await session.step(124, "Given a script \"BddModel{time}\" is on the server:", () => scriptOnServer(page, session.text("BddModel{time}"), "//language: javascript\n//meta.role: model\n//description: A model a BDD feature saved\n//input: int x = 1\n//output: int result\nresult = x + 1;"));
     await session.step(133, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
     await session.step(134, "And Apps---Compute tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute tree node inside browse tree")));
-    await session.step(156, "Given Apps---Compute---Model-Hub tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute---Model-Hub tree node inside browse tree")));
-    await session.step(157, "And Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree")));
-    await session.step(158, "When user double-clicks on Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => doubleClickOn(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
-    await session.step(159, "Then the \"BddModel{time} preview\" view should be current", () => viewIsCurrent(page, session.text("BddModel{time} preview")));
-    await session.step(160, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
-    await session.step(161, "Then Projects view should be visible", () => shouldBe(page, el("Projects view"), "visible"));
-    await session.step(162, "And \"BddModel{time} preview\" view should be present", () => shouldBe(page, el(session.text("\"BddModel{time} preview\" view")), "present"));
-    await session.step(164, "Given Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree")));
-    await session.step(165, "And Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree")), "visible"));
-    await session.step(166, "When user opens the context menu of Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => openContextMenu(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
-    await session.step(167, "Then the open menu should list \"Run...\"", () => menuLists(page, "Run..."));
-    await session.step(168, "When user closes the context menu", () => closeContextMenu(page));
-    await session.step(169, "Then no errors should have been logged", () => noErrors(page));
-    await session.step(170, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(154, "Given Apps---Compute---Model-Hub tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute---Model-Hub tree node inside browse tree")));
+    await session.step(155, "And Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree")));
+    await session.step(156, "When user double-clicks on Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => doubleClickOn(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
+    await session.step(157, "Then the \"BddModel{time} preview\" view should be current", () => viewIsCurrent(page, session.text("BddModel{time} preview")));
+    await session.step(158, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
+    await session.step(159, "Then Projects view should be visible", () => shouldBe(page, el("Projects view"), "visible"));
+    await session.step(160, "And \"BddModel{time} preview\" view should be present", () => shouldBe(page, el(session.text("\"BddModel{time} preview\" view")), "present"));
+    await session.step(162, "Given Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree")));
+    await session.step(163, "And Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree")), "visible"));
+    await session.step(164, "When user right-clicks on Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree", () => rightClickOn(page, el(session.text("Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree"))));
+    await session.step(165, "Then the open menu should list \"Run...\"", () => menuLists(page, "Run..."));
+    await session.step(166, "When user closes the context menu", () => closeContextMenu(page));
+    await session.step(167, "Then no errors should have been logged", () => noErrors(page));
+    await session.step(168, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
 });

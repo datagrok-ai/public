@@ -17,10 +17,11 @@ Feature: The Platform and Databases sections of the Browse tree
   report the database, not the tree — so it is not written. The Platform matrix (Node-Platform-01)
   opens every administrative node and claims the view it names, not only the absence of errors.
 
-  The package manager (Browse/package-manager.md) and local-deploy-ui.md 4 are not written: the
-  Plugins view's cards (`.grok-app-card`, named `div-<Package>`) are not a card kind a phrase can
-  reach, and the version, install and uninstall cases change a package every other feature uses;
-  local-deploy-ui.md 1-3, 5 and 6 are what a fresh deployment does once, not a shared stand.
+  The package manager (Browse/package-manager.md 1 and 3, GROK-16545) and local-deploy-ui.md 4 are
+  claimed read-only: the Plugins view lists the packages the stand installed, and a package's menu
+  offers no Delete. The version switch and the install and uninstall cases (2, 4-8) change a package
+  every other feature uses and are not written; local-deploy-ui.md 1-3, 5 and 6 are what a fresh
+  deployment does once, not something a shared stand can repeat.
 
   Browse-Tree-07 (a node the user may not read) is claimed through the second account: the first
   account's own connection is not in that user's tree at all, beside the shared Datagrok one.
@@ -125,7 +126,6 @@ Feature: The Platform and Databases sections of the Browse tree
       | Notebooks         | Notebooks    |
       | MCP-Servers       | MCP Servers  |
       | Predictive-models | Models       |
-      | Dockers           | Dockers      |
       | Sync              | Sync         |
       | Layouts           | View layouts |
       | URL-Aliases       | URL Aliases  |
@@ -149,3 +149,29 @@ Feature: The Platform and Databases sections of the Browse tree
     And no errors should have been logged
     When user signs in again as the first user
     Then the first user should be signed in
+
+  Scenario: The Plugins view lists the installed packages and offers no Delete for one
+    Given Platform tree node inside browse tree is expanded
+    When user clicks on Platform---Plugins tree node inside browse tree
+    Then the "Plugins" view should be current
+    And the following elements should be visible:
+      | "PowerPack" gallery card |
+      | "Tutorials" gallery card  |
+      | "DevTools" gallery card   |
+    When user opens the context menu of "PowerPack" gallery card
+    Then the open menu should list "Uninstall"
+    And the open menu should not list "Delete"
+    And the open menu should not list "Delete..."
+    When user closes the context menu
+    Then no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  # the Dockers view warns in a balloon on a stand whose Grok Spawner is off
+  Scenario: Platform > Dockers opens the Dockers view
+    Given the stand runs the "Grok Spawner" service
+    And the context panel is open
+    And Platform tree node inside browse tree is expanded
+    When user clicks on Platform---Dockers tree node inside browse tree
+    Then the "Dockers" view should be current
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

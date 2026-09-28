@@ -55,6 +55,7 @@ Feature: Every section of the Browse tree opens without an error
       | section   | child                     |
       | My stuff  | My-stuff---Recent         |
       | Apps      | Apps---Compute            |
+      | Apps      | Apps---Demo               |
       | Files     | Files---Demo              |
       | Databases | Databases---Postgres      |
       | Platform  | Platform---Users          |

@@ -21,9 +21,6 @@ Feature: The Browse panel and the icons of its toolbar
   open — as is the preview that was current before the refresh (browse.md 6). A folder open inside
   that section comes back collapsed (the GROK-16261 shape); that half waits for a filed ticket.
 
-  The panel's own close icon (Browse-Nav-09) has no name a phrase can reach — it is a bare
-  `div[name="Close"]` beside the icon strip — so it waits for a platform element name.
-
   Browse-Nav-03 (the search box of the header) is not claimed: the PowerPack box carries no name —
   its only handle is a placeholder with quotes in it ("Search everywhere. Try "aspirin" or "7JZK"")
   that an element phrase cannot quote — and a search reports no end and no empty state.
@@ -139,5 +136,14 @@ Feature: The Browse panel and the icons of its toolbar
     Then the "demog" view should be current
     And demog view should be visible
     And grid should show 5850 rows
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: The panel's close icon hides it and the Browse tab brings it back
+    When user clicks on browse panel close icon
+    Then the browse tree should be hidden
+    When user clicks on browse tab
+    Then the browse tree should be visible
+    And Apps tree node inside browse tree should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown

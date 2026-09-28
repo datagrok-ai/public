@@ -33,8 +33,10 @@ Feature: The quick filters of a Browse gallery
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  # the Dockers view warns in a balloon on a stand whose Grok Spawner is off
   Scenario: The Dockers gallery offers Used by me and Created recently
-    Given Platform tree node inside browse tree is expanded
+    Given the stand runs the "Grok Spawner" service
+    And Platform tree node inside browse tree is expanded
     When user clicks on Platform---Dockers tree node inside browse tree
     Then the "Dockers" view should be current
     When user clicks on "Toggle filters" icon

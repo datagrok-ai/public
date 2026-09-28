@@ -9,8 +9,9 @@ Feature: Working with the nodes of the Browse tree
   tree reports that no group is still fetching its children — the old spec allowed the expanded count
   to grow by one, which is the very defect.
 
-  Browse-Tree-02 step 5 (Enter opens the selected item) is claimed on a file moved to by the arrow
-  keys: the arrow moves the selection only, Enter opens it. Browse-Tree-05 (the context menu of an
+  Browse-Tree-02 step 5 (Enter or Space opens the selected item) is not claimed: in the tree an arrow
+  key already opens the file it moves to, and Enter on a selected item whose view was closed opens
+  nothing — a candidate finding, walked by hand before anything is claimed or filed. Browse-Tree-05 (the context menu of an
   entity) is in browse-context-panel-and-menus.feature, on a connection and on a file — the dashboard
   the manual case names is not used. Browse-Tree-06 (drag and drop) is claimed in
   spaces-drag-and-drop.feature; Browse-Tree-07 (a node the user may not read) in
@@ -99,15 +100,13 @@ Feature: Working with the nodes of the Browse tree
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Enter on a selected item opens it
+  Scenario: An arrow key opens the file it moves to
     Given Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
     When user clicks on Files---Demo---demog-1000.csv tree node inside browse tree
     Then the "demog-1000" view should be current
     When user presses ArrowDown
     Then Files---Demo---demog.csv tree node inside browse tree should be selected
-    # the arrow moves the selection only: the preview is still the one the click opened
-    And the "demog-1000" view should be current
-    When user presses Enter
-    Then the "demog" view should be current
+    And the "demog" view should be current
+    And grid should show 5850 rows
     And no errors should have been logged

@@ -307,6 +307,12 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
     const was = grok.shell.windows.showBrowse;
     grok.shell.windows.simpleMode = false;
     grok.shell.windows.showBrowse = true;
+    // a table view docks its Toolbox as a tab over Browse: bring the Browse tab to the front
+    const tab = document.querySelector('.tab-handle[name="view-handle: Browse"]') as HTMLElement | null;
+    if (tab && !tab.classList.contains('tab-handle-selected')) {
+      tab.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      tab.click();
+    }
     return was;
   });
   await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});

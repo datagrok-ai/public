@@ -21,9 +21,11 @@ Feature: The context panel and the context menus of the Browse tree
   "the context panel should show" cannot back it, and the claim is the panel's own text — the object
   that must be back and the one that must be gone. Browse-CtxPanel-04 (Collapse all / Expand all) is
   claimed on a pane's own expanded state. The title bar's icons are reached by their labels: the help
-  panel carries a Back and a Forward too, hidden while it is closed. Browse-Fav-02 (the star in the
-  title bar) is not written: the sidebar's Favorites icon carries the same label, and the title bar
-  has no name of its own to scope the phrase to.
+  panel carries a Back and a Forward too, hidden while it is closed, and the icons show only while
+  the pointer is on the bar. Browse-Fav-02 (the star beside the object's name toggles it in and out
+  of favorites) is claimed on the account's favorites on the server — the star publishes its state
+  only as a font class — and Browse-Fav-05b (a file has no star) on its absence for a file. The
+  title bar's own "Favorites" icon is not a toggle: it lists the favorites.
 
   Background:
     Given user is logged in
@@ -40,9 +42,10 @@ Feature: The context panel and the context menus of the Browse tree
 
   Scenario: The context panel follows the node that was clicked
     Given the context panel is open
-    And Apps tree node inside browse tree is expanded
-    When user clicks on Tutorials tree node inside browse tree
-    Then the context panel should show "Tutorials"
+    And Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user clicks on Files---Demo---demog.csv tree node inside browse tree
+    Then the context panel should show "demog.csv"
     # a view is not an entity: the panel follows grok.shell.o, so the next claim names
     # another object the tree owns rather than the view a node opens
     When Databases tree node inside browse tree is expanded
@@ -117,5 +120,35 @@ Feature: The context panel and the context menus of the Browse tree
     Then "Details" accordion header in context panel should be collapsed
     When user clicks on "Expand all" icon
     Then "Details" accordion header in context panel should be expanded
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: The star beside a connection's name adds it to favorites and takes it out
+    Given a "Postgres" connection named "BDD-Browse-Star-{run}" is on the server
+    And "BDD-Browse-Star-{run}" is not in favorites
+    And the context panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user clicks on Databases---Postgres---BDD-Browse-Star-{run} tree node inside browse tree
+    Then the context panel should show "BDD-Browse-Star-{run}"
+    When user clicks on favorite star in context panel
+    Then "BDD-Browse-Star-{run}" should be in favorites on the server
+    When user clicks on favorite star in context panel
+    Then "BDD-Browse-Star-{run}" should not be in favorites on the server
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: A file has no favorite star, a connection has one
+    Given the context panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user clicks on Databases---Postgres---Datagrok tree node inside browse tree
+    Then the context panel should show "Datagrok"
+    And favorite star in context panel should be visible
+    Given Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user clicks on Files---Demo---demog.csv tree node inside browse tree
+    Then the context panel should show "demog.csv"
+    And favorite star in context panel should be absent
     And no errors should have been logged
     And no error or warning balloon should have been shown

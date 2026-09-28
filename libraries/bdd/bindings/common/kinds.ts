@@ -252,6 +252,13 @@ kind('tab', {
   labelSelector: '.tab-handle-text, .dockspan-tab-handle-text',
   dartNames: ['{q}', 'tab-{q}'],
 });
+/** The tab of an open view in the shell's tab strip (`name="view-handle: <view>"`), by the view's
+ * name; simple mode hides the strip, the status bar's Tabs toggle shows it. */
+kind('view tab', {
+  selector: '.tab-handle[name^="view-handle: "]',
+  match: ['label', 'text'],
+  labelSelector: '.tab-handle-text',
+});
 kind('tab panel', {aliases: ['tab page'], selector: '[role="tabpanel"], .d4-tab-content', match: ['name', 'aria']});
 kind('section', {
   aliases: ['pane', 'accordion pane'],
@@ -274,14 +281,18 @@ kind('card', {
   match: ['name', 'title', 'text'],
   labelSelector: '.u2-card-title, .card-label',
 });
-/** The entity cards of a Dart gallery (a connection's queries, the scripts browser): named
- * `div-<Name>` and titled by their own label, not the `.d4-item-card` the card kind knows. */
+/** The entity cards of a Dart gallery (a connection's queries, the scripts browser, the Plugins
+ * view's package cards): named `div-<Name>` and titled by their own label, not the
+ * `.d4-item-card` the card kind knows. */
 kind('gallery card', {
-  selector: '.d4-gallery-card',
+  selector: '.d4-gallery-card, .grok-app-card',
   match: ['dart', 'label', 'text'],
-  labelSelector: '.grok-gallery-grid-item-title',
+  labelSelector: '.grok-gallery-grid-item-title, .grok-package-name',
   dartNames: ['div-{q}'],
 });
+/** The toggles of the status bar's windows manager (Tabs, Toolbox, Context Panel, Console,
+ * Presentation mode …), by their aria-label; `active` is the only state they publish. */
+kind('status bar toggle', {selector: '.layout-status-bar [name^="toggle-"]', match: ['aria']});
 kind('wizard', {selector: u2('wizard'), match: ['name', 'aria']});
 kind('wizard step', {aliases: ['step'], selector: '.u2-wizard-step', match: ['label', 'text'], labelSelector: '.u2-wizard-title'});
 kind('dock panel', {

@@ -84,8 +84,13 @@ const firstLogin = new WeakMap<Page, string>();
 async function signInWith(page: Page, token: string): Promise<void> {
   const origin = new URL(page.url() && page.url().startsWith('http') ? page.url() : (process.env.DATAGROK_URL ?? 'http://localhost:8888'));
   await page.context().addCookies([{name: 'auth', value: token, domain: origin.hostname, path: '/'}]);
-  await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
-  await enterShell(page, true);
+  await page.evaluate((t) => { window.localStorage.setItem('auth', t); }, token);
+  // a page stuck mid-switch (seen once: an evaluate that could not serialize its result) is reloaded
+  // from scratch rather than left to fail every later feature of the worker
+  await enterShell(page, true).catch(async () => {
+    await page.goto('/', {waitUntil: 'domcontentloaded'});
+    await enterShell(page, true);
+  });
 }
 
 async function currentLogin(page: Page): Promise<string> {
