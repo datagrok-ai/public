@@ -76,7 +76,7 @@ describe('rows', () => {
     at.setHours(10, 14, 3, 112);
     expect(timelineRow({time: at.toISOString(), source: 'datlas', kind: 'request', summary: 'POST /api/projects/{id}/save',
       status: 403, ms: 28, requestId: 'mfz3k2a1b9x8y7kq.1'}))
-      .toEqual({TIME: '10:14:03.112', SOURCE: 'datlas', KIND: 'request', SUMMARY: 'POST /api/projects/{id}/save', STATUS: 403, MS: 28, REQ: 'mfz3…kq'});
+      .toEqual({TIME: '10:14:03.112', SOURCE: 'datlas', KIND: 'request', SUMMARY: 'POST /api/projects/{id}/save', STATUS: 403, MS: 28, REQ: '…x8y7kq.1'});
   });
 
   it('takes exactly one timeline key', () => {
@@ -119,7 +119,7 @@ describe('handlers', () => {
     const csv = await captureOutput(() => handleCapture(connect, 'show', ['cap-17'], {timeline: true}, 'csv'));
     expect(calls[1].path).toBe('/log/timeline?rule=cap-17');
     expect(csv.out[0]).toBe('TIME,SOURCE,KIND,SUMMARY,STATUS,MS,REQ');
-    expect(csv.out[1]).toMatch(/,client,click,Hit Triage \/ Filters \/ Reset,,,mfz3…kq$/);
+    expect(csv.out[1]).toMatch(/,client,click,Hit Triage \/ Filters \/ Reset,,,…x8y7kq$/);
   });
 
   it('stops a rule with a reason', async () => {

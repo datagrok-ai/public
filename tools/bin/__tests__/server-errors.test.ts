@@ -53,8 +53,9 @@ describe('formats', () => {
   });
 
   it('shortens request ids to the action', () => {
-    expect(shortRequestId('mfz3k2a1b9x8y7kq.3')).toBe('mfz3…kq');
-    expect(shortRequestId('01J9ABCDEFGHJKMNPQRSTVWX7K')).toBe('01J9…7K');
+    expect(shortRequestId('mfz3k2a1b9x8y7kq.3')).toBe('…x8y7kq.3');
+    expect(shortRequestId('01J9ABCDEFGHJKMNPQRSTX7K2QM')).toBe('…X7K2QM');
+    expect(shortRequestId('abc.12')).toBe('abc.12');
     expect(shortRequestId(null)).toBe('');
   });
 
@@ -99,7 +100,7 @@ describe('formats', () => {
     const row = occurrenceRow({time: localIso(10, 14), user: 'alice', service: 'client', signature: 'a41f9c3e', error: 'boom',
       package: 'Chem', version: '1.14.2', route: 'POST /projects/{id}/save', server: 'datlas-1', requestId: 'mfz3k2a1b9x8y7kq.2'});
     expect(row).toEqual({TIME: '10:14', USER: 'alice', SOURCE: 'client', SIG: 'a41f9c', ERROR: 'boom', PACKAGE: 'Chem',
-      VERSION: '1.14.2', ROUTE: 'POST /projects/{id}/save', SERVER: 'datlas-1', REQ: 'mfz3…kq'});
+      VERSION: '1.14.2', ROUTE: 'POST /projects/{id}/save', SERVER: 'datlas-1', REQ: '…x8y7kq.2'});
   });
 });
 

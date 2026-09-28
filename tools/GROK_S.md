@@ -474,7 +474,7 @@ it's on the server's unauthenticated allowlist.
 These commands read and change the deployment's observability state: the alerts every server
 shares, errors as query results, the logging policy with its time-boxed overrides, and capture
 rules that record one user's or group's activity for a while. Times in tables are `HH:MM` when
-today, else `MM-DD HH:MM`; request ids are shortened to `01J9…7K`. Durations (`--since`, `--for`,
+today, else `MM-DD HH:MM`; request ids are shortened to their last six characters (`…X7K2QM.3`). Durations (`--since`, `--for`,
 `--window`) are `<n>m|h|d|w`, where `m` means **minutes** (in `pull --since` it means months); a
 leading `-` is accepted (`--since -7d`). `--help` after a command (`grok s errors --help`) prints
 all of its options.

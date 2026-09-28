@@ -98,12 +98,13 @@ export function sparkline(values: any): string {
   return nums.map((v) => BLOCKS[max ? Math.round((v / max) * (BLOCKS.length - 1)) : 0]).join('');
 }
 
-/** `<id>.<n>` → `01J9…7K`: the action part, first four and last two characters. */
+/** `<id>.<n>` → `…X7K2QM.3`: the last six characters of the id (its leading ones are time), suffix kept. */
 export function shortRequestId(id: any): string {
   if (!id) return '';
   const s = String(id);
-  const action = s.includes('.') ? s.slice(0, s.indexOf('.')) : s;
-  return action.length > 8 ? `${action.slice(0, 4)}…${action.slice(-2)}` : action;
+  const dot = s.indexOf('.');
+  const action = dot < 0 ? s : s.slice(0, dot);
+  return (action.length > 6 ? `…${action.slice(-6)}` : action) + (dot < 0 ? '' : s.slice(dot));
 }
 
 /** A stack signature as the examples print it: its first six hex characters. */
