@@ -533,7 +533,7 @@ Actions the server accepts: `create | get | delete` for `users`, `groups`, `conn
 `functions`, `queries`, `scripts` (`get | delete` for `reports`), `functions.run`
 (`{name, params}`), and `files.list | get | put | delete`. For `files.put`, add
 `"source": "<local-path>"` and the CLI base64-encodes the file into `content` before sending.
-`users.delete` removes the entity record only (see "List / count / get / delete").
+`users.delete` is refused, as is `DELETE /entities/{id}` on a user or its personal group: users are blocked, never deleted (see "List / count / get / delete").
 
 ## Scripting pattern
 

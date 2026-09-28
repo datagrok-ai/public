@@ -35,6 +35,8 @@ element('gallery toolbar', {selector: '.grok-gallery-search-bar',
   description: 'the bar above a gallery: New, Refresh, the search, the view modes and the counter — the scope for its icons, which the Browse toolbar repeats'});
 element('gallery counter', {selector: '.grok-items-view-counts',
   description: 'how many items the gallery lists: "N", "shown / total" under a filter, "N of M" while only the first N are rendered'});
+element('chat input', {selector: '.grok-comments-post-input', aliases: ['chat post input'],
+  description: 'the message box of an entity\'s Chats pane: a bare textarea no input kind reaches'});
 element('chat header', {selector: '.grok-chat-header',
   description: 'the title line of the open chat thread: "Chats > <thread>"'});
 element('membership search', {selector: '.d4-user-selector-input', aliases: ['membership search input'],
@@ -48,6 +50,8 @@ element('model preview', {selector: '.d4-pm-view-preview',
   description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('grid overlay', {selector: '[name="viewer-Grid"] canvas[name="overlay"]',
   description: 'the canvas the grid draws its selection and its cursor on, and the element its keyboard handling sits on: a key pressed while the focus is on the grid\'s root instead reaches only part of it (Escape then clears the selection but not the current row)'});
+element('table search', {selector: '.d4-toolbox[caption] .d4-search input',
+  description: 'the Search box of the table view\'s toolbox: Ctrl+F on the grid shows and focuses it; Enter filters the rows it matches, Shift+Enter selects them; a number or a numeric pattern (">= 0.83") is applied to every numeric column, text to the string columns'});
 element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
   description: 'the open Dart popup menu (the last one when a submenu is open)'});
 element('cell editor', {selector: '[name="cell-editor"]', aliases: ['grid cell editor'],

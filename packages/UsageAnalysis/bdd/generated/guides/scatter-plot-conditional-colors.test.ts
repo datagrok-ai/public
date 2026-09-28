@@ -6,6 +6,7 @@ generated: features/guides/scatter-plot-conditional-colors.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/connections.js';
 import '../../bindings/grid.js';
 import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';

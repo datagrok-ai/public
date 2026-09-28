@@ -212,6 +212,9 @@ export const filterIsExactly = Then('the filter should pass exactly the rows whe
 export const filterIsExactlyCategory = Then('the filter should pass exactly the rows where {string} is {string}', (page: Page, column: string, value: string) =>
   expectFilterExactly(page, column, {eq: value}, `is ${value}`), {description: 'the table filter bit by bit: the category\'s rows pass, no other row does'});
 
+export const filterIsExactlyAnyOf = Then('the filter should pass exactly the rows where {string} is one of {string}', (page: Page, column: string, values: string) =>
+  expectFilterExactly(page, column, {in: list(values)}, `is one of ${values}`), {description: 'the table filter bit by bit: the rows of the listed values pass, no other row does; a value the column lacks fails'});
+
 export const filterIsExactlyContains = Then('the filter should pass exactly the rows where {string} contains {string}', (page: Page, column: string, text: string) =>
   expectFilterExactly(page, column, {contains: text}, `contains "${text}"`), {description: 'every row whose value contains the text passes and no other; a text no row contains fails'});
 
@@ -235,8 +238,11 @@ export const deleteSelected = When('user deletes the selected rows', (page: Page
     df.rows.removeWhereIdx((i: number) => set.has(i));
   }, null), {tier: 'api', description: 'df.rows.removeWhereIdx — the UI path is the grid\'s Delete Rows command'});
 
+/* The claim is about the table a step before it opened, and a view that is still opening has none:
+   a read that threw ended the poll, so the step failed on the gap rather than waiting it out. */
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
-  expect.poll(() => page.evaluate(() => grok.shell.t.rowCount as number), {message: 'rows in the table'}).toBe(count));
+  expect.poll(() => page.evaluate(() => grok.shell.t ? grok.shell.t.rowCount as number : 'no table is open'),
+    {message: 'rows in the table'}).toBe(count));
 
 /** The one claim about a value the column may no longer hold (the rows were deleted), so it
  * counts on its own rather than through `rowFacts`, which refuses an unknown value. */

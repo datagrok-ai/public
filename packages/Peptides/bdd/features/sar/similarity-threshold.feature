@@ -36,7 +36,7 @@ Feature: Launch SAR at different similarity thresholds
     And the "A at 2" area of grid should be painted
     And scatter plot viewer in MCL viewer should be painted
     And the "completed threshold" reading of MCL viewer should be <threshold>
-    And the "clusters" reading of Logo Summary Table viewer should be <clusters>
+    And the "clusters" reading of Logo Summary Table viewer should be between <fewest clusters> and <most clusters>
     And no rows should be selected
     When user clicks on the "A at 2" area of grid
     Then 59 rows should be selected
@@ -51,11 +51,13 @@ Feature: Launch SAR at different similarity thresholds
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+    # 96 splits the peptides into five clusters on some stands and six on others with the same code
+    # (dev and one local master stand five, another six, 2026-09-23/24); the lower thresholds agree
     Examples:
-      | threshold | clusters |
-      | 10        | 1        |
-      | 75        | 2        |
-      | 96        | 6        |
+      | threshold | fewest clusters | most clusters |
+      | 10        | 1               | 1             |
+      | 75        | 2               | 2             |
+      | 96        | 5               | 6             |
 
   Scenario: Similarity threshold 90 on all peptides preserves the analysis and its selection behavior
     When user closes all views

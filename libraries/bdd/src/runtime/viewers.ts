@@ -307,6 +307,10 @@ export function takeBalloons(page: Page): Promise<Balloon[]> {
   return evaluate(page, () => (window as any).__bdd.takeBalloons(), undefined);
 }
 
+export function putBalloons(page: Page, back: Balloon[]): Promise<void> {
+  return evaluate(page, (b) => { (window as any).__bdd.putBalloons(b); }, back);
+}
+
 // --- size and layout -----------------------------------------------------------------------------------
 
 export async function resize(page: Page, target: ElementRef, width: number | null, height: number | null): Promise<void> {

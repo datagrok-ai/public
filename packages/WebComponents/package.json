@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/webcomponents",
   "friendlyName": "WebComponents",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -9,7 +9,7 @@
   "description": "WebComponents runtime code",
   "dependencies": {
     "@datagrok-libraries/dock-spawn-dg": "workspace:^",
-    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/test": "1.4.1",
     "@datagrok-libraries/utils": "workspace:^",
     "@datagrok-libraries/webcomponents": "workspace:^",
     "cash-dom": "catalog:",

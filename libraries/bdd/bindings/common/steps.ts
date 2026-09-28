@@ -285,6 +285,78 @@ export const downloadedNotContains = Then('the downloaded file should not contai
 export const uploadDownloaded = When('user uploads the downloaded file through {element}', async (page: Page, target: ElementRef) =>
   g.chooseFile(page, target, await lastDownloaded(page)), {tier: 'ui', description: 'answers the file chooser the element opens with the file downloaded last'});
 
+// --- code editors ---------------------------------------------------------------------------------
+
+/* A CodeMirror document is not an input value: the text goes in at the caret, and it is read from
+   the editor's own document — CM5 through the instance on its root, CM6 through the view the root
+   carries — never from the rendered lines, which a long document virtualizes. */
+async function codeOf(page: Page, target: ElementRef): Promise<string> {
+  // a view keeps the editors of its other tabs in the page, hidden
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  return loc.evaluate((el: any) => {
+    const root = el.classList?.contains('CodeMirror') || el.classList?.contains('cm-editor') ? el :
+      el.querySelector('.CodeMirror, .cm-editor');
+    if (root?.CodeMirror)
+      return String(root.CodeMirror.getValue());
+    const view = root?.cmView?.view ?? root?.querySelector?.('.cm-content')?.cmView?.view;
+    if (view)
+      return String(view.state.doc.toString());
+    return String(root?.textContent ?? el.textContent ?? '');
+  });
+}
+
+export const replaceCode = When('user replaces the code of {element} with {string}', async (page: Page, target: ElementRef, text: string) => {
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await loc.click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Delete');
+    await page.keyboard.type(text);
+    if ((await codeOf(page, target)).trim() === text.trim())
+      return;
+  }
+  expect((await codeOf(page, target)).trim(), `the code of ${target.phrase} after it was replaced`).toBe(text.trim());
+}, {tier: 'ui', description: 'select-all and type at the caret, the document read back (retyped once when an editor mounting late ate keys)'});
+
+export const holdsCode = Then('{element} should hold the code {string}', async (page: Page, target: ElementRef, text: string) => {
+  await expect.poll(async () => (await codeOf(page, target)).trim(), {message: `the code of ${target.phrase}`}).toBe(text.trim());
+}, {description: 'the editor document, exactly (trimmed)'});
+
+export const appendToEditor = When('user appends {string} to {element}', async (page: Page, text: string, target: ElementRef) => {
+  const editor = (await locate(page, target)).filter({visible: true}).first();
+  await editor.click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type(text);
+  await expect.poll(() => codeOf(page, target), {message: `the code of ${target.phrase} after the text was appended`}).toContain(text);
+}, {tier: 'ui', description: 'a new last line typed into a code editor, so its dirty flag sees a real edit'});
+
+/** A Dart text area (`ui.textInput` multiline) is a bare `<textarea class="ui-input-editor">` that
+ * no input kind reaches, and its text is its value. */
+export const textAreaHolds = Then('the text area of {element} should hold {string}', async (page: Page, target: ElementRef, text: string) => {
+  const area = (await locate(page, target)).first().locator('textarea').first();
+  await expect(area, `the text area of ${target.phrase}`).toHaveValue(text, {timeout: 15000});
+}, {description: 'the value of the first <textarea> inside the element'});
+
+// --- the browser's own dialogs --------------------------------------------------------------------
+
+const alerts = new WeakMap<Page, string[]>();
+
+export const recordAlerts = Given('browser alerts are recorded', async (page: Page) => {
+  if (alerts.has(page))
+    return;
+  const list: string[] = [];
+  alerts.set(page, list);
+  page.on('dialog', async (dialog) => {
+    list.push(dialog.message());
+    await dialog.dismiss().catch(() => undefined);
+  });
+}, {tier: 'api', description: 'every native alert the page raises from now on is recorded and dismissed (an undismissed one blocks every later step)'});
+
+export const alertShown = Then('the browser should have shown the alert {string}', async (page: Page, text: string) => {
+  await expect.poll(() => alerts.get(page) ?? [], {message: 'the native alerts the page raised'}).toContain(text);
+});
+
 export const computedStyleContains = Then('the {string} style of {element} should contain {string}', async (page: Page, property: string, target: ElementRef, text: string) => {
   const loc = (await locate(page, target)).filter({visible: true}).first();
   await expect.poll(() => loc.evaluate((e, p) => getComputedStyle(e).getPropertyValue(p), property),

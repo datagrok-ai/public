@@ -1,5 +1,5 @@
 @journey @realizes:chem.cp.panels-chemistry-mixture
-Feature: Mixture, synthon-search and highlight panes of the Chem context panel
+Feature: Mixture and highlight panes of the Chem context panel
   On test_mixtures the Chemistry group of a mixture cell offers Mixture and MixtureTree and none of
   the molecular panes; Mixture draws its component table, MixtureTree names the mixfile version and
   gives each component a pane of its own. On smiles the same group offers the molecular panes and
@@ -8,9 +8,8 @@ Feature: Mixture, synthon-search and highlight panes of the Chem context panel
   On SMILES_highlighted a benzene sketched into the Highlight pane of the isosmiles column puts the
   highlight colour into the grid cell, which did not carry it before.
 
-  The Gasteiger Partial Charges pane draws its charge map for a SMILES cell and for a V2000 cell.
-  The two Synthon Search panes are offered with their Space, Max hits, Include synthons and Cutoff
-  controls; the hits they come back with are panels/synthon-search, a `@full-stand` feature.
+  Not here: the Gasteiger Partial Charges and Synthon Search panes, both server-side Python
+  scripts — see the bdd library's CLAUDE.md, "What never becomes a feature".
 
   Background:
     Given user is logged in
@@ -62,21 +61,3 @@ Feature: Mixture, synthon-search and highlight panes of the Chem context panel
     And "chloroform" pane in "MixtureTree" pane in context panel should be visible
     And "isoamyl alcohol" pane in "MixtureTree" pane in context panel should be visible
     And no errors should have been logged
-
-  @realizes:chem.cp.panels-synthon-search
-  Scenario: The Databases group offers the two Synthon Search panes with their controls
-    Given user opens smiles dataset
-    When user clicks on the "cell 2 of canonical_smiles" area of grid
-    And user expands Databases accordion header in context panel
-    And user expands "Synthon Search" accordion header in "Databases" pane in context panel
-    Then "Substructure Search" pane in "Synthon Search" pane in context panel should be visible
-    And "Similarity Search" pane in "Synthon Search" pane in context panel should be visible
-    When user expands "Substructure Search" accordion header in "Synthon Search" pane in context panel
-    Then "Space" choice input in "Substructure Search" pane in context panel should have the value "Syntons_5567.csv"
-    And "Max hits" number input in "Substructure Search" pane in context panel should have the value "100"
-    And "Include synthons" checkbox in "Substructure Search" pane in context panel should be unchecked
-    And "Substructure Search" pane in "Synthon Search" pane in context panel should not contain the text "No synthon spaces found in synthon-data/"
-    When user expands "Similarity Search" accordion header in "Synthon Search" pane in context panel
-    Then "Cutoff" slider in "Similarity Search" pane in context panel should have the value "0.5"
-    And no errors should have been logged
-

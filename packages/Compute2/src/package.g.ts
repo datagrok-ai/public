@@ -116,6 +116,24 @@ export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
 }
 
+//name: Mock Single Step Pipeline
+//description: Single-step workflow used for testing the compact Tree Wizard view.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockSingleStepPipeline(params: any) {
+  return await PackageFunctions.MockSingleStepPipeline(params);
+}
+
+//name: Mock Single Step Nested
+//description: Single-step workflow reached through a ref, used for testing the compact Tree Wizard view.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockSingleStepNested(params: any) {
+  return await PackageFunctions.MockSingleStepNested(params);
+}
+
 //tags: stress
 //input: object params 
 //output: object result

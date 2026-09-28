@@ -2,6 +2,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {CHANGED_DOT_STYLE, Mode} from './shared';
+import {PropagatedColumnsPicker} from './propagation';
 
 export type ChipEl = {root: HTMLElement; textEl: HTMLElement; dot: HTMLElement};
 type StratCard = {root: HTMLElement; icon: HTMLElement};
@@ -19,16 +20,10 @@ export interface RibbonChipState {
 
 export interface EnumeratorNavDeps {
   view: DG.View;
-  templatesInput: DG.InputBase<DG.DataFrame | null>;
-  smartsColInput: DG.InputBase<DG.Column | null>;
-  blockingColInput: DG.InputBase<DG.Column | null>;
-  rxnNameColInput: DG.InputBase<DG.Column | null>;
-  bbsInput: DG.InputBase<DG.DataFrame | null>;
-  bbColInput: DG.InputBase<DG.Column | null>;
+  templatePropagation: PropagatedColumnsPicker;
+  bbPropagation: PropagatedColumnsPicker;
+  reagentPropagation: PropagatedColumnsPicker;
   reagentsInput: DG.InputBase<DG.DataFrame | null>;
-  reagentsColInput: DG.InputBase<DG.Column | null>;
-  exclusionInput: DG.InputBase<DG.DataFrame | null>;
-  exclusionColInput: DG.InputBase<DG.Column | null>;
   numRoundsInput: DG.InputBase<number | null>;
   depthFirstInput: DG.InputBase<boolean>;
   configInfoIcon: HTMLElement;
@@ -127,18 +122,17 @@ export class EnumeratorNav {
       ui.divH([back ?? ui.div([]), next ?? ui.div([])], {classes: 'chem-enum-nav-row'});
 
     // Last addPane arg is allowDragOut, which defaults to true. One shared form per pane so the
-    // field labels align (separate forms size independently).
+    // field labels align (separate forms size independently); a propagation picker's root is one.
     this.accReactionsPane = accordion.addPane('Reactions', () =>
-      ui.divV([ui.form([this.deps.templatesInput, this.deps.smartsColInput, this.deps.blockingColInput, this.deps.rxnNameColInput]),
+      ui.divV([this.deps.templatePropagation.root,
         navRow(mkBackBtn(() => this.accCombinePane, 'How to combine'), mkNextBtn(() => this.accBbsPane, 'Building blocks'))]),
     true, null, false);
     this.accBbsPane = accordion.addPane('Building blocks', () =>
-      ui.divV([ui.form([this.deps.bbsInput, this.deps.bbColInput]),
+      ui.divV([this.deps.bbPropagation.root,
         navRow(mkBackBtn(() => this.accReactionsPane, 'Reactions'), mkNextBtn(() => this.accExtrasPane, 'Extras'))]),
     false, null, false);
-    const extrasForm = ui.form([this.deps.reagentsInput, this.deps.reagentsColInput, this.deps.exclusionInput, this.deps.exclusionColInput]);
     this.accExtrasPane = accordion.addPane('Extras', () =>
-      ui.divV([extrasForm,
+      ui.divV([this.deps.reagentPropagation.root,
         navRow(mkBackBtn(() => this.accBbsPane, 'Building blocks'), mkNextBtn(() => this.accPreviewPane, 'Preview'))]),
     false, null, false);
 

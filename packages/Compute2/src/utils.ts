@@ -8,6 +8,7 @@ import {
   PipelineInstanceRuntimeData,
   PipelineState,
   PipelineStateDynamic,
+  PipelineStateStatic,
   StepFunCallState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -138,6 +139,24 @@ export function findNextStep(uuid: string, state: PipelineState): NodeWithPath |
 
 export function findNextSubStep(state: PipelineState): NodeWithPath | undefined {
   return _findTreeNode([state], suitableForNavStep);
+}
+
+// A workflow that resolves to one script through a chain of one-child static pipelines
+// (e.g. a root that only refs another provider) is rendered by TreeWizard in compact mode.
+type SinglePipelineChain = PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData>[];
+
+export function resolveSingleStep(
+  state: PipelineState,
+): {step: StepFunCallState, chain: SinglePipelineChain} | undefined {
+  const chain: SinglePipelineChain = [];
+  let current = state;
+  while (!isFuncCallState(current)) {
+    if (!isStaticPipelineState(current) || current.isActionStep || current.steps.length !== 1)
+      return undefined;
+    chain.push(current);
+    current = current.steps[0];
+  }
+  return {step: current, chain};
 }
 
 export type PipelineWithAdd = PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData>;

@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.scatter-plot, viewers.density-plot, viewers.bar-chart, powerpack.dialogs.formula-lines]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';

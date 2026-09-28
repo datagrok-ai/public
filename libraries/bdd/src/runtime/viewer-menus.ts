@@ -47,10 +47,23 @@ export async function openContextMenuAt(page: Page, x: number, y: number): Promi
 }
 
 /** The context menu of an element: at a named hit area, else its `view` area when it reports
- * one, else its centre. Three roundtrips: the point and the arming in one, the click, the wait. */
+ * one, else its centre. Three roundtrips: the point and the arming in one, the click, the wait.
+ * A list that reflows between the point and the click (a gallery relaid out, a tree refilled) puts
+ * another element under it, whose menu opens instead: the point also arms a check of what the
+ * right-click reached, and a click that missed the element is aimed again. */
 export async function openContextMenuOf(page: Page, target: ElementRef, area?: string): Promise<Locator> {
-  const {x, y, token} = await onViewer(page, target, (el, [a, cap]) => (window as any).__bdd.menuPoint(el, a, cap), [area ?? null, MENU_SHOWN_MS()] as [string | null, number]);
-  return rightClickArmed(page, x, y, token);
+  for (let attempt = 1; ; attempt++) {
+    const {x, y, token} = await onViewer(page, target, (el, [a, cap]) => {
+      const w = window as any;
+      w.__bddMenuHit = undefined;
+      document.addEventListener('contextmenu', (e) => { w.__bddMenuHit = el.contains(e.target as Node); }, {capture: true, once: true});
+      return w.__bdd.menuPoint(el, a, cap);
+    }, [area ?? null, MENU_SHOWN_MS()] as [string | null, number]);
+    const menu = await rightClickArmed(page, x, y, token);
+    if (attempt === 3 || await page.evaluate(() => (window as any).__bddMenuHit !== false))
+      return menu;
+    await closeContextMenu(page);
+  }
 }
 
 /** A group item holds its children under its own label: the labels inside it are the children's. */

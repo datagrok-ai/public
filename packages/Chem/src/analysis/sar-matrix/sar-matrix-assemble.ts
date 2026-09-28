@@ -1,6 +1,7 @@
 import {_package} from '../../package';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
-import {ClusterDecomposition, PositionRecord} from './sar-matrix-decompose';
+import {ClusterDecomposition, positionNumber, PositionRecord} from './sar-matrix-decompose';
+import {cellPossible, FragmentLinks, LinkStages, planLink} from './sar-matrix-link';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn,
   SarMatrixRow}
   from './sar-matrix-types';
@@ -179,7 +180,7 @@ function selectRows(records: PositionRecord[], foldedPositions: string[]): RowGr
 
 /** Distinct values, most frequent first; the value itself breaks a tie so columns do not follow the
  *  order the records happened to arrive in. */
-function rankByFrequency(values: Iterable<string>): string[] {
+export function rankByFrequency(values: Iterable<string>): string[] {
   const counts = new Map<string, number>();
   for (const value of values)
     counts.set(value, (counts.get(value) ?? 0) + 1);
@@ -188,21 +189,21 @@ function rankByFrequency(values: Iterable<string>): string[] {
     .map(([value]) => value);
 }
 
-/** Distinct values at a position, most frequent first. Every value becomes a column; thin columns are
- *  surfaced by the pane's reference-point filter rather than dropped. */
-function topValues(records: PositionRecord[], position: string): string[] {
-  return rankByFrequency(records.map((r) => r.values[position]).filter((v) => v));
+/** Distinct values at a position, most frequent first. `keepBlank` where a blank means hydrogen;
+ *  fragmenting gives it the opposite sense, a core that lacks the position entirely. */
+function topValues(records: PositionRecord[], position: string, keepBlank: boolean): string[] {
+  return rankByFrequency(records.map((r) => r.values[position] ?? '').filter((v) => keepBlank || v));
 }
 
 /** Ceiling on the cells one matrix may hold. Nothing upstream bounds a single-position matrix —
  *  `MAX_SAR_CLUSTER_SIZE` gates the decomposition, and a cluster past it arrives here with no anchor
  *  — so a runaway grouping would allocate millions of cells before anything could reject them. */
-const MAX_MATRIX_CELLS = 250000;
+export const MAX_MATRIX_CELLS = 250000;
 /** Ceiling on rows; the cell ceiling then trims columns to fit around it. */
-const MAX_MATRIX_ROWS = 2000;
+export const MAX_MATRIX_ROWS = 2000;
 /** Ceiling on columns, independent of the cell budget: the pane builds a grid column per substituent,
  *  so few rows must not buy unlimited width. */
-const MAX_MATRIX_COLS = 500;
+export const MAX_MATRIX_COLS = 500;
 /** Sweep ceiling for the additive fit. It converges geometrically and reaches the tolerance in a
  *  handful of sweeps; the cap only bounds a pathologically ill-conditioned design. */
 const MAX_FIT_SWEEPS = 50;
@@ -230,7 +231,8 @@ function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molId
  *
  * This DOES drop measured compounds, unlike a plain empty-line prune: a design sharing no compound
  * with the main block is not comparable to it, and showing both in one grid implies a comparison the
- * data cannot support. What survives is one grid where every cell is measured or predictable.
+ * data cannot support. What survives is one grid where every cell is measured or predictable. A block
+ * of one row or one column compares nothing, so any block of at least two of each is preferred.
  */
 function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
   cells: SarMatrixCell[][]): void {
@@ -242,13 +244,23 @@ function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
         observedPerRoot.set(root[ri], (observedPerRoot.get(root[ri]) ?? 0) + 1);
     }
   }
+  const rowsPerRoot = new Map<number, number>();
+  const colsPerRoot = new Map<number, number>();
+  root.forEach((r, i) => {
+    const lines = i < rows.length ? rowsPerRoot : colsPerRoot;
+    lines.set(r, (lines.get(r) ?? 0) + 1);
+  });
+  const twoWay = (r: number): number => (rowsPerRoot.get(r) ?? 0) >= 2 && (colsPerRoot.get(r) ?? 0) >= 2 ? 1 : 0;
   let best = -1;
   let bestN = 0;
+  let bestTwoWay = -1;
   // Ties break on the lower root so the surviving block does not depend on iteration order.
   for (const [r, n] of observedPerRoot) {
-    if (n > bestN || (n === bestN && r < best)) {
+    const tw = twoWay(r);
+    if (tw > bestTwoWay || (tw === bestTwoWay && (n > bestN || (n === bestN && r < best)))) {
       best = r;
       bestN = n;
+      bestTwoWay = tw;
     }
   }
   const keepRows = rows.map((_row, ri) => root[ri] === best);
@@ -326,7 +338,7 @@ function boundedSeries(cluster: CoreCluster): MatchedSeries[] {
  */
 export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecules: string[],
   activities: Float32Array, predict: boolean, decomp: ClusterDecomposition | null,
-  predictUnmeasured = false, assayed?: Uint8Array): Promise<SarMatrix | null> {
+  predictUnmeasured = false, assayed?: Uint8Array, axis?: string): Promise<SarMatrix | null> {
   // Both ways into the fallback ask the same question, so the rule sits here rather than at the two
   // call sites: placeholder series have no real cores, and would read as one bare core per compound.
   const fallback = (): SarMatrix | null => cluster.requiresDecomposition ? null :
@@ -334,21 +346,17 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   if (!decomp)
     return fallback();
 
-  const activePositions = selectActivePositions(decomp.records, decomp.positions);
-  if (activePositions.length === 0)
+  // Every position but the axis folds into the row: one left out would let two compounds share a cell.
+  const columnPosition = axis ?? selectActivePositions(decomp.records, decomp.positions)[0];
+  if (columnPosition === undefined)
     return fallback();
-
-  // Richest position is the column axis; EVERY other position folds into the row identity (not just
-  // the richest few). A position left out of both axes is unconstrained, so two compounds differing
-  // only there would collide in one cell.
-  const columnPosition = activePositions[0];
   const foldedPositions = decomp.positions.filter((p) => p !== columnPosition);
 
   const refValues: {[position: string]: string} = {};
   for (const p of decomp.positions)
     refValues[p] = referenceValue(decomp.records, p);
 
-  const columnValues = topValues(decomp.records, columnPosition);
+  const columnValues = topValues(decomp.records, columnPosition, decomp.links !== undefined);
   const candidates = new Set(columnValues);
   const observed = (record: PositionRecord): string | null => {
     const value = record.values[columnPosition] ?? '';
@@ -388,7 +396,11 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
     coreSmiles: g.coreSmiles, keySmiles: g.coreSmiles, label: `Core ${i + 1}`,
     foldedValues: g.folded,
   }));
-  await buildRowKeys(rows, foldedPositions);
+  const links = decomp.links;
+  const flat = flatStages(foldedPositions);
+  await buildRowKeys(rows, links === undefined ? rows.map(() => flat) :
+    rows.map((row) => planLink(row.coreSmiles, row.foldedValues, foldedPositions, links,
+      links.sites[columnPosition] ?? [], false)));
 
   const cells: SarMatrixCell[][] = rows.map(() =>
     columns.map((): SarMatrixCell => ({kind: 'empty', value: null, molIdx: null, smiles: null})));
@@ -416,11 +428,16 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   });
   const realCount = realMols.size;
   pruneUnobservedLines(rows, columns, cells);
+  if (links !== undefined)
+    markImpossibleCells(rows, columns, cells, columnPosition, decomp.positions, links);
 
   let virtualCount = 0;
   if (predict) {
     virtualCount = fillVirtualCells(cells, rows.length, columns.length, predictUnmeasured);
-    await linkVirtualCellStructures(rows, columns, cells, refValues);
+    if (links !== undefined)
+      await linkVirtualCells(rows, columns, cells, columnPosition, decomp.positions, links);
+    else
+      await linkVirtualCellStructures(rows, columns, cells, refValues);
   }
 
   return {
@@ -433,23 +450,101 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   };
 }
 
-/**
- * Fill each row's `keySmiles` by attaching its folded substituents to the core, leaving the column
- * position open. `coreSmiles` is left untouched — the virtual-cell linker needs the fully open core.
- */
-async function buildRowKeys(rows: SarMatrixRow[], foldedPositions: string[]): Promise<void> {
-  if (foldedPositions.length === 0 || rows.length === 0)
-    return;
-  const attachIdx = foldedPositions.map((p) => Number.parseInt(p.replace(/^\D+/, ''), 10));
-  if (attachIdx.some((n) => !Number.isFinite(n)))
-    return;
-  const cores = rows.map((row) => row.coreSmiles);
-  const fragmentColumns = foldedPositions.map((p) => rows.map((row) => row.foldedValues[p] ?? ''));
-  const linked = await (await getRdKitService()).linkRGroupFragments(cores, fragmentColumns, attachIdx);
-  rows.forEach((row, i) => {
-    if (linked[i])
-      row.keySmiles = linked[i];
+/** One pass off the position names: an RDKit decomposition hangs every fragment off the core. */
+function flatStages(foldedPositions: string[]): LinkStages | null {
+  if (foldedPositions.length === 0)
+    return null;
+  const stage = Object.fromEntries(foldedPositions.map((p) => [p, [positionNumber(p)]]));
+  return Object.values(stage).some(([n]) => !Number.isFinite(n)) ? null : [stage];
+}
+
+/** Joins each target's pieces by its own plan, batching targets that share one. A target that fails a
+ *  pass is dropped: joining the next pass onto what is left would build a different compound. */
+export async function linkStaged(cores: string[], plans: (LinkStages | null)[],
+  fragmentAt: (target: number, position: string) => string): Promise<(string | null)[]> {
+  const result: (string | null)[] = cores.map(() => null);
+  const buckets = new Map<string, number[]>();
+  plans.forEach((plan, i) => {
+    if (plan === null)
+      return;
+    const key = plan.map((stage) => Object.keys(stage).sort()
+      .map((position) => `${position}:${stage[position].join('+')}`).join(',')).join('|');
+    const bucket = buckets.get(key);
+    if (bucket === undefined)
+      buckets.set(key, [i]);
+    else
+      bucket.push(i);
   });
+  if (buckets.size === 0)
+    return result;
+
+  const service = await getRdKitService();
+  for (const idxs of buckets.values()) {
+    let built: (string | null)[] = idxs.map((i) => cores[i]);
+    for (const stage of plans[idxs[0]]!) {
+      const positions = Object.keys(stage);
+      const linked = await service.linkRGroupFragments(built.map((piece, k) => piece ?? cores[idxs[k]]),
+        positions.map((p) => idxs.map((i) => fragmentAt(i, p))),
+        positions.map((p) => stage[p]));
+      built = built.map((piece, k) => piece === null ? null : (linked[k] || null));
+    }
+    idxs.forEach((i, k) => result[i] = built[k]);
+  }
+  return result;
+}
+
+/** Fills each row's `keySmiles`, leaving the axis open; `coreSmiles` stays the open core. */
+async function buildRowKeys(rows: SarMatrixRow[], plans: (LinkStages | null)[]): Promise<void> {
+  const built = await linkStaged(rows.map((row) => row.coreSmiles), plans,
+    (i, position) => rows[i].foldedValues[position] ?? '');
+  rows.forEach((row, i) => {
+    if (built[i] !== null)
+      row.keySmiles = built[i]!;
+  });
+}
+
+/** Builds each predicted cell from the core outwards, pass by pass. */
+async function linkVirtualCells(rows: SarMatrixRow[], columns: SarMatrixColumn[],
+  cells: SarMatrixCell[][], columnPosition: string, positions: string[],
+  links: FragmentLinks): Promise<void> {
+  const targets: {cell: SarMatrixCell, core: string, values: {[position: string]: string}}[] = [];
+  for (let ri = 0; ri < rows.length; ri++) {
+    for (let ci = 0; ci < columns.length; ci++) {
+      const cell = cells[ri][ci];
+      if (cell.kind === 'virtual' && cell.smiles === null) {
+        targets.push({cell, core: rows[ri].coreSmiles,
+          values: {...rows[ri].foldedValues, [columnPosition]: columns[ci].substSmiles}});
+      }
+    }
+  }
+  if (targets.length === 0)
+    return;
+  const built = await linkStaged(targets.map((t) => t.core),
+    targets.map((t) => planLink(t.core, t.values, positions, links, [], true)),
+    (i, position) => targets[i].values[position] ?? '');
+  targets.forEach((t, i) => {
+    t.cell.smiles = built[i] !== null && !built[i]!.includes('[*:') ? built[i] : null;
+  });
+}
+
+/** Marks the holes the R-groups cannot form. A row where the rule also refuses a compound that
+ *  exists is being misread, so none of its cells is marked. */
+function markImpossibleCells(rows: SarMatrixRow[], columns: SarMatrixColumn[],
+  cells: SarMatrixCell[][], columnPosition: string, positions: string[],
+  links: FragmentLinks): void {
+  for (let ri = 0; ri < rows.length; ri++) {
+    const values = {...rows[ri].foldedValues};
+    const refused = columns.map((column) => {
+      values[columnPosition] = column.substSmiles;
+      return !cellPossible(rows[ri].coreSmiles, values, positions, links);
+    });
+    if (cells[ri].some((cell, ci) => refused[ci] && cell.kind !== 'empty'))
+      continue;
+    for (let ci = 0; ci < columns.length; ci++) {
+      if (refused[ci])
+        cells[ri][ci] = {kind: 'impossible', value: null, molIdx: null, smiles: null};
+    }
+  }
 }
 
 /**

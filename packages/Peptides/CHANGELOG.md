@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Settings: The Dendrogram box reads the tree that is actually shown: the tree is a grid neighbour, a sibling of the grid rather than a child, so its close button is looked for in the whole analysis view (the box stayed unchecked on reopen after GROK-20640's narrower lookup)
 * GROK-20640: Settings: Fixed the Dendrogram box reopening unchecked while the tree is shown, and unchecking it leaving the tree in place — the tree is attached beside the grid, not docked as a viewer
 * Tests: BDD suite closed its gaps against the TestTrack cases and the old Playwright specs: similarity thresholds 10-96, a launch at the default settings, the dock layout, selection after a project reopen, Mutation Cliffs glyphs, statistics after Manual Alignment; every feature states what it does not translate
 * 1930: Recalculate monomer-position stats and scaled-activity caches when rows are added or removed

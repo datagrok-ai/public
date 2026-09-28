@@ -548,11 +548,22 @@ export const noBalloons = Then('no error or warning balloon should have been sho
  * after the gesture. */
 async function expectBalloon(page: Page, types: string[], text: string | RegExp, capMs = 5000): Promise<void> {
   const what = typeof text === 'string' ? `containing "${text}"` : `matching /${text.source}/`;
+  const matches = (b: {type: string; message: string}) => types.includes(b.type) &&
+    (typeof text === 'string' ? b.message.includes(text) : text.test(b.message));
   let shown: Awaited<ReturnType<typeof v.takeBalloons>> = [];
-  await expect.poll(async () => {
-    shown = shown.concat(await v.takeBalloons(page));
-    return shown.some((b) => types.includes(b.type) && (typeof text === 'string' ? b.message.includes(text) : text.test(b.message)));
-  }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}; balloons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`}).toBe(true);
+  try {
+    await expect.poll(async () => {
+      shown = shown.concat(await v.takeBalloons(page));
+      return shown.some(matches);
+    }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}; balloons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`}).toBe(true);
+  }
+  finally {
+    // the read is destructive, so a balloon this claim did not want goes back on the floor: a
+    // "no error or warning balloon" after a positive check must still see what landed before it
+    const others = shown.filter((b) => !matches(b));
+    if (others.length > 0)
+      await v.putBalloons(page, others);
+  }
 }
 
 export const errorBalloonText = Then('an error balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, ['error'], text),

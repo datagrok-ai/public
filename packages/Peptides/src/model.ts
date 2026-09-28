@@ -1143,11 +1143,11 @@ export class PeptidesModel {
     viewer?.close();
   }
 
-  /** The Dendrogram package attaches its tree inside the analysis grid's root, not as a viewer; the
-   * tree's own close button is the one handle on it: it is there while the tree is shown, and a click
-   * on it removes the tree the way the user would. */
+  /** The Dendrogram package attaches its tree beside the analysis grid, not as a viewer; the tree's
+   * own close button is the one handle on it: there while the tree is shown, and a click on it removes
+   * the tree the way the user would. */
   get dendrogramCloseButton(): HTMLElement | null {
-    return this.analysisView?.grid?.root.querySelector('.dendrogram-close-bttn') ?? null;
+    return this.analysisView?.root.querySelector('.dendrogram-close-bttn') ?? null;
   }
 
   /**

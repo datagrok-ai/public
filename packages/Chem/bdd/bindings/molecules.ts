@@ -79,13 +79,6 @@ export const noSameMolecule = Then('no molecule of {string} column should be the
   expect(same, `rows where "${x}" repeats the molecule of "${y}"`).toEqual([]);
 }, {description: 'no filled cell holds the molecule of the other column\'s cell in its row'});
 
-export const changedMolecules = Then('{int} molecules of {string} column should differ from {string} column', async (page: Page, count: number, x: string, y: string) => {
-  const {values: [a, b], unreadable} = await canonical(page, [x, y]);
-  expect(unreadable, 'cells RDKit could not read').toEqual([]);
-  const changed = pairs(a, b).filter((p) => p.a !== p.b).map((p) => p.row);
-  expect(changed.length, `rows where "${x}" holds another molecule than "${y}": ${changed.join(', ')}`).toBe(count);
-}, {description: 'the number of rows whose canonical SMILES differ between the two columns'});
-
 export const someMoleculesChanged = Then('some but not all molecules of {string} column should differ from {string} column', async (page: Page, x: string, y: string) => {
   const {values: [a, b], unreadable} = await canonical(page, [x, y]);
   expect(unreadable, 'cells RDKit could not read').toEqual([]);

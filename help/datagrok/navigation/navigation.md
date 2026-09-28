@@ -223,6 +223,27 @@ set them there for a group or for everyone, and lock them so members keep the
 shared value. To learn more, see
 [Managed settings](../../govern/access-control/managed-settings.md).
 
+##### Current object in the Top Menu
+
+The right end of the **Top Menu** shows your _current object_: the column,
+cell, selected rows, viewer, package, connection, or any other object you last
+clicked. Molecules, curves, and other values with their own renderer appear as
+a small drawing rather than text. Clicking a viewer shows that viewer there
+even though it does not become the current object of the
+[Context Panel](panels/panels.md#context-panel).
+
+Click the object to open a dropdown with the same panes the
+**Context Panel** shows for it: details, filters, colors, style, actions,
+viewer settings, and so on. Use them right there, then click the object again
+or anywhere else to close the dropdown. The panes you expand stay expanded the
+next time, in the dropdown and in the **Context Panel** alike.
+
+By default the dropdown is hidden while the **Context Panel** is open, since
+the panel already shows the same content and the **Top Menu** has less room
+then. Change this on the **Settings** > **Ribbon** page: **Context ribbon**
+is **Auto** (hide while the panel is open), **Always**, or **Never**.
+Administrators can set it for a group or for everyone.
+
 ### Browse
 
 **Browse** is your entry point to everything on the platform - projects,

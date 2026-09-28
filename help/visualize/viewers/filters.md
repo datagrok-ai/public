@@ -178,7 +178,34 @@ Expression filter lets you create custom search terms for any column. These term
 In the filter, you can choose the column, choose available operation and value. To add expressions you can click the `+` button, or press enter.
 Similarly to the text filter, you can control the logical operation between the expressions by using the `and/or` switch. In case of string columns, exact matches to the query will be highlighted in the column values.
 
+Each expression has its own checkbox and a row count. Clear the checkbox to switch the expression off
+without removing it. Click the count to select the rows that match the expression.
+
+<Tabs>
+<TabItem value="expressions" label="Expressions" default>
+
 ![Expression Filter](../../uploads/gifs/expression-filter.gif)
+
+</TabItem>
+<TabItem value="exact-match" label="Exact match">
+
+For exact search or filtering, use the `in` operation. Copy a list of values
+from any table or an Excel file, and paste it directly into **Value**. Datagrok automatically
+treats each line as a separate value, no manual formatting is required.
+
+![Filtering by a pasted list of values](img/expression-filter-exact-match.gif)
+
+</TabItem>
+<TabItem value="partial-match" label="Partial match">
+
+For partial search or filtering, use the `regex` operation. Copy a list of values from any
+table or Excel file and paste it directly into **Value**. Datagrok automatically converts the list
+into a regular expression, no manual formatting is required.
+
+![Filtering by a pasted list of partial values](img/expression-filter-partial-match.gif)
+
+</TabItem>
+</Tabs>
 
 ### Free-text filter mode
 
