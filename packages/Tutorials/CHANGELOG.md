@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Sticky Meta: The Types and Schemas steps looked their tree nodes up before the Sticky Meta group had loaded and listened on the caption only, so they could never complete; the entity checkbox was looked up before the dialog's rows existed
+* Tutorials: A step that waits for a click sees it even when the control stops the click's propagation (a Browse tree row); the buttons of the dialog tours are named like the other tours'
 * Differential equations: The counter was 15 for 14 steps; the Lotka-Volterra model was taken as the third library card; "Set Delta to 0.1" watched the gamma input (the added eta parameter shifted the form) and could never complete — inputs are found by caption now
 * Peptides SAR: The counter was 18 for 24 steps; seven steps completed on their own after 30 minutes with nothing done
 * Activity Cliffs: The Show only cliffs step completed on a click on any switch of the page, and its hint was captured when the step began; it now waits for the plot's own filter

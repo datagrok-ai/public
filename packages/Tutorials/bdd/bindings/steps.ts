@@ -147,3 +147,40 @@ export const stepListedTimes = Then('the tutorial step {string} should be listed
   const entries = stepEntry(page, instruction);
   await expect.poll(() => entries.count(), {message: `entries "${instruction}"`}).toBe(times);
 }, {description: 'for an instruction a tutorial repeats: its Nth entry is on the list — the tutorial has prepared that step'});
+
+/* The Sticky Meta tutorial saves an entity type and a schema under fixed names. They are removed at
+   feature end and swept when the feature starts, since a killed run never reached its end; the schema
+   goes first (a type a schema still uses is not deleted), and the server is read back after. The
+   annotated value belongs to the schema and goes with it. */
+async function removeStickyMetaFixtures(page: Page, schema: string, type: string): Promise<void> {
+  await page.evaluate(async ([schema, type]) => {
+    // the JS Schema has no id getter although deleteSchema takes the id: read it off the Dart entity
+    const idOf = (s: any) => (window as any).grok_Entity_Get_Id(s.dart);
+    for (const s of await grok.dapi.stickyMeta.getSchemas())
+      if (s.name === schema)
+        await grok.dapi.stickyMeta.deleteSchema(idOf(s));
+    for (const t of await grok.dapi.entityTypes.list())
+      if (t.name === type)
+        await grok.dapi.entityTypes.delete(t);
+  }, [schema, type]);
+  await expect.poll(() => page.evaluate(async ([schema, type]) =>
+    (await grok.dapi.stickyMeta.getSchemas()).filter((s: any) => s.name === schema).length +
+    (await grok.dapi.entityTypes.list()).filter((t: any) => t.name === type).length, [schema, type]),
+  {message: `the "${schema}" schema and the "${type}" entity type on the server`}).toBe(0);
+}
+
+export const stickyMetaFixturesGone = Given('the Sticky Meta schema {string} and entity type {string} are removed now and at feature end',
+  async (page: Page, schema: string, type: string) => {
+    await removeStickyMetaFixtures(page, schema, type);
+    atFeatureEnd(page, () => removeStickyMetaFixtures(page, schema, type));
+  }, {tier: 'api', description: 'swept before the walk and removed after it, each time read back from the server'});
+
+export const entityTypeExists = Then('the entity type {string} should exist', async (page: Page, type: string) => {
+  await expect.poll(() => page.evaluate(async (type) => (await grok.dapi.entityTypes.list()).some((t: any) => t.name === type), type),
+    {message: `the "${type}" entity type on the server`}).toBe(true);
+}, {tier: 'api', description: 'the entity type is saved on the server'});
+
+export const stickySchemaExists = Then('the Sticky Meta schema {string} should exist', async (page: Page, schema: string) => {
+  await expect.poll(() => page.evaluate(async (schema) => (await grok.dapi.stickyMeta.getSchemas()).some((s: any) => s.name === schema), schema),
+    {message: `the "${schema}" schema on the server`}).toBe(true);
+}, {tier: 'api', description: 'the schema is saved on the server'});

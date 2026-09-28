@@ -5,7 +5,8 @@ import $ from 'cash-dom';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {getPlatform, Platform} from '../../shortcuts';
 import {_package} from '../../../package';
-import {fromEvent} from 'rxjs';
+import {fromEvent, interval} from 'rxjs';
+import {filter} from 'rxjs/operators';
 import {describeElements} from '../../compute/tutorials/utils';
 import {elementClick} from '../../eda/tutorials/utils';
 
@@ -61,16 +62,24 @@ export class StickyMetaTutorial extends Tutorial {
 
     // --- Step 2: Open types node ---
     this.title('Explore entity types');
-    const platformNode = findTreeNode(grok.shell.browsePanel.mainTree, 'Platform', true);
-    const stickyMetaNode = platformNode ? findTreeNode(platformNode, 'Sticky Meta', true) : undefined;
-    const typesNode = stickyMetaNode ? findTreeNode(stickyMetaNode, 'Types', true) : undefined;
+    // the Sticky Meta group loads its children after it expands: the nodes are looked up on every poll
+    const stickyMetaNode = () => {
+      const platformNode = findTreeNode(grok.shell.browsePanel.mainTree, 'Platform', true);
+      return platformNode ? findTreeNode(platformNode, 'Sticky Meta', true) : undefined;
+    };
+    const stickyMetaChild = (name: string) => {
+      const group = stickyMetaNode();
+      // the row, not its caption: the platform opens a node on a click anywhere in it
+      return group ? findTreeNode(group, name, true)?.root ?? null : null;
+    };
+    stickyMetaNode();
 
     this.describe('Entity types define the objects you annotate, e.g., molecules. ' +
       'They are located under <b>Browse → Platform → Sticky Meta → Types.</b>');
     await this.action(
       'Open Types node',
-      elementClick(() => typesNode?.captionLabel ?? null),
-      typesNode?.captionLabel ?? null
+      elementClick(() => stickyMetaChild('Types')),
+      () => stickyMetaChild('Types')
     );
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -111,13 +120,12 @@ export class StickyMetaTutorial extends Tutorial {
 
     // --- Step 6: Open schemas node ---
     this.title('Explore schemas');
-    const schemasNode = stickyMetaNode ? findTreeNode(stickyMetaNode, 'Schemas', true) : undefined;
     this.describe('Schemas define the metadata fields and are linked to entity types. ' +
       'They are located under <b>Browse → Platform → Sticky Meta → Schemas.</b>');
     await this.action(
       'Open schemas node',
-      elementClick(() => schemasNode?.captionLabel ?? null),
-      schemasNode?.captionLabel ?? null
+      elementClick(() => stickyMetaChild('Schemas')),
+      () => stickyMetaChild('Schemas')
     );
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -172,14 +180,15 @@ export class StickyMetaTutorial extends Tutorial {
       }, 50);
     });
 
-    const moleculeItem = Array.from(selectorDlg.root.querySelectorAll('.property-grid-item-name-text'))
-      .find(x => x.textContent?.trim() === 'molecule-tutorial');
-    const checkbox = moleculeItem?.closest('.property-grid-item')?.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    // the rows are rendered after the dialog opens: the checkbox is looked up on every poll
+    const moleculeCheckbox = () => Array.from(selectorDlg.root.querySelectorAll('.property-grid-item-name-text'))
+      .find(x => x.textContent?.trim() === 'molecule-tutorial')
+      ?.closest('.property-grid-item')?.querySelector('input[type="checkbox"]') as HTMLInputElement ?? null;
 
     await this.action(
       'Select molecule-tutorial',
-      new Promise<void>((resolve) => checkbox.addEventListener('click', () => resolve(), { once: true })),
-      checkbox
+      interval(200).pipe(filter(() => moleculeCheckbox()?.checked === true)),
+      moleculeCheckbox
     );
 
     const selectorOkBtn = $(selectorDlg.root).find('button.ui-btn-ok')[0];

@@ -20,7 +20,8 @@ export function elementClick(get: () => HTMLElement | null, timeoutMs = 30000): 
     filter((el): el is HTMLElement => el != null),
     timeout(timeoutMs),
     distinctUntilChanged(),
-    switchMap((el) => fromEvent(el, 'click')),
+    // capture: a control that stops the click's propagation (a tree row) must still be seen clicked
+    switchMap((el) => fromEvent(el, 'click', {capture: true})),
     take(1),
   );
 }
