@@ -1,9 +1,20 @@
 #!/usr/bin/env node
-const argv = require('minimist')(process.argv.slice(2), {
+// minimist reads a value that starts with '-' as more flags: keep `--save-levels -audit` and
+// `--from -7d` together as `--save-levels=-audit`.
+const DASH_VALUE_FLAGS = ['--print-levels', '--post-levels', '--save-levels', '--debug-flags', '--from', '--to'];
+const rawArgs = [];
+for (const arg of process.argv.slice(2)) {
+  const prev = rawArgs[rawArgs.length - 1];
+  if (DASH_VALUE_FLAGS.includes(prev) && /^-[^-]/.test(arg))
+    rawArgs[rawArgs.length - 1] = `${prev}=${arg}`;
+  else
+    rawArgs.push(arg);
+}
+const argv = require('minimist')(rawArgs, {
   alias: {k: 'key', h: 'help', r: 'recursive'},
   boolean: ['dartium'],
-  // keep versions verbatim — minimist would coerce '1.10' to the number 1.1
-  string: ['version'],
+  // keep versions and ids verbatim — minimist would coerce '1.10' to the number 1.1
+  string: ['version', 'until-version', 'signature', 'action', 'request', 'session'],
 });
 // minimist maps `--no-retry` to `{retry: false}`, so the `args['no-retry']` checks in
 // test.ts / playwright-runner.ts never fired and `--no-retry` was silently ignored
@@ -63,7 +74,8 @@ if (command !== 'test' && command !== 'stresstest')
   delete argv.dartium;
 if (command in commands) {
   try {
-    if (argv['help']) {
+    // `grok s <command> --help` is answered by the command itself, which knows its own options
+    if (argv['help'] && !((command === 's' || command === 'server') && argv._.length > 1)) {
       console.log(help[command]);
       exitWithCode(1);
     } else if (argv.all && onPackageCommandNames.includes(command)) {

@@ -2,10 +2,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {NodeDapi, BatchRequest, BatchOperation, InternalDataSource, PackageOpResult, mapPositionalParams} from '../utils/node-dapi';
-import {createClient} from '../utils/server-client';
+import {createClient, Connect, hostList} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
 import {handleMigrate} from './server-migrate';
 import {handleDomains} from './server-domains';
+import {handleAlerts, ALERTS_USAGE} from './server-alerts';
+import {handleErrors, ERRORS_USAGE} from './server-errors';
+import {handleLogger, LOGGER_USAGE} from './server-logger';
+import {handleCapture, handleTimeline, CAPTURE_USAGE, TIMELINE_USAGE} from './server-capture';
 import {isUuid} from '../utils/migrate/registry';
 import {resolveEntity} from '../utils/migrate/walker';
 
@@ -13,7 +17,19 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token'];
+const COMMANDS = ['shares', 'domains', 'raw', 'api', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle',
+  'token', 'alerts', 'errors', 'logger', 'capture', 'timeline'];
+
+type Handler = (connect: Connect, verb: string | undefined, rest: string[], argv: any, output: OutputFormat) => Promise<boolean>;
+
+/** Commands that open their own sessions: `alerts`, `errors` and `logger` may address several `--host`s. */
+const OBSERVABILITY: Record<string, {handle: Handler; usage: string}> = {
+  alerts: {handle: handleAlerts, usage: ALERTS_USAGE},
+  errors: {handle: handleErrors, usage: ERRORS_USAGE},
+  logger: {handle: handleLogger, usage: LOGGER_USAGE},
+  capture: {handle: handleCapture, usage: CAPTURE_USAGE},
+  timeline: {handle: handleTimeline, usage: TIMELINE_USAGE},
+};
 const VERBS = ['list', 'count', 'get', 'delete'];
 
 export async function server(argv: any): Promise<boolean> {
@@ -31,7 +47,24 @@ export async function server(argv: any): Promise<boolean> {
   const recursive: boolean = !!(argv.r ?? argv.recursive);
 
   if (!entity || argv.help) {
-    console.log(HELP_SERVER);
+    console.log(OBSERVABILITY[entity ?? '']?.usage ?? HELP_SERVER);
+    return true;
+  }
+
+  const observability = OBSERVABILITY[entity];
+  if (observability) {
+    const connect: Connect = async (h) => new NodeDapi(await createClient(h, !!argv.admin));
+    try {
+      return await observability.handle(connect, verb, rest, argv, output);
+    } catch (err: any) {
+      printError(err, {verbose: !!argv.verbose});
+      process.exitCode = 1;
+      return true;
+    }
+  }
+  if (hostList(host).length > 1) {
+    printError(new Error('--host may repeat only for alerts, errors and logger'));
+    process.exitCode = 1;
     return true;
   }
 
@@ -56,7 +89,7 @@ export async function server(argv: any): Promise<boolean> {
     // Shell scripts that used to curl /users/login/dev get a token the same way
     // every other command does, whatever credential the config holds.
     if (entity === 'token') { console.log(client.token); return true; }
-    if (entity === 'raw') return await handleRaw(dapi, verb, rest, argv, output);
+    if (entity === 'raw' || entity === 'api') return await handleRaw(dapi, verb, rest, argv, output);
     if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);
     if (entity === 'sync') return await handleSync(dapi, verb, rest, argv, output);
@@ -900,7 +933,8 @@ Manage a Datagrok server from the command line.
 
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
-  (plus domains, shares, batch, raw, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
+  (plus domains, shares, batch, raw/api, describe, healthcheck, sync, alerts, errors, logger, capture,
+  timeline, pull/push/migrate/diff/bundle below)
 
 Verbs:
   list      List entities (--filter, --limit, --offset)
@@ -918,6 +952,7 @@ Special commands:
   grok s files delete <path>                          Delete a file
   grok s files put <local> <remote>                   Upload a local file
   grok s raw <METHOD> <path> [--json f | --data j]    Any API endpoint; path is API-relative (/users/current), /api prefix optional
+  grok s api <METHOD> <path> ...                      Same as raw
   grok s describe <entity|type>                       Fields of an entity type (registry record + a live sample)
   grok s healthcheck [--module <name>]                Check server + per-module health
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
@@ -980,6 +1015,27 @@ Special commands:
   grok s sync setups list --pair <pair-id>            List the named sync setups under a pair
   grok s sync setup get <setup-id>                    Inspect a setup (selections, direction, last run)
   grok s sync run <setup-id>                          Trigger a push run; prints per-item outcome
+  grok s alerts list [--status s,s|all] [--kind k] [--since 24h]
+                                                      Alerts of the deployment (default: open, acknowledged, muted)
+  grok s alerts get|ack|unmute|resolve <id|kind:key> [--reason <text>]
+  grok s alerts mute <id|kind:key> --reason <t> (--for 2h | --until <iso|HH:MM> | --until-version <v> | --forever)
+  grok s alerts detection                             Servers and the one holding the detection lease
+  grok s errors list|top [filters] [--by d1,d2,d3] [--trend hour|day]
+                                                      Error occurrences, or figures grouped by up to three dimensions
+  grok s errors show <signature> [--since 24h]        One signature: versions, users, groups, reports, alert, change
+  grok s errors diff --before a..b --after c..d       Two windows: new, gone, risen, regressed
+  grok s errors diff --since 7d --host a --host b     Signatures only on a, only on b, on both
+  grok s errors export [filters] [--by ...] --format csv|json|parquet [-O file]
+  grok s errors save "<name>" [filters] --to "<Share:path/>" [--schedule "MON 07:00"]
+                                                      A job that exports on a schedule
+  grok s logger get [server] [--scope user:<login>|group:<g>|session:<id>|package:<p>]
+  grok s logger set [server] [--debug-flags +query] [--save-levels -debug] ... [--scope s] [--for 30m] [--reason t]
+  grok s logger diff [--version n | --host a --host b] / overrides / history / revert [<version> | --override <id>]
+  grok s capture add (--user l | --group g | --package p | --everyone) [--view v] --capture <items> --for 2d --reason t
+  grok s capture list [--all] [--since 90d] / show <cap-N> [--timeline] / stop <cap-N> [--reason t]
+  grok s timeline (--action <id> | --request <id> | --session <id> | --report <n> | --rule <cap-N>)
+                                                      Clicks, requests, calls and server lines in time order
+  grok s <alerts|errors|logger|capture|timeline> --help   Full options of one command
 
 Pull / push / migrate options:
   --out <dir>           Bundle directory to write (pull; merges into an existing bundle)
@@ -1010,7 +1066,8 @@ Pull / push / migrate options:
   --keep                Migrate: keep the temporary bundle and print its path on stderr
 
 Options:
-  --host <alias|url>    Server alias from config or full URL
+  --host <alias|url>    Server alias from config or full URL; repeat it for alerts list|detection,
+                        errors list|top|diff and logger get|overrides|diff (a HOST column is added)
   --admin               Ask the server for an admin session, so the run sees entities the key's
                         own account cannot (other people's spaces). Refused unless the account
                         may start one; lasts for this command only
@@ -1061,6 +1118,13 @@ Examples:
   grok s packages versions Chem
   grok s packages share Chem Chemists --access View
   grok s raw GET /users/current
+  grok s api GET "/log/timeline?report=4820"
+  grok s alerts list --status open --host prod --host val --host sandbox
+  grok s alerts mute connection:ELN:Prod --until 2026-10-04T06:00 --reason "monthly ELN maintenance"
+  grok s errors top --since 7d --by signature,package --min-users 2 --limit 5
+  grok s errors diff --since 7d --host prod --host val
+  grok s logger set server --debug-flags +queries --scope package:Snowflake --for 30m
+  grok s capture add --user alice.mendel --view "Hit Triage" --capture clicks,requests,errors --for 2d --reason "GROK-21044"
   grok s raw POST /public/v1/functions/Sin/call --data '{"x": 1}'
   grok s describe connections
   grok s tables download MyTable -O ./my-table.csv

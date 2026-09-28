@@ -1,5 +1,59 @@
-import {NodeApiClient} from './node-dapi';
+import {NodeApiClient, NodeDapi} from './node-dapi';
 import {getServerCredentials} from './keypair';
+import {printError} from './server-output';
+
+/** Opens a session on a host alias or URL (the configured default when omitted). */
+export type Connect = (host?: string) => Promise<NodeDapi>;
+
+/** `--host` as minimist leaves it: absent, one value, or an array when repeated. */
+export function hostList(host: any): string[] {
+  if (host === undefined || host === null || host === true) return [];
+  return (Array.isArray(host) ? host : [host]).map(String);
+}
+
+/** Commands that talk to one deployment refuse a repeated `--host`. */
+export function singleHost(argv: any, command: string): string | undefined {
+  const hosts = hostList(argv.host);
+  if (hosts.length > 1)
+    throw new Error(`'grok s ${command}' takes one --host`);
+  return hosts[0];
+}
+
+/**
+ * Runs [fn] against every `--host`. With several hosts a failing one is reported on stderr and
+ * the rest still answer; the run then exits 1.
+ */
+export async function eachHost(argv: any, connect: Connect,
+                               fn: (dapi: NodeDapi, host: string, multi: boolean) => Promise<void>): Promise<void> {
+  const hosts = hostList(argv.host);
+  if (hosts.length < 2)
+    return fn(await connect(hosts[0]), hosts[0] ?? '', false);
+  let answered = 0;
+  for (const host of hosts) {
+    try {
+      await fn(await connect(host), host, true);
+      answered++;
+    }
+    catch (err: any) {
+      const apiError = err?.apiError ? {...err.apiError, error: `${host}: ${err.apiError.error}`} : undefined;
+      printError({message: `${host}: ${err?.message ?? err}`, apiError});
+      process.exitCode = 1;
+    }
+  }
+  if (!answered)
+    throw new Error('No host answered');
+}
+
+/** Rows from every `--host`, each prefixed with a [column] naming its host when there are several. */
+export async function forEachHost(argv: any, connect: Connect, fn: (dapi: NodeDapi, host: string) => Promise<any[]>,
+                                  column: string = 'HOST'): Promise<any[]> {
+  const rows: any[] = [];
+  await eachHost(argv, connect, async (dapi, host, multi) => {
+    for (const row of await fn(dapi, host))
+      rows.push(multi ? {[column]: host, ...row} : row);
+  });
+  return rows;
+}
 
 /**
  * `--admin` asks the server for an admin session, which lifts the permission filter for this run:

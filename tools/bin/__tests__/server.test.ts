@@ -1,4 +1,4 @@
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -193,5 +193,35 @@ describe('resolveManifestSources', () => {
     const result = resolveManifestSources(manifest);
     const decoded = Buffer.from((result.operations[0].params as any).content, 'base64');
     expect(decoded).toEqual(bytes);
+  });
+});
+
+describe('observability dispatch', () => {
+  it('answers `grok s alerts --help` with the command usage', async () => {
+    const {server} = await import('../commands/server');
+    const {ALERTS_USAGE} = await import('../commands/server-alerts');
+    const lines: string[] = [];
+    const log = vi.spyOn(console, 'log').mockImplementation((s: any) => { lines.push(String(s)); });
+    try {
+      expect(await server({_: ['s', 'alerts'], help: true})).toBe(true);
+    } finally {
+      log.mockRestore();
+    }
+    expect(lines).toEqual([ALERTS_USAGE]);
+  });
+
+  it('refuses a repeated --host outside alerts, errors and logger', async () => {
+    const {server} = await import('../commands/server');
+    const err: string[] = [];
+    const write = vi.spyOn(process.stderr, 'write').mockImplementation((s: any) => { err.push(String(s)); return true; });
+    const before = process.exitCode;
+    try {
+      expect(await server({_: ['s', 'users', 'list'], host: ['a', 'b']})).toBe(true);
+      expect(process.exitCode).toBe(1);
+    } finally {
+      write.mockRestore();
+      process.exitCode = before;
+    }
+    expect(err.join('')).toMatch(/--host may repeat only for alerts, errors and logger/);
   });
 });
