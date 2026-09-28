@@ -57,6 +57,7 @@ category('UserSettingsStorage', () => {
     } finally {
       grok.userSettings.delete(storageName, key);
       await grok.userSettings.flush();
+      await grok.dapi.userDataStorage.remove(storageName, key);
     }
   });
 

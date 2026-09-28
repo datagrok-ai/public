@@ -62,7 +62,9 @@ export class UserSettingsStorage {
     return api.grok_UserSettings_Delete(name, key, isPrivate);
   }
 
-  /** Sends pending changes to the server now instead of waiting for the next periodic sync. */
+  /** Sends pending changes to the server now instead of waiting for the next periodic sync.
+   * Resolves once the attempt (and any sync already in progress) finishes; a failed save is queued
+   * again for the next periodic sync, not rejected. */
   async flush(): Promise<void> {
     await api.grok_UserSettings_Flush();
   }
