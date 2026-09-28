@@ -1,6 +1,6 @@
 /// `grok s alerts ...` — the deployment's alert state (AlertsRouter, `/alerts`).
 import {NodeAlertsClient} from '../utils/node-observability';
-import {Connect, forEachHost, singleHost} from '../utils/server-client';
+import {Connect, eachHost, forEachHost, hostList, singleHost} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
 import {fmtTime, fmtDateTime, hasValue, parseDuration, parseTime, printBlock, sinceArg, truncate} from '../utils/obs-format';
 
@@ -11,7 +11,8 @@ export const ALERTS_USAGE = `Usage: grok s alerts <verb> [args]
   mute <id|kind:key> --reason <text> (--for 2h | --until <iso|HH:MM> | --until-version <v> | --forever)
   unmute <id|kind:key> [--reason <text>]
   resolve <id|kind:key> [--reason <text>]
-  detection [--host a --host b ...]
+  detection [--all] [--host a --host b ...]      live servers and those stopped or last seen within 1 h;
+                                                --all lists every server; hosts on one database print once
 Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod), which names an open,
 acknowledged or muted alert (its key exactly, else a unique key prefix).`;
 
@@ -32,11 +33,19 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
       return true;
     }
     case 'detection': {
-      const rows = await forEachHost(argv, connect, async (dapi) => {
+      const deployments: {hosts: string[]; lease: any}[] = [];
+      await eachHost(argv, connect, async (dapi, host) => {
         const lease = await dapi.alerts.detection();
-        return output === 'json' ? [lease] : detectionRows(lease);
-      }, output);
-      printOutput(output === 'json' && rows.length === 1 ? rows[0] : rows, output);
+        const same = deployments.find((d) => deploymentKey(d.lease) === deploymentKey(lease));
+        if (same) same.hosts.push(host);
+        else deployments.push({hosts: [host], lease: {...lease, servers: recentServers(lease, argv.all === true)}});
+      });
+      if (hostList(argv.host).length < 2)
+        printOutput(output === 'json' ? deployments[0].lease : detectionRows(deployments[0].lease), output);
+      else if (output === 'json')
+        printOutput(deployments.map((d) => ({hosts: d.hosts, ...d.lease})), output);
+      else
+        printOutput(deployments.flatMap((d) => detectionRows(d.lease).map((r) => ({HOST: d.hosts.join(', '), ...r}))), output);
       return true;
     }
     case 'get': {
@@ -140,11 +149,26 @@ export function alertRow(a: any): Record<string, any> {
   };
 }
 
+/**
+ * Two aliases on one database answer with the same `servers` table, so the set of server ids
+ * names the deployment (the lease holder alone is empty while nothing holds it).
+ */
+export function deploymentKey(lease: any): string {
+  const servers: any[] = Array.isArray(lease?.servers) ? lease.servers : [];
+  return servers.map((s) => String(s?.id)).sort().join(',');
+}
+
+/** Live servers, and those that stopped or were last seen within the hour; every row with [all]. */
+export function recentServers(lease: any, all: boolean, now: number = Date.now()): any[] {
+  const servers: any[] = Array.isArray(lease?.servers) ? lease.servers : [];
+  return all ? servers : servers.filter((s) => s?.live || now - Date.parse(s?.stoppedAt ?? s?.lastSeen) <= 3600000);
+}
+
 export function detectionRows(lease: any): Record<string, any>[] {
   const servers: any[] = Array.isArray(lease?.servers) ? lease.servers : [];
   return servers.map((s) => ({
     SERVER: s?.name ?? '',
-    HOST: s?.host ?? '',
+    'HOST NAME': s?.host ?? '',
     VERSION: s?.version ?? '',
     'LAST SEEN': fmtTime(s?.lastSeen),
     LIVE: s?.live ? 'yes' : 'no',

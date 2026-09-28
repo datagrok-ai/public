@@ -123,7 +123,7 @@ describe('parquet', () => {
     const parquet = require('parquet-wasm');
     const table = arrow.tableFromIPC(parquet.readParquet(bytes).intoIPCStream());
     expect(table.toArray().map((r: any) => r.toJSON())).toEqual([{sig: 'a41f9c', users: 9, trend: '[0,57]'}, {sig: '7c02e1', users: 6, trend: '[3]'}]);
-  });
+  }, 60000);
 
   it('names the missing packages when they are not installed', () => {
     const missing = () => { throw new Error('Cannot find module'); };

@@ -1,5 +1,5 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {handleAlerts, muteBody, alertRow, detectionRows} from '../commands/server-alerts';
+import {handleAlerts, muteBody, alertRow, detectionRows, recentServers, deploymentKey} from '../commands/server-alerts';
 import {hostList, singleHost} from '../utils/server-client';
 import {mockConnect, captureOutput, localIso, apiError} from './obs-helpers';
 
@@ -47,7 +47,21 @@ describe('rows', () => {
       {id: 'S2', name: 'datlas-2', host: 'h2', version: '1.28.3', lastSeen: localIso(10, 8), live: true, eligible: true},
     ]});
     expect(rows.map((r) => [r.SERVER, r.LIVE, r.OWNER])).toEqual([['datlas-1', 'no', ''], ['datlas-2', 'yes', '*']]);
-    expect(Object.keys(rows[0])).toEqual(['SERVER', 'HOST', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
+    expect(Object.keys(rows[0])).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
+  });
+
+  it('keeps live servers and those gone within the hour unless --all', () => {
+    const now = Date.parse('2026-10-01T10:00:00Z');
+    const lease = {servers: [
+      {id: 'L', live: true, lastSeen: '2026-09-01T00:00:00Z'},
+      {id: 'S', live: false, stoppedAt: '2026-10-01T09:30:00Z', lastSeen: '2026-10-01T09:30:00Z'},
+      {id: 'C', live: false, lastSeen: '2026-10-01T09:10:00Z'},
+      {id: 'OLD', live: false, stoppedAt: '2026-09-30T09:00:00Z', lastSeen: '2026-10-01T09:59:00Z'},
+      {id: 'GONE', live: false, lastSeen: '2026-09-20T00:00:00Z'},
+    ]};
+    expect(recentServers(lease, false, now).map((s) => s.id)).toEqual(['L', 'S', 'C']);
+    expect(recentServers(lease, true, now).length).toBe(5);
+    expect(deploymentKey({servers: [{id: 'b'}, {id: 'a'}]})).toBe(deploymentKey({holder: 'x', servers: [{id: 'a'}, {id: 'b'}]}));
   });
 });
 
@@ -134,6 +148,17 @@ describe('handleAlerts', () => {
     const {out} = await captureOutput(() => handleAlerts(connect, 'detection', [], {}, 'table'));
     expect(calls[0].path).toBe('/alerts/detection');
     expect(out[2].trimEnd()).toMatch(/^datlas-1\s+h1\s+1\.28\.3\s+09:29\s+yes\s+yes\s+\*$/);
+  });
+
+  it('names rows by --host alias and prints a shared database once', async () => {
+    const server = (id: string, name: string) => ({id, name, host: 'pc-alex2', version: '1.28.3', lastSeen: localIso(9, 29), live: true, eligible: true});
+    const shared = {holder: 'S1', servers: [server('S1', 'datlas-1'), server('S2', 'datlas-2')]};
+    const {connect} = mockConnect((_m, _p, _b, host) => host === 'c' ? {holder: 'S9', servers: [server('S9', 'datlas-9')]} : shared);
+    const {out} = await captureOutput(() => handleAlerts(connect, 'detection', [], {host: ['a', 'b', 'c']}, 'table'));
+    expect(out[0].trimEnd().split(/\s{2,}/)).toEqual(['HOST', 'SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
+    expect(out.slice(2).map((l) => l.split(/\s{2,}/).slice(0, 2))).toEqual([['a, b', 'datlas-1'], ['a, b', 'datlas-2'], ['c', 'datlas-9']]);
+    const json = await captureOutput(() => handleAlerts(connect, 'detection', [], {host: ['a', 'b', 'c']}, 'json'));
+    expect(JSON.parse(json.out.join('\n')).map((d: any) => d.hosts)).toEqual([['a', 'b'], ['c']]);
   });
 
   it('answers an unknown verb with the usage', async () => {

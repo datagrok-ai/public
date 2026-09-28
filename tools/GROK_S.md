@@ -492,6 +492,7 @@ grok s alerts mute error-incident:7c02e1 --until 14:00 --reason "hotfix deployin
 grok s alerts unmute connection:ELN:Prod
 grok s alerts resolve report:4820 --reason "duplicate of 4819"
 grok s alerts detection                                   # servers, liveness, and which one holds detection
+grok s alerts detection --all --host prod --host val      # every server row, stopped ones included
 ```
 
 `list` prints `KIND KEY SEV AUDIENCE STATUS OPENED BY SUMMARY`, where `BY` is the server that
@@ -502,8 +503,10 @@ may itself contain colons: `connection:ELN:Prod` is kind `connection`, key `ELN:
 is looked up among the open, acknowledged and muted alerts (the key exactly, else a unique key
 prefix) before the alert is addressed by its id; no match, or several, exits 1 (the several are
 listed so one can be picked by id).
-`detection` prints `SERVER HOST VERSION LAST SEEN LIVE ELIGIBLE OWNER`, with `*` on the lease
-holder. Needs the `ManageAlerts` permission.
+`detection` prints `SERVER HOST NAME VERSION LAST SEEN LIVE ELIGIBLE OWNER`, with `*` on the lease
+holder: live servers, and those that stopped or were last seen within the last hour (`--all` for
+every row). With several `--host`s the `HOST` column is the alias as typed, and aliases that reach
+the same database (the same set of server ids) print once, as `HOST a, b`. Needs the `ManageAlerts` permission.
 
 ### Errors
 
