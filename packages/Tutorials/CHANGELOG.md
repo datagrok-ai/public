@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Data Connectors: The counter was 12 for 11 steps; the connection step named the menu item "Add connection..." — it is "New connection..."
 * Sticky Meta: The Types and Schemas steps looked their tree nodes up before the Sticky Meta group had loaded and listened on the caption only, so they could never complete; the entity checkbox was looked up before the dialog's rows existed
 * Tutorials: A step that waits for a click sees it even when the control stops the click's propagation (a Browse tree row); the buttons of the dialog tours are named like the other tours'
 * Differential equations: The counter was 15 for 14 steps; the Lotka-Volterra model was taken as the third library card; "Set Delta to 0.1" watched the gamma input (the added eta parameter shifted the form) and could never complete — inputs are found by caption now

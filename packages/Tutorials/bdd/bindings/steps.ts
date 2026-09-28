@@ -184,3 +184,31 @@ export const stickySchemaExists = Then('the Sticky Meta schema {string} should e
   await expect.poll(() => page.evaluate(async (schema) => (await grok.dapi.stickyMeta.getSchemas()).some((s: any) => s.name === schema), schema),
     {message: `the "${schema}" schema on the server`}).toBe(true);
 }, {tier: 'api', description: 'the schema is saved on the server'});
+
+/* The Data Connectors tutorial saves a connection and a query under fixed names that learners share: on
+   a stand where people took the tutorial by hand there are "Starbucks" connections of other users. Only
+   the running user's own are removed — the query first, then its connection — now and at feature end. */
+async function removeOwnConnection(page: Page, connection: string, query: string): Promise<void> {
+  await page.evaluate(async ([connection, query]) => {
+    const me = (await grok.dapi.users.current()).id;
+    const mine = (e: any) => e.author?.id === me;
+    for (const q of await grok.dapi.queries.list())
+      if ((q.friendlyName === query || q.name === query) && mine(q))
+        await grok.dapi.queries.delete(q);
+    for (const c of await grok.dapi.connections.list())
+      if ((c.friendlyName === connection || c.name === connection) && mine(c))
+        await grok.dapi.connections.delete(c);
+  }, [connection, query]);
+  await expect.poll(() => page.evaluate(async ([connection, query]) => {
+    const me = (await grok.dapi.users.current()).id;
+    const mine = (e: any) => e.author?.id === me;
+    return (await grok.dapi.queries.list()).filter((q: any) => (q.friendlyName === query || q.name === query) && mine(q)).length +
+      (await grok.dapi.connections.list()).filter((c: any) => (c.friendlyName === connection || c.name === connection) && mine(c)).length;
+  }, [connection, query]), {message: `the user's own "${connection}" connection and "${query}" query`, timeout: pollMs(30000)}).toBe(0);
+}
+
+export const ownConnectionGone = Given('the user\'s own connection {string} and query {string} are removed now and at feature end',
+  async (page: Page, connection: string, query: string) => {
+    await removeOwnConnection(page, connection, query);
+    atFeatureEnd(page, () => removeOwnConnection(page, connection, query));
+  }, {tier: 'api', description: 'only what the running user authored: other users\' entities of the same name stay'});

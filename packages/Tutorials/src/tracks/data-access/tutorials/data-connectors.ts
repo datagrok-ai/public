@@ -13,7 +13,7 @@ export class DataConnectorsTutorial extends Tutorial {
   get description() {
     return 'Direct connection to data sources and databases using the connector server';
   }
-  get steps() { return 12; }
+  get steps() { return 11; }
 
   get icon() {
     return '💾🔗';
@@ -47,7 +47,7 @@ export class DataConnectorsTutorial extends Tutorial {
     })[0];
 
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
-      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
+      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "New connection..."`);
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
