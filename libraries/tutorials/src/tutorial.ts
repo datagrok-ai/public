@@ -206,6 +206,8 @@ export abstract class Tutorial extends DG.Widget {
     this.completed = !this.closed;
     const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.completed});
     await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, dataToSave);
+    if (this.completed)
+      grok.events.fireCustomEvent('tutorial-completed', {tutorial: this.name, track: this.track?.name});
     const statusMap = await this.track?.updateStatus();
 
     if (statusMap && Object.values(statusMap).every((v) => v)) {
@@ -288,6 +290,9 @@ export abstract class Tutorial extends DG.Widget {
   _addHeader(): void {
     this.progressDiv.append(this.progress);
     this.progress.max = this.steps;
+    this.progress.setAttribute('role', 'progressbar');
+    this.progress.setAttribute('aria-label', 'Tutorial progress');
+    this._updateProgressAria();
 
     this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
     this.progressDiv.append(this.progressSteps);
@@ -413,6 +418,12 @@ export abstract class Tutorial extends DG.Widget {
       instructionIndicator,
       instructionDiv,
     ], 'grok-tutorial-entry');
+    const step = this.progress.value;
+    entry.setAttribute('role', 'checkbox');
+    entry.setAttribute('aria-label', instructions);
+    entry.setAttribute('aria-checked', 'false');
+    entry.setAttribute('aria-current', 'step');
+    entry.dataset.step = `${step}`;
     descriptionDiv.innerHTML = description;
 
     if (this.currentSection) {
@@ -424,11 +435,20 @@ export abstract class Tutorial extends DG.Widget {
     }
     descriptionDiv.scrollIntoView();
 
-    const currentStep = completed instanceof Promise ? completed : this.firstEvent(completed);
-    await currentStep;
+    const done = completed instanceof Promise ? completed.then(() => true) : this.firstEvent(completed);
+    const succeeded = await done;
+    if (this.closed)
+      return;
 
-    instructionDiv.classList.add('grok-tutorial-entry-success');
-    instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
+    entry.removeAttribute('aria-current');
+    if (succeeded) {
+      instructionDiv.classList.add('grok-tutorial-entry-success');
+      instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
+      entry.setAttribute('aria-checked', 'true');
+      grok.events.fireCustomEvent('tutorial-step-completed', {tutorial: this.name, step: step, instruction: instructions});
+    }
+    else
+      entry.setAttribute('aria-invalid', 'true');
 
     if (hint != null)
       this._removeHints(this.activeHints);
@@ -455,6 +475,12 @@ export abstract class Tutorial extends DG.Widget {
     this.progress.value++;
     this.progressSteps.innerHTML = '';
     this.progressSteps.append(`Step: ${this.progress.value} of ${this.steps}`);
+    this._updateProgressAria();
+  }
+
+  _updateProgressAria(): void {
+    this.progress.setAttribute('aria-valuenow', `${this.progress.value}`);
+    this.progress.setAttribute('aria-valuemax', `${this.steps}`);
   }
 
   clearRoot(): void {
@@ -464,8 +490,10 @@ export abstract class Tutorial extends DG.Widget {
       ($(this.headerDiv).empty(), $(this.progressDiv).empty()) : $(el).empty());
   }
 
-  firstEvent(eventStream: Observable<any>): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
+  /** Resolves true when the step's event came, false when its stream failed (the step could not
+   * complete, and is shown so), and does not settle as a success when the tutorial is closed. */
+  firstEvent(eventStream: Observable<any>): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
       let eventSub: Subscription;
       const closeSub = this.onClose.subscribe(() => {
         eventSub?.unsubscribe();
@@ -475,10 +503,10 @@ export abstract class Tutorial extends DG.Widget {
         reject();
       });
       eventSub = eventStream.pipe(first()).subscribe({
-        next: () => (closeSub.unsubscribe(), resolve()),
-        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(), resolve()),
+        next: () => (closeSub.unsubscribe(), resolve(true)),
+        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(), resolve(false)),
       });
-    }).catch((_) => console.log('Closing tutorial', this.name));
+    }).catch((_) => (console.log('Closing tutorial', this.name), false));
   }
 
   /** Closes all visual components that were added when working on tutorial, e.g., table views. */
@@ -611,7 +639,10 @@ export abstract class Tutorial extends DG.Widget {
           select = this.getElement(inputRoot, 'select') as HTMLSelectElement;
       }
     });
-    if (select! == null) return;
+    if (select! == null) {
+      console.error('Tutorial step skipped: no choice input', this.name, caption);
+      return;
+    }
     const source = fromEvent(select, 'change');
     await this.action(instructions, select.value === value ?
       new Promise<void>((resolve) => resolve()) :
@@ -662,7 +693,7 @@ export abstract class Tutorial extends DG.Widget {
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
   protected async openViewByType(instructions: string, type: string,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<DG.View> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<DG.View> {
     let view: DG.View;
 
     // If the view was opened earlier, we find it and wait until it becomes current.
@@ -688,7 +719,7 @@ export abstract class Tutorial extends DG.Widget {
 
   /** Prompts the user to open a dialog with the specified title, waits for it to open and returns it. */
   protected async openDialog(instructions: string, title: string,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<DG.Dialog> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<DG.Dialog> {
     let dialog: DG.Dialog;
 
     await this.action(instructions, grok.events.onDialogShown.pipe(filter((dlg) => {
@@ -711,7 +742,7 @@ export abstract class Tutorial extends DG.Widget {
 
   /** Prompts the user to select a menu item in the context menu. */
   protected async contextMenuAction(instructions: string, label: string,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<void> {
     const commandClick = new Promise<void>((resolve, reject) => {
       const sub = grok.events.onContextMenu.subscribe((data) => {
         data.args.menu.onContextMenuItemClick.pipe(

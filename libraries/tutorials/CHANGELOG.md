@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Tutorial: Step entries carry `role="checkbox"`, `aria-checked`, `aria-current="step"` and `data-step`, the progress bar `role="progressbar"` with `aria-valuenow`/`aria-valuemax`, and the `tutorial-step-completed` / `tutorial-completed` custom events fire, so tests read the tutorial's state instead of its CSS classes
+* Tutorial: A step whose event stream fails (a control that never appeared) is no longer shown as done: it keeps `aria-checked="false"` and gets `aria-invalid`
+* `openDialog`, `openViewByType` and `contextMenuAction` accept a `HintTarget`, so their hints can follow a control that is rebuilt; `choiceInputAction` reports a missing input like its siblings
 * GROK-20416: `Tutorial.action` accepts a `HintTarget` — an element or a function that resolves one — so a step can point at a control that is rebuilt while it is up
 * Steps that could not find the control they drive no longer return silently, which skipped the step and shifted every step number after it: `textInpAction`, `buttonClickAction`, `dlgInputAction` and the column inputs now wait for the control and report which one was missing
 
