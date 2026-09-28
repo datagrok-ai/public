@@ -272,6 +272,43 @@ export const pickInColumnSelector = When('user picks {string} in the {string} co
     await settle(page, target);
   }, {tier: 'ui', description: 'the column re-picked on the chart itself, the way a user re-picks it'});
 
+/* The trellis plot's axis selectors all carry the same empty name (`div-column-combobox-`), so they
+   are told apart by the hit area each one reports (`x selector 1`, `y selector 2`). */
+export const pickInAreaSelector = When('user picks {string} in the column selector at the {string} area of {widget}',
+  async (page: Page, column: string, area: string, target: ElementRef) => {
+    const c = v.centerOf(await v.hitArea(page, target, area, true));
+    const loc = await v.viewerLocator(page, target);
+    const found = await loc.evaluate((root, p) => {
+      for (const s of Array.from(root.querySelectorAll('.d4-column-selector')) as HTMLElement[]) {
+        const r = s.getBoundingClientRect();
+        s.removeAttribute('data-bdd-selector');
+        if (p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom) {
+          s.setAttribute('data-bdd-selector', '');
+          return true;
+        }
+      }
+      return false;
+    }, c);
+    if (!found)
+      throw new Error(`${target.phrase}: no column selector lies under its "${area}" area`);
+    const selector = loc.locator('[data-bdd-selector]');
+    await guide.located(page, selector);
+    await g.openColumnSelector(page, selector, false);
+    await g.pickInColumnGrid(page, column, `the column selector at the "${area}" area of ${target.phrase}`, selector);
+    // the viewer rebuilds its selectors after a pick: read the one that now lies under the area
+    await expect.poll(async () => {
+      const at = v.centerOf(await v.hitArea(page, target, area, true));
+      return loc.evaluate((root, p) => {
+        const s = (Array.from(root.querySelectorAll('.d4-column-selector')) as HTMLElement[]).find((e) => {
+          const r = e.getBoundingClientRect();
+          return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+        });
+        return s?.querySelector('.d4-column-selector-column')?.textContent ?? 'no selector';
+      }, at);
+    }, {timeout: pollMs(5000), message: `the column selector at the "${area}" area of ${target.phrase}`}).toBe(column);
+    await settle(page, target);
+  }, {tier: 'ui', description: 'a column selector the viewer names only by its hit area'});
+
 /** The same selector, typed into and committed, with no claim about the result: a selector that
  * offers only some columns leaves the column it had, and the feature reads it afterwards. */
 export const typeInColumnSelector = When('user types {string} into the {string} column selector of {widget}',
