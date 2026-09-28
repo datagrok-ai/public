@@ -7,6 +7,7 @@ import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
+declare const DG: any;
 
 const DATA_STORAGE_KEY = 'tutorials';
 
@@ -212,3 +213,21 @@ export const ownConnectionGone = Given('the user\'s own connection {string} and 
     await removeOwnConnection(page, connection, query);
     atFeatureEnd(page, () => removeOwnConnection(page, connection, query));
   }, {tier: 'api', description: 'only what the running user authored: other users\' entities of the same name stay'});
+
+async function removeOwnProject(page: Page, project: string): Promise<void> {
+  await page.evaluate(async (project) => {
+    const me = (await grok.dapi.users.current()).id;
+    for (const p of await grok.dapi.projects.list())
+      if ((p.friendlyName === project || p.name === project) && p.author?.id === me)
+        await grok.dapi.projects.delete(p);
+  }, project);
+  await expect.poll(() => page.evaluate(async (project) => {
+    const me = (await grok.dapi.users.current()).id;
+    return (await grok.dapi.projects.list()).filter((p: any) => (p.friendlyName === project || p.name === project) && p.author?.id === me).length;
+  }, project), {message: `the user's own "${project}" project`, timeout: pollMs(30000)}).toBe(0);
+}
+
+export const ownProjectGone = Given('the user\'s own project {string} is removed now and at feature end', async (page: Page, project: string) => {
+  await removeOwnProject(page, project);
+  atFeatureEnd(page, () => removeOwnProject(page, project));
+}, {tier: 'api', description: 'only what the running user authored: other users\' dashboards of the same name stay'});

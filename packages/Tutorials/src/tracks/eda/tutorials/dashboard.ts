@@ -51,7 +51,7 @@ export class DashboardTutorial extends Tutorial {
       (el.textContent ?? '')?.startsWith('Postgres'))[0]!;
 
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
-      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
+      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "New connection..."`);
 
     await this.dlgInputAction(dlg, `Set "Name" to "${connectionName}"`, 'Name', connectionName);
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
@@ -151,9 +151,11 @@ export class DashboardTutorial extends Tutorial {
     await this.action('Close the project', grok.events.onProjectClosed.pipe(filter(isSavedProject)), null, closeProjectDescription);
 
     await DG.delay(1000);
-    const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
+    // the tree is rebuilt after Close all: the row is looked up on every poll, and a click anywhere in it counts
+    const dashboardsNode = () => ($('div.d4-tree-view-item-label')
+      .filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]?.closest('.d4-tree-view-node') as HTMLElement) ?? null;
 
-    await this.action('Open browse and click on Dashboards', elementClick(() => dashboardsLabel), dashboardsLabel);
+    await this.action('Open browse and click on Dashboards', elementClick(dashboardsNode), dashboardsNode);
 
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter(isSavedProject)), null,
