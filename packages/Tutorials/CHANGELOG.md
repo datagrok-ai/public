@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Scripting: The counter was 11 for 10 steps
 * Dashboards: The connection step named the menu item "Add connection..." — it is "New connection..."; the Dashboards step looked its tree row up before "Close all" rebuilt the tree and could miss the click
 * Data Connectors: The counter was 12 for 11 steps; the connection step named the menu item "Add connection..." — it is "New connection..."
 * Sticky Meta: The Types and Schemas steps looked their tree nodes up before the Sticky Meta group had loaded and listened on the caption only, so they could never complete; the entity checkbox was looked up before the dialog's rows existed

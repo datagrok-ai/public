@@ -637,6 +637,25 @@ async function caretAtLineStarting(page: Page, target: ElementRef, start: string
   return loc;
 }
 
+/** Text typed into a line of a code editor chosen by position — the first empty one, or the last —
+ * with the caret put at its end first. */
+export async function typeIntoEditorLine(page: Page, target: ElementRef, which: 'first empty' | 'last', text: string): Promise<void> {
+  const loc = (await locate(page, target)).first();
+  const lines = loc.locator('.cm-line, .CodeMirror-line');
+  let line: Locator | null = null;
+  await expect.poll(async () => {
+    const texts = await lines.allTextContents();
+    // CodeMirror 5 renders an empty line as a zero-width space
+    const i = which === 'last' ? texts.length - 1 : texts.findIndex((t) => t.replace(/[\s\u200b]/g, '') === '');
+    line = i < 0 ? null : lines.nth(i);
+    return i >= 0 ? 'found' : `${target.phrase} has no ${which} line; it has: ${texts.slice(0, 30).join(' | ')}`;
+  }, {message: `the ${which} line of ${target.phrase}`}).toBe('found');
+  await line!.click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(text);
+  await expect(loc, `${target.phrase} after the line was typed`).toContainText(text);
+}
+
 export async function replaceLine(page: Page, target: ElementRef, start: string, text: string): Promise<void> {
   const loc = await caretAtLineStarting(page, target, start);
   await page.keyboard.press('Shift+Home');
