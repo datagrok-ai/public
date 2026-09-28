@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
-import { filter, map } from 'rxjs/operators';
+import { filter, first, map } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval } from 'rxjs';
 
@@ -58,25 +58,23 @@ export class EmbeddedViewersTutorial extends Tutorial {
       '<b>General | Use in Trellis</b>. You can select columns by which the data should be split. ' +
       'Each cell will only show rows that belong to the corresponding categories.');
 
-    let trellis: DG.Viewer;
-    for (const v of (<DG.TableView>grok.shell.v).viewers) {
-      if (v.type === DG.VIEWER.TRELLIS_PLOT) {
-        trellis = v;
-      }
-    }
+    // the menu command adds the Trellis plot after its click completes the step
+    const trellis: DG.Viewer = (<DG.TableView>grok.shell.v).viewers.find((v) => v.type === DG.VIEWER.TRELLIS_PLOT) ??
+      await grok.events.onViewerAdded.pipe(map((data: DG.EventData) => data.args.viewer as DG.Viewer),
+        filter((v) => v.type === DG.VIEWER.TRELLIS_PLOT), first()).toPromise() as DG.Viewer;
 
     await this.action('Set a scatter plot as an inner viewer', interval(1000).pipe(
         map((_) => trellis.props.viewerType),
         filter((t: string) => t === DG.VIEWER.SCATTER_PLOT)),
-      $(trellis!.root).find('.d4-combo-popup')[0], 'This time, use the viewer type selector ' +
+      () => trellis.root.querySelector('[name="viewer selector"]') as HTMLElement, 'This time, use the viewer type selector ' +
       'in the opened Trellis plot. You can also set it from the context panel.');
 
-    await this.action('Open the inner plot properties and set Color to AGE',
+    await this.action('Set Color of the inner scatter plot to AGE',
       interval(1000).pipe(
         map((_) => (trellis.getOptions() as {[key: string]: any }).look.innerViewerLook.colorColumnName),
         filter((name: string | undefined) => name === 'AGE')),
-      $(trellis!.root).find('.grok-font-icon-settings.d4-viewer-icon')[0],
-      'Click on the gear icon to edit the scatter plot properties. ' +
-      'Find the <b>Color</b> property within the <b>Color</b> section.');
+      () => trellis.root.querySelector('[name="div-column-combobox-color"]') as HTMLElement,
+      'The properties of the inner scatter plot are shown in the strip at the top of the Trellis plot. ' +
+      'Click the <b>Color</b> selector there and choose AGE. You can also find it in the context panel.');
   }
 }

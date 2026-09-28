@@ -1333,12 +1333,17 @@ export const noHintShown = Then('no hint should be shown', async (page: Page) =>
    `grok.userSettings` keeps a map per name in the page and writes it to the server on a timer. A
    feature that changes one through the UI (a tutorial's completion record, the recent viewers) puts
    the map back as it was at feature end: the whole map, then the server read back until it holds it.
-   `grok.userSettings.flush()` makes the write happen now; a client without it is waited out. */
+   `grok.userSettings.flush()` makes the write happen now; a client without it gets the server copy
+   written directly. */
 
 async function putSettingsBack(page: Page, name: string, saved: Record<string, string>): Promise<void> {
   await page.evaluate(async ([n, map]) => {
     grok.userSettings.put(n, map);
-    await grok.userSettings.flush?.();
+    // a client without flush() writes the server copy itself instead of waiting for the timer
+    if (grok.userSettings.flush)
+      await grok.userSettings.flush();
+    else
+      await grok.dapi.userDataStorage.put(n, map, true);
   }, [name, saved] as [string, Record<string, string>]);
   await expect.poll(() => page.evaluate(async (n) => JSON.stringify(Object.entries(await grok.dapi.userDataStorage.get(n, true) ?? {})
     .sort(([a], [b]) => a.localeCompare(b))), name),

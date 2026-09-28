@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20419: Embedded Viewers: The last step pointed at a gear icon no element carries, so it showed no highlight; it now points at the inner plot's Color selector in the Trellis strip and says so, and the Trellis plot is found even when it is added after the menu click
 * Added a BDD project (`bdd/`): the tutorials walked from their cards to the congratulations, each step claimed both as ticked and as done on the platform
 * Tutorial cards carry `role="button"`, `aria-label` (the tutorial's name) and `data-status` (`done` / `not done`)
 * Scatter Plot: "Select points" and "Deselect points" completed on the same selection event, so the trailing event of a Shift-drag could tick "Deselect points" with no Escape; they now wait for a selection and for an empty one

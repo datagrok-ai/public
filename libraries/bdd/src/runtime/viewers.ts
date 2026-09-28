@@ -198,7 +198,15 @@ export async function expectReading(page: Page, target: ElementRef, name: string
   }
 }
 
-export function rememberReading(page: Page, target: ElementRef, name: string): Promise<void> {
+/** A reading a viewer adds once it has drawn (a trellis cell's signature after its inner viewer is
+ * rebuilt) is waited for like a hit area, up to 5 s, before it is remembered. */
+export async function rememberReading(page: Page, target: ElementRef, name: string): Promise<void> {
+  let last = '';
+  await expect.poll(async () => {
+    const r = await readingOf(page, target, name);
+    last = r instanceof MissingReading ? String(r) : '';
+    return last === '';
+  }, {timeout: pollMs(5000)}).toBe(true).catch(() => { throw new Error(last); });
   return onViewer(page, target, (el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
 }
 

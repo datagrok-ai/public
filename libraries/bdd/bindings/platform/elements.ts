@@ -24,6 +24,8 @@ element('column manager', {selector: '.panel-content > .d4-column-grid', aliases
   description: 'the Columns pane a click on "Columns: N" in the status bar docks: a search, a type filter and a grid of the current table\'s columns (`column_grid.dart`)'});
 element('open tableview', {selector: '.d4-table-view, .grok-table-view', aliases: ['current table view', 'table view']});
 element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestures: {click: 'mouse'}});
+element('viewer selector', {selector: '[name="viewer selector"]', aliases: ['inner viewer selector'],
+  description: 'the viewer-type combo of a viewer that hosts others (the control panel of a Trellis plot); scope it: "viewer selector in trellis plot viewer"'});
 element('gallery', {selector: '.grok-gallery-grid', aliases: ['item gallery'],
   parts: {card: '.grok-gallery-grid-item-wrapper'},
   description: 'the card gallery of the platform — the contents of a Files folder, a space, the Apps list; '

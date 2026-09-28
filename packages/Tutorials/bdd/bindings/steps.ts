@@ -97,3 +97,4 @@ export const closeTutorial = When('user closes the tutorial', async (page: Page)
   await page.locator('.tutorials-root-header button').last().click();
   await expect(page.locator('.grok-tutorial-entry'), 'the step entries of the closed tutorial').toHaveCount(0);
 }, {tier: 'ui', description: 'the Close button in the running tutorial\'s header'});
+

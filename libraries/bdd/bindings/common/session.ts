@@ -62,9 +62,10 @@ async function enterShell(page: Page, reload = false): Promise<void> {
   await homeWidgetsSettled(page);
   await installViewerRuntime(page);
   // what the stand logs or shows while booting (a broken package's autostart, "Debugging
-  // packages") is not the scenario's
+  // packages") is not the scenario's — and a boot balloon left on screen covers the top right corner
   takeErrors(page);
   await takeBalloons(page);
+  await page.evaluate(() => document.querySelectorAll('.d4-balloon').forEach((b) => b.remove()));
 }
 
 export const loggedIn = Given('user is logged in', (page: Page) => enterShell(page), {tier: 'ui', description: 'the error floor starts here: "no errors should have been logged" counts from this step'});
