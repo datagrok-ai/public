@@ -498,6 +498,7 @@ export class EnumeratorConfigForm {
       [this.config.max_num_components, 'Max # components'],
       [this.config.max_num_routes_per_compound, 'Max routes per compound'],
       [this.config.max_num_combinations_per_template, 'Max combinations per template'],
+      [this.config.max_num_products_per_step, 'Max products per step'],
     ];
     for (const [cap, label] of caps)
       if (cap === 0) return `${label} must be at least 1, or blank for no cap.`;
@@ -572,6 +573,7 @@ export class EnumeratorConfigForm {
     card.appendChild(row('Max components', fmtNum(config.max_num_components)));
     card.appendChild(row('Max combinations / template', fmtNum(config.max_num_combinations_per_template)));
     card.appendChild(row('Max routes / compound', fmtNum(config.max_num_routes_per_compound)));
+    card.appendChild(row('Max products / step', fmtNum(config.max_num_products_per_step)));
     card.appendChild(row('Keep BBs in final output', yn(config.keep_building_blocks_in_final_output)));
 
     card.appendChild(sectionTitle('Columns'));
@@ -593,6 +595,7 @@ export class EnumeratorConfigForm {
     card.appendChild(row('Metals (max)', fmtNum(ps.max_num_metals, 'any')));
     card.appendChild(row('Halogens (max)', fmtNum(ps.max_num_halogens, 'any')));
     card.appendChild(row('Aromatic atoms (max)', fmtNum(ps.max_num_aromatic_atoms, 'any')));
+    card.appendChild(row('Aromatic rings (max)', fmtNum(ps.max_num_aromatic_rings, 'any')));
     card.appendChild(row('Unsat. non-arom. bonds (max)', fmtNum(ps.max_num_unsaturated_nonaromatic_bonds, 'any')));
     card.appendChild(row('Allowed atoms',
       ps.only_these_atoms_allowed.length ? ps.only_these_atoms_allowed.join(', ') : 'any'));
