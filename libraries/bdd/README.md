@@ -29,6 +29,12 @@ function called and its result checked),
 is a package test or an `ApiTests` test, never a feature. The same goes for a TestTrack case marked
 `manual-only` or `apitest`. The rule and its reasons are in `CLAUDE.md`, "What never becomes a feature".
 
+**A stand that lacks a capability skips, it does not fail.** The suites run on CI, dev, local stands
+and public, which differ: `Given the stand runs the "Jupyter" service` and `Given the stand can reach
+the database of the "<name>" connection` are gates placed right before the first step that needs the
+capability — never at the top of a feature — so the steps before them run everywhere and fail as usual,
+and the rest of the test is reported skipped with the reason when the stand has not got it.
+
 **Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
 database rows, the layout or chat the UI makes on the side, a setting or configuration of something
 it does not own — is removed or restored at feature end and swept again at its start, and the
@@ -80,6 +86,10 @@ open are registered in `bindings/platform/datasets.ts`: `demog-1000` is
 `spgi` comes with the published `Chem` package (`grok s packages install Chem`). A sharing feature
 shares with the account in `DATAGROK_SHARING_LOGIN`, or, unset, with the `bddsecond` user the
 setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays).
+`user signs in as the second user` reloads the same page under that account and the first comes back
+at feature end (`user signs in again as the first user` earlier): the token is `DATAGROK_AUTH_TOKEN_2`
+(what a CI runner exports; its login then names the account shared with), or a password login of
+`DATAGROK_SHARING_LOGIN` with `DATAGROK_SHARING_PASSWORD`.
 
 `grok-bdd init` runs in the package directory and creates what is missing, never overwriting:
 

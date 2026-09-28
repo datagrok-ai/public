@@ -11,7 +11,7 @@ import {randomUUID} from 'node:crypto';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
 import {leave} from './args.js';
-import {failure, isWaitFailure, journeyFailure} from './failure.js';
+import {failure, isWaitFailure, journeyFailure, isSkip} from './failure.js';
 import * as guide from './guide.js';
 import {explain} from './locate.js';
 import {whileExpectedToFail} from './patience.js';
@@ -60,6 +60,9 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
         await test.step(name, options?.knownFailure ? () => whileExpectedToFail(body) : body);
       }
       catch (e) {
+        // a capability gate's skip is not a failure of the journey: Playwright reports the test as skipped
+        if (isSkip(e))
+          throw e;
         if (!options?.knownFailure)
           failed.push({name, error: e});
         return;
@@ -82,7 +85,9 @@ export async function knownFailure(body: () => Promise<void>): Promise<void> {
   try {
     await whileExpectedToFail(body);
   }
-  catch {
+  catch (e) {
+    if (isSkip(e))
+      throw e;
     return;
   }
   throw new Error(KNOWN_FAILURE_PASSED);
@@ -233,6 +238,8 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
           await body();
         }
         catch (e) {
+          if (isSkip(e))
+            throw e;
           const shown = isWaitFailure(e) && page && !page.isClosed() ? await explain(page).catch(() => '') : '';
           throw failure(`${path || 'feature'}:${line}`, title, e, shown, file ? `${file}:${line}:1` : '');
         }

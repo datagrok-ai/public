@@ -1,6 +1,6 @@
 /* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
    provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
-import {type Page} from '@playwright/test';
+import {type Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
@@ -786,6 +786,38 @@ export const connectionDataSource = Then('the {string} connection on the server 
     return list.length === 1 ? list[0] : `${list.length} connections named "${name}"`;
   }, {message: `the data source of the connection "${name}" on the server`, timeout: pollMs(30000)}).toBe(source);
 }, {tier: 'api', description: 'the provider the connection was saved under, not the tree branch it is shown in'});
+
+/* --- capability gates ---------------------------------------------------------------------------
+   The suites run on stands that differ: not every one runs Jupyter or reaches an outside database.
+   A gate goes right before the first step that needs the capability — never at the top of a feature,
+   so the steps before it run on every stand and fail as usual — and skips the rest of the test with
+   the reason when the stand has not got it. Nothing else skips. */
+
+export const standRunsService = Given('the stand runs the {string} service', async (page: Page, service: string) => {
+  const status = await page.evaluate(async (name) => {
+    const info = (await grok.dapi.admin.getServiceInfos()).find((s: any) => s.name === name);
+    return info == null ? 'absent' : info.enabled && info.status === 'Running' ? '' : `${info.enabled ? '' : 'disabled, '}${info.status}`;
+  }, service);
+  test.skip(status !== '', `the stand does not run the ${service} service (${status}) — the rest of this test needs it`);
+}, {tier: 'api', description: 'a capability gate: the service is enabled and Running, as the platform reports it, or the rest of the test is skipped with the reason'});
+
+export const standReachesConnection = Given('the stand can reach the database of the {string} connection', async (page: Page, name: string) => {
+  const answer = await page.evaluate(async (n) => {
+    const found = (await grok.dapi.connections.list({pageSize: 5000})).filter((c: any) => c.friendlyName === n || c.name === n);
+    if (found.length !== 1)
+      return `${found.length} connections named "${n}"`;
+    try {
+      return String(await (await grok.dapi.connections.find(found[0].id)).test());
+    }
+    catch (error: any) {
+      return error?.message ?? String(error);
+    }
+  }, name);
+  // the connection itself is the feature's own fixture: its absence is a failure, not a missing capability
+  if (/^\d+ connections named/.test(answer))
+    throw new Error(`the capability gate needs the connection: ${answer}`);
+  test.skip(answer.trim().toLowerCase() !== 'ok', `the stand cannot reach the database of "${name}" (${answer.slice(0, 200)}) — the rest of this test needs it`);
+}, {tier: 'api', description: 'a capability gate: the connection answers its Grok Connect test with "ok", or the rest of the test is skipped with the answer'});
 
 export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));
