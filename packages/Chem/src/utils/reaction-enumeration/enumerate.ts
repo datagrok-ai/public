@@ -10,22 +10,35 @@ export interface TemplateInput {
   smarts: string;
   blockingSmartsList: string[];
   reactionName: string;
+  /** The row's propagated values joined by KEY_SEPARATOR; routes through rows that differ here stay apart. */
+  propagated?: string;
 }
 
+/** A control character, so it never occurs in SMILES, SMARTS or typed cell text. */
+export const KEY_SEPARATOR = '\u0001';
+
 // Template rows commonly share one reaction SMARTS across different blocking-group variants, so a
-// per-round override needs the full triple to identify a row.
-function templateOverrideKey(t: {smarts: string; blockingSmartsList: string[]; reactionName: string}): string {
-  return `${t.smarts} ${t.blockingSmartsList.join(' ')} ${t.reactionName}`;
+// per-round override needs the full triple, plus the propagated values, to identify a row.
+function templateOverrideKey(t: TemplateInput): string {
+  return `${t.smarts} ${t.blockingSmartsList.join(' ')} ${t.reactionName}${KEY_SEPARATOR}${t.propagated ?? ''}`;
 }
 
 export interface RouteStep {
   reactants: string[];
   product: string;
   templateSmarts: string;
+  /** Position in EnumerateOptions.templates. */
+  templateIndex: number;
   reactionName: string;
   /** Distinct products this template formed from these reactants, including ones the product
    * filters rejected, so >1 means the step branched. */
   nProducts: number;
+  /** Positions in EnumerateOptions.buildingBlocks of the reactants bought as building blocks (not
+   * reagents or intermediates), in reactant order; null for one missing from that list. */
+  buildingBlocks: (number | null)[];
+  /** Positions in EnumerateOptions.reagents of the reactants taken from the reagents library, in
+   * reactant order; null for one missing from that list. */
+  reagents: (number | null)[];
 }
 
 export type Route = RouteStep[];
@@ -151,6 +164,7 @@ interface ParsedTemplate {
   blockingQmols: RDMol[];
   // Kept raw as well as compiled, so templateOverrideKey() can be recomputed against an override.
   blockingSmartsList: string[];
+  propagated?: string;
   numReactants: number;
 }
 
@@ -203,7 +217,7 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
   }
   return {
     index: idx, smarts: t.smarts, reactionName: t.reactionName, blockingSmartsList: t.blockingSmartsList,
-    rxn, reactantQmols, blockingQmols, numReactants: slotSmarts.length,
+    propagated: t.propagated, rxn, reactantQmols, blockingQmols, numReactants: slotSmarts.length,
   };
 }
 
@@ -307,14 +321,21 @@ export function formatRoute(route: Route): string {
   return route.map((s) => `${s.reactants.join('.')}>>${s.product}`).join(BRANCH_DELIMITER);
 }
 
+/** Template rows sharing one SMARTS draw identical routes, kept apart only when their propagated values
+ * differ. Names alone would not do: three over three steps repeat a route 27 times and fill the cap. */
+function routeKey(route: Route, templates: TemplateInput[]): string {
+  return formatRoute(route) +
+    route.map((s) => KEY_SEPARATOR + (templates[s.templateIndex].propagated ?? '')).join('');
+}
+
 /** One synthesis can be rediscovered several times — breadth-first keeps retrying earlier BB
- * combos, and a single combo can match a template's slots in more than one way. Comparing formatted
- * route strings (not object identity) catches both. Returns false once `cap` is reached, so callers
- * can stop iterating. */
-function addRouteIfNew(rec: ProductRecord, route: Route, cap: number): boolean {
+ * combos, and a single combo can match a template's slots in more than one way. Comparing route keys
+ * (not object identity) catches both. Returns false once `cap` is reached, so callers can stop
+ * iterating. */
+function addRouteIfNew(rec: ProductRecord, route: Route, cap: number, templates: TemplateInput[]): boolean {
   if (cap >= 0 && rec.routes.length >= cap) return false;
-  const key = formatRoute(route);
-  if (!rec.routes.some((r) => formatRoute(r) === key)) rec.routes.push(route);
+  const key = routeKey(route, templates);
+  if (!rec.routes.some((r) => routeKey(r, templates) === key)) rec.routes.push(route);
   return true;
 }
 
@@ -323,11 +344,8 @@ function exceedsComponentCap(numReactants: number, cap: number): boolean {
   return cap >= 0 && numReactants > cap;
 }
 
-export interface OutputStep {
-  template: string;
-  reactionName: string;
-  nProducts: number;
-}
+export type OutputStep = {template: string} &
+  Pick<RouteStep, 'templateIndex' | 'reactionName' | 'nProducts' | 'buildingBlocks' | 'reagents'>;
 
 export interface OutputRow {
   product: string;
@@ -349,22 +367,24 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
   // the same reason.
   const canonCache = new DG.LruCache<string, string | null>(1000);
   const warnedInvalid = new Set<string>();
-  const canonUnique = (list: string[], label: string): string[] => {
-    const out: string[] = [];
-    for (const s of list) {
-      let c = canonCache.get(s);
-      if (c === undefined) {
-        c = canonicalize(rdkit, s);
-        canonCache.set(s, c);
-      }
-      if (c) out.push(c);
-      else if (!warnedInvalid.has(s)) {
-        warnedInvalid.add(s);
-        warnings.push(`Skipped invalid ${label} SMILES: ${s}`);
-      }
+  const canonOne = (s: string, label: string): string | null => {
+    const c = canonCache.getOrCreate(s, (k) => canonicalize(rdkit, k));
+    if (!c && !warnedInvalid.has(s)) {
+      warnedInvalid.add(s);
+      warnings.push(`Skipped invalid ${label} SMILES: ${s}`);
     }
-    return Array.from(new Set(out));
+    return c || null;
   };
+  // Canonical SMILES → position in `list`; among rows of one molecule, the first wins.
+  const positions = (list: string[], label: string): Map<string, number> => {
+    const out = new Map<string, number>();
+    list.forEach((s, i) => {
+      const c = canonOne(s, label);
+      if (c && !out.has(c)) out.set(c, i);
+    });
+    return out;
+  };
+  const canonUnique = (list: string[], label: string): string[] => Array.from(positions(list, label).keys());
 
   const parsedTemplates: ParsedTemplate[] = [];
   for (let i = 0; i < templates.length; i++) {
@@ -386,10 +406,12 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
   const exclusion = buildExclusionQmols(rdkit, exclusionSmarts);
 
-  const uniqueBBs = canonUnique(buildingBlocks, 'BB');
+  const bbPosition = positions(buildingBlocks, 'BB');
+  const uniqueBBs = Array.from(bbPosition.keys());
 
   const reagentsMode = !!(reagents && reagents.length > 0);
-  const uniqueReagents: string[] = reagentsMode ? canonUnique(reagents!, 'reagent') : [];
+  const reagentPosition = positions(reagents ?? [], 'reagent');
+  const uniqueReagents = Array.from(reagentPosition.keys());
   if (reagentsMode && uniqueReagents.length === 0)
     warnings.push('Reagents mode: no valid reagents after canonicalization; falling back to BB-only mode.');
   const useReagents = reagentsMode && uniqueReagents.length > 0;
@@ -473,6 +495,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
       const newPool = new Map<string, ProductRecord>();
       const prevRoundProducts = round === 1 ? [] : productPools[round - 1].map((p) => p.smiles);
+      const prevRoundSet = new Set(prevRoundProducts);
       const allPriorPool = new Set<string>();
       for (let r = 0; r < round; r++) for (const p of productPools[r]) allPriorPool.add(p.smiles);
       // Built once per round: productPools only grows when a round ends. First occurrence wins.
@@ -482,6 +505,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
       const allowedTemplateKeys = roundAllowedTemplateKeys[round - 1];
       const activeBBs = roundBBs[round - 1] ?? uniqueBBs;
+      const activeBBSet = new Set(activeBBs);
       const activeReagents = roundReagents[round - 1] ?? uniqueReagents;
 
       // Pool of SMILES that can fill any reactant slot this round.
@@ -525,8 +549,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         // Standard mode uses one configuration with every slot drawing from eligibleSmiles.
         // Reagents mode builds one per "main slot" index: that slot draws from eligibleSmiles and
         // every other from the reagents library. Symmetric templates can yield duplicate combos
-        // across main-slot choices, which the product-pool dedup absorbs.
-        const slotConfigs: string[][][] = [];
+        // across main-slot choices, which the product-pool dedup absorbs. mainSlot is -1 when every
+        // slot draws from eligibleSmiles.
+        const slotConfigs: {slots: string[][]; mainSlot: number}[] = [];
 
         if (useReagents) {
           for (let mainSlot = 0; mainSlot < t.numReactants; mainSlot++) {
@@ -558,7 +583,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               }
               if (slots[i].length === 0) {otherSlotsOk = false; break;}
             }
-            if (otherSlotsOk) slotConfigs.push(slots);
+            if (otherSlotsOk) slotConfigs.push({slots, mainSlot});
           }
         } else {
           const slots: string[][] = [];
@@ -572,7 +597,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             for (let i = 0; i < t.numReactants; i++)
               if (bbMatchesSlot(mol, t.reactantQmols[i])) slots[i].push(smi);
           }
-          if (!slots.some((s) => s.length === 0)) slotConfigs.push(slots);
+          if (!slots.some((s) => s.length === 0)) slotConfigs.push({slots, mainSlot: -1});
         }
 
         if (slotConfigs.length === 0) continue;
@@ -580,7 +605,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         let totalCombos = 0;
         for (const cfg of slotConfigs) {
           let c = 1;
-          for (const s of cfg) c *= s.length;
+          for (const s of cfg.slots) c *= s.length;
           totalCombos += c;
         }
         const comboCap = max_num_combinations_per_template;
@@ -591,7 +616,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         progressContext.combosTotal = totalCombos;
 
         configLoop:
-        for (const slots of slotConfigs) {
+        for (const {slots, mainSlot} of slotConfigs) {
           for (const combo of cartesian(slots)) {
             if (isCancelled?.()) break configLoop;
             if (comboCap >= 0 && executed >= comboCap) {
@@ -608,13 +633,11 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             // mode, where the slot pools already enforce their own shape and this would reject
             // everything (reagents are in neither the BB nor the prev-round set).
             if (!useReagents && config.enumeration.depth_first && round > 1) {
-              const prevSet = new Set(prevRoundProducts);
-              const bbSet = new Set(activeBBs);
               let prevCount = 0;
               let bbCount = 0;
               for (const c of combo) {
-                if (prevSet.has(c)) prevCount++;
-                else if (bbSet.has(c)) bbCount++;
+                if (prevRoundSet.has(c)) prevCount++;
+                else if (activeBBSet.has(c)) bbCount++;
               }
               if (prevCount !== 1 || prevCount + bbCount !== combo.length) continue;
             }
@@ -694,8 +717,11 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                       reactants: combo.slice(),
                       product: productSmiles,
                       templateSmarts: t.smarts,
+                      templateIndex: t.index,
                       reactionName: t.reactionName,
                       nProducts: 0,
+                      buildingBlocks: [],
+                      reagents: [],
                     });
                   } finally {
                     try {productMol?.delete();} catch {/* ignore */}
@@ -711,29 +737,27 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               if (comboSteps.length > 0 && productCap >= 0 && nFormed > productCap)
                 productCapped++;
               else if (comboSteps.length > 0) {
-                // The synthesis history preceding this step: for each combo component that is
-                // itself a product of ANY earlier round, splice in its known route. Restricting
-                // this to round-(r-1) would drop the history of older products a step legitimately
-                // consumes, making the route look like it started from pre-formed intermediates.
-                let baseRoutes: Route[];
-                if (round === 1)
-                  baseRoutes = [[]];
-                else {
-                  const prevComponents = combo.filter((c) => allPrevProducts.has(c));
-                  if (prevComponents.length === 0) baseRoutes = [[]];
-                  else {
-                    const prevRouteLists = prevComponents.map((pc) => {
-                      const rec = allPrevProducts.get(pc);
-                      return rec && rec.routes.length > 0 ? rec.routes : [[]];
-                    });
-                    baseRoutes = [];
-                    for (const combo2 of cartesian(prevRouteLists)) {
-                      const merged: Route = [];
-                      for (const r of combo2) for (const s of r) merged.push(s);
-                      baseRoutes.push(merged);
-                    }
-                  }
+                // Depth-first and reagents mode extend only the previous step's product, so a building
+                // block an older step also makes is bought here; breadth-first can consume any earlier
+                // product. Reagents are bought too, but are not building blocks.
+                const isIntermediate = (c: string, slot: number): boolean =>
+                  useReagents || config.enumeration.depth_first ?
+                    (mainSlot < 0 || slot === mainSlot) && prevRoundSet.has(c) :
+                    allPrevProducts.has(c);
+                // null: a per-step subset can hold a building block or reagent missing from the full list.
+                const stepBBs = combo.flatMap((c, slot) => isIntermediate(c, slot) ||
+                  (mainSlot >= 0 && slot !== mainSlot) ? [] : [bbPosition.get(c) ?? null]);
+                const stepReagents = combo.flatMap((c, slot) =>
+                  mainSlot >= 0 && slot !== mainSlot ? [reagentPosition.get(c) ?? null] : []);
+                for (const s of comboSteps) {
+                  s.buildingBlocks = stepBBs;
+                  s.reagents = stepReagents;
                 }
+                // The history before this step: each combination of its intermediates' known routes.
+                const baseRoutes = Array.from(cartesian(combo.filter(isIntermediate).map((c) => {
+                  const routes = allPrevProducts.get(c)?.routes;
+                  return routes?.length ? routes : [[]];
+                })), (parts) => parts.flat());
 
                 for (const step of comboSteps) {
                   let rec = newPool.get(step.product);
@@ -742,7 +766,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                     newPool.set(step.product, rec);
                   }
                   for (const base of baseRoutes)
-                    if (!addRouteIfNew(rec, [...base, step], max_num_routes_per_compound)) break;
+                    if (!addRouteIfNew(rec, [...base, step], max_num_routes_per_compound, templates)) break;
                 }
               }
             } catch (e) {
@@ -785,7 +809,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       else {
         if (r === 0) ex.isOriginalBB = true;
         for (const route of p.routes)
-          if (!addRouteIfNew(ex, route, max_num_routes_per_compound)) break;
+          if (!addRouteIfNew(ex, route, max_num_routes_per_compound, templates)) break;
       }
     }
   }
@@ -799,9 +823,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         rows.push({
           product: rec.smiles,
           route: formatRoute(route),
-          steps: route.map((s) => ({
-            template: s.templateSmarts, reactionName: s.reactionName, nProducts: s.nProducts,
-          })),
+          steps: route.map((s) => ({template: s.templateSmarts, templateIndex: s.templateIndex,
+            reactionName: s.reactionName, nProducts: s.nProducts, buildingBlocks: s.buildingBlocks,
+            reagents: s.reagents})),
           round: rec.firstRound,
           n_routes: rec.routes.length,
         });

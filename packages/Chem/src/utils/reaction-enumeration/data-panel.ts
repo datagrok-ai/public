@@ -429,7 +429,10 @@ export class DataPanel {
       if (this.selStep === 0) this.opts.badge?.refresh(currentDf.rowCount);
       return;
     }
-    this.deps.viewerHost.mountDf(gridHost, currentDf, this.filtersOn);
+    // A step's grid only chooses rows. Its SMILES and SMARTS are read as that step's pool and template
+    // subset, so an edit there would change what the step runs while its propagated values still come
+    // from "All steps".
+    this.deps.viewerHost.mountDf(gridHost, currentDf, this.filtersOn, {readOnly: this.selStep > 0});
     this.lastMounted.set(gridHost, {identity, filtersOn: this.filtersOn});
     if (this.selStep === 0) this.opts.badge?.refresh(currentDf.rowCount);
   }

@@ -4,7 +4,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PackageFunctions} from '../../package';
-import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
+import {
+  cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig, PropagatedColumns,
+} from './config';
 import {buildCombinationLimitFields, buildProductFilterFields, fixNullableIntStepper} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {tryGetRxn} from './enumerate';
@@ -15,6 +17,7 @@ import {
   productFiltersChangedCount, roundsLabel,
 } from './shared';
 import {loadEnumerationDefaults} from './default-files';
+import {PropagatedColumnsPicker} from './propagation';
 
 function pickFile(accept: string): Promise<File | null> {
   return new Promise((resolve) => {
@@ -55,6 +58,9 @@ function makeColInput(
     opts.table = table;
     const c = table.col(preferredName);
     if (c && filter(c)) opts.value = c;
+  } else {
+    opts.table = grok.data.demo.molecules(1);
+    opts.value = null;
   }
   const inp = ui.input.column(label, opts);
   inp.setTooltip(tooltip);
@@ -143,6 +149,9 @@ export class EnumeratorConfigForm {
   private readonly bbColInput: DG.InputBase<DG.Column | null>;
   private readonly reagentsColInput: DG.InputBase<DG.Column | null>;
   private readonly exclusionColInput: DG.InputBase<DG.Column | null>;
+  private readonly templatePropagation: PropagatedColumnsPicker;
+  private readonly bbPropagation: PropagatedColumnsPicker;
+  private readonly reagentPropagation: PropagatedColumnsPicker;
 
   private combinationLimitFields: ReturnType<typeof buildCombinationLimitFields>;
   private productFilterFields: ReturnType<typeof buildProductFilterFields>;
@@ -211,6 +220,26 @@ export class EnumeratorConfigForm {
     this.bbColInput = makeColInput('SMILES column', bbsDf, this.config.enumeration.bb_smiles_column, isStringCol,
       'Column in the building blocks file that contains SMILES.', false);
 
+    this.templatePropagation = new PropagatedColumnsPicker({
+      tableInput: this.templatesInput,
+      columnInputs: [this.smartsColInput, this.blockingColInput, this.rxnNameColInput],
+      initial: this.config.enumeration.template_propagated_columns,
+      tooltip: 'Columns of the reaction templates file to propagate into the result, one column per step ' +
+        '(e.g. yield → reaction_1_yield, reaction_2_yield). A numeric column can also be aggregated over ' +
+        'the route into one column to filter on (e.g. yields multiplied into reaction_yield_multiply, or the ' +
+        'worst step in reaction_yield_min).',
+      onChanged: () => this.deps.refreshValidation(), subs: this.deps.view.subs,
+    });
+    this.bbPropagation = new PropagatedColumnsPicker({
+      tableInput: this.bbsInput, columnInputs: [this.bbColInput],
+      initial: this.config.enumeration.bb_propagated_columns,
+      tooltip: 'Columns of the building blocks file to propagate into the result, one column per building ' +
+        'block of the route, numbered step by step in reactant order (e.g. price → bb_1_price, bb_2_price). ' +
+        'A numeric column can also be aggregated over the route into one column to filter on (e.g. prices ' +
+        'summed into bb_price_sum, or the most expensive building block in bb_price_max).',
+      onChanged: () => this.deps.refreshValidation(), subs: this.deps.view.subs,
+    });
+
     this.reagentsInput = ui.input.table('Reagents file (optional)', {
       value: reagentsDf ?? undefined, nullable: true,
       tooltipText: 'Optional table of reagent SMILES. When set, switches to reagents mode: every ' +
@@ -236,6 +265,17 @@ export class EnumeratorConfigForm {
     this.exclusionColInput = makeColInput('Exclusion SMARTS column', exclusionDf,
       this.config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol,
       'Column in the exclusion substructures file that contains the SMARTS strings.', true);
+
+    this.reagentPropagation = new PropagatedColumnsPicker({
+      tableInput: this.reagentsInput, columnInputs: [this.reagentsColInput],
+      trailingInputs: [this.exclusionInput, this.exclusionColInput],
+      initial: this.config.enumeration.reagent_propagated_columns,
+      tooltip: 'Columns of the reagents file to propagate into the result, one column per reagent of the ' +
+        'route, numbered step by step in reactant order (e.g. price → reagent_1_price, reagent_2_price). ' +
+        'A numeric column can also be aggregated over the route into one column to filter on (e.g. prices ' +
+        'summed into reagent_price_sum).',
+      onChanged: () => this.deps.refreshValidation(), subs: this.deps.view.subs,
+    });
 
     // Re-bind column inputs whenever the parent table changes.
     this.deps.view.subs.push(
@@ -328,11 +368,8 @@ export class EnumeratorConfigForm {
 
     this.nav = new EnumeratorNav({
       view: this.deps.view,
-      templatesInput: this.templatesInput, smartsColInput: this.smartsColInput,
-      blockingColInput: this.blockingColInput, rxnNameColInput: this.rxnNameColInput,
-      bbsInput: this.bbsInput, bbColInput: this.bbColInput,
-      reagentsInput: this.reagentsInput, reagentsColInput: this.reagentsColInput,
-      exclusionInput: this.exclusionInput, exclusionColInput: this.exclusionColInput,
+      templatePropagation: this.templatePropagation, bbPropagation: this.bbPropagation,
+      reagentPropagation: this.reagentPropagation, reagentsInput: this.reagentsInput,
       numRoundsInput: this.numRoundsInput, depthFirstInput: this.depthFirstInput,
       configInfoIcon: this.configInfoIcon,
       getCombinationLimitInputs: () => this.combinationLimitFields.inputs,
@@ -391,6 +428,9 @@ export class EnumeratorConfigForm {
       this.reagentsColInput.value?.name ?? config.enumeration.reagent_smiles_column;
     config.products_specs.exclusion_smarts_products_file_smarts_col =
       this.exclusionColInput.value?.name ?? config.products_specs.exclusion_smarts_products_file_smarts_col;
+    config.enumeration.template_propagated_columns = this.templatePropagation.value;
+    config.enumeration.bb_propagated_columns = this.bbPropagation.value;
+    config.enumeration.reagent_propagated_columns = this.reagentPropagation.value;
     this.combinationLimitFields.syncToConfig(config);
     this.productFilterFields.syncToConfig(config);
   };
@@ -441,6 +481,9 @@ export class EnumeratorConfigForm {
         const c = xDf.col(config.products_specs.exclusion_smarts_products_file_smarts_col);
         if (c) this.setAndFire(this.exclusionColInput, c);
       }
+      this.templatePropagation.value = config.enumeration.template_propagated_columns;
+      this.bbPropagation.value = config.enumeration.bb_propagated_columns;
+      this.reagentPropagation.value = config.enumeration.reagent_propagated_columns;
       // Neither field group has a "set value" hook, so rebuild from the loaded config; the fresh
       // inputs need their own revalidation wiring.
       this.limitFieldSubs.forEach((s) => s.unsubscribe());
@@ -528,6 +571,7 @@ export class EnumeratorConfigForm {
         <li><b>Building blocks file</b> — SMILES of starting materials.</li>
         <li><b>Reagents file</b> (optional) — switches to <i>reagents mode</i>: every step uses exactly one BB or earlier-step product, with reagents in the remaining slots. Yields derivatives of each BB across steps.</li>
         <li><b>Exclusion substructures</b> (optional) — SMARTS patterns; any product matching one is rejected.</li>
+        <li><b>Propagate columns</b> (optional, under Reactions, Building blocks and Extras) — copies columns such as yield or price into the result, one column per step, building block or reagent. For a numeric column, tick sum, multiply, avg, min or max to add one column per aggregate over the route, to filter on.</li>
       </ul>
       <div style="font-weight: bold; margin-top: 8px; margin-bottom: 2px;">Enumeration modes</div>
       <ul style="margin: 0 0 6px 16px; padding: 0;">
@@ -580,8 +624,13 @@ export class EnumeratorConfigForm {
     card.appendChild(row('Reaction SMARTS', en.smarts_col));
     card.appendChild(row('Blocking SMARTS', en.reactant_blocking_groups_per_template_column));
     card.appendChild(row('Reaction name', en.reaction_name_col));
+    const fmtPropagated = (picked: PropagatedColumns): string =>
+      Object.entries(picked).map(([c, aggs]) => aggs.length ? `${c} (${aggs.join(', ')})` : c).join('; ') || 'none';
+    card.appendChild(row('Propagated template columns', fmtPropagated(en.template_propagated_columns)));
     card.appendChild(row('Building block SMILES', en.bb_smiles_column));
+    card.appendChild(row('Propagated building-block columns', fmtPropagated(en.bb_propagated_columns)));
     card.appendChild(row('Reagent SMILES', en.reagent_smiles_column));
+    card.appendChild(row('Propagated reagent columns', fmtPropagated(en.reagent_propagated_columns)));
     card.appendChild(row('Exclusion SMARTS', ps.exclusion_smarts_products_file_smarts_col));
 
     card.appendChild(sectionTitle('Product filters'));
