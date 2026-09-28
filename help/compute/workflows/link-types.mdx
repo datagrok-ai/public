@@ -710,6 +710,11 @@ Three extra operations are registered:
 - `nulls`: a column; its number of missing values (`0` for anything else).
 - `regex`: a string, a pattern and optional flags; `true` when the string
   matches.
+- `script`: a GrokScript expression string, evaluated synchronously over the
+  rule context (every alias as a variable); `undefined` when it fails or the
+  platform predates 1.28.0.
+- `scriptVerdict`: the same, with the platform's `validator:` contract:
+  `null` when the result is neither `false` nor a string, else the message.
 
 A kind is one of the platform column kinds (`numerical`,
 `numerical_no_datetime`, `categorical`, `datetime`,
@@ -823,7 +828,9 @@ the same validator links, messages and severities.
 |---|---|---|---|
 | `nullable: false` | the value is present | Missing value | The default for every input; `optional` is a synonym. As an annotation, `nullable: true` or `optional: true` removes it; a `check` cannot relax it. |
 | `min`, `max` | the value is within the bound | Must be at least / at most N | Numeric inputs. |
-| `validator` | the string matches the regex literal | Must match /pattern/flags | Only the `/pattern/flags` form; GrokScript validators are ignored. |
+| `validator` (regex literal) | the string matches `/pattern/flags` | Must match /pattern/flags | |
+| `validator` (expression) | the GrokScript expression is not `false` and not a string | the expression text, or the string it returned; "Error during validation" when it fails | Evaluated with [`scriptVerdict`](#expressions) over `value` and the step's inputs by name; platform 1.28.0 or later, skipped with one console warning on older clients. |
+| `visible` | the GrokScript expression is not `false` | none; the input is hidden through meta, which also makes it optional | A meta link, not a validator; same evaluation and platform requirement as the expression validator. |
 | `choices` | the value is in the list | Must be one of: ... | Only a literal list; function-backed choices are ignored. |
 | `type`, `semType` | the column has the kind | Column must be ... | Kinds as in [`columnIs`](#expressions). |
 | `table` | the column's name is among the table's columns | Column does not belong to the table | An annotation names a parameter, defaulting to the first dataframe input; a `check` names the table io with a query. |
@@ -832,10 +839,22 @@ the same validator links, messages and severities.
 
 An absent value satisfies every check except `nullable: false`, so the
 required check is the only one that reports a missing input. Checks on an
-input hidden via meta are suppressed like every other validator.
+input hidden via meta are suppressed like every other validator, including
+by a `visible` check on the same input.
+
+Annotation-derived expression checks see every input of the step under its
+parameter name plus `value`; a `check` link names the inputs its expression
+reads in `vars`:
+
+```
+{id: 'foo', type: 'check', io: 'solver/foo', check: {validator: 'bar > 3'}, vars: {bar: 'solver/bar'}}
+{id: 'cyl', type: 'check', io: 'solver/cyl', check: {visible: 'bar > 3'}, vars: {bar: 'solver/bar'}}
+```
 
 A `check` link takes `io` (the checked io, a query without an alias),
-`check` (the options above), and optionally `message`, `severity`
+`check` (the options above), `vars` (variable name to io query for
+expressions; `value`, `table`, `target` and `call` are reserved), and
+optionally `message`, `severity`
 (`error` by default), `when` (a JSON Logic condition over the `value` and
 `table` aliases that gates every option of the link), `debounce` (`0` by
 default, like the annotation-derived validators), `not`, `base` and

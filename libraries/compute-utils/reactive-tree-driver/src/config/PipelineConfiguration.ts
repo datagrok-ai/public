@@ -190,6 +190,8 @@ export type PipelineCheckConfiguration<P> = {
   io: P;
   /** The annotation options to check; `table` is an LQL query of the table io, without an alias. */
   check: CheckOptions;
+  /** Inputs a GrokScript expression reads, as variable name to io query; `value` is the checked io. */
+  vars?: Record<string, P>;
   when?: RuleExpr;
   message?: RuleExpr;
   severity?: CheckSeverity;

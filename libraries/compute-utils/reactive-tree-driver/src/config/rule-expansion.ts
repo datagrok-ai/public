@@ -59,21 +59,32 @@ function expandCheck(check: PipelineCheckConfiguration<LinkSpecString>): Pipelin
   const expanded = expandChecks(options, {when: check.when, message: check.message, severity: check.severity});
   if (!expanded.length)
     throw new Error(`Check ${id}: no options to check`);
-  return expanded.map(({key, needsTable, params}) => {
+  const vars = Object.entries(check.vars ?? {}).map(([alias, query]) => {
+    if ([VALUE, TABLE, TARGET, CALL].includes(alias))
+      throw new Error(`Check ${id}: vars alias ${alias} is reserved`);
+    return `${alias}:${singleQuery(id, `vars.${alias}`, query)}`;
+  });
+  return expanded.map(({key, family, needsTable, needsInputs, params}) => {
     const from = [`${VALUE}:${io}`];
     if (needsTable)
       from.push(`${TABLE}:${table}`);
-    const link: PipelineValidatorConfiguration<LinkSpecString> = {
+    if (needsInputs)
+      from.push(...vars);
+    const common = {
       id: `${id}::${key}`,
-      type: 'validator',
       from,
       to: [`${TARGET}:${io}`],
       not: check.not,
       base: check.base,
       nodePriority: check.nodePriority,
-      debounce: check.debounce ?? 0,
-      handler: ruleValidatorHandler,
       params,
+    };
+    if (family === 'meta') {
+      const link: PipelineMetaConfiguration<LinkSpecString> = {...common, type: 'meta', handler: ruleMetaHandler};
+      return link;
+    }
+    const link: PipelineValidatorConfiguration<LinkSpecString> = {
+      ...common, type: 'validator', handler: ruleValidatorHandler, debounce: check.debounce ?? 0,
     };
     return link;
   });

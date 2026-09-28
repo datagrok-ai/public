@@ -6,7 +6,7 @@ import {LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
 import {parseLinkIO} from '../config/LinkSpec';
-import {ruleValidatorHandler} from './rule-handlers';
+import {ruleMetaHandler, ruleValidatorHandler} from './rule-handlers';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE} from '../config/checks';
 
 export class DependenciesData {
@@ -107,7 +107,7 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
       const expanded = expandChecks(options);
       if (annotationValidators?.length) {
         expanded.push({
-          key: 'validators', needsTable: false, needsCall: true,
+          key: 'validators', family: 'validator', needsTable: false, needsCall: true, needsInputs: false,
           params: {
             when: {'!': {missing: [VALUE]}},
             sources: {verdicts: {validators: {input: VALUE, call: CALL}}},
@@ -115,24 +115,32 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
           },
         });
       }
-      return expanded.map(({key, needsTable, needsCall, params}) => {
+      // a GrokScript expression sees every input of the step under its own name
+      const reserved = new Set([VALUE, TABLE, TARGET, CALL]);
+      const stepInputs = ios.filter((other) => other.direction === 'input' && !reserved.has(other.id));
+      return expanded.map(({key, family, needsTable, needsCall, needsInputs, params}) => {
         const spec: LinkSpec = {
           id: `::${io.id}:${key}`,
           from: [
             ...parseLinkIO(`${VALUE}:${io.id}`, 'input'),
             ...(needsTable ? parseLinkIO(`${TABLE}:${tableIo!.id}`, 'input') : []),
             ...(needsCall ? parseLinkIO(`${CALL}(call,optional):.`, 'input') : []),
+            ...(needsInputs ? stepInputs.flatMap((other) => parseLinkIO(`${other.id}:${other.id}`, 'input')) : []),
           ],
           to: parseLinkIO(`${TARGET}:${io.id}`, 'output'),
-          type: 'validator',
-          handler: ruleValidatorHandler,
+          type: family,
+          handler: family === 'meta' ? ruleMetaHandler : ruleValidatorHandler,
           params,
-        };
+        } as LinkSpec;
         const inputs: MatchInfo['inputs'] = {[VALUE]: [{path: [], ioName: io.id}]};
         if (needsTable)
           inputs[TABLE] = [{path: [], ioName: tableIo!.id}];
         if (needsCall)
           inputs[CALL] = [{path: []}];
+        if (needsInputs) {
+          for (const other of stepInputs)
+            inputs[other.id] = [{path: [], ioName: other.id}];
+        }
         const minfo: MatchInfo = {
           spec,
           inputs,

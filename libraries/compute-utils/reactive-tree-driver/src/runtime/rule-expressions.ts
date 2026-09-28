@@ -1,5 +1,7 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as jsonLogic from 'json-logic-js';
+import {isClientAtLeast} from '@datagrok-libraries/utils/src/format-version-utils';
 import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleTargets} from '../config/PipelineConfiguration';
 
@@ -8,6 +10,51 @@ export type RuleContext = Record<string, any> & {
 };
 
 let opsRegistered = false;
+
+// the context of the expression being evaluated, read by the script ops
+let activeCtx: RuleContext = {all: {}};
+let scriptSupport: boolean | undefined;
+
+// GrokScript with a variables map is js-api 1.28+; the same method ignores the map on
+// older clients, so the version decides, not the method's presence
+function hasScriptSupport(): boolean {
+  if (scriptSupport === undefined) {
+    scriptSupport = typeof (grok.functions as any).scriptSync === 'function' && isClientAtLeast('1.28.0');
+    if (!scriptSupport)
+      console.warn('RTD: GrokScript expressions need platform 1.28.0 or later, expression checks are skipped');
+  }
+  return scriptSupport;
+}
+
+function scriptVariables(ctx: RuleContext): Record<string, any> {
+  return Object.fromEntries(Object.entries(ctx).filter(([key]) => key !== 'all' && key !== 'literals'));
+}
+
+/** Evaluates a GrokScript expression over the rule context; `undefined` when unsupported or failing. */
+export function runScript(expr: string, ctx: RuleContext): any {
+  if (!hasScriptSupport())
+    return undefined;
+  try {
+    return grok.functions.scriptSync(expr, scriptVariables(ctx));
+  } catch {
+    return undefined;
+  }
+}
+
+/** The platform's `validator:` expression contract: `null` when valid, else the message. */
+export function scriptVerdict(expr: string, ctx: RuleContext): string | null {
+  if (!hasScriptSupport())
+    return null;
+  let result: unknown;
+  try {
+    result = grok.functions.scriptSync(expr, scriptVariables(ctx));
+  } catch {
+    return `Error during validation: "${expr}"`;
+  }
+  if (result === false)
+    return expr;
+  return typeof result === 'string' ? result : null;
+}
 
 /** Platform column kinds accepted by `type:` annotations, plus a column type or a semantic type. */
 export function columnIs(col: any, kind: string): boolean {
@@ -48,6 +95,8 @@ function registerOps() {
   jsonLogic.add_operation('nulls', (col: any) => col instanceof DG.Column ? col.stats.missingValueCount : 0);
   jsonLogic.add_operation('regex', (val: any, pattern: string, flags?: string) =>
     typeof val === 'string' && new RegExp(pattern, flags ?? '').test(val));
+  jsonLogic.add_operation('script', (expr: string) => runScript(expr, activeCtx));
+  jsonLogic.add_operation('scriptVerdict', (expr: string) => scriptVerdict(expr, activeCtx));
   jsonLogic.add_operation('len', (val: any) => {
     if (val == null)
       return 0;
@@ -86,7 +135,13 @@ export function evaluate(expr: RuleExpr, ctx: RuleContext): any {
   registerOps();
   const literals: any[] = [];
   const logic = extractLiterals(expr, literals);
-  return jsonLogic.apply(logic, literals.length ? {...ctx, literals} : ctx);
+  const previous = activeCtx;
+  activeCtx = ctx;
+  try {
+    return jsonLogic.apply(logic, literals.length ? {...ctx, literals} : ctx);
+  } finally {
+    activeCtx = previous;
+  }
 }
 
 export function isOn(when: RuleExpr | undefined, ctx: RuleContext): boolean {

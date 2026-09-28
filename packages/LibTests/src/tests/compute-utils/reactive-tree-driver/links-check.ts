@@ -132,7 +132,7 @@ category('ComputeUtils: Driver links check', async () => {
     await bad({nullable: true});
     await bad({optional: true});
     await bad({nullable: false, optional: true});
-    await bad({validator: 'a > 1'});
+    await bad({validator: 5});
     await bad({min: '1'});
     await bad({choices: 'a,b'});
     await bad({});

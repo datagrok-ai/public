@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {RuleExpr, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
+import {RuleEffect, RuleExpr, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
 
 /** The annotation options the driver validates. Keys and values match the function
  *  annotation syntax; `check` links use the same object. */
@@ -9,8 +9,10 @@ export type CheckOptions = {
   optional?: boolean;
   min?: number;
   max?: number;
-  /** Regex literal, `/pattern/flags`. */
+  /** A regex literal `/pattern/flags`, or a GrokScript expression over the step's inputs and `value`. */
   validator?: string;
+  /** GrokScript expression; the input is hidden while it is `false`. */
+  visible?: string;
   /** Named validator functions, evaluated by the platform (1.28+). */
   validators?: string[];
   choices?: any[];
@@ -24,14 +26,20 @@ export type CheckOptions = {
 
 export type CheckSeverity = 'error' | 'warning' | 'notification';
 
-export type CheckKey = 'required' | 'min' | 'max' | 'validator' | 'validators' | 'choices' | 'type' | 'semType' | 'table' | 'allowNulls';
+export type CheckKey =
+  'required' | 'min' | 'max' | 'validator' | 'validators' | 'visible' | 'choices' | 'type' | 'semType' | 'table' | 'allowNulls';
+
+export type CheckFamily = 'validator' | 'meta';
 
 export type ExpandedCheck = {
   key: CheckKey;
+  family: CheckFamily;
   needsTable: boolean;
   /** The check reads the node's FuncCall through the `call` alias. */
   needsCall: boolean;
-  params: {when: RuleExpr, effects: RuleValidatorEffect[], sources?: Record<string, RuleSource>};
+  /** The check's expression reads the step's other inputs by name. */
+  needsInputs: boolean;
+  params: {when: RuleExpr, effects: RuleEffect[], sources?: Record<string, RuleSource>};
 };
 
 export type CheckExtras = {
@@ -41,7 +49,7 @@ export type CheckExtras = {
 };
 
 export const checkOptionKeys: (keyof CheckOptions)[] =
-  ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'choices', 'type', 'semType', 'table', 'allowNulls'];
+  ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'visible', 'choices', 'type', 'semType', 'table', 'allowNulls'];
 
 // aliases shared by annotation-derived and config checks
 export const VALUE = 'value';
@@ -62,12 +70,18 @@ export function parseRegexLiteral(literal: string): {pattern: string, flags: str
 
 type Condition = {
   key: CheckKey;
+  family?: CheckFamily;
   needsTable: boolean;
   needsCall: boolean;
+  needsInputs?: boolean;
   when: RuleExpr;
+  /** Ready-made effects for non-validator families. */
+  effects?: RuleEffect[];
   /** A fixed message, or the alias of a source whose verdicts carry the messages. */
   message?: string;
   verdicts?: string;
+  /** An expression producing the message, overriding `message`. */
+  verdictMessage?: RuleExpr;
   sources?: Record<string, RuleSource>;
 };
 
@@ -82,8 +96,23 @@ function conditions(options: CheckOptions): Condition[] {
   if (options.max != null)
     add('max', {'>': [value, options.max]}, `Must be at most ${options.max}`);
   if (options.validator != null) {
-    const regex = parseRegexLiteral(options.validator)!;
-    add('validator', {'!': {regex: [value, regex.pattern, regex.flags]}}, `Must match ${options.validator}`);
+    const regex = parseRegexLiteral(options.validator);
+    if (regex)
+      add('validator', {'!': {regex: [value, regex.pattern, regex.flags]}}, `Must match ${options.validator}`);
+    else {
+      out.push({
+        key: 'validator', needsTable: false, needsCall: false, needsInputs: true,
+        when: {and: [present, {'!!': {scriptVerdict: options.validator}}]},
+        message: options.validator, verdictMessage: {scriptVerdict: options.validator},
+      });
+    }
+  }
+  if (options.visible != null) {
+    out.push({
+      key: 'visible', family: 'meta', needsTable: false, needsCall: false, needsInputs: true,
+      when: {'==': [{script: options.visible}, false]},
+      effects: [{effect: 'hide', targets: [TARGET]}],
+    });
   }
   if (options.validators?.length) {
     out.push({
@@ -114,8 +143,10 @@ export function validateCheckOptions(id: string, options: CheckOptions) {
   }
   if (options.optional != null && options.nullable != null && options.optional !== options.nullable)
     throw new Error(`Check ${id}: nullable and optional disagree`);
-  if (options.validator != null && !parseRegexLiteral(options.validator))
-    throw new Error(`Check ${id}: validator must be a regex literal /pattern/flags`);
+  for (const key of ['validator', 'visible'] as const) {
+    if (options[key] != null && typeof options[key] !== 'string')
+      throw new Error(`Check ${id}: ${key} must be a regex literal or a GrokScript expression`);
+  }
   if (options.choices != null && !Array.isArray(options.choices))
     throw new Error(`Check ${id}: choices must be an array`);
   if (options.validators != null &&
@@ -132,18 +163,24 @@ export function validateCheckOptions(id: string, options: CheckOptions) {
 export function expandChecks(options: CheckOptions, extras: CheckExtras = {}): ExpandedCheck[] {
   if (options.optional != null)
     options = {...options, nullable: options.optional};
-  return conditions(options).map(({key, needsTable, needsCall, when, message, verdicts, sources}) => {
-    const effects: RuleValidatorEffect[] = [];
-    if (verdicts != null && extras.message == null && extras.severity == null)
+  return conditions(options).map((condition) => {
+    const {key, needsTable, needsCall, when, message, verdicts, verdictMessage, sources} = condition;
+    const family = condition.family ?? 'validator';
+    let effects: RuleEffect[] = [];
+    if (family !== 'validator')
+      effects = condition.effects!;
+    else if (verdicts != null && extras.message == null && extras.severity == null)
       effects.push({effect: 'verdicts', targets: [TARGET], source: verdicts});
     else {
-      const text = extras.message ?? message ?? {map: [{var: verdicts}, {var: 'message'}]};
+      const text = extras.message ?? verdictMessage ?? message ?? {map: [{var: verdicts}, {var: 'message'}]};
       effects.push({effect: extras.severity ?? 'error', targets: [TARGET], message: text});
     }
     return {
       key,
+      family,
       needsTable,
       needsCall,
+      needsInputs: condition.needsInputs ?? false,
       params: {
         when: extras.when == null ? when : {and: [extras.when, when]},
         effects,
@@ -191,8 +228,10 @@ export function parseAnnotationChecks(prop: DG.Property): CheckOptions {
     if (min != null) checks.min = min;
     if (max != null) checks.max = max;
   }
-  if (options.validator != null && parseRegexLiteral(options.validator))
+  if (options.validator)
     checks.validator = options.validator;
+  if (options.visible)
+    checks.visible = options.visible;
   // the platform keeps `validators` as an array; other options arrive as strings
   const validators = Array.isArray(options.validators) ? options.validators : parseChoices(options.validators);
   if (validators?.length && validators.every((name: unknown) => typeof name === 'string'))

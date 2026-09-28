@@ -121,4 +121,8 @@ export namespace funcs {
   export async function mockValidatorThrow(x: number ): Promise<string> {
     return await grok.functions.call('LibTests:MockValidatorThrow', { x });
   }
+
+  export async function testExpressionInputs(k: number , hv: number , foo: number , bar: number , code: string ): Promise<number> {
+    return await grok.functions.call('LibTests:TestExpressionInputs', { k, hv, foo, bar, code });
+  }
 }

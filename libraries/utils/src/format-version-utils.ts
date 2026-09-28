@@ -19,3 +19,9 @@ export function getDefaultFloatFormat(): string {
   }
   return defaultFloatFormat;
 }
+
+/** True when the running js-api client is at least `version` (semver). */
+export function isClientAtLeast(version: string): boolean {
+  const apiVersion = semver.coerce(grok.shell.build.client.version);
+  return !!apiVersion && semver.gte(apiVersion, version);
+}

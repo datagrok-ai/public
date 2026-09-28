@@ -450,3 +450,13 @@ export function MockValidatorBool(x: number): boolean {
 export function MockValidatorThrow(x: number): string {
   throw new Error('boom');
 }
+
+//input: int k = 2
+//input: int hv = 1 {visible: k > 1}
+//input: int foo = 5 {validator: bar > 3}
+//input: double bar = 2
+//input: string code = "12ab" {validator: startsWith(value, "12")}
+//output: int res
+export function TestExpressionInputs(k: number, hv: number, foo: number, bar: number, code: string): number {
+  return k;
+}
