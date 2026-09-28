@@ -8,6 +8,16 @@ import {defaultFilterState} from './shared';
 // DataFrame's .filter shortly after construction; this is how long to wait past that window.
 const FILTER_REMOUNT_SETTLE_MS = 200;
 
+// Molecule and reaction widths equal their renderers' defaults, which the grid applies to a structure
+// column when it first paints, so that one-time sizing changes nothing.
+const COLUMN_WIDTHS = {molecule: 200, reaction: 600, number: 70, text: 140};
+
+function columnWidth(col: DG.Column): number {
+  if (col.semType === DG.SEMTYPE.MOLECULE) return COLUMN_WIDTHS.molecule;
+  if (col.semType === DG.SEMTYPE.CHEMICAL_REACTION) return COLUMN_WIDTHS.reaction;
+  return col.isNumerical || col.type === DG.COLUMN_TYPE.BOOL ? COLUMN_WIDTHS.number : COLUMN_WIDTHS.text;
+}
+
 /**
  * Owns every mounted Grid/Filters viewer for one Reaction Enumerator view, plus the deferred
  * filter-reset timers scheduled against them, and drains `view.subs` itself.
@@ -54,13 +64,6 @@ export class MountedViewerRegistry {
     }
   }
 
-  private applyGridColumnSizing(grid: DG.Grid, extendLast = true): void {
-    try {
-      grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
-      if (extendLast) grid.props.extendLastColumn = true;
-    } catch {/* setColumnsWidthType not available on older Dart builds */}
-  }
-
   // A single RAF after appending a resizable ui.splitH isn't reliably enough for a real clientWidth;
   // ui.onSizeChanged fires once real layout completes. Size once, then unsubscribe.
   private sizeSplitOnceLaidOut(a: HTMLElement, b: HTMLElement, computeAWidth: (total: number) => number): void {
@@ -78,19 +81,23 @@ export class MountedViewerRegistry {
   }
 
   mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean,
-    opts?: {rowHeight?: number; extendLastColumn?: boolean; readOnly?: boolean}): void {
+    opts?: {rowHeight?: number; readOnly?: boolean}): DG.Grid {
     this.close(host);
     host.innerHTML = '';
     const grid = DG.Viewer.grid(df);
     grid.props.rowHeight = opts?.rowHeight ?? 75;
     if (opts?.readOnly) grid.props.allowEdit = false;
+    // Sized once: nothing fits the columns to the available space, so a resize moves only that column.
+    for (const col of df.columns.toList()) {
+      const gc = grid.col(col.name);
+      if (gc) gc.width = columnWidth(col);
+    }
     grid.root.style.width = '100%';
     grid.root.style.height = '100%';
     if (!withFilters) {
       this.mountedViewers.set(host, [grid]);
       host.appendChild(grid.root);
-      this.applyGridColumnSizing(grid, opts?.extendLastColumn ?? true);
-      return;
+      return grid;
     }
     const filterStates = df.columns.toList()
       // ChemicalReaction has no meaningful substructure-filter semantics for a whole template, and
@@ -109,13 +116,13 @@ export class MountedViewerRegistry {
       overflow: 'auto', borderRight: '1px solid var(--grey-2)'}});
     const split = ui.splitH([filtersBox, gridBox], {style: {width: '100%', height: '100%', minHeight: '0'}}, true);
     host.appendChild(split);
-    this.applyGridColumnSizing(grid, opts?.extendLastColumn ?? true);
     // ui.splitH ignores child width/flex on first layout; its resize handler reads flexGrow off the
     // wrapper boxes it creates (children[0]/[2], skipping the divider at [1]).
     const filtersWrap = split.children[0] as HTMLElement;
     const gridWrap = split.children[2] as HTMLElement;
     if (gridWrap && filtersWrap)
       this.sizeSplitOnceLaidOut(filtersWrap, gridWrap, (total) => Math.min(260, Math.round(total * 0.25)));
+    return grid;
   }
 
   private scheduleTimer(fn: () => void): void {

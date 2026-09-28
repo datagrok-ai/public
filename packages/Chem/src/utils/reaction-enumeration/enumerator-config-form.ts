@@ -58,6 +58,9 @@ function makeColInput(
     opts.table = table;
     const c = table.col(preferredName);
     if (c && filter(c)) opts.value = c;
+  } else {
+    opts.table = grok.data.demo.molecules(1);
+    opts.value = null;
   }
   const inp = ui.input.column(label, opts);
   inp.setTooltip(tooltip);

@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {awaitCheck, before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
@@ -12,6 +13,7 @@ import {
 import {applyProductFilters, computeMolStats} from '../utils/reaction-enumeration/filters';
 import {addResultFilters, buildInputs, buildResultDataFrame} from '../utils/reaction-enumeration/shared';
 import {propagatedColumns, snapshotPropagation} from '../utils/reaction-enumeration/propagation';
+import {MountedViewerRegistry} from '../utils/reaction-enumeration/viewer-mount';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
@@ -432,6 +434,43 @@ category('Reaction Enumeration', () => {
       'a reaction whose products the filters all reject lost nothing to the cap');
   });
 
+
+  // ── grid column widths ──────────────────────────────────────────────────
+  test('grids: columns are sized once from constants, and resizing one leaves the rest alone', async () => {
+    const df = DG.DataFrame.fromCsv('reaction,smiles,name,mw\n' +
+      '"[C:1](=[O:2])[OH].[N;H2:3]>>[C:1](=[O:2])[N:3]",CC(=O)O,Acetic acid,60.05\n' +
+      '"[CX4:1][OH:2].[C:3](=[O:4])[OH]>>[C:1][O:2][C:3]=[O:4]",NCCO,Ethanolamine,61.08');
+    df.col('reaction')!.semType = DG.SEMTYPE.CHEMICAL_REACTION;
+    df.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
+    df.columns.addNewBool('in_stock');
+    // Wider than the columns, so a grid that fitted them to the available space would stretch one.
+    const host = ui.div([], {style: {width: '1600px', height: '300px'}});
+    document.body.appendChild(host);
+    const registry = new MountedViewerRegistry(DG.View.create());
+    try {
+      const grid = registry.mountDf(host, df, false);
+      const widths = () => df.columns.names().map((n) => grid.col(n)!.width).join();
+      const nextDraw = () => new Promise<void>((resolve) => {
+        const sub = grid.onAfterDrawContent.subscribe(() => {sub.unsubscribe(); resolve();});
+        grid.invalidate();
+      });
+      expect(widths(), '600,200,140,70,70', 'reaction, molecule, text, number and bool widths');
+      // The first paint resolves the reaction renderer, which used to swap in its own width.
+      await awaitCheck(() => grid.col('reaction')!.cellType === DG.SEMTYPE.CHEMICAL_REACTION,
+        'the reaction renderer never resolved', 15000);
+      await nextDraw();
+      expect(widths(), '600,200,140,70,70', 'the first paint leaves every width as it was');
+
+      for (const width of [250, 900]) {
+        grid.col('reaction')!.width = width;
+        await nextDraw();
+        expect(widths(), `${width},200,140,70,70`, `only the resized column moves (reaction at ${width}px)`);
+      }
+    } finally {
+      registry.close(host);
+      host.remove();
+    }
+  });
 
   // ── route formatting ────────────────────────────────────────────────────
   const tmpl = '';

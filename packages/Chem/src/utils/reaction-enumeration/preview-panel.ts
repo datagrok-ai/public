@@ -204,8 +204,8 @@ export class PreviewPanel {
 
     const samples = pickPreviewSamples(rows, PREVIEW_TARGET_ROWS);
     const df = buildResultDataFrame(samples, propagatedColumns(samples, propagation), 'Preview');
-    // Taller rows fit the extra route-step lines; route isn't the last column, so no extendLastColumn.
-    this.deps.viewerHost.mountDf(this.host, df, false, {rowHeight: 110, extendLastColumn: false});
+    // Taller rows fit the extra route-step lines.
+    this.deps.viewerHost.mountDf(this.host, df, false, {rowHeight: 110});
     this.status.textContent =
       `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} ` +
       `steps, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;
