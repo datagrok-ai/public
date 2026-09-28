@@ -101,9 +101,14 @@ Feature: The Grid Customization tutorial
     When user presses Escape
     Then the tutorial step "Clear the selection" should be done
 
+    # the tutorial opens the context panel here; beside it, the Tutorials panel and the toolbox, the
+    # last columns lie past the grid's edge: the learner makes room
+    Given the toolbox pane is hidden
+    When user presses F4
+    Then context panel should be hidden
     # row 1 of demog is a "None" severity; 3302 rows share it
-    When user presses Control+Home
-    And user presses End
+    When user presses Control+Home in grid
+    And user presses End in grid
     And user clicks on the "cell 1 of SEVERITY" area of grid
     And user presses Shift+Enter
     Then the tutorial step "Find the SEVERITY column and select all rows with the \"None\" value" should be done
@@ -135,11 +140,6 @@ Feature: The Grid Customization tutorial
     Then the tutorial step "Reset sorting in the grid" should be done
     And the "sort column" reading of grid should be ""
 
-    # beside the Tutorials panel, the toolbox and the context panel, STARTED lies past the grid's edge:
-    # the learner makes room
-    Given the toolbox pane is hidden
-    When user presses F4
-    Then context panel should be hidden
     When user clicks on the "header HEIGHT" area of grid holding Shift
     And user clicks on the "header WEIGHT" area of grid holding Shift
     And user clicks on the "header STARTED" area of grid holding Shift

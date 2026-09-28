@@ -85,13 +85,14 @@ export class FiltersTutorial extends Tutorial {
         const filters = this.t!.rows.filters;
         return filters.length === 1 &&
           filters.get(0) === 'DIS_POP: AS, Indigestion, PsA, Psoriasis, UC';
-      })), this.findIndicator(this.findFilterHeaderByColName('DIS_POP')),
+      })), () => this.findIndicator(this.findFilterHeaderByColName('DIS_POP')),
       indicatorInfo);
 
     const rowCountSelect = 'When you click on a row count, the corresponding rows ' +
       'get selected, taking into account the current filter. They are highlighted ' +
       'in orange both in filters and other viewers.';
-    await this.action('Click on a non-empty row count', this.t!.onSelectionChanged, null, rowCountSelect);
+    await this.action('Click on a non-empty row count',
+      this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.anyTrue)), null, rowCountSelect);
 
     await this.action('Filter the dataset to only females of Asian or Black origin',
       this.t!.onFilterChanged.pipe(filter(() => {
@@ -112,7 +113,7 @@ export class FiltersTutorial extends Tutorial {
 
     await this.action('Reset the filter',
       this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)),
-      $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0],
+      () => $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0] ?? null,
       'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.');
 
     this.title('Numerical filters');
@@ -125,7 +126,8 @@ export class FiltersTutorial extends Tutorial {
       `either pick bins one by one or drag a rectangle to form a group. If you hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while ` +
       'clicking, you will toggle the bin\'s selection. Note that other filters reflect the proportion ' +
       'of the selected rows.';
-    await this.action('Select one of the histogram bins', this.t!.onSelectionChanged, null, selectionInfo);
+    await this.action('Select one of the histogram bins',
+      this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.anyTrue)), null, selectionInfo);
 
     const indicatorsInfo = 'Current and mouse-over records are shown below the histogram ' +
       'bins as green and gray circles. These indicators can be used for quick data profiling.';
@@ -138,7 +140,7 @@ export class FiltersTutorial extends Tutorial {
       'to specify the exact values for the filter.';
     await this.action('Find records for people aged 40 to 60',
       this.t!.onFilterChanged.pipe(filter(() => wu(this.t!.rows.filters).some((s) => s === 'AGE: [40,60]'))),
-      this.findIndicator(this.findFilterHeaderByColName('AGE')),
+      () => this.findIndicator(this.findFilterHeaderByColName('AGE')),
       rangeInputInfo);
 
     this.title('Saving filter state');
@@ -155,7 +157,7 @@ export class FiltersTutorial extends Tutorial {
 
     await this.action('Reset the filter',
       this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)),
-      $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0],
+      () => $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0] ?? null,
       'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.');
 
     await this.contextMenuAction('Restore the filter state', 'AGE: [40,60]', null,

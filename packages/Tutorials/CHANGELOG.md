@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Filters: The row-count and bin-selection steps completed on any selection event; the indicator and reset hints were captured when their step began and could point at nothing
 * Grid Customization: The row-selection step asked for a plain click on a row number, which makes the row current and selects nothing; it asks for a Shift+click now. The new-row and remove-rows hints follow their controls instead of the nodes captured when the step began
 * Viewers: The counter never reached its last step (20 declared for 20 actions); three selection steps completed on any selection event, so the tail of one gesture could tick the next; the gallery's search box was captured when its step began
 * Calculated Columns: The expression step was declared twice — the first copy was skipped or shown depending on the dialog's layout, shifting every step number after it — and the Edit step pointed at a button called "Edit" while the pane says "Edit in dialog" (no highlight); both fixed
