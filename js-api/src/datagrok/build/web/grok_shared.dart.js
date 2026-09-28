@@ -106320,7 +106320,7 @@
         return value == null ? "" : $name + "=" + H.S(O.encodeUrl(J.toString$0$(value)));
       },
       _getList$2: function(path, makeItem) {
-        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1, $async$temp2;
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, s;
         var $async$_getList$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1)
             return P._asyncRethrow($async$result, $async$completer);
@@ -106332,13 +106332,18 @@
                 if (t1 == null)
                   t1 = $.$get$GrokClientBase__http();
                 t2 = J.$index$asx($.Zone__current, C.Symbol_IKb);
-                $async$temp1 = $async$self;
-                $async$temp2 = C.JsonCodec_null_null;
                 $async$goto = 3;
                 return P._asyncAwait(t1.read$1(0, H.S(t2 == null ? $._root : t2) + "/" + H.S(path)), $async$_getList$2);
               case 3:
                 // returning from await.
-                $async$returnValue = $async$temp1._mapList$2($async$temp2.decode$1($async$result), makeItem);
+                s = $async$result;
+                if (J.$eq$(s, "") === true) {
+                  $async$returnValue = [];
+                  // goto return
+                  $async$goto = 1;
+                  break;
+                }
+                $async$returnValue = $async$self._mapList$2(C.JsonCodec_null_null.decode$1(s), makeItem);
                 // goto return
                 $async$goto = 1;
                 break;
@@ -106353,7 +106358,7 @@
         return J.toList$0$ax(J.map$1$ax(infos, new Q.GrokClientBase__mapList_closure(makeItem)));
       },
       _getInt$1: function(path) {
-        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, s;
         var $async$_getInt$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1)
             return P._asyncRethrow($async$result, $async$completer);
@@ -106365,12 +106370,12 @@
                 if (t1 == null)
                   t1 = $.$get$GrokClientBase__http();
                 t2 = J.$index$asx($.Zone__current, C.Symbol_IKb);
-                $async$temp1 = H;
                 $async$goto = 3;
                 return P._asyncAwait(t1.read$1(0, H.S(t2 == null ? $._root : t2) + "/" + H.S(path)), $async$_getInt$1);
               case 3:
                 // returning from await.
-                $async$returnValue = $async$temp1.Primitives_parseInt($async$result, null, null);
+                s = $async$result;
+                $async$returnValue = J.$eq$(s, "") === true ? 0 : H.Primitives_parseInt(s, null, null);
                 // goto return
                 $async$goto = 1;
                 break;
@@ -106382,7 +106387,7 @@
         return P._asyncStart($async$_getInt$1, $async$completer);
       },
       _getStringList$1: function(path) {
-        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, s;
         var $async$_getStringList$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1)
             return P._asyncRethrow($async$result, $async$completer);
@@ -106394,12 +106399,12 @@
                 if (t1 == null)
                   t1 = $.$get$GrokClientBase__http();
                 t2 = J.$index$asx($.Zone__current, C.Symbol_IKb);
-                $async$temp1 = C.JsonCodec_null_null;
                 $async$goto = 3;
                 return P._asyncAwait(t1.read$1(0, H.S(t2 == null ? $._root : t2) + "/" + path), $async$_getStringList$1);
               case 3:
                 // returning from await.
-                $async$returnValue = $async$temp1.decode$1($async$result);
+                s = $async$result;
+                $async$returnValue = J.$eq$(s, "") === true ? [] : C.JsonCodec_null_null.decode$1(s);
                 // goto return
                 $async$goto = 1;
                 break;
@@ -169516,8 +169521,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "b9e4595c4450c062bfb229714ab095626e25da09");
-        t2.set$date(t1, "2026-09-27T17:34:31.368Z");
+        t2.set$commit(t1, "05b1d444a5403a5ef6f6a8335bc665991114c2cc");
+        t2.set$date(t1, "2026-09-28T22:47:54.498Z");
         t2.set$version(t1, "1.27.11");
         return t1;
       }, null, null, 0, 0, null, "call"]
