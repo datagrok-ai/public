@@ -120,6 +120,7 @@ export abstract class Tutorial extends DG.Widget {
     const trackRoot = $(`.tutorials-track[data-name ='${track?.name}']`);
     const root = trackRoot.find(`.tutorials-card[data-name='${track.tutorials[id].name}']`);
     root.find('.tutorials-card-status').show();
+    root.attr('data-status', 'done');
     root.find('.tutorials-card-title').css('color', 'var(--grey-4)');
     root.find('.tutorials-card-description').css('color', 'var(--grey-4)');
     root.find('.ui-image').css('mix-blend-mode', 'luminosity').css('opacity', '0.7');

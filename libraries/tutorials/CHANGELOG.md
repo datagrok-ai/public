@@ -2,6 +2,7 @@
 
 ## v.next
 
+* A tutorial finished while the panel is open marks its card done in `data-status` too, not only visually
 * Tutorial: Step entries carry `role="checkbox"`, `aria-checked`, `aria-current="step"` and `data-step`, the progress bar `role="progressbar"` with `aria-valuenow`/`aria-valuemax`, and the `tutorial-step-completed` / `tutorial-completed` custom events fire, so tests read the tutorial's state instead of its CSS classes
 * Tutorial: A step whose event stream fails (a control that never appeared) is no longer shown as done: it keeps `aria-checked="false"` and gets `aria-invalid`
 * `openDialog`, `openViewByType` and `contextMenuAction` accept a `HintTarget`, so their hints can follow a control that is rebuilt; `choiceInputAction` reports a missing input like its siblings

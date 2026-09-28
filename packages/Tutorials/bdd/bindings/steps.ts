@@ -47,6 +47,12 @@ export const tutorialsOpen = Given('the Tutorials app is open', async (page: Pag
   await expect(page.locator('.tutorials-root .tutorials-card').first(), 'the Tutorials panel with its cards').toBeVisible({timeout: pollMs(30000)});
 }, {tier: 'api', description: 'the app\'s function docks the panel (no running tutorial left from before); the panel closes at feature end'});
 
+export const tutorialsClosed = Given('the Tutorials app is closed', async (page: Page) => {
+  await closeTutorials(page);
+  closeAtFeatureEnd(page);
+  await expect(page.locator('.tutorials-root'), 'the Tutorials panel').toHaveCount(0);
+}, {tier: 'api', description: 'no Tutorials panel on the page, so the feature opens it the way a user does; closed again at feature end'});
+
 export const startTutorial = When('user starts the {string} tutorial', async (page: Page, name: string) => {
   const card = page.locator(`.tutorials-root .tutorials-card[aria-label="${name.replace(/"/g, '\\"')}"]`);
   if (!await card.isVisible()) {

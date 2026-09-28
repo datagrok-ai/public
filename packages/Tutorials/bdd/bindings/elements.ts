@@ -48,3 +48,11 @@ kind('tour button', {
   match: ['aria'],
   description: 'a button of a compute tutorial\'s guided tour, by its role: next, prev or done (the done button of a one-page tour reads "clear")',
 });
+
+kind('tutorial track', {
+  aliases: ['tutorial tracks'],
+  selector: '.tutorials-track[data-name]',
+  match: ['label'],
+  labelSelector: '.tutorials-track-title h1',
+  description: 'a track of the Tutorials panel (its title, progress and cards), by the track\'s name',
+});
