@@ -57,7 +57,7 @@ export class GridTutorial extends Tutorial {
     this.title('Editing');
 
     await this.action('Add a new row by clicking the "+" icon at the last row', this.t!.onRowsAdded,
-      $('.d4-grid-add-row-icon')[0], 'There are several ways to add a row to a spreadsheet: clicking the <b>+</b> ' +
+      () => $('.d4-grid-add-row-icon')[0] ?? null, 'There are several ways to add a row to a spreadsheet: clicking the <b>+</b> ' +
       'icon (requires "Allow Edit" property set to true), editing the last row (if "Add New Row On Last Row Edit" ' +
       'is enabled), selecting <b>Edit > Add Rows...</b> in the top menu (this way you can add a specific number of ' +
       'rows at a specific position in the grid).');
@@ -81,9 +81,10 @@ export class GridTutorial extends Tutorial {
 
     this.title('Selection');
 
-    await this.action(`Select the edited row by clicking on its number (#${lastRowIdx + 1})`,
+    await this.action(`Select the edited row: hold Shift and click its number (#${lastRowIdx + 1})`,
       this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.trueCount === 1 && this.t!.selection.get(lastRowIdx))),
-      null, 'Grid shares row selection with other viewers, which will be illustrated in the upcoming tutorials. ' +
+      null, 'A plain click on a row number makes the row current; holding Shift selects the rows from the current one ' +
+      'to the clicked one. Grid shares row selection with other viewers, which will be illustrated in the upcoming tutorials. ' +
       'Selected data is highlighted in orange. You can extend selection by holding <b>Shift</b> and dragging the mouse.');
 
     await this.action('Remove selection by pressing "Esc"', this.t!.onSelectionChanged.pipe(filter(() =>
@@ -115,7 +116,7 @@ export class GridTutorial extends Tutorial {
 
     await this.action(`Delete these rows (${noneSeverityRowCount})`, this.t!.onRowsRemoved.pipe(filter(() =>
       this.t!.rowCount === (rowCount - noneSeverityRowCount) && !severityColumn.categories.includes('None'))),
-      $('div.d4-ribbon-item').has('i.svg-remove-selected-rows')[0], 'In the context panel on the right, you ' +
+      () => $('div.d4-ribbon-item').has('i.svg-remove-selected-rows')[0] ?? null, 'In the context panel on the right, you ' +
       'can find the list of actions for selected rows. One of them is "Delete Rows". Pick this option to refine ' +
       'your dataset. You can also use <b>Shift+Delete</b> or the "Remove rows" icon in the top menu.');
 
