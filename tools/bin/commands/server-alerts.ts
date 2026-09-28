@@ -12,7 +12,8 @@ export const ALERTS_USAGE = `Usage: grok s alerts <verb> [args]
   unmute <id|kind:key> [--reason <text>]
   resolve <id|kind:key> [--reason <text>]
   detection [--host a --host b ...]
-Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod).`;
+Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod), which names an open,
+acknowledged or muted alert (its key exactly, else a unique key prefix).`;
 
 const PAST: Record<string, string> = {ack: 'acknowledged', unmute: 'unmuted', resolve: 'resolved'};
 
@@ -40,7 +41,8 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
     }
     case 'get': {
       if (!id) return usage('get <id|kind:key>');
-      const alert = await client(connect, argv, verb).then((c) => c.get(id));
+      const t = await target(connect, argv, verb, id);
+      const alert = await t.alerts.get(t.id);
       if (output === 'table') printAlert(alert);
       else printOutput(alert, output);
       return true;
@@ -50,14 +52,16 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
     case 'resolve': {
       if (!id) return usage(`${verb} <id|kind:key> [--reason <text>]`);
       const reason = optString(argv.reason);
-      const alert = await client(connect, argv, verb).then((c) => c.transition(id, verb, {reason}));
+      const t = await target(connect, argv, verb, id);
+      const alert = await t.alerts.transition(t.id, verb, {reason});
       report(alert, `${PAST[verb]} ${identity(alert, id)}${reason ? ` — ${reason}` : ''}`, output);
       return true;
     }
     case 'mute': {
       if (!id) return usage('mute <id|kind:key> --reason <text> (--for 2h | --until <iso|HH:MM> | --until-version <v> | --forever)');
       const {body, until} = muteBody(argv);
-      const alert = await client(connect, argv, verb).then((c) => c.transition(id, 'mute', body));
+      const t = await target(connect, argv, verb, id);
+      const alert = await t.alerts.transition(t.id, 'mute', body);
       report(alert, `muted ${identity(alert, id)} ${until} — ${body.reason}`, output);
       return true;
     }
@@ -66,8 +70,22 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
   return false;
 }
 
-async function client(connect: Connect, argv: any, verb: string): Promise<NodeAlertsClient> {
-  return (await connect(singleHost(argv, `alerts ${verb}`))).alerts;
+/** The alert an id names; `kind:key` cannot travel in the path, so it is looked up among the open alerts first. */
+async function target(connect: Connect, argv: any, verb: string, id: string): Promise<{alerts: NodeAlertsClient; id: string}> {
+  const alerts = (await connect(singleHost(argv, `alerts ${verb}`))).alerts;
+  return {alerts, id: await alertId(alerts, id)};
+}
+
+export async function alertId(alerts: NodeAlertsClient, id: string): Promise<string> {
+  const colon = id.indexOf(':');
+  if (colon < 0) return id;
+  const matches: any[] = await alerts.list({kind: id.slice(0, colon), key: id.slice(colon + 1), status: 'open,acknowledged,muted'}) ?? [];
+  if (!matches.length)
+    throw new Error(`No open alert ${id}`);
+  if (matches.length > 1)
+    throw new Error(`Several open alerts match ${id}; pass an id:\n` +
+      matches.map((a) => `  ${a?.id}  ${a?.kind}:${a?.key}  ${a?.status}  ${truncate(a?.summary, 60)}`).join('\n'));
+  return String(matches[0].id);
 }
 
 function usage(line: string): boolean {

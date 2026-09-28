@@ -83,14 +83,29 @@ describe('handleAlerts', () => {
     expect(exitCode).toBe(1);
   });
 
-  it('mutes a kind:key id with colons in the key and prints one line', async () => {
-    const {connect, calls} = mockConnect(() => ({kind: 'connection', key: 'ELN:Prod', status: 'muted'}));
+  it('looks a kind:key id up among open alerts, then mutes it by id', async () => {
+    const {connect, calls} = mockConnect((m) => m === 'GET'
+      ? [{id: 'E1', kind: 'connection', key: 'ELN:Prod', status: 'open'}]
+      : {id: 'E1', kind: 'connection', key: 'ELN:Prod', status: 'muted'});
     const {out} = await captureOutput(() => handleAlerts(connect, 'mute', ['connection:ELN:Prod'],
       {until: '2026-10-04T06:00', reason: 'monthly ELN maintenance'}, 'table'));
-    expect(calls[0].method).toBe('POST');
-    expect(calls[0].path).toBe('/alerts/connection%3AELN%3AProd/mute');
-    expect(calls[0].body).toEqual({reason: 'monthly ELN maintenance', until: new Date(2026, 9, 4, 6, 0).toISOString()});
+    expect(calls.map((c) => [c.method, c.path])).toEqual([
+      ['GET', '/alerts?kind=connection&key=ELN%3AProd&status=open%2Cacknowledged%2Cmuted'],
+      ['POST', '/alerts/E1/mute'],
+    ]);
+    expect(calls[1].body).toEqual({reason: 'monthly ELN maintenance', until: new Date(2026, 9, 4, 6, 0).toISOString()});
     expect(out).toEqual(['muted connection:ELN:Prod until 10-04 06:00 — monthly ELN maintenance']);
+  });
+
+  it('refuses a kind:key that matches no open alert, or several', async () => {
+    const none = mockConnect(() => []);
+    await expect(handleAlerts(none.connect, 'ack', ['report:4820'], {}, 'table')).rejects.toThrow('No open alert report:4820');
+    expect(none.calls.length).toBe(1);
+    const two = mockConnect(() => [{id: 'A1', kind: 'error-incident', key: 'a41f9c01', status: 'open'},
+      {id: 'A2', kind: 'error-incident', key: 'a41f9c02', status: 'muted'}]);
+    await expect(handleAlerts(two.connect, 'get', ['error-incident:a41f9c'], {}, 'table'))
+      .rejects.toThrow(/Several open alerts match error-incident:a41f9c; pass an id:\n {2}A1 .*\n {2}A2 /);
+    expect(two.calls.length).toBe(1);
   });
 
   it('refuses a mute without a reason before calling the server', async () => {

@@ -498,7 +498,10 @@ grok s alerts detection                                   # servers, liveness, a
 opened the alert. `mute` takes exactly one of `--for`, `--until` (ISO local time, or `HH:MM`
 today), `--until-version` or `--forever`, and always a `--reason`; it prints
 `muted <kind:key> until <…> — <reason>`. Muting through any server applies to all of them. A key
-may itself contain colons: `connection:ELN:Prod` is kind `connection`, key `ELN:Prod`.
+may itself contain colons: `connection:ELN:Prod` is kind `connection`, key `ELN:Prod`. A `kind:key`
+is looked up among the open, acknowledged and muted alerts (the key exactly, else a unique key
+prefix) before the alert is addressed by its id; no match, or several, exits 1 (the several are
+listed so one can be picked by id).
 `detection` prints `SERVER HOST VERSION LAST SEEN LIVE ELIGIBLE OWNER`, with `*` on the lease
 holder. Needs the `ManageAlerts` permission.
 
