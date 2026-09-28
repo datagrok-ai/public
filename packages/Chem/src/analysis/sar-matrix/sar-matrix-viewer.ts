@@ -8,8 +8,10 @@ import {getRdKitModule, getRdKitService} from '../../utils/chem-common-rdkit';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {nestByContainment, rankMatrices, SarRankScheme} from './sar-matrix-ranking';
 import {DEFAULT_TRANSFER_SIMILARITY} from './sar-matrix-transfer';
+import {SarFragmentColumns} from './sar-matrix-columns';
 import {MAX_SERIES_LEVELS, runSarMatrix, SarGrouping, SarMatrixParams} from './sar-matrix-run';
-import {closeGridQuietly, finiteOrNaN, observedMolecules, SarMatrix, SarMatrixCell} from './sar-matrix-types';
+import {closeGridQuietly, finiteOrNaN, observedMolecules, SarMatrix, SarMatrixCell, SarMatrixCellKind}
+  from './sar-matrix-types';
 import {CARD_CORE_H, CARD_CORE_W, CELL_H, CELL_W, CELL_W_MAX,
   clearCssColorCache, COL_HEADER_H, CORE_BG_ARGB, CORE_W, MatrixCellRef, MatrixGridState,
   NAV_COLLAPSED_W, NAV_W,
@@ -47,6 +49,9 @@ const RENDER_ONLY_PROPS = ['columnCaption', 'idColumnName'];
 
 /** Properties only the transfer scan reads; matrices are untouched. */
 const TRANSFER_ONLY_PROPS = ['transferSimilarity'];
+/** Read only when fragmenting, so they cannot change matrices built from existing R-groups. */
+const FRAGMENT_ONLY_PROPS = ['fragmentCutoff', 'grouping', 'fragmentationLevels', 'threshold',
+  'useMcsAnchors'];
 
 
 /** Auto derives from scaling (only −lg is higher-is-better); explicit options cover precomputed pIC50 etc. */
@@ -117,6 +122,11 @@ export class SarMatrixViewer extends DG.JsViewer {
   activityColumnName: string;
   /** Optional column captioning each observed cell. */
   idColumnName: string;
+  /** Empty unless the matrices come from R-group columns already in the table. The rows are the
+   *  R-groups other than the axis. */
+  coreColumnName: string;
+  rGroupColumnNames: string[];
+  axisColumnName: string;
   scaling: string;
   activityDirection: string;
   fragmentCutoff: number;
@@ -159,6 +169,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** A recompute was requested mid-compute; re-queued when the running one finishes. */
   private dirty = false;
   private computeTimer = 0;
+  private reported = '';
   /** Set in `detach`, so an in-flight compute can't render into a closed viewer. */
   detached = false;
   private cellW = CELL_W;
@@ -220,6 +231,28 @@ export class SarMatrixViewer extends DG.JsViewer {
   get helpUrl() {
     return 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
   }
+
+  /** The analysis and the series on screen: where the matrices came from and what their cells hold. */
+  getWidgetStatus(): DG.U2.IWidgetStatus {
+    const base = super.getWidgetStatus();
+    const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
+    const cells = matrix?.cells.flat() ?? [];
+    const count = (kind: SarMatrixCellKind): number => cells.filter((cell) => cell.kind === kind).length;
+    return {...base, values: {...base.values,
+      'computing': this.computing,
+      'problem': this.rGroupFault() ?? '',
+      'source': this.rGroupColumns() !== null ? 'R-group columns' : 'fragments',
+      'matrices': this.matrices.length,
+      'series': matrix?.label ?? '',
+      'rows': matrix?.rows.length ?? 0,
+      'columns': matrix?.columns.length ?? 0,
+      'measured': count('real'),
+      'predicted': count('virtual'),
+      'predicted with structure': cells.filter((cell) => cell.kind === 'virtual' && cell.smiles !== null).length,
+      'impossible': count('impossible'),
+      'row labels': matrix?.rows.slice(0, 20).map((row) => row.label).join(', ') ?? '',
+    }};
+  }
   constructor() {
     super();
     // COLUMN-typed properties so the picker filters to the right columns; the stored value is the name.
@@ -235,6 +268,17 @@ export class SarMatrixViewer extends DG.JsViewer {
       {nullable: true, category: 'Data', friendlyName: 'Series column',
         description: 'Optional: series you have assigned yourself. Compounds sharing a value make one ' +
           'matrix, named with that value. Leave empty to group by structure instead'});
+    this.coreColumnName = this.addProperty('coreColumnName', DG.TYPE.COLUMN, '',
+      {nullable: true, category: 'R-groups', friendlyName: 'Core',
+        description: 'Column with the core, its attachment points marked [*:1], [*:2], …. Set it with ' +
+          'R-groups and Matrix columns to use an existing R-group decomposition instead of fragmenting'});
+    this.rGroupColumnNames = this.columnList('rGroupColumnNames', [],
+      {nullable: true, columnTypeFilter: DG.TYPE.CATEGORICAL, category: 'R-groups', friendlyName: 'R-groups',
+        description: 'Columns with the substituent at each attachment point of the core'});
+    this.axisColumnName = this.addProperty('axisColumnName', DG.TYPE.COLUMN, '',
+      {nullable: true, category: 'R-groups', friendlyName: 'Matrix columns',
+        description: 'The R-group whose substituents become the matrix columns. The core and the other ' +
+          'R-groups make up the rows'});
     this.scaling = this.string('scaling', SCALING_METHODS.MINUS_LG, {choices: Object.values(SCALING_METHODS),
       friendlyName: 'Scaling',
       description: 'Activity transform before the additive model: none, log (lg) or −log (-lg)'});
@@ -446,6 +490,8 @@ export class SarMatrixViewer extends DG.JsViewer {
         this.transferPanel.activateTransferTab();
       return;
     }
+    if (property !== null && FRAGMENT_ONLY_PROPS.includes(property.name) && this.rGroupColumns() !== null)
+      return;
     this.scheduleCompute();
   }
 
@@ -471,6 +517,39 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.render();
   }
 
+  /** Why the R-group settings cannot build a matrix, or null when they can or are all empty. */
+  private rGroupFault(): string | null {
+    const core = this.coreColumnName;
+    const axis = this.axisColumnName;
+    if (!core && !axis)
+      return null;
+    if (!core || !axis)
+      return core ? 'pick the R-group for the matrix columns' : 'pick the core column';
+    if (core === axis)
+      return 'the core and the matrix columns are the same column';
+    const missing = [core, axis, ...(this.rGroupColumnNames ?? [])].filter((name) => !this.dataFrame?.col(name));
+    return missing.length > 0 ? `${missing.map((name) => `"${name}"`).join(', ')} not found in the table` : null;
+  }
+
+  /** The R-group columns the matrices are built from, or null to fragment the molecules. */
+  private rGroupColumns(): SarFragmentColumns | null {
+    if (!this.dataFrame || this.rGroupFault() !== null || !this.coreColumnName)
+      return null;
+    const core = this.dataFrame.col(this.coreColumnName)!;
+    const column = this.dataFrame.col(this.axisColumnName)!;
+    const rows = (this.rGroupColumnNames ?? []).filter((name) => name !== column.name && name !== core.name)
+      .map((name) => this.dataFrame.col(name)!);
+    return {core, rows, column};
+  }
+
+  /** Warns once per message: the property panel fires on every keystroke. */
+  private report(message: string): void {
+    if (message === this.reported)
+      return;
+    this.reported = message;
+    grok.shell.warning(`SAR Matrix: ${message}.`);
+  }
+
   /** Coalesce rapid property changes (e.g. from setOptions) into a single compute. */
   private scheduleCompute(): void {
     window.clearTimeout(this.computeTimer);
@@ -489,7 +568,19 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.dirty = true;
       return;
     }
+    // Incomplete R-group settings run nothing rather than fragmenting the whole table; a saved set still restores.
+    const fault = this.rGroupFault();
+    const restorable = !this.matrices.length && this.matricesData !== '' && this.matricesData !== '[]';
+    if (fault !== null && !restorable) {
+      this.report(fault);
+      if (!this.matrices.length) {
+        ui.empty(this.host);
+        this.host.appendChild(ui.divText(`SAR Matrix: ${fault}.`));
+      }
+      return;
+    }
 
+    this.reported = '';
     this.computing = true;
     this.analogPanels.clear();
     this.selectedCell = null;
@@ -517,6 +608,7 @@ export class SarMatrixViewer extends DG.JsViewer {
         threshold: this.threshold,
         rankScheme: this.rankScheme as SarRankScheme,
         seriesColumn: this.seriesColumnName ? this.dataFrame.col(this.seriesColumnName) : null,
+        fragmentColumns: this.rGroupColumns(),
       };
       // A set carried in by a layout is the analysis already; rebuilding it would cost minutes. An
       // empty one is not a set: restoring it would leave the settings that produced it unable to run.
@@ -1357,6 +1449,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (i === 0 || columns[i - 1].position !== column.position)
         firstOfGroup.add(i);
     });
+    const axisIsChemical = columns.some((column) => column.substSmiles.includes('[*:'));
 
     const df = DG.DataFrame.create(rows.length);
     df.columns.addNewString('Core');
@@ -1384,13 +1477,11 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Cap attachment points off the header so it names the shared scaffold without labelling filled sites.
     const headerCore = sharedCore === null ? null : sharedCore.replace(/\[\*:\d+\]/g, '[H]');
     const paneTemplate = headerCore !== null ? buildAlignmentTemplate(headerCore) : null;
-    // A matrix's rows are different cores by construction, so the strict shared core is almost never
-    // found and the header would caption a column while showing nothing. The matrix's key is the
-    // scaffold those rows do share, exact because it comes from the fragmentation, not an anchor.
     const onlyMatrix = rows.length > 0 && rows.every((row) => row.matrix === rows[0].matrix) ?
       rows[0].matrix : null;
-    const headerDepiction = headerCore ?? (onlyMatrix === null ? null : matrixCore(onlyMatrix));
-    const state: MatrixGridState = {grid, df, rows, columns, colKeyToIdx, firstOfGroup,
+    // The H-capped shared core draws no attachment point, so it is only the fallback across matrices.
+    const headerDepiction = onlyMatrix !== null ? matrixCore(onlyMatrix) : headerCore;
+    const state: MatrixGridState = {grid, df, rows, columns, colKeyToIdx, firstOfGroup, axisIsChemical,
       headerDepiction, paneTemplate, rowTemplates: new Array(rows.length).fill(null)};
 
     // Owned by this grid instance; unsubscribed when replaced or on detach so renders don't leak handlers.
@@ -1597,6 +1688,10 @@ export class SarMatrixViewer extends DG.JsViewer {
       return false;
     const {paneRow, ci} = resolved;
     const cell = paneRow.matrix.cells[paneRow.rowIndex][ci];
+    if (cell.kind === 'impossible') {
+      ui.tooltip.show(ui.divText('This row has no attachment point for this substituent.'), x, y);
+      return true;
+    }
     // A threshold-blanked cell must hover as empty too, or the hidden value returns under the cursor.
     if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(paneRow.matrix, paneRow.rowIndex, ci))
       return false;
