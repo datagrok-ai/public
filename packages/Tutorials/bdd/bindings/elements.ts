@@ -27,3 +27,10 @@ element('tutorial title', {selector: '.tutorials-root-header h1', aliases: ['run
 
 element('tutorial progress', {selector: '.tutorials-root-progress [role="progressbar"]',
   description: 'the running tutorial\'s progress bar (aria-valuenow of aria-valuemax), beside its "Step: N of M" caption'});
+
+kind('cliff molecule', {
+  aliases: ['cliff molecules'],
+  selector: '.chem-activity-cliffs-molecule[role="button"]',
+  match: ['aria'],
+  description: 'a molecule of the pair the Activity Cliffs pane shows (Chem), named "molecule of row N"; a click makes its row current',
+});

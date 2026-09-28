@@ -137,6 +137,49 @@ export const hoverArea = When('user hovers over the {string} area of {widget}', 
   await v.settle(page, target);
 }, {tier: 'ui', description: 'snapshots the canvas first, so "should not have repainted" can follow'});
 
+/* An area of a kind whose names depend on the run — the Nth line an activity-cliffs plot drew, a marker
+   whose row a zoom decides. "the first "line" area" is the first area named "line …" the viewer
+   reports now, in its own order; the step remembers which it took, so a later step can act on it. */
+const firstAreaTaken = new WeakMap<Page, string>();
+
+/* "free" skips an area whose box another kind of area overlaps: a label drawn over a line takes the
+   pointer, so hovering that line raises the label's tooltip instead. */
+async function firstAreaOf(page: Page, target: ElementRef, kind: string, free = false): Promise<string> {
+  let name: string | undefined;
+  const overlaps = (a: {x: number; y: number; width: number; height: number}, b: typeof a) =>
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  // the names are read off a finished frame, as every other area step reads its area
+  await v.settle(page, target);
+  await expect.poll(async () => {
+    const areas = await v.hitAreas(page, target);
+    const names = Object.keys(areas);
+    const others = names.filter((n) => !n.startsWith(`${kind} `) && n !== 'view' && areas[n].width * areas[n].height < 40000);
+    name = names.find((n) => n.startsWith(`${kind} `) && (!free || !others.some((o) => overlaps(areas[n], areas[o]))));
+    return name != null ? 'found' : `${target.phrase} reports no "${kind} …" area; it has: ${names.slice(0, 20).join(', ')}`;
+  }, {message: `the first "${kind}" area of ${target.phrase}`}).toBe('found');
+  firstAreaTaken.set(page, name!);
+  return name!;
+}
+
+export const hoverFirstArea = When('user hovers over the first {string} area of {widget}', async (page: Page, kind: string, target: ElementRef) =>
+  hoverArea(page, await firstAreaOf(page, target, kind), target),
+{tier: 'ui', description: 'the first area named "<kind> …" the viewer reports, whatever its number'});
+
+export const hoverFirstFreeArea = When('user hovers over the first free {string} area of {widget}', async (page: Page, kind: string, target: ElementRef) =>
+  hoverArea(page, await firstAreaOf(page, target, kind, true), target),
+{tier: 'ui', description: 'the first area named "<kind> …" that no other kind of area (a label, a marker) overlaps'});
+
+export const clickFirstArea = When('user clicks on the first {string} area of {widget}', async (page: Page, kind: string, target: ElementRef) =>
+  clickArea(page, await firstAreaOf(page, target, kind), target),
+{tier: 'ui', description: 'the first area named "<kind> …" the viewer reports — for a grid, the first row it shows, whatever the table row'});
+
+export const clickTakenArea = When('user clicks on that area of {widget}', async (page: Page, target: ElementRef) => {
+  const name = firstAreaTaken.get(page);
+  if (name == null)
+    throw new Error('no area was taken by an earlier "the first … area" step');
+  await clickArea(page, name, target);
+}, {tier: 'ui', description: 'the area the last "the first … area" step took'});
+
 export const clickAreaHolding = When('user clicks on the {string} area of {widget} holding {key}', async (page: Page, area: string, target: ElementRef, key: string) => {
   const c = v.centerOf(await v.hitArea(page, target, area, true));
   await withKeys(page, keysOf(key), () => page.mouse.click(c.x, c.y));

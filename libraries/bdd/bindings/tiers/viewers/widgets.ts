@@ -1036,3 +1036,35 @@ export const walkToColumn = When('user moves the current cell of {widget} to the
     {message: `the current column of ${target.phrase}`}).toBe(column);
   await settle(page, target);
 }, {tier: 'ui', description: 'arrow presses in the grid from the current column; the grid scrolls the column into view'});
+
+// --- the dock around a viewer ----------------------------------------------------------------------
+
+/* The border between a docked viewer and what is docked above it is the dock manager's horizontal
+   splitbar: a sibling of the container the viewer sits in, or of one of that container's ancestors.
+   The step drags it and claims the viewer grew. */
+export const dragTopBorder = When('user drags the top border of {widget} by {int} pixels up', async (page: Page, target: ElementRef, px: number) => {
+  const loc = await v.viewerLocator(page, target);
+  const before = (await loc.boundingBox())!;
+  const bar = await loc.evaluate((root) => {
+    const top = root.getBoundingClientRect().top;
+    for (let e: Element | null = root; e != null; e = e.parentElement) {
+      const prev = e.previousElementSibling as HTMLElement | null;
+      if (prev != null && prev.classList.contains('splitbar-horizontal')) {
+        const r = prev.getBoundingClientRect();
+        if (Math.abs(r.bottom - top) < 40)
+          return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+      }
+    }
+    return null;
+  });
+  if (bar == null)
+    throw new Error(`${target.phrase} has no dock border above it: it is not docked below another panel`);
+  await page.mouse.move(bar.x, bar.y);
+  await page.mouse.down();
+  await page.mouse.move(bar.x, bar.y - px / 2);
+  await page.mouse.move(bar.x, bar.y - px);
+  await page.mouse.up();
+  await expect.poll(async () => Math.round((await loc.boundingBox())?.height ?? 0),
+    {message: `the height of ${target.phrase} after the drag (was ${Math.round(before.height)})`}).toBeGreaterThan(Math.round(before.height) + px / 2);
+  await settle(page, target);
+}, {tier: 'ui', description: 'the dock splitbar right above the viewer dragged up; the viewer is claimed taller by at least half the distance'});
