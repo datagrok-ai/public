@@ -170,8 +170,20 @@ export function defaultAxis(columns: DG.Column[]): DG.Column | undefined {
   return scored[0]?.column;
 }
 
-/** Records cut to what one matrix may hold, least-populated lines first. */
-function boundedRecords(records: PositionRecord[], spec: SarFragmentColumns): PositionRecord[] {
+/** A series too large for one matrix, and how much of it the matrix shows. */
+export interface SeriesCut {
+  clusterId: string;
+  rows: number;
+  columns: number;
+  keptRows: number;
+  keptColumns: number;
+  compounds: number;
+  leftOut: number;
+}
+
+/** Records cut to what one matrix may hold, keeping the rows and columns with the most compounds. */
+function boundedRecords(records: PositionRecord[], spec: SarFragmentColumns):
+  {records: PositionRecord[], cut: Omit<SeriesCut, 'clusterId'> | null} {
   const rowKey = (r: PositionRecord): string =>
     [r.coreSmiles, ...spec.rows.map((c) => r.values[c.name] ?? '')].join('\0');
   const rows = rankByFrequency(records.map(rowKey));
@@ -181,11 +193,34 @@ function boundedRecords(records: PositionRecord[], spec: SarFragmentColumns): Po
     Math.floor(MAX_MATRIX_CELLS / Math.min(MAX_MATRIX_ROWS, rows.length)));
   const maxRows = Math.min(MAX_MATRIX_ROWS, rows.length, Math.floor(MAX_MATRIX_CELLS / maxColumns));
   if (rows.length <= maxRows && columns.length <= maxColumns)
-    return records;
+    return {records, cut: null};
   const keptRows = new Set(rows.slice(0, maxRows));
   const keptColumns = new Set(columns.slice(0, maxColumns));
-  grok.shell.warning(`SAR Matrix: a ${rows.length} × ${columns.length} matrix was cut to ${maxRows} × ${maxColumns}.`);
-  return records.filter((r) => keptRows.has(rowKey(r)) && keptColumns.has(r.values[spec.column.name]));
+  const kept = records.filter((r) => keptRows.has(rowKey(r)) && keptColumns.has(r.values[spec.column.name]));
+  return {records: kept, cut: {rows: rows.length, columns: columns.length, keptRows: maxRows,
+    keptColumns: maxColumns, compounds: records.length, leftOut: records.length - kept.length}};
+}
+
+/** The warning for series cut to fit one matrix, naming them as the navigator does. */
+export function cutWarning(cuts: SeriesCut[], labelOf: (clusterId: string) => string | undefined): string | null {
+  if (cuts.length === 0)
+    return null;
+  const n = (value: number): string => value.toLocaleString('en-US');
+  const advice = 'Pick an R-group with fewer values for Matrix columns, or split the table with a Series column, ' +
+    'to see them all.';
+  if (cuts.length > 1) {
+    const names = cuts.map((cut) => labelOf(cut.clusterId)).filter((name) => name);
+    const leftOut = cuts.reduce((sum, cut) => sum + cut.leftOut, 0);
+    return `SAR Matrix: ${cuts.length} series${names.length ? ` (${names.join(', ')})` : ''} are too large for ` +
+      `one matrix, so they show only the rows and columns with the most compounds and leave out ${n(leftOut)} ` +
+      `compounds. ${advice}`;
+  }
+  const cut = cuts[0];
+  const shown = [cut.keptRows < cut.rows ? `${n(cut.keptRows)} rows` : '',
+    cut.keptColumns < cut.columns ? `${n(cut.keptColumns)} columns` : ''].filter((part) => part).join(' and ');
+  return `SAR Matrix: ${labelOf(cut.clusterId) ?? 'A series'} is too large for one matrix ` +
+    `(${n(cut.rows)} × ${n(cut.columns)} R-group combinations), so it shows only the ${shown} with the most ` +
+    `compounds and leaves out ${n(cut.leftOut)} of its ${n(cut.compounds)} compounds. ${advice}`;
 }
 
 /**
@@ -194,7 +229,7 @@ function boundedRecords(records: PositionRecord[], spec: SarFragmentColumns): Po
  * Compounds without a core or a series value are left out.
  */
 export function decomposeByColumns(spec: SarFragmentColumns, series: (string | null)[] | null,
-  activities: Float32Array): {clusters: CoreCluster[], decomps: ClusterDecomposition[]} {
+  activities: Float32Array): {clusters: CoreCluster[], decomps: ClusterDecomposition[], cuts: SeriesCut[]} {
   const rowCount = activities.length;
   const reader = new FragmentReader();
   const coreValues = reader.readColumn(spec.core, rowCount, false);
@@ -237,11 +272,14 @@ export function decomposeByColumns(spec: SarFragmentColumns, series: (string | n
 
   const clusters: CoreCluster[] = [];
   const decomps: ClusterDecomposition[] = [];
+  const cuts: SeriesCut[] = [];
   const unfilled = new Set<number>();
   for (const [label, records] of byGroup) {
-    const bounded = boundedRecords(records, spec);
-    clusters.push({id: `f${clusters.length}`, series: [], siteKey: '', level: 2,
-      label: series === null ? '' : label});
+    const {records: bounded, cut} = boundedRecords(records, spec);
+    const clusterId = `f${clusters.length}`;
+    if (cut !== null)
+      cuts.push({clusterId, ...cut});
+    clusters.push({id: clusterId, series: [], siteKey: '', level: 2, label: series === null ? '' : label});
     const fills: PositionFills = {};
     const sites: PositionFills = {};
     for (const position of positions) {
@@ -273,7 +311,7 @@ export function decomposeByColumns(spec: SarFragmentColumns, series: (string | n
     _package.logger.warning(message);
     grok.shell.warning(message);
   }
-  return {clusters, decomps};
+  return {clusters, decomps, cuts};
 }
 
 const CHECK_SAMPLE = 300;

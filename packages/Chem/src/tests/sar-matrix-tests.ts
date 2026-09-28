@@ -8,7 +8,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sar-matrix-clustering';
 import {assembleSinglePositionMatrix, fitAdditiveModel, linkStaged} from '../analysis/sar-matrix/sar-matrix-assemble';
-import {checkAgainstMolecules, decomposeByColumns, defaultAxis, holdsFragments, SarFragmentColumns,
+import {checkAgainstMolecules, cutWarning, decomposeByColumns, defaultAxis, holdsFragments, SarFragmentColumns,
   standardizeFragment}
   from '../analysis/sar-matrix/sar-matrix-columns';
 import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/sar-matrix-link';
@@ -1094,6 +1094,25 @@ category('SAR Matrix: R-group columns', () => {
     expect(offered.join(','), 'Core,R1,R2,R3,R100,R101', 'only columns holding attachment points');
     expect(defaultAxis(['R1', 'R2', 'R3', 'R100', 'R101'].map((name) => df.col(name)!))?.name, 'R2',
       'the R-group every compound has, not the bridge');
+  });
+
+  test('SPGI: a series too large for one matrix is named, with what it shows and leaves out', async () => {
+    const df = await spgiWithCore();
+    const activities = new Float32Array(df.rowCount).map((_v, i) => df.col('Average Mass')!.get(i));
+    expect(decomposeByColumns(spgiColumns(df), null, activities).cuts.length, 0, 'R2 across fits every series');
+    const byR1: SarFragmentColumns = {core: df.col('Core')!,
+      rows: ['R2', 'R3', 'R100', 'R101'].map((name) => df.col(name)!), column: df.col('R1')!};
+    const {cuts} = decomposeByColumns(byR1, null, activities);
+    expect(cuts.length, 1, 'with R1 across, only the triazoles exceed one matrix');
+    const cut = cuts[0];
+    expect(cut.keptRows === cut.rows && cut.keptColumns < cut.columns, true, 'the columns are what is cut');
+    expect(cut.keptRows * cut.keptColumns <= 250000 && cut.leftOut > 0, true, JSON.stringify(cut));
+    const message = cutWarning(cuts, () => 'Series 4')!;
+    const n = (value: number): string => value.toLocaleString('en-US');
+    for (const part of [`Series 4 is too large for one matrix (${n(cut.rows)} × ${n(cut.columns)} R-group`,
+      `shows only the ${n(cut.keptColumns)} columns with the most compounds`,
+      `leaves out ${n(cut.leftOut)} of its ${n(cut.compounds)} compounds`, 'fewer values for Matrix columns'])
+      expect(message.includes(part), true, `"${part}" in: ${message}`);
   });
 
   test('SPGI: every compound rebuilds from its core and R-groups', async () => {

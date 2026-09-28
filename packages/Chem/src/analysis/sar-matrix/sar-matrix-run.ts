@@ -7,7 +7,8 @@ import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragment
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {assembleMultiPositionMatrix} from './sar-matrix-assemble';
-import {checkAgainstMolecules, decomposeByColumns, SarFragmentColumns} from './sar-matrix-columns';
+import {checkAgainstMolecules, cutWarning, decomposeByColumns, SarFragmentColumns, SeriesCut}
+  from './sar-matrix-columns';
 import {ClusterDecomposition, decomposeClusters} from './sar-matrix-decompose';
 import {computeMatrixConfidence} from './sar-matrix-confidence';
 import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeriesByColumn, groupSeriesBySite,
@@ -231,9 +232,10 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   let t = performance.now();
   let clusters: CoreCluster[];
   let decomps: (ClusterDecomposition | null)[];
+  let cuts: SeriesCut[] = [];
   if (params.fragmentColumns) {
     const read = decomposeByColumns(params.fragmentColumns, assigned, activities);
-    ({clusters, decomps} = read);
+    ({clusters, decomps, cuts} = read);
     const {checked, mismatched} = await checkAgainstMolecules(read.decomps, molList);
     if (mismatched > 0 && mismatched * 10 >= checked) {
       const message = `SAR Matrix: ${mismatched} of ${checked} compounds checked are not what their core and ` +
@@ -351,6 +353,11 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   // themselves already carry their own name and must keep it.
   if (assigned === null)
     assignSeriesLabels(matrices);
+  const cutMessage = cutWarning(cuts, (id) => matrices.find((matrix) => matrix.id === id)?.label);
+  if (cutMessage !== null) {
+    _package.logger.warning(cutMessage);
+    grok.shell.warning(cutMessage);
+  }
   // Started before the confidence pass rather than after it: linking is a worker round-trip and the
   // fit is main-thread, so run in sequence each waits on the other for no reason. They touch disjoint
   // fields — the fit reads `kind`/`value` and writes `fit`, linking writes `smiles` on virtual cells —
