@@ -35,6 +35,10 @@ browser or a logged-in session.
 | See what fields an entity type has                          | `grok s describe connections`                          |
 | Hit any undocumented endpoint                               | `grok s raw GET /users/current` / `raw POST <path> --data '{...}'` |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
+| See, acknowledge or mute the deployment's alerts            | `grok s alerts list` / `alerts mute <kind:key> --for 2h --reason ...` |
+| Errors grouped by signature, package, group, ...            | `grok s errors top --since 7d --by signature,package`  |
+| Turn logging up for one package / user, time-boxed          | `grok s logger set server --debug-flags +query --scope package:Chem --for 30m` |
+| Capture what one user or group does, then read it           | `grok s capture add --user alice --view "Hit Triage" ...` / `grok s timeline --report 4820` |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 | Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
 | Browse / query / edit domain-table rows                    | `grok s domains query grit.issue --filter 'status = "open"'` / `domains insert` / `domains upload` |
@@ -67,6 +71,10 @@ servers:
   is the API base (`https://host/api`, or `http://host:8082` for a bare Datlas).
 - `grok s token` prints a session token for the target server — what a shell script needs
   when it has to call the API with `curl` itself.
+- `--host` may repeat for `alerts list|detection`, `errors list|top|diff` and
+  `logger get|overrides|diff`: each host answers in turn and a `HOST` column is prepended. A
+  host that fails is reported on stderr, the others still print, and the run exits 1. Every
+  other command refuses a repeated `--host`.
 
 ## Entity operations
 
@@ -461,6 +469,123 @@ module the server does not report exits 1. Requires a valid dev key (standard `g
 For an anonymous liveness probe — load balancer, k8s readiness — hit `/admin/health` directly;
 it's on the server's unauthenticated allowlist.
 
+## Alerts, errors, logging and capture
+
+These commands read and change the deployment's observability state: the alerts every server
+shares, errors as query results, the logging policy with its time-boxed overrides, and capture
+rules that record one user's or group's activity for a while. Times in tables are `HH:MM` when
+today, else `MM-DD HH:MM`; request ids are shortened to `01J9…7K`. `--help` after a command
+(`grok s errors --help`) prints all of its options.
+
+### Alerts
+
+```bash
+grok s alerts list --status open,acknowledged            # default: open, acknowledged, muted; `all` for every status
+grok s alerts list --status open --host prod --host val --host sandbox
+grok s alerts get connection:ELN:Prod                    # id: UUID, unique UUID prefix (6+), or kind:key
+grok s alerts ack health:jupyter --reason "restarting the gateway"
+grok s alerts mute error-incident:a41f9c --until-version 1.14.3 --reason "fixed in Chem 1.14.3"
+grok s alerts mute connection:ELN:Prod --until 2026-10-04T06:00 --reason "monthly ELN maintenance"
+grok s alerts mute error-incident:7c02e1 --until 14:00 --reason "hotfix deploying"
+grok s alerts unmute connection:ELN:Prod
+grok s alerts resolve report:4820 --reason "duplicate of 4819"
+grok s alerts detection                                   # servers, liveness, and which one holds detection
+```
+
+`list` prints `KIND KEY SEV AUDIENCE STATUS OPENED BY SUMMARY`, where `BY` is the server that
+opened the alert. `mute` takes exactly one of `--for`, `--until` (ISO local time, or `HH:MM`
+today), `--until-version` or `--forever`, and always a `--reason`; it prints
+`muted <kind:key> until <…> — <reason>`. Muting through any server applies to all of them. A key
+may itself contain colons: `connection:ELN:Prod` is kind `connection`, key `ELN:Prod`.
+`detection` prints `SERVER HOST VERSION LAST SEEN LIVE ELIGIBLE OWNER`, with `*` on the lease
+holder. Needs the `ManageAlerts` permission.
+
+### Errors
+
+```bash
+grok s errors list --user alice --since 2h                # occurrences: TIME USER SOURCE SIG ERROR PACKAGE VERSION ROUTE SERVER REQ
+grok s errors top --since 7d --by signature,package --min-users 2 --limit 5
+grok s errors top --route "POST /api/queries/{id}/run" --since 1h --by connection
+grok s errors top --since 30d --group Chemists --by package
+grok s errors show a41f9c --since 24h
+grok s errors diff --before 2026-09-14..2026-09-20 --after 2026-09-21..2026-09-27
+grok s errors diff --since 7d --host prod --host val
+grok s errors top --since 7d --by package,group --format parquet > errors-w39.parquet
+grok s errors export --since 7d --by signature --format csv -O errors.csv
+grok s errors save "Errors by team, weekly" --since 7d --by group,package --schedule "MON 07:00" --to "System:AppData/Ops/errors/"
+```
+
+Filters for every verb: `--since 7d` (default 24h) or `--from`/`--to` (ISO, or relative `-7d`),
+`--signature`, `--package`, `--version`, `--user`, `--group`, `--service server|client`,
+`--route` (the `/api` prefix and the method are optional), `--server`, `--connection`,
+`--function`, `--regressed`, `--min-users`, `--min-count`.
+
+`top` groups by up to three of `signature package version user group service route server
+connection function` (default `signature`). Grouped by signature it prints `SIG … ERROR USERS
+COUNT FIRST SEEN LAST TREND STATE`: `FIRST SEEN` is `<version> · MM-DD`, `TREND` one block per
+day (`--trend hour` for hours), `STATE` is `open`, `muted → 1.14.3`, `muted until 14:00` or
+`resolved`. Grouped without signature it prints `SIGNATURES USERS COUNT NEW FIRST SEEN IN LAST
+TREND TOP ERROR`. `show` prints one signature: versions, occurrences, users, the top groups,
+reports, its alert and the package publish that preceded it. `diff --before/--after` prints the
+`NEW`, `GONE`, `RISEN` and `REGRESSED` counts with their top signature, then incidents and
+reports; `diff --host a --host b` prints the signatures seen only on each deployment and on both.
+
+`--format csv|json|parquet` writes the raw rows to stdout or `-O <file>` (distinct from
+`--output`, which formats tables). CSV and JSON come from the server; Parquet is written by the
+CLI from the JSON rows and needs the `apache-arrow` and `parquet-wasm` packages next to `grok`.
+`save` creates a job that writes CSV or JSON to a file share path on a schedule (`MON 07:00`,
+`DAILY 07:00`, `WEEKDAYS 07:00` or a cron string); a path ending in `/` gets
+`<name>-{date}.<format>`, and `--to` names that path, so a saved job takes `--since`, not
+`--from`/`--to`. Needs `ViewTelemetry`, or a `--group` filter on a group you administer.
+
+### Logging policy
+
+```bash
+grok s logger get server                                  # levels, debug flags, locks, group settings, active overrides
+grok s logger get --scope package:Snowflake               # effective settings for a scope, each with its source
+grok s logger set server --debug-flags +queries --scope package:Snowflake --for 30m --reason "ELN timeouts"
+grok s logger set server --save-levels -debug --reason "too much"      # base change for All Users
+grok s logger set --scope group:Chemists --print-levels error,warning
+grok s logger set --set exportFlushSeconds=5 --reason "faster sync"   # any settings path, base only
+grok s logger diff                                        # current policy vs deployment defaults, overrides included
+grok s logger diff --version 12                           # vs a history version
+grok s logger diff --host prod --host val
+grok s logger overrides
+grok s logger history --limit 20
+grok s logger revert                                      # undo the most recent change
+grok s logger revert --override <id>
+```
+
+Lists (`--print-levels`, `--post-levels`, `--save-levels`, `--debug-flags`) take `a,b` to
+replace or `+a,-b` to edit; mixing both is refused. Debug flags are the platform's (`db socket
+query hash storage credentials ...`); `queries` and `files` are accepted for `query` and
+`storage`. `--for`/`--until` make a time-boxed override (at most 7 days); a user, session or
+package scope without them lasts one hour; scope `all` or `group:<name>` without them changes the
+base settings. A setting the deployment locks is refused with `error: <lock> is locked by
+deployment configuration` and exit 1. `server` is the only target for now. Needs
+`EditPluginsSettings`.
+
+### Capture rules and timelines
+
+```bash
+grok s capture add --user alice.mendel --view "Hit Triage" --capture clicks,inputs,requests,calls,errors,server:debug=queries,files --for 2d --limit 2000 --reason "GROK-21044: campaign loses filters"
+grok s capture add --group Chemists --view "Hit Triage" --capture clicks,requests,errors --for 7d --anonymous --reason "submit drop-off"
+grok s capture list --all --since 90d                     # RULE AUTHOR SUBJECT SCOPE REASON ACTIVE EVENTS
+grok s capture show cap-17
+grok s capture show cap-17 --timeline --output csv > cap-17.csv
+grok s capture stop cap-17 --reason "reproduced"
+grok s timeline --report 4820                             # same as: grok s api GET "/log/timeline?report=4820"
+grok s timeline --rule cap-17                             # or --action <id>, --request <id>, --session <id>
+```
+
+A rule names one subject (`--user`, `--group`, `--package`, `--everyone`), at most one scope
+(`--view`, `--element`, `--function`, `--error`; the session is captured for `--window` after it
+matches), what to capture, an expiry and a reason; a rule without an expiry or a reason is
+refused. `server:<level>=<flags>` must be the last capture item, and `credentials` is never
+captured. `--anonymous` is for group and everyone rules only. `timeline` prints `TIME SOURCE KIND
+SUMMARY STATUS MS REQ` with milliseconds, so the click, its requests and the server lines of one
+action read in order.
+
 ## Describing an entity type
 
 ```bash
@@ -477,7 +602,7 @@ entity exists.
 
 ## Raw API access
 
-When no dedicated subcommand exists, fall through to `grok s raw`:
+When no dedicated subcommand exists, fall through to `grok s raw` (`grok s api` is the same):
 
 ```bash
 grok s raw GET  /users/current
