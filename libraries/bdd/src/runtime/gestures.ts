@@ -52,15 +52,59 @@ export async function click(page: Page, target: ElementRef): Promise<void> {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     return;
   }
+  await approach(page, loc);
   await loc.click();
 }
 
 export async function dblclick(page: Page, target: ElementRef): Promise<void> {
-  await (await locate(page, target)).dblclick();
+  const loc = await locate(page, target);
+  await approach(page, loc);
+  await loc.dblclick();
 }
 
 export async function rightclick(page: Page, target: ElementRef): Promise<void> {
-  await (await locate(page, target)).click({button: 'right'});
+  const loc = await locate(page, target);
+  await approach(page, loc);
+  await loc.click({button: 'right'});
+}
+
+/** Brings the pointer onto the element before a locator gesture, as a hand does. Where the pointer rests
+ * (a tree node just expanded) a tooltip with links comes up over the rows below after a delay, takes the
+ * pointer in and stays up while it is over it; Playwright, which moves only once the element is clear, waits
+ * out its timeout behind it. Leaving the resting place cancels a tooltip still to come; one already up is
+ * left from a part of the element it does not cover (or the corner), and goes down once the pointer is off
+ * its owner. Anything else over the middle of the element is not landed on either: a balloon stops its
+ * autohide timer while the pointer is over it (balloon.dart onMouseEnter), so a pointer resting there would
+ * keep it up for good. */
+async function approach(page: Page, loc: Locator): Promise<void> {
+  if (!await loc.isVisible().catch(() => false))
+    return;
+  const covered = (): Promise<boolean> => loc.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('.d4-tooltip');
+  }).catch(() => false);
+  const aim = await loc.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const y = r.top + r.height / 2;
+    const cx = r.left + r.width / 2;
+    const middle = document.elementFromPoint(cx, y);
+    if (!middle || el.contains(middle))
+      return {x: cx, y, tooltip: false};
+    const tooltip = !!middle.closest('.d4-tooltip');
+    for (const f of [0.05, 0.25, 0.75, 0.95]) {
+      const x = r.left + r.width * f;
+      const top = document.elementFromPoint(x, y);
+      if (top && el.contains(top))
+        return {x, y, tooltip};
+    }
+    return {x: 1, y: 1, tooltip};
+  }).catch(() => null);
+  if (aim === null)
+    return;
+  await page.mouse.move(aim.x, aim.y);
+  // a tooltip that stays leaves the gesture to wait as it always did
+  if (aim.tooltip)
+    await expect.poll(covered, {message: 'a tooltip over the element', timeout: 5000}).toBe(false).catch(() => undefined);
 }
 
 /** Clicks the element and answers the file chooser it opens with a file of the bdd project
@@ -618,6 +662,18 @@ export async function dragSlider(page: Page, target: ElementRef, value: number):
   await page.mouse.down();
   for (let i = 1; i <= 8; i++)
     await page.mouse.move(from + (to - from) * i / 8, y);
+  // the thumb travels a track shorter than the input by its own width, so the aim can land a step off: a hand
+  // watches the value and nudges the thumb before letting go
+  const want = track.step > 0 ? track.min + Math.round((value - track.min) / track.step) * track.step : value;
+  const close = Math.max(track.step, (track.max - track.min) / box.width) / 2;
+  let x = to;
+  for (let i = 0; i < 40; i++) {
+    const now = Number(await range.inputValue());
+    if (Math.abs(now - want) <= close)
+      break;
+    x += now < want ? 1 : -1;
+    await page.mouse.move(x, y);
+  }
   await page.mouse.up();
   const tolerance = Math.max(track.step, (track.max - track.min) / box.width) * 2;
   await expect.poll(async () => Math.abs(Number(await range.inputValue()) - value) <= tolerance,

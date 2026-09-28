@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {after, awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
-import {callMvaTransform, getMvaNames, MvaInput, MvaNames} from '../pls/pls-tools';
+import {callMvaTransform, getMvaNames, MvaInput, MvaNames, runDemoMVA} from '../pls/pls-tools';
 import {MVA_MODEL_TAG, MVA_TRANSFORM_FUNC, TITLE} from '../pls/pls-constants';
 
 const DATA_FILE = 'System:AppData/Eda/drugs-props-train.csv';
@@ -152,6 +152,12 @@ category('Multivariate analysis: projects', () => {
     const tableName = tv.dataFrame.name;
     await saveAndOpenProject(tv, names, false);
     await checkResults(tableName, names);
+  }, {timeout: TIMEOUT});
+
+  test('Closing the view during the analysis', async () => {
+    const analysis = runDemoMVA();
+    grok.shell.closeAll();
+    await analysis;
   }, {timeout: TIMEOUT});
 
   after(async () => {

@@ -283,7 +283,7 @@ type TemplateInfo = {
 ```
 
 Enumerate the template slots produced by [`(template)` wildcard
-selectors](./link-query-language#wildcard-selectors) on each side, in
+selectors](./link-query-language-advanced#wildcard-selectors) on each side, in
 spec order. Each entry pairs the link-io name with the underlying script
 IO id. Returns `[]` when no wildcard selectors are used.
 
@@ -333,7 +333,7 @@ pairs slots by index. For each pair:
   corresponding output, in declaration order. This is the original
   behavior.
 - **template ↔ template**: when both slots come from
-  [`(template)` wildcard selectors](./link-query-language#wildcard-selectors),
+  [`(template)` wildcard selectors](./link-query-language-advanced#wildcard-selectors),
   the handler matches their IOs by script IO name (not position) and
   silently drops anything unique to one side.
 - **template ↔ bare**: throws — flip the order or split the link.
@@ -706,45 +706,79 @@ Three extra operations are registered:
   spec, so `{'!!': {columnsMissing: [...]}}` is a schema check and the same
   expression inside `cat` names the offending columns in the message.
 - `len`: length of a string or array, or the row count of a dataframe.
+- `columnIs`: a column and a kind; `true` when the column has that kind.
+- `nulls`: a column; its number of missing values (`0` for anything else).
+- `regex`: a string, a pattern and optional flags; `true` when the string
+  matches.
+- `script`: a GrokScript expression string, evaluated synchronously over the
+  rule context (every alias as a variable); `undefined` when it fails or the
+  platform predates 1.28.0.
+- `scriptVerdict`: the same, with the platform's `validator:` contract:
+  `null` when the result is neither `false` nor a string, else the message.
+
+A kind is one of the platform column kinds (`numerical`,
+`numerical_no_datetime`, `categorical`, `datetime`,
+`categorical_or_datetime`), a column type such as `int`, or a semantic
+type such as `Molecule`. `var` paths walk into platform objects, so
+`col.name`, `col.type` and `col.semType` are valid references.
 
 Truthiness of `when` follows JSON Logic rules. `when` omitted or `null`
 means the rule is always on. All effects of one rule share its `when`;
 split effects with different conditions into separate rules.
 
-JSON Logic reads any object with exactly one key as an operation. To pass
-such an object as a value, wrap it: `{literal: {foo: 1}}` evaluates to
-`{foo: 1}` wherever it appears in an expression.
+A validator `message` that evaluates to an array yields one item per
+element, and an empty array yields nothing, so a message can be built
+with `map` and `filter` over a list.
 
-### Effects
+### Sources
 
-Every effect has an "on" state written while `when` holds and an "off"
-state written otherwise, so a rule fully re-derives its outputs on each
-run. `targets` is a `to` alias or an array of them.
+Values that need a function call, or plain JavaScript over the inputs,
+enter a rule through `sources`, a map of aliases to resolvers. Each alias
+becomes a variable of the expression context next to the `from` aliases,
+and the `verdicts` effect writes a `validators` source's result without
+any expression. Two resolvers exist:
 
-| Effect | Link | On | Off | Fields |
-|---|---|---|---|---|
-| `hide` / `show` | meta | `hidden: true` / `hidden: false` | the inverse | |
-| `items` | meta | `items: <evaluated>` | key omitted | `items` |
-| `meta` | meta | evaluated key/value pairs | keys omitted | `meta` |
-| `error` / `warning` / `notification` | validator | one message per target | cleared | `message` |
-| `set` | data | `setAll(target, value, restriction)` | restores the target's initial restriction | `value`, `restriction` (default `none`) |
-| `clear` | data | `setAll(target, null, restriction)` | no-op | `restriction` (default `none`) |
+- `validators`: `{input: <alias>, names?: [...]}`. With `names`, each
+  function is called with the value of `input` as its single argument and
+  the results follow the validator contract: `null` or `true` pass, a
+  string is the message, `false` is a generic failure naming the function,
+  a thrown error becomes a warning. Without `names`, the platform runs the
+  validators the io's own annotation declares (`FuncCall.evalParamValidators`,
+  1.28.0 or later; `[]` on older clients and in mock mode). For that,
+  expansion adds a `(call)` input for the step behind `input` on its own,
+  under the reserved alias `call`. The result is a list of
+  `{message, isError, isHelper}` items, empty when the value is absent.
+- `js`: `{args: [...], fn: (...values) => any}`. `fn` is called with the
+  values of the `args` input aliases, in order, and its result, or the
+  value of the promise it returns, becomes the alias. Like a handler, it
+  runs on every run of the rule's links, so keep `from` to what the rule
+  reads when `fn` is slow. `fn` runs even when an argument is absent.
 
-Like every data link, a rule's data link runs when one of its `from`
-values changes and never when a target changes. So `clear` resets the
-target each time an input changes while `when` holds, and the user can
-edit the target freely in between. `clear` is `set` with a `null` value.
-Rules hold no memory of previous runs: their outputs are always a
-function of the current values.
+```
+{
+  id: 'tolerance',
+  type: 'rule',
+  from: ['mode:solver/mode', 'tol:solver/tolerance', 'amb:solver/ambTemp'],
+  to: ['t:solver/tolerance', 'init:solver/initTemp'],
+  sources: {v: {validators: {input: 'tol', names: ['Pkg:checkTolerance']}}},
+  when: {'==': [{var: 'mode'}, 'advanced']},
+  effects: [
+    {effect: 'show', targets: 't'},
+    {effect: 'verdicts', targets: 't', source: 'v'},
+    {effect: 'warning', targets: 't', message: 'Custom tolerance is slower'},
+    {effect: 'error', targets: 'init', message: {cat: ['Must exceed ambient ', {var: 'amb'}]}},
+    {effect: 'set', targets: 'init', value: {var: 'amb'}, restriction: 'restricted'},
+  ],
+}
+```
 
-Rule data effects are defaults, not propagated results, so unlike plain
-[data links](#data-links) they use the `none` restriction unless one is
-given: the value is written directly and no consistency is tracked.
-Pass `restriction: 'restricted'` (or another type) to get the data-link
-behaviour. The [consistency](#consistency) rule for steps that have
-already run still applies: on a step whose outputs are current, an
-effect with `none` does nothing, and an effect with any other
-restriction only records the restriction and leaves the value alone.
+Sources share the rule's `when` with the effects and can be read in
+expressions like any input (`{'!': {var: 'v'}}` holds while the
+validators pass). Every link of a rule resolves its sources before it
+evaluates, and awaits only when a source returns a promise. A `validators`
+source that makes no call (absent value, no FuncCall, old platform) and a
+`js` source with a synchronous `fn` resolve synchronously, so the link
+stays batchable.
 
 ### Expansion
 
@@ -754,7 +788,8 @@ and `r::data`, one per effect family present. Each copies `from`, `not`,
 entries its effects target, and carries `{when, effects}` in
 [`params`](#params). `debounce` is passed to the validator link and
 `runOnInit` to the data link. The `(call)` and `(template)` flags are not
-allowed in rule queries.
+allowed in rule queries; the `call` input a [source](#sources) needs is
+added by the expansion.
 
 Config processing rejects a rule whose effect targets an unknown `to`
 alias, whose `to` alias is targeted by no effect, whose expression
@@ -766,9 +801,73 @@ Rules are self-contained: two rules writing the same effect to the same
 io is a configuration error, and which value ends up in the merged meta
 is unspecified.
 
-The default missing-value validators the driver adds for non-optional
-inputs are instances of the same built-in validator handler.
+The default validators the driver adds from function annotations are
+instances of the same built-in validator handler; see [Checks](#checks).
 
+
+## Checks
+
+Checks are the driver's version of the validation a function annotation
+declares. The driver reads the annotation options of every step's inputs
+at config processing and adds one validator per option, so the checks hold
+in every run, including runs with no form on screen. The same options can
+be written in a workflow config as a `check` link, for a script that does
+not declare them or to tighten what it declares. Both paths share one
+expansion, so an annotation and a `check` with the same options produce
+the same validator links, messages and severities.
+
+```
+//input: int    v    = 5 {min: 0; max: 10}
+//input: string code     {validator: /^[0-9]{4}$/i}
+//input: string mode     {choices: ["fast", "exact"]}
+//input: column col      {type: numerical; table: df; allowNulls: false}
+//input: double a        {nullable: true}
+```
+
+```
+{id: 'v',    type: 'check', io: 'solver/v',    check: {min: 0, max: 10}},
+{id: 'code', type: 'check', io: 'solver/code', check: {validator: '/^[0-9]{4}$/i'}},
+{id: 'mode', type: 'check', io: 'solver/mode', check: {choices: ['fast', 'exact']}, severity: 'warning'},
+{id: 'col',  type: 'check', io: 'solver/col',  check: {type: 'numerical', table: 'solver/df', allowNulls: false}},
+```
+
+| Option | Holds when | Message | Notes |
+|---|---|---|---|
+| `nullable: false` | the value is present | Missing value | The default for every input; `optional` is a synonym. As an annotation, `nullable: true` or `optional: true` removes it; a `check` cannot relax it. |
+| `min`, `max` | the value is within the bound | Must be at least / at most N | Numeric inputs. |
+| `validator` (regex literal) | the string matches `/pattern/flags` | Must match /pattern/flags | |
+| `validator` (expression) | the GrokScript expression is not `false` and not a string | the expression text, or the string it returned; "Error during validation" when it fails | Evaluated with [`scriptVerdict`](#expressions) over `value` and the step's inputs by name; platform 1.28.0 or later, skipped with one console warning on older clients. |
+| `visible` | the GrokScript expression is not `false` | none; the input is hidden through meta, which also makes it optional | A meta link, not a validator; same evaluation and platform requirement as the expression validator. |
+| `choices` | the value is in the list | Must be one of: ... | Only a literal list; function-backed choices are ignored. |
+| `type`, `semType` | the column has the kind | Column must be ... | Kinds as in [`columnIs`](#expressions). |
+| `table` | the column's name is among the table's columns | Column does not belong to the table | An annotation names a parameter, defaulting to the first dataframe input; a `check` names the table io with a query. |
+| `allowNulls: false` | the column has no missing values | Column has missing values | |
+| `validators` | every named validator function passes | the validators' own messages; a `false` result becomes "Validation failed: name", a thrown error a warning | Each function is called with the value as its single argument, following the [validator contract](../../datagrok/concepts/functions/func-params-annotation.md#validation). The annotation-derived check instead lets the platform run the script's own validators (`FuncCall.evalParamValidators`, platform 1.28.0 or later; skipped with one console warning on older clients), which also covers validators the platform injects, such as the one behind `allowNulls`. |
+
+An absent value satisfies every check except `nullable: false`, so the
+required check is the only one that reports a missing input. Checks on an
+input hidden via meta are suppressed like every other validator, including
+by a `visible` check on the same input.
+
+Annotation-derived expression checks see every input of the step under its
+parameter name plus `value`; a `check` link names the inputs its expression
+reads in `vars`:
+
+```
+{id: 'foo', type: 'check', io: 'solver/foo', check: {validator: 'bar > 3'}, vars: {bar: 'solver/bar'}}
+{id: 'cyl', type: 'check', io: 'solver/cyl', check: {visible: 'bar > 3'}, vars: {bar: 'solver/bar'}}
+```
+
+A `check` link takes `io` (the checked io, a query without an alias),
+`check` (the options above), `vars` (variable name to io query for
+expressions; `value`, `table`, `target` and `call` are reserved), and
+optionally `message`, `severity`
+(`error` by default), `when` (a JSON Logic condition over the `value` and
+`table` aliases that gates every option of the link), `debounce` (`0` by
+default, like the annotation-derived validators), `not`, `base` and
+`nodePriority`. It expands into one validator link per option,
+`<id>::min`, `<id>::table` and so on, with `value:<io>` and, for `table`,
+`table:<query>` as inputs and `target:<io>` as output.
 
 ## Actions
 

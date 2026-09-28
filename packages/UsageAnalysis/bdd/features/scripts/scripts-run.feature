@@ -120,5 +120,6 @@ Feature: Running a script with data from every source
     Then the "BddScriptRun{time}" dialog should close
     And the console should show "count: 510" 1 time
     And no errors should have been logged
-    # the gallery keeps its search text for the next visit: leave it empty
+    # the gallery keeps its search text for the next visit, and the open console is the account's setting too
     When user clears gallery search
+    And user closes the console

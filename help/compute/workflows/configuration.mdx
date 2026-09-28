@@ -248,6 +248,28 @@ node](#script-nodes) . Each item must have a unique
 id. This array defines an immutable sequence of steps, but if nested
 workflows are dynamic, those could be internally mutated.
 
+#### Single-step workflows
+
+A static workflow whose only step is a single [script node](#script-nodes)
+(directly, or through a chain of one-step static workflows such as a
+[reference](#reusing-workflows)) opens in a compact view: no step tree, no
+Back/Next navigation, and one ribbon with save, share, history, help and
+export. Links, validators, actions, restrictions and run history all work as
+in any workflow. Use it to attach workflow logic to a single script while
+keeping the look of a
+[Rich Function View](../scripting/advanced-scripting/rich-function-view.md).
+
+The workflow page is never shown in this view, so features that live on it
+are not available; use the script-level equivalents instead:
+
+| Not available (workflow level) | Use instead (script level) |
+|---|---|
+| Workflow `customExports` and the default zip report | `meta.customExports` and the default Excel export of the script |
+| Workflow `meta.help` / `readme` | `meta.help` / `readme` on the script |
+| `pipelineValidator` links | `validator` links on the script inputs |
+| Node descriptions from `nodemeta` links (`body`, `title`) | the script's `description`; the run title comes from the save dialog |
+| Workflow `actions` with `buttons` or `menu` position | `actions` on the script node (`globalmenu` actions stay visible) |
+
 ### Dynamic workflows
 
 #### `stepTypes`

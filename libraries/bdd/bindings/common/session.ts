@@ -36,6 +36,10 @@ export async function resetShellAfterLoad(page: Page): Promise<void> {
     grok.shell.closeAll();
     document.body.classList.add('selenium');
     grok.shell.windows.simpleMode = simple;
+    // the console and help panels a feature leaves open share the right column with the context panel and can
+    // squeeze it to its title bar; a feature that needs one opens it
+    grok.shell.windows.showConsole = false;
+    grok.shell.windows.showHelp = false;
   }, guide.shellSimpleMode());
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});

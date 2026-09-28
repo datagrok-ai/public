@@ -544,6 +544,95 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'Mock Single Step Pipeline',
+    description: 'Single-step workflow used for testing the compact Tree Wizard view.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockSingleStepPipeline(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'singleStep',
+      friendlyName: 'Single Step',
+      nqName: 'Compute2:MockSingleStepPipeline',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        id: 'cooling',
+        nqName: 'Compute2:ObjectCooling2',
+        friendlyName: 'Cooling',
+        initialValues: {ambTemp: 20},
+        inputRestrictions: {ambTemp: 'restricted'},
+        actions: [{
+          id: 'doubleInitTemp',
+          from: 'in:initTemp',
+          to: 'out:initTemp',
+          position: 'buttons',
+          friendlyName: 'Double initial temperature',
+          handler({controller}) {
+            controller.setAll('out', controller.getFirst('in') * 2);
+          },
+        }, {
+          id: 'resetSimTime',
+          from: 'in:simTime',
+          to: 'out:simTime',
+          position: 'menu',
+          menuCategory: 'Test',
+          friendlyName: 'Reset simulation time',
+          handler({controller}) {
+            controller.setAll('out', 3600);
+          },
+        }],
+      }],
+      links: [{
+        id: 'initTempValidator',
+        type: 'validator',
+        from: ['initTemp:cooling/initTemp', 'ambTemp:cooling/ambTemp'],
+        to: 'toInitTemp:cooling/initTemp',
+        handler({controller}) {
+          const tooCold = controller.getFirst('initTemp') < controller.getFirst('ambTemp');
+          controller.setValidation('toInitTemp',
+            tooCold ? {errors: [{description: 'Initial temperature should be above ambient'}]} : undefined);
+        },
+      }, {
+        id: 'hideArea',
+        type: 'meta',
+        from: 'desiredTemp:cooling/desiredTemp',
+        to: 'area:cooling/area',
+        handler({controller}) {
+          controller.setViewMeta('area', {hidden: controller.getFirst('desiredTemp') > 1000});
+        },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Mock Single Step Nested',
+    description: 'Single-step workflow reached through a ref, used for testing the compact Tree Wizard view.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockSingleStepNested(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'singleStepNested',
+      friendlyName: 'Single Step Nested',
+      nqName: 'Compute2:MockSingleStepNested',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        type: 'ref',
+        provider: 'Compute2:MockSingleStepPipeline',
+        version: '1.0',
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
     editor: 'Compute2:TreeWizardEditor',
     tags: ['stress'],
     outputs: [{type: 'object', name: 'result'}],

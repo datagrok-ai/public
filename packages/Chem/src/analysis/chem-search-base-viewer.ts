@@ -167,7 +167,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const metricsButton = ui.link(` ${this.distanceMetric}, ${this.fingerprint}`, () => {
       if (!grok.shell.windows.showContextPanel)
         grok.shell.windows.showContextPanel = true;
-      grok.shell.o = object;
+      grok.shell.setCurrentObject(object, true, true);
     }, 'Distance metric and fingerprint', '');
     Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);
     // remove the specific link element we previously added, so any other persistent

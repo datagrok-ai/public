@@ -15,7 +15,7 @@ import {_package} from '../package';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import * as rxjs from 'rxjs';
 import {filter} from 'rxjs/operators';
-import {IMonomerLib, getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import wu from 'wu';
 
 // ============================================================================
@@ -350,15 +350,8 @@ export function handleSequenceHeaderRendering() {
       sub(DG.debounce(rxjs.merge(df.onColumnsAdded, df.onColumnsRemoved, df.onSemanticTypeDetected, grid.onEvent('d4-data-frame-changed')), 200).subscribe(() => handleGrid(grid)));
 
       for (const seqCol of seqCols) {
-        // first check if the column was already processed
         const gCol = grid.col(seqCol.name);
         if (!gCol) continue;
-
-        // if (gCol.temp[MSA_HEADER_INITIALIZED_FLAG])
-        //   continue;
-        const wasInitialized = gCol.temp[MSA_HEADER_INITIALIZED_FLAG] === true;
-        gCol.temp[MSA_HEADER_INITIALIZED_FLAG] = true;
-
 
         let sh: ISeqHandler | null = null;
 
@@ -372,6 +365,9 @@ export function handleSequenceHeaderRendering() {
           continue;
         if (sh.isHelm() || sh.alphabet === ALPHABET.UN)
           continue; // Skip HELM and unknown alphabet, only works for sequences where we know positions of each monomers
+
+        const wasInitialized = gCol.temp[MSA_HEADER_INITIALIZED_FLAG] === true;
+        gCol.temp[MSA_HEADER_INITIALIZED_FLAG] = true;
 
         let positionStatsViewerAddedOnce = !!grid.tableView &&
           Array.from(grid.tableView.viewers).some((v) => v.type === 'Sequence Position Statistics');
@@ -521,7 +517,8 @@ export function handleSequenceHeaderRendering() {
           scroller.setSelectionData(df, seqCol, sh);
 
           if (maxSeqLen > 50 && !wasInitialized) {
-            grid.props.colHeaderHeight = initialHeaderHeight;
+            // the header height is shared by all columns, a new column must not take tracks away from the others
+            grid.props.colHeaderHeight = Math.max(grid.props.colHeaderHeight ?? 0, initialHeaderHeight);
 
             // Set column width
             setTimeout(() => {
@@ -562,17 +559,15 @@ export function handleSequenceHeaderRendering() {
           }));
         };
 
-        // Initialize with monomer library for MSA sequences
-        getMonomerLibHelper()
-          .then((libHelper) => {
-            const monomerLib = libHelper.getMonomerLib();
-            initializeHeaders(monomerLib);
-          })
-          .catch((error) => {
-            grok.shell.warning(`Failed to initialize monomer library`);
-            console.error('Failed to initialize monomer library:', error);
-          });
+        try {
+          initializeHeaders(_package.monomerLib);
+        } catch (err) {
+          console.error(`Failed to set up the sequence header of column ${seqCol.name}:`, err);
+        }
       }
+      // headers painted before the scrollers existed stay plain until the next repaint
+      if (seqCols.length > 0)
+        grid.invalidate();
     }, 1000);
   };
 

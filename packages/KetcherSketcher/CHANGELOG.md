@@ -5,6 +5,7 @@
 * Fixed a structure drawn from a template coming out twice: an export taken while the pointer was still over the canvas included the template's floating preview
 * Fixed a structure drawn right before OK being lost: the molblock is written and announced in the change itself, and the Indigo exports run one at a time (overlapping conversions got each other's replies or none)
 * The editor is ready without waiting for the hidden macromolecules editor to load
+* Fixed the first stroke right after the editor opened being lost: an empty starting molecule is no longer loaded into the empty canvas (the asynchronous load took the stroke's change for its own and then wiped it), and the editor is set up once, though Ketcher reports it ready twice
 
 ## 2.4.8
 

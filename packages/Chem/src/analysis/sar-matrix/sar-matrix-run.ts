@@ -7,13 +7,15 @@ import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragment
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {assembleMultiPositionMatrix} from './sar-matrix-assemble';
-import {decomposeClusters} from './sar-matrix-decompose';
+import {checkAgainstMolecules, cutWarning, decomposeByColumns, SarFragmentColumns, SeriesCut}
+  from './sar-matrix-columns';
+import {ClusterDecomposition, decomposeClusters} from './sar-matrix-decompose';
 import {computeMatrixConfidence} from './sar-matrix-confidence';
 import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeriesByColumn, groupSeriesBySite,
   poolUngroupedSeries, poolUngroupedMolecules}
   from './sar-matrix-clustering';
 import {rankMatrices, SarRankScheme} from './sar-matrix-ranking';
-import {logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from './sar-matrix-types';
+import {CoreCluster, logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from './sar-matrix-types';
 
 /**
  * Link each virtual analog's row core to its column substituent in one batched worker call.
@@ -173,6 +175,8 @@ export interface SarMatrixParams {
    *  entirely and skips the automatic tiers, which would otherwise fold the user's series by
    *  chemistry into matrices they did not ask for. */
   seriesColumn?: DG.Column | null;
+  /** Optional: core and R-group columns already in the table; they replace fragmentation and grouping. */
+  fragmentColumns?: SarFragmentColumns | null;
   /** Whether to also cover the compounds no shared core could group, by pooling those series and
    *  searching for a common core with an MCS. No matrix is lost and no compound is dropped by turning
    *  it on, but a cluster whose site key is too small to anchor also falls through to the MCS, so a
@@ -194,9 +198,8 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   const tTotal = performance.now();
   const molList = molecules.toList();
   const scaledCol = params.scaling === SCALING_METHODS.NONE ? activity : scaleActivity(activity, params.scaling);
-  // Map missing activities to NaN so assemblers skip them: scaleActivity passes the null sentinel
-  // through unchanged, and read as a number it would poison the Free-Wilson fit. Bound the scan by
-  // row count, not buffer length — column storage has spare capacity past the last row.
+  // Missing activities become NaN: a null sentinel read as a number would poison the Free-Wilson fit.
+  // The scan is bounded by row count, since column storage has spare capacity past the last row.
   const scaled = scaledCol.getRawData();
   const activities = new Float32Array(activity.length);
   // Whether the column holds a value at all, which is NOT the same as holding a usable one: a log
@@ -224,46 +227,62 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     grok.shell.warning(message);
   }
 
-  const tFrag = performance.now();
-  const [frags] = await getMmpFrags(molList);
-  logSarTime(`MMP fragmentation (${molList.length} molecules)`, tFrag);
-  let t = performance.now();
-  const series = buildMatchedSeries(frags, params.fragmentCutoff);
-  logSarTime(`matched series (${series.length} series)`, t);
-  t = performance.now();
   // A column of user-assigned series wins over both automatic groupings.
   const assigned = readSeriesValues(params.seriesColumn ?? null, molecules.length);
-  let base = assigned !== null ? groupSeriesByColumn(series, assigned) :
-    params.grouping === SarGrouping.Site ?
-      await groupSeriesBySite(series) :
-      await clusterRelatedCores(series, params.threshold);
-  // A series no core grouping could place is alone in its cluster, so it holds one row and never
-  // reaches a matrix. Pooling those is what the MCS is for, and the user asks for it: unasked,
-  // compounds without a shared core are left out rather than grouped by a search.
-  if (params.useMcsAnchors && assigned === null) {
-    base = await poolUngroupedSeries(base, params.threshold);
-    base = await poolUngroupedMolecules(base, molList, params.threshold);
-  }
-  logSarTime(`grouping by ${assigned !== null ? 'series column' : params.grouping.toLowerCase()} ` +
-    `(${base.length} groups)`, t);
-  // Clamped, not trusted: a programmatic caller can pass any number and each level costs a pass. The
-  // user's own series are never folded further: the tiers above them would mix series they named.
-  const levels = assigned !== null ? 1 : Math.min(MAX_SERIES_LEVELS, Math.max(1, params.fragmentationLevels));
-  t = performance.now();
-  const clusters = await buildCoarserLevels(base, levels - 1);
-  logSarTime(`coarser levels (${clusters.length} clusters)`, t);
+  let t = performance.now();
+  let clusters: CoreCluster[];
+  let decomps: (ClusterDecomposition | null)[];
+  let cuts: SeriesCut[] = [];
+  if (params.fragmentColumns) {
+    const read = decomposeByColumns(params.fragmentColumns, assigned, activities);
+    ({clusters, decomps, cuts} = read);
+    const {checked, mismatched} = await checkAgainstMolecules(read.decomps, molList);
+    if (mismatched > 0 && mismatched * 10 >= checked) {
+      const message = `SAR Matrix: ${mismatched} of ${checked} compounds checked are not what their core and ` +
+        `R-groups build; the columns may not belong to "${molecules.name}".`;
+      _package.logger.warning(message);
+      grok.shell.warning(message);
+    }
+    logSarTime(`fragment columns (${clusters.length} groups, ${mismatched}/${checked} mismatched)`, t);
+  } else {
+    const tFrag = performance.now();
+    const [frags] = await getMmpFrags(molList);
+    logSarTime(`MMP fragmentation (${molList.length} molecules)`, tFrag);
+    t = performance.now();
+    const series = buildMatchedSeries(frags, params.fragmentCutoff);
+    logSarTime(`matched series (${series.length} series)`, t);
+    t = performance.now();
+    let base = assigned !== null ? groupSeriesByColumn(series, assigned) :
+      params.grouping === SarGrouping.Site ?
+        await groupSeriesBySite(series) :
+        await clusterRelatedCores(series, params.threshold);
+    // A series no core grouping could place is alone in its cluster, so it holds one row and never
+    // reaches a matrix. Pooling those is what the MCS is for, and the user asks for it: unasked,
+    // compounds without a shared core are left out rather than grouped by a search.
+    if (params.useMcsAnchors && assigned === null) {
+      base = await poolUngroupedSeries(base, params.threshold);
+      base = await poolUngroupedMolecules(base, molList, params.threshold);
+    }
+    logSarTime(`grouping by ${assigned !== null ? 'series column' : params.grouping.toLowerCase()} ` +
+      `(${base.length} groups)`, t);
+    // Clamped, not trusted: a programmatic caller can pass any number and each level costs a pass. The
+    // user's own series are never folded further: the tiers above them would mix series they named.
+    const levels = assigned !== null ? 1 : Math.min(MAX_SERIES_LEVELS, Math.max(1, params.fragmentationLevels));
+    t = performance.now();
+    clusters = await buildCoarserLevels(base, levels - 1);
+    logSarTime(`coarser levels (${clusters.length} clusters)`, t);
 
-  // Decompose all clusters in one batched pass before assembly so they run parallel across workers;
-  // per-cluster calls under the Promise.all below would serialize on one worker. A null decomposition
-  // falls back to single-position construction inside the assembler.
-  const clusterMembers = clusters.map((c) => [...new Set(c.series.flatMap((s) => s.members.map((m) => m.molIdx)))]);
-  // The grouping already knows each cluster's shared scaffold; handing it over is what keeps the MCS
-  // to the clusters that have none.
-  const clusterSiteKeys = clusters.map((c) => c.siteKey);
-  t = performance.now();
-  const decomps = await decomposeClusters(clusterMembers, molList, params.useMcsAnchors,
-    clusterSiteKeys);
-  logSarTime(`decomposition total (${decomps.filter(Boolean).length}/${clusters.length} clusters decomposed)`, t);
+    // Decompose all clusters in one batched pass before assembly so they run parallel across workers;
+    // per-cluster calls under the Promise.all below would serialize on one worker. A null decomposition
+    // falls back to single-position construction inside the assembler.
+    const clusterMembers = clusters.map((c) => [...new Set(c.series.flatMap((s) => s.members.map((m) => m.molIdx)))]);
+    // The grouping already knows each cluster's shared scaffold; handing it over is what keeps the MCS
+    // to the clusters that have none.
+    const clusterSiteKeys = clusters.map((c) => c.siteKey);
+    t = performance.now();
+    decomps = await decomposeClusters(clusterMembers, molList, params.useMcsAnchors, clusterSiteKeys);
+    logSarTime(`decomposition total (${decomps.filter(Boolean).length}/${clusters.length} clusters decomposed)`, t);
+  }
 
   // A matrix needs >=2 rows to compare cores; folding can collapse several series onto one row, so
   // this is checked after assembly. The floor counts MEASURED compounds, not clustered members.
@@ -271,9 +290,10 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   const usable = (matrix: SarMatrix | null): matrix is SarMatrix =>
     matrix !== null && matrix.realCount >= params.minCompounds && matrix.columns.length > 0 &&
     matrix.rows.length >= 2;
+  const axis = params.fragmentColumns?.column.name;
   const assembled = (await Promise.all(clusters.map((cluster, i) =>
     assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, decomps[i],
-      params.predictUnmeasured, assayed))))
+      params.predictUnmeasured, assayed, axis))))
     .filter(usable);
 
   // An anchor can decompose a cluster into fewer rows than it has series, and a matrix under two rows
@@ -281,7 +301,8 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   // MCS may only add, so those are rebuilt the way they would have been built without it; a cluster
   // whose series are placeholders returns null from that build and simply stays absent.
   const built = new Set(assembled.map((matrix) => matrix.id));
-  const rescued = (await Promise.all(clusters.map((cluster, i) =>
+  // Columns mode has no anchor to cost anything, and its clusters carry no series to rebuild from.
+  const rescued = params.fragmentColumns ? [] : (await Promise.all(clusters.map((cluster, i) =>
     decomps[i] !== null && !built.has(cluster.id) ?
       assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, null,
         params.predictUnmeasured, assayed) : null)))
@@ -306,10 +327,37 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     matrix.parentId = parent;
   }
 
+  if (params.fragmentColumns) {
+    const linksOf = new Map(clusters.map((cluster, i) => [cluster.id, decomps[i]?.links]));
+    let collapsed = 0;
+    for (const matrix of matrices) {
+      const structures = linksOf.get(matrix.id)?.structures;
+      let named = false;
+      matrix.rows.forEach((row, i) => {
+        // Names are what tell such rows apart; structures are drawn.
+        const names = Object.values(row.foldedValues).filter((v) => v !== '' && !structures?.has(v));
+        named ||= names.length > 0;
+        row.label = names.length > 0 ? names.join(' · ') : `Row ${i + 1}`;
+      });
+      if (!named && matrix.rows.length > 1 && new Set(matrix.rows.map((row) => row.keySmiles)).size === 1)
+        collapsed++;
+    }
+    if (collapsed > 0) {
+      const message = `SAR Matrix: the rows of ${collapsed} series look alike, because their R-groups do ` +
+        'not join onto the core.';
+      _package.logger.warning(message);
+      grok.shell.warning(message);
+    }
+  }
   // Labels assigned before ranking so re-ranking never renames a matrix. Series the user grouped
   // themselves already carry their own name and must keep it.
   if (assigned === null)
     assignSeriesLabels(matrices);
+  const cutMessage = cutWarning(cuts, (id) => matrices.find((matrix) => matrix.id === id)?.label);
+  if (cutMessage !== null) {
+    _package.logger.warning(cutMessage);
+    grok.shell.warning(cutMessage);
+  }
   // Started before the confidence pass rather than after it: linking is a worker round-trip and the
   // fit is main-thread, so run in sequence each waits on the other for no reason. They touch disjoint
   // fields — the fit reads `kind`/`value` and writes `fit`, linking writes `smiles` on virtual cells —
