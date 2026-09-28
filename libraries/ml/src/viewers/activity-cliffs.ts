@@ -268,6 +268,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
       if (filterCliffsButton.enabled === true)
         df.filter.setAll(true);
       setTimeout(() => {
+        // the view may have been closed during the delay
+        if (sp.dataFrame == null)
+          return;
         updatePropertyPanel(df, acc, linesRes.lines.from[lineIdx], linesRes.lines.to[lineIdx], lineIdx,
           seqCol, activities, linesRes.linesDf.get(LINES_DF_SALI_COL_NAME, lineIdx), propertyPanelFunc);
         const order = sp.dataFrame.getSortedOrder(view.grid.sortByColumns, view.grid.sortTypes);
@@ -531,6 +534,9 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
       if (filterCliffsButton.enabled === true)
         df.filter.setAll(true);
       setTimeout(() => {
+        // the view may have been closed during the delay
+        if (sp.dataFrame == null)
+          return;
         updatePropertyPanel(df, acc, linesRes.lines.from[lineIdx], linesRes.lines.to[lineIdx], lineIdx,
           seqCol, activities, linesRes.linesDf.get(LINES_DF_SALI_COL_NAME, lineIdx), propertyPanelFunc);
         const order = sp.dataFrame.getSortedOrder(view.grid.sortByColumns, view.grid.sortTypes);
