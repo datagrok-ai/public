@@ -112,10 +112,16 @@ const cleanups = new WeakMap<Page, (() => Promise<void>)[]>();
 
 /** Runs when the feature's page closes, whatever its scenarios did — for state a step created on
  * the server (a project, an uploaded table). */
-export function atFeatureEnd(page: Page, cleanup: () => Promise<void>): void {
+/** `first` runs the callback before the ones registered earlier: signing the first account back in
+ * must come before the cleanups, which would otherwise run as the second account and not see its
+ * fixtures. */
+export function atFeatureEnd(page: Page, cleanup: () => Promise<void>, options?: {first?: boolean}): void {
   const list = cleanups.get(page) ?? [];
   cleanups.set(page, list);
-  list.push(cleanup);
+  if (options?.first)
+    list.unshift(cleanup);
+  else
+    list.push(cleanup);
 }
 
 /** The two console errors the browser raises about something that is not the platform's code.

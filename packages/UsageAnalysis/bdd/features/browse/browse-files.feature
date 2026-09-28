@@ -7,12 +7,11 @@ Feature: The Files section of the Browse tree
   A file preview does not become the shell's current table — `grok.shell.t` stays null — so the
   size of the preview is claimed through the grid's own reading rather than through the table.
 
-  Browse-Files-04 (a file added on the server appears after Refresh, GROK-19844) is not translated:
-  the old spec waived it in its own comment and asserted instead that the API sees what the API just
-  wrote. A real claim needs Refresh to say when it has finished, and it says nothing.
-  Browse-Files-05 (Shared with me grouped by sharer) depends on what other people happen to have
-  shared with this account. Browse-Files-06 (download) is writable — the old spec used a plain
-  download event and needed no configured path — and is simply not written yet.
+  Browse-Files-04 (a file written on the server appears after Refresh, GROK-19844) is claimed with a
+  file the feature writes into its own package's App Data folder and deletes again: Refresh reports
+  when it is done, so the tree is read after it. Browse-Files-06 (download from a file's menu) is
+  claimed on the file that arrives. Browse-Files-05 (Shared with me grouped by sharer) needs the
+  second account to own and share something first, which no step can make it do.
 
   The shares claimed are the two every stand is provisioned with, App Data and Demo. The user's
   own home share is named by the stand ("My files" on dev) and a stand whose users have no home
@@ -40,6 +39,7 @@ Feature: The Files section of the Browse tree
     Then the "Demo" view should be current
     # the title flips before anything is drawn, so the folder's contents are claimed too
     And gallery should contain text "chem"
+    And the gallery counter should show as many items as the "System:DemoFiles/" folder holds on the server
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -49,4 +49,27 @@ Feature: The Files section of the Browse tree
     Then the "demog" view should be current
     And grid should show 5850 rows
     And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Download from a file's menu hands over the file
+    Given user watches downloads
+    And Files---Demo tree node inside browse tree is expanded
+    When user opens the context menu of Files---Demo---demog.csv tree node inside browse tree
+    And user downloads a file through "Download" menu item in context menu
+    Then a file "demog.csv" should have been downloaded
+    And the downloaded file "demog.csv" should contain text "USUBJID"
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: A file written on the server shows in the tree after Refresh
+    Given a file "System:AppData/UsageAnalysis/bdd-browse-{run}.txt" with text "written by a feature" is on the server
+    And Files---App-Data tree node inside browse tree is expanded
+    When user refreshes the browse tree
+    # Refresh brings a folder open inside a section back collapsed (a candidate finding, see
+    # browse-navigation.feature), so the path is opened again
+    And Files---App-Data tree node inside browse tree is expanded
+    And user expands Files---App-Data---UsageAnalysis tree node inside browse tree
+    Then Files---App-Data---UsageAnalysis---bdd-browse-{run}.txt tree node inside browse tree should be visible
+    When user collapses Files---App-Data tree node inside browse tree
+    Then no errors should have been logged
     And no error or warning balloon should have been shown

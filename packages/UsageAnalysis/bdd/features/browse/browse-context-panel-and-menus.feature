@@ -16,12 +16,14 @@ Feature: The context panel and the context menus of the Browse tree
   or App Data, and a bare name matches whichever of them another feature happened to leave
   open: the tree remembers its expanded set per user, across features and across runs.
 
-  Browse-CtxPanel-04 (Collapse all / Expand all panes) is not translated: the old spec asserted
-  only that the two icons existed and that clicking them logged no error, which holds on a dead
-  button. Browse-CtxPanel-03 (Back and Forward) IS a real claim in the old spec — after Back the
-  panel holds the previous object and not the current one — and is writable with the header's
-  aria-labelled icons plus the same "context panel should show" step used below. It is simply not
-  written yet.
+  Browse-CtxPanel-03 (Back and Forward) is claimed on what the panel shows: Back renders the previous
+  object with the current object cleared (property_panel.dart sets it to null without notice), so
+  "the context panel should show" cannot back it, and the claim is the panel's own text — the object
+  that must be back and the one that must be gone. Browse-CtxPanel-04 (Collapse all / Expand all) is
+  claimed on a pane's own expanded state. The title bar's icons are reached by their labels: the help
+  panel carries a Back and a Forward too, hidden while it is closed. Browse-Fav-02 (the star in the
+  title bar) is not written: the sidebar's Favorites icon carries the same label, and the title bar
+  has no name of its own to scope the phrase to.
 
   Background:
     Given user is logged in
@@ -79,4 +81,41 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should not list "Add to favorites"
     When user closes the context menu
     Then no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Back and Forward walk the panel's history
+    Given the context panel is open
+    And Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user clicks on Files---Demo---demog.csv tree node inside browse tree
+    Then the context panel should show "demog.csv"
+    Given Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user clicks on Databases---Postgres---Datagrok tree node inside browse tree
+    Then the context panel should show "Datagrok"
+    # the title bar shows its history icons only while the pointer is on it
+    When user hovers over "Expand all" icon
+    And user clicks on "Back" icon
+    Then context panel should contain text "demog.csv"
+    And context panel should not contain text "Datagrok"
+    When user hovers over "Expand all" icon
+    And user clicks on "Forward" icon
+    Then context panel should contain text "Datagrok"
+    And context panel should not contain text "demog.csv"
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Collapse all and Expand all fold every pane of the panel
+    Given the context panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user clicks on Databases---Postgres---Datagrok tree node inside browse tree
+    Then the context panel should show "Datagrok"
+    When user clicks on "Expand all" icon
+    Then "Details" accordion header in context panel should be expanded
+    When user clicks on "Collapse all" icon
+    Then "Details" accordion header in context panel should be collapsed
+    When user clicks on "Expand all" icon
+    Then "Details" accordion header in context panel should be expanded
+    And no errors should have been logged
     And no error or warning balloon should have been shown

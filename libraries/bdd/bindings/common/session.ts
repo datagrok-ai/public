@@ -105,7 +105,7 @@ export const signInAsSecond = Given('user signs in as the second user', async (p
     atFeatureEnd(page, async () => {
       if (firstToken.has(page))
         await signBackIn(page);
-    });
+    }, {first: true});
   }
   await signInWith(page, token);
   const login = await currentLogin(page);

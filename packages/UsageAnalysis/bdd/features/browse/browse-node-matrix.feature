@@ -58,3 +58,38 @@ Feature: Every section of the Browse tree opens without an error
       | Files     | Files---Demo              |
       | Databases | Databases---Postgres      |
       | Platform  | Platform---Users          |
+
+  # Node-MyStuff-01: the section's own children, each opened and clicked
+  Scenario Outline: Clicking My stuff > <node> logs no error
+    Given My stuff tree node inside browse tree is expanded
+    When user clicks on My-stuff---<node> tree node inside browse tree
+    Then My-stuff---<node> tree node inside browse tree should be selected
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+    Examples:
+      | node           |
+      | Recent         |
+      | Favorites      |
+      | Shared-with-me |
+
+  # Node-DB-01: a provider is listed only while it has a connection, so these are the ones a full
+  # stand carries; a smaller stand lists fewer
+  @full-stand
+  Scenario Outline: Clicking the <provider> provider logs no error
+    Given Databases tree node inside browse tree is expanded
+    When user clicks on Databases---<provider> tree node inside browse tree
+    Then Databases---<provider> tree node inside browse tree should be selected
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+    Examples:
+      | provider   |
+      | Postgres   |
+      | MySQL      |
+      | MariaDB    |
+      | MS-SQL     |
+      | Oracle     |
+      | ClickHouse |
+      | Snowflake  |
+      | Neo4j      |

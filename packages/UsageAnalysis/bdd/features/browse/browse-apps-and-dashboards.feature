@@ -5,30 +5,24 @@ Feature: The Apps and Dashboards sections of the Browse tree
   Browse-Dash-01, -02 (playwright-public/browse/apps.test.ts, dash.test.ts,
   browse_manual_tests2.md sections 6 and 8).
 
-  Browse-Apps-03 (the tooltip and the details of an application, GROK-19638) is not translated:
-  the old spec hovered, slept and claimed only that nothing was logged, and the shared vocabulary
-  has no way to read the tooltip of a tree node. What the case is about — the details being
-  readable — is claimed for a connection in browse-context-panel-and-menus.feature.
-
-  Browse-Apps-01 also asks that the list appear within five seconds (GROK-20032). That half is not
-  translated: a wall-clock threshold on a shared stand reports the stand's load, not the product's,
-  and the suite has no vocabulary for it. What is claimed is the part that would actually have
-  caught the defect — the list arrives and holds the applications it should.
+  Browse-Apps-03 (the tooltip and the details of an application, GROK-19638) and the five-second
+  half of Browse-Apps-01 (GROK-20032) are writable now — the `tooltip` kind reads a tree node's
+  tooltip, and `{element} should become visible within {int} seconds` states a threshold — and are
+  left for the Apps round, which walks every application (a wall-clock threshold on a shared stand
+  still reports the stand's load as much as the product's).
 
   Browse-Dash-02 asks for a dashboard opened from the list. The stand's own dashboards are not a
   fixture — dev carries over two hundred of them, created by whoever — so the dashboard this
   feature opens is one it saves itself and removes again at the end. It is opened by name rather
   than from the gallery, so the list-to-view step of the manual case is not claimed.
-  Browse-Dash-03 (the context panel must not repeat the previous dashboard's content, GROK-19934)
-  needs two fixtures with distinguishable panes and is left for the round that can tell them apart.
+  Browse-Dash-03 (the context panel must not repeat the previous dashboard's content, GROK-19934) is
+  writable with two projects the feature saves itself, and is left for the Apps round with the
+  other Dashboards cases.
 
-  The Model Hub scenario claims that the view opens, and no more: its catalog is the Compute
-  package's own gallery, not the platform card gallery the shared vocabulary names, so a catalog
-  that opens empty (the GROK-17896 shape) is not caught here.
-
-  Browse-ModelHub-02, -03 and -04 are NOT translated, and that is a real gap: they carried
-  GROK-19740 and GROK-19965, the reproductions playwright-public/browse/KNOWN_BUGS.md is built
-  around, and GROK-19628. Clicking and double-clicking a model in the tree is claimed by nothing here.
+  The Model Hub scenario claims that the view opens, and no more; a catalog that opens empty (the
+  GROK-17896 shape) is not caught here. Browse-ModelHub-02, -03 and -04 (clicking and double-clicking
+  a model in the tree, GROK-19740, GROK-19965, GROK-19628) are not translated yet and belong to the
+  Apps round, which covers the Model Hub with the other applications.
 
   Background:
     Given user is logged in
