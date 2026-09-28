@@ -79,43 +79,6 @@ property of the `View` class.
 
 :::
 
-### Minimized viewers
-
-To get a viewer out of the way without closing it, click the minimize icon
-in its header. The viewer leaves the layout and becomes an icon on the ribbon,
-in the **Minimized** panel. The viewer keeps its settings and stays connected to
-the table: it still follows the current filter and selection.
-
-Hover the icon to see the live viewer. This preview is fully interactive: you
-can change its columns, use its context menu, and edit its properties without
-restoring it. Click the icon to put the viewer back where it was. Right-click
-the icon for **Restore** and **Close**; a closed viewer can be brought back with
-**Ctrl+Z**.
-
-When several viewers of the same type are minimized, their icons are numbered;
-a viewer with a title shows the title instead. Minimized viewers are saved with
-[layouts](view-layout.md) and projects, and come back minimized when the layout
-or project is opened.
-
-To hide the minimize icon, turn off **Settings > General > Allow viewer
-minimization**.
-
-### Multiple views
-
-You can add multiple views to the same table, each maintaining its own layout configuration while operating over the same underlying data and interaction state. This enables you to apply different visual arrangements or analytical perspectives without duplicating the dataset or losing context continuity.
-
-All views of the same table share synchronized filter and selection state. Any filtering or selection applied in one view immediately propagates to all other views, ensuring consistent data subset and selection across different layouts.
-
-#### Add view
-
-To add a new view and configure a separate layout, right-click the table name and select **Table > Add View**.
-
-#### Clone view
-
-To reuse the current layout configuration and viewer arrangement, clone the existing view. From the top menu, select **View > Layout > Clone View**.
-
-![Add view and clone view](viewers/img/add-vew-clone-vew.gif)
-
 ### Viewer properties
 
 Each viewer has a set of properties associated with it. These properties define
@@ -159,15 +122,6 @@ Core viewers like [scatterplot](viewers/scatter-plot.md), [box plot](viewers/box
 
 **Numerical columns:** For numerical color columns, the viewer uses a linear color scheme by default to represent the value range. If a custom linear color scheme is defined for the column in the grid, the viewer uses that instead. When conditional coloring is applied to a numerical column, the viewer displays range bins as categorical legend items, allowing you to customize individual bin colors via the legend color picker.
 
-#### Legend
-
-When a viewer colors or shapes markers by a categorical column, the legend shows a section for
-each of these columns. The legend follows the filter: it lists only the categories of the rows the
-viewer shows. In the scatterplot, the markers section has a column selector in its header. To hide the legend or
-move it, use **Legend Visibility** and **Legend Position** in the **Context Panel**.
-
-![The legend follows the filter](viewers/img/legend-follows-filter.gif)
-
 #### Viewer controls font
 
 Many viewers allow you to customize fonts for different elements to match your presentation style. **Controls Font** is used for control elements like column selectors, combo boxes, and other UI controls on the viewer. **Axis Font** is used for axis labels and tick marks in chart viewers. Individual viewers may also provide additional font properties for specialized elements such as labels, formulas, annotations, and statistics.
@@ -176,7 +130,46 @@ To customize fonts, access the viewer's **Context Panel** and look for font prop
 
 ![](viewers/img/viewers-font.gif)
 
-### Tooltips
+### Minimized viewers
+
+To get a viewer out of the way without closing it, click the minimize icon
+in its header. The viewer leaves the layout and becomes an icon on the ribbon,
+in the **Minimized** panel. The viewer keeps its settings and stays connected to
+the table: it still follows the current filter and selection.
+
+Hover the icon to see the live viewer. This preview is fully interactive: you
+can change its columns, use its context menu, and edit its properties without
+restoring it. Click the icon to put the viewer back where it was. Right-click
+the icon for **Restore** and **Close**; a closed viewer can be brought back with
+**Ctrl+Z**.
+
+![Minimizing viewers and previewing them with a filter](viewers/img/minimized-viewers.gif)
+
+When several viewers of the same type are minimized, their icons are numbered;
+a viewer with a title shows the title instead. Minimized viewers are saved with
+[layouts](view-layout.md) and projects, and come back minimized when the layout
+or project is opened.
+
+To hide the minimize icon, turn off **Settings > General > Allow viewer
+minimization**.
+
+## Multiple views
+
+You can add multiple views to the same table, each maintaining its own layout configuration while operating over the same underlying data and interaction state. This enables you to apply different visual arrangements or analytical perspectives without duplicating the dataset or losing context continuity.
+
+All views of the same table share synchronized filter and selection state. Any filtering or selection applied in one view immediately propagates to all other views, ensuring consistent data subset and selection across different layouts.
+
+### Add view
+
+To add a new view and configure a separate layout, right-click the table name and select **Table > Add View**.
+
+### Clone view
+
+To reuse the current layout configuration and viewer arrangement, clone the existing view. From the top menu, select **View > Layout > Clone View**.
+
+![Add view and clone view](viewers/img/add-vew-clone-vew.gif)
+
+## Tooltips
 
 By default, Datagrok shows tooltips for columns, rows, and data visualized in
 viewers. For example,  in tables, tooltips show statistics for numeric
@@ -201,7 +194,7 @@ columns. Tooltips don't show any column values for tables with 21 or more column
 
 :::
 
-#### Group tooltips
+### Group tooltips
 
 One of the unique features of Datagrok is the ability to create tooltips that
 interactively visualize groups of rows. For example, you can create
@@ -228,7 +221,7 @@ Remove Group Tooltip**.
 
 ![Group Tooltip](../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
 
-### Statistical hypothesis testing
+## Statistical hypothesis testing
 
 Certain viewers include statistical features:
 
@@ -551,8 +544,6 @@ Usage:
 If a context menu is open when multiple columns are selected, you are
 presented with a choice to apply commands to either the current column or all selected
 columns.
-
-![Reordering columns from the Column Manager](viewers/img/column-manager-reorder.gif)
 
 ## Controls
 

@@ -674,15 +674,9 @@ column's background.
 To customize color-coding settings, right-click the column's header, choose **Edit** from the **Color Coding** submenu, and adjust the settings.
 To color the text instead, set **Apply to** to `text`. To color only the area behind the text, set it to `text background`.
 
-![Color coding](img/grid-color-coding.gif)
+To apply the same color-coding settings to other columns, use Pick Up / Apply Coloring from the column's Color Coding menu.
 
-To copy color coding from one column to others, use the **Pick Up Coloring** and
-**Apply Coloring** commands from the column's **Color Coding** menu. These
-commands copy both standard and custom color-coding, including the **Off** setting
-which removes color coding. Note that you can't transfer settings
-between numeric and categorical columns. The **Apply Coloring** command remains
-inactive if no color coding has been picked up. These settings are retained for
-a viewer instance but are not saved through layout serialization. <!-- //TODO rewrite the last sentence for clarity-->
+![Color coding](img/grid-color-coding.gif)
 
 ### Show, hide, or reorder columns
 
