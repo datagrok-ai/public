@@ -116,6 +116,8 @@ category('ComputeUtils: Driver links check', async () => {
       effects: [{effect: 'warning', targets: ['target'], message: 'Too small'}],
     });
     expectDeepEqual(expandChecks({nullable: true}), []);
+    expectDeepEqual(expandChecks({optional: true}), []);
+    expectDeepEqual(expandChecks({optional: false}), expandChecks({nullable: false}));
     expectDeepEqual(parseRegexLiteral('/^[0-9]+$/im'), {pattern: '^[0-9]+$', flags: 'im'});
     expect(parseRegexLiteral('a > 1') === undefined, true);
   });
@@ -125,6 +127,8 @@ category('ComputeUtils: Driver links check', async () => {
       expectThrowsAsync(() => getProcessedConfig(twoSteps([{id: 'bad', type: 'check', io: 'step1/a', check}])));
     await bad({foo: 1});
     await bad({nullable: true});
+    await bad({optional: true});
+    await bad({nullable: false, optional: true});
     await bad({validator: 'a > 1'});
     await bad({min: '1'});
     await bad({choices: 'a,b'});

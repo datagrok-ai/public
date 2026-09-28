@@ -5,6 +5,8 @@ import {RuleExpr, RuleValidatorEffect} from './PipelineConfiguration';
  *  annotation syntax; `check` links use the same object. */
 export type CheckOptions = {
   nullable?: boolean;
+  /** Synonym of `nullable`, as in annotations. */
+  optional?: boolean;
   min?: number;
   max?: number;
   /** Regex literal, `/pattern/flags`. */
@@ -35,7 +37,7 @@ export type CheckExtras = {
 };
 
 export const checkOptionKeys: (keyof CheckOptions)[] =
-  ['nullable', 'min', 'max', 'validator', 'choices', 'type', 'semType', 'table', 'allowNulls'];
+  ['nullable', 'optional', 'min', 'max', 'validator', 'choices', 'type', 'semType', 'table', 'allowNulls'];
 
 // aliases shared by annotation-derived and config checks
 export const VALUE = 'value';
@@ -86,6 +88,8 @@ export function validateCheckOptions(id: string, options: CheckOptions) {
     if (!checkOptionKeys.includes(key as keyof CheckOptions))
       throw new Error(`Check ${id}: unknown option ${key}`);
   }
+  if (options.optional != null && options.nullable != null && options.optional !== options.nullable)
+    throw new Error(`Check ${id}: nullable and optional disagree`);
   if (options.validator != null && !parseRegexLiteral(options.validator))
     throw new Error(`Check ${id}: validator must be a regex literal /pattern/flags`);
   if (options.choices != null && !Array.isArray(options.choices))
@@ -99,6 +103,8 @@ export function validateCheckOptions(id: string, options: CheckOptions) {
 /** Expands annotation-style options into one validator per option, in the rule params shape.
  *  Values are read from the `value` alias, the table from `table`, results go to `target`. */
 export function expandChecks(options: CheckOptions, extras: CheckExtras = {}): ExpandedCheck[] {
+  if (options.optional != null)
+    options = {...options, nullable: options.optional};
   return conditions(options).map(({key, needsTable, when, message}) => ({
     key,
     needsTable,

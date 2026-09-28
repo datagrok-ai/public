@@ -808,7 +808,7 @@ the same validator links, messages and severities.
 
 | Option | Holds when | Message | Notes |
 |---|---|---|---|
-| `nullable: false` | the value is present | Missing value | The default for every input. As an annotation, `nullable: true` or `optional: true` removes it; a `check` cannot relax it. |
+| `nullable: false` | the value is present | Missing value | The default for every input; `optional` is a synonym. As an annotation, `nullable: true` or `optional: true` removes it; a `check` cannot relax it. |
 | `min`, `max` | the value is within the bound | Must be at least / at most N | Numeric inputs. |
 | `validator` | the string matches the regex literal | Must match /pattern/flags | Only the `/pattern/flags` form; GrokScript validators are ignored. |
 | `choices` | the value is in the list | Must be one of: ... | Only a literal list; function-backed choices are ignored. |

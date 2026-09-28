@@ -48,7 +48,7 @@ function expandCheck(check: PipelineCheckConfiguration<LinkSpecString>): Pipelin
   const {id} = check;
   const options: CheckOptions = {...check.check};
   validateCheckOptions(id, options);
-  if (options.nullable === true)
+  if (options.nullable === true || options.optional === true)
     throw new Error(`Check ${id}: nullable: true only relaxes the default check as a script annotation`);
   const io = singleQuery(id, 'io', check.io)!;
   const table = singleQuery(id, 'table', options.table);
