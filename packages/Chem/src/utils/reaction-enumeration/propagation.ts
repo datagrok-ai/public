@@ -1,5 +1,4 @@
 import {Subscription} from 'rxjs';
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Aggregation, AGGREGATIONS, EnumeratorConfig, PropagatedColumns} from './config';
@@ -10,14 +9,6 @@ import {getStringColumn, NO_FILTER_TAG, nonBlankRows} from './shared';
 function isAggregatable(col: DG.Column): boolean {
   return col.type === DG.COLUMN_TYPE.INT || col.type === DG.COLUMN_TYPE.FLOAT;
 }
-
-const AGGREGATION_DESCRIPTION: Record<Aggregation, (name: string, unit: string) => string> = {
-  sum: (name, unit) => `"${name}" summed over every ${unit} of the route`,
-  multiply: (name, unit) => `"${name}" multiplied over every ${unit} of the route`,
-  avg: (name, unit) => `"${name}" averaged over every ${unit} of the route`,
-  min: (name, unit) => `The lowest "${name}" of any ${unit} of the route`,
-  max: (name, unit) => `The highest "${name}" of any ${unit} of the route`,
-};
 
 /** Empty when any part is missing: a partial total would pass a range filter as if it were whole. */
 function aggregate(values: (number | null)[], agg: Aggregation): number | null {
@@ -95,20 +86,14 @@ function columnsFor(rows: OutputRow[], s: PropagationSource): DG.Column[] {
   for (const [name, aggregations] of Object.entries(s.picked)) {
     const src = s.df.col(name)!;
     const kept = KEPT_TYPES.includes(src.type);
-    // Each source row is read once. get() hands back the type's null sentinel (-2147483648 for int),
-    // which would add up as a number.
-    const read = new Map<number, unknown>();
-    const value = (row: number | null): unknown => {
-      if (row == null) return null;
-      if (!read.has(row)) read.set(row, src.isNone(row) ? null : kept ? src.get(row) : src.getString(row));
-      return read.get(row);
-    };
-    const values = perRow.map((r) => r.map(value));
+    // get() hands back the type's null sentinel (-2147483648 for int), which would add up as a number.
+    const all = Array.from({length: src.length}, (_, i) => src.isNone(i) ? null : kept ? src.get(i) : src.getString(i));
+    const values = perRow.map((r) => r.map((row) => row == null ? null : all[row]));
     for (const aggregation of isAggregatable(src) ? new Set(aggregations) : []) {
       const c = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${s.prefix}_${name}_${aggregation}`,
         values.map((v) => aggregate(v as (number | null)[], aggregation)));
-      c.setTag(DG.TAGS.DESCRIPTION, `${AGGREGATION_DESCRIPTION[aggregation](name, s.unit)}. ` +
-        'Empty when any of them has no value.');
+      c.setTag(DG.TAGS.DESCRIPTION,
+        `"${name}" of every ${s.unit} of the route, combined by ${aggregation}; empty when any of them has no value.`);
       out.push(c);
     }
     for (let k = 0; k < width; k++) {
@@ -138,16 +123,6 @@ export function propagatedColumns(rows: OutputRow[], snapshot: PropagationSnapsh
       nth: (k) => `reagent ${k} of the route, counting step by step in reactant order`,
       sourceRows: (r) => r.steps.flatMap((s) => s.reagents.map((p) => p == null ? null : reagents.rows[p]))}),
   ];
-}
-
-/** A propagated column that fails to build must not cost the run its rows. */
-export function propagatedColumnsOrWarn(rows: OutputRow[], snapshot: PropagationSnapshot): DG.Column[] {
-  try {
-    return propagatedColumns(rows, snapshot);
-  } catch (e) {
-    grok.shell.warning(`Propagated columns were left out: ${e instanceof Error ? e.message : String(e)}`);
-    return [];
-  }
 }
 
 export interface PropagatedColumnsPickerOpts {
@@ -216,8 +191,7 @@ export class PropagatedColumnsPicker {
           Object.entries(this.picks).map(([n, a]) => [n === oldName ? newName : n, a]));
         this.show();
       }),
-      t.onColumnsAdded.subscribe(() => this.show()),
-      t.onColumnsRemoved.subscribe(() => this.show()),
+      t.onColumnsChanged.subscribe(() => this.show()),
     ] : [];
     if (t) ui.input.setColumnsInputTable(this.columnsInput, t);
     // An optional file can be cleared, leaving no columns to offer.

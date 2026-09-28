@@ -5,7 +5,7 @@ import {cloneConfig, EnumeratorConfig} from './config';
 import {enumerate, EnumerationProgress, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {addResultFilters, buildInputs, buildResultDataFrame} from './shared';
-import {propagatedColumnsOrWarn, snapshotPropagation} from './propagation';
+import {propagatedColumns, snapshotPropagation} from './propagation';
 
 export interface RunControlsDeps {
   getConfig: () => EnumeratorConfig;
@@ -154,9 +154,7 @@ export class RunControls {
       const more = warnings.length > 3 ? ` (+${warnings.length - 3} more; see console)` : '';
       grok.shell.warning(`${preview}${more}`);
     }
-    if (rows.length > 0) {
-      const df = buildResultDataFrame(rows, propagatedColumnsOrWarn(rows, propagation));
-      addResultFilters(grok.shell.addTableView(df));
-    }
+    if (rows.length > 0)
+      addResultFilters(grok.shell.addTableView(buildResultDataFrame(rows, propagatedColumns(rows, propagation))));
   }
 }

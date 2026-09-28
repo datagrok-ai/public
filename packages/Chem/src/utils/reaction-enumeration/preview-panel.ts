@@ -5,7 +5,7 @@ import {cloneConfig, EnumeratorConfig} from './config';
 import {enumerate, OutputRow, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {MountedViewerRegistry} from './viewer-mount';
-import {PropagationSnapshot, propagatedColumnsOrWarn, snapshotPropagation} from './propagation';
+import {PropagationSnapshot, propagatedColumns, snapshotPropagation} from './propagation';
 import {
   BuiltInputs, buildInputs, buildResultDataFrame, clampRounds, DataKey, MAX_ROUNDS, Mode, MODE_LABEL, panelHeader,
   roundsLabel, tabPanel,
@@ -203,7 +203,7 @@ export class PreviewPanel {
     }
 
     const samples = pickPreviewSamples(rows, PREVIEW_TARGET_ROWS);
-    const df = buildResultDataFrame(samples, propagatedColumnsOrWarn(samples, propagation), 'Preview');
+    const df = buildResultDataFrame(samples, propagatedColumns(samples, propagation), 'Preview');
     // Taller rows fit the extra route-step lines; route isn't the last column, so no extendLastColumn.
     this.deps.viewerHost.mountDf(this.host, df, false, {rowHeight: 110, extendLastColumn: false});
     this.status.textContent =
