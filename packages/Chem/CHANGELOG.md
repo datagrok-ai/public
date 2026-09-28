@@ -2,6 +2,17 @@
 
 ## v.next
 
+* SAR Matrix: Added building the matrices from core and R-group columns already in the table (Use existing R-groups); attachment points are read in any common notation ([*:n], [n*], R# molfiles, CXSMILES labels), a bridge written in two columns is joined as one piece, and a warning names R-groups that do not rebuild the table's molecules
+* SAR Matrix: Fixed predicted structures inverting a stereocenter or double-bond geometry next to an attachment point
+* SAR Matrix: A series whose largest connected block has a single row or column now shows its largest block with at least two of each, instead of no matrix or a one-column one
+* SAR Matrix: The Core header marks the varied position on the series core, and the context panel shows the core and the row's own R-groups
+* Matched Molecular Pairs: Fixed missing values of an integer activity becoming -2147483648 when the activity is log-scaled
+
+* Substructure Search: Added the Crux engine (Substructure Search Engine package property) for Contains / Not contains searches; queries it cannot express run on RDKit
+* Substructure Search: Improved Crux parity with RDKit — nitro / N-oxides, perchlorates, elements beyond Rn and aromatic rings RDKit reads only without Kekulize are read as RDKit reads them (Chem datasets: 67 → 0 molecules Crux could not parse, 277 → 7 read differently)
+* Substructure Search: Fixed typed queries such as `[OH]`, `[CH3]`, `[N+]`, `c1cc[n+]cc1` finding almost nothing — a query whose SMILES reading is a radical is now read as SMARTS, by both engines
+* Substructure Search: Added a fallback to RDKit when a Crux search fails (e.g. a worker runs out of memory); Crux restarts to free its memory
+* Improved RDKit start-up: the RDKit wasm is compiled once on the main thread and shared with the workers, and in Crux mode the substructure filter no longer starts the RDKit workers
 * Substructure Search: A second run no longer asks for the molecule column, which offered the hidden canonical SMILES column the first search leaves
 * Reaction renderer: Replaced inter-step arrows with numbered panels and improved scaffold alignment using cached molecular coordinates
 * Substructure filter: Fixed the search progress staying in the task bar at 100% — a search's end closes it, a detached filter terminates every search it started, and the fingerprint precalculation clears its own entry

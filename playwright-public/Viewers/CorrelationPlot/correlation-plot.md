@@ -19,6 +19,8 @@ related_bugs:
     status: fixed
   - id: GROK-12586
     status: fixed
+  - id: GROK-20919
+    status: fixed
 precondition_guards: []
 expected_results:
   - anchor: "Title, description, and back color"

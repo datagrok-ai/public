@@ -54,6 +54,15 @@ export namespace scripts {
   }
 
   /**
+   * Generates IUPAC names for molecules deterministically using openclatura (Blue Book 2013 rules).
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
+  export async function iupacName(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:IUPACName', { table, molecules });
+  }
+
+  /**
    * Standardizes the dataset
    * @param {DG.Column} molecules
    *   semType: Molecule

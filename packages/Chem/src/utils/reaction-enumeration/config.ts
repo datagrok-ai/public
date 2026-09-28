@@ -12,6 +12,7 @@ export interface ProductsSpecs {
   max_num_metals: number;
   max_num_halogens: number;
   max_num_aromatic_atoms: number;
+  max_num_aromatic_rings: number;
   max_num_unsaturated_nonaromatic_bonds: number;
   only_these_atoms_allowed: string[];
   remove_radicals: boolean;
@@ -36,6 +37,7 @@ export interface EnumeratorConfig {
   max_num_components: number;
   max_num_routes_per_compound: number;
   max_num_combinations_per_template: number;
+  max_num_products_per_step: number;
   products_specs: ProductsSpecs;
   enumeration: EnumerationSpecs;
 }
@@ -45,6 +47,7 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
   max_num_components: -1,
   max_num_routes_per_compound: -1,
   max_num_combinations_per_template: -1,
+  max_num_products_per_step: -1,
   products_specs: {
     exclusion_smarts_products_file_smarts_col: 'SMARTS',
     max_num_heavy_atoms: -1,
@@ -57,6 +60,7 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
     max_num_metals: 0,
     max_num_halogens: -1,
     max_num_aromatic_atoms: -1,
+    max_num_aromatic_rings: -1,
     max_num_unsaturated_nonaromatic_bonds: 5,
     only_these_atoms_allowed: ['C', 'H', 'O', 'N', 'S', 'P'],
     remove_radicals: true,

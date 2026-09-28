@@ -350,7 +350,7 @@ scenario('space cleanup deletes existing fixtures even when server filters retur
   assert.deepEqual(await remaining(), ['unrelated']);
 });
 
-scenario('feature teardown attempts every cleanup and reports synchronous and asynchronous failures', async () => {
+scenario('feature teardown attempts every cleanup, retries a failed one and reports the failures that stay', async () => {
   let afterAll!: () => Promise<void>;
   const api = {afterEach: () => undefined, afterAll: (hook: () => Promise<void>) => { afterAll = hook; }};
   const session = feature(api as unknown as Parameters<typeof feature>[0]);
@@ -359,10 +359,11 @@ scenario('feature teardown attempts every cleanup and reports synchronous and as
   const errors = [new Error('synchronous'), new Error('asynchronous')];
   atFeatureEnd(cleanupPage, () => { ran.push(1); throw errors[0]; });
   atFeatureEnd(cleanupPage, async () => { ran.push(2); throw errors[1]; });
-  atFeatureEnd(cleanupPage, async () => { ran.push(3); });
+  atFeatureEnd(cleanupPage, async () => { ran.push(3); if (ran.filter((n) => n === 3).length === 1) throw new Error('dropped once'); });
+  atFeatureEnd(cleanupPage, async () => { ran.push(4); });
   await assert.rejects(afterAll, (e: unknown) => e instanceof AggregateError &&
     e.errors[0] === errors[0] && e.errors[1] === errors[1] && e.errors.length === 2);
-  assert.deepEqual(ran, [1, 2, 3]);
+  assert.deepEqual(ran, [1, 1, 1, 2, 2, 2, 3, 3, 4]);
   await afterAll();
 });
 

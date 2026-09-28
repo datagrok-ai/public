@@ -333,6 +333,7 @@ export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: 
    the server: a feature that draws or types a molecule names the one it was written against, so an
    account that picked another one elsewhere does not change what the feature sees. */
 export const sketcherIs = Given('the molecule sketcher is {string}', async (page: Page, name: string) => {
+  silent(page);
   const was = await page.evaluate((n) => {
     const known = DG.Func.find({meta: {role: 'moleculeSketcher'}}).map((f: any) => f.friendlyName);
     if (!known.includes(n))
@@ -349,7 +350,7 @@ export const sketcherIs = Given('the molecule sketcher is {string}', async (page
       grok.userSettings.add(DG.chem.STORAGE_NAME, DG.chem.KEY, b);
     DG.chem.currentSketcherType = b ?? DG.DEFAULT_SKETCHER;
   }, was));
-}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default); the account\'s own choice comes back at feature end'});
+}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default); the account\'s own choice comes back at feature end; not in the video'});
 
 /** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
  * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */
@@ -665,6 +666,23 @@ async function refreshBrowseTree(page: Page): Promise<void> {
   const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
   await click(page, el('"Refresh" icon inside browse toolbar'));
   await refreshed();
+  // the event comes once the tree is rebuilt, while the groups it reopens still fetch their children: a row
+  // found then moves as they arrive, and a click aimed at it lands on the row that took its place
+  await expect.poll(() => page.evaluate(() => document.querySelectorAll('.grok-view-browse .d4-tree-view-group-host[data-state="loading"], ' +
+    '.layout-browse .d4-tree-view-group-host[data-state="loading"]').length),
+  {message: 'Browse tree groups still fetching their children after the refresh', timeout: pollMs(30000)}).toBe(0);
+  // groups filled without that state (Databases adds its sources when their list arrives, Apps its apps once the
+  // functions are in) add rows later still: the tree counts as built once its rows have held for a second
+  let rows = -1;
+  let since = Date.now();
+  await expect.poll(async () => {
+    const now = await page.evaluate(() => document.querySelectorAll('.grok-view-browse .d4-tree-view-node, .layout-browse .d4-tree-view-node').length);
+    if (now !== rows) {
+      rows = now;
+      since = Date.now();
+    }
+    return Date.now() - since >= 1000;
+  }, {message: 'the Browse tree rows settling after the refresh', timeout: pollMs(30000), intervals: [200]}).toBe(true);
 }
 
 export const noSpaceOnServer = Given('no space named {string} is on the server', async (page: Page, name: string) => {
@@ -1191,6 +1209,15 @@ async function openConsole(page: Page): Promise<void> {
   }
   await expect(input, 'the console input').toBeVisible();
 }
+
+export const closeConsole = When('user closes the console', async (page: Page) => {
+  const input = page.locator('.d4-console-wrapper input.ui-input-editor').filter({visible: true});
+  if (await input.count() > 0) {
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press('Backquote');
+  }
+  await expect(input, 'the console input').toHaveCount(0);
+}, {tier: 'ui', description: 'closes the console (Backquote) when it is open'});
 
 export const noteConsole = When('user notes the console output', async (page: Page) => {
   await openConsole(page);

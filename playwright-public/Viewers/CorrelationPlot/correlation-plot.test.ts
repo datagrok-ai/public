@@ -5,7 +5,6 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
-import {knownOpenBug} from '@datagrok-libraries/test/src/playwright/known-open-bug';
 
 declare const grok: any;
 declare const DG: any;
@@ -969,16 +968,13 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       expect(neg![2]).toBeGreaterThan(neg![0]);
       expect(pos![0]).toBeGreaterThan(pos![2]);
 
-      // GROK-20919: the cells are coloured over each column's own range instead of the plot's
-      // -1..1 scale, so the same coefficient differs between mirrored cells and a near-zero r is
-      // painted as strongly as a real one. Both consequences are asserted for the fixed behaviour.
+      // GROK-20919: cells are coloured on the plot's -1..1 scale, so mirrored cells match and a
+      // near-zero r is painted lighter than a real one.
       const mirrorOfNearZero = await cellPixel(colsNow.x.indexOf('AGE'), colsNow.y.indexOf('WEIGHT'));
       const lightness = (p: number[]) => Math.min(p[0], p[1], p[2]);
-      await knownOpenBug('GROK-20919', () => {
-        expect(nearZero!.slice(0, 3)).toEqual(mirrorOfNearZero!.slice(0, 3));
-        expect(lightness(nearZero!)).toBeGreaterThan(lightness(neg!));
-        expect(lightness(nearZero!)).toBeGreaterThan(lightness(pos!));
-      });
+      expect(nearZero!.slice(0, 3), 'GROK-20919: mirrored cells differ').toEqual(mirrorOfNearZero!.slice(0, 3));
+      expect(lightness(nearZero!), 'GROK-20919: near-zero r as dark as a negative one').toBeGreaterThan(lightness(neg!));
+      expect(lightness(nearZero!), 'GROK-20919: near-zero r as dark as a positive one').toBeGreaterThan(lightness(pos!));
 
       await openCellMenu(page, geom, xiH, yiA);
       await hoverMenuGroupTrusted(page, 'div-Grid');

@@ -403,14 +403,57 @@ export class DataFrame {
 
   /**
    * Appends two tables ('union' in SQL).
-   * @param inPlace - whether to create a new table, or modify 'this' one. */
+   *
+   * Moves rows only: a formula column that [t2] does not have stays empty for the appended rows,
+   * because recalculating it means running a function. Use {@link appendAsync} to get it calculated.
+   * @param inPlace - whether to create a new table, or modify 'this' one.
+   * @example
+   * grok.shell.addTableView(t1.append(t2));
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/modification/append} */
   append(t2: DataFrame, inPlace: boolean = false, columnsToAppend: string[] | null = null): DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
   }
 
-  /** Appends the rows of [t] in place, adding its missing columns. */
+  /**
+   * Same as {@link append}, and additionally calculates, for the appended rows, the formula columns
+   * whose values [t2] does not provide. A `$[..]` formula needs the whole column, so it recalculates in full.
+   * @param inPlace - whether to create a new table, or modify 'this' one.
+   * @example
+   * grok.shell.addTableView(await t1.appendAsync(t2));
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/modification/append-async} */
+  async appendAsync(t2: DataFrame, inPlace: boolean = false, columnsToAppend: string[] | null = null): Promise<DataFrame> {
+    return api.grok_DataFrame_AppendAsync(this.dart, t2.dart, inPlace, columnsToAppend);
+  }
+
+  /**
+   * Appends the rows of [t] in place, adding its missing columns.
+   *
+   * Moves rows only: a formula column that [t] does not have stays empty for the appended rows,
+   * because recalculating it means running a function. Use {@link appendMergeAsync} to get it calculated. */
   appendMerge(t: DataFrame): void {
     api.grok_DataFrame_Append_Merge(this.dart, t.dart);
+  }
+
+  /**
+   * Same as {@link appendMerge}, and additionally calculates, for the appended rows, the formula columns
+   * [t] does not have. A `$[..]` formula needs the whole column, so it recalculates in full.
+   * @example
+   * await t1.appendMergeAsync(t2);
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/modification/append-async} */
+  async appendMergeAsync(t: DataFrame): Promise<void> {
+    await api.grok_DataFrame_AppendMergeAsync(this.dart, t.dart);
+  }
+
+  /**
+   * Recalculates every row of every formula column, including columns added with
+   * `subscribeOnChanges: false`. Needed after {@link append}, {@link appendMerge},
+   * or any other bulk row insert that leaves them empty for the new rows.
+   * @example
+   * t1.append(t2, true);
+   * await t1.recalculateFormulaColumns();
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/modification/append-async} */
+  async recalculateFormulaColumns(): Promise<void> {
+    await api.grok_DataFrame_RecalculateFormulaColumns(this.dart);
   }
 
   _event(event: string): Observable<any> {

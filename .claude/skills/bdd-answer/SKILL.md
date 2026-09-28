@@ -57,8 +57,13 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
   on the page — a dialog, a column, a row count, a value, a legend item's color. The checks a
   test needs and a person does not are filmed out by the `HIDDEN_CHECKS` patterns in
   `src/runtime/guide.ts`: error and balloon floors, server state, viewer readings and pixels,
-  "than before" claims, property bags, widget counts, task-bar and command bookkeeping. Keep
+  "than before" claims, property bags, widget counts, task-bar and command bookkeeping, values
+  matched against a regular expression (a guide names a new column exactly, not by a pattern). Keep
   them in the feature (they are the test); a new kind of bookkeeping check goes into that list.
+- **Set-up a person never does is not filmed**: a pinned setting (`the molecule sketcher is …`) and
+  a package's readiness wait are silent (`silent` from `@datagrok-libraries/bdd/runtime` for a
+  package's own step), and a wait is written as a `Then` (`… should have finished updating`), not
+  an `And` under a `When`, or it is filmed as an action.
 
 ## 1. Find or write the scenario
 

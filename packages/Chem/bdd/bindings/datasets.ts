@@ -36,3 +36,5 @@ dataset('drugs-props-train', {path: 'System:AppData/Eda/drugs-props-train.csv', 
   description: '663 drugs with a boolean CNS column and a dozen numeric properties: the pMPO training set of the EDA package'});
 dataset('ex-smarts', {path: 'System:AppData/Chem/enumerations/ex_smarts.csv', aliases: ['ex_smarts'],
   description: 'a SMARTS column of substructure patterns'});
+dataset('SPGI-full', {path: 'System:DemoFiles/chem/SPGI.csv',
+  description: '3624 compounds with their own decomposition (Core, R1, R2, R3, R100, R101) and Average Mass'});

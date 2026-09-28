@@ -375,16 +375,19 @@ scenario into `guides/<feature slug>/<scenario slug>/`:
   (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
   where it is; the page after the step is revealed, and a caption above the page (clear of a
   player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
-  toolbar"). A choice is shown being made: a native `<select>` opens its list, the option is typed
+  toolbar"); a caption too long for the strip is set smaller, then on two lines, and the lines of a
+  pasted text (`\n` in the step) read as values separated by commas. A choice is shown being made: a native `<select>` opens its list, the option is typed
   so the list highlights it, Enter takes it; a column selector opens its picker, the name is typed
   into the search short of its last letter (a complete unique name is taken on the spot) and the
   row it leaves is clicked. A `Then` step shows what it checked with a check mark —
   when a person could see it (a dialog, a column, a row count, a value, a legend item's color);
   the checks a test needs and a person does not (error and balloon floors, server state, viewer
   readings and pixels, "than before" claims, property bags, widget counts, task-bar and command
-  bookkeeping) are left out, by the `HIDDEN_CHECKS` patterns in `src/runtime/guide.ts`;
+  bookkeeping, values matched against a regular expression) are left out, by the `HIDDEN_CHECKS`
+  patterns in `src/runtime/guide.ts` — so a guide names a new column exactly, not by a pattern;
 - `step-NN.png` — the lit picture of every step, and `steps.md` — the numbered steps with those
-  pictures, ready to paste into a reply;
+  pictures, ready to paste into a reply (a filming with fewer steps removes the pictures it no
+  longer has);
 - `audit.png` and `audit.json` — every press as the video shows it, beside the same picture with
   ticks aimed at where it landed, and how far the mark's centre and the pointer's tip are from it
   (the renderer prints a press more than 2 px off, or outside the element its stop lit);
@@ -406,7 +409,11 @@ for another) so the video reads without zooming every step — the video itself,
 mode off), as a person has it — filmed or in a plain run: every `@guide` scenario carries `And
 simple mode is off` right after the login (the compiler refuses one without it), and the step
 puts simple mode back at feature end. Every step is in the video except the login and that shell
-step (`guide.silent`) and a step that neither
+step (`guide.silent`), other set-up a person does not take (a pinned setting such as `the molecule
+sketcher is …`, a package's own readiness wait, which calls `silent` from
+`@datagrok-libraries/bdd/runtime`), a wait the `HIDDEN_CHECKS` list names (`the package autostarts
+have completed`, `… should have finished updating`), whether it is written as a `Given` or a
+`Then`, and a step that neither
 acted nor changed the page (its before and after pictures are the same file): a table opened
 through the API is shown under its caption. A path walked inside a step — the top menu's group,
 then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as it was
@@ -456,7 +463,10 @@ on Reload Window; `taskkill /F /IM rg.exe` (or `pkill rg`) clears the ones alrea
 
 ## Developing the library
 
-`npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`; `npm run
+`npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`, which is what a
+package's `grok-bdd` loads: while any of those sources is newer than its build (a pull, an edit),
+every command but `init` and `link` stops and names the file, rather than failing a sound feature on
+a kind or a step only the sources have. `npm run
 test:unit` runs the engine tests (nouns, compile, project, init, failure) and the locator test,
 which drives the kinds and the platform names over a static page in the library's Chromium (and
 skips itself where none is installed); the library is a project itself (`features/platform`):

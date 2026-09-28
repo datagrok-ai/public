@@ -27,6 +27,19 @@
       "nullable": true
     },
     {
+      "name": "SubstructureSearchEngine",
+      "friendlyName": "Substructure Search Engine",
+      "category": "Search",
+      "description": "Engine for Contains / Not contains substructure searches. Crux falls back to RDKit for queries it cannot express (radicals, isotopes, some SMARTS primitives)",
+      "propertyType": "string",
+      "choices": [
+        "RDKit",
+        "Crux"
+      ],
+      "defaultValue": "RDKit",
+      "nullable": false
+    },
+    {
       "name": "TemplatesPath",
       "friendlyName": "Default Reactions",
       "category": "Enumeration",

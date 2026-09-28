@@ -98,7 +98,9 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   by relative path; never mix `src/` and `dist/` in one run. ESM everywhere. One `@playwright/test`
   per run: a package of the pnpm workspace depends on `workspace:^` and resolves the library's copy
   with nothing to link; one outside it depends by path (`file:…`) and `grok-bdd link` makes its
-  Playwright the library's copy (redo after `npm ci`).
+  Playwright the library's copy (redo after `npm ci`). A package's `grok-bdd` loads `dist/`, so it
+  stops while a source is newer than its build (`staleBuild` in cli.ts): an "unknown kind" or "no step
+  matches" right after a pull is a stale build, and a kind is defined in `bindings/`, not `src/`.
 - **One page per worker** (`harness.ts`): `feature(test)` reuses the worker's page, `afterEach`
   resets the shell (first waiting up to 60 s for the command the scenario armed and up to 25 s until the task bar has no progress entry — an
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
@@ -267,7 +269,11 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   that cell is clicked (`select` clicks it first). The Save project dialog's name field is a bare
   `<input>` (aria-label "Name"), which `text input` reaches. Typing into a column picker's search
   box used to toggle the scatter plot's regression line on every "r" (the R shortcut listened on
-  the plot's root) — fixed 2026-09-21 in `regression_line.dart`.
+  the plot's root) — fixed 2026-09-21 in `regression_line.dart`; the box plot's T (p-value) and the
+  line chart's R had the same hole until 2026-09-24 (picking "HEIGHT" hid the p-value). A
+  single-key shortcut on a viewer's root ignores keys whose target is an input or a text area. A
+  column selector named after a property with a space is reached without it (`"Category 1"` is
+  `div-column-combobox-category1`).
 - Filters: `user filters rows where …` writes the filter bitset, and anything that calls
   `requestFilter` (a histogram on every menu pick) recomputes it — hold a filter across viewer
   interaction through a filter card. `getFiltersGroup` creates a panel when there is none. A click
@@ -285,6 +291,9 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
 - `painted in at least N colors` groups by hue: a linear scale is one colour. `repainted`
   measures the whole canvas; `the "x" area … should have repainted` one area. A hover highlight
   can be gone by the time a later step reads it: repaint checks right after the gesture.
+  `should show a/no selection highlight` reads the canvas as it is, so a viewer no gesture touched
+  (a histogram that shows a selection made in the WebLogo) needs no snapshot; `more`/`less …
+  than before` compare with the snapshot.
 - An area phrase can name a part of a hit area: `left edge of x axis` (a 16 px strip along that
   edge — the axis away from the column selector in its middle), `top left corner of region Older`
   (a 16 px square), `overlap of region Tall and region Heavy` (the rectangle two areas share), and

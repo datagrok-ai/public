@@ -9,6 +9,7 @@ const SENTINELS = {
   awsSecretAccessKey: 'LEAK_SENTINEL_AWS_SECRET',
   awsBearerToken: 'LEAK_SENTINEL_AWS_BEARER',
   foundryApiKey: 'LEAK_SENTINEL_FOUNDRY_KEY',
+  DATABRICKS_TOKEN: 'LEAK_SENTINEL_DATABRICKS_TOKEN',
 };
 const ALL_SENTINELS = Object.values(SENTINELS);
 const found = (text) => ALL_SENTINELS.filter((s) => text.includes(s));
@@ -20,7 +21,7 @@ function runBash(cmd, env) {
 
 const legacyEnv = () => ({...process.env, ...SENTINELS, ANTHROPIC_API_KEY: SENTINELS.apiKey});
 
-const MODES = ['anthropic', 'subscription', 'bedrock', 'foundry'];
+const MODES = ['anthropic', 'subscription', 'bedrock', 'foundry', 'databricks'];
 const infoFor = (mode) => ({mode, region: 'us-east-1', foundryResource: 'my-res'});
 
 test('LEAK (pre-fix): `env` exposes credentials to bash — proves the harness detects a leak', () => {
@@ -37,7 +38,7 @@ test('buildCliEnv exposes only the allowlist — no secret values, no raw provid
     const env = buildCliEnv(infoFor(mode));
     for (const v of Object.values(env))
       assert.ok(!ALL_SENTINELS.some((s) => String(v).includes(s)));
-    for (const forbidden of ['apiKey', 'awsSecretAccessKey', 'awsBearerToken', 'foundryApiKey', 'provider'])
+    for (const forbidden of ['apiKey', 'awsSecretAccessKey', 'awsBearerToken', 'foundryApiKey', 'DATABRICKS_TOKEN', 'provider'])
       assert.ok(!(forbidden in env), `${mode}: raw field ${forbidden} must not be in the CLI env`);
   }
   const anth = buildCliEnv(infoFor('anthropic'));

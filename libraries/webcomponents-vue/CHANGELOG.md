@@ -1,5 +1,9 @@
 # webcomponents-vue changelog
 
+## v.next
+
+* InputForm: Driver validation marks the caption label as well as the editor, matching the platform's own invalid styling
+
 ## 0.4.0 (2026-09-23)
 
 * Introduced an injectable per-view service (`provideDgViewService`/`useViewService`/`useDgView`) that owns ribbon rendering and diffing
