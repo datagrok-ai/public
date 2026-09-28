@@ -23,7 +23,9 @@
     "wu": "catalog:"
   },
   "devDependencies": {
-    "@types/wu": "catalog:"
+    "@types/wu": "catalog:",
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1"
   },
   "scripts": {
     "build": "grok build",
@@ -31,7 +33,8 @@
     "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test",
     "check-code-style": "eslint ./src/*.ts",
-    "fix-style-errors": "eslint ./src/*.ts --fix"
+    "fix-style-errors": "eslint ./src/*.ts --fix",
+    "test:bdd": "grok-bdd run"
   },
   "properties": [
     {

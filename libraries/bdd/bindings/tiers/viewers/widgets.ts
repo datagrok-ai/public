@@ -919,3 +919,18 @@ export const areaLies = Then('the {string} area of {widget} should lie {word} th
 export const areaLiesBeside = Then('the {string} area of {widget} should lie to the {word} of the {string} area',
   (page: Page, a: string, target: ElementRef, side: string, b: string) => expectAreaRelation(page, target, a, side, b),
   {description: 'left or right — a vertical band title in the strip the layout reserved to the right of the plot'});
+
+// --- the row a click made current -------------------------------------------------------------------
+
+/* A click on a crowded canvas makes current whatever row the viewer hit-tests on top at that point,
+   not necessarily the marker aimed at. What the click claims is that the row under the pointer — the
+   viewer's own `hovered row` (from 1, 0 for none) — is the table's current row now. */
+export const currentRowIsHovered = Then('the {string} reading of {widget} should be the current row', async (page: Page, name: string, target: ElementRef) => {
+  await expect.poll(async () => {
+    const reading = await v.readingOf(page, target, name);
+    if (reading instanceof v.MissingReading)
+      return String(reading);
+    const current = await page.evaluate(() => (window as any).grok.shell.t?.currentRowIdx + 1);
+    return Number(reading) > 0 && Number(reading) === current ? 'same' : `the ${name} is ${reading}, the current row is ${current}`;
+  }, {message: `the ${name} of ${target.phrase} against the current row`}).toBe('same');
+}, {description: 'a row reading counted from 1 (`hovered row`) names the table\'s current row, and is not 0'});

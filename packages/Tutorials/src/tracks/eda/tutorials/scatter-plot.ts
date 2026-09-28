@@ -66,9 +66,11 @@ export class ScatterPlotTutorial extends Tutorial {
     const selection = 'Select points by dragging a rectangle on a viewer while holding <b>Shift</b>. ' +
       'Note that the row selection is being reflected on most viewers, such as the spreadsheet. ' +
       'A number of points under the selection rectangle is shown right there.';
-    await this.action('Select points', this.t!.onSelectionChanged, null, selection);
+    await this.action('Select points',
+      this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.anyTrue)), null, selection);
 
     const deselection = `To remove selection, press <b>Escape</b>.`;
-    await this.action('Deselect points', this.t!.onSelectionChanged, null, deselection);
+    await this.action('Deselect points',
+      this.t!.onSelectionChanged.pipe(filter(() => !this.t!.selection.anyTrue)), null, deselection);
   }
 }

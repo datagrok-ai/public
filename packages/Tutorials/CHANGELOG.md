@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Added a BDD project (`bdd/`): the tutorials walked from their cards to the congratulations, each step claimed both as ticked and as done on the platform
+* Tutorial cards carry `role="button"`, `aria-label` (the tutorial's name) and `data-status` (`done` / `not done`)
+* Scatter Plot: "Select points" and "Deselect points" completed on the same selection event, so the trailing event of a Shift-drag could tick "Deselect points" with no Escape; they now wait for a selection and for an empty one
 * R-Groups Analysis: The Distributions pane step resolves the pane when it appears instead of when the step is built — it exists only while a RowGroup is the current object
 * GROK-20416: Steps that point at a rebuilt element (the Add viewer ribbon icon, the aggregation tag) now resolve it per tick instead of caching it, so both the click listener and the highlight follow the new node; the icon is found by its `aria-label`, not by its position in the ribbon
 * Sticky Meta: Fixed the tutorial dying at "Save schema" — step 11 looked up the schema section and the property input with strings that disagreed in case with what the steps tell the learner to type, and the miss threw one line later

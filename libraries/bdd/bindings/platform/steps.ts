@@ -1,6 +1,6 @@
 /* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
    provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
-import {type Page, test} from '@playwright/test';
+import {type Locator, type Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
@@ -1298,3 +1298,65 @@ export const toolboxPaneHidden = Given('the toolbox pane is hidden', async (page
   await page.evaluate(() => { grok.shell.windows.showToolbox = false; });
   await expect(page.locator('.d4-toolbox[caption]').filter({visible: true}), 'the toolbox pane').toHaveCount(0, {timeout: pollMs(15000)});
 }, {tier: 'api', description: 'the side panel goes back to what it showed before the toolbox (the browse tree when it is open)'});
+
+/* --- hints ------------------------------------------------------------------------------------------
+   `ui.hints.addHintIndicator` marks its target with `ui-hint-target` and a `data-target` token and
+   draws a `.ui-hint-blob` carrying the same token, hidden while the target is clipped or gone. The
+   hint is on an element when the element, an ancestor or a descendant is the target and its blob is
+   displayed — what a learner sees. */
+
+async function hintOn(loc: Locator): Promise<string> {
+  return loc.evaluate((e) => {
+    const target = e.closest('.ui-hint-target') ?? e.querySelector('.ui-hint-target');
+    if (!target)
+      return 'it is not a hint target';
+    const blob = document.querySelector(`.ui-hint-blob[data-target="${target.getAttribute('data-target')}"]`) as HTMLElement | null;
+    if (!blob)
+      return 'its hint has no blob';
+    const r = blob.getBoundingClientRect();
+    return getComputedStyle(blob).display === 'none' || getComputedStyle(blob).visibility === 'hidden' || r.width === 0 ? 'its blob is not shown' : '';
+  });
+}
+
+export const elementHinted = Then('{element} should be hinted', async (page: Page, target: ElementRef) => {
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  await expect.poll(() => hintOn(loc).catch((e) => String(e?.message ?? e)), {message: `the hint on ${target.phrase}`}).toBe('');
+}, {tier: 'ui', description: 'the element (or its ancestor or descendant) is a ui.hints target and the hint blob is displayed'});
+
+export const noHintShown = Then('no hint should be shown', async (page: Page) => {
+  await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('.ui-hint-blob')]
+    .filter((b) => getComputedStyle(b).display !== 'none' && (b as HTMLElement).getBoundingClientRect().width > 0).length),
+  {message: 'hint blobs displayed'}).toBe(0);
+}, {tier: 'ui', description: 'no ui.hints blob is displayed anywhere on the page'});
+
+/* --- user settings ----------------------------------------------------------------------------------
+   `grok.userSettings` keeps a map per name in the page and writes it to the server on a timer. A
+   feature that changes one through the UI (a tutorial's completion record, the recent viewers) puts
+   the map back as it was at feature end: the whole map, then the server read back until it holds it.
+   `grok.userSettings.flush()` makes the write happen now; a client without it is waited out. */
+
+async function putSettingsBack(page: Page, name: string, saved: Record<string, string>): Promise<void> {
+  await page.evaluate(async ([n, map]) => {
+    grok.userSettings.put(n, map);
+    await grok.userSettings.flush?.();
+  }, [name, saved] as [string, Record<string, string>]);
+  await expect.poll(() => page.evaluate(async (n) => JSON.stringify(Object.entries(await grok.dapi.userDataStorage.get(n, true) ?? {})
+    .sort(([a], [b]) => a.localeCompare(b))), name),
+  {message: `the "${name}" user settings on the server`, timeout: pollMs(30000)})
+    .toBe(JSON.stringify(Object.entries(saved).sort(([a], [b]) => a.localeCompare(b))));
+}
+
+const settingsSaved = new WeakMap<Page, Set<string>>();
+
+export const userSettingsPutBack = Given('the {string} user settings are put back at feature end', async (page: Page, name: string) => {
+  const saved = settingsSaved.get(page) ?? new Set<string>();
+  settingsSaved.set(page, saved);
+  if (saved.has(name))
+    return;
+  saved.add(name);
+  const before = await page.evaluate((n) => ({...(grok.userSettings.get(n, true) ?? {})}), name) as Record<string, string>;
+  atFeatureEnd(page, async () => {
+    saved.delete(name);
+    await putSettingsBack(page, name, before);
+  });
+}, {tier: 'api', description: 'the whole map is remembered now and written back at feature end, the server read back until it holds it'});
