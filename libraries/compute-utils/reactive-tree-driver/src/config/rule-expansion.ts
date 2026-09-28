@@ -130,6 +130,15 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   for (const [alias, source] of Object.entries(sources ?? {})) {
     if (fromAliases.has(alias))
       throw new Error(`Rule ${id}: source alias ${alias} collides with an input alias`);
+    if ('js' in source) {
+      const {args, fn} = source.js;
+      if (!Array.isArray(args) || args.some((arg) => !fromAliases.has(arg)))
+        throw new Error(`Rule ${id}: source ${alias} args must be input aliases`);
+      if (typeof fn !== 'function')
+        throw new Error(`Rule ${id}: source ${alias} fn must be a function`);
+      expandedSources[alias] = source;
+      continue;
+    }
     if (!('validators' in source))
       throw new Error(`Rule ${id}: unknown source kind for alias ${alias}`);
     const {input, names} = source.validators;
@@ -169,8 +178,8 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   for (const effect of effects) {
     if (!metaEffects.has(effect.effect) && !validatorEffects.has(effect.effect) && !dataEffects.has(effect.effect))
       throw new Error(`Rule ${id}: unknown effect ${(effect as any).effect}`);
-    if (effect.effect === 'verdicts' && !(effect.source in (sources ?? {})))
-      throw new Error(`Rule ${id}: verdicts effect references unknown source ${effect.source}`);
+    if (effect.effect === 'verdicts' && !('validators' in (sources?.[effect.source] ?? {})))
+      throw new Error(`Rule ${id}: verdicts effect references unknown validators source ${effect.source}`);
     for (const target of ruleTargets(effect.targets)) {
       if (!toAliases.has(target))
         throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown output alias ${target}`);

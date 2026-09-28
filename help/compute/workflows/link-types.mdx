@@ -732,10 +732,11 @@ with `map` and `filter` over a list.
 
 ### Sources
 
-Values that need a function call enter a rule through `sources`, a map of
-aliases to resolvers. Each alias becomes a variable of the expression
-context next to the `from` aliases, and the `verdicts` effect writes a
-source's result without any expression. One resolver exists:
+Values that need a function call, or plain JavaScript over the inputs,
+enter a rule through `sources`, a map of aliases to resolvers. Each alias
+becomes a variable of the expression context next to the `from` aliases,
+and the `verdicts` effect writes a `validators` source's result without
+any expression. Two resolvers exist:
 
 - `validators`: `{input: <alias>, names?: [...]}`. With `names`, each
   function is called with the value of `input` as its single argument and
@@ -747,6 +748,13 @@ source's result without any expression. One resolver exists:
   expansion adds a `(call)` input for the step behind `input` on its own,
   under the reserved alias `call`. The result is a list of
   `{message, isError, isHelper}` items, empty when the value is absent.
+- `js`: `{args: [...], fn: (...values) => any}`. `fn` is called with the
+  values of the `args` input aliases, in order, and its result, or the
+  value of the promise it returns, becomes the alias. The result is
+  memoized per rule until an argument changes (by identity, so a replaced
+  dataframe counts and a mutated one does not), so a rule may list every
+  input it reads in `from` and still run `fn` only when its arguments
+  change. `fn` runs even when an argument is absent.
 
 ```
 {
@@ -768,10 +776,11 @@ source's result without any expression. One resolver exists:
 
 Sources share the rule's `when` with the effects and can be read in
 expressions like any input (`{'!': {var: 'v'}}` holds while the
-validators pass). Only the validator link of a rule awaits its sources;
-the meta and data links stay synchronous. A source that makes no call
-(absent value, no FuncCall, old platform) resolves synchronously, so the
-link stays batchable.
+validators pass). Every link of a rule resolves its sources before it
+evaluates, and awaits only when a source returns a promise. A `validators`
+source that makes no call (absent value, no FuncCall, old platform) and a
+`js` source with a synchronous `fn` or a memoized result resolve
+synchronously, so the link stays batchable.
 
 ### Expansion
 

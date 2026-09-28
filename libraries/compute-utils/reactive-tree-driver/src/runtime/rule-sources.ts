@@ -63,7 +63,7 @@ function namedVerdicts(value: any, names: string[]): Promise<ValidatorVerdict[]>
 // synchronous whenever nothing is called (absent value, mock mode, old platform), so those
 // links stay batchable and virtual-time tests see their results immediately
 function resolveValidators(
-  controller: IControllerBase, spec: RuleSource['validators'],
+  controller: IControllerBase, spec: ValidatorsSource,
 ): ValidatorVerdict[] | Promise<ValidatorVerdict[]> {
   if (spec.names) {
     const value = controller.getFirst(spec.input);
@@ -74,6 +74,24 @@ function resolveValidators(
   return annotationVerdicts(controller, spec);
 }
 
+type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];
+type JsSource = Extract<RuleSource, {js: any}>['js'];
+
+// the spec object is shared by every link and run of the rule, so it keys the memo
+const memo = new WeakMap<JsSource, {args: any[], value: any}>();
+
+function resolveJs(controller: IControllerBase, spec: JsSource) {
+  const args = spec.args.map((alias) => controller.getFirst(alias));
+  const last = memo.get(spec);
+  if (last && last.args.every((arg, i) => Object.is(arg, args[i])))
+    return last.value;
+  const value = spec.fn(...args);
+  memo.set(spec, {args, value});
+  if (value instanceof Promise)
+    value.then((result) => memo.set(spec, {args, value: result}), () => memo.delete(spec));
+  return value;
+}
+
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
  *  Returns a plain object when nothing had to be awaited. */
 export function resolveSources(
@@ -82,11 +100,11 @@ export function resolveSources(
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];
   for (const [alias, source] of Object.entries(sources ?? {})) {
-    if (!('validators' in source))
+    if (!('validators' in source) && !('js' in source))
       throw new Error(`Unknown rule source ${JSON.stringify(source)} for alias ${alias}`);
-    const value = resolveValidators(controller, source.validators);
+    const value = 'js' in source ? resolveJs(controller, source.js) : resolveValidators(controller, source.validators);
     if (value instanceof Promise)
-      pending.push(value.then((verdicts) => { resolved[alias] = verdicts; }));
+      pending.push(value.then((result) => {resolved[alias] = result;}));
     else
       resolved[alias] = value;
   }
