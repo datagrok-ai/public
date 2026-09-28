@@ -225,7 +225,7 @@ Remove Group Tooltip**.
 
 Certain viewers include statistical features:
 
-* Box [plots](viewers/box-plot.md) show the [p-value](viewers/box-plot.md#t-test), allowing you to determine
+* Box [plots](viewers/box-plot.md) show the [p-value](viewers/box-plot.md#group-comparison), allowing you to determine
   whether the findings are statistically significant.
 * Scatterplots can show one or more [regression lines](viewers/scatter-plot.md#regression-line) with
   associated equations and color-coding. [Correlation plots](viewers/correlation-plot.md) highlight the values of
