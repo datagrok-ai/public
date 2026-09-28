@@ -61,4 +61,9 @@ export class UserSettingsStorage {
   delete(name: string, key: string, isPrivate: boolean = true): void {
     return api.grok_UserSettings_Delete(name, key, isPrivate);
   }
+
+  /** Sends pending changes to the server now instead of waiting for the next periodic sync. */
+  async flush(): Promise<void> {
+    await api.grok_UserSettings_Flush();
+  }
 }

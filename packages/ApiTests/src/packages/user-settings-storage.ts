@@ -46,6 +46,20 @@ category('UserSettingsStorage', () => {
     expect(receivedValue == undefined);
   }, {stressTest: true});
 
+  test('flush', async () => {
+    const storageName = 'js-api-storage-name5';
+    const key = 'flushKey';
+    const value = `value-${Date.now()}`;
+    try {
+      grok.userSettings.add(storageName, key, value);
+      await grok.userSettings.flush();
+      expect(await grok.dapi.userDataStorage.getValue(storageName, key), value);
+    } finally {
+      grok.userSettings.delete(storageName, key);
+      await grok.userSettings.flush();
+    }
+  });
+
   test('credentials', async () => {
     try {
       const url = `${grok.dapi.root}/credentials/for/${_package.name}`;
