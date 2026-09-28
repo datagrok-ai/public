@@ -18,7 +18,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, doubleClickOn, expand, selectIn, shouldBe, shouldHaveValue, typeInto, uploadThrough} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {consoleCall, consoleShows, consoleShowsTimes, contextPanelOpen, contextPanelShows, dialogCloses, noteConsole, openDataset, scriptOnServer, scriptsView} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {closeConsole, consoleCall, consoleShows, consoleShowsTimes, contextPanelOpen, contextPanelShows, dialogCloses, noteConsole, openDataset, scriptOnServer, scriptsView} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -117,6 +117,7 @@ test.describe("Running a script with data from every source", () => {
       await session.step(121, "And the console should show \"count: 510\" 1 time", () => consoleShowsTimes(page, "count: 510", 1));
       await session.step(122, "And no errors should have been logged", () => noErrors(page));
       await session.step(124, "When user clears gallery search", () => clearField(page, el("gallery search")));
+      await session.step(125, "And user closes the console", () => closeConsole(page));
     });
     run.finish();
   });
