@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect, expectFloat, before} from '@datagrok-libraries/test/src/test';
@@ -6,8 +7,9 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sar-matrix-clustering';
-import {assembleSinglePositionMatrix, fitAdditiveModel} from '../analysis/sar-matrix/sar-matrix-assemble';
-import {decomposeByColumns, SarFragmentColumns}
+import {assembleSinglePositionMatrix, fitAdditiveModel, linkStaged} from '../analysis/sar-matrix/sar-matrix-assemble';
+import {checkAgainstMolecules, decomposeByColumns, defaultAxis, holdsFragments, SarFragmentColumns,
+  standardizeFragment}
   from '../analysis/sar-matrix/sar-matrix-columns';
 import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/sar-matrix-link';
 import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
@@ -637,7 +639,7 @@ category('SAR Matrix', () => {
 
 /** Building the matrices from columns that already hold a decomposition, instead of fragmenting the
  *  structures. Kept apart from the pipeline category: nothing here fragments anything. */
-category('SAR Matrix: fragment columns', () => {
+category('SAR Matrix: R-group columns', () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -646,6 +648,7 @@ category('SAR Matrix: fragment columns', () => {
   });
 
   const col = (name: string, values: string[]): DG.Column => DG.Column.fromStrings(name, values);
+  const measured = (n: number): Float32Array => new Float32Array(n).fill(1);
 
   /** Decomposition columns for a table. A plain string is the same fragment in every row; the last
    *  group runs across the top unless `axis` names another. */
@@ -661,25 +664,25 @@ category('SAR Matrix: fragment columns', () => {
   };
 
   /** The decomposition run end to end, so an assertion lands on the assembled matrix. */
-  const run = (smiles: string[], activity: number[], columns: SarFragmentColumns, predict = false,
+  const run = (smiles: string[], activity: (number | null)[], columns: SarFragmentColumns,
     extra: Partial<SarMatrixParams> = {}): Promise<SarMatrix[]> => {
     const molecules = col('smiles', smiles);
     molecules.semType = DG.SEMTYPE.MOLECULE;
     return runSarMatrix(molecules,
       DG.Column.fromList('double', 'activity', activity) as DG.Column<number>,
-      {...e2eParams(predict), fragmentColumns: columns, ...extra});
+      {...e2eParams(false), fragmentColumns: columns, ...extra});
   };
 
   /** The plan one record gets, the way assembly builds it: the whole cell, or the row key with the
    *  axis point left open. */
   const recordPlan = (columns: SarFragmentColumns, rowCount: number, row = false,
     idx = 0): LinkStages | null => {
-    const decomp = decomposeByColumns(columns, null, rowCount).decomps[0];
+    const decomp = decomposeByColumns(columns, null, measured(rowCount)).decomps[0];
     const record = decomp.records[idx];
     const links = decomp.links!;
     const positions = row ? decomp.positions.filter((p) => p !== columns.column.name) : decomp.positions;
     return planLink(record.coreSmiles, record.values, positions, links,
-      row ? links.fills[columns.column.name] : [], !row);
+      row ? links.sites[columns.column.name] : [], !row);
   };
 
   test('fragment columns build the matrix', async () => {
@@ -701,11 +704,12 @@ category('SAR Matrix: fragment columns', () => {
 
   // A connector drawn alone is a bare chain with nothing to recognise it by, so it stays on its core.
   test('a bridging row fragment stays on its core', async () => {
-    const matrices = await run(['CCOCCN', 'CCCCN', 'CCOCCNC'], [5.1, 5.8, 6.4],
-      spec('CC(=O)N[*:1]', {
-        'Linker': ['[*:1]CCOCC(=O)[*:2]', '[*:1]CCCCC(=O)[*:2]', '[*:1]CCOCC(=O)[*:2]'],
-        'E3 ligand': ['[*:2]NC1=CC=CC=C1', '[*:2]NC1=CC=CC=C1', '[*:2]NC1=CC=NC=C1'],
-      }), false, {minCompounds: 1});
+    const matrices = await run(['CC(=O)NCCOCC(=O)Nc1ccccc1', 'CC(=O)NCCCCC(=O)Nc1ccccc1',
+      'CC(=O)NCCOCC(=O)Nc1ccncc1'], [5.1, 5.8, 6.4],
+    spec('CC(=O)N[*:1]', {
+      'Linker': ['[*:1]CCOCC(=O)[*:2]', '[*:1]CCCCC(=O)[*:2]', '[*:1]CCOCC(=O)[*:2]'],
+      'E3 ligand': ['[*:2]NC1=CC=CC=C1', '[*:2]NC1=CC=CC=C1', '[*:2]NC1=CC=NC=C1'],
+    }), {minCompounds: 1});
     const keys = matrices[0].rows.map((row) => row.keySmiles);
     expect(keys.every((k) => k.includes('C(=O)N') && k.includes('[*:2]')), true,
       'the connector is drawn on its core, with the column attachment left open');
@@ -724,7 +728,7 @@ category('SAR Matrix: fragment columns', () => {
     mol.delete();
     expect(block.startsWith('\n'), true, 'the fixture must carry the empty title line');
     const core = col('Core', new Array(4).fill(block));
-    const {decomps} = decomposeByColumns({core, rows: [r1], column: r2}, null, 4);
+    const {decomps} = decomposeByColumns({core, rows: [r1], column: r2}, null, measured(4));
     expect(new Set(decomps[0].records.map((r) => r.coreSmiles)).size, 1, 'one scaffold keys as one');
     expect(decomps[0].links!.fills['R2'].join(','), '2', 'and still says what each fragment fills');
     expect(recordPlan({core, rows: [r1], column: r2}, 4)!.length, 1, 'so its fragments recombine');
@@ -736,9 +740,9 @@ category('SAR Matrix: fragment columns', () => {
     const {core, r1, r2} = fragmentTable();
     const renamed = col('E3 ligand', r2.toList());
     const named = col('E3 ligand', ['VHL', 'CRBN', 'VHL', 'CRBN']);
-    const fills = decomposeByColumns({core, rows: [r1], column: r2}, null, 4).decomps[0].links!.fills;
+    const fills = decomposeByColumns({core, rows: [r1], column: r2}, null, measured(4)).decomps[0].links!.fills;
     expect(fills['R1'].join(',') + '/' + fills['R2'].join(','), '1/2', 'read off the fragments');
-    expect(decomposeByColumns({core, rows: [r1], column: renamed}, null, 4).decomps[0].links!
+    expect(decomposeByColumns({core, rows: [r1], column: renamed}, null, measured(4)).decomps[0].links!
       .fills['E3 ligand'].join(','), '2', 'the column name is not what says it');
     expect(recordPlan({core, rows: [r1], column: named}, 4), null,
       'and a fragment carrying no attachment is never recombined');
@@ -751,7 +755,7 @@ category('SAR Matrix: fragment columns', () => {
     spec('[*:1]c1nc([*:2])nc([*:3])c1', {
       R1: ['CN[*:1]', 'CCN[*:1]', 'CN[*:1]'], R2: '[*:2]c1ccccc1',
       R3: ['[*:3]OC', '[*:3]OC', '[*:3]Cl'],
-    }), false, {minCompounds: 1});
+    }), {minCompounds: 1});
     const matrix = matrices[0];
     expect(matrix.positions.join(','), 'R3', 'the last attachment runs across the top');
     expect(`${matrix.rows.length}x${matrix.columns.length}`, '2x2', 'R1+R2 down the side, R3 across');
@@ -821,7 +825,7 @@ category('SAR Matrix: fragment columns', () => {
   test('a blank on the column axis is the parent, not a discard', async () => {
     const columns = spec('[*:1]c1ccc([*:2])cc1', {R1: ['C[*:1]', 'CC[*:1]', 'C[*:1]', 'CC[*:1]'],
       R2: ['', '', 'Cl[*:2]', 'Cl[*:2]']});
-    expect(decomposeByColumns(columns, null, 4).decomps[0].records.length, 4, 'none dropped');
+    expect(decomposeByColumns(columns, null, measured(4)).decomps[0].records.length, 4, 'none dropped');
     const matrix = (await run(['Cc1ccccc1', 'CCc1ccccc1', 'Cc1ccc(Cl)cc1', 'CCc1ccc(Cl)cc1'],
       [5.2, 5.6, 6.1, 6.5], columns))[0];
     expect(matrix.columns.length, 2, 'the parent takes a column beside the chloro one');
@@ -852,9 +856,9 @@ category('SAR Matrix: fragment columns', () => {
     const {r1, r2} = fragmentTable();
     const twoCores = col('Core', ['[*:1]c1ccc([*:2])cc1', '[*:1]c1ccc([*:2])cc1',
       '[*:1]C1CCC([*:2])CC1', '[*:1]C1CCC([*:2])CC1']);
-    expect(decomposeByColumns({core: twoCores, rows: [r1], column: r2}, null, 4).clusters.length, 2,
+    expect(decomposeByColumns({core: twoCores, rows: [r1], column: r2}, null, measured(4)).clusters.length, 2,
       'two scaffolds make two matrices, not one of twice the height');
-    const pooled = decomposeByColumns({core: twoCores, rows: [], column: r2}, null, 4);
+    const pooled = decomposeByColumns({core: twoCores, rows: [], column: r2}, null, measured(4));
     expect(pooled.clusters.length, 1, 'with nothing on the row axis the cores become the rows');
     expect(new Set(pooled.decomps[0].records.map((r) => r.coreSmiles)).size, 2, 'and both reach it');
   });
@@ -903,7 +907,7 @@ category('SAR Matrix: fragment columns', () => {
 
     const matrices = await run(mols, mols.map((_v, i) => 5 + i * 0.1), {
       core: col('Core', cores), rows: [col('R1', r1), col('R2', r2), col('R3', r3)],
-      column: col('R4', r4)}, true, {minCompounds: 1});
+      column: col('R4', r4)}, {minCompounds: 1});
 
     expect(matrices.length, 4, 'each core is its own series, whatever shape it is');
     const chain = matrices.find((m) => m.rows[0].coreSmiles.includes('c1'))!;
@@ -957,7 +961,7 @@ category('SAR Matrix: fragment columns', () => {
 
     const matrices = await run(mols, mols.map((_v, i) => 7 + i * 0.1), {
       core: col('Linker', cores), rows: [col('Warhead', wh)],
-      column: col('E3 ligand', e3)}, true, {minCompounds: 1});
+      column: col('E3 ligand', e3)}, {minCompounds: 1});
 
     expect(matrices.length, 2, 'each linker is its own series');
     expect(matrices.every((m) => m.rows.every((row) => row.keySmiles.includes('[*:2]') &&
@@ -973,7 +977,7 @@ category('SAR Matrix: fragment columns', () => {
   // build as something else — the substituent is dropped and an already-measured molecule returns.
   test('a cell with no attachment point is greyed, not predicted', async () => {
     const {smiles, activity, columns} = mixed();
-    const matrix = (await run(smiles, activity, columns, true))[0];
+    const matrix = (await run(smiles, activity, columns))[0];
     const furan = matrix.rows.findIndex((row) => row.keySmiles.includes('o1') ||
       row.keySmiles.includes('co'));
     expect(furan >= 0, true, 'the furan row must survive');
@@ -989,10 +993,10 @@ category('SAR Matrix: fragment columns', () => {
 
   // Where the rule contradicts a compound that was measured, it is the rule misreading that row.
   test('a measured compound is never called impossible', async () => {
-    const matrices = await run(['CC(CC(=O)Nc1ccccc1)c1ccccc1', 'C1CC1CC(=O)Nc1ccccc1',
-      'CC(CC(=O)Nc1ccccc1)C1CC1', 'CC(=O)Nc1ccccc1'], [5.5, 5.9, 6.2, 6.4],
+    const matrices = await run(['CC(CNC(=O)c1ccccc1)c1ccccc1', 'C1CC1CC(=O)Nc1ccccc1',
+      'CC(CNC(=O)c1ccccc1)C1CC1', 'CC(=O)Nc1ccccc1'], [5.5, 5.9, 6.2, 6.4],
     spec('[*:1]NC(=O)c1ccccc1', {R1: ['[*:1]CC([*:2])C', '', '[*:1]CC([*:2])C', ''],
-      R2: ['[*:2]c1ccccc1', '[*:2]C1CC1', '[*:2]C1CC1', '[*:2]c1ccccc1']}), true, {minCompounds: 1});
+      R2: ['[*:2]c1ccccc1', '[*:2]C1CC1', '[*:2]C1CC1', '[*:2]c1ccccc1']}), {minCompounds: 1});
     expect(matrices.every((m) => m.cells.flat().every((c) => c.kind !== 'impossible')), true,
       'every cell of that row holds a compound, so the row is read wrongly rather than impossible');
   });
@@ -1002,8 +1006,130 @@ category('SAR Matrix: fragment columns', () => {
   test('a point no column fills is not an impossible cell', async () => {
     const core = '[*:1]c1cc([*:2])cc([*:3])c1';
     const links = decomposeByColumns(spec(core, {R1: ['C[*:1]', 'CC[*:1]', 'C[*:1]', 'CC[*:1]'],
-      R2: ['Cl[*:2]', 'Cl[*:2]', 'F[*:2]', 'F[*:2]']}), null, 4).decomps[0].links!;
+      R2: ['Cl[*:2]', 'Cl[*:2]', 'F[*:2]', 'F[*:2]']}), null, measured(4)).decomps[0].links!;
     expect(cellPossible(core, {R1: 'C[*:1]', R2: 'Cl[*:2]'}, ['R2', 'R1'], links), true,
       '[*:3] is outside the decomposition, so it proves nothing');
   });
+
+  test('every R-group notation reads as [*:n]', async () => {
+    for (const written of ['C[*:1]', '[1*]C', '[*1]C', '[R1]C', '[R:1]C', '[2*:1]C', '*C |$_R1;$|'])
+      expect(standardizeFragment(written).value, 'C[*:1]', written);
+    const rdkit = chemCommonRdKit.getRdKitModule();
+    const mol = rdkit.get_mol('[1*]c1ccc([2*])cc1');
+    mol.set_new_coords();
+    // R-Groups Analysis writes its core this way.
+    const block = mol.get_molblock().replace('ISO', 'RGP');
+    mol.delete();
+    expect(standardizeFragment(block).value, standardizeFragment('[*:1]c1ccc([*:2])cc1').value, 'an RGP molblock');
+    expect(standardizeFragment('VHL').structure, false, 'a name stays a name');
+  });
+
+  test('an unnumbered attachment point takes its column\'s number', async () => {
+    const core = '[*:1]c1ccc([*:2])cc1';
+    const {decomps} = decomposeByColumns(spec(core, {R1: ['C[*:1]', 'CC[*:1]', 'C[*:1]', 'CC[*:1]'],
+      R2: ['*F', '*F', '*Cl', '*Cl']}), null, measured(4));
+    expect(decomps[0].records.map((r) => r.values['R2']).join(','), 'F[*:2],F[*:2],Cl[*:2],Cl[*:2]');
+
+    // Nothing numbers "Aryl", so nothing about it can be claimed impossible.
+    const matrix = (await run(['Cc1ccccc1', 'CCc1ccccc1', 'CCc1ccc(F)cc1'], [5.1, 5.6, 6.2],
+      spec(core, {R1: ['C[*:1]', 'CC[*:1]', 'CC[*:1]'], Aryl: ['', '', '*F']})))[0];
+    expect(matrix.cells.flat().some((c) => c.kind === 'impossible'), false, 'no cell is struck through');
+    expect(matrix.cells.flat().some((c) => c.kind === 'virtual'), true, 'the hole is predicted instead');
+  });
+
+  test('a repeated compound keeps its measured copy', async () => {
+    const matrix = (await run(['Cc1ccc(F)cc1', 'CCc1ccc(F)cc1', 'CCc1ccc(F)cc1', 'Cc1ccc(Cl)cc1', 'CCc1ccc(Cl)cc1'],
+      [5.1, null, 5.8, 6.4, 7.0], spec('[*:1]c1ccc([*:2])cc1', {
+        R1: ['C[*:1]', 'CC[*:1]', 'CC[*:1]', 'C[*:1]', 'CC[*:1]'],
+        R2: ['F[*:2]', 'F[*:2]', 'F[*:2]', 'Cl[*:2]', 'Cl[*:2]']})))[0];
+    const cells = matrix.cells.flat();
+    expect(cells.some((c) => c.kind === 'real' && c.molIdx === 2), true, 'the measured copy takes the cell');
+    expect(cells.some((c) => c.molIdx === 1), false, 'the unmeasured copy does not');
+    expect(matrix.realCount, 4);
+  });
+
+  test('R-groups that are not the table\'s molecules are caught', async () => {
+    const {molecules, core, r1, r2} = fragmentTable();
+    const {decomps} = decomposeByColumns({core, rows: [r1], column: r2}, null, measured(4));
+    const matching = await checkAgainstMolecules(decomps, molecules.toList());
+    expect(`${matching.mismatched}/${matching.checked}`, '0/4', 'each compound rebuilds from its own R-groups');
+    const shifted = await checkAgainstMolecules(decomps, [...molecules.toList()].reverse());
+    expect(`${shifted.mismatched}/${shifted.checked}`, '4/4', 'rows out of step with the molecules are all reported');
+  });
+
+  test('a bridge written in both of its columns closes one ring', async () => {
+    const bridge = 'C(C[*:101])[*:100]';
+    const columns = spec('C1CC(C[*:100])(N[*:1])C([*:101])N1[*:2]',
+      {R1: ['CC(=O)[*:1]', 'CC(=O)[*:1]'], R100: bridge, R101: bridge, R2: ['C[*:2]', 'CC[*:2]']});
+    const {decomps} = decomposeByColumns(columns, null, measured(2));
+    const record = decomps[0].records[0];
+    const plan = planLink(record.coreSmiles, record.values, decomps[0].positions, decomps[0].links!, [], true);
+    expect(plan !== null, true, 'the bridge is one piece, not two claims on one point');
+    const [built] = await linkStaged([record.coreSmiles], [plan], (_i, p) => record.values[p] ?? '');
+    const canonical = (smiles: string): string => {
+      const mol = chemCommonRdKit.getRdKitModule().get_mol(smiles);
+      const out = mol.get_smiles();
+      mol.delete();
+      return out;
+    };
+    expect(canonical(built!), canonical('CC(=O)NC12CCN(C)C1CCC2'), 'the bicyclic compound it describes');
+  });
+
+  /** SPGI's compounds that carry a decomposition, with Average Mass as the value. */
+  let spgi: DG.DataFrame | null = null;
+  const spgiWithCore = async (): Promise<DG.DataFrame> => {
+    if (spgi === null) {
+      const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
+      const core = df.col('Core')!;
+      spgi = df.clone(DG.BitSet.create(df.rowCount, (i) => !core.isNone(i) && core.get(i) !== ''));
+    }
+    return spgi;
+  };
+  const spgiColumns = (df: DG.DataFrame): SarFragmentColumns => ({core: df.col('Core')!,
+    rows: ['R1', 'R3', 'R100', 'R101'].map((name) => df.col(name)!), column: df.col('R2')!});
+
+  test('SPGI: the dialog offers the R-group columns and picks R2', async () => {
+    const df = await spgiWithCore();
+    const offered = df.columns.toList().filter(holdsFragments).map((c) => c.name);
+    expect(offered.join(','), 'Core,R1,R2,R3,R100,R101', 'only columns holding attachment points');
+    expect(defaultAxis(['R1', 'R2', 'R3', 'R100', 'R101'].map((name) => df.col(name)!))?.name, 'R2',
+      'the R-group every compound has, not the bridge');
+  });
+
+  test('SPGI: every compound rebuilds from its core and R-groups', async () => {
+    const df = await spgiWithCore();
+    const activities = new Float32Array(df.rowCount).map((_v, i) => df.col('Average Mass')!.get(i));
+    const {decomps} = decomposeByColumns(spgiColumns(df), null, activities);
+    expect(decomps.length, 6, 'one series per core');
+    const {checked, mismatched} = await checkAgainstMolecules(decomps, df.col('Structure')!.toList());
+    expect(checked > 250, true, `${checked} compounds rebuilt`);
+    expect(mismatched, 0, 'and each is the compound on its row');
+  }, {timeout: 120000});
+
+  test('SPGI: rows and proposals come out whole', async () => {
+    const df = await spgiWithCore();
+    const matrices = await runSarMatrix(df.col('Structure')!, df.col('Average Mass') as DG.Column<number>,
+      {...e2eParams(false), minCompounds: 3, fragmentColumns: spgiColumns(df)});
+    expect(matrices.length >= 5, true, `${matrices.length} series`);
+    // The two compounds whose R1 and R2 are one ring cannot vary R2, so only their rows stay open.
+    const ringRow = (row: SarMatrixRow): boolean => (row.foldedValues['R1'] ?? '').includes('[*:2]');
+    for (const matrix of matrices) {
+      for (const row of matrix.rows.filter((r) => !ringRow(r))) {
+        expect(row.keySmiles.replace('[*:2]', '').includes('[*:'), false,
+          `${matrix.label}: row ${row.keySmiles} leaves only R2 open`);
+      }
+      matrix.rows.forEach((row, ri) => {
+        if (!ringRow(row))
+          expect(matrix.cells[ri].some((c) => c.kind === 'impossible'), false, `${matrix.label} ${row.label}`);
+      });
+    }
+    const predicted = matrices.flatMap((m) => m.cells.flat()).filter((c) => c.kind === 'virtual');
+    const drawn = predicted.filter((c) => c.smiles !== null);
+    expect(drawn.every((c) => !c.smiles!.includes('[*:')), true, 'no proposal keeps an attachment point');
+    expect(drawn.length >= predicted.length * 0.95, true, `${drawn.length} of ${predicted.length} proposals drawn`);
+    const bridged = matrices.find((m) => m.rows[0].coreSmiles.includes('[*:100]'));
+    expect(bridged !== undefined && bridged.rows.length >= 2, true, 'the bridged pyrrolidines make a series');
+    expect(bridged!.rows.every((row) => !row.keySmiles.includes('[*:100]') && !row.keySmiles.includes('[*:101]')),
+      true, 'their bridge is closed in every row');
+  }, {timeout: 300000});
 });

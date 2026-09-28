@@ -4,10 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
 import {isMolBlock} from '../../utils/chem-common';
 import {checkMoleculeValid} from '../../utils/chem-common-rdkit';
-import {MAX_MATRIX_CELLS, MAX_MATRIX_COLS, MAX_MATRIX_ROWS, rankByFrequency}
+import {linkStaged, MAX_MATRIX_CELLS, MAX_MATRIX_COLS, MAX_MATRIX_ROWS, rankByFrequency}
   from './sar-matrix-assemble';
 import {ClusterDecomposition, PositionRecord} from './sar-matrix-decompose';
-import {attachmentNumbers, PositionFills} from './sar-matrix-link';
+import {attachmentNumbers, fragmentLinks, planLink, PositionFills} from './sar-matrix-link';
 import {CoreCluster} from './sar-matrix-types';
 
 /** Columns that already hold a decomposition, sorted into the axes they build. */
@@ -17,71 +17,166 @@ export interface SarFragmentColumns {
   column: DG.Column;
 }
 
-/** Distinct attachment points a column's fragments carry, ascending. */
-function columnAttachments(column: DG.Column): number[] {
-  const sites = new Set<number>();
-  for (const value of column.categories) {
-    for (const n of attachmentNumbers(value))
-      sites.add(n);
+/** Numbered attachment points in every spelling in use: `[*:1]`, `[1*]`, `[1*:2]`, `[*1]`, `[R1]`, `[R:1]`. */
+const R_LABEL = /\[(\d*)\*:(\d+)\]|\[(\d+)\*\]|\[\*(\d+)\]|\[R:?(\d+)\]/g;
+const BARE_DUMMY = /(?<!\[)\*/g;
+const ATOM_TOKEN = /\[[^\]]*\]|Br|Cl|[BCNOPSFIbcnops*]/g;
+
+function relabel(smiles: string): string {
+  return smiles.replace(R_LABEL, (_m, iso, map, iso2, star, r) => {
+    const n = map !== undefined ? (Number(map) > 0 ? map : iso) : iso2 ?? star ?? r;
+    return n ? `[*:${Number(n)}]` : '*';
+  });
+}
+
+/** CXSMILES `*C |$_R1;$|` names its dummies in atom order. */
+function applyCxLabels(text: string): string {
+  const m = text.match(/^(\S+)\s+\|(.*)\|$/);
+  if (m === null)
+    return text;
+  const labels = m[2].match(/\$([^$]*)\$/)?.[1].split(';') ?? [];
+  let atom = 0;
+  return m[1].replace(ATOM_TOKEN, (token) => {
+    const label = (labels[atom++] ?? '').match(/^_?R(\d+)$/);
+    return label !== null && (token === '*' || token === '[*]') ? `[*:${label[1]}]` : token;
+  });
+}
+
+/**
+ * A core or R-group as canonical SMILES with its attachment points written `[*:n]`, whatever notation
+ * it came in: SMILES or CXSMILES labels, a molblock with `R#` atoms, or an isotope-labelled dummy.
+ * Text RDKit cannot read is a label and comes back as written.
+ */
+export function standardizeFragment(text: string): {value: string, structure: boolean} {
+  const molblock = isMolBlock(text);
+  const written = molblock ? text : text.trim();
+  const mol = checkMoleculeValid(molblock ? text : relabel(applyCxLabels(written)));
+  let smiles: string;
+  try {
+    if (!mol?.is_valid())
+      return {value: written, structure: false};
+    smiles = mol.get_smiles();
+  } finally {
+    mol?.delete();
   }
-  return [...sites].sort((a, b) => a - b);
+  const labelled = relabel(smiles);
+  // An isotope dummy orders the atoms differently from a numbered one, so the relabelled form is canonicalized again.
+  return {value: labelled === smiles ? smiles : standardizeFragment(labelled).value, structure: true};
 }
 
-/**
- * Which R-group the matrix should enumerate across, by default.
- *
- * The one filling the LAST attachment runs along the top and the earlier ones fold into the row, so a
- * core with R1 and R2 opens as R1 down the side and R2 across. Which attachment a fragment fills
- * decides this, not the order the columns were picked in.
- */
-export function defaultAxis(columns: DG.Column[]): DG.Column | undefined {
-  const sites = columns.map((c) => columnAttachments(c)[0] ?? -1);
-  return columns[sites.lastIndexOf(Math.max(...sites))];
+/** The one attachment number most of a column's fragments carry, else the number in its name. */
+function columnSite(values: string[], name: string): number | null {
+  const counts = new Map<number, number>();
+  let numbered = 0;
+  for (const value of values) {
+    const numbers = attachmentNumbers(value);
+    if (numbers.size > 0)
+      numbered++;
+    for (const n of numbers)
+      counts.set(n, (counts.get(n) ?? 0) + 1);
+  }
+  for (const [n, count] of counts) {
+    if (count * 2 > numbered)
+      return n;
+  }
+  const fromName = name.match(/r[\s_\-:]*(\d+)/i);
+  return fromName ? Number(fromName[1]) : null;
 }
 
-/**
- * Canonicalizing reader for a fragment column, memoized over the distinct strings it holds.
- *
- * R-Group Analysis writes its core as molblocks whose coordinates differ per compound, so keying raw
- * text would make one scaffold read as one row per molecule. Attachment points are rewritten to the
- * `[*:n]` form the linker matches on, since a molblock round-trip can come back isotope-labelled.
- * Text RDKit cannot read is a label, kept as written — which is what lets component names be an axis.
- */
-function fragmentReader(): {read: (column: DG.Column, i: number) => string, structures: Set<string>} {
-  const canonical = new Map<string, string>();
-  const structures = new Set<string>();
-  const read = (column: DG.Column, i: number): string => {
+/** Numbers most of a position's fragments carry. */
+function majoritySites(values: string[]): number[] {
+  const counts = new Map<number, number>();
+  let filled = 0;
+  for (const value of values) {
+    if (value === '')
+      continue;
+    filled++;
+    for (const n of attachmentNumbers(value))
+      counts.set(n, (counts.get(n) ?? 0) + 1);
+  }
+  return [...counts].filter(([, count]) => count * 2 > filled).map(([n]) => n).sort((a, b) => a - b);
+}
+
+/** Reads fragment columns in the standard notation, memoized over the distinct strings they hold. */
+class FragmentReader {
+  readonly structures = new Set<string>();
+  private readonly cache = new Map<string, string>();
+
+  read(column: DG.Column, i: number): string {
     const text = column.isNone(i) ? '' : column.getString(i);
     if (text.trim() === '')
       return '';
-    // A molblock opens with an empty title line, so trimming it shifts every header line up.
-    const raw = isMolBlock(text) ? text : text.trim();
-    const cached = canonical.get(raw);
-    if (cached !== undefined)
-      return cached;
-    const mol = checkMoleculeValid(raw);
-    let value = raw;
-    if (mol?.is_valid()) {
-      value = (mol.get_smiles() || raw).replace(/\[(\d+)\*\]/g, '[*:$1]');
-      structures.add(value);
+    let value = this.cache.get(text);
+    if (value === undefined) {
+      const standard = standardizeFragment(text);
+      value = standard.value;
+      if (standard.structure)
+        this.structures.add(value);
+      this.cache.set(text, value);
     }
-    mol?.delete();
-    canonical.set(raw, value);
     return value;
-  };
-  return {read, structures};
+  }
+
+  /** A column read whole, a lone unnumbered `*` numbered after the column's own site. */
+  readColumn(column: DG.Column, rowCount: number, numberBareDummies: boolean): string[] {
+    const values = Array.from({length: rowCount}, (_, i) => this.read(column, i));
+    if (!numberBareDummies)
+      return values;
+    const site = columnSite(values, column.name);
+    if (site === null)
+      return values;
+    const numbered = new Map<string, string>();
+    return values.map((value) => {
+      if (value === '' || attachmentNumbers(value).size > 0 || (value.match(BARE_DUMMY) ?? []).length !== 1)
+        return value;
+      let fixed = numbered.get(value);
+      if (fixed === undefined) {
+        fixed = standardizeFragment(value.replace(BARE_DUMMY, `[*:${site}]`)).value;
+        this.structures.add(fixed);
+        numbered.set(value, fixed);
+      }
+      return fixed;
+    });
+  }
 }
 
-/** Records cut to what one matrix may hold, least-populated lines first so a trim keeps the data.
- *  Nothing else bounds this path: the size caps sit in the single-position assembler, and the gate on
- *  cluster size belongs to the decomposition that columns mode skips. */
+/** Whether a column holds cores or R-groups: values carrying attachment points. */
+export function holdsFragments(column: DG.Column): boolean {
+  if (column.type !== DG.COLUMN_TYPE.STRING)
+    return false;
+  const labelled = /\[\d*\*|\*:\d|\[R:?\d|M {2}RGP|R#|\$_?R\d/;
+  let seen = 0;
+  for (const value of column.categories) {
+    if (value === '')
+      continue;
+    if (labelled.test(value) || (!/\s/.test(value) && value.includes('*')))
+      return true;
+    if (++seen >= 20)
+      return false;
+  }
+  return false;
+}
+
+/** The default matrix columns: R-groups rather than linkers, filled in the most compounds, then the
+ *  highest attachment point. */
+export function defaultAxis(columns: DG.Column[]): DG.Column | undefined {
+  const scored = columns.map((column) => {
+    const sample = column.categories.filter((v) => v !== '').slice(0, 20).map((v) => standardizeFragment(v).value);
+    const linkers = sample.filter((v) => attachmentNumbers(v).size > 1).length;
+    return {column, terminal: linkers * 2 <= sample.length ? 1 : 0,
+      filled: column.length - column.stats.missingValueCount, site: columnSite(sample, column.name) ?? -1};
+  });
+  scored.sort((a, b) => b.terminal - a.terminal || b.filled - a.filled || b.site - a.site);
+  return scored[0]?.column;
+}
+
+/** Records cut to what one matrix may hold, least-populated lines first. */
 function boundedRecords(records: PositionRecord[], spec: SarFragmentColumns): PositionRecord[] {
   const rowKey = (r: PositionRecord): string =>
     [r.coreSmiles, ...spec.rows.map((c) => r.values[c.name] ?? '')].join('\0');
   const rows = rankByFrequency(records.map(rowKey));
   const columns = rankByFrequency(records.map((r) => r.values[spec.column.name]));
-  // Spent against what each axis is cut to: dividing both by the untrimmed other axis shrinks the
-  // matrix quadratically.
+  // Spent against the trimmed other axis: dividing both by the untrimmed one shrinks the matrix twice.
   const maxColumns = Math.min(MAX_MATRIX_COLS, columns.length,
     Math.floor(MAX_MATRIX_CELLS / Math.min(MAX_MATRIX_ROWS, rows.length)));
   const maxRows = Math.min(MAX_MATRIX_ROWS, rows.length, Math.floor(MAX_MATRIX_CELLS / maxColumns));
@@ -89,86 +184,77 @@ function boundedRecords(records: PositionRecord[], spec: SarFragmentColumns): Po
     return records;
   const keptRows = new Set(rows.slice(0, maxRows));
   const keptColumns = new Set(columns.slice(0, maxColumns));
-  const bounded = records.filter((r) => keptRows.has(rowKey(r)) && keptColumns.has(r.values[spec.column.name]));
-  grok.shell.warning(`SAR Matrix: the fragment columns describe ${rows.length} rows × ${columns.length} ` +
-    `columns, which is more than one matrix can hold. It was cut to ${maxRows} × ${maxColumns}, ` +
-    'keeping the rows and columns carrying the most compounds.');
-  return bounded;
+  grok.shell.warning(`SAR Matrix: a ${rows.length} × ${columns.length} matrix was cut to ${maxRows} × ${maxColumns}.`);
+  return records.filter((r) => keptRows.has(rowKey(r)) && keptColumns.has(r.values[spec.column.name]));
 }
 
 /**
- * Turn already-decomposed columns into the clusters and decompositions assembly consumes, skipping
- * fragmentation entirely.
- *
- * A series is the compounds sharing a core, so each distinct core value makes its own matrix — three
- * linkers are three series. Two things override that: a series column the user gave, which is their
- * own grouping and replaces this one, and having nothing on the row axis, where a matrix per core
- * would hold a single row and so be no matrix at all — there the cores are the rows instead.
- * A compound with no series value is left out, as it is when a series column groups fragmented ones.
+ * Clusters and decompositions read from columns that already hold a decomposition. Each distinct core
+ * is a series unless a series column groups them; with no R-group on the rows, the cores are the rows.
+ * Compounds without a core or a series value are left out.
  */
 export function decomposeByColumns(spec: SarFragmentColumns, series: (string | null)[] | null,
-  rowCount: number): {clusters: CoreCluster[], decomps: ClusterDecomposition[]} {
-  const {read, structures} = fragmentReader();
+  activities: Float32Array): {clusters: CoreCluster[], decomps: ClusterDecomposition[]} {
+  const rowCount = activities.length;
+  const reader = new FragmentReader();
+  const coreValues = reader.readColumn(spec.core, rowCount, false);
+  const axisValues = reader.readColumn(spec.column, rowCount, true);
+  const rowValues = spec.rows.map((c) => reader.readColumn(c, rowCount, true));
   const positions = [spec.column.name, ...spec.rows.map((c) => c.name)];
   const splitByCore = series === null && spec.rows.length > 0;
   const byGroup = new Map<string, PositionRecord[]>();
-  const claimed = new Set<string>();
+  const cells = new Map<string, PositionRecord>();
   let duplicates = 0;
 
   for (let i = 0; i < rowCount; i++) {
     const value = series === null ? '' : series[i];
-    if (value === null)
-      continue;
-    // No core means the scaffold never matched. A blank axis value is not that — it is the
-    // unsubstituted parent, and it takes its own column.
-    const axis = read(spec.column, i);
-    const coreSmiles = read(spec.core, i);
-    if (coreSmiles === '')
+    const coreSmiles = coreValues[i];
+    if (value === null || coreSmiles === '')
       continue;
     const group = splitByCore ? coreSmiles : value;
-    const values: {[position: string]: string} = {[spec.column.name]: axis};
-    for (const c of spec.rows)
-      values[c.name] = read(c, i);
-    // Assembly resolves a collision by overwriting, so replicates would vanish uncounted.
-    const cell = [group, coreSmiles, ...spec.rows.map((c) => values[c.name]), axis].join('\0');
-    if (claimed.has(cell)) {
+    const values: {[position: string]: string} = {[spec.column.name]: axisValues[i]};
+    spec.rows.forEach((c, k) => values[c.name] = rowValues[k][i]);
+    const key = [group, coreSmiles, ...positions.map((p) => values[p])].join('\0');
+    const claimed = cells.get(key);
+    if (claimed !== undefined) {
       duplicates++;
+      if (!Number.isFinite(activities[claimed.molIdx]) && Number.isFinite(activities[i]))
+        claimed.molIdx = i;
       continue;
     }
-    claimed.add(cell);
+    const record = {molIdx: i, coreSmiles, values};
+    cells.set(key, record);
     if (!byGroup.has(group))
       byGroup.set(group, []);
-    byGroup.get(group)!.push({molIdx: i, coreSmiles, values});
+    byGroup.get(group)!.push(record);
   }
   if (duplicates > 0) {
-    const message = `SAR Matrix: ${duplicates} compounds share a core, row fragments and ` +
-      `"${spec.column.name}" value with another compound and cannot have their own cell. The first ` +
-      'of each set is shown — add the column that tells them apart to the row fragments.';
+    const message = `SAR Matrix: ${duplicates} compounds repeat the core and R-groups of another; one of ` +
+      'each is shown, a measured one where there is one.';
     _package.logger.warning(message);
     grok.shell.warning(message);
   }
 
   const clusters: CoreCluster[] = [];
   const decomps: ClusterDecomposition[] = [];
-  /** Attachment points the cores carry that no picked column fills. Nothing can complete a proposal
-   *  over one, so those cells come out with a value and no structure — which needs saying, or it
-   *  reads as a bug. */
   const unfilled = new Set<number>();
   for (const [label, records] of byGroup) {
     const bounded = boundedRecords(records, spec);
     clusters.push({id: `f${clusters.length}`, series: [], siteKey: '', level: 2,
       label: series === null ? '' : label});
     const fills: PositionFills = {};
+    const sites: PositionFills = {};
     for (const position of positions) {
+      const values = bounded.map((record) => record.values[position] ?? '');
       const numbers = new Set<number>();
-      for (const record of bounded) {
-        for (const n of attachmentNumbers(record.values[position] ?? ''))
+      for (const value of values) {
+        for (const n of attachmentNumbers(value))
           numbers.add(n);
       }
       fills[position] = [...numbers].sort((a, b) => a - b);
+      sites[position] = majoritySites(values);
     }
-    // Skipped where a position fills nothing: scanning against a label column would report the very
-    // point it occupies.
+    // A label column fills nothing, and would report the very point it occupies.
     if (positions.every((p) => fills[p].length > 0)) {
       const covered = new Set(Object.values(fills).flat());
       for (const core of new Set(bounded.map((r) => r.coreSmiles))) {
@@ -178,16 +264,59 @@ export function decomposeByColumns(spec: SarFragmentColumns, series: (string | n
         }
       }
     }
-    decomps.push({records: bounded, positions, links: {fills, structures}});
+    decomps.push({records: bounded, positions, links: fragmentLinks(fills, sites, reader.structures)});
   }
   if (unfilled.size > 0) {
     const points = [...unfilled].sort((a, b) => a - b).map((n) => `[*:${n}]`).join(', ');
-    const message = `SAR Matrix: the core carries ${points}, which none of the picked columns fills. ` +
-      'Measured compounds are unaffected, but no predicted structure can be completed over an open ' +
-      'attachment point, so predicted cells show a value and no structure. Add the column that fills ' +
-      'it to the fragment columns.';
+    const message = `SAR Matrix: no R-group column fills ${points} on the core, so predicted compounds ` +
+      'there have no structure.';
     _package.logger.warning(message);
     grok.shell.warning(message);
   }
   return {clusters, decomps};
+}
+
+const CHECK_SAMPLE = 300;
+
+function canonicalSmiles(molecule: string): string {
+  const mol = checkMoleculeValid(molecule);
+  try {
+    return mol?.is_valid() ? mol.get_smiles() : '';
+  } finally {
+    mol?.delete();
+  }
+}
+
+/** The largest component without stereo, canonical. */
+function comparable(molecule: string): string {
+  const smiles = canonicalSmiles(molecule).split('.').reduce((a, b) => b.length > a.length ? b : a, '');
+  return smiles ? canonicalSmiles(smiles.replace(/@+/g, '').replace(/[/\\]/g, '')) : '';
+}
+
+/**
+ * How many of a sample of compounds their own core and R-groups rebuild into something else, which
+ * means the columns belong to another table or another molecule column. Stereo and counter-ions are
+ * not compared: a decomposition may drop them.
+ */
+export async function checkAgainstMolecules(decomps: ClusterDecomposition[], molecules: string[]):
+  Promise<{checked: number, mismatched: number}> {
+  const all = decomps.flatMap((decomp) => decomp.records.map((record) => ({decomp, record})));
+  const step = Math.max(1, Math.floor(all.length / CHECK_SAMPLE));
+  const sample = all.filter((_t, i) => i % step === 0).slice(0, CHECK_SAMPLE);
+  const plans = sample.map(({decomp, record}) =>
+    planLink(record.coreSmiles, record.values, decomp.positions, decomp.links!, [], true));
+  const built = await linkStaged(sample.map((t) => t.record.coreSmiles), plans,
+    (i, position) => sample[i].record.values[position] ?? '');
+  let checked = 0;
+  let mismatched = 0;
+  sample.forEach((t, i) => {
+    const smiles = built[i];
+    const molecule = molecules[t.record.molIdx];
+    if (smiles === null || smiles === '' || smiles.includes('[*:') || !molecule)
+      return;
+    checked++;
+    if (comparable(smiles) !== comparable(molecule))
+      mismatched++;
+  });
+  return {checked, mismatched};
 }

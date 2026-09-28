@@ -4,8 +4,23 @@ import * as DG from 'datagrok-api/dg';
 
 import {renderMolecule} from '../../rendering/render-molecule';
 import {fitAdditiveEffects} from './sar-matrix-assemble';
+import {standardizeFragment} from './sar-matrix-columns';
 import {closeGridQuietly, SarMatrix, SarMatrixCell} from './sar-matrix-types';
 import {ANALOG_W, CELL_H, CELL_W, CORE_W, MatrixCellRef} from './sar-matrix-ui-common';
+
+const structureCache = new Map<string, boolean>();
+const STRUCTURE_CACHE_MAX = 2000;
+
+/** Whether a fragment is a structure rather than a name such as "VHL". */
+function isStructure(value: string): boolean {
+  let known = structureCache.get(value);
+  if (known === undefined) {
+    if (structureCache.size >= STRUCTURE_CACHE_MAX)
+      structureCache.clear();
+    structureCache.set(value, known = standardizeFragment(value).structure);
+  }
+  return known;
+}
 
 /** Spelled out in the Context Panel, where there is room to say what produced the number. */
 const FREE_WILSON_METHOD = 'local Free-Wilson (row + column effects)';
@@ -84,7 +99,8 @@ export class MakeListPanel {
   private buildAnalogTable(cells: MatrixCellRef[]): DG.DataFrame {
     const molCol = (name: string, values: string[]): DG.Column => {
       const col = DG.Column.fromStrings(name, values);
-      col.semType = DG.SEMTYPE.MOLECULE;
+      if (values.every((value) => !value || isStructure(value)))
+        col.semType = DG.SEMTYPE.MOLECULE;
       return col;
     };
     const cell = (c: MatrixCellRef): SarMatrixCell => c.matrix.cells[c.ri][c.ci];
@@ -392,8 +408,7 @@ export class MakeListPanel {
     section('Measured with this substituent', collect((_ri, ci) => ci === colIdx));
     return block;
   }
-  /** The values behind a section as one strip, over the matrix's own range, so every strip and the
-   *  cell tints behind them read against one scale. The tiles carry the numbers; this carries the shape. */
+  /** A section's values as ticks on the matrix's activity range, the selected compound highlighted. */
   private cpStrip(values: number[], self: number | null, matrix: SarMatrix): HTMLElement {
     const lo = matrix.minActivity;
     const hi = matrix.maxActivity;
@@ -406,20 +421,20 @@ export class MakeListPanel {
     };
     for (const value of values)
       tick(value, 'chem-sar-cp-tick');
-    // Drawn last so it sits over its peers rather than under them.
     if (self !== null)
       tick(self, 'chem-sar-cp-tick chem-sar-cp-tick-self');
     return ui.divV([track, ui.divH([ui.divText(this.host.formatActivity(lo)),
       ui.divText(this.host.formatActivity(hi))], 'chem-sar-cp-strip-scale')], 'chem-sar-cp-strip');
   }
-  /** A framed fragment tile: the structure with the compound's value beneath; structure omitted for
-   *  an empty SMILES. */
+  /** A framed fragment tile: the structure, or a name as text, with the compound's value beneath. */
   private cpFragment(smiles: string | null, value?: number, caption?: string): HTMLElement {
     const parts: HTMLElement[] = [];
     if (caption !== undefined)
       parts.push(ui.divText(caption, 'chem-sar-cp-frag-role'));
-    if (smiles)
-      parts.push(ui.div([renderMolecule(smiles, {width: 78, height: 52, popupMenu: false})], 'chem-sar-cp-frag-box'));
+    if (smiles) {
+      parts.push(ui.div([isStructure(smiles) ? renderMolecule(smiles, {width: 78, height: 52, popupMenu: false}) :
+        ui.divText(smiles, 'chem-sar-cp-frag-name')], 'chem-sar-cp-frag-box'));
+    }
     if (value !== undefined)
       parts.push(ui.divText(this.host.formatActivity(value), 'chem-sar-cp-rv'));
     return ui.divV(parts, 'chem-sar-cp-frag');

@@ -42,9 +42,8 @@ export interface CoreCluster {
 
 /** `unmeasured` is a compound the dataset already holds whose activity is missing. It is kept apart
  *  from `empty` so the Free-Wilson fill cannot propose synthesizing something that already exists.
- *  `impossible` is a combination the decomposition cannot express: the row's fragments carry no
- *  attachment point this substituent could fill. The compound may well be makeable — it simply has
- *  no place in this matrix — so it is never predicted and never offered as one to make. */
+ *  `impossible` is a combination the R-groups cannot form (no attachment point for the substituent);
+ *  it is never predicted. */
 export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured' | 'impossible';
 
 export interface SarMatrixCell {

@@ -2648,19 +2648,19 @@ export class PackageFunctions {
     }) seriesColumn: string = '',
     @grok.decorators.param({
       type: 'column',
-      options: {nullable: true, caption: 'Core column',
-        description: 'Optional. The scaffold every row is drawn from. Given this and its R-groups, the structures are not fragmented'},
+      options: {nullable: true, caption: 'Core',
+        description: 'Optional. Column with the core of an existing R-group decomposition, used instead of fragmenting the molecules'},
     }) coreColumn: DG.Column | null = null,
     @grok.decorators.param({
       type: 'column_list',
-      options: {nullable: true, caption: 'R-group columns',
-        description: 'The substituent columns that hang off the core'},
-    }) fragmentColumns: DG.Column[] = [],
+      options: {nullable: true, caption: 'R-groups',
+        description: 'Columns with the substituent at each attachment point of the core'},
+    }) rGroupColumns: DG.Column[] = [],
     @grok.decorators.param({
       type: 'string',
-      options: {nullable: true, caption: 'Columns axis',
-        description: 'The R-group the matrix enumerates across. The rest fold into the row'},
-    }) columnAxis: string = '',
+      options: {nullable: true, caption: 'Matrix columns',
+        description: 'The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows'},
+    }) matrixColumns: string = '',
   ): Promise<void> {
     // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
     // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
@@ -2680,15 +2680,11 @@ export class PackageFunctions {
         'Pick a series column from that table, or leave it empty to group by structure.');
       return;
     }
-    // Omitted by a programmatic caller arrives as null.
-    const rgroups = fragmentColumns ?? [];
-    const axis = columnAxis ?? '';
+    const rgroups = rGroupColumns ?? [];
+    const axis = matrixColumns ?? '';
     const named = coreColumn !== null || rgroups.length > 0;
-    if (named && (coreColumn === null || coreColumn.name === axis ||
-      !rgroups.some((c) => c.name === axis))) {
-      grok.shell.error('SAR Matrix: name the core column and which R-group runs across the top — ' +
-        'the scaffold every row is drawn from, and a different fragment for the matrix to enumerate ' +
-        'across.');
+    if (named && (coreColumn === null || coreColumn.name === axis || !rgroups.some((c) => c.name === axis))) {
+      grok.shell.error('SAR Matrix: pick the core, the R-groups, and which R-group becomes the matrix columns.');
       return;
     }
     checkCurrentView(table);
@@ -2696,8 +2692,8 @@ export class PackageFunctions {
     const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
       seriesColumnName: seriesName,
-      coreColumnName: named ? coreColumn!.name : '', columnColumnName: named ? axis : '',
-      fragmentColumnNames: named ? rgroups.map((c) => c.name) : [],
+      coreColumnName: named ? coreColumn!.name : '', axisColumnName: named ? axis : '',
+      rGroupColumnNames: named ? rgroups.map((c) => c.name) : [],
       scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
     dockSarMatrixTabs(view, viewer);
   }

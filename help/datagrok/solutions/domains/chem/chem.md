@@ -963,10 +963,10 @@ To run SAR Matrix analysis:
     * **Scaling**: _none_, _log10_, or _-log10_. Use _-log10_ for raw IC50 or Ki values so that higher
       numbers mean more potent; for pre-computed pIC50 use _none_ and set **Direction** explicitly
     * **Direction**: which end of the scaled activity counts as more potent
-    * **Fragment structures**: on by default. The gear beside it holds **Fragment cutoff**,
-      **Series levels** and **Group leftovers by MCS**. Turn it off to name columns that already hold
-      a decomposition — see [Using your own fragment columns](#using-your-own-fragment-columns)
-    * **Series column** (optional): group by your own series instead of by structure
+    * **Use existing R-groups** (optional): build the matrices from core and R-group columns already
+      in the table instead of fragmenting the molecules. When it is off, the gear beside it holds
+      **Fragment cutoff**, **Series levels** and **Group leftovers by MCS**
+    * **Series** (optional): group by your own series instead of by structure
     * **Predict analogs**: fill the combinations nobody has made with Free-Wilson predictions
 3. Click **OK**. The analysis opens with three tabs:
 
@@ -1021,37 +1021,25 @@ selected compound, and **Clear** empties the list.
 </TabItem>
 </Tabs>
 
-#### Using your own fragment columns
+<details>
+<summary>Use existing R-group columns</summary>
 
-When the table already holds a decomposition (a core column and its R-group columns, as
-[R-Groups Analysis](#r-groups-analysis) writes them), turn **Fragment structures** off and name those
-columns:
+If the table already has a core column and R-group columns, for example from
+[R-Groups Analysis](#r-groups-analysis), you can build the matrices from them instead of fragmenting
+the molecules:
 
-| Picker | What it takes |
-|--------|---------------|
-| **Core column** | The scaffold every row is drawn from |
-| **R-group columns** | The substituent columns that hang off it |
-| **Columns axis** | Which of those R-groups runs along the top. The rest fold into the row |
+1. Select **Use existing R-groups**.
+2. In **Core**, select the core column.
+3. In **R-groups**, select the R-group columns.
+4. In **Matrix columns**, select the R-group to compare across the matrix columns. The core and the
+   other R-groups form the rows.
 
-Each distinct core is its own series, and a line under the pickers states the layout you have
-described. Name a different axis to transpose the matrix. This is how to lay out a compound built from
-more than two parts: put the part you want to compare across the top, and each row is one fixed
-combination of the rest.
+The dialog lists only columns whose values have attachment points, such as `[*:1]`, `[1*]` or `R1` in
+a molfile. Each core forms its own series, and a blank R-group means hydrogen. Cells for
+combinations the R-groups can't form are crossed out. If two rows have the same core and R-groups,
+the matrix shows one of them, preferring the one with a measured value.
 
-What differs from fragmenting the structures:
-
-* Which attachment point a fragment fills is read from the fragment, not from the column name, so
-  `E3 ligand` works as well as `R2`. A fragment carrying two of them is a connector, and rows and
-  proposals are built from the core outwards, one link at a time.
-* There are no series tiers. The list of matrices is flat, since the tiers exist to relate splits that
-  were discovered rather than given.
-* A blank cell is hydrogen where the column holds structures and an unnamed component where it holds
-  names. On the axis it is the unsubstituted parent, and keeps a column of its own.
-* A combination the decomposition cannot express is struck through and never proposed. A cell that
-  keeps its potency but draws no molecule is one whose fragments could not be joined.
-
-Two compounds sharing a core, the same folded fragments and the same axis fragment describe one cell.
-Only the first is shown, and the rest are reported.
+</details>
 
 #### Group leftovers by MCS
 

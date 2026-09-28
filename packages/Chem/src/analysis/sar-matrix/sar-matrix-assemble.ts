@@ -231,7 +231,8 @@ function claimUnmeasured(cells: SarMatrixCell[][], ri: number, ci: number, molId
  *
  * This DOES drop measured compounds, unlike a plain empty-line prune: a design sharing no compound
  * with the main block is not comparable to it, and showing both in one grid implies a comparison the
- * data cannot support. What survives is one grid where every cell is measured or predictable.
+ * data cannot support. What survives is one grid where every cell is measured or predictable. A block
+ * of one row or one column compares nothing, so any block of at least two of each is preferred.
  */
 function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
   cells: SarMatrixCell[][]): void {
@@ -243,13 +244,23 @@ function pruneUnobservedLines(rows: SarMatrixRow[], columns: SarMatrixColumn[],
         observedPerRoot.set(root[ri], (observedPerRoot.get(root[ri]) ?? 0) + 1);
     }
   }
+  const rowsPerRoot = new Map<number, number>();
+  const colsPerRoot = new Map<number, number>();
+  root.forEach((r, i) => {
+    const lines = i < rows.length ? rowsPerRoot : colsPerRoot;
+    lines.set(r, (lines.get(r) ?? 0) + 1);
+  });
+  const twoWay = (r: number): number => (rowsPerRoot.get(r) ?? 0) >= 2 && (colsPerRoot.get(r) ?? 0) >= 2 ? 1 : 0;
   let best = -1;
   let bestN = 0;
+  let bestTwoWay = -1;
   // Ties break on the lower root so the surviving block does not depend on iteration order.
   for (const [r, n] of observedPerRoot) {
-    if (n > bestN || (n === bestN && r < best)) {
+    const tw = twoWay(r);
+    if (tw > bestTwoWay || (tw === bestTwoWay && (n > bestN || (n === bestN && r < best)))) {
       best = r;
       bestN = n;
+      bestTwoWay = tw;
     }
   }
   const keepRows = rows.map((_row, ri) => root[ri] === best);
@@ -335,9 +346,7 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   if (!decomp)
     return fallback();
 
-  // Richest position is the column axis unless the caller named one; EVERY other position folds into
-  // the row identity (not just the richest few). A position left out of both axes is unconstrained, so
-  // two compounds differing only there would collide in one cell.
+  // Every position but the axis folds into the row: one left out would let two compounds share a cell.
   const columnPosition = axis ?? selectActivePositions(decomp.records, decomp.positions)[0];
   if (columnPosition === undefined)
     return fallback();
@@ -388,12 +397,10 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
     foldedValues: g.folded,
   }));
   const links = decomp.links;
-  // Planned per row: a terminal fragment on one row and a connector on the next need different
-  // orders, or no key at all.
   const flat = flatStages(foldedPositions);
   await buildRowKeys(rows, links === undefined ? rows.map(() => flat) :
     rows.map((row) => planLink(row.coreSmiles, row.foldedValues, foldedPositions, links,
-      links.fills[columnPosition] ?? [], false)));
+      links.sites[columnPosition] ?? [], false)));
 
   const cells: SarMatrixCell[][] = rows.map(() =>
     columns.map((): SarMatrixCell => ({kind: 'empty', value: null, molIdx: null, smiles: null})));
@@ -421,7 +428,6 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   });
   const realCount = realMols.size;
   pruneUnobservedLines(rows, columns, cells);
-  // Outside the predict gate: the fact holds whether or not a number was asked for.
   if (links !== undefined)
     markImpossibleCells(rows, columns, cells, columnPosition, decomp.positions, links);
 
@@ -444,17 +450,17 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   };
 }
 
-/** One pass off the position names — an RDKit decomposition hangs every fragment off the core. */
+/** One pass off the position names: an RDKit decomposition hangs every fragment off the core. */
 function flatStages(foldedPositions: string[]): LinkStages | null {
   if (foldedPositions.length === 0)
     return null;
-  const stage = Object.fromEntries(foldedPositions.map((p) => [p, positionNumber(p)]));
-  return Object.values(stage).some((n) => !Number.isFinite(n)) ? null : [stage];
+  const stage = Object.fromEntries(foldedPositions.map((p) => [p, [positionNumber(p)]]));
+  return Object.values(stage).some(([n]) => !Number.isFinite(n)) ? null : [stage];
 }
 
-/** Join each target's pieces by its own plan, batching targets that share one. A target failing a
- *  pass is dropped: folding onto a piece missing the one before it builds a different compound. */
-async function linkStaged(cores: string[], plans: (LinkStages | null)[],
+/** Joins each target's pieces by its own plan, batching targets that share one. A target that fails a
+ *  pass is dropped: joining the next pass onto what is left would build a different compound. */
+export async function linkStaged(cores: string[], plans: (LinkStages | null)[],
   fragmentAt: (target: number, position: string) => string): Promise<(string | null)[]> {
   const result: (string | null)[] = cores.map(() => null);
   const buckets = new Map<string, number[]>();
@@ -462,7 +468,7 @@ async function linkStaged(cores: string[], plans: (LinkStages | null)[],
     if (plan === null)
       return;
     const key = plan.map((stage) => Object.keys(stage).sort()
-      .map((position) => `${position}:${stage[position]}`).join(',')).join('|');
+      .map((position) => `${position}:${stage[position].join('+')}`).join(',')).join('|');
     const bucket = buckets.get(key);
     if (bucket === undefined)
       buckets.set(key, [i]);
@@ -477,7 +483,6 @@ async function linkStaged(cores: string[], plans: (LinkStages | null)[],
     let built: (string | null)[] = idxs.map((i) => cores[i]);
     for (const stage of plans[idxs[0]]!) {
       const positions = Object.keys(stage);
-      // A dropped target keeps a slot so the batch stays aligned; its result is discarded either way.
       const linked = await service.linkRGroupFragments(built.map((piece, k) => piece ?? cores[idxs[k]]),
         positions.map((p) => idxs.map((i) => fragmentAt(i, p))),
         positions.map((p) => stage[p]));
@@ -488,8 +493,7 @@ async function linkStaged(cores: string[], plans: (LinkStages | null)[],
   return result;
 }
 
-/** Fill each row's `keySmiles`, leaving the column position open. `coreSmiles` is left untouched:
- *  the virtual-cell linker needs the fully open core. */
+/** Fills each row's `keySmiles`, leaving the axis open; `coreSmiles` stays the open core. */
 async function buildRowKeys(rows: SarMatrixRow[], plans: (LinkStages | null)[]): Promise<void> {
   const built = await linkStaged(rows.map((row) => row.coreSmiles), plans,
     (i, position) => rows[i].foldedValues[position] ?? '');
@@ -499,8 +503,7 @@ async function buildRowKeys(rows: SarMatrixRow[], plans: (LinkStages | null)[]):
   });
 }
 
-/** Assemble each virtual cell from the core outwards. The fragments form a graph, so with the core
- *  at one end of a chain the column fragment goes on first and the row's own hang off it. */
+/** Builds each predicted cell from the core outwards, pass by pass. */
 async function linkVirtualCells(rows: SarMatrixRow[], columns: SarMatrixColumn[],
   cells: SarMatrixCell[][], columnPosition: string, positions: string[],
   links: FragmentLinks): Promise<void> {
@@ -524,8 +527,8 @@ async function linkVirtualCells(rows: SarMatrixRow[], columns: SarMatrixColumn[]
   });
 }
 
-/** Grey out what the decomposition cannot express, before anything offers to predict it. Only holes
- *  are judged, and a row holding one the rule refuses is being misread, so none of it is greyed. */
+/** Marks the holes the R-groups cannot form. A row where the rule also refuses a compound that
+ *  exists is being misread, so none of its cells is marked. */
 function markImpossibleCells(rows: SarMatrixRow[], columns: SarMatrixColumn[],
   cells: SarMatrixCell[][], columnPosition: string, positions: string[],
   links: FragmentLinks): void {

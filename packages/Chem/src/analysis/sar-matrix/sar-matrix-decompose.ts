@@ -31,8 +31,7 @@ export interface PositionRecord {
 export interface ClusterDecomposition {
   records: PositionRecord[];
   positions: string[];
-  /** Present where the decomposition was read off columns the table already held: each row and each
-   *  proposed cell is then planned from its own pieces. */
+  /** Present when read from R-group columns: each row and cell is then joined from its own pieces. */
   links?: FragmentLinks;
 }
 

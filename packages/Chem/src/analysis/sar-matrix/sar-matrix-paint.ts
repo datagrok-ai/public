@@ -101,10 +101,8 @@ export class MatrixPainter {
       drawDepiction(g, b.x + (b.width - depW) / 2, b.y + posBandH, depW, depH,
         column.substSmiles, null, HEADER_ARGB);
     } else {
-      // A name drawn as a structure comes back as the renderer's failure cross, so it is written out
-      // instead; a blank is hydrogen where the axis holds fragments and unnamed where it holds names.
+      // Names are written out: the renderer would draw them as a failure cross.
       const label = column.substSmiles || (state.axisIsChemical ? 'H' : '(none)');
-      // A name or a hydrogen is what the column holds; nothing named is an absence, and reads as one.
       g.fillStyle = column.substSmiles || state.axisIsChemical ? grey6 : grey5;
       g.font = `600 13px ${GRID_FONT}`;
       g.textAlign = 'center';
@@ -144,8 +142,7 @@ export class MatrixPainter {
     const matrix = paneRow.matrix;
     const ri = paneRow.rowIndex;
     const cell = matrix.cells[ri][paneRow.colIdxs[colIndex]];
-    // A white cell would read as a combination nobody has made yet. Above the filter test because
-    // the cell carries no value the filter could be hiding.
+    // Struck through rather than white, which would read as a combination not made yet.
     if (cell.kind === 'impossible') {
       g.fillStyle = cssColor(this.host.root, '--grey-1', '#f2f2f5');
       g.fillRect(b.x, b.y, b.width, b.height);

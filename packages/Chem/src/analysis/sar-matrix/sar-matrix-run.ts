@@ -7,7 +7,7 @@ import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragment
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {assembleMultiPositionMatrix} from './sar-matrix-assemble';
-import {decomposeByColumns, SarFragmentColumns} from './sar-matrix-columns';
+import {checkAgainstMolecules, decomposeByColumns, SarFragmentColumns} from './sar-matrix-columns';
 import {ClusterDecomposition, decomposeClusters} from './sar-matrix-decompose';
 import {computeMatrixConfidence} from './sar-matrix-confidence';
 import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeriesByColumn, groupSeriesBySite,
@@ -174,8 +174,7 @@ export interface SarMatrixParams {
    *  entirely and skips the automatic tiers, which would otherwise fold the user's series by
    *  chemistry into matrices they did not ask for. */
   seriesColumn?: DG.Column | null;
-  /** Optional: columns that already hold a decomposition. Replaces fragmentation, core grouping and
-   *  the tiers — all three discover a split the user has already made — and names the axis outright. */
+  /** Optional: core and R-group columns already in the table; they replace fragmentation and grouping. */
   fragmentColumns?: SarFragmentColumns | null;
   /** Whether to also cover the compounds no shared core could group, by pooling those series and
    *  searching for a common core with an MCS. No matrix is lost and no compound is dropped by turning
@@ -198,9 +197,8 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   const tTotal = performance.now();
   const molList = molecules.toList();
   const scaledCol = params.scaling === SCALING_METHODS.NONE ? activity : scaleActivity(activity, params.scaling);
-  // Map missing activities to NaN so assemblers skip them: scaleActivity passes the null sentinel
-  // through unchanged, and read as a number it would poison the Free-Wilson fit. Bound the scan by
-  // row count, not buffer length — column storage has spare capacity past the last row.
+  // Missing activities become NaN: a null sentinel read as a number would poison the Free-Wilson fit.
+  // The scan is bounded by row count, since column storage has spare capacity past the last row.
   const scaled = scaledCol.getRawData();
   const activities = new Float32Array(activity.length);
   // Whether the column holds a value at all, which is NOT the same as holding a usable one: a log
@@ -234,8 +232,16 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   let clusters: CoreCluster[];
   let decomps: (ClusterDecomposition | null)[];
   if (params.fragmentColumns) {
-    ({clusters, decomps} = decomposeByColumns(params.fragmentColumns, assigned, molecules.length));
-    logSarTime(`fragment columns (${clusters.length} groups)`, t);
+    const read = decomposeByColumns(params.fragmentColumns, assigned, activities);
+    ({clusters, decomps} = read);
+    const {checked, mismatched} = await checkAgainstMolecules(read.decomps, molList);
+    if (mismatched > 0 && mismatched * 10 >= checked) {
+      const message = `SAR Matrix: ${mismatched} of ${checked} compounds checked are not what their core and ` +
+        `R-groups build; the columns may not belong to "${molecules.name}".`;
+      _package.logger.warning(message);
+      grok.shell.warning(message);
+    }
+    logSarTime(`fragment columns (${clusters.length} groups, ${mismatched}/${checked} mismatched)`, t);
   } else {
     const tFrag = performance.now();
     const [frags] = await getMmpFrags(molList);
@@ -319,19 +325,24 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     matrix.parentId = parent;
   }
 
-  // "Core N" describes nothing when the core is what the rows share, so the row is numbered instead.
   if (params.fragmentColumns) {
+    const linksOf = new Map(clusters.map((cluster, i) => [cluster.id, decomps[i]?.links]));
     let collapsed = 0;
     for (const matrix of matrices) {
-      matrix.rows.forEach((row, i) => row.label = `Row ${i + 1}`);
-      if (matrix.rows.length > 1 && new Set(matrix.rows.map((row) => row.keySmiles)).size === 1)
+      const structures = linksOf.get(matrix.id)?.structures;
+      let named = false;
+      matrix.rows.forEach((row, i) => {
+        // Names are what tell such rows apart; structures are drawn.
+        const names = Object.values(row.foldedValues).filter((v) => v !== '' && !structures?.has(v));
+        named ||= names.length > 0;
+        row.label = names.length > 0 ? names.join(' · ') : `Row ${i + 1}`;
+      });
+      if (!named && matrix.rows.length > 1 && new Set(matrix.rows.map((row) => row.keySmiles)).size === 1)
         collapsed++;
     }
     if (collapsed > 0) {
-      const message = `SAR Matrix: ${collapsed} ${collapsed === 1 ? 'series draws' : 'series draw'} every ` +
-        'row as the same structure, because the row fragments could not be joined onto the core — they ' +
-        'meet a point nothing exposes, carry one attachment point twice, or are text rather than ' +
-        'structures. The potencies are unaffected; check the R-group columns that fold into the row.';
+      const message = `SAR Matrix: the rows of ${collapsed} series look alike, because their R-groups do ` +
+        'not join onto the core.';
       _package.logger.warning(message);
       grok.shell.warning(message);
     }

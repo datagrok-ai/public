@@ -52,15 +52,12 @@ function moveStartRLabelToBranch(smi: string): string {
   if (!m)
     return smi;
   const [, rlab, bondRaw, atomRaw, rest] = m;
-  // The label keeps neighbour slot 1, but an implicit H in the bracket does not: with an atom before
-  // it, it is written second; once the atom opens the string, it is written first. That single
-  // transposition inverts the centre, so the tag has to absorb it. A bracket with no implicit H keeps
-  // its neighbour order — flipping `[C@](C)(F)Cl` or `[S@](C)=O` would invert a correct centre.
+  // Moving the label swaps it with the atom's implicit H in neighbour order, which inverts `@`/`@@`;
+  // an atom without an implicit H keeps its order.
   const chiral = /^\[[0-9]*[A-Za-z][a-z]?@{1,2}H/.test(atomRaw);
   const atom = !chiral ? atomRaw :
     atomRaw.includes('@@') ? atomRaw.replace('@@', '@') : atomRaw.replace('@', '@@');
-  // A directional bond names a direction between its two endpoints, and moving the label into a
-  // branch exchanges them.
+  // Moving the label into a branch swaps the bond's endpoints, so a directional bond flips.
   const bond = bondRaw === '/' ? '\\' : bondRaw === '\\' ? '/' : bondRaw;
   return `${atom}(${bond ?? ''}${rlab})${rest}`;
 }
@@ -783,39 +780,45 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
    * Attachment points not listed in `attachIdx` come through untouched (still `[*:N]`), which
    * `buildRowKeys` relies on to keep the column-axis position open.
    *
-   * `attachIdx[p]` is the R-group position number for fragment column `p` (R7 -> 7), an arbitrary
-   * subset (e.g. R1 and R7), not the array order. It cannot be inferred from the fragments
-   * themselves: an empty fragment carries no `[*:N]` label, yet must still name which dummy to
-   * erase while other open positions stay.
+   * `attachIdx[p]` is the attachment number of fragment column `p` (R7 -> 7), or several numbers for a
+   * fragment bonded to the core at more than one point (a bridge). It cannot be inferred from the
+   * fragments: an empty fragment carries no `[*:N]` label, yet must still name which dummy to erase.
    */
-  linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: number[]): string[] {
+  linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: (number | number[])[]): string[] {
     const size = cores.length;
     const smiles = new Array<string>(size);
+    const numbers = attachIdx.map((a) => Array.isArray(a) ? a : [a]);
     for (let i = 0; i < size; i++) {
       // Collect the joins this core actually supports; erase dummies whose fragment is H.
       let core = cores[i];
-      const joins: {n: number, fragment: string}[] = [];
+      const joins: {ns: number[], fragment: string}[] = [];
       for (let p = 0; p < fragmentColumns.length; p++) {
-        const n = attachIdx[p];
-        if (!core.includes(`[*:${n}]`))
+        const ns = numbers[p];
+        if (!ns.every((n) => core.includes(`[*:${n}]`)))
           continue;
         const fragment = fragmentColumns[p][i];
         if (fragment)
-          joins.push({n, fragment: moveStartRLabelToBranch(fragment)});
-        else
-          core = core.split(`[*:${n}]`).join('[H]');
+          joins.push({ns, fragment: moveStartRLabelToBranch(fragment)});
+        else {
+          for (const n of ns)
+            core = core.split(`[*:${n}]`).join('[H]');
+        }
       }
 
       const pieces = [moveStartRLabelToBranch(core), ...joins.map((j) => j.fragment)];
-      const digits = pickFreeRingDigits(pieces, joins.length);
-      if (digits.length < joins.length) {
+      const bonds = joins.reduce((count, join) => count + join.ns.length, 0);
+      const digits = pickFreeRingDigits(pieces, bonds);
+      if (digits.length < bonds) {
         smiles[i] = '';
         continue;
       }
+      let next = 0;
       joins.forEach((join, j) => {
-        const digit = formatRingDigit(digits[j]);
-        pieces[0] = substituteRLabelWithRingDigit(pieces[0], join.n, digit);
-        pieces[j + 1] = substituteRLabelWithRingDigit(pieces[j + 1], join.n, digit);
+        for (const n of join.ns) {
+          const digit = formatRingDigit(digits[next++]);
+          pieces[0] = substituteRLabelWithRingDigit(pieces[0], n, digit);
+          pieces[j + 1] = substituteRLabelWithRingDigit(pieces[j + 1], n, digit);
+        }
       });
 
       let mol: RDMol | null = null;

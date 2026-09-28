@@ -131,12 +131,8 @@ export function coreDepictionBlock(smiles: string, columnOrdinal: number): strin
 
 /**
  * The scaffold a matrix varies, with the R at the position its columns enumerate and a `*` at
- * every position its rows differ at.
- *
- * Which mark is the axis is not fixed, and guessing puts the R where the matrix holds constant, so
- * it is read off the substituents the columns actually carry. A position is only a column header:
- * its name is whatever the decomposition called it, and need carry no number at all. Rows keep a
- * mark, not a hydrogen, which would claim they are unsubstituted.
+ * every position its rows differ at. The axis is read off the attachment points the column
+ * substituents carry, since position names need not be numbered.
  */
 export function matrixCore(matrix: SarMatrix): string {
   const core = matrix.rows[0]?.coreSmiles ?? '';
@@ -145,7 +141,6 @@ export function matrixCore(matrix: SarMatrix): string {
   if (!core || Object.keys(matrix.refValues).length === 0)
     return coreDepictionBlock((matrix.siteKey || core).replace(/\[\d+\*\]|\[\*:\d+\]/g, '[*]'), 0);
   const coreNumbers = attachmentNumbers(core);
-  // An axis fragment touching the core twice takes the first in string order, as it always has.
   const columnNumber = matrix.columns.flatMap((c) => [...attachmentNumbers(c.substSmiles)])
     .find((n) => coreNumbers.has(n));
   let seen = 0;
