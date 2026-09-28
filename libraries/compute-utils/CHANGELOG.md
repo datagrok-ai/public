@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Added `check` links and annotation-derived default validators sharing one expansion (`nullable`, `min`/`max`, regex `validator`, static `choices`, column `type`/`semType`/`table`/`allowNulls`), the `regex`, `nulls` and `columnIs` rule operations, the platform column kinds in `columns`/`columnsMissing`, and `nullable: true` annotations now make an input optional
 * RTD: Plain data links stay inactive while the init hook and `runOnInit` links run, so init writes no longer propagate through them
 * RTD: Added declarative `rule` links (JSON Logic conditions expanding into meta/validator/data links), `params`/`getParam` controller support, and validation suppression for inputs hidden via meta
 

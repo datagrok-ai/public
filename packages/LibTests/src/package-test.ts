@@ -13,6 +13,7 @@ import './tests/compute-utils/reactive-tree-driver/links-reactivity-data';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-validators';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-meta';
 import './tests/compute-utils/reactive-tree-driver/links-rule';
+import './tests/compute-utils/reactive-tree-driver/links-check';
 import './tests/compute-utils/reactive-tree-driver/links-batching';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-actions';
 import './tests/compute-utils/reactive-tree-driver/instance-additional';

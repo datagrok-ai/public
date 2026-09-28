@@ -1,3 +1,4 @@
+import type {CheckOptions, CheckSeverity} from './checks';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
@@ -176,7 +177,24 @@ export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   params?: undefined;
 };
 
-export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P>;
+/** Annotation-style checks on one io, expanded into validator links at config processing. */
+export type PipelineCheckConfiguration<P> = {
+  id: ItemId;
+  type: 'check';
+  /** LQL query of the checked io, without an alias. */
+  io: P;
+  /** The annotation options to check; `table` is an LQL query of the table io, without an alias. */
+  check: CheckOptions;
+  when?: RuleExpr;
+  message?: RuleExpr;
+  severity?: CheckSeverity;
+  not?: P;
+  base?: P;
+  nodePriority?: number;
+  debounce?: number;
+};
+
+export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P> | PipelineCheckConfiguration<P>;
 
 /** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
  *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */

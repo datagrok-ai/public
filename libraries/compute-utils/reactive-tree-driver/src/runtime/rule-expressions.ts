@@ -9,17 +9,25 @@ export type RuleContext = Record<string, any> & {
 
 let opsRegistered = false;
 
+/** Platform column kinds accepted by `type:` annotations, plus a column type or a semantic type. */
+export function columnIs(col: any, kind: string): boolean {
+  if (!(col instanceof DG.Column))
+    return false;
+  switch (kind) {
+  case 'numerical': return col.isNumerical || col.type === DG.TYPE.DATE_TIME;
+  case 'numerical_no_datetime': return col.isNumerical && col.type !== DG.TYPE.DATE_TIME;
+  case 'categorical': return col.isCategorical;
+  case 'datetime': return col.type === DG.TYPE.DATE_TIME;
+  case 'categorical_or_datetime': return col.isCategorical || col.type === DG.TYPE.DATE_TIME;
+  default: return col.type === kind || col.semType === kind;
+  }
+}
+
 function columnsOf(df: any, kind?: string): DG.Column[] {
   if (!(df instanceof DG.DataFrame))
     return [];
   const cols = df.columns.toList();
-  if (kind == null)
-    return cols;
-  if (kind === 'numerical')
-    return cols.filter((col) => col.isNumerical);
-  if (kind === 'categorical')
-    return cols.filter((col) => col.isCategorical);
-  return cols.filter((col) => col.type === kind || col.semType === kind);
+  return kind == null ? cols : cols.filter((col) => columnIs(col, kind));
 }
 
 function registerOps() {
@@ -36,6 +44,10 @@ function registerOps() {
     }
     return missing;
   });
+  jsonLogic.add_operation('columnIs', columnIs);
+  jsonLogic.add_operation('nulls', (col: any) => col instanceof DG.Column ? col.stats.missingValueCount : 0);
+  jsonLogic.add_operation('regex', (val: any, pattern: string, flags?: string) =>
+    typeof val === 'string' && new RegExp(pattern, flags ?? '').test(val));
   jsonLogic.add_operation('len', (val: any) => {
     if (val == null)
       return 0;

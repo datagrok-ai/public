@@ -1,8 +1,9 @@
 import {LinkSpecString} from '../data/common-types';
 import {
-  PipelineHandlerConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationInput, PipelineMetaConfiguration,
-  PipelineRuleConfiguration, PipelineValidatorConfiguration, RuleEffect, RuleExpr,
+  PipelineCheckConfiguration, PipelineHandlerConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationInput,
+  PipelineMetaConfiguration, PipelineRuleConfiguration, PipelineValidatorConfiguration, RuleEffect, RuleExpr,
 } from './PipelineConfiguration';
+import {CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
 import {parseLinkIO} from './LinkSpec';
 import {IOType, normalizeLinkSpec} from './config-processing-utils';
 import {ruleDataHandler, ruleMetaHandler, ruleValidatorHandler} from '../runtime/rule-handlers';
@@ -18,10 +19,61 @@ export function isRuleLink(
   return link.type === 'rule';
 }
 
+export function isCheckLink(
+  link: PipelineLinkConfigurationInput<LinkSpecString>,
+): link is PipelineCheckConfiguration<LinkSpecString> {
+  return link.type === 'check';
+}
+
 export function expandLinks(
   links: PipelineLinkConfigurationInput<LinkSpecString>[],
 ): PipelineLinkConfiguration<LinkSpecString>[] {
-  return links.flatMap((link) => isRuleLink(link) ? expandRule(link) : [link]);
+  return links.flatMap((link) => isRuleLink(link) ? expandRule(link) : isCheckLink(link) ? expandCheck(link) : [link]);
+}
+
+function singleQuery(id: string, field: string, query: LinkSpecString | undefined): string | undefined {
+  if (query == null)
+    return undefined;
+  if (typeof query !== 'string' && !Array.isArray(query))
+    throw new Error(`Check ${id}: ${field} must be a query`);
+  if (Array.isArray(query)) {
+    if (query.length !== 1)
+      throw new Error(`Check ${id}: ${field} must be a single query`);
+    return query[0];
+  }
+  return query;
+}
+
+function expandCheck(check: PipelineCheckConfiguration<LinkSpecString>): PipelineLinkConfiguration<LinkSpecString>[] {
+  const {id} = check;
+  const options: CheckOptions = {...check.check};
+  validateCheckOptions(id, options);
+  if (options.nullable === true)
+    throw new Error(`Check ${id}: nullable: true only relaxes the default check as a script annotation`);
+  const io = singleQuery(id, 'io', check.io)!;
+  const table = singleQuery(id, 'table', options.table);
+  for (const alias of usedAliases(check.when)) {
+    if (alias !== VALUE && alias !== TABLE)
+      throw new Error(`Check ${id}: when references unknown alias ${alias}, use ${VALUE} or ${TABLE}`);
+  }
+  const expanded = expandChecks(options, {when: check.when, message: check.message, severity: check.severity});
+  if (!expanded.length)
+    throw new Error(`Check ${id}: no options to check`);
+  return expanded.map(({key, needsTable, params}) => {
+    const link: PipelineValidatorConfiguration<LinkSpecString> = {
+      id: `${id}::${key}`,
+      type: 'validator',
+      from: needsTable ? [`${VALUE}:${io}`, `${TABLE}:${table}`] : [`${VALUE}:${io}`],
+      to: [`${TARGET}:${io}`],
+      not: check.not,
+      base: check.base,
+      nodePriority: check.nodePriority,
+      debounce: check.debounce ?? 0,
+      handler: ruleValidatorHandler,
+      params,
+    };
+    return link;
+  });
 }
 
 function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOType) {

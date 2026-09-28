@@ -7,6 +7,7 @@ import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
 import {parseLinkIO} from '../config/LinkSpec';
 import {ruleValidatorHandler} from './rule-handlers';
+import {CheckOptions, expandChecks, TABLE, TARGET, VALUE} from '../config/checks';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -91,39 +92,43 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
     const item = node.getItem();
     if (!isFuncCallNode(item))
       return acc;
-    const validators = item.config.io?.map((io) => {
-      if (io.nullable || io.direction === 'output')
-        return;
-      const spec: LinkSpec = {
-        id: `::${io.id}`,
-        from: parseLinkIO(`in:${io.id}`, io.direction),
-        to: parseLinkIO(`out:${io.id}`, io.direction),
-        type: 'validator',
-        handler: ruleValidatorHandler,
-        params: {when: {missing: ['in']}, effects: [{effect: 'error', targets: ['out'], message: 'Missing value'}]},
-      };
-      const minfo: MatchInfo = {
-        spec,
-        inputs: {
-          'in': [{
-            path: [],
-            ioName: io.id,
-          }],
-        },
-        outputs: {
-          'out': [{
-            path: [],
-            ioName: io.id,
-          }],
-        },
-        actions: {},
-        inputsUUID: new Map(),
-        outputsUUID: new Map(),
-        isDefaultValidator: true,
-      };
-      return new Link(path, minfo, 0, logger);
-    }).filter((x) => !!x);
-    return [...acc, ...(validators ?? [])];
+    const ios = item.config.io ?? [];
+    const validators = ios.flatMap((io) => {
+      if (io.direction === 'output')
+        return [];
+      const options: CheckOptions = {...io.checks, nullable: io.nullable};
+      const tableIo = options.table == null ? undefined :
+        ios.find((other) => other.id === options.table && other.direction === 'input');
+      if (!tableIo)
+        delete options.table;
+      return expandChecks(options).map(({key, needsTable, params}) => {
+        const spec: LinkSpec = {
+          id: `::${io.id}:${key}`,
+          from: [
+            ...parseLinkIO(`${VALUE}:${io.id}`, 'input'),
+            ...(needsTable ? parseLinkIO(`${TABLE}:${tableIo!.id}`, 'input') : []),
+          ],
+          to: parseLinkIO(`${TARGET}:${io.id}`, 'output'),
+          type: 'validator',
+          handler: ruleValidatorHandler,
+          params,
+        };
+        const inputs: MatchInfo['inputs'] = {[VALUE]: [{path: [], ioName: io.id}]};
+        if (needsTable)
+          inputs[TABLE] = [{path: [], ioName: tableIo!.id}];
+        const minfo: MatchInfo = {
+          spec,
+          inputs,
+          outputs: {[TARGET]: [{path: [], ioName: io.id}]},
+          actions: {},
+          inputsUUID: new Map(),
+          outputsUUID: new Map(),
+          isDefaultValidator: true,
+        };
+        return new Link(path, minfo, 0, logger);
+      });
+    });
+    return [...acc, ...validators];
   }, [] as Link[]);
   return defaultValidators;
 }

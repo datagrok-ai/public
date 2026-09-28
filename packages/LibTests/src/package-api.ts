@@ -95,4 +95,14 @@ export namespace funcs {
   export async function mockWrapperDF(params: any ): Promise<any> {
     return await grok.functions.call('LibTests:MockWrapperDF', { params });
   }
+
+  /**
+   * @param {string} mode
+   *   choices: ["fast", "exact"]
+   * @param {DG.Column} mol
+   *   semType: Molecule
+   */
+  export async function testAnnotatedInputs(a: number | null, b: number | undefined, c: number , v: number , code: string , mode: string , df: DG.DataFrame , col: DG.Column , mol: DG.Column ): Promise<number> {
+    return await grok.functions.call('LibTests:TestAnnotatedInputs', { a, b, c, v, code, mode, df, col, mol });
+  }
 }

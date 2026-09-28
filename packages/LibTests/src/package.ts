@@ -408,3 +408,20 @@ export async function MockWrapperDF(params: any) {
   };
   return c;
 }
+
+// annotation checks
+
+//input: double a {nullable: true}
+//input: double b {optional: true}
+//input: double c
+//input: int v = 5 {min: 0; max: 10}
+//input: string code = "1234" {validator: /^[0-9]{4}$/i}
+//input: string mode = "fast" {choices: ["fast", "exact"]}
+//input: dataframe df
+//input: column col {type: numerical; allowNulls: false}
+//input: column mol {semType: Molecule; table: df}
+//output: double res
+export async function TestAnnotatedInputs(a: number, b: number, c: number, v: number, code: string, mode: string,
+  df: DG.DataFrame, col: DG.Column, mol: DG.Column) {
+  return 1;
+}
