@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21024: Similarity and Diversity Search: The "Tanimoto, Morgan" link now shows the viewer in the Context Panel even right after another object was made current
 * Substructure Search: Added the Crux engine (Substructure Search Engine package property) for Contains / Not contains searches; queries it cannot express run on RDKit
 * Substructure Search: Improved Crux parity with RDKit — nitro / N-oxides, perchlorates, elements beyond Rn and aromatic rings RDKit reads only without Kekulize are read as RDKit reads them (Chem datasets: 67 → 0 molecules Crux could not parse, 277 → 7 read differently)
 * Substructure Search: Fixed typed queries such as `[OH]`, `[CH3]`, `[N+]`, `c1cc[n+]cc1` finding almost nothing — a query whose SMILES reading is a radical is now read as SMARTS, by both engines
