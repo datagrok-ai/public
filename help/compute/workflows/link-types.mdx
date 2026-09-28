@@ -283,7 +283,7 @@ type TemplateInfo = {
 ```
 
 Enumerate the template slots produced by [`(template)` wildcard
-selectors](./link-query-language#wildcard-selectors) on each side, in
+selectors](./link-query-language-advanced#wildcard-selectors) on each side, in
 spec order. Each entry pairs the link-io name with the underlying script
 IO id. Returns `[]` when no wildcard selectors are used.
 
@@ -333,7 +333,7 @@ pairs slots by index. For each pair:
   corresponding output, in declaration order. This is the original
   behavior.
 - **template ↔ template**: when both slots come from
-  [`(template)` wildcard selectors](./link-query-language#wildcard-selectors),
+  [`(template)` wildcard selectors](./link-query-language-advanced#wildcard-selectors),
   the handler matches their IOs by script IO name (not position) and
   silently drops anything unique to one side.
 - **template ↔ bare**: throws — flip the order or split the link.
