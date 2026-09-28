@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Viewers: The counter never reached its last step (20 declared for 20 actions); three selection steps completed on any selection event, so the tail of one gesture could tick the next; the gallery's search box was captured when its step began
 * Calculated Columns: The expression step was declared twice — the first copy was skipped or shown depending on the dialog's layout, shifting every step number after it — and the Edit step pointed at a button called "Edit" while the pane says "Edit in dialog" (no highlight); both fixed
 * GROK-20419: Embedded Viewers: The last step pointed at a gear icon no element carries, so it showed no highlight; it now points at the inner plot's Color selector in the Trellis strip and says so, and the Trellis plot is found even when it is added after the menu click
 * Added a BDD project (`bdd/`): the tutorials walked from their cards to the congratulations, each step claimed both as ticked and as done on the platform

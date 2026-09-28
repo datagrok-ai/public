@@ -113,8 +113,15 @@ export const stepDone = Then('the tutorial step {string} should be done', async 
   }, {message: `the tutorial step "${instruction}"`}).toBe('done');
 }, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete'});
 
+export const stepDoneTimes = Then('the tutorial step {string} should be done {int} times', async (page: Page, instruction: string, times: number) => {
+  const entries = stepEntry(page, instruction);
+  await expect.poll(() => entries.evaluateAll((els) => els.filter((e) => e.getAttribute('aria-checked') === 'true').length),
+    {message: `checked entries "${instruction}"`}).toBe(times);
+}, {description: 'for an instruction a tutorial repeats ("Open scatter plot"): that many of its entries are checked'});
+
 export const stepNotDone = Then('the tutorial step {string} should not be done yet', async (page: Page, instruction: string) => {
   const entries = stepEntry(page, instruction);
   await expect.poll(() => entries.evaluateAll((els) => els.length === 0 ? 'not listed' : els.every((e) => e.getAttribute('aria-checked') === 'false') ? 'pending' : 'done'),
     {message: `the tutorial step "${instruction}"`}).toBe('pending');
 }, {description: 'the entry is listed and still unchecked — the claim that pairs with a gesture which must not tick it'});
+

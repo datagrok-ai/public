@@ -3,7 +3,7 @@
    context instead, and "toolbox" keeps meaning the platform's. Selector sources: toolbox.dart
    (.d4-toolbox[caption]), console.dart, the shell's `name=` annotations (Browse, Toolbox), the selectors.ts
    files under playwright-public. */
-import {element} from '../../src/registry.js';
+import {element, kind} from '../../src/registry.js';
 
 // simple_mode.dart also uses d4-toolbox on an empty sliding host. Only Toolbox.root has caption.
 element('toolbox', {selector: '.d4-toolbox[caption]', aliases: ['toolbox pane'],
@@ -80,3 +80,12 @@ element('column picker popup', {selector: '.d4-column-grid', aliases: ['column g
   description: 'the column grid a Dart column selector or a + icon opens (the platform appends it to the page body); absent once a column is taken or the picker is dismissed'});
 element('help panel', {selector: '.grok-help', aliases: ['help pane'],
   description: 'the help the shell shows for the current object (a viewer\'s "?" icon opens its page)'});
+
+/* The Add viewer gallery (PowerPack's `viewers-gallery.ts`, opened by the ribbon's "Add viewer" icon):
+   the recently used cards are a copy of the others under `viewer-card-recent-<name>`, left out here. */
+element('viewer gallery', {selector: '[name="viewer-gallery-root"]', aliases: ['add viewer gallery']});
+element('viewer gallery search', {selector: '[name="viewer-gallery-search"]', aliases: ['viewer gallery search box']});
+kind('viewer card', {aliases: ['viewer cards'], selector: '[name^="viewer-card-"]:not([name^="viewer-card-recent-"])', match: ['label'],
+  labelSelector: '.card-label', description: 'a card of the Add viewer gallery, by the viewer name it shows ("Radar" viewer card)'});
+kind('viewer tag', {aliases: ['viewer tags'], selector: '[name^="viewer-tag-"]', match: ['text'],
+  description: 'a tag of the Add viewer gallery that filters its cards ("Charts" viewer tag)'});

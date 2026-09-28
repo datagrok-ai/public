@@ -383,10 +383,13 @@ export const contextPanelOpen = Given('the context panel is open', async (page: 
 export const contextPanelShows = Then('the context panel should show {string}', async (page: Page, name: string) => {
   await expect.poll(() => page.evaluate(() => {
     const o = grok.shell.o;
-    return o == null ? 'nothing' : `${o.constructor?.name ?? typeof o} "${o.friendlyName ?? o.name ?? ''}"`;
+    // a viewer has no name of its own: it is its type
+    return o == null ? 'nothing' : `${o.constructor?.name ?? typeof o} "${o.friendlyName || o.name || o.type || ''}"`;
   }), {message: `the current object (grok.shell.o), which the context panel renders`}).toMatch(new RegExp(`"${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"$`));
-  await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name);
-}, {description: 'the current object (grok.shell.o) is the entity of that name, and the panel shows it'});
+  // a viewer's panel is its property grid, with no header naming it: the text is claimed for entities
+  if (!await page.evaluate(() => grok.shell.o instanceof DG.Viewer))
+    await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name);
+}, {description: 'the current object (grok.shell.o) is the entity of that name (a viewer: of that type), and the panel shows it'});
 
 /* --- the second account ------------------------------------------------------------------------
    A sharing feature needs a user other than the one running it: DATAGROK_SHARING_LOGIN — the same
@@ -1308,8 +1311,11 @@ export const toolboxPaneHidden = Given('the toolbox pane is hidden', async (page
 async function hintOn(loc: Locator): Promise<string> {
   return loc.evaluate((e) => {
     const target = e.closest('.ui-hint-target') ?? e.querySelector('.ui-hint-target');
-    if (!target)
-      return 'it is not a hint target';
+    if (!target) {
+      const targets = [...document.querySelectorAll('.ui-hint-target')].map((t) =>
+        t.getAttribute('aria-label') || t.getAttribute('name') || (t.textContent ?? '').trim().slice(0, 30) || t.className);
+      return `it is not a hint target; the hints are on: ${targets.join(' | ') || 'nothing'}`;
+    }
     const blob = document.querySelector(`.ui-hint-blob[data-target="${target.getAttribute('data-target')}"]`) as HTMLElement | null;
     if (!blob)
       return 'its hint has no blob';
