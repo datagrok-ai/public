@@ -2,6 +2,12 @@
 
 ## v.next
 
+* SAR Matrix: Added building the matrices from core and R-group columns already in the table (Use existing R-groups); attachment points are read in any common notation ([*:n], [n*], R# molfiles, CXSMILES labels), a bridge written in two columns is joined as one piece, and a warning names R-groups that do not rebuild the table's molecules
+* SAR Matrix: Fixed predicted structures inverting a stereocenter or double-bond geometry next to an attachment point
+* SAR Matrix: A series whose largest connected block has a single row or column now shows its largest block with at least two of each, instead of no matrix or a one-column one
+* SAR Matrix: The Core header marks the varied position on the series core, and the context panel shows the core and the row's own R-groups
+* Matched Molecular Pairs: Fixed missing values of an integer activity becoming -2147483648 when the activity is log-scaled
+
 * Substructure Search: Added the Crux engine (Substructure Search Engine package property) for Contains / Not contains searches; queries it cannot express run on RDKit
 * Substructure Search: Improved Crux parity with RDKit — nitro / N-oxides, perchlorates, elements beyond Rn and aromatic rings RDKit reads only without Kekulize are read as RDKit reads them (Chem datasets: 67 → 0 molecules Crux could not parse, 277 → 7 read differently)
 * Substructure Search: Fixed typed queries such as `[OH]`, `[CH3]`, `[N+]`, `c1cc[n+]cc1` finding almost nothing — a query whose SMILES reading is a radical is now read as SMARTS, by both engines
