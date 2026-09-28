@@ -135,8 +135,8 @@ const HIERARCHICAL_MAX_PRODUCTS = 500_000;
 const COLUMN_DESCRIPTIONS: Record<string, string> = {
   product: 'The product this route makes: the molecule its last step produced.',
   route: 'Every step of the synthesis, drawn as reactions.',
-  product_counts: 'How many products each step kept, one line per step. More than one means the ' +
-    'template matched in several places and more than one of those products passed the filters.',
+  product_counts: 'How many distinct products each step formed, one line per step, including ones the ' +
+    'product filters removed. More than one means the template matched in several non-equivalent places.',
   n_products: 'The per-step product counts multiplied together: how many isomer paths this route ' +
     'passed through.',
   n_routes: 'How many distinct routes reach this same product.',

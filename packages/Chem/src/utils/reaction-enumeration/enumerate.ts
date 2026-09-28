@@ -23,7 +23,8 @@ export interface RouteStep {
   product: string;
   templateSmarts: string;
   reactionName: string;
-  /** Products this template kept from these reactants, so >1 means the step branched. */
+  /** Distinct products this template formed from these reactants, including ones the product
+   * filters rejected, so >1 means the step branched. */
   nProducts: number;
 }
 
@@ -648,6 +649,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               // One result.get(i).next() per set, as in rdkit-api.ts — calling reset() or at_end()
               // beforehand can leave the iterator corrupt.
               const producedSmilesSet = new Set<string>();
+              // Counted before the product filters: they choose what to keep, not what the reaction
+              // forms, so a stricter filter must never make a non-selective reaction pass the cap.
+              let nFormed = 0;
               for (let ri = 0; ri < result.size(); ri++) {
                 const productSet = result.get(ri);
                 try {
@@ -671,6 +675,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                     // itself: get_substruct_match on a post-reaction mol corrupts the WASM heap.
                     const evalMol = tryGetMol(rdkit, productSmiles);
                     if (!evalMol) continue;
+                    nFormed++;
                     try {
                       let stats: MolStats;
                       try {
@@ -701,9 +706,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               }
 
               // The routes below hold these same step objects, so one stamp reaches every route.
-              for (const s of comboSteps) s.nProducts = comboSteps.length;
+              for (const s of comboSteps) s.nProducts = nFormed;
               // Over the cap, every product of the combo is removed, not just the excess.
-              if (productCap >= 0 && comboSteps.length > productCap)
+              if (comboSteps.length > 0 && productCap >= 0 && nFormed > productCap)
                 productCapped++;
               else if (comboSteps.length > 0) {
                 // The synthesis history preceding this step: for each combo component that is

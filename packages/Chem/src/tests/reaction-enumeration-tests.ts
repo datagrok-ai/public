@@ -311,18 +311,29 @@ category('Reaction Enumeration', () => {
       'and says so, rather than silently');
   });
 
-  test('per-step limit: the cap counts kept products, not raw reaction outputs', async () => {
+  test('per-step limit: the cap counts every product formed, including ones the filters reject', async () => {
     const rdkit = getRdKitModule();
-    // This SMARTS rejects two of the triol's three ethers, leaving one — within a cap of 1.
-    const cfg = polyolConfig(1);
-    cfg.max_num_products_per_step = 1;
-    const {rows, warnings} = await enumerate({rdkit, config: cfg, templates: [O_METHYLATION],
-      buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts: ['[CX4H1][OX2][CH3]']});
+    const run = async (cap: number, exclusionSmarts: string[]) => {
+      const cfg = polyolConfig(1);
+      cfg.max_num_products_per_step = cap;
+      return enumerate({rdkit, config: cfg, templates: [O_METHYLATION],
+        buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts});
+    };
+    // Rejects the triol's two secondary ethers: the flask still makes all three.
+    const secondaryEthers = ['[CX4H1][OX2][CH3]'];
 
-    expect(rows.length, 1, 'the one product that passed the filters is kept');
-    expect(rows[0].product, 'COCC(O)C(C)O', 'the primary ether, reached only after two rejections');
-    expect(warnings.some((w) => w.includes('product cap')), false,
-      'nothing was dropped, so no cap warning');
+    const capped = await run(1, secondaryEthers);
+    expect(capped.rows.length, 0, 'a filter must not make a three-product reaction pass a cap of one');
+    expect(capped.warnings.some((w) => w.includes('1-product cap')), true, 'and the drop is reported');
+
+    const {rows} = await run(3, secondaryEthers);
+    expect(rows.length, 1, 'within the cap, the filters still decide what is kept');
+    expect(rows[0].product, 'COCC(O)C(C)O', 'the primary ether');
+    expect(rows[0].steps[0].nProducts, 3, 'the step reports what the reaction formed, not what was kept');
+
+    const allFiltered = await run(1, ['[CX4][OX2][CH3]']);
+    expect(allFiltered.warnings.some((w) => w.includes('product cap')), false,
+      'a reaction whose products the filters all reject lost nothing to the cap');
   });
 
 
