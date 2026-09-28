@@ -11,10 +11,19 @@ import {UaFilter} from '../filter';
 
 export class OverviewView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
+  private summary: {[metric: string]: {metric: string, current: number, previous: number}} = {};
+  private uniqueUsersViewer?: UaFilterableQueryViewer;
+  private packageStatsViewer?: UaFilterableQueryViewer;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Overview';
+  }
+
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    const loaded = (v?: UaFilterableQueryViewer) => v?.errorDiv == null ? v?.viewer?.dataFrame : null;
+    return UaView.csvFiles({'summary': DG.DataFrame.fromObjects(Object.values(this.summary)),
+      'unique-users': loaded(this.uniqueUsersViewer), 'package-usage': loaded(this.packageStatsViewer)});
   }
 
   async initViewers(path?: string) : Promise<void> {
@@ -187,6 +196,8 @@ export class OverviewView extends UaView {
     this.viewers.push(uniqueUsersViewer);
     this.viewers.push(packageStatsViewer);
     this.viewers.push(userStatsViewer);
+    this.uniqueUsersViewer = uniqueUsersViewer;
+    this.packageStatsViewer = packageStatsViewer;
 
     const cardsView = ui.div([
     ], {classes: 'ua-cards'});
@@ -202,12 +213,14 @@ export class OverviewView extends UaView {
 
     const refresh = (filter: UaFilter): void => {
       cardsView.textContent = '';
+      this.summary = {};
       for (const k of Object.keys(counters)) {
         cardsView.append(ui.div([ui.divText(k), ui.wait(async () => {
           const fc: DG.DataFrame = await grok.functions.call(counters[k], filter);
           const valuePrev = fc.get('count1', 0);
           const valueNow = fc.get('count2', 0);
           const d = valueNow - valuePrev;
+          this.summary[k] = {metric: k, current: valueNow, previous: valuePrev};
           return ui.div([ui.divText(`${valueNow}`),
             ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : d < 0 ? 'ua-card-minus' : ''})]);
         })], 'ua-card'));

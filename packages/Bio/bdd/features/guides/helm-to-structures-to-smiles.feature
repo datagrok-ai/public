@@ -5,8 +5,7 @@ Feature: HELM sequences to structures, then to SMILES
   sequence from the monomer library and adds it as a Molecule column (V3000 molfiles); Chem |
   Transform | Convert Notation then rewrites that column in SMILES as a second new column, with
   SMILES already proposed as the target. Demo: Bio's filter_HELM fixture (four HELM peptides:
-  a branched one and three cyclic ones). Film it with BDD_GUIDE_VIEWPORT=1920x1080: at the
-  default 1600 px the ribbon's current-cell display folds Bio and Chem under the "more" group.
+  a branched one and three cyclic ones).
 
   Scenario: Build molecules from the HELM sequences, then write them out as SMILES
     Given user is logged in
@@ -16,7 +15,7 @@ Feature: HELM sequences to structures, then to SMILES
     When user picks "Bio > Transform > To Atomic Level..." from the top menu
     And user clicks on OK button in "To Atomic Level" dialog
     Then the top menu command should have completed
-    And a new column matching "^molfile\(HELM string\)" should have been added
+    And a new column "molfile(HELM string)" should have been added
     And every value of "molfile(HELM string)" column should contain "V30 BEGIN CTAB"
     When user picks "Chem > Transform > Convert Notation..." from the top menu
     Then "Target Notation" input in "Convert Notation" dialog should have value "smiles"

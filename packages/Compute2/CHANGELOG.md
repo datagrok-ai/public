@@ -1,5 +1,10 @@
 # Compute2 changelog
 
+## v.next
+
+* TreeWizard: Compact view for single-step workflows (no tree or navigation; save, share and export unified on the step ribbon)
+* RFV: Default Excel export includes validation and consistency
+
 ## 1.6.0 (2026-09-23)
 
 * TreeWizard: Fixed saving a step to history overwriting the previously saved run (a loaded or re-saved step now gets a new id; saved runs are immutable)

@@ -7,8 +7,9 @@ Press <kbd>Ctrl+Z</kbd> to reverse the last operation, and <kbd>Ctrl+Shift+Z</kb
 <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd>.
 
 Undo is **scoped to what you are looking at**: <kbd>Ctrl+Z</kbd> reverses the last operation on the
-current table or view, never one you performed somewhere else. Switching to another view and back
-brings the history with you.
+current table or view, never one you performed somewhere else. That includes tables shown inside
+the current view, such as the results of a function. Switching to another view and back brings the
+history with you.
 
 ## What can be undone
 
@@ -20,7 +21,7 @@ brings the history with you.
 | Values | **Find and Replace** |
 | Metadata | Color coding and format changes from the column menu |
 | Selection | **Reset Selection Filter** (<kbd>Esc</kbd>) |
-| Layout | Closing a viewer or a view, adding a viewer, **View \| Layout \| Clear** |
+| Layout | Closing a viewer (it comes back where it was) or a view, adding a viewer, **View \| Layout \| Clear** |
 | AI | Operations performed by the assistant (add/close viewer, change properties, filter, select) |
 
 Everything else — sorting, filtering, creating new tables, and anonymizing data — is not recorded.

@@ -44,6 +44,7 @@ export function createTestScheduler(): TestScheduler {
   scheduler.run = ((callback: any) => {
     scheduler.frame = 0;
     (scheduler as any).index = -1;
+    (scheduler as any).flushTests = [];
     return origRun(callback);
   }) as typeof scheduler.run;
   return scheduler;

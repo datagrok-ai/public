@@ -6,7 +6,7 @@ import {
   PipelineStateDynamic,
   StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {findNextStep, findPrevStep, findNextSubStep, resolveChosenUuid} from '../utils';
+import {findNextStep, findPrevStep, findNextSubStep, resolveChosenUuid, resolveSingleStep} from '../utils';
 
 function mockFuncCall(uuid: string, opts?: {isReadonly?: boolean}): StepFunCallState {
   return {
@@ -586,5 +586,46 @@ category('Navigation: dynamic pipelines', () => {
       mockFuncCall('step3'),
     ]);
     expect(findPrevStep('step2', tree)?.state.uuid, 'dynPipe');
+  });
+});
+
+// ============================================================
+// resolveSingleStep: compact TreeWizard detection
+// ============================================================
+
+category('Navigation: resolveSingleStep', () => {
+  test('root with one funccall resolves to it', async () => {
+    const tree = mockStaticPipeline('root', [mockFuncCall('step1')]);
+    const res = resolveSingleStep(tree);
+    expect(res?.step.uuid, 'step1');
+    expect(res?.chain.map((p) => p.uuid).join(','), 'root');
+  });
+
+  test('chain of one-step static pipelines resolves to the leaf', async () => {
+    const tree = mockStaticPipeline('root', [mockStaticPipeline('inner', [mockFuncCall('step1')])]);
+    const res = resolveSingleStep(tree);
+    expect(res?.step.uuid, 'step1');
+    expect(res?.chain.map((p) => p.uuid).join(','), 'root,inner');
+  });
+
+  test('dynamic pipeline with one step is not single-step', async () => {
+    const tree = mockDynamicPipeline('root', [mockFuncCall('step1')]);
+    expect(resolveSingleStep(tree) === undefined, true);
+  });
+
+  test('static pipeline with two steps is not single-step', async () => {
+    const tree = mockStaticPipeline('root', [mockFuncCall('step1'), mockFuncCall('step2')]);
+    expect(resolveSingleStep(tree) === undefined, true);
+  });
+
+  test('action step is not single-step', async () => {
+    const tree = mockStaticPipeline('root', [mockStaticPipeline('action1', [], {isActionStep: true})]);
+    expect(resolveSingleStep(tree) === undefined, true);
+  });
+
+  test('bare funccall root resolves with an empty chain', async () => {
+    const res = resolveSingleStep(mockFuncCall('step1'));
+    expect(res?.step.uuid, 'step1');
+    expect(res?.chain.length, 0);
   });
 });

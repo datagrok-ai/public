@@ -523,7 +523,7 @@ The trellis plot initially displays pie charts. To change the chart type, use th
 If you prefer not to use a trellis plot, close it or clear the **Visual analysis** checkbox
 during Step 3. You can manually add it later. You can also use other [chemical viewers](chemically-aware-viewers.md), like scatterplot, box plot, bar chart, and others.
 
-Use **Replace latest** checkbox to remove previous analysis results when running the new one. Or check it to add new analysis results in addition to existing.
+When the table already has the results of an earlier analysis, the dialog shows the **Replace latest** checkbox. Keep it checked to replace those results with the new ones, or clear it to add the new results beside them.
 </TabItem>
 <TabItem value="Match" label="Only match at R groups">
 
@@ -961,10 +961,13 @@ To run SAR Matrix analysis:
     * **Molecules**: the column containing molecules
     * **Activity**: a numerical column representing activity or property values
     * **Scaling**: _none_, _log10_, or _-log10_. Use _-log10_ for raw IC50 or Ki values so that higher
-      numbers mean more potent; for pre-computed pIC50 use _none_ and set **Activity direction**
-      explicitly
-    * **Series column** (optional): group by your own series instead of by structure
-    * **Group leftovers by MCS** (optional): also cover compounds no shared core could group
+      numbers mean more potent; for pre-computed pIC50 use _none_ and set **Direction** explicitly
+    * **Direction**: which end of the scaled activity counts as more potent
+    * **Use existing R-groups** (optional): build the matrices from core and R-group columns already
+      in the table instead of fragmenting the molecules. When it is off, the gear beside it holds
+      **Fragment cutoff**, **Series levels** and **Group leftovers by MCS**
+    * **Series** (optional): group by your own series instead of by structure
+    * **Predict analogs**: fill the combinations nobody has made with Free-Wilson predictions
 3. Click **OK**. The analysis opens with three tabs:
 
 ![SAR Matrix walkthrough](img/sar_matrix_demo.gif)
@@ -1017,6 +1020,26 @@ selected compound, and **Clear** empties the list.
 
 </TabItem>
 </Tabs>
+
+<details>
+<summary>Use existing R-group columns</summary>
+
+If the table already has a core column and R-group columns, for example from
+[R-Groups Analysis](#r-groups-analysis), you can build the matrices from them instead of fragmenting
+the molecules:
+
+1. Select **Use existing R-groups**.
+2. In **Core**, select the core column.
+3. In **R-groups**, select the R-group columns.
+4. In **Matrix columns**, select the R-group to compare across the matrix columns. The core and the
+   other R-groups form the rows.
+
+The dialog lists only columns whose values have attachment points, such as `[*:1]`, `[1*]` or `R1` in
+a molfile. Each core forms its own series, and a blank R-group means hydrogen. Cells for
+combinations the R-groups can't form are crossed out. If two rows have the same core and R-groups,
+the matrix shows one of them, preferring the one with a measured value.
+
+</details>
 
 #### Group leftovers by MCS
 

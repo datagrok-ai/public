@@ -408,3 +408,55 @@ export async function MockWrapperDF(params: any) {
   };
   return c;
 }
+
+// annotation checks
+
+//input: double a {nullable: true}
+//input: double b {optional: true}
+//input: double c
+//input: int v = 5 {min: 0; max: 10}
+//input: string code = "1234" {validator: /^[0-9]{4}$/i}
+//input: string mode = "fast" {choices: ["fast", "exact"]}
+//input: dataframe df
+//input: column col {type: numerical; allowNulls: false}
+//input: column mol {semType: Molecule; table: df}
+//output: double res
+export async function TestAnnotatedInputs(a: number, b: number, c: number, v: number, code: string, mode: string,
+  df: DG.DataFrame, col: DG.Column, mol: DG.Column) {
+  return 1;
+}
+
+//input: int x
+//output: string res
+export function MockValidator(x: number): string | null {
+  return x < 10 ? null : 'too big';
+}
+
+//input: int x = 1 {validators: ["LibTests:MockValidator"]}
+//input: int y = 1
+//output: int res
+export function TestNamedValidators(x: number, y: number): number {
+  return x + y;
+}
+
+//input: int x
+//output: bool res
+export function MockValidatorBool(x: number): boolean {
+  return x < 10;
+}
+
+//input: int x
+//output: string res
+export function MockValidatorThrow(x: number): string {
+  throw new Error('boom');
+}
+
+//input: int k = 2
+//input: int hv = 1 {visible: k > 1}
+//input: int foo = 5 {validator: bar > 3}
+//input: double bar = 2
+//input: string code = "12ab" {validator: startsWith(value, "12")}
+//output: int res
+export function TestExpressionInputs(k: number, hv: number, foo: number, bar: number, code: string): number {
+  return k;
+}
