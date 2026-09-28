@@ -20,7 +20,8 @@ export class PeptidesSarTutorial extends Tutorial {
          identify mutation cliffs and compute statistical distributions of activity values.`;
     }
 
-    get steps() { return 18; }
+    // 24 as launched here; a machine with WebGPU lists one more (Check Use WebGPU), which the counter clamps
+    get steps() { return 24; }
 
     get icon() {
         return '🧬📈';
@@ -164,10 +165,6 @@ export class PeptidesSarTutorial extends Tutorial {
                         res();
                     }
                 }, 200);
-                setTimeout(() => {
-                    clearInterval(timer);
-                    res();
-                }, 1800000); // 30 minutes timeout
             })
 
         await this.action('Click any WebLogo letter', webLogoClick);
@@ -261,10 +258,6 @@ export class PeptidesSarTutorial extends Tutorial {
                     res();
                 }
             }, 200);
-            setTimeout(() => {
-                clearInterval(timer);
-                res();
-            }, 1800000); // 30 minutes timeout
         });
         await this.action('Click a Mutation Cliffs cell', mutViewerClickPromise
         );
@@ -297,10 +290,6 @@ export class PeptidesSarTutorial extends Tutorial {
                     res();
                 }
             }, 200);
-            setTimeout(() => {
-                clearInterval(int);
-                res();
-            }, 1800000); // 30 minutes timeout
         });
         const invariantHint = greenHint(invariantRadioButton, paragraphs(['Switch the <i>SVM viewer</i> to <i>Invariant Map</i> mode using the radio button.']), 'top');
         await this.action('Switch SVM mode to Invariant Map', invariantPromise, invariantRadioButton);
@@ -363,10 +352,6 @@ export class PeptidesSarTutorial extends Tutorial {
                     resolve();
                 }
         }, 200);
-        setTimeout(() => {
-            clearInterval(int);
-            resolve();
-        }, 1800000); // 30 minutes timeout
     });
         await this.action('Open Logo Summary Table settings (gear)', lstContextPromise, lstGear ?? LSTViewer.root);
         this._removeHints(step10LSTHint);
@@ -388,10 +373,6 @@ export class PeptidesSarTutorial extends Tutorial {
                     resolve();
                 }
             }, 200);
-            setTimeout(() => {
-                clearInterval(int);
-                resolve();
-            }, 1800000); // 30 minutes timeout
         });
 
         await this.action('Add pie chart aggregation for position 14', lstAggRegationPromise, aggColumnsButton);
@@ -436,10 +417,6 @@ export class PeptidesSarTutorial extends Tutorial {
                     res();
                 }
             }, 200);
-            setTimeout(() => {
-                clearInterval(int);
-                res();
-            }, 1800000); // 30 minutes timeout
         });
         await this.action('Check Dendrogram', dendrogramPromise, dendrogramCheckBox);
         const analDialogOk = analDialog.root.querySelector('button.ui-btn.ui-btn-ok') as HTMLButtonElement;
@@ -496,5 +473,4 @@ function attachRemovingHintListener(hintDiv: HTMLElement, onRemoved: () => void)
             onRemoved();
         }
     }, 200);
-    setTimeout(() => {clearInterval(timer); onRemoved();}, 1800000); // 30 miunutes timeout
 }
