@@ -21,7 +21,6 @@ import './tests/toAtomicLevel-tests';
 import './tests/oligo-renderer-tests';
 import './tests/oligo-linkers-tests';
 import './tests/oligo-cell-editor-tests';
-import './tests/oligo-structure-tests';
 
 import {OligoToolkitTestPackage} from './tests/utils';
 

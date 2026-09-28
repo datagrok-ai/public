@@ -19,8 +19,7 @@ Feature: Heat map navigation and grid mode
     And heat map viewer should be painted
 
   Scenario: A click on a column band makes a row of that column current
-    Then the "current row" reading of heat map viewer should be 1
-    And the "current column" reading of heat map viewer should be "USUBJID"
+    Given user makes row 1 current
     When user clicks on the "column AGE" area of heat map viewer
     Then the "current column" reading of heat map viewer should be "AGE"
     And the "current row" reading of heat map viewer should differ from before

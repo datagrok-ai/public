@@ -67,7 +67,7 @@ Feature: Save and reopen a peptide SAR analysis
     When user expands Selection pane in context panel
     Then grid in Selection pane in context panel should show 299 rows
     When user collapses Selection pane in context panel
-    Then "Mutation Cliffs pairs" pane in context panel should be present
+    Then "Mutation Cliffs pairs" pane in context panel should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

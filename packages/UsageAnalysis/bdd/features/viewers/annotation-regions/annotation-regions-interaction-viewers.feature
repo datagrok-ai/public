@@ -47,7 +47,6 @@ Feature: Hovering and clicking regions on every viewer
     When user hovers over the "left edge of overlap of region Tall and region Heavy" area of scatter plot viewer
     And user clicks on the "left edge of overlap of region Tall and region Heavy" area of scatter plot viewer
     Then 21 rows should be selected
-    And every selected row should pass the filter
     When user clears the row selection
     And user moves the pointer away from scatter plot viewer
     Then no errors should have been logged

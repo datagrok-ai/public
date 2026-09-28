@@ -8,7 +8,7 @@ Feature: Grid row selection, navigation and row source
   Row Selection gates all of it (Shift+ArrowDown moves the caret and selects nothing), and Row
   Source decides how many rows the grid shows at all. Under a filter and a sort the arrows walk the
   grid's own order and Shift+ArrowDown selects the rows it leaves - the AGE-31 rows come first, in
-  the order 533, 95, 982, 115, 117, 497, 833. Also the mouse gestures of `grid-ui.md`: a Shift+click
+  row order, since the sort keeps tied rows as they were: 95, 115, 117, 210, 320, 430, 497. Also the mouse gestures of `grid-ui.md`: a Shift+click
   range on the row strip; a Control+click on a row number inverts that row's selection without
   making it current, and a plain click moves the current row and leaves the selection as it was; a
   drag down the strip; Shift+click and Control+click on the headers. The Tab wrap, the plain click
@@ -30,10 +30,10 @@ Feature: Grid row selection, navigation and row source
     And no rows should be selected
 
   Scenario: A click sets the current row and selects nothing
-    When user clicks on the "cell 6 of USUBJID" area of grid
+    When user clicks on the "cell 6 of AGE" area of grid
     Then row 6 should be current
     And the "current row" reading of grid should be 6
-    And the "current column" reading of grid should be "USUBJID"
+    And the "current column" reading of grid should be "AGE"
     And no rows should be selected
     And no errors should have been logged
 
@@ -158,18 +158,18 @@ Feature: Grid row selection, navigation and row source
     And grid should show 844 rows
     And the "row order" reading of grid should differ from before
     When user presses Control+Home
-    Then the "current row" reading of grid should be 533
+    Then the "current row" reading of grid should be 95
     And "AGE" of the current row should be "31"
     When user presses ArrowDown
-    Then the "current row" reading of grid should be 95
+    Then the "current row" reading of grid should be 115
     When user presses ArrowDown
-    Then the "current row" reading of grid should be 982
+    Then the "current row" reading of grid should be 117
     When user presses Shift+ArrowDown
     And user presses Shift+ArrowDown
     And user presses Shift+ArrowDown
     And user presses Shift+ArrowDown
-    Then the "current row" reading of grid should be 833
-    And only rows where "USUBJID" is one of "X0273T51060200007, X0273T22000400015, X0273T22000400018, X0273T38000400027" should be selected
+    Then the "current row" reading of grid should be 497
+    And only rows where "USUBJID" is one of "X0273T22000400018, X0273T26004000004, X0273T29013500101, X0273T37001500013" should be selected
     And every selected row should pass the filter
     And 844 rows should pass the filter
     When user clears the row selection

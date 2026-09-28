@@ -10,3 +10,5 @@ export * from './failure.js';
 export {callFunction, readResult} from './functions.js';
 export {columnsSince, menuNames, openTopMenu, pickTopMenu, waitCommand} from './menus.js';
 export {expectCustomEvent, listenCustomEvent} from './events.js';
+export {silent} from './guide.js';
+export {serverRequests, chatIdsOf, deleteChatsOf} from './server.js';

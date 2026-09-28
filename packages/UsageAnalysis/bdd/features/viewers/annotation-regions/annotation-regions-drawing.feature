@@ -93,9 +93,8 @@ Feature: Drawing and editing annotation regions
     And "annotationRegions" property of density plot viewer should contain "\"formula1\":\"${HEIGHT} = ${WEIGHT}"
     And "annotationRegions" property of density plot viewer should contain "\"formula2\":\"${HEIGHT} = ${WEIGHT}"
     When user sets "showViewerAnnotationRegions" property of density plot viewer to "true"
-    Then the "regions shown" reading of density plot viewer should be 2
-    When user sets "annotationRegions" property of density plot viewer to "[]"
-    Then the "viewer regions" reading of density plot viewer should be 0
+    Then density plot viewer should have a "region 1" area
+    And density plot viewer should have a "region 2" area
     And no errors should have been logged
 
   Scenario: A vertical bar chart locks the drawn region to its full width
@@ -165,8 +164,8 @@ Feature: Drawing and editing annotation regions
       | annotationRegions | [{"type":"area","x":"AGE","y":"WEIGHT","header":"Adults","area":[[30.5,30],[60.5,30],[60.5,180],[30.5,180]]}] |
     And user resizes scatter plot viewer to 800 by 500
     Then scatter plot viewer should have a "region Adults" area
-    When user takes a snapshot of scatter plot viewer
-    And user picks "Edit..." from the context menu of the "left edge of region Adults" area of scatter plot viewer
+    And the "region Adults" area of scatter plot viewer should not contain the color "#FF8800"
+    When user picks "Edit..." from the context menu of the "left edge of region Adults" area of scatter plot viewer
     Then "Formula Lines" dialog should be visible
     When user enters "#ff8800" into Region Color input in "Formula Lines" dialog
     And user enters "#003366" into Outline Color input in "Formula Lines" dialog
@@ -175,6 +174,7 @@ Feature: Drawing and editing annotation regions
     And user enters "#ff0000" into Color input in "Formula Lines" dialog
     And user clicks OK button in "Formula Lines" dialog
     Then the "Formula Lines" dialog should close
+    And the "region Adults" area of scatter plot viewer should contain the color "#FF8800"
     And "annotationRegions" property of scatter plot viewer should contain "\"fillColor\""
     And "annotationRegions" property of scatter plot viewer should contain "\"outlineColor\""
     And "annotationRegions" property of scatter plot viewer should contain "\"outlineWidth\":3"
@@ -202,7 +202,7 @@ Feature: Drawing and editing annotation regions
     And the "viewer regions" reading of scatter plot viewer should be 0
     And scatter plot viewer should have a "region Medium weight" area
     When user sets "showDataframeAnnotationRegions" property of scatter plot viewer to "false"
-    Then the "regions shown" reading of scatter plot viewer should be 0
+    Then scatter plot viewer should not have a "region Medium weight" area
     And the "dataframe regions" reading of scatter plot viewer should be 1
     When user sets the ".annotation-regions" tag of the table to ""
     Then the "dataframe regions" reading of scatter plot viewer should be 0

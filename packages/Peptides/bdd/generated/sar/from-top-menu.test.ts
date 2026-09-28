@@ -26,7 +26,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Configure peptide SAR through the top menu", () => {
   const session = feature(test, "features/sar/from-top-menu.feature", import.meta.url);
-  test("Configure peptide SAR through the top menu", {tag: ["@journey", "@known-failure"]}, async ({browser}) => {
+  test("Configure peptide SAR through the top menu", {tag: ["@journey"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 9, page);
     await session.step(16, "Given user is logged in", () => loggedIn(page));
@@ -192,28 +192,27 @@ test.describe("Configure peptide SAR through the top menu", () => {
       await session.step(147, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("The settings show Dendrogram checked while the tree is shown", async () => {
-      await session.step(154, "When user clicks on \"Peptides analysis settings\" icon", () => clickOn(page, el("\"Peptides analysis settings\" icon")));
-      await session.step(155, "And user expands Viewers pane in \"Peptides settings\" dialog", () => expand(page, el("Viewers pane in \"Peptides settings\" dialog")));
-      await session.step(156, "Then Dendrogram checkbox in \"Peptides settings\" dialog should be checked", () => shouldBe(page, el("Dendrogram checkbox in \"Peptides settings\" dialog"), "checked"));
-      await session.step(157, "When user clicks on CANCEL button in \"Peptides settings\" dialog", () => clickOn(page, el("CANCEL button in \"Peptides settings\" dialog")));
-    }, {knownFailure: true});
+      await session.step(150, "When user clicks on \"Peptides analysis settings\" icon", () => clickOn(page, el("\"Peptides analysis settings\" icon")));
+      await session.step(151, "And user expands Viewers pane in \"Peptides settings\" dialog", () => expand(page, el("Viewers pane in \"Peptides settings\" dialog")));
+      await session.step(152, "Then Dendrogram checkbox in \"Peptides settings\" dialog should be checked", () => shouldBe(page, el("Dendrogram checkbox in \"Peptides settings\" dialog"), "checked"));
+      await session.step(153, "When user clicks on CANCEL button in \"Peptides settings\" dialog", () => clickOn(page, el("CANCEL button in \"Peptides settings\" dialog")));
+    });
     await run.scenario("Leaving the settings unapplied keeps the tree", async () => {
-      await session.step(160, "When user presses Escape", () => pressKey(page, "Escape"));
-      await session.step(161, "Then \"Peptides settings\" dialog should be absent", () => shouldBe(page, el("\"Peptides settings\" dialog"), "absent"));
-      await session.step(162, "And the analysis grid should have a dendrogram", () => dendrogramAttached(page));
-      await session.step(163, "And no errors should have been logged", () => noErrors(page));
+      await session.step(156, "When user presses Escape", () => pressKey(page, "Escape"));
+      await session.step(157, "Then \"Peptides settings\" dialog should be absent", () => shouldBe(page, el("\"Peptides settings\" dialog"), "absent"));
+      await session.step(158, "And the analysis grid should have a dendrogram", () => dendrogramAttached(page));
+      await session.step(159, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Unchecking Dendrogram removes the tree", async () => {
-      await session.step(170, "When user clicks on \"Peptides analysis settings\" icon", () => clickOn(page, el("\"Peptides analysis settings\" icon")));
-      await session.step(171, "And user expands Viewers pane in \"Peptides settings\" dialog", () => expand(page, el("Viewers pane in \"Peptides settings\" dialog")));
-      await session.step(172, "And user checks Dendrogram checkbox in \"Peptides settings\" dialog", () => check(page, el("Dendrogram checkbox in \"Peptides settings\" dialog")));
-      await session.step(173, "And user unchecks Dendrogram checkbox in \"Peptides settings\" dialog", () => uncheck(page, el("Dendrogram checkbox in \"Peptides settings\" dialog")));
-      await session.step(174, "Given user listens for \"peptides-sar-ready\" custom event", () => listenCustom(page, "peptides-sar-ready"));
-      await session.step(175, "When user clicks on OK button in \"Peptides settings\" dialog", () => clickOn(page, el("OK button in \"Peptides settings\" dialog")));
-      await session.step(176, "Then the SAR analysis should be ready", () => sarReady(page));
-      await session.step(177, "And the SAR setting \"showDendrogram\" should be \"false\"", () => sarSetting(page, "showDendrogram", "false"));
-      await session.step(178, "And the analysis grid should not have a dendrogram", () => dendrogramDetached(page));
-    }, {knownFailure: true});
+      await session.step(162, "When user clicks on \"Peptides analysis settings\" icon", () => clickOn(page, el("\"Peptides analysis settings\" icon")));
+      await session.step(163, "And user expands Viewers pane in \"Peptides settings\" dialog", () => expand(page, el("Viewers pane in \"Peptides settings\" dialog")));
+      await session.step(164, "And user unchecks Dendrogram checkbox in \"Peptides settings\" dialog", () => uncheck(page, el("Dendrogram checkbox in \"Peptides settings\" dialog")));
+      await session.step(165, "Given user listens for \"peptides-sar-ready\" custom event", () => listenCustom(page, "peptides-sar-ready"));
+      await session.step(166, "When user clicks on OK button in \"Peptides settings\" dialog", () => clickOn(page, el("OK button in \"Peptides settings\" dialog")));
+      await session.step(167, "Then the SAR analysis should be ready", () => sarReady(page));
+      await session.step(168, "And the SAR setting \"showDendrogram\" should be \"false\"", () => sarSetting(page, "showDendrogram", "false"));
+      await session.step(169, "And the analysis grid should not have a dendrogram", () => dendrogramDetached(page));
+    });
     run.finish();
   });
 });

@@ -5,9 +5,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from './package';
 import type {BuilderType} from '../escher_src/src/Builder';
-import type {CobraModelData, ReactionBounds, SamplingFunctionResult} from '../escher_src/src/ts/types';
+import type {CobraModelData, FluxHistogram, ReactionBounds, SamplingFunctionResult} from '../escher_src/src/ts/types';
 import {WorkerCobraSolver} from './cobra';
-import type {PrecomputedExtremePoints} from './cobra/sampler-wrapper';
+import type {PrecomputedWarmup} from './cobra/sampler-wrapper';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {solveUsingGLPKJvail} from './cobra/glpkJS';
 import {openTimeCourseDialog, clearTimeCourseSlider} from './timeCourse';
@@ -187,15 +187,14 @@ export async function loadStateProxy(builder: BuilderType, campJSON: string, pat
   builder.settings.set('saveAction', () => saveStateDialog(builder, path));
 }
 
-export async function computeExtremePointsPython(cobraModel: CobraModelData): Promise<PrecomputedExtremePoints> {
+/** cobra's own OptGP warmup points, computed on the server (ComputeExtremePoints.py). */
+export async function computeWarmupPython(cobraModel: CobraModelData): Promise<PrecomputedWarmup> {
   const func = DG.Func.find({package: 'MetabolicGraph', name: 'ComputeExtremePoints'})[0];
   if (!func)
     throw new Error('ComputeExtremePoints Python function not found');
-  const modelString = JSON.stringify(cobraModel).replaceAll(`'{}'`, '{}').replaceAll('"{}\"', '{}');
+  const modelString = JSON.stringify(cobraModel).replaceAll(`'{}'`, '{}').replaceAll('"{}"', '{}');
   const resultString: string = await func.apply({cobraModel: modelString});
-  const parsed = JSON.parse(resultString) as {reactionNames: string[], solutions: number[][]};
-  const solutions = parsed.solutions.map((s) => new Float32Array(s));
-  return {reactionNames: parsed.reactionNames, solutions};
+  return JSON.parse(resultString) as PrecomputedWarmup;
 }
 
 export async function sampleReactions(cobraModel: CobraModelData, builder: BuilderType): Promise<SamplingFunctionResult> {
@@ -203,16 +202,22 @@ export async function sampleReactions(cobraModel: CobraModelData, builder: Build
     const samplesInput = ui.input.int('Number of samples', {value: 10000, nullable: false});
     const binsInput = ui.input.int('Number of bins', {value: 20, nullable: false, tooltipText: 'Number of bins for histogram in the reaction tooltips'});
     const thinningInput = ui.input.int('Thinning', {value: 10, nullable: false, tooltipText: 'Thinning interval for the sampler'});
+    const aggregationInput = ui.input.choice<FluxAggregation>('Aggregation', {items: FLUX_AGGREGATIONS, value: 'Mean',
+      nullable: false, tooltipText: 'How each reaction\'s samples are reduced to the single flux shown on the map. ' +
+        'Mean keeps the fluxes mass-balanced, Median resists skewed distributions, Mode is the histogram peak'});
     const addDfInput = ui.input.bool('Add DataFrame', {value: false, tooltipText: 'Add a DataFrame with all sampled fluxes to the workspace'});
     const runUsingPythonInput = ui.input.bool('Run using Python', {value: false, tooltipText: 'Use Python OptGpSampling script instead of WebAssembly sampler'});
-    const usePythonFBAInput = ui.input.bool('Use Python FBA', {value: false, tooltipText: 'Use Python to compute feasibility space (extreme points via FBA), then sample using WebAssembly'});
+    const usePythonFBAInput = ui.input.bool('Use Python FBA', {value: false, tooltipText: 'Compute the warmup points (cobra\'s minimum and maximum of every flux) with cobra in Python, then sample using WebAssembly. The browser computes the same points itself, so this only adds a server round trip'});
     const getInput = () => {
-      return {samples: samplesInput.value, thinning: thinningInput.value, bins: binsInput.value, addDf: addDfInput.value, runInPython: runUsingPythonInput.value, usePythonFBA: usePythonFBAInput.value};
+      return {samples: samplesInput.value, thinning: thinningInput.value, bins: binsInput.value,
+        aggregation: aggregationInput.value ?? 'Mean', addDf: addDfInput.value, runInPython: runUsingPythonInput.value,
+        usePythonFBA: usePythonFBAInput.value};
     };
     const applyInput = (x: Partial<ReturnType<typeof getInput>>) => {
       x.samples && (samplesInput.value = x.samples);
       x.thinning && (thinningInput.value = x.thinning);
       x.bins && (binsInput.value = x.bins);
+      x.aggregation && FLUX_AGGREGATIONS.includes(x.aggregation) && (aggregationInput.value = x.aggregation);
       x.addDf != undefined && (addDfInput.value = x.addDf);
       x.runInPython != undefined && (runUsingPythonInput.value = x.runInPython);
       x.usePythonFBA != undefined && (usePythonFBAInput.value = x.usePythonFBA);
@@ -230,13 +235,14 @@ export async function sampleReactions(cobraModel: CobraModelData, builder: Build
       .add(samplesInput)
       .add(thinningInput)
       .add(binsInput)
+      .add(aggregationInput)
       .add(addDfInput)
       .add(runUsingPythonInput)
       .add(usePythonFBAInput);
     dlg.addButton('Time-course…', () => {
       // hand off to the interpolated-bounds flow, reusing the parameters set above;
       // resolve the single-reaction sampling promise as cancelled so its distribution is left untouched
-      resolve({upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>(), cancled: true});
+      resolve({data: new Map(), cancled: true});
       dlg.close();
       openTimeCourseDialog(cobraModel, builder, getInput());
     });
@@ -246,18 +252,19 @@ export async function sampleReactions(cobraModel: CobraModelData, builder: Build
           const toSave = getInput();
           localStorage.setItem(innerLocalStorageKey, JSON.stringify(toSave));
         } catch (_) {}
-        let precomputedExtremes: PrecomputedExtremePoints | undefined;
+        let precomputedWarmup: PrecomputedWarmup | undefined;
         if (usePythonFBAInput.value) {
-          const pg = DG.TaskBarProgressIndicator.create('Computing feasibility space via Python FBA');
+          const pg = DG.TaskBarProgressIndicator.create('Computing warmup points with cobra (Python)');
           try {
-            precomputedExtremes = await computeExtremePointsPython(cobraModel);
+            precomputedWarmup = await computeWarmupPython(cobraModel);
           } finally {
             pg.close();
           }
         }
+        const aggregation = aggregationInput.value ?? 'Mean';
         const result = runUsingPythonInput.value ?
-          await runReactionSamplingPython(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value) :
-          await runReactionSampling(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value, precomputedExtremes);
+          await runReactionSamplingPython(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value, aggregation) :
+          await runReactionSampling(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value, aggregation, precomputedWarmup);
         resolve(result);
       } catch (e) {
         grok.shell.error('Error sampling reactions');
@@ -266,7 +273,7 @@ export async function sampleReactions(cobraModel: CobraModelData, builder: Build
       }
     })
       .onCancel(() => {
-        resolve({upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>(), cancled: true});
+        resolve({data: new Map(), cancled: true});
       })
       .show({center: true})
       .history(() => getInput(),
@@ -283,39 +290,84 @@ export async function sampleReactions(cobraModel: CobraModelData, builder: Build
   });
 }
 
-/** Flux range across the whole model, used to bin the sampling histogram. */
-function modelFluxRange(cobraModel: CobraModelData) {
-  const lower_bound = cobraModel.reactions.reduce((min, r) => Math.min(min, r.lower_bound ?? 0), 0);
-  const upper_bound = cobraModel.reactions.reduce((max, r) => Math.max(max, r.upper_bound ?? 0), 0);
-  return {lower_bound, upper_bound};
+/**
+ * Statistic that reduces a reaction's samples to the one flux shown on the map: the central statistics
+ * of the COBRA Toolbox's calcSampleStats. Harmonic/geometric means are left out: fluxes are signed and
+ * often zero.
+ */
+export type FluxAggregation = 'Mean' | 'Median' | 'Mode';
+export const FLUX_AGGREGATIONS: FluxAggregation[] = ['Mean', 'Median', 'Mode'];
+
+/** 'median flux' etc., for data source captions. */
+export const aggregatedFluxLabel = (aggregation: FluxAggregation) => `${aggregation.toLowerCase()} flux`;
+
+/** With every reaction fixed at zero there is nothing to sample. */
+const allFluxesFixedAtZero = (cobraModel: CobraModelData) =>
+  cobraModel.reactions.every((r) => (r.lower_bound ?? 0) >= 0 && (r.upper_bound ?? 0) <= 0);
+
+/**
+ * Bin one reaction's samples over their own [min, max] and reduce them to a single flux.
+ * Takes ownership of `values`: the median sorts it in place.
+ */
+function summarizeFluxes(values: Float32Array | Float64Array, bins: number, aggregation: FluxAggregation):
+  {histogram: FluxHistogram, flux: number} | null {
+  const n = values.length;
+  if (n === 0)
+    return null;
+  let min = Infinity;
+  let max = -Infinity;
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+    sum += v;
+  }
+  // a spread within float noise is one fixed flux: a single bin at its value
+  if (max - min <= 1e-6 * Math.max(1, Math.abs(min), Math.abs(max))) {
+    min = max = (min + max) / 2;
+    bins = 1;
+  }
+  const counts = new Array<number>(bins).fill(0);
+  const binWidth = (max - min) / bins;
+  if (bins === 1)
+    counts[0] = n;
+  else {
+    for (let i = 0; i < n; i++)
+      counts[Math.min(bins - 1, Math.floor((values[i] - min) / binWidth))]++;
+  }
+
+  let flux = sum / n;
+  if (aggregation === 'Median') {
+    values.sort();
+    const mid = n >> 1;
+    flux = n % 2 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+  } else if (aggregation === 'Mode') {
+    // center of the fullest bin: the peak of the tooltip histogram
+    let top = 0;
+    for (let b = 1; b < bins; b++) {
+      if (counts[b] > counts[top])
+        top = b;
+    }
+    flux = min + (top + 0.5) * binWidth;
+  }
+  return {histogram: {min, max, counts}, flux};
 }
 
-/** Reduce raw flux samples to per-reaction histograms and averages. */
-function binSamples(cobraModel: CobraModelData, results: Float32Array, nSamples: number, bins: number, lower_bound: number, upper_bound: number) {
-  const sampleMap = new Map<string, number[]>();
-  const range = upper_bound - lower_bound;
-  const step = range / bins;
-  const reactionCount = cobraModel.reactions.length;
-
-  for (let i = 0; i < reactionCount; i++)
-    sampleMap.set(cobraModel.reactions[i].id, new Array(bins).fill(0));
-
-  const reactionAverages = new Float32Array(reactionCount).fill(0);
+/** Per-reaction histograms (tooltips) and aggregated fluxes (map colors); `column(i)` returns a fresh copy. */
+function reduceSamples(ids: string[], column: (i: number) => Float32Array | Float64Array, bins: number,
+  aggregation: FluxAggregation) {
   const reactionData: {[key: string]: number} = {};
-
-  for (let i = 0; i < reactionCount; i++) {
-    for (let j = 0; j < nSamples; j++) {
-      const flux = results[j * reactionCount + i];
-      const binIndex = Math.min(bins - 1, Math.max(0, Math.floor((flux - lower_bound) / step)));
-      sampleMap.get(cobraModel.reactions[i].id)![binIndex]++;
-      reactionAverages[i] += flux;
+  const distribution: SamplingFunctionResult = {data: new Map()};
+  const binCount = Math.max(1, Math.floor(bins));
+  ids.forEach((id, i) => {
+    const summary = summarizeFluxes(column(i), binCount, aggregation);
+    if (summary) {
+      reactionData[id] = summary.flux;
+      distribution.data.set(id, summary.histogram);
     }
-  }
-  for (let i = 0; i < reactionCount; i++) {
-    reactionAverages[i] /= nSamples;
-    reactionData[cobraModel.reactions[i].id] = reactionAverages[i];
-  }
-  return {reactionData, sampleMap};
+  });
+  return {reactionData, distribution};
 }
 
 /** Build a DataFrame (one column per reaction) from raw stacked flux samples. */
@@ -330,66 +382,63 @@ export function samplesToDataFrame(cobraModel: CobraModelData, results: Float32A
 }
 
 export type FluxSamplingResult = {
-  reactionData: {[key: string]: number}; // per-reaction average flux (drives map colors)
-  distribution: SamplingFunctionResult; // per-reaction histogram + bounds (drives tooltips)
+  reactionData: {[key: string]: number}; // per-reaction aggregated flux (drives map colors)
+  distribution: SamplingFunctionResult; // per-reaction histograms over their own ranges (drives tooltips)
   results?: Float32Array; // raw samples (WASM path), stacked row-wise
   df?: DG.DataFrame; // raw samples as a DataFrame (Python path)
 };
 
-/** Run the WebAssembly sampler and reduce to averages + histogram. No UI/builder side effects. */
-export async function sampleFluxAveragesWasm(cobraModel: CobraModelData, bins = 20, nSamples = 1000, thinning = 20, precomputedExtremes?: PrecomputedExtremePoints): Promise<FluxSamplingResult | null> {
-  const {lower_bound, upper_bound} = modelFluxRange(cobraModel);
-  if (lower_bound >= upper_bound)
+/** Run the WebAssembly sampler and reduce to aggregated fluxes + histograms. No UI/builder side effects. */
+export async function sampleFluxesWasm(cobraModel: CobraModelData, bins = 20, nSamples = 1000, thinning = 20,
+  aggregation: FluxAggregation = 'Mean', precomputedWarmup?: PrecomputedWarmup): Promise<FluxSamplingResult | null> {
+  if (allFluxesFixedAtZero(cobraModel))
     return null;
-  const results = await WorkerCobraSolver.runSampling(cobraModel, nSamples, thinning, precomputedExtremes);
-  const {reactionData, sampleMap} = binSamples(cobraModel, results, nSamples, bins, lower_bound, upper_bound);
-  return {reactionData, distribution: {upper_bound, lower_bound, data: sampleMap}, results};
+  const results = await WorkerCobraSolver.runSampling(cobraModel, nSamples, thinning, precomputedWarmup);
+  const reactionCount = cobraModel.reactions.length;
+  const {reactionData, distribution} = reduceSamples(cobraModel.reactions.map((r) => r.id), (i) => {
+    const values = new Float32Array(nSamples);
+    for (let j = 0; j < nSamples; j++)
+      values[j] = results[j * reactionCount + i];
+    return values;
+  }, bins, aggregation);
+  return {reactionData, distribution, results};
 }
 
-/** Run the Python OptGpSampling function and reduce to averages + histogram. No UI/builder side effects. */
-export async function sampleFluxAveragesPython(cobraModel: CobraModelData, bins = 20, nSamples = 1000, thinning = 10): Promise<FluxSamplingResult | null> {
+/** Run the Python OptGpSampling function and reduce to aggregated fluxes + histograms. No UI/builder side effects. */
+export async function sampleFluxesPython(cobraModel: CobraModelData, bins = 20, nSamples = 1000, thinning = 10,
+  aggregation: FluxAggregation = 'Mean'): Promise<FluxSamplingResult | null> {
   const func = DG.Func.find({package: 'MetabolicGraph', name: 'OptGpSampling'})[0];
   if (!func) {
     grok.shell.error('OptGpSampling function not found');
     return null;
   }
-  const {lower_bound, upper_bound} = modelFluxRange(cobraModel);
-  if (lower_bound >= upper_bound)
+  if (allFluxesFixedAtZero(cobraModel))
     return null;
   const modelString = JSON.stringify(cobraModel).replaceAll(`'{}'`, '{}').replaceAll('"{}"', '{}');
   const resDf: DG.DataFrame = await func.apply({cobraModel: modelString, nSamples: nSamples, thinning: thinning});
-  const range = upper_bound - lower_bound;
-  const step = range / bins;
-  const sampleMap = new Map<string, number[]>();
-  const reactionData: {[key: string]: number} = {};
-  for (const col of resDf.columns) {
-    const binCounts = new Array(bins).fill(0);
-    let sum = 0;
-    const colList = col.toList() as number[];
-    for (let j = 0; j < resDf.rowCount; j++) {
-      const flux = colList[j];
-      const binIndex = Math.min(bins - 1, Math.max(0, Math.floor((flux - lower_bound) / step)));
-      binCounts[binIndex]++;
-      sum += flux;
-    }
-    sampleMap.set(col.name, binCounts);
-    reactionData[col.name] = sum / resDf.rowCount;
-  }
-  return {reactionData, distribution: {upper_bound, lower_bound, data: sampleMap}, df: resDf};
+  const {reactionData, distribution} = reduceSamples(resDf.columns.names(), (i) => {
+    const col = resDf.columns.byIndex(i);
+    // the raw buffer can outlive the column length, and marks missing values in-band
+    const values = Float64Array.from(col.getRawData().subarray(0, col.length));
+    return col.stats.missingValueCount ? values.filter((_, r) => !col.isNone(r)) : values;
+  }, bins, aggregation);
+  return {reactionData, distribution, df: resDf};
 }
 
-export async function runReactionSampling(cobraModel: CobraModelData, builder: BuilderType, bins: number = 20, addDataFrame: boolean = false, nSamples: number = 1000, thinning: number = 20, precomputedExtremes?: PrecomputedExtremePoints): Promise<SamplingFunctionResult> {
+export async function runReactionSampling(cobraModel: CobraModelData, builder: BuilderType, bins: number = 20,
+  addDataFrame: boolean = false, nSamples: number = 1000, thinning: number = 20, aggregation: FluxAggregation = 'Mean',
+  precomputedWarmup?: PrecomputedWarmup): Promise<SamplingFunctionResult> {
   if (!cobraModel)
     throw new Error('Cannot run optimization without a model loaded');
   clearTimeCourseSlider(); // a fresh single-shot sampling supersedes any time-course animation
   const pg = DG.TaskBarProgressIndicator.create('Sampling reactions');
   try {
-    const res = await sampleFluxAveragesWasm(cobraModel, bins, nSamples, thinning, precomputedExtremes);
+    const res = await sampleFluxesWasm(cobraModel, bins, nSamples, thinning, aggregation, precomputedWarmup);
     if (!res) {
       grok.shell.error('Invalid reaction bounds in the model. Check reaction lower and upper bounds');
-      return {upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>()};
+      return {data: new Map()};
     }
-    builder.set_reaction_data(res.reactionData, 'Sampling Histogram');
+    builder.set_reaction_data(res.reactionData, `Sampling, ${aggregatedFluxLabel(aggregation)}`);
     if (addDataFrame) {
       const table = samplesToDataFrame(cobraModel, res.results!, nSamples);
       table.name = 'Sampler results';
@@ -399,22 +448,24 @@ export async function runReactionSampling(cobraModel: CobraModelData, builder: B
   } catch (e) {
     grok.shell.error('Error sampling reactions');
     console.error(e);
-    return {upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>()};
+    return {data: new Map()};
   } finally {
     pg.close();
   }
 }
 
-export async function runReactionSamplingPython(cobraModel: CobraModelData, builder: BuilderType, bins: number = 20, addDataFrame: boolean = false, nSamples: number = 1000, thinning: number = 10): Promise<SamplingFunctionResult> {
+export async function runReactionSamplingPython(cobraModel: CobraModelData, builder: BuilderType, bins: number = 20,
+  addDataFrame: boolean = false, nSamples: number = 1000, thinning: number = 10,
+  aggregation: FluxAggregation = 'Mean'): Promise<SamplingFunctionResult> {
   clearTimeCourseSlider(); // a fresh single-shot sampling supersedes any time-course animation
   const pg = DG.TaskBarProgressIndicator.create('Sampling reactions (Python)');
   try {
-    const res = await sampleFluxAveragesPython(cobraModel, bins, nSamples, thinning);
+    const res = await sampleFluxesPython(cobraModel, bins, nSamples, thinning, aggregation);
     if (!res) {
       grok.shell.error('Invalid reaction bounds in the model. Check reaction lower and upper bounds');
-      return {upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>()};
+      return {data: new Map()};
     }
-    builder.set_reaction_data(res.reactionData, 'Sampling Histogram (Python)');
+    builder.set_reaction_data(res.reactionData, `Sampling (Python), ${aggregatedFluxLabel(aggregation)}`);
     if (addDataFrame && res.df) {
       res.df.name = 'Sampler results (Python)';
       grok.shell.addTableView(res.df);
@@ -423,7 +474,7 @@ export async function runReactionSamplingPython(cobraModel: CobraModelData, buil
   } catch (e) {
     grok.shell.error('Error sampling reactions');
     console.error(e);
-    return {upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>()};
+    return {data: new Map()};
   } finally {
     pg.close();
   }

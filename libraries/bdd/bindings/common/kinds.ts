@@ -124,7 +124,8 @@ kind('property', {
   match: ['label', 'name', 'aria', 'dart'],
   labelSelector: '.u2-propgrid-name, .property-grid-item-name-text',
   dartNames: ['prop-{q}'],
-  parts: {editor: '[name^="prop-view-"]'},
+  parts: {label: '.u2-propgrid-name, .property-grid-item-name', value: '.u2-propgrid-value, .property-grid-item-value',
+    editor: '[name^="prop-view-"]'},
 });
 // the Dart property grid's category is a row of the grid (prop-category-<name>)
 kind('category', {
@@ -204,6 +205,8 @@ kind('tray', {selector: u2('tray'), match: ['name']});
 kind('heading', {aliases: ['header', 'title'], selector: 'h1, h2, h3, h4, h5, h6', match: ['text']});
 kind('text', {aliases: ['label'], selector: '*', match: ['exact-text']});
 kind('link', {selector: 'a, .d4-link-label', match: ['text', 'name', 'aria', 'dart'], dartNames: ['label-{q}']});
+kind('action', {aliases: ['action link'], selector: '.d4-link-action', match: ['exact-text', 'text'],
+  description: 'a function link of the context panel\'s Actions pane ("Convert Notation...")'});
 
 // --- navigation -----------------------------------------------------------------------------------
 kind('toolbar', {selector: u2('toolbar') + ', [role="toolbar"], .d4-ribbon', match: ['name', 'aria']});
@@ -271,8 +274,22 @@ kind('card', {
   match: ['name', 'title', 'text'],
   labelSelector: '.u2-card-title, .card-label',
 });
+/** The entity cards of a Dart gallery (a connection's queries, the scripts browser): named
+ * `div-<Name>` and titled by their own label, not the `.d4-item-card` the card kind knows. */
+kind('gallery card', {
+  selector: '.d4-gallery-card',
+  match: ['dart', 'label', 'text'],
+  labelSelector: '.grok-gallery-grid-item-title',
+  dartNames: ['div-{q}'],
+});
 kind('wizard', {selector: u2('wizard'), match: ['name', 'aria']});
 kind('wizard step', {aliases: ['step'], selector: '.u2-wizard-step', match: ['label', 'text'], labelSelector: '.u2-wizard-title'});
+kind('dock panel', {
+  selector: '.panel-base',
+  match: ['label', 'text'],
+  labelSelector: '.panel-titlebar-text',
+  description: 'a panel of the dock manager by the title its titlebar (or its tab handle) shows — "Activity cliffs"',
+});
 kind('splitter', {aliases: ['split panel'], selector: u2('splitter'), match: ['name']});
 kind('splitter panel', {aliases: ['split pane'], selector: '.u2-splitter-panel', match: ['name']});
 kind('sash', {aliases: ['splitter sash', 'divider'], selector: '.u2-sash, .u2-splitter-sash', match: ['aria', 'name']});
@@ -343,6 +360,14 @@ kind('membership candidate', {
   match: ['label'],
   labelSelector: '.d4-user-selector-user-name',
   parts: {...MEMBERSHIP_PARTS, 'add button': '[name="button-Add"]'},
+});
+// a table row of the Save project dialog's entity list (project_entity_move.dart): its action,
+// its Data sync switch and the Creation script block
+kind('project table', {
+  aliases: ['saved table'],
+  selector: '.grok-project-move-entity-row',
+  match: ['dart'],
+  dartNames: ['project-table-{q}'],
 });
 kind('view', {
   selector: '.d4-view-handle, [name^="view-handle: "]',

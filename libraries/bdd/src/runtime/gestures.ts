@@ -52,15 +52,55 @@ export async function click(page: Page, target: ElementRef): Promise<void> {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     return;
   }
+  await approach(page, loc);
   await loc.click();
 }
 
 export async function dblclick(page: Page, target: ElementRef): Promise<void> {
-  await (await locate(page, target)).dblclick();
+  const loc = await locate(page, target);
+  await approach(page, loc);
+  await loc.dblclick();
 }
 
 export async function rightclick(page: Page, target: ElementRef): Promise<void> {
-  await (await locate(page, target)).click({button: 'right'});
+  const loc = await locate(page, target);
+  await approach(page, loc);
+  await loc.click({button: 'right'});
+}
+
+/** Brings the pointer onto the element before a locator gesture, as a hand does. Where the pointer rests
+ * (a tree node just expanded) a tooltip with links comes up over the rows below after a delay, takes the
+ * pointer in and stays up while it is over it; Playwright, which moves only once the element is clear, waits
+ * out its timeout behind it. Leaving the resting place cancels a tooltip still to come; one already up is
+ * left from a part of the element it does not cover (or the corner), and goes down once the pointer is off
+ * its owner. */
+async function approach(page: Page, loc: Locator): Promise<void> {
+  if (!await loc.isVisible().catch(() => false))
+    return;
+  const covered = (): Promise<boolean> => loc.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('.d4-tooltip');
+  }).catch(() => false);
+  const aim = await loc.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const y = r.top + r.height / 2;
+    const cx = r.left + r.width / 2;
+    if (!document.elementFromPoint(cx, y)?.closest('.d4-tooltip'))
+      return {x: cx, y, tooltip: false};
+    for (const f of [0.05, 0.25, 0.75, 0.95]) {
+      const x = r.left + r.width * f;
+      const top = document.elementFromPoint(x, y);
+      if (top && el.contains(top))
+        return {x, y, tooltip: true};
+    }
+    return {x: 1, y: 1, tooltip: true};
+  }).catch(() => null);
+  if (aim === null)
+    return;
+  await page.mouse.move(aim.x, aim.y);
+  // a tooltip that stays leaves the gesture to wait as it always did
+  if (aim.tooltip)
+    await expect.poll(covered, {message: 'a tooltip over the element', timeout: 5000}).toBe(false).catch(() => undefined);
 }
 
 /** Clicks the element and answers the file chooser it opens with a file of the bdd project
@@ -118,11 +158,26 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
   }
 }
 
+/** A Dart property grid row shows its value as a label and builds its editor (a select, an input)
+ * only when the value cell is clicked: open it first, so the gesture finds the editor. */
+async function openPropertyEditor(loc: Locator): Promise<void> {
+  const row = loc.first();
+  if (!await row.evaluate((e) => e.matches('tr.property-grid-item')).catch(() => false))
+    return;
+  // a row the grid redrew keeps its old editor detached from view: only a shown one counts
+  const editors = row.locator('input, select, textarea, .d4-column-selector').filter({visible: true});
+  if (await editors.count() > 0)
+    return;
+  await row.locator('.property-grid-item-value').click();
+  await expect(editors.first(), 'the editor of the property').toBeVisible();
+}
+
 /** The editable control of an element: itself when it is one, otherwise its editor part. A viewer
  * handles keys on its root (a form walks rows on the arrows, a plot zooms on +/-); its first input
  * is a field, not its editor. */
 export async function editorOf(page: Page, target: ElementRef): Promise<Locator> {
   const loc = await locate(page, target);
+  await openPropertyEditor(loc);
   const own = await loc.evaluate((e) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.tagName) ||
     (e as HTMLElement).isContentEditable || e.matches('[name^="viewer-"], .d4-viewer')).catch(() => false);
   if (own)
@@ -224,6 +279,11 @@ export async function press(page: Page, key: string): Promise<void> {
     await dialog.press(name);
     return;
   }
+  // a popup (a column's, a picker's) hides on the Escape that reaches the document: a field that
+  // has the focus and keeps the key to itself (a card's search box the popup just filled) would
+  // hold it back, so the key is pressed with nothing focused
+  if (name === 'Escape' && await page.locator('.d4-popup-host').filter({visible: true}).count() > 0)
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
   await page.keyboard.press(name);
 }
 
@@ -297,16 +357,46 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
   await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.up();
-  if (leave)
-    await page.mouse.move(2, 2);
+  if (leave) {
+    const away = guide.guideDir() ? await besidePicker(page, box) : {x: 2, y: 2};
+    await page.mouse.move(away.x, away.y);
+  }
+}
+
+/** A guide's pointer steps just off the selector, clear of the picker it opened: the page's corner,
+ * where a test's goes, is a flight across the video and back. */
+async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
+  const popup = page.locator('.d4-column-grid').last();
+  await popup.waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
+  const picker = await popup.boundingBox().catch(() => null);
+  const view = page.viewportSize() ?? {width: 1920, height: 1080};
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  const clear = (p: {x: number; y: number}): boolean => p.x > 0 && p.y > 0 && p.x < view.width && p.y < view.height &&
+    (!picker || p.x < picker.x - 4 || p.x > picker.x + picker.width + 4 || p.y < picker.y - 4 || p.y > picker.y + picker.height + 4);
+  return [{x: box.x - 16, y: cy}, {x: cx, y: box.y - 16}, {x: box.x + box.width + 16, y: cy}, {x: cx, y: box.y + box.height + 16}]
+    .find(clear) ?? {x: 2, y: 2};
 }
 
 export async function select(page: Page, target: ElementRef, option: string): Promise<void> {
   const loc = await locate(page, target);
+  await openPropertyEditor(loc);
+  // a property grid redraws its rows after a change to another property, dropping the editor just
+  // opened: a row that lost it is opened once more
+  if (await loc.first().evaluate((e) => e.matches('tr.property-grid-item') && !e.querySelector('select, input, .d4-column-selector')).catch(() => false))
+    await openPropertyEditor(loc);
   // a Dart choice input's name can land on its <select> itself rather than on the host around it
   const native = await loc.first().evaluate((e) => e.tagName === 'SELECT') ? loc.first() : loc.locator('select').first();
   if (await native.count() > 0) {
     await selectNative(page, native, option);
+    return;
+  }
+  // a Dart radio group (`ui-input-radio`) offers its options as radios, each behind its own label
+  const radio = loc.locator(`input[type="radio"][data-value="${option.replace(/"/g, '\\"')}"]`).first();
+  if (await radio.count() > 0) {
+    const id = await radio.getAttribute('id');
+    await (id ? loc.locator(`label[for="${id}"]`).first() : radio).click();
+    await expect(radio, `"${option}" chosen in ${target.phrase}`).toBeChecked({timeout: 5000});
     return;
   }
   const columnSelector = (await loc.first().evaluate((el) => el.classList.contains('d4-column-selector'))) ? loc.first() : loc.locator('.d4-column-selector').first();
@@ -544,6 +634,18 @@ export async function dragSlider(page: Page, target: ElementRef, value: number):
   await page.mouse.down();
   for (let i = 1; i <= 8; i++)
     await page.mouse.move(from + (to - from) * i / 8, y);
+  // the thumb travels a track shorter than the input by its own width, so the aim can land a step off: a hand
+  // watches the value and nudges the thumb before letting go
+  const want = track.step > 0 ? track.min + Math.round((value - track.min) / track.step) * track.step : value;
+  const close = Math.max(track.step, (track.max - track.min) / box.width) / 2;
+  let x = to;
+  for (let i = 0; i < 40; i++) {
+    const now = Number(await range.inputValue());
+    if (Math.abs(now - want) <= close)
+      break;
+    x += now < want ? 1 : -1;
+    await page.mouse.move(x, y);
+  }
   await page.mouse.up();
   const tolerance = Math.max(track.step, (track.max - track.min) / box.width) * 2;
   await expect.poll(async () => Math.abs(Number(await range.inputValue()) - value) <= tolerance,

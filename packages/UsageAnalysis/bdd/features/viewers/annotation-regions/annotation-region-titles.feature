@@ -8,10 +8,9 @@ Feature: Annotation region titles
   hit area, the strips as the `title strip top` / `title strip right` readings, and the count as
   `region titles shown`, so a claim about placement is a rectangle, not a screenshot.
   Two defects are regression-guarded here: clicking a title relaid it out (GROK-20157), and a
-  size or style change made it jump (GROK-20158). Two scenarios are tagged @known-failure: a band
-  title the strip cannot take is not drawn at all — the in-data fallback the strip code documents
-  never draws a band title — and Auto Layout off, which removes the strip, loses the title the same way.
-  Those two run last, since a scenario that stops at its defect cannot put Auto Layout back.
+  size or style change made it jump (GROK-20158), and a band title the strip cannot take — too wide
+  for it, or Auto Layout off — was not drawn at all: its anchor lay level with a vertex of the
+  band's sampled edge, which the polygon's ray cast counted twice and put outside the band.
   One journey on demog-1000: AGE runs 18..89 and WEIGHT 41.6..165, with no blanks in either; the
   area region spans the whole WEIGHT range, so a click on it selects exactly the rows of its AGE band.
   The scatter plot is held at 800 by 500 so the band widths the strip claims depend on are known,
@@ -128,7 +127,6 @@ Feature: Annotation region titles
     Then the "region Prime title" area of box plot viewer should be placed as remembered
     And no errors should have been logged
 
-  @known-failure
   Scenario: A band title that does not fit renders in the data and reserves nothing
     When user sets properties of scatter plot viewer:
       | annotationRegions | [{"type":"formula","header":"Adults of the study population","formula1":"${AGE} = 40","formula2":"${AGE} = 45"}] |
@@ -138,7 +136,6 @@ Feature: Annotation region titles
     And the "region Adults of the study population title" area of scatter plot viewer should lie inside the "view" area
     And no errors should have been logged
 
-  @known-failure
   Scenario: Auto Layout off drops the strip and the title moves into the data
     When user sets properties of scatter plot viewer:
       | annotationRegions | [{"type":"formula","header":"Adults","formula1":"${AGE} = 30","formula2":"${AGE} = 60"}] |

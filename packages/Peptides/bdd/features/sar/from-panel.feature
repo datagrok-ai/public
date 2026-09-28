@@ -92,7 +92,7 @@ Feature: Launch and configure SAR from the Peptides pane
     Then only rows where "2" is "A" should be selected
     And 299 rows should be selected
     And the "selected monomer-positions" reading of Sequence Variability Map viewer should be "2:A"
-    And "Mutation Cliffs pairs" pane in context panel should be present
+    And "Mutation Cliffs pairs" pane in context panel should be visible
     And Distribution pane in context panel should be visible
     When user expands Distribution pane in context panel
     Then Distribution pane in context panel should contain text "Mean difference"

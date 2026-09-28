@@ -1,6 +1,6 @@
 # webcomponents-vue changelog
 
-## v.next
+## 0.4.0 (2026-09-23)
 
 * Introduced an injectable per-view service (`provideDgViewService`/`useViewService`/`useDgView`) that owns ribbon rendering and diffing
 * RibbonPanel/RibbonMenu: rewritten as thin descriptor-based wrappers over the view service; `view` prop removed, added `priority` ordering and built-in disabled state (debounced style, reason tooltip/popup)

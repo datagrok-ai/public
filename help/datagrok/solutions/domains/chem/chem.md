@@ -523,7 +523,7 @@ The trellis plot initially displays pie charts. To change the chart type, use th
 If you prefer not to use a trellis plot, close it or clear the **Visual analysis** checkbox
 during Step 3. You can manually add it later. You can also use other [chemical viewers](chemically-aware-viewers.md), like scatterplot, box plot, bar chart, and others.
 
-Use **Replace latest** checkbox to remove previous analysis results when running the new one. Or check it to add new analysis results in addition to existing.
+When the table already has the results of an earlier analysis, the dialog shows the **Replace latest** checkbox. Keep it checked to replace those results with the new ones, or clear it to add the new results beside them.
 </TabItem>
 <TabItem value="Match" label="Only match at R groups">
 

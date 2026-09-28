@@ -39,6 +39,7 @@ export class RdKitService {
   segmentLength: number = 0;
   moleculesSegmentsLengths: Uint32Array;
   webRoot?: string;
+  wasm?: WebAssembly.Module;
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
@@ -46,14 +47,15 @@ export class RdKitService {
     this.moleculesSegmentsLengths = new Uint32Array(this.workerCount);
   }
 
-  async init(webRoot: string): Promise<void> {
+  async init(webRoot: string, wasm: WebAssembly.Module): Promise<void> {
     this.webRoot = webRoot;
+    this.wasm = wasm;
     if (!this._initWaiters) {
       this._initWaiters = [];
       for (let i = 0; i < this.workerCount; ++i) {
         const workerClient = new RdKitServiceWorkerClient();
         this.parallelWorkers[i] = workerClient;
-        this._initWaiters.push(workerClient.moduleInit(webRoot));
+        this._initWaiters.push(workerClient.moduleInit(webRoot, wasm));
       }
     }
     await Promise.all(this._initWaiters);
@@ -614,7 +616,7 @@ export class RdKitService {
     this.parallelWorkers[workerIndex].terminate();
     const workerClient = new RdKitServiceWorkerClient();
     this.parallelWorkers[workerIndex] = workerClient;
-    await workerClient.moduleInit(this.webRoot);
+    await workerClient.moduleInit(this.webRoot, this.wasm!);
   }
 
   /**

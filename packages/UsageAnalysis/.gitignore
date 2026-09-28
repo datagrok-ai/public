@@ -39,3 +39,6 @@ bdd/test-results/
 bdd/guides/
 bdd/e2e/
 bdd/.auth.json
+
+# bdd run history page, built from bdd/history/runs by `node bdd/history/history.mjs html`
+bdd/history/history.html

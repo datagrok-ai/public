@@ -3,9 +3,8 @@ Feature: Heat map colouring
   The two switches that decide how a heat map's cells are filled, read off the pixels of one
   column's band rather than off the whole canvas — so "recoloured" is a claim about the column
   whose scale changed, not about a repaint somewhere on screen.
-  Both scenarios make the same claim about the same band, which is what makes the pair worth
-  having: Global Color Scaling moves it (measured 48828 pixels differ), Heatmap Colors does not
-  move it at all (measured 0).
+  Global Color Scaling recolours the band (its pixels change); Heatmap Colors off takes the fill
+  away, so the band is left with less ink than it had.
 
   Background:
     Given user is logged in
@@ -35,4 +34,5 @@ Feature: Heat map colouring
     Then the "heatmap colors" reading of heat map viewer should be "true"
     When user sets "heatmapColors" property of heat map viewer to "false"
     Then the "heatmap colors" reading of heat map viewer should be "false"
-    And the "column AGE" area of heat map viewer should have repainted
+    And the "column AGE" area of heat map viewer should have less ink than before
+    And no errors should have been logged

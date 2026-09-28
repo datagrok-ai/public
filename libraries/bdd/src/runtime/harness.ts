@@ -185,12 +185,21 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   test.afterAll(async () => {
     const failures: unknown[] = [];
     if (page && !page.isClosed()) {
+      // a cleanup deletes what is still there, so one that failed on a request the stand dropped under load (nginx
+      // answering 502 when its connection to Datlas fails) is run again before the feature fails for it
       for (const cleanup of cleanups.get(page) ?? []) {
-        try {
-          await cleanup();
-        }
-        catch (error) {
-          failures.push(error);
+        for (let attempt = 1; ; attempt++) {
+          try {
+            await cleanup();
+            break;
+          }
+          catch (error) {
+            if (attempt === 3) {
+              failures.push(error);
+              break;
+            }
+            await page.waitForTimeout(2000).catch(() => undefined);
+          }
         }
       }
       cleanups.delete(page);
@@ -211,7 +220,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
           shared = await shared.context().newPage();
         shared ??= await (await browser.newContext()).newPage();
         watchErrors(shared);
-        guide.attach(shared);
+        await guide.attach(shared);
         page = shared;
       }
       return page;
@@ -258,7 +267,8 @@ async function settleWork(page: Page): Promise<void> {
     .map((e) => (e.textContent ?? '').trim())
     .filter((t) => !known.includes(t));
   const known = [...stuck];
-  const quiet = await page.waitForFunction((k) => running(k).length === 0, known,
+  // the predicate runs in the page, where only its own source exists: `running` goes in as text
+  const quiet = await page.waitForFunction(`(${running})(${JSON.stringify(known)}).length === 0`, undefined,
     {timeout: Math.max(1, deadline - Date.now()), polling: 100}).then(() => true).catch(() => false);
   const left: string[] = quiet ? [] : await page.evaluate(running, known).catch(() => []);
   if (left.length > 0) {

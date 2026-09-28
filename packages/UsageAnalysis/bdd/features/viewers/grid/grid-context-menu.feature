@@ -17,15 +17,18 @@ Feature: The context menu acts on the right-clicked cell
     When user clicks on the "cell 5 of AGE" area of grid
     Then row 5 should be current
     When user scrolls the mouse wheel down 60 times over the "cell 5 of AGE" area of grid
-    Then the "row order" reading of grid should not contain "1, 2, 3, 4"
+    Then grid should have a "cell 1000 of AGE" area
+    And grid should not have a "cell 5 of AGE" area
     When user right-clicks on the "cell 1000 of AGE" area of grid
     Then the open menu should list "Current Column"
     And row 1000 should be current
     And the "current row" reading of grid should be 1000
-    And the "row order" reading of grid should not contain "1, 2, 3, 4"
+    And grid should have a "cell 1000 of AGE" area
+    And grid should not have a "cell 5 of AGE" area
     When user closes the context menu
     Then row 1000 should be current
-    And the "row order" reading of grid should not contain "1, 2, 3, 4"
+    And grid should have a "cell 1000 of AGE" area
+    And grid should not have a "cell 5 of AGE" area
     And no errors should have been logged
 
   Scenario: Copy as SMILES copies the right-clicked molecule, not the one that was current

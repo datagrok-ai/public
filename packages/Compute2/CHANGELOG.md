@@ -2,6 +2,12 @@
 
 ## v.next
 
+* TreeWizard: Compact view for single-step workflows (no tree or navigation; save, share and export unified on the step ribbon)
+* RFV: Default Excel export includes validation and consistency
+
+## 1.6.0 (2026-09-23)
+
+* TreeWizard: Fixed saving a step to history overwriting the previously saved run (a loaded or re-saved step now gets a new id; saved runs are immutable)
 * Ribbon panels and menus migrated to the injected per-view service from webcomponents-vue; removed view prop drilling, busy-guarded ribbon actions use the built-in disabled API
 * TreeWizard: Fixed the subtree save icon saving the currently selected step instead of the clicked one
 * TreeWizard: Stopped re-creating the pipeline FuncCall on every re-render (help panel churn and repeated context help fetches)

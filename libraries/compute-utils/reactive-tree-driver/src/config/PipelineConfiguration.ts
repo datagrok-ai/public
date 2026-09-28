@@ -82,6 +82,7 @@ export type PipelineLinkConfigurationBase<P> = {
   dataFrameMutations?: boolean | string[];
   defaultRestrictions?: Record<string, RestrictionType> | RestrictionType;
   nodePriority?: number;
+  params?: Record<string, any>;
 }
 
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -141,6 +142,42 @@ export type PipelinePipelineValidatorConfiguration<P> = PipelineLinkConfiguratio
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P> | PipelinePipelineValidatorConfiguration<P>;
 
+// rule links (expanded into meta/validator/data links at config processing)
+
+/** JSON Logic expression or a plain literal. */
+export type RuleExpr = any;
+export type RuleTargets = string | string[];
+
+export type RuleMetaEffect =
+  | {effect: 'hide' | 'show', targets: RuleTargets}
+  | {effect: 'items', targets: RuleTargets, items: RuleExpr}
+  | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>};
+
+export type RuleValidatorEffect = {
+  effect: 'error' | 'warning' | 'notification',
+  targets: RuleTargets,
+  message: RuleExpr,
+};
+
+export type RuleDataEffect =
+  | {effect: 'set', targets: RuleTargets, value: RuleExpr, restriction?: RestrictionType}
+  | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType};
+
+export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
+
+export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  type: 'rule';
+  when?: RuleExpr;
+  effects: RuleEffect[];
+  debounce?: number;
+  runOnInit?: boolean;
+  handler?: undefined;
+  actions?: undefined;
+  params?: undefined;
+};
+
+export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P>;
+
 /** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
  *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */
 export type ActionInfoBase = {
@@ -185,6 +222,9 @@ const actionPositions = ['buttons', 'menu', 'globalmenu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
 
 type LinkOf<S> = [S] extends [never] ? LinkSpecString : LinkIOParsed[];
+type LinksOf<S> = [S] extends [never] ?
+  PipelineLinkConfigurationInput<LinkSpecString>[] :
+  PipelineLinkConfiguration<LinkIOParsed[]>[];
 type RefOf<S> = [S] extends [never] ? PipelineRefInitial : PipelineSelfRef;
 type StatesOf<S> = [S] extends [never] ? Array<ItemId | StateItem> : StateItem[];
 
@@ -194,7 +234,7 @@ export type PipelineStepConfiguration<S> = {
   type?: 'step',
   nqName: NqName;
   friendlyName?: string;
-  links?: PipelineLinkConfiguration<LinkOf<S>>[];
+  links?: LinksOf<S>;
   actions?: (DataActionConfiguraion<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
   states?: StatesOf<S>;
   tags?: string[];
@@ -218,7 +258,7 @@ export type PipelineConfigurationBase<S> = {
   version?: string;
   friendlyName?: string;
   description?: string;
-  links?: PipelineLinkConfiguration<LinkOf<S>>[];
+  links?: LinksOf<S>;
   actions?: (DataActionConfiguraion<LinkOf<S>> | PipelineMutationConfiguration<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
   onInit?: PipelineInitConfiguration<LinkOf<S>>;
   onReturn?: PipelineReturnConfiguration<LinkOf<S>>;

@@ -25,10 +25,13 @@ const settle = v.settle;
 /* A reading whose value is a comma-separated list: the tile viewer's `fields` and `lane names`, the
    pc plot's `axes`, the trellis plot's `x columns`. */
 async function expectReadingContains(page: Page, target: ElementRef, name: string, item: string, negate: boolean): Promise<void> {
+  if (item.includes(','))
+    throw new Error(`"${item}" holds a comma, so it is never one member of the "${name}" list and a negative claim on it cannot fail; name one member`);
   let last = '';
   const poll = expect.poll(async () => {
-    last = String(await v.readValue(page, target, name));
-    return last.split(/\s*,\s*/).includes(item);
+    const r = await v.readingOf(page, target, name);
+    last = String(r);
+    return r instanceof v.MissingReading ? negate : last.split(/\s*,\s*/).includes(item);
   }, {timeout: pollMs(5000), message: `"${name}" of ${target.phrase} is "${last}"`});
   await (negate ? poll.not : poll).toBe(true);
 }
@@ -252,7 +255,8 @@ async function openColumnSelector(page: Page, target: ElementRef, which: string)
   const loc = await v.viewerLocator(page, target);
   const centre = v.centerOf(await v.hitArea(page, target, 'view'));
   await page.mouse.move(centre.x, centre.y);
-  const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase()}"]`);
+  // the selector is named by its property without spaces: "Category 1" is category1
+  const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase().replace(/\s+/g, '')}"]`);
   await selector.waitFor({state: 'visible', timeout: 5000});
   // the guide lights the selector, not the whole viewer the phrase named
   await guide.located(page, selector);
@@ -472,8 +476,9 @@ export const dragLasso = When('user drags a lasso over the {string} area of {wid
 async function expectTextIn(page: Page, name: string, target: ElementRef, text: string, negate: boolean): Promise<void> {
   let last = '';
   const holds = async (): Promise<boolean> => {
-    last = String(await v.readValue(page, target, name));
-    return last.includes(text);
+    const r = await v.readingOf(page, target, name);
+    last = String(r);
+    return r instanceof v.MissingReading ? negate : last.includes(text);
   };
   try {
     const poll = expect.poll(holds, {timeout: pollMs(5000)});

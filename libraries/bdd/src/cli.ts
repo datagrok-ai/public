@@ -136,9 +136,23 @@ function launch(project: Project, args: string[], env: Record<string, string> = 
   const config = ['playwright.config.js', 'playwright.config.ts'].map((f) => join(LIB_DIR, f)).find(existsSync);
   if (!config)
     throw new Error(`no Playwright config in ${LIB_DIR} — run \`npm run build\` in the library`);
-  const child = spawn(process.execPath, [playwrightCli(project), 'test', '--config', config, ...args],
-    {cwd: project.root, stdio: 'inherit', env: {...process.env, ...env, BDD_ROOT: project.root}});
+  const report = withJsonReport(project, args);
+  const child = spawn(process.execPath, [playwrightCli(project), 'test', '--config', config, ...report.args],
+    {cwd: project.root, stdio: 'inherit', env: {...process.env, ...report.env, ...env, BDD_ROOT: project.root}});
   return new Promise((resolve) => child.on('exit', (exit) => resolve(exit ?? 1)));
+}
+
+/** A `--reporter` on the command line replaces the config's reporters, the JSON report every run
+ * leaves in test-results/report.json among them: json joins the reporters given, to the same file. */
+function withJsonReport(project: Project, args: string[]): {args: string[]; env: Record<string, string>} {
+  const i = args.findIndex((a) => a === '--reporter' || a.startsWith('--reporter='));
+  const spaced = args[i] === '--reporter';
+  const value = i < 0 ? '' : spaced ? args[i + 1] ?? '' : args[i].slice('--reporter='.length);
+  if (i < 0 || value.split(',').includes('json'))
+    return {args, env: {}};
+  const named = process.env.PLAYWRIGHT_JSON_OUTPUT_FILE ?? process.env.PLAYWRIGHT_JSON_OUTPUT_NAME;
+  return {args: [...args.slice(0, i), `--reporter=${value},json`, ...args.slice(i + (spaced ? 2 : 1))],
+    env: named ? {} : {PLAYWRIGHT_JSON_OUTPUT_FILE: join(project.root, 'test-results', 'report.json')}};
 }
 
 function exec(command: string, args: string[], cwd: string): Promise<number> {
@@ -344,6 +358,21 @@ function link(cwd: string, undo: boolean): number {
   return 0;
 }
 
+/** The library's sources newer than their build. A package's compile and run load the library from
+ * `dist/`, so after a pull without a rebuild a sound feature fails on a kind or a step only the
+ * sources have. */
+function staleBuild(): string[] {
+  // a published copy ships no src/, and its install gives the files no meaningful order in time
+  if (LIB_DIR === LIB_ROOT || !existsSync(join(LIB_ROOT, 'src')))
+    return [];
+  const sources = [...listFiles(join(LIB_ROOT, 'src'), '.ts'), ...listFiles(join(LIB_ROOT, 'bindings'), '.ts'),
+    join(LIB_ROOT, 'playwright.config.ts')];
+  return sources.filter((file) => {
+    const built = join(LIB_DIR, relative(LIB_ROOT, file)).replace(/\.ts$/, '.js');
+    return !existsSync(built) || statSync(built).mtimeMs < statSync(file).mtimeMs;
+  });
+}
+
 async function main(): Promise<number> {
   const [command = 'compile', ...flags] = process.argv.slice(2);
   if (command === '--help' || command === '-h' || command === 'help') {
@@ -355,6 +384,13 @@ async function main(): Promise<number> {
     return init(process.cwd());
   if (command === 'link')
     return link(process.cwd(), flags.includes('--undo'));
+  const stale = staleBuild();
+  if (stale.length > 0) {
+    const first = relative(LIB_ROOT, stale[0]).split(sep).join('/');
+    console.error(`grok-bdd: the library's build is older than its sources (${first}` +
+      `${stale.length > 1 ? ` and ${stale.length - 1} more` : ''}) — run \`npm run build\` in ${LIB_ROOT}`);
+    return 2;
+  }
   const project = loadProject(process.cwd());
   console.log(`bdd: ${project.name} at ${project.root}${project.tiers.length > 0 ? ` (tiers: ${project.tiers.join(', ')})` : ''}`);
   switch (command) {

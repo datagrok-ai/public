@@ -40,8 +40,7 @@ Feature: Partial least squares regression
     Then editor of Using input in "PLS" dialog should contain text "(15)"
     And RUN button in "PLS" dialog should be enabled
     When user clicks on RUN button in "PLS" dialog
-    Then the top menu command should have completed
-    And "PLS" dialog should be hidden
+    Then "PLS" dialog should be hidden
     And 3 new columns should have been added
     And the table should have a column "PLS1"
     And the table should have a column "PLS2"

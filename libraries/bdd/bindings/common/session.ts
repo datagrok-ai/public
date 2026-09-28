@@ -30,8 +30,12 @@ async function homeWidgetsSettled(page: Page): Promise<void> {
 }
 
 export const loggedIn = Given('user is logged in', async (page: Page) => {
+  // a worker runs one spec after another on the same page, so what a feature leaves behind (an open
+  // dialog, a docked panel, a sticky option) reaches the next one; BDD_FRESH_PAGE starts each
+  // feature from a reload, at the cost of a shell load per feature
   guide.silent(page);
-  const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
+  const inShell = process.env.BDD_FRESH_PAGE !== '1' &&
+    await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell) {
     // a dev stand's pub serve can take minutes to hand out the bundle while it recompiles or is
     // starved: that is a delay once per page, not a failure of the feature
@@ -46,6 +50,10 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
     grok.shell.closeAll();
     document.body.classList.add('selenium');
     grok.shell.windows.simpleMode = simple;
+    // the console and help panels a feature leaves open share the right column with the context panel and can
+    // squeeze it to its title bar; a feature that needs one opens it
+    grok.shell.windows.showConsole = false;
+    grok.shell.windows.showHelp = false;
   }, guide.shellSimpleMode());
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});

@@ -54,16 +54,20 @@ function columnFacts(page: Page, column: string): Promise<ColumnFacts> {
 
 const filled = (f: ColumnFacts): number[] => f.values.map((_, i) => i).filter((i) => f.values[i] !== '');
 
+/** A fact a poll waits for: a column a computation is about to add is not there yet, and a throw
+ * would end the poll at once — the missing column is kept as the value the failure shows. */
+const factOrAbsence = (read: Promise<string>): Promise<string> => read.catch((e) => `(${e?.message ?? String(e)})`);
+
 export const columnSemType = Then('{string} column should have semantic type {string}', async (page: Page, column: string, semType: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).semType, {message: `semantic type of "${column}"`}).toBe(semType);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.semType)), {message: `semantic type of "${column}"`}).toBe(semType);
 }, {description: 'what the detectors set (Macromolecule, Molecule, Monomer); polled, since detection runs after the column appears'});
 
 export const columnUnits = Then('{string} column should have units {string}', async (page: Page, column: string, units: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).tags['units'] ?? '', {message: `units of "${column}"`}).toBe(units);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.tags['units'] ?? '')), {message: `units of "${column}"`}).toBe(units);
 }, {description: 'the `units` tag — a sequence column\'s notation (fasta, separator, helm), a molecule column\'s molblock'});
 
 export const columnTag = Then('{string} column should have tag {string} equal to {string}', async (page: Page, column: string, tag: string, value: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).tags[tag] ?? '', {message: `tag "${tag}" of "${column}"`}).toBe(value);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.tags[tag] ?? '')), {message: `tag "${tag}" of "${column}"`}).toBe(value);
 });
 
 export const columnTagLists = Then('the {string} tag of {string} column should list at least {int} values', async (page: Page, tag: string, column: string, count: number) => {
@@ -90,6 +94,23 @@ export const everyValueMatches = Then('every value of {string} column should mat
   expect(bad.map((i) => `row ${i + 1}: ${f.values[i].slice(0, 60)}`), `values of "${column}" not matching /${pattern}/ (missing values skipped)`).toEqual([]);
   expect(filled(f).length, `filled values of "${column}"`).toBeGreaterThan(0);
 }, {description: 'a regular expression over every filled cell; a column with no filled cell fails'});
+
+export const fewerDistinctThanRows = Then('{string} column should have fewer distinct values than the table has rows', async (page: Page, column: string) => {
+  const f = await columnFacts(page, column);
+  const distinct = new Set(filled(f).map((i) => f.values[i])).size;
+  expect(distinct, `distinct values of "${column}" against the ${f.values.length} rows`).toBeLessThan(f.values.length);
+}, {description: 'a column that groups the rows rather than naming each of them'});
+
+export const someValueMatches = Then('some value of {string} column should match {string}', async (page: Page, column: string, pattern: string) => {
+  const f = await columnFacts(page, column);
+  const re = new RegExp(pattern);
+  expect(filled(f).filter((i) => re.test(f.values[i])).length, `values of "${column}" matching /${pattern}/`).toBeGreaterThan(0);
+}, {description: 'a regular expression that at least one filled cell matches'});
+
+export const someValueDiffers = Then('some value of {string} column should differ from {string} column in the same row', async (page: Page, x: string, y: string) => {
+  const [a, b] = [await columnFacts(page, x), await columnFacts(page, y)];
+  expect(a.values.filter((v, i) => v !== b.values[i]).length, `rows where "${x}" and "${y}" hold different text`).toBeGreaterThan(0);
+}, {description: 'the cells\' text, row by row'});
 
 export const everyValueContains = Then('every value of {string} column should contain {string}', async (page: Page, column: string, text: string) => {
   const f = await columnFacts(page, column);

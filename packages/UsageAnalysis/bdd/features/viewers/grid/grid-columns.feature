@@ -111,12 +111,10 @@ Feature: Grid column geometry
 
   Scenario: Dragging a header onto another reorders the columns
     When user drags the "header HEIGHT" area of grid to the "header DEMOG" area
-    Then the "column order" reading of grid should differ from before
-    And grid should have a "header HEIGHT" area
-    And grid should have a "header DEMOG" area
-    And the table should have 11 columns
+    Then the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, WEIGHT, DEMOG, HEIGHT, CONTROL, STARTED, SEVERITY"
     And no errors should have been logged
     When user drags the "header HEIGHT" area of grid to the "header DIS_POP" area
+    Then the "column order" reading of grid should be "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
 
   Scenario: Order or Hide Columns filters its list by type and Reset filter clears it (GROK-19333, GROK-20167)
     When user picks "Order or Hide Columns..." from the context menu of the "cell 4 of AGE" area of grid

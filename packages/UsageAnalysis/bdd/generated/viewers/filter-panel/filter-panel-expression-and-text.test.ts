@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.filters]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
@@ -15,11 +16,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {pickPanelMenu, typeIntoCardSearch} from '../../../bindings/filter-panel.js';
+import {typeIntoCardSearch} from '../../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, dragSliderTo, hoverOver, pasteInto, pressKey, selectIn, shouldBe, shouldHaveText, shouldHaveValue, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterIsExactly, filterIsExactlyCategory, filterIsExactlyContains, filterPasses, filterPassesAll, openEmptyFilterPanel} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {pickPanelMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
 import {clickArea, noErrors, pickFromAreaContextMenu, readingAtLeast, readingHigherThanRemembered, readingReads, rememberReading} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 

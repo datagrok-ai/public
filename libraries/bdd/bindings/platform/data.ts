@@ -7,8 +7,8 @@
    do the lookups and the row scans, and say which column or category is missing. */
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
-import {Then, When} from '../../src/registry.js';
-import {changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
+import {Given, Then, When} from '../../src/registry.js';
+import {baselineAll, changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -212,6 +212,9 @@ export const filterIsExactly = Then('the filter should pass exactly the rows whe
 export const filterIsExactlyCategory = Then('the filter should pass exactly the rows where {string} is {string}', (page: Page, column: string, value: string) =>
   expectFilterExactly(page, column, {eq: value}, `is ${value}`), {description: 'the table filter bit by bit: the category\'s rows pass, no other row does'});
 
+export const filterIsExactlyAnyOf = Then('the filter should pass exactly the rows where {string} is one of {string}', (page: Page, column: string, values: string) =>
+  expectFilterExactly(page, column, {in: list(values)}, `is one of ${values}`), {description: 'the table filter bit by bit: the rows of the listed values pass, no other row does; a value the column lacks fails'});
+
 export const filterIsExactlyContains = Then('the filter should pass exactly the rows where {string} contains {string}', (page: Page, column: string, text: string) =>
   expectFilterExactly(page, column, {contains: text}, `contains "${text}"`), {description: 'every row whose value contains the text passes and no other; a text no row contains fails'});
 
@@ -235,8 +238,11 @@ export const deleteSelected = When('user deletes the selected rows', (page: Page
     df.rows.removeWhereIdx((i: number) => set.has(i));
   }, null), {tier: 'api', description: 'df.rows.removeWhereIdx — the UI path is the grid\'s Delete Rows command'});
 
+/* The claim is about the table a step before it opened, and a view that is still opening has none:
+   a read that threw ended the poll, so the step failed on the gap rather than waiting it out. */
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
-  expect.poll(() => page.evaluate(() => grok.shell.t.rowCount as number), {message: 'rows in the table'}).toBe(count));
+  expect.poll(() => page.evaluate(() => grok.shell.t ? grok.shell.t.rowCount as number : 'no table is open'),
+    {message: 'rows in the table'}).toBe(count));
 
 /** The one claim about a value the column may no longer hold (the rows were deleted), so it
  * counts on its own rather than through `rowFacts`, which refuses an unknown value. */
@@ -258,6 +264,33 @@ export const tableTagIsFile = Then('the table should have tag {string} equal to 
   expect(file.length, `the length of ${path}`).toBeGreaterThan(0);
   expect(actual, `tag "${tag}" of the table against ${path}`).toBe(file);
 }, {tier: 'api', description: 'byte for byte, line breaks included — what a file handler put on the table it opened'});
+
+export const columnIsCurrentObject = Given('the {string} column is the current object', async (page: Page, column: string) => {
+  await page.evaluate((c) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    // forced: the shell drops a set that lands within two seconds of a context-panel edit, or on a value of the same kind
+    grok.shell.setCurrentObject(col, true, true);
+  }, column);
+  await expect.poll(() => page.evaluate(() => String((grok.shell.o as any)?.name ?? '')),
+    {message: 'the current object the context panel renders'}).toBe(column);
+}, {tier: 'api', description: 'what a click on the column header does, for a feature whose subject is what the context panel then shows'});
+
+export const cellIsCurrentObject = Given('the {string} cell of row {int} is the current object', async (page: Page, column: string, row: number) => {
+  const table: string = await page.evaluate(([c, r]) => {
+    const col = grok.shell.t.col(c as string);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    grok.shell.t.currentCell = grok.shell.t.cell(Number(r) - 1, c as string);
+    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), true, true);
+    return grok.shell.t.name;
+  }, [column, row] as [string, number]);
+  await expect.poll(() => page.evaluate(() => {
+    const cell = (grok.shell.o as any)?.cell;
+    return cell ? `${cell.dataFrame?.name}: ${cell.column?.name} ${cell.rowIndex + 1}` : String(grok.shell.o);
+  }), {message: 'the cell the current object is'}).toBe(`${table}: ${column} ${row}`);
+}, {tier: 'api', description: 'what a click on the cell does, for a feature whose subject is the panes the context panel then shows'});
 
 // --- columns -----------------------------------------------------------------------------------------
 
