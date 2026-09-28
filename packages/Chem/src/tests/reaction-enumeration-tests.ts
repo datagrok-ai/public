@@ -4,13 +4,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {awaitCheck, before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
-import {cloneConfig, DEFAULT_CONFIG} from '../utils/reaction-enumeration/config';
+import {cloneConfig, DEFAULT_CONFIG, EnumeratorConfig} from '../utils/reaction-enumeration/config';
 import {
   enumerate, formatRoute, OutputRow, Route,
   splitSmartsByReactants, stripOuterParens, TemplateInput,
 } from '../utils/reaction-enumeration/enumerate';
 import {applyProductFilters, computeMolStats} from '../utils/reaction-enumeration/filters';
-import {addResultFilters, buildResultDataFrame} from '../utils/reaction-enumeration/shared';
+import {addResultFilters, buildInputs, buildResultDataFrame} from '../utils/reaction-enumeration/shared';
+import {propagatedColumns, snapshotPropagation} from '../utils/reaction-enumeration/propagation';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
@@ -292,6 +293,101 @@ category('Reaction Enumeration', () => {
     }
   });
 
+  // ── propagated columns ──────────────────────────────────────────────────
+  // Amide coupling and O-acylation of an amino alcohol.
+  const acylationTemplates = () => DG.DataFrame.fromCsv('reaction_smarts\n' +
+    '"[NX3;H2:1].[C:2](=[O:3])[OH]>>[N:1][C:2]=[O:3]"\n"[CX4:1][OH:2].[C:3](=[O:4])[OH]>>[C:1][O:2][C:3]=[O:4]"');
+  const runPropagated = async (config: EnumeratorConfig, tDf: DG.DataFrame, bDf: DG.DataFrame,
+    rDf: DG.DataFrame | null = null) => {
+    const snapshot = snapshotPropagation(config, tDf, bDf, rDf);
+    const {rows} = await enumerate({rdkit: getRdKitModule(), config, ...buildInputs(config, tDf, bDf, null, rDf)});
+    return {rows, snapshot, df: buildResultDataFrame(rows, propagatedColumns(rows, snapshot))};
+  };
+
+  test('propagation: per-building-block columns keep the source type, or become text where it cannot be empty', async () => {
+    const bDf = DG.DataFrame.fromCsv('SMILES,received,supplier\nNCCO,2024-01-02,Acme\nCC(=O)O,2024-03-04,Beta');
+    bDf.col('SMILES')!.semType = DG.SEMTYPE.MOLECULE;
+    bDf.columns.addNewBool('in_stock').init((i) => i === 0);
+    bDf.columns.add(DG.Column.fromBigInt64Array('catalog', BigInt64Array.from([9007199254740993n, 9007199254740995n])));
+    const config = polyolConfig(2);
+    config.enumeration.bb_propagated_columns =
+      {SMILES: [], received: [], supplier: ['sum'], in_stock: [], catalog: [], absent: ['sum']};
+    const {rows, df, snapshot} = await runPropagated(config, acylationTemplates(), bDf);
+
+    for (const c of ['received', 'supplier'])
+      expect(df.col(`bb_1_${c}`)!.type, bDf.col(c)!.type, `${c} keeps its type`);
+    for (const c of ['in_stock', 'catalog'])
+      expect(df.col(`bb_1_${c}`)!.type, DG.COLUMN_TYPE.STRING, `${c} becomes text`);
+    expect(df.col('bb_1_SMILES')!.semType, DG.SEMTYPE.MOLECULE, 'a structure column still draws structures');
+    expect(df.col('bb_supplier_sum'), null, 'a text column is never aggregated');
+    expect(snapshot.missing.length === 1 && snapshot.missing[0].includes('"absent"'), true,
+      'a picked column the file lacks is reported, not dropped silently');
+
+    const cols = ['received', 'supplier', 'in_stock', 'catalog'];
+    const acetamide = canonicalizer(getRdKitModule())('CC(=O)NCCO');
+    const amide = rows.findIndex((r) => r.product === acetamide);
+    expect(cols.map((c) => df.col(`bb_2_${c}`)!.getString(amide)).join(),
+      cols.map((c) => bDf.col(c)!.getString(1)).join(), 'the acid is the second building block');
+    expect(df.col('bb_1_in_stock')!.get(amide), 'true');
+    for (const c of cols) {
+      expect(df.col(`bb_3_${c}`)!.isNone(amide), true,
+        `a one-step route has no third building block, so bb_3_${c} is empty (not "false" for in_stock)`);
+    }
+  });
+
+  test('propagation: template rows sharing a SMARTS stay apart when the result tells them apart', async () => {
+    const amide = '[C:1](=[O:2])[OH].[N;H2:3]>>[C:1](=[O:2])[N:3]';
+    const tDf = DG.DataFrame.fromCsv(`reaction_smarts,reaction_name,yield,cost\n"${amide}",Amide HATU,0.5,12\n` +
+      `"${amide}",Amide EDC,0.9,3\n"${amide}",Amide HATU,0.5,12`);
+    const bDf = DG.DataFrame.fromCsv('SMILES\nOC(=O)c1ccccc1\nNCc1ccccc1');
+    const config = polyolConfig(1);
+    config.enumeration.template_propagated_columns = {yield: ['multiply'], cost: []};
+    const {rows, df} = await runPropagated(config, tDf, bDf);
+
+    const product = canonicalizer(getRdKitModule())('O=C(NCc1ccccc1)c1ccccc1');
+    const found = rows.flatMap((r, i) => r.product === product ? [i] : []);
+    expect(found.length, 2, 'HATU and EDC each keep a route; the repeated HATU row adds none');
+    expect(found.map((i) => `${df.get('reaction_names', i)} ${df.get('reaction_1_yield', i).toFixed(1)} ` +
+      `${df.get('reaction_1_cost', i)}`).sort().join('; '), 'Step 1: Amide EDC 0.9 3; Step 1: Amide HATU 0.5 12');
+    expect(df.get('n_routes', found[0]), 2);
+  });
+
+  test('propagation: reagents get their own columns and never count as building blocks', async () => {
+    // Acetic acid is in both files; in reagents mode it can only reach a step through a reagent slot.
+    const bDf = DG.DataFrame.fromCsv('SMILES,price\nNCCO,10\nCC(=O)O,20');
+    const rDf = DG.DataFrame.fromCsv('SMILES,price\nCC(=O)O,1\nCCC(=O)O,3');
+    const config = polyolConfig(2);
+    config.enumeration.bb_propagated_columns = {price: ['sum']};
+    config.enumeration.reagent_propagated_columns = {price: ['sum']};
+    const {rows, df} = await runPropagated(config, acylationTemplates(), bDf, rDf);
+
+    expect(rows.some((r) => r.steps.length === 2), true, 'two-step routes exist');
+    const reagentPrices = [1, 3];
+    for (let i = 0; i < df.rowCount; i++) {
+      expect(df.get('bb_price_sum', i), 10, 'the ethanolamine is the only building block');
+      const expected = rows[i].steps.flatMap((s) => s.reagents).reduce<number>((a, p) => a + reagentPrices[p!], 0);
+      expect(df.get('reagent_price_sum', i), expected, 'each step\'s reagent, priced from the reagents file');
+    }
+  });
+
+  test('propagation: depth-first — a building block an earlier step also makes is still bought', async () => {
+    // N-acetylethanolamine is on the shelf and also what step 1 makes from ethanolamine and acetic acid.
+    // Step 3 can take it as the alcohol for a step-2 acid; it must count as bought, with no step-1 history.
+    const bDf = DG.DataFrame.fromCsv('SMILES,price\nNCCO,10\nOC(=O)CCC(=O)O,20\nCC(=O)O,5\nCC(=O)NCCO,30');
+    const config = polyolConfig(3);
+    config.products_specs.max_num_hetero_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.enumeration.bb_propagated_columns = {price: ['sum']};
+    const {rows, df} = await runPropagated(config, acylationTemplates(), bDf);
+
+    expect(Math.max(...rows.map((r) => r.steps.length)), 3, 'no route is longer than the steps run');
+    const bought = rows.findIndex((r) => r.steps.length === 3 && r.steps[2].buildingBlocks.includes(3));
+    expect(bought >= 0, true, 'some step 3 takes N-acetylethanolamine off the shelf');
+    const prices = [10, 20, 5, 30];
+    const expected = rows[bought].steps.flatMap((s) => s.buildingBlocks).reduce<number>((a, p) => a + prices[p!], 0);
+    expect(df.get('bb_price_sum', bought), expected, 'its sum covers the building blocks the route actually bought');
+  });
+
   test('per-step limit: a step over the cap is dropped whole, not trimmed to the cap', async () => {
     const rdkit = getRdKitModule();
     const bb = ['CC(O)C(O)CO'];
@@ -340,7 +436,8 @@ category('Reaction Enumeration', () => {
   // ── route formatting ────────────────────────────────────────────────────
   const tmpl = '';
   const step = (reactants: string[], product: string) =>
-    ({reactants, product, templateSmarts: tmpl, reactionName: '', nProducts: 1});
+    ({reactants, product, templateSmarts: tmpl, templateIndex: 0, reactionName: '', nProducts: 1, buildingBlocks: [],
+      reagents: []});
 
   test('route formatting: single-step route', async () => {
     const route: Route = [step(['BB1', 'BB2'], 'P1')];

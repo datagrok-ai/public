@@ -78,11 +78,12 @@ export class MountedViewerRegistry {
   }
 
   mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean,
-    opts?: {rowHeight?: number; extendLastColumn?: boolean}): void {
+    opts?: {rowHeight?: number; extendLastColumn?: boolean; readOnly?: boolean}): void {
     this.close(host);
     host.innerHTML = '';
     const grid = DG.Viewer.grid(df);
     grid.props.rowHeight = opts?.rowHeight ?? 75;
+    if (opts?.readOnly) grid.props.allowEdit = false;
     grid.root.style.width = '100%';
     grid.root.style.height = '100%';
     if (!withFilters) {

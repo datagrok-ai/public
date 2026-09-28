@@ -1324,6 +1324,13 @@
   width: auto;
 }
 
+/* One row: five stacked checkboxes per propagated column would push the rest of the pane off screen. */
+.chem-enumerator .chem-enum-aggregation .ui-input-multi-choice-checks {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+
 /* Pane content is a row-flex container, so the form needs to grow into it explicitly. */
 .chem-enum-combine-pane .d4-accordion .d4-accordion-pane-content > .ui-div {
   flex: 1 1 auto;
