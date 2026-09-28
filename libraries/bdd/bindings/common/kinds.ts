@@ -65,6 +65,10 @@ inputKind('list input', ['list-input'], '', []);
 inputKind('map input', ['map-input'], '', ['key value input']);
 inputKind('message input', ['message-input'], '', ['prompt input', 'chat input']);
 inputKind('radio input', ['radio-input'], '.ui-input-radio', ['radio group', 'radio']);
+/* One option of a Dart radio group (the Save project dialog's "Save original project" / "Save a
+   copy" / "Save personal view customizations"): the radio and its label, so "checked" and
+   "disabled" read the radio itself. */
+kind('radio choice', {selector: '.ui-radio-button', match: ['label', 'text'], labelSelector: 'label'});
 inputKind('slider', ['slider-input'], '.ui-input-slider', ['slider input']);
 inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input'], {dartNames: ['input-host-{q}', '{q}']});
 kind('slider handle', {

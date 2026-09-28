@@ -254,6 +254,39 @@ list is the reference; this is the map:
   its counter against a remembered one (lower, not lower, higher — search, then clear). The membership editor behind Groups..., Roles..., Members
   and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
   `remove button` and `checkbox` parts, typed into through `membership search`.
+- **Projects, sharing and the second account** (`platform/steps.ts`): `no project named … is on the
+  server` also notes the tables and views of the project whenever a check sees it (`1 project named
+  … should be on the server`, `… should hold the tables …`), and deletes them at feature end even
+  after the gallery's Delete Project left them orphaned; `the "<project>" project on the server
+  should hold the tables "a, b"`, `the creation script of the "<table>" table of the "<project>"
+  project on the server should contain "…"`, `the "<space>" space should (not) hold the
+  project|query|script "<name>" on the server`. Row counts that differ between stands are
+  remembered and claimed by label: `user remembers the row count of the table as "<label>"` (or `of
+  table "<name>"`), then `the table should have the "<label>" row count` / `table "<name>" should
+  have the "<label>" row count`. A reopened project's table: `table "<name>" should have been
+  reloaded by data sync with N rows` or `… loaded as a snapshot with N rows` (either `with the
+  "<label>" row count`), refused for a frame `user marks the open tables as the frames in memory`
+  marked before the save. `table "<name>" should have N rows` and `the table should have N rows`
+  poll (a query view opens before its rows arrive). The second account (`DATAGROK_SHARING_LOGIN`,
+  else the setup's `bddsecond`): `user signs in as the sharing user` reloads the shell under its
+  session (never the platform's Logout, which ends the session every worker shares), `user signs in
+  as themselves again` comes back, and the feature end signs back in before any other cleanup; in a
+  Share dialog `user picks the sharing user in …`, `user opens the access level of the sharing user
+  in …` (the `privilege tree` opens; `user clicks outside the privilege tree`), `the access level
+  of the sharing user in … should be "Edit"`; in the Sharing pane `the sharing pane should (not)
+  list the sharing user`, `… should show the sharing user as "can view and use"`.
+- **The workspace** (`platform/workspace.ts`, `common/session.ts`): `left sidebar` (its context
+  menu is Close All), `dashboards tab`, `dashboards project node(s)` and `the dashboards panel of
+  the left sidebar is open` (closed again at feature end: it stays open beside Browse and gives every
+  table view a second Save button); `the open tables should be exactly "…"`, `no table should be left in
+  the workspace` (after a Close All made through the UI), `the table views "…" should be open`;
+  `the open should end in the "<view>" view or the "<title>" dialog` (a barrier) and `no "<title>"
+  dialog should show "…"`; `user notes the time as "<label>"` / `at most N seconds should have
+  passed since "<label>"`; `the file "<path>" should be on the server`, a folder of the user's own
+  files (`no folder "…" is in the user's files`, `the file "…" of the folder "…" in the user's
+  files holds:`); `user reloads the page`. A Dart radio option is a `radio choice`
+  (`"Save a copy" radio choice`); a Dart column selector outside a viewer takes `user picks column
+  "<name>" in …`.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
   filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
   equal row by row), calculated and renamed columns, colour coding,
@@ -318,7 +351,7 @@ The `viewers` tier drives viewers the way the platform sees them:
   collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
   against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
-  logged`, `no error or warning balloon should have been shown`; a balloon that should have been
+  logged`, `no error or warning balloon should have been shown` (or `no error balloon …`, which leaves the warnings for a later check; both read the balloons once, so they follow a barrier); a balloon that should have been
   shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,

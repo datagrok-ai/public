@@ -3,7 +3,7 @@
    automation-friendly shell settings every suite applies, plus the viewer runtime: every viewer the
    page holds or adds later renders immediately (no debounce, no animation-frame wait). */
 import type {Page} from '@playwright/test';
-import {Given} from '../../src/registry.js';
+import {Given, When} from '../../src/registry.js';
 import {takeErrors} from '../../src/runtime/harness.js';
 import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
 import * as guide from '../../src/runtime/guide.js';
@@ -29,6 +29,24 @@ async function homeWidgetsSettled(page: Page): Promise<void> {
   }
 }
 
+/** A freshly loaded shell made ready for a feature: nothing open, the Home view settled, the in-page
+ * runtime installed, and the error and balloon records started from here. */
+export async function resetShellAfterLoad(page: Page): Promise<void> {
+  await page.evaluate((simple) => {
+    grok.shell.closeAll();
+    document.body.classList.add('selenium');
+    grok.shell.windows.simpleMode = simple;
+  }, guide.shellSimpleMode());
+  // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
+  await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
+  await homeWidgetsSettled(page);
+  await installViewerRuntime(page);
+  // what the stand logs or shows while booting (a broken package's autostart, "Debugging
+  // packages") is not the scenario's
+  takeErrors(page);
+  await takeBalloons(page);
+}
+
 export const loggedIn = Given('user is logged in', async (page: Page) => {
   // a worker runs one spec after another on the same page, so what a feature leaves behind (an open
   // dialog, a docked panel, a sticky option) reaches the next one; BDD_FRESH_PAGE starts each
@@ -46,17 +64,13 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
     if (seconds >= 30)
       console.warn(`bdd: the shell took ${seconds} s to load (a dev stand serving a bundle it is recompiling?)`);
   }
-  await page.evaluate((simple) => {
-    grok.shell.closeAll();
-    document.body.classList.add('selenium');
-    grok.shell.windows.simpleMode = simple;
-  }, guide.shellSimpleMode());
-  // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
-  await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
-  await homeWidgetsSettled(page);
-  await installViewerRuntime(page);
-  // what the stand logs or shows while booting (a broken package's autostart, "Debugging
-  // packages") is not the scenario's
-  takeErrors(page);
-  await takeBalloons(page);
+  await resetShellAfterLoad(page);
 }, {tier: 'ui', description: 'the error floor starts here: "no errors should have been logged" counts from this step'});
+
+/** The browser's reload: a new session of the shell with nothing in memory, for a reopen that has
+ * to come from the server alone. The panels and the gallery a feature opened are gone with it. */
+export const reloadPage = When('user reloads the page', async (page: Page) => {
+  await page.reload({waitUntil: 'domcontentloaded', timeout: 180000});
+  await page.locator('[name="Browse"]').first().waitFor({timeout: 180000});
+  await resetShellAfterLoad(page);
+}, {tier: 'ui', description: 'page.reload, then the shell set up as "user is logged in" sets it up; the error and balloon records start again from the loaded shell'});

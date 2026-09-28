@@ -6,7 +6,7 @@
    baseline is the state after it. The in-page runtime's `table`, `col`, `rowFacts` and `setRows`
    do the lookups and the row scans, and say which column or category is missing. */
 import {Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import {baselineAll, changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
 
@@ -242,7 +242,8 @@ export const deleteSelected = When('user deletes the selected rows', (page: Page
    a read that threw ended the poll, so the step failed on the gap rather than waiting it out. */
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
   expect.poll(() => page.evaluate(() => grok.shell.t ? grok.shell.t.rowCount as number : 'no table is open'),
-    {message: 'rows in the table'}).toBe(count));
+    {message: 'rows in the table', timeout: pollMs(30000)}).toBe(count),
+{description: 'polled: a query view opens its table before the rows arrive'});
 
 /** The one claim about a value the column may no longer hold (the rows were deleted), so it
  * counts on its own rather than through `rowFacts`, which refuses an unknown value. */
@@ -504,9 +505,14 @@ export const tableColumns = Then('table {string} should have columns {string}', 
   expect((await tableInfo(page, name)).columns, `columns of "${name}"`).toEqual(list(columns));
 }, {description: 'exactly these, in this order (comma-separated)'});
 
+/* Polled, the table found by name each time: a query view opens its table before the rows arrive,
+   and a project opens its tables one by one. */
 export const tableRows = Then('table {string} should have {int} row(s)', async (page: Page, name: string, count: number) => {
-  expect((await tableInfo(page, name)).rows, `rows of "${name}"`).toBe(count);
-});
+  await expect.poll(() => page.evaluate((n) => {
+    const t = (grok.shell.tables as any[]).find((x) => x.name === n);
+    return t ? t.rowCount as number : `not open; open: ${(grok.shell.tables as any[]).map((x) => x.name).join(' | ') || 'none'}`;
+  }, name), {message: `rows of table "${name}"`, timeout: pollMs(30000)}).toBe(count);
+}, {description: 'polled until the open table of that name holds exactly that many rows'});
 
 const missingCount = (page: Page, name: string, column: string): Promise<number> => evaluate(page, ([n, c]) => {
   const b = (window as any).__bdd;

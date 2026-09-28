@@ -114,7 +114,7 @@ function settleMs(): number {
  * a legend item's color) stays. Matched against the lowercased text of a `Then` (an `And` after
  * one included) — never an action: "drags across the "view" area of …" is a step to show. */
 const HIDDEN_CHECKS: RegExp[] = [
-  /^no errors should have been logged$/, /^no error or warning balloon should have been shown$/,
+  /^no errors should have been logged$/, /^no error (or warning )?balloon should have been shown$/,
   / on the server$/,
   /^the top menu command should have completed$/, /^the package autostarts have completed$/, /\btask bar\b/,
   /\breadings? of\b/, /\bas remembered\b/, /^user remembers /, /\blistens for\b/, /\bshould have fired\b/,

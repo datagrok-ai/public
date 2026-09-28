@@ -6,7 +6,7 @@ import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {gestures, locate, pollMs} from '@datagrok-libraries/bdd/runtime';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
-import {deleteLayoutsAtEnd} from '../helpers/layouts.js';
+import {deleteNamedLayouts} from '../helpers/layouts.js';
 
 declare const grok: any;
 
@@ -97,8 +97,40 @@ export const builderRowHolds = Then('the {string} row of the visual query should
     {message: `the tags of the "${row}" row of the visual query`, timeout: pollMs(15000)}).toEqual(want);
 }, {description: 'the tags the row shows, in order'});
 
+/* A Where condition reaches the builder's query 750 ms after its last keystroke (a debounced
+   input, visual_query.dart), and only then does the builder re-run; Save and Run query... in that
+   window take the query without it. The counts under the builder's grid are rewritten by each run,
+   so a row count the condition alone yields is the barrier that it landed. */
+// package, temporary (same CORE-SIGNAL)
+export const builderRowCount = Then('the visual query should have run to {int} row(s)', async (page: Page, rows: number) => {
+  await expect.poll(() => page.evaluate(() => {
+    const counts = (Array.from(document.querySelectorAll('.grok-pivot-counts')) as HTMLElement[]).filter((e) => e.offsetParent !== null);
+    if (counts.length !== 1)
+      return `${counts.length} visible visual query builders`;
+    const m = /(\d+) rows/.exec(counts[0].textContent ?? '');
+    return m ? Number(m[1]) : `no row count in "${counts[0].textContent}"`;
+  }), {message: 'the row count the visual query builder shows under its grid', timeout: pollMs(15000)}).toBe(rows);
+}, {description: 'the "N rows" the builder writes under its preview after each run — the run that follows a condition or a tag'});
+
+/* The builder's query as the server stored it: Save takes the builder's Where row as it stands
+   then, so a condition that had not reached the query is missing here, however the view looks. */
+export const savedQueryFilters = Then('the query {string} on the server should filter {string} by {string} as a parameter', async (page: Page, name: string, field: string, pattern: string) => {
+  const saved = await page.evaluate(async (n) => {
+    const q = await grok.dapi.queries.filter(`friendlyName = "${n}"`).first();
+    if (!q)
+      return null;
+    const f = await grok.dapi.queries.include('params').find(q.id);
+    return {where: (f.where ?? []).map((w: any) => ({field: String(w.field), pattern: String(w.pattern)})),
+      inputs: f.inputs.map((p: any) => String(p.name))};
+  }, name);
+  expect(saved, `the query "${name}" on the server`).not.toBeNull();
+  expect(saved!.where.filter((w) => w.field.split('.').pop() === field).map((w) => w.pattern),
+    `the Where conditions on "${field}" of the query "${name}" on the server (all: ${JSON.stringify(saved!.where)})`).toEqual([pattern]);
+  expect(saved!.inputs, `the parameters of the query "${name}" on the server`).toContain(field);
+}, {tier: 'api', description: 'the saved visual query holds that one Where condition on the column, and a parameter named after the column'});
+
 /* The query view names the layout it saves after the query, and neither the layout nor the project
    that wraps it goes with the query. */
-export const cleanQueryLayout = Given('the layout saved for the query {string} is deleted at the end', async (page: Page, name: string) => {
-  deleteLayoutsAtEnd(page, `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
-}, {tier: 'api', description: 'the layout of that name this account made since the step ran, and the project it belongs to, go when the feature ends'});
+export const cleanQueryLayout = Given('the layout saved for the query {string} is deleted at the end', (page: Page, name: string) =>
+  deleteNamedLayouts(page, name),
+{tier: 'api', description: 'the layout of that name (with the project it belongs to) goes now, with the older ones of its {time} family a killed run left, and again when the feature ends; read back gone'});

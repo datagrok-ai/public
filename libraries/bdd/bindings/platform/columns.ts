@@ -6,6 +6,9 @@ import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
 import {changeAll} from '../../src/runtime/viewers.js';
+import type {ElementRef} from '../../src/runtime/args.js';
+import {openColumnSelector, pickColumnCounted} from '../../src/runtime/gestures.js';
+import {locate} from '../../src/runtime/locate.js';
 
 declare const grok: any;
 
@@ -206,6 +209,15 @@ export const hasNoColumn = Then('the table should not have a column {string}', a
 export const columnCount = Then('the table should have {int} column(s)', async (page: Page, count: number) => {
   await expect.poll(async () => (await columnNames(page)).length, {message: 'columns of the current table'}).toBe(count);
 });
+
+/** A Dart column selector outside a viewer (a dialog's key column): clicked open, the column typed
+ * and committed, and the selector read back showing it. */
+export const pickColumnIn = When('user picks column {string} in {element}', async (page: Page, column: string, target: ElementRef) => {
+  const loc = (await locate(page, target)).first();
+  const selector = (await loc.evaluate((e) => e.classList.contains('d4-column-selector'))) ? loc : loc.locator('.d4-column-selector').first();
+  await pickColumnCounted(page, () => openColumnSelector(page, selector), column, target.phrase, selector);
+  await expect(selector.locator('.d4-column-selector-column'), `${target.phrase} after the pick`).toHaveText(column, {timeout: pollMs(5000)});
+}, {tier: 'ui', description: 'the selector clicked open, the column typed into its picker and committed; done when the selector shows it'});
 
 // --- the current row ---------------------------------------------------------------------------------
 

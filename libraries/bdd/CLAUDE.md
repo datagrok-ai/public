@@ -27,7 +27,7 @@ src/runtime/            args, locate, gestures, assertions, harness (session, jo
                         guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), the page's own pointer events per stop → steps.json; full shell)
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
-bindings/platform/      the shell: elements, datasets, steps, data, columns, commands, functions, events — always loaded
+bindings/platform/      the shell: elements, datasets, steps, workspace, data, columns, commands, functions, events — always loaded
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, events, floor), widgets (shared per-viewer steps)
 tests/                  node:test via tsx: nouns, compile, project, init, failure, locate (Chromium over a static page)
 playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers)
@@ -143,7 +143,11 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
 - **A gesture aims where the viewer has finished putting the thing**: `hitArea(…, beforeChange)`
   settles first; `menuPoint` also waits for the anchor's box to hold for two frames; hit areas are
   polled for up to 5 s like elements. A context menu opens on `{element}` (a tree node too):
-  `menuPoint` skips the viewer waits for a non-viewer.
+  `menuPoint` skips the viewer waits for a non-viewer, waits for its box to hold two frames and
+  returns a point `elementFromPoint` gives back to it, and `aimMenu` hit-tests that point again
+  right before the right-click; an element with no such point (detached by a re-render, not laid
+  out) is located afresh for up to 5 s. Never a fallback box: a detached element's (0, 0) is the
+  left sidebar, and its menu is Close All (seen on Scripts Run... and a gallery card's Copy).
 - **Typed text is verified and retyped** (`typeVerified`); an editor that already has the focus
   is not clicked; a hit area typed into must end up owning the focus (`typeIntoArea`).
 - **Platform keys are normalized in the shared gesture helpers.** `Control` / `Ctrl` becomes
@@ -212,6 +216,11 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   parent root in its cleanup names because the listing does not include child spaces.
   After setup cleanup, refresh an open Browse tree: API deletion leaves cached nodes behind,
   so recreating the same name otherwise targets a stale node or resolves to two nodes.
+- **A project deleted through the UI leaves its tables and views**: the gallery's Delete Project
+  removes the project entity only. `no project named … is on the server` keeps the ids of the
+  TableInfo/ViewInfo children whenever a check sees the watched project (`N project(s) named …`,
+  `… should hold the tables …`) and deletes what is left of them at feature end, read back gone —
+  so a feature that deletes a project through the UI claims it on the server first.
 - **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
   is also swept by family — the same name with any run suffix, older than an hour — whenever a
   `no … named` or `a … named` step runs, and by the project save (`isStaleFixture`,
@@ -398,7 +407,13 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   selected gives the same rows as a replace; pick a pair whose union differs from either.
 - **State the harness or an earlier feature left**, stated as the product's: `openTable`'s current
   cell, the context panel or toolbox open, a custom-event count (reset by `listens for`), a per-account
-  setting toggled through the UI (pin it with a Given that restores it at feature end).
+  setting toggled through the UI (pin it with a Given that restores it at feature end). Seen in the
+  Projects round: the Dashboards panel left open beside Browse (a second "Save" button in every
+  table view — the sidebar's tabs toggle panels that can be open together, and Browse and
+  Dashboards both carry `selected`, so read the Files node, not the class); a context pane left
+  expanded (`… section in context panel is collapsed` before claiming what it shows on expand);
+  the pivot table's saved configurations in localStorage, which the visual query builder of a
+  later feature reads (`user clears the saved pivot table parameters` clears them at the end too).
 - **Package bindings take `expect` and `pollMs` from `@datagrok-libraries/bdd/runtime`**, never from
   `@playwright/test`: the `@known-failure` narrowing and `BDD_EXPECT_TIMEOUT` go through them.
 - **Titles and descriptions that promise more than the Thens claim** ("…and dropping the tree
@@ -424,7 +439,14 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   `html`; see that package's bdd README).
 - A sharing feature shares with `DATAGROK_SHARING_LOGIN` or, unset, with the `bddsecond` user
   `global-setup.ts` creates through `POST /public/v1/users` with the dev-key token (a missing
-  login answers 200 with an `ApiError` body; users cannot be deleted, so it stays).
+  login answers 200 with an `ApiError` body; users cannot be deleted, so it stays). `user signs in
+  as the sharing user` exchanges that user's dev key for a session and reloads the shell under it;
+  never the platform's Logout, which revokes every session of the admin that all workers share.
+  The feature end signs back in first (`atFeatureEnd(…, first = true)`), since the second account
+  may not delete what the feature made; after a switch the panels and the gallery are reopened.
+- A row count that differs between stands (a table of the Datagrok database) is remembered by
+  label (`user remembers the row count of [the table|table "…"] as "…"`), kept for the worker, and
+  claimed after every reopen; never a literal count of a Datagrok table.
 - `pub serve` degrades under a run: the direct port (`:63343`) has served the bundle in 46 s
   while nginx at `:8888` answered from cache in 3 s; a run started while it is starved fails every
   feature at the shell load. `curl -o /dev/null -w '%{time_total}' localhost:63343/login.dart.js_1.part.js`

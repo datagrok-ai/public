@@ -1036,9 +1036,11 @@ function install(): void {
   };
   /** Where to right-click an element for its context menu — a named hit area, else the viewer's
    * `view` area, else a point of the element's visible part that the page hit-tests to it — with
-   * the canvas baseline taken and the menu armed. A tree node, a card or a list row has no render to
-   * wait through and no areas (`settle` and `stableArea` throw for a non-viewer). */
-  const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string}> => {
+   * the canvas baseline taken. A viewer's menu is armed here; a tree node, a card or a list row has
+   * no render to wait through and no areas (`settle` and `stableArea` throw for a non-viewer), and
+   * its point is aimed again by `aimMenu` right before the click: `miss` says why there is no point
+   * yet (the element was replaced or is not laid out), and the caller locates it again. */
+  const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string; miss?: string}> => {
     const v = findViewer(el);
     if (!v && area !== null)
       throw new Error(`"${area}" names a hit area, and the element is not a viewer of an open table view`);
@@ -1057,7 +1059,13 @@ function install(): void {
     // right-click aims at a point of the element a person can see and the page hit-tests to it.
     // Only an element with no part in sight is scrolled to — scrollIntoView moves overflow-hidden
     // ancestors too, and the page with them.
+    if (v && box)
+      return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
     if (!box) {
+      // a popup still open goes first: closing it can lay the page out again
+      await closeMenu();
+      if (!el.isConnected)
+        return {x: 0, y: 0, token: '', miss: 'the element left the page (re-rendered)'};
       const reachable = (b: Box): Box | undefined => {
         for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.5], [0.75, 0.5], [0.5, 0.25], [0.5, 0.75], [0.1, 0.5], [0.9, 0.5]]) {
           const [x, y] = [b.x + b.width * fx, b.y + b.height * fy];
@@ -1081,13 +1089,14 @@ function install(): void {
         [left, top, right, bottom] = [Math.max(left, 0), Math.max(top, 0), Math.min(right, innerWidth), Math.min(bottom, innerHeight)];
         return right > left && bottom > top ? {x: left, y: top, width: right - left, height: bottom - top} : undefined;
       };
-      // a panel docked a moment ago (the console) is still resizing what it pushed aside
+      // a panel docked a moment ago (the console) is still resizing what it pushed aside, a view
+      // switch still moving the side panels: the box has to hold for two frames running
       let last = '';
-      for (let frame = 0; frame < 30; frame++) {
+      let same = 0;
+      for (let frame = 0; frame < 60 && same < 2; frame++) {
         const r = el.getBoundingClientRect();
         const now = `${r.x},${r.y},${r.width},${r.height}`;
-        if (now === last)
-          break;
+        same = now === last ? same + 1 : 0;
         last = now;
         await new Promise((resolve) => requestAnimationFrame(resolve));
       }
@@ -1095,12 +1104,24 @@ function install(): void {
       box = seen && reachable(seen);
       if (!box) {
         el.scrollIntoView({block: 'nearest'});
-        const r = el.getBoundingClientRect();
         const now = visible();
-        box = (now && reachable(now)) ?? now ?? {x: r.x, y: r.y, width: r.width, height: r.height};
+        box = now && reachable(now);
+      }
+      // never the box of a detached or unlaid element: its (0, 0) is the left sidebar, whose menu
+      // is Close All
+      if (!box) {
+        const r = el.getBoundingClientRect();
+        return {x: 0, y: 0, token: '', miss: `no point of the element hit-tests to it (box ${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)})`};
       }
     }
-    return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
+    return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: ''};
+  };
+  /** Right before the right-click at a point `menuPoint` found for a non-viewer: the point still
+   * hit-tests to the element, and then the menu is armed; null when something else is there now. */
+  const aimMenu = async (el: Element, x: number, y: number, capMs: number): Promise<string | null> => {
+    const token = await openMenu(capMs);
+    const hit = document.elementFromPoint(x, y);
+    return hit && (hit === el || el.contains(hit)) ? token : null;
   };
   let added: any;
   const addViewer = (type: string): void => {
@@ -1272,7 +1293,7 @@ function install(): void {
     viewerOf, arm, stampAll, settle, quiet, readProperty, writeProperties, findArea, hitArea, areas, quietAreaRects, areaInk, areaChange, areaDelta, areaColors,
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
-    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
+    palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, aimMenu, stableArea, addViewer, writePropertiesOfAdded,
     takeBalloons, putBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, hue, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));

@@ -15,15 +15,27 @@ export async function serverRequests(page: Page): Promise<ServerApi> {
   const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
     token: String(grok.dapi.token)}));
   const headers = {Authorization: token};
+  // a request that fails in transport throws with Playwright's call log, which prints the headers:
+  // the session token must not reach the run's log, report or trace
+  const scrubbed = async <T>(method: string, path: string, request: Promise<T>): Promise<T> => {
+    try {
+      return await request;
+    }
+    catch (error) {
+      const message = String((error as Error)?.message ?? error).split(token).join('<token>')
+        .replace(/(authorization["']?\s*[:=]\s*["']?)[^\s"',}]+/gi, '$1<token>');
+      throw new Error(`${method} ${path}: ${message.split('\n')[0]}`);
+    }
+  };
   const checked = async (method: string, path: string, response: Promise<{ok(): boolean; text(): Promise<string>}>) => {
-    const done = await response;
+    const done = await scrubbed(method, path, response);
     const body = await done.text();
     if (!done.ok() || body.includes('ApiError'))
       throw new Error(`${method} ${path}: ${body.slice(0, 200)}`);
   };
   return {
     async get<T>(path: string): Promise<T> {
-      const got = await page.request.get(`${root}${path}`, {headers});
+      const got = await scrubbed('GET', path, page.request.get(`${root}${path}`, {headers}));
       if (!got.ok())
         throw new Error(`GET ${path} failed: HTTP ${got.status()}`);
       return got.json();

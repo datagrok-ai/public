@@ -19,7 +19,7 @@
    (`bindings/tiers/viewers/widgets.ts` and `bindings/platform/steps.ts`). */
 import {expect, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {el, ElementRef, exactText, gestures, viewers} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, el, ElementRef, exactText, gestures, viewers} from '@datagrok-libraries/bdd/runtime';
 
 const HISTORY_KEY = 'grok-aggregation-history';
 
@@ -29,14 +29,20 @@ const settle = (page: Page, target: ElementRef): Promise<number> => viewers.sett
 // --- the tag rows' column picker ------------------------------------------------------------------
 
 /** The `+` of a tag row opens the platform's column picker; the pointer leaves it first, because a
- * row it rests on is previewed onto the row's chip. The picker itself is `pickInColumnGrid`. */
+ * row it rests on is previewed onto the row's chip. The picker itself is `pickInColumnGrid`.
+ * The picker's search box is made by a letter's keydown on the `+` itself (`ColumnComboBox` with the
+ * icon as its `origin`, pivot_grid.dart), and the `+` holds the focus only until something else takes
+ * it (the table view's grid does, on a timer): the letter goes to the `+` it belongs to, focused by
+ * the key press itself, not to whatever the page has focused by then. */
 export const addToRow = When('user adds {string} to the {string} row of pivot table viewer',
   async (page: Page, column: string, row: string) => {
     const target = el('pivot table viewer');
     const c = viewers.centerOf(await viewers.hitArea(page, target, `add ${row}`, true));
     await page.mouse.click(c.x, c.y);
     await page.mouse.move(2, 2);
-    await gestures.pickInColumnGrid(page, column, `the "${row}" row`);
+    const plus = (await viewers.viewerLocator(page, target))
+      .locator(`[name="div-add-${row.replace(/ /g, '-')}" i] [tabindex]`).first();
+    await gestures.pickInColumnGrid(page, column, `the "${row}" row`, plus);
     await settle(page, target);
   }, {tier: 'ui', description: 'the + of a tag row, the column typed and committed — as a user picks it'});
 
@@ -164,10 +170,13 @@ export const pickFromHistory = When('user picks {string} from the history menu o
     await settle(page, target);
   }, {tier: 'ui', description: 'the command bar\'s history icon and one of its entries'});
 
-export const clearSavedParameters = Given('user clears the saved pivot table parameters',
-  (page: Page) => page.evaluate((key) => {
-    window.localStorage.removeItem(key);
-  }, HISTORY_KEY), {tier: 'api', description: 'the saved configurations live in localStorage and outlive a feature'});
+const clearHistory = (page: Page): Promise<void> => page.evaluate((key) => { window.localStorage.removeItem(key); }, HISTORY_KEY);
+
+// the visual query builder of a later feature reads the same history
+export const clearSavedParameters = Given('user clears the saved pivot table parameters', async (page: Page) => {
+  atFeatureEnd(page, () => clearHistory(page));
+  await clearHistory(page);
+}, {tier: 'api', description: 'the saved configurations live in localStorage and outlive a feature: cleared now and when the feature ends'});
 
 // --- the in-cell viewer columns ----------------------------------------------------------------------
 

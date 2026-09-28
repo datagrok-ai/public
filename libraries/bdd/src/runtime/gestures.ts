@@ -258,6 +258,11 @@ export async function press(page: Page, key: string): Promise<void> {
 export async function typeInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<Locator> {
   const popup = page.locator('.d4-column-grid').last();
   await popup.waitFor({state: 'visible', timeout: 10000});
+  // the picker focuses the element that listens for the letter from a zero timer after it shows
+  // (column_combo_box.dart Timer.run), and Chrome runs queued input before timers: a letter sent to
+  // the page keyboard waits for that turn
+  if (!selector)
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
   await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
   const search = page.locator('input.d4-column-selector-search-input');
   await search.waitFor({state: 'visible', timeout: 10000});
@@ -306,6 +311,20 @@ export async function pickInColumnGrid(page: Page, option: string, what: string,
   await popup.waitFor({state: 'detached', timeout: 5000}).catch(() => {
     throw new Error(`the column picker of ${what} is still open after Enter: "${option}" was not taken`);
   });
+}
+
+/** The picker [open] shows, the column typed and committed. A docked Columns pane (Data > Aggregate
+ * Rows... docks one) is a `.d4-column-grid` too, so `pickInColumnGrid`'s wait for the last grid to
+ * go never ends while it is open: the picker is done when the page is back to the grids it had
+ * before it opened. */
+export async function pickColumnCounted(page: Page, open: () => Promise<void>, column: string, what: string, selector?: Locator): Promise<void> {
+  const grids = page.locator('.d4-column-grid');
+  const before = await grids.count();
+  await open();
+  await expect.poll(() => grids.count(), {message: `the column picker of ${what}, opened`, timeout: 10000}).toBeGreaterThan(before);
+  await typeInColumnGrid(page, column, what, selector);
+  await expect.poll(() => grids.count(), {message: `the column picker of ${what} after Enter: "${column}" was not taken while it stays open`,
+    timeout: 5000}).toBe(before);
 }
 
 /** A mouse-down on a Dart column selector opens its column grid; the pointer then leaves it, since
@@ -419,8 +438,13 @@ function optionsNamed(page: Page, option: string): Locator {
     .or(page.locator(withAttr(OPTION, `[aria-label="${cssString(option)}" i]`)));
 }
 
+const CHECKABLE = 'input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]';
+
 export async function setChecked(page: Page, target: ElementRef, checked: boolean): Promise<void> {
   const loc = await locate(page, target);
+  // a dialog that fills its rows after it opens (Save project) has the host before its control
+  if (!await loc.first().evaluate((e, sel) => e.matches(sel), CHECKABLE))
+    await expect(loc.first().locator(`.ui-input-switch, ${CHECKABLE}`).first(), `the control inside ${target.phrase}`).toBeAttached();
   // the Dart switch keeps its checkbox hidden and takes the click on a div, so it is not settable
   if (await loc.first().locator('.ui-input-switch').count() > 0)
     return setSwitched(page, target, checked);

@@ -181,6 +181,8 @@ export const clipboardImage = Then('the clipboard should hold a PNG image of at 
 /** The state a scenario needs, rather than a gesture: `setExpanded` reads where the element is
  * first, so a group that is already open stays open — "user expands" on it would close it. */
 export const isExpanded = Given('{element} is expanded', (page: Page, target: ElementRef) => g.setExpanded(page, target, true), {tier: 'ui'});
+export const isCollapsed = Given('{element} is collapsed', (page: Page, target: ElementRef) => g.setExpanded(page, target, false),
+  {tier: 'ui', description: 'a pane or a group whose expanded state an earlier feature may have left (a context pane keeps it in the browser): collapsed unless it already is'});
 
 export const finishedUpdating = Then('{element} should have finished updating', async (page: Page, target: ElementRef) => {
   const loc = (await locate(page, target)).filter({visible: true}).first();

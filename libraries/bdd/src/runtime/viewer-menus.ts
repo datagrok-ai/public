@@ -47,10 +47,24 @@ export async function openContextMenuAt(page: Page, x: number, y: number): Promi
 }
 
 /** The context menu of an element: at a named hit area, else its `view` area when it reports
- * one, else its centre. Three roundtrips: the point and the arming in one, the click, the wait. */
+ * one, else a visible point of it. A viewer: three roundtrips (the point and the arming in one, the
+ * click, the wait). Anything else (a tree node, a card) is aimed at once its box has settled and
+ * hit-tested again right before the click, and located afresh while it has no such point — a card a
+ * gallery re-rendered in between sent the click to (0, 0), the left sidebar, whose menu is Close All. */
 export async function openContextMenuOf(page: Page, target: ElementRef, area?: string): Promise<Locator> {
-  const {x, y, token} = await onViewer(page, target, (el, [a, cap]) => (window as any).__bdd.menuPoint(el, a, cap), [area ?? null, MENU_SHOWN_MS()] as [string | null, number]);
-  return rightClickArmed(page, x, y, token);
+  const deadline = Date.now() + pollMs(5000);
+  for (;;) {
+    const {x, y, token, miss} = await onViewer(page, target, (el, [a, cap]) => (window as any).__bdd.menuPoint(el, a, cap),
+      [area ?? null, MENU_SHOWN_MS()] as [string | null, number]) as {x: number; y: number; token: string; miss?: string};
+    if (token)
+      return rightClickArmed(page, x, y, token);
+    const armed = miss ? null : await onViewer(page, target, (el, [px, py, cap]) => (window as any).__bdd.aimMenu(el, px, py, cap),
+      [x, y, MENU_SHOWN_MS()] as [number, number, number]) as string | null;
+    if (armed)
+      return rightClickArmed(page, x, y, armed);
+    if (Date.now() > deadline)
+      throw new Error(`no point to right-click ${target.phrase} at: ${miss ?? `something else lies over (${Math.round(x)}, ${Math.round(y)}) by the time of the click`}`);
+  }
 }
 
 /** A group item holds its children under its own label: the labels inside it are the children's. */

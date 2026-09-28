@@ -107,10 +107,13 @@ const cleanups = new WeakMap<Page, (() => Promise<void>)[]>();
 
 /** Runs when the feature's page closes, whatever its scenarios did — for state a step created on
  * the server (a project, an uploaded table). */
-export function atFeatureEnd(page: Page, cleanup: () => Promise<void>): void {
+export function atFeatureEnd(page: Page, cleanup: () => Promise<void>, first = false): void {
   const list = cleanups.get(page) ?? [];
   cleanups.set(page, list);
-  list.push(cleanup);
+  if (first)
+    list.unshift(cleanup);
+  else
+    list.push(cleanup);
 }
 
 /** The two console errors the browser raises about something that is not the platform's code.
