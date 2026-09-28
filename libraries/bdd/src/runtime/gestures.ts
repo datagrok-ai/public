@@ -618,6 +618,41 @@ export async function insertLine(page: Page, target: ElementRef, text: string): 
   await expect(loc, `${target.phrase} after the line was typed`).toContainText(text);
 }
 
+/** A line of a code editor (CodeMirror 5 or 6), found by how it starts — whitespace ignored, as a
+ * reader copies it — and replaced, or followed by a new line. The caret goes to the end of that line
+ * by a click there and End; the line is selected with Shift+Home, which both editors keep to the line. */
+async function caretAtLineStarting(page: Page, target: ElementRef, start: string): Promise<Locator> {
+  const loc = (await locate(page, target)).first();
+  const want = start.replace(/\s+/g, '');
+  const lines = loc.locator('.cm-line, .CodeMirror-line');
+  let line: Locator | null = null;
+  await expect.poll(async () => {
+    const texts = await lines.allTextContents();
+    const i = texts.findIndex((t) => t.replace(/\s+/g, '').startsWith(want));
+    line = i < 0 ? null : lines.nth(i);
+    return i >= 0 ? 'found' : `no line of ${target.phrase} starts with "${start}"; it has: ${texts.slice(0, 30).join(' | ')}`;
+  }, {message: `the line starting with "${start}" in ${target.phrase}`}).toBe('found');
+  await line!.click();
+  await page.keyboard.press('End');
+  return loc;
+}
+
+export async function replaceLine(page: Page, target: ElementRef, start: string, text: string): Promise<void> {
+  const loc = await caretAtLineStarting(page, target, start);
+  await page.keyboard.press('Shift+Home');
+  await page.keyboard.type(text);
+  await expect(loc, `${target.phrase} after the line was replaced`).toContainText(text);
+}
+
+export async function insertLineAfter(page: Page, target: ElementRef, start: string, text: string): Promise<void> {
+  const loc = await caretAtLineStarting(page, target, start);
+  await page.keyboard.press('Enter');
+  // an editor that indents or closes brackets on Enter would change the typed line; start it clean
+  await page.keyboard.press('Shift+Home');
+  await page.keyboard.type(text);
+  await expect(loc, `${target.phrase} after the line was added`).toContainText(text);
+}
+
 /** A value set by dragging the slider of an input, not by typing into it: a real pointer press on
  * the thumb, a walk to where the value lives on the track, and a release. The track says what it
  * spans (`min`, `max`, `step`), so a feature can name the value a reader would aim at; a pixel of a

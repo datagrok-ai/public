@@ -25,6 +25,12 @@ export const enterInto = When('user enters {string} in(to) {element}', (page: Pa
 export const insertLine = When('user puts {string} on the first line of {element}',
   (page: Page, text: string, target: ElementRef) => g.insertLine(page, target, text),
   {tier: 'ui', description: 'a line typed into a code editor, whose document is not an input value'});
+export const replaceLine = When('user replaces the line starting with {string} in {element} with {string}',
+  (page: Page, start: string, target: ElementRef, text: string) => g.replaceLine(page, target, start, text),
+  {tier: 'ui', description: 'the first line of a code editor that starts with the text (spaces ignored), selected and typed over'});
+export const insertLineAfter = When('user puts {string} on a new line after the line starting with {string} in {element}',
+  (page: Page, text: string, start: string, target: ElementRef) => g.insertLineAfter(page, target, start, text),
+  {tier: 'ui', description: 'a new line typed right after the first line of a code editor that starts with the text'});
 export const clearField = When('user clears {element}', (page: Page, target: ElementRef) => g.clear(page, target), {tier: 'ui'});
 export const pressKey = When('user presses {key}', (page: Page, key: string) => g.press(page, key), {tier: 'ui'});
 export const pressKeyIn = When('user presses {key} in {element}', (page: Page, key: string, target: ElementRef) => g.pressIn(page, target, key), {tier: 'ui'});

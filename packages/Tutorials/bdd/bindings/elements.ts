@@ -34,3 +34,17 @@ kind('cliff molecule', {
   match: ['aria'],
   description: 'a molecule of the pair the Activity Cliffs pane shows (Chem), named "molecule of row N"; a click makes its row current',
 });
+
+kind('model card', {
+  aliases: ['model cards'],
+  selector: '.diff-studio-hub-card',
+  match: ['label'],
+  labelSelector: '.diff-studio-hub-card-header',
+  description: 'a model of the Diff Studio hub (templates and library), by its name; a double-click runs it',
+});
+
+kind('tour button', {
+  selector: '[name^="button-tour-"]',
+  match: ['aria'],
+  description: 'a button of a compute tutorial\'s guided tour, by its role: next, prev or done (the done button of a one-page tour reads "clear")',
+});

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Differential equations: The counter was 15 for 14 steps; the Lotka-Volterra model was taken as the third library card; "Set Delta to 0.1" watched the gamma input (the added eta parameter shifted the form) and could never complete — inputs are found by caption now
 * Peptides SAR: The counter was 18 for 24 steps; seven steps completed on their own after 30 minutes with nothing done
 * Activity Cliffs: The Show only cliffs step completed on a click on any switch of the page, and its hint was captured when the step began; it now waits for the plot's own filter
 * R-Groups Analysis: The counter never reached its last step (14 declared for 15 actions); the gear step completed on a click on any gear of the page; the Category and Value steps watched the context panel's text and now read the trellis's inner viewer; the hover step threw when the Distributions pane was not built yet; a stale Jupyter prerequisite is gone
