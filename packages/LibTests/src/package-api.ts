@@ -105,4 +105,20 @@ export namespace funcs {
   export async function testAnnotatedInputs(a: number | null, b: number | undefined, c: number , v: number , code: string , mode: string , df: DG.DataFrame , col: DG.Column , mol: DG.Column ): Promise<number> {
     return await grok.functions.call('LibTests:TestAnnotatedInputs', { a, b, c, v, code, mode, df, col, mol });
   }
+
+  export async function mockValidator(x: number ): Promise<string> {
+    return await grok.functions.call('LibTests:MockValidator', { x });
+  }
+
+  export async function testNamedValidators(x: number , y: number ): Promise<number> {
+    return await grok.functions.call('LibTests:TestNamedValidators', { x, y });
+  }
+
+  export async function mockValidatorBool(x: number ): Promise<boolean> {
+    return await grok.functions.call('LibTests:MockValidatorBool', { x });
+  }
+
+  export async function mockValidatorThrow(x: number ): Promise<string> {
+    return await grok.functions.call('LibTests:MockValidatorThrow', { x });
+  }
 }

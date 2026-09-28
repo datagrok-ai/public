@@ -4,6 +4,7 @@ import {getProcessedConfig} from
 import {expandChecks, parseRegexLiteral, validateCheckOptions} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/checks';
 import {evaluate} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-expressions';
+import {resolveSources} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-sources';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
@@ -15,6 +16,7 @@ import * as DG from 'datagrok-api/dg';
 import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
 
 const ANNOTATED = 'LibTests:TestAnnotatedInputs';
+const NAMED = 'LibTests:TestNamedValidators';
 
 const annotatedStep = (links: PipelineLinkConfigurationInput<string | string[]>[] = []): PipelineConfiguration => ({
   id: 'pipeline1',
@@ -55,7 +57,8 @@ const annotationsAsChecks: PipelineLinkConfigurationInput<string | string[]>[] =
   {id: 'code', type: 'check', io: 's/code', check: {nullable: false, validator: '/^[0-9]{4}$/i'}},
   {id: 'mode', type: 'check', io: 's/mode', check: {nullable: false, choices: ['fast', 'exact']}},
   {id: 'df', type: 'check', io: 's/df', check: {nullable: false}},
-  {id: 'col', type: 'check', io: 's/col', check: {nullable: false, type: 'numerical', table: 's/df', allowNulls: false}},
+  {id: 'col', type: 'check', io: 's/col',
+    check: {nullable: false, type: 'numerical', table: 's/df', allowNulls: false}},
   {id: 'mol', type: 'check', io: 's/mol', check: {nullable: false, semType: 'Molecule', table: 's/df'}},
 ];
 
@@ -300,6 +303,139 @@ category('ComputeUtils: Driver links check', async () => {
     ]);
   });
 
+  test('Annotations parse named validators', async () => {
+    const pconf: any = await getProcessedConfig({id: 'p', type: 'static', steps: [{id: 's', nqName: NAMED}]});
+    const io = Object.fromEntries(pconf.steps[0].io.map((item: any) => [item.id, item]));
+    expectDeepEqual(io.x.checks, {validators: ['LibTests:MockValidator']});
+    expect(io.y.checks === undefined, true);
+  });
+
+  test('Expand the validators check', async () => {
+    const [check] = expandChecks({validators: ['Pkg:f']});
+    expect(check.key, 'validators');
+    expect(check.needsCall, false);
+    expectDeepEqual(check.params.sources, {verdicts: {validators: {input: 'value', names: ['Pkg:f']}}});
+    expectDeepEqual(check.params.when, {'!': {missing: ['value']}});
+    expectDeepEqual(check.params.effects, [{effect: 'verdicts', targets: ['target'], source: 'verdicts'}]);
+    const [lowered] = expandChecks({validators: ['Pkg:f']}, {severity: 'notification'});
+    expectDeepEqual(lowered.params.effects,
+      [{effect: 'notification', targets: ['target'], message: {map: [{var: 'verdicts'}, {var: 'message'}]}}]);
+    expect(expandChecks({min: 0})[0].needsCall, false);
+  });
+
+  test('Check links run the named validators directly', async () => {
+    const pconf: any = await getProcessedConfig(twoSteps([
+      {id: 'named', type: 'check', io: 'step1/a', check: {validators: ['LibTests:MockValidator']}},
+    ]));
+    const link = pconf.links[0];
+    expect(link.id, 'named::validators');
+    expectDeepEqual(link.from.map((io: any) => [io.name, io.flags ?? []]), [['value', []]]);
+    expectDeepEqual(link.params.sources,
+      {verdicts: {validators: {input: 'value', names: ['LibTests:MockValidator']}}});
+    await expectThrowsAsync(() => getProcessedConfig(twoSteps([
+      {id: 'bad', type: 'check', io: 'step1/a', check: {validators: 'LibTests:MockValidator' as any}},
+    ])));
+  });
+
+  test('Annotation validators are silent without a FuncCall', async () => {
+    const pconf = await getProcessedConfig({id: 'p', type: 'static', steps: [{id: 's', nqName: NAMED}]});
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      StateTree.loadOrCreateCalls(tree, true).subscribe();
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+      cold('-a').subscribe(() => {
+        node.getStateStore().setState('x', 20);
+        node.getStateStore().setState('y', 1);
+      });
+      cold('--a').subscribe(() => snapshots.push(node.validationInfo$.value));
+      cold('---a').subscribe(() => node.getStateStore().setState('x', null));
+      cold('----a').subscribe(() => snapshots.push(node.validationInfo$.value));
+    });
+    expectDeepEqual(snapshots, [{}, {x: errors('Missing value')}]);
+  });
+
+  test('Validator source resolves named and annotation validators alike', async () => {
+    const fc = DG.Func.byName(NAMED).prepare({x: 20, y: 1});
+    const controllerFor = (value: any, call?: any) => ({
+      hasCall: (name: string) => name === 'call',
+      getFirst: (name: string) => name === 'call' ? call : value,
+      getMatchedPositions: () => [{path: [], position: 0, ioName: 'x'}],
+    }) as any;
+    const named = (...names: string[]) => ({verdicts: {validators: {input: 'value', names}}});
+    const annotation = {verdicts: {validators: {input: 'value', call: 'call'}}};
+    const tooBig = {verdicts: [{message: 'too big', isError: true, isHelper: false}]};
+    expectDeepEqual(await resolveSources(controllerFor(20), named('LibTests:MockValidator')), tooBig);
+    expectDeepEqual(await resolveSources(controllerFor(20, fc), annotation), tooBig);
+    expectDeepEqual(await resolveSources(controllerFor(1), named('LibTests:MockValidator')), {verdicts: []});
+    expectDeepEqual(await resolveSources(controllerFor(null), named('LibTests:MockValidator')), {verdicts: []});
+    expectDeepEqual(await resolveSources(controllerFor(20), named('LibTests:MockValidatorBool')),
+      {verdicts: [{message: 'Validation failed: LibTests:MockValidatorBool', isError: true, isHelper: false}]});
+    expectDeepEqual(await resolveSources(controllerFor(1), named('LibTests:MockValidatorBool')), {verdicts: []});
+    const thrown: any = await resolveSources(controllerFor(1), named('LibTests:MockValidatorThrow'));
+    expect(thrown.verdicts.length, 1);
+    expect(thrown.verdicts[0].isError, false);
+    expect(thrown.verdicts[0].message.includes('boom'), true);
+    const unknown: any = await resolveSources(controllerFor(1), named('LibTests:NoSuchValidator'));
+    expect(unknown.verdicts[0].isError, false);
+    expectDeepEqual(await resolveSources(controllerFor(20, undefined), annotation), {verdicts: []});
+    expectDeepEqual(await resolveSources(controllerFor(20, {}), annotation), {verdicts: []});
+    expectDeepEqual(resolveSources(controllerFor(20), undefined), {});
+  });
+
+  test('Rules accept sources, verdicts and array messages', async () => {
+    const pconf: any = await getProcessedConfig(twoSteps([{
+      id: 'named',
+      type: 'rule',
+      from: 'x:step1/a',
+      to: 't:step1/a',
+      sources: {v: {validators: {input: 'x'}}},
+      debounce: 0,
+      effects: [{effect: 'verdicts', targets: 't', source: 'v'}],
+    }, {
+      id: 'list',
+      type: 'rule',
+      from: 'b:step1/b',
+      to: 'tb:step1/b',
+      debounce: 0,
+      when: {'>': [{var: 'b'}, 0]},
+      effects: [{effect: 'warning', targets: 'tb', message: {if: [{'>': [{var: 'b'}, 1]}, ['first', 'second'], []]}}],
+    }]));
+    const namedLink = pconf.links.find((link: any) => link.id === 'named::validator');
+    expectDeepEqual(namedLink.from.map((io: any) => [io.name, io.flags ?? []]),
+      [['x', []], ['call', ['call', 'optional']]]);
+    expectDeepEqual(namedLink.params.sources, {v: {validators: {input: 'x', call: 'call'}}});
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+      const store = node.getStateStore();
+      cold('-a').subscribe(() => {
+        store.setState('a', 20);
+        store.setState('b', 2);
+      });
+      cold('--a').subscribe(() => snapshots.push(node.validationInfo$.value));
+      cold('---a').subscribe(() => store.setState('b', 1));
+      cold('----a').subscribe(() => snapshots.push(node.validationInfo$.value));
+    });
+    expectDeepEqual(snapshots, [{b: warnings('first', 'second')}, {}]);
+    const badRule = (rule: any) => expectThrowsAsync(() => getProcessedConfig(twoSteps([{
+      id: 'bad', type: 'rule', from: 'x:step1/a', to: 't:step1/a',
+      effects: [{effect: 'error', targets: 't', message: 'm'}], ...rule,
+    }])));
+    await badRule({sources: {x: {validators: {input: 'x'}}}});
+    await badRule({sources: {v: {validators: {input: 'nope'}}}});
+    await badRule({sources: {v: {validators: {input: 'x', names: 'Pkg:f'}}}});
+    await badRule({sources: {v: {other: {}}}});
+    await badRule({sources: {v: {validators: {input: 'x'}}},
+      effects: [{effect: 'verdicts', targets: 't', source: 'w'}]});
+    await badRule({from: ['x:step1/a', 'call:step1/b'], sources: {v: {validators: {input: 'x'}}}});
+  });
+
   test('Check links give the same results as annotations', async () => {
     const annotated = annotationScenario(await getProcessedConfig(annotatedStep()), true, false);
     const configured = annotationScenario(await getProcessedConfig(annotatedStep(annotationsAsChecks)), false, false);
@@ -309,8 +445,10 @@ category('ComputeUtils: Driver links check', async () => {
     for (let i = 0; i < annotated.length; i++) {
       const [c, a] = [brief(configured[i]), brief(annotated[i])];
       for (const io of new Set([...Object.keys(c), ...Object.keys(a)])) {
-        if (JSON.stringify(c[io] ?? []) !== JSON.stringify(a[io] ?? []))
-          throw new Error(`snapshot ${i} io ${io} configured ${JSON.stringify(c[io])} annotated ${JSON.stringify(a[io])}`);
+        if (JSON.stringify(c[io] ?? []) !== JSON.stringify(a[io] ?? [])) {
+          throw new Error(`snapshot ${i} io ${io} configured ${JSON.stringify(c[io])} ` +
+            `annotated ${JSON.stringify(a[io])}`);
+        }
       }
     }
     expectDeepEqual(configured, annotated);

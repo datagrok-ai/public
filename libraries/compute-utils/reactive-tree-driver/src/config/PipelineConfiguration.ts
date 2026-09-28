@@ -154,11 +154,10 @@ export type RuleMetaEffect =
   | {effect: 'items', targets: RuleTargets, items: RuleExpr}
   | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>};
 
-export type RuleValidatorEffect = {
-  effect: 'error' | 'warning' | 'notification',
-  targets: RuleTargets,
-  message: RuleExpr,
-};
+export type RuleValidatorEffect =
+  | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr}
+  /** Writes a source's verdicts: `isError` items as errors, the rest as warnings. */
+  | {effect: 'verdicts', targets: RuleTargets, source: string};
 
 export type RuleDataEffect =
   | {effect: 'set', targets: RuleTargets, value: RuleExpr, restriction?: RestrictionType}
@@ -166,9 +165,15 @@ export type RuleDataEffect =
 
 export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
 
+/** Async values resolved before a rule evaluates. `validators` runs the named functions
+ *  on the io behind `input`; without `names` it runs the io's own annotation validators
+ *  through the platform, using the `(call)` input that expansion adds as `call`. */
+export type RuleSource = {validators: {input: string, names?: string[], call?: string}};
+
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';
   when?: RuleExpr;
+  sources?: Record<string, RuleSource>;
   effects: RuleEffect[];
   debounce?: number;
   runOnInit?: boolean;

@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {RuleExpr, RuleValidatorEffect} from './PipelineConfiguration';
+import {RuleExpr, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
 
 /** The annotation options the driver validates. Keys and values match the function
  *  annotation syntax; `check` links use the same object. */
@@ -11,6 +11,8 @@ export type CheckOptions = {
   max?: number;
   /** Regex literal, `/pattern/flags`. */
   validator?: string;
+  /** Named validator functions, evaluated by the platform (1.28+). */
+  validators?: string[];
   choices?: any[];
   /** Column kind, column type or semantic type. */
   type?: string;
@@ -22,12 +24,14 @@ export type CheckOptions = {
 
 export type CheckSeverity = 'error' | 'warning' | 'notification';
 
-export type CheckKey = 'required' | 'min' | 'max' | 'validator' | 'choices' | 'type' | 'semType' | 'table' | 'allowNulls';
+export type CheckKey = 'required' | 'min' | 'max' | 'validator' | 'validators' | 'choices' | 'type' | 'semType' | 'table' | 'allowNulls';
 
 export type ExpandedCheck = {
   key: CheckKey;
   needsTable: boolean;
-  params: {when: RuleExpr, effects: RuleValidatorEffect[]};
+  /** The check reads the node's FuncCall through the `call` alias. */
+  needsCall: boolean;
+  params: {when: RuleExpr, effects: RuleValidatorEffect[], sources?: Record<string, RuleSource>};
 };
 
 export type CheckExtras = {
@@ -37,12 +41,14 @@ export type CheckExtras = {
 };
 
 export const checkOptionKeys: (keyof CheckOptions)[] =
-  ['nullable', 'optional', 'min', 'max', 'validator', 'choices', 'type', 'semType', 'table', 'allowNulls'];
+  ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'choices', 'type', 'semType', 'table', 'allowNulls'];
 
 // aliases shared by annotation-derived and config checks
 export const VALUE = 'value';
 export const TABLE = 'table';
 export const TARGET = 'target';
+export const CALL = 'call';
+const VERDICTS = 'verdicts';
 
 const present = {'!': {missing: [VALUE]}};
 const value = {var: VALUE};
@@ -54,12 +60,23 @@ export function parseRegexLiteral(literal: string): {pattern: string, flags: str
   return match ? {pattern: match[1], flags: match[2]} : undefined;
 }
 
-function conditions(options: CheckOptions): {key: CheckKey, needsTable: boolean, when: RuleExpr, message: string}[] {
-  const out: {key: CheckKey, needsTable: boolean, when: RuleExpr, message: string}[] = [];
+type Condition = {
+  key: CheckKey;
+  needsTable: boolean;
+  needsCall: boolean;
+  when: RuleExpr;
+  /** A fixed message, or the alias of a source whose verdicts carry the messages. */
+  message?: string;
+  verdicts?: string;
+  sources?: Record<string, RuleSource>;
+};
+
+function conditions(options: CheckOptions): Condition[] {
+  const out: Condition[] = [];
   const add = (key: CheckKey, when: RuleExpr, message: string, needsTable = false) =>
-    out.push({key, needsTable, when: {and: [present, when]}, message});
+    out.push({key, needsTable, needsCall: false, when: {and: [present, when]}, message});
   if (options.nullable === false)
-    out.push({key: 'required', needsTable: false, when: {missing: [VALUE]}, message: 'Missing value'});
+    out.push({key: 'required', needsTable: false, needsCall: false, when: {missing: [VALUE]}, message: 'Missing value'});
   if (options.min != null)
     add('min', {'<': [value, options.min]}, `Must be at least ${options.min}`);
   if (options.max != null)
@@ -67,6 +84,13 @@ function conditions(options: CheckOptions): {key: CheckKey, needsTable: boolean,
   if (options.validator != null) {
     const regex = parseRegexLiteral(options.validator)!;
     add('validator', {'!': {regex: [value, regex.pattern, regex.flags]}}, `Must match ${options.validator}`);
+  }
+  if (options.validators?.length) {
+    out.push({
+      key: 'validators', needsTable: false, needsCall: false,
+      sources: {[VERDICTS]: {validators: {input: VALUE, names: options.validators}}},
+      when: present, verdicts: VERDICTS,
+    });
   }
   if (options.choices != null)
     add('choices', {'!': {in: [value, options.choices]}}, `Must be one of: ${options.choices.join(', ')}`);
@@ -94,6 +118,9 @@ export function validateCheckOptions(id: string, options: CheckOptions) {
     throw new Error(`Check ${id}: validator must be a regex literal /pattern/flags`);
   if (options.choices != null && !Array.isArray(options.choices))
     throw new Error(`Check ${id}: choices must be an array`);
+  if (options.validators != null &&
+      (!Array.isArray(options.validators) || options.validators.some((name) => typeof name !== 'string')))
+    throw new Error(`Check ${id}: validators must be an array of function names`);
   for (const key of ['min', 'max'] as const) {
     if (options[key] != null && typeof options[key] !== 'number')
       throw new Error(`Check ${id}: ${key} must be a number`);
@@ -105,14 +132,25 @@ export function validateCheckOptions(id: string, options: CheckOptions) {
 export function expandChecks(options: CheckOptions, extras: CheckExtras = {}): ExpandedCheck[] {
   if (options.optional != null)
     options = {...options, nullable: options.optional};
-  return conditions(options).map(({key, needsTable, when, message}) => ({
-    key,
-    needsTable,
-    params: {
-      when: extras.when == null ? when : {and: [extras.when, when]},
-      effects: [{effect: extras.severity ?? 'error', targets: [TARGET], message: extras.message ?? message}],
-    },
-  }));
+  return conditions(options).map(({key, needsTable, needsCall, when, message, verdicts, sources}) => {
+    const effects: RuleValidatorEffect[] = [];
+    if (verdicts != null && extras.message == null && extras.severity == null)
+      effects.push({effect: 'verdicts', targets: [TARGET], source: verdicts});
+    else {
+      const text = extras.message ?? message ?? {map: [{var: verdicts}, {var: 'message'}]};
+      effects.push({effect: extras.severity ?? 'error', targets: [TARGET], message: text});
+    }
+    return {
+      key,
+      needsTable,
+      needsCall,
+      params: {
+        when: extras.when == null ? when : {and: [extras.when, when]},
+        effects,
+        ...(sources ? {sources} : {}),
+      },
+    };
+  });
 }
 
 function parseBool(val: string | undefined): boolean | undefined {
@@ -155,6 +193,10 @@ export function parseAnnotationChecks(prop: DG.Property): CheckOptions {
   }
   if (options.validator != null && parseRegexLiteral(options.validator))
     checks.validator = options.validator;
+  // the platform keeps `validators` as an array; other options arrive as strings
+  const validators = Array.isArray(options.validators) ? options.validators : parseChoices(options.validators);
+  if (validators?.length && validators.every((name: unknown) => typeof name === 'string'))
+    checks.validators = validators;
   const choices = parseChoices(options.choices);
   if (choices && DG.TYPES_SCALAR.has(prop.propertyType))
     checks.choices = choices;

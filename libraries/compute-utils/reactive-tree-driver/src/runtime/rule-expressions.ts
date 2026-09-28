@@ -103,6 +103,8 @@ export function buildRuleContext(controller: IControllerBase): RuleContext {
   return ctx;
 }
 
+const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
+
 /** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `all.` prefix stripped. */
 export function usedAliases(expr: RuleExpr): string[] {
   const aliases = new Set<string>();
@@ -134,6 +136,13 @@ export function usedAliases(expr: RuleExpr): string[] {
       values.forEach(addPath);
     else if (op === 'missing_some')
       (Array.isArray(values[1]) ? values[1] : [values[1]]).forEach(addPath);
+    // the second argument of an array operation runs over the element, not the rule context
+    if (scopedOps.has(op)) {
+      visit(values[0]);
+      if (op === 'reduce')
+        visit(values[2]);
+      return;
+    }
     values.forEach(visit);
   };
   visit(expr);

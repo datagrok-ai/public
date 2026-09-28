@@ -425,3 +425,28 @@ export async function TestAnnotatedInputs(a: number, b: number, c: number, v: nu
   df: DG.DataFrame, col: DG.Column, mol: DG.Column) {
   return 1;
 }
+
+//input: int x
+//output: string res
+export function MockValidator(x: number): string | null {
+  return x < 10 ? null : 'too big';
+}
+
+//input: int x = 1 {validators: ["LibTests:MockValidator"]}
+//input: int y = 1
+//output: int res
+export function TestNamedValidators(x: number, y: number): number {
+  return x + y;
+}
+
+//input: int x
+//output: bool res
+export function MockValidatorBool(x: number): boolean {
+  return x < 10;
+}
+
+//input: int x
+//output: string res
+export function MockValidatorThrow(x: number): string {
+  throw new Error('boom');
+}
