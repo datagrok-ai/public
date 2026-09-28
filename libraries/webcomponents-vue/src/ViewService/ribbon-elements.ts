@@ -45,12 +45,17 @@ export function createPanelItem(item: RibbonPanelItem, iconKey: string, deps: El
     }, () => state.item.disabledStyleDebounce ?? DISABLED_STYLE_DEBOUNCE_TIME),
   };
   ui.tooltip.bind(el, () => hoverText(state.item));
+  // the icon shows no text: its tooltip is its name for assistive tools and tests
+  if (item.tooltip)
+    el.setAttribute('aria-label', item.tooltip);
   el.addEventListener('click', () => dispatchClick(state.item, deps.warn));
   return state;
 }
 
 export function updatePanelItem(state: PanelItemState, item: RibbonPanelItem): void {
   state.item = item;
+  if (item.tooltip)
+    state.el.setAttribute('aria-label', item.tooltip);
   state.el.style.backgroundColor = item.active ? 'var(--grey-1)' : '';
   state.applyDisabledStyle(!!item.disabled && (item.disabledStyle ?? 'default') === 'default');
 }

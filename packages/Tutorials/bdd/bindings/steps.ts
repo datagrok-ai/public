@@ -125,3 +125,25 @@ export const stepNotDone = Then('the tutorial step {string} should not be done y
     {message: `the tutorial step "${instruction}"`}).toBe('pending');
 }, {description: 'the entry is listed and still unchecked — the claim that pairs with a gesture which must not tick it'});
 
+
+/* The compute tutorials explain a view with a guided tour (ui-describer.ts): one popup per page, with
+   "next" until the last, which has "done" (labelled "OK", "ok" or "clear" on a one-page tour). How many
+   pages there are follows the view (one per viewer), so the step reads the tour, not a count. */
+export const walkTour = When('user goes through the tour to its end', async (page: Page) => {
+  const next = page.locator('[name="button-tour-next"]').filter({visible: true});
+  const done = page.locator('[name="button-tour-done"]').filter({visible: true});
+  await expect(next.or(done).first(), 'a tour popup').toBeVisible();
+  for (let pages = 1; await next.count() > 0; pages++) {
+    if (pages > 20)
+      throw new Error('the tour still offers "next" after 20 pages');
+    await next.first().click();
+    await expect(next.or(done).first(), `tour page ${pages + 1}`).toBeVisible();
+  }
+  await done.first().click();
+  await expect(next.or(done), 'the tour after "done"').toHaveCount(0);
+}, {tier: 'ui', description: '"next" on every page of the guided tour, then "done" — the tour closes'});
+
+export const stepListedTimes = Then('the tutorial step {string} should be listed {int} times', async (page: Page, instruction: string, times: number) => {
+  const entries = stepEntry(page, instruction);
+  await expect.poll(() => entries.count(), {message: `entries "${instruction}"`}).toBe(times);
+}, {description: 'for an instruction a tutorial repeats: its Nth entry is on the list — the tutorial has prepared that step'});

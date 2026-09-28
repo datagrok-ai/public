@@ -1,5 +1,9 @@
 # webcomponents-vue changelog
 
+## v.next
+
+* RibbonPanel: an icon item carries its tooltip as `aria-label`, so assistive tools and tests can name it
+
 ## 0.4.0 (2026-09-23)
 
 * Introduced an injectable per-view service (`provideDgViewService`/`useViewService`/`useDgView`) that owns ribbon rendering and diffing
