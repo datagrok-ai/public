@@ -1,5 +1,6 @@
-/* The steps only the pivot table needs. Everything else its features use is the library's `viewers`
-   tier and the platform's data steps, read from the regions and readings the pivot reports
+/* The pivot table's own steps (promoted from UsageAnalysis when the Data Aggregation tutorial wanted
+   them too). Everything else its features use is the rest of the `viewers` tier and the platform's
+   data steps, read from the regions and readings the pivot reports
    (`group by chip <name>`, `add aggregate`, `counts`, `grid cell <r> of <col>`, `group by`,
    `aggregated rows`, `text of grid cell <r> of <col>`, … — see
    `core/client/d4/lib/src/viewers/pivot_viewer/CLAUDE.md`).
@@ -17,9 +18,13 @@
    The cross-widget drag, the list-reading membership check and the dialog's plain checkbox were
    none of them pivot business and are in the library now
    (`bindings/tiers/viewers/widgets.ts` and `bindings/platform/steps.ts`). */
-import {expect, Page} from '@playwright/test';
-import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {el, ElementRef, exactText, gestures, viewers} from '@datagrok-libraries/bdd/runtime';
+import type {Page} from '@playwright/test';
+import {expect} from '../../../src/runtime/patience.js';
+import {Given, Then, When} from '../../../src/registry.js';
+import {el, type ElementRef} from '../../../src/runtime/args.js';
+import {exactText} from '../../../src/runtime/locate.js';
+import * as gestures from '../../../src/runtime/gestures.js';
+import * as viewers from '../../../src/runtime/viewers.js';
 
 const HISTORY_KEY = 'grok-aggregation-history';
 

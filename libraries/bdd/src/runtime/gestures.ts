@@ -296,7 +296,9 @@ export async function press(page: Page, key: string): Promise<void> {
  * over whatever landed. Enter is pressed ON the box, because the grid moves the focus while it
  * filters. */
 export async function typeInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<Locator> {
-  const popup = page.locator('.d4-column-grid').last();
+  // the picker's column grid holds the backdrop grid; a column list on the page (the Aggregation
+  // Editor's, the column manager) is a column grid too, and must not be taken for it
+  const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').last();
   await popup.waitFor({state: 'visible', timeout: 10000});
   await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
   const search = page.locator('input.d4-column-selector-search-input');
@@ -366,7 +368,7 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
 /** A guide's pointer steps just off the selector, clear of the picker it opened: the page's corner,
  * where a test's goes, is a flight across the video and back. */
 async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
-  const popup = page.locator('.d4-column-grid').last();
+  const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').last();
   await popup.waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
   const picker = await popup.boundingBox().catch(() => null);
   const view = page.viewportSize() ?? {width: 1920, height: 1080};
