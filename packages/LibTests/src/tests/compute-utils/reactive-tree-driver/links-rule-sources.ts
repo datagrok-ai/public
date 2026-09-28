@@ -48,7 +48,7 @@ category('ComputeUtils: Driver rule js sources', async () => {
     expectDeepEqual(pconf.links[0].params.sources.v.js.args, ['x']);
   });
 
-  test('A js source feeds items and meta and runs once per argument change', async () => {
+  test('A js source feeds items and meta on every run', async () => {
     let calls = 0;
     const pconf = await getProcessedConfig(twoSteps([{
       id: 'r',
@@ -83,10 +83,10 @@ category('ComputeUtils: Driver rule js sources', async () => {
       {items: ['x', 'y'], count: 2},
       {items: ['z'], count: 1},
     ]);
-    expect(calls, 2);
+    expect(calls, 3);
   });
 
-  test('A js source may be async and memoizes its result', async () => {
+  test('A js source may be async', async () => {
     let calls = 0;
     const sum = {js: {args: ['x', 'y'], fn: async (x: number, y: number) => {
       calls++;
@@ -94,12 +94,9 @@ category('ComputeUtils: Driver rule js sources', async () => {
     }}};
     const controller = (values: Record<string, any>) => ({getFirst: (name: string) => values[name]}) as any;
     expectDeepEqual(await resolveSources(controller({x: 1, y: 2}), {sum}), {sum: 3});
-    expect(calls, 1);
-    const memoized = resolveSources(controller({x: 1, y: 2}), {sum});
-    expect(memoized instanceof Promise, false);
-    expectDeepEqual(memoized, {sum: 3});
+    expect(resolveSources(controller({x: 1, y: 2}), {sum}) instanceof Promise, true);
     expectDeepEqual(await resolveSources(controller({x: 2, y: 2}), {sum}), {sum: 4});
-    expect(calls, 2);
+    expect(calls, 3);
     const list = {js: {args: ['x'], fn: (x: number) => [x]}};
     expectDeepEqual(resolveSources(controller({x: 7}), {list}), {list: [7]});
     expectDeepEqual(resolveSources(controller({x: undefined}), {list}), {list: [undefined]});

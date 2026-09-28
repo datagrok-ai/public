@@ -77,19 +77,8 @@ function resolveValidators(
 type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];
 type JsSource = Extract<RuleSource, {js: any}>['js'];
 
-// the spec object is shared by every link and run of the rule, so it keys the memo
-const memo = new WeakMap<JsSource, {args: any[], value: any}>();
-
 function resolveJs(controller: IControllerBase, spec: JsSource) {
-  const args = spec.args.map((alias) => controller.getFirst(alias));
-  const last = memo.get(spec);
-  if (last && last.args.every((arg, i) => Object.is(arg, args[i])))
-    return last.value;
-  const value = spec.fn(...args);
-  memo.set(spec, {args, value});
-  if (value instanceof Promise)
-    value.then((result) => memo.set(spec, {args, value: result}), () => memo.delete(spec));
-  return value;
+  return spec.fn(...spec.args.map((alias) => controller.getFirst(alias)));
 }
 
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.

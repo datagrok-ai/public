@@ -750,11 +750,9 @@ any expression. Two resolvers exist:
   `{message, isError, isHelper}` items, empty when the value is absent.
 - `js`: `{args: [...], fn: (...values) => any}`. `fn` is called with the
   values of the `args` input aliases, in order, and its result, or the
-  value of the promise it returns, becomes the alias. The result is
-  memoized per rule until an argument changes (by identity, so a replaced
-  dataframe counts and a mutated one does not), so a rule may list every
-  input it reads in `from` and still run `fn` only when its arguments
-  change. `fn` runs even when an argument is absent.
+  value of the promise it returns, becomes the alias. Like a handler, it
+  runs on every run of the rule's links, so keep `from` to what the rule
+  reads when `fn` is slow. `fn` runs even when an argument is absent.
 
 ```
 {
@@ -779,8 +777,8 @@ expressions like any input (`{'!': {var: 'v'}}` holds while the
 validators pass). Every link of a rule resolves its sources before it
 evaluates, and awaits only when a source returns a promise. A `validators`
 source that makes no call (absent value, no FuncCall, old platform) and a
-`js` source with a synchronous `fn` or a memoized result resolve
-synchronously, so the link stays batchable.
+`js` source with a synchronous `fn` resolve synchronously, so the link
+stays batchable.
 
 ### Expansion
 

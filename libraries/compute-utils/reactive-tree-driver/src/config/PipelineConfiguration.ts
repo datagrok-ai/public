@@ -168,8 +168,8 @@ export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
 /** Values resolved before a rule evaluates. `validators` runs the named functions
  *  on the io behind `input`; without `names` it runs the io's own annotation validators
  *  through the platform, using the `(call)` input that expansion adds as `call`.
- *  `js` calls `fn` with the values of the `args` input aliases; the result (or the
- *  promise it returns) is memoized until one of the arguments changes. */
+ *  `js` calls `fn` with the values of the `args` input aliases on every run of the
+ *  rule; a returned promise is awaited. */
 export type RuleSource =
   {validators: {input: string, names?: string[], call?: string}} |
   {js: {args: string[], fn: (...values: any[]) => any}};
