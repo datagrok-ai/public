@@ -934,3 +934,68 @@ export const currentRowIsHovered = Then('the {string} reading of {widget} should
     return Number(reading) > 0 && Number(reading) === current ? 'same' : `the ${name} is ${reading}, the current row is ${current}`;
   }, {message: `the ${name} of ${target.phrase} against the current row`}).toBe('same');
 }, {description: 'a row reading counted from 1 (`hovered row`) names the table\'s current row, and is not 0'});
+
+// --- result cards ---------------------------------------------------------------------------------
+
+/* A search viewer (similarity, diversity) reports each result card as `card <row>`, the table row it
+   shows (from 0), in the order the cards are laid out; which rows they are depends on the data, so a
+   card is named by its place: "card 2 of <viewer>" is the second card drawn. */
+async function nthCard(page: Page, target: ElementRef, n: number): Promise<{name: string; row: number}> {
+  let names: string[] = [];
+  await expect.poll(async () => {
+    names = Object.keys(await v.hitAreas(page, target)).filter((k) => /^card \d+$/.test(k));
+    return names.length >= n;
+  }, {message: `${target.phrase} showing ${n} result card(s)`, timeout: pollMs(10000)}).toBe(true);
+  const name = names[n - 1];
+  return {name, row: Number(name.slice('card '.length))};
+}
+
+const clickedCardRow = new WeakMap<Page, number>();
+
+export const clickNthCard = When('user clicks on card {int} of {widget}', async (page: Page, n: number, target: ElementRef) => {
+  const {name, row} = await nthCard(page, target, n);
+  clickedCardRow.set(page, row);
+  const c = v.centerOf(await v.hitArea(page, target, name, true));
+  await page.mouse.click(c.x, c.y);
+  await settle(page, target);
+}, {tier: 'ui', description: 'the Nth result card in the order the viewer lays them out (the `card <row>` areas of a search viewer); its row is remembered'});
+
+/* A click on a similarity card makes its row current, and the viewer then searches again around it,
+   so the claim is made against the row the card showed when it was clicked. */
+export const currentRowIsClickedCard = Then('the current row should be the row of the clicked card', async (page: Page) => {
+  const row = clickedCardRow.get(page);
+  if (row === undefined)
+    throw new Error('no result card was clicked in this scenario');
+  await expect.poll(() => page.evaluate(() => (window as any).grok.shell.t?.currentRowIdx), {message: `the current row against the clicked card (row ${row + 1})`}).toBe(row);
+}, {description: 'the table row the last clicked result card showed is the current row'});
+
+export const hoverNthCard = When('user hovers over card {int} of {widget}', async (page: Page, n: number, target: ElementRef) => {
+  const {name} = await nthCard(page, target, n);
+  const c = v.centerOf(await v.hitArea(page, target, name, true));
+  await page.mouse.move(c.x, c.y);
+}, {tier: 'ui', description: 'the pointer on the Nth result card, which shows the icons a card reveals on hover'});
+
+// --- the grid's current cell -----------------------------------------------------------------------
+
+/* A column far to the right is reached the way a user reaches it from the keyboard: the current cell
+   walks there one arrow press at a time and the grid scrolls to keep it in view. */
+export const walkToColumn = When('user moves the current cell of {widget} to the {string} column', async (page: Page, target: ElementRef, column: string) => {
+  const steps = await v.onViewer(page, target, (root, column) => {
+    const grid = (window as any).DG.Widget.find(root);
+    const names: string[] = [];
+    for (let i = 0; i < grid.columns.length; i++) {
+      const c = grid.columns.byIndex(i);
+      if (c.visible && c.column != null)
+        names.push(c.name);
+    }
+    const to = names.indexOf(column);
+    if (to < 0)
+      throw new Error(`the grid shows no "${column}" column; it shows: ${names.join(', ')}`);
+    return to - names.indexOf(grid.dataFrame.currentCol?.name);
+  }, column) as number;
+  for (let i = 0; i < Math.abs(steps); i++)
+    await g.pressIn(page, target, steps > 0 ? 'ArrowRight' : 'ArrowLeft');
+  await expect.poll(() => v.onViewer(page, target, (root) => (window as any).DG.Widget.find(root).dataFrame.currentCol?.name),
+    {message: `the current column of ${target.phrase}`}).toBe(column);
+  await settle(page, target);
+}, {tier: 'ui', description: 'arrow presses in the grid from the current column; the grid scrolls the column into view'});

@@ -390,7 +390,7 @@ export const contextPanelShows = Then('the context panel should show {string}', 
   await expect.poll(() => page.evaluate(() => {
     const o = grok.shell.o;
     // a viewer has no name of its own: it is its type
-    return o == null ? 'nothing' : `${o.constructor?.name ?? typeof o} "${o.friendlyName || o.name || o.type || ''}"`;
+    return o == null ? 'nothing' : `${o.constructor?.name ?? typeof o} "${o instanceof DG.Viewer ? o.type : o.friendlyName || o.name || o.type || ''}"`;
   }), {message: `the current object (grok.shell.o), which the context panel renders`}).toMatch(new RegExp(`"${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"$`));
   // a viewer's panel is its property grid, with no header naming it: the text is claimed for entities
   if (!await page.evaluate(() => grok.shell.o instanceof DG.Viewer))
@@ -809,6 +809,12 @@ export const standRunsService = Given('the stand runs the {string} service', asy
   }, service);
   test.skip(status !== '', `the stand does not run the ${service} service (${status}) — the rest of this test needs it`);
 }, {tier: 'api', description: 'a capability gate: the service is enabled and Running, as the platform reports it, or the rest of the test is skipped with the reason'});
+
+export const packageInstalled = Given('the {string} package is installed', async (page: Page, name: string) => {
+  const found = await page.evaluate(async (n) => (await grok.dapi.packages.list({pageSize: 1000}))
+    .some((p: any) => p.name === n || p.friendlyName === n), name);
+  test.skip(!found, `the stand has no ${name} package — the rest of this test needs it`);
+}, {tier: 'api', description: 'a capability gate: a package of that name (or friendly name) is on the stand, or the rest of the test is skipped with the reason'});
 
 export const standReachesConnection = Given('the stand can reach the database of the {string} connection', async (page: Page, name: string) => {
   const answer = await page.evaluate(async (n) => {

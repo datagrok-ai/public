@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Similarity and Diversity Search: The counter never reached its last step; the gear step completed on a click on any gear of the page; the Follow Current Row and Molecule Properties steps waited for texts in the context panel and now read the viewers' properties; the Edit hint looked for a class the viewer does not carry, so it showed nothing
 * Substructure Search and Filtering: The counter never reached its last step; switching the card off completed on any class change of the card and now waits for the card to say it is off; three hints were captured when their step began; typos "flter" and "filers" in the steps
 * Multivariate Analysis: The counter never reached its last step; the viewer tour took the charts two seconds after RUN by position (a slower first run left it short or wrong) and now waits for them by title; the tour's texts were one off from the charts, since the Scores text was split in two
 * Filters: The row-count and bin-selection steps completed on any selection event; the indicator and reset hints were captured when their step began and could point at nothing
