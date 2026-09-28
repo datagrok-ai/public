@@ -11,6 +11,7 @@ import {el} from '../../src/runtime/args.js';
 import {click} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {armEvent} from '../../src/runtime/viewer-menus.js';
+import {expectCustomEvent} from '../../src/runtime/events.js';
 
 declare const grok: any;
 
@@ -122,3 +123,30 @@ export const openRememberedAddress = When('user opens the remembered address', a
     throw new Error('no address remembered: "user remembers the page address" first');
   await page.evaluate((p) => { grok.shell.route(p); }, address);
 }, {tier: 'api', description: 'follows the remembered address inside the running app (grok.shell.route), as a pasted link does'});
+
+/* A custom event read with what it carried: the Tutorials demo app fires `demo-loaded` with the demo's
+   `path` once a demo started from the tree has run and its view is named — the event says which demo,
+   so a claim can tell the demo it opened from one left over from before. */
+export const customFiredWith = Then('the {string} custom event should have fired with {word} {string}', async (page: Page, id: string, key: string, value: string) => {
+  const args = await expectCustomEvent(page, id, pollMs(60000)) as Record<string, unknown> | null;
+  const got = args == null ? undefined : args[key];
+  if (String(got) !== value)
+    throw new Error(`the "${id}" custom event carried ${key} "${got}", not "${value}"`);
+}, {description: 'fired since "listens for" (up to 60 s), and its last arguments hold that value under that key'});
+
+/* `grok.shell.settings` are the account's own (Settings > Beta and the rest), kept on the server: a
+   demo or a feature that flips one (Domain Databases turns on `enableDomainDatabases`) leaves it for
+   every later session of the account, so the value is remembered and put back at feature end. */
+export const shellSettingPutBack = Given('the {string} shell setting is put back at feature end', async (page: Page, name: string) => {
+  const before = await page.evaluate((n) => (grok.shell.settings as any)[n], name);
+  atFeatureEnd(page, async () => {
+    await page.evaluate(([n, v]) => { (grok.shell.settings as any)[n] = v; }, [name, before] as [string, unknown]);
+    await expect.poll(() => page.evaluate((n) => (grok.shell.settings as any)[n], name),
+      {message: `the "${name}" shell setting put back`, timeout: pollMs(15000)}).toEqual(before);
+  });
+}, {tier: 'api', description: 'the account setting is remembered now and written back at feature end, then read back'});
+
+export const shellSettingIs = Then('the {string} shell setting should be {word}', async (page: Page, name: string, value: string) => {
+  await expect.poll(() => page.evaluate((n) => String((grok.shell.settings as any)[n]), name),
+    {message: `the "${name}" shell setting`}).toBe(value);
+}, {description: 'the value of an account setting (grok.shell.settings) as text: true, false, a number'});

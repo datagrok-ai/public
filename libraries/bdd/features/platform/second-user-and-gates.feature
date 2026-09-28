@@ -18,3 +18,7 @@ Feature: The second account and the capability gates
   Scenario: A service the stand does not run skips the rest of the test
     Given the stand runs the "No Such Service" service
     Then the "No such view" view should be current
+
+  Scenario: A package the stand does not have skips the rest of the test
+    Given the "NoSuchPackageAnywhere" package is installed
+    Then the "No such view" view should be current
