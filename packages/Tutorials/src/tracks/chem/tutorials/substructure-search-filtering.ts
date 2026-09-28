@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable, combineLatest} from 'rxjs';
+import {Observable, combineLatest, interval} from 'rxjs';
 import $ from 'cash-dom';
 import { _package } from '../../../package';
 
@@ -18,7 +18,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     'Specifically for molecules, Datagrok uses integrated sketchers to filter by substructure.';
   }
 
-  get steps() {return 10;}
+  get steps() {return 11;}
 
   get icon() {
     return '🔍🧪';
@@ -45,7 +45,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     </ul><br>
     Let’s use the <b>Chem</b> menu.`);
 
-    const d = await this.openDialog('Click Chem > Search > Substructure Search…', '', this.getMenuItem('Chem', true));
+    const d = await this.openDialog('Click Chem > Search > Substructure Search…', '', () => this.getMenuItem('Chem', true));
 
     this.title('Specify substructure using sketcher', true);
     this.describe('In the sketcher, draw naphthalene.' +
@@ -64,7 +64,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
 
     this.title('Use current molecule to filter by substructure', true);
 
-    await this.contextMenuAction('In the grid, right-click any molecule and select Current Value > Use as flter', 'Use as filter');
+    await this.contextMenuAction('In the grid, right-click any molecule and select Current Value > Use as filter', 'Use as filter');
 
     let d_: DG.Dialog;
     await this.action('On the Filter Panel, click the molecule and modify it in the sketcher',
@@ -74,7 +74,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
         return true;
       }
       return false;
-    })), v!.root.querySelector('.chem-canvas') as HTMLElement);
+    })), () => v!.root.querySelector('.chem-canvas') as HTMLElement | null);
 
     await this.action('Click OK', d_!.onClose);
 
@@ -94,24 +94,17 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
         });
       });
       observer.observe(v!.root.querySelector('.d4-flex-col.d4-filter')!, {subtree: true, attributes: true});
-    }), v?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement,
+    }), () => v?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement | null,
     `<ol><li>On the <b>Filter Panel</b>, hover over a molecule and click the <b>Gear</b> icon.</li>
     <li>From the dropdown, select <b>Not contains<b>.</li><ol>`);
 
     this.title('Toggle the filter', true);
     this.describe(`You can toggle a filter using a checkbox to the right of the filter's name ("smiles"). Turn it off.`);
 
-    await this.action('In the filter panel, turn off the filter by clearing the checkbox', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          if (m.attributeName === 'class') {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe(v!.root.querySelector('.d4-flex-col.ui-div.chem-filter.d4-filter-element')!, {attributes: true});
-    }), v?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement);
+    // the card says it is off with aria-disabled on its body; any class change used to count
+    const cardOff = () => v!.root.querySelector('.d4-flex-col.d4-filter[aria-disabled="true"], .d4-flex-col.d4-filter [aria-disabled="true"]') != null;
+    await this.action('In the filter panel, turn off the filter by clearing the checkbox',
+      interval(200).pipe(filter(cardOff)), () => v?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement | null);
 
     this.title('Add more filters', true);
     this.describe(`In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose <b>Select columns...</b>.<br>
@@ -119,10 +112,10 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     Click <b>OK</b>`);
 
     const exp = ['NOCount', 'NumRotatableBonds', 'smiles'];
-    await this.action('Select columns to be used as filers', v?.onEvent('d4-filter-added').pipe(filter(() => {
+    await this.action('Select columns to be used as filters', v?.onEvent('d4-filter-added').pipe(filter(() => {
       const filt = v.getOptions().look.filters;
       return filt.length === 3 && filt.every((f: any) => exp.includes(f.column));
-    }))!, $('.panel-titlebar.panel-titlebar-tabhost .grok-icon.grok-font-icon-menu').get(0));
+    }))!, () => $('.panel-titlebar.panel-titlebar-tabhost .grok-icon.grok-font-icon-menu').get(0) ?? null);
 
     this.title('Explore the dataset using newly added filters', true);
     this.describe(`Hover over categories or distributions in the <b>Filter Panel</b> to instantly

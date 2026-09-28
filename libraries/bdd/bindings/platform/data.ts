@@ -549,9 +549,10 @@ export const tableFilterCount = Then('{int} rows of table {string} should pass t
 /** The filters of the current view's filter panel, by column name. */
 const filterColumns = (page: Page): Promise<string[]> => page.evaluate(() => {
   // getFiltersGroup creates one when the view has none, which would make "0 filters" resurrect a panel
-  const open = Array.from(grok.shell.tv?.viewers ?? []).some((v: any) => String(v.type) === 'Filters');
-  const group = open ? grok.shell.tv.getFiltersGroup({createDefaultFilters: false}) : null;
-  return group ? (group.filters as any[]).map((f) => String(f.columnName ?? f.column?.name ?? '')) : [];
+  const panel: any = Array.from(grok.shell.tv?.viewers ?? []).find((v: any) => String(v.type) === 'Filters');
+  // the look lists every card by its column; a card added from the panel's menu has a JS wrapper
+  // with no columnName, so the wrappers alone read it as ""
+  return panel ? ((panel.getOptions().look.filters ?? []) as any[]).map((f) => String(f.column ?? f.columnName ?? '')) : [];
 });
 
 export const filterPanelCount = Then('the filter panel should have {int} filter(s)', async (page: Page, count: number) => {
