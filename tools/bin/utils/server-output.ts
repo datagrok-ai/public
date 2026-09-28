@@ -135,7 +135,8 @@ export function printError(err: any, opts: {verbose?: boolean} = {}): void {
   const apiErr: NodeApiError | undefined = err?.apiError;
   const status = apiErr?.errorCode;
   const base = apiErr?.error ?? String(err?.message ?? err);
-  const withStatus = typeof status === 'number' && status >= 400 && !base.includes(String(status)) ? `${base} (HTTP ${status})` : base;
+  const withStatus = !apiErr?.verbatim && typeof status === 'number' && status >= 400 && !base.includes(String(status))
+    ? `${base} (HTTP ${status})` : base;
   const message = apiErr?.requestId ? `${withStatus} (request ${apiErr.requestId})` : withStatus;
   if (errorFormat === 'json') {
     process.stderr.write(JSON.stringify({...apiErr, error: message}) + '\n');

@@ -2,7 +2,9 @@
 
 ## v.next
 
-* GROK-20884: `grok s alerts` (list, get, ack, mute, unmute, resolve, detection), `grok s errors` (list, top, show, diff, export, save), `grok s logger` (get, set, diff, overrides, history, revert), `grok s capture` (add, list, show, stop) and `grok s timeline`; `--host` may repeat for alerts, errors and logger, which adds a HOST column; `grok s api` is an alias of `grok s raw`; an error line names the request id the server returned
+* GROK-20884: Added `grok s alerts`, `errors`, `logger`, `capture` and `timeline`; `--host` may repeat for alerts, errors and logger, which adds a HOST column
+* GROK-20884: Added `grok s api`, an alias of `grok s raw`
+* GROK-20884: Added the request id the server returned to `grok s` error lines
 * `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step
 * `grok setup` also removes the `.js`/`.d.ts` files the npm-era tsc emitted beside js-api and library sources: the workspace emits into `dist/`, and a leftover `js-api/grok.js` shadowed the `grok` command in cmd.exe
 * GROK-20753: `domain-schema.schema.json` accepts the `hierarchy` table key (the table is a tree: exactly one ref column targeting itself) — without it `grok api` / `grok check` refused a manifest the server accepts

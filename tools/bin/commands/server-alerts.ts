@@ -2,7 +2,7 @@
 import {NodeAlertsClient} from '../utils/node-observability';
 import {Connect, forEachHost, singleHost} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {fmtTime, fmtDateTime, parseDuration, parseTime, printBlock, truncate} from '../utils/obs-format';
+import {fmtTime, fmtDateTime, hasValue, parseDuration, parseTime, printBlock, sinceArg, truncate} from '../utils/obs-format';
 
 export const ALERTS_USAGE = `Usage: grok s alerts <verb> [args]
   list [--status open,acknowledged|muted|resolved|all] [--kind <k>] [--since 24h] [--limit n] [--host a --host b ...]
@@ -21,21 +21,20 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
   const id = rest[0] === undefined ? undefined : String(rest[0]);
   switch (verb) {
     case 'list': {
-      const since = argv.since === undefined ? undefined : String(argv.since);
-      if (since !== undefined) parseDuration(since, '--since');
+      const since = argv.since === undefined ? undefined : sinceArg(argv.since);
       const q = {status: optString(argv.status), kind: optString(argv.kind), since, limit: argv.limit};
       const rows = await forEachHost(argv, connect, async (dapi) => {
-        const alerts: any[] = await new NodeAlertsClient(dapi.client).list(q) ?? [];
+        const alerts: any[] = await dapi.alerts.list(q) ?? [];
         return output === 'json' || output === 'quiet' ? alerts : alerts.map(alertRow);
-      }, output === 'json' ? 'host' : 'HOST');
+      }, output);
       printOutput(rows, output);
       return true;
     }
     case 'detection': {
       const rows = await forEachHost(argv, connect, async (dapi) => {
-        const lease = await new NodeAlertsClient(dapi.client).detection();
+        const lease = await dapi.alerts.detection();
         return output === 'json' ? [lease] : detectionRows(lease);
-      }, output === 'json' ? 'host' : 'HOST');
+      }, output);
       printOutput(output === 'json' && rows.length === 1 ? rows[0] : rows, output);
       return true;
     }
@@ -68,7 +67,7 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
 }
 
 async function client(connect: Connect, argv: any, verb: string): Promise<NodeAlertsClient> {
-  return new NodeAlertsClient((await connect(singleHost(argv, `alerts ${verb}`))).client);
+  return (await connect(singleHost(argv, `alerts ${verb}`))).alerts;
 }
 
 function usage(line: string): boolean {
@@ -92,17 +91,17 @@ function report(alert: any, line: string, output: OutputFormat): void {
 
 /** Exactly one of `--for`, `--until`, `--until-version`, `--forever`, and a reason. */
 export function muteBody(argv: any, now: Date = new Date()): {body: Record<string, any>; until: string} {
-  const given = ['for', 'until', 'until-version', 'forever'].filter((k) => argv[k] !== undefined && argv[k] !== false);
+  const given = ['for', 'until', 'until-version'].filter((k) => hasValue(argv[k])).concat(argv.forever === true ? ['forever'] : []);
   if (given.length !== 1)
     throw new Error('alerts mute takes exactly one of --for <duration>, --until <iso|HH:MM>, --until-version <v>, --forever');
   const reason = optString(argv.reason);
   if (!reason)
     throw new Error('alerts mute needs --reason <text>');
-  if (argv.forever !== undefined)
+  if (argv.forever === true)
     return {body: {reason, forever: true}, until: 'forever'};
-  if (argv['until-version'] !== undefined)
+  if (hasValue(argv['until-version']))
     return {body: {reason, untilVersion: String(argv['until-version'])}, until: `until ${argv['until-version']}`};
-  const until = argv.for !== undefined
+  const until = hasValue(argv.for)
     ? new Date(now.getTime() + parseDuration(argv.for, '--for'))
     : parseTime(argv.until, '--until', now);
   if (until.getTime() <= now.getTime())

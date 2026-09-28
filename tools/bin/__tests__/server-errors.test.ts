@@ -14,6 +14,7 @@ describe('filters', () => {
       .toEqual({since: '1h', route: 'POST /queries/{id}/run', minUsers: 2, regressed: true, group: 'Chemists', service: 'client'});
     expect(errorFilters({})).toEqual({since: '24h'});
     expect(errorFilters({regressed: false, package: 'Chem', version: '1.14.2'})).toEqual({since: '24h', package: 'Chem', version: '1.14.2'});
+    expect(errorFilters({since: '-7d', signature: ''})).toEqual({since: '7d'});
   });
 
   it('normalizes routes', () => {
@@ -114,6 +115,15 @@ describe('classifyHosts', () => {
 });
 
 describe('parquet', () => {
+  it('writes rows the real libraries read back', () => {
+    const bytes = toParquet([{sig: 'a41f9c', users: 9, trend: [0, 57]}, {sig: '7c02e1', users: 6, trend: [3]}]);
+    expect(bytes.subarray(0, 4).toString()).toBe('PAR1');
+    const arrow = require('apache-arrow');
+    const parquet = require('parquet-wasm');
+    const table = arrow.tableFromIPC(parquet.readParquet(bytes).intoIPCStream());
+    expect(table.toArray().map((r: any) => r.toJSON())).toEqual([{sig: 'a41f9c', users: 9, trend: '[0,57]'}, {sig: '7c02e1', users: 6, trend: '[3]'}]);
+  });
+
   it('names the missing packages when they are not installed', () => {
     const missing = () => { throw new Error('Cannot find module'); };
     expect(() => toParquet([{a: 1}], missing)).toThrow(/apache-arrow and parquet-wasm/);

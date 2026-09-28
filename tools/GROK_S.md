@@ -474,8 +474,10 @@ it's on the server's unauthenticated allowlist.
 These commands read and change the deployment's observability state: the alerts every server
 shares, errors as query results, the logging policy with its time-boxed overrides, and capture
 rules that record one user's or group's activity for a while. Times in tables are `HH:MM` when
-today, else `MM-DD HH:MM`; request ids are shortened to `01J9…7K`. `--help` after a command
-(`grok s errors --help`) prints all of its options.
+today, else `MM-DD HH:MM`; request ids are shortened to `01J9…7K`. Durations (`--since`, `--for`,
+`--window`) are `<n>m|h|d|w`, where `m` means **minutes** (in `pull --since` it means months); a
+leading `-` is accepted (`--since -7d`). `--help` after a command (`grok s errors --help`) prints
+all of its options.
 
 ### Alerts
 
@@ -558,11 +560,11 @@ grok s logger revert --override <id>
 
 Lists (`--print-levels`, `--post-levels`, `--save-levels`, `--debug-flags`) take `a,b` to
 replace or `+a,-b` to edit; mixing both is refused. Debug flags are the platform's (`db socket
-query hash storage credentials ...`); `queries` and `files` are accepted for `query` and
-`storage`. `--for`/`--until` make a time-boxed override (at most 7 days); a user, session or
+query hash storage credentials ...`; the server refuses unknown names); `queries` and `files` are
+accepted for `query` and `storage`. `--for`/`--until` make a time-boxed override (at most 7 days); a user, session or
 package scope without them lasts one hour; scope `all` or `group:<name>` without them changes the
-base settings. A setting the deployment locks is refused with `error: <lock> is locked by
-deployment configuration` and exit 1. `server` is the only target for now. Needs
+base settings. A setting the deployment locks is refused with `<lock> is locked by deployment
+configuration` and exit 1. `server` is the only target for now. Needs
 `EditPluginsSettings`.
 
 ### Capture rules and timelines

@@ -47,9 +47,12 @@ export interface NodeApiError {
   body?: any;
   /** The response's `x-request-id`, to find the server's lines for this failure. */
   requestId?: string;
+  /** The message is the server's whole sentence (a lock refusal): printed without the HTTP status. */
+  verbatim?: boolean;
 }
 
 import {keyLogin, keypairFor} from './keypair';
+import {NodeAlertsClient, NodeErrorsClient, NodeLoggingClient} from './node-observability';
 
 const setting = (name: string, fallback: number): number => {
   const value = Number(process.env[`GROK_HTTP_${name}`]);
@@ -1049,6 +1052,9 @@ export class NodeDapi {
   get shares(): NodeSharesDataSource { return new NodeSharesDataSource(this.client); }
   get tables(): NodeTablesDataSource { return new NodeTablesDataSource(this.client); }
   get domains(): NodeDomainsDataSource { return new NodeDomainsDataSource(this.client); }
+  get alerts(): NodeAlertsClient { return new NodeAlertsClient(this.client); }
+  get errors(): NodeErrorsClient { return new NodeErrorsClient(this.client); }
+  get logging(): NodeLoggingClient { return new NodeLoggingClient(this.client); }
 
   internal(route: string): InternalDataSource { return new InternalDataSource(this.client, route); }
 

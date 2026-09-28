@@ -1,10 +1,10 @@
 /// `grok s capture ...` (capture rules, LoggingRouter `/logging/capture`) and `grok s timeline`
 /// (one action, request, session, report or rule in time order, `/log/timeline`).
-import {NodeLoggingClient, Query} from '../utils/node-observability';
+import {Query} from '../utils/node-observability';
 import {Connect, singleHost} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {fmtClock, fmtDateTime, fmtSpan, listArg, normalizeFlag, normalizeLevel, parseDuration, parseTime, printBlock,
-  shortRequestId, truncate} from '../utils/obs-format';
+import {fmtClock, fmtDateTime, fmtSpan, hasValue, listArg, normalizeFlag, normalizeLevel, parseDuration, parseTime,
+  printBlock, shortRequestId, sinceArg, truncate} from '../utils/obs-format';
 
 export const CAPTURE_USAGE = `Usage: grok s capture <verb> [args]
   add (--user <login> | --group <name> | --package <name> | --everyone)
@@ -161,7 +161,7 @@ function printTimeline(events: any[], output: OutputFormat): void {
 export async function handleCapture(connect: Connect, verb: string | undefined, rest: string[], argv: any,
                                     output: OutputFormat): Promise<boolean> {
   const id = rest[0] === undefined ? undefined : String(rest[0]);
-  const logging = async () => new NodeLoggingClient((await connect(singleHost(argv, `capture ${verb}`))).client);
+  const logging = async () => (await connect(singleHost(argv, `capture ${verb}`))).logging;
   switch (verb) {
     case 'add': {
       const rule = await (await logging()).addCaptureRule(captureBody(argv));
@@ -171,9 +171,8 @@ export async function handleCapture(connect: Connect, verb: string | undefined, 
       return true;
     }
     case 'list': {
-      if (argv.since !== undefined) parseDuration(argv.since, '--since');
-      const rules: any[] = await (await logging()).captureRules({all: argv.all === true ? true : undefined,
-        since: argv.since === undefined ? undefined : String(argv.since)}) ?? [];
+      const since = argv.since === undefined ? undefined : sinceArg(argv.since);
+      const rules: any[] = await (await logging()).captureRules({all: argv.all === true ? true : undefined, since}) ?? [];
       if (output === 'quiet') for (const r of rules) console.log(ruleId(r));
       else printOutput(output === 'json' ? rules : rules.map(ruleRow), output);
       return true;
@@ -228,7 +227,7 @@ function usage(line: string): boolean {
 }
 
 export function timelineQuery(argv: any, now: Date = new Date()): Query {
-  const keys = TIMELINE_KEYS.filter((k) => argv[k] !== undefined && argv[k] !== true);
+  const keys = TIMELINE_KEYS.filter((k) => hasValue(argv[k]));
   if (keys.length !== 1)
     throw new Error(`timeline takes exactly one of ${TIMELINE_KEYS.map((k) => `--${k}`).join(', ')}`);
   const q: Query = {[keys[0]]: String(argv[keys[0]]), limit: argv.limit};
@@ -248,6 +247,6 @@ export async function handleTimeline(connect: Connect, _verb: string | undefined
     return false;
   }
   const dapi = await connect(singleHost(argv, 'timeline'));
-  printTimeline(await new NodeLoggingClient(dapi.client).timeline(q) ?? [], output);
+  printTimeline(await dapi.logging.timeline(q) ?? [], output);
   return true;
 }

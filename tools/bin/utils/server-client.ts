@@ -1,6 +1,6 @@
 import {NodeApiClient, NodeDapi} from './node-dapi';
 import {getServerCredentials} from './keypair';
-import {printError} from './server-output';
+import {printError, OutputFormat} from './server-output';
 
 /** Opens a session on a host alias or URL (the configured default when omitted). */
 export type Connect = (host?: string) => Promise<NodeDapi>;
@@ -44,9 +44,13 @@ export async function eachHost(argv: any, connect: Connect,
     throw new Error('No host answered');
 }
 
-/** Rows from every `--host`, each prefixed with a [column] naming its host when there are several. */
+/**
+ * Rows from every `--host`, each prefixed with the host when there are several: a `HOST` column
+ * in a table, a `host` field in JSON.
+ */
 export async function forEachHost(argv: any, connect: Connect, fn: (dapi: NodeDapi, host: string) => Promise<any[]>,
-                                  column: string = 'HOST'): Promise<any[]> {
+                                  output: OutputFormat): Promise<any[]> {
+  const column = output === 'json' ? 'host' : 'HOST';
   const rows: any[] = [];
   await eachHost(argv, connect, async (dapi, host, multi) => {
     for (const row of await fn(dapi, host))

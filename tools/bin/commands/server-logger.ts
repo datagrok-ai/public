@@ -45,16 +45,16 @@ const EXPORT_PATH = /^exportSettings\.([^.]+)\.(.+)$/;
 export async function handleLogger(connect: Connect, verb: string | undefined, rest: string[], argv: any,
                                    output: OutputFormat): Promise<boolean> {
   if ((verb === 'get' || verb === 'set') && rest[0] !== undefined && String(rest[0]) !== 'server')
-    throw new Error(`Only 'server' is supported; service levels arrive with WO 1.3 (got '${rest[0]}')`);
+    throw new Error(`Only 'server' is supported (got '${rest[0]}')`);
   switch (verb) {
     case 'get': return await loggerGet(connect, argv, output);
     case 'set': return await loggerSet(connect, argv, output);
     case 'diff': return await loggerDiff(connect, argv, output);
     case 'overrides': {
       const rows = await forEachHost(argv, connect, async (dapi) => {
-        const overrides: any[] = await new NodeLoggingClient(dapi.client).overrides() ?? [];
+        const overrides: any[] = await dapi.logging.overrides() ?? [];
         return output === 'json' || output === 'quiet' ? overrides : overrides.map(overrideRow);
-      }, output === 'json' ? 'host' : 'HOST');
+      }, output);
       printOutput(rows, output);
       return true;
     }
@@ -81,7 +81,13 @@ export async function handleLogger(connect: Connect, verb: string | undefined, r
 }
 
 async function client(connect: Connect, argv: any, verb: string): Promise<NodeLoggingClient> {
-  return new NodeLoggingClient((await connect(singleHost(argv, `logger ${verb}`))).client);
+  return (await connect(singleHost(argv, `logger ${verb}`))).logging;
+}
+
+/** A lock refusal is the server's own sentence (`levels.audit is locked by deployment configuration`). */
+function lockRefusal(err: any): never {
+  if (err?.apiError?.errorCode === 409) err.apiError.verbatim = true;
+  throw err;
 }
 
 export function revertBody(rest: string[], argv: any): Record<string, any> {
@@ -231,7 +237,7 @@ async function loggerGet(connect: Connect, argv: any, output: OutputFormat): Pro
     throw new Error('logger get --scope takes user:, group:, session: or package:; without it the base policy is shown');
   const docs: any[] = [];
   await eachHost(argv, connect, async (dapi, host, multi) => {
-    const logging = new NodeLoggingClient(dapi.client);
+    const logging = dapi.logging;
     const policy = await logging.policy();
     const doc = scope ? await logging.effective((await scopeTarget(dapi, policy, scope)).param) : policy;
     if (output !== 'table') { docs.push(multi ? {host, ...doc} : doc); return; }
@@ -300,45 +306,36 @@ async function loggerSet(connect: Connect, argv: any, output: OutputFormat): Pro
   }
   const reason = argv.reason === undefined ? undefined : String(argv.reason);
   const dapi = await connect(singleHost(argv, 'logger set'));
-  const logging = new NodeLoggingClient(dapi.client);
+  const logging = dapi.logging;
   const policy = await logging.policy();
-  try {
-    if (override) {
+  if (override) {
       const target = await scopeTarget(dapi, policy, scope);
       const effective = (await logging.effective(target.param))?.settings ?? {};
       const body: Record<string, any> = {scope: scope.type, scopeId: target.scopeId, set: propChanges(argv, (p) => effective[p]), reason};
       if (argv.for !== undefined) body.forMinutes = parseDuration(argv.for, '--for') / 60000;
       if (argv.until !== undefined) body.expiresAt = parseTime(argv.until, '--until').toISOString();
-      const created = await logging.addOverride(body);
-      if (output !== 'table') { printOutput(created, output); return true; }
-      for (const [prop, v] of Object.entries(body.set))
-        console.log(`+ server.${prop}  ${valueText(v)}  scope ${scope.label}  reverts ${fmtTime(created?.expiresAt)}`);
-      return true;
-    }
-    const gid = scope.type === 'all'
-      ? allUsersId(policy) ?? (await dapi.groups.resolve('All users')).id
-      : await groupId(dapi, policy, scope.value!);
-    const all = allUsersId(policy);
-    const current = (prop: string) =>
-      policy?.settings?.[`userGroupSettings.${gid}.${prop}`] ?? policy?.settings?.[`userGroupSettings.${all}.${prop}`];
-    const set: Record<string, any> = {...paths};
-    for (const [prop, v] of Object.entries(propChanges(argv, current)))
-      set[`userGroupSettings.${gid}.${prop}`] = v;
-    const res = await logging.setPolicy({set, reason});
-    if (output !== 'table') { printOutput(res, output); return true; }
-    const named = {...policy, groups: {...policy?.groups, [gid]: policy?.groups?.[gid] ?? scope.value ?? 'All users'}};
-    for (const [path, v] of Object.entries(set))
-      console.log(`~ ${displayPath(path, named)}  ${valueText(v)}`);
-    if (res?.version !== undefined) console.log(`policy version ${res.version}`);
+    const created = await logging.addOverride(body).catch(lockRefusal);
+    if (output !== 'table') { printOutput(created, output); return true; }
+    for (const [prop, v] of Object.entries(body.set))
+      console.log(`+ server.${prop}  ${valueText(v)}  scope ${scope.label}  reverts ${fmtTime(created?.expiresAt)}`);
     return true;
   }
-  catch (err: any) {
-    // A lock refusal is the answer, not a failure of the command: print the server's sentence as is.
-    if (err?.apiError?.errorCode !== 409) throw err;
-    process.stderr.write(`error: ${err.apiError.error}\n`);
-    process.exitCode = 1;
-    return true;
-  }
+  const gid = scope.type === 'all'
+    ? allUsersId(policy) ?? (await dapi.groups.resolve('All users')).id
+    : await groupId(dapi, policy, scope.value!);
+  const all = allUsersId(policy);
+  const current = (prop: string) =>
+    policy?.settings?.[`userGroupSettings.${gid}.${prop}`] ?? policy?.settings?.[`userGroupSettings.${all}.${prop}`];
+  const set: Record<string, any> = {...paths};
+  for (const [prop, v] of Object.entries(propChanges(argv, current)))
+    set[`userGroupSettings.${gid}.${prop}`] = v;
+  const res = await logging.setPolicy({set, reason}).catch(lockRefusal);
+  if (output !== 'table') { printOutput(res, output); return true; }
+  const named = {...policy, groups: {...policy?.groups, [gid]: policy?.groups?.[gid] ?? scope.value ?? 'All users'}};
+  for (const [path, v] of Object.entries(set))
+    console.log(`~ ${displayPath(path, named)}  ${valueText(v)}`);
+  if (res?.version !== undefined) console.log(`policy version ${res.version}`);
+  return true;
 }
 
 async function loggerDiff(connect: Connect, argv: any, output: OutputFormat): Promise<boolean> {
@@ -347,13 +344,13 @@ async function loggerDiff(connect: Connect, argv: any, output: OutputFormat): Pr
     if (hosts.length !== 2 || argv.version !== undefined) throw new Error('logger diff compares exactly two --host, without --version');
     const maps: Record<string, any>[] = [];
     for (const host of hosts) {
-      const policy = await new NodeLoggingClient((await connect(host)).client).policy();
+      const policy = await (await connect(host)).logging.policy();
       maps.push(displayMap(policy?.settings, policy));
     }
     printDiff(diffMaps(maps[0], maps[1]), output);
     return true;
   }
-  const logging = new NodeLoggingClient((await connect(hosts[0])).client);
+  const logging = (await connect(hosts[0])).logging;
   if (argv.version !== undefined) {
     if (!/^\d+$/.test(String(argv.version))) throw new Error(`--version is a history version number, got '${argv.version}'`);
     const [then, now] = [await logging.policy({version: String(argv.version)}), await logging.policy()];

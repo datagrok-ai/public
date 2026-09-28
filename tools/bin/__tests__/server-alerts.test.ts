@@ -14,6 +14,7 @@ describe('muteBody', () => {
     expect(() => muteBody({reason: 'r'}, now)).toThrow(/exactly one/);
     expect(() => muteBody({reason: 'r', for: '2h', forever: true}, now)).toThrow(/exactly one/);
     expect(() => muteBody({for: '2h'}, now)).toThrow(/--reason/);
+    expect(() => muteBody({reason: 'r', 'until-version': ''}, now)).toThrow(/exactly one/);
   });
 
   it('resolves --for and --until to an absolute time', () => {

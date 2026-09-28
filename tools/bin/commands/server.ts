@@ -43,7 +43,7 @@ export async function server(argv: any): Promise<boolean> {
   const limit: number = Number(argv.limit ?? argv.l ?? 50);
   const offset: number = Number(argv.offset ?? 0);
   const filter: string = argv.filter ?? argv.f ?? '';
-  const host: string | undefined = argv.host;
+  const hosts = hostList(argv.host);
   const recursive: boolean = !!(argv.r ?? argv.recursive);
 
   if (!entity || argv.help) {
@@ -51,31 +51,32 @@ export async function server(argv: any): Promise<boolean> {
     return true;
   }
 
+  // A runtime failure is not a usage error: report it and exit non-zero without
+  // making grok.js dump the help block (which it does for every `false` result).
+  const fail = (err: any): boolean => {
+    printError(err, {verbose: !!argv.verbose});
+    process.exitCode = 1;
+    return true;
+  };
+
   const observability = OBSERVABILITY[entity];
   if (observability) {
     const connect: Connect = async (h) => new NodeDapi(await createClient(h, !!argv.admin));
     try {
       return await observability.handle(connect, verb, rest, argv, output);
     } catch (err: any) {
-      printError(err, {verbose: !!argv.verbose});
-      process.exitCode = 1;
-      return true;
+      return fail(err);
     }
   }
-  if (hostList(host).length > 1) {
-    printError(new Error('--host may repeat only for alerts, errors and logger'));
-    process.exitCode = 1;
-    return true;
-  }
+  if (hosts.length > 1)
+    return fail(new Error('--host may repeat only for alerts, errors and logger'));
 
   let client;
   try {
-    client = await createClient(host, !!argv.admin);
+    client = await createClient(hosts[0], !!argv.admin);
   } catch (err: any) {
     // a bad alias, URL or key is not a usage error: no help dump, just the reason
-    printError(err);
-    process.exitCode = 1;
-    return true;
+    return fail(err);
   }
   const dapi = new NodeDapi(client);
 
@@ -181,11 +182,7 @@ export async function server(argv: any): Promise<boolean> {
     printError(new Error(`Unknown verb: '${verb}'. Valid: ${VERBS.join(', ')}${extraVerbs}`));
     return false;
   } catch (err: any) {
-    // A runtime failure is not a usage error: report it and exit non-zero without
-    // making grok.js dump the help block (which it does for every `false` result).
-    printError(err, {verbose: !!argv.verbose});
-    process.exitCode = 1;
-    return true;
+    return fail(err);
   }
 }
 
@@ -1079,7 +1076,7 @@ Options:
   --verbose             Print the stack of a runtime failure, not just its message
   --json <file>         Read a JSON body from a file (save, functions run, batch, raw)
   --data '<json>'       Inline JSON body for raw
-  -O, --output-file     Write table download to a file instead of stdout
+  -O, --output-file     Write a table download, or an errors top/export --format file, instead of stdout
   --type <t>            Function discriminator: script | query | function | package
   --language <lang>     Script language: python, r, julia, nodejs, octave, grok
   --package <name>      Restrict to functions belonging to a package (by short name)

@@ -1,12 +1,6 @@
 /// Argument parsing and table formatting shared by `grok s alerts|errors|logger|capture|timeline`.
 
-export const LEVELS = ['error', 'warning', 'info', 'debug', 'audit', 'usage'];
-
-/** The platform's debug-flag choices (`LoggerSettings.debugFlags`, action_logger_settings.dart). */
-export const DEBUG_FLAGS = ['db', 'socket', 'query', 'hash', 'storage', 'credentials', 'balloon', 'startup', 'srcmaps',
-  'docker', 'auth', 'ai-indexing', 'email'];
-
-/** Names the worked examples use for the platform's flags. */
+/** Names the worked examples use for the platform's debug flags; the server validates the rest. */
 export const DEBUG_FLAG_ALIASES: Record<string, string> = {queries: 'query', files: 'storage'};
 
 const UNIT_MS: Record<string, number> = {m: 60000, h: 3600000, d: 86400000, w: 604800000};
@@ -15,12 +9,18 @@ const BLOCKS = '▁▂▃▄▅▆▇█';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-/** `30m`, `2h`, `7d`, `1w` → milliseconds. */
+/** `30m`, `2h`, `7d`, `1w` → milliseconds; `m` is minutes. A leading `-` is accepted, as `--since -2w` in migrate. */
 export function parseDuration(value: any, flag: string): number {
-  const m = /^(\d+)\s*([mhdw])$/.exec(String(value ?? '').trim());
+  const m = /^-?(\d+)\s*([mhdw])$/.exec(String(value ?? '').trim());
   if (!m || Number(m[1]) <= 0)
-    throw new Error(`${flag} expects a duration such as 30m, 2h, 7d or 1w, got '${value}'`);
+    throw new Error(`${flag} expects a duration such as 30m, 2h, 7d or 1w (m is minutes), got '${value}'`);
   return Number(m[1]) * UNIT_MS[m[2]];
+}
+
+/** A `--since` value as the server takes it: validated, without the optional leading `-`. */
+export function sinceArg(value: any, flag: string = '--since'): string {
+  parseDuration(value, flag);
+  return String(value).trim().replace(/^-/, '');
 }
 
 /** ISO (local when it has no offset), a date (local midnight), relative `-7d`, or `HH:MM` today. */
@@ -123,17 +123,16 @@ export function listArg(value: any): string[] {
 }
 
 export function normalizeLevel(name: string): string {
-  const level = name.toLowerCase();
-  if (!LEVELS.includes(level))
-    throw new Error(`Unknown level '${name}'. Valid: ${LEVELS.join(', ')}`);
-  return level;
+  return name.toLowerCase();
 }
 
 export function normalizeFlag(name: string): string {
-  const flag = DEBUG_FLAG_ALIASES[name.toLowerCase()] ?? name.toLowerCase();
-  if (!DEBUG_FLAGS.includes(flag))
-    throw new Error(`Unknown debug flag '${name}'. Valid: ${DEBUG_FLAGS.join(', ')} (aliases: queries, files)`);
-  return flag;
+  return DEBUG_FLAG_ALIASES[name.toLowerCase()] ?? name.toLowerCase();
+}
+
+/** A string option minimist left empty (`--signature` with no value) counts as not given. */
+export function hasValue(value: any): boolean {
+  return value !== undefined && value !== null && value !== true && value !== false && value !== '';
 }
 
 /**

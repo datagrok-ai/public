@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// minimist reads a value that starts with '-' as more flags: keep `--save-levels -audit` and
-// `--from -7d` together as `--save-levels=-audit`.
-const DASH_VALUE_FLAGS = ['--print-levels', '--post-levels', '--save-levels', '--debug-flags', '--from', '--to'];
+// minimist reads a value that starts with '-' as more flags: for `grok s`, keep `--save-levels -audit`
+// and `--since -7d` together as `--save-levels=-audit`.
+const DASH_VALUE_FLAGS = ['--print-levels', '--post-levels', '--save-levels', '--debug-flags', '--from', '--to', '--since'];
+const firstWord = process.argv.slice(2).find((a) => !a.startsWith('-'));
+const joinDashValues = firstWord === 's' || firstWord === 'server';
 const rawArgs = [];
 for (const arg of process.argv.slice(2)) {
   const prev = rawArgs[rawArgs.length - 1];
-  if (DASH_VALUE_FLAGS.includes(prev) && /^-[^-]/.test(arg))
+  if (joinDashValues && DASH_VALUE_FLAGS.includes(prev) && /^-[^-]/.test(arg))
     rawArgs[rawArgs.length - 1] = `${prev}=${arg}`;
   else
     rawArgs.push(arg);
@@ -74,8 +76,8 @@ if (command !== 'test' && command !== 'stresstest')
   delete argv.dartium;
 if (command in commands) {
   try {
-    // `grok s <command> --help` is answered by the command itself, which knows its own options
-    if (argv['help'] && !((command === 's' || command === 'server') && argv._.length > 1)) {
+    // `grok s [<command>] --help` is answered by server(), which knows each command's options
+    if (argv['help'] && command !== 's' && command !== 'server') {
       console.log(help[command]);
       exitWithCode(1);
     } else if (argv.all && onPackageCommandNames.includes(command)) {

@@ -1,6 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import {handleLogger, parseScope, isOverride, propChanges, setArgs, revertBody, displayPath, diffMaps} from '../commands/server-logger';
 import {applyListSpec, normalizeFlag, normalizeLevel} from '../utils/obs-format';
+import {printError} from '../utils/server-output';
 import {mockConnect, captureOutput, localIso, apiError} from './obs-helpers';
 
 const ALL = 'a4b45840-0000-0000-0000-00000000a11a';
@@ -37,11 +38,9 @@ describe('lists', () => {
     expect(applyListSpec(['query'], '+query', normalizeFlag, '--debug-flags')).toEqual(['query']);
   });
 
-  it('refuses mixed forms, unknown levels and unknown flags', () => {
+  it('refuses mixed forms and leaves unknown names to the server', () => {
     expect(() => applyListSpec([], 'error,+info', normalizeLevel, '--save-levels')).toThrow(/not both/);
-    expect(() => applyListSpec([], 'fatal', normalizeLevel, '--save-levels')).toThrow(/Unknown level 'fatal'/);
-    expect(() => applyListSpec([], '+queries,+connections', normalizeFlag, '--debug-flags'))
-      .toThrow(/Unknown debug flag 'connections'. Valid: db, socket, query/);
+    expect(applyListSpec([], '+queries,+connections', normalizeFlag, '--debug-flags')).toEqual(['query', 'connections']);
   });
 });
 
@@ -102,7 +101,7 @@ describe('handleLogger', () => {
 
   it('refuses a target other than server', async () => {
     const {connect} = mockConnect(() => POLICY);
-    await expect(handleLogger(connect, 'get', ['grok_connect'], {}, 'table')).rejects.toThrow(/Only 'server' is supported; service levels arrive with WO 1.3/);
+    await expect(handleLogger(connect, 'get', ['grok_connect'], {}, 'table')).rejects.toThrow(/Only 'server' is supported \(got 'grok_connect'\)/);
   });
 
   it('prints the policy block', async () => {
@@ -151,14 +150,15 @@ describe('handleLogger', () => {
     await expect(handleLogger(connect, 'set', [], {set: 'exportBatchSize=10', for: '1h'}, 'table')).rejects.toThrow(/--set changes the base settings/);
   });
 
-  it('prints a lock refusal as the server says it and exits 1', async () => {
+  it('passes a lock refusal on as the server words it, without the HTTP status', async () => {
     const {connect} = mockConnect((m) => {
       if (m === 'PUT') throw apiError(409, 'levels.audit is locked by deployment configuration');
       return POLICY;
     });
-    const {err, exitCode} = await captureOutput(() => handleLogger(connect, 'set', ['server'], {'save-levels': '-audit'}, 'table'));
-    expect(err).toEqual(['error: levels.audit is locked by deployment configuration']);
-    expect(exitCode).toBe(1);
+    const refusal = await handleLogger(connect, 'set', ['server'], {'save-levels': '-audit'}, 'table').catch((e) => e);
+    expect(refusal.apiError).toMatchObject({errorCode: 409, verbatim: true});
+    const {err} = await captureOutput(async () => printError(refusal));
+    expect(err).toEqual(['levels.audit is locked by deployment configuration']);
   });
 
   it('diffs against the deployment defaults, with active overrides', async () => {

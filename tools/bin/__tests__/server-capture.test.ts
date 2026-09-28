@@ -17,9 +17,9 @@ describe('parseCapture', () => {
     expect(parseCapture('server:info')).toMatchObject({clicks: false, serverLevel: 'info', debugFlags: []});
   });
 
-  it('refuses unknown items, flags after server: and the credentials flag', () => {
+  it('refuses unknown items and the credentials flag; everything after server: is flags', () => {
     expect(() => parseCapture('clicks,screens')).toThrow(/Unknown capture item 'screens'/);
-    expect(() => parseCapture('server:debug=queries,clicks')).toThrow(/Unknown debug flag 'clicks'/);
+    expect(parseCapture('server:debug=queries,clicks').debugFlags).toEqual(['query', 'clicks']);
     expect(() => parseCapture('server:debug=credentials')).toThrow(/credentials/);
     expect(() => parseCapture(undefined)).toThrow(/needs items/);
   });
@@ -83,6 +83,7 @@ describe('rows', () => {
     expect(timelineQuery({report: 4820})).toEqual({report: '4820', limit: undefined});
     expect(timelineQuery({rule: 'cap-17', from: '-1h'}, NOW)).toEqual({rule: 'cap-17', limit: undefined, from: new Date(2026, 8, 28, 9, 20).toISOString()});
     expect(() => timelineQuery({})).toThrow(/exactly one of --action/);
+    expect(() => timelineQuery({session: '', report: 1})).not.toThrow();
     expect(() => timelineQuery({action: 'a', session: 's'})).toThrow(/exactly one/);
   });
 });

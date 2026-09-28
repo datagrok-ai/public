@@ -210,6 +210,17 @@ describe('observability dispatch', () => {
     expect(lines).toEqual([ALERTS_USAGE]);
   });
 
+  it('answers a bare `grok s --help` with success', async () => {
+    const {server, HELP_SERVER} = await import('../commands/server');
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      expect(await server({_: ['s'], help: true})).toBe(true);
+      expect(log).toHaveBeenCalledWith(HELP_SERVER);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it('refuses a repeated --host outside alerts, errors and logger', async () => {
     const {server} = await import('../commands/server');
     const err: string[] = [];

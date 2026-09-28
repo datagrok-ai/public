@@ -3925,6 +3925,9 @@ importers:
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
+      apache-arrow:
+        specifier: ^21.0.0
+        version: 21.2.0
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
@@ -3955,6 +3958,9 @@ importers:
       papaparse:
         specifier: ^5.5.3
         version: 5.7.0
+      parquet-wasm:
+        specifier: 0.6.1
+        version: 0.6.1
       puppeteer:
         specifier: ^24.15.0
         version: 24.43.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)

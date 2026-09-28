@@ -1,10 +1,10 @@
 /// `grok s errors ...` — platform errors as query results (ErrorsRouter, `/errors`).
 import * as fs from 'fs';
-import {NodeErrorsClient, Query} from '../utils/node-observability';
+import {Query} from '../utils/node-observability';
 import {Connect, forEachHost, hostList, singleHost} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {cronFromSchedule, fmtDate, fmtMinutes, fmtTime, listArg, parseDuration, parseTime, printBlock, shortRequestId,
-  shortSig, slug, sparkline, truncate} from '../utils/obs-format';
+import {cronFromSchedule, fmtDate, fmtMinutes, fmtTime, hasValue, listArg, parseTime, printBlock, shortRequestId,
+  shortSig, sinceArg, slug, sparkline, truncate} from '../utils/obs-format';
 import {rowsToCsv} from './server-domains';
 
 export const ERRORS_USAGE = `Usage: grok s errors <verb> [filters] [options]
@@ -30,9 +30,9 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
     case 'list': {
       const q = {...errorFilters(argv), limit: argv.limit ?? 50, offset: argv.offset};
       const rows = await forEachHost(argv, connect, async (dapi) => {
-        const occurrences: any[] = await new NodeErrorsClient(dapi.client).query(q) ?? [];
+        const occurrences: any[] = await dapi.errors.query(q) ?? [];
         return output === 'json' ? occurrences : occurrences.map(occurrenceRow);
-      }, output === 'json' ? 'host' : 'HOST');
+      }, output);
       printOutput(rows, output);
       return true;
     }
@@ -43,9 +43,9 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
       if (argv.format !== undefined)
         return await writeExport(connect, argv, q, output);
       const rows = await forEachHost(argv, connect, async (dapi) => {
-        const aggregates: any[] = await new NodeErrorsClient(dapi.client).query(q) ?? [];
+        const aggregates: any[] = await dapi.errors.query(q) ?? [];
         return output === 'json' ? aggregates : aggregates.map((r) => aggregateRow(r, by, trend));
-      }, output === 'json' ? 'host' : 'HOST');
+      }, output);
       printOutput(rows, output);
       return true;
     }
@@ -58,10 +58,9 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
     }
     case 'show': {
       if (rest[0] === undefined) return usage('show <signature> [--since 24h]');
-      const since = String(argv.since ?? '24h');
-      parseDuration(since, '--since');
+      const since = sinceArg(argv.since ?? '24h');
       const dapi = await connect(singleHost(argv, 'errors show'));
-      const doc = await new NodeErrorsClient(dapi.client).show(String(rest[0]), {since});
+      const doc = await dapi.errors.show(String(rest[0]), {since});
       if (output === 'table') printShow(doc);
       else printOutput(doc, output);
       return true;
@@ -100,12 +99,11 @@ export function errorFilters(argv: any, opts: {time?: boolean; range?: boolean; 
     else {
       if (opts.range === false && argv.from !== undefined)
         throw new Error('A saved job takes --since (--to names the destination)');
-      q.since = String(argv.since ?? opts.defaultSince ?? '24h');
-      parseDuration(q.since, '--since');
+      q.since = sinceArg(argv.since ?? opts.defaultSince ?? '24h');
     }
   }
   for (const f of STRING_FILTERS)
-    if (argv[f] !== undefined && argv[f] !== true) q[f] = String(argv[f]);
+    if (hasValue(argv[f])) q[f] = String(argv[f]);
   if (argv.service !== undefined) {
     if (!['server', 'client'].includes(String(argv.service))) throw new Error(`--service is server or client, got '${argv.service}'`);
     q.service = String(argv.service);
@@ -185,7 +183,7 @@ export function aggregateRow(r: any, by: string[], trend: string): Record<string
 async function writeExport(connect: Connect, argv: any, q: Query, output: OutputFormat): Promise<boolean> {
   const format = String(argv.format);
   if (!FORMATS.includes(format)) throw new Error(`--format is csv, json or parquet, got '${format}'`);
-  const errors = new NodeErrorsClient((await connect(singleHost(argv, 'errors --format'))).client);
+  const errors = (await connect(singleHost(argv, 'errors --format'))).errors;
   let bytes: Buffer;
   if (format === 'csv') {
     const csv = await errors.query({...q, format: 'csv'});
@@ -237,7 +235,7 @@ async function diffWindows(connect: Connect, argv: any, output: OutputFormat): P
     if (!String(w).includes('..')) throw new Error(`A window is <from>..<to>, got '${w}'`);
   const q = {...errorFilters(argv, {time: false}), before: String(argv.before), after: String(argv.after)};
   const dapi = await connect(singleHost(argv, 'errors diff --before/--after'));
-  const doc = await new NodeErrorsClient(dapi.client).diff(q);
+  const doc = await dapi.errors.diff(q);
   if (output === 'json') { printOutput(doc, output); return true; }
   if (output === 'csv' || output === 'quiet') { printOutput(doc?.rows ?? [], output); return true; }
   const c = doc?.categories ?? {};
@@ -287,7 +285,7 @@ async function diffHosts(connect: Connect, argv: any, output: OutputFormat): Pro
   for (const host of hosts) {
     const dapi = await connect(host);
     const version = (await dapi.serverInfo()).version;
-    sides.push({host, version, rows: (await new NodeErrorsClient(dapi.client).query(q) ?? []) as any[]});
+    sides.push({host, version, rows: (await dapi.errors.query(q) ?? []) as any[]});
   }
   const {onlyA, onlyB, both} = classifyHosts(sides[0].rows, sides[1].rows);
   if (output === 'json') {
@@ -318,7 +316,7 @@ async function saveJob(connect: Connect, rest: string[], argv: any, output: Outp
   const path = to.endsWith('/') ? `${to}${slug(name)}-{date}.${format}` : to;
   const cron = argv.schedule === undefined ? undefined : cronFromSchedule(argv.schedule);
   const dapi = await connect(singleHost(argv, 'errors save'));
-  const job = await new NodeErrorsClient(dapi.client).saveJob({name, spec, format, path, cron});
+  const job = await dapi.errors.saveJob({name, spec, format, path, cron});
   if (output === 'json' || output === 'csv') printOutput(job, output);
   else if (output === 'quiet') console.log(job?.id ?? '');
   else console.log(`saved job "${name}" ${cron ?? '(no schedule)'} → ${path}`);
