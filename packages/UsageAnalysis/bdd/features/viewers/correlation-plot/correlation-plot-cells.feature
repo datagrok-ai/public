@@ -138,14 +138,9 @@ Feature: Correlation plot — a cell as a click, hover and menu target
     When user moves the pointer away from correlation plot viewer
     Then no errors should have been logged
 
-  @known-failure
-  Scenario: Show Tooltip off still shows the cell tooltip (correlation_plot_core.dart:57)
-    # `showTooltip` is declared on the look (correlation_plot_look.dart:30, "Shows the tooltip with
-    # the corresponding scatter plot inside") and the context menu's Tooltip > Visible toggles it
-    # (correlation_plot_core.dart:129), but the `onCellTooltip` handler at :57 never reads it: it
-    # builds the tooltip and calls `tooltip.showElement` unconditionally. Turning the setting off
-    # changes nothing a user can see. Left last in the journey because a known failure aborts before
-    # its own restore step.
+  Scenario: Show Tooltip off hides the cell tooltip
+    # Fixed 2026-09-21 in correlation_plot_core.dart: the `onCellTooltip` handler built and showed
+    # the tooltip without reading `showTooltip`; it now suppresses the default tooltip as well.
     When user sets "showTooltip" property of correlation plot viewer to "false"
     And user moves the pointer away from correlation plot viewer
     And user hovers over the "cell HEIGHT x AGE" area of correlation plot viewer

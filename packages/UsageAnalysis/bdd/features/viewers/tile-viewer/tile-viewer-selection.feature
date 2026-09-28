@@ -20,6 +20,7 @@ Feature: Tile viewer current row and selection
     And the "tiles" reading of tile viewer should be at least 5
 
   Scenario: Nothing is selected and the first row is current
+    Given user makes row 1 current
     Then the "current row" reading of tile viewer should be 1
     And the "rows selected" reading of tile viewer should be 0
     And no rows should be selected

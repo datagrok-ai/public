@@ -3,6 +3,9 @@
 ## v.next
 
 * GROK-20800: Adverse events: Fixed the treatment-arm legend sizing — it fills its container and wraps horizontally
+
+## 1.4.1 (2026-07-13)
+
 * GROK-18695: Forced echarts >= 6.1.0 (XSS fix), d3-color >= 3.1.0 (ReDoS fix), and uuid >= 11.1.1 under exceljs via npm overrides
 * Docker: Raised security floors for cryptography (>=48.0.1) and redis (>=4.5.4) (VEX)
 * GROK-19985: Validation: Throw a clear error when the clinical-case container is unavailable instead of the platform-level NoSuchMethodError

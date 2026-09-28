@@ -243,6 +243,8 @@ Add the DB-explorer library to your plugin:
    ```bash
    npm install @datagrok-libraries/db-explorer
    ```
+   Inside the public repository, run `pnpm add @datagrok-libraries/db-explorer@workspace:^` instead. See
+   [Build system](../../dev-process/build-system.md#declare-dependencies).
 
 #### Step 3: Create the explorer configuration
 

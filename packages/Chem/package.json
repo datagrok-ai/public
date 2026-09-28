@@ -27,6 +27,19 @@
       "nullable": true
     },
     {
+      "name": "SubstructureSearchEngine",
+      "friendlyName": "Substructure Search Engine",
+      "category": "Search",
+      "description": "Engine for Contains / Not contains substructure searches. Crux falls back to RDKit for queries it cannot express (radicals, isotopes, some SMARTS primitives)",
+      "propertyType": "string",
+      "choices": [
+        "RDKit",
+        "Crux"
+      ],
+      "defaultValue": "RDKit",
+      "nullable": false
+    },
+    {
       "name": "TemplatesPath",
       "friendlyName": "Default Reactions",
       "category": "Enumeration",
@@ -70,7 +83,7 @@
     "dayjs": "catalog:",
     "js-yaml": "^4.1.1",
     "jszip": "3.10.1",
-    "ngl": "^2.4.0",
+    "ngl": "catalog:",
     "offscreen-canvas": "^0.1.1",
     "openchemlib": "catalog:",
     "pako": "^2.1.0",
@@ -84,7 +97,8 @@
     "@types/js-yaml": "^4.0.9",
     "@types/offscreencanvas": "^2019.7.3",
     "@types/wu": "catalog:",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "@datagrok-libraries/bdd": "workspace:^"
   },
   "browser": {
     "fs": false,

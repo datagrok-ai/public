@@ -32,6 +32,25 @@ Box plot, histogram, and bar chart accept only constant-RHS formulas (`${value} 
 (`${value} in (a, b)`) on their value axis. The Formula Lines editor dialog limits the popup-menu
 items and the column picker to match each viewer's supported axes.
 
+## Axis tokens
+
+A formula normally names the columns it binds to (`${height} = ${weight}`), so it only draws while those
+columns are on the axes. Use the tokens `X` and `Y` instead to mean "whatever column is currently on that
+axis", and the line follows the axes as they change:
+
+| Formula | Result |
+|---------|--------|
+| `Y = X` | diagonal across both axes |
+| `Y = X + 25` | offset diagonal; any expression in `X` works |
+| `Y = 100` | horizontal line |
+| `X = 50` | vertical line |
+| `X in(10, 20)` | vertical band |
+| `Y = ${weight} + 25` | Y axis against a named column |
+
+Tokens are case-insensitive (`Y = X` and `y = x` are the same), and may also be written braced
+(`${Y} = ${X}`). A column actually named `x` or `y` always wins: on such a dataframe the token is
+unavailable on that axis and the name refers to the column, whatever its casing.
+
 Lines information is stored in a special storage in a dataframe or viewer. The viewer automatically reads storages when
 it connects to the dataframe.
 

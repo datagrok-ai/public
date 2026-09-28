@@ -7,7 +7,7 @@ import {DEFAULT_SETTINGS, Func, InputOptions, MoeadOptions, SLEEP_TIME} from './
 import {clip, euclideanDistance, pickTwo} from './utils';
 
 function sleep(ms: number) {
-  return new Promise((resolve, reject) => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 /** The MOEA/D multi-objective optimizer */

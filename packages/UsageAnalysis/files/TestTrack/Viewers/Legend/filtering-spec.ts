@@ -7,6 +7,8 @@ import * as v from '../../helpers/viewers';
 import {addLegendViewers} from './legend-setup';
 import {clearClickFilters, clickCanvasFilter} from './canvas-filter';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 // The substructure filter and the two layout round-trips live in filtering-server-spec.ts.
 test.use(specTestOptions);
 
@@ -18,7 +20,7 @@ test('Legend filtering', async ({page}) => {
   // no withFilterPanel: every step here reaches the filters through getFiltersGroup(),
   // and opening the panel up front raced the substructure filter this dataset's molecule
   // column builds — the .d4-filter wait then timed out before any assertion ran
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],

@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.histogram]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -28,7 +30,7 @@ test.describe("Histogram property surface", () => {
     const run = journey(test, 10, page);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(14, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"]]));
+    await session.step(14, "And user adds a histogram viewer with:", () => addViewerWith(page, "histogram", [["Value","AGE"]]), [["Value","AGE"]]);
     await session.step(16, "And user resizes histogram viewer to 500 by 400", () => resizeTo(page, el("histogram viewer"), 500, 400));
     await session.step(17, "Then histogram viewer should show 1000 rows", () => showsRows(page, el("histogram viewer"), 1000));
     await session.step(18, "And the \"bins shown\" reading of histogram viewer should be 20", () => readingIs(page, "bins shown", el("histogram viewer"), 20));
@@ -94,13 +96,13 @@ test.describe("Histogram property surface", () => {
       await session.step(79, "And histogram viewer should have a \"bins slider\" area", () => hasArea(page, el("histogram viewer"), "bins slider"));
       await session.step(80, "And histogram viewer should have a \"range min handle\" area", () => hasArea(page, el("histogram viewer"), "range min handle"));
       await session.step(81, "And histogram viewer should have a \"range max handle\" area", () => hasArea(page, el("histogram viewer"), "range max handle"));
-      await session.step(82, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Column Selector","false"],["Show Bin Selector","false"],["Show Range Slider","false"]]));
+      await session.step(82, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Column Selector","false"],["Show Bin Selector","false"],["Show Range Slider","false"]]), [["Show Column Selector","false"],["Show Bin Selector","false"],["Show Range Slider","false"]]);
       await session.step(86, "And user moves the pointer away from histogram viewer", () => pointerAway(page, el("histogram viewer")));
       await session.step(87, "And user hovers over histogram viewer", () => hoverOver(page, el("histogram viewer")));
       await session.step(88, "Then Value column input in histogram viewer should be hidden", () => shouldBe(page, el("Value column input in histogram viewer"), "hidden"));
       await session.step(89, "And histogram viewer should not have a \"bins slider\" area", () => hasNoArea(page, el("histogram viewer"), "bins slider"));
       await session.step(90, "And histogram viewer should not have a \"range min handle\" area", () => hasNoArea(page, el("histogram viewer"), "range min handle"));
-      await session.step(91, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Column Selector","true"],["Show Bin Selector","true"],["Show Range Slider","true"]]));
+      await session.step(91, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Column Selector","true"],["Show Bin Selector","true"],["Show Range Slider","true"]]), [["Show Column Selector","true"],["Show Bin Selector","true"],["Show Range Slider","true"]]);
       await session.step(95, "And user moves the pointer away from histogram viewer", () => pointerAway(page, el("histogram viewer")));
       await session.step(96, "And user hovers over histogram viewer", () => hoverOver(page, el("histogram viewer")));
       await session.step(97, "Then Value column input in histogram viewer should be visible", () => shouldBe(page, el("Value column input in histogram viewer"), "visible"));
@@ -118,7 +120,7 @@ test.describe("Histogram property surface", () => {
       await session.step(109, "When user sets \"Show Y Axis\" property of histogram viewer to \"false\"", () => setProperty(page, "Show Y Axis", el("histogram viewer"), "false"));
       await session.step(110, "Then histogram viewer should not have a \"y axis\" area", () => hasNoArea(page, el("histogram viewer"), "y axis"));
       await session.step(111, "And histogram viewer should have repainted by at least 500 pixels", () => repaintedBy(page, el("histogram viewer"), 500));
-      await session.step(112, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show X Axis","true"],["Show Y Axis","true"]]));
+      await session.step(112, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show X Axis","true"],["Show Y Axis","true"]]), [["Show X Axis","true"],["Show Y Axis","true"]]);
       await session.step(115, "Then histogram viewer should have an \"x axis\" area", () => hasArea(page, el("histogram viewer"), "x axis"));
       await session.step(116, "And histogram viewer should have a \"y axis\" area", () => hasArea(page, el("histogram viewer"), "y axis"));
       await session.step(117, "When user sets \"X Axis Type\" property of histogram viewer to \"logarithmic\"", () => setProperty(page, "X Axis Type", el("histogram viewer"), "logarithmic"));
@@ -142,13 +144,13 @@ test.describe("Histogram property surface", () => {
       await session.step(135, "When user sets \"Show Clipped Bin Indicators\" property of histogram viewer to \"false\"", () => setProperty(page, "Show Clipped Bin Indicators", el("histogram viewer"), "false"));
       await session.step(136, "Then the \"clipped bins\" reading of histogram viewer should be 0", () => readingIs(page, "clipped bins", el("histogram viewer"), 0));
       await session.step(137, "And histogram viewer should have repainted", () => repainted(page, el("histogram viewer")));
-      await session.step(138, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Clipped Bin Indicators","true"],["Y Max",""]]));
+      await session.step(138, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Show Clipped Bin Indicators","true"],["Y Max",""]]), [["Show Clipped Bin Indicators","true"],["Y Max",""]]);
       await session.step(141, "Then the \"y axis max\" reading of histogram viewer should be 99", () => readingIs(page, "y axis max", el("histogram viewer"), 99));
       await session.step(142, "And the \"clipped bins\" reading of histogram viewer should be 0", () => readingIs(page, "clipped bins", el("histogram viewer"), 0));
       await session.step(143, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A split brings a legend", async () => {
-      await session.step(146, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Split","SEX"],["Legend Visibility","Always"]]));
+      await session.step(146, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Split","SEX"],["Legend Visibility","Always"]]), [["Split","SEX"],["Legend Visibility","Always"]]);
       await session.step(149, "Then legend of histogram viewer should be visible", () => shouldBe(page, el("legend of histogram viewer"), "visible"));
       await session.step(150, "And the legend of histogram viewer should list 2 items", () => legendLists(page, el("histogram viewer"), 2));
       await session.step(151, "And legend of histogram viewer should contain text \"F\"", () => shouldContainText(page, el("legend of histogram viewer"), "F"));
@@ -161,7 +163,7 @@ test.describe("Histogram property surface", () => {
       await session.step(158, "Then the legend of histogram viewer should be on the left", () => legendSide(page, el("histogram viewer"), "left"));
       await session.step(159, "When user sets \"Legend Visibility\" property of histogram viewer to \"Never\"", () => setProperty(page, "Legend Visibility", el("histogram viewer"), "Never"));
       await session.step(160, "Then legend of histogram viewer should be hidden", () => shouldBe(page, el("legend of histogram viewer"), "hidden"));
-      await session.step(161, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Legend Visibility","Auto"],["Legend Position","Auto"],["Split",""]]));
+      await session.step(161, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Legend Visibility","Auto"],["Legend Position","Auto"],["Split",""]]), [["Legend Visibility","Auto"],["Legend Position","Auto"],["Split",""]]);
       await session.step(165, "Then legend of histogram viewer should be hidden", () => shouldBe(page, el("legend of histogram viewer"), "hidden"));
       await session.step(166, "And histogram viewer should have a \"bin 8\" area", () => hasArea(page, el("histogram viewer"), "bin 8"));
       await session.step(167, "And no errors should have been logged", () => noErrors(page));
@@ -224,10 +226,10 @@ test.describe("Histogram property surface", () => {
       await session.step(224, "Then histogram viewer should be absent", () => shouldBe(page, el("histogram viewer"), "absent"));
       await session.step(225, "When user loads the saved layout", () => loadLayout(page));
       await session.step(226, "Then histogram viewer should be visible", () => shouldBe(page, el("histogram viewer"), "visible"));
-      await session.step(227, "And properties of histogram viewer should be:", () => propertiesShouldBe(page, el("histogram viewer"), [["Table","spgi-100"],["Filter","${CAST Idea ID} < 634835"],["Value","CAST Idea ID"]]));
+      await session.step(227, "And properties of histogram viewer should be:", () => propertiesShouldBe(page, el("histogram viewer"), [["Table","spgi-100"],["Filter","${CAST Idea ID} < 634835"],["Value","CAST Idea ID"]]), [["Table","spgi-100"],["Filter","${CAST Idea ID} < 634835"],["Value","CAST Idea ID"]]);
       await session.step(231, "And histogram viewer should show 50 rows", () => showsRows(page, el("histogram viewer"), 50));
       await session.step(232, "And no errors should have been logged", () => noErrors(page));
-      await session.step(233, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Filter",""],["Table","demog-1000"]]));
+      await session.step(233, "When user sets properties of histogram viewer:", () => setProperties(page, el("histogram viewer"), [["Filter",""],["Table","demog-1000"]]), [["Filter",""],["Table","demog-1000"]]);
       await session.step(236, "And user sets \"Value\" property of histogram viewer to \"AGE\"", () => setProperty(page, "Value", el("histogram viewer"), "AGE"));
       await session.step(237, "Then histogram viewer should be bound to table \"demog-1000\"", () => boundTable(page, el("histogram viewer"), "demog-1000"));
       await session.step(238, "And histogram viewer should show 1000 rows", () => showsRows(page, el("histogram viewer"), 1000));

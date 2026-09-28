@@ -12,7 +12,6 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/UsageAnalysis"
   },
-  "playwrightTests": "files/TestTrack",
   "dependencies": {
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
@@ -22,6 +21,7 @@
     "color-hash": "^2.0.2",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
+    "fflate": "^0.8.2",
     "moment": "^2.29.1",
     "rxjs": "catalog:"
   },

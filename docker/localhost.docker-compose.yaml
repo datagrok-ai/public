@@ -58,7 +58,7 @@ services:
     platform: linux/amd64
     container_name: grok_pipe
     ports:
-      - "3000:3000"
+      - "${GROK_PIPE_PORT:-3000}:3000"
     environment:
       API_KEY: test-key
     networks:

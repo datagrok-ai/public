@@ -27,6 +27,13 @@ packages/*/.auth.json
 packages/*/e2e/
 packages/*/playwright/test-output/
 
+# grok-bdd run artifacts of every bdd project (packages, libraries): filmed guides, Playwright
+# results, the login storage state. Features and generated specs stay tracked.
+**/bdd/guides/
+**/bdd/test-results/
+**/bdd/e2e/
+**/bdd/.auth.json
+
 # Dev auth + Playwright test outputs (UsageAnalysis test automation)
 packages/UsageAnalysis/auth-dev.json
 packages/UsageAnalysis/test-playwright-output/

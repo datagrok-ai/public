@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.density-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -29,7 +31,7 @@ test.describe("Density plot selection, zoom and axis bounds", () => {
     const run = journey(test, 8, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
     await session.step(16, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(17, "And user adds a density plot viewer with:", () => addViewerWith(page, "density plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"]]));
+    await session.step(17, "And user adds a density plot viewer with:", () => addViewerWith(page, "density plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"]]), [["xColumnName","AGE"],["yColumnName","WEIGHT"]]);
     await session.step(20, "Then the \"rows shown\" reading of density plot viewer should be 1000", () => readingIs(page, "rows shown", el("density plot viewer"), 1000));
     await session.step(21, "And the \"bin shape\" reading of density plot viewer should be \"hexagon\"", () => readingReads(page, "bin shape", el("density plot viewer"), "hexagon"));
     await session.step(22, "And density plot viewer should have a \"densest bin\" area", () => hasArea(page, el("density plot viewer"), "densest bin"));
@@ -68,15 +70,15 @@ test.describe("Density plot selection, zoom and axis bounds", () => {
       await session.step(56, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The four bound properties pin the viewport, and clearing them releases it", async () => {
-      await session.step(59, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["xMin","30"],["xMax","60"]]));
+      await session.step(59, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["xMin","30"],["xMax","60"]]), [["xMin","30"],["xMax","60"]]);
       await session.step(62, "Then the \"x axis min\" reading of density plot viewer should be 30", () => readingIs(page, "x axis min", el("density plot viewer"), 30));
       await session.step(63, "And the \"x axis max\" reading of density plot viewer should be 60", () => readingIs(page, "x axis max", el("density plot viewer"), 60));
       await session.step(64, "And the \"x axis span\" reading of density plot viewer should be 30", () => readingIs(page, "x axis span", el("density plot viewer"), 30));
-      await session.step(65, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["yMin","60"],["yMax","100"]]));
+      await session.step(65, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["yMin","60"],["yMax","100"]]), [["yMin","60"],["yMax","100"]]);
       await session.step(68, "Then the \"y axis min\" reading of density plot viewer should be 60", () => readingIs(page, "y axis min", el("density plot viewer"), 60));
       await session.step(69, "And the \"y axis max\" reading of density plot viewer should be 100", () => readingIs(page, "y axis max", el("density plot viewer"), 100));
       await session.step(70, "And density plot viewer should have repainted", () => repainted(page, el("density plot viewer")));
-      await session.step(71, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["xMin",""],["xMax",""],["yMin",""],["yMax",""]]));
+      await session.step(71, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["xMin",""],["xMax",""],["yMin",""],["yMax",""]]), [["xMin",""],["xMax",""],["yMin",""],["yMax",""]]);
       await session.step(76, "Then the \"x axis span\" reading of density plot viewer should be higher than before", () => readingHigher(page, "x axis span", el("density plot viewer")));
       await session.step(77, "And no errors should have been logged", () => noErrors(page));
     });

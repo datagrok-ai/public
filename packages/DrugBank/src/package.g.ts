@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: Init
+//meta.role: init
 export async function initDrugBank() : Promise<void> {
   await PackageFunctions.initDrugBank();
 }
@@ -9,7 +9,7 @@ export async function initDrugBank() : Promise<void> {
 //name: Databases | DrugBank | Substructure Search
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 //condition: true
 export async function drugBankSubstructureSearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.drugBankSubstructureSearchPanel(mol);
@@ -18,7 +18,7 @@ export async function drugBankSubstructureSearchPanel(mol: string) : Promise<any
 //name: Databases | DrugBank | Similarity Search
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 //condition: true
 export async function drugBankSimilaritySearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.drugBankSimilaritySearchPanel(mol);

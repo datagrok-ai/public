@@ -71,6 +71,13 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:FilterBuilder', {});
   }
 
+  /**
+   * The u2 app behind a /domains/<schema>/<table>[/<keyOrId>] address
+   */
+  export async function domainRouteView(address: string ): Promise<DG.View> {
+    return await grok.functions.call('PowerPack:DomainRouteView', { address });
+  }
+
   export async function isFormulaColumn(col: DG.Column ): Promise<boolean> {
     return await grok.functions.call('PowerPack:IsFormulaColumn', { col });
   }

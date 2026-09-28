@@ -9,7 +9,7 @@ import {PeptidesModel, VIEWER_TYPE} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {ILogoSummaryTable, LogoSummaryTable} from '../viewers/logo-summary';
+import {ILogoSummaryTable} from '../viewers/logo-summary';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {MCL_INPUTS} from './settings';
 import {createSequenceColumnInput, ISequenceColumnInput} from '@datagrok-libraries/bio/src/utils/sequence-column-input';
@@ -40,6 +40,7 @@ export async function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string
     sequenceColInput = await createSequenceColumnInput('Sequence', {table: df, value: potentialCol, onValueChanged: (value) => {
       $(logoHost).empty().append(ui.wait(async () => {
         const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: value.name});
+        viewer.root.setAttribute('name', 'viewer-WebLogo');
         viewer.root.style.setProperty('height', '130px');
         return viewer.root;
       }));
@@ -212,6 +213,7 @@ export async function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string
 
   $(logoHost).empty().append(ui.wait(async () => {
     const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: col?.name ?? sequenceColInput!.value!.name});
+    viewer.root.setAttribute('name', 'viewer-WebLogo');
     viewer.root.style.setProperty('height', '130px');
     return viewer.root;
   }));
@@ -256,110 +258,109 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     return model;
   }
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
+  try {
 
-  // Prepare new DF
-  // const newDf = DG.DataFrame.create(sourceDf.rowCount);
-  // newDf.name = 'Peptides analysis';
-  // const newDfCols = newDf.columns;
-  // newDfCols.add(scaledCol);
-  // for (const col of sourceDf.columns) {
-  //   if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
-  //     if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
-  //       col.name = sourceDf.columns.getUnusedName(col.name);
-  //     newDfCols.add(col);
-  //   }
-  // }
+    // Prepare new DF
+    // const newDf = DG.DataFrame.create(sourceDf.rowCount);
+    // newDf.name = 'Peptides analysis';
+    // const newDfCols = newDf.columns;
+    // newDfCols.add(scaledCol);
+    // for (const col of sourceDf.columns) {
+    //   if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
+    //     if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
+    //       col.name = sourceDf.columns.getUnusedName(col.name);
+    //     newDfCols.add(col);
+    //   }
+    // }
 
-  //make sure the data sync is turned off for the dataframe:
-  sourceDf.tags.delete && sourceDf.tags.delete('.script');
+    //make sure the data sync is turned off for the dataframe:
+    sourceDf.tags.delete && sourceDf.tags.delete('.script');
 
-  const sourceCols = sourceDf.columns;
-  const oldActivityCol = sourceDf.col(scaledCol.name);
-  if (oldActivityCol)
-    oldActivityCol.name = sourceCols.getUnusedName(oldActivityCol.name);
-  const scaleColRawData = scaledCol.getRawData();
-  sourceDf.columns.addNew(scaledCol.name, scaledCol.type).init((i) => scaleColRawData[i]);
-  sourceCols.setOrder([scaledCol.name, peptidesCol.name, ...sourceCols.names().filter((name) => name !== peptidesCol.name && name !== scaledCol.name)]);
-  const settings: type.PeptidesSettings = {
-    sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
-    columns: {}, showDendrogram: false, showSequenceSpace: false,
-    sequenceSpaceParams: new type.SequenceSpaceParams(!!options.useEmbeddingsClusters && !clustersColumn),
-    mclSettings: options.mclSettings ?? new type.MCLSettings(),
-  };
-
-  if (clustersColumn) {
-    const clusterCol = sourceDf.getCol(clustersColumn.name);
-    if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
-      sourceCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
-  }
-  sourceDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
-
-  // const bitset = DG.BitSet.create(sourceDf.rowCount,
-  //   (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && sourceDf.filter.get(i));
-
-  // Cloning dataframe with applied filter. If filter is not applied, cloning is
-  // needed anyway to allow filtering on the original dataframe
-  model = PeptidesModel.getInstance(sourceDf);
-  model.init(settings);
-  if (clustersColumn) {
-    const lstProps: ILogoSummaryTable = {
-      clustersColumnName: clustersColumn.name, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
-      activityColumnName: activityColumn.name,
+    const sourceCols = sourceDf.columns;
+    const oldActivityCol = sourceDf.col(scaledCol.name);
+    if (oldActivityCol)
+      oldActivityCol.name = sourceCols.getUnusedName(oldActivityCol.name);
+    const scaleColRawData = scaledCol.getRawData();
+    sourceDf.columns.addNew(scaledCol.name, scaledCol.type).init((i) => scaleColRawData[i]);
+    sourceCols.setOrder([scaledCol.name, peptidesCol.name, ...sourceCols.names().filter((name) => name !== peptidesCol.name && name !== scaledCol.name)]);
+    const settings: type.PeptidesSettings = {
+      sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
+      columns: {}, showDendrogram: false, showSequenceSpace: false,
+      sequenceSpaceParams: new type.SequenceSpaceParams(!!options.useEmbeddingsClusters && !clustersColumn),
+      mclSettings: options.mclSettings ?? new type.MCLSettings(),
     };
-    await model.addLogoSummaryTable(lstProps);
-  }
-  await model.addMonomerPosition();
-  await model.addMostPotentResidues();
 
-  // FIXME: enable by default for tests
-  if (options.addSequenceSpace ?? false) {
-    await model.addSequenceSpace({clusterCol: clustersColumn, clusterEmbeddings: options.useEmbeddingsClusters});
-    if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
-      const clusterCol = model._sequenceSpaceCols
-        .find((col) => model!.df.col(col) && model!.df.col(col)?.type === DG.COLUMN_TYPE.STRING);
-      if (clusterCol) {
-        const lstProps: ILogoSummaryTable = {
-          clustersColumnName: clusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
-          activityColumnName: activityColumn.name,
-        };
-        await model.addLogoSummaryTable(lstProps);
-        setTimeout(() => {
-          model && (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render &&
-          (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render();
-        }, 100);
+    if (clustersColumn) {
+      const clusterCol = sourceDf.getCol(clustersColumn.name);
+      if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
+        sourceCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
+    }
+    sourceDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
+
+    // const bitset = DG.BitSet.create(sourceDf.rowCount,
+    //   (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && sourceDf.filter.get(i));
+
+    // Cloning dataframe with applied filter. If filter is not applied, cloning is
+    // needed anyway to allow filtering on the original dataframe
+    model = PeptidesModel.getInstance(sourceDf);
+    model.init(settings);
+    if (clustersColumn) {
+      const lstProps: ILogoSummaryTable = {
+        clustersColumnName: clustersColumn.name, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+        activityColumnName: activityColumn.name,
+      };
+      await model.addLogoSummaryTable(lstProps);
+    }
+    await model.addMonomerPosition();
+    await model.addMostPotentResidues();
+
+    // FIXME: enable by default for tests
+    if (options.addSequenceSpace ?? false) {
+      await model.addSequenceSpace({clusterCol: clustersColumn, clusterEmbeddings: options.useEmbeddingsClusters});
+      if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
+        const clusterCol = model._sequenceSpaceCols
+          .find((col) => model!.df.col(col) && model!.df.col(col)?.type === DG.COLUMN_TYPE.STRING);
+        if (clusterCol) {
+          const lstProps: ILogoSummaryTable = {
+            clustersColumnName: clusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+            activityColumnName: activityColumn.name,
+          };
+          await model.addLogoSummaryTable(lstProps);
+        }
+      }
+    } else if (options.addMCL ?? false) {
+      await model.addMCLClusters();
+      if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
+        const mclClusterCol = model._mclCols
+          .find(
+            (col) => model?.df.col(col) && col.toLowerCase().startsWith('cluster') && !col.toLowerCase().includes('size'),
+          );
+        if (mclClusterCol) {
+          const lstProps: ILogoSummaryTable = {
+            clustersColumnName: mclClusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+            activityColumnName: activityColumn.name,
+          };
+          await model.addLogoSummaryTable(lstProps);
+        }
       }
     }
-  } else if (options.addMCL ?? false) {
-    await model.addMCLClusters();
-    if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
-      const mclClusterCol = model._mclCols
-        .find(
-          (col) => model?.df.col(col) && col.toLowerCase().startsWith('cluster') && !col.toLowerCase().includes('size'),
-        );
-      if (mclClusterCol) {
-        const lstProps: ILogoSummaryTable = {
-          clustersColumnName: mclClusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
-          activityColumnName: activityColumn.name,
-        };
-        await model.addLogoSummaryTable(lstProps);
-        setTimeout(() => {
-          model && (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render &&
-          (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render();
-        }, 100);
-      }
-    }
+
+    const selectionGrid = model.df.plot.grid({
+      rowSource: DG.RowSet.Selected,
+      selectedRowsColor: DG.Color.fromHtml('#ffffff'),
+      title: 'Selection',
+    });
+
+    const logoViewerNode = (model?.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE));
+    selectionGrid.root.setAttribute('name', 'viewer-Selection');
+    if (logoViewerNode)
+      model.analysisView.dockManager.dock(selectionGrid, DG.DOCK_TYPE.DOWN, logoViewerNode, 'Selection', 0.4);
+
+    // Adding and hiding columns during analysis can retain an offset into the old layout.
+    model.analysisView.grid.scrollToCell(C.COLUMNS_NAMES.ACTIVITY, 0);
+    grok.events.fireCustomEvent('peptides-sar-ready', {table: model.df.name});
+    return model;
+  } finally {
+    progress.close();
   }
-
-  const selectionGrid = model.df.plot.grid({
-    rowSource: DG.RowSet.Selected,
-    selectedRowsColor: DG.Color.fromHtml('#ffffff'),
-    title: 'Selection',
-  });
-
-  const logoViewerNode = (model?.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE));
-  if (logoViewerNode)
-    model.analysisView.dockManager.dock(selectionGrid, DG.DOCK_TYPE.DOWN, logoViewerNode, 'Selection', 0.4);
-
-  progress.close();
-  return model;
 }

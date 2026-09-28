@@ -5,12 +5,18 @@ Feature: Trellis plot legend and lifecycle
   title-bar close, a layout round-trip through the server, and a project round-trip. One journey on
   demog-1000 with SEX by RACE and a scatter plot inside.
 
-  Not translated here: the legend's dimming — the trellis legend says "shown" and "hidden" through
-  opacity alone and carries no state a reader can name, so a cross click can only be graded on a
-  number of pixels; "Pick Up / Apply" between two trellises and "Use in Trellis" from another
-  viewer, both of which need a second viewer of the same type addressed apart from the first; and
-  the claim that a selection is lost across a project round-trip, which the old spec asserted from
-  a nine-month-old observation.
+  A box plot inside, with Show All Categories on, keeps that setting through the legend's label and
+  cross clicks (GROK-20432); the legend's dimming is read as the subset it marks current
+  (`aria-selected`): nothing before the first click, the label-clicked entry alone, a second one
+  added with Control, one taken away by its cross, a plain label click replacing the subset with its
+  own entry, and nothing again once the last one's cross is clicked. Show All Categories is read
+  from the inner look the trellis keeps and builds its cells from, where it was written — not from
+  each inner box plot or from the Box plot tab of the context panel the md reads. The md's first click is a cross on an entry nothing has chosen yet; the current legend
+  shows a cross only on a chosen entry (`d4.css`, `.d4-legend-item-current > .d4-legend-cross`), so
+  the subset is built with the label and Control first.
+  Not translated here: "Pick Up / Apply" between two trellises and "Use in Trellis" from another
+  viewer (`viewer-chrome.feature` and a later round). The md's persistence tail with two trellises
+  and a Selected trellis through a project is `trellis-plot-persistence.feature`.
 
   Background:
     Given user is logged in
@@ -49,6 +55,47 @@ Feature: Trellis plot legend and lifecycle
       | Legend Position   | Auto   |
     Then legend of trellis plot viewer should be visible
     And no errors should have been logged
+
+  Scenario: A box plot inside keeps Show All Categories through the legend's clicks
+    When user sets "Viewer Type" property of trellis plot viewer to "Box plot"
+    And user sets "showAllCategories" inner property of trellis plot viewer to "true"
+    Then "showAllCategories" inner property of trellis plot viewer should be "true"
+    And legend of trellis plot viewer should be visible
+    And the legend of trellis plot viewer should list 6 items
+    And "AS" legend item in legend of trellis plot viewer should not be selected
+    And "Indigestion" legend item in legend of trellis plot viewer should not be selected
+    And "PsA" legend item in legend of trellis plot viewer should not be selected
+    When user clicks on "AS" item in the legend of trellis plot viewer
+    Then "AS" legend item in legend of trellis plot viewer should be selected
+    And "Indigestion" legend item in legend of trellis plot viewer should not be selected
+    And "PsA" legend item in legend of trellis plot viewer should not be selected
+    And "showAllCategories" inner property of trellis plot viewer should be "true"
+    When user clicks on "Indigestion" item in the legend of trellis plot viewer holding Control
+    Then "AS" legend item in legend of trellis plot viewer should be selected
+    And "Indigestion" legend item in legend of trellis plot viewer should be selected
+    And "PsA" legend item in legend of trellis plot viewer should not be selected
+    And "showAllCategories" inner property of trellis plot viewer should be "true"
+    When user clicks on the cross of "AS" item in the legend of trellis plot viewer
+    Then "AS" legend item in legend of trellis plot viewer should not be selected
+    And "Indigestion" legend item in legend of trellis plot viewer should be selected
+    And "PsA" legend item in legend of trellis plot viewer should not be selected
+    And "showAllCategories" inner property of trellis plot viewer should be "true"
+    When user clicks on "PsA" item in the legend of trellis plot viewer
+    Then "PsA" legend item in legend of trellis plot viewer should be selected
+    And "Indigestion" legend item in legend of trellis plot viewer should not be selected
+    And "AS" legend item in legend of trellis plot viewer should not be selected
+    And "showAllCategories" inner property of trellis plot viewer should be "true"
+    When user clicks on the cross of "PsA" item in the legend of trellis plot viewer
+    Then "PsA" legend item in legend of trellis plot viewer should not be selected
+    And "Indigestion" legend item in legend of trellis plot viewer should not be selected
+    And "AS" legend item in legend of trellis plot viewer should not be selected
+    And "PsA" legend item in legend of trellis plot viewer should not be selected
+    And "UC" legend item in legend of trellis plot viewer should not be selected
+    And the legend of trellis plot viewer should list 6 items
+    And "showAllCategories" inner property of trellis plot viewer should be "true"
+    And no errors should have been logged
+    When user sets "Viewer Type" property of trellis plot viewer to "Scatter plot"
+    Then the "inner viewer type" reading of trellis plot viewer should be "Scatter plot"
 
   Scenario: Undo brings the closed viewer back and redo closes it again
     Then the open tableview should have 1 trellis plot viewer
@@ -104,3 +151,4 @@ Feature: Trellis plot legend and lifecycle
     And the "cells drawn" reading of trellis plot viewer should be 8
     And trellis plot viewer should show 1000 rows
     And no errors should have been logged
+

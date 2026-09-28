@@ -14,7 +14,8 @@ interface SetupArgs {
 /**
  * `grok setup`: one command to get (or keep) a public/ checkout ready to build.
  *   1. Node 20+ (22 recommended); pnpm through corepack, at the version package.json pins.
- *   2. Removes per-package node_modules left by the npm era and stray package-lock.json files.
+ *   2. Removes per-package node_modules left by the npm era, stray package-lock.json files and the .js/.d.ts
+ *      files the npm-era tsc emitted beside js-api and library sources.
  *   3. `pnpm install` at the workspace root.
  *   4. Reports a global `grok` older than the workspace one (`--global` updates it).
  * `--check` only reports.
@@ -41,8 +42,12 @@ export async function setup(args: SetupArgs): Promise<boolean> {
   if (pnpmVersion !== pinnedPnpm) {
     color.warn(`pnpm ${pnpmVersion || 'not found'}; the workspace pins ${pinnedPnpm}.`);
     if (!check) {
+      if (run('corepack', ['--version']) === null) {
+        color.warn('corepack not found (Node 25 no longer bundles it): installing');
+        spawnSync('npm', ['install', '-g', 'corepack'], {stdio: 'inherit', shell: true});
+      }
       if (run('corepack', ['--version']) === null)
-        color.warn('corepack not found: `npm install -g corepack`, then rerun `grok setup`.');
+        color.warn('could not install corepack: `npm install -g corepack` by hand, then rerun `grok setup`.');
       else {
         spawnSync('corepack', ['enable'], {stdio: 'inherit', shell: true});
         spawnSync('corepack', ['prepare', `pnpm@${pinnedPnpm}`, '--activate'], {stdio: 'inherit', shell: true});
@@ -58,16 +63,18 @@ export async function setup(args: SetupArgs): Promise<boolean> {
   // 2. leftovers from the npm era
   const projectDirs = ['js-api', 'tools', 'build-config'].map((d) => path.join(root, d));
   for (const group of ['packages', 'libraries'])
-    for (const d of fs.readdirSync(path.join(root, group)))
-      projectDirs.push(path.join(root, group, d));
+    for (const d of fs.readdirSync(path.join(root, group), {withFileTypes: true}).filter((e) => e.isDirectory()))
+      projectDirs.push(path.join(root, group, d.name));
   const staleModules = projectDirs.filter((d) => isLegacyNodeModules(path.join(d, 'node_modules')));
   const staleLocks = projectDirs.map((d) => path.join(d, 'package-lock.json')).filter((f) => fs.existsSync(f));
-  if (staleModules.length || staleLocks.length) {
-    color.warn(`${staleModules.length} per-package node_modules from npm and ${staleLocks.length} package-lock.json file(s)` +
-      (check ? ' would be removed' : ': removing'));
+  const staleEmits = projectDirs.filter((d) => d === path.join(root, 'js-api') || path.dirname(d) === path.join(root, 'libraries')).flatMap(inPlaceEmits);
+  if (staleModules.length || staleLocks.length || staleEmits.length) {
+    color.warn(`${staleModules.length} per-package node_modules from npm, ${staleLocks.length} package-lock.json file(s) and ` +
+      `${staleEmits.length} .js/.d.ts file(s) emitted beside their .ts sources` + (check ? ' would be removed' : ': removing'));
     if (!check) {
-      for (const d of staleModules) fs.rmSync(path.join(d, 'node_modules'), {recursive: true, force: true});
-      for (const f of staleLocks) fs.rmSync(f, {force: true});
+      const leftovers = [...staleModules.map((d) => path.join(d, 'node_modules')), ...staleLocks, ...staleEmits].filter((p) => !tryRemove(p));
+      if (leftovers.length)
+        color.warn(`could not remove ${leftovers.length} item(s) (locked by an editor, watcher or antivirus?), delete by hand:\n  ${leftovers.join('\n  ')}`);
     }
   }
   else
@@ -124,6 +131,45 @@ function isLegacyNodeModules(dir: string): boolean {
       return true;
   }
   return false;
+}
+
+/**
+ * The npm-era tsc emitted next to the sources; the workspace emits into dist/, so a .js/.d.ts beside its .ts is stale
+ * (js-api/grok.js even shadows the `grok` command in cmd.exe). js-api/datagrok.js is still bundled in place and stays.
+ */
+function inPlaceEmits(dir: string): string[] {
+  const out: string[] = [];
+  const walk = (d: string, recurse: boolean) => {
+    for (const e of fs.readdirSync(d, {withFileTypes: true})) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) {
+        if (recurse && e.name !== 'node_modules' && e.name !== 'dist')
+          walk(p, true);
+      }
+      else if (e.name.endsWith('.ts') && !e.name.endsWith('.d.ts')) {
+        const base = p.slice(0, -3);
+        for (const ext of ['.js', '.js.map', '.d.ts', '.d.ts.map'])
+          if (fs.existsSync(base + ext) && !(d === dir && e.name === 'datagrok.ts' && ext.startsWith('.js')))
+            out.push(base + ext);
+      }
+    }
+  };
+  walk(dir, false);
+  if (fs.existsSync(path.join(dir, 'src')))
+    walk(path.join(dir, 'src'), true);
+  return out;
+}
+
+/** Windows reports a directory as busy/non-empty while a handle is still open on it; retry, then give up on this one only. */
+function tryRemove(p: string): boolean {
+  try {
+    fs.rmSync(p, {recursive: true, force: true, maxRetries: 5, retryDelay: 200});
+    return !fs.existsSync(p);
+  }
+  catch (e) {
+    color.warn(`${p}: ${(e as NodeJS.ErrnoException).code || e}`);
+    return false;
+  }
 }
 
 function run(cmd: string, args: string[]): string | null {

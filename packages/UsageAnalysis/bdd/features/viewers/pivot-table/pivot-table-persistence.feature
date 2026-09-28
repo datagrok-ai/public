@@ -3,7 +3,9 @@ Feature: Pivot table — a configured cross tab that survives a round trip
   A pivot configured away from its defaults — med instead of avg, a title, a colour-coded value
   column — saved with the view's layout on the server and restored, and then saved as a project,
   closed and reopened: the tag rows, the aggregation it recomputes and the inner grid's look all come
-  back (github-2535). One journey on demog-1000 grouped by DIS_POP and pivoted on SEVERITY, where
+  back (github-2535) — the title and the inner grid's colour coding through both, and the title
+  unmoved by a change of the tag rows made after the layout was saved. The md's spgi-100 cross tab
+  and its inline title edit become demog-1000's DIS_POP by SEVERITY and the Title property. One journey on demog-1000 grouped by DIS_POP and pivoted on SEVERITY, where
   med(AGE) is a different number from avg(AGE) in every cell, so a restored viewer that fell back to
   the default aggregation would be caught.
   Not translated: the ribbon's Save entry point of the old server spec — generic application chrome,
@@ -38,14 +40,20 @@ Feature: Pivot table — a configured cross tab that survives a round trip
     And user picks "Grid > Color Coding > Linear" from the context menu of the "grid header None med(AGE)" area of pivot table viewer
     Then the "color coding of None med(AGE)" reading of pivot table viewer should be "Linear"
     And title of pivot table viewer should have text "Cross tab"
-    When user saves the layout of the current table view to the server
-    And user clicks on close icon of pivot table viewer
+    When user remembers the "color of grid cell 2 of None med(AGE)" reading of pivot table viewer
+    And user saves the layout of the current table view to the server
+    And user clicks on the "remove group by chip DIS_POP" area of pivot table viewer
+    Then the "group by" reading of pivot table viewer should be ""
+    And title of pivot table viewer should have text "Cross tab"
+    When user clicks on close icon of pivot table viewer
     Then pivot table viewer should be absent
     When user loads the saved layout
     Then pivot table viewer should be visible
+    And the "group by" reading of pivot table viewer should be "DIS_POP"
     And title of pivot table viewer should have text "Cross tab"
     And the "color coding of None med(AGE)" reading of pivot table viewer should be "Linear"
     And the "color of grid cell 2 of None med(AGE)" reading of pivot table viewer should not be "#ffffff"
+    And the "color of grid cell 2 of None med(AGE)" reading of pivot table viewer should be as remembered
     And the "aggregations" reading of pivot table viewer should be "med(AGE)"
     And no errors should have been logged
 
@@ -60,5 +68,7 @@ Feature: Pivot table — a configured cross tab that survives a round trip
     And the "aggregated rows" reading of pivot table viewer should be 6
     And the "aggregated columns" reading of pivot table viewer should be 6
     And title of pivot table viewer should have text "Cross tab"
+    And the "color coding of None med(AGE)" reading of pivot table viewer should be "Linear"
+    And the "color of grid cell 2 of None med(AGE)" reading of pivot table viewer should be as remembered
     And the aggregated values of pivot table viewer should match "med(AGE)" grouped by "DIS_POP" pivoted on "SEVERITY"
     And no errors should have been logged

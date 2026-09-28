@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 //input: string path { meta.url: true; optional: true }
 //input: string _filter { optional: true }
 //output: view result
-//meta.role: App
+//meta.role: app
 //meta.icon: images/cdd-icon-small.png
 //meta.browsePath: Chem
 export async function cddVaultApp(path: string, _filter: string) : Promise<any> {
@@ -13,7 +13,7 @@ export async function cddVaultApp(path: string, _filter: string) : Promise<any> 
 }
 
 //input: dynamic treeNode 
-//meta.role: AppTreeBrowser
+//meta.role: appTreeBrowser
 //meta.app: CDD Vault
 export async function cddVaultAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.cddVaultAppTreeBrowser(treeNode);
@@ -22,13 +22,13 @@ export async function cddVaultAppTreeBrowser(treeNode: any) : Promise<void> {
 //name: Databases | CDD Vault
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: Panel
+//meta.role: panel
 export function molColumnPropertyPanel(molecule: string) : any {
   return PackageFunctions.molColumnPropertyPanel(molecule);
 }
 
 //input: funccall _call 
-//meta.role: Editor
+//meta.role: editor
 export async function CDDVaultSearchEditor(_call: DG.FuncCall) : Promise<void> {
   await PackageFunctions.CDDVaultSearchEditor(_call);
 }

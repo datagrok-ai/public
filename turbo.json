@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build", "datagrok-tools#build"],
       "inputs": ["$TURBO_DEFAULT$", "!src/package.g.ts", "!src/package-api.ts", "!dist/**"],
-      "outputs": ["dist/**", "src/package.g.ts", "src/package-api.ts", "bin/**/*.js", "datagrok.js", "datagrok.js.map"]
+      "outputs": ["dist/**", "src/package.g.ts", "src/package-api.ts", "bin/**/*.js", "datagrok.js", "datagrok.js.map", "*.datagrok.js", "*.datagrok.js.map"]
     },
     "typecheck": {
       "dependsOn": ["^build", "datagrok-tools#build"],

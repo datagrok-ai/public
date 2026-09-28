@@ -191,6 +191,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
     }
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
+  listCliffsLink.setAttribute('name', 'button-cliffs');
+  // what the run found, on the plot it drew it onto: the link's caption carries the same number
+  sp.addStatusProvider('activity cliffs', () => ({values: {
+    'cliffs': linesRes.linesDf.rowCount,
+    'only cliffs': sp.dataFrame.getTag(CLIFFS_FILTER_APPLIED) === axesNames[0],
+  }}));
 
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
@@ -446,6 +452,12 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
     }
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
+  listCliffsLink.setAttribute('name', 'button-cliffs');
+  // what the run found, on the plot it drew it onto: the link's caption carries the same number
+  sp.addStatusProvider('activity cliffs', () => ({values: {
+    'cliffs': linesRes.linesDf.rowCount,
+    'only cliffs': sp.dataFrame.getTag(CLIFFS_FILTER_APPLIED) === axesNames[0],
+  }}));
 
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers

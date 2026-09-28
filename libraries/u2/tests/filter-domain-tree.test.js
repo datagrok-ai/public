@@ -238,3 +238,27 @@ test('a literal % or _ survives model → tree → text → tree → model', () 
     assert.equal(again.options, undefined, text);
   }
 });
+
+test('column refs and $params: {$column} ⇄ {column}, {$param} ⇄ {param}, format, and Filters.bind', () => {
+  const schema = Filters.schema([{name: 'start', type: TYPE.DATE_TIME}, {name: 'end', type: TYPE.DATE_TIME},
+    {name: 'country_id', type: TYPE.STRING, ref: 'geo.country'}, {name: 'name', type: TYPE.STRING},
+    {name: 'x', type: TYPE.INT}]);
+  const tree = [c('end', '>=', {$column: 'start'}), 'and', c('country_id', '=', {$param: 'country_id'}), 'and',
+    c('x', '=', [{$param: 'a'}, 5]), 'and', c('name', 'like', {$param: 'q'})];
+  const root = Filters.fromDomainTree(tree, schema);
+  assert.deepEqual(root.nodes.map((n) => [n.operator, n.value]), [
+    ['>=', {column: 'start'}], ['=', {param: 'country_id'}], ['in', [{param: 'a'}, 5]], ['like', {param: 'q'}]]);
+  assert.deepEqual(Filters.toDomainTree(root, {schema}), tree, 'the inverse');
+  assert.equal(Filters.format(root), 'end >= start and country_id = $country_id and x in ($a, 5) and name like $q');
+  assert.deepEqual(Filters.parse(Filters.format(root), schema).problems, []);
+  assert.deepEqual(Filters.toJson(root).nodes[0].value, {column: 'start'});
+  assert.equal(Filters.equals(Filters.fromJson(Filters.toJson(root)), root), true);
+
+  const bound = Filters.bind(root, {country_id: 'c1', a: 3, q: 'as%'}, schema);
+  assert.deepEqual(bound.nodes.map((n) => n.value), [{column: 'start'}, {type: 'geo.country', id: 'c1'}, [3, 5], 'as%'],
+    'typed through the schema; a like value is the text');
+  assert.deepEqual(Filters.toDomainTree(bound, {schema}).filter((n) => n !== 'and').map((n) => n.value),
+    [{$column: 'start'}, 'c1', [3, 5], '%as\\%%'], 'the domain form wraps and escapes the bound like');
+  assert.deepEqual(Filters.bind(root, {a: 1}).nodes[1].value, {param: 'country_id'}, 'an absent name stays a param');
+  assert.notEqual(Filters.bind(root, {}), root, 'always a copy');
+});

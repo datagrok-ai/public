@@ -116,9 +116,9 @@ async function clickCategoryNameRowIn(
   await activateView(page, viewName);
   await page.evaluate(({vn, col, x, y}) => {
     const overlay = (window as any).__card(vn, col)
-      .querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null;
+      .querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
     if (!overlay)
-      throw new Error(`the "${col}" card in view "${vn}" exposes no categorical [name="viewer-Grid"] [name="overlay"] body — the category-row click never happened`);
+      throw new Error(`the "${col}" card in view "${vn}" exposes no categorical [name="filter-grid"] [name="overlay"] body — the category-row click never happened`);
     const rect = overlay.getBoundingClientRect();
     if (rect.height <= y)
       throw new Error(`the "${col}" card body in view "${vn}" is ${rect.height}px tall, so the row at y=${y} is not painted and the click would land on empty canvas`);

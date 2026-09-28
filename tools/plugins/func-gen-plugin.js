@@ -19,7 +19,7 @@ const {
 } = require('../bin/utils/func-generation');
 
 // Not imported from commands/migrate: that module loads ts-morph (~1.5 s) at require time.
-const toCamelCase = (s) => s.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+const toCamelCase = (s) => s.replace(/[-_ ]+(\w)/g, (_, c) => c.toUpperCase()).replace(/^[A-Z]/, (c) => c.toLowerCase());
 
 let _api;
 const api = (...a) => (_api ??= require('../bin/commands/api').api)(...a);

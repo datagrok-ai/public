@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
+
 import {KnimeDeployment} from '../types';
 import {PackageFunctions} from '../package';
 import {_package} from '../package-test';
@@ -25,6 +26,8 @@ const EXPECTED_INPUT_NAMES = [
 
 const EXPECTED_OUTPUT_NAMES = ['json_output', 'table_output', 'file_output'];
 
+const ciSkip = DG.Test.isCiCd ? 'needs a KNIME server, which CI does not have' : undefined;
+
 
 category('KnimeLink: integration', () => {
 
@@ -34,7 +37,7 @@ category('KnimeLink: integration', () => {
     const dep = deployments.find((d) => d.id === TEST_DEPLOYMENT.id);
     expect(dep !== undefined, true);
     expect(dep!.name.toLowerCase(), 'test_inputs');
-  });
+  }, {skipReason: ciSkip});
 
   test('registers function with correct inputs and outputs', async () => {
     const func: DG.Func = await funcs.knimeGetOrRegisterFunc(
@@ -50,7 +53,7 @@ category('KnimeLink: integration', () => {
     expect(outputNames.length, EXPECTED_OUTPUT_NAMES.length);
     for (const expected of EXPECTED_OUTPUT_NAMES)
       expect(outputNames.includes(expected), true);
-  });
+  }, {skipReason: ciSkip});
 
   test('returns workflow image URL for the test pipeline', async () => {
     const deployments: KnimeDeployment[] = await funcs.knimeListDeployments('rest');
@@ -72,7 +75,7 @@ category('KnimeLink: integration', () => {
       img.onerror = () => { clearTimeout(timeoutId); reject(new Error('Image failed to load')); };
       img.src = url!;
     });
-  }, {timeout: 30000});
+  }, {timeout: 30000, skipReason: ciSkip});
 
   test('preview renders for the function', async () => {
     const func = await funcs.knimeGetOrRegisterFunc(
@@ -81,7 +84,7 @@ category('KnimeLink: integration', () => {
     expect(handler !== null && handler !== undefined, true);
     const preview = await handler!.renderPreview(func);
     expect(preview !== null && preview !== undefined, true);
-  });
+  }, {skipReason: ciSkip});
 
   test('runs pipeline and echoes inputs back', async () => {
     await funcs.knimeGetOrRegisterFunc(
@@ -126,5 +129,5 @@ category('KnimeLink: integration', () => {
     const fileOut = String(result.file_output);
     expect(fileOut.length > 0, true);
     expect(fileOut.includes('111111') || fileOut.includes('input-file') || fileOut.includes('.txt'), true);
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 }, {timeout: 60000});

@@ -4,6 +4,9 @@ Feature: Diversity search
   sequences. Closed and run again on another table, it computes over that table — a cached
   subset of fasta rows cannot pass for HELM.
 
+  Not translated: an empty current row (GROK-16111) is claimed with the other search viewers in
+  analyze/empty-current-row; nothing else of the md is left out.
+
   Background:
     Given user is logged in
     And user opens filter_FASTA dataset
@@ -23,7 +26,7 @@ Feature: Diversity search
 
   Scenario: Closing the viewer removes it
     When user clicks on close icon of "Sequence Diversity Search" viewer
-    Then "Sequence Diversity Search" viewer should be hidden
+    Then "Sequence Diversity Search" viewer should be absent
 
   Scenario: On a HELM table the subset is HELM
     Given user opens filter_HELM dataset

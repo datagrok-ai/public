@@ -1,8 +1,10 @@
 @journey @viewers @realizes:viewers.trellis-plot
 Feature: Trellis plot click actions
   What a click on a cell does under each On Click setting: nothing at all while the setting is only
-  being switched, the cell's own rows selected (Control adding a second cell, an empty cell adding
-  none but taking the current-cell mark), and the cell's own rows filtered — composed with a filter
+  being switched — to Select or to Filter the cells draw what they drew (GROK-17708) and the
+  viewport keeps its 2 by 4 categories (GROK-17714) — the cell's own rows selected (Control adding a second cell, an empty cell adding
+  none but taking the current-cell mark, and a cell a filter card emptied — kept on screen under
+  Row Source All — adding all of its rows, since the selection ignores the filter), and the cell's own rows filtered — composed with a filter
   card, dropped by Escape and by a change of split column. Both trellis events fire off one click.
   A cell is clicked on the corner band the trellis owns: the middle of a cell belongs to the inner
   viewer's canvas. One journey on demog-1000 with SEX by RACE; every scenario puts back what it
@@ -23,6 +25,8 @@ Feature: Trellis plot click actions
     And user sets "On Click" property of trellis plot viewer to "Select"
     Then the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
     And the "cell signature F | Caucasian" and "cell signature M | Asian" readings of trellis plot viewer should differ
+    And the "columns" reading of trellis plot viewer should be 2
+    And the "rows" reading of trellis plot viewer should be 4
     And the "current cell" reading of trellis plot viewer should be ""
     And no rows should be selected
     And all rows should pass the filter
@@ -32,6 +36,8 @@ Feature: Trellis plot click actions
     When user clicks on the "cell F | Caucasian" area of trellis plot viewer
     Then 480 rows should be selected
     And the "current cell" reading of trellis plot viewer should be "F | Caucasian"
+    And the "columns" reading of trellis plot viewer should be 2
+    And the "rows" reading of trellis plot viewer should be 4
     And all rows should pass the filter
     And trellis plot viewer should show 1000 rows
     And no errors should have been logged
@@ -58,6 +64,26 @@ Feature: Trellis plot click actions
     Then no rows should be selected
     And no errors should have been logged
 
+  Scenario: Control on a cell the filter panel emptied still adds the cell's rows
+    Given "Row Source" property of trellis plot viewer should be "Filtered"
+    When user sets "Row Source" property of trellis plot viewer to "All"
+    And user clicks on the "cell M | Caucasian" area of trellis plot viewer
+    Then 416 rows should be selected
+    When user adds a categorical filter on "SEX" keeping "M"
+    Then 447 rows should pass the filter
+    And the "cells" reading of trellis plot viewer should be 8
+    And trellis plot viewer should have a "cell F | Caucasian" area
+    When user clicks on the "cell F | Caucasian" area of trellis plot viewer holding Control
+    Then 896 rows should be selected
+    And all rows where "RACE" is "Caucasian" should be selected
+    And the "current cell" reading of trellis plot viewer should be "F | Caucasian"
+    When user adds a categorical filter on "SEX" keeping "F, M"
+    Then all rows should pass the filter
+    When user presses Escape in trellis plot viewer
+    And user sets "Row Source" property of trellis plot viewer to "Filtered"
+    Then no rows should be selected
+    And no errors should have been logged
+
   Scenario: Control on an empty cell adds nothing but takes the current cell
     When user sets properties of trellis plot viewer:
       | X Column Names  | RACE     |
@@ -81,8 +107,12 @@ Feature: Trellis plot click actions
     And no errors should have been logged
 
   Scenario: A cell click filters to exactly its rows
-    When user sets "On Click" property of trellis plot viewer to "Filter"
-    Then "Row Source" property of trellis plot viewer should be "All"
+    When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
+    And user remembers the "cell signature M | Asian" reading of trellis plot viewer
+    And user sets "On Click" property of trellis plot viewer to "Filter"
+    Then the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
+    And the "cell signature M | Asian" reading of trellis plot viewer should be as remembered
+    And "Row Source" property of trellis plot viewer should be "All"
     And all rows should pass the filter
     When user clicks on the "cell F | Caucasian" area of trellis plot viewer
     Then 480 rows should pass the filter

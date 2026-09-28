@@ -1,6 +1,6 @@
 # Admetica changelog
 
-## v.next
+## 1.3.2 (2026-09-16)
 
 * Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages, upgraded pip/setuptools/wheel in the conda env, and pinned urllib3/idna to fixed releases
 * Docker: Raised security floors (VEX) — torch/torchvision/torchaudio to 2.6.0+cu118 via PyPI wheels (CVE-2025-32434), pinned pillow/pyarrow/jaraco.context/brotli/setuptools/wheel, and removed padelpy's bundled PaDEL-Descriptor jars (log4j 1.2.15, guava 17.0)

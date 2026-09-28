@@ -5,6 +5,7 @@ import {signal, Signal, isWritableSignal} from '../core/signals.js';
 import {bindTypeOf} from '../core/widget-like.js';
 import {Scope} from '../core/scope.js';
 import {Component, Control} from '../core/component.js';
+import {SharedSession} from '../sources/session.js';
 import {ComponentMeta, ComponentStart, SpecPropMeta, Registry, registry as globalRegistry,
   SPEC_SCHEMA} from './registry.js';
 import {findBindingCycle, parsePath, referencesOf} from './path.js';
@@ -121,6 +122,8 @@ export class SpecContext {
  * the DOM. */
 export class SpecInstance extends Control {
   readonly ctx: SpecContext;
+  /** The unit of work every domain source of this instance joins: one Save for the whole spec. */
+  readonly session = new SharedSession();
 
   private readonly _spec: Spec;
   private readonly _registry: Registry;
@@ -498,14 +501,14 @@ export class SpecInstance extends Control {
     // while the context panel builds its form would hand a live data source to the panel's scope,
     // and the next `disposePanel()` would take it down
     const scope = this._mount(node, this.scope);
-    Scope.runWith(scope, () => {
+    Scope.runWith(scope, () => SharedSession.runWith(this.session, () => {
       const built = this._buildComponent(node);
       this._nodes.set(node, built);
       if (node.name === undefined)
         this._warn(`${node.tag}: a component without a name cannot be bound to`);
       else
         this._name(node, built);
-    });
+    }));
   }
 
   private _flushStarts(): void {

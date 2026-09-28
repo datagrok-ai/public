@@ -6,7 +6,7 @@ Feature: Statistics for a date column, and the aggregations added for one from t
   stored value is a float, µs since the epoch, and `_formatDateTimeStatCell` turns a date-valued
   aggregation into a date, `stdev` — a spread, not a point in time — into a duration. Nothing but a
   screenshot could see that. `<stat> of <COLUMN>` is meant to be exactly that text, which is what
-  makes them automatable; the last scenario here is where it is not yet.
+  makes them automatable.
   "Background color" stays manual: it is a colour of the viewer's own backdrop and nothing reports
   it.
   Fixture: demog-1000, STARTED running 1989-12-03 to 1991-11-30 over 541 distinct days, no blanks.

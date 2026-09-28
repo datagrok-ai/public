@@ -75,6 +75,10 @@
   background: var(--dg-accent);
 }
 
+.u2-sash:focus-visible {
+  outline: var(--dg-focus-ring);
+}
+
 .u2-splitter-dragging {
   user-select: none;
 }

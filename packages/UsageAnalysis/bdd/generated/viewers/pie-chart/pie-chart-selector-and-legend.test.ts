@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.pie-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -29,7 +31,7 @@ test.describe("Pie chart on-chart selector and legend", () => {
     const run = journey(test, 7, page);
     await session.step(16, "Given user is logged in", () => loggedIn(page));
     await session.step(17, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(18, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Legend Visibility","Always"]]));
+    await session.step(18, "And user adds a pie chart viewer with:", () => addViewerWith(page, "pie chart", [["Category","RACE"],["Legend Visibility","Always"]]), [["Category","RACE"],["Legend Visibility","Always"]]);
     await session.step(21, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
     await session.step(22, "And legend of pie chart viewer should be visible", () => shouldBe(page, el("legend of pie chart viewer"), "visible"));
     await run.scenario("The legend lists exactly the category column's categories", async () => {

@@ -29,6 +29,8 @@ import {Splitter} from '../components/containers/splitter.js';
 import {Accordion} from '../components/containers/accordion.js';
 import {Card} from '../components/containers/card.js';
 import {StatCard} from '../components/display/stat-card.js';
+import {DataTable} from '../components/collections/data-table.js';
+import type {DataTableColumn} from '../components/collections/data-table.js';
 import {TabStrip, TabStripOptions} from '../components/containers/tabs.js';
 import {PropertyGrid, PropDescriptor} from '../components/forms/property-grid.js';
 import {Breadcrumbs} from '../components/navigation/breadcrumbs.js';
@@ -69,6 +71,14 @@ function inputOptions<T>(props: Props): InputOptions<T> {
 function boundItems(input: Control & {setItems(items: string[]): void}, items: unknown): void {
   if (items instanceof Signal)
     input.effect(() => input.setItems(items.value as string[] ?? []));
+}
+
+/** `['name', 'cas:CAS number']` — the property, and after a colon the header it gets. */
+function dataTableColumns(spec: unknown): DataTableColumn<Record<string, unknown>>[] {
+  return itemList(spec).map((entry) => {
+    const at = entry.indexOf(':');
+    return at < 0 ? {name: entry} : {name: entry.slice(0, at), header: entry.slice(at + 1)};
+  });
 }
 
 function itemList(items: unknown): string[] {
@@ -743,6 +753,35 @@ const METAS: ComponentMeta[] = [
     ],
     defaults: {label: 'Metric', value: '0'},
     example: {tag: 'u2-stat-card', props: {label: 'Revenue', value: '1.2M', delta: 0.12, icon: 'chart-line'}},
+  },
+  {
+    tag: 'u2-data-table',
+    category: 'Display',
+    create: (props) => {
+      const table = new DataTable<Record<string, unknown>>({
+        columns: dataTableColumns(props.columns),
+        rowHeight: props.rowHeight as number | undefined,
+      });
+      const items = props.items;
+      if (items instanceof Signal || Array.isArray(items))
+        table.setItems(items as Signal<Record<string, unknown>[]> | Record<string, unknown>[]);
+      return table;
+    },
+    description: 'Virtualized table: pooled rows under a sticky header, one column per named ' +
+      'property, only the visible window in the DOM.',
+    usage: 'For a list of records with several columns — bind `items` to a source\'s rows ' +
+      '(`$.orders.rows`). Prefer `u2-domain-grid` for editing a domain table, and `u2-domain-list` ' +
+      'for one line or a card per row; a handful of rows with rich cells belongs in a plain table.',
+    props: [
+      {name: 'columns', type: 'string_list',
+        description: 'The item properties to show, in order; `name:Header` gives a column its own header.'},
+      {name: 'items', type: 'object', bindable: true,
+        description: 'The records to show — bind a source\'s rows (`$.substances.rows`).'},
+      {name: 'rowHeight', type: 'int', description: 'Row and header height in pixels (default 24).'},
+    ],
+    defaults: {columns: ['name', 'value']},
+    example: {tag: 'u2-data-table', props: {columns: ['name', 'cas:CAS number'],
+      items: [{name: 'Aspirin', cas: '50-78-2'}, {name: 'Caffeine', cas: '58-08-2'}]}},
   },
   {
     tag: 'u2-filter-builder',

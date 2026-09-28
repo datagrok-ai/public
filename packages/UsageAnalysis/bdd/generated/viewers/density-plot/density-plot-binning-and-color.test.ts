@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.density-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -28,7 +30,7 @@ test.describe("Density plot binning, bin shape and the colour scale", () => {
     const run = journey(test, 8, page);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
     await session.step(15, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(16, "And user adds a density plot viewer with:", () => addViewerWith(page, "density plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"]]));
+    await session.step(16, "And user adds a density plot viewer with:", () => addViewerWith(page, "density plot", [["xColumnName","AGE"],["yColumnName","WEIGHT"]]), [["xColumnName","AGE"],["yColumnName","WEIGHT"]]);
     await session.step(19, "Then the \"rows shown\" reading of density plot viewer should be 1000", () => readingIs(page, "rows shown", el("density plot viewer"), 1000));
     await session.step(20, "And the \"bins\" reading of density plot viewer should be 50", () => readingIs(page, "bins", el("density plot viewer"), 50));
     await session.step(21, "And the \"bin shape\" reading of density plot viewer should be \"hexagon\"", () => readingReads(page, "bin shape", el("density plot viewer"), "hexagon"));
@@ -50,10 +52,10 @@ test.describe("Density plot binning, bin shape and the colour scale", () => {
       await session.step(38, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A single rectangular bin holds every row that was binned", async () => {
-      await session.step(41, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["binShape","rectangle"],["bins","1"]]));
+      await session.step(41, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["binShape","rectangle"],["bins","1"]]), [["binShape","rectangle"],["bins","1"]]);
       await session.step(44, "Then the \"bins drawn\" reading of density plot viewer should be 1", () => readingIs(page, "bins drawn", el("density plot viewer"), 1));
-      await session.step(45, "And the \"rows in densest bin\" and \"rows shown\" readings of density plot viewer should be the same", () => readingsEqual(page, "rows in densest bin", "rows shown", el("density plot viewer")));
-      await session.step(46, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["bins","50"],["binShape","hexagon"]]));
+      await session.step(45, "And the \"rows in densest bin\" reading of density plot viewer should be 1000", () => readingIs(page, "rows in densest bin", el("density plot viewer"), 1000));
+      await session.step(46, "When user sets properties of density plot viewer:", () => setProperties(page, el("density plot viewer"), [["bins","50"],["binShape","hexagon"]]), [["bins","50"],["binShape","hexagon"]]);
       await session.step(49, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The colour scale spans zero to the fullest bin, and the transform is reported", async () => {

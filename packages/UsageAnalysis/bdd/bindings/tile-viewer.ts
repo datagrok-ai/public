@@ -26,6 +26,8 @@ element('tile viewer', {selector: '[name="viewer-Tile-Viewer"]', parts: {
   'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
   'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
   description: '.d4-viewer-description',
+  'lane header': '.d4-tile-viewer-lane-header',
+  'card field': 'input',
 }});
 element('form designer', {selector: '.grok-view-sketch'});
 

@@ -35,5 +35,10 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/chem"
+    ]
+  }
 }

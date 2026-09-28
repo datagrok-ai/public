@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.analyze.alignment-pairwise, bio.calculate.get-region, bio.calculate.get-region.api, bio.calculate.identity, bio.calculate.seq-identity, bio.calculate.similarity]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -89,7 +87,7 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
   test.setTimeout(180_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  // Scenario 1 — Identity scoring via top-menu (filter_HELM.csv).
+
   await openBioDataset(page, HELM_DATASET_PATH);
   const helmSetup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
@@ -183,7 +181,7 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(errorBalloonCount,
       'Scenario 1 Expected: "No error balloon appears"').toBe(0);
   });
-  // Scenario 2 — Similarity scoring via top-menu (same filter_HELM.csv view).
+
   const preSimilarityColumnCount = await page.evaluate(() =>
     grok.shell.tv.dataFrame.columns.length);
   await softStep('Scenario 2.1: click Bio > Calculate > Similarity... (dialog opens)', async () => {
@@ -282,7 +280,7 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(errorBalloonCount,
       'Scenario 2 Expected: "No error balloon appears"').toBe(0);
   });
-  // Scenario 3 — getRegion API on filter_FASTA.csv.
+
   await openBioDataset(page, FASTA_DATASET_PATH);
   const fastaSetup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
@@ -371,7 +369,7 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(errorBalloonCount,
       'Scenario 3 Expected: "No error balloon appears"').toBe(0);
   });
-  // Scenario 4 — seqIdentity API (single-pair + empty-input contract).
+
   await openBioDataset(page, HELM_DATASET_PATH);
   const helmSeq4Setup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
@@ -462,7 +460,7 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
     expect(errorBalloonCount,
       'Scenario 4 Expected: "No error balloon appears across the three invocations"').toBe(0);
   });
-  // Scenario 5 — sequenceAlignment API (global + local).
+
   await openBioDataset(page, FASTA_DATASET_PATH);
   const fastaSeq5Setup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;

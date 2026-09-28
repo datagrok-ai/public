@@ -27,30 +27,30 @@ test.describe("Subsequence search on the filter panel", () => {
   test("Subsequence search on the filter panel", {tag: ["@journey", "@realizes:bio.search.subsequence"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 3, page);
-    await session.step(8, "Given user is logged in", () => loggedIn(page));
-    await session.step(9, "And user opens filter_FASTA dataset", () => openDataset(page, ds("filter_FASTA")));
-    await session.step(10, "And the Bio package is initialized", () => bioInitialized(page));
-    await session.step(11, "Then the table should have 14 rows", () => rowCount(page, 14));
-    await session.step(12, "And \"fasta\" column should have units \"fasta\"", () => columnUnits(page, "fasta", "fasta"));
+    await session.step(11, "Given user is logged in", () => loggedIn(page));
+    await session.step(12, "And user opens filter_FASTA dataset", () => openDataset(page, ds("filter_FASTA")));
+    await session.step(13, "And the Bio package is initialized", () => bioInitialized(page));
+    await session.step(14, "Then the table should have 14 rows", () => rowCount(page, 14));
+    await session.step(15, "And \"fasta\" column should have units \"fasta\"", () => columnUnits(page, "fasta", "fasta"));
     await run.scenario("The command adds a filter bound to the sequence column", async () => {
-      await session.step(15, "When user picks \"Bio > Search > Subsequence Search ...\" from the top menu", () => pickFromTopMenu(page, "Bio > Search > Subsequence Search ..."));
-      await session.step(16, "Then filters viewer should be visible", () => shouldBe(page, el("filters viewer"), "visible"));
-      await session.step(17, "And \"Substructure\" input in filters viewer should be visible", () => shouldBe(page, el("\"Substructure\" input in filters viewer"), "visible"));
-      await session.step(18, "And the filter panel should have 1 filter", () => filterPanelCount(page, 1));
-      await session.step(19, "And the filter panel should have a filter on \"fasta\" column", () => filterPanelHas(page, "fasta"));
+      await session.step(18, "When user picks \"Bio > Search > Subsequence Search ...\" from the top menu", () => pickFromTopMenu(page, "Bio > Search > Subsequence Search ..."));
+      await session.step(19, "Then filters viewer should be visible", () => shouldBe(page, el("filters viewer"), "visible"));
+      await session.step(20, "And \"Substructure\" input in filters viewer should be visible", () => shouldBe(page, el("\"Substructure\" input in filters viewer"), "visible"));
+      await session.step(21, "And the filter panel should have 1 filter", () => filterPanelCount(page, 1));
+      await session.step(22, "And the filter panel should have a filter on \"fasta\" column", () => filterPanelHas(page, "fasta"));
     });
     await run.scenario("A subsequence one row contains keeps that row alone", async () => {
-      await session.step(22, "When user enters \"RTDEVSNHTHDKPTLTWFEEIFEEYHSP\" into \"Substructure\" input in filters viewer", () => enterInto(page, "RTDEVSNHTHDKPTLTWFEEIFEEYHSP", el("\"Substructure\" input in filters viewer")));
-      await session.step(23, "Then 1 row should pass the filter", () => filterPasses(page, 1));
-      await session.step(24, "And the filter should pass exactly the rows where \"fasta\" contains \"RTDEVSNHTHDKPTLTWFEEIFEEYHSP\"", () => filterIsExactlyContains(page, "fasta", "RTDEVSNHTHDKPTLTWFEEIFEEYHSP"));
-      await session.step(25, "And the table should have 14 rows", () => rowCount(page, 14));
+      await session.step(25, "When user enters \"RTDEVSNHTHDKPTLTWFEEIFEEYHSP\" into \"Substructure\" input in filters viewer", () => enterInto(page, "RTDEVSNHTHDKPTLTWFEEIFEEYHSP", el("\"Substructure\" input in filters viewer")));
+      await session.step(26, "Then 1 row should pass the filter", () => filterPasses(page, 1));
+      await session.step(27, "And the filter should pass exactly the rows where \"fasta\" contains \"RTDEVSNHTHDKPTLTWFEEIFEEYHSP\"", () => filterIsExactlyContains(page, "fasta", "RTDEVSNHTHDKPTLTWFEEIFEEYHSP"));
+      await session.step(28, "And the table should have 14 rows", () => rowCount(page, 14));
     });
     await run.scenario("Reset restores every row and empties the query", async () => {
-      await session.step(28, "When user clicks on \"arrow rotate left\" icon in filters viewer", () => clickOn(page, el("\"arrow rotate left\" icon in filters viewer")));
-      await session.step(29, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(30, "And \"Substructure\" input in filters viewer should have value \"\"", () => shouldHaveValue(page, el("\"Substructure\" input in filters viewer"), ""));
-      await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(32, "And no errors should have been logged", () => noErrors(page));
+      await session.step(31, "When user clicks on \"arrow rotate left\" icon in filters viewer", () => clickOn(page, el("\"arrow rotate left\" icon in filters viewer")));
+      await session.step(32, "Then all rows should pass the filter", () => filterPassesAll(page));
+      await session.step(33, "And \"Substructure\" input in filters viewer should have value \"\"", () => shouldHaveValue(page, el("\"Substructure\" input in filters viewer"), ""));
+      await session.step(34, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(35, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

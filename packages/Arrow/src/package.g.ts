@@ -1,12 +1,12 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: Autostart
+//meta.role: autostart
 export function parquetInit() : void {
   PackageFunctions.parquetInit();
 }
 
-//meta.role: Init
+//meta.role: init
 export async function initPackage() : Promise<void> {
   await PackageFunctions.initPackage();
 }
@@ -43,7 +43,7 @@ export function fromParquet(bytes: Uint8Array) : any {
 
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: FileHandler
+//meta.role: fileHandler
 //meta.ext: parquet
 export function parquetFileHandler(bytes: any) : any {
   return PackageFunctions.parquetFileHandler(bytes);
@@ -51,20 +51,20 @@ export function parquetFileHandler(bytes: any) : any {
 
 //input: list bytes 
 //output: list<dataframe> result
-//meta.role: FileHandler
+//meta.role: fileHandler
 //meta.ext: feather
 export function featherFileHandler(bytes: any) : any {
   return PackageFunctions.featherFileHandler(bytes);
 }
 
 //description: Save as Parquet
-//meta.role: FileExporter
+//meta.role: fileExporter
 export function saveAsParquet() : void {
   PackageFunctions.saveAsParquet();
 }
 
 //description: Save as Feather
-//meta.role: FileExporter
+//meta.role: fileExporter
 export function saveAsFeather() : void {
   PackageFunctions.saveAsFeather();
 }

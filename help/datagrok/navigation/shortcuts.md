@@ -159,6 +159,12 @@ TBD: Add Alt+ I +R/C to add new row or column
 
 * <kbd>Shift + Delete</kbd>: <b>Viewers | Grid</b> | Delete selected rows and/or columns
 * <kbd>Ctrl + Enter</kbd>: <b>Editors (e.g., scripts, queries)</b> | Run (requires an open editor)
+* <kbd>Ctrl + /</kbd> (<kbd>Cmd + /</kbd> on Mac): <b>Editors (e.g., scripts, queries)</b> | Comment or uncomment selected lines
+* <kbd>Alt + ↑↓</kbd>: <b>Editors (e.g., scripts, queries)</b> | Move selected lines up/down
+* <kbd>Shift + Alt + ↓</kbd>: <b>Editors (e.g., scripts, queries)</b> | Duplicate selected lines
+* <kbd>Ctrl + Shift + K</kbd> (<kbd>Cmd + Shift + K</kbd> on Mac): <b>Editors (e.g., scripts, queries)</b> | Delete selected lines
+* <kbd>Shift + Tab</kbd>: <b>Editors (e.g., scripts, queries)</b> | Outdent selected lines
+* <kbd>Ctrl + F</kbd> (<kbd>Cmd + F</kbd> on Mac): <b>Editors (e.g., scripts, queries)</b> | Find in the editor. <kbd>Ctrl + G</kbd> finds next, <kbd>Ctrl + Shift + F</kbd> replaces (<kbd>Cmd + G</kbd> and <kbd>Cmd + Option + F</kbd> on Mac)
 
 <br/>
 

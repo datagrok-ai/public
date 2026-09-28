@@ -180,6 +180,7 @@ async function parseAnalysisSheet(
     title: sheetName,
     resultData,
     columnTitles,
+    rowTitlesPresent: !!resultSheetJson.table.rowTitlesDataSet,
   };
 }
 

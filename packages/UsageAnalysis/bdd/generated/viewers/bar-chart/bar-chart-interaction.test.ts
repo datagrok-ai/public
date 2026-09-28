@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.bar-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -30,7 +32,7 @@ test.describe("Bar chart setup and interaction", () => {
     const run = journey(test, 8, page);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await session.step(14, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","Primary Series Name"],["Value","CAST Idea ID"],["Value Aggr Type","count"]]));
+    await session.step(14, "And user adds a bar chart viewer with:", () => addViewerWith(page, "bar chart", [["Split","Primary Series Name"],["Value","CAST Idea ID"],["Value Aggr Type","count"]]), [["Split","Primary Series Name"],["Value","CAST Idea ID"],["Value Aggr Type","count"]]);
     await session.step(18, "Then the table should have 100 rows", () => rowCount(page, 100));
     await session.step(19, "And the \"bars\" reading of bar chart viewer should be 5", () => readingIs(page, "bars", el("bar chart viewer"), 5));
     await run.scenario("A bar per category", async () => {
@@ -65,7 +67,7 @@ test.describe("Bar chart setup and interaction", () => {
       await session.step(50, "When user clicks on empty plot space of bar chart viewer", () => clickEmptySpace(page, el("bar chart viewer")));
       await session.step(51, "Then all rows should pass the filter", () => filterPassesAll(page));
       await session.step(52, "And no errors should have been logged", () => noErrors(page));
-      await session.step(53, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Row Source","Filtered"],["On Click","Select"]]));
+      await session.step(53, "When user sets properties of bar chart viewer:", () => setProperties(page, el("bar chart viewer"), [["Row Source","Filtered"],["On Click","Select"]]), [["Row Source","Filtered"],["On Click","Select"]]);
     });
     await run.scenario("An Alt-drag zooms the categories and a double-click resets the view", async () => {
       await session.step(58, "Given user listens for \"d4-bar-chart-reset-view\" event on bar chart viewer", () => listenFor(page, "d4-bar-chart-reset-view", el("bar chart viewer")));
@@ -111,7 +113,7 @@ test.describe("Bar chart setup and interaction", () => {
     });
     await run.scenario("The Split column's color coding drives the bar colors and survives a layout round-trip", async () => {
       await session.step(100, "Then \"Primary Series Name\" column should have no color coding", () => noColorCoding(page, "Primary Series Name"));
-      await session.step(101, "When user colors \"Primary Series Name\" column categorically:", () => colorCategorical(page, "Primary Series Name", [["Triazoles","#FF0000"],["Pyrrolidines","#0000FF"]]));
+      await session.step(101, "When user colors \"Primary Series Name\" column categorically:", () => colorCategorical(page, "Primary Series Name", [["Triazoles","#FF0000"],["Pyrrolidines","#0000FF"]]), [["Triazoles","#FF0000"],["Pyrrolidines","#0000FF"]]);
       await session.step(104, "Then \"Primary Series Name\" column should be color-coded categorically", () => colorCodedCategorically(page, "Primary Series Name"));
       await session.step(105, "And bar chart viewer should have repainted by at least 500 pixels", () => repaintedBy(page, el("bar chart viewer"), 500));
       await session.step(106, "And the \"bar Triazoles\" area of bar chart viewer should contain the color \"#FF0000\"", () => areaColor(page, "bar Triazoles", el("bar chart viewer"), "#FF0000"));

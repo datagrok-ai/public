@@ -96,7 +96,7 @@ In addition to that, it might contain the following folders:
     "datagrok-api": "^1.27.0"
   },
   "devDependencies": {
-    "@datagrok/build-config": "^0.1.0"
+    "@datagrok/build-config": "^1.0.0"
   },
   "scripts": {
     "build": "grok build",
@@ -111,11 +111,9 @@ A package declares only what it imports at runtime. The toolchain (the rspack bu
 eslint) comes from the single `@datagrok/build-config` devDependency; the four scripts are the same in every
 package. Add dependencies with `npm install <name>` as usual.
 
-Inside the [public repository](https://github.com/datagrok-ai/public) the picture is the same but managed
-once for all packages: it is a pnpm workspace, `datagrok-api` and the libraries are `workspace:^`, shared
-versions are `catalog:`, and the toolchain is a root devDependency, so a package there has no
-devDependencies at all. Run `pnpm install` once at the repository root and `grok build` in any package;
-see [packages/BUILD.MD](https://github.com/datagrok-ai/public/blob/master/packages/BUILD.MD).
+Inside the [public repository](https://github.com/datagrok-ai/public), all packages form one pnpm
+workspace. You install dependencies once at the repository root, and a package there has no
+devDependencies. See [Build system](dev-process/build-system.md).
 
 ### <a href="#" id="package.js"></a>package.js
 
@@ -320,8 +318,9 @@ will no longer exist after the developer releases their package.
 ### Building package
 
 The package source must be bundled before it can run in the browser. `grok publish` builds first, so
-you rarely run the build yourself; when you do, use `npm run build` in the package (in the public
-repository, `grok build`, which also builds the libraries the package depends on and caches the result).
+you rarely run the build yourself. When you do, use `npm run build` in the package. In the public
+repository, use `grok build`, which also builds the libraries the package depends on. See
+[Build system](dev-process/build-system.md).
 The `build` script is `grok build`: bundle, generate the function metadata files, run `grok check`.
 Keep the script name; do not change what it runs.
 

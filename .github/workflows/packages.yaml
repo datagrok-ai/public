@@ -516,7 +516,7 @@ jobs:
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             if [[ "${{ matrix.package }}" == "Chemspace" ]]; then
               token=$(.github/scripts/dev-login.sh "${{ steps.datagrok-image.outputs.apiUrl }}" admin)
-              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace.Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
+              curl -s -H "Authorization: $token" -H "Content-Type": "application/json" '${{ steps.datagrok-image.outputs.apiUrl }}/credentials/for/Chemspace' -X POST -d "{\"apiKey\": \"$CHEMSPACE_APIKEY\"}"
             fi
           fi
 
@@ -592,6 +592,12 @@ jobs:
       - name: Install Chromium for grok test
         if: ${{ matrix.test == 'test' }}
         run: pnpm --filter datagrok-tools exec puppeteer browsers install chrome
+      - name: Install Chromium for the Playwright pass
+        if: ${{ matrix.test == 'test' }}
+        run: |
+          if [ -n "$(jq -r '.playwrightTests // empty' packages/${{ matrix.package }}/package.json)" ]; then
+            pnpm --filter "./packages/${{ matrix.package }}" exec playwright install --with-deps chromium
+          fi
       - name: Configuration setuid sandbox
         if: ${{ matrix.test == 'test' }}
         run: |
@@ -618,12 +624,16 @@ jobs:
         id: test-package
         env:
           CHROME_DEVEL_SANDBOX: /usr/local/sbin/chrome-devel-sandbox
+          # A hosted runner has 2 vCPU (4 on the -m tier); the shared base config defaults to
+          # 4 Playwright workers, so four browsers competed for them. CPU-bound analyses then
+          # never finish: Peptides SAR sat 300 s with MCL clustering producing no columns.
+          PLAYWRIGHT_WORKERS: 2
         run: |
           npm list -g --depth=0 --json
           if [ "${{ matrix.package }}" == "DevTools" ]; then
-            npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+            npm run test -- --skip-build --skip-publish --record --core --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose --ci-cd
           else
-            npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose
+            npm run test -- --skip-build --skip-publish --record --csv --host ${{ steps.datagrok-image.outputs.alias }} --verbose --ci-cd
           fi
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
@@ -680,6 +690,10 @@ jobs:
         id: publish
         working-directory: packages/${{ matrix.package }}
         run: |
+          # Servers before 1.28.0 install an npm package as bundled only when it ships webpack.config.js (see BUNDLE_MARKER in grok publish)
+          if [ -f dist/package.js ] && [ ! -f webpack.config.js ]; then
+            printf '%s\n' '// Generated at npm publish for servers before 1.28.0, which detect a bundled' '// package by this file. The bundle itself is built by @datagrok/build-config.' 'module.exports = {};' > webpack.config.js
+          fi
           tgz="$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)"
           for dep in $(tar xzf "$tgz" -O package/package.json | jq -r '(.dependencies // {}) + (.peerDependencies // {}) | to_entries[] | select(.key | test("^(datagrok-api|datagrok-tools|@datagrok-libraries/)")) | "\(.key)@\(.value | ltrimstr("^"))"'); do
             if [ "$(npm view "$dep" version 2>/dev/null)" != "${dep##*@}" ]; then
@@ -692,6 +706,7 @@ jobs:
 
       - name: Get actors slack
         id: actor
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
@@ -702,12 +717,14 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Get owners slack
         id: owner
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
           emails: ${{ steps.owner-email.outputs.owner }}
       - name: Get QA slack
         id: qa
+        continue-on-error: true
         uses: ./.github/actions/slack-user-action
         if: ${{ (matrix.package == 'Tutorials' || matrix.package == 'Chem' || matrix.package == 'DiffStidio' || matrix.package == 'PowerPack') }}
         with:

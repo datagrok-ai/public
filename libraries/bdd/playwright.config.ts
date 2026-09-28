@@ -2,6 +2,7 @@
    points BDD_ROOT at the project). The shared Datagrok base (login storage state, viewport,
    traces) with the project's generated/ as the test dir. */
 import {existsSync} from 'node:fs';
+import {cpus, hostname, platform, release, totalmem} from 'node:os';
 import {basename, dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {defineConfig} from '@playwright/test';
@@ -10,7 +11,12 @@ import {baseConfig} from '@datagrok-libraries/test/src/playwright/base-config.js
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(process.env.BDD_ROOT ?? (basename(here) === 'dist' ? dirname(here) : here));
 const url = (process.env.DATAGROK_URL ?? 'http://localhost:8888').replace(/\/$/, '');
-const globalSetup = ['global-setup.js', 'global-setup.ts'].map((f) => join(here, 'src', 'runtime', f)).find(existsSync)!;
+function guideViewport(spec = ''): {width: number; height: number} {
+  const m = /^(\d+)x(\d+)$/.exec(spec);
+  return m ? {width: Number(m[1]), height: Number(m[2])} : {width: 1920, height: 1080};
+}
+
+const globalSetup =['global-setup.js', 'global-setup.ts'].map((f) => join(here, 'src', 'runtime', f)).find(existsSync)!;
 
 export default defineConfig({
   ...baseConfig,
@@ -18,11 +24,21 @@ export default defineConfig({
   workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 4),
   testDir: join(root, 'generated'),
   outputDir: join(root, 'test-results'),
+  // every run leaves its JSON report beside the failure artifacts and says where it ran: UsageAnalysis'
+  // bdd/history keeps such reports as a run's record (a --reporter given on the command line replaces
+  // these, and `grok-bdd run` adds json to it)
+  reporter: [['list'], ['json', {outputFile: process.env.PLAYWRIGHT_JSON_OUTPUT_FILE ??
+    process.env.PLAYWRIGHT_JSON_OUTPUT_NAME ?? join(root, 'test-results', 'report.json')}]],
+  metadata: {stand: url, machine: {host: hostname(), os: `${platform()} ${release()}`, cpu: cpus()[0]?.model.trim(),
+    cores: cpus().length, memoryGb: Math.round(totalmem() / 2 ** 30), node: process.version}},
   globalSetup,
   use: {
     ...baseConfig.use,
     baseURL: url,
     storageState: join(root, 'e2e', '.auth.json'),
+    // a guide run (`grok-bdd guide`) is filmed at 1080p: below 1920 px the top menu bar folds its
+    // last groups (Chem, Bio) into "more"; BDD_GUIDE_VIEWPORT=<w>x<h> chooses another
+    ...(process.env.BDD_GUIDE ? {viewport: guideViewport(process.env.BDD_GUIDE_VIEWPORT)} : {}),
     // a failed run keeps its trace (actions, console, network) and the failure screenshot, but
     // neither DOM snapshots (serializing the shell's DOM around every action was ~45% of a
     // feature's time) nor a screenshot per action (~12 s over six features, only a filmstrip);
@@ -33,5 +49,10 @@ export default defineConfig({
     // headless is software-rasterized throughout
     launchOptions: {args: [`--unsafely-treat-insecure-origin-as-secure=${url}`, '--disable-accelerated-2d-canvas']},
   },
-  projects: [{name: 'bdd'}],
+  // a stand that computes in the browser (chemistry over a thousand molecules) needs longer than the
+  // shared 15 s once two workers share it: BDD_EXPECT_TIMEOUT raises what every check waits
+  expect: {...baseConfig.expect, timeout: Number(process.env.BDD_EXPECT_TIMEOUT ?? baseConfig.expect?.timeout ?? 15000)},
+  // @serial features share server state another worker would change under them (a fuzzy gallery
+  // search over fixtures the others create and delete): they take turns, beside everything else
+  projects: [{name: 'bdd', grepInvert: /@serial(\s|$)/}, {name: 'bdd-serial', grep: /@serial(\s|$)/, workers: 1}],
 });

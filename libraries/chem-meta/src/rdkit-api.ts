@@ -66,11 +66,8 @@ export interface RDMol {
   get_atom_pair_fp_as_uint8array(details?: string): Uint8Array;
   get_maccs_fp_as_uint8array(): Uint8Array;
   get_frags(details?: string): {
-    molIterator: MolList,
-    mappings: {
-      frags: Array<number>,
-      fragsMolAtomMapping: Array<Array<number>>,
-    },
+    molList: MolList,
+    mappings: string,
   };
   get_mmpa_frags(minCuts: number, maxCuts: number, maxCutsBonds: number): {cores: MolList, sidechains: MolList};
   get_avalon_fp_as_uint8array(details?: string): Uint8Array;

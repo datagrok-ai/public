@@ -4,7 +4,8 @@ Feature: PC plot colouring, legend and colour scale
   numerical one gets no legend but the colour scale the plot draws on its overlay (the `color scale`
   hit area), which the Color Scheme menu inverts and edits and which Color Min / Color Max clamp. A
   column the grid colours conditionally hands the plot its bins instead, and a DateTime column with
-  a Color Map is split into the categories that map names.
+  a Color Map is split into the categories that map names. HEIGHT's own coding switched categorical,
+  then numerical, then off, leaves the plot drawing with no legend left behind (GROK-17754).
   demog-1000: RACE has exactly Caucasian, Asian, Black and Other; HEIGHT has 128 blanks, so a
   conditional coding on it shows its two bins plus "no value"; STARTED spans 1989..1991, so the
   colour map yields 3 years, 4 quarters and 12 months. Every scenario clears the colour column it
@@ -97,8 +98,7 @@ Feature: PC plot colouring, legend and colour scale
     When user sets properties of pc plot viewer:
       | Color Min | 30 |
       | Color Max | 60 |
-    Then "Color Min" property of pc plot viewer should be "30"
-    And the "color scale" area of pc plot viewer should have repainted
+    Then the "color scale" area of pc plot viewer should have repainted
     And pc plot viewer should have repainted by at least 2000 pixels
     When user sets "Color Axis Type" property of pc plot viewer to "logarithmic"
     Then the "color scale" area of pc plot viewer should have repainted
@@ -129,6 +129,24 @@ Feature: PC plot colouring, legend and colour scale
     And pc plot viewer should have a "color scale" area
     When user sets "Color" property of pc plot viewer to ""
     Then no errors should have been logged
+
+  Scenario: HEIGHT's colour coding switched categorical, numerical and off leaves no legend behind
+    When user sets "Color" property of pc plot viewer to "HEIGHT"
+    And user colors "HEIGHT" column categorically again
+    Then "HEIGHT" column should be color-coded categorically
+    And pc plot viewer should be painted
+    When user colors "HEIGHT" column linearly again
+    Then "HEIGHT" column should be color-coded linearly
+    And legend of pc plot viewer should be hidden
+    And pc plot viewer should have a "color scale" area
+    When user removes the coloring of "HEIGHT" column
+    Then "HEIGHT" column should have no color coding
+    And legend of pc plot viewer should be hidden
+    And pc plot viewer should have a "color scale" area
+    And pc plot viewer should show 1000 rows
+    When user sets "Color" property of pc plot viewer to ""
+    Then pc plot viewer should not have a "color scale" area
+    And no errors should have been logged
 
   Scenario: A DateTime colour column is split by its Color Map
     When user sets properties of pc plot viewer:

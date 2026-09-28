@@ -98,7 +98,8 @@ Feature: PC plot axes, vertical scale and chrome
     Then pc plot viewer should have more ink than before
     When user sets "Line Width" property of pc plot viewer to "1"
     Then pc plot viewer should have less ink than before
-    When user sets "Current Line Width" property of pc plot viewer to "8"
+    When user makes row 1 current
+    And user sets "Current Line Width" property of pc plot viewer to "8"
     Then the "current row" reading of pc plot viewer should be 1
     And pc plot viewer should have repainted by at least 500 pixels
     When user sets "Current Line Width" property of pc plot viewer to "2"

@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.space]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/connections.js';
+import '../../bindings/grid.js';
 import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
@@ -55,7 +57,7 @@ test.describe("What the context panel says about a space", () => {
       await session.step(42, "And \"Details\" accordion header in context panel should be visible", () => shouldBe(page, el("\"Details\" accordion header in context panel"), "visible"));
     });
     await run.scenario("The panel carries the sections a space has", async () => {
-      await session.step(49, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]));
+      await session.step(49, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]), [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]);
       await session.step(54, "And \"Activity\" accordion header in context panel should be present", () => shouldBe(page, el("\"Activity\" accordion header in context panel"), "present"));
     });
     await run.scenario("Clicking one child, then the other, switches the panel", async () => {

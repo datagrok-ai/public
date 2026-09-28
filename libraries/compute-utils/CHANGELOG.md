@@ -2,6 +2,16 @@
 
 ## v.next
 
+* RTD: Added the `visible` and GrokScript `validator` checks (`script`/`scriptVerdict` rule operations over `grok.functions.scriptSync`, platform 1.28+), `vars` on `check` links, and `isClientAtLeast` in utils
+* RTD: Added the `validators` check (named validator functions called directly; annotation-derived ones through `FuncCall.evalParamValidators`, platform 1.28+, skipped on older clients), rule `sources` (`validators` and `js` resolvers) with the `verdicts` effect, and array validator messages
+* RTD: Added `check` links and annotation-derived default validators sharing one expansion (`nullable`, `min`/`max`, regex `validator`, static `choices`, column `type`/`semType`/`table`/`allowNulls`), the `regex`, `nulls` and `columnIs` rule operations, the platform column kinds in `columns`/`columnsMissing`, and `nullable: true` annotations now make an input optional
+* RTD: Plain data links stay inactive while the init hook and `runOnInit` links run, so init writes no longer propagate through them
+* RTD: Added declarative `rule` links (JSON Logic conditions expanding into meta/validator/data links), `params`/`getParam` controller support, and validation suppression for inputs hidden via meta
+
+## 1.47.0 (2026-09-23)
+
+* historyUtils.saveRun: Added the `newId` option to save a run under a fresh id
+* Old views: Removed `testFunctionView`/`testPipeline` and the Test runner ribbon group; their module-level import of the view classes formed a cycle that threw `Cannot access 'FunctionView' before initialization` in consumers
 * RTD: Added `getMatchedPositions`/`getBasePosition` controller methods exposing matched node positions to link handlers
 * HistoricalRunsDelete.awaitDelete: dialog helper resolving null on dismissal (mirrors awaitMetadata)
 * Excel export detaches the render viewer (and its cloned dataframe) after the screenshot

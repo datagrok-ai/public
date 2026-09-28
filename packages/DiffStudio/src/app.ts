@@ -265,6 +265,7 @@ function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings>
     multiAxisLegendPosition: DG.FlexExtendedPosition.RightTop,
     segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: undefined,
     showAggrSelectors: false,
+    showSplitSelector: false,
   };
 }
 
@@ -298,11 +299,13 @@ export type UiOptions = {
   graphsDockRatio: number,
 };
 
-/** Metadata attached to a tree item; consumed by the centralized selection handler. */
+/** Metadata attached to a tree item; consumed by the centralized selection handler and the
+ *  context-menu builder. Carries the display/section/help fields the menu needs so it can be
+ *  built from `node.value` alone. */
 type ItemPreviewMeta =
-  | {kind: 'builtin', state: EDITOR_STATE}
-  | {kind: 'custom', path: string}
-  | {kind: 'external', path: string};
+  | {kind: 'builtin', state: EDITOR_STATE, name: TITLE, section: TITLE}
+  | {kind: 'custom', path: string, name: string}
+  | {kind: 'external', path: string, name: string, helpUrl: string | undefined};
 
 /** Solver of differential equations */
 export class DiffStudio {
@@ -616,6 +619,11 @@ export class DiffStudio {
    *  released by `releaseSharedPreview()` whenever the platform's preview slot
    *  goes away (full-view opened, navigation, etc.). */
   private static sharedPreview: DiffStudio | null = null;
+
+  /** Single active subscription that adds Diff Studio items' context menu to the Browse tree.
+   *  Kept static (one per app, not per instance) so re-entering `createTree` never stacks
+   *  duplicate handlers. */
+  private static ctxMenuSub: {unsubscribe: () => void} | null = null;
 
   /** Drop the shared preview reference and detach the platform's preview view.
    *  Safe to call when there is no shared preview — used as the canonical reset
@@ -2300,7 +2308,79 @@ export class DiffStudio {
 
       this.setupTreeItemSelection();
     }
+
+    this.setupTreeContextMenu();
   } // createTree
+
+  /** Wire the Browse-tree context menu for Diff Studio model items. Tree items are platform
+   *  `d4-tree-view` nodes, so a raw DOM `contextmenu` listener never surfaces (the platform's own
+   *  right-click flow suppresses it). Instead we add our items to the menu the platform is about to
+   *  show via `grok.events.onContextMenu`, keyed on the item's `ItemPreviewMeta` (`node.value`). */
+  private setupTreeContextMenu(): void {
+    DiffStudio.ctxMenuSub?.unsubscribe();
+    DiffStudio.ctxMenuSub = grok.events.onContextMenu.subscribe((e: any) => {
+      const meta = e?.args?.item?.value as ItemPreviewMeta | undefined;
+      const menu = e?.args?.menu as DG.Menu | undefined;
+      if (!menu || !meta || !meta.kind)
+        return;
+      this.populateModelMenu(menu, meta);
+    });
+  } // setupTreeContextMenu
+
+  /** Populate a context menu for a model item. Shared shape for every folder, consistent with the
+   *  model cards: Run and Copy link always; Help for built-in (outside Recent) and external models;
+   *  Settings… for external models. */
+  private populateModelMenu(menu: DG.Menu, meta: ItemPreviewMeta): void {
+    menu.item('Run', async () => {
+      if (meta.kind === 'builtin') {
+        DiffStudio.releaseSharedPreview();
+        const solver = new DiffStudio(false);
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addView(await solver.runSolverApp(undefined, meta.state) as DG.View, undefined, null, null);
+      } else {
+        const file = await getCachedFileInfo(meta.path);
+        if (!file) {
+          grok.shell.warning(`File not found: ${meta.path}`);
+          return;
+        }
+        DiffStudio.releaseSharedPreview();
+        const solver = new DiffStudio(false, true, true);
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showBrowse = true;
+        grok.shell.addView(await solver.getFilePreview(file, meta.path));
+      }
+    }, null, {description: 'Run model'});
+
+    menu.item('Copy link', async () => {
+      let url: string;
+      if (meta.kind === 'builtin') {
+        const linkSection = (meta.section === TITLE.RECENT) ?
+          (TEMPLATE_TITLES.includes(meta.name) ? TITLE.TEMPL : TITLE.LIBRARY) :
+          meta.section;
+        url = `${window.location.origin}${PATH.APPS_DS}/${linkSection}/${meta.state}${PATH.PARAM}`;
+      } else
+        url = `${window.location.origin}/${PATH.FILE}/${meta.path.replace(':', '.')}`;
+      await navigator.clipboard.writeText(url);
+      grok.shell.info('Model link copied to clipboard');
+    }, null, {description: 'Copy the model link to clipboard'});
+
+    if (meta.kind === 'builtin' && meta.section !== TITLE.RECENT) {
+      menu.item('Help', () => {
+        grok.shell.windows.help.visible = true;
+        grok.shell.windows.help.showHelp(getLink(meta.state));
+      }, null, {description: 'Open help for this model'});
+    } else if (meta.kind === 'external') {
+      menu.item('Help', () => {
+        if (meta.helpUrl)
+          window.open(meta.helpUrl, '_blank');
+        else
+          grok.shell.warning('Help link is not defined. To set help, right click the model and select "Settings..."');
+      }, null, {description: 'Open help in a new tab'});
+      menu.item('Settings...', () => this.openExternalModelSettings(meta.path, meta.helpUrl), null,
+        {description: 'Configure model properties'});
+    }
+  } // populateModelMenu
 
   /** Single, debounced subscription that opens the preview for the selected tree item.
    *  Replaces per-item `item.onSelected` handlers so that arrow-key navigation is not
@@ -2429,46 +2509,11 @@ export class DiffStudio {
   /** Add template/example model to browse tree folder */
   private putBuiltInModelToFolder(name: TITLE, folder: DG.TreeViewGroup, section: TITLE): void {
     const state = STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE;
-    const meta: ItemPreviewMeta = {kind: 'builtin', state};
+    const meta: ItemPreviewMeta = {kind: 'builtin', state, name, section};
     const item = folder.item(name, meta);
     const description = MODEL_HINT.get(name) ?? '';
     const iconUrl = getModelIconUrl(name);
     ui.tooltip.bind(item.root, () => buildModelTooltip(name, description, iconUrl));
-
-    const run = async () => {
-      const solver = new DiffStudio(false);
-      grok.shell.windows.showToolbox = false;
-      grok.shell.windows.showBrowse = true;
-      grok.shell.addView(
-        await solver.runSolverApp(undefined, state) as DG.View,
-        undefined, null, null,
-      );
-    };
-
-    item.root.addEventListener('contextmenu', (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      const menu = DG.Menu.popup()
-        .item('Run', run, null, {description: 'Run model'});
-
-      const linkSection = (section === TITLE.RECENT) ?
-        (TEMPLATE_TITLES.includes(name) ? TITLE.TEMPL : TITLE.LIBRARY) :
-        section;
-      menu.item('Copy link', async () => {
-        const url = `${window.location.origin}${PATH.APPS_DS}/${linkSection}/${state}${PATH.PARAM}`;
-        await navigator.clipboard.writeText(url);
-        grok.shell.info('Model link copied to clipboard');
-      }, null, {description: 'Copy the model link to clipboard'});
-
-      if (section !== TITLE.RECENT) {
-        menu.item('Help', () => {
-          grok.shell.windows.help.visible = true;
-          grok.shell.windows.help.showHelp(getLink(state));
-        }, null, {description: 'Open help for this model'});
-      }
-
-      menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
-    });
 
     item.root.addEventListener('dblclick', async (e) => {
       e.stopImmediatePropagation();
@@ -2494,30 +2539,10 @@ export class DiffStudio {
 
       const idx = path.lastIndexOf('/');
       const name = path.slice(idx + 1, path.length);
-      const meta: ItemPreviewMeta = {kind: 'custom', path};
+      const meta: ItemPreviewMeta = {kind: 'custom', path, name};
       const item = this.recentFolder.item(name, meta);
       const iconUrl = `${_package.webRoot}/files/icons/default.png`;
       ui.tooltip.bind(item.root, () => buildModelTooltip(name, path, iconUrl));
-
-      item.root.addEventListener('contextmenu', (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        DG.Menu.popup()
-          .item('Run', async () => {
-            DiffStudio.releaseSharedPreview();
-            const solver = new DiffStudio(false, true, true);
-            const preview = await solver.getFilePreview(file, path);
-            grok.shell.windows.showToolbox = false;
-            grok.shell.windows.showBrowse = true;
-            grok.shell.addView(preview);
-          }, null, {description: 'Run model'})
-          .item('Copy link', async () => {
-            const url = `${window.location.origin}/${PATH.FILE}/${path.replace(':', '.')}`;
-            await navigator.clipboard.writeText(url);
-            grok.shell.info('Model link copied to clipboard');
-          }, null, {description: 'Copy the model link to clipboard'})
-          .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
-      });
 
       item.root.addEventListener('dblclick', async (e) => {
         e.stopImmediatePropagation();
@@ -2543,7 +2568,7 @@ export class DiffStudio {
   /** Add a single external (custom) model entry to the Library tree folder */
   private addExternalModelToFolder(folder: DG.TreeViewGroup, modelPath: string, displayName: string,
     description: string, iconUrl: string, helpUrl: string | undefined): void {
-    const meta: ItemPreviewMeta = {kind: 'external', path: modelPath};
+    const meta: ItemPreviewMeta = {kind: 'external', path: modelPath, name: displayName, helpUrl};
     const item = folder.item(displayName, meta);
     ui.tooltip.bind(item.root, () => buildModelTooltip(displayName, description, iconUrl));
 
@@ -2565,8 +2590,6 @@ export class DiffStudio {
       this.cancelPendingItemPreview();
       await openFullView();
     });
-
-    this.attachExternalContextMenu(item.root, modelPath, helpUrl, openFullView);
   }
 
   /** Attach Run/Copy link/Help/Settings context menu to an external (custom) model element */

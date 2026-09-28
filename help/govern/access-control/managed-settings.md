@@ -15,8 +15,10 @@ Administrators and group admins can define default client settings for a
 [group](users-and-groups.md#groups) or for everyone on the platform, and
 optionally **lock** individual settings or whole settings pages so that group
 members can't change them. Typical uses: enforcing a corporate color palette,
-turning off beta features for everyone, or pre-configuring formatting defaults
-for a team.
+turning off beta features for everyone, pre-configuring formatting defaults for
+a team, or hiding the
+[**Top Menu** sections](../../datagrok/navigation/navigation.md#show-and-hide-top-menu-sections)
+a team never uses.
 
 Shared defaults are managed from the same place as personal settings: on the
 **Sidebar**, click **Settings** (<FAIcon icon="fa-solid fa-gear"/>).

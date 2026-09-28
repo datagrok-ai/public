@@ -245,28 +245,28 @@ export type IssueLabelExpand = {
 };
 
 export type GritTransactionOp =
-  {op: 'insert'; table: 'project'; ref?: string; values: DG.DomainTxValues<ProjectInsert>} |
+  {op: 'insert'; table: 'project'; ref?: string; values: DG.DomainTxValues<ProjectInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'project'; id: string; values: DG.DomainTxValues<Partial<ProjectRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'project'; id: string} |
-  {op: 'insert'; table: 'status'; ref?: string; values: DG.DomainTxValues<StatusInsert>} |
+  {op: 'insert'; table: 'status'; ref?: string; values: DG.DomainTxValues<StatusInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'status'; id: string; values: DG.DomainTxValues<Partial<StatusRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'status'; id: string} |
-  {op: 'insert'; table: 'priority'; ref?: string; values: DG.DomainTxValues<PriorityInsert>} |
+  {op: 'insert'; table: 'priority'; ref?: string; values: DG.DomainTxValues<PriorityInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'priority'; id: string; values: DG.DomainTxValues<Partial<PriorityRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'priority'; id: string} |
-  {op: 'insert'; table: 'issue_type'; ref?: string; values: DG.DomainTxValues<IssueTypeInsert>} |
+  {op: 'insert'; table: 'issue_type'; ref?: string; values: DG.DomainTxValues<IssueTypeInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'issue_type'; id: string; values: DG.DomainTxValues<Partial<IssueTypeRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'issue_type'; id: string} |
-  {op: 'insert'; table: 'issue'; ref?: string; values: DG.DomainTxValues<IssueInsert>} |
+  {op: 'insert'; table: 'issue'; ref?: string; values: DG.DomainTxValues<IssueInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'issue'; id: string; values: DG.DomainTxValues<IssueUpdate>; expectedVersion?: number} |
   {op: 'delete'; table: 'issue'; id: string} |
-  {op: 'insert'; table: 'comment'; ref?: string; values: DG.DomainTxValues<CommentInsert>} |
+  {op: 'insert'; table: 'comment'; ref?: string; values: DG.DomainTxValues<CommentInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'comment'; id: string; values: DG.DomainTxValues<Partial<CommentRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'comment'; id: string} |
-  {op: 'insert'; table: 'label'; ref?: string; values: DG.DomainTxValues<LabelInsert>} |
+  {op: 'insert'; table: 'label'; ref?: string; values: DG.DomainTxValues<LabelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'label'; id: string; values: DG.DomainTxValues<Partial<LabelRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'label'; id: string} |
-  {op: 'insert'; table: 'issue_label'; ref?: string; values: DG.DomainTxValues<IssueLabelInsert>} |
+  {op: 'insert'; table: 'issue_label'; ref?: string; values: DG.DomainTxValues<IssueLabelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'issue_label'; id: string; values: DG.DomainTxValues<Partial<IssueLabelRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'issue_label'; id: string};
 

@@ -88,7 +88,7 @@ describe('plan', () => {
     const json = {'#type': 'TableInfo', id: TABLE_ID, name: 'Cereal', namespace: 'Admin:', metaParams: {}};
     const bundle = bundleOf([[TABLE_ID, {type: 'TableInfo', json}]]);
     const {dapi} = makeDapi((_m, path) => path.startsWith(`/tables/${TABLE_ID}`) ? {
-      ...json, metaParams: {sync_id: TABLE_ID}, updatedOn: 'now',
+      ...json, metaParams: {sync_id: TABLE_ID, migrated_from: 'http://src/api', migrated_on: 'now'}, updatedOn: 'now',
       columns: [{'#type': 'ColumnInfo', name: 'name', type: 'string'}],
     } : notFound());
     const {rows, ops} = await plan(dapi, bundle, {onConflict: 'fail'});
@@ -365,6 +365,7 @@ describe('push', () => {
     const posted = calls.find((c) => c.method === 'POST')!.body;
     expect(posted.parameters).toEqual({db: 'northwind'});
     expect(posted.metaParams.sync_id).toBe(CONN_ID);
+    expect(posted.metaParams.migrated_from).toBe('http://src/api');
     expect(posted._credentials).toBeUndefined();
     expect(result.items.map((r) => r.action)).toEqual(['create', 'needs-credentials']);
     expect(result.items[1].detail).toBe('password');

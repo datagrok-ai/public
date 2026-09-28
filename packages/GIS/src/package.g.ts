@@ -16,7 +16,7 @@ export async function info() : Promise<void> {
   await PackageFunctions.info();
 }
 
-//meta.role: Init
+//meta.role: init
 export function init() : void {
   PackageFunctions.init();
 }
@@ -56,7 +56,7 @@ export function gisViewer() : any {
 
 //input: file file 
 //output: view result
-//meta.role: FileViewer
+//meta.role: fileViewer
 //meta.fileViewer: kmz,kml
 export async function gisKMZAndKMLFileViewer(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.gisKMZAndKMLFileViewer(file);
@@ -64,7 +64,7 @@ export async function gisKMZAndKMLFileViewer(file: DG.FileInfo) : Promise<any> {
 
 //input: string filecontent 
 //output: list<dataframe> result
-//meta.role: FileHandler
+//meta.role: fileHandler
 //meta.ext: kml
 export async function gisKMLFileHandler(filecontent: string) : Promise<any> {
   return await PackageFunctions.gisKMLFileHandler(filecontent);
@@ -72,7 +72,7 @@ export async function gisKMLFileHandler(filecontent: string) : Promise<any> {
 
 //input: list filecontent 
 //output: list<dataframe> result
-//meta.role: FileHandler
+//meta.role: fileHandler
 //meta.ext: kmz
 export async function gisKMZFileHandler(filecontent: Uint8Array) : Promise<any> {
   return await PackageFunctions.gisKMZFileHandler(filecontent);
@@ -80,7 +80,7 @@ export async function gisKMZFileHandler(filecontent: Uint8Array) : Promise<any> 
 
 //input: file file 
 //output: view result
-//meta.role: FileViewer
+//meta.role: fileViewer
 //meta.fileViewer: geojson, topojson
 export async function gisGeoJSONFileViewer(file: DG.FileInfo) {
   return await PackageFunctions.gisGeoJSONFileViewer(file);
@@ -88,7 +88,7 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo) {
 
 //input: string filecontent 
 //output: list<dataframe> result
-//meta.role: FileHandler
+//meta.role: fileHandler
 //meta.ext: geojson, topojson
 export function gisGeoJSONFileHandler(filecontent: string) : any {
   return PackageFunctions.gisGeoJSONFileHandler(filecontent);
@@ -96,7 +96,7 @@ export function gisGeoJSONFileHandler(filecontent: string) : any {
 
 //input: string gisArea { semType: gis-area }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 //condition: true
 export function gisAreaWidget(gisArea: any) : any {
   return PackageFunctions.gisAreaWidget(gisArea);

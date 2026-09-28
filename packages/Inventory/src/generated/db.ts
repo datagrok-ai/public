@@ -7,14 +7,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type {Dayjs} from 'dayjs';
 
-export type ItemsHazardClass = 'non-hazardous' | 'flammable' | 'corrosive' | 'toxic' | 'oxidizer';
+export type ItemHazardClass = 'non-hazardous' | 'flammable' | 'corrosive' | 'toxic' | 'oxidizer';
 
-export type ItemsInspectionStatus = 'pending' | 'passed' | 'failed' | 'quarantined';
+export type ItemInspectionStatus = 'pending' | 'passed' | 'failed' | 'quarantined';
 
-export type StockMovementsReason = 'received' | 'shipped' | 'adjustment' | 'damaged' | 'returned';
+export type StockMovementReason = 'received' | 'shipped' | 'adjustment' | 'damaged' | 'returned';
 
-/** Row of `inventory.items`. */
-export interface ItemsRow {
+/** Row of `inventory.item`. */
+export interface ItemRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -25,35 +25,35 @@ export interface ItemsRow {
   quantity?: number;
   location?: string;
   cas_number?: string;
-  hazard_class?: ItemsHazardClass;
+  hazard_class?: ItemHazardClass;
   unit_cost?: number;
   reorder_point?: number;
-  inspection_status?: ItemsInspectionStatus;
+  inspection_status?: ItemInspectionStatus;
 }
 
-/** Insert payload for `inventory.items`. */
-export interface ItemsInsert {
+/** Insert payload for `inventory.item`. */
+export interface ItemInsert {
   sku: string;
   name: string;
   quantity?: number;
   location?: string;
   cas_number?: string;
-  hazard_class?: ItemsHazardClass;
+  hazard_class?: ItemHazardClass;
   unit_cost?: number;
   reorder_point?: number;
-  inspection_status?: ItemsInspectionStatus;
+  inspection_status?: ItemInspectionStatus;
 }
 
-export type ItemsColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'sku' | 'name' |
-  'quantity' | 'location' | 'cas_number' | 'hazard_class' | 'unit_cost' | 'reorder_point' | 'inspection_status';
+export type ItemColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'sku' | 'name' | 'quantity' |
+  'location' | 'cas_number' | 'hazard_class' | 'unit_cost' | 'reorder_point' | 'inspection_status';
 
-/** Expand keys of `inventory.items` → fields each adds to the row (consumed by query()/builder). */
-export type ItemsExpand = {
-  'details:stock_movements': {stock_movements?: StockMovementsRow[]};
+/** Expand keys of `inventory.item` → fields each adds to the row (consumed by query()/builder). */
+export type ItemExpand = {
+  'details:stock_movement': {stock_movement?: StockMovementRow[]};
 };
 
-/** Row of `inventory.stock_movements`. */
-export interface StockMovementsRow {
+/** Row of `inventory.stock_movement`. */
+export interface StockMovementRow {
   id: string;
   version: number;
   created_on: Dayjs;
@@ -61,44 +61,44 @@ export interface StockMovementsRow {
   author_id: string;
   item_id: string;
   delta: number;
-  reason?: StockMovementsReason;
+  reason?: StockMovementReason;
   moved_on?: Dayjs;
 }
 
-/** Insert payload for `inventory.stock_movements`. */
-export interface StockMovementsInsert {
+/** Insert payload for `inventory.stock_movement`. */
+export interface StockMovementInsert {
   item_id: string;
   delta: number;
-  reason?: StockMovementsReason;
+  reason?: StockMovementReason;
   moved_on?: Dayjs | string;
 }
 
-export type StockMovementsColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'item_id' |
+export type StockMovementColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'item_id' |
   'delta' | 'reason' | 'moved_on';
 
-/** Expand keys of `inventory.stock_movements` → fields each adds to the row (consumed by query()/builder). */
-export type StockMovementsExpand = {
+/** Expand keys of `inventory.stock_movement` → fields each adds to the row (consumed by query()/builder). */
+export type StockMovementExpand = {
   'item_id': {'item_id.sku'?: string; 'item_id.name'?: string; 'item_id.quantity'?: number;
-    'item_id.location'?: string; 'item_id.cas_number'?: string; 'item_id.hazard_class'?: ItemsHazardClass;
+    'item_id.location'?: string; 'item_id.cas_number'?: string; 'item_id.hazard_class'?: ItemHazardClass;
     'item_id.unit_cost'?: number; 'item_id.reorder_point'?: number;
-    'item_id.inspection_status'?: ItemsInspectionStatus};
+    'item_id.inspection_status'?: ItemInspectionStatus};
 };
 
 export type InventoryTransactionOp =
-  {op: 'insert'; table: 'items'; ref?: string; values: DG.DomainTxValues<ItemsInsert>} |
-  {op: 'update'; table: 'items'; id: string; values: DG.DomainTxValues<Partial<ItemsRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'items'; id: string} |
-  {op: 'insert'; table: 'stock_movements'; ref?: string; values: DG.DomainTxValues<StockMovementsInsert>} |
-  {op: 'update'; table: 'stock_movements'; id: string; values: DG.DomainTxValues<Partial<StockMovementsRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'stock_movements'; id: string};
+  {op: 'insert'; table: 'item'; ref?: string; values: DG.DomainTxValues<ItemInsert>} |
+  {op: 'update'; table: 'item'; id: string; values: DG.DomainTxValues<Partial<ItemRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'item'; id: string} |
+  {op: 'insert'; table: 'stock_movement'; ref?: string; values: DG.DomainTxValues<StockMovementInsert>} |
+  {op: 'update'; table: 'stock_movement'; id: string; values: DG.DomainTxValues<Partial<StockMovementRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'stock_movement'; id: string};
 
 /** Typed clients for the `inventory` domain schema tables (lazy — no import-time side effects). */
 export const inventoryDb = {
-  get itemses() {
-    return grok.dapi.domains.table<ItemsRow, ItemsInsert, ItemsColumn, ItemsExpand>('inventory.items');
+  get items() {
+    return grok.dapi.domains.table<ItemRow, ItemInsert, ItemColumn, ItemExpand>('inventory.item');
   },
-  get stockMovementses() {
-    return grok.dapi.domains.table<StockMovementsRow, StockMovementsInsert, StockMovementsColumn, StockMovementsExpand>('inventory.stock_movements');
+  get stockMovements() {
+    return grok.dapi.domains.table<StockMovementRow, StockMovementInsert, StockMovementColumn, StockMovementExpand>('inventory.stock_movement');
   },
   transaction<T extends InventoryTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

@@ -5,10 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import * as type from '../utils/types';
 import * as C from '../utils/constants';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {PeptidesModel} from '../model';
+import {VIEWER_TYPE} from '../utils/constants';
 
 import $ from 'cash-dom';
-import wu from 'wu';
 import {getTreeHelperInstance} from '../package';
 import {
   MmDistanceFunctionsNames,
@@ -31,9 +31,7 @@ export enum GENERAL_INPUTS {
   ACTIVITY_SCALING = 'Activity scaling',
 }
 
-export enum VIEWERS_INPUTS {
-  DENDROGRAM = VIEWER_TYPE.DENDROGRAM,
-}
+export const VIEWERS_INPUTS = {DENDROGRAM: VIEWER_TYPE.DENDROGRAM} as const;
 
 export enum COLUMNS_INPUTS {
   IS_INCLUDED = '',
@@ -115,8 +113,8 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     onValueChanged: (value) => result.showLogoSummaryTable = value});
   logoSummaryTable.enabled = typeof settings.clustersColumnName !== 'undefined';
   */
-  const isDendrogramEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.DENDROGRAM);
-  const dendrogram = ui.input.bool(VIEWER_TYPE.DENDROGRAM, {value: isDendrogramEnabled ?? false,
+  const isDendrogramEnabled = model.dendrogramCloseButton !== null;
+  const dendrogram = ui.input.bool(VIEWER_TYPE.DENDROGRAM, {value: isDendrogramEnabled,
     onValueChanged: (value) => result.showDendrogram = value}) as DG.InputBase<boolean>;
   const clusterMaxActivity = ui.input.bool(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY, {value: !!settings?.showClusterMaxActivity,
     onValueChanged: (value) => {result.showClusterMaxActivity = value ?? undefined;}});
@@ -328,8 +326,12 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   showSeqSpace.fireChanged();
   const dialog = ui.dialog('Peptides settings').add(accordion);
   dialog.root.style.width = '400px';
-  dialog.onOK(() => {
-    model.settings = result;
+  dialog.onOK(async () => {
+    try {
+      await model.applySettings(result);
+    } catch (error) {
+      grok.shell.error(String(error));
+    }
   });
   dialog.show();
 

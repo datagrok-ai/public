@@ -24,13 +24,9 @@ export namespace funcs {
   }
 
   /**
-   * Issue tracker over entity-mapped domain schemas — the platform's Domain View with the filter panel
+   * Issue tracker over entity-mapped domain schemas — the u2 app over grit.issue with Grit's actions, presets and shortcuts
    */
   export async function issuesApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Grit:IssuesApp', { path });
-  }
-
-  export async function issuesTreeBrowser(treeNode: any ): Promise<void> {
-    return await grok.functions.call('Grit:IssuesTreeBrowser', { treeNode });
   }
 }

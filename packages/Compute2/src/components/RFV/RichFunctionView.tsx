@@ -32,6 +32,7 @@ import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
 import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
+import {getShareAction} from '../../sharing/sharing';
 
 
 interface ScalarsState {
@@ -260,24 +261,11 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    historyEnabled: {
-      type: Boolean,
-      default: false,
-    },
-    // per-step history mode: adds a save-to-history icon (emits `saveToHistory`) and limits the
-    // history panel to runs explicitly saved for this step
-    stepHistory: {
-      type: Boolean,
-      default: false,
-    },
-    // adds a share icon (emits `publishRun`); hosts gate it on the sharingMethod package setting
-    showPublish: {
-      type: Boolean,
-      default: false,
-    },
-    publishTooltip: {
-      type: String,
-      default: 'Share run',
+    // run history and the save icon: 'function' lists the function's runs, 'step' only runs saved
+    // for this step (emits `saveToHistory`), 'workflow' the provider's saved runs (row emits
+    // `historyRunChosen`). The share icon follows the sharingMethod setting whenever history is on.
+    history: {
+      type: Object as Vue.PropType<{mode: 'function' | 'step' | 'workflow', func?: DG.Func, version?: string}>,
     },
     showRunButton: {
       type: Boolean,
@@ -301,9 +289,14 @@ export const RichFunctionView = Vue.defineComponent({
     urlExportHandler: {
       type: Function as Vue.PropType<() => void>,
     },
+    hideDefaultExport: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
+    'historyRunChosen': (_call: DG.FuncCall) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
     'publishRun': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
@@ -357,6 +350,10 @@ export const RichFunctionView = Vue.defineComponent({
 
     const isFittingActive = Vue.ref(false);
     const uiBlocked = Vue.computed(() => props.isBlocked || isFittingActive.value);
+
+    const historyMode = Vue.computed(() => props.history?.mode);
+    const isWorkflowHistory = Vue.computed(() => historyMode.value === 'workflow');
+    const shareAction = getShareAction();
 
     const formHidden = Vue.ref(false);
     const inputsHidden = Vue.ref(false);
@@ -521,7 +518,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const exports = Vue.computed(() => {
       const activeExports: ExportItem[] = [];
-      if (isReportEnabled.value) {
+      if (isReportEnabled.value && !props.hideDefaultExport) {
         const name = 'Default Excel';
         const handler = async () => {
           try {
@@ -531,6 +528,8 @@ export const RichFunctionView = Vue.defineComponent({
               currentCall.value.func,
               currentCall.value,
               viewers,
+              validationState.value,
+              consistencyState.value,
             ).finally(() => disposeViewers(viewers));
             DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
           } catch (e: any) {
@@ -704,7 +703,7 @@ export const RichFunctionView = Vue.defineComponent({
         check: !helpHidden.value,
         onClick: () => helpHidden.value = !helpHidden.value,
       },
-      ...(props.historyEnabled || props.stepHistory ? [{
+      ...(props.history ? [{
         text: 'Show history',
         icon: 'history',
         check: !historyHidden.value,
@@ -728,17 +727,17 @@ export const RichFunctionView = Vue.defineComponent({
         tooltip: 'Run sensitivity analysis',
         onClick: runSA,
       }] : []),
-      ...((props.historyEnabled || (props.stepHistory && exportsVisible.value)) && !uiBlocked.value ? [{
-        icon: props.stepHistory ? 'cloud-upload-alt' : 'save',
+      ...(props.history && (historyMode.value !== 'step' || exportsVisible.value) && !uiBlocked.value ? [{
+        icon: historyMode.value === 'step' ? 'cloud-upload-alt' : 'save',
         tooltip: 'Save run to history',
         onClick: () => emit('saveToHistory', currentCall.value),
       }] : []),
-      ...(props.showPublish && !uiBlocked.value ? [{
+      ...(props.history && shareAction && !uiBlocked.value ? [{
         icon: 'share-alt',
-        tooltip: props.publishTooltip,
+        tooltip: shareAction.tooltip,
         onClick: () => emit('publishRun', currentCall.value),
       }] : []),
-      ...(props.historyEnabled || props.stepHistory ? [{
+      ...(props.history ? [{
         icon: 'history',
         tooltip: 'Open history panel',
         active: !historyHidden.value,
@@ -766,15 +765,19 @@ export const RichFunctionView = Vue.defineComponent({
           key={currentUuid.value}
           ref={dockSpawnRef}
         >
-          { !historyHidden.value && (props.historyEnabled || props.stepHistory) &&
+          { !historyHidden.value && props.history &&
             <History
               key="__HISTORY__"
-              func={currentCall.value.func}
-              savedOnly={props.stepHistory}
-              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-              allowCompare={true}
-              forceHideInputs={false}
-              showIsComplete={true}
+              func={props.history.func ?? currentCall.value.func}
+              version={props.history.version}
+              allowOtherVersions={isWorkflowHistory.value}
+              savedOnly={historyMode.value === 'step'}
+              onRunChosen={(chosenCall) => isWorkflowHistory.value ?
+                emit('historyRunChosen', chosenCall) :
+                emit('update:funcCall', chosenCall)}
+              allowCompare={!isWorkflowHistory.value}
+              forceHideInputs={isWorkflowHistory.value}
+              showIsComplete={!isWorkflowHistory.value}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
               dock-spawn-title='History'

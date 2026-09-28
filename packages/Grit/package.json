@@ -8,15 +8,15 @@
   },
   "description": "Grit (GRok Issue Tracker) — reference app for entity-mapped domain schemas: projects, issues, comments, labels",
   "dependencies": {
-    "@datagrok-libraries/domain-ui": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:"
   },
   "scripts": {
-    "build": "grok build",
+    "build": "grok api && grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test"

@@ -1,7 +1,7 @@
 {
-  "name": "revvitysignalslink",
+  "name": "@datagrok/revvitysignalslink",
   "friendlyName": "RevvitySignalsLink",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Integration with RevvitySignals",
   "author": {
     "name": "Maria Dolotova",

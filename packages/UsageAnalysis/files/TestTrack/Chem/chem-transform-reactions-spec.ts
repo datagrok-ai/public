@@ -111,17 +111,36 @@ async function openTable(page: Page, file: string): Promise<void> {
   await waitForMolecule(page);
 }
 
+// A newly created reaction reaches the card list only after saveUserReaction has written
+// AppData/Chem/reactions/<user>-reactions.json and the browser has reloaded from it
+// (reaction-storage.ts:76-87), so both the card and the selection it sets are polled rather
+// than read in the same tick as the gesture.
 async function selectReactionCard(page: Page, dialogSel: string, name: string): Promise<string | null> {
-  return page.evaluate(({dialogSel, name}) => {
-    const dlg = document.querySelector(dialogSel);
-    if (!dlg) return null;
-    const cards = Array.from(dlg.querySelectorAll('div.d4-flex-col.ui-div')).filter((d: any) =>
-      d.firstElementChild && d.firstElementChild.tagName === 'CANVAS' && d.querySelector('label.ui-label'));
-    const target = cards.find((c: any) => c.querySelector('label.ui-label').textContent.trim() === name);
+  return page.evaluate(async ({dialogSel, name}) => {
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const cardNamed = () => {
+      const dlg = document.querySelector(dialogSel);
+      if (!dlg) return null;
+      const cards = Array.from(dlg.querySelectorAll('div.d4-flex-col.ui-div')).filter((d: any) =>
+        d.firstElementChild && d.firstElementChild.tagName === 'CANVAS' && d.querySelector('label.ui-label'));
+      return cards.find((c: any) => c.querySelector('label.ui-label').textContent.trim() === name) ?? null;
+    };
+    const selected = () => {
+      const sel = document.querySelector(`${dialogSel} .reaction-card-selected`);
+      return sel ? sel.querySelector('label.ui-label')!.textContent!.trim() : null;
+    };
+    let target: Element | null = null;
+    const appears = Date.now() + 30000;
+    do {
+      target = cardNamed();
+      if (!target) await wait(250);
+    } while (!target && Date.now() < appears);
     if (!target) return null;
     (target as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-    const sel = dlg.querySelector('.reaction-card-selected');
-    return sel ? sel.querySelector('label.ui-label')!.textContent!.trim() : null;
+    const arms = Date.now() + 15000;
+    while (selected() !== name && Date.now() < arms)
+      await wait(200);
+    return selected();
   }, {dialogSel, name});
 }
 

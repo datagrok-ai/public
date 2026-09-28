@@ -78,4 +78,4 @@ packages/Samples/projects/demo-notebooks/notebooks/rigid_body_transformations_in
 
 # --- tutorial demo credential ---
 packages/Tutorials/src/tracks/data-access/tutorials/data-connectors.ts:generic-api-key:60
-packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:generic-api-key:64
+packages/Tutorials/src/tracks/eda/tutorials/dashboard.ts:generic-api-key:61

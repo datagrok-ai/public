@@ -1,5 +1,11 @@
 # ml changelog
 
+## v.next
+
+* Activity cliffs: the scatter plot reports the number of cliffs found as a `cliffs` status reading (what its "N cliffs" button shows), whether only cliffs are shown, and the cliff-count button carries a name
+* `SearchBaseViewer`: Added `isRenderPending` / `onRendered`; a render that throws no longer leaves the viewer pending for ever
+* Added `searchResultsStatus` — the `search-results` status a card-based search viewer registers: `card <row>` hit areas plus `cards`, `current card`, `selected cards`, `target column` and `limit`, over cards marked with `data-row` and `d4-current` / `d4-selected` (Chem's similarity and diversity viewers)
+
 ## 6.10.16 (2026-09-08)
 
 * Distance matrix: Fixed `DistanceMatrixService` spawning a worker per CPU thread before knowing the job's size and terminating the unused ones mid-load — every such worker's chunk import surfaced as an uncaught NetworkError on the page; workers are now spawned for the job

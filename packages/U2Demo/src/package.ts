@@ -59,6 +59,7 @@ import '@datagrok-libraries/u2/css/designer.css';
 import '@datagrok-libraries/u2/css/viewers.css';
 import '@datagrok-libraries/u2/css/filter.css';
 import '@datagrok-libraries/u2/css/filter-query.css';
+import '@datagrok-libraries/u2/css/domain.css';
 import '../css/u2demo.css';
 
 import {computed} from '@datagrok-libraries/u2';
@@ -74,6 +75,7 @@ import {registerEnabledEditors} from './editors';
 import {registerPropRowHandler} from './convergence';
 import {DESIGNER_SPEC, appendRunLog, designerContext} from './designer';
 import {filterPath, readFilterPath} from './pages/filters';
+import {demoOrders as buildDemoOrders} from './demo-orders';
 
 export * from './package.g';
 // not a package function: what the e2e leak check reads after closing every view
@@ -178,22 +180,12 @@ export function info() {
 
 /* What the designer's data sources are demonstrated against: a client-side table small enough to
    read whole, with a parameter worth binding to an input. */
-const ORDERS = [
-  {orderId: 1001, customer: 'Aspirin Labs', city: 'Kyiv', total: 1240, daysAgo: 2},
-  {orderId: 1002, customer: 'Bayer', city: 'Lviv', total: 380, daysAgo: 5},
-  {orderId: 1003, customer: 'Roche', city: 'Basel', total: 2150, daysAgo: 11},
-  {orderId: 1004, customer: 'Novartis', city: 'Basel', total: 640, daysAgo: 24},
-  {orderId: 1005, customer: 'Pfizer', city: 'New York', total: 1790, daysAgo: 45},
-  {orderId: 1006, customer: 'Merck', city: 'Darmstadt', total: 920, daysAgo: 88},
-];
-
 //name: demoOrders
 //description: Demo orders placed within the last N days — the data source demo of the u2 designer
 //input: int days = 30
 //output: dataframe orders
 export function demoOrders(days: number): DG.DataFrame {
-  const rows = ORDERS.filter((order) => order.daysAgo <= days);
-  return DG.DataFrame.fromObjects(rows) ?? DG.DataFrame.create(0);
+  return buildDemoOrders(days);
 }
 
 //name: u2Record

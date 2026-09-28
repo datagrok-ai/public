@@ -345,6 +345,8 @@ export function isPnpmWorkspace(dir: string): boolean {
   }
 }
 
+export const grokCommand = `"${process.execPath}" "${path.join(__dirname, '..', 'grok.js')}"`;
+
 export async function runScript(script: string, path: string, verbose: boolean = false) {
   try {
     const {stdout, stderr} = await execAsync(script, {cwd: path});

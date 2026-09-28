@@ -1,6 +1,6 @@
 # NLP changelog
 
-## v.next
+## 1.2.5 (2026-07-12)
 
 * GROK-18695: Migrated AWS Translate to AWS SDK v3 (removes unpatchable aws-sdk v2 advisory)
 * GROK-18695: Dependency security updates — overrode uuid to 11.x and protobufjs to 7.6.5 (clears aws-sdk and @xenova/transformers transitive advisories)

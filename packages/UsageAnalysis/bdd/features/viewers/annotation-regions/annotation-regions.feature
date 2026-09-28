@@ -4,9 +4,10 @@ Feature: Annotation regions
   what the viewer reports about it, what the visibility switches do to it, and what the one-
   dimensional viewers persist instead (an axis-locked value band written as a formula region).
   Every claim is a reading or a hit area the viewer publishes — `viewer regions` and `dataframe
-  regions` count what the look holds, `regions shown` counts what is drawn, and a `region N` hit
-  area exists only while the region is actually on screen, so hiding one removes its area rather
-  than leaving the rectangle of the frame that last drew it.
+  regions` count what the look holds, `regions shown` counts the regions the two visibility
+  switches let through (drawn or not), and a `region N` hit area exists only while the region is
+  actually on screen, so hiding one removes its area rather than leaving the rectangle of the frame
+  that last drew it.
   One journey on demog-1000. PowerPack is installed on this stand, so the Formula Lines dialog
   opens after a region is drawn and each scenario accepts it with OK; the spec's "PowerPack absent"
   section cannot be translated here. Both the axis annotations group and the viewer's annotation
@@ -16,8 +17,8 @@ Feature: Annotation regions
   before the click lands, so no honest gesture reaches it. The count axis is
   not claimed about: a right-click there carries the viewer's whole menu, where the viewer's own
   "Annotations" property group has the same name, so the difference cannot be stated honestly at
-  the label level. Region hover and click selection are
-  the manual checks of `annotation-regions-ui.md` and stay manual.
+  the label level. Region hover and click selection are covered by
+  `annotation-region-interaction.feature`.
 
   Background:
     Given user is logged in
@@ -38,8 +39,7 @@ Feature: Annotation regions
     And the "regions shown" reading of scatter plot viewer should be 1
     And the "dataframe regions" reading of scatter plot viewer should be 0
     And scatter plot viewer should have a "region 1" area
-    And the "region 1" area of scatter plot viewer should be painted
-    And scatter plot viewer should have repainted
+    And the "region 1" area of scatter plot viewer should have repainted
     And "annotationRegions" property of scatter plot viewer should contain "area"
     When user clicks OK button in "Formula Lines" dialog
     Then the "viewer regions" reading of scatter plot viewer should be 1
@@ -47,21 +47,26 @@ Feature: Annotation regions
     And no errors should have been logged
 
   Scenario: Hiding the viewer's regions takes the region off the plot but not out of the look
-    When user takes a snapshot of scatter plot viewer
-    And user sets "showViewerAnnotationRegions" property of scatter plot viewer to "false"
+    When user sets "showViewerAnnotationRegions" property of scatter plot viewer to "false"
     Then the "viewer regions" reading of scatter plot viewer should be 1
     And the "regions shown" reading of scatter plot viewer should be 0
     And scatter plot viewer should not have a "region 1" area
     And scatter plot viewer should have repainted
     When user sets "showViewerAnnotationRegions" property of scatter plot viewer to "true"
-    Then the "regions shown" reading of scatter plot viewer should be 1
-    And scatter plot viewer should have a "region 1" area
+    Then scatter plot viewer should have a "region 1" area
     And no errors should have been logged
 
   Scenario: Show Annotation Regions in the Tools menu switches both kinds at once
     When user picks "Tools > Show Annotation Regions" from the context menu of the "empty space" area of scatter plot viewer
     Then "showViewerAnnotationRegions" property of scatter plot viewer should be "false"
     And "showDataframeAnnotationRegions" property of scatter plot viewer should be "false"
+    And the "regions shown" reading of scatter plot viewer should be 0
+    When user picks "Tools > Show Annotation Regions" from the context menu of the "empty space" area of scatter plot viewer
+    Then "showViewerAnnotationRegions" property of scatter plot viewer should be "true"
+    And "showDataframeAnnotationRegions" property of scatter plot viewer should be "true"
+    And the "regions shown" reading of scatter plot viewer should be 1
+    When user picks "Tools > Show Annotation Regions" from the context menu of the "empty space" area of scatter plot viewer
+    Then "showViewerAnnotationRegions" property of scatter plot viewer should be "false"
     And the "regions shown" reading of scatter plot viewer should be 0
     When user picks "Tools > Show Annotation Regions" from the context menu of the "empty space" area of scatter plot viewer
     Then "showViewerAnnotationRegions" property of scatter plot viewer should be "true"

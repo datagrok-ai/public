@@ -123,6 +123,10 @@ export class ViewBase extends Widget {
   get parentView(): ViewBase { return toJs(api.grok_View_Get_ParentView(this.dart)); }
   set parentView(s: ViewBase) { api.grok_View_Set_ParentView(this.dart, toDart(s)); }
 
+  /** The view this one is currently surfacing, if it hosts another (such as a {@link MultiView}
+   * tab). `grok.shell.t` resolves through it. */
+  set innerView(v: ViewBase | null) { api.grok_View_Set_InnerView(this.dart, toDart(v)); }
+
   get description(): string { return ''; }
   set description(s: string) { }
 
@@ -748,4 +752,3 @@ export class VirtualView {
     api.grok_VirtualItemView_RefreshItem(this.dart, i);
   }
 }
-

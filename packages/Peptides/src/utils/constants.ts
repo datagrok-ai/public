@@ -1,5 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 
+export enum VIEWER_TYPE {
+  SEQUENCE_VARIABILITY_MAP = 'Sequence Variability Map',
+  MOST_POTENT_RESIDUES = 'Most Potent Residues',
+  LOGO_SUMMARY_TABLE = 'Logo Summary Table',
+  DENDROGRAM = 'Dendrogram',
+  CLUSTER_MAX_ACTIVITY = 'Active peptide selection',
+  MCL = 'MCL',
+  SEQUENCE_MUTATION_CLIFFS = 'Sequence Mutation Cliffs',
+}
+
 export enum COLUMNS_NAMES {
   SPLIT_COL = '~split',
   ACTIVITY = 'Activity',

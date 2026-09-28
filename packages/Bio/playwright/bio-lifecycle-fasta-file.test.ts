@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.api.get-seq-helper, bio.detector, bio.io.fasta-handler, bio.io.save-as-fasta, bio.lifecycle.init, bio.rendering, bio.rendering.fasta]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
@@ -20,7 +18,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
   let preSaveRowCount = 0;
   await loginToDatagrok(page);
-  // Scenario 1 — Programmatic load entry path
+
   await page.evaluate(async (samplePath) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -31,7 +29,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     const df: any = Array.isArray(dfs) ? dfs[0] : dfs;
     if (!df) throw new Error(`Bio:importFasta returned no DataFrame for ${samplePath}`);
     grok.shell.addTableView(df);
-    try { await (grok as any).data.detectSemanticTypes(df); } catch (_) { /* tolerate */ }
+    try { await (grok as any).data.detectSemanticTypes(df); } catch (_) {  }
     await new Promise<void>((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
       setTimeout(() => resolve(), 4000);
@@ -43,7 +41,6 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
   }, fastaSamplePath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
-  // Gate on Bio:getSeqHelper actually resolving (poll), not a flat sleep.
   await expect.poll(async () => page.evaluate(async () => {
     try { const h: any = await (grok as any).functions.call('Bio:getSeqHelper', {}); return !!h; }
     catch { return false; }
@@ -99,10 +96,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     expect(result.firstSeqLen).toBeGreaterThan(0);
     expect(result.gridCanvasMounted).toBe(true);
   });
-  // Scenario 2 — Drag-and-drop entry path (synthetic drop, falls back to Bio:importFasta — same handler code path).
-  // A synthetic DragEvent carrying a real File in DataTransfer does not reliably dispatch onto the
-  // Datagrok drop handler on dev, so when no table appears we fall back to the same FastaFileHandler
-  // code path via Bio:importFasta (atlas bio.cp.fasta-import-via-multiple-entry-paths).
+
   await softStep('S2.1-2.2: Drop entry path → FASTA handler dispatches → Macromolecule column with units=fasta (sync detector)', async () => {
     const before = await page.evaluate(() => grok.shell.tables.length);
     const result = await page.evaluate(async (samplePath) => {
@@ -134,7 +128,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
           const fdf: any = Array.isArray(dfs) ? dfs[0] : dfs;
           if (fdf) {
             grok.shell.addTableView(fdf);
-            try { await (grok as any).data.detectSemanticTypes(fdf); } catch (_) { /* tolerate */ }
+            try { await (grok as any).data.detectSemanticTypes(fdf); } catch (_) {  }
             await new Promise<void>((resolve) => {
               const sub = fdf.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
               setTimeout(() => resolve(), 4000);
@@ -165,7 +159,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
         hasMacro, units, rowCount, rendererCellType, firstSeqLen};
     }, fastaSamplePath);
     if (result.fellBack && !result.viaSyntheticDrop) {
-      // eslint-disable-next-line no-console
+
       console.warn('[S2] synthetic File-drop did not dispatch file-handler; used Bio:importFasta atlas-equivalent fallback (same FastaFileHandler.importFasta code path per atlas bio.cp.fasta-import-via-multiple-entry-paths)');
     }
     expect(result.dropReason, result.dropReason ?? '').toBeNull();
@@ -179,7 +173,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     expect(result.rowCount).toBeGreaterThan(0);
     expect(result.firstSeqLen).toBeGreaterThan(0);
   });
-  // Scenario 3 — Export As FASTA round trip (build FASTA via SeqHandler.getSplitted, write temp, re-import).
+
   await softStep('S3.1-3.4: Export As FASTA via SeqHandler primitive → write temp → re-import → row-count + first-seq match', async () => {
     const result = await page.evaluate(async ({tempPath}) => {
       const df = grok.shell.tv.dataFrame;
@@ -227,7 +221,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
           const dfs: any = await (grok as any).functions.call('Bio:importFasta', {fileContent: readBack});
           reimported = Array.isArray(dfs) ? dfs[0] : dfs;
           if (reimported) {
-            try { await (grok as any).data.detectSemanticTypes(reimported); } catch (_) { /* tolerate */ }
+            try { await (grok as any).data.detectSemanticTypes(reimported); } catch (_) {  }
           }
         } catch (e) {
           reimportErr = String(e).slice(0, 200);
@@ -276,7 +270,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
     expect(result.reimportedFirstSeq).toBe(result.originalFirstSeq);
   });
   try {
-    // Scenario 4 — Save project with FASTA-imported table; reopen survives
+
     await softStep('S4.1: Save project with FASTA-imported table (JS API path)', async () => {
       preSaveRowCount = await page.evaluate(() => grok.shell.tv?.dataFrame?.rowCount ?? 0);
       expect(preSaveRowCount).toBeGreaterThan(0);
@@ -312,7 +306,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
       expect(post.rowCount).toBe(preSaveRowCount);
     });
   } finally {
-    // Scenario 5 — Cleanup (runs regardless of earlier failures)
+
     if (saved) {
       await deleteProjectWithCleanup(page, {
         projectId: saved.projectId,
@@ -320,7 +314,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
       });
     }
     await page.evaluate(async (p) => {
-      try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
+      try { await grok.dapi.files.delete(p); } catch (_) {  }
     }, fastaTempPath).catch(() => {});
   }
   finishSpec();

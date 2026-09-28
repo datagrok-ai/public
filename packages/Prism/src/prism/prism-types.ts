@@ -20,6 +20,7 @@ export interface PrismAnalysis {
   title: string;
   resultData: string[][];
   columnTitles: string[];
+  rowTitlesPresent: boolean;
 }
 
 export interface DocumentJson {

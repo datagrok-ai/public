@@ -2,7 +2,10 @@
 Feature: Subsequence search on the filter panel
   Bio | Search | Subsequence Search ... on a table with one sequence column adds a substructure
   filter to the filter panel straight away; a subsequence typed there keeps the rows that contain
-  it, and the panel's reset brings every row back.
+  it, and the panel's reset brings every row back. With two sequence columns the command asks for
+  one in a dialog instead; that path is claimed in menu/top-menu.
+
+  Not translated: nothing of the md is left out.
 
   Background:
     Given user is logged in

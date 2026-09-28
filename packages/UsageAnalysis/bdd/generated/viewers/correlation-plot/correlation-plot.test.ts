@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.correlation-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -23,7 +25,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Correlation plot — the matrix and the numbers in it", () => {
   const session = feature(test, "features/viewers/correlation-plot/correlation-plot.feature", import.meta.url);
-  test("Correlation plot — the matrix and the numbers in it", {tag: ["@journey", "@viewers", "@realizes:viewers.correlation-plot", "@known-failure"]}, async ({browser}) => {
+  test("Correlation plot — the matrix and the numbers in it", {tag: ["@journey", "@viewers", "@realizes:viewers.correlation-plot"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 9, page);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
@@ -110,7 +112,7 @@ test.describe("Correlation plot — the matrix and the numbers in it", () => {
       await session.step(103, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Narrowing the axes re-tiles the matrix to their product", async () => {
-      await session.step(106, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]));
+      await session.step(106, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT"],["yColumnNames","AGE, HEIGHT"]]);
       await session.step(109, "Then the \"cells\" reading of correlation plot viewer should be 6", () => readingIs(page, "cells", el("correlation plot viewer"), 6));
       await session.step(110, "And the \"x columns\" reading of correlation plot viewer should be \"AGE, HEIGHT, WEIGHT\"", () => readingReads(page, "x columns", el("correlation plot viewer"), "AGE, HEIGHT, WEIGHT"));
       await session.step(111, "And the \"y columns\" reading of correlation plot viewer should be \"AGE, HEIGHT\"", () => readingReads(page, "y columns", el("correlation plot viewer"), "AGE, HEIGHT"));
@@ -119,32 +121,32 @@ test.describe("Correlation plot — the matrix and the numbers in it", () => {
       await session.step(114, "And correlation plot viewer should not have a \"cell STARTED x AGE\" area", () => hasNoArea(page, el("correlation plot viewer"), "cell STARTED x AGE"));
       await session.step(115, "And correlation plot viewer should not have a \"cell AGE x WEIGHT\" area", () => hasNoArea(page, el("correlation plot viewer"), "cell AGE x WEIGHT"));
       await session.step(116, "And the correlation of \"WEIGHT\" and \"HEIGHT\" of correlation plot viewer should match the Pearson coefficient of the table", () => correlationMatches(page, "WEIGHT", "HEIGHT", el("correlation plot viewer"), "Pearson"));
-      await session.step(117, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(117, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(120, "Then the \"cells\" reading of correlation plot viewer should be 16", () => readingIs(page, "cells", el("correlation plot viewer"), 16));
       await session.step(121, "And correlation plot viewer should have a \"cell STARTED x AGE\" area", () => hasArea(page, el("correlation plot viewer"), "cell STARTED x AGE"));
       await session.step(122, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A column with no variance has no coefficient and its cells stay blank", async () => {
       await session.step(125, "Given user adds a calculated column \"FLAT\" with formula \"0\"", () => addCalculated(page, "FLAT", "0"));
-      await session.step(126, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED, FLAT"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED, FLAT"]]));
+      await session.step(126, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED, FLAT"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED, FLAT"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED, FLAT"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED, FLAT"]]);
       await session.step(129, "Then the \"cells\" reading of correlation plot viewer should be 25", () => readingIs(page, "cells", el("correlation plot viewer"), 25));
       await session.step(130, "And the \"cell type of FLAT x AGE\" reading of correlation plot viewer should be \"correlation\"", () => readingReads(page, "cell type of FLAT x AGE", el("correlation plot viewer"), "correlation"));
       await session.step(131, "And the \"text of cell FLAT x AGE\" reading of correlation plot viewer should be \"\"", () => readingReads(page, "text of cell FLAT x AGE", el("correlation plot viewer"), ""));
       await session.step(132, "And the \"text of cell HEIGHT x AGE\" reading of correlation plot viewer should be \"-0.23\"", () => readingReads(page, "text of cell HEIGHT x AGE", el("correlation plot viewer"), "-0.23"));
       await session.step(133, "And the \"error\" reading of correlation plot viewer should be \"\"", () => readingReads(page, "error", el("correlation plot viewer"), ""));
       await session.step(134, "And no errors should have been logged", () => noErrors(page));
-      await session.step(135, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(135, "When user sets properties of correlation plot viewer:", () => setProperties(page, el("correlation plot viewer"), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(138, "And user removes \"FLAT\" column", () => removeColumn(page, "FLAT"));
       await session.step(139, "Then the \"cells\" reading of correlation plot viewer should be 16", () => readingIs(page, "cells", el("correlation plot viewer"), 16));
       await session.step(140, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Cells six times apart in coefficient are painted the same full red (GROK — color_coding.dart:322-337)", async () => {
-      await session.step(153, "Then the \"correlation of WEIGHT and AGE\" reading of correlation plot viewer should be between 0.0647 and 0.0649", () => readingBetween(page, "correlation of WEIGHT and AGE", el("correlation plot viewer"), 0.0647, 0.0649));
-      await session.step(154, "And the \"correlation of WEIGHT and HEIGHT\" reading of correlation plot viewer should be between 0.4124 and 0.4125", () => readingBetween(page, "correlation of WEIGHT and HEIGHT", el("correlation plot viewer"), 0.4124, 0.4125));
-      await session.step(155, "And the \"color of cell AGE x WEIGHT\" and \"color of cell HEIGHT x WEIGHT\" readings of correlation plot viewer should differ", () => readingsDiffer(page, "color of cell AGE x WEIGHT", "color of cell HEIGHT x WEIGHT", el("correlation plot viewer")));
-      await session.step(156, "And the \"color of cell AGE x WEIGHT\" reading of correlation plot viewer should not be \"#ff0000\"", () => readingDoesNotRead(page, "color of cell AGE x WEIGHT", el("correlation plot viewer"), "#ff0000"));
-      await session.step(157, "And no errors should have been logged", () => noErrors(page));
-    }, {knownFailure: true});
+    await run.scenario("Cells six times apart in coefficient are painted on the same -1..1 scale", async () => {
+      await session.step(147, "Then the \"correlation of WEIGHT and AGE\" reading of correlation plot viewer should be between 0.0647 and 0.0649", () => readingBetween(page, "correlation of WEIGHT and AGE", el("correlation plot viewer"), 0.0647, 0.0649));
+      await session.step(148, "And the \"correlation of WEIGHT and HEIGHT\" reading of correlation plot viewer should be between 0.4124 and 0.4125", () => readingBetween(page, "correlation of WEIGHT and HEIGHT", el("correlation plot viewer"), 0.4124, 0.4125));
+      await session.step(149, "And the \"color of cell AGE x WEIGHT\" and \"color of cell HEIGHT x WEIGHT\" readings of correlation plot viewer should differ", () => readingsDiffer(page, "color of cell AGE x WEIGHT", "color of cell HEIGHT x WEIGHT", el("correlation plot viewer")));
+      await session.step(150, "And the \"color of cell AGE x WEIGHT\" reading of correlation plot viewer should not be \"#ff0000\"", () => readingDoesNotRead(page, "color of cell AGE x WEIGHT", el("correlation plot viewer"), "#ff0000"));
+      await session.step(151, "And no errors should have been logged", () => noErrors(page));
+    });
     run.finish();
   });
 });

@@ -5,7 +5,8 @@ Feature: Trellis plot global scale, axes and range sliders
   every flip of the setting redraws every cell. The axes obey Always, Never and Auto; Show Range
   Sliders gates the sliders without taking the strip away; "Reset Inner Range Sliders" is offered
   only while a slider exists, and it puts the cells back exactly where the shared slider took them
-  from. Last, the wheel over a cell zooms nothing until the inner viewer's own Allow Zoom says so.
+  from. Last, the wheel over a cell zooms nothing until the inner viewer's own Allow Zoom says so, and
+  zooms nothing in a bar chart or a box plot cell, which have no such setting (GROK-14587).
   One journey on demog-1000 with SEX by RACE and a scatter plot inside.
 
   Not translated here: "nothing repaints while the viewer is idle" — the trellis paints no canvas
@@ -121,13 +122,22 @@ Feature: Trellis plot global scale, axes and range sliders
     Then the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
     And no errors should have been logged
 
-  Scenario: The wheel leaves a bar chart cell alone too
-    When user sets "Viewer Type" property of trellis plot viewer to "Bar chart"
+  Scenario: The wheel leaves a bar chart cell and a box plot cell alone too
+    When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
+    And user sets "Viewer Type" property of trellis plot viewer to "Bar chart"
     Then the "inner viewer type" reading of trellis plot viewer should be "Bar chart"
+    And the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
     And the "distinct cell signatures" reading of trellis plot viewer should be at least 2
     When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
     And user scrolls the mouse wheel down over the "cell body F | Caucasian" area of trellis plot viewer
-    Then the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
+    Then the "cell signature F | Caucasian" reading of trellis plot viewer should be the same as before
+    When user sets "Viewer Type" property of trellis plot viewer to "Box plot"
+    Then the "inner viewer type" reading of trellis plot viewer should be "Box plot"
+    And the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
+    And the "distinct cell signatures" reading of trellis plot viewer should be at least 2
+    When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
+    And user scrolls the mouse wheel down over the "cell body F | Caucasian" area of trellis plot viewer
+    Then the "cell signature F | Caucasian" reading of trellis plot viewer should be the same as before
     When user sets "Viewer Type" property of trellis plot viewer to "Scatter plot"
     Then the "inner viewer type" reading of trellis plot viewer should be "Scatter plot"
     And no errors should have been logged

@@ -5,15 +5,26 @@ import {getCurrentUserGroup} from './spotlight/group-favorites';
 
 const window = grok.shell.windows;
 
-const aiToggle = ui.div([ui.iconFA('user-robot')], 'windows-manager-toggle');
-const topmenuToggle = ui.div([ui.iconFA('window-maximize')], 'windows-manager-toggle');
-const toolboxToogle = ui.div([ui.iconFA('ballot')], 'windows-manager-toggle');
-const propertiesToggle = ui.div([ui.iconFA('sliders-h')], 'windows-manager-toggle');
-const helpToggle = ui.div([ui.iconFA('info')], 'windows-manager-toggle');
-const vairablesToggle = ui.div([ui.iconFA('value-absolute')], 'windows-manager-toggle');
-const consoleToggle = ui.div([ui.iconFA('terminal')], 'windows-manager-toggle');
-const presentationToggle = ui.div([ui.iconFA('presentation')], 'windows-manager-toggle');
-const inspectorToggle = ui.div([ui.iconFA('tools')], 'windows-manager-toggle');
+/** A status-bar toggle, named and ARIA-labelled so it is addressable by what it does
+ * rather than by the FontAwesome class of its icon. */
+function toggle(icon: string, name: string): HTMLDivElement {
+  const root = ui.div([ui.iconFA(icon)], 'windows-manager-toggle');
+  root.setAttribute('name', `toggle-${name.toLowerCase().replace(/ /g, '-')}`);
+  root.setAttribute('role', 'button');
+  root.setAttribute('aria-label', name);
+  root.setAttribute('aria-pressed', 'false');
+  return root;
+}
+
+const aiToggle = toggle('user-robot', 'AI');
+const topmenuToggle = toggle('window-maximize', 'Tabs');
+const toolboxToogle = toggle('ballot', 'Toolbox');
+const propertiesToggle = toggle('sliders-h', 'Context Panel');
+const helpToggle = toggle('info', 'Context Help');
+const vairablesToggle = toggle('value-absolute', 'Variables');
+const consoleToggle = toggle('terminal', 'Console');
+const presentationToggle = toggle('presentation', 'Presentation mode');
+const inspectorToggle = toggle('tools', 'Inspector');
 
 presentationToggle.addEventListener('click', ()=> {
   window.presentationMode ? window.presentationMode = false : window.presentationMode = true;
@@ -27,12 +38,12 @@ toolboxToogle.addEventListener('click', ()=> {
 
 aiToggle.addEventListener('click', ()=> {
   window.showAI = !window.showAI;
-  ui.setClass(aiToggle, 'active', window.showAI);
+  setToggleState(window.showAI, aiToggle);
 });
 
 topmenuToggle.addEventListener('click', ()=> {
   window.simpleMode ? window.simpleMode = false : window.simpleMode = true;
-  window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
+  setToggleState(!window.simpleMode, topmenuToggle);
 });
 
 propertiesToggle.addEventListener('click', ()=> {
@@ -75,12 +86,13 @@ function closeInspectorPane(): void {
 }
 
 function setToggleState(v: boolean, toggle: HTMLDivElement) {
-  return (v ? toggle.className = 'windows-manager-toggle active' : toggle.className = 'windows-manager-toggle');
+  ui.setClass(toggle, 'active', v);
+  toggle.setAttribute('aria-pressed', `${v}`);
 }
 
 function setButtonsToggleState() {
   setToggleState(window.showAI, aiToggle);
-  window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
+  setToggleState(!window.simpleMode, topmenuToggle);
   setToggleState(window.showToolbox, toolboxToogle);
   setToggleState(window.showContextPanel, propertiesToggle);
   setToggleState(window.showHelp, helpToggle);

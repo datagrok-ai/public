@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.46.9",
+  "version": "1.47.0",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -17,12 +17,13 @@
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
-    "diff-grok": "^1.3.1",
+    "diff-grok": "^1.4.0",
     "ebnf": "^1.9.1",
     "exceljs": "catalog:",
     "fast-equals": "^5.2.2",
     "fflate": "^0.7.4",
     "html2canvas": "catalog:",
+    "json-logic-js": "^2.0.5",
     "jstat": "^1.9.6",
     "lodash.clonedeepwith": "^4.5.0",
     "lodash.isequal": "^4.5.0",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@datagrok-libraries/codegen-async-to-sync": "workspace:^",
+    "@types/json-logic-js": "^2.0.8",
     "@types/lodash.isequal": "^4.5.8"
   },
   "scripts": {

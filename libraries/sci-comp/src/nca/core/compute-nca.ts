@@ -1,11 +1,10 @@
 import type {
   ProfileInputs, NcaRules, ComputeResult, ParameterValues,
-  ParameterWarning, AucMethod, BlqProcessingResult, LambdaZResult,
+  ParameterWarning, AucMethod, LambdaZResult, C0Provenance,
 } from './types';
 import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION} from './types';
 import {applyBlqStrategy} from './blq';
-import {findCmax} from './cmax';
-import {insertC0} from './c0';
+import {augmentProfile} from './augment';
 import {lambdaZBestFit, lambdaZManual} from './lambda-z';
 import {
   aucLinearNaive, aucLogLinearNaive, aucLinearUpLogDownNaive,
@@ -64,18 +63,29 @@ const NAN_VALUES: ParameterValues = Object.freeze({
  * status flag.
  *
  * Pipeline:
- * 1. Apply BLQ pre-processing → modified concentrations + excluded indices.
- * 2. For IV bolus profiles without a t=0 observation, estimate c0 by
- *    log-linear back-extrapolation and insert (0, c0). This mirrors the
- *    PKNCA convention used by every reference NCA tool.
- * 3. Find observed Cmax/Tmax on the original (non-augmented) post-BLQ
- *    profile — for IV bolus the inserted c0 is excluded from the reported
- *    peak.
- * 4. Compute AUClast over the augmented profile (skipping NaN/excluded
- *    points), using the method and summation strategy in `rules`.
+ * 1–3. `augmentProfile` (one exported kernel, `augment.ts`): BLQ
+ *    pre-processing → observed Cmax/Tmax on the un-augmented post-BLQ profile
+ *    → route-aware dose-time augmentation. IV bolus: a positive measured t=0
+ *    sample is the c0; a missing OR BLQ / non-positive t=0 row is replaced by
+ *    `(0, c0)` from the PKNCA c0 chain (`insertC0`). Extravascular and IV
+ *    infusion: `(0, 0)` is prepended when no kept t=0 row exists. The kernel
+ *    returns TWO masks — the effective BLQ mask (what the observed quantities
+ *    read) and the drop set (what integration and λz skip) — plus the
+ *    augmented ↔ input index map.
+ * 4. Compute AUClast / AUMClast over the augmented profile (skipping the drop
+ *    set), using the method and summation strategy in `rules`.
  * 5. Fit lambda_z (auto best-fit or manual) on the augmented profile.
- * 6. Derive AUCinf (= AUClast + cLast/λz), t½, CL, Vz, %AUCextrap.
+ * 6. Derive AUCinf (= AUClast + cLast/λz), t½, CL, Vz, %AUCextrap; for IV
+ *    bolus, the back-extrapolated share of AUCinf (`provenance.c0`).
  * 7. Generate quality warnings.
+ *
+ * IV-bolus AUC convention: the profile integrates FROM the back-extrapolated
+ * c0 (Phoenix WinNonlin `AUC` with `C0`), so the same subject does not lose
+ * the dose-time → first-sample area because a pre-dose sample happened to be
+ * drawn. Stock PKNCA does not do this — its `auclast` on a raw IV-bolus
+ * profile is NA without a t=0 datum and integrates from the observed `(0, 0)`
+ * when one is present (measured 2026-09-22) — so the reference fixtures feed
+ * PKNCA the augmented profile. A deliberate, documented divergence.
  *
  * Status:
  * - `'failed'`  — no measurable point (every conc was BLQ).
@@ -84,81 +94,51 @@ const NAN_VALUES: ParameterValues = Object.freeze({
  * - `'ok'`      — every parameter computed.
  */
 export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResult {
-  // Step 1: BLQ pre-processing on the raw concentrations.
-  const blqRes: BlqProcessingResult = applyBlqStrategy(
-    inputs.conc, inputs.blqMask, inputs.lloq, 0, rules.blq,
-  );
-  const procConc = blqRes.conc;
-  const effBlq = new Uint8Array(inputs.blqMask);
-  for (let k = 0; k < blqRes.excluded.length; k++)
-    effBlq[blqRes.excluded[k]] = 1;
-
-  // Step 2: Observed Cmax/Tmax on raw post-BLQ profile.
-  const observedCmax = findCmax(inputs.time, procConc, effBlq);
-  if (observedCmax === null) {
+  // Steps 1–3: the augmentation kernel.
+  const aug = augmentProfile(inputs, rules.blq);
+  if (aug === null) {
+    // No measurable point. The BLQ trace is still reported (the kernel bails
+    // after Step 2, so re-run Step 1 for the provenance the auditor expects).
     return {
       values: NAN_VALUES,
       provenance: {
         lambdaZ: null,
-        blqApplied: blqRes,
+        blqApplied: applyBlqStrategy(inputs.conc, inputs.blqMask, inputs.lloq, 0, rules.blq),
         aucMethod: rules.aucMethod,
         compensated: rules.compensatedSummation,
         warnings: [],
+        c0: null,
       },
       status: 'failed',
     };
   }
+  const {time: augTime, conc: augConc, blqMask: augBlq, dropMask, observedCmax} = aug;
+  const cmaxIdxForFit = aug.cmaxIdx;
 
-  // Step 3: Augment with a t=0 observation when missing, mirroring PKNCA:
-  //   - IV bolus      → insert (0, c0) where c0 is back-extrapolated.
-  //   - extravascular → insert (0, 0)  (pre-dose conc = 0 by convention).
-  // An existing t=0 row counts even when conc(0) = 0 — that's a valid
-  // pre-dose observation for extravascular profiles, not a missing value.
-  const hasT0 = (
-    inputs.time.length > 0 && inputs.time[0] === 0 && effBlq[0] === 0 &&
-    Number.isFinite(procConc[0])
-  );
-  let augTime = inputs.time;
-  let augConc = procConc;
-  let augBlq: Uint8Array = effBlq;
-  let cmaxIdxForFit = observedCmax.cmaxIdx;
-  if (!hasT0) {
-    if (inputs.route === ROUTE_IV_BOLUS) {
-      const aug = insertC0(inputs.time, procConc, effBlq);
-      if (aug !== null) {
-        augTime = aug.time;
-        augConc = aug.conc;
-        augBlq = aug.blqMask;
-        cmaxIdxForFit = aug.cmaxIdx; // = 0 (inserted c0 is the new peak)
-      }
-    } else {
-      // Extravascular: pre-dose concentration is 0 by convention.
-      augTime = prependScalar(inputs.time, 0);
-      augConc = prependScalar(procConc, 0);
-      augBlq = prependByte(effBlq, 0);
-      cmaxIdxForFit = observedCmax.cmaxIdx + 1;
-    }
-  }
-
-  // Step 4: AUClast over the augmented profile (skipping NaN/excluded).
-  const dense = collectMeasurable(augTime, augConc, augBlq);
+  // Step 4: AUClast over the augmented profile (skipping the drop set).
+  const dense = collectMeasurable(augTime, augConc, dropMask);
+  const aucFn = pickAucFn(rules.aucMethod, rules.compensatedSummation);
   let aucLast = NaN;
   let aumcLast = NaN;
   let cLast = NaN;
   let tLast = NaN;
+  // Augmented index of `cLast` — the base of every extrapolated tail. Tracked so
+  // Step 7 can ask whether the anchor was MEASURED or substituted; -1 = none.
+  let cLastIdx = -1;
   if (dense.time.length >= 2) {
     const last = dense.time.length - 1;
-    const aucFn = pickAucFn(rules.aucMethod, rules.compensatedSummation);
     const aumcFn = pickAumcFn(rules.aucMethod, rules.compensatedSummation);
     aucLast = aucFn(dense.time, dense.conc, 0, last);
     aumcLast = aumcFn(dense.time, dense.conc, 0, last);
     cLast = dense.conc[last];
     tLast = dense.time[last];
+    cLastIdx = dense.idx[last];
   } else if (dense.time.length === 1) {
     aucLast = 0;
     aumcLast = 0;
     cLast = dense.conc[0];
     tLast = dense.time[0];
+    cLastIdx = dense.idx[0];
   }
 
   // Tlag is an OBSERVED quantity (independent of lambda_z) and an absorption
@@ -170,7 +150,10 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     // Computed on the AUGMENTED series with BLQ/excluded points treated as 0,
     // NOT the dense (BLQ-removed) profile: a BLQ sample before the first
     // measurable point IS the lag boundary, and dropping it would
-    // underestimate Tlag.
+    // underestimate Tlag. Reads the EFFECTIVE BLQ mask, not the drop set: a
+    // substituted BLQ sample is not a quantifiable observation, so it cannot
+    // end the lag (documented divergence from PKNCA's tlag on the cleaned
+    // profile under exclude / missing / set-half-lloq).
     const tlagConc = new Float64Array(augTime.length);
     for (let i = 0; i < augTime.length; i++) {
       tlagConc[i] =
@@ -179,10 +162,10 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     tlag = tlagOf(augTime, tlagConc);
   }
 
-  // Step 5: lambda_z.
+  // Step 5: lambda_z — on the drop set; the fit itself drops `conc <= 0`.
   const lambdaZRes: LambdaZResult | null =
     (rules.lambdaZ.mode === 'auto-best-fit') ?
-      lambdaZBestFit(augTime, augConc, augBlq, cmaxIdxForFit, rules.lambdaZ) :
+      lambdaZBestFit(augTime, augConc, dropMask, cmaxIdxForFit, rules.lambdaZ) :
       (rules.lambdaZ.mode === 'manual-points' && rules.lambdaZ.manualPoints) ?
         lambdaZManual(augTime, augConc, rules.lambdaZ.manualPoints) :
         null;
@@ -224,8 +207,38 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     status = 'ok';
   }
 
+  // c0 provenance (IV bolus only). The back-extrapolated share of AUCinf is
+  // the dose-time → first-observation segment — `[0, 1]` of the dense profile,
+  // whose slot 0 IS the inserted c0 — integrated with the SAME method and
+  // summation the profile used, as a percentage of AUCinf. 0 for an observed
+  // dose-time value (nothing was extrapolated); NaN on 'partial' (no AUCinf).
+  let c0Prov: C0Provenance | null = null;
+  if (aug.c0 !== null) {
+    const pct =
+      aug.c0.method === 'observed' ? 0 :
+        (status === 'ok' && dense.time.length >= 2) ?
+          aucFn(dense.time, dense.conc, 0, 1) / aucInf * 100 :
+          NaN;
+    c0Prov = {...aug.c0, pctAucBackExtrap: pct};
+  }
+
   // Step 7: Quality warnings.
   const warnings: ParameterWarning[] = [];
+  // The log-slope was not estimable and c0 rests on a plateau assumption (the
+  // first observation, the minimum, or zero). Routine inserts / replacements
+  // are recorded in `provenance.c0`, not warned — a warning is for the
+  // genuinely fragile anchor.
+  if (c0Prov !== null &&
+      (c0Prov.method === 'c1' || c0Prov.method === 'cmin' || c0Prov.method === 'set0')) {
+    warnings.push({
+      code: 'C0_FALLBACK',
+      severity: 'warning',
+      message:
+        `c0 could not be back-extrapolated (log-slope not estimable); ` +
+        `fell back to '${c0Prov.method}' (${c0Prov.value}) — the dose-time ` +
+        `concentration and AUC from t = 0 rest on a plateau assumption`,
+    });
+  }
   if (status === 'ok' && pctExtrap > rules.extrapWarnPct) {
     warnings.push({
       code: 'AUC_EXTRAP_HIGH',
@@ -243,6 +256,70 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
         `% AUMC extrapolated (${pctExtrapAumc.toFixed(1)}%) exceeds threshold ` +
         `(${rules.extrapWarnPctAumc}%) — MRT/Vss are fragile`,
     });
+  }
+  // A point that is BLQ-flagged but NOT in the drop set is a SUBSTITUTED value
+  // (`set-half-lloq` — `set-zero` substitutes are non-positive and both the λz
+  // filter and the trailing trim drop them). AT LEAST three distinct harms
+  // follow; this warning covers the two that the rule choice does NOT already
+  // imply, and the terminal parameters can carry either one alone:
+  //
+  //   (1) a substitute inside the fitted window — the SLOPE rests on a number
+  //       nobody measured, and no fit statistic can say so (a substitute near
+  //       the trend line scores WELL precisely because it is near the line);
+  //   (2) a substituted `cLast` — the extrapolated TAIL rests on it, since
+  //       AUCinf = AUClast + cLast/λz and AUMCinf likewise.
+  //
+  // They coincide under `auto-best-fit` (every candidate window is a trailing
+  // subset of the eligible points, so the last eligible point — which is cLast —
+  // is in every window), but NOT under `manual-points`: `cLast` comes from Step 4
+  // and is independent of the caller's selection, so force-EXCLUDING the terminal
+  // substitute from the fit removes it from `pointsUsed` while leaving it as the
+  // tail anchor. Keying only on fit membership would make the signal vanish
+  // exactly when an analyst acts on it — worse than never warning. So the anchor
+  // is checked on its own, whatever the mode.
+  //
+  // The THIRD harm is deliberately NOT warned here: an embedded substitute that
+  // is neither in the fit nor `cLast` is still integrated into AUClast/AUMClast
+  // (and so moves AUCinf, CL, Vz, MRT, Vss, %extrap). That one IS implied by the
+  // rule the caller chose — `set-half-lloq` means "treat LLOQ/2 as data", and M3
+  // substitution (Beal 2001) integrates it by definition — so warning on it
+  // would fire on essentially every `set-half-lloq` profile and say only that
+  // the rule did what it says. `provenance.blqApplied` records which points were
+  // substituted; quantifying the share is tracked separately (nca-studio TODO
+  // GAP-BLQ-SUBSTITUTED-AUC-SHARE). The two cases above are different in kind:
+  // nothing in the rule choice tells the analyst that a fabricated value entered
+  // the terminal SLOPE or became its anchor.
+  const isSubstituted = (i: number): boolean =>
+    i >= 0 && augBlq[i] !== 0 && dropMask[i] === 0;
+  if (status === 'ok') {
+    const inFit: number[] = [];
+    if (lambdaZRes !== null) {
+      for (let k = 0; k < lambdaZRes.pointsUsed.length; k++) {
+        const i = lambdaZRes.pointsUsed[k];
+        if (isSubstituted(i)) inFit.push(augTime[i]);
+      }
+    }
+    const anchorSubstituted = isSubstituted(cLastIdx);
+    if (inFit.length > 0 || anchorSubstituted) {
+      const parts: string[] = [];
+      if (inFit.length > 0) {
+        parts.push(
+          `lambda_z was fitted through ${inFit.length} substituted BLQ value(s) ` +
+          `(t = ${inFit.join(', ')})`);
+      }
+      if (anchorSubstituted) {
+        parts.push(
+          `the terminal anchor C_last is a substituted BLQ value ` +
+          `(t = ${tLast}, C = ${cLast}), so the extrapolated AUC/AUMC tail rests on it`);
+      }
+      warnings.push({
+        code: 'LAMBDAZ_SUBSTITUTED_BLQ',
+        severity: 'warning',
+        message:
+          `${parts.join('; ')} — terminal parameters rest partly on unmeasured ` +
+          `concentrations`,
+      });
+    }
   }
   if (lambdaZRes !== null &&
       lambdaZRes.pointsUsed.length <= rules.lambdaZ.minPoints) {
@@ -298,24 +375,27 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     },
     provenance: {
       lambdaZ: lambdaZRes,
-      blqApplied: blqRes,
+      blqApplied: aug.blqApplied,
       aucMethod: rules.aucMethod,
       compensated: rules.compensatedSummation,
       warnings,
+      c0: c0Prov,
     },
     status,
   };
 }
 
-/** Build dense Float64Arrays of (time, conc) skipping BLQ and NaN entries. */
+/** Build dense Float64Arrays of (time, conc) skipping the drop set and NaN entries. */
 function collectMeasurable(
-  time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
-): {time: Float64Array; conc: Float64Array} {
+  time: Float64Array, conc: Float64Array, dropMask: Uint8Array,
+): {time: Float64Array; conc: Float64Array; idx: Int32Array} {
   const tBuf: number[] = [];
   const cBuf: number[] = [];
+  const iBuf: number[] = [];
   for (let i = 0; i < time.length; i++) {
-    if (blqMask[i] !== 0) continue;
+    if (dropMask[i] !== 0) continue;
     if (!Number.isFinite(conc[i])) continue;
+    iBuf.push(i);
     tBuf.push(time[i]);
     cBuf.push(conc[i]);
   }
@@ -330,26 +410,20 @@ function collectMeasurable(
   while (cBuf.length > 0 && cBuf[cBuf.length - 1] <= 0) {
     cBuf.pop();
     tBuf.pop();
+    iBuf.pop();
   }
-  return {time: Float64Array.from(tBuf), conc: Float64Array.from(cBuf)};
+  // `idx` keeps each kept point's index in the AUGMENTED arrays, so a caller can
+  // ask what a dense position actually was — specifically whether `cLast` (the
+  // last element, the base of every extrapolated tail) is a measured value or a
+  // BLQ substitute. Without it that question is unanswerable after the fact.
+  return {
+    time: Float64Array.from(tBuf), conc: Float64Array.from(cBuf),
+    idx: Int32Array.from(iBuf),
+  };
 }
 
 function countBlq(blqMask: Uint8Array): number {
   let n = 0;
   for (let i = 0; i < blqMask.length; i++) if (blqMask[i] !== 0) n++;
   return n;
-}
-
-function prependScalar(src: Float64Array, value: number): Float64Array {
-  const out = new Float64Array(src.length + 1);
-  out[0] = value;
-  out.set(src, 1);
-  return out;
-}
-
-function prependByte(src: Uint8Array, value: number): Uint8Array {
-  const out = new Uint8Array(src.length + 1);
-  out[0] = value;
-  out.set(src, 1);
-  return out;
 }

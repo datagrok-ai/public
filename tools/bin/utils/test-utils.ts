@@ -241,12 +241,8 @@ export async function loadPackage(
   if (skipPublish != true) {
     process.stdout.write(`Building and publishing ${dirName}...`);
     try {
-      await utils.runScript(`npm install`, packageDir);
-      if (linkPackage)
-        await utils.runScript(`grok link`, packageDir);
-      if (skipBuild != true)
-        await utils.runScript(`npm run build`, packageDir);
-      await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
+      const flags = `${release ? ' --release' : ''}${linkPackage ? ' --link' : ''}${skipBuild ? ' --skip-build' : ''}`;
+      await utils.runScript(`${utils.grokCommand} publish ${hostString}${flags}`, packageDir);
     }
     catch (e: any) {
       process.stdout.write(' FAILED\n');

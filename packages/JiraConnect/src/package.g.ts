@@ -6,7 +6,7 @@ export function info() : void {
   PackageFunctions.info();
 }
 
-//meta.role: Autostart
+//meta.role: autostart
 export async function _init() : Promise<void> {
   await PackageFunctions._init();
 }

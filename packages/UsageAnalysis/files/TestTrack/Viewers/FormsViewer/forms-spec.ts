@@ -92,9 +92,22 @@ const rendererSizeProp = (page: Page): Promise<string | null> => page.evaluate((
 });
 
 async function setRendererSizeViaPanel(page: Page, value: 'small' | 'normal' | 'large'): Promise<void> {
-  // re-open the gear for the CURRENT Forms viewer: a new openTable/addViewer leaves the
-  // property grid bound to the previous view's viewer, so edits never reach this one
+  // A new openTable/addViewer leaves the property grid bound to the previous view's Forms viewer, and
+  // on a slow client the grid still shows it right after the gear click: the select then edits the
+  // detached viewer. Re-target until the edit commits on this view's viewer.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await selectRendererSize(page, value);
+    if (await v.pollValue(() => rendererSizeProp(page), (s) => s === value, 3000, 100) === value) break;
+  }
+  expect(await rendererSizeProp(page), `rendererSize did not commit to "${value}"`).toBe(value);
+}
+
+async function selectRendererSize(page: Page, value: string): Promise<void> {
   await v.clickViewerTitlebarIcon(page, 'Forms', 'icon-font-icon-settings').catch(() => {});
+  await v.pollValue(() => page.evaluate(() => {
+    const vw = grok.shell.tv?.viewers.find((x: any) => x.type === 'FormsViewer');
+    return !!vw && grok.shell.o?.dart === vw.dart;
+  }), (bound) => bound, 3000, 50);
   await v.ensurePropertyCategory(page, 'Forms', 'misc', 'renderer-size');
   // the row can sit in a COLLAPSED category: display stays 'table-row' but the box is 0x0,
   // so isVisible()-style gating passes while clicks and selectOption reach nothing. Expand
@@ -116,8 +129,6 @@ async function setRendererSizeViaPanel(page: Page, value: 'small' | 'normal' | '
   const sel = page.locator('[name="prop-renderer-size"] select').first();
   await sel.waitFor({state: 'visible', timeout: 5000});
   await sel.selectOption(value);
-  await v.pollValue(() => rendererSizeProp(page), (s) => s === value, 3000, 100);
-  expect(await rendererSizeProp(page), `rendererSize did not commit to "${value}"`).toBe(value);
 }
 
 async function setColorCodeViaPanel(page: Page, on: boolean): Promise<void> {

@@ -1,4 +1,5 @@
 import {computeNca} from '../compute-nca';
+import {augmentProfile} from '../augment';
 import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
 import type {ProfileInputs, NcaRules, ParameterWarning} from '../types';
 
@@ -105,6 +106,22 @@ describe('computeNca — BLQ handling', () => {
     // BLQ at index 0 → preFirstMeasurable set-zero; no NaN propagation.
     expect(Number.isFinite(r.values.aucLast)).toBe(true);
     expect(Number.isFinite(r.values.lambdaZ)).toBe(true);
+
+    // The EV dose-time contract (GROK-20960 AC-U2.1.2), asserted where the
+    // behaviour lives rather than only in the kernel's own suite: under a
+    // SUBSTITUTING rule the flagged t=0 sample is a KEPT dose-time value, so
+    // nothing is prepended and the profile keeps its own length — there is no
+    // duplicated t=0. Under a DROPPING rule the row leaves the drop set empty
+    // at t=0, so the `(0, 0)` prepend happens as it always did.
+    const kept = augmentProfile(inputs, DEFAULT_RULES.blq)!;
+    expect(Array.from(kept.sourceIndex)).not.toContain(-1);
+    expect(kept.time.length).toBe(inputs.time.length);
+    for (const rule of ['exclude', 'missing'] as const) {
+      const dropped = augmentProfile(inputs,
+        {preFirstMeasurable: rule, embedded: rule, afterLast: rule, consecutiveAfterLast: rule})!;
+      expect(dropped.sourceIndex[0]).toBe(-1);
+      expect(dropped.time.length).toBe(inputs.time.length + 1);
+    }
   });
 
   it('every point BLQ → status "failed"', () => {
@@ -406,6 +423,223 @@ describe('computeNca — LAMBDAZ_LOW_SPAN (terminal-phase span diagnostic)', () 
   });
 });
 
+describe('computeNca — c0 provenance (IV bolus dose-time gate, GROK-20960)', () => {
+  // indometh subject 1 — the modal IV-bolus shape (no t=0 row, clean decay).
+  const indT = [0.25, 0.5, 0.75, 1, 1.25, 2, 3, 4, 5, 6, 8];
+  const indC = [1.5, 0.94, 0.78, 0.48, 0.37, 0.19, 0.12, 0.11, 0.08, 0.07, 0.05];
+  const withRow = (c0Row: number, flag = 0): ProfileInputs => ({
+    ...ivInputs([0, ...indT], [c0Row, ...indC], 25),
+    blqMask: Uint8Array.from([flag, ...indT.map(() => 0)]),
+  });
+  const c0Warn = (r: ReturnType<typeof computeNca>) =>
+    r.provenance.warnings.find((w) => w.code === 'C0_FALLBACK');
+
+  it('is null for non-IV-bolus routes', () => {
+    const po = computeNca(poInputs([0, 1, 2, 4, 8], [0, 1, 0.7, 0.3, 0.1], 2.5), DEFAULT_RULES);
+    expect(po.provenance.c0).toBeNull();
+    const inf = computeNca(ivInfusionInputs(indT, indC, 25, 1), DEFAULT_RULES);
+    expect(inf.provenance.c0).toBeNull();
+  });
+
+  it('is null on a failed IV-bolus profile (no chain ran)', () => {
+    const r = computeNca(
+      {...ivInputs([0, 1, 2], [0.005, 0.003, 0.002], 25), blqMask: new Uint8Array([1, 1, 1])},
+      DEFAULT_RULES);
+    expect(r.status).toBe('failed');
+    expect(r.provenance.c0).toBeNull();
+  });
+
+  it('records a logslope insert when no t=0 row exists — no warning', () => {
+    const r = computeNca(ivInputs(indT, indC, 25), DEFAULT_RULES);
+    expect(r.status).toBe('ok');
+    expect(r.provenance.c0).not.toBeNull();
+    expect(r.provenance.c0!.method).toBe('logslope');
+    expect(r.provenance.c0!.replacedDoseTimeRow).toBe(false);
+    expect(r.provenance.c0!.value).toBeGreaterThan(indC[0]);
+    expect(c0Warn(r)).toBeUndefined();
+  });
+
+  it('a (0, 0) pre-dose row is REPLACED — the result equals the no-row result (SF-F2)', () => {
+    const noRow = computeNca(ivInputs(indT, indC, 25), DEFAULT_RULES);
+    const zeroRow = computeNca(withRow(0), DEFAULT_RULES);
+    const flaggedRow = computeNca(withRow(0, 1), DEFAULT_RULES);
+    for (const r of [zeroRow, flaggedRow]) {
+      expect(r.status).toBe('ok');
+      expect(r.provenance.c0!.replacedDoseTimeRow).toBe(true);
+      expect(r.provenance.c0!.method).toBe('logslope');
+      expect(r.provenance.c0!.value).toBe(noRow.provenance.c0!.value);
+      expect(r.values.aucLast).toBe(noRow.values.aucLast);
+      expect(r.values.aucInf).toBe(noRow.values.aucInf);
+      expect(r.values.aumcLast).toBe(noRow.values.aumcLast);
+      expect(r.values.lambdaZ).toBe(noRow.values.lambdaZ);
+      expect(r.values.cmax).toBe(1.5); // observed peak, never the inserted c0
+      expect(r.values.tmax).toBe(0.25);
+      // Same window; pointsUsed are augmented indices, identical by construction
+      // (the replaced profile has the same length as the no-row prepend).
+      expect(Array.from(r.provenance.lambdaZ!.pointsUsed))
+        .toEqual(Array.from(noRow.provenance.lambdaZ!.pointsUsed));
+    }
+  });
+
+  it('a positive measured dose-time value is used as-is: method "observed", no extrapolation', () => {
+    const r = computeNca(withRow(2.4), DEFAULT_RULES);
+    expect(r.provenance.c0).toEqual({
+      value: 2.4, method: 'observed', replacedDoseTimeRow: false, pctAucBackExtrap: 0,
+    });
+    expect(r.values.cmax).toBe(2.4);
+    expect(r.values.tmax).toBe(0);
+    expect(c0Warn(r)).toBeUndefined();
+  });
+
+  it('emits C0_FALLBACK (severity "warning") when c0 fell back to c1', () => {
+    // First two post-dose points RISE, so the log-slope is not estimable and
+    // the chain answers with the first observation.
+    const t = [0.25, 0.5, 1, 2, 4, 8];
+    const c = [3.0, 3.4, 2.5, 1.6, 0.7, 0.15];
+    const r = computeNca(ivInputs(t, c, 25), DEFAULT_RULES);
+    expect(r.provenance.c0!.method).toBe('c1');
+    expect(r.provenance.c0!.value).toBe(3.0);
+    const w = c0Warn(r);
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('warning');
+    expect(w!.message).toContain('c1');
+  });
+
+  it('does not emit C0_FALLBACK for logslope or observed', () => {
+    expect(c0Warn(computeNca(ivInputs(indT, indC, 25), DEFAULT_RULES))).toBeUndefined();
+    expect(c0Warn(computeNca(withRow(2.4), DEFAULT_RULES))).toBeUndefined();
+  });
+
+  describe('pctAucBackExtrap — the back-extrapolated share of AUCinf (AC-U1.3.5)', () => {
+    it('is NaN on a partial profile (no AUCinf)', () => {
+      // Two post-dose points: c0 inserts, but λz cannot fit (minPoints 3).
+      const r = computeNca(ivInputs([0.5, 1], [4, 3], 25), DEFAULT_RULES);
+      expect(r.status).toBe('partial');
+      expect(r.provenance.c0).not.toBeNull();
+      expect(Number.isNaN(r.provenance.c0!.pctAucBackExtrap)).toBe(true);
+    });
+
+    it.each(['linear', 'log-linear', 'linear-up-log-down'] as const)(
+      'equals the [0, t1] segment over AUCinf under the %s method', (method) => {
+        const rules: NcaRules = {...DEFAULT_RULES, aucMethod: method};
+        const r = computeNca(ivInputs(indT, indC, 25), rules);
+        expect(r.status).toBe('ok');
+        const c0 = r.provenance.c0!.value;
+        const t1 = indT[0];
+        const c1 = indC[0];
+        // Hand-integrate the first segment with the method's own rule. c0 > c1
+        // so lin-up/log-down takes the log-down branch.
+        const lin = (c0 + c1) / 2 * t1;
+        const log = (c0 - c1) * t1 / Math.log(c0 / c1);
+        const seg = method === 'linear' ? lin : log;
+        expect(r.provenance.c0!.pctAucBackExtrap)
+          .toBeCloseTo(seg / r.values.aucInf * 100, 10);
+        expect(r.provenance.c0!.pctAucBackExtrap).toBeGreaterThan(0);
+      });
+
+    it('is identical for the replaced-row and no-row profiles', () => {
+      const a = computeNca(ivInputs(indT, indC, 25), DEFAULT_RULES).provenance.c0!;
+      const b = computeNca(withRow(0), DEFAULT_RULES).provenance.c0!;
+      expect(b.pctAucBackExtrap).toBe(a.pctAucBackExtrap);
+    });
+  });
+});
+
+describe('computeNca — LAMBDAZ_SUBSTITUTED_BLQ (λz fitted through unmeasured values)', () => {
+  const halfLloq: NcaRules = {
+    ...DEFAULT_RULES,
+    blq: {
+      preFirstMeasurable: 'set-half-lloq', embedded: 'set-half-lloq',
+      afterLast: 'set-half-lloq', consecutiveAfterLast: 'set-half-lloq',
+    },
+  };
+  const subWarn = (r: ReturnType<typeof computeNca>) =>
+    r.provenance.warnings.find((w) => w.code === 'LAMBDAZ_SUBSTITUTED_BLQ');
+  // Clean log-linear decay plus ONE trailing BLQ. Under set-half-lloq the
+  // substitute is positive, survives the trailing trim, and lands close enough
+  // to the line that the fit is ACCEPTED — the case adj-R² cannot detect.
+  const t = [0, 1, 2, 4, 8, 12, 24];
+  const c = [0, 4, 3.2, 2, 0.8, 0.32, 0];
+  const blq = [1, 0, 0, 0, 0, 0, 1];
+  const withBlq = (rules: NcaRules) => computeNca(
+    {...poInputs(t, c, 10), lloq: 0.05, blqMask: Uint8Array.from(blq)}, rules);
+
+  it('fires when an accepted λz window contains a substituted BLQ value', () => {
+    const r = withBlq(halfLloq);
+    expect(r.status).toBe('ok');
+    // The fit really did absorb the substitute, and its statistics look fine.
+    expect(r.provenance.lambdaZ!.adjRSquared).toBeGreaterThan(0.85);
+    const w = subWarn(r);
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('warning');
+    expect(w!.message).toContain('24'); // names the offending time
+    expect(w!.message).toContain('1 substituted');
+  });
+
+  it('does NOT fire under set-zero — the λz filter drops non-positive substitutes itself', () => {
+    const r = withBlq(DEFAULT_RULES); // set-zero ×4
+    expect(subWarn(r)).toBeUndefined();
+  });
+
+  it('does NOT fire under exclude / missing — the points are dropped, not substituted', () => {
+    for (const rule of ['exclude', 'missing'] as const) {
+      const r = withBlq({...DEFAULT_RULES,
+        blq: {preFirstMeasurable: rule, embedded: rule, afterLast: rule, consecutiveAfterLast: rule}});
+      expect(subWarn(r)).toBeUndefined();
+    }
+  });
+
+  it('does NOT fire on a clean profile with no BLQ at all', () => {
+    const times = [0, 0.5, 1, 2, 4, 8, 12];
+    const conc = times.map((x) => 10 * Math.exp(-0.3 * x));
+    expect(subWarn(computeNca(poInputs(times, conc, 10), halfLloq))).toBeUndefined();
+  });
+
+  it('STILL fires in manual mode when the terminal substitute is force-EXCLUDED from the fit', () => {
+    // The false-reassurance case (peer review round 2). `cLast` comes from Step 4
+    // and is independent of the caller's manual selection, so excluding the
+    // terminal substitute from the λz window does NOT stop it anchoring the
+    // AUCinf tail. Keyed only on fit membership, the warning would fall silent
+    // exactly when the analyst acted on it — the corrective gesture would hide
+    // the contamination instead of removing it.
+    const inputs: ProfileInputs = {
+      ...poInputs(t, c, 10), lloq: 0.05, blqMask: Uint8Array.from(blq),
+    };
+    const auto = computeNca(inputs, halfLloq);
+    const augTimes = [...t]; // no augmentation: a kept t=0 substitute, EV route
+    const terminal = augTimes.indexOf(24);
+    // Fit the three points BEFORE the substitute, excluding it (force-out).
+    const manual: NcaRules = {...halfLloq,
+      lambdaZ: {...halfLloq.lambdaZ, mode: 'manual-points',
+        manualPoints: Int32Array.from([augTimes.indexOf(4), augTimes.indexOf(8), augTimes.indexOf(12)])}};
+    const r = computeNca(inputs, manual);
+    expect(r.status).toBe('ok');
+    // The substitute is genuinely OUT of the fit …
+    expect(Array.from(r.provenance.lambdaZ!.pointsUsed)).not.toContain(terminal);
+    // … but still the terminal anchor: AUCinf is extrapolated from LLOQ/2.
+    expect(r.values.aucInf - r.values.aucLast)
+      .toBeCloseTo((0.05 / 2) / r.values.lambdaZ, 10);
+    const w = subWarn(r);
+    expect(w).toBeDefined();
+    expect(w!.message).toContain('C_last');
+    // The auto fit warns too, for the other reason (substitute inside the window).
+    expect(subWarn(auto)).toBeDefined();
+  });
+
+  it('does NOT fire when the substitute stays OUTSIDE the accepted window', () => {
+    // BLQ at the START (pre-first-measurable) under set-half-lloq: substituted,
+    // but far from the terminal phase, so it never enters the λz window.
+    const r = computeNca({
+      ...poInputs([0, 0.5, 1, 2, 4, 8, 12], [0, 0, 4, 3.2, 2, 0.8, 0.32], 10),
+      lloq: 0.05, blqMask: Uint8Array.from([1, 1, 0, 0, 0, 0, 0]),
+    }, halfLloq);
+    expect(r.status).toBe('ok');
+    const used = Array.from(r.provenance.lambdaZ!.pointsUsed);
+    expect(Math.min(...used)).toBeGreaterThan(1); // window starts past the substitutes
+    expect(subWarn(r)).toBeUndefined();
+  });
+});
+
 /**
  * REGRESSION GUARD — `ParameterWarning.code` must stay an OPEN union.
  *
@@ -435,5 +669,11 @@ describe('ParameterWarning.code — open-union contract', () => {
       message: 'short terminal-phase span',
     };
     expect(coreWarning.code).toBe('LAMBDAZ_LOW_SPAN');
+    const c0Warning: ParameterWarning = {
+      code: 'C0_FALLBACK',
+      severity: 'warning',
+      message: 'c0 fell back to c1',
+    };
+    expect(c0Warning.code).toBe('C0_FALLBACK');
   });
 });

@@ -14,7 +14,9 @@
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "dependencies": {
+    "@floating-ui/core": "^1.8.0",
     "@floating-ui/dom": "^1.6.0",
+    "@floating-ui/utils": "^0.2.12",
     "rxjs": "catalog:"
   },
   "peerDependencies": {
@@ -28,10 +30,13 @@
     "build": "grok tsc -p tsconfig.json && npm run manifest:check && npm run lint:tokens",
     "lint": "eslint --ext .ts,.tsx src",
     "prepublishOnly": "npm run build",
+    "test": "grok tsc -p tsconfig.json --outDir . && node --test tests/*.test.js",
     "e2e:local": "node e2e/run.mjs",
+    "e2e:local:domain": "node e2e/run.mjs --lane domain,session",
     "e2e:boot": "node e2e/boot-smoke.mjs",
     "e2e:stand": "node e2e/designer.stand.spec.mjs",
     "e2e:stand-u2demo": "node e2e/u2demo.stand.spec.mjs",
+    "e2e:stand-domain": "node e2e/domain.stand.spec.mjs",
     "manifest": "node scripts/gen-manifest.mjs",
     "manifest:check": "node scripts/gen-manifest.mjs --check",
     "icons": "node scripts/gen-icon-names.mjs",
@@ -53,6 +58,10 @@
     },
     "./package.json": "./package.json",
     "./css/*": "./css/*",
+    "./tests/conformance/scenarios": {
+      "types": "./tests/conformance/scenarios.d.ts",
+      "default": "./tests/conformance/scenarios.mjs"
+    },
     "./src/core/filter": {
       "types": "./dist/src/core/filter/index.d.ts",
       "default": "./dist/src/core/filter/index.js"
@@ -68,6 +77,10 @@
     "./src": {
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
+    },
+    "./src/dg/domain": {
+      "types": "./dist/src/dg/domain/index.d.ts",
+      "default": "./dist/src/dg/domain/index.js"
     },
     "./*.js": {
       "types": "./dist/*.d.ts",

@@ -1,5 +1,9 @@
 # Biologics changelog
 
+## 1.0.12 (2026-05-04)
+
+* Version bump without code changes
+
 ## 1.0.9 (2025-12-31)
 
 * Updated assaysByOrganism query

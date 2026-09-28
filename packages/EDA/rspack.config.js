@@ -1,5 +1,5 @@
 const {bundler} = require('@datagrok/build-config');
 
 module.exports = bundler({
-  "wasm": "async"
+  "emit": ["./wasm/sci_comp_ml_bg.wasm", "./wasm/XGBoostAPI.wasm", "./wasm/SVMAPI.wasm"]
 });

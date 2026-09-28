@@ -109,7 +109,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     input: configForm.reagentsInput, badge: reagentsBadge,
     apply: (o, work, cfg) => {o.reagents = extractReagents(cfg, work);},
     noTableMsg: 'No reagents file selected.', emptyMsg: 'No reagents file selected. Add one in the Extras ' +
-      'section to subset reagents per round.'}, dataPanelDeps);
+      'section to subset reagents per step.'}, dataPanelDeps);
   const dataCtls = [templatesCtl, bbsCtl, reagentsCtl];
 
   view.subs.push(configForm.numRoundsInput.onChanged.subscribe(() => ctx.refreshValidation()));

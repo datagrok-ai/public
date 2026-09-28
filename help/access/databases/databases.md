@@ -37,6 +37,10 @@ You can also [connect to a data source, query data, and share connections progra
 
 ## Connecting to database
 
+Before adding a connection, check **Browse** > **Databases**: connections
+that colleagues shared with you are already listed there. To learn how to
+find connected data across databases, file shares, and spaces, see
+[Browse](../../datagrok/navigation/views/browse.md#browse-tree).
 
 ### Adding connection
 
@@ -82,10 +86,22 @@ options).
 
 :::
 
-### Caching data
+### Refreshing and caching
 
-You can cache query results to improve query performance. To learn more, see
-[Caching function results](../../develop/how-to/functions/cache-function-results.md)
+Query results are snapshots taken when the query runs. To get current data,
+refresh the query in **Toolbox** > **Source**, or re-run it. For dashboards,
+the **Data sync** switch determines whether the query re-runs each time the
+dashboard is opened.
+
+You can also cache query results to improve query performance. To learn more, see
+[Caching function results](../../develop/how-to/functions/cache-function-results.md).
+
+:::note
+
+Until the cache expires or is cleared, a refresh returns the cached result,
+so the data you see can be older than the database.
+
+:::
 
 ### Modifying connection
 
@@ -152,13 +168,13 @@ Datagrok provides several tools for creating, exploring, and editing queries.
     summarizing, filtering, and pivoting table data.
 * _Built-in queries for tables_:
   * **Get All**: retrieves all table data. Use it with caution.
-  * **Get TOP 100**: retrieves the first 100 rows.
+  * **Get Top 100**: retrieves the first 100 rows.
 
   :::tip
 
   To retrieve specific columns, hold down the Shift key on your keyboard while
   clicking the desired columns in the schema. Once selected, right-click the
-  selection and run **Get All** or **Get TOP 100** just for these columns.
+  selection and run **Get All** or **Get Top 100** just for these columns.
 
   :::
 
@@ -195,6 +211,14 @@ dataframe, you can view object details, perform actions on columns, and more.
 
 When your query is complete, give it a name and click the **Save** button. If
 you don't want to save the query, close the editor without saving.
+
+:::caution
+
+Name queries with letters, digits, and underscores only. A query whose name
+contains a dash (such as `assay-results`) can't be resolved by the creation
+script of a dashboard built on it, and the dashboard fails to load its data.
+
+:::
 
 ![Create a database query](img/query-add.gif)
 
@@ -560,7 +584,7 @@ data set up to your satisfaction, you can add viewers and create a
 visualization.
 
 To view the queries you've created or those shared with you, you can use the
-**Queries Gallery** (**Data** > **Queries**). This gallery provides a convenient
+**Queries** gallery (**Browse** > **Platform** > **Functions** > **Queries**). This gallery provides a convenient
 interface to quickly access and manage queries. You can search queries by their
 name or tag and use the **Context Panel** to view information and actions for
 the selected query.
@@ -580,7 +604,7 @@ To save the query output as a dynamic dashboard, do the following:
    the fields provided.
 1. Select how to store data:
     * Save the data as a static snapshot.
-    * Store the data as a generation script by toggling the **Data sync**
+    * Store the data as a creation script by toggling the **Data sync**
       control. The query re-executes each time the project is opened. To learn
       more about dynamic data updates in projects, see [Dynamic data](../../datagrok/navigation/basic-tasks/basic-tasks.md#dynamic-data).
 1. Click **OK** to upload the project.
@@ -614,9 +638,9 @@ necessary permissions to execute this query.
 If you want to persist a specific layout, create a dynamic dashboard, or assign
 access permissions to specific groups or users, you can share query results as a
 project. First, you need to [upload the project](#creating-dynamic-dashboards-for-query-results).
- Then, locate the desired project in **Data** > **Projects** and right-click it to share. Users
-will get an email notification with the access link. To learn more about access
-privileges, see [Access control](#access-control).
+ Then, locate the desired project in **Browse** > **Dashboards**, right-click it, and select
+**Share...** The dialog works the same way as for connections and queries, see
+[Access control](#access-control).
 
 ## Access control
 
@@ -636,14 +660,13 @@ To share:
    [groups](../../govern/access-control/users-and-groups#groups). For more information on the access privilege
    model, see [Permissions](../../govern/access-control/access-control.md#permissions).
 3. Optional. Add a description in the provided text field. If you don't want to
-   notify the recipients, clear the **Send notification** checkbox. :::note
+   notify the recipients, clear the **Send notifications** checkbox. :::note
 
-   If you enter the name of a user or a group, they are notified through the
-   Datagrok interface. To share an object with a user who doesn't have a
-   Datagrok account, enter their email address. They will receive an email
-   notification containing a link to the shared object and the entered
-   description. After they sign up for a Datagrok account, they will be able to
-   access the shared object.
+   Recipients are notified in the app and by email. The notification contains
+   a link to the shared object and the entered description. To share an object
+   with a user who doesn't have a Datagrok account, enter their email address.
+   After they sign up for a Datagrok account, they will be able to access the
+   shared object.
 
    :::
 

@@ -46,9 +46,10 @@ default: localhost
 GROKCFG
 
 echo "Building and deploying Arrow package..."
-cd "$REPO_ROOT/public/packages/Arrow"
-npm install
-npm run build
+cd "$REPO_ROOT/public"
+pnpm install --frozen-lockfile
+pnpm turbo run build --filter='{./packages/Arrow}...'
+cd packages/Arrow
 grok publish localhost --release
 cd "$PROJECT_DIR"
 

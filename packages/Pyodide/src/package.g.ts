@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: Init
+//meta.role: init
 export async function initPyodide() : Promise<void> {
   await PackageFunctions.initPyodide();
 }

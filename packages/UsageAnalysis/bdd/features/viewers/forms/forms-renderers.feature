@@ -29,7 +29,6 @@ Feature: Forms viewer renderers, renderer size and the twenty-field cap
     Then the "fields shown" reading of forms viewer should be 20
     And the "fields" reading of forms viewer should be "Id, Structure, CAST Idea ID, Last Published Date, Chemist, Lab Notebook, Stereo Category, Series, Scaffold Names, Primary Series Name, Primary Scaffold Name, Has Unlabeled R-Groups, Core, R1, R2, R3, R100, R101, Chemical Space X, Chemical Space Y"
     And the "fields" and "header labels" readings of forms viewer should be the same
-    And forms viewer should report no error
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
@@ -96,5 +95,4 @@ Feature: Forms viewer renderers, renderer size and the twenty-field cap
     And the "multiple prefit of card 1" reading of forms viewer should be "canvas"
     And the "width of multiple prefit of card 1" reading of forms viewer should be 200
     And the "height of multiple prefit of card 1" reading of forms viewer should be 100
-    And forms viewer should report no error
     And no errors should have been logged

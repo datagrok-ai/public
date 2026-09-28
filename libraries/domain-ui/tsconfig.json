@@ -1,9 +1,0 @@
-{
-  "extends": "@datagrok/build-config/tsconfig.lib.json",
-  "compilerOptions": {
-    "types": [
-      "node",
-      "@datagrok/build-config/css"
-    ]
-  }
-}

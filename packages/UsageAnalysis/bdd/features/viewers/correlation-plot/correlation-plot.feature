@@ -139,17 +139,11 @@ Feature: Correlation plot — the matrix and the numbers in it
     Then the "cells" reading of correlation plot viewer should be 16
     And no errors should have been logged
 
-  @known-failure
-  Scenario: Cells six times apart in coefficient are painted the same full red (GROK — color_coding.dart:322-337)
-    # `_refreshGridColumns` sets minScale = -1 / maxScale = 1 on every matrix column
-    # (correlation_plot_core.dart:195-196) so that a colour means the same thing everywhere, but
-    # `ColorCoding.getGridCellAutoColor` takes the `isNumerical` branch (color_coding.dart:317-329)
-    # and scales each grid column over its OWN min and max — the minScale/maxScale arguments live in
-    # the branch below it, which a numerical column never reaches. So each column is stretched over
-    # its own four values, the diagonal's stored 0 included: AGE x WEIGHT (+0.065) and
-    # HEIGHT x WEIGHT (+0.412) are both #ff0000 because each is the largest value in its own column,
-    # and a near-neutral +0.065 is painted as the extreme of a -1..1 scale. This is the assertion the
-    # whole of correlation-plot-spec.ts was marked `test.fail(true, ...)` for, at line 343.
+  Scenario: Cells six times apart in coefficient are painted on the same -1..1 scale
+    # Fixed 2026-09-21 in color_coding.dart: the numerical branch of `getGridCellAutoColor` scaled
+    # each grid column over its own min and max, ignoring the minScale/maxScale (-1..1) the plot
+    # sets on every matrix column, so +0.065 and +0.412 were both the full red of their columns.
+    # This is the assertion the whole of correlation-plot-spec.ts was marked `test.fail` for.
     Then the "correlation of WEIGHT and AGE" reading of correlation plot viewer should be between 0.0647 and 0.0649
     And the "correlation of WEIGHT and HEIGHT" reading of correlation plot viewer should be between 0.4124 and 0.4125
     And the "color of cell AGE x WEIGHT" and "color of cell HEIGHT x WEIGHT" readings of correlation plot viewer should differ

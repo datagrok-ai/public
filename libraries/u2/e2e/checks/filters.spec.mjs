@@ -139,7 +139,7 @@ async function checkQueryInputCompletion(page) {
   const prop = await rows(page, 'criteria').first().locator('[data-u2-part="prop"] select').inputValue();
   await shot(page, 'filters-3-completion-committed');
   ok('filters/3a/na-offers-name-then-the-operator-then-enter-commits-one-builder-row',
-    offered.some((t) => t.includes('Name')) && afterProperty === 'name ' && afterOperator === 'name = ' &&
+    offered.some((t) => t.includes('Name')) && afterProperty === 'name ' && afterOperator === 'name =' &&
     committed === 'name = "x"' && count === 1 && prop === 'name',
     `offered=${JSON.stringify(offered)} "${afterProperty}" → "${afterOperator}" → "${committed}" rows=${count} prop=${prop}`);
 }

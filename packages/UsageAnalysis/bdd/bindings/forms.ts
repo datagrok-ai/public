@@ -22,6 +22,8 @@ import {expect, Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
 import {ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
 
+declare const grok: any;
+
 interface Card {label: string; kind: string; record: number}
 
 async function cardsOf(page: Page, target: ElementRef): Promise<Card[]> {

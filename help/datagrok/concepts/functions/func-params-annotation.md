@@ -56,7 +56,7 @@ These are the common parameters for all functions:
 * `name`: shows up in the user interface
 * `description`: shows up in a function tooltip
 * `tags`: comma-separated tags that you can use in search
-* `help-url`: help that shows up when you click on the "?" in the function dialog
+* `help-url`: a help page such as `/help/explore/dim-reduction`. It opens from the "?" in the function dialog. For scripts and package functions it also opens from the "?" on the function view's ribbon, and an open Help panel keeps showing it on that view until you pick something else
 * `reference`: Reference to a research paper, Wikipedia article, Git repository, etc.
 * `top-menu`: Top menu path separated with pipes (`|`), such as `Chem | Gasteiger Charges`
 
@@ -164,7 +164,7 @@ For `dataframe` type:
 | columns     | numerical              | Only numerical columns will be loaded (including datetime)   |
 | columns     | numerical_no_datetime  | Same as numerical, but datetime columns are excluded         |
 | columns     | categorical            | Only categorical columns will be loaded                      |
-| viewer      | Line chart \| Grid     | Visualizes the parameter with the specified [viewers](../../../compute/scripting/scripting-features/visualize-output-data.md) |
+| viewer      | Line chart(block: 60) \| Grid(block: 40) | Visualizes the parameter with the specified [viewers](../../../compute/scripting/scripting-features/visualize-output-data.md), for inputs and outputs. Each viewer takes [properties](../../../compute/scripting/scripting-features/visualize-output-data.md#customize-viewers-for-dataframe) in parentheses, and `block` [arranges them in rows](../../../compute/scripting/scripting-features/visualize-output-data.md#arrange-viewers) |
 
 For `column` and `column_list` types
 
@@ -197,6 +197,7 @@ For `numeric` types
 | step          | Increment used by the slider and the +/- clicker                                                                                           |
 | showSlider    | Explicitly shows or hides the slider (requires `min` and `max`)                                                                            |
 | showPlusMinus | Explicitly shows or hides the +/- clicker                                                                                                  |
+| format        | Display format, such as `0.00` or `G3` (three significant digits). Also applies to scalar outputs in the function view                    |
 
 For `list` type`
 
@@ -1003,6 +1004,27 @@ a molecule, a molecule sketcher pops up.
 ![](molecule-input.png)
 
 </details>
+
+### Table and column names
+
+When a string parameter holds the name of a table or of a column, say so with the `TableName` and `ColumnName`
+semantic types. The formula editor in [Add new column](../../../transform/add-new-column.md) then offers the open
+tables or the table's columns for that argument. For a column name, the `table` option names the parameter that
+supplies the table. When it is omitted, the function's table parameter is used, and then the table the formula runs on.
+The `columns` filter narrows the list the same way it does for column inputs.
+
+```javascript
+//name: PriceOf
+//input: string tableName {semType: TableName}
+//input: string keyColumn {semType: ColumnName; table: tableName}
+//input: string valueColumn {semType: ColumnName; table: tableName; columns: numerical}
+//output: double result
+```
+
+Parameters of the `dataframe` and `column` types get the same selectors without any annotation.
+
+A function that returns a table or a column for use inside a formula, such as `Column("price", "products")`, is
+offered in the formula editor when it has the `meta.accessor: true` annotation.
 
 ## Search integrated functions
 

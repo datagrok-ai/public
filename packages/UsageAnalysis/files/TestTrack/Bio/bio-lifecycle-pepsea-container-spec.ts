@@ -1,6 +1,6 @@
 import {expect} from '@playwright/test';
 import {test} from '../shared-page';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, skipOnMinimalStack} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import * as bio from '../helpers/bio';
 import {
@@ -136,8 +136,14 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       return {hasSelect: true, options};
     });
     expect(engineOpts.hasSelect).toBe(true);
-    expect(engineOpts.options.length).toBeGreaterThanOrEqual(2);
     const hasPepsea = engineOpts.options.some((o: string) => o.toLowerCase().indexOf('pepsea') >= 0);
+    if ((!hasPepsea || engineOpts.options.length < 2) && skipOnMinimalStack('the PepSeA engine steps',
+      `the MSA dialog offers ${JSON.stringify(engineOpts.options)} — a full engine list needs the pepsea ` +
+      'docker container and the alignment engines the minimal stand does not run')) {
+      envHasPepsea = false;
+      return;
+    }
+    expect(engineOpts.options.length).toBeGreaterThanOrEqual(2);
     expect(hasPepsea).toBe(true);
     const hasKalign = engineOpts.options.some((o: string) =>
       o.toLowerCase().indexOf('datagrok') >= 0 || o.toLowerCase().indexOf('msa') >= 0);

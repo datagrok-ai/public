@@ -124,7 +124,7 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
         return pred();
       };
       gear.click();
-      await waitFor(() => document.querySelector('[name="div-column-combobox-split--by"]'), 10_000);
+      await waitFor(() => document.querySelector('[name="div-column-combobox-split-by"]'), 10_000);
 
       const tv = (window as any).grok.shell.tv;
       let timelines: any = null;
@@ -158,8 +158,7 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       const legendVisLabel = document.querySelector('[name="prop-view-legend-visibility"]');
       const legendVisLabelShown = !!legendVisLabel;
 
-      // Split-by combobox name uses a double dash.
-      const splitCombo = document.querySelector('[name="div-column-combobox-split--by"]');
+      const splitCombo = document.querySelector('[name="div-column-combobox-split-by"]');
       const splitComboShown = !!splitCombo;
 
       return {
@@ -393,7 +392,7 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
         await new Promise((r) => setTimeout(r, 100));
       const root = timelines.root as HTMLElement;
       const rect = root.getBoundingClientRect();
-      const splitComboText = document.querySelector('[name="div-column-combobox-split--by"] .d4-column-selector-column')?.textContent?.trim() || null;
+      const splitComboText = document.querySelector('[name="div-column-combobox-split-by"] .d4-column-selector-column')?.textContent?.trim() || null;
       const splitBy = timelines.props.get('splitByColumnName');
       return {ok: true, splitBy, splitComboText, width: rect.width, height: rect.height};
     });
@@ -467,7 +466,7 @@ test('Charts / Timelines viewer — legend filtering regression (GROK-19033)', a
       const root = timelines.root as HTMLElement;
       const rect = root.getBoundingClientRect();
       const splitBy = timelines.props.get('splitByColumnName');
-      const splitComboText = document.querySelector('[name="div-column-combobox-split--by"] .d4-column-selector-column')?.textContent?.trim() || null;
+      const splitComboText = document.querySelector('[name="div-column-combobox-split-by"] .d4-column-selector-column')?.textContent?.trim() || null;
       return {ok: true, splitBy, splitComboText, width: rect.width, height: rect.height};
     });
     expect(result.ok).toBe(true);

@@ -10,6 +10,7 @@ import {UaFilter} from '../filter';
 export class ClicksView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
   tabControl?: DG.TabControl;
+  private clicksDf?: DG.DataFrame;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -35,6 +36,10 @@ export class ClicksView extends UaView {
     this.root.appendChild(this.tabControl.root);
   }
 
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    return UaView.csvFiles({'clicks': this.clicksDf});
+  }
+
   createWaitElement(filter: UaFilter): HTMLElement {
     const elem: HTMLElement = ui.wait(async () => this.getClickAnalysisTab(filter));
     elem.style.height = '100%';
@@ -44,6 +49,7 @@ export class ClicksView extends UaView {
   async getClickAnalysisTab(filter: UaFilter): Promise<HTMLDivElement> {
     const table = await queries.getAggregatedClicks(filter.date!);
     table.name = 'Click Analysis';
+    this.clicksDf = table;
     const descriptionCol = table.col('description');
     if (!descriptionCol)
       throw new Error('Description column is missing in the Click Analysis table');

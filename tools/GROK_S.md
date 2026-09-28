@@ -336,7 +336,7 @@ grok s domains list grit                            # tables of one schema: secu
 grok s domains get grit                             # the manifest, as JSON (doubles as an export)
 grok s domains get grit.issue                       # the table's columns (--output json: its manifest section)
 grok s domains get grit.issue <row-id>              # one row
-grok s domains capabilities grit.issue              # what the current user may do on the table
+grok s domains access grit.issue                    # can.view/insert/edit/delete/share + editable/readonly column lists
 ```
 
 ### Querying
@@ -533,7 +533,7 @@ Actions the server accepts: `create | get | delete` for `users`, `groups`, `conn
 `functions`, `queries`, `scripts` (`get | delete` for `reports`), `functions.run`
 (`{name, params}`), and `files.list | get | put | delete`. For `files.put`, add
 `"source": "<local-path>"` and the CLI base64-encodes the file into `content` before sending.
-`users.delete` removes the entity record only (see "List / count / get / delete").
+`users.delete` is refused, as is `DELETE /entities/{id}` on a user or its personal group: users are blocked, never deleted (see "List / count / get / delete").
 
 ## Scripting pattern
 

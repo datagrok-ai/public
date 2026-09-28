@@ -28,7 +28,7 @@ async function cardFilterType(page: Page, column: string): Promise<string | null
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => ((c.querySelector('.d4-filter-column-name') as HTMLElement | null)?.textContent ?? '').trim() === col);
     if (!card) return null;
-    if (card.querySelector('[name="viewer-Grid"]')) return 'categorical';
+    if (card.querySelector('[name="filter-grid"]')) return 'categorical';
     if (card.querySelector('[name="viewer-Histogram"]')) return 'histogram';
     return null;
   }, column);
@@ -39,7 +39,7 @@ async function cardBody(page: Page, column: string): Promise<{grid: boolean; his
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     return {
-      grid: !!card?.querySelector('[name="viewer-Grid"]'),
+      grid: !!card?.querySelector('[name="filter-grid"]'),
       histo: !!card?.querySelector('[name="viewer-Histogram"]'),
       menuIcon: !!card?.querySelector('[name="icon-font-icon-menu"]'),
     };
@@ -192,7 +192,7 @@ async function clickCategoryRow(page: Page, column: string, rowIndex: number,
   const res = await page.evaluate(async ({col, cx, cy, cap}) => {
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
-    const overlay = card?.querySelector('[name="viewer-Grid"] [name="overlay"]') as HTMLElement | null;
+    const overlay = card?.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
     if (!overlay) return null;
     const read = () => {
       const st = grok.shell.tv.getFiltersGroup().getStates(col, 'categorical');
@@ -382,7 +382,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
     await clickCardTypeSwitch(page, 'AGE', 'icon-list');
     const body = await cardBody(page, 'AGE');
     expect(await cardFilterType(page, 'AGE'), 'card is categorical after the switch').toBe('categorical');
-    expect(body.grid, 'categorical card body is a viewer-Grid, not a histogram').toBe(true);
+    expect(body.grid, 'categorical card body is a filter-grid, not a histogram').toBe(true);
     expect(body.histo).toBe(false);
     expect(body.menuIcon, 'GROK-19915: filter menu icon present on rebuilt categorical header').toBe(true);
     expect(await trueCount(page), 'switch alone does not filter').toBe(fullRowCount);

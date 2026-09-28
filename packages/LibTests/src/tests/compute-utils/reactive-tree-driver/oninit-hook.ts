@@ -161,6 +161,94 @@ category('ComputeUtils: Driver hooks running', async () => {
     });
   });
 
+  const initChainConfig = (runOnInit: boolean): PipelineConfiguration => ({
+    id: 'pipeline1',
+    type: 'static',
+    steps: [
+      {id: 'step1', nqName: 'LibTests:TestAdd2'},
+      {id: 'step2', nqName: 'LibTests:TestMul2'},
+    ],
+    states: ['s'],
+    onInit: {
+      id: 'init',
+      from: [],
+      to: 'out:s',
+      handler({controller}) {
+        controller.setAll('out', 5);
+      },
+    },
+    links: [
+      {id: 'l1', from: 'in1:s', to: 'out1:step1/a', runOnInit},
+      {id: 'l2', from: 'in2:step1/a', to: 'out2:step2/a', runOnInit},
+    ],
+  });
+
+  test('onInit writes do not reach plain data links', async () => {
+    const pconf = await getProcessedConfig(initChainConfig(false));
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const root = tree.nodeTree.root.getItem().getStateStore();
+      const step1 = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const step2 = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+      const snap = () => snapshots.push([root.getState('s'), step1.getState('a'), step2.getState('a')]);
+      cold('-a').subscribe(snap);
+      cold('--a').subscribe(() => root.setState('s', 9));
+      cold('---a').subscribe(snap);
+    });
+    expectDeepEqual(snapshots, [[5, undefined, undefined], [9, 9, 9]]);
+  });
+
+  test('onInit writes reach runOnInit links and chain through them', async () => {
+    const pconf = await getProcessedConfig(initChainConfig(true));
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const root = tree.nodeTree.root.getItem().getStateStore();
+      const step1 = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const step2 = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+      cold('-a').subscribe(() => snapshots.push([root.getState('s'), step1.getState('a'), step2.getState('a')]));
+    });
+    expectDeepEqual(snapshots, [[5, 5, 5]]);
+  });
+
+  test('runOnInit link writes do not reach plain data links', async () => {
+    const pconf = await getProcessedConfig({
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [
+        {
+          id: 'l0', from: [], to: 'out0:step1/a', runOnInit: true,
+          handler({controller}) {
+            controller.setAll('out0', 7);
+          },
+        },
+        {id: 'l2', from: 'in2:step1/a', to: 'out2:step2/a'},
+      ],
+    });
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const step1 = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const step2 = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+      const snap = () => snapshots.push([step1.getState('a'), step2.getState('a')]);
+      cold('-a').subscribe(snap);
+      cold('--a').subscribe(() => step1.setState('a', 8));
+      cold('---a').subscribe(snap);
+    });
+    expectDeepEqual(snapshots, [[7, undefined], [8, 8]]);
+  });
+
   test('Run onReturn hook', async () => {
     const pconf = await getProcessedConfig(config4);
 

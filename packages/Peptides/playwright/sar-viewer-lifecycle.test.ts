@@ -7,7 +7,7 @@ sub_features_covered: [peptides.model.add-cluster-max-activity, peptides.model.a
 // through its Settings toggle, which is the only path that proves the viewer actually mounts.
 
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, onHostedRunner, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {waitForViewers} from './helpers';
 
@@ -54,6 +54,8 @@ async function openViewersPane(page: Page): Promise<void> {
 
 test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + Settings dialog Viewers-pane round-trip', async ({page}) => {
   test.setTimeout(360_000);
+  test.skip(onHostedRunner(),
+    'SAR launches with MCL clustering: 227 s each on a hosted runner against 39-44 s on dev; the nightly covers it on a 32-core agent');
   await loginToDatagrok(page);
 
   await softStep('Setup: open peptides dataset, prewarm Peptides:initPeptides', async () => {

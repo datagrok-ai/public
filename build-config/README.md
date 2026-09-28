@@ -39,6 +39,16 @@ and source maps, ES2020.
 workspace root config extends it; a standalone package's `.eslintrc.json` extends
 `./node_modules/@datagrok/build-config/eslintrc.json`.
 
+## platform-deps.json
+
+The libraries the client serves at runtime, with the version it ships and the global each one is
+exposed as. `.pnpmfile.cjs` at the workspace root adds it to the default pnpm catalog
+(`"vue": "catalog:"`), and `grok check` reads it to warn about a package that pins its own
+version and to map `common/*.js` sources to their externals. Every entry is also a default bundler external.
+A package that deliberately ships its own copy (for example CodeMirror 6 where the platform serves 5)
+opts out in its `rspack.config.js` with `externals: {codemirror: false}`. Versions here follow the core
+client; bump them with the platform release, not with npm.
+
 ## rspack.config.js (only when a package deviates from the defaults)
 
 ```js

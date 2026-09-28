@@ -115,6 +115,58 @@ category('Dapi: domains batch', () => {
     expect(rows.length, 0, 'allOrNothing batch must not apply any rows');
   });
 
+  test('validateOnly predicts exactly what the commit then does', async () => {
+    const p = prefix();
+    try {
+      // A payload with one of everything: a row that exists (so upsert updates it), two new
+      // rows, and one the fixture refuses.
+      await items().insert({sku: `${p}-1`, name: 'Seed', quantity: 1});
+      const payload = [
+        {sku: `${p}-1`, name: 'Existing', quantity: 9},
+        {sku: `${p}-2`, name: 'New A', quantity: 2},
+        {sku: `${p}-3`, name: 'New B', quantity: 3},
+        {sku: `${p}-4`, name: 'Refused', quantity: -5},
+      ];
+      const before = (await items().query({filter: `sku starts "${p}"`})).length;
+      const preview = await items().batch(payload, {mode: 'upsert', allOrNothing: false, validateOnly: true});
+      expect(preview.validateOnly, true, `the preview must answer its own shape: ${JSON.stringify(preview)}`);
+      expect(preview.rowCount, 4, JSON.stringify(preview));
+      expect(preview.willInsert, 2, `two new business keys: ${JSON.stringify(preview)}`);
+      expect(preview.willUpdate, 1, `one matched business key: ${JSON.stringify(preview)}`);
+      expect(preview.errorCount, 1, `one refused row: ${JSON.stringify(preview)}`);
+      // A predicted insert has no id — the id of a rolled-back insert does not exist.
+      for (const row of preview.rows)
+        expect('id' in row, false, `a preview row must carry no id: ${JSON.stringify(row)}`);
+      const bad = preview.rows.find((r) => r.predicted === 'error');
+      expect(bad != null, true, `no predicted error row: ${JSON.stringify(preview.rows)}`);
+      expect(bad!.index, 3, 'the preview must name the payload row it refuses');
+      expect(bad!.errors![0].column, 'quantity', JSON.stringify(bad));
+      const updated = preview.rows.find((r) => r.predicted === 'update');
+      expect(updated!.existingId != null, true,
+        `a predicted update must name the row it would merge into: ${JSON.stringify(updated)}`);
+      // Nothing was written.
+      expect((await items().query({filter: `sku starts "${p}"`})).length, before,
+        'a validate-only batch must write no rows');
+      expect((await items().query({filter: `sku = "${p}-1"`}))[0].quantity, 1,
+        'a validate-only batch must not update the row it predicted an update for');
+
+      // Now commit the same payload: every verdict must match, one to one.
+      const report = await items().batch(payload, {mode: 'upsert', allOrNothing: false});
+      expect(report.inserted, preview.willInsert, 'willInsert disagrees with the commit');
+      expect(report.updated, preview.willUpdate, 'willUpdate disagrees with the commit');
+      expect(report.skipped, preview.willSkip, 'willSkip disagrees with the commit');
+      expect(report.errorCount, preview.errorCount, 'errorCount disagrees with the commit');
+      const predicted = new Map(preview.rows.map((r) => [r.index, r.predicted]));
+      const committed: {[status: string]: string} =
+        {inserted: 'insert', updated: 'update', duplicate: 'skip', error: 'error'};
+      for (const row of report.rows)
+        expect(predicted.get(row.index), committed[row.status],
+          `row ${row.index}: predicted ${predicted.get(row.index)}, committed ${row.status}`);
+    } finally {
+      await purge(p);
+    }
+  });
+
   test('batch throwOnError rejects', async () => {
     const p = prefix();
     const payload = [{sku: `${p}-ok`, quantity: 1}, {sku: `${p}-bad`, quantity: -5}];
@@ -135,6 +187,20 @@ category('Dapi: domains batch', () => {
     } finally {
       await purge(p);
     }
+  });
+
+  test('validateOnly still refuses a malformed request', async () => {
+    const p = prefix();
+    let error: any = null;
+    try {
+      await items().batch([{sku: `${p}-1`, nosuchcolumn: 1}], {validateOnly: true});
+    } catch (e: any) {
+      error = e;
+    }
+    // A request-level refusal precedes the transaction, so it is a refusal either way.
+    expect(error != null, true, 'an unknown column must reject a preview as it rejects a commit');
+    expect(error instanceof DG.DomainError, true,
+      `expected a typed domain error, got ${error?.constructor?.name}: ${error?.message}`);
   });
 
   test('transaction $ref across tables', async () => {

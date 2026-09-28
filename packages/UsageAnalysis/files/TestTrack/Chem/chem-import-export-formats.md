@@ -349,11 +349,9 @@ that are the subject of this scenario (`importSdf`, `importMol`, `importMol2`,
 `importSmi`) are the ones the dispatch selects and runs, exactly as they would
 be for a user's double-click.
 
-The export side is different, and the gap there is real: the SDF export is
-invoked by calling the `Chem:saveAsSdf` function directly, so the route a user
-takes to it — the table hamburger menu / File > Export > "As SDF…" — is not
-exercised. Everything from the export dialog onwards (the dialog itself, its OK,
-and the file it writes) is covered; only that menu gesture is not.
+The export side is reached the way a user reaches it: the download icon of the
+ribbon offers "As SDF…", and the dialog, its OK and the file it writes follow
+from there.
 
 ## Scenarios
 
@@ -440,9 +438,8 @@ Steps:
 Steps:
 1. Open `smiles.csv` from System:DemoFiles/chem. The table loads with a
    Molecule column (semType=Molecule).
-2. Invoke the SDF exporter (a user reaches it from the table hamburger menu or
-   File > Export > "As SDF…"; that menu gesture is the one gap declared in
-   Setup). The SDF export dialog appears with a Molecules column selector.
+2. Open the download icon of the ribbon and pick "As SDF…". The SDF export
+   dialog appears with a Molecules column selector.
 3. Accept the defaults and click OK. Verify that the dialog closes, that the
    export writes out an `.sdf` file, and that no error or warning notification
    appears. Verify that the written file's record count — its number of `$$$$`

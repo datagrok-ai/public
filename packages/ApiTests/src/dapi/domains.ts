@@ -108,6 +108,114 @@ category('Dapi: domains', () => {
     }
     expect(error.includes('<schema>.<table>'), true);
   });
+
+  test('read scope: count/exists take one object, the positional form still answers it', async () => {
+    const key = sku();
+    const [ins] = await items().insert({sku: key, name: 'Scoped'});
+    const filter = `sku = "${key}"`;
+    try {
+      // Every form of the same scope must answer the same number — that is what makes a
+      // paged list's total agree with its rows.
+      expect(await items().count({filter}), 1, 'the scope object');
+      expect(await items().count(filter), 1, 'the deprecated positional filter');
+      expect(await items().count({search: 'Scoped', filter}), 1, 'search inside the scope');
+      expect(await items().exists({filter}), true, 'exists over the scope object');
+      // An empty scope and no scope are the whole table, and a filter object is a FILTER,
+      // not a scope — the discriminator's two edges.
+      const all = await items().count();
+      expect(await items().count({}), all, 'an empty scope is the whole table');
+      expect(await items().count({property: 'sku', operator: '=', value: key} as any), 1,
+        'a condition object must be read as a filter, not as a scope');
+      await items().delete(ins.id);
+      expect(await items().count({filter}), 0, 'a deleted row leaves the default scope');
+      expect(await items().count({filter, deleted: 'only'}), 1, 'the trash scope, as one object');
+      expect(await items().count(filter, {deleted: 'only'}), 1, 'the deprecated pair agrees with it');
+      expect(await items().exists({filter, deleted: 'only'}), true, 'exists follows the same scope');
+      // aggregate() takes the same scope, so a summary and a count cannot disagree.
+      const [row] = await items().aggregate<string, string>(
+        {measures: [{fn: 'count'}], filter, deleted: 'only'});
+      expect(Number(row.count), 1, `aggregate must honour the scope: ${JSON.stringify(row)}`);
+    } finally {
+      try {
+        await items().delete(ins.id);
+      } catch (_) { /* already deleted by the scope case */ }
+    }
+  });
+
+  test('captions: a ref column projects the target row\'s display name', async () => {
+    const key = sku();
+    const [ins] = await items().insert({sku: key, name: 'Caption parent'});
+    const events = grok.dapi.domains.table('apitests.item_event');
+    try {
+      const [ev] = await events.insert({item_id: ins.id, kind: 'captioned', amount: 1});
+      const filter = `id = "${ev.id}"`;
+      const caption = DG.domainCaptionColumn('item_id');
+      expect(caption, '~caption_item_id', 'the caption column name is spelled once, in the js-api');
+      const [row] = await events.query({filter, captions: ['item_id']});
+      // the name column wins over the business key (C3): apitests.item names itself by `name`
+      expect(row[caption], 'Caption parent', `the caption must be the parent's display name: ${JSON.stringify(row)}`);
+      // A caption is not an expand and does not drag its ref column in.
+      const [narrow] = await events.query({filter, columns: ['kind'], captions: ['item_id']});
+      expect(narrow[caption], 'Caption parent', 'a caption is independent of the projected columns');
+      expect('item_id' in narrow, false,
+        `asking for a caption must not project the ref column: ${JSON.stringify(narrow)}`);
+      const [plain] = await events.query({filter});
+      expect(caption in plain, false, `captions are never on by default: ${JSON.stringify(plain)}`);
+    } finally {
+      await items().delete(ins.id); // cascades item_event
+    }
+  });
+
+  test('captions: the queryDf column is typed and export-tagged, and toCsv drops it', async () => {
+    const key = sku();
+    const [ins] = await items().insert({sku: key, name: 'Caption frame parent'});
+    const events = grok.dapi.domains.table('apitests.item_event');
+    try {
+      const [ev] = await events.insert({item_id: ins.id, kind: 'captioned-df', amount: 2});
+      const df = await events.queryDf({filter: `id = "${ev.id}"`, captions: ['item_id']});
+      expect(df.rowCount, 1);
+      const col = df.col('~caption_item_id');
+      expect(col != null, true, `no caption column: ${df.columns.names().join(', ')}`);
+      expect(col!.type, DG.TYPE.STRING, `a caption is a string column, got ${col!.type}`);
+      expect(col!.get(0), 'Caption frame parent', 'the caption column carries the parent display name');
+      expect(col!.meta.includeInCsvExport, false, 'the caption leaked into csv export');
+      expect(col!.meta.includeInBinaryExport, false, 'the caption leaked into binary export');
+      expect(df.toCsv().includes('~caption_'), false, 'the caption column leaked into toCsv()');
+    } finally {
+      await items().delete(ins.id);
+    }
+  });
+
+  test('captions: no oracle — unknown, non-ref, nested and duplicate all refuse', async () => {
+    const events = grok.dapi.domains.table('apitests.item_event');
+    const refused = async (captions: string[]): Promise<any> => {
+      try {
+        await events.query({filter: 'amount > -1', limit: 1, captions: captions as any});
+      } catch (e: any) {
+        return e;
+      }
+      return null;
+    };
+    // An unknown column and a real-but-not-a-ref column must be indistinguishable: the
+    // refusal may not tell a caller whether the column exists.
+    const unknown = await refused(['nosuchcolumn']);
+    const nonRef = await refused(['kind']);
+    for (const [label, e] of [['unknown', unknown], ['non-ref', nonRef]] as [string, any][]) {
+      expect(e instanceof DG.DomainFilterError, true,
+        `${label} caption: expected DomainFilterError, got ${e?.constructor?.name}: ${e?.message}`);
+      expect(e.message.includes('Unknown or inaccessible caption column'), true,
+        `${label} caption: unexpected message '${e.message}'`);
+    }
+    expect(unknown.message.replace('nosuchcolumn', 'X'), nonRef.message.replace('kind', 'X'),
+      'the two refusals differ, so the message is an oracle for column existence');
+    const nested = await refused(['item_id.sku']);
+    expect(nested?.message.includes('Nested caption'), true,
+      `a dotted caption must refuse as nested: ${nested?.message}`);
+    const duplicate = await refused(['item_id', 'item_id']);
+    expect(duplicate?.message.includes('Duplicate caption'), true,
+      `a repeated caption must refuse: ${duplicate?.message}`);
+  });
+
 }, {owner: 'askalkin@datagrok.ai'});
 
 // Registry reflection (ui-js-api WO-2): grok.dapi.domains.registry — the runtime

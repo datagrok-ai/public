@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {isSpotlightEntity} from './entity-kinds';
 
 
 export interface GroupFavorites {
@@ -49,7 +50,7 @@ export async function getMyGroupFavorites(): Promise<GroupFavorites[]> {
   try {
     const byGroup = await grok.dapi.entities.getFavoritesForGroups(uniqueGroups);
     for (const g of uniqueGroups) {
-      const entities = byGroup[g.id] ?? [];
+      const entities = (byGroup[g.id] ?? []).filter(isSpotlightEntity);
       if (entities.length > 0)
         results.push({group: g, entities, isAdmin: adminIds.has(g.id)});
     }
@@ -74,7 +75,7 @@ export function sortGroupsByFriendlyName<T extends {friendlyName: string}>(group
 /** Returns entities the current user pinned to their personal group ("Myself only"). */
 export async function getMyPersonalFavorites(): Promise<DG.Entity[]> {
   try {
-    return await grok.dapi.entities.getFavorites(DG.User.current().group);
+    return (await grok.dapi.entities.getFavorites(DG.User.current().group)).filter(isSpotlightEntity);
   }
   catch (e) {
     console.warn('Failed to load personal favorites', e);

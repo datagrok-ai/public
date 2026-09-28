@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 //description: Finds ChEMBL molecules that contain the query structure as a substructure.
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.chemblSubstructureSearchPanel(mol);
 }
@@ -14,7 +14,7 @@ export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> 
 //description: Finds ChEMBL molecules most similar to the query structure.
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function chemblSimilaritySearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.chemblSimilaritySearchPanel(mol);
 }

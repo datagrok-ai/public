@@ -26,6 +26,12 @@ functions registry on the right or use *plus* icon. You can combine functions wr
 ![functions suggestions](./add_new_column_functions_suggestions.gif)
 * Interactive preview of results as you type
 * Autocompletion for functions (including packages names) and columns. Suggestions appear as you type.
+  The highlighted function shows its signature and description, and the inserted function uses its parameter names
+  as placeholders.
+* Table and column selectors. When an argument takes a table or a column, the open tables or the table's columns
+  are offered as soon as you type the opening parenthesis or a comma.
+* Help for the function under the cursor. The line below the editor shows the signature and description of the
+  function you are in, and clicking a function name shows its details in the **Context Panel**.
 * Different highlights within the formula for better readability. For instance, column names are highlighted in bold blue font.
 * Validation against various types of mistakes including syntax errors, missing columns detection, incorrect data types, unmatching brackets.
 * Resulting column type autodetection
@@ -39,6 +45,11 @@ Adding columns to formulas:
   For example you can use this expression in function like that: `Round(${Width})`.
   * To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For
   example you can use this expression in function like that: `Avg($[Width])`.
+  * To reference tables and columns by name, including other open tables, use `Table([tableName])`,
+  `Column(columnName, [tableName])`, and `Value(columnName, [row], [tableName])`. The table name defaults to the
+  current table, and the row to the current row: `Avg(Column("Width", "other table"))`, `Table("other table").rowCount`,
+  `Value("Width", 0)`. When you type the opening parenthesis, the dialog offers the open tables or the table's columns.
+  See [Table and column functions](functions/table-functions.md) for lookups, running totals and moving averages.
 
 * vector function
   * To reference a whole column, specify its name in the curly brackets, preceded by the dollar sign: `${molecule}`. For example you can use this expression in function like that: `Chem:getInchis(${molecule})`.
@@ -76,6 +87,7 @@ corresponding sections of the help system:
 - [Math functions](functions/math-functions.md)
 - [Operators](formula-syntax.md#operators)
 - [Stats functions](functions/stats-functions.md)
+- [Table and column functions](functions/table-functions.md)
 - [Text functions](functions/text-functions.md)
 - [TimeSpan functions](functions/timespan-functions.md)
 

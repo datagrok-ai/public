@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay} from './utils';
+import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay, inputRootByCaption} from './utils';
 import { runDescriber } from './ui-describer';
 
 /** Fitting results info */
@@ -183,15 +183,18 @@ export class FittingTutorial extends Tutorial {
     }
 
     const fitFormRoot = await getElement(fittingView.root, 'div.ui-form');
+    // by caption, from the model's own parameter declarations - see DiffStudio ballFlight
+    const input = (caption: string) => inputRootByCaption(fitFormRoot!, caption)!;
+    // this view carries the caption on the value row and lays the toggle out as its previous
+    // sibling, unlike sensitivity analysis, which nests the toggle inside the row
+    const toggleOf = (caption: string) =>
+      (input(caption).previousElementSibling as HTMLElement).querySelector('div.ui-input-editor') as HTMLElement;
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    const distFitInputRoot = fitFormRoot!.children[38] as HTMLElement;
-    const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
+
+    const distSwitcher = input('Max distance').querySelector('input.ui-input-editor') as HTMLInputElement;
     distSwitcher.value = '0';
 
-    const switchers = fitFormRoot!.querySelectorAll('div.ui-input-bool-switch');
-    const velocitySwitcher = switchers[3] as HTMLElement;
-    const velocityToggle = velocitySwitcher.querySelector('div.ui-input-editor') as HTMLElement;
+    const velocityToggle = toggleOf('Velocity');
 
     this.describe('Let\'s find the initial velocity and angle.');
 
@@ -206,9 +209,8 @@ export class FittingTutorial extends Tutorial {
 
     velocityOverlay.remove();
 
-    // 7. Switch Angle    
-    const angleSwitcher = switchers[4] as HTMLElement;
-    const angleToggle = angleSwitcher.querySelector('div.ui-input-editor') as HTMLElement;
+    // 7. Switch Angle
+    const angleToggle = toggleOf('Angle');
 
     // Build 'fake' overlay to prevent wide hint for the case of narrow input form
     const angleOverlay = buildToggleOverlay(angleToggle);
@@ -283,8 +285,7 @@ export class FittingTutorial extends Tutorial {
     this.title('Fit curve');
     this.describe('How to throw a ball so that it follows a given trajectory?\nYou may check the target in <b>Tables > Ball trajectory</b>.');
 
-    const maxDistRoot = fitFormRoot!.children[37] as HTMLElement;
-    const maxDistSwitcher = maxDistRoot.querySelector('div.ui-input-editor') as HTMLElement;
+    const maxDistSwitcher = toggleOf('Max distance');
 
     // Build 'fake' overlay to prevent wide hint for the case of narrow input form
     const maxDistOverlay = buildToggleOverlay(maxDistSwitcher);
@@ -298,8 +299,7 @@ export class FittingTutorial extends Tutorial {
     maxDistOverlay.remove();
 
     // 12. Switch on Trajectory
-    const trajectoryRoot = fitFormRoot!.children[41] as HTMLElement;
-    const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
+    const trajectorySwitcher = toggleOf('Trajectory');
 
     // Build 'fake' overlay to prevent wide hint for the case of narrow input form
     const trajectoryOverlay = buildToggleOverlay(trajectorySwitcher);

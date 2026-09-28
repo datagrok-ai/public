@@ -7,8 +7,8 @@
    do the lookups and the row scans, and say which column or category is missing. */
 import {Page} from '@playwright/test';
 import {expect} from '../../src/runtime/patience.js';
-import {Then, When} from '../../src/registry.js';
-import {baselineAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
+import {Given, Then, When} from '../../src/registry.js';
+import {baselineAll, changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
 declare const DG: any;
@@ -20,12 +20,8 @@ const selectedCount = (page: Page): Promise<number> => page.evaluate(() => grok.
 const filteredCount = (page: Page): Promise<number> => page.evaluate(() => grok.shell.t.filter.trueCount as number);
 
 /** A change to the table every viewer answers: baselines first, the change, then every viewer
- * has drawn it. */
-async function changeTable(page: Page, body: (arg: any) => void, arg: unknown): Promise<void> {
-  await baselineAll(page);
-  await page.evaluate(body as (arg: unknown) => void, arg);
-  await settleAll(page);
-}
+ * has drawn it — one round trip. */
+const changeTable = (page: Page, body: (arg: any) => void, arg: unknown): Promise<void> => changeAll(page, body, arg);
 
 /** The selection or the filter becomes exactly the rows a test names. A value the column does
  * not hold (a typo) fails in the page with the values it does hold; an empty result is legal. */
@@ -92,6 +88,10 @@ export const onlyOfSelected = Then('only rows where {string} is {string} should 
 export const onlyOfAnySelected = Then('only rows where {string} is one of {string} should be selected', (page: Page, column: string, values: string) =>
   expectOnlySelected(page, column, {in: list(values)}, `is one of ${values}`),
 {description: 'every row of these categories (comma-separated) and nothing else — a union built with Control clicks'});
+
+export const onlyBetweenSelected = Then('only rows where {string} is between {float} and {float} should be selected', (page: Page, column: string, min: number, max: number) =>
+  expectOnlySelected(page, column, {between: [min, max]}, `is between ${min} and ${max}`),
+{description: 'every row of the numeric range (both ends included) and nothing else — what a click on an annotation region selects'});
 
 export const onlyStartingWithSelected = Then('only rows where {string} starts with {string} should be selected', (page: Page, column: string, prefix: string) =>
   expectOnlySelected(page, column, {startsWith: prefix}, `starts with "${prefix}"`), {description: 'every row whose value starts with the text is selected and no other'});
@@ -212,6 +212,9 @@ export const filterIsExactly = Then('the filter should pass exactly the rows whe
 export const filterIsExactlyCategory = Then('the filter should pass exactly the rows where {string} is {string}', (page: Page, column: string, value: string) =>
   expectFilterExactly(page, column, {eq: value}, `is ${value}`), {description: 'the table filter bit by bit: the category\'s rows pass, no other row does'});
 
+export const filterIsExactlyAnyOf = Then('the filter should pass exactly the rows where {string} is one of {string}', (page: Page, column: string, values: string) =>
+  expectFilterExactly(page, column, {in: list(values)}, `is one of ${values}`), {description: 'the table filter bit by bit: the rows of the listed values pass, no other row does; a value the column lacks fails'});
+
 export const filterIsExactlyContains = Then('the filter should pass exactly the rows where {string} contains {string}', (page: Page, column: string, text: string) =>
   expectFilterExactly(page, column, {contains: text}, `contains "${text}"`), {description: 'every row whose value contains the text passes and no other; a text no row contains fails'});
 
@@ -235,8 +238,11 @@ export const deleteSelected = When('user deletes the selected rows', (page: Page
     df.rows.removeWhereIdx((i: number) => set.has(i));
   }, null), {tier: 'api', description: 'df.rows.removeWhereIdx — the UI path is the grid\'s Delete Rows command'});
 
+/* The claim is about the table a step before it opened, and a view that is still opening has none:
+   a read that threw ended the poll, so the step failed on the gap rather than waiting it out. */
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
-  expect.poll(() => page.evaluate(() => grok.shell.t.rowCount as number), {message: 'rows in the table'}).toBe(count));
+  expect.poll(() => page.evaluate(() => grok.shell.t ? grok.shell.t.rowCount as number : 'no table is open'),
+    {message: 'rows in the table'}).toBe(count));
 
 /** The one claim about a value the column may no longer hold (the rows were deleted), so it
  * counts on its own rather than through `rowFacts`, which refuses an unknown value. */
@@ -250,6 +256,41 @@ export const noRowsWhere = Then('the table should have no rows where {string} is
     return n;
   }, [column, value] as [string, string]), {message: `rows where ${column} is ${value}`}).toBe(0);
 });
+
+// --- table tags --------------------------------------------------------------------------------------
+
+export const tableTagIsFile = Then('the table should have tag {string} equal to the text of {string} file', async (page: Page, tag: string, path: string) => {
+  const [actual, file] = await page.evaluate(async ([t, p]) => [grok.shell.t.getTag(t) as string | null, await grok.dapi.files.readAsText(p) as string], [tag, path]);
+  expect(file.length, `the length of ${path}`).toBeGreaterThan(0);
+  expect(actual, `tag "${tag}" of the table against ${path}`).toBe(file);
+}, {tier: 'api', description: 'byte for byte, line breaks included — what a file handler put on the table it opened'});
+
+export const columnIsCurrentObject = Given('the {string} column is the current object', async (page: Page, column: string) => {
+  await page.evaluate((c) => {
+    const col = grok.shell.t.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    // forced: the shell drops a set that lands within two seconds of a context-panel edit, or on a value of the same kind
+    grok.shell.setCurrentObject(col, true, true);
+  }, column);
+  await expect.poll(() => page.evaluate(() => String((grok.shell.o as any)?.name ?? '')),
+    {message: 'the current object the context panel renders'}).toBe(column);
+}, {tier: 'api', description: 'what a click on the column header does, for a feature whose subject is what the context panel then shows'});
+
+export const cellIsCurrentObject = Given('the {string} cell of row {int} is the current object', async (page: Page, column: string, row: number) => {
+  const table: string = await page.evaluate(([c, r]) => {
+    const col = grok.shell.t.col(c as string);
+    if (!col)
+      throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
+    grok.shell.t.currentCell = grok.shell.t.cell(Number(r) - 1, c as string);
+    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), true, true);
+    return grok.shell.t.name;
+  }, [column, row] as [string, number]);
+  await expect.poll(() => page.evaluate(() => {
+    const cell = (grok.shell.o as any)?.cell;
+    return cell ? `${cell.dataFrame?.name}: ${cell.column?.name} ${cell.rowIndex + 1}` : String(grok.shell.o);
+  }), {message: 'the cell the current object is'}).toBe(`${table}: ${column} ${row}`);
+}, {tier: 'api', description: 'what a click on the cell does, for a feature whose subject is the panes the context panel then shows'});
 
 // --- columns -----------------------------------------------------------------------------------------
 
@@ -274,6 +315,17 @@ export const addCalculated = When('user adds a calculated column {string} with f
   await page.evaluate(async ([n, f]) => { await grok.shell.t.columns.addNewCalculated(n, f); }, [name, formula] as [string, string]);
   await expect.poll(() => page.evaluate((n) => grok.shell.t.columns.names().includes(n), name), {message: `"${name}" in the table's columns`}).toBe(true);
 }, {tier: 'api', description: 'a formula in the platform\'s syntax: ${HEIGHT} * 2'});
+
+const writeTableTag = (page: Page, tag: string, value: string): Promise<void> =>
+  changeTable(page, ([t, x]: [string, string]) => { grok.shell.t.setTag(t, x); }, [tag, value]);
+
+export const setTableTag = When('user sets the {string} tag of the table to {string}', (page: Page, tag: string, value: string) =>
+  writeTableTag(page, tag, value),
+{tier: 'api', description: 'a table tag through the JS API ("" empties it) — ".annotation-regions" holds the dataframe\'s annotation regions, which every viewer of the table reads on the change'});
+
+export const setTableTagText = When('user sets the {string} tag of the table to:', (page: Page, tag: string, value: string) =>
+  writeTableTag(page, tag, value),
+{tier: 'api', description: 'the same with the value as a doc string — JSON without escaped quotes'});
 
 export const removeColumn = When('user removes {string} column', (page: Page, name: string) =>
   evaluate(page, (n) => { const b = (window as any).__bdd; b.col(n); b.table().columns.remove(n); }, name), {tier: 'api'});
@@ -578,3 +630,74 @@ export const nestedTableRows = Then('the {string} table should have at least {in
   async (page: Page, inside: string, count: number) => {
     expect((await nestedTable(page, inside)).rows, `rows of the table in "${inside}"`).toBeGreaterThanOrEqual(count);
   }, {tier: 'api', description: 'a dataframe-valued column of the current row'});
+
+// --- another open table, changed from the view that is shown ------------------------------------
+
+type NamedChange = {op: 'select', column: string, values: string[]} | {op: 'unselect'} | {op: 'current', row: number} |
+  {op: 'range', column: string, min: number, max: number};
+
+/** A change to an open table that is not the current view's — the one a viewer rebound to it
+ * draws — made without switching views; every viewer of every view is then waited on. */
+function changeNamedTable(page: Page, name: string, change: NamedChange): Promise<void> {
+  return changeAll(page, ([n, ch]) => {
+    const b = (window as any).__bdd;
+    const t = b.tableNamed(n);
+    if (ch.op === 'select') {
+      const c = b.col(ch.column, t);
+      const have = new Set<string>();
+      for (let i = 0; i < c.length; i++)
+        have.add(String(c.get(i) ?? ''));
+      const missing = ch.values.filter((v: string) => !have.has(v));
+      if (missing.length > 0)
+        throw new Error(`${ch.column} of ${t.name} has no value ${missing.join(', ')}; it has: ${[...have].slice(0, 20).join(', ')}`);
+      t.selection.init((i: number) => ch.values.includes(String(c.get(i) ?? '')));
+    }
+    else if (ch.op === 'unselect')
+      t.selection.setAll(false);
+    else if (ch.op === 'current') {
+      if (ch.row < 1 || ch.row > t.rowCount)
+        throw new Error(`row ${ch.row} is outside the ${t.rowCount} rows of ${t.name}`);
+      t.currentRowIdx = ch.row - 1;
+    }
+    else {
+      b.col(ch.column, t);
+      const view = (Array.from(grok.shell.tableViews ?? []) as any[]).find((v) => v.dataFrame === t);
+      if (!view)
+        throw new Error(`${t.name} has no table view to hold a filter panel`);
+      view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({type: 'histogram', column: ch.column, min: ch.min, max: ch.max}, true);
+    }
+  }, [name, change] as [string, NamedChange]);
+}
+
+export const selectInTableOneOf = When('user selects rows of table {string} where {string} is one of {string}',
+  (page: Page, name: string, column: string, values: string) => changeNamedTable(page, name, {op: 'select', column, values: list(values)}),
+  {tier: 'api', description: 'the selection of that open table, set from the view that is shown; comma-separated categories'});
+
+export const clearSelectionInTable = When('user clears the row selection of table {string}', (page: Page, name: string) =>
+  changeNamedTable(page, name, {op: 'unselect'}), {tier: 'api'});
+
+export const makeRowCurrentInTable = When('user makes row {int} of table {string} current', (page: Page, row: number, name: string) =>
+  changeNamedTable(page, name, {op: 'current', row}), {tier: 'api', description: 'rows count from 1'});
+
+export const addRangeFilterInTable = When('user adds a range filter on {string} of table {string} from {float} to {float}',
+  (page: Page, column: string, name: string, min: number, max: number) => changeNamedTable(page, name, {op: 'range', column, min, max}),
+  {tier: 'api', description: 'a histogram card in the filter panel of that table\'s own view, narrowed to the range, set from the view that is shown'});
+
+export const selectedInTable = Then('{int} row(s) of table {string} should be selected', (page: Page, count: number, name: string) =>
+  expect.poll(() => evaluate(page, (n) => (window as any).__bdd.tableNamed(n).selection.trueCount as number, name),
+    {message: `rows of "${name}" selected`}).toBe(count));
+
+export const currentRowOfTableValue = Then('{string} of the current row of table {string} should be {string}',
+  (page: Page, column: string, name: string, value: string) => expect.poll(() => evaluate(page, ([n, c]) => {
+    const b = (window as any).__bdd;
+    const t = b.tableNamed(n);
+    return t.currentRowIdx < 0 ? '(no current row)' : String(b.col(c, t).get(t.currentRowIdx) ?? '');
+  }, [name, column] as [string, string]), {message: `"${column}" of the current row of "${name}"`}).toBe(value));
+
+export const colorLinearThrough = When('user colors {string} column linearly through {string}', (page: Page, column: string, stops: string) =>
+  color(page, column, 'linear', {scheme: list(stops).map(argb)}),
+{tier: 'api', description: 'a linear scheme of any number of stops, comma-separated #rrggbb colors from the low end to the high one'});
+
+export const mouseOverRowIs = Then('the mouse-over row of the table should be {int}', (page: Page, row: number) =>
+  expect.poll(() => page.evaluate(() => grok.shell.t.mouseOverRowIdx + 1 as number), {message: 'the mouse-over row of the table (from 1, 0 for none)'}).toBe(row),
+{description: 'the row the pointer is over in some viewer, counted from 1; 0 when no row is hovered'});

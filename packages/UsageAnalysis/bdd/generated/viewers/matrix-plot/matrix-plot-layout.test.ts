@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.matrix-plot]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -46,7 +48,7 @@ test.describe("Matrix plot — the chrome around the grid and the layout that de
       await session.step(35, "When user sets \"showYAxes\" property of matrix plot viewer to \"false\"", () => setProperty(page, "showYAxes", el("matrix plot viewer"), "false"));
       await session.step(36, "Then the \"y axis shown\" reading of matrix plot viewer should be \"false\"", () => readingReads(page, "y axis shown", el("matrix plot viewer"), "false"));
       await session.step(37, "And matrix plot viewer should not have a \"y axis\" area", () => hasNoArea(page, el("matrix plot viewer"), "y axis"));
-      await session.step(38, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["showXAxes","true"],["showYAxes","true"]]));
+      await session.step(38, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["showXAxes","true"],["showYAxes","true"]]), [["showXAxes","true"],["showYAxes","true"]]);
       await session.step(41, "Then the \"x axis shown\" reading of matrix plot viewer should be \"true\"", () => readingReads(page, "x axis shown", el("matrix plot viewer"), "true"));
       await session.step(42, "And matrix plot viewer should have an \"x axis\" area", () => hasArea(page, el("matrix plot viewer"), "x axis"));
       await session.step(43, "And matrix plot viewer should have a \"y axis\" area", () => hasArea(page, el("matrix plot viewer"), "y axis"));
@@ -87,7 +89,7 @@ test.describe("Matrix plot — the chrome around the grid and the layout that de
       await session.step(78, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The title shows and the description sits above the grid, then below it", async () => {
-      await session.step(81, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["showTitle","true"],["title","Pairwise"],["description","Every numerical pair"]]));
+      await session.step(81, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["showTitle","true"],["title","Pairwise"],["description","Every numerical pair"]]), [["showTitle","true"],["title","Pairwise"],["description","Every numerical pair"]]);
       await session.step(85, "Then title of matrix plot viewer should have text \"Pairwise\"", () => shouldHaveText(page, el("title of matrix plot viewer"), "Pairwise"));
       await session.step(86, "And description of matrix plot viewer should be visible", () => shouldBe(page, el("description of matrix plot viewer"), "visible"));
       await session.step(87, "And description of matrix plot viewer should have text \"Every numerical pair\"", () => shouldHaveText(page, el("description of matrix plot viewer"), "Every numerical pair"));
@@ -96,16 +98,16 @@ test.describe("Matrix plot — the chrome around the grid and the layout that de
       await session.step(90, "Then the description of matrix plot viewer should be below its content", () => descriptionBelow(page, el("matrix plot viewer")));
       await session.step(91, "When user sets \"descriptionVisibilityMode\" property of matrix plot viewer to \"Never\"", () => setProperty(page, "descriptionVisibilityMode", el("matrix plot viewer"), "Never"));
       await session.step(92, "Then description of matrix plot viewer should be hidden", () => shouldBe(page, el("description of matrix plot viewer"), "hidden"));
-      await session.step(93, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["descriptionVisibilityMode","Auto"],["descriptionPosition","Top"],["description",""],["title",""],["showTitle","false"]]));
+      await session.step(93, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["descriptionVisibilityMode","Auto"],["descriptionPosition","Top"],["description",""],["title",""],["showTitle","false"]]), [["descriptionVisibilityMode","Auto"],["descriptionPosition","Top"],["description",""],["title",""],["showTitle","false"]]);
       await session.step(99, "Then the \"cells\" reading of matrix plot viewer should be 16", () => readingIs(page, "cells", el("matrix plot viewer"), 16));
       await session.step(100, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A saved layout brings the configured grid back", async () => {
-      await session.step(103, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Scatter plot"],["xColumnNames","AGE, HEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]));
+      await session.step(103, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Scatter plot"],["xColumnNames","AGE, HEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]), [["cellPlotType","Scatter plot"],["xColumnNames","AGE, HEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]);
       await session.step(107, "Then the \"cells\" reading of matrix plot viewer should be 6", () => readingIs(page, "cells", el("matrix plot viewer"), 6));
       await session.step(108, "And the cells of matrix plot viewer should be 2 wide and 3 tall", () => cellsWideTall(page, el("matrix plot viewer"), 2, 3));
       await session.step(109, "And user saves the layout of the current table view", () => saveLayout(page));
-      await session.step(110, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(110, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(114, "Then the \"cells\" reading of matrix plot viewer should be 16", () => readingIs(page, "cells", el("matrix plot viewer"), 16));
       await session.step(115, "When user loads the saved layout", () => loadLayout(page));
       await session.step(116, "Then matrix plot viewer should be visible", () => shouldBe(page, el("matrix plot viewer"), "visible"));
@@ -114,12 +116,12 @@ test.describe("Matrix plot — the chrome around the grid and the layout that de
       await session.step(119, "And the \"cell viewer type\" reading of matrix plot viewer should be \"Scatter plot\"", () => readingReads(page, "cell viewer type", el("matrix plot viewer"), "Scatter plot"));
       await session.step(120, "And the \"cell viewer type of HEIGHT x AGE\" reading of matrix plot viewer should be \"Scatter plot\"", () => readingReads(page, "cell viewer type of HEIGHT x AGE", el("matrix plot viewer"), "Scatter plot"));
       await session.step(121, "And the \"cell viewer type of AGE x AGE\" reading of matrix plot viewer should be \"Histogram\"", () => readingReads(page, "cell viewer type of AGE x AGE", el("matrix plot viewer"), "Histogram"));
-      await session.step(122, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(122, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(126, "Then the \"cells\" reading of matrix plot viewer should be 16", () => readingIs(page, "cells", el("matrix plot viewer"), 16));
       await session.step(127, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A project round-trip brings it back too (GROK-10925)", async () => {
-      await session.step(130, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Scatter plot"],["xColumnNames","AGE, HEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]));
+      await session.step(130, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Scatter plot"],["xColumnNames","AGE, HEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]), [["cellPlotType","Scatter plot"],["xColumnNames","AGE, HEIGHT"],["yColumnNames","AGE, HEIGHT, WEIGHT"]]);
       await session.step(134, "Then the \"cells\" reading of matrix plot viewer should be 6", () => readingIs(page, "cells", el("matrix plot viewer"), 6));
       await session.step(135, "When user saves the current view as project \"bdd matrix plot grid\"", () => saveAsProject(page, "bdd matrix plot grid"));
       await session.step(136, "And user closes all views", () => closeAllViews(page));
@@ -130,7 +132,7 @@ test.describe("Matrix plot — the chrome around the grid and the layout that de
       await session.step(141, "And the \"cell viewer type\" reading of matrix plot viewer should be \"Scatter plot\"", () => readingReads(page, "cell viewer type", el("matrix plot viewer"), "Scatter plot"));
       await session.step(142, "And the \"rows shown\" reading of matrix plot viewer should be 1000", () => readingIs(page, "rows shown", el("matrix plot viewer"), 1000));
       await session.step(143, "And the \"cell rows shown of HEIGHT x AGE\" reading of matrix plot viewer should be 872", () => readingIs(page, "cell rows shown of HEIGHT x AGE", el("matrix plot viewer"), 872));
-      await session.step(144, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]));
+      await session.step(144, "When user sets properties of matrix plot viewer:", () => setProperties(page, el("matrix plot viewer"), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]), [["cellPlotType","Density plot"],["xColumnNames","AGE, HEIGHT, WEIGHT, STARTED"],["yColumnNames","AGE, HEIGHT, WEIGHT, STARTED"]]);
       await session.step(148, "Then the \"cells\" reading of matrix plot viewer should be 16", () => readingIs(page, "cells", el("matrix plot viewer"), 16));
       await session.step(149, "And no errors should have been logged", () => noErrors(page));
     });

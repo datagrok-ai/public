@@ -5,7 +5,7 @@
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
-  "version": "1.4.16",
+  "version": "1.4.18",
   "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
   "dependencies": {
     "@datagrok-libraries/bio": "workspace:^",
@@ -26,7 +26,8 @@
   "devDependencies": {
     "@playwright/test": "^1.48.0",
     "@types/wu": "catalog:",
-    "webpack-bundle-analyzer": "^4.10.2"
+    "webpack-bundle-analyzer": "^4.10.2",
+    "@datagrok-libraries/bdd": "workspace:^"
   },
   "scripts": {
     "build": "grok build",
@@ -50,7 +51,8 @@
   "grok": {
     "testDependencies": [
       "@datagrok/bio",
-      "@datagrok/chem"
+      "@datagrok/chem",
+      "@datagrok/phylo-tree-viewer"
     ]
   }
 }

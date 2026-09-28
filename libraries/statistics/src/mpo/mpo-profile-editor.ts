@@ -301,7 +301,7 @@ export class MpoProfileEditor {
         const trimmed = v.trim();
         if (trimmed === oldName || this.validatePropertyName(ctx, trimmed))
           return;
-        if (this.renameProperty(oldName, trimmed))
+        if (this.updatePropertyName(oldName, trimmed))
           this.emitChange();
       },
     });
@@ -533,6 +533,15 @@ export class MpoProfileEditor {
   }
 
   renameProperty(oldName: string, newName: string): boolean {
+    if (!this.updatePropertyName(oldName, newName))
+      return false;
+
+    this.updatePropertyCell(this.rowIds[newName]);
+    this.emitChange();
+    return true;
+  }
+
+  private updatePropertyName(oldName: string, newName: string): boolean {
     if (!this.profile || oldName === newName)
       return false;
 
@@ -556,9 +565,6 @@ export class MpoProfileEditor {
     const ctx = this.rowCtx.get(rowId);
     if (ctx)
       ctx.name = newName;
-    this.updatePropertyCell(rowId);
-
-    this.emitChange();
     return true;
   }
 

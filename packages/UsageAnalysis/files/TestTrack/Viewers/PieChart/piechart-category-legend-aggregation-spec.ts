@@ -48,13 +48,14 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
     console.timeEnd('step: category + legendVisibility');
 
     console.time('step: read legend labels');
-    const legend = await page.evaluate(() => {
+    // The corner legend is rebuilt a frame after the render event the wait above returns on.
+    const legend = await v.pollValue(() => page.evaluate(() => {
       const pie = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       const labels = Array.from(pie.root.querySelectorAll('[name="legend"] .d4-legend-item .d4-legend-value'))
         .map((e: any) => (e.textContent ?? '').trim());
       return {labels, cats: df.col('RACE').categories.slice()};
-    });
+    }), (l) => l.labels.length === l.cats.length, 3000, 100);
     console.timeEnd('step: read legend labels');
     expect(legend.labels.length).toBeGreaterThan(0);
     expect([...legend.labels].sort()).toEqual([...legend.cats].sort());

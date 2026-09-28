@@ -166,21 +166,18 @@ export async function sequenceChemSimilarity(
   const libHelper = await getMonomerLibHelper();
   const monomerLib = libHelper.getMonomerLib();
   // const smilesCols: DG.Column<string>[] = new Array(monomerCols.length);
-  const rawCols: { categories: string[], data: Uint32Array, emptyIndex: number }[] = new Array(positionColumns.length);
   const rowCount = positionColumns[0].length;
   const totalSimilarity = new Float32Array(rowCount);
 
   // Calculate base similarity
-  for (let position = 0; position < positionColumns.length; ++position) {
-    const referenceMonomerCanonical = position < referenceSequence.length ?
-      referenceSequence.getCanonical(position) : GAP_SYMBOL;
+  for (let position = 0; position < Math.min(positionColumns.length, referenceSequence.length); ++position) {
+    const referenceMonomerCanonical = referenceSequence.getCanonical(position);
     const referenceMol = monomerLib.getMonomer('PEPTIDE', referenceMonomerCanonical)?.smiles ?? '';
 
     const monomerCol = positionColumns[position];
     const monomerColData = monomerCol.getRawData() as Uint32Array;
     const monomerColCategories = monomerCol.categories;
     const emptyCategoryIdx = monomerColCategories.indexOf('');
-    rawCols[position] = {categories: monomerColCategories, data: monomerColData, emptyIndex: emptyCategoryIdx};
     if (typeof referenceMonomerCanonical === 'undefined')
       continue;
 
@@ -201,18 +198,8 @@ export async function sequenceChemSimilarity(
     }
   }
 
-  for (let similarityIndex = 0; similarityIndex < totalSimilarity.length; ++similarityIndex) {
-    let updatedSimilarity = totalSimilarity[similarityIndex] / referenceSequence.length;
-    for (let position = 0; position < positionColumns.length; ++position) {
-      const currentRawCol = rawCols[position];
-      if ((position >= referenceSequence.length && currentRawCol.data[similarityIndex] !== currentRawCol.emptyIndex) ||
-        (currentRawCol.data[similarityIndex] === currentRawCol.emptyIndex && position < referenceSequence.length)) {
-        updatedSimilarity = DG.FLOAT_NULL;
-        break;
-      }
-    }
-    totalSimilarity[similarityIndex] = updatedSimilarity;
-  }
+  for (let similarityIndex = 0; similarityIndex < totalSimilarity.length; ++similarityIndex)
+    totalSimilarity[similarityIndex] /= referenceSequence.length;
 
   const similarityCol = DG.Column.fromFloat32Array('Similarity', totalSimilarity);
   return similarityCol;

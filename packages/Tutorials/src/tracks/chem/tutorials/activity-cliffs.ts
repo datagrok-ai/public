@@ -67,27 +67,34 @@ export class ActivityCliffsTutorial extends Tutorial {
     await this.action('Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
 
     let v: DG.ScatterPlotViewer;
-    await this.action('Wait for analysis to complete',
-      grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
-        const found = data.args.viewer.type === DG.VIEWER.SCATTER_PLOT;
-        if (found)
+    await this.action('Wait for analysis to complete', new Observable((subscriber: any) => {
+      // the analysis adds the plot while the previous step is still resolving, and onViewerAdded is
+      // a hot stream — so a plot that is already there has to be checked for, not waited for
+      const existing = Array.from(grok.shell.tv?.viewers ?? [])
+        .find((x) => x.type === DG.VIEWER.SCATTER_PLOT) as DG.ScatterPlotViewer | undefined;
+      if (existing != null) {
+        v = existing;
+        subscriber.next(true);
+        return;
+      }
+      const sub = grok.events.onViewerAdded
+        .pipe(filter((data: DG.EventData) => data.args.viewer.type === DG.VIEWER.SCATTER_PLOT))
+        .subscribe((data: DG.EventData) => {
           v = data.args.viewer;
-        return found;
-      })));
+          sub.unsubscribe();
+          subscriber.next(true);
+        });
+      return () => sub.unsubscribe();
+    }));
 
     this.title('Start analyzing the results', true);
     this.describe(`Activity cliffs are visualized on an interactive scatterplot,
     where the proximity of the points indicates structural similarity.`);
 
-    await this.action('Hover over data points for molecule information', new Observable((subscriber: any) => {
-      const onMousemove = () => {
-        if ($('.d4-tooltip').css('display') === 'block') {
-          subscriber.next(true);
-          v.root.removeEventListener('mousemove', onMousemove);
-        }
-      };
-      v.root.addEventListener('mousemove', onMousemove);
-    }));
+    // the platform reports the tooltip; checking for it on mousemove needed a second move, because
+    // the first one is what raises it
+    await this.action('Hover over data points for molecule information',
+      grok.events.onTooltipShown.pipe(filter(() => v.root.matches(':hover'))));
 
     await this.action('To view only the cliffs, toggle Show only cliffs.', new Observable((subscriber: any) => {
       $('.ui-input-switch').one('click', () => subscriber.next(true));

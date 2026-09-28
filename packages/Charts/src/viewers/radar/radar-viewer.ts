@@ -76,7 +76,7 @@ export class RadarViewer extends EChartViewer {
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME, category: 'Value', groupWith: 'minValues, maxValues'});
     this.minValues = this.addProperty('minValues', DG.TYPE.MAP, null,
-      {category: 'Value', description: 'Axis minimum per column; defaults to 0, or below the minimum for negative columns'}) ?? {};
+      {category: 'Value', description: 'Axis minimum per column; defaults to the column minimum'}) ?? {};
     this.maxValues = this.addProperty('maxValues', DG.TYPE.MAP, null,
       {category: 'Value', description: 'Axis maximum per column; defaults to the column maximum'}) ?? {};
     this.legendVisibility = <VisibilityMode> this.string('legendVisibility', VISIBILITY_MODE.AUTO,
@@ -205,8 +205,10 @@ export class RadarViewer extends EChartViewer {
     this.root.appendChild(this.legendHelper.legendDiv);
     this.updateLegend();
     this.filter = this.dataFrame.filter;
-    this.valuesColumnNames = Array.from(this.dataFrame.columns.numericalNoDateTime)
-      .map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
+    const numericalColumns = Array.from(this.dataFrame.columns.numericalNoDateTime);
+    for (const c of numericalColumns)
+      this.initMinMax(c);
+    this.valuesColumnNames = numericalColumns.map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
     this.resubscribe(() => this.addSubs());
     this.render();
   }
@@ -438,12 +440,14 @@ export class RadarViewer extends EChartViewer {
     return indicators;
   }
 
+  initMinMax(c: DG.Column): void {
+    this.minValues[c.name] ??= c.min;
+    this.maxValues[c.name] ??= c.max;
+  }
+
   createRadarIndicator(c: DG.Column): Required<RadarIndicator> {
-    return {
-      name: c.name,
-      min: this.minValues?.[c.name] ?? (c.min < 0 ? c.min + c.min * 0.1 : 0),
-      max: this.maxValues?.[c.name] ?? c.max,
-    };
+    this.initMinMax(c);
+    return {name: c.name, min: this.minValues[c.name], max: this.maxValues[c.name]};
   }
 
   private cellValue(c: DG.Column, colIdx: number, rowIdx: number): number | null {

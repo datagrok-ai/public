@@ -140,7 +140,7 @@ test.describe.serial('Scripts: Create', () => {
     await saveBtn.click();
 
     // Verify: "saved" balloon message appears
-    await expect(page.locator('.d4-balloon').first()).toContainText(/saved/i, { timeout: 10_000 });
+    await expect(page.locator('.d4-balloon', { hasText: /saved/i }).first()).toBeVisible({ timeout: 10_000 });
 
     // Verify: view title updated to script name. The platform drops underscores from the
     // entity name (PW_CreateTest -> PWCreateTest), same transform the run suite applies to

@@ -1,4 +1,4 @@
-import {KIND, isGroup, isRef, isSpan, walk} from './model.js';
+import {KIND, isColumnRef, isGroup, isParam, isRef, isSpan, walk} from './model.js';
 import type {FilterCondition, FilterGroup, FilterKind, FilterNode, FilterProblem, FilterScalar} from './model.js';
 import {checkLocks, property} from './schema.js';
 import type {FilterProperty, FilterSchema, FilterTemplate} from './schema.js';
@@ -10,9 +10,36 @@ import {isSpanText} from '../span.js';
 export type FilterTarget = 'domain' | 'dataframe';
 
 const DIGITS = /^-?\d+$/;
+const COMPARISONS = ['=', '!=', '<', '<=', '>', '>='];
+const NUMERIC: FilterKind[] = [KIND.INT, KIND.FLOAT, KIND.BIG_INT];
 
-function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: FilterOperator): string | null {
+function badScalar(v: FilterScalar, kind: FilterKind, prop: FilterProperty, op: FilterOperator,
+  schema: FilterSchema): string | null {
   const bad = (expected: string) => `Expected ${expected} for "${prop.name}"`;
+  if (isParam(v))
+    return null;
+  if (isColumnRef(v)) {
+    const other = property(schema, v.column);
+    // a bare name is a column reference (2-6a): over a ref or a text column it is almost always a
+    // value the user forgot to quote, so the message says how to spell what they meant
+    if (!other || v.column.includes('.')) {
+      const bare = `Unknown column "${v.column}"`;
+      if (v.column.includes('.'))
+        return bare;
+      // `under` walks the hierarchy by id, and a dotted path through it is refused server-side:
+      // pointing at `<ref>.name` would send the user somewhere that cannot work
+      if (op.id === 'under')
+        return `${bare} — under takes a ${prop.ref ?? 'row'} — pick one from the list`;
+      if (prop.ref)
+        return `${bare} — did you mean \`${prop.name}.name ${op.id} "${v.column}"\`?`;
+      return kind === KIND.STRING || kind === KIND.STRING_LIST || prop.choices !== undefined ?
+        `${bare} — quote a text value` : bare;
+    }
+    if (!COMPARISONS.includes(op.id))
+      return `Operator "${op.id}" does not accept a column`;
+    const same = kindOf(other) === kind || (NUMERIC.includes(kind) && NUMERIC.includes(kindOf(other)));
+    return same ? null : `Cannot compare "${prop.name}" with "${other.name}"`;
+  }
   switch (kind) {
     case KIND.INT:
       if (typeof v !== 'number' || !Number.isInteger(v))
@@ -59,7 +86,11 @@ function checkCondition(c: FilterCondition, schema: FilterSchema, target: Filter
   const problem = (code: FilterProblem['code'], message: string) => problems.push({nodeId: c.id, code, message});
   const prop = property(schema, c.property);
   if (!prop) {
-    problem('unknown-property', `Unknown property "${c.property}"`);
+    // `priority = High` over a table whose column is the ref `priority_id` (2-6a's shaping)
+    const ref = property(schema, `${c.property.split('.')[0]}_id`);
+    problem('unknown-property', ref && ref.ref ?
+      `Unknown property "${c.property}" — did you mean \`${ref.name}.name\`?` :
+      `Unknown property "${c.property}"`);
     return;
   }
   if (c.property.includes('.'))
@@ -80,7 +111,7 @@ function checkCondition(c: FilterCondition, schema: FilterSchema, target: Filter
   if (op.arity !== 0) {
     const kind = kindOf(prop);
     for (const item of Array.isArray(v) ? v : [v as FilterScalar]) {
-      const message = badScalar(item, kind, prop, op);
+      const message = badScalar(item, kind, prop, op, schema);
       if (message) {
         problem('invalid-value', message);
         return;

@@ -8,7 +8,7 @@ import {withKeys} from './gestures.js';
 import {exactText} from './locate.js';
 import {LegendState} from './viewer-runtime.js';
 import {near, parseHex} from './viewer-pixels.js';
-import {onViewer, settle, snapshot, viewerLocator} from './viewers.js';
+import {centerOf, dragDelta, dragFrom, onViewer, settle, snapshot, viewerLocator} from './viewers.js';
 
 const TOOLTIP_ROWS = '.d4-tooltip:visible table.d4-row-tooltip-table tr';
 const TOOLTIP_COLUMNS = TOOLTIP_ROWS + ' td:first-child';
@@ -113,6 +113,115 @@ export async function expectLegendPlacedAsBefore(page: Page, target: ElementRef)
     throw new Error(`the legend of ${target.phrase}: ${!r.before ? 'no legend at the snapshot' : 'no legend now'}`);
   const where = (l: LegendState) => `${l.mode}/${l.slot}/${Math.round(l.width)}x${Math.round(l.height)}`;
   expect(where(r.now), `the legend of ${target.phrase} moved (before ${describeLegend(r.before)}; now ${describeLegend(r.now)})`).toBe(where(r.before));
+}
+
+/** Drags the splitter between a docked legend and the plot: the baseline is taken first, so "wider
+ * / narrower / taller / shorter than before" compare with the legend as it was before the drag. */
+export async function dragLegendSplitter(page: Page, target: ElementRef, px: number, direction: string): Promise<void> {
+  const delta = dragDelta(px, direction);
+  await settle(page, target);
+  await snapshot(page, target);
+  const splitter = (await viewerLocator(page, target)).locator('[name="legend-splitter"]').filter({visible: true}).first();
+  await splitter.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
+    throw new Error(`the legend of ${target.phrase} has no splitter to drag (${describeLegend(await legendStateOf(page, target))}) — only a docked legend has one`);
+  });
+  const box = await splitter.boundingBox();
+  if (!box)
+    throw new Error(`the legend splitter of ${target.phrase} has no box`);
+  await dragFrom(page, centerOf(box), delta);
+  await settle(page, target);
+}
+
+export type LegendSizeChange = 'wider' | 'narrower' | 'taller' | 'shorter';
+
+/** The legend's own box against the snapshot before the last change, by more than a rounding
+ * pixel, read once the viewer is quiet. */
+export async function expectLegendSize(page: Page, target: ElementRef, change: LegendSizeChange): Promise<void> {
+  let last: {before?: LegendState; now?: LegendState} = {};
+  const holds = async (): Promise<boolean> => {
+    last = await onViewer(page, target, async (el) => {
+      const b = (window as any).__bdd;
+      await b.quiet(b.viewerOf(el));
+      return b.legendChange(el);
+    }, undefined);
+    if (!last.before || !last.now)
+      return false;
+    const delta = change === 'wider' || change === 'narrower' ? last.now.width - last.before.width : last.now.height - last.before.height;
+    return change === 'wider' || change === 'taller' ? delta > 2 : delta < -2;
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`the legend of ${target.phrase} is not ${change} than before (before ${describeLegend(last.before)}; now ${describeLegend(last.now)})`);
+  }
+}
+
+interface DrawnItem {key: string; empty: boolean; canvas: boolean; ink: number; shaped: boolean; text: boolean}
+
+/** How every item of the legend draws its category — the lists are virtualised, so each section is
+ * scrolled through and put back. A structure is a renderer's canvas (`d4-legend-canvas-item`) whose
+ * painted pixels span a figure, not one line of text (blank only for the empty category, and not
+ * every item blank); text is a label span. */
+export async function expectLegendItemsDrawnAs(page: Page, target: ElementRef, as: 'structure' | 'text'): Promise<void> {
+  let last = '';
+  const holds = async (): Promise<boolean> => {
+    const r: {total: number; items: DrawnItem[]} = await onViewer(page, target, async (el) => {
+      const b = (window as any).__bdd;
+      const v = b.viewerOf(el);
+      const l: HTMLElement | null = v.root.querySelector('[name="legend"]') ?? document.querySelector('.d4-tooltip [name="legend"]');
+      const seen = new Map<string, DrawnItem>();
+      const read = (i: Element): void => {
+        const key = i.getAttribute('data-item-key') ?? i.getAttribute('aria-label') ?? '';
+        const cv = i.querySelector('canvas.d4-legend-value') as HTMLCanvasElement | null;
+        let ink = 0;
+        let top = Infinity, bottom = -1, left = Infinity, right = -1;
+        if (cv && cv.width > 0 && cv.height > 0) {
+          const data = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+          for (let p = 3; p < data.length; p += 4) {
+            if (data[p] === 0 || (data[p - 3] > 245 && data[p - 2] > 245 && data[p - 1] > 245))
+              continue;
+            ink++;
+            const px = (p - 3) / 4;
+            const x = px % cv.width, y = Math.floor(px / cv.width);
+            top = Math.min(top, y); bottom = Math.max(bottom, y); left = Math.min(left, x); right = Math.max(right, x);
+          }
+        }
+        // one line of text is a band a fifth of the canvas tall; a drawn figure spans most of it
+        const shaped = cv !== null && ink > 20 && bottom - top >= cv.height * 0.35 && right - left >= cv.width * 0.25;
+        seen.set(key, {key, empty: (i.getAttribute('aria-label') ?? '') === '', ink, shaped,
+          canvas: i.classList.contains('d4-legend-canvas-item') && cv !== null, text: i.classList.contains('d4-legend-text-item')});
+      };
+      const frame = (): Promise<void> => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(() => res())));
+      for (const list of Array.from(l?.querySelectorAll('[name^="legend-list-"]') ?? []) as HTMLElement[]) {
+        const start = list.scrollTop;
+        const step = Math.max(1, list.clientHeight);
+        for (let y = 0; ; y += step) {
+          list.scrollTop = y;
+          await frame();
+          list.querySelectorAll('[name="legend-item"]').forEach(read);
+          if (y + step >= list.scrollHeight)
+            break;
+        }
+        list.scrollTop = start;
+      }
+      return {total: Number(l?.dataset.legendItems ?? 0), items: [...seen.values()]};
+    }, undefined);
+    const items = r.items;
+    last = `${items.length} of ${r.total} items read: ` + items.map((i) => `${i.key}${i.empty ? ' (empty)' : ''}: ` +
+      (i.canvas ? `canvas, ${i.ink} px painted${i.shaped ? '' : ' in no figure'}` : i.text ? 'text' : 'neither')).join('; ');
+    if (items.length === 0 || items.length !== r.total)
+      return false;
+    // the empty category goes through the renderer too, and a renderer draws nothing for it
+    return as === 'structure' ? items.every((i) => i.canvas && (i.shaped || i.empty && i.ink === 0)) && items.some((i) => i.shaped) :
+      items.every((i) => i.text && !i.canvas);
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`not every item in the legend of ${target.phrase} is drawn as ${as === 'structure' ? 'a structure' : 'text'}: ${last || 'no item rendered'}`);
+  }
 }
 
 /** A click on a legend item (the category filters the viewer): the baseline is taken first and

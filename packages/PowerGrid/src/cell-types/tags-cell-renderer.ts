@@ -208,6 +208,7 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
     for (const item of layout) {
       const color = this.getColor(gridCell, item.tag);
       g.fillStyle = DG.Color.toHtml(color);
+      g.beginPath();
       g.roundRect(x + item.x, y + item.y, item.width, item.height, 4);
       g.fill();
 

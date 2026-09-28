@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bdd run history</title>
+<!-- filled by `node history.mjs html`: the records of runs/ go where the HISTORY constant is -->
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10); --hover: rgba(11,11,11,0.04);
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a;
+  --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
+  --faster: #006300; --slower: #b42626;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --hover: rgba(255,255,255,0.05);
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+    --faster: #0ca30c; --slower: #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --hover: rgba(255,255,255,0.05);
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+  --faster: #0ca30c; --slower: #e66767;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.app { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; }
+h1 { font-size: 20px; margin: 0; }
+h2 { font-size: 15px; margin: 0 0 8px; }
+.sub { color: var(--ink-2); margin: 2px 0 12px; }
+.muted { color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-bottom: 16px; }
+.tabs { display: flex; gap: 4px; }
+.tabs button { font: inherit; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); padding: 5px 14px; border-radius: 6px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--axis); font-weight: 600; }
+select, input[type="search"] { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; max-width: 100%; }
+label { color: var(--ink-2); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
+.crumbs { margin-bottom: 8px; color: var(--ink-2); }
+.crumbs a { color: var(--ink); cursor: pointer; text-decoration: underline; text-decoration-color: var(--axis); }
+.chart { width: 100%; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--ink-2); font-size: 12px; margin: 4px 0 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.legend i.line { height: 2px; width: 14px; vertical-align: 3px; }
+.legend i.empty { border: 1px solid var(--axis); background: none; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 10px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; vertical-align: middle; }
+th { color: var(--ink-2); font-weight: 600; font-size: 12px; cursor: pointer; user-select: none; }
+th.num, td.num { text-align: right; }
+tbody tr:hover { background: var(--hover); }
+tr.selected { background: var(--hover); box-shadow: inset 3px 0 0 var(--series-1); }
+td.name { white-space: normal; min-width: 260px; }
+.toggle { display: inline-block; width: 16px; color: var(--muted); cursor: pointer; }
+.nodename { cursor: pointer; }
+.kind { color: var(--muted); font-size: 11px; margin-left: 6px; }
+.faster { color: var(--faster); }
+.slower { color: var(--slower); }
+.tiles { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; min-width: 130px; }
+.tile .label { color: var(--ink-2); font-size: 12px; }
+.tile .value { font-size: 20px; font-weight: 600; }
+.warn { border-left: 3px solid var(--warning); padding: 8px 12px; background: var(--surface); margin-bottom: 12px; }
+.status { display: inline-flex; align-items: center; gap: 5px; }
+.status i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+pre.error { white-space: pre-wrap; margin: 6px 0; font-size: 12px; color: var(--ink-2); max-width: 1000px; }
+.tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); max-width: 420px; }
+.empty-state { color: var(--ink-2); padding: 24px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>bdd run history</h1>
+  <p class="sub" id="summary"></p>
+  <div class="controls">
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="timeline" aria-selected="true">Timeline</button>
+      <button role="tab" data-tab="compare" aria-selected="false">Compare</button>
+      <button role="tab" data-tab="problems" aria-selected="false">Failures and flakes</button>
+    </div>
+    <label>Where the runs ran <select id="where"></select></label>
+  </div>
+
+  <section id="tab-timeline">
+    <div class="card">
+      <div class="crumbs" id="crumbs"></div>
+      <h2 id="duration-title"></h2>
+      <div class="legend" id="duration-legend"></div>
+      <div class="chart" id="chart-duration"></div>
+      <h2 style="margin-top: 14px">Failed and flaky tests per run</h2>
+      <div class="legend"><span><i style="background: var(--critical)"></i>Failed</span><span><i style="background: var(--warning)"></i>Flaky (passed on a retry)</span></div>
+      <div class="chart" id="chart-status"></div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <input type="search" id="search" placeholder="Filter by name" aria-label="Filter by name">
+        <span class="legend" style="margin: 0"><span><i style="background: var(--good)"></i>Passed</span><span><i style="background: var(--critical)"></i>Failed</span><span><i style="background: var(--warning)"></i>Flaky</span><span><i style="background: var(--muted)"></i>Known failure</span><span><i class="empty"></i>Not run</span></span>
+      </div>
+      <div class="table-wrap"><table id="tree"></table></div>
+    </div>
+  </section>
+
+  <section id="tab-compare" hidden>
+    <div class="card">
+      <div class="row">
+        <label>A <select id="run-a"></select></label>
+        <label>B <select id="run-b"></select></label>
+      </div>
+      <div id="compare-warn"></div>
+      <div class="tiles" id="compare-tiles"></div>
+      <div class="row">
+        <label>Level <select id="level">
+          <option value="project">Projects</option><option value="folder">Folders</option>
+          <option value="feature" selected>Features</option><option value="test">Tests</option><option value="scenario">Journey scenarios</option>
+        </select></label>
+        <input type="search" id="compare-search" placeholder="Filter by name" aria-label="Filter by name">
+        <label><input type="checkbox" id="changed-only"> Status changes only</label>
+      </div>
+      <div class="table-wrap"><table id="compare"></table></div>
+    </div>
+  </section>
+
+  <section id="tab-problems" hidden>
+    <div class="card">
+      <div class="row">
+        <input type="search" id="problem-search" placeholder="Filter by name" aria-label="Filter by name">
+        <label><input type="checkbox" id="with-known"> Include known failures</label>
+      </div>
+      <div class="table-wrap"><table id="problems"></table></div>
+    </div>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const HISTORY = /*HISTORY*/[];
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]);
+const STRIP_RUNS = 30;
+const RANK = {failed: 4, flaky: 3, known: 2, passed: 1, skipped: 0};
+const STATUS_COLOR = {passed: 'var(--good)', failed: 'var(--critical)', flaky: 'var(--warning)', known: 'var(--muted)'};
+const STATUS_LABEL = {passed: 'passed', failed: 'failed', flaky: 'flaky', known: 'known failure', skipped: 'skipped'};
+
+// --- the model: every record, and a tree of suites → folders → features → tests → journey scenarios
+const runs = HISTORY.map((r, i) => ({...r, i, setup: `${r.machine?.host ?? '?'} · ${r.stand ?? '?'}`}));
+const setups = [...new Set(runs.map((r) => r.setup))];
+const nodes = new Map();
+
+function node(key, name, kind, parent) {
+  let n = nodes.get(key);
+  if (!n) {
+    n = {key, name, kind, parent, children: [], byRun: new Map()};
+    nodes.set(key, n);
+    parent?.children.push(n);
+  }
+  return n;
+}
+
+function tally(n, run, duration, status) {
+  let a = n.byRun.get(run);
+  if (!a)
+    n.byRun.set(run, a = {d: 0, n: 0, passed: 0, failed: 0, flaky: 0, known: 0, skipped: 0});
+  a.d += duration;
+  a.n++;
+  a[status]++;
+  return a;
+}
+
+const root = node('', 'All suites', 'root', null);
+for (const r of runs)
+  for (const p of r.projects) {
+    const project = node(p.name, p.name, 'project', root);
+    for (const t of p.tests) {
+      const parts = t.file.split('/');
+      let parent = project, key = p.name;
+      for (const folder of parts.slice(0, -1))
+        parent = node(key += `/${folder}`, folder, 'folder', parent);
+      const feature = node(`${key}/${parts.at(-1)}`, parts.at(-1), 'feature', parent);
+      const test = node(`${feature.key}::${t.title}`, t.title, 'test', feature);
+      for (let n = test; n; n = n.parent)
+        tally(n, r.i, t.duration, t.status);
+      test.byRun.get(r.i).detail = t;
+      if (t.scenarios) {
+        const bg = node(`${test.key}::(background)`, 'Background', 'scenario', test);
+        tally(bg, r.i, t.setup ?? 0, 'passed');
+        for (const s of t.scenarios) {
+          const sc = node(`${test.key}::${s.title}`, s.title, 'scenario', test);
+          tally(sc, r.i, s.duration, s.status ?? 'passed').detail = s.status === 'failed' ? t : undefined;
+        }
+      }
+    }
+    project.byRun.get(r.i).wall = p.duration;
+    project.byRun.get(r.i).workers = p.workers;
+    root.byRun.get(r.i).wall = (root.byRun.get(r.i).wall ?? 0) + p.duration;
+  }
+
+const statusOf = (a) => !a ? undefined : a.failed ? 'failed' : a.flaky ? 'flaky' : a.passed ? 'passed' : a.known ? 'known' : 'skipped';
+/** What a node took in a run: the wall time of a whole run or project, the sum of test times below. */
+const metric = (n, run) => n.byRun.get(run)?.wall ?? n.byRun.get(run)?.d;
+const usesWall = (n) => n.kind === 'root' || n.kind === 'project';
+
+// --- formatting
+function fmtDur(ms) {
+  if (ms == null)
+    return '—';
+  if (Math.abs(ms) < 1000)
+    return `${Math.round(ms)} ms`;
+  if (Math.abs(ms) < 60000)
+    return `${(ms / 1000).toFixed(1)} s`;
+  const s = Math.round(Math.abs(ms) / 1000);
+  return `${ms < 0 ? '-' : ''}${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+}
+function fmtDelta(a, b) {
+  if (a == null || b == null)
+    return '<span class="muted">—</span>';
+  const d = b - a, pct = a > 0 ? d / a * 100 : 0;
+  // below a second or 10% a change is run-to-run noise, shown without a colour
+  const cls = Math.abs(d) >= 1000 && Math.abs(pct) >= 10 ? (d > 0 ? 'slower' : 'faster') : 'muted';
+  return `<span class="${cls}">${d > 0 ? '+' : ''}${fmtDur(d)} (${d > 0 ? '+' : ''}${pct.toFixed(0)}%)</span>`;
+}
+const pad = (n) => String(n).padStart(2, '0');
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+const runLabel = (r) => `${fmtDate(r.date)} · ${r.machine?.host ?? '?'}${r.note ? ` · ${r.note}` : ''}`;
+const machineText = (r) => { const m = r.machine ?? {}; return `${m.host} — ${m.cpu}, ${m.cores} threads, ${m.memoryGb} GB, ${m.os}`; };
+const statusChip = (s) => s ? `<span class="status"><i style="background:${STATUS_COLOR[s] ?? 'none'};${s === 'skipped' ? 'border:1px solid var(--axis)' : ''}"></i>${STATUS_LABEL[s]}</span>` : '<span class="muted">not run</span>';
+const pathOf = (n) => { const out = []; for (let p = n.parent; p && p.kind !== 'root'; p = p.parent) out.unshift(p.name); return out.join(' / '); };
+const setupColor = (setup) => { const i = setups.indexOf(setup); return i < 3 ? `var(--series-${i + 1})` : 'var(--muted)'; };
+
+// --- state
+let where = 'all', scope = root, sortKey = 'name', sortDesc = false;
+const expanded = new Set(['']);
+const visibleRuns = () => runs.filter((r) => where === 'all' || r.setup === where);
+
+// --- tooltip
+const tip = $('#tip');
+function showTip(html, ev) {
+  tip.innerHTML = html;
+  tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = `${Math.min(ev.clientX + 14, window.innerWidth - w - 8)}px`;
+  tip.style.top = `${ev.clientY + h + 20 > window.innerHeight ? ev.clientY - h - 10 : ev.clientY + 14}px`;
+}
+const hideTip = () => { tip.hidden = true; };
+function runTip(r, n) {
+  const a = n.byRun.get(r.i);
+  const g = r.git ? `${esc(r.git.branch)} @ ${esc(r.git.commit)}${r.git.dirty ? ' (uncommitted changes)' : ''}` : '';
+  const excluded = r.projects.filter((p) => p.excluded).map((p) => `${esc(p.name)} without ${esc(p.excluded)}`).join(', ');
+  return `<b>${esc(fmtDate(r.date))}</b>${r.note ? ` · ${esc(r.note)}` : ''}<br>` +
+    `<span class="muted">${esc(machineText(r))}<br>stand ${esc(r.stand)}${g ? `<br>${g}` : ''}${excluded ? `<br>${excluded}` : ''}</span><br>` +
+    (a ? `${esc(n.name)}: <b>${fmtDur(metric(n, r.i))}</b> ${usesWall(n) ? 'wall time' : 'test time'}<br>` +
+      `${a.n} test${a.n === 1 ? '' : 's'} · ${a.failed} failed · ${a.flaky} flaky · ${a.known} known-failure tests`
+      : `${esc(n.name)} did not run`);
+}
+
+// --- charts
+function niceTicks(max, count, whole = false) {
+  if (!(max > 0))
+    return [0, 1];
+  const raw = max / count, mag = 10 ** Math.floor(Math.log10(raw));
+  const nice = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+  const step = whole ? Math.max(1, Math.ceil(nice)) : nice;
+  const out = [];
+  for (let v = 0; v < max + step * 0.999; v += step)
+    out.push(+v.toFixed(10));
+  return out;
+}
+
+function frame(el, height, n) {
+  const width = Math.max(320, el.clientWidth);
+  const m = {l: 64, r: 16, t: 10, b: 26};
+  const plotW = width - m.l - m.r, plotH = height - m.t - m.b;
+  const x = (i) => m.l + (n <= 1 ? plotW / 2 : i * plotW / (n - 1));
+  return {width, height, m, plotW, plotH, x};
+}
+
+function xLabels(f, vr) {
+  const every = Math.max(1, Math.ceil(vr.length / Math.max(1, Math.floor(f.plotW / 110))));
+  return vr.map((r, i) => i % every !== 0 && i !== vr.length - 1 ? '' :
+    `<text x="${f.x(i)}" y="${f.height - 6}" text-anchor="${i === vr.length - 1 && i > 0 ? 'end' : 'middle'}" fill="var(--muted)" font-size="11">${esc(fmtDate(r.date).slice(5))}</text>`).join('');
+}
+
+function hoverLayer(el, f, vr, n) {
+  const svg = el.querySelector('svg');
+  const cross = svg.querySelector('.cross');
+  const pick = (ev) => {
+    const box = svg.getBoundingClientRect();
+    const mx = (ev.clientX - box.left) * f.width / box.width;
+    return vr.length <= 1 ? 0 : Math.max(0, Math.min(vr.length - 1, Math.round((mx - f.m.l) / (f.plotW / (vr.length - 1)))));
+  };
+  svg.addEventListener('mousemove', (ev) => {
+    const i = pick(ev);
+    cross.setAttribute('x1', f.x(i));
+    cross.setAttribute('x2', f.x(i));
+    cross.style.display = '';
+    showTip(runTip(vr[i], n) + '<br><span class="muted">Click to compare with the run before it on the same machine</span>', ev);
+  });
+  svg.addEventListener('mouseleave', () => { cross.style.display = 'none'; hideTip(); });
+  svg.addEventListener('click', (ev) => compareWithPrevious(vr[pick(ev)]));
+}
+
+function durationChart() {
+  const el = $('#chart-duration'), vr = visibleRuns();
+  $('#duration-title').textContent = `${scope.name} — ${usesWall(scope) ? 'wall time of the run' : 'test time (the sum of its tests)'}`;
+  const shown = setups.filter((s) => vr.some((r) => r.setup === s && scope.byRun.has(r.i)));
+  $('#duration-legend').innerHTML = shown.length < 2 ? '' :
+    shown.map((s) => `<span><i class="line" style="background:${setupColor(s)}"></i>${esc(s)}</span>`).join('');
+  if (vr.length === 0) {
+    el.innerHTML = '<p class="empty-state">No runs recorded yet: <code>node history.mjs record</code> after a full run.</p>';
+    return;
+  }
+  const f = frame(el, 220, vr.length);
+  const values = vr.map((r) => metric(scope, r.i));
+  const max = Math.max(0, ...values.filter((v) => v != null));
+  const unit = max >= 120000 ? 60000 : 1000, name = unit === 60000 ? 'min' : 's';
+  const ticks = niceTicks(max / unit, 4), top = ticks.at(-1) * unit;
+  const y = (v) => f.m.t + f.plotH * (1 - v / top);
+  let svg = ticks.map((t) => `<line x1="${f.m.l}" x2="${f.width - f.m.r}" y1="${y(t * unit)}" y2="${y(t * unit)}" stroke="${t === 0 ? 'var(--axis)' : 'var(--grid)'}" stroke-width="1"/>` +
+    `<text x="${f.m.l - 8}" y="${y(t * unit) + 4}" text-anchor="end" fill="var(--muted)" font-size="11">${t} ${name}</text>`).join('');
+  svg += xLabels(f, vr);
+  svg += `<line class="cross" y1="${f.m.t}" y2="${f.m.t + f.plotH}" stroke="var(--axis)" stroke-width="1" style="display:none"/>`;
+  for (const s of shown) {
+    const pts = vr.map((r, i) => ({r, i, v: values[i]})).filter((p) => p.r.setup === s && p.v != null);
+    const c = setupColor(s);
+    svg += `<path d="${pts.map((p, k) => `${k ? 'L' : 'M'}${f.x(p.i)},${y(p.v)}`).join('')}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    svg += pts.map((p) => `<circle cx="${f.x(p.i)}" cy="${y(p.v)}" r="4" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`).join('');
+  }
+  el.innerHTML = `<svg viewBox="0 0 ${f.width} ${f.height}" height="${f.height}" role="img" aria-label="${esc($('#duration-title').textContent)}">${svg}</svg>`;
+  hoverLayer(el, f, vr, scope);
+}
+
+function statusChart() {
+  const el = $('#chart-status'), vr = visibleRuns();
+  if (vr.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  const f = frame(el, 110, vr.length);
+  const counts = vr.map((r) => scope.byRun.get(r.i) ?? {failed: 0, flaky: 0});
+  const max = Math.max(1, ...counts.map((a) => a.failed + a.flaky));
+  const ticks = niceTicks(max, 2, true), top = ticks.at(-1);
+  const y = (v) => f.m.t + f.plotH * (1 - v / top);
+  const bw = Math.max(3, Math.min(24, (vr.length <= 1 ? f.plotW : f.plotW / (vr.length - 1)) * 0.6));
+  let svg = ticks.map((t) => `<line x1="${f.m.l}" x2="${f.width - f.m.r}" y1="${y(t)}" y2="${y(t)}" stroke="${t === 0 ? 'var(--axis)' : 'var(--grid)'}" stroke-width="1"/>` +
+    `<text x="${f.m.l - 8}" y="${y(t) + 4}" text-anchor="end" fill="var(--muted)" font-size="11">${t}</text>`).join('');
+  svg += xLabels(f, vr);
+  svg += `<line class="cross" y1="${f.m.t}" y2="${f.m.t + f.plotH}" stroke="var(--axis)" stroke-width="1" style="display:none"/>`;
+  counts.forEach((a, i) => {
+    const x0 = f.x(i) - bw / 2;
+    // failed from the baseline, flaky on top of it, a 2 px surface gap between them
+    if (a.failed)
+      svg += `<rect x="${x0}" y="${y(a.failed)}" width="${bw}" height="${y(0) - y(a.failed)}" rx="${a.flaky ? 0 : 3}" fill="var(--critical)"/>`;
+    if (a.flaky)
+      svg += `<rect x="${x0}" y="${y(a.failed + a.flaky)}" width="${bw}" height="${Math.max(1, y(a.failed) - y(a.failed + a.flaky) - (a.failed ? 2 : 0))}" rx="3" fill="var(--warning)"/>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${f.width} ${f.height}" height="${f.height}" role="img" aria-label="failed and flaky tests per run">${svg}</svg>`;
+  hoverLayer(el, f, vr, scope);
+}
+
+function sparkline(n, vr) {
+  const last = vr.filter((r) => n.byRun.has(r.i)).at(-1);
+  if (!last)
+    return '';
+  const pts = vr.filter((r) => r.setup === last.setup && n.byRun.has(r.i)).slice(-STRIP_RUNS).map((r) => metric(n, r.i));
+  if (pts.length < 2)
+    return '';
+  const w = 90, h = 20, max = Math.max(...pts), min = Math.min(...pts), span = max - min || 1;
+  const xy = pts.map((v, i) => [i * (w - 4) / (pts.length - 1) + 2, h - 3 - (v - min) / span * (h - 6)]);
+  return `<svg width="${w}" height="${h}" aria-hidden="true"><path d="${xy.map((p, i) => `${i ? 'L' : 'M'}${p[0]},${p[1]}`).join('')}" fill="none" stroke="var(--muted)" stroke-width="1.5"/>` +
+    `<circle cx="${xy.at(-1)[0]}" cy="${xy.at(-1)[1]}" r="2.5" fill="var(--series-1)"/></svg>`;
+}
+
+function strip(n, vr) {
+  const cells = vr.slice(-STRIP_RUNS);
+  return `<svg width="${cells.length * 9}" height="14" class="strip" data-key="${esc(n.key)}">` + cells.map((r, i) => {
+    const s = statusOf(n.byRun.get(r.i));
+    return !s || s === 'skipped'
+      ? `<rect x="${i * 9 + 0.5}" y="2.5" width="6" height="9" rx="1.5" fill="none" stroke="var(--axis)" data-run="${r.i}"/>`
+      : `<rect x="${i * 9}" y="2" width="7" height="10" rx="1.5" fill="${STATUS_COLOR[s]}" data-run="${r.i}"/>`;
+  }).join('') + '</svg>';
+}
+
+document.addEventListener('mouseover', (ev) => {
+  const cell = ev.target.closest?.('svg.strip rect');
+  if (!cell)
+    return;
+  const n = nodes.get(cell.parentNode.dataset.key), r = runs[Number(cell.dataset.run)];
+  showTip(`${runTip(r, n)}${n.byRun.get(r.i) ? `<br>Status: ${STATUS_LABEL[statusOf(n.byRun.get(r.i))]}` : ''}`, ev);
+});
+document.addEventListener('mouseout', (ev) => { if (ev.target.closest?.('svg.strip rect')) hideTip(); });
+
+// --- the tree
+/** How often a node failed, was flaky, or changed between passing and failing over the runs shown. */
+function history(n, vr) {
+  let failed = 0, flaky = 0, flips = 0, prev;
+  for (const r of vr) {
+    const s = statusOf(n.byRun.get(r.i));
+    if (s === 'failed')
+      failed++;
+    if (s === 'flaky')
+      flaky++;
+    if ((s === 'failed' || s === 'passed') && prev && s !== prev)
+      flips++;
+    if (s === 'failed' || s === 'passed')
+      prev = s;
+  }
+  return {failed, flaky, flips};
+}
+
+/** The node's latest run among those shown, and the run before it on the same machine and stand. */
+function lastTwo(n, vr) {
+  const present = vr.filter((r) => n.byRun.has(r.i));
+  const last = present.at(-1);
+  const prev = last && present.slice(0, -1).filter((r) => r.setup === last.setup).at(-1);
+  return {last, prev};
+}
+
+const COLUMNS = [
+  {key: 'name', label: 'Name'},
+  {key: 'tests', label: 'Tests', num: true},
+  {key: 'last', label: 'Latest', num: true},
+  {key: 'delta', label: 'Against the run before', num: true},
+  {key: 'trend', label: 'Trend', sort: false},
+  {key: 'runs', label: `Last ${STRIP_RUNS} runs`, sort: false},
+  {key: 'failed', label: 'Failed', num: true},
+  {key: 'flaky', label: 'Flaky', num: true},
+  {key: 'flips', label: 'Flips', num: true},
+];
+
+function sortValue(n, vr) {
+  const {last, prev} = lastTwo(n, vr);
+  switch (sortKey) {
+    case 'tests': return last ? n.byRun.get(last.i).n : -1;
+    case 'last': return last ? metric(n, last.i) : -1;
+    case 'delta': return last && prev ? metric(n, last.i) - metric(n, prev.i) : -Infinity;
+    case 'failed': case 'flaky': case 'flips': return history(n, vr)[sortKey];
+    default: return n.name.toLowerCase();
+  }
+}
+
+function sorted(children, vr) {
+  const keyed = children.map((c) => [sortValue(c, vr), c]);
+  keyed.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) * (sortDesc ? -1 : 1));
+  return keyed.map((k) => k[1]);
+}
+
+function treeRows(vr) {
+  const rows = [];
+  const q = $('#search').value.trim().toLowerCase();
+  if (q) {
+    const keep = new Set();
+    for (const n of nodes.values())
+      if (n.kind !== 'root' && n.name.toLowerCase().includes(q) && vr.some((r) => n.byRun.has(r.i)))
+        for (let p = n; p; p = p.parent)
+          keep.add(p);
+    const walk = (n, depth) => {
+      if (rows.length > 400)
+        return;
+      rows.push([n, depth]);
+      for (const c of sorted(n.children.filter((c) => keep.has(c)), vr))
+        walk(c, depth + 1);
+    };
+    walk(root, 0);
+    return rows;
+  }
+  const walk = (n, depth) => {
+    rows.push([n, depth]);
+    if (expanded.has(n.key))
+      for (const c of sorted(n.children.filter((c) => vr.some((r) => c.byRun.has(r.i))), vr))
+        walk(c, depth + 1);
+  };
+  walk(root, 0);
+  return rows;
+}
+
+function tree() {
+  const vr = visibleRuns();
+  const head = '<thead><tr>' + COLUMNS.map((c) => `<th class="${c.num ? 'num' : ''}" data-sort="${c.sort === false ? '' : c.key}">${c.label}${sortKey === c.key ? (sortDesc ? ' ↓' : ' ↑') : ''}</th>`).join('') + '</tr></thead>';
+  const body = treeRows(vr).map(([n, depth]) => {
+    const {last, prev} = lastTwo(n, vr);
+    const h = history(n, vr);
+    const open = expanded.has(n.key) || $('#search').value.trim() !== '';
+    return `<tr data-key="${esc(n.key)}" class="${n === scope ? 'selected' : ''}">` +
+      `<td class="name" style="padding-left:${8 + depth * 18}px"><span class="toggle">${n.children.length ? (open ? '▾' : '▸') : ''}</span>` +
+      `<span class="nodename">${esc(n.name)}</span><span class="kind">${n.kind === 'root' ? '' : n.kind}</span></td>` +
+      `<td class="num">${last ? n.byRun.get(last.i).n : '—'}</td>` +
+      `<td class="num">${last ? fmtDur(metric(n, last.i)) : '—'}</td>` +
+      `<td class="num">${last && prev ? fmtDelta(metric(n, prev.i), metric(n, last.i)) : '<span class="muted">—</span>'}</td>` +
+      `<td>${sparkline(n, vr)}</td><td>${strip(n, vr)}</td>` +
+      `<td class="num">${h.failed || ''}</td><td class="num">${h.flaky || ''}</td><td class="num">${h.flips || ''}</td></tr>`;
+  }).join('');
+  $('#tree').innerHTML = head + `<tbody>${body}</tbody>`;
+}
+
+$('#tree').addEventListener('click', (ev) => {
+  const th = ev.target.closest('th');
+  if (th) {
+    if (!th.dataset.sort)
+      return;
+    sortDesc = sortKey === th.dataset.sort ? !sortDesc : th.dataset.sort !== 'name';
+    sortKey = th.dataset.sort;
+    tree();
+    return;
+  }
+  const tr = ev.target.closest('tr[data-key]');
+  if (!tr)
+    return;
+  const n = nodes.get(tr.dataset.key);
+  if (ev.target.closest('.toggle')) {
+    if (expanded.has(n.key) && n !== root)
+      expanded.delete(n.key);
+    else
+      expanded.add(n.key);
+    tree();
+    return;
+  }
+  scope = n;
+  expanded.add(n.key);
+  timeline();
+});
+
+function crumbs() {
+  const chain = [];
+  for (let n = scope; n; n = n.parent)
+    chain.unshift(n);
+  $('#crumbs').hidden = chain.length === 1;
+  $('#crumbs').innerHTML = chain.map((n, i) => i === chain.length - 1 ? `<b>${esc(n.name)}</b>` : `<a data-key="${esc(n.key)}">${esc(n.name)}</a>`).join(' / ');
+}
+$('#crumbs').addEventListener('click', (ev) => {
+  const a = ev.target.closest('a[data-key]');
+  if (a) {
+    scope = nodes.get(a.dataset.key);
+    timeline();
+  }
+});
+
+function timeline() {
+  crumbs();
+  durationChart();
+  statusChart();
+  tree();
+}
+
+// --- compare
+function fillRunSelects() {
+  const vr = visibleRuns();
+  for (const id of ['#run-a', '#run-b'])
+    $(id).innerHTML = vr.map((r) => `<option value="${r.i}">${esc(runLabel(r))}</option>`).join('');
+  const b = vr.at(-1);
+  const a = b && (vr.slice(0, -1).filter((r) => r.setup === b.setup).at(-1) ?? vr.at(-2) ?? b);
+  if (b) {
+    $('#run-a').value = a.i;
+    $('#run-b').value = b.i;
+  }
+}
+
+function compareWithPrevious(r) {
+  const vr = visibleRuns();
+  const k = vr.indexOf(r);
+  const a = vr.slice(0, k).filter((x) => x.setup === r.setup).at(-1) ?? vr[k - 1] ?? r;
+  $('#run-a').value = a.i;
+  $('#run-b').value = r.i;
+  showTab('compare');
+}
+
+let cmpKey = 'delta', cmpDesc = true;
+
+function compare() {
+  const A = Number($('#run-a').value), B = Number($('#run-b').value);
+  const ra = runs[A], rb = runs[B];
+  if (!ra || !rb) {
+    $('#compare').innerHTML = '<tr><td class="empty-state">Two recorded runs are needed to compare.</td></tr>';
+    return;
+  }
+  $('#compare-warn').innerHTML = ra.setup === rb.setup ? '' :
+    `<div class="warn">The runs ran in different places, so their times are not comparable: A on ${esc(machineText(ra))}, stand ${esc(ra.stand)}; ` +
+    `B on ${esc(machineText(rb))}, stand ${esc(rb.stand)}.</div>`;
+  const tests = [...nodes.values()].filter((n) => n.kind === 'test');
+  const st = (n, r) => statusOf(n.byRun.get(r));
+  const newlyFailing = tests.filter((n) => st(n, B) === 'failed' && st(n, A) && st(n, A) !== 'failed').length;
+  const fixed = tests.filter((n) => st(n, A) === 'failed' && st(n, B) === 'passed').length;
+  const added = tests.filter((n) => n.byRun.has(B) && !n.byRun.has(A)).length;
+  const gone = tests.filter((n) => n.byRun.has(A) && !n.byRun.has(B)).length;
+  const ta = root.byRun.get(A), tb = root.byRun.get(B);
+  const tile = (label, value, extra = '') => `<div class="tile"><div class="label">${label}</div><div class="value">${value}</div>${extra ? `<div class="label">${extra}</div>` : ''}</div>`;
+  $('#compare-tiles').innerHTML = tile('Wall time', fmtDur(tb.wall), `${fmtDelta(ta.wall, tb.wall)} against A`) +
+    tile('Tests', tb.n, `${tb.n - ta.n >= 0 ? '+' : ''}${tb.n - ta.n} against A`) +
+    tile('Failed', tb.failed, `${ta.failed} in A`) + tile('Newly failing', newlyFailing) + tile('Fixed', fixed) +
+    tile('New tests', added) + tile('Gone', gone);
+
+  const level = $('#level').value, q = $('#compare-search').value.trim().toLowerCase(), changed = $('#changed-only').checked;
+  let list = [...nodes.values()].filter((n) => n.kind === level && (n.byRun.has(A) || n.byRun.has(B)) &&
+    (!q || `${pathOf(n)} ${n.name}`.toLowerCase().includes(q)) && (!changed || st(n, A) !== st(n, B)));
+  const val = (n) => {
+    const a = metric(n, A), b = metric(n, B);
+    switch (cmpKey) {
+      case 'name': return `${pathOf(n)} ${n.name}`.toLowerCase();
+      case 'a': return a ?? -1;
+      case 'b': return b ?? -1;
+      case 'pct': return a && b != null ? (b - a) / a : -Infinity;
+      case 'status': return (RANK[st(n, B)] ?? -1) * 10 + (RANK[st(n, A)] ?? -1);
+      default: return a != null && b != null ? Math.abs(b - a) : -1;
+    }
+  };
+  list = list.map((n) => [val(n), n]).sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0) * (cmpDesc ? -1 : 1)).map((x) => x[1]);
+  const cols = [['name', 'Name'], ['a', 'A', 1], ['b', 'B', 1], ['delta', 'Change', 1], ['pct', '%', 1], ['status', 'Status in A → B']];
+  const head = '<thead><tr>' + cols.map(([k, l, num]) => `<th class="${num ? 'num' : ''}" data-sort="${k}">${l}${cmpKey === k ? (cmpDesc ? ' ↓' : ' ↑') : ''}</th>`).join('') + '</tr></thead>';
+  const body = list.slice(0, 500).map((n) => {
+    const a = metric(n, A), b = metric(n, B);
+    const pct = a && b != null ? `${b - a > 0 ? '+' : ''}${((b - a) / a * 100).toFixed(0)}%` : '—';
+    return `<tr><td class="name">${pathOf(n) ? `<span class="muted">${esc(pathOf(n))} / </span>` : ''}${esc(n.name)}</td>` +
+      `<td class="num">${fmtDur(a)}</td><td class="num">${fmtDur(b)}</td><td class="num">${fmtDelta(a, b)}</td><td class="num">${pct}</td>` +
+      `<td>${statusChip(st(n, A))} → ${statusChip(st(n, B))}</td></tr>`;
+  }).join('');
+  $('#compare').innerHTML = head + `<tbody>${body || '<tr><td class="empty-state" colspan="6">Nothing at this level matches.</td></tr>'}</tbody>` +
+    (list.length > 500 ? `<tfoot><tr><td colspan="6" class="muted">${list.length - 500} more — narrow the filter</td></tr></tfoot>` : '');
+}
+
+$('#compare').addEventListener('click', (ev) => {
+  const th = ev.target.closest('th[data-sort]');
+  if (!th)
+    return;
+  cmpDesc = cmpKey === th.dataset.sort ? !cmpDesc : th.dataset.sort !== 'name';
+  cmpKey = th.dataset.sort;
+  compare();
+});
+
+// --- failures and flakes
+const openProblems = new Set();
+
+function problems() {
+  const vr = visibleRuns(), withKnown = $('#with-known').checked, q = $('#problem-search').value.trim().toLowerCase();
+  const bad = withKnown ? ['failed', 'flaky', 'known'] : ['failed', 'flaky'];
+  const rows = [...nodes.values()].filter((n) => (n.kind === 'test' || n.kind === 'scenario') &&
+    vr.some((r) => bad.includes(statusOf(n.byRun.get(r.i)))) && (!q || `${pathOf(n)} ${n.name}`.toLowerCase().includes(q)))
+    .map((n) => {
+      const h = history(n, vr);
+      const lastBad = vr.filter((r) => bad.includes(statusOf(n.byRun.get(r.i)))).at(-1);
+      return {n, h, lastBad, ran: vr.filter((r) => n.byRun.has(r.i)).length, known: vr.filter((r) => statusOf(n.byRun.get(r.i)) === 'known').length};
+    })
+    .sort((a, b) => (b.h.failed + b.h.flaky + b.h.flips) - (a.h.failed + a.h.flaky + a.h.flips) || b.lastBad.i - a.lastBad.i);
+  const head = '<thead><tr><th>Test</th><th class="num">Runs</th><th class="num">Failed</th><th class="num">Flaky</th><th class="num">Flips</th>' +
+    `${withKnown ? '<th class="num">Known</th>' : ''}<th>Last bad run</th><th>Latest</th><th>Last ${STRIP_RUNS} runs</th></tr></thead>`;
+  const body = rows.map(({n, h, lastBad, ran, known}) => {
+    const latest = lastTwo(n, vr).last;
+    const detail = n.byRun.get(lastBad.i).detail;
+    const open = openProblems.has(n.key) && detail?.error;
+    return `<tr data-key="${esc(n.key)}"><td class="name"><span class="toggle">${detail?.error ? (open ? '▾' : '▸') : ''}</span>` +
+      `<span class="muted">${esc(pathOf(n))} / </span>${esc(n.name)}</td>` +
+      `<td class="num">${ran}</td><td class="num">${h.failed || ''}</td><td class="num">${h.flaky || ''}</td><td class="num">${h.flips || ''}</td>` +
+      `${withKnown ? `<td class="num">${known || ''}</td>` : ''}<td>${esc(fmtDate(lastBad.date))}</td>` +
+      `<td>${statusChip(latest && statusOf(n.byRun.get(latest.i)))}</td><td>${strip(n, vr)}</td></tr>` +
+      (open ? `<tr><td colspan="${withKnown ? 9 : 8}">${detail.step ? `<div>Stopped at: <b>${esc(detail.step)}</b></div>` : ''}<pre class="error">${esc(detail.error)}</pre></td></tr>` : '');
+  }).join('');
+  $('#problems').innerHTML = head + `<tbody>${body || `<tr><td class="empty-state" colspan="8">No failed or flaky test in the runs shown.</td></tr>`}</tbody>`;
+}
+
+$('#problems').addEventListener('click', (ev) => {
+  const tr = ev.target.closest('tr[data-key]');
+  if (!tr)
+    return;
+  if (openProblems.has(tr.dataset.key))
+    openProblems.delete(tr.dataset.key);
+  else
+    openProblems.add(tr.dataset.key);
+  problems();
+});
+
+// --- shell
+function showTab(tab) {
+  for (const b of document.querySelectorAll('.tabs button'))
+    b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+  for (const s of ['timeline', 'compare', 'problems'])
+    $(`#tab-${s}`).hidden = s !== tab;
+  ({timeline, compare, problems})[tab]();
+}
+const currentTab = () => document.querySelector('.tabs button[aria-selected="true"]').dataset.tab;
+
+for (const b of document.querySelectorAll('.tabs button'))
+  b.addEventListener('click', () => showTab(b.dataset.tab));
+$('#where').innerHTML = '<option value="all">Everywhere</option>' +
+  setups.map((s) => `<option value="${esc(s)}">${esc(s)} (${runs.filter((r) => r.setup === s).length} runs)</option>`).join('');
+$('#where').addEventListener('change', () => {
+  where = $('#where').value;
+  fillRunSelects();
+  showTab(currentTab());
+});
+$('#search').addEventListener('input', tree);
+for (const id of ['#run-a', '#run-b', '#level', '#changed-only'])
+  $(id).addEventListener('change', compare);
+$('#compare-search').addEventListener('input', compare);
+$('#problem-search').addEventListener('input', problems);
+$('#with-known').addEventListener('change', problems);
+let resizing;
+window.addEventListener('resize', () => {
+  clearTimeout(resizing);
+  resizing = setTimeout(() => { if (currentTab() === 'timeline') { durationChart(); statusChart(); } }, 150);
+});
+
+$('#summary').textContent = runs.length === 0 ? 'No runs recorded yet.' :
+  `${runs.length} run${runs.length === 1 ? '' : 's'} from ${fmtDate(runs[0].date)} to ${fmtDate(runs.at(-1).date)}, ` +
+  `in ${setups.length} place${setups.length === 1 ? '' : 's'} (machine and stand). Times of different places are drawn as separate lines.`;
+fillRunSelects();
+timeline();
+</script>
+</body>
+</html>

@@ -56,6 +56,15 @@ viewed('chrome components are disposed with the content; plain elements pass as 
   assert.equal(toolbox.scope.isDisposed, true);
 });
 
+viewed('what the view owns beside its content is disposed with it', () => {
+  const content = new Control();
+  const source = {disposed: 0, dispose() { this.disposed++; }};
+  appView({name: 'App', content, own: [source]});
+  assert.equal(source.disposed, 0);
+  content.dispose();
+  assert.equal(source.disposed, 1);
+});
+
 viewed('a string path is written to the view verbatim', () => {
   const content = new Control();
   const view = appView({name: 'App', content, path: '/apps/Pkg/App/home'});

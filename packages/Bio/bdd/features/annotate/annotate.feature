@@ -4,6 +4,8 @@ Feature: Comparing, scanning and annotating antibody sequences
   them into a difference column; Scan Liabilities marks the motifs its rules find and reports
   them per row or as a count; Manage Annotations lists what a column carries and drops it.
 
+  Not translated: nothing of the annotate-dialogs spec is left out.
+
   Background:
     Given user is logged in
     And user opens antibodies dataset keeping the first 40 rows as "antibodies"
@@ -17,8 +19,7 @@ Feature: Comparing, scanning and annotating antibody sequences
     And "Sequence column 1" input in "Compare Sequences" dialog should have value "AntibodyHC"
     And "Sequence column 2" input in "Compare Sequences" dialog should have value "AntibodyLC"
     When user clicks on OK button in "Compare Sequences" dialog
-    Then the top menu command should have completed
-    And 1 new column should have been added
+    Then 1 new column should have been added
     And a new column "AntibodyHC vs AntibodyLC" should have been added
     And "AntibodyHC vs AntibodyLC" column should have tag "cell.renderer" equal to "MacromoleculeDifference"
     And every value of "AntibodyHC vs AntibodyLC" column should be "AntibodyHC" and "AntibodyLC" of the same row joined by "#"
@@ -30,8 +31,7 @@ Feature: Comparing, scanning and annotating antibody sequences
     And user selects "AntibodyHC" in "Sequence column 2" input in "Compare Sequences" dialog
     And user enters "LC minus HC" into "Result column name" input in "Compare Sequences" dialog
     And user clicks on OK button in "Compare Sequences" dialog
-    Then the top menu command should have completed
-    And 1 new column should have been added
+    Then 1 new column should have been added
     And a new column "LC minus HC" should have been added
     And every value of "LC minus HC" column should be "AntibodyLC" and "AntibodyHC" of the same row joined by "#"
 
@@ -39,8 +39,7 @@ Feature: Comparing, scanning and annotating antibody sequences
     When user picks "Bio > Analyze > Compare sequences..." from the top menu
     And user selects "AntibodyHC" in "Sequence column 2" input in "Compare Sequences" dialog
     And user clicks on OK button in "Compare Sequences" dialog
-    Then the top menu command should have completed
-    And an error balloon containing "distinct columns" should have been shown
+    Then an error balloon containing "distinct columns" should have been shown
     And no new column should have been added
 
   Scenario: Scan Liabilities opens with its documented rule defaults
@@ -54,8 +53,7 @@ Feature: Comparing, scanning and annotating antibody sequences
 
   Scenario: The default rules write the per-row annotation column and hit real motifs
     When user clicks on OK button in "Scan Sequence Liabilities" dialog
-    Then the top menu command should have completed
-    And a new column "~AntibodyHC_annotations" should have been added
+    Then a new column "~AntibodyHC_annotations" should have been added
     And the table should not have a column "AntibodyHC_liability_count"
     And "AntibodyHC" column should carry at least 1 annotation
     And every liability hit on "AntibodyHC" column should match its motif at the position it reports
@@ -87,8 +85,7 @@ Feature: Comparing, scanning and annotating antibody sequences
     And user unchecks "Create annotation column" checkbox in "Scan Sequence Liabilities" dialog
     And user checks "Create summary count column" checkbox in "Scan Sequence Liabilities" dialog
     And user clicks on OK button in "Scan Sequence Liabilities" dialog
-    Then the top menu command should have completed
-    And a new column "AntibodyHC_liability_count" should have been added
+    Then a new column "AntibodyHC_liability_count" should have been added
     And "AntibodyHC_liability_count" column should have type "int"
     And "AntibodyHC_liability_count" column should have no missing values
     And the total of "AntibodyHC_liability_count" column should be fewer than the liability hits found before

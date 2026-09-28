@@ -18,11 +18,11 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
   sorted and `useGridSort` off the cards return to table order and the viewer reports no sort
   column, and `forms-viewer.ts:539` gates the mirror on the flag. That scenario is a plain positive
   claim here and carries no `@known-failure` — a tag on a fixed bug is itself a failure.
-  A sort from the grid's own header clears the table's current row, and the Forms viewer then
-  draws NO cards at all — not the record cards of the selected rows either. The last scenario
-  states the desired behaviour and is `@known-failure`; it is last because a failing scenario does
-  not put back what it changed. Every other sort scenario therefore makes a row current again after
-  each header double-click, which is what a user does anyway, and claims the mirroring from there.
+  A sort from the grid's own header clears the table's current row; until 2026-09-21 the Forms
+  viewer then drew NO cards at all — not the record cards of the selected rows either. The last
+  scenario claims the fixed behaviour; it is last because it leaves the grid sorted. Every other
+  sort scenario makes a row current again after each header double-click, which is what a user
+  does anyway, and claims the mirroring from there.
   The double-click cycle runs BEFORE any grid sorting for a third reason: once a scenario has sorted
   the grid and reset it from the grid's context menu, the Forms viewer keeps reporting that sort
   column while the grid itself reports none, so a claim that the viewer has no sort column reads
@@ -240,14 +240,12 @@ Feature: Forms viewer field set, row binding, sort mirroring and pinning
     And user clears the row selection
     Then no errors should have been logged
 
-  @known-failure
   Scenario: A sort from the grid header keeps the cards it was showing
-    A grid-header sort clears the table's current row, and `render` then hands the virtual view a
-    leading card built for row -1 — a stack of empty divs, zero pixels tall. The view measures its
-    first item to size its rows, gets nothing, and lays out no card at all: the five selected rows
-    lose their cards too, and they do not come back until some row is made current again. The claim
-    below is what the viewer should do. It is the last scenario of the feature because it leaves
-    the grid sorted and the viewer blank.
+    A grid-header sort clears the table's current row, so the leading card is built for row -1.
+    Until 2026-09-21 that card was a stack of empty divs, zero pixels tall; the virtual view sizes
+    its layout by its first item, so it laid out no card at all and the five selected rows lost
+    theirs too. `forms-viewer.ts` now gives a card for no row the size of a real card, measured on
+    the header's temporary form. It stays last because it leaves the grid sorted.
     Given user selects rows where "SEVERITY" is "Critical"
     Then the record cards of forms viewer should show rows "215, 304, 428, 430, 512"
     When user double-clicks on the "header AGE" area of grid

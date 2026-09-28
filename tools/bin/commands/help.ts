@@ -95,13 +95,15 @@ grok add tests
 Please note that entity names may only include letters and numbers
 
 --domain scaffolds a working browse/CRUD app over an entity-mapped domain table
-(\`grok.dapi.domains\`) from the \`@datagrok-libraries/domain-ui\` defaults. Give it
-one table (\`--domain grit.issue\`), a whole schema the package declares in
+(\`grok.dapi.domains\`) from the u2 defaults (\`@datagrok-libraries/u2\`): a three-line
+app function, a \`src/app.spec.json\` the designer edits, and — for a schema the package
+does not declare yet — a one-table starter \`databases/<schema>/schema.json\`. Give it
+one table (\`--domain tracker.issue\`), a whole schema the package declares in
 \`databases/<schema>/schema.json\` (one app per table), or the path to a schema
 manifest to copy into the package. A fresh app package is two commands:
 
 grok create MyTracker
-cd MyTracker && grok add app --domain grit.issue
+cd MyTracker && grok add app --domain tracker.issue
 
 Supported languages for scripts:
 javascript, julia, node, octave, python, r
@@ -137,8 +139,9 @@ Options:
 [-v | --verbose] [--ui]
 
 --verbose         Print detailed output
---ui              Also generate \`src/generated/db-ui.ts\` — typed UI wrappers over
-                  \`@datagrok-libraries/domain-ui\` for every domain table. Once the
+--ui              Also generate \`src/generated/db-ui.ts\` — typed u2 handles
+                  (\`get<Schema>Db()\` → a \`DomainTable<Row>\` per table, opened in
+                  parallel behind one await) over \`@datagrok-libraries/u2\`. Once the
                   file exists, plain \`grok api\` keeps it up to date; delete it to
                   opt out again
 `;
@@ -215,7 +218,7 @@ Options:
 
 --all                  Publish all available packages (run in packages directory)
 --refresh              Publish all available already loaded packages (run in packages directory)
---link                 Link the package to local packages
+--link                 Link the package to local packages (no effect in a pnpm workspace checkout)
 --build                Builds the package (the default; kept for compatibility)
 --skip-build           Upload the existing dist/ without rebuilding
 --release              Publish package as release version
@@ -262,7 +265,7 @@ Options:
 --skip-playwright   Skip the Playwright pass; only run Puppeteer/DG.Test
 --skip-node         Skip the Node (browserless) pass; run all tests in the browser
 --node-only         Run only tests annotated {node: true} headless under Node, no browser
---link  	        Link the package to local utils
+--link  	        Link the package to local utils (no effect in a pnpm workspace checkout)
 --record            Records the test execution process in mp4 format
 --platform          Runs only platform tests (applicable for ApiTests package only)
 --core              Runs package & auto tests & core tests (core tests run only from DevTools package)
@@ -364,7 +367,8 @@ Usage: grok setup [--check] [--global]
 
 Gets a public/ checkout (or a fresh worktree) ready to build, and keeps it that way after a pull:
   1. Node 20+ (22 recommended); pnpm through corepack, at the version the workspace pins
-  2. removes per-package node_modules left by the npm era and stray package-lock.json files
+  2. removes per-package node_modules left by the npm era, stray package-lock.json files and the .js/.d.ts
+     files the npm-era tsc emitted beside js-api and library sources
   3. pnpm install at the workspace root
   4. reports a global grok older than the workspace one
 

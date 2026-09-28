@@ -26,6 +26,7 @@
     "bin",
     "dist",
     "bindings",
+    "tool",
     "README.md",
     "KNOWN_FAILURES.md"
   ],

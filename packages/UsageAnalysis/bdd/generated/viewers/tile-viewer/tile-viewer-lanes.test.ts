@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.tile-viewer]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -74,7 +76,7 @@ test.describe("Tile viewer lanes", () => {
       await session.step(64, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("An explicit lane list overrides the column's category order", async () => {
-      await session.step(67, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Lanes Column Name","RACE"],["Lanes","Black, Asian"]]));
+      await session.step(67, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Lanes Column Name","RACE"],["Lanes","Black, Asian"]]), [["Lanes Column Name","RACE"],["Lanes","Black, Asian"]]);
       await session.step(70, "Then the \"lanes list\" reading of tile viewer should be \"Black, Asian\"", () => readingReads(page, "lanes list", el("tile viewer"), "Black, Asian"));
       await session.step(71, "And the \"lanes\" reading of tile viewer should be 2", () => readingIs(page, "lanes", el("tile viewer"), 2));
       await session.step(72, "And the \"lane names\" reading of tile viewer should be \"Black, Asian\"", () => readingReads(page, "lane names", el("tile viewer"), "Black, Asian"));
@@ -124,7 +126,7 @@ test.describe("Tile viewer lanes", () => {
       await session.step(116, "When user resets the filter", () => resetFilter(page));
       await session.step(117, "Then all rows should pass the filter", () => filterPassesAll(page));
       await session.step(118, "And tile viewer should show 1000 rows", () => showsRows(page, el("tile viewer"), 1000));
-      await session.step(119, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Lanes",""],["Lanes Column Name","RACE"]]));
+      await session.step(119, "When user sets properties of tile viewer:", () => setProperties(page, el("tile viewer"), [["Lanes",""],["Lanes Column Name","RACE"]]), [["Lanes",""],["Lanes Column Name","RACE"]]);
       await session.step(122, "Then the \"lanes\" reading of tile viewer should be 4", () => readingIs(page, "lanes", el("tile viewer"), 4));
       await session.step(123, "And the \"lanes list\" reading of tile viewer should be \"\"", () => readingReads(page, "lanes list", el("tile viewer"), ""));
       await session.step(124, "And no errors should have been logged", () => noErrors(page));

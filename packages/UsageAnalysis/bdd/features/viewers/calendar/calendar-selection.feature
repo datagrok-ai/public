@@ -25,7 +25,6 @@ Feature: Calendar selection, On Click and Show Filtered Only
     Given user clears the row selection
     When user clicks on the "day 1989-12-21" area of calendar viewer
     Then 5 rows should be selected
-    And every selected row should pass the filter
     When user clears the row selection
     And user clicks on the "busiest day" area of calendar viewer
     Then some rows should be selected

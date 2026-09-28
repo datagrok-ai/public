@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: Init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -15,7 +15,7 @@ export async function renderPanel(func: any) : Promise<any> {
 
 //name: Model Hub
 //output: view result
-//meta.role: App
+//meta.role: app
 //meta.browsePath: Compute
 export function modelCatalog() {
   return PackageFunctions.modelCatalog();
@@ -32,7 +32,7 @@ export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) 
 //name: Custom Function View Editor
 //input: funccall call 
 //output: view result
-//meta.role: Editor
+//meta.role: editor
 export async function CustomFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.CustomFunctionViewEditor(call);
 }
@@ -40,7 +40,7 @@ export async function CustomFunctionViewEditor(call: DG.FuncCall) : Promise<any>
 //name: Rich Function View Editor
 //input: funccall call 
 //output: view result
-//meta.role: Editor
+//meta.role: editor
 export async function RichFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.RichFunctionViewEditor(call);
 }
@@ -48,7 +48,7 @@ export async function RichFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
 //name: Tree Wizard Editor
 //input: funccall call 
 //output: view result
-//meta.role: Editor
+//meta.role: editor
 export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TreeWizardEditor(call);
 }
@@ -114,6 +114,24 @@ export async function MockPipeline1(params: any) {
 //editor: Compute2:TreeWizardEditor
 export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
+}
+
+//name: Mock Single Step Pipeline
+//description: Single-step workflow used for testing the compact Tree Wizard view.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockSingleStepPipeline(params: any) {
+  return await PackageFunctions.MockSingleStepPipeline(params);
+}
+
+//name: Mock Single Step Nested
+//description: Single-step workflow reached through a ref, used for testing the compact Tree Wizard view.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockSingleStepNested(params: any) {
+  return await PackageFunctions.MockSingleStepNested(params);
 }
 
 //tags: stress

@@ -12,7 +12,7 @@
     "access": "public"
   },
   "license": "MIT",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "friendlyName": "Scientific Computing",
   "description": "Pure TypeScript library for numerical methods",
   "keywords": [
@@ -29,11 +29,14 @@
     "@types/wu": "catalog:",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
-    "typedoc": "^0.28.14"
+    "typedoc": "^0.28.14",
+    "typescript": "npm:typescript@^5.9.3"
   },
   "scripts": {
     "build": "grok tsc -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
+    "lint-fix": "eslint --ext .ts,.tsx src --fix",
+    "test": "jest",
     "update-codegen": "codegen-async-to-sync --roots src",
     "codegen:check": "codegen-async-to-sync --check --roots src"
   },

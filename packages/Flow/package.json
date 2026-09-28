@@ -43,5 +43,12 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/funcflow"
+  },
+  "grok": {
+    "testDependencies": [
+      "@datagrok/bio",
+      "@datagrok/chem",
+      "@datagrok/curves"
+    ]
   }
 }

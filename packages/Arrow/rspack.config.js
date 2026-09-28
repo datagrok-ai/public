@@ -1,5 +1,3 @@
 const {bundler} = require('@datagrok/build-config');
 
-module.exports = bundler({
-  "wasm": "sync"
-});
+module.exports = bundler({});

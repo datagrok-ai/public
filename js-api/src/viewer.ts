@@ -2,7 +2,7 @@
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType, Callback} from "./const";
 import {BitSet, Column, DataFrame} from "./dataframe.js";
 import {Func, Property, IProperty} from "./entities";
-import {IWidgetStatus, IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs, RangeSlider} from "./widgets";
+import {IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs, RangeSlider} from "./widgets";
 import {_toJson} from "./utils_convert";
 import {MapProxy} from "./proxies";
 import {toJs, toDart} from "./wrappers";
@@ -139,9 +139,6 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
   /** Descriptor of this widget. */
   get descriptor(): WidgetDescriptor { return api.grok_Viewer_Get_Descriptor(this.dart); }
-
-  /** Returns the widget's runtime structure for automated testing and introspection. */
-  getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
 
   /** Functions applicable to the underlying Dart viewer. */
   getFunctions(): Func[] { return this.dart ? toJs(api.grok_Widget_GetFunctions(this.dart)) : super.getFunctions(); }

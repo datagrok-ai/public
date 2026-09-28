@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
 import {LearningWidget} from '../widgets/learning-widget';
-import {WorkspaceTab, isApp} from './workspace-tab';
+import {WorkspaceTab} from './workspace-tab';
+import {isSpotlightEntity} from './entity-kinds';
 import {clearWorkspacePreview} from './preview-host';
 
 
@@ -102,8 +103,7 @@ export class SpotlightWidget extends DG.Widget {
       this.cleanLists();
       if (tabPane.name !== 'Workspace')
         clearWorkspacePreview();
-      tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
-        tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
+      this.updateContentOverflow(tabPane);
       for (const id of Array.from(this.markedReadIds)) {
         for (const el of Array.from(tabPane.content.querySelectorAll(`[data-notification-id="${id}"]`))) {
           el.classList.remove('grok-notification-unread');
@@ -111,6 +111,7 @@ export class SpotlightWidget extends DG.Widget {
         }
       }
     }));
+    this.updateContentOverflow(this.tabControl.currentPane);
     const notifPane = this.tabControl.panes.find((p) => p.name === 'Notifications');
     if (notifPane) {
       this.notificationsPromise.then((notifications) => {
@@ -135,6 +136,10 @@ export class SpotlightWidget extends DG.Widget {
     //   if (this.root.contains(trigger))
     //     grok.shell.windows.context.visible = true;
     // })));
+  }
+
+  updateContentOverflow(tabPane: DG.TabPane): void {
+    tabPane.content.parentElement?.classList.toggle('power-pack-overflow-hidden', tabPane.name === 'Learn');
   }
 
   async getDemosOfTheDay(): Promise<string[]> {
@@ -304,7 +309,7 @@ export class SpotlightWidget extends DG.Widget {
     const existingIds = new Set(this.sharedWithMe.map((e) => e.id));
     for (const id of sqlOnlyIds) {
       const ent = byIdMap.get(id);
-      if (!ent || existingIds.has(id) || !SpotlightWidget.isSpotlightEntity(ent))
+      if (!ent || existingIds.has(id) || !isSpotlightEntity(ent))
         continue;
       this.sharedWithMe.push(ent);
       this.sharedNotifications.push(null as any);
@@ -339,7 +344,7 @@ export class SpotlightWidget extends DG.Widget {
     this.recentEntities.length = 0;
     this.recentEntityTimes.length = 0;
     for (const ent of entities) {
-      if (!SpotlightWidget.isSpotlightEntity(ent))
+      if (!isSpotlightEntity(ent))
         continue;
       this.recentEntities.push(ent);
       this.recentEntityTimes.push(timestampMap.get(ent.id) ?? null);
@@ -813,21 +818,6 @@ export class SpotlightWidget extends DG.Widget {
         child.querySelector('span.d4-markup')?.appendChild(ui.span([` ${uniqueEvents.get(text)} times`]));
     }
     return list;
-  }
-
-  /** Returns true if the entity is relevant for Spotlight (Recent / Shared with me). */
-  static isSpotlightEntity(ent: DG.Entity): boolean {
-    if (!ent || !ent.friendlyName)
-      return false;
-    if (ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
-      ent instanceof DG.UserReport || ent.entityType === 'UserReport' || ent instanceof DG.TableInfo ||
-      (ent instanceof DG.Func && !(ent instanceof DG.Script || ent instanceof DG.DataQuery || ent instanceof DG.DataJob || isApp(ent))) ||
-      ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection ||
-      (ent instanceof DG.Project && (ent.isPackage || (!ent.isDashboard && !ent.isSpace))) ||
-      //@ts-ignore
-        (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))
-      return false;
-    return true;
   }
 
   removeUnnecessaryEntities(list: Array<DG.LogEvent | DG.UserNotification>): Array<DG.LogEvent | DG.UserNotification> {

@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.word-cloud]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -58,11 +60,11 @@ test.describe("Word cloud counts, the category gate and the viewer filter", () =
       await session.step(49, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("The word of the bigger count gets the bigger box", async () => {
-      await session.step(55, "Given user sets properties of word cloud viewer:", () => setProperties(page, el("word cloud viewer"), [["minRotationDegree","0"],["maxRotationDegree","0"]]));
+      await session.step(55, "Given user sets properties of word cloud viewer:", () => setProperties(page, el("word cloud viewer"), [["minRotationDegree","0"],["maxRotationDegree","0"]]), [["minRotationDegree","0"],["maxRotationDegree","0"]]);
       await session.step(58, "Then the \"word \\\"Caucasian\\\"\" area of word cloud viewer should be taller than the \"word \\\"Other\\\"\" area", () => areaBiggerThanArea(page, "word \"Caucasian\"", el("word cloud viewer"), "taller", "word \"Other\""));
       await session.step(59, "And the \"word \\\"Other\\\"\" area of word cloud viewer should be taller than the \"word \\\"Asian\\\"\" area", () => areaBiggerThanArea(page, "word \"Other\"", el("word cloud viewer"), "taller", "word \"Asian\""));
       await session.step(60, "And the \"word \\\"Caucasian\\\"\" area of word cloud viewer should be at least 60 pixels tall", () => areaAtLeastTall(page, "word \"Caucasian\"", el("word cloud viewer"), 60));
-      await session.step(61, "When user sets properties of word cloud viewer:", () => setProperties(page, el("word cloud viewer"), [["minRotationDegree","-30"],["maxRotationDegree","30"]]));
+      await session.step(61, "When user sets properties of word cloud viewer:", () => setProperties(page, el("word cloud viewer"), [["minRotationDegree","-30"],["maxRotationDegree","30"]]), [["minRotationDegree","-30"],["maxRotationDegree","30"]]);
       await session.step(64, "Then the \"words\" reading of word cloud viewer should be 4", () => readingIs(page, "words", el("word cloud viewer"), 4));
       await session.step(65, "And no errors should have been logged", () => noErrors(page));
     });
@@ -83,7 +85,7 @@ test.describe("Word cloud counts, the category gate and the viewer filter", () =
       await session.step(81, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Hovering a word shows how many rows carry it", async () => {
-      await session.step(87, "Given user sets properties of word cloud viewer:", () => setProperties(page, el("word cloud viewer"), [["minRotationDegree","0"],["maxRotationDegree","0"]]));
+      await session.step(87, "Given user sets properties of word cloud viewer:", () => setProperties(page, el("word cloud viewer"), [["minRotationDegree","0"],["maxRotationDegree","0"]]), [["minRotationDegree","0"],["maxRotationDegree","0"]]);
       await session.step(90, "When user hovers over the \"word \\\"Caucasian\\\"\" area of word cloud viewer", () => hoverArea(page, "word \"Caucasian\"", el("word cloud viewer")));
       await session.step(91, "Then exactly one tooltip should be shown", () => oneTooltip(page));
       await session.step(92, "And tooltip should contain text \"896 rows\"", () => shouldContainText(page, el("tooltip"), "896 rows"));
@@ -92,7 +94,7 @@ test.describe("Word cloud counts, the category gate and the viewer filter", () =
       await session.step(95, "Then exactly one tooltip should be shown", () => oneTooltip(page));
       await session.step(96, "And tooltip should contain text \"62 rows\"", () => shouldContainText(page, el("tooltip"), "62 rows"));
       await session.step(97, "When user moves the pointer away from word cloud viewer", () => pointerAway(page, el("word cloud viewer")));
-      await session.step(98, "And user sets properties of word cloud viewer:", () => setProperties(page, el("word cloud viewer"), [["minRotationDegree","-30"],["maxRotationDegree","30"]]));
+      await session.step(98, "And user sets properties of word cloud viewer:", () => setProperties(page, el("word cloud viewer"), [["minRotationDegree","-30"],["maxRotationDegree","30"]]), [["minRotationDegree","-30"],["maxRotationDegree","30"]]);
       await session.step(101, "Then the \"words\" reading of word cloud viewer should be 4", () => readingIs(page, "words", el("word cloud viewer"), 4));
       await session.step(102, "And no errors should have been logged", () => noErrors(page));
     });

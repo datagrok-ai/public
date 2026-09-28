@@ -14,13 +14,6 @@ export namespace queries {
 }
 
 export namespace funcs {
-  /**
-   * A complete browse/CRUD app over apitests.item, from domain-ui defaults alone
-   */
-  export async function domainItemsApp(path?: string ): Promise<DG.View> {
-    return await grok.functions.call('APITests:DomainItemsApp', { path });
-  }
-
   export async function getTable(name: string , path?: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('APITests:GetTable', { name, path });
   }

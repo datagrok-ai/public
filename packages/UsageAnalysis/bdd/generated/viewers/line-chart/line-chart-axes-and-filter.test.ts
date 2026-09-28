@@ -7,6 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.line-chart]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
+import '../../../bindings/grid.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -28,7 +30,7 @@ test.describe("Line chart axes, date bucketing and following the filter", () => 
     const run = journey(test, 9, page);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
     await session.step(20, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
-    await session.step(21, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]));
+    await session.step(21, "And user adds a line chart viewer with:", () => addViewerWith(page, "line chart", [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]), [["xColumnName","CAST Idea ID"],["yColumnNames","Chemical Space X"]]);
     await session.step(24, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
     await session.step(25, "And \"axesFollowFilter\" property of line chart viewer should be \"true\"", () => propertyShouldBe(page, "axesFollowFilter", el("line chart viewer"), "true"));
     await session.step(26, "And the \"x axis min\" reading of line chart viewer should be between 634780 and 634782", () => readingBetween(page, "x axis min", el("line chart viewer"), 634780, 634782));
@@ -75,12 +77,12 @@ test.describe("Line chart axes, date bucketing and following the filter", () => 
       await session.step(68, "And the \"x axis min\" reading of line chart viewer should be between 0 and 1", () => readingBetween(page, "x axis min", el("line chart viewer"), 0, 1));
       await session.step(69, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
       await session.step(70, "And line chart viewer should be painted", () => painted(page, el("line chart viewer")));
-      await session.step(71, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xAxisType","linear"],["xColumnName","CAST Idea ID"]]));
+      await session.step(71, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xAxisType","linear"],["xColumnName","CAST Idea ID"]]), [["xAxisType","linear"],["xColumnName","CAST Idea ID"]]);
       await session.step(74, "Then the \"markers drawn\" reading of line chart viewer should be 100", () => readingIs(page, "markers drawn", el("line chart viewer"), 100));
       await session.step(75, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Hovering an empty logarithmic chart raises nothing (github-2574)", async () => {
-      await session.step(78, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xColumnName","Chemical Space X"],["xAxisType","logarithmic"]]));
+      await session.step(78, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xColumnName","Chemical Space X"],["xAxisType","logarithmic"]]), [["xColumnName","Chemical Space X"],["xAxisType","logarithmic"]]);
       await session.step(81, "And user filters rows where \"TPSA\" is between 0 and 1", () => filterBetween(page, "TPSA", 0, 1));
       await session.step(82, "Then 0 rows should pass the filter", () => filterPasses(page, 0));
       await session.step(83, "And the \"rows shown\" reading of line chart viewer should be 0", () => readingIs(page, "rows shown", el("line chart viewer"), 0));
@@ -92,7 +94,7 @@ test.describe("Line chart axes, date bucketing and following the filter", () => 
       await session.step(89, "When user resets the filter", () => resetFilter(page));
       await session.step(90, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
       await session.step(91, "And the \"markers drawn\" reading of line chart viewer should be 59", () => readingIs(page, "markers drawn", el("line chart viewer"), 59));
-      await session.step(92, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xAxisType","linear"],["xColumnName","CAST Idea ID"]]));
+      await session.step(92, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xAxisType","linear"],["xColumnName","CAST Idea ID"]]), [["xAxisType","linear"],["xColumnName","CAST Idea ID"]]);
       await session.step(95, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A date column buckets into as many X positions as the mapping asks for", async () => {
@@ -111,12 +113,12 @@ test.describe("Line chart axes, date bucketing and following the filter", () => 
       await session.step(110, "Then the \"x categories\" reading of line chart viewer should be 11", () => readingIs(page, "x categories", el("line chart viewer"), 11));
       await session.step(111, "And the \"aggregation\" reading of line chart viewer should be \"avg\"", () => readingReads(page, "aggregation", el("line chart viewer"), "avg"));
       await session.step(112, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
-      await session.step(113, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xMap",""],["xColumnName","CAST Idea ID"]]));
+      await session.step(113, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xMap",""],["xColumnName","CAST Idea ID"]]), [["xMap",""],["xColumnName","CAST Idea ID"]]);
       await session.step(116, "Then the \"aggregated\" reading of line chart viewer should be \"false\"", () => readingReads(page, "aggregated", el("line chart viewer"), "false"));
       await session.step(117, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Filtering while the X axis is year-quarter buckets keeps the chart drawing (GROK-18375)", async () => {
-      await session.step(120, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xColumnName","Competition assay Date"],["xMap","year quarter"]]));
+      await session.step(120, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xColumnName","Competition assay Date"],["xMap","year quarter"]]), [["xColumnName","Competition assay Date"],["xMap","year quarter"]]);
       await session.step(123, "Then the \"x categories\" reading of line chart viewer should be 11", () => readingIs(page, "x categories", el("line chart viewer"), 11));
       await session.step(124, "When user filters rows where \"Series\" is one of \"Aminopiperidines, Pyrrolidines\"", () => filterToAnyOf(page, "Series", "Aminopiperidines, Pyrrolidines"));
       await session.step(125, "Then 25 rows should pass the filter", () => filterPasses(page, 25));
@@ -128,7 +130,7 @@ test.describe("Line chart axes, date bucketing and following the filter", () => 
       await session.step(131, "When user resets the filter", () => resetFilter(page));
       await session.step(132, "Then 100 rows should pass the filter", () => filterPasses(page, 100));
       await session.step(133, "And the \"x categories\" reading of line chart viewer should be 11", () => readingIs(page, "x categories", el("line chart viewer"), 11));
-      await session.step(134, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xMap",""],["xColumnName","CAST Idea ID"]]));
+      await session.step(134, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xMap",""],["xColumnName","CAST Idea ID"]]), [["xMap",""],["xColumnName","CAST Idea ID"]]);
       await session.step(137, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Narrowing the X column to its middle half keeps 29 rows (GROK-20185)", async () => {
@@ -156,7 +158,7 @@ test.describe("Line chart axes, date bucketing and following the filter", () => 
       await session.step(161, "Then the \"plot\" area of line chart viewer should have less ink than before", () => areaLessInk(page, "plot", el("line chart viewer")));
       await session.step(162, "When user sets \"showHorizontalGridLines\" property of line chart viewer to \"false\"", () => setProperty(page, "showHorizontalGridLines", el("line chart viewer"), "false"));
       await session.step(163, "Then the \"plot\" area of line chart viewer should have less ink than before", () => areaLessInk(page, "plot", el("line chart viewer")));
-      await session.step(164, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["invertXAxis","false"],["showVerticalGridLines","true"],["showHorizontalGridLines","true"]]));
+      await session.step(164, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["invertXAxis","false"],["showVerticalGridLines","true"],["showHorizontalGridLines","true"]]), [["invertXAxis","false"],["showVerticalGridLines","true"],["showHorizontalGridLines","true"]]);
       await session.step(168, "Then the \"plot\" area of line chart viewer should have more ink than before", () => areaMoreInk(page, "plot", el("line chart viewer")));
       await session.step(169, "And no errors should have been logged", () => noErrors(page));
     });
@@ -166,7 +168,7 @@ test.describe("Line chart axes, date bucketing and following the filter", () => 
       await session.step(174, "And the \"x axis span\" reading of line chart viewer should be between 106 and 107", () => readingBetween(page, "x axis span", el("line chart viewer"), 106, 107));
       await session.step(175, "When user sets \"yAxisTickmarksMode\" property of line chart viewer to \"MinMax\"", () => setProperty(page, "yAxisTickmarksMode", el("line chart viewer"), "MinMax"));
       await session.step(176, "Then the \"y axis\" area of line chart viewer should have less ink than before", () => areaLessInk(page, "y axis", el("line chart viewer")));
-      await session.step(177, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xAxisTickmarksMode","Auto"],["yAxisTickmarksMode","Auto"]]));
+      await session.step(177, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["xAxisTickmarksMode","Auto"],["yAxisTickmarksMode","Auto"]]), [["xAxisTickmarksMode","Auto"],["yAxisTickmarksMode","Auto"]]);
       await session.step(180, "Then the \"x axis\" area of line chart viewer should have more ink than before", () => areaMoreInk(page, "x axis", el("line chart viewer")));
       await session.step(181, "And no errors should have been logged", () => noErrors(page));
     });

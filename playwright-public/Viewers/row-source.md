@@ -1,3 +1,16 @@
+---
+feature: row-source
+target_layer: playwright
+boot_lane: local
+coverage_type: regression
+priority: p2
+realizes_atlas: []
+realizes: [viewers.scatter-plot, viewers.line-chart, viewers.histogram, viewers.bar-chart, viewers.pie-chart, viewers.box-plot, viewers.pc-plot, viewers.filters]
+realized_as:
+  - row-source-spec.ts
+related_bugs: []
+---
+
 # Row Source tests
 
 **Filter values:**

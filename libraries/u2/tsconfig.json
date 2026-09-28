@@ -1,6 +1,7 @@
 {
   "extends": "@datagrok/build-config/tsconfig.lib.json",
   "include": [
-    "src"
+    "src",
+    "tests/typing"
   ]
 }

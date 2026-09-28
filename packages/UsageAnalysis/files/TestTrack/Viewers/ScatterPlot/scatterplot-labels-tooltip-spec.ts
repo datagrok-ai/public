@@ -258,8 +258,9 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     console.log(`label overlay ink: cleared=${cleared}`);
     expect(Math.abs(cleared - baseline)).toBeLessThan(OVERLAY_RESTORE_TOLERANCE);
 
-    await setListProp(page, 'labelColumnNames', []);
+    // Show Labels For greys out (aria-disabled) once no label column is set, so it is reset first
     await sp.setChoiceProp(page, 'prop-show-labels-for', 'labels', 'All');
+    await setListProp(page, 'labelColumnNames', []);
     expect(await sp.readProp(page, 'labelColumnNames')).toEqual([]);
     expect(await sp.readProp(page, 'showLabelsFor')).toBe('All');
     expect(errCount()).toBe(errBefore);

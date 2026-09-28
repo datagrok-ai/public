@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: Autostart
+//meta.role: autostart
 export function init() : void {
   PackageFunctions.init();
 }
@@ -17,7 +17,7 @@ export async function chemblSearchWidgetLocalDb(mol: string, substructure: boole
 //name: Databases | ChEMBL | Substructure Search (Internal)
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.chemblSubstructureSearchPanel(mol);
 }
@@ -25,7 +25,7 @@ export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> 
 //name: Databases | ChEMBL | Similarity Search (Internal)
 //input: string mol { semType: Molecule }
 //output: widget result
-//meta.role: widgets,Panel
+//meta.role: widgets,panel
 export async function chemblSimilaritySearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.chemblSimilaritySearchPanel(mol);
 }

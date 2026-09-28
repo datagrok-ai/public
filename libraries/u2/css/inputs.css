@@ -30,6 +30,19 @@
   text-overflow: ellipsis;
 }
 
+/* a field that must hold a value carries the asterisk on its caption; the caption is a column
+   flex so a bare text node centers vertically — a row does the same and leaves the star beside it */
+.u2-input-required > .u2-input-label {
+  flex-direction: row;
+  align-items: center;
+}
+
+.u2-input-required > .u2-input-label::after {
+  content: '*';
+  margin-left: var(--dg-space-xs);
+  color: var(--dg-error);
+}
+
 .u2-input-editor {
   box-sizing: border-box;
   height: var(--dg-control-height);
@@ -90,6 +103,16 @@ textarea.u2-input-editor {
   border-bottom: var(--dg-border-width) solid var(--dg-error);
 }
 
+/* the bridged molecule editor is a canvas the Dart input measures and repaints itself, at the
+   100×70 chem.css gives it (molecule_input.dart:65-69, 116-124); the editor skin above stretched
+   it to the form's full width at one row's height, where the depiction renders blank */
+.u2-input-root[data-u2='dart-input'] .u2-input-editor.d4-input-molecule-canvas {
+  flex: none;
+  width: 100px;
+  height: 70px;
+  padding: 0;
+}
+
 /* a whole line of its own under the editor, whatever room is left beside it: the editors are as
    wide as the platform pins them, so a message that fit beside a 100px color field but not beside a
    460px one would land off the pane on one row and under the field on the next. Long verdicts
@@ -98,7 +121,6 @@ textarea.u2-input-editor {
 .u2-input-error {
   flex: 1 0 100%;
   min-width: 0;
-  max-width: 260px;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
