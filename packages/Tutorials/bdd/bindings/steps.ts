@@ -98,3 +98,23 @@ export const closeTutorial = When('user closes the tutorial', async (page: Page)
   await expect(page.locator('.grok-tutorial-entry'), 'the step entries of the closed tutorial').toHaveCount(0);
 }, {tier: 'ui', description: 'the Close button in the running tutorial\'s header'});
 
+
+/** A step entry by its instruction exactly as shown — a {string}, since instructions quote what the
+ * learner types ('Name a column "BMI"'), which an element phrase cannot hold. */
+function stepEntry(page: Page, instruction: string) {
+  return page.locator(`.grok-tutorial-entry[role="checkbox"][aria-label="${instruction.replace(/"/g, '\\"')}"]`);
+}
+
+export const stepDone = Then('the tutorial step {string} should be done', async (page: Page, instruction: string) => {
+  const entries = stepEntry(page, instruction);
+  await expect.poll(async () => {
+    const states = await entries.evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-checked')}${e.getAttribute('aria-invalid') === 'true' ? ' invalid' : ''}`));
+    return states.length === 0 ? 'not listed' : states.includes('true') ? 'done' : states.join(', ');
+  }, {message: `the tutorial step "${instruction}"`}).toBe('done');
+}, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete'});
+
+export const stepNotDone = Then('the tutorial step {string} should not be done yet', async (page: Page, instruction: string) => {
+  const entries = stepEntry(page, instruction);
+  await expect.poll(() => entries.evaluateAll((els) => els.length === 0 ? 'not listed' : els.every((e) => e.getAttribute('aria-checked') === 'false') ? 'pending' : 'done'),
+    {message: `the tutorial step "${instruction}"`}).toBe('pending');
+}, {description: 'the entry is listed and still unchecked — the claim that pairs with a gesture which must not tick it'});

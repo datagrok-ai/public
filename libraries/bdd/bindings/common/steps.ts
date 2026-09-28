@@ -301,6 +301,10 @@ async function codeOf(page: Page, target: ElementRef): Promise<string> {
     const view = root?.cmView?.view ?? root?.querySelector?.('.cm-content')?.cmView?.view;
     if (view)
       return String(view.state.doc.toString());
+    // a CM6 editor also holds its screen-reader announcements ("Selection deleted"): read the lines only
+    const lines = root?.querySelectorAll?.('.cm-content .cm-line');
+    if (lines?.length)
+      return [...lines].map((l: Element) => l.textContent ?? '').join('\n');
     return String(root?.textContent ?? el.textContent ?? '');
   });
 }

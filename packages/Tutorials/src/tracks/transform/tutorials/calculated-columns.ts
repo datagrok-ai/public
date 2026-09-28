@@ -45,8 +45,6 @@ export class CalculatedColumnsTutorial extends Tutorial {
     await this.dlgInputAction(addNCDlg, `Name a column "${columnName}"`, '', columnName);
 
     const simpleFormula = 'Div(170, 100)';
-    await this.dlgInputAction(addNCDlg, `Enter the expression "${simpleFormula}"`, '', simpleFormula, '', false, 2);
-
     await this.action(`Enter the expression "${simpleFormula}"`, new Observable((subscriber: any) => {
       const formulaEntered = () => Array.from(addNCDlg!.root.querySelectorAll('.cm-line'))
         .map((line) => line.textContent).join('\n') === simpleFormula;
@@ -87,11 +85,11 @@ export class CalculatedColumnsTutorial extends Tutorial {
       })));
 
     accordion!.getPane('Formula').expanded = true;
-    const editDlg = await this.openDialog('Click the "Edit" button under the formula field in the context panel',
-      'Edit Column Formula', $(accordion!.root).find('div.d4-pane-formula button.ui-btn').filter((idx, el) =>
-      el.textContent?.toLowerCase() === 'edit')[0], 'The <b>Formula</b> pane contains the expression the column ' +
+    const editDlg = await this.openDialog('Click the "Edit in dialog" button under the formula field in the context panel',
+      'Edit Column Formula', () => $(accordion!.root).find('div.d4-pane-formula button.ui-btn').filter((idx, el) =>
+      el.textContent?.trim().toLowerCase() === 'edit in dialog')[0] ?? null, 'The <b>Formula</b> pane contains the expression the column ' +
       'is calculated on. You can edit it in the field and apply the changes directly from the context panel, ' +
-      'or re-open the dialog by pressing "Edit".');
+      'or re-open the dialog by pressing "Edit in dialog".');
 
     const formulaWithColInfo = 'To apply a function to column values, drag the column into the dialog formula ' +
       'field either from the grid or from the column list in the dialog (use search input to find a column in ' +

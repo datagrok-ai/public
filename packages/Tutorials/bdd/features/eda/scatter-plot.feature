@@ -22,46 +22,46 @@ Feature: The Scatter Plot tutorial
   Scenario: A learner completes the Scatter Plot tutorial
     When user starts the "Scatter Plot" tutorial
     Then the tutorial progress should be 1 of 11
-    And "Open scatter plot" tutorial step should be unchecked
+    And the tutorial step "Open scatter plot" should not be done yet
     And scatter-plot icon in toolbox should be hinted
     When user clicks on scatter-plot icon in toolbox
     Then the open tableview should have 1 scatter plot viewer
-    And "Open scatter plot" tutorial step should be checked
+    And the tutorial step "Open scatter plot" should be done
     And the tutorial progress should be 2 of 11
 
     When user picks "HEIGHT" in the "x" column selector of scatter plot viewer
-    Then "Set X to HEIGHT" tutorial step should be checked
+    Then the tutorial step "Set X to HEIGHT" should be done
     And "xColumnName" property of scatter plot viewer should be "HEIGHT"
     When user picks "WEIGHT" in the "y" column selector of scatter plot viewer
-    Then "Set Y to WEIGHT" tutorial step should be checked
+    Then the tutorial step "Set Y to WEIGHT" should be done
     And "yColumnName" property of scatter plot viewer should be "WEIGHT"
     When user picks "AGE" in the "size" column selector of scatter plot viewer
-    Then "Set Size to AGE" tutorial step should be checked
+    Then the tutorial step "Set Size to AGE" should be done
     And "sizeColumnName" property of scatter plot viewer should be "AGE"
     When user picks "SEX" in the "color" column selector of scatter plot viewer
-    Then "Set Color to SEX" tutorial step should be checked
+    Then the tutorial step "Set Color to SEX" should be done
     And "colorColumnName" property of scatter plot viewer should be "SEX"
 
     When user remembers the "x axis span" reading of scatter plot viewer
     And user drags a zoom box over the "view" area of scatter plot viewer
-    Then "Zoom in" tutorial step should be checked
+    Then the tutorial step "Zoom in" should be done
     And the "x axis span" reading of scatter plot viewer should be lower than remembered
     When user double-clicks on empty plot space of scatter plot viewer
-    Then "Double-click to unzoom" tutorial step should be checked
+    Then the tutorial step "Double-click to unzoom" should be done
     And the "x axis span" reading of scatter plot viewer should be as remembered
 
     # 5850 markers sized by AGE overlap: the click makes current the row the plot finds on top under
     # the pointer, so the claim is that row — the plot's own "hovered row" — not the one aimed at
     When user clicks on the "marker of row 11" area of scatter plot viewer
-    Then "Click on a point" tutorial step should be checked
+    Then the tutorial step "Click on a point" should be done
     And the "hovered row" reading of scatter plot viewer should be the current row
 
     When user drags a selection box over the "view" area of scatter plot viewer
-    Then "Select points" tutorial step should be checked
+    Then the tutorial step "Select points" should be done
     And some rows should be selected
-    And "Deselect points" tutorial step should be unchecked
+    And the tutorial step "Deselect points" should not be done yet
     When user presses Escape in scatter plot viewer
-    Then "Deselect points" tutorial step should be checked
+    Then the tutorial step "Deselect points" should be done
     And no rows should be selected
 
     And the "Scatter Plot" tutorial should be completed
