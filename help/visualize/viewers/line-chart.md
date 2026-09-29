@@ -196,6 +196,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Line Coloring Type | string |  |
 | Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
 | Show Regression Line Equation | boolean |  |
+| Show Determination Coefficient | boolean | Coefficient of determination (r²) of the fit. |
 | Show Spearman Correlation | boolean |  |
 | Show Pearson Correlation | boolean |  |
 | Show Mean Absolute Error | boolean |  |

@@ -40,7 +40,7 @@ A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/ch
 To add a scatterplot, click the **Scatterplot** icon on the **Toolbox**.
 
 Use the viewer controls to select columns for each axis and marker color and
-size. You can also drag-and-drop columns from the grid into the scatter plot. 
+size. You can also drag-and-drop columns from the grid into the scatterplot. 
 For additional configurations, click the **Gear** icon on top of the
 viewer and set your preferences in the **Context Panel**. 
 
@@ -50,11 +50,11 @@ Element-specific context menus appear when you click on legend, axis, or label.
 
 ## Data source
 
-To specify the rows to show on the scatter plot, use the "Table" and "Row Source" properties in the **Data** 
+To specify the rows to show on the scatterplot, use the "Table" and "Row Source" properties in the **Data** 
 section on the **Context Panel**. 
 * "Table" to visualize a table other than the current one
 * "Row Source" to visualize a subset of data: 
-  * "Filtered" (the default value) - scatter plot follows view filter
+  * "Filtered" (the default value) - scatterplot follows view filter
   * "All", "Selected", "SelectedOrCurrent", "FilteredSelected", "MouseOverGroup", "CurrentRow", "MouseOverRow" - 
     other options useful for providing interactivity
 
@@ -78,16 +78,16 @@ check **Show Markers With Empty Size**.
 
 ## Filtering
 
-In addition to visualizing filtered rows, scatter plot can also be used to filter the table, which
+In addition to visualizing filtered rows, scatterplot can also be used to filter the table, which
 in turn affects what you see on other viewers on this view. This behavior is controlled by the
 "Zoom and Filter" property:
 
 * "filter by zoom" (default): as you zoom in, global view filter changes to show only rows that are 
   visible on the scatterplot. In this mode, "Filter Out Invalid" property defined whether rows that
-  could not be visualized on the scatter plot (such as negative values on log scales) should be
+  could not be visualized on the scatterplot (such as negative values on log scales) should be
   filtered out. 
 * "no action": zooming in does not affect view filter
-* "zoom by filter": as the view filter changes, scatter plot zooms in to the minimum area containing
+* "zoom by filter": as the view filter changes, scatterplot zooms in to the minimum area containing
   filtered points. This is useful for analyzing clusters of data.
 * "pack and zoom by filter": mostly same as "zoom by filter", but in case categorical values 
   are shown on an axis and some categories are completely filtered out, these categories get removed
@@ -109,18 +109,23 @@ from the context menu.
 
 ![](img/scatter-plot-selection.gif)
 
-## Regression line
+## Trend lines
 
-To show a regression line, press `R` or select **Show Regression Line** in the **Context Panel**.
+Use regression and moving average lines in a scatterplot to identify and analyze trends in your data.
+
+### Regression line
+
+To show a regression line, press `R` or right-click the scatterplot and select **Tools** > **Show Regression Line**.
 
 When the scatterplot is colored by a categorical column, a separate regression line is shown for
 each category, up to 20 categories. To show a single regression line for all points, clear
 **Regression Per Category**.
 
-### Regression statistics
+#### Regression statistics
 
 By default, the regression equation and R² are shown in the top-left corner of the scatterplot. To
-hide them, clear **Show Regression Line Equation**.
+hide the equation, clear **Show Regression Line Equation**. To hide R², clear **Show Determination
+Coefficient**. Each statistic can be shown without the equation.
 
 You can also display additional statistics by selecting:
 
@@ -129,9 +134,9 @@ You can also display additional statistics by selecting:
 * **Show Mean Absolute Error**
 * **Show Root Mean Square Error**
 
-![](img/scatter-plot-regression-line.png)
+![Adding a regression line, splitting it by category, and choosing the statistics](img/scatter-plot-regression-line.gif)
 
-## Moving average
+### Moving average
 
 A moving average line shows the trend in noisy data. Each point of the line is the average of the
 Y values in a window that ends at this point. To show the line, check **Show Moving Average Line**
@@ -150,6 +155,8 @@ line.
 
 When the scatterplot is colored by a categorical column, it draws a line for each category, up to
 20 categories. To draw one line for all points, clear **Moving Average Per Category**.
+
+![Adding a moving average, changing its window for a numeric and a date X axis, and splitting it by category](img/scatter-plot-moving-average.gif)
 
 ## Formula lines
 
@@ -199,7 +206,7 @@ To customize a region, provide a description and configure visual properties suc
 
 ### Supported viewers
 
-Formula lines and annotation regions are supported on the [scatter plot](scatter-plot.md), [line chart](line-chart.md), [bar chart](bar-chart.md), [histogram](histogram.md), [box plot](box-plot.md), and [density plot](density-plot.md). When applied to the dataframe, they automatically appear on every viewer with matching axes.
+Formula lines and annotation regions are supported on the [scatterplot](scatter-plot.md), [line chart](line-chart.md), [bar chart](bar-chart.md), [histogram](histogram.md), [box plot](box-plot.md), and [density plot](density-plot.md). When applied to the dataframe, they automatically appear on every viewer with matching axes.
 Box plot, histogram, and bar chart support lines and bands on the value axis only.
 
 If a table has several similar columns, such as measurements at different time points, you can
@@ -370,6 +377,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Lines Width | number | Defines the width of the lines connecting the markers. See **Lines Width**. |
 | Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
 | Show Regression Line Equation | boolean |  |
+| Show Determination Coefficient | boolean | Coefficient of determination (r²) of the fit. |
 | Show Spearman Correlation | boolean |  |
 | Show Pearson Correlation | boolean |  |
 | Show Mean Absolute Error | boolean |  |

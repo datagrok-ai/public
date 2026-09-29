@@ -160,10 +160,11 @@ The enumerate feature is a powerful tool for generating multiple sequence varian
 Choose specific monomers that will be enumerated at each specified position.
 
 **Placeholder Enumeration**  
-Specify positions and monomers (or entire monomer libraries) for enumeration with two sub-modes:
+Specify positions and monomers (or entire monomer libraries) for enumeration. The **Enumerator type** sets how variants are built:
 
-* **Single Enumeration**: At each position, only one monomer from the list is chosen for each variant
-* **Matrix Enumeration**: All combinations of monomers at specified positions are generated (combinatorial expansion)
+* **single**: Each position is enumerated independently. Each variant changes one position.
+* **parallel**: The first variant takes the first monomer listed for every position, the second takes the second, and so on. All positions must have the same number of monomers.
+* **matrix**: All combinations of monomers at the specified positions are generated (combinatorial expansion).
 
 ### Additional Options
 
@@ -175,15 +176,15 @@ Specify positions and monomers (or entire monomer libraries) for enumeration wit
 <details>
 <summary>How to enumerate sequences</summary>
 
-1. Right-click on any sequence (template) in any supported notation
-2. Select **Polytool Enumerate** from the context menu
+1. Click a sequence (template) in any supported notation
+2. On the **Top Menu**, select **Bio** > **PolyTool** > **Enumerate HELM...**
 3. The dialog opens with HELM representation of the sequence
 4. Click on positions in the HELM sequence to select them for enumeration
 5. Specify which monomers to use at each selected position:
    * Individual monomers
    * Multiple monomers
    * Entire monomer libraries
-6. Choose enumeration mode (single or matrix)
+6. Choose the **Enumerator type** (single, parallel, or matrix)
 7. Optionally enable conversion to molecular structures
 8. Click **OK** to generate variants
 
