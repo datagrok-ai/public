@@ -3,7 +3,7 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [projects.cp.rename-dependent-entity-reopen, projects.op.rename_external_dep, projects.op.share_with_recipient_open, projects.op.rename_project]
+realizes_atlas: [projects.cp.rename-dependent-entity-reopen, projects.op.rename_external_dep, projects.op.share_with_recipient_open]
 realizes: [views.projects]
 realized_as:
   - projects-lifecycle-query-spec.ts
@@ -21,13 +21,16 @@ related_bugs:
 
 A project built from your own saved query is saved, shared, and then
 the **query** is renamed. The project must still open with its data
-(github-3550).
+(github-3550). Then the query's SQL is changed: the next open must show
+the new result, which proves that Data sync runs the query again
+instead of showing the saved rows.
 
 ## Setup
 
 1. Two accounts: the **owner** (test user) and a **second user** who
    can access the **NorthwindTest** Postgres connection.
-2. Names in this test: query `lifecycleQuery`, project
+2. **NorthwindTest** exists only on dev.
+3. Names in this test: query `lifecycleQuery`, project
    `lifecycleQueryProj`.
 
 ## Scenario
@@ -98,36 +101,43 @@ the **query** is renamed. The project must still open with its data
    - **Verify:** no error dialog appears.
    - Right-click the left sidebar and select **Close All**.
 
-8. **The recipient reopens the project (github-3550).**
-   - Click your avatar at the bottom of the left sidebar.
-   - Click **Logout** in the profile view.
-   - Sign in with the second user's credentials.
+8. **Change the query's SQL.**
+   - Under **NorthwindTest**, right-click `lifecycleQueryRenamed` and
+     choose **Edit...**.
+   - Change the query text to `select * from public.orders limit 100`.
+   - Click **Save** on the ribbon.
+   - Close the query editor.
+
+9. **The owner reopens the project with the new SQL.**
+   - Reload the browser tab.
    - Go to **Browse > Dashboards**.
    - Type `lifecycleQueryProj` into the search box.
    - Click the refresh icon.
    - Double-click the `lifecycleQueryProj` tile.
-   - **Verify:** the table opens with 830 rows.
+   - **Verify:** the table opens with 100 rows (not the 830 it was
+     saved with).
    - **Verify:** no error dialog appears.
    - Right-click the left sidebar and select **Close All**.
-   - Click your avatar at the bottom of the left sidebar.
-   - Click **Logout** in the profile view.
-   - Sign in with the owner's credentials.
 
-9. **Rename the project.**
-   - Go to **Browse > Dashboards**.
-   - Right-click the `lifecycleQueryProj` tile and choose **Rename...**.
-   - Change the name to `lifecycleQueryProjRenamed`.
-   - Click **OK**.
-   - Go to **Browse > Dashboards**.
-   - Type `lifecycleQueryProjRenamed` into the search box.
-   - Click the refresh icon.
-   - Double-click the `lifecycleQueryProjRenamed` tile.
-   - **Verify:** the table opens with 830 rows.
-   - Right-click the left sidebar and select **Close All**.
+10. **The recipient reopens the project (github-3550).**
+    - Click your avatar at the bottom of the left sidebar.
+    - Click **Logout** in the profile view.
+    - Sign in with the second user's credentials.
+    - Go to **Browse > Dashboards**.
+    - Type `lifecycleQueryProj` into the search box.
+    - Click the refresh icon.
+    - Double-click the `lifecycleQueryProj` tile.
+    - **Verify:** the table opens with 100 rows.
+    - **Verify:** no error dialog appears.
+    - Right-click the left sidebar and select **Close All**.
+    - Click your avatar at the bottom of the left sidebar.
+    - Click **Logout** in the profile view.
+    - Sign in with the owner's credentials.
 
-10. **Cleanup.**
-    - Right-click the `lifecycleQueryProjRenamed` tile and choose
-      **Delete Project**.
+11. **Cleanup.**
+    - Go to **Browse > Dashboards**.
+    - Right-click the `lifecycleQueryProj` tile and choose **Delete
+      Project**.
     - Click **DELETE**.
     - Wait until the dialog closes.
     - Under **NorthwindTest**, right-click `lifecycleQueryRenamed` and
@@ -138,6 +148,14 @@ the **query** is renamed. The project must still open with its data
 
 ## Expected results
 
-- A query-based project reopens and reloads the query result.
+- A query-based project reopens and runs the query again: after the
+  SQL changes, the owner and the recipient see the new result.
 - The recipient can open the shared project.
 - After the query is renamed, the project still opens with its data.
+
+## Automation notes
+
+- Step 9 reloads the tab so that the owner's session does not reuse a
+  query definition it loaded before the edit: after a script is edited,
+  the same session can keep running the old body for about a minute.
+  Whether a query edit has the same delay was not checked.
