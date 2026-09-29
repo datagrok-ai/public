@@ -1271,13 +1271,20 @@ const consoleMark = new WeakMap<Page, number>();
 /** The console logs the calls only while it is open. */
 async function openConsole(page: Page): Promise<void> {
   const input = page.locator('.d4-console-wrapper input.ui-input-editor').filter({visible: true});
-  if (await input.count() === 0) {
+  const opening = await input.count() === 0;
+  if (opening) {
     // a focused text field would take the backquote as a character
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.keyboard.press('Backquote');
   }
   await expect(input, 'the console input').toBeVisible();
+  // an opening console focuses its input a moment after it shows: text typed elsewhere before that ends up there
+  if (opening)
+    await expect(input, 'the console input, which takes the focus once the console is up').toBeFocused();
 }
+
+export const userOpensConsole = When('user opens the console', (page: Page) => openConsole(page),
+  {tier: 'ui', description: 'the Backquote key when the console is closed; ends once the console has taken the focus into its input, as it does when it opens'});
 
 export const closeConsole = When('user closes the console', async (page: Page) => {
   const input = page.locator('.d4-console-wrapper input.ui-input-editor').filter({visible: true});
