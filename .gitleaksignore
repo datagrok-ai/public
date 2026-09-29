@@ -63,7 +63,6 @@ packages/Samples/projects/coffee-company/connections/postgres-starbucks.json:gen
 
 # --- documentation example ---
 help/govern/_deprecated/group.md:generic-api-key:57
-help/govern/access-control/users-and-groups.md:generic-api-key:250
 
 # --- localhost demo default ---
 packages/NodeJSDemo/dockerfiles/todo-app/src/server.ts:generic-api-key:8

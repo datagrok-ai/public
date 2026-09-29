@@ -255,7 +255,7 @@ To create an invitation link:
 
       For example:
 
-      `public.datagrok.ai/?groupPassword=w0TDE6RcpH8XO0ZIBSauVLos`
+      `public.datagrok.ai/?groupPassword=<password>`
     
 1. Copy the URL and distribute to recipients.
 
