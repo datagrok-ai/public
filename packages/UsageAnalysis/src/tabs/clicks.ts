@@ -5,6 +5,8 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {queries} from '../package-api';
 import {UaFilter} from '../filter';
+import {TimelineView} from './timeline';
+import {onRowContextMenu} from '../utils';
 
 
 export class ClicksView extends UaView {
@@ -19,26 +21,44 @@ export class ClicksView extends UaView {
   async initViewers(path?: string): Promise<void> {
     this.root.className = 'grok-view ui-box';
     const tabs: {[key: string]: (() => HTMLElement)} = {
-      'Click Analysis': () => {
-        let current = this.createWaitElement(this.uaToolbox.getFilter());
-        this.uaToolbox.filterStream.subscribe((filter) => {
-          if (!current.parentElement)
-            return;
-          const next = this.createWaitElement(filter);
-          current.replaceWith(next);
-          current = next;
-        });
-        return current;
-      },
+      'Click Analysis': () => this.createFilteredElement((filter) => this.getClickAnalysisTab(filter)),
+      'Clicks': () => this.createFilteredElement((filter) => this.getClicksTab(filter)),
     };
     this.tabControl = ui.tabControl(tabs);
     this.root.appendChild(this.tabControl.root);
   }
 
-  createWaitElement(filter: UaFilter): HTMLElement {
-    const elem: HTMLElement = ui.wait(async () => this.getClickAnalysisTab(filter));
+  createFilteredElement(build: (filter: UaFilter) => Promise<HTMLElement>): HTMLElement {
+    let current = this.createWaitElement(this.uaToolbox.getFilter(), build);
+    this.uaToolbox.filterStream.subscribe((filter) => {
+      if (!current.parentElement)
+        return;
+      const next = this.createWaitElement(filter, build);
+      current.replaceWith(next);
+      current = next;
+    });
+    return current;
+  }
+
+  createWaitElement(filter: UaFilter, build: (filter: UaFilter) => Promise<HTMLElement>): HTMLElement {
+    const elem: HTMLElement = ui.wait(async () => build(filter));
     elem.style.height = '100%';
     return elem;
+  }
+
+  async getClicksTab(filter: UaFilter): Promise<HTMLElement> {
+    const table = await queries.clicks(filter.date!, filter.groups);
+    table.name = 'Clicks';
+    const grid = DG.Viewer.grid(table, {showRowHeader: false, allowRowSelection: false, allowBlockSelection: false});
+    grid.col('ugid')!.visible = false;
+    grid.col('id')!.visible = false;
+    grid.col('description')!.width = 400;
+    onRowContextMenu(grid, (menu, i) => {
+      const action = table.get('request_id', i);
+      if (action)
+        menu.item('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'action', action));
+    });
+    return grid.root;
   }
 
   async getClickAnalysisTab(filter: UaFilter): Promise<HTMLDivElement> {

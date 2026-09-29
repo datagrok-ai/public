@@ -29,6 +29,10 @@
   max-width: 250px;
 }
 
+.ui-box > .ua-toolbar.ui-div, .ui-box > .ua-toolbar.ui-form {
+  flex: 0 0 auto;
+}
+
 .ua-errors-reports {
   align-items: center;
 }

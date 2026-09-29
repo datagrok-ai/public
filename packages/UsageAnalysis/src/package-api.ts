@@ -12,8 +12,16 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:GetAggregatedClicks', { date });
   }
 
+  export async function clicks(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:Clicks', { date, groups });
+  }
+
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:AllTestRuns', { benchmarks });
+  }
+
+  export async function captureRules(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:CaptureRules', { date });
   }
 
   export async function uniqueUsersCount(date: string , groups: any , packages: any ): Promise<DG.DataFrame> {

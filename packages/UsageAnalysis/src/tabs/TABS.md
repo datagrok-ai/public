@@ -25,8 +25,19 @@ Tabs are a **fixed list** in `ViewHandler.init()`:
 
 ```ts
 const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
-                     SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+                     SystemActivityView, ErrorsView, CaptureView, TimelineView, ProjectsView, MetricsView, StressView,
+                     VulnerabilitiesView];
 ```
+
+`CaptureView` (tab `Capture`) lists the capture rules (`CaptureRules` over `capture_rules`, the columns of
+`grok s capture list`: rule, author, subject, scope, reason, active, events); active rules always show, ended ones
+when created within the Date filter. **New rule...** builds the `POST /logging/capture` body and calls the server
+function `CaptureRuleAdd`; a row's context panel and context menu offer **Stop...** (`CaptureRuleStop`, active rules
+only) and **Timeline**. `TimelineView` (tab `Timeline`) shows one action, request, session, report or rule
+(`cap-<n>`) in time order from the server function `Timeline`; it routes as `/timeline?<key>=<id>` (the id keeps its
+case). The Clicks tab's **Clicks** sub-tab lists single clicks (`Clicks` query) with their `request_id` (the action
+id); the row's context menu **Timeline** opens that action. The server enforces the permissions on all three
+functions; the packages and groups inputs are hidden on both tabs.
 
 `SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
 `server-started`, `user-logged-in`, `user-logged-out`, `user-login-failed`, `user-impersonated`,

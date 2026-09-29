@@ -68,3 +68,18 @@ export function setupUserIconRenderer(grid: DG.Grid, users: { [name: string]: DG
     }
   });
 }
+
+/** Calls [handler] with the table row a context menu was opened on (a right-click does not move the current row). */
+export function onRowContextMenu(grid: DG.Grid, handler: (menu: DG.Menu, row: number) => void): void {
+  let row = -1;
+  grid.root.addEventListener('mousedown', (e) => {
+    if (e.button !== 2)
+      return;
+    const r = grid.root.getBoundingClientRect();
+    row = grid.hitTest(e.clientX - r.left, e.clientY - r.top)?.tableRowIndex ?? -1;
+  }, true);
+  grid.onContextMenu.subscribe((menu) => {
+    if (row >= 0)
+      handler(menu, row);
+  });
+}
