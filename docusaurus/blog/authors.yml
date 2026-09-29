@@ -11,3 +11,8 @@ datagrok:
   url: https://datagrok.ai
   image_url: /docusaurus_img/logo.png
   page: false
+
+vmakarichev:
+  name: Viktor Makarichev
+  title: Data Scientist at Datagrok
+  page: false
