@@ -7,13 +7,13 @@ const UNIT_MS: Record<string, number> = {m: 60000, h: 3600000, d: 86400000, w: 6
 const DAYS: Record<string, string> = {SUN: '0', MON: '1', TUE: '2', WED: '3', THU: '4', FRI: '5', SAT: '6', DAILY: '*', WEEKDAYS: '1-5'};
 const BLOCKS = '▁▂▃▄▅▆▇█';
 
-const pad2 = (n: number) => String(n).padStart(2, '0');
+const given = (value: any) => hasValue(value) ? `got '${value}'` : 'got no value';
 
 /** `30m`, `2h`, `7d`, `1w` → milliseconds; `m` is minutes. A leading `-` is accepted, as `--since -2w` in migrate. */
 export function parseDuration(value: any, flag: string): number {
   const m = /^-?(\d+)\s*([mhdw])$/.exec(String(value ?? '').trim());
   if (!m || Number(m[1]) <= 0)
-    throw new Error(`${flag} expects a duration such as 30m, 2h, 7d or 1w (m is minutes), got '${value}'`);
+    throw new Error(`${flag} expects a duration such as 30m, 2h, 7d or 1w (m is minutes), ${given(value)}`);
   return Number(m[1]) * UNIT_MS[m[2]];
 }
 
@@ -23,7 +23,7 @@ export function sinceArg(value: any, flag: string = '--since'): string {
   return String(value).trim().replace(/^-/, '');
 }
 
-/** ISO (local when it has no offset), a date (local midnight), relative `-7d`, or `HH:MM` today. */
+/** ISO (UTC when it has no offset), a date (UTC midnight), relative `-7d`, or `HH:MM` UTC today. */
 export function parseTime(value: any, flag: string, now: Date = new Date()): Date {
   const s = String(value ?? '').trim();
   const rel = /^-(\d+)([mhdw])$/.exec(s);
@@ -32,15 +32,15 @@ export function parseTime(value: any, flag: string, now: Date = new Date()): Dat
   const hm = /^(\d{1,2}):(\d{2})$/.exec(s);
   if (hm && Number(hm[1]) < 24 && Number(hm[2]) < 60) {
     const d = new Date(now.getTime());
-    d.setHours(Number(hm[1]), Number(hm[2]), 0, 0);
+    d.setUTCHours(Number(hm[1]), Number(hm[2]), 0, 0);
     return d;
   }
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-    const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00` : s);
+    const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00Z` : /(Z|[+-]\d{2}:?\d{2})$/i.test(s) ? s : `${s}Z`);
     if (!isNaN(d.getTime()))
       return d;
   }
-  throw new Error(`${flag} expects an ISO time (2026-10-04T06:00), a relative time (-7d) or HH:MM, got '${value}'`);
+  throw new Error(`${flag} expects an ISO time (2026-10-04T06:00), a relative time (-7d) or HH:MM, ${given(value)}`);
 }
 
 function toDate(value: any): Date | null {
@@ -49,32 +49,32 @@ function toDate(value: any): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const sameDay = (a: Date, b: Date) => a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
 
-/** `HH:MM` when [value] is today, else `MM-DD HH:MM`, local time. */
+/** `HH:MMZ` when [value] is today, else `MM-DD HH:MMZ`, in UTC. */
 export function fmtTime(value: any, now: Date = new Date()): string {
   const d = toDate(value);
   if (!d) return '';
-  const hm = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-  return sameDay(d, now) ? hm : `${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${hm}`;
+  const hm = `${d.toISOString().slice(11, 16)}Z`;
+  return sameDay(d, now) ? hm : `${fmtDate(d)} ${hm}`;
 }
 
-/** `HH:MM:SS.mmm`, prefixed with `MM-DD` when not today: timeline rows of one click share a minute. */
+/** `HH:MM:SS.mmmZ`, prefixed with `MM-DD` when not today: timeline rows of one click share a minute. */
 export function fmtClock(value: any, now: Date = new Date()): string {
   const d = toDate(value);
   if (!d) return '';
-  const t = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3, '0')}`;
-  return sameDay(d, now) ? t : `${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${t}`;
+  const t = d.toISOString().slice(11);
+  return sameDay(d, now) ? t : `${fmtDate(d)} ${t}`;
 }
 
 export function fmtDateTime(value: any): string {
   const d = toDate(value);
-  return d ? `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}` : '';
+  return d ? `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)}Z` : '';
 }
 
 export function fmtDate(value: any): string {
   const d = toDate(value);
-  return d ? `${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` : '';
+  return d ? d.toISOString().slice(5, 10) : '';
 }
 
 /** A span as `2 d`, `5 h` or `30 min`. */

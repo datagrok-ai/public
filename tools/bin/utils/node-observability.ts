@@ -1,5 +1,4 @@
 /// REST clients for the observability routes (`/alerts`, `/errors`, `/logging`, `/log/timeline`).
-/// Contracts: core/docs/features/ops/observability/r9-r10/plan.md §5.7.
 import {NodeApiClient, buildQuery} from './node-dapi';
 
 export type Query = Record<string, string | number | boolean | undefined>;

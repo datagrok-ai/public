@@ -1,14 +1,14 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {handleAlerts, muteBody, alertRow, detectionRows, recentServers, deploymentKey} from '../commands/server-alerts';
+import {handleAlerts, muteBody, alertRow, detectionRows, recentServers, serverIds} from '../commands/server-alerts';
 import {hostList, singleHost} from '../utils/server-client';
-import {mockConnect, captureOutput, localIso, apiError} from './obs-helpers';
+import {mockConnect, captureOutput, utcIso, apiError} from './obs-helpers';
 
 const ALERT = {id: 'a41f9c00-0000-4000-8000-000000000001', kind: 'error-incident', key: 'a41f9c', severity: 'warning',
-  audience: 'platform', status: 'open', openedAt: localIso(10, 5), openedOnServerName: 'datlas-2',
+  audience: 'platform', status: 'open', openedAt: utcIso(10, 5), openedOnServerName: 'datlas-2',
   summary: 'TypeError: Cannot read properties of undefined (reading \'molfile\') in Chem, 9 users in 15 min'};
 
 describe('muteBody', () => {
-  const now = new Date(2026, 9, 1, 9, 30);
+  const now = new Date(Date.UTC(2026, 9, 1, 9, 30));
 
   it('takes exactly one of --for, --until, --until-version, --forever', () => {
     expect(() => muteBody({reason: 'r'}, now)).toThrow(/exactly one/);
@@ -18,10 +18,10 @@ describe('muteBody', () => {
   });
 
   it('resolves --for and --until to an absolute time', () => {
-    expect(muteBody({reason: 'r', for: '2h'}, now).body.until).toBe(new Date(2026, 9, 1, 11, 30).toISOString());
-    expect(muteBody({reason: 'r', until: '14:00'}, now)).toEqual({body: {reason: 'r', until: new Date(2026, 9, 1, 14, 0).toISOString()}, until: 'until 14:00'});
-    expect(muteBody({reason: 'r', until: '2026-10-04T06:00'}, now).body.until).toBe(new Date(2026, 9, 4, 6, 0).toISOString());
-    expect(muteBody({reason: 'r', until: '2026-10-04T06:00'}, now).until).toBe('until 10-04 06:00');
+    expect(muteBody({reason: 'r', for: '2h'}, now).body.until).toBe(new Date(Date.UTC(2026, 9, 1, 11, 30)).toISOString());
+    expect(muteBody({reason: 'r', until: '14:00'}, now)).toEqual({body: {reason: 'r', until: new Date(Date.UTC(2026, 9, 1, 14, 0)).toISOString()}, until: 'until 14:00Z'});
+    expect(muteBody({reason: 'r', until: '2026-10-04T06:00'}, now).body.until).toBe(new Date(Date.UTC(2026, 9, 4, 6, 0)).toISOString());
+    expect(muteBody({reason: 'r', until: '2026-10-04T06:00'}, now).until).toBe('until 10-04 06:00Z');
     expect(() => muteBody({reason: 'r', until: '08:00'}, now)).toThrow(/in the past/);
     expect(() => muteBody({reason: 'r', until: 'tomorrow'}, now)).toThrow(/ISO time/);
   });
@@ -36,15 +36,15 @@ describe('rows', () => {
   it('prints the fixed alert columns, summary cut at 60', () => {
     const row = alertRow(ALERT);
     expect(Object.keys(row)).toEqual(['KIND', 'KEY', 'SEV', 'AUDIENCE', 'STATUS', 'OPENED', 'BY', 'SUMMARY']);
-    expect(row).toMatchObject({KIND: 'error-incident', KEY: 'a41f9c', OPENED: '10:05', BY: 'datlas-2'});
+    expect(row).toMatchObject({KIND: 'error-incident', KEY: 'a41f9c', OPENED: '10:05Z', BY: 'datlas-2'});
     expect(row.SUMMARY.length).toBe(60);
     expect(row.SUMMARY.endsWith('…')).toBe(true);
   });
 
   it('marks the lease holder', () => {
     const rows = detectionRows({holder: 'S2', servers: [
-      {id: 'S1', name: 'datlas-1', host: 'h1', version: '1.28.3', lastSeen: localIso(10, 5), live: false, eligible: true},
-      {id: 'S2', name: 'datlas-2', host: 'h2', version: '1.28.3', lastSeen: localIso(10, 8), live: true, eligible: true},
+      {id: 'S1', name: 'datlas-1', host: 'h1', version: '1.28.3', lastSeen: utcIso(10, 5), live: false, eligible: true},
+      {id: 'S2', name: 'datlas-2', host: 'h2', version: '1.28.3', lastSeen: utcIso(10, 8), live: true, eligible: true},
     ]});
     expect(rows.map((r) => [r.SERVER, r.LIVE, r.OWNER])).toEqual([['datlas-1', 'no', ''], ['datlas-2', 'yes', '*']]);
     expect(Object.keys(rows[0])).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
@@ -61,7 +61,7 @@ describe('rows', () => {
     ]};
     expect(recentServers(lease, false, now).map((s) => s.id)).toEqual(['L', 'S', 'C']);
     expect(recentServers(lease, true, now).length).toBe(5);
-    expect(deploymentKey({servers: [{id: 'b'}, {id: 'a'}]})).toBe(deploymentKey({holder: 'x', servers: [{id: 'a'}, {id: 'b'}]}));
+    expect(serverIds({holder: 'x', servers: [{id: 'b'}, {id: 'a'}]})).toEqual(['b', 'a']);
   });
 });
 
@@ -76,7 +76,7 @@ describe('hosts', () => {
 });
 
 describe('handleAlerts', () => {
-  beforeEach(() => { vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(new Date(2026, 9, 1, 9, 30)); });
+  beforeEach(() => { vi.useFakeTimers({toFake: ['Date']}); vi.setSystemTime(new Date(Date.UTC(2026, 9, 1, 9, 30))); });
   afterEach(() => vi.useRealTimers());
 
   it('lists with the status filter and merges several hosts under a HOST column', async () => {
@@ -107,8 +107,8 @@ describe('handleAlerts', () => {
       ['GET', '/alerts?kind=connection&key=ELN%3AProd&status=open%2Cacknowledged%2Cmuted'],
       ['POST', '/alerts/E1/mute'],
     ]);
-    expect(calls[1].body).toEqual({reason: 'monthly ELN maintenance', until: new Date(2026, 9, 4, 6, 0).toISOString()});
-    expect(out).toEqual(['muted connection:ELN:Prod until 10-04 06:00 — monthly ELN maintenance']);
+    expect(calls[1].body).toEqual({reason: 'monthly ELN maintenance', until: new Date(Date.UTC(2026, 9, 4, 6, 0)).toISOString()});
+    expect(out).toEqual(['muted connection:ELN:Prod until 10-04 06:00Z — monthly ELN maintenance']);
   });
 
   it('refuses a kind:key that matches no open alert, or several', async () => {
@@ -144,15 +144,16 @@ describe('handleAlerts', () => {
 
   it('shows the detection lease per server', async () => {
     const {connect, calls} = mockConnect(() => ({holder: 'S1', holderName: 'datlas-1', epoch: 3,
-      servers: [{id: 'S1', name: 'datlas-1', host: 'h1', version: '1.28.3', lastSeen: localIso(9, 29), live: true, eligible: true}]}));
+      servers: [{id: 'S1', name: 'datlas-1', host: 'h1', version: '1.28.3', lastSeen: utcIso(9, 29), live: true, eligible: true}]}));
     const {out} = await captureOutput(() => handleAlerts(connect, 'detection', [], {}, 'table'));
     expect(calls[0].path).toBe('/alerts/detection');
-    expect(out[2].trimEnd()).toMatch(/^datlas-1\s+h1\s+1\.28\.3\s+09:29\s+yes\s+yes\s+\*$/);
+    expect(out[2].trimEnd()).toMatch(/^datlas-1\s+h1\s+1\.28\.3\s+09:29Z\s+yes\s+yes\s+\*$/);
   });
 
   it('names rows by --host alias and prints a shared database once', async () => {
-    const server = (id: string, name: string) => ({id, name, host: 'pc-alex2', version: '1.28.3', lastSeen: localIso(9, 29), live: true, eligible: true});
-    const shared = {holder: 'S1', servers: [server('S1', 'datlas-1'), server('S2', 'datlas-2')]};
+    const server = (id: string, name: string) => ({id, name, host: 'pc-alex2', version: '1.28.3', lastSeen: utcIso(9, 29), live: true, eligible: true});
+    const shared = {holder: 'S1', servers: [server('S1', 'datlas-1'), server('S2', 'datlas-2'),
+      {...server('S0', 'datlas-0'), live: false, lastSeen: utcIso(9, 29, 3)}]};
     const {connect} = mockConnect((_m, _p, _b, host) => host === 'c' ? {holder: 'S9', servers: [server('S9', 'datlas-9')]} : shared);
     const {out} = await captureOutput(() => handleAlerts(connect, 'detection', [], {host: ['a', 'b', 'c']}, 'table'));
     expect(out[0].trimEnd().split(/\s{2,}/)).toEqual(['HOST', 'SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);

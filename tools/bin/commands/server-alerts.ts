@@ -33,12 +33,13 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
       return true;
     }
     case 'detection': {
-      const deployments: {hosts: string[]; lease: any}[] = [];
+      const deployments: {hosts: string[]; ids: string[]; lease: any}[] = [];
       await eachHost(argv, connect, async (dapi, host) => {
         const lease = await dapi.alerts.detection();
-        const same = deployments.find((d) => deploymentKey(d.lease) === deploymentKey(lease));
+        const ids = serverIds(lease);
+        const same = deployments.find((d) => d.ids.some((id) => ids.includes(id)));
         if (same) same.hosts.push(host);
-        else deployments.push({hosts: [host], lease: {...lease, servers: recentServers(lease, argv.all === true)}});
+        else deployments.push({hosts: [host], ids, lease: {...lease, servers: recentServers(lease, argv.all === true)}});
       });
       if (hostList(argv.host).length < 2)
         printOutput(output === 'json' ? deployments[0].lease : detectionRows(deployments[0].lease), output);
@@ -150,12 +151,13 @@ export function alertRow(a: any): Record<string, any> {
 }
 
 /**
- * Two aliases on one database answer with the same `servers` table, so the set of server ids
- * names the deployment (the lease holder alone is empty while nothing holds it).
+ * Two aliases on one database answer from the same `servers` table, so leases that share a server id
+ * are one deployment (the lease holder alone is empty while nothing holds it). The ids are taken before
+ * the recent-server filter, which hides different rows as time passes between the calls.
  */
-export function deploymentKey(lease: any): string {
+export function serverIds(lease: any): string[] {
   const servers: any[] = Array.isArray(lease?.servers) ? lease.servers : [];
-  return servers.map((s) => String(s?.id)).sort().join(',');
+  return servers.map((s) => String(s?.id));
 }
 
 /** Live servers, and those that stopped or were last seen within the hour; every row with [all]. */

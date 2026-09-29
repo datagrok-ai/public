@@ -1,13 +1,13 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {handleCapture, handleTimeline, parseCapture, captureBody, ruleRow, ruleSummary, timelineQuery, timelineRow} from '../commands/server-capture';
-import {mockConnect, captureOutput, localIso} from './obs-helpers';
+import {mockConnect, captureOutput, utcIso} from './obs-helpers';
 
-const NOW = new Date(2026, 8, 28, 10, 20);
+const NOW = new Date(Date.UTC(2026, 8, 28, 10, 20));
 
 const RULE = {id: 'r-17', number: 17, author: 'b.ivanov', subject: {type: 'user', value: 'alice.mendel'},
   scope: {type: 'view', value: 'Hit Triage'}, capture: {clicks: true, inputs: true, requests: true, calls: true, errors: true,
     serverLevel: 'debug', debugFlags: ['query', 'storage']}, reason: 'GROK-21044: campaign loses filters', status: 'active',
-  createdAt: new Date(2026, 8, 28, 10, 20).toISOString(), expiresAt: new Date(2026, 8, 30, 10, 20).toISOString(),
+  createdAt: new Date(Date.UTC(2026, 8, 28, 10, 20)).toISOString(), expiresAt: new Date(Date.UTC(2026, 8, 30, 10, 20)).toISOString(),
   events: 0, maxEvents: 2000, windowMinutes: 10, maxSessions: 20};
 
 describe('parseCapture', () => {
@@ -39,7 +39,7 @@ describe('captureBody', () => {
     const body = captureBody({group: 'Chemists', view: 'Hit Triage', capture: 'clicks,requests,errors', until: '2026-10-05T10:00',
       anonymous: true, reason: 'submit drop-off', window: '5m', 'max-sessions': 50}, NOW);
     expect(body).toMatchObject({subject: {type: 'group', value: 'Chemists'}, anonymous: true, windowMinutes: 5, maxSessions: 50,
-      expiresAt: new Date(2026, 9, 5, 10, 0).toISOString()});
+      expiresAt: new Date(Date.UTC(2026, 9, 5, 10, 0)).toISOString()});
     expect(body.forMinutes).toBeUndefined();
   });
 
@@ -57,7 +57,7 @@ describe('captureBody', () => {
 
 describe('rows', () => {
   it('prints the one-line summary of a new rule', () => {
-    expect(ruleSummary(RULE)).toBe('rule cap-17  active until 2026-09-30 10:20 · 1 user · 1 view · 0/2000 events');
+    expect(ruleSummary(RULE)).toBe('rule cap-17  active until 2026-09-30 10:20Z · 1 user · 1 view · 0/2000 events');
     expect(ruleSummary({...RULE, subject: {type: 'everyone'}, scope: null})).toMatch(/· everyone · all activity ·/);
   });
 
@@ -66,7 +66,7 @@ describe('rows', () => {
     expect(ruleRow(ended)).toEqual({RULE: 'cap-17', AUTHOR: 'b.ivanov', SUBJECT: 'user alice.mendel', SCOPE: 'view Hit Triage',
       REASON: 'GROK-21044: campaign loses filters', ACTIVE: '2 d (expired)', EVENTS: 340});
     const server = {...RULE, number: 12, subject: {type: 'package', value: 'Snowflake'}, scope: null,
-      expiresAt: new Date(2026, 8, 28, 10, 50).toISOString()};
+      expiresAt: new Date(Date.UTC(2026, 8, 28, 10, 50)).toISOString()};
     expect(ruleRow(server)).toMatchObject({SUBJECT: 'package Snowflake', SCOPE: 'server debug', ACTIVE: '30 min'});
     expect(ruleRow({...server, capture: {clicks: true}})).toMatchObject({SCOPE: 'all activity'});
   });
@@ -76,12 +76,12 @@ describe('rows', () => {
     at.setHours(10, 14, 3, 112);
     expect(timelineRow({time: at.toISOString(), source: 'datlas', kind: 'request', summary: 'POST /api/projects/{id}/save',
       status: 403, ms: 28, requestId: 'mfz3k2a1b9x8y7kq.1'}))
-      .toEqual({TIME: '10:14:03.112', SOURCE: 'datlas', KIND: 'request', SUMMARY: 'POST /api/projects/{id}/save', STATUS: 403, MS: 28, REQ: '…x8y7kq.1'});
+      .toEqual({TIME: '09:14:03.112Z', SOURCE: 'datlas', KIND: 'request', SUMMARY: 'POST /api/projects/{id}/save', STATUS: 403, MS: 28, REQ: '…x8y7kq.1'});
   });
 
   it('takes exactly one timeline key', () => {
     expect(timelineQuery({report: 4820})).toEqual({report: '4820', limit: undefined});
-    expect(timelineQuery({rule: 'cap-17', from: '-1h'}, NOW)).toEqual({rule: 'cap-17', limit: undefined, from: new Date(2026, 8, 28, 9, 20).toISOString()});
+    expect(timelineQuery({rule: 'cap-17', from: '-1h'}, NOW)).toEqual({rule: 'cap-17', limit: undefined, from: new Date(Date.UTC(2026, 8, 28, 9, 20)).toISOString()});
     expect(() => timelineQuery({})).toThrow(/exactly one of --action/);
     expect(() => timelineQuery({session: '', report: 1})).not.toThrow();
     expect(() => timelineQuery({action: 'a', session: 's'})).toThrow(/exactly one/);
@@ -97,7 +97,7 @@ describe('handlers', () => {
     const {out} = await captureOutput(() => handleCapture(connect, 'add', [],
       {user: 'alice.mendel', view: 'Hit Triage', capture: 'clicks,errors', for: '2d', limit: 2000, reason: 'GROK-21044'}, 'table'));
     expect(calls[0]).toMatchObject({method: 'POST', path: '/logging/capture'});
-    expect(out).toEqual(['rule cap-17  active until 2026-09-30 10:20 · 1 user · 1 view · 0/2000 events']);
+    expect(out).toEqual(['rule cap-17  active until 2026-09-30 10:20Z · 1 user · 1 view · 0/2000 events']);
   });
 
   it('lists all rules since a time', async () => {
@@ -109,7 +109,7 @@ describe('handlers', () => {
 
   it('shows a rule, its activations, and its timeline as csv', async () => {
     const {connect, calls} = mockConnect((_m, p) => p.startsWith('/log/timeline')
-      ? [{time: localIso(15, 2), source: 'client', kind: 'click', summary: 'Hit Triage / Filters / Reset', requestId: 'mfz3k2a1b9x8y7kq'}]
+      ? [{time: utcIso(15, 2), source: 'client', kind: 'click', summary: 'Hit Triage / Filters / Reset', requestId: 'mfz3k2a1b9x8y7kq'}]
       : {...RULE, activations: [{sessionId: 'abcdef0123', user: 'alice.mendel', activatedAt: RULE.createdAt, until: RULE.expiresAt, triggerDetail: 'view Hit Triage'}]});
     const show = await captureOutput(() => handleCapture(connect, 'show', ['cap-17'], {}, 'table'));
     expect(calls[0].path).toBe('/logging/capture/cap-17');

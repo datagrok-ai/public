@@ -4,9 +4,9 @@ import * as os from 'os';
 import * as path from 'path';
 import {handleErrors, errorFilters, normalizeRoute, byArg, aggregateRow, occurrenceRow, classifyHosts, toParquet} from '../commands/server-errors';
 import {cronFromSchedule, sparkline, shortRequestId, fmtMinutes} from '../utils/obs-format';
-import {mockConnect, captureOutput, localIso} from './obs-helpers';
+import {mockConnect, captureOutput, utcIso} from './obs-helpers';
 
-const NOW = new Date(2026, 8, 28, 11, 0);
+const NOW = new Date(Date.UTC(2026, 8, 28, 11, 0));
 
 describe('filters', () => {
   it('maps flags to query parameters, route without /api', () => {
@@ -26,7 +26,7 @@ describe('filters', () => {
 
   it('takes --from/--to as absolute or relative times, never with --since', () => {
     expect(errorFilters({from: '-7d', to: '2026-09-27'}, {}, NOW))
-      .toEqual({from: new Date(2026, 8, 21, 11, 0).toISOString(), to: new Date(2026, 8, 27).toISOString()});
+      .toEqual({from: new Date(Date.UTC(2026, 8, 21, 11, 0)).toISOString(), to: new Date(Date.UTC(2026, 8, 27)).toISOString()});
     expect(() => errorFilters({since: '7d', from: '-1d'})).toThrow(/either --since/);
     expect(() => errorFilters({since: 'week'})).toThrow(/duration/);
     expect(() => errorFilters({service: 'db'})).toThrow(/server or client/);
@@ -77,7 +77,7 @@ describe('formats', () => {
 
   it('renders signature rows with first seen, sparkline and state', () => {
     const r = {signature: 'a41f9c3e-1111-2222-3333-444455556666', package: 'Chem', users: 9, count: 57, firstVersion: '1.14.2',
-      firstSeen: localIso(10, 2), lastSeen: localIso(10, 47), trend: [0, 0, 0, 0, 0, 0, 57], state: 'muted', stateVersion: '1.14.3',
+      firstSeen: utcIso(10, 2), lastSeen: utcIso(10, 47), trend: [0, 0, 0, 0, 0, 0, 57], state: 'muted', stateVersion: '1.14.3',
       topError: 'TypeError: Cannot read properties of undefined (reading \'molfile\')'};
     const row = aggregateRow(r, ['package', 'signature'], 'day');
     expect(Object.keys(row)).toEqual(['SIG', 'PACKAGE', 'ERROR', 'USERS', 'COUNT', 'FIRST SEEN', 'LAST', 'TREND (daily)', 'STATE']);
@@ -85,7 +85,7 @@ describe('formats', () => {
     expect(row['FIRST SEEN']).toMatch(/^1\.14\.2 · \d\d-\d\d$/);
     expect(row['TREND (daily)']).toBe('▁▁▁▁▁▁█');
     expect(row.STATE).toBe('muted → 1.14.3');
-    expect(aggregateRow({...r, state: 'muted', stateVersion: null, stateUntil: localIso(14, 0)}, ['signature'], 'hour').STATE).toBe('muted until 14:00');
+    expect(aggregateRow({...r, state: 'muted', stateVersion: null, stateUntil: utcIso(14, 0)}, ['signature'], 'hour').STATE).toBe('muted until 14:00Z');
     expect(aggregateRow({...r, state: undefined}, ['signature'], 'day').STATE).toBe('');
   });
 
@@ -97,9 +97,9 @@ describe('formats', () => {
   });
 
   it('renders occurrence rows', () => {
-    const row = occurrenceRow({time: localIso(10, 14), user: 'alice', service: 'client', signature: 'a41f9c3e', error: 'boom',
+    const row = occurrenceRow({time: utcIso(10, 14), user: 'alice', service: 'client', signature: 'a41f9c3e', error: 'boom',
       package: 'Chem', version: '1.14.2', route: 'POST /projects/{id}/save', server: 'datlas-1', requestId: 'mfz3k2a1b9x8y7kq.2'});
-    expect(row).toEqual({TIME: '10:14', USER: 'alice', SOURCE: 'client', SIG: 'a41f9c', ERROR: 'boom', PACKAGE: 'Chem',
+    expect(row).toEqual({TIME: '10:14Z', USER: 'alice', SOURCE: 'client', SIG: 'a41f9c', ERROR: 'boom', PACKAGE: 'Chem',
       VERSION: '1.14.2', ROUTE: 'POST /projects/{id}/save', SERVER: 'datlas-1', REQ: '…x8y7kq.2'});
   });
 });
@@ -147,11 +147,11 @@ describe('handleErrors', () => {
 
   it('asks top for the grouping, trend and limit and prints the table', async () => {
     const {connect, calls} = mockConnect(() => [{signature: '7c02e1aa', package: 'PowerGrid', users: 6, count: 212, firstVersion: '2.3.0',
-      firstSeen: localIso(9, 0, 17), lastSeen: localIso(10, 0), trend: [3, 4, 3, 5, 4, 6, 5], state: 'open', topError: 'NPE'}]);
+      firstSeen: utcIso(9, 0, 17), lastSeen: utcIso(10, 0), trend: [3, 4, 3, 5, 4, 6, 5], state: 'open', topError: 'NPE'}]);
     const {out} = await captureOutput(() => handleErrors(connect, 'top', [], {since: '7d', by: 'signature,package', 'min-users': 2, limit: 5}, 'table'));
     expect(calls[0].path).toBe('/errors?since=7d&minUsers=2&by=signature%2Cpackage&trend=day&limit=5');
     expect(out[0].split(/\s{2,}/)).toEqual(['SIG', 'PACKAGE', 'ERROR', 'USERS', 'COUNT', 'FIRST SEEN', 'LAST', 'TREND (daily)', 'STATE']);
-    expect(out[2]).toMatch(/^7c02e1\s+PowerGrid\s+NPE\s+6\s+212\s+2\.3\.0 · 09-11\s+10:00\s+▅▆▅▇▆█▇\s+open/);
+    expect(out[2]).toMatch(/^7c02e1\s+PowerGrid\s+NPE\s+6\s+212\s+2\.3\.0 · 09-11\s+10:00Z\s+▅▆▅▇▆█▇\s+open/);
   });
 
   it('exports csv from the server and json/parquet from the rows, to stdout or -O', async () => {
@@ -172,29 +172,29 @@ describe('handleErrors', () => {
 
   it('prints the show block', async () => {
     const {connect, calls} = mockConnect(() => ({signature: 'a41f9c3e', error: 'TypeError: x', package: 'Chem', firstVersion: '1.14.2',
-      firstSeen: localIso(10, 2), lastSeen: localIso(10, 47), occurrences: 57, users: 9,
+      firstSeen: utcIso(10, 2), lastSeen: utcIso(10, 47), occurrences: 57, users: 9,
       groups: [{name: 'Chemists', users: 7}, {name: 'Biology', users: 2}], reports: [4815, 4817],
-      alert: {kind: 'error-incident', key: 'a41f9c', status: 'open', openedAt: localIso(10, 5)},
-      change: {type: 'package-published', package: 'Chem', version: '1.14.2', by: 'j.doe', at: localIso(9, 58)}}));
+      alert: {kind: 'error-incident', key: 'a41f9c', status: 'open', openedAt: utcIso(10, 5)},
+      change: {type: 'package-published', package: 'Chem', version: '1.14.2', by: 'j.doe', at: utcIso(9, 58)}}));
     const {out} = await captureOutput(() => handleErrors(connect, 'show', ['a41f9c'], {}, 'table'));
     expect(calls[0].path).toBe('/errors/a41f9c?since=24h');
     expect(out).toEqual([
       'signature    a41f9c  TypeError: x',
-      'package      Chem    first seen in 1.14.2 at 10:02 · last seen 10:47',
+      'package      Chem    first seen in 1.14.2 at 10:02Z · last seen 10:47Z',
       'occurrences  57      users 9      groups Chemists 7 · Biology 2',
-      'reports      #4815 #4817          alert error-incident, open since 10:05',
-      'change       package-published Chem 1.14.2 by j.doe at 09:58',
+      'reports      #4815 #4817          alert error-incident, open since 10:05Z',
+      'change       package-published Chem 1.14.2 by j.doe at 09:58Z',
     ]);
   });
 
   it('widens the show block for a long package name', async () => {
     const {connect} = mockConnect(() => ({signature: 'a41f9c3e', error: 'TypeError: x', package: 'UsageAnalysis',
-      firstVersion: '2.6.1', firstSeen: localIso(10, 2), lastSeen: localIso(10, 47), occurrences: 1234567, users: 1234567890,
+      firstVersion: '2.6.1', firstSeen: utcIso(10, 2), lastSeen: utcIso(10, 47), occurrences: 1234567, users: 1234567890,
       groups: [], reports: [4815, 4816, 4817, 4818, 4819], alert: null}));
     const {out} = await captureOutput(() => handleErrors(connect, 'show', ['a41f9c'], {}, 'table'));
     expect(out).toEqual([
       'signature    a41f9c         TypeError: x',
-      'package      UsageAnalysis  first seen in 2.6.1 at 10:02 · last seen 10:47',
+      'package      UsageAnalysis  first seen in 2.6.1 at 10:02Z · last seen 10:47Z',
       'occurrences  1234567        users 1234567890  groups (none)',
       'reports      #4815 #4816 #4817 #4818 #4819',
     ]);
@@ -243,7 +243,7 @@ describe('handleErrors', () => {
   });
 
   it('lists occurrences from several hosts', async () => {
-    const {connect, calls} = mockConnect(() => [{time: localIso(10, 0), user: 'alice', signature: 'a41f9c3e', error: 'boom'}]);
+    const {connect, calls} = mockConnect(() => [{time: utcIso(10, 0), user: 'alice', signature: 'a41f9c3e', error: 'boom'}]);
     const {out} = await captureOutput(() => handleErrors(connect, 'list', [], {host: ['prod', 'val'], user: 'alice'}, 'table'));
     expect(calls.map((c) => c.path)).toEqual(['/errors?since=24h&user=alice&limit=50', '/errors?since=24h&user=alice&limit=50']);
     expect(out[0].split(/\s{2,}/).slice(0, 3)).toEqual(['HOST', 'TIME', 'USER']);

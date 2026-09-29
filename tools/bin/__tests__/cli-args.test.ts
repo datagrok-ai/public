@@ -20,6 +20,12 @@ describe('parseArgs', () => {
     expect(parseArgs(['publish', '--from', '-x']).from).toBe(true);
   });
 
+  it('finds grok s after global options', () => {
+    const argv = parseArgs(['--host', 'obs-b', 's', 'alerts', 'get', '08327370', '--since', '-7d']);
+    expect(argv._).toEqual(['s', 'alerts', 'get', '08327370']);
+    expect([argv.host, argv.since]).toEqual(['obs-b', '-7d']);
+  });
+
   it('leaves other commands as they were', () => {
     expect(parseArgs(['test', '42'])._).toEqual(['test', 42]);
   });

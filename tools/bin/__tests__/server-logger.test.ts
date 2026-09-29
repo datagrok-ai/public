@@ -2,7 +2,7 @@ import {describe, it, expect} from 'vitest';
 import {handleLogger, parseScope, isOverride, propChanges, setArgs, revertBody, displayPath, diffMaps} from '../commands/server-logger';
 import {applyListSpec, normalizeFlag, normalizeLevel} from '../utils/obs-format';
 import {printError} from '../utils/server-output';
-import {mockConnect, captureOutput, localIso, apiError} from './obs-helpers';
+import {mockConnect, captureOutput, utcIso, apiError} from './obs-helpers';
 
 const ALL = 'a4b45840-0000-0000-0000-00000000a11a';
 const CHEM = 'c4e00000-0000-0000-0000-000000000c4e';
@@ -25,7 +25,7 @@ const POLICY = {
   },
   locked: ['exportSettings', 'levels.audit'],
   overrides: [{id: 'o1', scope: 'package', scopeId: 'Snowflake', scopeName: 'Snowflake', changes: {debugFlags: ['query']},
-    expiresAt: localIso(11, 42), reason: 'prod timeouts', createdByLogin: 'k.lee'}],
+    expiresAt: utcIso(11, 42), reason: 'prod timeouts', createdByLogin: 'k.lee'}],
   groups: {[ALL]: 'All users', [CHEM]: 'Chemists'},
   destinations: {d1: 'OpenTelemetry'},
 };
@@ -113,7 +113,7 @@ describe('handleLogger', () => {
     expect(out[1]).toBe(`${label('save')}error warning audit usage   debug flags  (none)`);
     expect(out[2]).toBe(`${label('locked')}exportSettings, levels.audit   # from deployment configuration`);
     expect(out[3]).toBe(`${label('group Chemists')}save error warning audit usage info`);
-    expect(out[4]).toBe(`${label('override')}package:Snowflake  debugFlags query  reverts 11:42  by k.lee  prod timeouts`);
+    expect(out[4]).toBe(`${label('override')}package:Snowflake  debugFlags query  reverts 11:42Z  by k.lee  prod timeouts`);
   });
 
   it('shows effective settings for a scope with their sources', async () => {
@@ -128,13 +128,13 @@ describe('handleLogger', () => {
     const {connect, calls} = mockConnect((m, p) => {
       if (p === '/logging/policy') return POLICY;
       if (p.startsWith('/logging/policy/effective')) return {settings: {debugFlags: ['db']}};
-      return {id: 'o2', expiresAt: localIso(11, 42)};
+      return {id: 'o2', expiresAt: utcIso(11, 42)};
     });
     const {out} = await captureOutput(() => handleLogger(connect, 'set', ['server'],
       {'debug-flags': '+queries', scope: 'package:Snowflake', for: '30m', reason: 'ELN'}, 'table'));
     expect(calls[2]).toMatchObject({method: 'POST', path: '/logging/policy/overrides',
       body: {scope: 'package', scopeId: 'Snowflake', set: {debugFlags: ['db', 'query']}, reason: 'ELN', forMinutes: 30}});
-    expect(out).toEqual(['+ server.debugFlags  db, query  scope package:Snowflake  reverts 11:42']);
+    expect(out).toEqual(['+ server.debugFlags  db, query  scope package:Snowflake  reverts 11:42Z']);
   });
 
   it('changes the base settings of All Users by path', async () => {
@@ -168,7 +168,7 @@ describe('handleLogger', () => {
     expect(out.map((l) => l.replace(/\s+/g, ' '))).toEqual([
       '+ server.export.OpenTelemetry.endpoint https://otel.acme.internal:4318',
       '+ server.groups.Chemists.saveLevels error, warning, audit, usage, info',
-      '+ server.debugFlags query scope package:Snowflake reverts 11:42',
+      '+ server.debugFlags query scope package:Snowflake reverts 11:42Z',
     ]);
   });
 
@@ -188,7 +188,7 @@ describe('handleLogger', () => {
     const {connect, calls} = mockConnect((m, p) => p === '/logging/policy/revert' ? {reverted: 'override o1'} : POLICY.overrides);
     const list = await captureOutput(() => handleLogger(connect, 'overrides', [], {host: ['prod', 'val']}, 'table'));
     expect(list.out[0].trimEnd().split(/\s{2,}/)).toEqual(['HOST', 'ID', 'SCOPE', 'CHANGES', 'REVERTS', 'BY', 'REASON']);
-    expect(list.out[2]).toMatch(/^prod\s+o1\s+package:Snowflake\s+debugFlags=query\s+11:42\s+k\.lee\s+prod timeouts/);
+    expect(list.out[2]).toMatch(/^prod\s+o1\s+package:Snowflake\s+debugFlags=query\s+11:42Z\s+k\.lee\s+prod timeouts/);
     const rev = await captureOutput(() => handleLogger(connect, 'revert', [], {override: 'o1', reason: 'done'}, 'table'));
     expect(calls[calls.length - 1]).toMatchObject({method: 'POST', path: '/logging/policy/revert', body: {override: 'o1', reason: 'done'}});
     expect(rev.out).toEqual(['reverted override o1']);

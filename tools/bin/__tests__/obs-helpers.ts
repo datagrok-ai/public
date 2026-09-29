@@ -51,10 +51,10 @@ export async function captureOutput(fn: () => Promise<any>): Promise<{out: strin
   }
 }
 
-/** A local time today (or [daysAgo] days back) as ISO, so time formatting is independent of the zone. */
-export function localIso(h: number, m: number, daysAgo: number = 0): string {
+/** A UTC time today (or [daysAgo] days back) as ISO. */
+export function utcIso(h: number, m: number, daysAgo: number = 0): string {
   const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  d.setHours(h, m, 0, 0);
+  d.setUTCDate(d.getUTCDate() - daysAgo);
+  d.setUTCHours(h, m, 0, 0);
   return d.toISOString();
 }

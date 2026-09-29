@@ -473,8 +473,10 @@ it's on the server's unauthenticated allowlist.
 
 These commands read and change the deployment's observability state: the alerts every server
 shares, errors as query results, the logging policy with its time-boxed overrides, and capture
-rules that record one user's or group's activity for a while. Times in tables are `HH:MM` when
-today, else `MM-DD HH:MM`; request ids are shortened to their last six characters (`…X7K2QM.3`). Durations (`--since`, `--for`,
+rules that record one user's or group's activity for a while. Times are UTC, as in the UI and the
+REST API: tables print `HH:MMZ` when today, else `MM-DD HH:MMZ`, and a time given without an offset
+(`--until 14:00`, `--from 2026-09-21T06:00`) is read as UTC. Request ids are shortened to their last
+six characters (`…X7K2QM.3`). Durations (`--since`, `--for`,
 `--window`) are `<n>m|h|d|w`, where `m` means **minutes** (in `pull --since` it means months); a
 leading `-` is accepted (`--since -7d`). `--help` after a command (`grok s errors --help`) prints
 all of its options.
@@ -496,8 +498,8 @@ grok s alerts detection --all --host prod --host val      # every server row, st
 ```
 
 `list` prints `KIND KEY SEV AUDIENCE STATUS OPENED BY SUMMARY`, where `BY` is the server that
-opened the alert. `mute` takes exactly one of `--for`, `--until` (ISO local time, or `HH:MM`
-today), `--until-version` or `--forever`, and always a `--reason`; it prints
+opened the alert. `mute` takes exactly one of `--for`, `--until` (ISO time, or `HH:MM`
+today, UTC), `--until-version` or `--forever`, and always a `--reason`; it prints
 `muted <kind:key> until <…> — <reason>`. Muting through any server applies to all of them. A key
 may itself contain colons: `connection:ELN:Prod` is kind `connection`, key `ELN:Prod`. A `kind:key`
 is looked up among the open, acknowledged and muted alerts (the key exactly, else a unique key
@@ -506,7 +508,7 @@ listed so one can be picked by id).
 `detection` prints `SERVER HOST NAME VERSION LAST SEEN LIVE ELIGIBLE OWNER`, with `*` on the lease
 holder: live servers, and those that stopped or were last seen within the last hour (`--all` for
 every row). With several `--host`s the `HOST` column is the alias as typed, and aliases that reach
-the same database (the same set of server ids) print once, as `HOST a, b`. Needs the `ManageAlerts` permission.
+the same database (their server lists share a server id) print once, as `HOST a, b`. Needs the `ManageAlerts` permission.
 
 ### Errors
 
@@ -531,7 +533,7 @@ Filters for every verb: `--since 7d` (default 24h) or `--from`/`--to` (ISO, or r
 `top` groups by up to three of `signature package version user group service route server
 connection function` (default `signature`). Grouped by signature it prints `SIG … ERROR USERS
 COUNT FIRST SEEN LAST TREND STATE`: `FIRST SEEN` is `<version> · MM-DD`, `TREND` one block per
-day (`--trend hour` for hours), `STATE` is `open`, `muted → 1.14.3`, `muted until 14:00` or
+day (`--trend hour` for hours), `STATE` is `open`, `muted → 1.14.3`, `muted until 14:00Z` or
 `resolved`. Grouped without signature it prints `SIGNATURES USERS COUNT NEW FIRST SEEN IN LAST
 TREND TOP ERROR`. `show` prints one signature: versions, occurrences, users, the top groups,
 reports, its alert and the package publish that preceded it. `diff --before/--after` prints the
@@ -544,7 +546,7 @@ CLI from the JSON rows and needs the `apache-arrow` and `parquet-wasm` packages 
 `save` creates a job that writes CSV or JSON to a file share path on a schedule (`MON 07:00`,
 `DAILY 07:00`, `WEEKDAYS 07:00` or a cron string); a path ending in `/` gets
 `<name>-{date}.<format>`, and `--to` names that path, so a saved job takes `--since`, not
-`--from`/`--to`. Needs `ViewTelemetry`, or a `--group` filter on a group you administer.
+`--from`/`--to`. Needs `ViewTelemetry`.
 
 ### Logging policy
 
@@ -592,7 +594,8 @@ matches), what to capture, an expiry and a reason; a rule without an expiry or a
 refused. `server:<level>=<flags>` must be the last capture item, and `credentials` is never
 captured. `--anonymous` is for group and everyone rules only. `timeline` prints `TIME SOURCE KIND
 SUMMARY STATUS MS REQ` with milliseconds, so the click, its requests and the server lines of one
-action read in order.
+action read in order. `capture` needs `EditPluginsSettings`, as the logging policy does; `timeline`
+needs `ViewTelemetry`.
 
 ## Describing an entity type
 
