@@ -67,6 +67,23 @@ category('ComputeUtils: Driver links rule', async () => {
     expectDeepEqual(pconf.links!.map((l) => l.id), ['r::meta']);
   });
 
+  test('Effect when is kept by expansion and checked', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: ['t:step2/a', 'u:step2/b'],
+      when: {'>': [{var: 'm'}, 0]},
+      effects: [
+        {effect: 'hide', targets: 't'},
+        {effect: 'set', targets: 'u', value: {var: 'm'}, when: {'>': [{var: 'm'}, 1]}},
+      ],
+    }]));
+    const data = pconf.links!.find((l) => l.id === 'r::data')!;
+    expectDeepEqual(data.params!.effects[0].when, {'>': [{var: 'm'}, 1]});
+    await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
+      effects: [{effect: 'hide', targets: 't', when: {'>': [{var: 'q'}, 0]}}],
+    }])), /unknown input alias q/);
+  });
+
   test('Reject invalid rules', async () => {
     await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
       id: 'r', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
@@ -142,6 +159,94 @@ category('ComputeUtils: Driver links rule', async () => {
       expectObservable(outBridge.meta.a).toBe('ab-c', {a: undefined, b: {hidden: true}, c: {hidden: false}});
       expectObservable(outBridge.meta.b).toBe('ab-c', {a: undefined, b: {hidden: false}, c: {hidden: true}});
     });
+  });
+
+  test('Effect when drives hide and show without a rule condition', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: 'm:step1/a',
+      to: ['t:step2/a', 'u:step2/b'],
+      effects: [
+        {effect: 'hide', targets: 't', when: {'>': [{var: 'm'}, 0]}},
+        {effect: 'show', targets: 'u', when: {'>': [{var: 'm'}, 0]}},
+      ],
+    }]));
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outBridge = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      cold('-a-b').subscribe((v) => {
+        inNode.getItem().getStateStore().setState('a', v === 'a' ? 1 : -1);
+      });
+      expectObservable(outBridge.meta.a).toBe('ab-c', {a: undefined, b: {hidden: true}, c: {hidden: false}});
+      expectObservable(outBridge.meta.b).toBe('ab-c', {a: undefined, b: {hidden: false}, c: {hidden: true}});
+    });
+  });
+
+  test('Effect when narrows the rule condition for data effects', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: 'm:step1/a',
+      to: ['t:step2/a', 'u:step2/b'],
+      when: {'>': [{var: 'm'}, 0]},
+      effects: [
+        {effect: 'set', targets: 't', value: {var: 'm'}},
+        {effect: 'set', targets: 'u', value: {var: 'm'}, when: {'>': [{var: 'm'}, 1]}},
+      ],
+    }]));
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inStore = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const outStore = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+      cold('-a').subscribe(() => inStore.setState('a', 1));
+      cold('--a').subscribe(() => inStore.setState('a', 2));
+      cold('---a').subscribe(() => inStore.setState('a', -1));
+      expectObservable(outStore.getStateChanges('a')).toBe('abc', {a: undefined, b: 1, c: 2});
+      expectObservable(outStore.getStateChanges('b')).toBe('a-b', {a: undefined, b: 2});
+    });
+  });
+
+  test('Effect when narrows the rule condition for validators', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: ['a1:step1/a', 'b1:step1/b'],
+      to: ['t:step1/a', 'u:step1/b'],
+      when: {'<': [{var: 'a1'}, {var: 'b1'}]},
+      debounce: 0,
+      effects: [
+        {effect: 'error', targets: 't', message: 'too small'},
+        {effect: 'warning', targets: 'u', message: 'negative', when: {'<': [{var: 'a1'}, 0]}},
+      ],
+    }]));
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+      const store = node.getStateStore();
+      cold('-a').subscribe(() => {
+        store.setState('b', 2);
+        store.setState('a', 1);
+      });
+      cold('--a').subscribe(() => snapshots.push(node.validationInfo$.value));
+      cold('---a').subscribe(() => store.setState('a', -1));
+      cold('----a').subscribe(() => snapshots.push(node.validationInfo$.value));
+    });
+    expectDeepEqual(snapshots, [
+      {a: {errors: [{description: 'too small'}], warnings: [], notifications: []}},
+      {
+        a: {errors: [{description: 'too small'}], warnings: [], notifications: []},
+        b: {errors: [], warnings: [{description: 'negative'}], notifications: []},
+      },
+    ]);
   });
 
   test('Items and meta effects evaluate expressions', async () => {

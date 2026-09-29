@@ -349,40 +349,36 @@ does the same with a `js` source and the `items` effect, and adds what
 the annotation cannot: clearing a value that fell out of the list.
 
 ```
-const columns = {js: {args: ['table'], fn: (df) => df ? df.columns.names() : []}};
-
 {
   id: 'columnItems',
   type: 'rule',
   base: 'base:expand(analysis)',
-  from: 'table:before(@base, load)/table',
-  to: 'c:same(@base)/column',
-  sources: {columns},
-  effects: [{effect: 'items', targets: 'c', items: {var: 'columns'}}],
-},
-{
-  id: 'columnReset',
-  type: 'rule',
-  base: 'base:expand(analysis)',
   from: ['table:before(@base, load)/table', 'column:same(@base)/column'],
   to: 'c:same(@base)/column',
-  sources: {columns},
-  when: {and: [{'!': {missing: ['column']}}, {'!': {in: [{var: 'column'}, {var: 'columns'}]}}]},
-  effects: [{effect: 'clear', targets: 'c'}],
+  sources: {columns: {js: {args: ['table'], fn: (df) => df ? df.columns.names() : []}}},
+  effects: [
+    {effect: 'items', targets: 'c', items: {var: 'columns'}},
+    {
+      effect: 'clear', targets: 'c',
+      when: {and: [{'!': {missing: ['column']}}, {'!': {in: [{var: 'column'}, {var: 'columns'}]}}]},
+    },
+  ],
 }
 ```
 
-- The first rule is a meta link: the list replaces the dropdown items of
-  every analysis step's `column` input, and changes with the table.
-- The second rule reads the current value through
-  `column:same(@base)/column` and clears it when it is not in the list.
-  The clear changes the value it reads, which reruns the rule, but the
-  value is now absent, so the `when` is off and the loop ends.
-- The source object is shared, which keeps the two lists identical. A
+- The `items` effect expands into a meta link: the list replaces the
+  dropdown items of every analysis step's `column` input, and changes
+  with the table.
+- The `clear` effect expands into a data link. It reads the current value
+  through `column:same(@base)/column` and clears it when it is not in the
+  list. The clear changes the value it reads, which reruns the link, but
+  the value is now absent, so the effect's `when` is off and the loop
+  ends. The rule has no `when` of its own, so the items stay on.
+- One source serves both effects, which keeps the two lists identical. A
   list produced by a platform function returns its promise, as in the
   previous case. The rule's `from` names the dependencies, the same role
   the annotation's `dependsOn` plays.
-- Items are a form concept. In a headless run the second rule is what
+- Items are a form concept. In a headless run the `clear` effect is what
   keeps a stale value out of the step.
 
 ### Lookup table

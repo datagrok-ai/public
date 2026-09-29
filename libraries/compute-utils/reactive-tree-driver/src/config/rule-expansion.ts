@@ -191,6 +191,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       }
     }
     effectExpressions(effect).forEach(checkExpr);
+    checkExpr(effect.when);
   }
   for (const alias of toAliases.keys()) {
     if (!targeted.has(alias))

@@ -35,9 +35,10 @@ function matchedTargets<E extends {targets: string | string[]}>(controller: ICon
 export const ruleMetaHandler: MetaHandler = ({controller}) => {
   const {when, effects, sources} = ruleParams<RuleMetaEffect>(controller);
   return withContext(controller, sources, (ctx) => {
-    const on = isOn(when, ctx);
+    const ruleOn = isOn(when, ctx);
     const metas: Record<string, Record<string, any>> = {};
     for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
       for (const target of matchedTargets(controller, effect)) {
         const meta = metas[target] ??= {};
         if (effect.effect === 'hide')
@@ -62,9 +63,10 @@ const severityKey = {error: 'errors', warning: 'warnings', notification: 'notifi
 export const ruleValidatorHandler: Validator = ({controller}) => {
   const {when, effects, sources} = ruleParams<RuleValidatorEffect>(controller);
   return withContext(controller, sources, (ctx) => {
-    const on = isOn(when, ctx);
+    const ruleOn = isOn(when, ctx);
     const results: Record<string, ValidationResult | undefined> = {};
     for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
       for (const target of matchedTargets(controller, effect)) {
         results[target] ??= undefined;
         if (!on)
@@ -95,8 +97,9 @@ export const ruleValidatorHandler: Validator = ({controller}) => {
 export const ruleDataHandler: Handler = ({controller}) => {
   const {when, effects, sources} = ruleParams<RuleDataEffect>(controller);
   return withContext(controller, sources, (ctx) => {
-    const on = isOn(when, ctx);
+    const ruleOn = isOn(when, ctx);
     for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
       for (const target of matchedTargets(controller, effect)) {
         if (effect.effect === 'set') {
           if (on)

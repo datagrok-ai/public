@@ -692,8 +692,9 @@ runtime never sees the rule itself.
 
 ### Expressions
 
-`when` and every value-bearing effect field (`items`, `meta` values,
-`message`, `value`) is a [JSON Logic](https://jsonlogic.com/) expression.
+`when`, an effect's own `when` and every value-bearing effect field
+(`items`, `meta` values, `message`, `value`) is a
+[JSON Logic](https://jsonlogic.com/) expression.
 Plain literals are valid expressions and evaluate to themselves. The data
 available to `var` is:
 
@@ -728,8 +729,11 @@ type such as `Molecule`. `var` paths walk into platform objects, so
 `col.name`, `col.type` and `col.semType` are valid references.
 
 Truthiness of `when` follows JSON Logic rules. `when` omitted or `null`
-means the rule is always on. All effects of one rule share its `when`;
-split effects with different conditions into separate rules.
+means the rule is always on. An effect may carry its own `when`, and it
+is on only while both the rule's and its own condition hold. Off means
+the same at either level: `items`, `meta`, messages and `set` are not
+applied, `clear` does nothing, while `hide` and `show` still write the
+visibility, so an off `hide` shows the input.
 
 A validator `message` that evaluates to an array yields one item per
 element, and an empty array yields nothing, so a message can be built
