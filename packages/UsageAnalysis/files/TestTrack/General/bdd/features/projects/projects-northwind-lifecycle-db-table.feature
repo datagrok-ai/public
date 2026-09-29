@@ -1,4 +1,4 @@
-@dev-only @journey @serial @realizes:views.projects
+@dev-only @journey @serial @realizes:views.projects @realizes:sharing.share-dialog
 Feature: A project of the NorthwindTest orders table: saved, reopened and shared
   Dev only: NorthwindTest (the Postgres connection Dbtests:PostgresTest of the Dbtests package,
   listed as NorthwindTest under Browse > Databases > Postgres) exists only on dev.datagrok.ai; on
@@ -8,34 +8,27 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
   lists all the stand's projects, 35-65 s each, and the Dashboards gallery answers a search in up to
   30 s, past the default 120 s per test and afterAll hook and 15 s per check).
 
-  Test 2 of the md, as written: NorthwindTest > Schemas > public > orders is opened with Get All
-  (830 rows), saved through the ribbon's Save dialog with Data sync on and the creation script
-  DbQuery(Dbtests:PostgresTest, "public.orders", …), reopened from the Dashboards gallery, shared
-  through the tile's Share... with the second account, which opens it too, and removed through
-  Delete Project. Every reopen is claimed by the md's 830 rows and by the data-sync mark (the table
-  was re-read from the database, not a snapshot loaded). Translated from the TestTrack case
-  Projects/projects-lifecycle-db; Test 1 (the PostgresAll query) is
-  projects-northwind-lifecycle-db-query, and the System:Datagrok version of both is
-  packages/UsageAnalysis/bdd/features/projects/projects-lifecycle-db.feature.
+  Test 2 of the md: NorthwindTest > Schemas > public > orders is opened with Get All (830 rows),
+  saved through the ribbon's Save dialog with Data sync on and the creation script
+  DbQuery(Dbtests:PostgresTest, "public.orders", …), reopened from the Dashboards gallery (830 rows,
+  re-read by data sync, the Save dialog still showing Data sync and the DbQuery call), shared with
+  the second account (the project only) and removed through Delete Project. Translated from the
+  TestTrack case Projects/projects-lifecycle-db; Test 1 (the PostgresAll query) is
+  projects-northwind-lifecycle-db-query.
 
-  The md's setup asks for "a second user who can access the NorthwindTest connection". The
-  connection is not shared with the second account on dev, and the project's Share dialog does not
-  share it, so the feature grants the second account "View and use" on the connection for the run
-  and revokes it at the end, reading the server back both times.
+  Parked (see the request document): the recipient's opens — without access to the connection (the
+  Data loading error with OPEN ANYWAY and CLOSE PROJECT, no EDIT SCRIPT...) and after the
+  connection is shared with it — which need signing in as the sharing user, and the connection's
+  share with its removal, which only those opens need. The System:Datagrok version for other stands
+  is parked too (its row counts differ per server and need a remembered row count).
 
-  The project name carries the run's time; the project (with its table and view) is removed at the
-  start and at the end. @serial: the Dashboards search is shared with every feature that saves a
-  project.
-
-  Not translated, and why: Logout and signing in with the second user's credentials — the platform's
-  Logout ends every session of the account, which all workers of a run share, so the second account
-  is entered through its own session ("user signs in as the sharing user"); Close All from the left
-  sidebar's context menu is done through the shell (closing views is not the claim).
+  The project name carries the run's time (letters and digits only); the project (with its table,
+  view and grant) is removed at the start and at the end. It is serial: the Dashboards search is
+  shared with every feature that saves a project.
 
   Background:
     Given user is logged in
     And the browse panel is open
-    And the sharing user may use the "Dbtests:PostgresTest" connection until the feature ends
     And no project named "BDDNwLifeDbTable{time}" is on the server
 
   Scenario: Get All opens the database table into a table view
@@ -58,8 +51,7 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     And Data sync switch in "orders" project table in "Save project" dialog should be checked
     When user enters "BDDNwLifeDbTable{time}" into Name text input in "Save project" dialog
     And user clicks on "Creation script" button in "orders" project table in "Save project" dialog
-    Then creation script text in "orders" project table in "Save project" dialog should be visible
-    And creation script text in "orders" project table in "Save project" dialog should contain text "DbQuery(Dbtests:PostgresTest, \"public.orders\""
+    Then "orders" project table in "Save project" dialog should contain text "DbQuery(Dbtests:PostgresTest, \"public.orders\""
     When user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And an info balloon containing 'Project "BDDNwLifeDbTable{time}" uploaded' should have been shown
@@ -83,49 +75,34 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     And the table should have been reloaded by data sync
     And no errors should have been logged
     And no error or warning balloon should have been shown
+    When user clicks on Save button
+    Then "Save project" dialog should be visible
+    And "Creation script" button in "orders" project table in "Save project" dialog should be visible
+    And Data sync switch in "orders" project table in "Save project" dialog should be checked
+    When user clicks on "Creation script" button in "orders" project table in "Save project" dialog
+    Then "orders" project table in "Save project" dialog should contain text "DbQuery(Dbtests:PostgresTest, \"public.orders\""
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
 
-  Scenario: The table project is shared with the second account
+  Scenario: Only the project is shared with the second account
     When user closes all views
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeDbTable{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
     And user picks "Share..." from the context menu of BDDNwLifeDbTable{time} gallery card
     Then "Share BDDNwLifeDbTable{time}" dialog should be visible
-    And "Share BDDNwLifeDbTable{time}" dialog should contain text "Full access"
+    And share access selector should contain text "View and use"
     When user picks the sharing user in "User, group, or email" input in "Share BDDNwLifeDbTable{time}" dialog
-    Then share access selector should contain text "View and use"
-    When user clicks on OK button in "Share BDDNwLifeDbTable{time}" dialog
+    And user clicks on OK button in "Share BDDNwLifeDbTable{time}" dialog
     Then the "Share BDDNwLifeDbTable{time}" dialog should close
-    Given the context panel is open
     When user clicks on BDDNwLifeDbTable{time} gallery card
     Then the context panel should show "BDDNwLifeDbTable{time}"
     And the sharing pane should list the sharing user
-    When user picks "Share..." from the context menu of BDDNwLifeDbTable{time} gallery card
-    Then the access level of the sharing user in "Share BDDNwLifeDbTable{time}" dialog should be "View and use"
-    When user clicks on CANCEL button in "Share BDDNwLifeDbTable{time}" dialog
-    Then the "Share BDDNwLifeDbTable{time}" dialog should close
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  Scenario: The second account opens the shared table project
-    Given user signs in as the sharing user
-    And the browse panel is open
-    And the sharing user may use the "Dbtests:PostgresTest" connection until the feature ends
-    When user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDNwLifeDbTable{time}" into gallery search
-    And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDNwLifeDbTable{time} gallery card
-    Then the current view should be a TableView view
-    And the "orders" view should be current
-    And the table should have 830 rows
-    And the table should have been reloaded by data sync
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
 
   Scenario: Delete Project removes the table project
-    Given user signs in as themselves again
-    And the browse panel is open
-    And the sharing user may use the "Dbtests:PostgresTest" connection until the feature ends
+    When user closes all views
+    Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeDbTable{time}" into gallery search
     Then BDDNwLifeDbTable{time} gallery card should be visible

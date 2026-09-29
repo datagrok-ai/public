@@ -73,9 +73,7 @@ export async function rightclick(page: Page, target: ElementRef): Promise<void> 
  * pointer in and stays up while it is over it; Playwright, which moves only once the element is clear, waits
  * out its timeout behind it. Leaving the resting place cancels a tooltip still to come; one already up is
  * left from a part of the element it does not cover (or the corner), and goes down once the pointer is off
- * its owner. Anything else over the middle of the element is not landed on either: a balloon stops its
- * autohide timer while the pointer is over it (balloon.dart onMouseEnter), so a pointer resting there would
- * keep it up for good. */
+ * its owner. */
 async function approach(page: Page, loc: Locator): Promise<void> {
   if (!await loc.isVisible().catch(() => false))
     return;
@@ -87,17 +85,15 @@ async function approach(page: Page, loc: Locator): Promise<void> {
     const r = el.getBoundingClientRect();
     const y = r.top + r.height / 2;
     const cx = r.left + r.width / 2;
-    const middle = document.elementFromPoint(cx, y);
-    if (!middle || el.contains(middle))
+    if (!document.elementFromPoint(cx, y)?.closest('.d4-tooltip'))
       return {x: cx, y, tooltip: false};
-    const tooltip = !!middle.closest('.d4-tooltip');
     for (const f of [0.05, 0.25, 0.75, 0.95]) {
       const x = r.left + r.width * f;
       const top = document.elementFromPoint(x, y);
       if (top && el.contains(top))
-        return {x, y, tooltip};
+        return {x, y, tooltip: true};
     }
-    return {x: 1, y: 1, tooltip};
+    return {x: 1, y: 1, tooltip: true};
   }).catch(() => null);
   if (aim === null)
     return;
@@ -303,11 +299,6 @@ export async function typeInColumnGrid(page: Page, option: string, what: string,
   // a picker another selector left hidden in the page (a closed dialog's) is not the one this opened
   const popup = page.locator('.d4-column-grid').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 10000});
-  // the picker focuses the element that listens for the letter from a zero timer after it shows
-  // (column_combo_box.dart Timer.run), and Chrome runs queued input before timers: a letter sent to
-  // the page keyboard waits for that turn
-  if (!selector)
-    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
   await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
   const search = page.locator('input.d4-column-selector-search-input');
   await search.waitFor({state: 'visible', timeout: 10000});
@@ -356,20 +347,6 @@ export async function pickInColumnGrid(page: Page, option: string, what: string,
   await popup.waitFor({state: 'detached', timeout: 5000}).catch(() => {
     throw new Error(`the column picker of ${what} is still open after Enter: "${option}" was not taken`);
   });
-}
-
-/** The picker [open] shows, the column typed and committed. A docked Columns pane (Data > Aggregate
- * Rows... docks one) is a `.d4-column-grid` too, so `pickInColumnGrid`'s wait for the last grid to
- * go never ends while it is open: the picker is done when the page is back to the grids it had
- * before it opened. */
-export async function pickColumnCounted(page: Page, open: () => Promise<void>, column: string, what: string, selector?: Locator): Promise<void> {
-  const grids = page.locator('.d4-column-grid');
-  const before = await grids.count();
-  await open();
-  await expect.poll(() => grids.count(), {message: `the column picker of ${what}, opened`, timeout: 10000}).toBeGreaterThan(before);
-  await typeInColumnGrid(page, column, what, selector);
-  await expect.poll(() => grids.count(), {message: `the column picker of ${what} after Enter: "${column}" was not taken while it stays open`,
-    timeout: 5000}).toBe(before);
 }
 
 /** A mouse-down on a Dart column selector opens its column grid; the pointer then leaves it, since
@@ -483,13 +460,8 @@ function optionsNamed(page: Page, option: string): Locator {
     .or(page.locator(withAttr(OPTION, `[aria-label="${cssString(option)}" i]`)));
 }
 
-const CHECKABLE = 'input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]';
-
 export async function setChecked(page: Page, target: ElementRef, checked: boolean): Promise<void> {
   const loc = await locate(page, target);
-  // a dialog that fills its rows after it opens (Save project) has the host before its control
-  if (!await loc.first().evaluate((e, sel) => e.matches(sel), CHECKABLE))
-    await expect(loc.first().locator(`.ui-input-switch, ${CHECKABLE}`).first(), `the control inside ${target.phrase}`).toBeAttached();
   // the Dart switch keeps its checkbox hidden and takes the click on a div, so it is not settable
   if (await loc.first().locator('.ui-input-switch').count() > 0)
     return setSwitched(page, target, checked);

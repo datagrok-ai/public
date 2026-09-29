@@ -544,16 +544,6 @@ export const noBalloons = Then('no error or warning balloon should have been sho
   expect(shown.map((b) => `${b.type}: ${b.message}`), 'error and warning balloons since the last check').toEqual([]);
 }, {description: 'the platform\'s balloons (d4-balloon-shown) since the previous check, the scenario start or the login; checking clears them'});
 
-/* Where a gesture may raise a warning that is not the claim (a project opened from a space): only
-   the errors are claimed, and the rest go back on the floor for a later check. */
-export const noErrorBalloon = Then('no error balloon should have been shown', async (page: Page) => {
-  const shown = await v.takeBalloons(page);
-  const others = shown.filter((b) => b.type !== 'error');
-  if (others.length > 0)
-    await v.putBalloons(page, others);
-  expect(shown.filter((b) => b.type === 'error').map((b) => b.message), 'error balloons since the last check').toEqual([]);
-}, {description: 'error balloons (d4-balloon-shown) since the previous balloon check; warnings and info stay for the next check'});
-
 /** The balloons of a type since the last read, polled: a balloon a command raises lands a task
  * after the gesture. */
 async function expectBalloon(page: Page, types: string[], text: string | RegExp, capMs = 5000): Promise<void> {

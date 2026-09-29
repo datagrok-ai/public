@@ -13,13 +13,13 @@ Feature: Projects regressions: names of projects and their tables
   the deleted project's table or a "_1" in its address (GROK-15135, GROK-20197); a Save dialog with
   no table, an error on OK, or the save landing under the old name (GROK-17700).
 
-  The Save dialog's preview logs "Unable to find element in cloned iframe" for some views
-  (GROK-18606, won't fix, known noise by the operator's ruling): the check right after a save lets
-  that one message through; every check after a reopen or a rename is strict. Every project is
-  named with the run's time and removed with its tables and views when each scenario starts and
-  when the feature ends. The gallery's Delete Project removes the project alone, so the table and
-  view of the project GROK-15135 deletes are read before the delete and removed when the feature
-  ends.
+  The console is claimed clean after every save as well (the Save dialog's preview noise, GROK-18606,
+  did not show for these single-table views). Every project is named with the run's time and removed
+  with its tables and views when each scenario starts and when the feature ends. The gallery's Delete
+  Project removes the project alone: the table and view of the project GROK-15135 deletes stay on the
+  server until the library sweeps them (requested in the request document). That the reused name brings back
+  only the new table is read in the reopened workspace (no demog view); the server-side claim on the
+  project's tables is parked in the request document.
 
   Background:
     Given user is logged in
@@ -51,7 +51,7 @@ Feature: Projects regressions: names of projects and their tables
     When user clicks on CANCEL button in "Share BDDRegDigits<mode>{time}" dialog
     Then the "Share BDDRegDigits<mode>{time}" dialog should close
     And the "12345" table of the "BDDRegDigits<mode>{time}" project should be saved <kept>
-    And no errors but the project preview's should have been logged
+    And no errors should have been logged
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegDigits<mode>{time}" into gallery search
@@ -82,7 +82,7 @@ Feature: Projects regressions: names of projects and their tables
     When user clicks on CANCEL button in "Share BDDRegPipe{time}|A_B" dialog
     Then the "Share BDDRegPipe{time}|A_B" dialog should close
     And 1 project named "BDDRegPipe{time}|A_B" should be on the server
-    And no errors but the project preview's should have been logged
+    And no errors should have been logged
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegPipe{time}" into gallery search
@@ -111,8 +111,7 @@ Feature: Projects regressions: names of projects and their tables
     And "Share BDDRegReuse{time}" dialog should be visible
     When user clicks on CANCEL button in "Share BDDRegReuse{time}" dialog
     Then the "Share BDDRegReuse{time}" dialog should close
-    And the "BDDRegReuse{time}" project on the server should hold the tables "demog"
-    And no errors but the project preview's should have been logged
+    And no errors should have been logged
     And 1 project named "BDDRegReuse{time}" should be on the server
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree
@@ -132,8 +131,7 @@ Feature: Projects regressions: names of projects and their tables
     And "Share BDDRegReuse{time}" dialog should be visible
     When user clicks on CANCEL button in "Share BDDRegReuse{time}" dialog
     Then the "Share BDDRegReuse{time}" dialog should close
-    And the "BDDRegReuse{time}" project on the server should hold the tables "cars"
-    And no errors but the project preview's should have been logged
+    And no errors should have been logged
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegReuse{time}" into gallery search
@@ -141,6 +139,7 @@ Feature: Projects regressions: names of projects and their tables
     And user double-clicks on BDDRegReuse{time} gallery card
     Then the "cars" view should be current
     And table "cars" should be open
+    And demog view should be absent
     And the page address should contain ".bddregreuse{time}/"
     And the page address should not contain "bddregreuse{time}_"
     And no error or warning balloon should have been shown
@@ -159,6 +158,7 @@ Feature: Projects regressions: names of projects and their tables
     Then the browse tree should be visible
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
+    And "Creation script" button in "demog" project table in "Save project" dialog should be visible
     And Data sync switch in "demog" project table in "Save project" dialog should be checked
     When user enters "BDDRegRename{time}" into Name text input in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
@@ -166,7 +166,7 @@ Feature: Projects regressions: names of projects and their tables
     And "Share BDDRegRename{time}" dialog should be visible
     When user clicks on CANCEL button in "Share BDDRegRename{time}" dialog
     Then the "Share BDDRegRename{time}" dialog should close
-    And no errors but the project preview's should have been logged
+    And no errors should have been logged
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegRename{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
@@ -186,7 +186,7 @@ Feature: Projects regressions: names of projects and their tables
     Then the "Save project" dialog should close
     And an info balloon containing 'Project "BDDRegRenamed{time}" uploaded' should have been shown
     And no error or warning balloon should have been shown
-    And no errors but the project preview's should have been logged
+    And no errors should have been logged
     And 1 project named "BDDRegRenamed{time}" should be on the server
     And 0 projects named "BDDRegRename{time}" should be on the server
     And the "demog" table of the "BDDRegRenamed{time}" project should be saved with data sync

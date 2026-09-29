@@ -10,15 +10,6 @@ element('toolbox', {selector: '.d4-toolbox[caption]', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
-element('left sidebar', {selector: '[name="sidebar"]',
-  description: 'the dark strip of tabs on the left edge of the shell (Browse, Toolbox, Dashboards …); its context menu is "Close All", which closes every view, table and project with no prompt'});
-element('dashboards tab', {selector: '[name="sidebar"] [name="Dashboards"]', aliases: ['dashboards sidebar tab'],
-  description: 'the Dashboards tab of the left sidebar; a click toggles its panel ("the dashboards panel of the left sidebar is open" opens it idempotently)'});
-/* The Dashboards panel reuses the Browse panel's host, so its nodes are also "<Project>---<table>
-   tree node inside browse tree". */
-element('dashboards project node', {aliases: ['dashboards project nodes'],
-  selector: '.grok-view-browse [role="tree"] > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node',
-  description: 'a top-level row of the Dashboards panel: "New Dashboard" (the scratchpad) or an open project, never one of their tables'});
 element('browse toolbar', {selector: '.grok-browse-icons',
   description: 'the Browse header actions, outside the panel body and its tree'});
 element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],
@@ -55,8 +46,6 @@ element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source e
     'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
 element('share access selector', {selector: '[name="div-share-selector"]',
   description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
-element('privilege tree', {selector: '.grok-privilege-selector-tree',
-  description: 'the popup tree of privileges behind an access level of the Share dialog (tree-Full-access, tree-View-and-use, tree-Edit, tree-Delete, tree-Share nodes, a checkbox each); ticking a node sets that level'});
 element('model preview', {selector: '.d4-pm-view-preview',
   description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('grid overlay', {selector: '[name="viewer-Grid"] canvas[name="overlay"]',

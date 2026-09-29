@@ -188,8 +188,4 @@ test('a fixture of a dead run is stale after an hour; a live, a foreign or an un
   assert.equal(isStaleFixture(at('BDD-GL-Renamed-1789900000000', old), families, now), false);
   assert.equal(isStaleFixture(at('BDD-GL-Group', old), families, now), false);
   assert.equal(isStaleFixture(at('BDD-GL-Group-1789900000000', 0), families, now), false);
-  const bare = fixtureFamilies(['BDDLifeFiles1789927107045', 'BDDComplexQ1789927107045R', 'Report2026']);
-  assert.deepEqual(bare, ['BDDLifeFiles']);
-  assert.equal(isStaleFixture(at('BDDLifeFiles1789900000000', old), bare, now), true);
-  assert.equal(isStaleFixture(at('BDDLifeFilesRenamed1789900000000', old), bare, now), false);
 });

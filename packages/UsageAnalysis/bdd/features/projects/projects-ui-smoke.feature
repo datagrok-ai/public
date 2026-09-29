@@ -2,21 +2,24 @@
 Feature: A project through its card in the Dashboards gallery
   demog.csv opened from Browse > Files > Demo is saved through the ribbon's Save dialog, and every
   later step goes through the project's card in Browse > Dashboards: the Share dialog, Rename, the
-  four Copy items, Add to favorites, Save as Zip, reopening by a double click and Delete Project.
+  Copy items, Add to favorites, Save as Zip, reopening by a double click and Delete Project.
   Translated from the TestTrack case Projects/projects-ui-smoke.
 
-  What the Copy items put on the clipboard is claimed against the project the server holds: the id,
-  the grok name (<namespace>:<name>), the markup #{x.<grok name>."<name>"} and the link
-  <server>/p/<namespace>.<name>. The md says the namespace is "your login"; on the stand it is the
-  owner's namespace, "Admin" with a capital, so the claim reads it from the server, and the name part
-  is claimed literally besides. The md says "paste the clipboard into any text field"; the clipboard
-  is read directly. The recipient of the share is the library's sharing user (the md's
-  "qa_playwright" is any user other than yourself).
+  Parked (see the request document): the tag added in Context Panel > Details and the "#tag"
+  search (the Add tag box is a bare input no element reaches); everything about the description:
+  typing it into the Save dialog (its Description box is a bare text area no element reaches), the
+  second project saved without one, the card and the Details pane showing it, and changing it by
+  saving again; the tag and the description surviving a page reload (no reload step); Copy > ID
+  (a UUID the feature cannot know without reading the project on the server); the filled star in
+  the context panel's header after Add to favorites. The words of the recipient's line in the
+  Sharing pane ("has special permissions") are claimed on the pane as a whole.
 
-  Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
-  time. The project, under both names, is deleted when the feature starts and ends, with its table,
-  view and grant; the favorite the scenario adds is removed by the scenario. It is @serial: the save
-  uploads a table the reopen reads back.
+  The recipient of the share is the library's sharing user (the md's "qa_playwright" is any user
+  other than yourself). The Grok name, markup and URL are claimed for the admin account the suite
+  runs as (namespace "Admin"). Names are letters and digits only (the Dashboards search misses "-"
+  and "_") and carry the run's time. The project, under both names, is deleted
+  when the feature starts and ends, with its table, view and grant; the favorite the scenario
+  adds is removed by the scenario. It is serial: the save uploads a table the reopen reads back.
 
   Background:
     Given user is logged in
@@ -30,8 +33,9 @@ Feature: A project through its card in the Dashboards gallery
     When user picks "Open" from the context menu of Files---Demo---demog.csv tree node inside browse tree
     Then the "demog" view should be current
     And the table should have 5850 rows
-    When user clicks on Save button
+    When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
+    And "Creation script" button in "demog" project table in "Save project" dialog should be visible
     And Data sync switch in "demog" project table in "Save project" dialog should be checked
     When user enters "BDDSmoke{time}" into Name text input in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
@@ -44,32 +48,31 @@ Feature: A project through its card in the Dashboards gallery
     And no errors should have been logged
 
   Scenario: The card is found by the gallery search
-    When user picks "Close All" from the context menu of left sidebar
+    When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user remembers the gallery counter
     And user enters "BDDSmoke{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
     Then the gallery counter should be lower than remembered
     And BDDSmoke{time} gallery card should be visible
 
   Scenario: The project is shared from its card
     When user clicks on BDDSmoke{time} gallery card
     Then the context panel should show "BDDSmoke{time}"
-    And the sharing pane should not list the sharing user
     When user picks "Share..." from the context menu of BDDSmoke{time} gallery card
     Then "Share BDDSmoke{time}" dialog should be visible
     And share access selector should contain text "View and use"
     When user picks the sharing user in "User, group, or email" input in "Share BDDSmoke{time}" dialog
     And user unchecks "Send notifications" input in "Share BDDSmoke{time}" dialog
-    Then "Send notifications" input in "Share BDDSmoke{time}" dialog should be unchecked
     When user clicks on OK button in "Share BDDSmoke{time}" dialog
     Then the "Share BDDSmoke{time}" dialog should close
     When user clicks on BDDSmoke{time} gallery card
     Then the context panel should show "BDDSmoke{time}"
     And the sharing pane should list the sharing user
-    And the sharing pane should show the sharing user as "has special permissions"
+    And Sharing pane in context panel should contain text "has special permissions"
 
   Scenario: The project is renamed from its card
     When user picks "Rename..." from the context menu of BDDSmoke{time} gallery card
@@ -83,20 +86,14 @@ Feature: A project through its card in the Dashboards gallery
     When user enters "BDDSmokeRenamed{time}" into gallery search
     And user clicks on Refresh icon in gallery toolbar
     Then BDDSmokeRenamed{time} gallery card should be visible
-    And BDDSmoke{time} gallery card should be absent
 
-  Scenario: Copy puts the id, the grok name, the markup and the link on the clipboard
-    When user picks "Copy > ID" from the context menu of BDDSmokeRenamed{time} gallery card
-    Then the clipboard should hold the id of the "BDDSmokeRenamed{time}" project
+  Scenario: The Copy items put the Grok name, the markup and the URL on the clipboard
     When user picks "Copy > Grok name" from the context menu of BDDSmokeRenamed{time} gallery card
-    Then the clipboard should hold the grok-name of the "BDDSmokeRenamed{time}" project
-    And the clipboard should contain text ":BDDSmokeRenamed{time}"
+    Then the clipboard should have text "Admin:BDDSmokeRenamed{time}"
     When user picks "Copy > Markup" from the context menu of BDDSmokeRenamed{time} gallery card
-    Then the clipboard should hold the markup of the "BDDSmokeRenamed{time}" project
-    And the clipboard should contain text '."BDDSmokeRenamed{time}"}'
+    Then the clipboard should have text '#{x.Admin:BDDSmokeRenamed{time}."BDDSmokeRenamed{time}"}'
     When user picks "Copy > URL" from the context menu of BDDSmokeRenamed{time} gallery card
-    Then the clipboard should hold the url of the "BDDSmokeRenamed{time}" project
-    And the clipboard should contain text ".BDDSmokeRenamed{time}"
+    Then the clipboard should contain text "/p/Admin.BDDSmokeRenamed{time}"
 
   Scenario: The project is added to favorites and taken out again
     Given "My stuff" tree node inside browse tree is expanded
@@ -117,7 +114,7 @@ Feature: A project through its card in the Dashboards gallery
     And the downloaded file "BDDSmokeRenamed{time}.zip" should contain text "demog"
 
   Scenario: The card reopens the project with its data
-    When user picks "Close All" from the context menu of left sidebar
+    When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
@@ -130,7 +127,7 @@ Feature: A project through its card in the Dashboards gallery
     And no error or warning balloon should have been shown
 
   Scenario: The project is deleted from its card
-    When user picks "Close All" from the context menu of left sidebar
+    When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree

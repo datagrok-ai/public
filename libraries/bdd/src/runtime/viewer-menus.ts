@@ -47,32 +47,22 @@ export async function openContextMenuAt(page: Page, x: number, y: number): Promi
 }
 
 /** The context menu of an element: at a named hit area, else its `view` area when it reports
- * one, else a visible point of it. A viewer: three roundtrips (the point and the arming in one, the
- * click, the wait). Anything else (a tree node, a card) is aimed at once its box has settled and
- * hit-tested again right before the click, and located afresh while it has no such point — a card a
- * gallery re-rendered in between sent the click to (0, 0), the left sidebar, whose menu is Close All.
- * A list that reflows between the aim and the click still puts another element under it: the click
- * also records what it reached, and a click that missed the element is aimed again (three times). */
+ * one, else its centre. Three roundtrips: the point and the arming in one, the click, the wait.
+ * A list that reflows between the point and the click (a gallery relaid out, a tree refilled) puts
+ * another element under it, whose menu opens instead: the point also arms a check of what the
+ * right-click reached, and a click that missed the element is aimed again. */
 export async function openContextMenuOf(page: Page, target: ElementRef, area?: string): Promise<Locator> {
-  const deadline = Date.now() + pollMs(5000);
   for (let attempt = 1; ; attempt++) {
-    const {x, y, token, miss} = await onViewer(page, target, (el, [a, cap]) => {
+    const {x, y, token} = await onViewer(page, target, (el, [a, cap]) => {
       const w = window as any;
       w.__bddMenuHit = undefined;
       document.addEventListener('contextmenu', (e) => { w.__bddMenuHit = el.contains(e.target as Node); }, {capture: true, once: true});
       return w.__bdd.menuPoint(el, a, cap);
-    }, [area ?? null, MENU_SHOWN_MS()] as [string | null, number]) as {x: number; y: number; token: string; miss?: string};
-    const armed = token || (miss ? null : await onViewer(page, target, (el, [px, py, cap]) => (window as any).__bdd.aimMenu(el, px, py, cap),
-      [x, y, MENU_SHOWN_MS()] as [number, number, number]) as string | null);
-    if (armed) {
-      const menu = await rightClickArmed(page, x, y, armed);
-      if (attempt >= 3 || await page.evaluate(() => (window as any).__bddMenuHit !== false))
-        return menu;
-      await closeContextMenu(page);
-      continue;
-    }
-    if (Date.now() > deadline)
-      throw new Error(`no point to right-click ${target.phrase} at: ${miss ?? `something else lies over (${Math.round(x)}, ${Math.round(y)}) by the time of the click`}`);
+    }, [area ?? null, MENU_SHOWN_MS()] as [string | null, number]);
+    const menu = await rightClickArmed(page, x, y, token);
+    if (attempt === 3 || await page.evaluate(() => (window as any).__bddMenuHit !== false))
+      return menu;
+    await closeContextMenu(page);
   }
 }
 

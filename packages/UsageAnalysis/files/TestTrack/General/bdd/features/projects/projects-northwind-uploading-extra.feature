@@ -10,23 +10,22 @@ Feature: Projects uploaded from a Get Top 100 result of the NorthwindTest orders
 
   The md's "Project from the Get Top 100 query result" as written, on the Northwind orders it names:
   Get Top 100 on NorthwindTest > Schemas > public > orders opens 100 of its 830 rows, its creation
-  script reads the table with limit = 100, and the result is saved with Data sync on
-  (UI_Top100_Sync) and off (UI_Top100_NoSync). Each reopens from its Dashboards card: with Data sync
-  on the query is re-run, with it off the stored result opens — both with 100 rows. Translated from
-  the TestTrack case Projects/uploading-ui; the md's other cases (an SDF file, the scratchpad's
-  upload dialog) and the System:Datagrok version of this one are
-  packages/UsageAnalysis/bdd/features/projects/projects-uploading-extra.feature, and "Project from
-  two local files" is not translated (the operating system's file picker with files of the local
+  script reads the table with limit = 100, and the result is saved with Data sync on and off. Each
+  reopens from its Dashboards card: with Data sync on the query is re-run, with it off the stored
+  result opens — both with 100 rows. Translated from the TestTrack case Projects/uploading-ui (a
+  manual companion whose automatable cases the operator asked to translate).
+
+  Parked (see the request document): the SDF case (mol1K.sdf reopened with its molecules rendered —
+  no reading of a column's renderer) and the System:Datagrok version of this one (row counts differ
+  per server); the proof that the reopened table is not a frame that stayed open. Not translated:
+  "Project from two local files" (the operating system's file picker with files of the local
   machine, which a CI agent does not have).
 
-  A reopen is claimed to be a reopen: the table open before the save is marked in memory, Close All
-  is claimed to leave no table, and the table that comes back must be a frame without the mark.
-
   Every project (with its table and view) is named with the run's time and removed before its row
-  starts and when the feature ends. The Save dialog's preview logs "Unable to find element in cloned
-  iframe" (GROK-18606, known noise), so a save is claimed to log nothing else; the reopen is claimed
-  to log nothing at all. It is @serial: the Dashboards search and the uploads are shared with every
-  feature that saves a project.
+  starts and when the feature ends. The console is claimed clean after the save and after the reopen
+  (the Save dialog's preview noise, GROK-18606, shows for views of several tables, not for one). It
+  is serial: the Dashboards search and the uploads are shared with every feature that saves a
+  project.
 
   Background:
     Given user is logged in
@@ -42,8 +41,7 @@ Feature: Projects uploaded from a Get Top 100 result of the NorthwindTest orders
     When user picks "Get Top 100" from the context menu of Databases---Postgres---NorthwindTest---Schemas---public---orders tree node inside browse tree
     Then the "orders" view should be current
     And table "orders" should have 100 rows
-    When user marks the open tables as the frames in memory
-    And user clicks on Save ribbon item
+    When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
     When user clicks on "Creation script" button in "orders" project table in "Save project" dialog
     Then "orders" project table in "Save project" dialog should contain text "limit = 100"
@@ -58,15 +56,17 @@ Feature: Projects uploaded from a Get Top 100 result of the NorthwindTest orders
     And "Share <Project>" dialog should be visible
     When user clicks on CANCEL button in "Share <Project>" dialog
     Then the "Share <Project>" dialog should close
-    And no errors but the project preview's should have been logged
-    When user picks "Close All" from the context menu of left sidebar
-    Then no table should be left in the workspace
+    And no errors should have been logged
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "<Project>" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
     And user double-clicks on <Project> gallery card
-    Then table "orders" should have been <how> with 100 rows
+    Then the "orders" view should be current
+    And the table should have 100 rows
+    And the table should have been <how>
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

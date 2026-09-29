@@ -11,10 +11,11 @@ Feature: Projects regressions: a project with pinned rows
   on pinning that such a pin "won't be applied from the layout", so the claim is the error-free
   reopen of the sorted grid, not the pins.
 
-  The Save dialog's preview logs "Unable to find element in cloned iframe" for some views
-  (GROK-18606, won't fix, known noise by the operator's ruling): the check right after the save lets
-  that one message through; the checks after the reopen are strict. The project is named with the
-  run's time and removed with its table and view when the feature starts and ends.
+  The check right after the save is strict too: the Save dialog's preview can log "Unable to find
+  element in cloned iframe" for some views (GROK-18606, won't fix), which did not happen for this
+  view in three runs; a check that lets only that message through is requested in the request document. The
+  project is named with the run's time and removed with its table and view when the feature starts
+  and ends.
 
   Background:
     Given user is logged in
@@ -37,6 +38,7 @@ Feature: Projects regressions: a project with pinned rows
     And a warning balloon containing "pinned a non-unique value" should have been shown
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
+    And "Creation script" button in "demog" project table in "Save project" dialog should be visible
     And Data sync switch in "demog" project table in "Save project" dialog should be checked
     When user enters "BDDRegPinned{time}" into Name text input in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
@@ -45,7 +47,7 @@ Feature: Projects regressions: a project with pinned rows
     When user clicks on CANCEL button in "Share BDDRegPinned{time}" dialog
     Then the "Share BDDRegPinned{time}" dialog should close
     And the "demog" table of the "BDDRegPinned{time}" project should be saved with data sync
-    And no errors but the project preview's should have been logged
+    And no errors should have been logged
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegPinned{time}" into gallery search

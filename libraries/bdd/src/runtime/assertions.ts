@@ -119,15 +119,9 @@ async function expectInvalid(loc: Locator, invalid: boolean): Promise<void> {
   await expect.poll(holds, {message: `${invalid ? 'invalid' : 'valid'} expected`}).toBe(invalid);
 }
 
-const CHECKABLE = 'input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]';
-
-/** The control is the element itself or one inside it; a dialog that fills its rows after it opens
- * (Save project) has the host before the control, so the control is waited for, not counted once. */
 async function expectChecked(loc: Locator, checked: boolean): Promise<void> {
-  const self = await loc.first().evaluate((e, sel) => e.matches(sel), CHECKABLE);
-  const target = self ? loc : loc.locator(CHECKABLE).first();
-  if (!self)
-    await expect(target, 'the checkbox or switch inside the element').toBeAttached();
+  const box = loc.locator('input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]').first();
+  const target = await box.count() > 0 ? box : loc;
   await (checked ? expect(target) : expect(target).not).toBeChecked();
 }
 

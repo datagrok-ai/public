@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["bindings", "generated"]
+  "include": ["generated"]
 }
