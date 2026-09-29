@@ -592,8 +592,8 @@ A rule names one subject (`--user`, `--group`, `--package`, `--everyone`), at mo
 (`--view`, `--element`, `--function`, `--error`; the session is captured for `--window` after it
 matches), what to capture, an expiry and a reason; a rule without an expiry or a reason is
 refused. `server:<level>=<flags>` must be the last capture item, and `credentials` is never
-captured. `--anonymous` is for group and everyone rules only. `timeline` prints `TIME SOURCE KIND
-SUMMARY STATUS MS REQ` with milliseconds, so the click, its requests and the server lines of one
+captured. `--anonymous` is for group and everyone rules only. `timeline` prints `TIME SOURCE SERVER
+KIND SUMMARY STATUS MS REQ` with milliseconds, so the click, its requests and the server lines of one
 action read in order. `capture` needs `EditPluginsSettings`, as the logging policy does; `timeline`
 needs `ViewTelemetry`.
 

@@ -15,9 +15,7 @@ const ALL_ACTIVITY = 'all activity';
 const SCOPES = [ALL_ACTIVITY, 'view', 'element', 'function', 'error'];
 const NO_LEVEL = 'none';
 const LEVELS = [NO_LEVEL, 'error', 'warning', 'info', 'debug'];
-/** The logger's debug flags (Settings > Logger) but `credentials`, which a capture rule never turns on. */
-const DEBUG_FLAGS = ['db', 'socket', 'query', 'hash', 'storage', 'balloon', 'startup', 'srcmaps', 'docker', 'auth',
-  'ai-indexing', 'email'];
+const CREDENTIALS_FLAG = 'credentials';
 const DURATIONS: {[name: string]: number} = {'30 min': 30, '2 h': 120, '1 d': 1440, '2 d': 2880, '7 d': 10080};
 const HIDDEN_COLUMNS = ['status', 'capture', 'anonymous', 'name', 'max_events', 'window_minutes', 'max_sessions',
   'created_at', 'expires_at', 'ended_at', 'id', 'stopped_by', 'stop_reason'];
@@ -34,6 +32,8 @@ export class CaptureView extends UaView {
   reshow?: string;
   /** Reasons of the rules stopped here: the server records one a moment after the stop. */
   stopReasons: {[rule: string]: string} = {};
+  /** The New rule dialog's debug flags, read once. */
+  debugFlags?: Promise<string[]>;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -147,7 +147,18 @@ export class CaptureView extends UaView {
     return message;
   }
 
-  newRuleDialog(): void {
+  /** The server's debug flags (`LoggingPolicy`), in their order, but `credentials`. */
+  static async loadDebugFlags(): Promise<string[]> {
+    const policy = JSON.parse(await grok.functions.call('LoggingPolicy'));
+    return (policy.debugFlags ?? []).filter((f: string) => f !== CREDENTIALS_FLAG);
+  }
+
+  async newRuleDialog(): Promise<void> {
+    this.debugFlags ??= CaptureView.loadDebugFlags().catch(() => {
+      this.debugFlags = undefined;
+      return [];
+    });
+    const debugFlags = await this.debugFlags;
     const subject = ui.input.choice('Subject', {value: 'user', items: SUBJECTS, nullable: false});
     const names: {[subject: string]: Promise<string[]>} = {};
     const namesOf = (type: string): Promise<string[]> => names[type] ??= (type === 'user' ?
@@ -165,8 +176,9 @@ export class CaptureView extends UaView {
       {tooltipText: 'A view name, a part of an element path, a function nqName or an error signature'});
     const capture = ui.input.multiChoice('Capture', {value: ['clicks', 'requests', 'errors'], items: CAPTURE_ITEMS});
     const level = ui.input.choice('Server level', {value: NO_LEVEL, items: LEVELS, nullable: false});
-    const flags = ui.input.multiChoice('Debug flags', {value: [], items: DEBUG_FLAGS,
+    const flags = ui.input.multiChoice('Debug flags', {value: [], items: debugFlags,
       tooltipText: 'The server debug categories this rule turns on, as in Settings > Logger'});
+    ui.setDisplay(flags.root, debugFlags.length > 0);
     const duration = ui.input.choice('For', {value: '1 d', items: Object.keys(DURATIONS), nullable: false});
     const maxEvents = ui.input.int('Max events', {value: 10000});
     const anonymous = ui.input.bool('Anonymous', {tooltipText: 'Group and everyone rules only: no user, session or IP'});

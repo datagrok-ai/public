@@ -146,6 +146,7 @@ export function timelineRow(e: any): Record<string, any> {
   return {
     TIME: fmtClock(e?.time),
     SOURCE: e?.source ?? '',
+    SERVER: e?.server ?? '',
     KIND: e?.kind ?? '',
     SUMMARY: truncate(e?.summary, 70),
     STATUS: e?.status ?? '',

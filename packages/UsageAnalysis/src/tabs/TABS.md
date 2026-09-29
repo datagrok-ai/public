@@ -32,7 +32,8 @@ const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, Clic
 `CaptureView` (tab `Capture`) lists the capture rules (`CaptureRules` over `capture_rules`, the columns of
 `grok s capture list`: rule, author, subject, scope, reason, active, events); active rules always show, ended ones
 when created within the Date filter. **New rule...** builds the `POST /logging/capture` body and calls the server
-function `CaptureRuleAdd`; a row's context panel and context menu offer **Stop...** (`CaptureRuleStop`, active rules
+function `CaptureRuleAdd`; its Debug flags are the server's (`LoggingPolicy`, `debugFlags` of `GET /logging/policy`)
+but `credentials`, and hidden when the policy can't be read; a row's context panel and context menu offer **Stop...** (`CaptureRuleStop`, active rules
 only) and **Timeline**. `TimelineView` (tab `Timeline`) shows one action, request, session, report or rule
 (`cap-<n>`) in time order from the server function `Timeline`; it routes as `/timeline?<key>=<id>` (the id keeps its
 case; the platform hands the query parameters to `usageAnalysisApp`, which passes them on as

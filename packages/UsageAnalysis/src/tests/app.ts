@@ -56,6 +56,12 @@ category('Capture', () => {
     expect(CaptureView.refusal('maxEvents is a whole number from 1'), 'Max events is a whole number from 1');
   });
 
+  test('Debug flags come from the server, without credentials', async () => {
+    const flags = await CaptureView.loadDebugFlags();
+    expect(flags.includes('query'), true, `no "query" in ${flags}`);
+    expect(flags.includes('credentials'), false, 'credentials is offered');
+  });
+
   test('Timeline splits the server out of the source', async () => {
     const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('source', ['client', 'server', 'A'])]);
     TimelineView.splitSource(t);
