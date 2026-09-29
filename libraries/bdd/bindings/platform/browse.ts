@@ -1,6 +1,5 @@
 /* The Browse panel beyond opening and clicking nodes (its Refresh is in steps.ts): the
-   tree's own "children are there" state, favorites and a file put
-   on the server for a feature, and moving inside the app by address. Refresh and Find path fire
+   tree's own "children are there" state, favorites, and moving inside the app by address. Refresh and Find path fire
    `grok.events.onBrowseTreeRefreshed` once the tree is rebuilt and the path parsed
    (browse_panel.dart); a group fetching its children carries `data-state="loading"` on its host
    (tree_view.dart `loadChildren`). */
@@ -8,7 +7,6 @@ import {type Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
-import {expectCustomEvent} from '../../src/runtime/events.js';
 
 declare const grok: any;
 
@@ -54,23 +52,6 @@ export const notFavoriteOnServer = Then('{string} should not be in favorites on 
     {message: `"${name}" among the account's favorites on the server`, timeout: pollMs(30000)}).toBe(false);
 }, {tier: 'api'});
 
-async function deleteFile(page: Page, path: string): Promise<void> {
-  await page.evaluate(async (p) => {
-    if (await grok.dapi.files.exists(p))
-      await grok.dapi.files.delete(p);
-  }, path);
-  await expect.poll(() => page.evaluate((p) => grok.dapi.files.exists(p), path),
-    {message: `the file ${path} on the server`, timeout: pollMs(30000)}).toBe(false);
-}
-
-export const fileOnServer = Given('a file {string} with text {string} is on the server', async (page: Page, path: string, text: string) => {
-  atFeatureEnd(page, () => deleteFile(page, path));
-  await deleteFile(page, path);
-  await page.evaluate(async ([p, t]) => { await grok.dapi.files.writeAsText(p, t); }, [path, text] as [string, string]);
-  await expect.poll(() => page.evaluate((p) => grok.dapi.files.exists(p), path),
-    {message: `the file ${path} on the server`, timeout: pollMs(30000)}).toBe(true);
-}, {tier: 'api', description: 'written through the files API (the tree is not told); deleted at feature end, verified gone'});
-
 export const openAddress = When('user opens the address {string}', async (page: Page, path: string) => {
   await page.evaluate((p) => { grok.shell.route(p); }, path);
 }, {tier: 'api', description: 'moves inside the running app to the address, as a link does (grok.shell.route) — no reload'});
@@ -112,30 +93,3 @@ export const openRememberedAddress = When('user opens the remembered address', a
     throw new Error('no address remembered: "user remembers the page address" first');
   await page.evaluate((p) => { grok.shell.route(p); }, address);
 }, {tier: 'api', description: 'follows the remembered address inside the running app (grok.shell.route), as a pasted link does'});
-
-/* A custom event read with what it carried: the Tutorials demo app fires `demo-loaded` with the demo's
-   `path` once a demo started from the tree has run and its view is named — the event says which demo,
-   so a claim can tell the demo it opened from one left over from before. */
-export const customFiredWith = Then('the {string} custom event should have fired with {word} {string}', async (page: Page, id: string, key: string, value: string) => {
-  const args = await expectCustomEvent(page, id, pollMs(60000)) as Record<string, unknown> | null;
-  const got = args == null ? undefined : args[key];
-  if (String(got) !== value)
-    throw new Error(`the "${id}" custom event carried ${key} "${got}", not "${value}"`);
-}, {description: 'fired since "listens for" (up to 60 s), and its last arguments hold that value under that key'});
-
-/* `grok.shell.settings` are the account's own (Settings > Beta and the rest), kept on the server: a
-   demo or a feature that flips one (Domain Databases turns on `enableDomainDatabases`) leaves it for
-   every later session of the account, so the value is remembered and put back at feature end. */
-export const shellSettingPutBack = Given('the {string} shell setting is put back at feature end', async (page: Page, name: string) => {
-  const before = await page.evaluate((n) => (grok.shell.settings as any)[n], name);
-  atFeatureEnd(page, async () => {
-    await page.evaluate(([n, v]) => { (grok.shell.settings as any)[n] = v; }, [name, before] as [string, unknown]);
-    await expect.poll(() => page.evaluate((n) => (grok.shell.settings as any)[n], name),
-      {message: `the "${name}" shell setting put back`, timeout: pollMs(15000)}).toEqual(before);
-  });
-}, {tier: 'api', description: 'the account setting is remembered now and written back at feature end, then read back'});
-
-export const shellSettingIs = Then('the {string} shell setting should be {word}', async (page: Page, name: string, value: string) => {
-  await expect.poll(() => page.evaluate((n) => String((grok.shell.settings as any)[n]), name),
-    {message: `the "${name}" shell setting`}).toBe(value);
-}, {description: 'the value of an account setting (grok.shell.settings) as text: true, false, a number'});

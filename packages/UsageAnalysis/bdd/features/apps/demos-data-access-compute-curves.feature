@@ -39,8 +39,7 @@ Feature: The Data Access, Compute and Curves demos open from Browse > Apps > Dem
       | Curves     | Curves      | Curves      | Assay Curves          | Assay-Curves          | MultiCurveViewer viewer        |
 
   Scenario Outline: The <demo> demo opens the platform's <type> view
-    Given the "Tutorials" package is installed
-    And Apps---Demo---Data-Access tree node inside browse tree is expanded
+    Given Apps---Demo---Data-Access tree node inside browse tree is expanded
     And user listens for "demo-loaded" custom event
     When user clicks on Apps---Demo---Data-Access---<demo> tree node inside browse tree
     Then the "demo-loaded" custom event should have fired with path "Data Access | <demo>"
@@ -55,8 +54,7 @@ Feature: The Data Access, Compute and Curves demos open from Browse > Apps > Dem
       | Databases | databases |
 
   Scenario: Table Linking filters the demographics by the category made current
-    Given the "Tutorials" package is installed
-    And Apps---Demo---Data-Access tree node inside browse tree is expanded
+    Given Apps---Demo---Data-Access tree node inside browse tree is expanded
     And user listens for "demo-loaded" custom event
     When user clicks on Apps---Demo---Data-Access---Table-Linking tree node inside browse tree
     Then the "demo-loaded" custom event should have fired with path "Data Access | Table Linking"
@@ -70,8 +68,7 @@ Feature: The Data Access, Compute and Curves demos open from Browse > Apps > Dem
     And no error or warning balloon should have been shown
 
   Scenario: The Domain Databases demo turns the beta setting on, and the feature puts it back
-    Given the "Tutorials" package is installed
-    And the "enableDomainDatabases" shell setting is put back at feature end
+    Given the "enableDomainDatabases" shell setting is put back at feature end
     And Apps---Demo---Data-Access tree node inside browse tree is expanded
     And user listens for "demo-loaded" custom event
     When user clicks on Apps---Demo---Data-Access---Domain-Databases tree node inside browse tree

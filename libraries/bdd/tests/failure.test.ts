@@ -58,8 +58,8 @@ test('a journey lists the failed scenarios with their step reports', () => {
 });
 
 test('a capability gate\'s skip is told apart from a failure, so the harness lets it through', () => {
-  class SkipError extends Error {}
-  assert.ok(isSkip(new SkipError('the stand does not run the Jupyter service')));
+  class TestSkipError extends Error {}
+  assert.ok(isSkip(new TestSkipError('the stand does not run the Jupyter service')));
   assert.ok(isSkip(new Error('Test is skipped: the stand cannot reach the database of "Starbucks"')));
   assert.ok(!isSkip(new Error(IN_PAGE)));
   assert.ok(!isSkip(null));

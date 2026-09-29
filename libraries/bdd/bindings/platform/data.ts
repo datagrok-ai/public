@@ -110,10 +110,9 @@ export const rowsRangeSelected = Then('rows {int} to {int} should be selected', 
   await expect.poll(() => page.evaluate(([a, b]) => {
     const df = grok.shell.t;
     let inRange = 0;
-    for (let i = a - 1; i < b && i < df.rowCount; i++) {
+    for (let i = a - 1; i < b && i < df.rowCount; i++)
       if (df.selection.get(i))
         inRange++;
-    }
     return `${inRange} of ${b - a + 1} in the range, ${df.selection.trueCount} in all`;
   }, [from, to] as [number, number]), {message: `rows ${from} to ${to} selected`}).toBe(`${to - from + 1} of ${to - from + 1} in the range, ${to - from + 1} in all`);
 }, {description: 'rows counted from 1 as the grid shows them, every row of the range and nothing else'});
@@ -122,10 +121,9 @@ export const rowsRangeAllSelected = Then('rows {int} to {int} should all be sele
   await expect.poll(() => page.evaluate(([a, b]) => {
     const df = grok.shell.t;
     let inRange = 0;
-    for (let i = a - 1; i < b && i < df.rowCount; i++) {
+    for (let i = a - 1; i < b && i < df.rowCount; i++)
       if (df.selection.get(i))
         inRange++;
-    }
     return `${inRange} of ${b - a + 1} in the range`;
   }, [from, to] as [number, number]), {message: `rows ${from} to ${to} selected`}).toBe(`${to - from + 1} of ${to - from + 1} in the range`);
 }, {description: 'every row of the range is selected, whatever else is — pair it with the total count when a selection spans several ranges'});

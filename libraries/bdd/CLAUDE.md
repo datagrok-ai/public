@@ -31,7 +31,8 @@ bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart con
 bindings/platform/      the shell: elements, datasets, steps (views, projects and the Save dialog, server fixtures, the second
                         account and signing in as another), data (rows, filter, links between tables), columns, commands,
                         functions, events, workspace (open tables and views, direct links, files in the user's files or a
-                        space, a dropped or chosen file) — always loaded
+                        space, a dropped or chosen file), browse (the tree's loading state, favorites,
+                        moving by address) — always loaded
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, layouts, events, floor), widgets (shared
                         per-viewer steps, the grid, docking and tabbed panels), formula-lines (the Formula Lines dialog and
                         what a viewer draws of its lines), filter-panel
@@ -81,7 +82,10 @@ A UI walk that an outside dependency interrupts halfway (a tutorial whose last s
 outside host or Python in Jupyter) keeps its UI part: a capability gate (`the stand runs the {string}
 service`, `the stand can reach the database of the {string} connection`) goes right before the step
 that needs it and skips the rest of the test where the stand has not got it (`test.skip`; `isSkip` in
-`failure.ts` lets it through the harness and a journey). Nothing else skips (agreed 2026-09-28).
+`failure.ts` lets it through the harness and a journey). A third gate, `the {string} package is
+installed`, is for a package a feature needs but does not test (a Chem demo on a stand without Chem,
+as the minimal CI stack is); it may sit in the Background when every scenario needs that package, and
+never names the package under test, whose absence is a failure. Nothing else skips (agreed 2026-09-28).
 
 A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in

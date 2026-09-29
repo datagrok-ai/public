@@ -47,7 +47,7 @@ export function isWaitFailure(e: unknown): boolean {
  * own control flow, which must travel untouched or the run reports a failure where it should report a skip. */
 export function isSkip(e: unknown): boolean {
   const err = e as {message?: string; constructor?: {name?: string}} | null;
-  return !!err && (err.constructor?.name === 'SkipError' || /Test is skipped/i.test(String(err.message ?? '')));
+  return !!err && (err.constructor?.name === 'TestSkipError' || /Test is skipped/i.test(String(err.message ?? '')));
 }
 
 export function failure(at: string, step: string, e: unknown, shown = '', frame = ''): StepFailure {

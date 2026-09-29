@@ -86,8 +86,7 @@ Feature: The Visualization demos open from Browse > Apps > Demo with their viewe
 
   # apps.md 2: "select points on charts — selected cells or points highlight properly"
   Scenario: Rows selected in the Scatter Plot demo reach its scatter plot
-    Given the "Tutorials" package is installed
-    And Apps---Demo---Visualization---General tree node inside browse tree is expanded
+    Given Apps---Demo---Visualization---General tree node inside browse tree is expanded
     And user listens for "demo-loaded" custom event
     When user clicks on Apps---Demo---Visualization---General---Scatter-Plot tree node inside browse tree
     Then the "demo-loaded" custom event should have fired with path "Visualization | General | Scatter Plot"

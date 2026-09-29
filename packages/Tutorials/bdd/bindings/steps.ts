@@ -15,15 +15,17 @@ const DATA_STORAGE_KEY = 'tutorials';
  * closes its table) and the Tutorials panel with it: the panel is not a view, so the shell reset
  * leaves it — and a tutorial left running keeps listening to the platform's events and would take
  * the next feature's gestures as its steps. */
+const TUTORIAL_CLOSE = '.tutorials-root-header button:has(.fa-times-circle)';
+
 async function closeTutorials(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const close = document.querySelector('.tutorials-root-header button[aria-label="Close"], .tutorials-root-header .ui-btn') as HTMLElement | null;
+  await page.evaluate((selector) => {
+    const close = document.querySelector(selector) as HTMLElement | null;
     close?.click();
     const root = document.querySelector('.tutorials-root') as HTMLElement | null;
     const node = root ? grok.shell.dockManager.findNode(root) : null;
     if (node)
       grok.shell.dockManager.close(node);
-  });
+  }, TUTORIAL_CLOSE);
   await expect.poll(() => page.evaluate(() => document.querySelector('.tutorials-root') == null &&
     document.querySelectorAll('.grok-tutorial-entry').length === 0), {message: 'the Tutorials panel closed'}).toBe(true);
 }
@@ -101,7 +103,7 @@ export const cardDone = Then('the {string} tutorial card should show it is done'
 }, {description: 'the card\'s own status, as the runner read the completion record'});
 
 export const closeTutorial = When('user closes the tutorial', async (page: Page) => {
-  await page.locator('.tutorials-root-header button').last().click();
+  await page.locator(TUTORIAL_CLOSE).click();
   await expect(page.locator('.grok-tutorial-entry'), 'the step entries of the closed tutorial').toHaveCount(0);
 }, {tier: 'ui', description: 'the Close button in the running tutorial\'s header'});
 

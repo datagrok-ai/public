@@ -46,3 +46,13 @@ export const taskBarShown = Then('the task bar should have shown {string}', asyn
 
 export const customFired = Then('the {string} custom event should have fired', async (page: Page, id: string) => { await expectCustomEvent(page, id); },
   {description: 'at least once since "listens for" or the previous read (up to 30 s); reading zeroes the count'});
+
+/* A custom event read with what it carried: the Tutorials demo app fires `demo-loaded` with the demo's
+   `path` once a demo started from the tree has run and its view is named — the event says which demo,
+   so a claim can tell the demo it opened from one left over from before. */
+export const customFiredWith = Then('the {string} custom event should have fired with {word} {string}', async (page: Page, id: string, key: string, value: string) => {
+  const args = await expectCustomEvent(page, id, pollMs(60000)) as Record<string, unknown> | null;
+  const got = args == null ? undefined : args[key];
+  if (String(got) !== value)
+    throw new Error(`the "${id}" custom event carried ${key} "${got}", not "${value}"`);
+}, {description: 'fired since "listens for" (up to 60 s), and its last arguments hold that value under that key'});

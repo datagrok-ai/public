@@ -102,6 +102,23 @@ export const noLoader = Then('no loading indicator should be visible', async (pa
    under its root. */
 const bytesOf = (file: string): string => readFileSync(resolve(process.env.BDD_ROOT ?? process.cwd(), file)).toString('base64');
 
+async function deleteServerFile(page: Page, path: string): Promise<void> {
+  await page.evaluate(async (p) => {
+    if (await grok.dapi.files.exists(p))
+      await grok.dapi.files.delete(p);
+  }, path);
+  await expect.poll(() => page.evaluate((p) => grok.dapi.files.exists(p), path),
+    {message: `the file ${path} on the server`, timeout: pollMs(30000)}).toBe(false);
+}
+
+export const fileOnServer = Given('a file {string} with text {string} is on the server', async (page: Page, path: string, text: string) => {
+  atFeatureEnd(page, () => deleteServerFile(page, path));
+  await deleteServerFile(page, path);
+  await page.evaluate(async ([p, t]) => { await grok.dapi.files.writeAsText(p, t); }, [path, text] as [string, string]);
+  await expect.poll(() => page.evaluate((p) => grok.dapi.files.exists(p), path),
+    {message: `the file ${path} on the server`, timeout: pollMs(30000)}).toBe(true);
+}, {tier: 'api', description: 'written through the files API (the tree is not told); deleted at feature end, verified gone'});
+
 async function putIntoUsersFiles(page: Page, name: string, write: (path: string) => Promise<void>): Promise<void> {
   const home: string = await page.evaluate(async () => {
     const project = grok.shell.user.project.name;
@@ -126,14 +143,7 @@ async function putIntoUsersFiles(page: Page, name: string, write: (path: string)
     }, [home, stale.map((f) => f.name)] as [string, string[]]);
   }
   const path = `${home}/${name}`;
-  atFeatureEnd(page, async () => {
-    await page.evaluate(async (p) => {
-      if (await grok.dapi.files.exists(p))
-        await grok.dapi.files.delete(p);
-    }, path);
-    await expect.poll(() => page.evaluate((p) => grok.dapi.files.exists(p), path),
-      {message: `${path} still in My files`, timeout: pollMs(15000)}).toBe(false);
-  });
+  atFeatureEnd(page, () => deleteServerFile(page, path));
   await write(path);
 }
 

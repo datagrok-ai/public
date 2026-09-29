@@ -268,7 +268,6 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
       if (filterCliffsButton.enabled === true)
         df.filter.setAll(true);
       setTimeout(() => {
-        // the view may have been closed during the delay
         if (sp.dataFrame == null)
           return;
         updatePropertyPanel(df, acc, linesRes.lines.from[lineIdx], linesRes.lines.to[lineIdx], lineIdx,
@@ -534,7 +533,6 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
       if (filterCliffsButton.enabled === true)
         df.filter.setAll(true);
       setTimeout(() => {
-        // the view may have been closed during the delay
         if (sp.dataFrame == null)
           return;
         updatePropertyPanel(df, acc, linesRes.lines.from[lineIdx], linesRes.lines.to[lineIdx], lineIdx,

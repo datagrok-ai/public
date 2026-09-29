@@ -34,6 +34,8 @@ and public, which differ: `Given the stand runs the "Jupyter" service` and `Give
 the database of the "<name>" connection` are gates placed right before the first step that needs the
 capability — never at the top of a feature — so the steps before them run everywhere and fail as usual,
 and the rest of the test is reported skipped with the reason when the stand has not got it.
+`Given the "Chem" package is installed` gates on a package the feature needs but does not test; it
+may stand in the Background when every scenario needs it, and never names the package under test.
 
 **Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
 database rows, the layout or chat the UI makes on the side, a setting or configuration of something

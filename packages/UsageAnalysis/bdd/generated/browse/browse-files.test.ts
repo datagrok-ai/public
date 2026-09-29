@@ -18,8 +18,9 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, collapse, downloadContains, downloadThrough, expand, fileDownloaded, followingShouldBe, isExpanded, shouldBe, shouldContainText, watchDownloads} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {counterMatchesFolder, fileOnServer} from '@datagrok-libraries/bdd/bindings/platform/browse';
+import {counterMatchesFolder} from '@datagrok-libraries/bdd/bindings/platform/browse';
 import {browsePanelOpen, refreshBrowse, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {fileOnServer} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {noBalloons, noErrors, openContextMenu, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 

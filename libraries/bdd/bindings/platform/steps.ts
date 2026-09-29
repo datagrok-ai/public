@@ -1103,7 +1103,12 @@ export const packageInstalled = Given('the {string} package is installed', async
 
 export const standReachesConnection = Given('the stand can reach the database of the {string} connection', async (page: Page, name: string) => {
   const answer = await page.evaluate(async (n) => {
-    const found = (await grok.dapi.connections.list({pageSize: 5000})).filter((c: any) => c.friendlyName === n || c.name === n);
+    let found = (await grok.dapi.connections.list({pageSize: 5000})).filter((c: any) => c.friendlyName === n || c.name === n);
+    // a name learners share (a tutorial's connection) lists other users' copies too: the running user's own is the fixture
+    if (found.length > 1) {
+      const me = (await grok.dapi.users.current()).id;
+      found = found.filter((c: any) => c.author?.id === me);
+    }
     if (found.length !== 1)
       return `${found.length} connections named "${n}"`;
     try {
@@ -1643,17 +1648,12 @@ export const noHintShown = Then('no hint should be shown', async (page: Page) =>
    `grok.userSettings` keeps a map per name in the page and writes it to the server on a timer. A
    feature that changes one through the UI (a tutorial's completion record, the recent viewers) puts
    the map back as it was at feature end: the whole map, then the server read back until it holds it.
-   `grok.userSettings.flush()` makes the write happen now; a client without it gets the server copy
-   written directly. */
+   `grok.userSettings.flush()` makes the write happen now. */
 
 async function putSettingsBack(page: Page, name: string, saved: Record<string, string>): Promise<void> {
   await page.evaluate(async ([n, map]) => {
     grok.userSettings.put(n, map);
-    // a client without flush() writes the server copy itself instead of waiting for the timer
-    if (grok.userSettings.flush)
-      await grok.userSettings.flush();
-    else
-      await grok.dapi.userDataStorage.put(n, map, true);
+    await grok.userSettings.flush();
   }, [name, saved] as [string, Record<string, string>]);
   await expect.poll(() => page.evaluate(async (n) => JSON.stringify(Object.entries(await grok.dapi.userDataStorage.get(n, true) ?? {})
     .sort(([a], [b]) => a.localeCompare(b))), name),
@@ -1675,3 +1675,20 @@ export const userSettingsPutBack = Given('the {string} user settings are put bac
     await putSettingsBack(page, name, before);
   });
 }, {tier: 'api', description: 'the whole map is remembered now and written back at feature end, the server read back until it holds it'});
+
+/* `grok.shell.settings` are the account's own (Settings > Beta and the rest), kept on the server: a
+   demo or a feature that flips one (Domain Databases turns on `enableDomainDatabases`) leaves it for
+   every later session of the account, so the value is remembered and put back at feature end. */
+export const shellSettingPutBack = Given('the {string} shell setting is put back at feature end', async (page: Page, name: string) => {
+  const before = await page.evaluate((n) => (grok.shell.settings as any)[n], name);
+  atFeatureEnd(page, async () => {
+    await page.evaluate(([n, v]) => { (grok.shell.settings as any)[n] = v; }, [name, before] as [string, unknown]);
+    await expect.poll(() => page.evaluate((n) => (grok.shell.settings as any)[n], name),
+      {message: `the "${name}" shell setting put back`, timeout: pollMs(15000)}).toEqual(before);
+  });
+}, {tier: 'api', description: 'the account setting is remembered now and written back at feature end, then read back'});
+
+export const shellSettingIs = Then('the {string} shell setting should be {word}', async (page: Page, name: string, value: string) => {
+  await expect.poll(() => page.evaluate((n) => String((grok.shell.settings as any)[n]), name),
+    {message: `the "${name}" shell setting`}).toBe(value);
+}, {description: 'the value of an account setting (grok.shell.settings) as text: true, false, a number'});

@@ -32,12 +32,9 @@ export const replaceLine = When('user replaces the line starting with {string} i
 export const insertLineAfter = When('user puts {string} on a new line after the line starting with {string} in {element}',
   (page: Page, text: string, start: string, target: ElementRef) => g.insertLineAfter(page, target, start, text),
   {tier: 'ui', description: 'a new line typed right after the first line of a code editor that starts with the text'});
-export const typeIntoEditorLine = When('user types {string} into the {word} line of {element}',
-  (page: Page, text: string, which: string, target: ElementRef) => {
-    if (which !== 'last')
-      throw new Error(`"${which}" is not a line position this step knows: last, or "first empty"`);
-    return g.typeIntoEditorLine(page, target, 'last', text);
-  }, {tier: 'ui', description: 'typed at the end of the last line of a code editor'});
+export const typeIntoEditorLine = When('user types {string} into the last line of {element}',
+  (page: Page, text: string, target: ElementRef) => g.typeIntoEditorLine(page, target, 'last', text),
+  {tier: 'ui', description: 'typed at the end of the last line of a code editor'});
 export const typeIntoFirstEmptyLine = When('user types {string} into the first empty line of {element}',
   (page: Page, text: string, target: ElementRef) => g.typeIntoEditorLine(page, target, 'first empty', text),
   {tier: 'ui', description: 'typed into the first line of a code editor that holds nothing'});

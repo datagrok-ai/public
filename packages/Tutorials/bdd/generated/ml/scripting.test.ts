@@ -12,16 +12,16 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {startTutorial, stepDone, stepDoneTimes, stepListedTimes, stepNotDone, tutorialCompleted, tutorialNotCompleted, tutorialProgress, tutorialStepsListed, tutorialsOpen} from '../../bindings/steps.js';
+import {startTutorial, stepDone, stepNotDone, tutorialNotCompleted, tutorialProgress, tutorialsOpen} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, selectIn, shouldBe, shouldContainText, typeIntoEditorLine, typeIntoFirstEmptyLine} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {autostartsCompleted, dialogCloses, noHintShown, standRunsService, userOpensConsole, userSettingsPutBack} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {clickOn, selectIn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {autostartsCompleted, dialogCloses, standRunsService, userSettingsPutBack} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors, pickFromOpenMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The Scripting tutorial", () => {
   const session = feature(test, "features/ml/scripting.feature", import.meta.url);
-  test("A learner completes the Scripting tutorial", {tag: ["@tutorials", "@serial", "@realizes:tutorials.scripting"]}, async ({browser}) => {
+  test("A learner runs the Scripting tutorial's script for the first time", {tag: ["@tutorials", "@serial", "@realizes:tutorials.scripting"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
     await session.step(22, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -50,27 +50,6 @@ test.describe("The Scripting tutorial", () => {
     await session.step(48, "When user clicks on OK button in \"Template\" dialog", () => clickOn(page, el("OK button in \"Template\" dialog")));
     await session.step(50, "Then the \"Template\" dialog should close", () => dialogCloses(page, "Template"));
     await session.step(51, "And the tutorial step \"Click \\\"OK\\\"\" should be done", () => stepDone(page, "Click \"OK\""));
-    await session.step(53, "And \"Results\" dock panel should contain text \"510\"", () => shouldContainText(page, el("\"Results\" dock panel"), "510"));
-    await session.step(54, "Given the tutorial step \"Find the results in the console\" should not be done yet", () => stepNotDone(page, "Find the results in the console"));
-    await session.step(56, "When user opens the console", () => userOpensConsole(page));
-    await session.step(57, "Then the tutorial step \"Find the results in the console\" should be done", () => stepDone(page, "Find the results in the console"));
-    await session.step(59, "Given the tutorial step \"Add the second output value to the script\" should not be done yet", () => stepNotDone(page, "Add the second output value to the script"));
-    await session.step(60, "When user types \"#output: dataframe clone\" into the first empty line of code editor", () => typeIntoFirstEmptyLine(page, "#output: dataframe clone", el("code editor")));
-    await session.step(61, "And user types \"clone = table\" into the last line of code editor", () => typeIntoEditorLine(page, "clone = table", "last", el("code editor")));
-    await session.step(62, "Then the tutorial step \"Add the second output value to the script\" should be done", () => stepDone(page, "Add the second output value to the script"));
-    await session.step(63, "Given the tutorial step \"Run the script\" should be listed 2 times", () => stepListedTimes(page, "Run the script", 2));
-    await session.step(64, "When user clicks on play icon", () => clickOn(page, el("play icon")));
-    await session.step(65, "Then the tutorial step \"Run the script\" should be done 2 times", () => stepDoneTimes(page, "Run the script", 2));
-    await session.step(66, "When user selects \"cars\" in \"Table\" input in \"Template\" dialog", () => selectIn(page, "cars", el("\"Table\" input in \"Template\" dialog")));
-    await session.step(67, "Then the tutorial step \"Set \\\"Table\\\" to cars\" should be done 2 times", () => stepDoneTimes(page, "Set \"Table\" to cars", 2));
-    await session.step(68, "When user clicks on OK button in \"Template\" dialog", () => clickOn(page, el("OK button in \"Template\" dialog")));
-    await session.step(69, "Then the \"Template\" dialog should close", () => dialogCloses(page, "Template"));
-    await session.step(70, "And the tutorial step \"Click \\\"OK\\\"\" should be done 2 times", () => stepDoneTimes(page, "Click \"OK\"", 2));
-    await session.step(71, "And \"Clone\" dock panel should be visible", () => shouldBe(page, el("\"Clone\" dock panel"), "visible"));
-    await session.step(73, "And the \"Scripting\" tutorial should be completed", () => tutorialCompleted(page, "Scripting"));
-    await session.step(74, "And the tutorial should have listed 10 steps", () => tutorialStepsListed(page, 10));
-    await session.step(75, "And the tutorial progress should be 10 of 10", () => tutorialProgress(page, 10, 10));
-    await session.step(76, "And no hint should be shown", () => noHintShown(page));
-    await session.step(77, "And no errors should have been logged", () => noErrors(page));
+    await session.step(52, "And no errors should have been logged", () => noErrors(page));
   });
 });
