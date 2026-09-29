@@ -23,24 +23,48 @@ export function initSearch() {
   initTemplates();
 }
 
-export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLInputElement): void {
-  ui.empty(host);
-  tableQueriesFunctionsSearch(s, host);
-  // tableQueriesFunctionsSearchLlm(s, host);
-  jsEvalSearch(s, host) ||
-  viewsSearch(s, host);
+export type Track = (p: Promise<unknown>) => void;
+let searchGeneration = 0;
 
-  regexEntitiesSearch(s, host);
-  projectsSearch(s, host);
-  functionEvaluationsSearch(s, host);
-  searchFunctionsSearch(s, host);
-  /*  queriesEntitiesSearch(s, host);
-  queriesSearch(s, host);*/
-  templatesSearch(s, host);
-  widgetsSearch(s, host);
-  specificWidgetsSearch(s, host);
-  exactAppViewSearch(s);
-  searchProvidersSearch(s, host, inputElement);
+/// The host is aria-busy until every path of the latest search has settled; a path of an earlier
+/// search can still append to it afterwards. A rejection nobody handled before still surfaces unhandled.
+export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLInputElement): void {
+  const generation = ++searchGeneration;
+  let pending = 1;
+  const settle = () => {
+    if (--pending === 0 && generation === searchGeneration && inputElement.value === s)
+      host.setAttribute('aria-busy', 'false');
+  };
+  const track: Track = (p) => {
+    pending++;
+    p.then(settle, (e) => {
+      settle();
+      throw e;
+    });
+  };
+  host.setAttribute('aria-busy', 'true');
+  try {
+    ui.empty(host);
+    tableQueriesFunctionsSearch(s, host);
+    // tableQueriesFunctionsSearchLlm(s, host);
+    jsEvalSearch(s, host) ||
+    viewsSearch(s, host);
+
+    regexEntitiesSearch(s, host);
+    projectsSearch(s, host, track);
+    functionEvaluationsSearch(s, host, track);
+    searchFunctionsSearch(s, host, track);
+    /*  queriesEntitiesSearch(s, host);
+    queriesSearch(s, host);*/
+    templatesSearch(s, host, track);
+    widgetsSearch(s, host, track);
+    specificWidgetsSearch(s, host, track);
+    exactAppViewSearch(s, track);
+    track(searchProvidersSearch(s, host, inputElement, track));
+  }
+  finally {
+    settle();
+  }
 }
 
 
@@ -86,12 +110,12 @@ function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
 }
 
 
-function projectsSearch(s: string, host: HTMLDivElement): void {
+function projectsSearch(s: string, host: HTMLDivElement, track: Track): void {
   if (s.length < 3)
     return;
-  grok.dapi.projects.filter(s).list({pageSize: 5}).then((projects) => {
+  track(grok.dapi.projects.filter(s).list({pageSize: 5}).then((projects) => {
     processListSearchResults(projects, host, s, {name: 'Projects'});
-  });
+  }));
 }
 
 /// Evaluates some of the JavaScript code
@@ -204,11 +228,11 @@ function processListSearchResults(
 }
 
 /// Evaluates custom search functions, specifically those that return a list of items
-function searchFunctionsSearch(s: string, host: HTMLDivElement): void {
+function searchFunctionsSearch(s: string, host: HTMLDivElement, track: Track): void {
   for (const sf of searchFunctions) {
-    sf.apply({s: s}).then((results: any[]) => {
+    track(sf.apply({s: s}).then((results: any[]) => {
       processListSearchResults(results, host, s, {name: sf.name, description: sf.description, relatedViewName: sf.options['relatedViewName']});
-    });
+    }));
   }
 }
 
@@ -232,7 +256,7 @@ async function _getSearchProviders(): Promise<void> {
 
 let _suggestionsMenu: DG.Menu | null = null;
 let _ctrlSpaceSubscribed = false;
-async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInput: HTMLInputElement): Promise<void> {
+async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInput: HTMLInputElement, track: Track): Promise<void> {
   _suggestionsMenu?.hide();
   _suggestionsMenu = null;
   if (!s?.trim())
@@ -318,7 +342,7 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
       // handle search
       if (pp.isApplicable && !pp.isApplicable(s))
         return;
-      pp.search(s, grok.shell.v).then((result) => {
+      track(pp.search(s, grok.shell.v).then((result) => {
         if (!result || !result.results)
           return;
         if (Array.isArray(result.results))
@@ -332,7 +356,7 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
         // TODO: Add more return types handling
       }).catch((e) => {
         console.error(`Error searching with provider ${pp.name}:`, e);
-      });
+      }));
     });
   });
 }
@@ -405,25 +429,25 @@ export function createFuncTableViewWidget(sf: DG.Func, inputParams: Record<strin
 }
 
 /// Special widgets
-function widgetsSearch(s: string, host: HTMLDivElement): void {
+function widgetsSearch(s: string, host: HTMLDivElement, track: Track): void {
   for (const sf of searchWidgetFunctions) {
     const inputName = sf.inputs[0]?.name;
     if (!inputName)
       continue;
-    sf.apply({[inputName]: s})
+    track(sf.apply({[inputName]: s})
       .then((result: DG.Widget) => {
         if (result)
           host.appendChild(widgetHost(result));
-      });
+      }));
   }
 }
 
 let _currentSearchAppView: DG.View | DG.ViewBase | null = null;
-function exactAppViewSearch(s: string) {
+function exactAppViewSearch(s: string, track: Track) {
   s = s.toLowerCase().trim();
   const appFunc = exactAppFuncSearch(s);
   if (appFunc) {
-    appFunc.apply({}).then((v) => {
+    track(appFunc.apply({}).then((v) => {
       if (v && (v instanceof DG.View || v instanceof DG.ViewBase)) {
         try {
           if (_currentSearchAppView && _currentSearchAppView.root && document.body.contains(_currentSearchAppView.root))
@@ -434,30 +458,30 @@ function exactAppViewSearch(s: string) {
         _currentSearchAppView = v;
         grok.shell.dockManager.dock(v.root, DG.DOCK_TYPE.DOWN, grok.shell.dockManager.findNode(grok.shell.v.root), v.name ?? capitalizeFirstLetter(v.type));
       }
-    }).catch((e) => console.error(`Error opening app view for ${s}: ${e}`));
+    }).catch((e) => console.error(`Error opening app view for ${s}: ${e}`)));
   }
 }
 
 /// Explicitly spelled widgets
 /// Example: "kpiWidget"
-function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
+function specificWidgetsSearch(s: string, host: HTMLDivElement, track: Track): void {
   s = s.toLowerCase();
   for (const wf of widgetFunctions) {
     if (wf.name.toLowerCase() == s) {
-      wf.apply().then((w: DG.Widget) => {
+      track(wf.apply().then((w: DG.Widget) => {
         if (w)
           host.appendChild(ui.div([widgetHost(w)]));
-      });
+      }));
     }
   }
 }
 
-function functionEvaluationsSearch(s: string, host: HTMLDivElement): void {
+function functionEvaluationsSearch(s: string, host: HTMLDivElement, track: Track): void {
   if (!s.includes('(') || !s.includes(')'))
     return;
 
-  grok.functions
+  track(grok.functions
     .eval(s)
     .then((result) => host.appendChild(ui.span([s + ' = ', result], {style: {fontSize: '20px'}})))
-    .catch(() => {});
+    .catch(() => {}));
 }

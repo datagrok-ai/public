@@ -9,11 +9,7 @@ sub_features_covered: [viewers.matrix-plot]
 import {test} from '@playwright/test';
 import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
-import '../../../bindings/minimized-viewers.js';
-import '../../../bindings/projects-copies.js';
-import '../../../bindings/projects-derived.js';
-import '../../../bindings/projects-regressions.js';
-import '../../../bindings/projects-sources.js';
+import '../../../bindings/nx.js';
 import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
