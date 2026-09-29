@@ -208,7 +208,10 @@ export abstract class Tutorial extends DG.Widget {
       await this._run();
     } catch (error) {
       // If the tutorial was closed during execution, exit without error
-      if (!this.closed) return Promise.reject(error);
+      if (!this.closed) {
+        this.showFailure(error);
+        return;
+      }
     }
 
     this.endSection();
@@ -481,6 +484,23 @@ export abstract class Tutorial extends DG.Widget {
     this.progress.value = 1;
     $(this.root).children().each((idx, el) => el.classList.contains('tutorials-main-header') ?
       ($(this.headerDiv).empty(), $(this.progressDiv).empty()) : $(el).empty());
+  }
+
+  private showFailure(error: any): void {
+    const details = `Tutorial "${this.name}" failed at step ${this.progress.value}: ${error?.stack ?? error}`;
+    const restart = ui.bigButton('Restart', () => {
+      this._closeAll();
+      this.clearRoot();
+      this.start();
+    });
+    const copy = ui.button([ui.iconFA('copy'), 'Copy details'], () => navigator.clipboard.writeText(details));
+    const title = ui.element('b');
+    title.textContent = 'This tutorial can\'t continue';
+    (this.currentSection ?? this.activity).append(ui.divV([
+      title,
+      ui.divText('Something went wrong. Restart to try again, or copy the details for support.'),
+      ui.divH([restart, copy]),
+    ], 'tutorials-failure'));
   }
 
   firstEvent(eventStream: Observable<any>): Promise<void> {
