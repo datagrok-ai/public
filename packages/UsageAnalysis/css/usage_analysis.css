@@ -506,3 +506,42 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   white-space: nowrap;
   font-family: monospace;
 }
+
+.ua-problem {
+  color: var(--red-3);
+  font-size: 12px;
+  margin: 4px 0;
+  max-width: 300px;
+}
+
+.ua-empty {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-light);
+}
+
+.ua-empty-hint {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.ua-error-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 8px;
+}
+
+.ua-stack {
+  max-height: 240px;
+  overflow: auto;
+  font-size: 11px;
+  white-space: pre;
+  margin: 0;
+}
+
+.ua-timeline-toolbar {
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+}

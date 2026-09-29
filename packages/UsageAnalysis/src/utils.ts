@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {take} from 'rxjs/operators';
+import dayjs from 'dayjs';
 
 export const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 
@@ -88,4 +89,38 @@ export function onRowContextMenu(grid: DG.Grid, handler: (menu: DG.Menu, row: nu
     if (row >= 0)
       handler(menu, row);
   });
+}
+
+export const GRID_TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss';
+
+/** Shows every date column of [grid] without the zone and milliseconds; the grid keeps the platform's UTC. */
+export function formatGridTimes(grid: DG.Grid): void {
+  for (const col of grid.dataFrame.columns.toList()) {
+    if (col.type === DG.TYPE.DATE_TIME && grid.col(col.name))
+      grid.col(col.name)!.format = GRID_TIME_FORMAT;
+  }
+}
+
+/** A date column's value as [formatGridTimes] shows it; empty for none. */
+export function formatTime(value: any): string {
+  return value == null ? '' : dayjs(value).toISOString().replace('T', ' ').substring(0, 19);
+}
+
+/** A line that says why an action is disabled: a disabled button shows no tooltip. */
+export function problemLine(): HTMLDivElement {
+  const line = ui.divText('', 'ua-problem');
+  ui.setDisplay(line, false);
+  return line;
+}
+
+/** Disables [button] while there is a [problem] and shows it in [line]. */
+export function showProblem(button: HTMLButtonElement, line: HTMLElement, problem: string | null): void {
+  button.disabled = problem != null;
+  line.textContent = problem ?? '';
+  ui.setDisplay(line, problem != null);
+}
+
+/** A centred message with a hint, for a list with nothing to show. */
+export function emptyState(message: string, hint: string): HTMLDivElement {
+  return ui.divV([ui.divText(message), ui.divText(hint, 'ua-empty-hint')], 'ua-empty');
 }

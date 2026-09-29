@@ -20,6 +20,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ClicksFollowedByError', { date, groups, view });
   }
 
+  export async function clickErrors(date: string , groups: any , element: string , view: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ClickErrors', { date, groups, element, view });
+  }
+
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:AllTestRuns', { benchmarks });
   }
@@ -122,6 +126,10 @@ export namespace queries {
 
   export async function errorAlerts(signatures: any ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ErrorAlerts', { signatures });
+  }
+
+  export async function errorSample(signature: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ErrorSample', { signature });
   }
 
   export async function packageInfo(name: string ): Promise<DG.DataFrame> {

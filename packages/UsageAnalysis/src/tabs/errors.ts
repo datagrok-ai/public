@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import {UaView} from './ua';
 import {TimelineView} from './timeline';
 import {UaToolbox} from '../ua-toolbox';
-import {onRowContextMenu, scrollToStartOnFirstDraw} from '../utils';
+import {emptyState, formatGridTimes, formatTime, onRowContextMenu, problemLine, scrollToStartOnFirstDraw,
+  showProblem} from '../utils';
 import {funcs, queries} from '../package-api';
 
 import '../../css/usage_analysis.css';
@@ -19,11 +20,13 @@ const SINCE: {[label: string]: string} = {'1 hour': '1h', '24 hours': '24h', '7 
 const RANGE = 'From - To';
 const MAX_TREND = 60;
 const DRILL_LIMIT = 500;
-const SHOWN = 20;
+const SHOWN = 5;
 const ROUTE = /^([A-Za-z]+\s+)?\//;
 const FORMULA = /^[=+\-@\t\r]/;
-const HEADERS: {[column: string]: string} = {count: 'occurrences', firstVersion: 'first seen in', firstSeen: 'first seen',
-  lastSeen: 'last seen', newInRange: 'new', mttrMinutes: 'MTTR, min', requestId: 'request'};
+const HEADERS: {[column: string]: string} = {count: 'occurrences', firstVersion: 'first seen in',
+  firstSeen: 'first seen', lastSeen: 'last seen', newInRange: 'new in range', mttrMinutes: 'MTTR, min',
+  requestId: 'request id', state: 'alert'};
+const ERROR_COLUMNS = ['error', 'topError'];
 const DEFAULT_FOLDER = 'System:AppData/Ops/errors/';
 const DAYS: {[day: string]: string} = {SUN: '0', MON: '1', TUE: '2', WED: '3', THU: '4', FRI: '5', SAT: '6', DAILY: '*',
   WEEKDAYS: '1-5'};
@@ -46,6 +49,9 @@ export class ErrorsView extends UaView {
   regressed = ui.input.bool('Regressed', {tooltipText: 'Only signatures unmuted by a newer version in the window'});
   trend = ui.input.choice('Trend', {value: 'day', items: ['day', 'hour'], nullable: false});
   applyButton = ui.bigButton('Apply', () => this.load());
+  applyProblem = problemLine();
+  saveButton = ui.button('Save as job...', () => this.saveJobDialog());
+  saveProblemLine = problemLine();
   host: HTMLDivElement = ui.box();
   table?: DG.DataFrame;
   shownSpec?: Spec;
@@ -57,26 +63,32 @@ export class ErrorsView extends UaView {
   }
 
   async initViewers(path?: string): Promise<void> {
-    const groups = (await grok.dapi.groups.list()).filter((g) => !g.personal).map((g) => g.friendlyName).sort();
+    const allUsers = DG.Group.defaultGroupsIds['All users'];
+    const groups = (await grok.dapi.groups.list()).filter((g) => !g.personal && g.id !== allUsers)
+      .map((g) => g.friendlyName).sort();
     this.group = ui.typeAhead('Group', {source: {local: groups}, minLength: 1, limit: 30, highlight: true});
-    this.group.setTooltip('Only errors of this group\'s members');
+    this.group.setTooltip('Only errors of this group\'s members; empty for everyone. A group filter leaves out ' +
+      'the errors without a user');
     this.text.signature.setTooltip('A stack hash or its first 6+ characters');
     this.text.route.setTooltip('"<METHOD> /path" or "/path", without /api');
     this.text.connection.setTooltip('Namespace:Name or the connection id');
     this.text.function.setTooltip('The function\'s nqName');
-    const inputs: DG.InputBase[] = [this.since, this.from, this.to, this.group, this.by, this.service,
-      ...Object.values(this.text), this.minUsers, this.minCount, this.regressed, this.trend];
-    for (const input of inputs)
+    const main: DG.InputBase[] = [this.since, this.from, this.to, this.group, this.by];
+    const more: DG.InputBase[] = [this.service, ...Object.values(this.text), this.minUsers, this.minCount,
+      this.regressed, this.trend];
+    for (const input of [...main, ...more])
       input.onChanged.subscribe(() => this.refresh());
-    const form = ui.narrowForm(inputs);
-    form.append(this.applyButton);
-    ui.tooltip.bind(this.applyButton, () => this.problem() ?? 'Show the errors');
+    const form = ui.narrowForm(main);
+    ui.tooltip.bind(this.applyButton, 'Show the errors');
+    const moreFilters = ui.accordion();
+    moreFilters.addPane('More filters', () => ui.narrowForm(more), false);
+    form.append(this.applyButton, this.applyProblem, moreFilters.root);
     this.uaToolbox.addTabPane(this.name, form);
 
     const exportButton = ui.button('Export', (e: MouseEvent) => this.exportMenu(e));
-    const saveButton = ui.button('Save as job...', () => this.saveJobDialog());
-    ui.tooltip.bind(saveButton, () => this.saveProblem() ?? 'Save this view as an export job, optionally scheduled');
-    this.root.append(ui.divV([ui.divH([exportButton, saveButton], 'ua-toolbar'), this.host], 'ui-box'));
+    ui.tooltip.bind(this.saveButton, 'Save this view as an export job, optionally scheduled');
+    this.root.append(ui.divV([ui.divH([exportButton, this.saveButton, this.saveProblemLine], 'ua-toolbar'), this.host],
+      'ui-box'));
     this.refresh();
     this.load();
   }
@@ -86,7 +98,8 @@ export class ErrorsView extends UaView {
     ui.setDisplay(this.from.root, range);
     ui.setDisplay(this.to.root, range);
     this.trend.enabled = (this.by.value ?? []).length > 0;
-    this.applyButton.disabled = this.problem() != null;
+    showProblem(this.applyButton, this.applyProblem, this.problem());
+    showProblem(this.saveButton, this.saveProblemLine, this.saveProblem());
   }
 
   problem(): string | null {
@@ -134,6 +147,9 @@ export class ErrorsView extends UaView {
     const spec = this.spec();
     const run = ++this.runs;
     this.table = undefined;
+    this.shownSpec = undefined;
+    this.refresh();
+    grok.shell.o = null;
     ui.empty(this.host);
     this.host.append(ui.waitBox(async () => {
       try {
@@ -143,7 +159,10 @@ export class ErrorsView extends UaView {
         t.name = 'Errors';
         this.table = t;
         this.shownSpec = spec;
-        return t.rowCount === 0 ? ui.divText('No errors match') : this.grid(t, spec).root;
+        this.refresh();
+        return t.rowCount === 0 ?
+          emptyState('No errors match', 'Choose a longer Since, or clear Group and More filters') :
+          this.grid(t, spec).root;
       }
       catch (e: any) {
         return ui.divText(`Errors: ${e?.message ?? e}`, 'd4-viewer-error');
@@ -163,11 +182,11 @@ export class ErrorsView extends UaView {
       grid.columns.setOrder(order);
       grid.col('trend')!.width = 120;
       grid.col('count')!.width = 80;
-      grid.col('topError')!.width = 300;
+      grid.col('topError')!.width = 400;
       grid.col('topError')!.name = bySignature ? 'error' : 'top error';
     }
     else {
-      grid.col('error')!.width = 300;
+      grid.col('error')!.width = 400;
       onRowContextMenu(grid, (menu, i) => {
         const request = t.get('requestId', i);
         if (request)
@@ -176,6 +195,7 @@ export class ErrorsView extends UaView {
     }
     if (grid.col('signature'))
       grid.col('signature')!.width = 70;
+    formatGridTimes(grid);
     for (const [name, header] of Object.entries(HEADERS)) {
       if (grid.col(name))
         grid.col(name)!.name = header;
@@ -183,11 +203,19 @@ export class ErrorsView extends UaView {
     grid.onCellPrepare((gc) => {
       if (!gc.isTableCell)
         return;
-      const name = gc.gridColumn.column?.name;
-      if (name === 'signature')
+      const name = gc.gridColumn.column?.name ?? '';
+      if (ERROR_COLUMNS.includes(name))
+        gc.style.textWrap = 'none';
+      else if (name === 'signature')
         gc.customText = ErrorsView.shortSignature(gc.cell.value);
       else if (name === 'state')
         gc.customText = ErrorsView.stateText(t, gc.cell.rowIndex);
+    });
+    grid.onCellTooltip((gc, x, y) => {
+      if (!gc.isTableCell || !ERROR_COLUMNS.includes(gc.gridColumn.column?.name ?? '') || !gc.cell.value)
+        return false;
+      ui.tooltip.show(ui.divText(gc.cell.value, 'ua-error-text'), x, y);
+      return true;
     });
     grid.onCellRender.subscribe((args) => {
       if (!args.cell.isTableCell || args.cell.gridColumn.column?.name !== 'trend')
@@ -196,7 +224,7 @@ export class ErrorsView extends UaView {
       const max = Math.max(0, ...counts);
       const b = args.bounds;
       const w = (b.width - 8) / Math.max(1, counts.length);
-      args.g.fillStyle = DG.Color.toHtml(DG.Color.blue);
+      args.g.fillStyle = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
       for (let i = 0; i < counts.length; i++) {
         const h = max ? Math.max(1, counts[i] / max * (b.height - 8)) : 1;
         args.g.fillRect(b.x + 4 + i * w, b.y + b.height - 4 - h, Math.max(1, w - 1), h);
@@ -230,8 +258,8 @@ export class ErrorsView extends UaView {
     if (state !== 'muted')
       return state ?? '';
     const version = t.get('stateVersion', i);
-    const until = t.col('stateUntil')!.getString(i);
-    return version ? `muted → ${version}` : until ? `muted until ${until}` : 'muted';
+    const until = t.get('stateUntil', i);
+    return version ? `muted → ${version}` : until ? `muted until ${formatTime(until)}` : 'muted';
   }
 
   /** The filters that narrow [spec] to row [i]: its dimension values, or an occurrence's signature. */
@@ -246,24 +274,50 @@ export class ErrorsView extends UaView {
     return filters;
   }
 
+  /** `a41f9c · package Chem · 142 occurrences, 4 users`: what row [i] of [t] stands for. */
+  static rowTitle(t: DG.DataFrame, spec: Spec, i: number): string {
+    const filters = ErrorsView.rowFilters(t, spec, i);
+    const parts = Object.entries(filters).map(([d, v]) => d === 'signature' ? ErrorsView.shortSignature(v as string) :
+      `${d} ${v}`);
+    if (spec.by)
+      parts.push(`${t.get('count', i)} occurrences, ${t.get('users', i)} users`);
+    else
+      parts.push(formatTime(t.get('time', i)));
+    return parts.join(' · ');
+  }
+
   showRow(t: DG.DataFrame, spec: Spec, i: number): void {
     const filters = ErrorsView.rowFilters(t, spec, i);
     const drill: Spec = {...spec, ...filters, by: undefined, trend: undefined, limit: DRILL_LIMIT};
     const occurrences: Promise<DG.DataFrame> = grok.functions.call('ErrorStats', {spec: JSON.stringify(drill)});
+    const error: string = t.col('topError') ? t.get('topError', i) : t.get('error', i);
     const acc = DG.Accordion.create();
+    acc.addPane(ErrorsView.rowTitle(t, spec, i), () => ui.divV([
+      ui.divText(error ?? '', 'ua-error-text'),
+      ui.wait(async () => {
+        const o = await occurrences;
+        const signature = o.rowCount ? o.get('signature', 0) : null;
+        const sample = signature ? await queries.errorSample(signature) : null;
+        if (!sample?.rowCount || !sample.get('stack', 0))
+          return ui.divText('No stack trace');
+        const pre = ui.element('pre', 'ua-stack');
+        pre.textContent = sample.get('stack', 0);
+        return ui.divV([ui.divText(`Stack trace of the latest occurrence, ${formatTime(sample.get('time', 0))}`), pre]);
+      }),
+    ]), true);
     if (!spec.by) {
       const details: {[key: string]: any} = {};
       for (const c of t.columns.toList())
-        details[HEADERS[c.name] ?? c.name] = c.getString(i);
+        details[HEADERS[c.name] ?? c.name] = c.type === DG.TYPE.DATE_TIME ? formatTime(c.get(i)) : c.getString(i);
       const request = t.get('requestId', i);
       acc.addPane('Occurrence', () => ui.divV([ui.tableFromMap(details),
         request ? ui.link('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'request', request)) : null,
-      ]), true);
+      ]));
     }
     acc.addPane('Occurrences', () => ui.wait(async () => {
       const o = await occurrences;
       const rows = [...Array(Math.min(o.rowCount, SHOWN)).keys()];
-      const table = ui.table(rows, (r) => [o.col('time')!.getString(r), o.get('user', r) ?? '',
+      const table = ui.table(rows, (r) => [formatTime(o.get('time', r)), o.get('user', r) ?? '',
         ErrorsView.shortSignature(o.get('signature', r)), o.get('error', r),
         o.get('requestId', r) ? ui.link('timeline', () =>
           TimelineView.open(this.uaToolbox.viewHandler, 'request', o.get('requestId', r))) : ''],
@@ -272,7 +326,7 @@ export class ErrorsView extends UaView {
       return ui.divV([table, o.rowCount > SHOWN || o.rowCount === 0 ?
         ui.divText(o.rowCount === 0 ? 'No occurrences' : `${o.rowCount}${o.rowCount === DRILL_LIMIT ? '+' : ''} in all`) :
         null, o.rowCount ? ui.link('Open as a table', () => grok.shell.addTableView(o)) : null]);
-    }), true);
+    }));
     acc.addPane('Sessions', () => ui.wait(async () => {
       const o = await occurrences;
       const signatures = ErrorsView.values(o, 'signature');
@@ -284,7 +338,7 @@ export class ErrorsView extends UaView {
         new Date(Math.max(...times) + 1000).toISOString());
       if (s.rowCount === 0)
         return ui.divText('No sessions');
-      return ui.table([...Array(s.rowCount).keys()], (r) => [s.get('user', r), s.col('first')!.getString(r),
+      return ui.table([...Array(s.rowCount).keys()], (r) => [s.get('user', r), formatTime(s.get('first', r)),
         s.get('count', r), ui.link('timeline', () =>
           TimelineView.open(this.uaToolbox.viewHandler, 'session', s.get('session', r)))],
       ['user', 'first', 'errors', '']);
@@ -296,7 +350,7 @@ export class ErrorsView extends UaView {
         return ui.divText('No reports');
       return ui.table([...Array(r.rowCount).keys()], (k) => [
         ui.link(`#${r.get('number', k)}`, async () => grok.shell.addView(await funcs.reportsApp(`/${r.get('number', k)}`))),
-        r.col('created_on')!.getString(k), r.get('is_auto', k) ? 'auto' : r.get('reporter', k) ?? '',
+        formatTime(r.get('created_on', k)), r.get('is_auto', k) ? 'auto' : r.get('reporter', k) ?? '',
         r.get('is_resolved', k) ? 'resolved' : 'open', r.get('description', k) ?? ''],
       ['report', 'created', 'by', 'status', 'description']);
     }));
@@ -306,7 +360,7 @@ export class ErrorsView extends UaView {
       if (a.rowCount === 0)
         return ui.divText('No alerts');
       return ui.table([...Array(a.rowCount).keys()], (k) => [a.get('kind', k), a.get('status', k),
-        a.col('opened_at')!.getString(k), a.get('summary', k) ?? ''], ['kind', 'status', 'opened', 'summary']);
+        formatTime(a.get('opened_at', k)), a.get('summary', k) ?? ''], ['kind', 'status', 'opened', 'summary']);
     }));
     grok.shell.o = acc.root;
   }
@@ -354,18 +408,23 @@ export class ErrorsView extends UaView {
     return this.shownSpec.since ? null : 'A saved job runs over Since, not From - To';
   }
 
+  /** `since 7d · by signature · trend day · group Chemists`: what a job of [spec] exports. */
+  static describe(spec: Spec): string {
+    return Object.entries(spec).filter(([_, v]) => v != null && v !== '').map(([k, v]) => `${k} ${v}`).join(' · ');
+  }
+
   saveJobDialog(): void {
-    const problem = this.saveProblem();
-    if (problem) {
-      grok.shell.warning(problem);
+    if (this.saveProblem())
       return;
-    }
     const spec = {...this.shownSpec};
+    const saves = ui.input.string('Saves', {value: ErrorsView.describe(spec)});
+    saves.readOnly = true;
     const name = ui.input.string('Name');
-    const format = ui.input.choice('Format', {value: 'csv', items: ['csv', 'json'], nullable: false});
+    const format = ui.input.choice('Format', {value: 'csv', items: ['csv', 'json'], nullable: false,
+      tooltipText: 'The server writes CSV or JSON. For Parquet, use Export > Parquet in the browser'});
     const path = ui.input.string('Path', {value: DEFAULT_FOLDER,
       tooltipText: '<connection>/<path>; a path ending in / gets <name>-{date}.<format>; {date} is the run\'s UTC date'});
-    const schedule = ui.input.string('Schedule', {
+    const schedule = ui.input.string('Schedule', {placeholder: 'MON 07:00',
       tooltipText: 'Empty for no schedule, "MON 07:00", "DAILY 07:00", "WEEKDAYS 07:00" or a five-field cron (UTC)'});
     const dialogProblem = (): string | null => {
       if (!name.value?.trim())
@@ -375,11 +434,14 @@ export class ErrorsView extends UaView {
       return schedule.value?.trim() && ErrorsView.cron(schedule.value) == null ?
         'The schedule is "MON 07:00", "DAILY 07:00", "WEEKDAYS 07:00" or a five-field cron' : null;
     };
+    const line = problemLine();
     const dialog = ui.dialog('Save as job');
+    dialog.add(saves);
     for (const input of [name, format, path, schedule]) {
       dialog.add(input);
-      input.onChanged.subscribe(() => dialog.getButton('OK').disabled = dialogProblem() != null);
+      input.onChanged.subscribe(() => showProblem(dialog.getButton('OK'), line, dialogProblem()));
     }
+    dialog.add(line);
     dialog.onOK(async () => {
       const folder = path.value.trim();
       const target = folder.endsWith('/') ?
@@ -396,8 +458,8 @@ export class ErrorsView extends UaView {
       }
     });
     dialog.show();
-    ui.tooltip.bind(dialog.getButton('OK'), () => dialogProblem() ?? 'Save the job');
-    dialog.getButton('OK').disabled = true;
+    showProblem(dialog.getButton('OK'), line, dialogProblem());
+    name.input.focus();
   }
 
   /** `MON 07:00`, `DAILY 07:00`, `WEEKDAYS 07:00` or a five-field cron → cron; null when it is neither. */

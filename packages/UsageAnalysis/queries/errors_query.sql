@@ -107,3 +107,16 @@ where (a.kind = 'error-incident' and a.key = any(array(select left(s, 12) from u
 order by a.opened_at desc
 limit 50
 --end
+
+--name: ErrorSample
+--friendlyName: Error Sample
+--input: string signature
+--connection: System:Datagrok
+select e.event_time as time, coalesce(nullif(e.error_message, ''), e.description) as error,
+  coalesce(e.error_stack_trace, t.error_stack_trace) as stack
+from events e
+join event_types t on t.id = e.event_type_id
+where t.source = 'error' and t.error_stack_trace_hash = @signature::uuid
+order by e.event_time desc
+limit 1
+--end

@@ -4,6 +4,8 @@ import {before, after, category, test, expect, awaitCheck} from '@datagrok-libra
 import {ViewHandler} from '../view-handler';
 import {queries} from '../package-api';
 import {ErrorsView} from '../tabs/errors';
+import {CaptureView} from '../tabs/capture';
+import {TimelineView} from '../tabs/timeline';
 
 
 category('App', () => {
@@ -36,7 +38,8 @@ category('App', () => {
 category('Capture', () => {
   test('CaptureRules columns', async () => {
     const t = await queries.captureRules('this year');
-    for (const name of ['rule', 'author', 'subject', 'scope', 'reason', 'active', 'events', 'status', 'id'])
+    for (const name of ['rule', 'author', 'subject', 'scope', 'reason', 'active', 'events', 'status', 'id', 'stopped_by',
+      'stop_reason'])
       expect(t.col(name) != null, true, `column "${name}" is missing`);
   });
 
@@ -45,6 +48,19 @@ category('Capture', () => {
     const t = await queries.clicks('this week', [allUsers]);
     for (const name of ['event_time', 'user', 'event_type', 'description', 'request_id'])
       expect(t.col(name) != null, true, `column "${name}" is missing`);
+  });
+
+  test('Refusals use the dialog labels', async () => {
+    expect(CaptureView.refusal('subject.type is one of user, group'), 'Subject is one of user, group');
+    expect(CaptureView.refusal('debugFlags: x not one of db'), 'Debug flags: x not one of db');
+    expect(CaptureView.refusal('maxEvents is a whole number from 1'), 'Max events is a whole number from 1');
+  });
+
+  test('Timeline splits the server out of the source', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('source', ['client', 'server', 'A'])]);
+    TimelineView.splitSource(t);
+    expect(t.col('source')!.toList().join(','), 'client,server,server');
+    expect(t.col('server')!.toList().join(','), ',,A');
   });
 
   test('Timeline of an unknown action is empty', async () => {
@@ -90,6 +106,7 @@ category('Errors', () => {
     expect((await queries.errorSessions(none, ['admin'], '2026-01-01T00:00:00Z', '2100-01-01T00:00:00Z')).rowCount, 0);
     expect((await queries.errorReports(none)).col('number') != null, true);
     expect((await queries.errorAlerts(none)).col('status') != null, true);
+    expect((await queries.errorSample(none[0])).rowCount, 0);
   });
 
   test('ClicksFollowedByError columns', async () => {
@@ -97,6 +114,9 @@ category('Errors', () => {
     const t = await queries.clicksFollowedByError('this month', [allUsers], '');
     for (const name of ['element', 'clicks', 'users', 'followed_by_error', 'followed_by_error_pct'])
       expect(t.col(name) != null, true, `column "${name}" is missing`);
+    const errors = await queries.clickErrors('this month', [allUsers], 'no such element', '');
+    for (const name of ['signature', 'error', 'clicks', 'action'])
+      expect(errors.col(name) != null, true, `column "${name}" is missing`);
   });
 
   test('Trend, state and schedule helpers', async () => {

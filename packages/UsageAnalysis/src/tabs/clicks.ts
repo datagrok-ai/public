@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../../css/usage_analysis.css';
@@ -6,9 +7,12 @@ import {UaView} from './ua';
 import {queries} from '../package-api';
 import {UaFilter} from '../filter';
 import {TimelineView} from './timeline';
-import {onRowContextMenu} from '../utils';
+import {emptyState, formatGridTimes, formatTime, onRowContextMenu} from '../utils';
+import {ErrorsView} from './errors';
 import {debounceTime} from 'rxjs/operators';
 
+const CLICK_HEADERS: {[column: string]: string} = {event_time: 'time', event_type: 'type', description: 'element',
+  request_id: 'action id'};
 
 export class ClicksView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
@@ -34,7 +38,10 @@ export class ClicksView extends UaView {
       for (const r of this.refreshers)
         r();
     };
-    this.tabControl.onTabChanged.subscribe(() => refresh());
+    this.tabControl.onTabChanged.subscribe(() => {
+      grok.shell.o = null;
+      refresh();
+    });
     this.uaToolbox.viewHandler.view.tabs.onTabChanged.subscribe(() => refresh());
   }
 
@@ -69,32 +76,63 @@ export class ClicksView extends UaView {
     grid.col('ugid')!.visible = false;
     grid.col('id')!.visible = false;
     grid.col('description')!.width = 400;
+    formatGridTimes(grid);
+    for (const [name, header] of Object.entries(CLICK_HEADERS))
+      grid.col(name)!.name = header;
     onRowContextMenu(grid, (menu, i) => {
       const action = table.get('request_id', i);
       if (action)
         menu.item('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'action', action));
+    });
+    table.onCurrentRowChanged.subscribe(() => {
+      const i = table.currentRowIdx;
+      if (i < 0)
+        return;
+      const action = table.get('request_id', i);
+      const acc = DG.Accordion.create();
+      acc.addPane(table.get('event_type', i), () => ui.divV([
+        ui.tableFromMap({
+          'Time': formatTime(table.get('event_time', i)),
+          'User': table.get('user', i) ?? '',
+          'Type': table.get('event_type', i),
+          'Element': table.get('description', i),
+          ...(action ? {'Action id': action} : {}),
+        }),
+        action ? ui.buttonsInput([ui.button('Timeline', () =>
+          TimelineView.open(this.uaToolbox.viewHandler, 'action', action))]) : ui.divText('No action id'),
+      ]), true);
+      grok.shell.o = acc.root;
     });
     return grid.root;
   }
 
   /** Clicks per element and how many of them an error followed within 5 s (same action id). */
   async getFollowedByErrorTab(filter: UaFilter): Promise<HTMLElement> {
-    const view = ui.input.string('View', {value: this.followedView, tooltipText: 'Only clicks in the view of this name'});
+    const view = ui.input.string('View', {value: this.followedView, placeholder: 'Any view',
+      tooltipText: 'Only clicks in the view of this name'});
     const host = ui.box();
     const load = () => {
       this.followedView = (view.value ?? '').trim();
+      grok.shell.o = null;
       ui.empty(host);
       host.append(ui.waitBox(async () => {
         try {
           const table = await queries.clicksFollowedByError(filter.date!, filter.groups, this.followedView);
           if (table.rowCount === 0)
-            return ui.divText('No clicks');
+            return emptyState('No clicks', 'Choose a longer Date, or clear View');
           table.name = 'Clicks followed by error';
+          const errors: number[] = table.col('followed_by_error')!.toList();
+          const pct: number[] = table.col('followed_by_error_pct')!.toList();
+          table.columns.addNewString('followed').init((i) => `${errors[i]} (${Math.round(pct[i] * 10) / 10}%)`);
           const grid = DG.Viewer.grid(table, {showRowHeader: false, allowRowSelection: false, allowBlockSelection: false});
+          grid.columns.setVisible(['element', 'clicks', 'users', 'followed']);
           grid.col('element')!.width = 400;
-          grid.col('followed_by_error')!.width = 150;
-          grid.col('followed_by_error')!.name = 'followed by error ≤ 5 s';
-          grid.col('followed_by_error_pct')!.name = '%';
+          grid.col('followed')!.width = 170;
+          grid.col('followed')!.name = 'followed by error ≤ 5 s';
+          table.onCurrentRowChanged.subscribe(() => {
+            if (table.currentRowIdx >= 0)
+              this.showClickErrors(filter, table.get('element', table.currentRowIdx), errors[table.currentRowIdx]);
+          });
           return grid.root;
         }
         catch (e: any) {
@@ -105,6 +143,20 @@ export class ClicksView extends UaView {
     view.onChanged.pipe(debounceTime(500)).subscribe(() => load());
     load();
     return ui.divV([ui.div([ui.form([view])], 'ua-toolbar'), host], 'ui-box');
+  }
+
+  /** The errors that followed clicks on [element], by signature, each with the timeline of its latest click. */
+  showClickErrors(filter: UaFilter, element: string, errors: number): void {
+    const acc = DG.Accordion.create();
+    acc.addPane('Errors after the click', () => ui.divV([ui.divText(element, 'ua-error-text'), errors === 0 ?
+      ui.divText('No error followed these clicks') : ui.wait(async () => {
+        const t = await queries.clickErrors(filter.date!, filter.groups, element, this.followedView);
+        return ui.table([...Array(t.rowCount).keys()], (r) => [ErrorsView.shortSignature(t.get('signature', r)),
+          t.get('error', r), t.get('clicks', r), ui.link('timeline', () =>
+            TimelineView.open(this.uaToolbox.viewHandler, 'action', t.get('action', r)), 'The latest click')],
+        ['signature', 'error', 'clicks', '']);
+      })]), true);
+    grok.shell.o = acc.root;
   }
 
   async getClickAnalysisTab(filter: UaFilter): Promise<HTMLDivElement> {
