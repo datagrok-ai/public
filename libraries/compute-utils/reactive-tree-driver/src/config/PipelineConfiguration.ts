@@ -183,7 +183,9 @@ export type RuleSource =
   /** Calls the platform function `name`; `args` maps its parameters to expressions over the inputs. */
   {func: {name: string, args?: Record<string, RuleExpr>}} |
   /** Runs `sql` on the connection; `args` binds the query's `@name` parameters. */
-  {query: {connection: string, sql: string, args?: Record<string, RuleExpr>}};
+  {query: {connection: string, sql: string, args?: Record<string, RuleExpr>}} |
+  /** Loads a table from a file share path or a URL, once per link. */
+  {file: string};
 
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';

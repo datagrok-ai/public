@@ -135,6 +135,39 @@ category('ComputeUtils: Driver rule js sources', async () => {
     expectDeepEqual(df2.rowCount, 1);
   });
 
+  test('A file source loads a table', async () => {
+    const controller = () => ({getFirst: () => undefined}) as any;
+    await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
+      id: 'bad', type: 'rule', from: 'x:step1/a', to: 't:step1/a',
+      sources: {v: {file: ''}}, effects: [{effect: 'error', targets: 't', message: 'm'}],
+    }])));
+    const births = {file: 'System:DemoFiles/births.csv'};
+    const {births: df} = await resolveSources(controller(), {births}) as any;
+    expect(df.rowCount > 0, true);
+  });
+
+  test('Sources that read no input resolve once per link', async () => {
+    const original = grok.functions.call;
+    let calls = 0;
+    (grok.functions as any).call = (name: string, params: any) => {
+      calls++;
+      return original.call(grok.functions, name, params);
+    };
+    try {
+      const cache = new Map<string, any>();
+      const controller = () => ({getFirst: () => undefined, sourceCache: cache}) as any;
+      const fixed = {func: {name: 'LibTests:TestAdd2', args: {a: 1, b: 2}}};
+      const varying = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 2}}};
+      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {all: {}, x: 1}), {fixed: 3, varying: 3});
+      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {all: {}, x: 5}), {fixed: 3, varying: 7});
+      expect(calls, 3);
+      expect(cache.has('fixed'), true);
+      expect(cache.has('varying'), false);
+    } finally {
+      (grok.functions as any).call = original;
+    }
+  });
+
   test('A js source may be async', async () => {
     let calls = 0;
     const sum = {js: {args: ['x', 'y'], fn: async (x: number, y: number) => {

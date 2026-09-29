@@ -798,10 +798,15 @@ any expression. Two resolvers exist:
 - `query`: `{connection: 'Pkg:Conn', sql: '...', args?: {name: <expression>}}`.
   Runs the SQL on the connection and the resulting dataframe becomes the
   alias. `@name` in the text binds to the argument of that name; the
-  values never enter the text. Nothing caches an ad-hoc query, so it
-  runs on every run of the rule's links: keep `from` to the inputs the
-  query reads, and prefer a package query with `meta.cache` for a static
-  table.
+  values never enter the text.
+- `file`: `'System:AppData/Pkg/presets.csv'`, or a URL. Loads the table
+  and it becomes the alias.
+
+A source that reads no input, a `file`, or a `func` or `query` whose
+arguments hold no `var`, is resolved once per link and the value is
+reused on every later run. The others run whenever the rule's links
+run, so keep `from` to what they read, and give a function that loads
+data a `meta.cache` annotation so the platform loads it once.
 
 ```
 {

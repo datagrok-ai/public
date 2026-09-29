@@ -161,6 +161,12 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       expandedSources[alias] = source;
       continue;
     }
+    if ('file' in source) {
+      if (typeof source.file !== 'string' || !source.file)
+        throw new Error(`Rule ${id}: source ${alias} file must be a path`);
+      expandedSources[alias] = source;
+      continue;
+    }
     if ('query' in source) {
       const {connection, sql, args} = source.query;
       if (typeof connection !== 'string' || !connection || typeof sql !== 'string' || !sql)

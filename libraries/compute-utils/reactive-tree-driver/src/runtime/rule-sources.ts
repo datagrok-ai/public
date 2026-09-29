@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleSource} from '../config/PipelineConfiguration';
-import {evaluate, RuleContext} from './rule-expressions';
+import {evaluate, RuleContext, usedAliases} from './rule-expressions';
 
 export type ValidatorVerdict = {message: string, isError: boolean, isHelper: boolean};
 
@@ -80,6 +80,18 @@ type JsSource = Extract<RuleSource, {js: any}>['js'];
 type FuncSource = Extract<RuleSource, {func: any}>['func'];
 type QuerySource = Extract<RuleSource, {query: any}>['query'];
 
+function resolveFile(path: string) {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(path) ? grok.data.loadTable(path) : grok.data.files.openTable(path);
+}
+
+// a source that reads no input is loaded once per link
+function isConstant(source: RuleSource) {
+  if ('file' in source)
+    return true;
+  const args = 'func' in source ? source.func.args : 'query' in source ? source.query.args : undefined;
+  return args !== undefined && Object.values(args).every((expr) => !usedAliases(expr).length);
+}
+
 function resolveJs(controller: IControllerBase, spec: JsSource) {
   return spec.fn(...spec.args.map((alias) => controller.getFirst(alias)));
 }
@@ -124,12 +136,25 @@ export function resolveSources(
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];
   for (const [alias, source] of Object.entries(sources ?? {})) {
-    if (!('validators' in source) && !('js' in source) && !('func' in source) && !('query' in source))
+    if (!('validators' in source) && !('js' in source) && !('func' in source) && !('query' in source) && !('file' in source))
       throw new Error(`Unknown rule source ${JSON.stringify(source)} for alias ${alias}`);
-    const value = 'js' in source ? resolveJs(controller, source.js) :
-      'func' in source ? resolveFunc(source.func, ctx) :
-        'query' in source ? resolveQuery(source.query, ctx) :
-          resolveValidators(controller, source.validators);
+    const cache = controller.sourceCache;
+    const constant = !!cache && isConstant(source);
+    let value: any;
+    if (constant && cache.has(alias))
+      value = cache.get(alias);
+    else {
+      value = 'js' in source ? resolveJs(controller, source.js) :
+        'func' in source ? resolveFunc(source.func, ctx) :
+          'query' in source ? resolveQuery(source.query, ctx) :
+            'file' in source ? resolveFile(source.file) :
+              resolveValidators(controller, source.validators);
+      if (constant) {
+        cache.set(alias, value);
+        if (value instanceof Promise)
+          value.catch(() => cache.delete(alias));
+      }
+    }
     if (value instanceof Promise)
       pending.push(value.then((result) => {resolved[alias] = result;}));
     else

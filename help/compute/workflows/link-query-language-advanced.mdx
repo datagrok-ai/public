@@ -384,16 +384,8 @@ the annotation cannot: clearing a value that fell out of the list.
 ### Lookup table
 
 A key input picks a row of a table, and the row's columns fill the
-other inputs of the step. The table comes from a package function, and
-the bare `solver` id is the first solver of the workflow:
-
-```
-//output: dataframe presets
-//meta.cache: all
-export async function presets() {
-  return grok.data.loadTable(`${_package.webRoot}tables/presets.csv`);
-}
-```
+other inputs of the step. The table is a file on a file share, and the
+bare `solver` id is the first solver of the workflow:
 
 ```
 {
@@ -402,7 +394,7 @@ export async function presets() {
   runOnInit: true,
   from: 'key:solver/preset',
   to: ['k:solver/preset', '_(template):solver/inputs(Pkg:Solver, preset)'],
-  sources: {presets: {func: {name: 'Pkg:presets'}}},
+  sources: {presets: {file: 'System:AppData/Pkg/presets.csv'}},
   effects: [
     {effect: 'items', targets: 'k', items: {column: [{var: 'presets'}, 'preset']}},
     {
@@ -413,11 +405,8 @@ export async function presets() {
 }
 ```
 
-- The `func` source calls the function on every run of the rule; the
-  `meta.cache` annotation makes the platform load the table once. Nothing
-  in the rule is code. For a small table the package function can go too:
-  `{func: {name: 'OpenFile', args: {fullPath: 'System:AppData/Pkg/presets.csv'}}}`
-  reads the file directly, at the cost of a read per rerun.
+- The `file` source reads no input, so the table is loaded once per
+  link and reused on every rerun. Nothing in the rule is code.
 - The `(template)` query lists every input of the solver except the key,
   and the `_` prefix makes the aliases the io names. `row` returns the
   picked row as an object keyed by column name, and `assign` writes each
