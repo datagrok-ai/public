@@ -329,21 +329,31 @@ export async function restoreSize(page: Page, target: ElementRef): Promise<void>
   await onViewer(page, target, (el) => (window as any).__bdd.restoreSize(el, 500), undefined);
 }
 
-export function saveLayout(page: Page): Promise<void> {
-  return evaluate(page, () => { (window as any).__bdd.saveLayout(); }, undefined);
+/** Keeps the layout of the current table view in the page, under a name ('' for the unnamed one). */
+export function saveLayout(page: Page, name = ''): Promise<void> {
+  return evaluate(page, (n) => { (window as any).__bdd.saveLayout(n); }, name);
 }
 
-/** Saves the layout through the server and returns its id; the caller registers the deletion. */
-export function saveLayoutToServer(page: Page): Promise<string> {
+/** The named layouts kept in the page go: the runtime outlives a feature on the page. */
+export function forgetLayouts(page: Page): Promise<void> {
+  return evaluate(page, () => { (window as any).__bdd.forgetLayouts(); }, undefined);
+}
+
+/** Saves the layout through the server under a name of its run's family; the caller registers the deletion. */
+export function saveLayoutToServer(page: Page): Promise<{id: string; family: string}> {
   return evaluate(page, () => (window as any).__bdd.saveLayoutToServer(), undefined);
+}
+
+export function layoutOnServer(page: Page, id: string): Promise<boolean> {
+  return page.evaluate((i) => (window as any).__bdd.layoutOnServer(i), id);
 }
 
 export function deleteLayout(page: Page, id: string): Promise<void> {
   return page.evaluate((i) => (window as any).__bdd.deleteLayout(i), id);
 }
 
-export function loadLayout(page: Page): Promise<void> {
-  return evaluate(page, () => (window as any).__bdd.loadLayout(), undefined);
+export function loadLayout(page: Page, name = ''): Promise<void> {
+  return evaluate(page, (n) => (window as any).__bdd.loadLayout(n), name);
 }
 
 // --- area gestures ------------------------------------------------------------------------------------

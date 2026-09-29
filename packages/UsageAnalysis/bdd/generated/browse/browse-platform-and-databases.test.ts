@@ -16,9 +16,9 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {firstSignedIn, loggedIn, signBackInAsFirst, signInAsSecond, signedInAs} from '@datagrok-libraries/bdd/bindings/common/session';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, collapse, followingShouldBe, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {browsePanelOpen, connectionOnServer, contextPanelOpen, contextPanelShows, standRunsService, urlShouldContain, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, connectionOnServer, contextPanelOpen, contextPanelShows, runningAccountSignedIn, sharingUserSignedIn, signInAsSelf, signInAsSharingUser, standRunsService, urlShouldContain, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {closeContextMenu, menuDoesNotList, menuLists, noBalloons, noErrors, openContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -238,16 +238,16 @@ test.describe("The Platform and Databases sections of the Browse tree", () => {
     await session.step(139, "And Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
     await session.step(140, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
     await session.step(141, "Then Databases---Postgres---BDD-Browse-Private-{run} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("Databases---Postgres---BDD-Browse-Private-{run} tree node inside browse tree")), "visible"));
-    await session.step(142, "When user signs in as the second user", () => signInAsSecond(page));
+    await session.step(142, "When user signs in as the sharing user", () => signInAsSharingUser(page));
     await session.step(143, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(144, "Then the second user should be signed in", () => signedInAs(page));
+    await session.step(144, "Then the sharing user should be signed in", () => sharingUserSignedIn(page));
     await session.step(145, "When Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
     await session.step(146, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
     await session.step(147, "Then Databases---Postgres---Datagrok tree node inside browse tree should be visible", () => shouldBe(page, el("Databases---Postgres---Datagrok tree node inside browse tree"), "visible"));
     await session.step(148, "And Databases---Postgres---BDD-Browse-Private-{run} tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("Databases---Postgres---BDD-Browse-Private-{run} tree node inside browse tree")), "absent"));
     await session.step(149, "And no errors should have been logged", () => noErrors(page));
-    await session.step(150, "When user signs in again as the first user", () => signBackInAsFirst(page));
-    await session.step(151, "Then the first user should be signed in", () => firstSignedIn(page));
+    await session.step(150, "When user signs in as themselves again", () => signInAsSelf(page));
+    await session.step(151, "Then the running account should be signed in", () => runningAccountSignedIn(page));
   });
   test("The Plugins view lists the installed packages and offers no Delete for one", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);

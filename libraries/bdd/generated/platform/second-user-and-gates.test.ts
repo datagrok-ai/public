@@ -10,21 +10,21 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {firstSignedIn, loggedIn, signBackInAsFirst, signInAsSecond, signedInAs} from '@datagrok-libraries/bdd/bindings/common/session';
-import {packageInstalled, standRunsService, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {packageInstalled, runningAccountSignedIn, sharingUserSignedIn, signInAsSelf, signInAsSharingUser, standRunsService, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The second account and the capability gates", () => {
   const session = feature(test, "features/platform/second-user-and-gates.feature", import.meta.url);
-  test("The second user signs in on the same page and the first comes back", {tag: ["@platform"]}, async ({browser}) => {
+  test("The sharing user signs in on the same page and the running account comes back", {tag: ["@platform"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(8, "Given user is logged in", () => loggedIn(page));
-    await session.step(11, "When user signs in as the second user", () => signInAsSecond(page));
-    await session.step(12, "Then the second user should be signed in", () => signedInAs(page));
+    await session.step(11, "When user signs in as the sharing user", () => signInAsSharingUser(page));
+    await session.step(12, "Then the sharing user should be signed in", () => sharingUserSignedIn(page));
     await session.step(13, "And no errors should have been logged", () => noErrors(page));
-    await session.step(14, "When user signs in again as the first user", () => signBackInAsFirst(page));
-    await session.step(15, "Then the first user should be signed in", () => firstSignedIn(page));
+    await session.step(14, "When user signs in as themselves again", () => signInAsSelf(page));
+    await session.step(15, "Then the running account should be signed in", () => runningAccountSignedIn(page));
     await session.step(16, "And no errors should have been logged", () => noErrors(page));
   });
   test("A service the stand does not run skips the rest of the test", {tag: ["@platform"]}, async ({browser}) => {

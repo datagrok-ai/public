@@ -7,8 +7,8 @@ Feature: Multiple sequence alignment with kalign
 
   Not translated, and why: running PepSeA itself (and the container's lifecycle) needs the PepSeA
   Docker container deployed and started on the stand, which the suite cannot assume; the HELM scenario
-  stops at the dialog, which needs no container. The MSA header's WebLogo (msa.md step 8) is not
-  claimed: the grid reports the column's cell type, not what its header draws.
+  stops at the dialog, which needs no container. The MSA header's WebLogo (msa.md step 8) is
+  claimed in render/msa-header, on the antibody chains.
 
   Background:
     Given user is logged in

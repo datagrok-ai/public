@@ -18,10 +18,9 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, collapse, expand, followingShouldBe, isExpanded, shouldBe, uploadThrough} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {refreshBrowse} from '@datagrok-libraries/bdd/bindings/platform/browse';
 import {columnCount, hasColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, noScriptOnServer, scriptOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, noScriptOnServer, refreshBrowse, scriptOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 

@@ -52,6 +52,7 @@ export interface IDartApi {
   grok_UserSettings_Get(name: String, isPrivate: Bool): any;
   grok_UserSettings_GetValue(name: String, key: String, isPrivate: Bool): any;
   grok_UserSettings_Delete(name: String, key: String, isPrivate: Bool): any;
+  grok_UserSettings_Flush(): Promise<any>;
   grok_DockView(addToWorkspace: Bool): any;
   grok_DockView_InitDock(v: any): any;
   grok_DockView_HandleResize(v: any): any;

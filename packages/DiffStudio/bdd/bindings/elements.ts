@@ -5,6 +5,8 @@ import {element, kind} from '@datagrok-libraries/bdd';
 
 /* The hub's cards: a template or a library model, named by the label in the card's header. */
 kind('hub card', {selector: '.diff-studio-hub-card', match: ['label'], labelSelector: '.diff-studio-hub-card-header'});
+/* A model opened earlier has a second card under Recent, which the hub lists as well. */
+element('library section', {selector: '[name="section-Library"]', description: 'the Library cards of the hub'});
 
 /* The folder icon on the ribbon that opens the model menu — it has no name of its own, only the
    class the app puts on both of its ribbon dropdowns and the icon it is drawn with. */

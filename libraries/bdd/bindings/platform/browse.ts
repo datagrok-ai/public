@@ -1,4 +1,4 @@
-/* The Browse panel beyond opening and clicking nodes: its Refresh as a gesture with an end, the
+/* The Browse panel beyond opening and clicking nodes (its Refresh is in steps.ts): the
    tree's own "children are there" state, favorites and a file put
    on the server for a feature, and moving inside the app by address. Refresh and Find path fire
    `grok.events.onBrowseTreeRefreshed` once the tree is rebuilt and the path parsed
@@ -7,10 +7,7 @@
 import {type Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
-import {el} from '../../src/runtime/args.js';
-import {click} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
-import {armEvent} from '../../src/runtime/viewer-menus.js';
 import {expectCustomEvent} from '../../src/runtime/events.js';
 
 declare const grok: any;
@@ -21,14 +18,6 @@ async function treeLoaded(page: Page): Promise<void> {
   await expect.poll(() => page.evaluate((sel) => document.querySelectorAll(sel).length, LOADING),
     {message: 'Browse tree groups still fetching their children', timeout: pollMs(30000)}).toBe(0);
 }
-
-export const refreshBrowse = When('user refreshes the browse tree', async (page: Page) => {
-  const refreshed = await armEvent(page, 'onBrowseTreeRefreshed', pollMs(30000));
-  await click(page, el('"Refresh" icon inside browse toolbar'));
-  if (!await refreshed())
-    throw new Error('the Browse tree did not report the refresh done (onBrowseTreeRefreshed) within 30 s');
-  await treeLoaded(page);
-}, {tier: 'ui', description: 'the Refresh icon of the browse toolbar, done when the tree reports itself rebuilt and no group is still fetching its children'});
 
 export const browseTreeLoaded = Then('the browse tree should have finished loading', (page: Page) => treeLoaded(page),
   {description: 'no group of the tree carries data-state="loading" — the end anchor after anything that rebuilds it'});

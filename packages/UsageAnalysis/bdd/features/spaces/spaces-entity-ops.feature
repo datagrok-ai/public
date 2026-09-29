@@ -123,4 +123,5 @@ Feature: Working with what a space holds
 
     Scenario: A file opens as a table
       When user double-clicks on acidiq.csv link in gallery
-      Then grid should be visible
+      Then the "acidiq" view should be current
+      And the table should have 180 rows

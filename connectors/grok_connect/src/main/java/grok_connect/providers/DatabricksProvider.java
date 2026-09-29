@@ -49,6 +49,7 @@ public class DatabricksProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, "workspaceURL", "Your Databricks workspace host. You can copy this from your browser’s address bar — for example dbc-52240d8b-a70a.cloud.databricks.com."));
             add(new Property(Property.STRING_TYPE, "httpPath", "The unique path of your SQL Warehouse or endpoint. You can find it in Databricks → Compute → SQL Warehouses → Connection details."));
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, "Optional. Unity Catalog name that contains your data (for example samples or main). If omitted, Databricks defaults to main.", null, "Catalog"));
+            add(new Property(Property.STRING_TYPE, DbCredentials.SCHEMA, "Optional. Default schema within the catalog. If not specified schema 'default' will be used.", null, "Schema"));
         }};
 
         descriptor.credentialsTemplate = new ArrayList<Property>() {{
@@ -154,7 +155,8 @@ public class DatabricksProvider extends JdbcDataProvider {
             if (colonIndex != -1)
                 workspaceUrl = workspaceUrl.substring(0, colonIndex);
         }
-        String url = "jdbc:databricks://" + workspaceUrl + ":443" +  "/" + "default";
+        String schema = conn.get(DbCredentials.SCHEMA);
+        String url = "jdbc:databricks://" + workspaceUrl + ":443/" + (GrokConnectUtil.isEmpty(schema) ? descriptor.defaultSchema : schema);
         String httpPath = conn.get("httpPath");
         if (GrokConnectUtil.isNotEmpty(httpPath))
             url += ";httpPath=" + httpPath + ";";

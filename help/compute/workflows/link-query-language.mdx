@@ -1,262 +1,242 @@
 ---
-title: "Link Query Language"
+title: "LQL tutorial"
 sidebar_position: 3
-description: Guided introduction to LQL, the query language used to address workflow nodes, inputs, and outputs in links.
+sidebar_label: "LQL tutorial"
+description: Guided introduction to LQL, the query language that names workflow nodes, inputs and outputs in links, with the simple cases most links need.
 keywords:
   - link query language
-  - lql base path
-  - expand selector
-  - position selectors
-  - tag matching
+  - lql tutorial
+  - query structure
+  - optional flag
   - template queries
   - workflow node addressing
 ---
 
-A [LQL link](./link-types) is a one-directional connection that propagates data
-from one workflow node to another.
-The Link Query Language (LQL) is used to point at the
-workflow nodes and their inputs and outputs.
+A [link](./link-types) connects workflow nodes: it reads inputs and
+outputs of some steps and writes to others. The Link Query Language (LQL)
+is how a link names those inputs and outputs.
 
-This page is a guided introduction;
-for the full selector catalog, grammar, and gotchas see the
-[LQL reference](./link-query-language-reference).
+This page covers the queries most links need. Fan-out over repeated
+steps, reference selectors, tags and the advanced examples are in
+[LQL advanced](./link-query-language-advanced). Every selector, flag and
+rule is listed in the [LQL reference](./link-query-language-reference).
 
-## Understanding workflow links – essentials
+## Two concepts: ids and positions
 
-The Datagrok low-code workflows are designed to handle both simple pre-determined workflows
-and complex dymaic multi-step ones.
-Therefore, the LQL works by using together two different concepts:
+Workflows range from a fixed list of steps to dynamic ones where users
+add, remove and reorder steps. LQL therefore combines two concepts:
 
-* IDs - these are the **names** of nodes or sub workflows in a workflow.
-  In a simple case when a workflow contains a fixed set of steps and each of them has a unique name,
-  this is all what we need.
-  However, in a complex case where the workflow is dynamic, any ID can be non-unique.
-  To solve this issue, LQL uses the second concept:
-* Position selectors.  These is a relation between a particular step and the steps before or after it.
-  Position modifiers allow choosing steps from the set of steps with a given ID.
-  For example, we can choose all steps that match a given ID or a step with the given ID
-  that goes exactly after another step, etc.
+* **Ids** are the names of steps and nested workflows. When every step
+  has a unique id, a path of ids is all a link needs.
+* **Position selectors** relate a step to the steps before or after it.
+  In a dynamic workflow several steps may share an id, and a selector
+  picks the first, the last, all of them, or the one right after a given
+  step.
 
-LQL paths use position modifiers to select steps from the set of steps with matching IDs.
+A path of bare ids is the common case. Selectors appear only where the
+workflow shape makes an id ambiguous.
 
-### Query structure
+## Query structure
 
-Every LQL query has the form:
+Every query has the form:
 
 ```
 NAME(FLAGS)?:PATH
 ```
 
-`NAME` is the query name used by the link engine and controllers to retrieve
-results. `FLAGS` is an optional comma-separated list inside parentheses; the
-three recognized flags are `optional`, `call`, and `template` (see
-[reference](./link-query-language-reference#flags)). `PATH` is a `/`-separated
-list of segments resolved relative to the workflow where the link is defined.
-Absolute paths (with a leading `/`) are forbidden.
+`NAME` is the alias the handler uses to read or write the matched value.
+`FLAGS` is an optional comma-separated list inside parentheses; the flags
+are `optional`, `call` and `template`. `PATH` is a `/`-separated list of
+segments resolved relative to the workflow that declares the link. A
+leading `/` is not allowed.
 
-A minimal example targeting a script input:
-
-```
-value(optional):myworkflow/subworkflow/script/input1
-```
-
-Here `myworkflow`, `subworkflow`, and `script` are IDs of the workflow nodes.
-For a bare identifier workflow engine automatically applies the `first` selector,
-that choses the first node matching the given ID.
-Therefore, the query above is equivalent to:
+A query that targets a script input:
 
 ```
-value(optional):first(myworkflow)/first(subworkflow)/first(script)/input1
+value:myworkflow/subworkflow/script/input1
 ```
 
-To target the workflow that hosts the link itself
-(often used by [`pipelineValidator`](./link-types#pipeline-validators))
-we can use a name with no path.
-The forms `NAME`, `NAME:`, `NAME:.`, and `NAME:./` are all equivalent.
-`NAME:./path` is also accepted; mid-path `.` is not.
+`myworkflow`, `subworkflow` and `script` are ids. A bare id means "the
+first node with this id", so the query above is the same as:
 
-### Base path and `expand`
+```
+value:first(myworkflow)/first(subworkflow)/first(script)/input1
+```
 
-Many useful links fan out across repeated parts of a workflow — every step of
-a given type, every workflow inside a parent, every matching tag. LQL expresses
-this with a **base path** and **reference selectors**.
+A query with no path targets the workflow that declares the link. The
+forms `NAME`, `NAME:`, `NAME:.` and `NAME:./` are equivalent, and
+`NAME:./path` is accepted. A `.` in the middle of a path is not.
 
-The `base` field of a link is itself an LQL query, conventionally named `base`.
-Inside `base`, we use the special `expand` selector,
-that matches like `all` but with one crucial difference:
-every match produces a separate **link instance**.
+## Simple cases
 
-Each link instance is then resolved on its own
-— `from` and `to` paths use reference selectors (`same`, `before`, `after`)
-that take the base query name (prefixed with `@`, e.g. `@base`)
-and anchor relative to that instance's match.
-Using base path, we if fact define a template allowing us to create
-many links at once.
-
-Here is a link definition that uses `expand` plus reference selectors:
+Every case below lives in this one workflow. `load` produces a table,
+`clean` filters it and reports statistics, `fit` fits a model, and
+`summary` reports. Between them, `reviews` is a nested dynamic workflow
+with a single step type: users add as many `review` steps as they want,
+or remove them all.
 
 ```
 {
-  id: "mylink1",
-  base: "base:expand(workflow1|workflow2)/expand(script1)",
-  from: "in:same(@base)/same(@base)/output1",
-  to:   "out:same(@base)/after+(@base,script2)/input1"
-}
-```
-
-![Base path example](pics/base_path_example1.svg)
-
-Assuming `mylink1` is defined inside `myworkflow`:
-
-- `expand(workflow1|workflow2)` matches both workflows;
-  `expand(script1)` matches the two `script1` nodes inside each.
-  It totals we have four base matches (red borders in the diagram).
-- For every base match, `from` resolves `same(@base)` -
-  The node that the base picked at each segment,
-  then takes `output1` on that script.
-- `to` resolves the same workflow,
-  then `after+(@base, script2)` takes the immediately adjacent node with the name `script2`
-  after the base's `script1`,
-  and connects to the `input1` of this script.
-
-Four base matches → four `mylink1` instances. If the trailing `script2` in
-either workflow were removed, that last `script1` would have no `after+` match
-and the count would drop to three.
-
-Every `@base` reference in `from`/`to` is positionally aligned with the
-corresponding segment of `base`:
-
-![Segment alignment of @base](pics/segment_alignment.svg)
-
-
-Position selectors `before`, `after`, and their `*` / `+` variants
-take their own id-list and fileter it according to the position.
-
-`same(@base)` accepts an optional id-list as a narrowing filter (see
-[reference](./link-query-language-reference#patterns)).
-
-### Direction and cardinality
-
-Position selectors `before` and `after` differ by two criteria:
-which direction they scan, and how many matches they keep.
-The bare form keeps the first match in the direction;
-`*` keeps every match;
-`+` only matches if the **immediately adjacent** node is matching the provided ID.
-
-Each row below shows the matches for
-`before(@base, prep1|prep2|prep3)` and `after(@base, next1|next2|next3)`:
-
-![before / after modifiers](pics/before_after_modifiers.svg)
-
-Position selectors also accept **boundary**:
-— an optional third argument with an ID or list of IDs,
-that confines the scan to the region before the boundary step(s).
-Example: `before(@base, target, boundary)`
-
-The full list of reference selectors and their modifiers (`*` for "match all
-in the direction", `+` for "immediately adjacent only") lives in the
-[reference](./link-query-language-reference#selectors).
-
-### Tags
-
-Any selector can match by [tag](./configuration#tags) instead of id by prefixing it with `#`.
-Tag arguments combine with **AND** (`&`),
-unlike id arguments which combine with **OR** (`|`),
-because the same node can carrymultiple tags.
-Tag matching also crosses nesting boundaries —
-a `#all(metric)` query finds every descendant tagged `metric`,
-no matter how deep — but never travels upward past the link's host workflow.
-
-From the perspective of the link engine,
-tags are just a more flexible kind of IDs with slightly different combination rules.
-Position selectors usrk with tags the same way as with regular IDs.
-
-![tag selectors on a nested tree](pics/tag_selectors.svg)
-
-
-Pure tag query:
-
-```
-#first(tag1&tag2)
-```
-
-Matches the first descendant (depth-first) that carries both `tag1` and
-`tag2`.
-
-Tags and ids mix freely; each segment resolves against the result set of the
-previous one:
-
-```
-#all(metric)/last(script1|script2)/input1
-```
-
-Matches every descendant tagged `metric`, then picks the *last* direct child
-of each whose id is `script1` or `script2`, then targets its `input1`.
-
-![mixing tags and ids](pics/mixed_tag_id_selectors.svg)
-
-Note: tag selectors do not support the `+` modifier (only `*`). See the
-[reference](./link-query-language-reference#modifiers-and-stop-ids).
-
-### Template queries
-
-When a link needs to fan out across several inputs and outputs of the same
-script, the `template` flag avoids repeating the same path. Instead of:
-
-```
-{
-  from: [
-    "in_output1:myworkflow/subworkflow/script1/output1",
-    "in_output2:myworkflow/subworkflow/script1/output2",
-    "in_output3:myworkflow/subworkflow/script1/output3"
+  id: 'demo',
+  type: 'static',
+  steps: [
+    {id: 'load', nqName: 'Pkg:LoadTable'},     // out: table
+    {id: 'clean', nqName: 'Pkg:CleanTable'},   // in: table, threshold; out: table, stats
+    {id: 'fit', nqName: 'Pkg:FitModel'},       // in: table, stats, iterations; out: model
+    {id: 'reviews', type: 'dynamic',
+      stepTypes: [{id: 'review', nqName: 'Pkg:Review'}],  // in: model, notes; out: score
+      initialSteps: ['review']},
+    {id: 'summary', nqName: 'Pkg:Summary'},    // in: model, scores, notes
   ],
-  to: [
-    "out_input1:myworkflow/subworkflow/script2/input1",
-    "out_input2:myworkflow/subworkflow/script2/input2",
-    "out_input3:myworkflow/subworkflow/script2/input3"
-  ]
+  links: [/* the cases below */],
 }
 ```
 
-write:
+### Connect two steps
+
+```
+{id: 'toClean', from: 'table:load/table', to: 'input:clean/table'}
+```
+
+The alias before the colon (`table`, `input`) is what the handler works
+with. The path after it names the step and its io. In a static workflow
+every id is unique, so a path of ids is all the link needs. Without a
+handler the [default handler](./link-types#default-handler) copies each
+`from` value to the `to` entry at the same position.
+
+### Reach into a nested workflow
+
+```
+{id: 'toReview', from: 'model:fit/model', to: 'target:reviews/review/model'}
+```
+
+Paths are relative to the workflow that declares the link, and cross
+into nested workflows segment by segment. Inside `reviews` the id
+`review` is not unique, and a bare id means the first match, so this
+link feeds the first review only. The same link declared inside
+`reviews` would write `target:review/model`.
+
+### Read several values in one handler
 
 ```
 {
-  from: "in_(template):myworkflow/subworkflow/script1/output1|output2|output3",
-  to:   "out_(template):myworkflow/subworkflow/script2/input1|input2|input3"
+  id: 'iterations',
+  type: 'validator',
+  from: ['threshold:clean/threshold', 'n:fit/iterations'],
+  to: 'target:fit/iterations',
+  handler: ({controller}) => {
+    if (controller.getFirst('threshold') > 0.5 && controller.getFirst('n') < 100)
+      controller.setValidation('target', {warnings: ['Few iterations for a strict threshold']});
+    else
+      controller.setValidation('target', undefined);
+  },
 }
 ```
 
-Template expansion is permitted only in the **last** segment — the script IO
-name — never in the path leading to the script. The expanded query name is
-the template name concatenated with the IO name (`in_output1`, `in_output2`,
-…); use `_(template)` if you want no prefix.
+Aliases are distinct within a link, across `from` and `to` alike. A
+validator reads its inputs and writes a result to the io named in `to`.
 
-#### Wildcard IO selectors: `outputs(nqName)` / `inputs(nqName)` {#wildcard-selectors}
+### Several inputs and outputs of one step
 
-Alias for the bare-list form. The argument is the script's `nqName`; an
-optional pipe-separated second argument excludes IOs. Expansion happens
-at config-processing time.
+When a link moves several ios between the same two steps, the
+`template` flag expands a `|`-list in the last segment into one query
+per io. The alias becomes the prefix plus the io name.
 
 ```
-from: "in_(template):script1/outputs(MyPkg:Script1)"
-to:   "out_(template):script2/inputs(MyPkg:Script2, debug|verbose)"
+{
+  id: 'toFit',
+  from: 'in_(template):clean/table|stats',
+  to: 'out_(template):fit/table|stats',
+}
 ```
 
-`outputs(...)` always pulls outputs, `inputs(...)` always pulls inputs,
-regardless of which side it appears on.
+This is the same as writing `in_table`, `in_stats`, `out_table` and
+`out_stats` by hand. Use `_` as the prefix to get aliases equal to the
+io names. The list may only appear in the last segment, never in the
+path to the step.
 
-**`_(template)`** with no prefix expands link-io names equal the script
-IO ids verbatim (`a`, `b` instead of `in_a`, `in_b`). The slot id is
-then the operator's 0-based index on its side, so multiple anonymous
-templates stay addressable without colliding with string-named ones.
+### The same paths in checks and rules
 
-How template slots propagate at runtime is covered under the
-[default handler](./link-types#default-handler); the controller
-primitives custom handlers can use are listed under
-[Data links](./link-types#data-links).
+[Checks](./link-types#checks) and [rules](./link-types#rules) use the
+same paths. A check names one io and has no alias:
 
----
+```
+{id: 'iterationsRange', type: 'check', io: 'fit/iterations', check: {min: 1, max: 10000}}
+```
 
-Next: see the [LQL reference](./link-query-language-reference) for the full
-selector table, formal grammar, common patterns, and gotchas.
+A rule reads and writes through aliases like any link. Rule queries take
+no flag but `optional`:
+
+```
+{
+  id: 'strict',
+  type: 'rule',
+  from: 'threshold:clean/threshold',
+  to: 'n:fit/iterations',
+  when: {'>': [{var: 'threshold'}, 0.5]},
+  effects: [{effect: 'warning', targets: 'n', message: 'Consider more iterations for a strict threshold'}],
+}
+```
+
+### A step that may be absent
+
+A link whose query matches nothing is not created. The `optional` flag
+creates it anyway, and the alias reads as absent:
+
+```
+{
+  id: 'carryNotes',
+  from: 'notes(optional):reviews/review/notes',
+  to: 'target:summary/notes',
+  handler: ({controller}) => controller.setAll('target', controller.getFirst('notes') ?? ''),
+}
+```
+
+Here `review` means the first review. When the user removes every review
+the link still runs and writes an empty string.
+
+### Every step with one id
+
+`all` matches every direct child with the id, so one query yields many
+values. The handler reads them with `getAll`:
+
+```
+{
+  id: 'collectScores',
+  from: 'scores:reviews/all(review)/score',
+  to: 'target:summary/scores',
+  handler: ({controller}) => controller.setAll('target', controller.getAll('scores')),
+}
+```
+
+This is one link that sees all reviews at once. When each review should
+get a link of its own, the advanced page's `expand` is the tool.
+
+### The host workflow
+
+A [pipeline validator](./link-types#pipeline-validators) targets a
+workflow node. A query with no path is the workflow that declares the
+link:
+
+```
+{
+  id: 'needsReviews',
+  type: 'pipelineValidator',
+  from: 'scores:reviews/all(review)/score',
+  to: 'self',
+  handler: ({controller}) => {
+    const scores = controller.getAll('scores');
+    controller.setValidation('self', scores.length ? undefined : {errors: ['Add at least one review']});
+  },
+}
+```
+
+## What the advanced page adds
+
+[LQL advanced](./link-query-language-advanced) covers a `base` query
+with `expand`, which turns one link definition into one link per
+matching step, and the reference selectors `same`, `before` and `after`
+that anchor `from` and `to` to each of those steps. It also covers tags,
+which match across nesting levels, and the wildcard io selectors, with
+one example per topic on a single workflow, including a computed
+default, a dynamic option list and a lookup table built from rules.

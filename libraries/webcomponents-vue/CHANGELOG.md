@@ -3,6 +3,7 @@
 ## v.next
 
 * RibbonPanel: an icon item carries its tooltip as `aria-label`, so assistive tools and tests can name it
+* InputForm: Driver validation marks the caption label as well as the editor, matching the platform's own invalid styling
 
 ## 0.4.0 (2026-09-23)
 

@@ -139,16 +139,16 @@ Feature: The Platform and Databases sections of the Browse tree
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     Then Databases---Postgres---BDD-Browse-Private-{run} tree node inside browse tree should be visible
-    When user signs in as the second user
+    When user signs in as the sharing user
     And the browse panel is open
-    Then the second user should be signed in
+    Then the sharing user should be signed in
     When Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     Then Databases---Postgres---Datagrok tree node inside browse tree should be visible
     And Databases---Postgres---BDD-Browse-Private-{run} tree node inside browse tree should be absent
     And no errors should have been logged
-    When user signs in again as the first user
-    Then the first user should be signed in
+    When user signs in as themselves again
+    Then the running account should be signed in
 
   Scenario: The Plugins view lists the installed packages and offers no Delete for one
     Given Platform tree node inside browse tree is expanded

@@ -5,6 +5,7 @@ import {cloneConfig, EnumeratorConfig} from './config';
 import {enumerate, OutputRow, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {MountedViewerRegistry} from './viewer-mount';
+import {PropagationSnapshot, propagatedColumns, snapshotPropagation} from './propagation';
 import {
   BuiltInputs, buildInputs, buildResultDataFrame, clampRounds, DataKey, MAX_ROUNDS, Mode, MODE_LABEL, panelHeader,
   roundsLabel, tabPanel,
@@ -141,8 +142,10 @@ export class PreviewPanel {
     const rDf = this.deps.reagentsInput.value;
 
     let inputs: BuiltInputs;
+    let propagation: PropagationSnapshot;
     try {
       inputs = buildInputs(config, tDf, bDf, xDf, rDf);
+      propagation = snapshotPropagation(config, tDf, bDf, rDf);
     } catch (e) {
       this.status.textContent = '';
       this.showMessage(e instanceof Error ? e.message : String(e), 'var(--red-3)');
@@ -175,7 +178,7 @@ export class PreviewPanel {
         isCancelled: () => myRunId !== this.runId,
       });
       rows = result.rows;
-      warnings = result.warnings;
+      warnings = [...result.warnings, ...propagation.missing];
     } catch (e) {
       if (myRunId !== this.runId) return;
       this.status.textContent = '';
@@ -200,9 +203,9 @@ export class PreviewPanel {
     }
 
     const samples = pickPreviewSamples(rows, PREVIEW_TARGET_ROWS);
-    const df = buildResultDataFrame(samples, 'Preview');
-    // Taller rows fit the extra route-step lines; route isn't the last column, so no extendLastColumn.
-    this.deps.viewerHost.mountDf(this.host, df, false, {rowHeight: 110, extendLastColumn: false});
+    const df = buildResultDataFrame(samples, propagatedColumns(samples, propagation), 'Preview');
+    // Taller rows fit the extra route-step lines.
+    this.deps.viewerHost.mountDf(this.host, df, false, {rowHeight: 110});
     this.status.textContent =
       `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} ` +
       `steps, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;

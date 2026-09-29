@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DEFAULT_CONFIG, EnumeratorConfig} from './config';
-import {OutputRow, OutputStep, TemplateInput} from './enumerate';
+import {KEY_SEPARATOR, OutputRow, OutputStep, TemplateInput} from './enumerate';
 
 export type Mode = 'depth' | 'breadth' | 'reagents';
 export type DataKey = 'templates' | 'buildingBlocks' | 'reagents';
@@ -24,6 +24,7 @@ export function combinationLimitsChanged(cfg: EnumeratorConfig): boolean {
   return cfg.max_num_components !== DEFAULT_CONFIG.max_num_components ||
     cfg.max_num_routes_per_compound !== DEFAULT_CONFIG.max_num_routes_per_compound ||
     cfg.max_num_combinations_per_template !== DEFAULT_CONFIG.max_num_combinations_per_template ||
+    cfg.max_num_products_per_step !== DEFAULT_CONFIG.max_num_products_per_step ||
     cfg.keep_building_blocks_in_final_output !== DEFAULT_CONFIG.keep_building_blocks_in_final_output;
 }
 
@@ -41,6 +42,7 @@ export function productFiltersChangedCount(cfg: EnumeratorConfig): number {
     ps.max_num_metals !== dps.max_num_metals,
     ps.max_num_halogens !== dps.max_num_halogens,
     ps.max_num_aromatic_atoms !== dps.max_num_aromatic_atoms,
+    ps.max_num_aromatic_rings !== dps.max_num_aromatic_rings,
     ps.max_num_unsaturated_nonaromatic_bonds !== dps.max_num_unsaturated_nonaromatic_bonds,
     ps.only_these_atoms_allowed.join(',') !== dps.only_these_atoms_allowed.join(','),
     ps.remove_radicals !== dps.remove_radicals,
@@ -113,7 +115,7 @@ export function detectChemSemTypes(df: DG.DataFrame): Promise<void> {
   return df.meta.detectSemanticTypes();
 }
 
-function getStringColumn(df: DG.DataFrame, name: string): string[] {
+export function getStringColumn(df: DG.DataFrame, name: string): string[] {
   const col = df.col(name);
   if (!col) throw new Error(`Column "${name}" not found in "${df.name}". Available: ${df.columns.names().join(', ')}`);
   const out: string[] = new Array(col.length);
@@ -125,28 +127,61 @@ function getStringColumn(df: DG.DataFrame, name: string): string[] {
 }
 
 const STEP_RXN_PREFIX = '~reaction_name_';
+/** `~` and not a grid flag: the preview builds its own frame, where a grid flag would not apply. */
+const STEP_PRODUCTS_PREFIX = '~step_products_';
 /** Past this many products the step hierarchy filter is too slow to build and redraw. */
 const HIERARCHICAL_MAX_PRODUCTS = 500_000;
 
-export function buildResultDataFrame(rows: OutputRow[], name = 'Enumeration result'): DG.DataFrame {
+const COLUMN_DESCRIPTIONS: Record<string, string> = {
+  product: 'The product this route makes: the molecule its last step produced.',
+  route: 'Every step of the synthesis, drawn as reactions.',
+  product_counts: 'How many distinct products each step formed, one line per step, including ones the ' +
+    'product filters removed. More than one means the template matched in several non-equivalent places.',
+  n_products: 'The per-step product counts multiplied together: how many isomer paths this route ' +
+    'passed through.',
+  n_routes: 'How many distinct routes reach this same product.',
+  round: 'The step at which this product first appeared.',
+};
+
+/** `extraColumns` are row-aligned with `rows`. */
+export function buildResultDataFrame(
+  rows: OutputRow[], extraColumns: DG.Column[] = [], name = 'Enumeration result',
+): DG.DataFrame {
   const maxSteps = rows.reduce((m, r) => Math.max(m, r.steps.length), 0);
   // maxSteps is the longest route; shorter routes leave their tail cells blank.
   const perStep = (colName: (k: number) => string, pick: (s: OutputStep) => string): DG.Column[] =>
     Array.from({length: maxSteps}, (_, k) =>
       DG.Column.fromStrings(colName(k + 1), rows.map((r) => (r.steps[k] ? pick(r.steps[k]) : ''))));
+  // 0 marks "this route has no step k" — a real step always made at least the product on this row.
+  const perStepInt = (colName: (k: number) => string, pick: (s: OutputStep) => number): DG.Column[] =>
+    Array.from({length: maxSteps}, (_, k) =>
+      DG.Column.fromInt32Array(colName(k + 1),
+        Int32Array.from(rows, (r) => (r.steps[k] ? pick(r.steps[k]) : 0))));
   // Per-step templates stay visible (a SMARTS is only readable drawn); per-step reaction names are
   // hidden and exist to feed the step hierarchy filter.
   const templateCols = perStep((k) => `template_${k}`, (s) => s.template);
+  // A range filter is what expresses "step 2 kept at most two products"; the cell cannot. Capped
+  // like the tree, being the same kind of per-step column-and-filter cost.
+  const stepProductCols = rows.length <= HIERARCHICAL_MAX_PRODUCTS ?
+    perStepInt((k) => `${STEP_PRODUCTS_PREFIX}${k}`, (s) => s.nProducts) : [];
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromStrings('product', rows.map((r) => r.product)),
     DG.Column.fromStrings('route', rows.map((r) => r.route)),
     DG.Column.fromStrings('reaction_names',
       rows.map((r) => r.steps.map((s, i) => `Step ${i + 1}: ${s.reactionName}`).join('\n'))),
+    DG.Column.fromStrings('product_counts', rows.map((r) => r.steps
+      .map((s, i) => `Step ${i + 1}: ${s.nProducts} product${s.nProducts === 1 ? '' : 's'}`)
+      .join('\n'))),
     ...templateCols,
     DG.Column.fromInt32Array('round', new Int32Array(rows.map((r) => r.round))),
     DG.Column.fromInt32Array('n_routes', new Int32Array(rows.map((r) => r.n_routes))),
+    // Clamped because a long branching route can exceed what an int column holds.
+    DG.Column.fromInt32Array('n_products', Int32Array.from(rows, (r) =>
+      Math.min(r.steps.reduce((n, s) => n * s.nProducts, 1), 2 ** 31 - 1))),
+    ...extraColumns,
     ...(maxSteps > 1 && rows.length <= HIERARCHICAL_MAX_PRODUCTS ?
       perStep((k) => `${STEP_RXN_PREFIX}${k}`, (s) => s.reactionName) : []),
+    ...stepProductCols,
   ]);
   df.name = name;
   df.col('product')!.semType = DG.SEMTYPE.MOLECULE;
@@ -154,6 +189,12 @@ export function buildResultDataFrame(rows: OutputRow[], name = 'Enumeration resu
   for (const c of templateCols) c.semType = 'ChemicalReaction';
   // A filter on this column then offers each "Step k: …" line as its own category.
   df.col('reaction_names')!.meta.multiValueSeparator = '\n';
+  df.col('product_counts')!.meta.multiValueSeparator = '\n';
+  for (const [col, description] of Object.entries(COLUMN_DESCRIPTIONS))
+    df.col(col)!.setTag(DG.TAGS.DESCRIPTION, description);
+  templateCols.forEach((c, k) => c.setTag(DG.TAGS.DESCRIPTION, `The reaction template that step ${k + 1} ran.`));
+  stepProductCols.forEach((c, k) => c.setTag(DG.TAGS.DESCRIPTION,
+    `How many products step ${k + 1} made. 0 means the route has no step ${k + 1}.`));
   return df;
 }
 
@@ -167,19 +208,27 @@ export function defaultFilterState(col: DG.Column): DG.FilterState {
   return {type, column: col.name};
 }
 
+/** The per-step, per-building-block and per-reagent copies of a propagated column grow with route length
+ * and would bury the filter panel, so only their aggregates get filters. */
+export const NO_FILTER_TAG = '.chem-enum-no-filter';
+
 /** Per-column filters for the result view, minus `route` (every value is distinct) and, when there is
  * a step tree, minus the summary column it duplicates; plus a "step 1 reaction → step 2 reaction → …"
  * tree over the hidden per-step columns, which the hierarchical filter's own column picker (visible
- * columns only) could not build. */
+ * columns only) could not build, and `product_counts`' own filter replaced by one histogram per step. */
 export function addResultFilters(tv: DG.TableView): void {
   const df = tv.dataFrame;
-  const stepCols = df.columns.names().filter((c) => c.startsWith(STEP_RXN_PREFIX));
+  const names = df.columns.names();
+  const stepCols = names.filter((c) => c.startsWith(STEP_RXN_PREFIX));
   const tree = stepCols.length > 1;
-  const skip = new Set(tree ? ['route', 'reaction_names'] : ['route']);
+  const countGroup = names.filter((c) => c.startsWith(STEP_PRODUCTS_PREFIX));
+  const skip = new Set(['route', ...(tree ? ['reaction_names'] : [])]);
   const fg = tv.getFiltersGroup({createDefaultFilters: false});
   // The newest filter shows on top, so add bottom-up: the panel then follows column order, tree first.
-  const cols = df.columns.toList().filter((c) => !c.name.startsWith('~') && !skip.has(c.name)).reverse();
-  for (const c of cols) fg.updateOrAdd(defaultFilterState(c), false);
+  // Past the cap there are no per-step columns, so the summary cell keeps its own filter.
+  const ordered = names.filter((c) => !c.startsWith('~') && !skip.has(c) && !df.col(c)!.getTag(NO_FILTER_TAG))
+    .flatMap((c) => (c === 'product_counts' && countGroup.length ? countGroup : [c])).reverse();
+  for (const c of ordered) fg.updateOrAdd(defaultFilterState(df.col(c)!), false);
   // 'hierarchical' isn't in DG.FILTER_TYPE; the state shape is what the group itself serializes.
   if (tree) fg.updateOrAdd({type: 'hierarchical', colNames: stepCols}, false);
 }
@@ -191,6 +240,11 @@ export interface BuiltInputs {
   reagents: string[];
 }
 
+/** The rows the extractors keep: the i-th template, building block or reagent came from `nonBlankRows(...)[i]`. */
+export function nonBlankRows(values: string[]): number[] {
+  return values.flatMap((v, i) => v.trim() ? [i] : []);
+}
+
 /** Also runs against a per-round subset table, hence the separate export. */
 export function extractTemplates(config: EnumeratorConfig, tDf: DG.DataFrame): TemplateInput[] {
   const smartsList = getStringColumn(tDf, config.enumeration.smarts_col);
@@ -198,26 +252,28 @@ export function extractTemplates(config: EnumeratorConfig, tDf: DG.DataFrame): T
   const rxnNameCol = config.enumeration.reaction_name_col;
   const blockingListRaw = tDf.col(blockingCol) ? getStringColumn(tDf, blockingCol) : null;
   const rxnNameList = tDf.col(rxnNameCol) ? getStringColumn(tDf, rxnNameCol) : null;
+  const propagatedCols = Object.keys(config.enumeration.template_propagated_columns)
+    .map((n) => tDf.col(n)).filter((c): c is DG.Column => c != null);
 
-  const templates: TemplateInput[] = [];
-  for (let i = 0; i < smartsList.length; i++) {
-    const smarts = (smartsList[i] ?? '').trim();
-    if (!smarts) continue;
+  return nonBlankRows(smartsList).map((i) => {
     const blockingRaw = blockingListRaw ? blockingListRaw[i] : '';
     const blockingSmartsList = blockingRaw ?
       blockingRaw.split(/[;|]/).map((s) => s.trim()).filter((s) => s.length > 0) : [];
-    templates.push({smarts, blockingSmartsList, reactionName: rxnNameList?.[i] ?? ''});
-  }
-  return templates;
+    return {smarts: smartsList[i].trim(), blockingSmartsList, reactionName: rxnNameList?.[i] ?? '',
+      propagated: propagatedCols.map((c) => c.getString(i)).join(KEY_SEPARATOR)};
+  });
 }
 
 export function extractBuildingBlocks(config: EnumeratorConfig, bDf: DG.DataFrame): string[] {
-  return getStringColumn(bDf, config.enumeration.bb_smiles_column).filter((s) => s.trim().length > 0);
+  const smiles = getStringColumn(bDf, config.enumeration.bb_smiles_column);
+  return nonBlankRows(smiles).map((i) => smiles[i]);
 }
 
 export function extractReagents(config: EnumeratorConfig, rDf: DG.DataFrame): string[] {
   const rCol = config.enumeration.reagent_smiles_column;
-  return rDf.col(rCol) ? getStringColumn(rDf, rCol).filter((s) => s.trim().length > 0) : [];
+  if (!rDf.col(rCol)) return [];
+  const smiles = getStringColumn(rDf, rCol);
+  return nonBlankRows(smiles).map((i) => smiles[i]);
 }
 
 export function buildInputs(

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added `grok.userSettings.flush()`, which sends pending user settings to the server now instead of waiting for the periodic sync; it resolves once the attempt finishes, and a failed save is queued again for the next periodic sync
 * GROK-20864: Added `DataFrame.appendAsync`, `DataFrame.appendMergeAsync`, `DataFrame.recalculateFormulaColumns` and `grok.data.appendTables`, which calculate formula columns for the appended rows; `append` and `appendMerge` still move rows only
 * GROK-20924: `ObjectHandler.getCaption` defaults to the value for a `SemanticValue` or a `GridCell` instead of `[object Object]`, so a handler that does not override it captions cells readably (the ribbon's current object dropdown, tooltips)
 * Sketcher: Fixed the "Malformed molfile" error the compact sketcher's tooltip logged on hover when the molecule had been typed as SMILES (a filter card's, a molecule input's): the tooltip converts it to a molblock first

@@ -102,42 +102,13 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     if (!token) {
       console.log(`bdd: no dev-key token for "${name}" — signing in through the login form`);
       await formLogin(url);
-      await resolveSecondUser(`${url}/api`);
       return;
     }
     process.env.DATAGROK_AUTH_TOKEN = token;
-    await resolveSecondUser(api!);
     process.env.DATAGROK_SHARING_LOGIN ??= await ensureSecondAccount(api!, token);
   }
-  else
-    await resolveSecondUser(`${url}/api`);
   await warmClient(url);
   await libSetup(config);
-}
-
-/** The account a feature signs in as its second user, and the one the sharing steps share with, are
- * the same: a CI runner hands over DATAGROK_AUTH_TOKEN_2 (its login is read back from the server),
- * a local or dev run names DATAGROK_SHARING_LOGIN with DATAGROK_SHARING_PASSWORD (a password login;
- * the server wants the password in base64). Without either, the second user is only shared with. */
-async function resolveSecondUser(apiUrl: string): Promise<void> {
-  const base = apiUrl.replace(/\/$/, '');
-  const login = process.env.DATAGROK_SHARING_LOGIN;
-  const password = process.env.DATAGROK_SHARING_PASSWORD;
-  if (!process.env.DATAGROK_AUTH_TOKEN_2 && login && password) {
-    const response = await fetch(`${base}/users/login`, {method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({login, password: Buffer.from(password, 'utf8').toString('base64')}), signal: AbortSignal.timeout(20000)});
-    const json = await response.json().catch(() => ({})) as {token?: string; isSuccess?: boolean};
-    if (!json.isSuccess || !json.token)
-      throw new Error(`the second account "${login}" could not sign in at ${base} (status ${response.status})`);
-    process.env.DATAGROK_AUTH_TOKEN_2 = json.token;
-  }
-  const token = process.env.DATAGROK_AUTH_TOKEN_2;
-  if (token && !login) {
-    const user = await fetch(`${base}/users/current`, {headers: {Authorization: token}, signal: AbortSignal.timeout(20000)})
-      .then((r) => r.json()).catch(() => ({})) as {login?: string};
-    if (user.login)
-      process.env.DATAGROK_SHARING_LOGIN = user.login;
-  }
 }
 
 export const SECOND_LOGIN = 'bddsecond';
