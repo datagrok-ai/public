@@ -171,24 +171,20 @@ category('ComputeUtils: Driver docs cases', async () => {
   });
 
   test('Dynamic option list from an upstream table', async () => {
-    const columns = {js: {args: ['table'], fn: (df?: DG.DataFrame) => df ? df.columns.names() : []}};
     const pconf = await getProcessedConfig(screening([{
       id: 'columnItems',
       type: 'rule',
       base: 'base:expand(analysis)',
-      from: 'table:before(@base, load)/res',
-      to: 'c:same(@base)/mode',
-      sources: {columns},
-      effects: [{effect: 'items', targets: 'c', items: {var: 'columns'}}],
-    }, {
-      id: 'columnReset',
-      type: 'rule',
-      base: 'base:expand(analysis)',
       from: ['table:before(@base, load)/res', 'column:same(@base)/mode'],
       to: 'c:same(@base)/mode',
-      sources: {columns},
-      when: {and: [{'!': {missing: ['column']}}, {'!': {in: [{var: 'column'}, {var: 'columns'}]}}]},
-      effects: [{effect: 'clear', targets: 'c'}],
+      sources: {columns: {js: {args: ['table'], fn: (df?: DG.DataFrame) => df ? df.columns.names() : []}}},
+      effects: [
+        {effect: 'items', targets: 'c', items: {var: 'columns'}},
+        {
+          effect: 'clear', targets: 'c',
+          when: {and: [{'!': {missing: ['column']}}, {'!': {in: [{var: 'column'}, {var: 'columns'}]}}]},
+        },
+      ],
     }]));
     const values: any[] = [];
     testScheduler.run(({cold}) => {
@@ -210,30 +206,27 @@ category('ComputeUtils: Driver docs cases', async () => {
   });
 
   test('Lookup table fills sibling inputs', async () => {
-    const presets = [
-      {mode: 'fast', a: 1, b: 2, c: 3},
-      {mode: 'exact', a: 10, b: 20, c: 30},
-    ];
+    // the docs load the table through a func source; a sync js source keeps virtual time
+    const presets = DG.DataFrame.fromColumns([
+      DG.Column.fromList('string', 'mode', ['fast', 'exact']),
+      DG.Column.fromList('double', 'a', [1, 10]),
+      DG.Column.fromList('double', 'b', [2, 20]),
+      DG.Column.fromList('double', 'c', [3, 30]),
+    ]);
     const pconf = await getProcessedConfig(screening([{
       id: 'preset',
       type: 'rule',
       runOnInit: true,
       from: 'key:solver/mode',
-      to: ['a:solver/a', 'b:solver/b', 'c:solver/c'],
-      sources: {row: {js: {args: ['key'], fn: (key: string) => presets.find((p) => p.mode === key) ?? null}}},
-      when: {'!!': {var: 'row'}},
+      to: ['k:solver/mode', '_(template):solver/inputs(LibTests:TestAnnotatedInputs, mode|v|df)'],
+      sources: {presets: {js: {args: [], fn: () => presets}}},
       effects: [
-        {effect: 'set', targets: 'a', value: {var: 'row.a'}, restriction: 'restricted'},
-        {effect: 'set', targets: 'b', value: {var: 'row.b'}, restriction: 'restricted'},
-        {effect: 'set', targets: 'c', value: {var: 'row.c'}, restriction: 'restricted'},
+        {effect: 'items', targets: 'k', items: {column: [{var: 'presets'}, 'mode']}},
+        {
+          effect: 'assign', values: {row: [{var: 'presets'}, 'mode', {var: 'key'}]}, restriction: 'restricted',
+          when: {in: [{var: 'key'}, {column: [{var: 'presets'}, 'mode']}]},
+        },
       ],
-    }, {
-      id: 'presetItems',
-      type: 'rule',
-      from: 'key:solver/mode',
-      to: 'k:solver/mode',
-      sources: {keys: {js: {args: [], fn: () => presets.map((p) => p.mode)}}},
-      effects: [{effect: 'items', targets: 'k', items: {var: 'keys'}}],
     }]));
     const values: any[] = [];
     testScheduler.run(({cold}) => {

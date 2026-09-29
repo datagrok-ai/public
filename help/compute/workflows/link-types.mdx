@@ -693,7 +693,7 @@ runtime never sees the rule itself.
 ### Expressions
 
 `when`, an effect's own `when` and every value-bearing effect field
-(`items`, `meta` values, `message`, `value`) is a
+(`items`, `meta` values, `message`, `value`, `values`) is a
 [JSON Logic](https://jsonlogic.com/) expression.
 Plain literals are valid expressions and evaluate to themselves. The data
 available to `var` is:
@@ -714,6 +714,12 @@ Three extra operations are registered:
 - `len`: length of a string or array, or the row count of a dataframe.
 - `columnIs`: a column and a kind; `true` when the column has that kind.
 - `nulls`: a column; its number of missing values (`0` for anything else).
+- `column`: a dataframe and a column name; the column's values as a list,
+  empty when either is absent.
+- `row`: a dataframe, a key column name and a key; the first row whose
+  key cell equals the key, as an object keyed by column name, or `null`.
+  Cells and keys are compared as they are, then as strings, so a numeric
+  column matches a string key.
 - `regex`: a string, a pattern and optional flags; `true` when the string
   matches.
 - `script`: a GrokScript expression string, evaluated synchronously over the
@@ -731,9 +737,28 @@ type such as `Molecule`. `var` paths walk into platform objects, so
 Truthiness of `when` follows JSON Logic rules. `when` omitted or `null`
 means the rule is always on. An effect may carry its own `when`, and it
 is on only while both the rule's and its own condition hold. Off means
-the same at either level: `items`, `meta`, messages and `set` are not
-applied, `clear` does nothing, while `hide` and `show` still write the
-visibility, so an off `hide` shows the input.
+the same at either level: `items`, `meta`, messages, `set` and `assign`
+are not applied, `clear` does nothing, while `hide` and `show` still
+write the visibility, so an off `hide` shows the input.
+
+`assign` is `set` for an object: `values` evaluates to an object, and
+each key that names a target alias is written to that alias, with the
+effect's `restriction`. Keys with no target are ignored, targets with no
+key are left as they are. Without `targets` every `to` alias of the rule
+is a target, which pairs with a `(template)` query whose aliases are the
+io names:
+
+```
+{
+  id: 'preset',
+  type: 'rule',
+  from: 'key:solver/preset',
+  to: '_(template):solver/inputs(Pkg:Solver, preset)',
+  sources: {row: {js: {args: ['key'], fn: rowOf}}},
+  when: {'!!': {var: 'row'}},
+  effects: [{effect: 'assign', values: {var: 'row'}, restriction: 'restricted'}],
+}
+```
 
 A validator `message` that evaluates to an array yields one item per
 element, and an empty array yields nothing, so a message can be built
@@ -762,6 +787,12 @@ any expression. Two resolvers exist:
   value of the promise it returns, becomes the alias. Like a handler, it
   runs on every run of the rule's links, so keep `from` to what the rule
   reads when `fn` is slow. `fn` runs even when an argument is absent.
+- `func`: `{name: 'Pkg:Function', args?: {param: <alias>}}`. Calls the
+  platform function with each parameter set to the value of its input
+  alias, and the result becomes the alias. Like `js`, it runs on every
+  run of the rule's links, so a function that loads data should carry a
+  `meta.cache` annotation, which makes the platform load it once. The
+  config stays plain data, with no closures.
 
 ```
 {
@@ -796,7 +827,8 @@ and `r::data`, one per effect family present. Each copies `from`, `not`,
 `base`, `nodePriority` and `dataFrameMutations`, keeps only the `to`
 entries its effects target, and carries `{when, effects}` in
 [`params`](#params). `debounce` is passed to the validator link and
-`runOnInit` to the data link. The `(call)` and `(template)` flags are not
+`runOnInit` to the data link. A `(template)` query expands as in any
+link, and its aliases are targeted one by one. The `(call)` flag is not
 allowed in rule queries; the `call` input a [source](#sources) needs is
 added by the expansion.
 

@@ -86,6 +86,33 @@ category('ComputeUtils: Driver rule js sources', async () => {
     expect(calls, 3);
   });
 
+  test('Rules validate func sources', async () => {
+    const badRule = (rule: any) => expectThrowsAsync(() => getProcessedConfig(twoSteps([{
+      id: 'bad', type: 'rule', from: 'x:step1/a', to: 't:step1/a',
+      effects: [{effect: 'error', targets: 't', message: 'm'}], ...rule,
+    }])));
+    await badRule({sources: {v: {func: {args: {a: 'x'}}}}});
+    await badRule({sources: {v: {func: {name: 'LibTests:TestAdd2', args: {a: 'nope'}}}}});
+    await badRule({sources: {v: {func: {name: 'LibTests:TestAdd2', args: ['x']}}}});
+    const pconf: any = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'x:step1/a', to: 't:step1/a',
+      sources: {v: {func: {name: 'LibTests:TestAdd2', args: {a: 'x', b: 'x'}}}},
+      effects: [{effect: 'error', targets: 't', message: {var: 'v'}}],
+    }]));
+    expectDeepEqual(pconf.links[0].params.sources.v.func.args, {a: 'x', b: 'x'});
+  });
+
+  test('A func source calls a platform function', async () => {
+    const controller = (values: Record<string, any>) => ({getFirst: (name: string) => values[name]}) as any;
+    const sum = {func: {name: 'LibTests:TestAdd2', args: {a: 'x', b: 'y'}}};
+    const pending = resolveSources(controller({x: 1, y: 2}), {sum});
+    expect(pending instanceof Promise, true);
+    expectDeepEqual(await pending, {sum: 3});
+    const presets = {func: {name: 'LibTests:TestPresets'}};
+    const {presets: df} = await resolveSources(controller({}), {presets}) as any;
+    expectDeepEqual(df.col('preset').toList(), ['fast', 'exact']);
+  });
+
   test('A js source may be async', async () => {
     let calls = 0;
     const sum = {js: {args: ['x', 'y'], fn: async (x: number, y: number) => {

@@ -76,9 +76,15 @@ function resolveValidators(
 
 type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];
 type JsSource = Extract<RuleSource, {js: any}>['js'];
+type FuncSource = Extract<RuleSource, {func: any}>['func'];
 
 function resolveJs(controller: IControllerBase, spec: JsSource) {
   return spec.fn(...spec.args.map((alias) => controller.getFirst(alias)));
+}
+
+function resolveFunc(controller: IControllerBase, spec: FuncSource) {
+  const args = Object.fromEntries(Object.entries(spec.args ?? {}).map(([param, alias]) => [param, controller.getFirst(alias)]));
+  return grok.functions.call(spec.name, args);
 }
 
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
@@ -89,9 +95,11 @@ export function resolveSources(
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];
   for (const [alias, source] of Object.entries(sources ?? {})) {
-    if (!('validators' in source) && !('js' in source))
+    if (!('validators' in source) && !('js' in source) && !('func' in source))
       throw new Error(`Unknown rule source ${JSON.stringify(source)} for alias ${alias}`);
-    const value = 'js' in source ? resolveJs(controller, source.js) : resolveValidators(controller, source.validators);
+    const value = 'js' in source ? resolveJs(controller, source.js) :
+      'func' in source ? resolveFunc(controller, source.func) :
+        resolveValidators(controller, source.validators);
     if (value instanceof Promise)
       pending.push(value.then((result) => {resolved[alias] = result;}));
     else

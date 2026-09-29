@@ -27,8 +27,10 @@ function withContext(
   return run({...base, ...resolved});
 }
 
-function matchedTargets<E extends {targets: string | string[]}>(controller: IControllerBase, effect: E) {
+function matchedTargets<E extends {targets?: string | string[]}>(controller: IControllerBase, effect: E) {
   const outputs = controller.getMatchedOutputs();
+  if (effect.targets == null)
+    return [...outputs];
   return ruleTargets(effect.targets).filter((target) => outputs.has(target));
 }
 
@@ -100,6 +102,7 @@ export const ruleDataHandler: Handler = ({controller}) => {
     const ruleOn = isOn(when, ctx);
     for (const effect of effects) {
       const on = ruleOn && isOn(effect.when, ctx);
+      const values = effect.effect === 'assign' && on ? evaluate(effect.values, ctx) : undefined;
       for (const target of matchedTargets(controller, effect)) {
         if (effect.effect === 'set') {
           if (on)
@@ -108,6 +111,12 @@ export const ruleDataHandler: Handler = ({controller}) => {
             controller.clearRestriction(target);
         } else if (effect.effect === 'clear' && on)
           controller.setAll(target, null, effect.restriction ?? 'none');
+        else if (effect.effect === 'assign') {
+          if (!on)
+            controller.clearRestriction(target);
+          else if (values != null && typeof values === 'object' && target in values)
+            controller.setAll(target, values[target], effect.restriction ?? 'none');
+        }
       }
     }
   });

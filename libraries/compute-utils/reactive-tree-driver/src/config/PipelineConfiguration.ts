@@ -164,7 +164,11 @@ export type RuleValidatorEffect = RuleEffectWhen & (
 
 export type RuleDataEffect = RuleEffectWhen & (
   | {effect: 'set', targets: RuleTargets, value: RuleExpr, restriction?: RestrictionType}
-  | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType});
+  | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType}
+  /** Writes each key of the `values` object to the target alias of the same name;
+   *  keys without a target are ignored, targets without a key are left as they are.
+   *  Without `targets` every `to` alias is a target. */
+  | {effect: 'assign', targets?: RuleTargets, values: RuleExpr, restriction?: RestrictionType});
 
 export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
 
@@ -175,7 +179,9 @@ export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
  *  rule; a returned promise is awaited. */
 export type RuleSource =
   {validators: {input: string, names?: string[], call?: string}} |
-  {js: {args: string[], fn: (...values: any[]) => any}};
+  {js: {args: string[], fn: (...values: any[]) => any}} |
+  /** Calls the platform function `name`; `args` maps its parameters to input aliases. */
+  {func: {name: string, args?: Record<string, string>}};
 
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';

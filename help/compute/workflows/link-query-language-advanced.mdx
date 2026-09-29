@@ -383,55 +383,52 @@ the annotation cannot: clearing a value that fell out of the list.
 
 ### Lookup table
 
-A key input picks a row of a table, and the row's columns fill sibling
-inputs. The bare `solver` id is the first solver of the workflow, and the
-siblings are named one by one:
+A key input picks a row of a table, and the row's columns fill the
+other inputs of the step. The table comes from a package function, and
+the bare `solver` id is the first solver of the workflow:
 
 ```
-let presets;
-const loadPresets = async () => presets ??= await grok.data.loadTable(`${_package.webRoot}tables/presets.csv`);
-const rowOf = async (key) => {
-  const t = await loadPresets();
-  const i = t.col('preset').toList().indexOf(key);
-  return i < 0 ? null : {a: t.get('a', i), b: t.get('b', i), c: t.get('c', i)};
-};
+//output: dataframe presets
+//meta.cache: all
+export async function presets() {
+  return grok.data.loadTable(`${_package.webRoot}tables/presets.csv`);
+}
+```
 
+```
 {
   id: 'preset',
   type: 'rule',
   runOnInit: true,
   from: 'key:solver/preset',
-  to: ['a:solver/a', 'b:solver/b', 'c:solver/c'],
-  sources: {row: {js: {args: ['key'], fn: rowOf}}},
-  when: {'!!': {var: 'row'}},
+  to: ['k:solver/preset', '_(template):solver/inputs(Pkg:Solver, preset)'],
+  sources: {presets: {func: {name: 'Pkg:presets'}}},
   effects: [
-    {effect: 'set', targets: 'a', value: {var: 'row.a'}, restriction: 'restricted'},
-    {effect: 'set', targets: 'b', value: {var: 'row.b'}, restriction: 'restricted'},
-    {effect: 'set', targets: 'c', value: {var: 'row.c'}, restriction: 'restricted'},
+    {effect: 'items', targets: 'k', items: {column: [{var: 'presets'}, 'preset']}},
+    {
+      effect: 'assign', values: {row: [{var: 'presets'}, 'preset', {var: 'key'}]}, restriction: 'restricted',
+      when: {in: [{var: 'key'}, {column: [{var: 'presets'}, 'preset']}]},
+    },
   ],
-},
-{
-  id: 'presetItems',
-  type: 'rule',
-  from: 'key:solver/preset',
-  to: 'k:solver/preset',
-  sources: {keys: {js: {args: [], fn: async () => (await loadPresets()).col('preset').toList()}}},
-  effects: [{effect: 'items', targets: 'k', items: {var: 'keys'}}],
 }
 ```
 
-- Rule queries take no `template` flag, so the siblings are listed as
-  separate `to` entries, one effect each. `var` paths walk into the row
-  object, so `row.a` reads a column of the picked row.
-- `runOnInit` applies the annotation's default key at init. A key with no
-  row makes the source `null`, the `when` turns off, and a `set` that is
-  off clears its restriction while keeping the value, so an unknown
-  preset leaves the inputs editable.
-- `fn` runs on every run of the rule, so the table is loaded once and
-  cached outside it.
-- The second rule fills the key's dropdown from the same table. Its
-  `from` is the key itself, which is only there to give the meta link an
-  input to run on.
+- The `func` source calls the function on every run of the rule; the
+  `meta.cache` annotation makes the platform load the table once. Nothing
+  in the rule is code.
+- The `(template)` query lists every input of the solver except the key,
+  and the `_` prefix makes the aliases the io names. `row` returns the
+  picked row as an object keyed by column name, and `assign` writes each
+  key to the alias of the same name and ignores the rest, so the `preset`
+  column is skipped, and a column added to the script and the table needs
+  no rule change.
+- `runOnInit` applies the annotation's default key at init. A key that is
+  not in the `preset` column turns the effect's `when` off, and an
+  `assign` that is off clears its restrictions while keeping the values,
+  so an unknown preset leaves the inputs editable.
+- The `items` effect fills the key's dropdown from the same column. It
+  has no condition of its own, so the list stays while the key is
+  unknown.
 
 To apply the lookup to every step of a dynamic workflow, add
 `base: 'base:expand(solver)'` and prefix each query with `same(@base)/`.

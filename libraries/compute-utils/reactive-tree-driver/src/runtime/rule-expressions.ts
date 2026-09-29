@@ -93,6 +93,19 @@ function registerOps() {
   });
   jsonLogic.add_operation('columnIs', columnIs);
   jsonLogic.add_operation('nulls', (col: any) => col instanceof DG.Column ? col.stats.missingValueCount : 0);
+  jsonLogic.add_operation('column', (df: any, name: string) =>
+    df instanceof DG.DataFrame ? df.col(name)?.toList() ?? [] : []);
+  jsonLogic.add_operation('row', (df: any, keyColumn: string, key: any) => {
+    const col = df instanceof DG.DataFrame ? df.col(keyColumn) : null;
+    if (!col || key == null)
+      return null;
+    for (let i = 0; i < col.length; i++) {
+      const value = col.get(i);
+      if (value === key || String(value) === String(key))
+        return Object.fromEntries(df.columns.names().map((name: string) => [name, df.get(name, i)]));
+    }
+    return null;
+  });
   jsonLogic.add_operation('regex', (val: any, pattern: string, flags?: string) =>
     typeof val === 'string' && new RegExp(pattern, flags ?? '').test(val));
   jsonLogic.add_operation('script', (expr: string) => runScript(expr, activeCtx));
