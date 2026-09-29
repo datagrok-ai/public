@@ -22,6 +22,8 @@ const HIDDEN_COLUMNS = ['status', 'capture', 'anonymous', 'name', 'max_events', 
 /** Capture rules (`capture_rules`): who is captured, by whom and why; new rules and stops go through the server. */
 export class CaptureView extends UaView {
   rulesViewer?: UaFilterableQueryViewer;
+  /** The rule to show again in the context panel once the rules reload. */
+  reshow?: string;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -35,6 +37,10 @@ export class CaptureView extends UaView {
       queryName: 'CaptureRules',
       processDataFrame: (t: DG.DataFrame) => {
         t.onCurrentRowChanged.subscribe(() => this.showRule(t, t.currentRowIdx));
+        const i = this.reshow ? t.col('rule')!.toList().indexOf(this.reshow) : -1;
+        this.reshow = undefined;
+        if (i >= 0)
+          t.currentRowIdx = i;
         return t;
       },
       createViewer: (t: DG.DataFrame) => {
@@ -93,6 +99,7 @@ export class CaptureView extends UaView {
         try {
           await grok.functions.call('CaptureRuleStop', {id: rule, reason: reason.value || null});
           grok.shell.info(`Stopped ${rule}`);
+          this.reshow = rule;
           this.rulesViewer?.reloadViewer();
         }
         catch (e: any) {
