@@ -130,7 +130,7 @@ async function launchSarWithSimilarity(page: import('@playwright/test').Page, va
       await new Promise((r) => setTimeout(r, 100));
       headerHasRender = headerInked();
     }
-    const lastError = grok.shell.lastError ? String(grok.shell.lastError) : '';
+    const lastError = String((await grok.shell.lastError) ?? '');
     return {
       appliedThreshold, viewers, positionsWithStats, totalMonomerEntries,
       colHeaderHeight, headerHasRender, lastError,
@@ -148,6 +148,10 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
   test.skip(onHostedRunner(),
     'four SAR launches with MCL clustering: 227 s each on a hosted runner against 39-44 s on dev; the nightly covers it on a 32-core agent');
   await loginToDatagrok(page);
+  const consoleErrors: string[] = [];
+  page.on('pageerror', (e) => consoleErrors.push(String(e).slice(0, 300)));
+  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 300)); });
+  const errorsSeen = () => consoleErrors.slice(-3).join(' | ') || 'none';
   await softStep('Setup: open the peptides Macromolecule table', async () => {
     const result = await openPeptidesTable(page);
     expect(result.rows, 'peptides.csv should load 647 rows').toBe(647);
@@ -164,7 +168,7 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
         `Similarity=${threshold} did not propagate to the model mclSettings.threshold`).toBe(threshold);
       expect(out.modelPresent, `PeptidesModel did not attach after SAR at Similarity=${threshold}`).toBe(true);
       for (const type of EXPECTED_VIEWERS)
-        expect(out.viewers, `${type} must attach at Similarity=${threshold}; last error: ${out.lastError || 'none'}`).toContain(type);
+        expect(out.viewers, `${type} must attach at Similarity=${threshold}; last error: ${out.lastError || 'none'}; console: ${errorsSeen()}`).toContain(type);
       expect(out.positionsWithStats,
         `MonomerPositionStats is empty at Similarity=${threshold} (WebLogo would render blank)`)
         .toBeGreaterThan(0);
@@ -182,7 +186,7 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
     await openPeptidesTable(page);
     const out = await launchSarWithSimilarity(page, 90);
     expect(out.appliedThreshold, 'Similarity=90 did not propagate to the model').toBe(90);
-    expect(out.viewers, `Sequence Variability Map must be attached at Similarity=90; last error: ${out.lastError || 'none'}`)
+    expect(out.viewers, `Sequence Variability Map must be attached at Similarity=90; last error: ${out.lastError || 'none'}; console: ${errorsSeen()}`)
       .toContain('Sequence Variability Map');
     expect(out.positionsWithStats, 'WebLogo backing stats are empty at Similarity=90').toBeGreaterThan(0);
     expect(out.headerHasRender, 'WebLogo column-headers drew nothing at Similarity=90 (silently-blank regression)').toBe(true);
@@ -213,7 +217,7 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
       } catch (e) { threw = String(e); }
       await new Promise((res) => setTimeout(res, 2500));
       const selAfter = df.selection.trueCount;
-      const lastError = grok.shell.lastError ? String(grok.shell.lastError) : '';
+      const lastError = String((await grok.shell.lastError) ?? '');
       return {svmFound: true, canvasFound: true, selBefore, selAfter, threw, lastError};
     });
     expect(result.svmFound, 'Sequence Variability Map viewer not found for the selection-backbone click').toBe(true);
