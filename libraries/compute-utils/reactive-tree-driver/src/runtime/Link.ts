@@ -40,6 +40,7 @@ export class Link {
   public readonly isNodeMeta = this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
   public readonly isReturn = this.matchInfo.spec.type === 'return';
+  public sourceCache = new Map<string, any>();
   public readonly isBatchable: boolean;
 
   // probably a better api
@@ -291,6 +292,7 @@ export class Link {
       matchedInputs: this.matchInfo.inputs, matchedOutputs: this.matchInfo.outputs,
       basePath: this.matchInfo.basePath,
       params: this.matchInfo.spec.params,
+      sourceCache: this.sourceCache,
     };
 
     if (this.isValidator)

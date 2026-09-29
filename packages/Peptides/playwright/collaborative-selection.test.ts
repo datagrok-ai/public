@@ -172,7 +172,7 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
       for (const paneName of ['pane-Distribution', 'pane-Selection']) {
         widgets[paneName] = await (window as any).__paneHasContent(paneName);
       }
-      const lastError = grok.shell.lastError ? String(grok.shell.lastError) : '';
+      const lastError = String((await grok.shell.lastError) ?? '');
       return {
         pickFound: true, pick, threw, selAfter, combinedCount, mapForPos,
         svmHasCanvas, mprPresent, widgets, lastError,
@@ -259,7 +259,7 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
       for (const paneName of ['pane-Distribution', 'pane-Selection']) {
         widgetsAfterShift[paneName] = (await (window as any).__paneHasContent(paneName)).hasContent;
       }
-      const lastErrorAfterShift = grok.shell.lastError ? String(grok.shell.lastError) : '';
+      const lastErrorAfterShift = String((await grok.shell.lastError) ?? '');
       // Step 7: Ctrl-click the second pick — toggle it off; re-broadcast the reduced selection.
       let ctrlThrew: string | null = null;
       try {
@@ -282,7 +282,7 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
       for (const paneName of ['pane-Distribution', 'pane-Selection']) {
         widgetsAfterCtrl[paneName] = (await (window as any).__paneHasContent(paneName)).hasContent;
       }
-      const lastErrorAfterCtrl = grok.shell.lastError ? String(grok.shell.lastError) : '';
+      const lastErrorAfterCtrl = String((await grok.shell.lastError) ?? '');
       return {
         twoPicksFound: true, first, second,
         selSingle, selAdditive, selReduced, combinedReduced,

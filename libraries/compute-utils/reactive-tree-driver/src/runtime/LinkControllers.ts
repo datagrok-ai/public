@@ -23,6 +23,7 @@ export interface ControllerBaseArgs {
   matchedOutputs?: Record<string, MatchedNodePaths>;
   basePath?: MatchedIO['path'];
   params?: Record<string, any>;
+  sourceCache?: Map<string, any>;
 }
 
 export interface ValidatorControllerArgs extends ControllerBaseArgs {
@@ -59,6 +60,7 @@ export class ControllerBase<T> {
   private matchedOutputs: Record<string, MatchedNodePaths>;
   private basePath?: MatchedIO['path'];
   private params: Record<string, any>;
+  public sourceCache?: Map<string, any>;
 
   constructor(args: ControllerBaseArgs) {
     this.inputs = args.inputs;
@@ -70,6 +72,7 @@ export class ControllerBase<T> {
     this.matchedInputs = args.matchedInputs ?? {};
     this.matchedOutputs = args.matchedOutputs ?? {};
     this.basePath = args.basePath;
+    this.sourceCache = args.sourceCache;
     this.params = args.params ?? {};
   }
 

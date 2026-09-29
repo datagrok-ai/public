@@ -381,12 +381,12 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
     else
       await hoverSvmTarget(page, target);
 
-    const state = await page.evaluate(() => {
+    const state = await page.evaluate(async () => {
       const tt = (ui as any).tooltip;
       const innerLen = tt?.root?.innerHTML?.length || 0;
       const svm = document.querySelector('[name="viewer-Sequence-Variability-Map"]');
       const mcChecked = (svm?.querySelector('[name="input-Mutation-Cliffs"]') as HTMLInputElement | null)?.checked;
-      const lastError = grok.shell.lastError ? String(grok.shell.lastError) : null;
+      const lastError = ((await grok.shell.lastError) ?? null);
       return {innerLen, mcChecked, lastError};
     });
     expect(state.mcChecked, 'SVM did not switch back to Mutation Cliffs mode').toBe(true);
@@ -502,8 +502,8 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
     await page.mouse.move(svmRect!.x + 200, svmRect!.y + 160, {steps: 6});
     await page.waitForTimeout(1500);
 
-    const lastError = await page.evaluate(() =>
-      grok.shell.lastError ? String(grok.shell.lastError) : null);
+    const lastError = await page.evaluate(async () =>
+      ((await grok.shell.lastError) ?? null));
     const hasNullReceiver = lastError && NULL_RECEIVER_PATTERN.test(lastError);
     // GROK-15934 invariant: post-selection-sync hover must not throw on null.
     expect(hasNullReceiver,
@@ -561,10 +561,10 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
     if (target.found)
       await hoverSvmTarget(page, target);
 
-    const finalState = await page.evaluate(() => {
+    const finalState = await page.evaluate(async () => {
       const tt = (ui as any).tooltip;
       const innerLen = tt?.root?.innerHTML?.length || 0;
-      const lastError = grok.shell.lastError ? String(grok.shell.lastError) : null;
+      const lastError = ((await grok.shell.lastError) ?? null);
       return {innerLen, lastError};
     });
     // GROK-15934 invariant: post-settings hover must not throw on null column receiver.
@@ -737,8 +737,8 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       await page.waitForTimeout(1200);
     }
 
-    const lastError = await page.evaluate(() =>
-      grok.shell.lastError ? String(grok.shell.lastError) : null);
+    const lastError = await page.evaluate(async () =>
+      ((await grok.shell.lastError) ?? null));
     const hasNullReceiver = lastError && NULL_RECEIVER_PATTERN.test(lastError);
     expect(hasNullReceiver,
       `GROK-15934 (inter-letter / cross-column WebLogo hover): null-receiver error surfaced: ${lastError}`)
@@ -789,8 +789,8 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
     await page.mouse.move(lstState.x! + 60, lstState.y! + 30, {steps: 4});
     await page.waitForTimeout(1500);
 
-    const lastError = await page.evaluate(() =>
-      grok.shell.lastError ? String(grok.shell.lastError) : null);
+    const lastError = await page.evaluate(async () =>
+      ((await grok.shell.lastError) ?? null));
     const hasNullReceiver = lastError && NULL_RECEIVER_PATTERN.test(lastError);
     expect(hasNullReceiver,
       `GROK-15934 (LST cell WebLogo hover): null-receiver error surfaced: ${lastError}`)
@@ -798,8 +798,8 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
   });
 
   await softStep('Scenario 2 (step 9): GROK-15934 invariant — no null-receiver across dual-call-site WebLogo + showTooltipAt', async () => {
-    const lastError = await page.evaluate(() =>
-      grok.shell.lastError ? String(grok.shell.lastError) : null);
+    const lastError = await page.evaluate(async () =>
+      ((await grok.shell.lastError) ?? null));
     const hasNullReceiver = lastError && NULL_RECEIVER_PATTERN.test(lastError);
     expect(hasNullReceiver,
       `GROK-15934 invariant (final): null-receiver / getTag-on-null error surfaced across the ` +

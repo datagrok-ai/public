@@ -129,6 +129,14 @@ export async function TestDF1(df: DG.DataFrame) {
   return df;
 }
 
+//output: dataframe res
+export async function TestPresets() {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'preset', ['fast', 'exact']),
+    DG.Column.fromList('double', 'a', [1, 10]),
+  ]);
+}
+
 //input: file inputFile
 //output: string result
 export async function TestFileInput(inputFile: DG.FileInfo) {

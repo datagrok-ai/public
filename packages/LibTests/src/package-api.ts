@@ -40,6 +40,10 @@ export namespace funcs {
     return await grok.functions.call('LibTests:TestDF1', { df });
   }
 
+  export async function testPresets(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:TestPresets', {});
+  }
+
   export async function testFileInput(inputFile: DG.FileInfo ): Promise<string> {
     return await grok.functions.call('LibTests:TestFileInput', { inputFile });
   }

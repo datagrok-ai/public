@@ -71,6 +71,7 @@ export abstract class Tutorial extends DG.Widget {
   activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
   closed: boolean = false;
+  private currentRun: Promise<void> | null = null;
   completed: boolean = false;
   activeHints: HTMLElement[] = [];
   progressDiv: HTMLDivElement = ui.divV([], 'tutorials-root-progress');
@@ -92,7 +93,7 @@ export abstract class Tutorial extends DG.Widget {
       try {
         const parsedInfo = JSON.parse(info);
         neededStatus = parsedInfo.isCompleted;
-      } catch (e) {
+      } catch {
 
       } finally {
         this.status = !!neededStatus;
@@ -142,6 +143,23 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   async start(): Promise<void> {
+    while (this.currentRun != null) {
+      this.closed = true;
+      this.onClose.next();
+      this._closeAll();
+      await this.currentRun.catch(() => {});
+      this.clearRoot();
+    }
+    const run: Promise<void> = this._start().finally(() => {
+      if (this.currentRun === run)
+        this.currentRun = null;
+    });
+    this.currentRun = run;
+    await run;
+  }
+
+  private async _start(): Promise<void> {
+    this.closed = false;
     this._addHeader();
 
     const tutorials = this.track?.tutorials;
@@ -177,13 +195,14 @@ export abstract class Tutorial extends DG.Widget {
     }
 
     const id = tutorials.indexOf(this);
+    if (this.closed)
+      return;
 
     if (this.demoTable) {
       this._t = await grok.data.getDemoTable(this.demoTable);
       grok.shell.addTableView(this._t);
       this._setViewPath();
     }
-    this.closed = false;
 
     try {
       await this._run();
@@ -466,7 +485,6 @@ export abstract class Tutorial extends DG.Widget {
 
   firstEvent(eventStream: Observable<any>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      let eventSub: Subscription;
       const closeSub = this.onClose.subscribe(() => {
         eventSub?.unsubscribe();
         closeSub.unsubscribe();
@@ -474,9 +492,13 @@ export abstract class Tutorial extends DG.Widget {
         // eslint-disable-next-line
         reject();
       });
-      eventSub = eventStream.pipe(first()).subscribe({
+      const eventSub: Subscription = eventStream.pipe(first()).subscribe({
         next: () => (closeSub.unsubscribe(), resolve()),
-        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(), resolve()),
+        error: (e) => {
+          console.error('Tutorial step could not complete', this.name, e);
+          closeSub.unsubscribe();
+          resolve();
+        },
       });
     }).catch((_) => console.log('Closing tutorial', this.name));
   }
@@ -533,7 +555,8 @@ export abstract class Tutorial extends DG.Widget {
   protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
     const pane = grok.shell.sidebar.getPane(paneName);
     const command = this.getElement(pane.content, `div.d4-toggle-button[data-view=${commandName}]`) ??
-      this.getElement(pane.content, 'div.d4-toggle-button', (idx, el) => el.textContent?.toLowerCase() === commandName.toLowerCase())!;
+      this.getElement(pane.content, 'div.d4-toggle-button',
+        (idx, el) => el.textContent?.toLowerCase() === commandName.toLowerCase())!;
     return [pane.header, command];
   }
 
@@ -712,7 +735,7 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to select a menu item in the context menu. */
   protected async contextMenuAction(instructions: string, label: string,
     hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {
-    const commandClick = new Promise<void>((resolve, reject) => {
+    const commandClick = new Promise<void>((resolve) => {
       const sub = grok.events.onContextMenu.subscribe((data) => {
         data.args.menu.onContextMenuItemClick.pipe(
           filter((mi) => (new DG.Menu(mi)).toString().toLowerCase() === label.toLowerCase()),
