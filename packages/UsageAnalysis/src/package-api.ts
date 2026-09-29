@@ -16,6 +16,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:Clicks', { date, groups });
   }
 
+  export async function clicksFollowedByError(date: string , groups: any , view: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ClicksFollowedByError', { date, groups, view });
+  }
+
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:AllTestRuns', { benchmarks });
   }
@@ -118,6 +122,18 @@ export namespace queries {
 
   export async function topErrors(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:TopErrors', { date });
+  }
+
+  export async function errorSessions(signatures: any , users: any , from: string , to: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ErrorSessions', { signatures, users, from, to });
+  }
+
+  export async function errorReports(signatures: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ErrorReports', { signatures });
+  }
+
+  export async function errorAlerts(signatures: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ErrorAlerts', { signatures });
   }
 
   export async function packageInfo(name: string ): Promise<DG.DataFrame> {
@@ -584,8 +600,8 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:TestAnalysisReportForCurrentDay', { date });
   }
 
-  export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string ): Promise<DG.View> {
-    return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects });
+  export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string , action?: string , request?: string , session?: string , report?: string , rule?: string ): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects, action, request, session, report, rule });
   }
 
   export async function releaseDashboardApp(path?: string ): Promise<DG.View> {

@@ -35,9 +35,20 @@ when created within the Date filter. **New rule...** builds the `POST /logging/c
 function `CaptureRuleAdd`; a row's context panel and context menu offer **Stop...** (`CaptureRuleStop`, active rules
 only) and **Timeline**. `TimelineView` (tab `Timeline`) shows one action, request, session, report or rule
 (`cap-<n>`) in time order from the server function `Timeline`; it routes as `/timeline?<key>=<id>` (the id keeps its
-case). The Clicks tab's **Clicks** sub-tab lists single clicks (`Clicks` query) with their `request_id` (the action
+case; the platform hands the query parameters to `usageAnalysisApp`, which passes them on as `TimelineView.urlParams`). The Clicks tab's **Clicks** sub-tab lists single clicks (`Clicks` query) with their `request_id` (the action
 id); the row's context menu **Timeline** opens that action. The server enforces the permissions on all three
 functions; the packages and groups inputs are hidden on both tabs.
+
+`ErrorsView` (tab `Errors`) is the platform's errors as data, from the server function `ErrorStats` (the
+`GET /errors` query; ViewTelemetry): without Group by, occurrences; with up to three Group by dimensions, one row of
+figures per combination (first seen in, trend, and, by signature, the alert state). Its inputs are the toolbox's
+**Errors** pane (`UaToolbox.addTabPane`), which replaces the Filters pane while the tab is current. A row's context
+panel runs `ErrorStats` narrowed to the row and lists the occurrences (request → Timeline), then the sessions, reports
+and alerts of their signatures (`ErrorSessions`, `ErrorReports`, `ErrorAlerts` in `errors_query.sql`). **Export**
+writes the shown table as CSV, JSON or Parquet (`Arrow:toParquet`, disabled without Arrow); **Save as job...** calls
+`ErrorsSaveJob` with the shown query (Since only; cron in UTC). The Clicks tab's **Followed by Error** sub-tab
+(`ClicksFollowedByError`) counts clicks per element and those an error followed within 5 s whose request id is the
+click's action id or `<action>.<n>`; anonymous clicks count users by `anonSession`.
 
 `SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
 `server-started`, `user-logged-in`, `user-logged-out`, `user-login-failed`, `user-impersonated`,

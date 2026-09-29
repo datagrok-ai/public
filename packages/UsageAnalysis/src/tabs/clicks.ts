@@ -7,11 +7,13 @@ import {queries} from '../package-api';
 import {UaFilter} from '../filter';
 import {TimelineView} from './timeline';
 import {onRowContextMenu} from '../utils';
+import {debounceTime} from 'rxjs/operators';
 
 
 export class ClicksView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
   tabControl?: DG.TabControl;
+  followedView: string = '';
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -23,6 +25,7 @@ export class ClicksView extends UaView {
     const tabs: {[key: string]: (() => HTMLElement)} = {
       'Click Analysis': () => this.createFilteredElement((filter) => this.getClickAnalysisTab(filter)),
       'Clicks': () => this.createFilteredElement((filter) => this.getClicksTab(filter)),
+      'Followed by Error': () => this.createFilteredElement((filter) => this.getFollowedByErrorTab(filter)),
     };
     this.tabControl = ui.tabControl(tabs);
     this.root.appendChild(this.tabControl.root);
@@ -59,6 +62,36 @@ export class ClicksView extends UaView {
         menu.item('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'action', action));
     });
     return grid.root;
+  }
+
+  /** Clicks per element and how many of them an error followed within 5 s (same action id). */
+  async getFollowedByErrorTab(filter: UaFilter): Promise<HTMLElement> {
+    const view = ui.input.string('View', {value: this.followedView, tooltipText: 'Only clicks in the view of this name'});
+    const host = ui.box();
+    const load = () => {
+      this.followedView = (view.value ?? '').trim();
+      ui.empty(host);
+      host.append(ui.waitBox(async () => {
+        try {
+          const table = await queries.clicksFollowedByError(filter.date!, filter.groups, this.followedView);
+          if (table.rowCount === 0)
+            return ui.divText('No clicks');
+          table.name = 'Clicks followed by error';
+          const grid = DG.Viewer.grid(table, {showRowHeader: false, allowRowSelection: false, allowBlockSelection: false});
+          grid.col('element')!.width = 400;
+          grid.col('followed_by_error')!.width = 150;
+          grid.col('followed_by_error')!.name = 'followed by error ≤ 5 s';
+          grid.col('followed_by_error_pct')!.name = '%';
+          return grid.root;
+        }
+        catch (e: any) {
+          return ui.divText(`Clicks followed by error: ${e?.message ?? e}`, 'd4-viewer-error');
+        }
+      }));
+    };
+    view.onChanged.pipe(debounceTime(500)).subscribe(() => load());
+    load();
+    return ui.divV([ui.div([ui.form([view])], 'ua-toolbar'), host], 'ui-box');
   }
 
   async getClickAnalysisTab(filter: UaFilter): Promise<HTMLDivElement> {

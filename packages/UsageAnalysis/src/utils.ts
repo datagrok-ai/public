@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {take} from 'rxjs/operators';
 
 export const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 
@@ -70,6 +71,11 @@ export function setupUserIconRenderer(grid: DG.Grid, users: { [name: string]: DG
 }
 
 /** Calls [handler] with the table row a context menu was opened on (a right-click does not move the current row). */
+/** A grid wider than its view opens scrolled right past its first column: scroll back on the first draw. */
+export function scrollToStartOnFirstDraw(grid: DG.Grid): void {
+  grid.onAfterDrawContent.pipe(take(1)).subscribe(() => grid.horzScroll.scrollTo(0));
+}
+
 export function onRowContextMenu(grid: DG.Grid, handler: (menu: DG.Menu, row: number) => void): void {
   let row = -1;
   grid.root.addEventListener('mousedown', (e) => {

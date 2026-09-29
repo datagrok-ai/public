@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {UaView} from './ua';
 import {UaToolbox} from '../ua-toolbox';
 import {ViewHandler} from '../view-handler';
+import {scrollToStartOnFirstDraw} from '../utils';
 import '../../css/usage_analysis.css';
 
 export const TIMELINE_KEYS = ['action', 'request', 'session', 'report', 'rule'];
@@ -16,14 +17,15 @@ export class TimelineView extends UaView {
   host: HTMLDivElement = ui.box();
   shown = false;
   private fromUrl: {key: string, value: string} | null = null;
+  /** The app's `?<key>=<id>` parameters: the platform passes them to the app function, not in the URL. */
+  static urlParams: {[key: string]: string | undefined} = {};
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Timeline';
-    const params = new URLSearchParams(window.location.search);
-    const key = TIMELINE_KEYS.find((k) => params.get(k));
+    const key = TIMELINE_KEYS.find((k) => TimelineView.urlParams[k]);
     if (key)
-      this.fromUrl = {key, value: params.get(key)!};
+      this.fromUrl = {key, value: TimelineView.urlParams[key]!};
   }
 
   static open(handler: ViewHandler, key: string, value: string): void {
@@ -39,7 +41,7 @@ export class TimelineView extends UaView {
     this.idInput.setTooltip('An action or request id (x-request-id), a session id, a report number or cap-<n>');
     const form = ui.form([this.keyInput, this.idInput], {classes: 'ua-toolbar'});
     form.append(ui.buttonsInput([ui.button('Show', () => this.load())]));
-    this.root.append(ui.divV([form, this.host], 'ui-box'));
+    this.root.append(ui.divV([ui.div([form], 'ua-toolbar'), this.host], 'ui-box'));
     if (!this.shown && this.fromUrl)
       this.show(this.fromUrl.key, this.fromUrl.value);
   }
@@ -68,6 +70,7 @@ export class TimelineView extends UaView {
         const grid = DG.Viewer.grid(t, {showRowHeader: false, allowRowSelection: false, allowBlockSelection: false});
         grid.col('time')!.format = 'yyyy-MM-dd HH:mm:ss.fff';
         grid.col('summary')!.width = 500;
+        scrollToStartOnFirstDraw(grid);
         return grid.root;
       }
       catch (e: any) {

@@ -187,6 +187,19 @@ describe('handleErrors', () => {
     ]);
   });
 
+  it('widens the show block for a long package name', async () => {
+    const {connect} = mockConnect(() => ({signature: 'a41f9c3e', error: 'TypeError: x', package: 'UsageAnalysis',
+      firstVersion: '2.6.1', firstSeen: localIso(10, 2), lastSeen: localIso(10, 47), occurrences: 1234567, users: 1234567890,
+      groups: [], reports: [4815, 4816, 4817, 4818, 4819], alert: null}));
+    const {out} = await captureOutput(() => handleErrors(connect, 'show', ['a41f9c'], {}, 'table'));
+    expect(out).toEqual([
+      'signature    a41f9c         TypeError: x',
+      'package      UsageAnalysis  first seen in 2.6.1 at 10:02 · last seen 10:47',
+      'occurrences  1234567        users 1234567890  groups (none)',
+      'reports      #4815 #4816 #4817 #4818 #4819',
+    ]);
+  });
+
   it('prints the window diff', async () => {
     const top = (sig: string, extra: any = {}) => ({signature: sig, package: 'core', error: 'TableView.close', users: 4, ...extra});
     const {connect, calls} = mockConnect(() => ({

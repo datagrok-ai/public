@@ -328,12 +328,17 @@ function printShow(d: any): void {
   const reports: any[] = Array.isArray(d?.reports) ? d.reports : [];
   const groupText = groups.map((g) => `${g?.name} ${g?.users}`).join(' · ') || '(none)';
   const alertText = d?.alert ? `alert ${d.alert.kind}, ${d.alert.status} since ${fmtTime(d.alert.openedAt)}` : '';
+  const first = [shortSig(d?.signature), String(d?.package ?? ''), String(d?.occurrences ?? 0)];
+  const width = Math.max(8, ...first.map((s) => s.length + 2));
+  const users = `users ${d?.users ?? 0}`;
+  const usersWidth = Math.max(13, users.length + 2);
+  const reportText = reports.map((n) => `#${n}`).join(' ') || '(none)';
   const lines: [string, string][] = [
-    ['signature', `${shortSig(d?.signature).padEnd(8)}${d?.error ?? ''}`],
-    ['package', `${String(d?.package ?? '').padEnd(8)}first seen in ${d?.firstVersion ?? '?'} at ${fmtTime(d?.firstSeen)}` +
+    ['signature', `${first[0].padEnd(width)}${d?.error ?? ''}`],
+    ['package', `${first[1].padEnd(width)}first seen in ${d?.firstVersion ?? '?'} at ${fmtTime(d?.firstSeen)}` +
       ` · last seen ${fmtTime(d?.lastSeen)}`],
-    ['occurrences', `${String(d?.occurrences ?? 0).padEnd(8)}users ${String(d?.users ?? 0).padEnd(7)}groups ${groupText}`],
-    ['reports', `${(reports.map((n) => `#${n}`).join(' ') || '(none)').padEnd(21)}${alertText}`],
+    ['occurrences', `${first[2].padEnd(width)}${users.padEnd(usersWidth)}groups ${groupText}`],
+    ['reports', `${reportText.padEnd(Math.max(width + usersWidth, reportText.length + 2))}${alertText}`],
   ];
   if (d?.change)
     lines.push(['change', `${d.change.type} ${d.change.package} ${d.change.version} by ${d.change.by} at ${fmtTime(d.change.at)}`]);
