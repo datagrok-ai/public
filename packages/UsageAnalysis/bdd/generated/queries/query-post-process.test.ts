@@ -19,7 +19,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {appendToEditor, clickOn, enterInto, isExpanded, replaceCode, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, currentViewType, noQueryOnServer, queriesOnServer, queryPostProcess, toolboxPaneHidden} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, currentViewType, noQueryOnServer, queriesOnServer, queryPostProcess, refreshBrowse, toolboxPaneHidden} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {infoBalloonText, noBalloons, noErrors, pickFromContextMenu, pointerAway, readingIs} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -57,7 +57,7 @@ test.describe("A query's post-process runs on its result", () => {
       await session.step(46, "Given the toolbox pane is hidden", () => toolboxPaneHidden(page));
       await session.step(47, "And the browse panel is open", () => browsePanelOpen(page));
       await session.step(48, "And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest tree node inside browse tree")));
-      await session.step(49, "When user clicks on \"Refresh\" icon inside browse toolbar", () => clickOn(page, el("\"Refresh\" icon inside browse toolbar")));
+      await session.step(49, "When user refreshes the browse tree", () => refreshBrowse(page));
       await session.step(50, "And user picks \"Run\" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree", () => pickFromContextMenu(page, "Run", el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree"))));
       await session.step(51, "Then the table should have 77 rows", () => rowCount(page, 77));
       await session.step(52, "And an info balloon containing \"PP77\" should have been shown", () => infoBalloonText(page, "PP77"));

@@ -54,7 +54,7 @@ Feature: A visual query built on a table
     Given the toolbox pane is hidden
     And the browse panel is open
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    When user clicks on "Refresh" icon inside browse toolbar
+    When user refreshes the browse tree
     And user picks "Edit..." from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-vq-{time} tree node inside browse tree
     Then the current view should be a DataQueryView view
     And the "Group-by" row of the visual query should hold "companyname"

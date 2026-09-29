@@ -296,7 +296,8 @@ export async function press(page: Page, key: string): Promise<void> {
  * over whatever landed. Enter is pressed ON the box, because the grid moves the focus while it
  * filters. */
 export async function typeInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<Locator> {
-  const popup = page.locator('.d4-column-grid').last();
+  // a picker another selector left hidden in the page (a closed dialog's) is not the one this opened
+  const popup = page.locator('.d4-column-grid').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 10000});
   await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
   const search = page.locator('input.d4-column-selector-search-input');
@@ -366,7 +367,7 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
 /** A guide's pointer steps just off the selector, clear of the picker it opened: the page's corner,
  * where a test's goes, is a flight across the video and back. */
 async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
-  const popup = page.locator('.d4-column-grid').last();
+  const popup = page.locator('.d4-column-grid').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
   const picker = await popup.boundingBox().catch(() => null);
   const view = page.viewportSize() ?? {width: 1920, height: 1080};
@@ -459,12 +460,22 @@ function optionsNamed(page: Page, option: string): Locator {
     .or(page.locator(withAttr(OPTION, `[aria-label="${cssString(option)}" i]`)));
 }
 
+export const CHECKABLE = 'input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]';
+
+/** The locator once something matches it, so a choice between the element and a control inside it
+ * is made on what the page shows, not on a dialog still building its rows (a Data sync switch is
+ * hidden until the dialog has looked at the table's source). */
+export async function whenPresent(loc: Locator): Promise<Locator> {
+  await expect(loc.first()).toBeAttached();
+  return loc;
+}
+
 export async function setChecked(page: Page, target: ElementRef, checked: boolean): Promise<void> {
-  const loc = await locate(page, target);
+  const loc = await whenPresent(await locate(page, target));
   // the Dart switch keeps its checkbox hidden and takes the click on a div, so it is not settable
   if (await loc.first().locator('.ui-input-switch').count() > 0)
     return setSwitched(page, target, checked);
-  const box = loc.locator('input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]').first();
+  const box = loc.locator(CHECKABLE).first();
   if (await box.count() > 0) {
     await box.setChecked(checked);
     return;
@@ -473,8 +484,8 @@ export async function setChecked(page: Page, target: ElementRef, checked: boolea
 }
 
 export async function toggle(page: Page, target: ElementRef): Promise<void> {
-  const loc = await locate(page, target);
-  const box = loc.locator('.ui-input-switch, input[type="checkbox"], [role="checkbox"], [role="switch"]').first();
+  const loc = await whenPresent(await locate(page, target));
+  const box = loc.locator(`.ui-input-switch, ${CHECKABLE}`).first();
   await (await box.count() > 0 ? box : loc).click();
 }
 

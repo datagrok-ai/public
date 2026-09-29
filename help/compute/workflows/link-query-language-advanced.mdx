@@ -327,8 +327,9 @@ when its source changes, and tracks it for consistency.
   future. `before(@base, load)` reads the nearest `load` before that
   step, so a second `load` added later in the sequence feeds only the
   analyses after it. `same(@base)/rows` targets the instance itself.
-- `runOnInit` applies the default when the tree is created, and the link
-  reruns when the table changes. Rules run every effect family through
+- `runOnInit` applies the default at every init, including a load from
+  history, where it refreshes analysis steps that have not been run
+  yet; the link reruns when the table changes. Rules run every effect family through
   the same `from`, so `fn` is called even while the table is absent: the
   `?.` guard returns `undefined` and the `when` keeps the write off.
 - `restricted` records the written value, so a user edit is flagged
@@ -348,93 +349,77 @@ does the same with a `js` source and the `items` effect, and adds what
 the annotation cannot: clearing a value that fell out of the list.
 
 ```
-const columns = {js: {args: ['table'], fn: (df) => df ? df.columns.names() : []}};
-
 {
   id: 'columnItems',
   type: 'rule',
   base: 'base:expand(analysis)',
-  from: 'table:before(@base, load)/table',
-  to: 'c:same(@base)/column',
-  sources: {columns},
-  effects: [{effect: 'items', targets: 'c', items: {var: 'columns'}}],
-},
-{
-  id: 'columnReset',
-  type: 'rule',
-  base: 'base:expand(analysis)',
   from: ['table:before(@base, load)/table', 'column:same(@base)/column'],
   to: 'c:same(@base)/column',
-  sources: {columns},
-  when: {and: [{'!': {missing: ['column']}}, {'!': {in: [{var: 'column'}, {var: 'columns'}]}}]},
-  effects: [{effect: 'clear', targets: 'c'}],
+  sources: {columns: {js: {args: ['table'], fn: (df) => df ? df.columns.names() : []}}},
+  effects: [
+    {effect: 'items', targets: 'c', items: {var: 'columns'}},
+    {
+      effect: 'clear', targets: 'c',
+      when: {and: [{'!': {missing: ['column']}}, {'!': {in: [{var: 'column'}, {var: 'columns'}]}}]},
+    },
+  ],
 }
 ```
 
-- The first rule is a meta link: the list replaces the dropdown items of
-  every analysis step's `column` input, and changes with the table.
-- The second rule reads the current value through
-  `column:same(@base)/column` and clears it when it is not in the list.
-  The clear changes the value it reads, which reruns the rule, but the
-  value is now absent, so the `when` is off and the loop ends.
-- The source object is shared, which keeps the two lists identical. A
+- The `items` effect expands into a meta link: the list replaces the
+  dropdown items of every analysis step's `column` input, and changes
+  with the table.
+- The `clear` effect expands into a data link. It reads the current value
+  through `column:same(@base)/column` and clears it when it is not in the
+  list. The clear changes the value it reads, which reruns the link, but
+  the value is now absent, so the effect's `when` is off and the loop
+  ends. The rule has no `when` of its own, so the items stay on.
+- One source serves both effects, which keeps the two lists identical. A
   list produced by a platform function returns its promise, as in the
   previous case. The rule's `from` names the dependencies, the same role
   the annotation's `dependsOn` plays.
-- Items are a form concept. In a headless run the second rule is what
+- Items are a form concept. In a headless run the `clear` effect is what
   keeps a stale value out of the step.
 
 ### Lookup table
 
-A key input picks a row of a table, and the row's columns fill sibling
-inputs. The bare `solver` id is the first solver of the workflow, and the
-siblings are named one by one:
+A key input picks a row of a table, and the row's columns fill the
+other inputs of the step. The table is a file on a file share, and the
+bare `solver` id is the first solver of the workflow:
 
 ```
-let presets;
-const loadPresets = async () => presets ??= await grok.data.loadTable(`${_package.webRoot}tables/presets.csv`);
-const rowOf = async (key) => {
-  const t = await loadPresets();
-  const i = t.col('preset').toList().indexOf(key);
-  return i < 0 ? null : {a: t.get('a', i), b: t.get('b', i), c: t.get('c', i)};
-};
-
 {
   id: 'preset',
   type: 'rule',
   runOnInit: true,
   from: 'key:solver/preset',
-  to: ['a:solver/a', 'b:solver/b', 'c:solver/c'],
-  sources: {row: {js: {args: ['key'], fn: rowOf}}},
-  when: {'!!': {var: 'row'}},
+  to: ['k:solver/preset', '_(template):solver/inputs(Pkg:Solver, preset)'],
+  sources: {presets: {file: 'System:AppData/Pkg/presets.csv'}},
   effects: [
-    {effect: 'set', targets: 'a', value: {var: 'row.a'}, restriction: 'restricted'},
-    {effect: 'set', targets: 'b', value: {var: 'row.b'}, restriction: 'restricted'},
-    {effect: 'set', targets: 'c', value: {var: 'row.c'}, restriction: 'restricted'},
+    {effect: 'items', targets: 'k', items: {column: [{var: 'presets'}, 'preset']}},
+    {
+      effect: 'assign', values: {row: [{var: 'presets'}, 'preset', {var: 'key'}]}, restriction: 'restricted',
+      when: {in: [{var: 'key'}, {column: [{var: 'presets'}, 'preset']}]},
+    },
   ],
-},
-{
-  id: 'presetItems',
-  type: 'rule',
-  from: 'key:solver/preset',
-  to: 'k:solver/preset',
-  sources: {keys: {js: {args: [], fn: async () => (await loadPresets()).col('preset').toList()}}},
-  effects: [{effect: 'items', targets: 'k', items: {var: 'keys'}}],
 }
 ```
 
-- Rule queries take no `template` flag, so the siblings are listed as
-  separate `to` entries, one effect each. `var` paths walk into the row
-  object, so `row.a` reads a column of the picked row.
-- `runOnInit` applies the annotation's default key at init. A key with no
-  row makes the source `null`, the `when` turns off, and a `set` that is
-  off clears its restriction while keeping the value, so an unknown
-  preset leaves the inputs editable.
-- `fn` runs on every run of the rule, so the table is loaded once and
-  cached outside it.
-- The second rule fills the key's dropdown from the same table. Its
-  `from` is the key itself, which is only there to give the meta link an
-  input to run on.
+- The `file` source reads no input, so the table is loaded once per
+  link and reused on every rerun. Nothing in the rule is code.
+- The `(template)` query lists every input of the solver except the key,
+  and the `_` prefix makes the aliases the io names. `row` returns the
+  picked row as an object keyed by column name, and `assign` writes each
+  key to the alias of the same name and ignores the rest, so the `preset`
+  column is skipped, and a column added to the script and the table needs
+  no rule change.
+- `runOnInit` applies the annotation's default key at init. A key that is
+  not in the `preset` column turns the effect's `when` off, and an
+  `assign` that is off clears its restrictions while keeping the values,
+  so an unknown preset leaves the inputs editable.
+- The `items` effect fills the key's dropdown from the same column. It
+  has no condition of its own, so the list stays while the key is
+  unknown.
 
 To apply the lookup to every step of a dynamic workflow, add
 `base: 'base:expand(solver)'` and prefix each query with `same(@base)/`.

@@ -75,6 +75,7 @@ jobs:
         with:
           sparse-checkout: |
             help
+            docusaurus/blog
             .markdownlint.yaml
             .markdownlint-cli2.jsonc
       - uses: DavidAnson/markdownlint-cli2-action@v16.0.0
@@ -83,6 +84,8 @@ jobs:
           globs: |
             help/**/*.md
             help/**/*.mdx
+            docusaurus/blog/**/*.md
+            docusaurus/blog/**/*.mdx
             packages/*/CHANGELOG.md
           fix: true
 

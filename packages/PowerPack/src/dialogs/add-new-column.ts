@@ -165,7 +165,7 @@ export class AddNewColumnDialog {
   maxPreviewRowCount: number = 20;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
   tooltips = {
-    name: 'Сolumn name.',
+    name: 'Column name.',
     type: 'Column type. When set to "auto", type is determined based on the expression.',
     expression: `Formula for calculating column values.<br>
       Columns and functions can be drag-n-dropped into this field.`,

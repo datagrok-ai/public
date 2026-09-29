@@ -18,6 +18,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, doubleClickOn, dragTo, enterInto, isExpanded, selectIn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, dialogCloses, noSpaceOnServer, spacesOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {closeContextMenu, menuLists, openContextMenu, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -137,7 +138,8 @@ test.describe("Working with what a space holds", () => {
     await run.scenario("A file opens as a table", async () => {
       await session.step(117, "Then the \"BDD-Ops-Copy\" view should be current", () => viewIsCurrent(page, "BDD-Ops-Copy"));
       await session.step(125, "When user double-clicks on acidiq.csv link in gallery", () => doubleClickOn(page, el("acidiq.csv link in gallery")));
-      await session.step(126, "Then grid should be visible", () => shouldBe(page, el("grid"), "visible"));
+      await session.step(126, "Then the \"acidiq\" view should be current", () => viewIsCurrent(page, "acidiq"));
+      await session.step(127, "And the table should have 180 rows", () => rowCount(page, 180));
     });
     run.finish();
   });

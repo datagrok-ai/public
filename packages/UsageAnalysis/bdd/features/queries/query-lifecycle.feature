@@ -95,14 +95,14 @@ Feature: A SQL query from creation to deletion
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    When user clicks on "Refresh" icon inside browse toolbar
+    When user refreshes the browse tree
     And user picks "Delete" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree
     Then "Are you sure?" dialog should be visible
     And "Are you sure?" dialog should contain the text "BDD-Q-life-renamed-{time}"
     When user clicks on DELETE button in "Are you sure?" dialog
     Then the "Are you sure?" dialog should close
     And 0 queries named "BDD-Q-life-renamed-{time}" should be on the server
-    When user clicks on "Refresh" icon inside browse toolbar
+    When user refreshes the browse tree
     Then Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree should be absent
     And no errors should have been logged
     And no error or warning balloon should have been shown

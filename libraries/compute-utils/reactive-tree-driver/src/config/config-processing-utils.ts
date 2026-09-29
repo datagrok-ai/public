@@ -295,7 +295,7 @@ function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
 // Deferred IO selector expansion
 // ---------------------------------------------------------------------------
 
-function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed[] {
+export function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed[] {
   const seenTemplateNames = new Set<string | number>();
   let anonIdx = 0;
   return ioList.flatMap((io) => {

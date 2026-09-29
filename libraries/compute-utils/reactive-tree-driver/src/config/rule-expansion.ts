@@ -5,13 +5,13 @@ import {
 } from './PipelineConfiguration';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
 import {parseLinkIO} from './LinkSpec';
-import {IOType, normalizeLinkSpec} from './config-processing-utils';
+import {IOType, expandDeferredIOs, normalizeLinkSpec} from './config-processing-utils';
 import {ruleDataHandler, ruleMetaHandler, ruleValidatorHandler} from '../runtime/rule-handlers';
 import {ruleTargets, usedAliases} from '../runtime/rule-expressions';
 
 const metaEffects = new Set(['hide', 'show', 'items', 'meta']);
 const validatorEffects = new Set(['error', 'warning', 'notification', 'verdicts']);
-const dataEffects = new Set(['set', 'clear']);
+const dataEffects = new Set(['set', 'clear', 'assign']);
 
 export function isRuleLink(
   link: PipelineLinkConfigurationInput<LinkSpecString>,
@@ -93,8 +93,8 @@ function expandCheck(check: PipelineCheckConfiguration<LinkSpecString>): Pipelin
 function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOType) {
   const aliases = new Map<string, string>();
   for (const raw of normalizeLinkSpec(ios)) {
-    for (const parsed of parseLinkIO(raw, ioType)) {
-      const badFlag = parsed.flags?.find((flag) => flag !== 'optional');
+    for (const parsed of expandDeferredIOs(parseLinkIO(raw, ioType), ruleId)) {
+      const badFlag = parsed.flags?.find((flag) => flag !== 'optional' && flag !== 'template');
       if (badFlag)
         throw new Error(`Rule ${ruleId}: (${badFlag}) flag is not allowed in rule queries (${raw})`);
       aliases.set(parsed.name, raw);
@@ -112,6 +112,7 @@ function effectExpressions(effect: RuleEffect): RuleExpr[] {
   case 'notification': return [effect.message];
   case 'verdicts': return [];
   case 'set': return [effect.value];
+  case 'assign': return [effect.values];
   default: return [];
   }
 }
@@ -126,6 +127,19 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   const fromAliases = aliasesOf(id, rule.from, 'input');
   const toAliases = aliasesOf(id, rule.to, 'output');
   const from = [...normalizeLinkSpec(rule.from)];
+  const checkExpr = (expr: RuleExpr) => {
+    for (const alias of usedAliases(expr)) {
+      if (!fromAliases.has(alias) && !(alias in (sources ?? {})))
+        throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
+    }
+  };
+  const checkArgs = (alias: string, args: unknown) => {
+    if (args == null)
+      return;
+    if (typeof args !== 'object' || Array.isArray(args))
+      throw new Error(`Rule ${id}: source ${alias} args must map parameters to expressions`);
+    Object.values(args).forEach(checkExpr);
+  };
   const expandedSources: Record<string, RuleSource> = {};
   for (const [alias, source] of Object.entries(sources ?? {})) {
     if (fromAliases.has(alias))
@@ -136,6 +150,28 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
         throw new Error(`Rule ${id}: source ${alias} args must be input aliases`);
       if (typeof fn !== 'function')
         throw new Error(`Rule ${id}: source ${alias} fn must be a function`);
+      expandedSources[alias] = source;
+      continue;
+    }
+    if ('func' in source) {
+      const {name, args} = source.func;
+      if (typeof name !== 'string' || !name)
+        throw new Error(`Rule ${id}: source ${alias} name must be a function name`);
+      checkArgs(alias, args);
+      expandedSources[alias] = source;
+      continue;
+    }
+    if ('file' in source) {
+      if (typeof source.file !== 'string' || !source.file)
+        throw new Error(`Rule ${id}: source ${alias} file must be a path`);
+      expandedSources[alias] = source;
+      continue;
+    }
+    if ('query' in source) {
+      const {connection, sql, args} = source.query;
+      if (typeof connection !== 'string' || !connection || typeof sql !== 'string' || !sql)
+        throw new Error(`Rule ${id}: source ${alias} needs a connection and sql`);
+      checkArgs(alias, args);
       expandedSources[alias] = source;
       continue;
     }
@@ -165,13 +201,16 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     expandedSources[alias] = {validators: {input, call: CALL}};
   }
 
-  const checkExpr = (expr: RuleExpr) => {
-    for (const alias of usedAliases(expr)) {
-      if (!fromAliases.has(alias) && !(alias in (sources ?? {})))
-        throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
-    }
-  };
   checkExpr(when);
+
+  const effectTargets = (effect: RuleEffect) => {
+    if (effect.targets == null) {
+      if (effect.effect !== 'assign')
+        throw new Error(`Rule ${id}: effect ${effect.effect} needs targets`);
+      return [...toAliases.keys()];
+    }
+    return ruleTargets(effect.targets);
+  };
 
   const targeted = new Set<string>();
   const visibilityTargets = new Set<string>();
@@ -180,7 +219,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       throw new Error(`Rule ${id}: unknown effect ${(effect as any).effect}`);
     if (effect.effect === 'verdicts' && !('validators' in (sources?.[effect.source] ?? {})))
       throw new Error(`Rule ${id}: verdicts effect references unknown validators source ${effect.source}`);
-    for (const target of ruleTargets(effect.targets)) {
+    for (const target of effectTargets(effect)) {
       if (!toAliases.has(target))
         throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown output alias ${target}`);
       targeted.add(target);
@@ -191,6 +230,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       }
     }
     effectExpressions(effect).forEach(checkExpr);
+    checkExpr(effect.when);
   }
   for (const alias of toAliases.keys()) {
     if (!targeted.has(alias))
@@ -209,8 +249,8 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     const familyEffects = effects.filter((effect) => family.has(effect.effect));
     if (!familyEffects.length)
       return undefined;
-    const familyTargets = new Set(familyEffects.flatMap((effect) => ruleTargets(effect.targets)));
-    const to = [...toAliases].filter(([alias]) => familyTargets.has(alias)).map(([, raw]) => raw);
+    const familyTargets = new Set(familyEffects.flatMap(effectTargets));
+    const to = [...new Set([...toAliases].filter(([alias]) => familyTargets.has(alias)).map(([, raw]) => raw))];
     return {to, params: {when, effects: familyEffects, ...(sources ? {sources: expandedSources} : {})}};
   };
 
