@@ -73,10 +73,11 @@ const discard = (res: Response): Promise<void> => res.body?.cancel() ?? Promise.
 
 /**
  * Without a deadline one unresponsive entity stalls a whole pull — `GET /projects/{id}` on a
- * space holding tens of thousands of children never answers. A request that hung or dropped is
- * retried, since a deadline is as often a server busy with this very pull as a dead one; a reply
- * the server actually sent is not. The deadline covers the body too, so a transfer that is slow
- * by nature rather than stuck (`.d42` table data) asks for a longer one.
+ * space holding tens of thousands of children never answers. A dropped connection or a
+ * load-shedding status is retried; a request that ran out of time is not, because the server may
+ * still be working on it, and each retry would stack another copy of the same heavy query on it.
+ * The deadline covers the body too, so a transfer that is slow by nature rather than stuck
+ * (`.d42` table data) asks for a longer one.
  */
 async function fetchOrRetry(url: string, opts: RequestInit, retriable: boolean,
                             timeoutMs: number = setting('TIMEOUT', 60000)): Promise<Response> {
@@ -89,9 +90,11 @@ async function fetchOrRetry(url: string, opts: RequestInit, retriable: boolean,
         return res;
       await res.body?.cancel();
     } catch (err: any) {
+      if (err?.name === 'TimeoutError')
+        throw new Error(`${opts.method ?? 'GET'} ${url}: no answer in ${timeoutMs}ms — the server may still be ` +
+          'processing the request; narrow the query (a shorter time window, fewer rows) rather than repeating it');
       if (last)
-        throw new Error(`${opts.method ?? 'GET'} ${url}: ` +
-          (err?.name === 'TimeoutError' ? `no answer in ${timeoutMs}ms` : err?.message ?? err));
+        throw new Error(`${opts.method ?? 'GET'} ${url}: ${err?.message ?? err}`);
     }
     // Capped: uncapped doubling turns a long retry budget into minutes asleep on one request.
     const backoff = Math.min(setting('BACKOFF', 1000) * Math.pow(2, attempt), setting('BACKOFF_MAX', 15000));

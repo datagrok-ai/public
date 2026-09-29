@@ -814,8 +814,10 @@ a user who does not exist there lands under the pushing account instead of their
 ### Surviving a blip
 
 A retriable answer (429, 502, 503, 504) or a dropped socket is retried with exponential backoff —
-five attempts by default, about half a minute. That covers a busy moment, not a stand that steps
-out for a restart, and a whole-instance walk is long enough to meet one:
+five attempts by default, about half a minute. A request that gets no answer within
+`GROK_HTTP_TIMEOUT` (60 s) is never repeated: the server may still be processing it, so narrow
+the query (a shorter `--since`, fewer rows) instead. Retries cover a busy moment, not a stand
+that steps out for a restart, and a whole-instance walk is long enough to meet one:
 
 ```bash
 GROK_HTTP_RETRIES=9 grok s pull --out ./bundle --host dev --admin ...   # ~90s of tolerance
