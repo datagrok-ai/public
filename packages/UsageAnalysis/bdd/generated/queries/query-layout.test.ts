@@ -9,7 +9,6 @@ sub_features_covered: [views.queries]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/nx.js';
 import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
@@ -20,7 +19,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, isExpanded, replaceCode, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, currentViewType, entityHasLayout, layoutsDeleted, noQueryOnServer, queriesOnServer, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, currentViewType, entityHasLayout, layoutsDeleted, noQueryOnServer, queriesOnServer, refreshBrowse, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu, pointerAway, readingIs, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -61,7 +60,7 @@ test.describe("A query's layout", () => {
       await session.step(47, "Given the toolbox pane is hidden", () => toolboxPaneHidden(page));
       await session.step(48, "And the browse panel is open", () => browsePanelOpen(page));
       await session.step(49, "And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest tree node inside browse tree")));
-      await session.step(50, "When user clicks on \"Refresh\" icon inside browse toolbar", () => clickOn(page, el("\"Refresh\" icon inside browse toolbar")));
+      await session.step(50, "When user refreshes the browse tree", () => refreshBrowse(page));
       await session.step(51, "And user picks \"Run\" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-layout-{time} tree node inside browse tree", () => pickFromContextMenu(page, "Run", el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-layout-{time} tree node inside browse tree"))));
       await session.step(52, "Then the current view should be a TableView view", () => currentViewType(page, "TableView"));
       await session.step(53, "And the table should have 77 rows", () => rowCount(page, 77));

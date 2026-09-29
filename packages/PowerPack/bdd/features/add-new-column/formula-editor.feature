@@ -26,7 +26,7 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
     And "Acos" completion should be visible
     And "Avg" completion should be visible
     When user accepts the highlighted completion with Enter
-    Then formula editor should hold the formula "Abs(x)"
+    Then formula editor should hold the code "Abs(x)"
     And "Add New Column" dialog should be visible
     And completion list should be hidden
     And no errors should have been logged
@@ -36,7 +36,7 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
     And user types "a" into formula editor
     Then "Acos" completion should be visible
     When user clicks on "Acos" completion
-    Then formula editor should hold the formula "Acos(x)"
+    Then formula editor should hold the code "Acos(x)"
     And no errors should have been logged
 
   Scenario: Ctrl+Space offers the functions on an empty editor
@@ -65,7 +65,7 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
     And user types "a" into formula editor
     Then "Abs" completion should be visible
     When user accepts the highlighted completion with Enter
-    Then formula editor should hold the formula "Abs(x)"
+    Then formula editor should hold the code "Abs(x)"
     And "Add New Column" dialog should be visible
     And formula hint should contain text "Abs(x:"
     When user hovers over the text "Abs" in formula editor
@@ -75,10 +75,10 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
 
   Scenario: A pasted ${col} reference is highlighted, a bare name is not
     When user pastes "Abs(age)" into formula editor
-    Then formula editor should hold the formula "Abs(age)"
+    Then formula editor should hold the code "Abs(age)"
     And formula editor should highlight the column references ""
     When user pastes "Abs(${age})" into formula editor
-    Then formula editor should hold the formula "Abs(${age})"
+    Then formula editor should hold the code "Abs(${age})"
     And formula editor should highlight the column references "${age}"
     And every column reference of formula editor should be drawn in the color of "--blue-2"
     And every column reference of formula editor should differ in color from the plain text of its line
@@ -86,7 +86,7 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
 
   Scenario: A pasted $[col] reference is highlighted
     When user pastes "Avg($[age])" into formula editor
-    Then formula editor should hold the formula "Avg($[age])"
+    Then formula editor should hold the code "Avg($[age])"
     And formula editor should highlight the column references "$[age]"
     And every column reference of formula editor should be drawn in the color of "--blue-2"
     And every column reference of formula editor should differ in color from the plain text of its line

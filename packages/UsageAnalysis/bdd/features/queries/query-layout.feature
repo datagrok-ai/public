@@ -47,7 +47,7 @@ Feature: A query's layout
     Given the toolbox pane is hidden
     And the browse panel is open
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    When user clicks on "Refresh" icon inside browse toolbar
+    When user refreshes the browse tree
     And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-layout-{time} tree node inside browse tree
     Then the current view should be a TableView view
     And the table should have 77 rows

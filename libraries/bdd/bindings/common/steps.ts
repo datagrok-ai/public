@@ -12,7 +12,8 @@ import {el} from '../../src/runtime/args.js';
 import {expectCount, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, expectVisible, State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
-import {locate} from '../../src/runtime/locate.js';
+import {cssString, escapeRegExp, locate} from '../../src/runtime/locate.js';
+import {centerOf, dragFrom} from '../../src/runtime/viewers.js';
 
 export const clickOn = When('user clicks (on ){element}', (page: Page, target: ElementRef) => g.click(page, target), {tier: 'ui'});
 export const doubleClickOn = When('user double-clicks (on ){element}', (page: Page, target: ElementRef) => g.dblclick(page, target), {tier: 'ui'});
@@ -43,6 +44,60 @@ export const dragSliderTo = When('user drags the slider of {element} to {float}'
   (page: Page, target: ElementRef, value: number) => g.dragSlider(page, target, value),
   {tier: 'ui', description: 'a real pointer drag along the track, to where the value lives on it'});
 export const dragTo = When('user drags {element} to {element}', (page: Page, source: ElementRef, target: ElementRef) => g.drag(page, source, target), {tier: 'ui'});
+export const dragBy = When('user drags {element} by {int} and {int} pixels', async (page: Page, target: ElementRef, dx: number, dy: number) => {
+  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
+  if (!box)
+    throw new Error(`${target.phrase} has no box to drag`);
+  await dragFrom(page, centerOf(box), {dx, dy});
+}, {tier: 'ui', description: 'a pointer drag of the element right and down by those amounts (negative: left and up) — a resize corner, a splitter'});
+export const typeAtCaret = When('user types {string} at the caret', async (page: Page, text: string) => {
+  await page.keyboard.type(text);
+}, {tier: 'ui', description: 'keys into whatever holds the focus, where its caret is, without selecting what it holds first'});
+export const hoverText = When('user hovers over the text {string} in {element}', async (page: Page, text: string, target: ElementRef) => {
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  let box: {x: number; y: number; width: number; height: number} | null = null;
+  await expect.poll(async () => (box = await loc.evaluate((root, t) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const i = n.textContent!.indexOf(t);
+      if (i < 0)
+        continue;
+      const range = document.createRange();
+      range.setStart(n, i);
+      range.setEnd(n, i + t.length);
+      const r = range.getBoundingClientRect();
+      return {x: r.x, y: r.y, width: r.width, height: r.height};
+    }
+    return null;
+  }, text)) !== null, {timeout: pollMs(5000), message: `"${text}" in ${target.phrase}`}).toBe(true);
+  const b = box!;
+  // the pointer arrives from a step away, so the element sees a move into the text
+  await page.mouse.move(b.x + b.width / 2 - 3, b.y + b.height / 2 + 3);
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, {steps: 2});
+}, {tier: 'ui', description: 'the pointer over the middle of the first place the element shows that text'});
+export const scrollToMiddle = When('user scrolls {element} to the middle of its list', async (page: Page, target: ElementRef) => {
+  const loc = (await locate(page, target)).first();
+  // the wheel over the list, not scrollIntoView: that also moves overflow-hidden ancestors, and the page with them
+  const aim = await loc.evaluate((e) => {
+    let list = e.parentElement;
+    while (list && !(/auto|scroll/.test(getComputedStyle(list).overflowY) && list.scrollHeight > list.clientHeight))
+      list = list.parentElement;
+    if (!list)
+      return null;
+    const r = e.getBoundingClientRect();
+    const l = list.getBoundingClientRect();
+    return {x: l.x + l.width / 2, y: l.y + l.height / 2, dy: r.y + r.height / 2 - (l.y + l.height / 2)};
+  });
+  if (aim && Math.abs(aim.dy) > 1) {
+    await page.mouse.move(aim.x, aim.y);
+    await page.mouse.wheel(0, aim.dy);
+  }
+  await expect.poll(async () => {
+    const box = await loc.boundingBox();
+    const size = page.viewportSize();
+    return !!box && !!size && box.y > 100 && box.y + box.height < size.height - 100;
+  }, {message: `${target.phrase} away from the edges of the window`}).toBe(true);
+}, {tier: 'ui', description: 'the mouse wheel over the list until the element sits mid-window, clear of the status bar a node on the last line hides under'});
 
 /** `| element | value |` rows: selects choose an option, checkboxes take yes/no, everything else is typed. */
 export const fillIn = When('user fills in:', async (page: Page, table: string[][]) => {
@@ -94,6 +149,75 @@ async function expectVisibleAgainstRemembered(page: Page, target: ElementRef, fe
     return `${(fewer ? count < remembered : count > remembered) ? '' : 'not '}${fewer ? 'fewer' : 'more'} (${count} vs ${remembered})`;
   }, {message: `visible ${target.phrase} against the remembered count`}).toMatch(/^(fewer|more) \(/);
 }
+export const placeholderStarts = Then('the placeholder of {element} should start with {string}', async (page: Page, target: ElementRef, text: string) => {
+  await expect((await locate(page, target)).first(), `the placeholder of ${target.phrase}`)
+    .toHaveAttribute('placeholder', new RegExp(`^${escapeRegExp(text)}`));
+});
+export const containsOneOf = Then('{element} should contain one of the texts {string}', async (page: Page, target: ElementRef, list: string) => {
+  const texts = list.split('|').map((t) => t.trim()).filter(Boolean);
+  const loc = (await locate(page, target)).first();
+  await expect.poll(async () => {
+    const shown = await loc.innerText().catch(() => '');
+    return texts.some((t) => shown.includes(t)) ? 'one of them' : `none of them in: ${shown.slice(0, 120)}`;
+  }, {message: `one of ${texts.join(' | ')} in ${target.phrase}`}).toBe('one of them');
+}, {description: 'the texts separated by |: what an element shows in one of its known states'});
+/** A Dart tab control: the header marked selected, and the page it names shown — not the one before. */
+export const tabShowing = Then('the {string} tab of {element} should be showing', async (page: Page, tab: string, target: ElementRef) => {
+  const root = (await locate(page, target)).first();
+  await expect(root.locator(`.d4-tab-header[name="${cssString(tab)}"]`), `the ${tab} tab header of ${target.phrase}`)
+    .toHaveClass(/(^|\s)selected(\s|$)/);
+  await expect(root.locator(`[data-source="tab-content-${cssString(tab)}"]`).first(), `the ${tab} page of ${target.phrase}`).toBeVisible();
+}, {description: 'the tab header marked selected and the page it names shown; what the page lists is a claim of its own'});
+
+/* The size of an element before a gesture that should change it, kept under its phrase so several
+   elements can be remembered at once. */
+const rememberedBoxes = new WeakMap<Page, Map<string, {width: number; height: number}>>();
+
+export const rememberSize = When('user remembers the size of {element}', async (page: Page, target: ElementRef) => {
+  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
+  if (!box)
+    throw new Error(`${target.phrase} has no box`);
+  if (!rememberedBoxes.has(page)) {
+    rememberedBoxes.set(page, new Map());
+    atFeatureEnd(page, async () => { rememberedBoxes.delete(page); });
+  }
+  rememberedBoxes.get(page)!.set(target.phrase, {width: box.width, height: box.height});
+}, {tier: 'api', description: 'kept under the phrase, so several elements can be remembered at once'});
+
+function rememberedBox(page: Page, target: ElementRef): {width: number; height: number} {
+  const kept = rememberedBoxes.get(page)?.get(target.phrase);
+  if (!kept)
+    throw new Error(`no size of ${target.phrase} was remembered — "user remembers the size of ${target.phrase}" comes first`);
+  return kept;
+}
+
+export const sizeAgainstRemembered = Then('{element} should be {word} than remembered', async (page: Page, target: ElementRef, how: string) => {
+  const kept = rememberedBox(page, target);
+  const checks: Record<string, (w: number, h: number) => boolean> = {
+    larger: (w, h) => w > kept.width + 20 && h > kept.height + 20,
+    smaller: (w, h) => w < kept.width - 20 && h < kept.height - 20,
+    wider: (w) => w > kept.width + 20,
+    taller: (_w, h) => h > kept.height + 20,
+    narrower: (w) => w < kept.width - 20,
+  };
+  if (!checks[how])
+    throw new Error(`"${how}": larger, smaller, wider, taller or narrower`);
+  let now = {width: 0, height: 0};
+  await expect.poll(async () => {
+    const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
+    now = box ?? now;
+    return checks[how](now.width, now.height);
+  }, {message: `${target.phrase} ${how} than remembered`}).toBe(true).catch(() => {
+    throw new Error(`${target.phrase} is ${Math.round(now.width)}×${Math.round(now.height)}, it was ${Math.round(kept.width)}×${Math.round(kept.height)}`);
+  });
+}, {description: 'larger/smaller: both width and height by more than 20 px; wider/narrower/taller: that one dimension'});
+
+export const keepsWidth = Then('{element} should keep its remembered width', async (page: Page, target: ElementRef) => {
+  const kept = rememberedBox(page, target);
+  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
+  expect(Math.round(box?.width ?? -1), `the width of ${target.phrase} (it was ${Math.round(kept.width)})`).toBe(Math.round(kept.width));
+}, {description: 'to the pixel, read once after the change that could have moved it'});
+
 export const rememberVisibleCount = When('user remembers the number of visible {element}', async (page: Page, target: ElementRef) => {
   const counts = rememberedVisible.get(page) ?? new Map<string, number>();
   rememberedVisible.set(page, counts);
@@ -298,7 +422,8 @@ async function codeOf(page: Page, target: ElementRef): Promise<string> {
       el.querySelector('.CodeMirror, .cm-editor');
     if (root?.CodeMirror)
       return String(root.CodeMirror.getValue());
-    const view = root?.cmView?.view ?? root?.querySelector?.('.cm-content')?.cmView?.view;
+    // an element that names the content of a CM6 editor (`.cm-content`) carries the view itself
+    const view = root?.cmView?.view ?? root?.querySelector?.('.cm-content')?.cmView?.view ?? el.cmView?.view;
     if (view)
       return String(view.state.doc.toString());
     return String(root?.textContent ?? el.textContent ?? '');

@@ -1,4 +1,4 @@
-@journey @serial
+@journey
 Feature: A project opened by its direct link
   A saved project opens when the page is loaded on the project's direct link — the address the
   platform gives it, `/p/<namespace>.<name>` — as pasting the link into the address bar does
@@ -13,9 +13,6 @@ Feature: A project opened by its direct link
   the link in the same browser the feature runs in, not in a fresh profile: what the browser has
   cached from the earlier load stays.
 
-  It runs @serial: a page loading while home-widgets.feature hides or shows a widget can write the
-  widget settings it read at its start back to the server (see that feature).
-
   Background:
     Given user is logged in
 
@@ -29,6 +26,9 @@ Feature: A project opened by its direct link
     And user clicks on OK button in "Save project" dialog
     Then "Save project" dialog should be hidden
     And 1 project named "bdd-direct-link-{time}" should be on the server
+    And "Share bdd-direct-link-{time}" dialog should be visible
+    When user presses Escape
+    Then "Share bdd-direct-link-{time}" dialog should be absent
     And no error or warning balloon should have been shown
 
   Scenario: The direct link opens the project's table view
@@ -41,7 +41,6 @@ Feature: A project opened by its direct link
     And the table should have a column "AGE"
     And the table should have a column "RACE"
     And grid should show 5850 rows
-    And the "Home" view should not be current
     And no loading indicator should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown

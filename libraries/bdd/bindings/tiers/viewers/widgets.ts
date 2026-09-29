@@ -13,7 +13,7 @@ import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {el} from '../../../src/runtime/args.js';
-import {exactText, locate} from '../../../src/runtime/locate.js';
+import {cssString, exactText, locate} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
 import * as guide from '../../../src/runtime/guide.js';
 import * as v from '../../../src/runtime/viewers.js';
@@ -281,6 +281,19 @@ export const typeInColumnSelector = When('user types {string} into the {string} 
     await settle(page, target);
   }, {tier: 'ui', description: 'for the negative: the selector takes the name typed only when it offers that column'});
 
+/** A line chart's split selectors sit in its top-left corner, revealed on hover: the ones that hold a
+ * split, and the empty "add-split" one after them that takes the next. */
+export const addLineChartSplit = When('user adds {string} to the splits of {widget}', async (page: Page, column: string, target: ElementRef) => {
+  const root = await v.viewerLocator(page, target);
+  await root.hover();
+  const add = root.locator('[name="add-split"]').first();
+  await expect(add, 'the empty split selector of the line chart').toBeVisible({timeout: pollMs(5000)});
+  await v.snapshot(page, target);
+  await g.openColumnSelector(page, add);
+  await g.pickInColumnGrid(page, column, 'the split selector of the line chart');
+  await settle(page, target);
+}, {tier: 'ui', description: 'hovers the chart, opens its empty split selector and picks the column in the popup'});
+
 /** The type selector of a viewer that hosts another viewer (a `ComboPopup` named "viewer
  * selector"): a click opens the list, and the pick goes through the host's `setViewerType`, which
  * is what announces the type change — writing the property does not. */
@@ -364,6 +377,29 @@ async function rowSelected(page: Page, target: ElementRef, row: number): Promise
 export const lineSelected = Then('the line of row {int} of {widget} should be selected', async (page: Page, row: number, target: ElementRef) => {
   await expect.poll(() => rowSelected(page, target, row), {message: `row ${row} of the table ${target.phrase} draws`}).toBe(true);
 }, {description: 'the row behind a line the viewer drew, by the number its hit areas use'});
+
+// --- the grid of the view in front -------------------------------------------------------------------
+
+/** A wide table shows a dozen of its columns: a header a feature right-clicks is scrolled into view
+ * first, as a user drags the scroll bar to it. */
+export const scrollGridTo = When('user scrolls the grid to the {string} column', async (page: Page, column: string) => {
+  await page.evaluate((c) => {
+    const grid = (window as any).grok.shell.tv?.grid;
+    if (!grid?.dataFrame.col(c))
+      throw new Error(`the grid of the current view has no "${c}" column`);
+    grid.scrollToCell(c, 0);
+  }, column);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'grid.scrollToCell on the first row of the column, then the viewers settle'});
+
+export const gridPins = Then('the grid should pin the columns {string}', async (page: Page, list: string) => {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  await expect.poll(() => v.onViewer(page, el('grid'), (e) => {
+    const w = (window as any).__bdd.viewerOf(e);
+    const order = String(w.getWidgetStatus()?.values?.['column order'] ?? '').split(', ');
+    return order.slice(0, Number(w.props.frozenColumns) - 1);
+  }), {message: 'the columns left of the frozen line (Frozen Columns counts the row header)'}).toEqual(want);
+}, {description: 'the first columns of the grid\'s "column order" reading, as many as Frozen Columns keeps (less the row header), in order'});
 
 // --- viewers that lay a card out per row ---------------------------------------------------------
 
@@ -592,6 +628,20 @@ export const dragAreaOntoWidget = When('user drags the {string} area of {widget}
     await page.mouse.up();
     await settle(page, target);
   }, {tier: 'ui', description: 'a grid column header onto a pivot row, a card onto a lane — drag and drop across two widgets'});
+
+export const dragAreaOntoElement = When('user drags the {string} area of {widget} onto {element}',
+  async (page: Page, from: string, source: ElementRef, target: ElementRef) => {
+    const a = v.centerOf(await v.hitArea(page, source, from, true));
+    const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
+    if (!box)
+      throw new Error(`${target.phrase} has no box to drop onto`);
+    const b = {x: box.x + Math.min(40, box.width / 2), y: box.y + Math.min(10, box.height / 2)};
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++)
+      await page.mouse.move(a.x + (b.x - a.x) * i / 10, a.y + (b.y - a.y) * i / 10);
+    await page.mouse.up();
+  }, {tier: 'ui', description: 'a hit area of a widget (a grid column header) dropped near the start of an element outside it, a text field'});
 
 // --- the column list of a "Select columns..." dialog -------------------------------------------------
 
@@ -860,6 +910,77 @@ export const dockedBeside = Then('{widget} should be docked {word} {widget}', (p
 export const notDockedBeside = Then('{widget} should not be docked {word} {widget}', (page: Page, target: ElementRef, where: string, other: ElementRef) =>
   expectDocked(page, () => besides(page, target, where, other), true),
 {description: 'the state before a drag'});
+
+/* Viewers stacked as the tabs of one panel. Dragging a viewer by its title bar over another shows the
+   dock compass over that viewer; its middle item (`.dock-wheel-fill`) puts the dragged viewer into the
+   other's panel as a tab. A tabbed panel is a `.dock-container-fill` with one `view-handle: <title>` tab
+   handle per viewer, and only the selected tab's viewer is in the page. */
+export const stackViewer = When('user stacks {widget} onto {widget} as a tab', async (page: Page, target: ElementRef, other: ElementRef) => {
+  const title = (await panelOf(page, target)).locator('.panel-titlebar').first();
+  const t = await title.boundingBox();
+  if (!t)
+    throw new Error(`${target.phrase} has no title bar to drag`);
+  const start = {x: t.x + Math.min(30, t.width / 4), y: t.y + t.height / 2};
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 20, start.y + 20, {steps: 4});
+  const fill = page.locator('.dock-wheel-base .dock-wheel-item.dock-wheel-fill').filter({visible: true}).first();
+  try {
+    // the dragged panel leaves the layout once the drag starts, and the others take its room: the
+    // target is measured after that
+    const over = await (await v.viewerLocator(page, other)).boundingBox();
+    if (!over)
+      throw new Error(`${other.phrase} has no box to drop on`);
+    await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, {steps: 8});
+    await fill.waitFor({timeout: pollMs(5000)}).catch(() => {
+      throw new Error(`dragging ${target.phrase} over ${other.phrase} showed no dock compass`);
+    });
+    const box = (await fill.boundingBox())!;
+    const inside = box.x + box.width / 2 > over.x && box.x + box.width / 2 < over.x + over.width &&
+      box.y + box.height / 2 > over.y && box.y + box.height / 2 < over.y + over.height;
+    if (!inside)
+      throw new Error(`the dock compass did not open over ${other.phrase}`);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {steps: 6});
+    await expect(fill, 'the middle item of the dock compass under the pointer').toHaveClass(/dock-wheel-fill-icon-hover/, {timeout: pollMs(3000)});
+  }
+  catch (e) {
+    await page.mouse.up();
+    throw e;
+  }
+  await page.mouse.up();
+  await v.settleAll(page);
+}, {tier: 'ui', description: 'drags the viewer by its title bar onto the middle item of the dock compass over the other viewer, which makes it a tab of that viewer\'s panel'});
+
+/** The tabs of the tabbed panels of the view in front, by panel. */
+function tabPanels(page: Page): Promise<{tabs: string[]; selected: string}[]> {
+  return page.evaluate(() => {
+    const root = (window as any).grok.shell.v?.root as HTMLElement | undefined;
+    return Array.from(root?.querySelectorAll('.dock-container-fill') ?? []).map((c) => {
+      const handles = Array.from(c.querySelectorAll('.tab-handle[name^="view-handle: "]'))
+        .filter((h) => h.closest('.dock-container-fill') === c);
+      return {tabs: handles.map((h) => h.getAttribute('name')!.slice('view-handle: '.length)),
+        selected: handles.filter((h) => h.classList.contains('tab-handle-selected')).map((h) => h.getAttribute('name')!.slice('view-handle: '.length))[0] ?? ''};
+    }).filter((p) => p.tabs.length > 1);
+  });
+}
+
+export const viewersTabbed = Then('the viewers {string} should be the tabs of one panel', async (page: Page, list: string) => {
+  const want = list.split(/\s*,\s*/).filter(Boolean).sort().join(', ');
+  await expect.poll(async () => (await tabPanels(page)).map((p) => [...p.tabs].sort().join(', ')),
+    {message: 'the tabbed panels of the current view, by their tabs'}).toContain(want);
+}, {description: 'one tabbed panel of the view in front holds exactly these viewers (their titles, comma-separated) as its tabs'});
+
+export const noTabbedPanel = Then('no panel of the current view should hold tabs', async (page: Page) => {
+  await expect.poll(async () => (await tabPanels(page)).map((p) => p.tabs.join(', ')), {message: 'the tabbed panels of the current view'}).toEqual([]);
+}, {description: 'every viewer of the view in front has a panel of its own'});
+
+export const switchTab = When('user switches the tabbed panel to the {string} tab', async (page: Page, title: string) => {
+  const handle = page.locator(`.dock-container-fill .tab-handle[name="view-handle: ${cssString(title)}"]`).filter({visible: true}).first();
+  await expect(handle, `the "${title}" tab of a tabbed panel`).toBeVisible({timeout: pollMs(5000)});
+  await handle.click();
+  await expect.poll(async () => (await tabPanels(page)).some((p) => p.selected === title), {message: `the "${title}" tab selected`}).toBe(true);
+  await v.settleAll(page);
+}, {tier: 'ui', description: 'a click on the tab handle of that title; done when it is the selected tab and the viewers have settled'});
 
 export const openViewerHelp = When('user opens the help of {widget}', async (page: Page, target: ElementRef) => {
   const icon = (await panelOf(page, target)).locator('.panel-titlebar [name="icon-font-icon-help"]').first();

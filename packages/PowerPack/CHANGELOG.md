@@ -6,6 +6,7 @@
 * Formula Lines: Added the item the dialog's preview was handed to its widget status (`current item`)
 * Home: Named the widget hosts `widget-<name>`
 * Home: Added `aria-busy` to the search results until the search paths have answered
+* Home: Fixed the Community widget throwing when the community forum cannot be reached; it now says so
 * Add New Column: Fixed the Name tooltip's "Column name.", which began with a Cyrillic С, so a search for the text missed it
 * GROK-20931: Add New Column: Resizing the dialog now widens only the formula and preview pane; the column and function lists keep their width
 * GROK-20931: Add New Column: Clicking a function in the formula makes it the current object, so its help shows in the context panel

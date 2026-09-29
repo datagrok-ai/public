@@ -4,12 +4,11 @@
    FunctionsWidget: one row per function, a plus icon revealed on hover, a sort icon), the preview
    grid, and the input history menu. */
 import {Page} from '@playwright/test';
-import {element, Given, kind, Then, When} from '@datagrok-libraries/bdd';
+import {element, kind, Then, When} from '@datagrok-libraries/bdd';
 import {type ElementRef, expect, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
-import {putIntoHomeFolder} from '../helpers/home-folder.js';
+import {dragAreaOntoElement} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 
 declare const DG: any;
-declare const grok: any;
 
 element('formula editor', {selector: '.add-new-column-dialog-root .add-new-column-dialog-cm-div .cm-content',
   description: 'the CodeMirror field of the Add New Column dialog'});
@@ -27,14 +26,10 @@ element('functions list', {selector: '.add-new-column-dialog-root .grok-actions-
   description: 'the functions on the right of the dialog, in the order the sort mode gives'});
 element('functions panel', {selector: '.add-new-column-dialog-root .ui-widget-addnewcolumn-functions',
   description: 'the scrolling pane that holds the functions list'});
-element('column name input', {selector: '[name="input-Add-New-Column---Name"]',
-  description: 'the Name field of the Add New Column dialog; its placeholder follows the formula while it is empty'});
 element('column type input', {selector: '[name="input-Add-New-Column---Type"]',
   description: 'the Type choice of the Add New Column dialog: auto (with the type the preview computed), a type, or plain text'});
 element('functions sort icon', {selector: '.add-new-column-dialog-root [name="icon-sort-alt"]',
   description: 'the two arrows over the functions list: By name or By relevance'});
-element('input history menu', {selector: '[name="input-history"]',
-  description: 'the menu the history icon of a dialog opens: one entry per earlier run, the latest first'});
 element('completion list', {selector: '.cm-tooltip-autocomplete',
   description: 'the autocomplete popup of the formula editor'});
 element('signature tooltip', {selector: '.cm-tooltip-hover',
@@ -62,18 +57,6 @@ async function columnCell(page: Page, target: ElementRef, name: string): Promise
   return names.find((n) => n.endsWith(`=${name}`))!.split('=')[0].replace('text of ', '');
 }
 
-async function dragTo(page: Page, from: {x: number; y: number}, target: ElementRef): Promise<void> {
-  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
-  if (!box)
-    throw new Error(`${target.phrase} has no box to drop onto`);
-  const to = {x: box.x + Math.min(40, box.width / 2), y: box.y + Math.min(10, box.height / 2)};
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  for (let i = 1; i <= 10; i++)
-    await page.mouse.move(from.x + (to.x - from.x) * i / 10, from.y + (to.y - from.y) * i / 10);
-  await page.mouse.up();
-}
-
 export const clickColumnName = When('user clicks on the {string} column in {widget}', async (page: Page, name: string, target: ElementRef) => {
   const box = await viewers.hitArea(page, target, await columnCell(page, target, name), true);
   const c = viewers.centerOf(box);
@@ -81,12 +64,8 @@ export const clickColumnName = When('user clicks on the {string} column in {widg
 }, {tier: 'ui', description: 'a click on the name of that column in the column list, found by the grid\'s "text of cell N of __name" readings'});
 
 export const dragColumnName = When('user drags the {string} column of {widget} onto {element}', async (page: Page, name: string, source: ElementRef, target: ElementRef) =>
-  dragTo(page, viewers.centerOf(await viewers.hitArea(page, source, await columnCell(page, source, name), true)), target),
+  dragAreaOntoElement(page, await columnCell(page, source, name), source, target),
 {tier: 'ui', description: 'a pointer drag from the column\'s name in the column list to the element'});
-
-export const dragAreaOnto = When('user drags the {string} area of {widget} onto {element}', async (page: Page, area: string, source: ElementRef, target: ElementRef) =>
-  dragTo(page, viewers.centerOf(await viewers.hitArea(page, source, area, true)), target),
-{tier: 'ui', description: 'a pointer drag from a hit area of a widget (a grid column header) to an element outside it'});
 
 /** The functions list as the user sees it: every visible row's function, top to bottom. */
 function functionOrder(page: Page): Promise<{name: string; nqName: string}[]> {
@@ -213,134 +192,6 @@ export const previewAbs = Then('the preview grid should show {string} as the abs
   }, {timeout: pollMs(15000), message: `${column} against |${source}| in the preview`}).toBe('');
 }, {description: 'every preview row, to four decimals'});
 
-const rememberedBoxes = new WeakMap<Page, Map<string, {width: number; height: number}>>();
-
-export const rememberSize = When('user remembers the size of {element}', async (page: Page, target: ElementRef) => {
-  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
-  if (!box)
-    throw new Error(`${target.phrase} has no box`);
-  if (!rememberedBoxes.has(page))
-    rememberedBoxes.set(page, new Map());
-  rememberedBoxes.get(page)!.set(target.phrase, {width: box.width, height: box.height});
-}, {tier: 'api', description: 'kept under the phrase, so several elements can be remembered at once'});
-
-export const dragCornerBy = When('user drags {element} by {int} and {int} pixels', async (page: Page, target: ElementRef, dx: number, dy: number) => {
-  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
-  if (!box)
-    throw new Error(`${target.phrase} has no box to drag`);
-  await viewers.dragFrom(page, viewers.centerOf(box), {dx, dy});
-}, {tier: 'ui', description: 'a pointer drag of the element right and down by those amounts (negative: left and up)'});
-
-export const sizeAgainstRemembered = Then('{element} should be {word} than remembered', async (page: Page, target: ElementRef, how: string) => {
-  const kept = rememberedBoxes.get(page)?.get(target.phrase);
-  if (!kept)
-    throw new Error(`no size of ${target.phrase} was remembered — "user remembers the size of ${target.phrase}" comes first`);
-  const checks: Record<string, (w: number, h: number) => boolean> = {
-    larger: (w, h) => w > kept.width + 20 && h > kept.height + 20,
-    smaller: (w, h) => w < kept.width - 20 && h < kept.height - 20,
-    wider: (w) => w > kept.width + 20,
-    taller: (_w, h) => h > kept.height + 20,
-    narrower: (w) => w < kept.width - 20,
-  };
-  if (!checks[how])
-    throw new Error(`"${how}": larger, smaller, wider, taller or narrower`);
-  let now = {width: 0, height: 0};
-  await expect.poll(async () => {
-    const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
-    now = box ?? now;
-    return checks[how](now.width, now.height);
-  }, {message: `${target.phrase} ${how} than remembered`}).toBe(true).catch(() => {
-    throw new Error(`${target.phrase} is ${Math.round(now.width)}×${Math.round(now.height)}, it was ${Math.round(kept.width)}×${Math.round(kept.height)}`);
-  });
-}, {description: 'larger/smaller: both width and height by more than 20 px; wider/narrower/taller: that one dimension'});
-
-export const keepsWidth = Then('{element} should keep its remembered width', async (page: Page, target: ElementRef) => {
-  const kept = rememberedBoxes.get(page)?.get(target.phrase);
-  if (!kept)
-    throw new Error(`no size of ${target.phrase} was remembered`);
-  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
-  expect(Math.round(box?.width ?? -1), `the width of ${target.phrase} (it was ${Math.round(kept.width)})`).toBe(Math.round(kept.width));
-}, {description: 'to the pixel, read once after the change that could have moved it'});
-
-export const everyValueEquals = Then('every value of {string} column should equal {string} column plus {float}',
-  async (page: Page, column: string, source: string, delta: number) => {
-    const bad = await page.evaluate(([c, s, d]) => {
-      const df = grok.shell.t;
-      const a = df.col(c as string); const b = df.col(s as string);
-      if (!a || !b)
-        return `no "${a ? s : c}" column; the table has ${df.columns.names().join(', ')}`;
-      for (let i = 0; i < df.rowCount; i++) {
-        const x = a.get(i); const y = b.get(i);
-        if (y === null || b.isNone(i)) {
-          if (!a.isNone(i))
-            return `row ${i + 1}: ${s} is empty and ${c} is ${x}`;
-        }
-        else if (!(Math.abs(x - (y + (d as number))) <= 1e-3))
-          return `row ${i + 1}: ${c} is ${x}, ${s} is ${y}`;
-      }
-      return df.rowCount > 0 ? '' : 'the table has no rows';
-    }, [column, source, delta] as [string, string, number]);
-    expect(bad, `${column} against ${source} + ${delta}`).toBe('');
-  }, {description: 'row by row to a thousandth (the columns are 32-bit floats), an empty source cell giving an empty value'});
-
-export const everyValueLog = Then('every value of {string} column should be the decimal log of {string} column minus {float}',
-  async (page: Page, column: string, source: string, delta: number) => {
-    const bad = await page.evaluate(([c, s, d]) => {
-      const df = grok.shell.t;
-      const a = df.col(c as string); const b = df.col(s as string);
-      if (!a || !b)
-        return `no "${a ? s : c}" column; the table has ${df.columns.names().join(', ')}`;
-      for (let i = 0; i < df.rowCount; i++) {
-        const x = a.get(i); const y = b.get(i);
-        if (b.isNone(i)) {
-          if (!a.isNone(i))
-            return `row ${i + 1}: ${s} is empty and ${c} is ${x}`;
-        }
-        else if (!(Math.abs(x - (Math.log10(y) - (d as number))) <= 1e-4))
-          return `row ${i + 1}: ${c} is ${x}, ${s} is ${y}`;
-      }
-      return df.rowCount > 0 ? '' : 'the table has no rows';
-    }, [column, source, delta] as [string, string, number]);
-    expect(bad, `${column} against log10(${source}) - ${delta}`).toBe('');
-  }, {description: 'row by row, to four decimals, an empty source cell giving an empty value'});
-
-export const holdsFormula = Then('{element} should hold the formula {string}', async (page: Page, target: ElementRef, text: string) => {
-  const loc = (await locate(page, target)).filter({visible: true});
-  let seen: string[] = [];
-  await expect.poll(async () => {
-    seen = await loc.evaluateAll((els) => els.map((e) => e.textContent ?? ''));
-    return seen.length === 1 && seen[0] === text;
-  }, {message: `the text of ${target.phrase}`}).toBe(true).catch(() => {
-    throw new Error(`${target.phrase} holds ${seen.length === 1 ? JSON.stringify(seen[0]) : `${seen.length} editors: ${JSON.stringify(seen)}`}, not ${JSON.stringify(text)}`);
-  });
-}, {description: 'the whole text of exactly one visible editor, character for character ("" for an empty one)'});
-
-export const typeAtCaret = When('user types {string} at the caret', async (page: Page, text: string) => {
-  await page.keyboard.type(text);
-}, {tier: 'ui', description: 'keys into whatever holds the focus, where its caret is, without selecting what it holds first'});
-
-export const hoverText = When('user hovers over the text {string} in {element}', async (page: Page, text: string, target: ElementRef) => {
-  const loc = (await locate(page, target)).filter({visible: true}).first();
-  let box: {x: number; y: number; width: number; height: number} | null = null;
-  await expect.poll(async () => (box = await loc.evaluate((root, t) => {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      const i = n.textContent!.indexOf(t);
-      if (i < 0)
-        continue;
-      const range = document.createRange();
-      range.setStart(n, i);
-      range.setEnd(n, i + t.length);
-      const r = range.getBoundingClientRect();
-      return {x: r.x, y: r.y, width: r.width, height: r.height};
-    }
-    return null;
-  }, text)) !== null, {timeout: pollMs(5000), message: `"${text}" in ${target.phrase}`}).toBe(true);
-  const b = box!;
-  await page.mouse.move(b.x + b.width / 2 - 3, b.y + b.height / 2 + 3);
-  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, {steps: 2});
-}, {tier: 'ui', description: 'the pointer over the middle of the first place the element shows that text'});
-
 /** The runs of highlighted text in the formula editor, in document order: CodeMirror splits one
  * mark into several spans where another decoration (the bracket match at the caret) cuts it, so
  * adjacent highlighted text is joined back into the reference it is. */
@@ -402,17 +253,6 @@ export const highlightStandsOut = Then('every column reference of {element} shou
   });
   expect(report, 'column references drawn like the plain text around them').toEqual([]);
 }, {description: 'each highlighted span against the color its line gives unhighlighted text'});
-
-export const noTablesOpen = Then('no table should be open', async (page: Page) => {
-  await expect.poll(() => page.evaluate(() => (grok.shell.tables ?? []).map((t: any) => t.name).join(', ')),
-    {message: 'the tables open in the workspace'}).toBe('');
-}, {description: 'the workspace holds no table, so what a reopen shows came from the server'});
-
-export const fileInHome = Given('a copy of the {string} file is in the home folder as {string}', (page: Page, source: string, name: string) =>
-  putIntoHomeFolder(page, name, (path) => page.evaluate(async ([src, p]) => {
-    await grok.dapi.files.write(p, await grok.dapi.files.readAsBytes(src));
-  }, [source, path])),
-{tier: 'api', description: 'the file written into the "My files" share of the current user, and deleted when the feature ends'});
 
 const COMPLETION_INTERACTION_DELAY_MS = 75;
 

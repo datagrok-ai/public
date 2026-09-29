@@ -91,6 +91,7 @@ export class SubstructureFilter extends DG.Filter {
   currentMolecule: string = '';
   modifiedRows = new Set<number>(); // edited row indexes (received from chem-searches via event), awaiting re-check
   initListeners = false;
+  laidOut = false;
   searchType: SubstructureSearchType = SubstructureSearchType.CONTAINS;
   similarityCutOff = 0.8;
   fp: Fingerprint = Fingerprint.Morgan;
@@ -237,6 +238,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   attach(dataFrame: DG.DataFrame): void {
+    this.laidOut = false;
     if (dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
       ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
         this.sketcher.root.children[0]?.classList.add('chem-hide-filter');
@@ -261,6 +263,7 @@ export class SubstructureFilter extends DG.Filter {
         this.root.append(this.sketcher.filterOptions);
       } else
         this.updateFilterUiOnSketcherChanged(this.currentMolecule);
+      this.laidOut = true;
     });
     super.attach(dataFrame);
     this.resolveColumn();
@@ -455,6 +458,9 @@ export class SubstructureFilter extends DG.Filter {
         [`fingerprint of ${col}`]: this.fp,
         [`similarity cutoff of ${col}`]: this.similarityCutOff,
         [`searching of ${col}`]: this.calculating || this.currentSearches.size > 0,
+        // the cards below move until this one has settled its sketcher mode and drawn the thumbnail (empty meanwhile)
+        [`drawing of ${col}`]: !this.laidOut ||
+          (this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL && this.sketcher.extSketcherDiv.childElementCount === 0),
       }};
     });
   }

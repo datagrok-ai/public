@@ -28,24 +28,24 @@ Feature: An Excel workbook opens from every entry path
 
   Scenario: The workbook opens from My files in the Browse tree
     Given no table view is open
-    And the "fixtures/xlsx-open-test.xlsx" file of the project is in the home folder as "xlsx-open-{time}.xlsx"
+    And the "fixtures/xlsx-open-test.xlsx" file of the project is in the user's files as "xlsx-open-{time}.xlsx"
     And the browse panel is open
     And user refreshes the browse tree
     And Files tree node inside browse tree is expanded
     And Files---My-files tree node inside browse tree is expanded
     When user double-clicks on Files---My-files---xlsx-open-{time}.xlsx tree node inside browse tree
-    Then the table views "Customers, Orders, Products" should be open
+    Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
     And table "Customers" should have 5 rows
     And table "Customers" should have columns "CustomerID, Name, Country, Since"
-    And the value of "Name" column in row 2 of table "Customers" should be "Bottom Dollar"
+    And the "Name" cell of row 2 of table "Customers" should be displayed as "Bottom Dollar"
     And "Since" column of table "Customers" should have type "datetime"
     And table "Orders" should have 6 rows
     And table "Orders" should have columns "OrderID, CustomerID, Amount, Shipped"
-    And the value of "Amount" column in row 3 of table "Orders" should be "1200.00"
+    And the "Amount" cell of row 3 of table "Orders" should be displayed as "1200.00"
     And table "Products" should have 4 rows
     And table "Products" should have columns "ProductID, Product, Price, InStock"
-    And the value of "Product" column in row 1 of table "Products" should be "Chai"
+    And the "Product" cell of row 1 of table "Products" should be displayed as "Chai"
     And grid should show 4 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
@@ -53,13 +53,13 @@ Feature: An Excel workbook opens from every entry path
   Scenario: The workbook opens when dropped onto the window
     Given no table view is open
     When user drops the "fixtures/xlsx-open-test.xlsx" file of the project onto home widgets panel
-    Then the table views "Customers, Orders, Products" should be open
+    Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
     And table "Customers" should have 5 rows
-    And the value of "Country" column in row 3 of table "Customers" should be "Switzerland"
+    And the "Country" cell of row 3 of table "Customers" should be displayed as "Switzerland"
     And table "Orders" should have 6 rows
     And table "Products" should have 4 rows
-    And the value of "Price" column in row 4 of table "Products" should be "23.25"
+    And the "Price" cell of row 4 of table "Products" should be displayed as "23.25"
     And grid should show 4 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
@@ -68,11 +68,11 @@ Feature: An Excel workbook opens from every entry path
     Given no table view is open
     And the browse panel is open
     When user uploads "fixtures/xlsx-open-test.xlsx" through "Open local file" icon in browse toolbar
-    Then the table views "Customers, Orders, Products" should be open
+    Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
     And table "Customers" should have 5 rows
     And table "Orders" should have 6 rows
-    And the value of "Shipped" column in row 2 of table "Orders" should be "no"
+    And the "Shipped" cell of row 2 of table "Orders" should be displayed as "no"
     And table "Products" should have 4 rows
     And grid should show 4 rows
     And no errors should have been logged
@@ -82,11 +82,11 @@ Feature: An Excel workbook opens from every entry path
     Given no table view is open
     When user clicks on Menu tab
     And user picks "File > Open > File..." from the open menu and chooses the "fixtures/xlsx-open-test.xlsx" file of the project
-    Then the table views "Customers, Orders, Products" should be open
+    Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
     And table "Customers" should have 5 rows
     And table "Orders" should have 6 rows
     And table "Products" should have 4 rows
-    And the value of "Product" column in row 2 of table "Products" should be "Chang"
+    And the "Product" cell of row 2 of table "Products" should be displayed as "Chang"
     And no errors should have been logged
     And no error or warning balloon should have been shown

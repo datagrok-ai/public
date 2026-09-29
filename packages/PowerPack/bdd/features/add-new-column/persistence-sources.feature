@@ -15,7 +15,7 @@ Feature: Calculated columns over a file in My files follow a rename and an edit,
   Background:
     Given user is logged in
     And no project named "bdd-anc-home-{run}" is on the server
-    And a copy of the "System:DemoFiles/demog.csv" file is in the home folder as "bdd-anc-{run}.csv"
+    And a copy of the "System:DemoFiles/demog.csv" file is in the user's files as "bdd-anc-{run}.csv"
     And the browse panel is open
     And user refreshes the browse tree
     And Files tree node inside browse tree is expanded
@@ -65,7 +65,7 @@ Feature: Calculated columns over a file in My files follow a rename and an edit,
     And 1 project named "bdd-anc-home-{run}" should be on the server
     When user presses Escape
     And user closes all views
-    Then no table should be open
+    Then no table should be left in the workspace
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "bdd-anc-home-{run}" into gallery search

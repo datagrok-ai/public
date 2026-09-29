@@ -82,7 +82,10 @@ open are registered in `bindings/platform/datasets.ts`: `demog-1000` is
 `grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:DemoFiles/demog-1000.csv" --host localhost`;
 `spgi` comes with the published `Chem` package (`grok s packages install Chem`). A sharing feature
 shares with the account in `DATAGROK_SHARING_LOGIN`, or, unset, with the `bddsecond` user the
-setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays).
+setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays). A
+feature that signs in as that account or another does it on its own page, and the running account
+is back when the feature ends; a feature that empties the second account's notifications runs only
+against a `bdd…` fixture account.
 
 `grok-bdd init` runs in the package directory and creates what is missing, never overwriting:
 
@@ -258,7 +261,13 @@ list is the reference; this is the map:
   group or holds a role; the gallery's render mode and
   its counter against a remembered one (lower, not lower, higher — search, then clear). The membership editor behind Groups..., Roles..., Members
   and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
-  `remove button` and `checkbox` parts, typed into through `membership search`.
+  `remove button` and `checkbox` parts, typed into through `membership search`. Signing in as
+  another account on the feature's page (the sharing user or a named fixture account) and back,
+  the running account back first thing at feature end; the second account's notifications.
+- **The workspace** (`platform/workspace.ts`): what is open (no table left, the table views, a
+  table view opened with its rows, a project), a project's direct link, a file put into the user's
+  files or a space for the feature (deleted at feature end), a file dropped from disk, the file
+  chooser a menu opens.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
   filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
   equal row by row), calculated and renamed columns, colour coding,
@@ -327,7 +336,12 @@ The `viewers` tier drives viewers the way the platform sees them:
   shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
-  inner viewers, card readings, lassos, cross-widget drags.
+  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins.
+- **`formula-lines.ts`**: the Formula Lines dialog (a line added, its range, an edit), the lines a
+  viewer draws (the `formula line <title>` / `formula band <title>` areas it reports only for what
+  it drew), their ranges, and the formulas of the viewer and the table naming only existing columns.
+- **`filter-panel.ts`**: the cards of the filter panel, what every view's panel filters by across a
+  project round trip, and a wait for the Chem cards (searching, drawing, scaffold hits).
 
 Every property set, menu pick, area gesture, resize and data step snapshots the viewer first, and
 no check moves the snapshot, so `should have repainted` and every "than before" compare with the

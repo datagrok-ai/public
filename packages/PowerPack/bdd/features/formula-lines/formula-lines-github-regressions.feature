@@ -23,12 +23,11 @@ Feature: Formula Lines dialog regressions from GitHub
   value axis by a margin that depends on the chart's height, so its preview is matched with it by
   the Y column and the X axis range, not by the Y range.
 
-  Not translated: that a line is drawn at the expected position on the scatter plot ("at the
-  expected date position", "at the same position on both viewers"). The scatter plot reports no
-  hit area for a formula line (a `formula line "<title>"` area like the line chart's is a request
-  to the core), only the count of lines active on its axes, which includes a line lying outside
-  the axis range. What is claimed instead: the line's value lies within the X axis range the
-  viewer reports, in the axis's own units, and on the line chart its `formula line <title>` area. Steps already covered
+  Not translated: that a line is drawn at the expected position ("at the expected date position",
+  "at the same position on both viewers"). What is claimed instead: the viewer draws the line — its
+  `formula line <title>` hit area, which a viewer reports only for a line it drew on screen, unlike
+  the count of lines active on its axes — and the line's value lies within the X axis range the
+  viewer reports, in the axis's own units. Steps already covered
   elsewhere: adding a line from ADD NEW and deleting it with its trash button
   (`formula-lines-dialog.feature:18`), a dataframe line drawn by every viewer whose axis carries
   its column (`formula-lines-dialog.feature:97`), a line kept when the axis columns change
@@ -56,6 +55,7 @@ Feature: Formula Lines dialog regressions from GitHub
     Then the "Formula Lines" dialog should close
     And "formulaLines" property of scatter plot viewer should contain "${Competition assay Date} = 1528502400000000.0"
     And the "formula lines" reading of scatter plot viewer should be 1
+    And scatter plot viewer should draw 1 formula line
     And the "Competition assay Date" line of scatter plot viewer should lie within its x axis
     When user picks "Tools > Formula Lines..." from the context menu of scatter plot viewer
     And user clicks on Delete button in "Formula Lines" dialog
@@ -128,6 +128,7 @@ Feature: Formula Lines dialog regressions from GitHub
     And user picks "Line - Horizontal" from the open menu
     And user clicks OK button in "Formula Lines" dialog
     Then the "formula lines" reading of scatter plot viewer should be 1
+    And scatter plot viewer should draw 1 formula line
     And the "formula lines" reading of line chart viewer should be 1
     And line chart viewer should have a "formula line Average Mass = 396.4" area
     And "formulaLines" property of scatter plot viewer should be "[]"

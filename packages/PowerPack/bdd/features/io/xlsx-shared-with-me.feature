@@ -9,13 +9,10 @@ Feature: An Excel workbook opens from Shared with me
   shared it, opens the workbook from it and gets the same three table views as every other path;
   the running account signs back in at the end, and the space is deleted.
 
-  It runs @serial: the Home page of the running account is read at the end, and home-widgets.feature changes
-  it meanwhile.
+  It runs @serial with the other features that sign in as the second account on their page.
 
   Background:
     Given user is logged in
-    And the sharing user can sign in on this page
-    And the name of the running account is remembered
 
   Scenario: A space holding the workbook is shared with the sharing user
     Given no space named "bdd-xlsx-{time}" is on the server
@@ -38,17 +35,17 @@ Feature: An Excel workbook opens from Shared with me
     And user expands "." shared by the running account
     And user expands "bdd-xlsx-{time}" shared by the running account
     And user double-clicks on "bdd-xlsx-{time} > xlsx-open-test.xlsx" shared by the running account
-    Then the table views "Customers, Orders, Products" should be open
+    Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
     And table "Customers" should have 5 rows
     And table "Customers" should have columns "CustomerID, Name, Country, Since"
     And table "Orders" should have 6 rows
-    And the value of "Amount" column in row 1 of table "Orders" should be "250.50"
+    And the "Amount" cell of row 1 of table "Orders" should be displayed as "250.50"
     And table "Products" should have 4 rows
-    And the value of "InStock" column in row 2 of table "Products" should be "17"
+    And the "InStock" cell of row 2 of table "Products" should be displayed as "17"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
   Scenario: The running account signs back in
-    When user signs back in
+    When user signs in as themselves again
     Then the Home page should show the widgets "Spotlight, Reports, Usage, Community"

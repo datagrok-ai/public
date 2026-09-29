@@ -42,12 +42,12 @@ npx grok-bdd run generated/add-new-column             # one folder
 ```
 
 The bindings are the package's own screen parts and checks: `bindings/add-new-column.ts` — the
-Add New Column dialog's editor, hint, column list, functions list, preview and input history; the
-column list's rows found by the grid's own readings; the functions list's order and what its top
-rows take; the highlighted column references and their computed color; relations between calculated
-columns checked row by row. `formula-lines.ts` — the Formula Lines dialog and what it writes;
-`home.ts` — the Home widgets, their stored settings, Spotlight and the other accounts' sign-in;
-`search.ts` — the Home search and its suggestions; `io.ts` — the workbook's entry paths;
-`navigation.ts` — a project's direct link; `enrichment.ts` — the Enrich pane and its editor.
-`helpers/home-folder.ts` puts a file into the account's My files share for a feature and deletes it
-at the end, with a killed run's file of the same name family.
+Add New Column dialog's editor, hint, column list, functions list and preview; the column list's rows
+found by the grid's own readings; the functions list's order and what its top rows take; the
+highlighted column references and their computed color. `home.ts` — the Home widgets, their stored
+settings, Spotlight's tip of the day and the administrator account the widget feature signs in as;
+`search.ts` — the Home search and its suggestions; `enrichment.ts` — the Enrich pane, its editor and
+the enrichment files on the server. What other suites use too is library vocabulary: signing in as
+another account, a reload, files put into the user's files or a space, a dropped file, a direct link,
+a named table's cells, element sizes, and the Formula Lines dialog — PowerPack's, but the NX chain of
+UsageAnalysis drives it as well.

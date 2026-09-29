@@ -19,7 +19,8 @@ Feature: Enter in the Home search box
   md's "dem" brings up no suggestion on a stand; "DG" brings up two, which is what the arrow keys
   need. Enter takes the highlighted "DGUSER-{User Login}", which puts its fixed part into the box and
   searches for it. The "PDB ID, e.g. 4AKZ" suggestion is walked past, not taken: its search asks
-  data.rcsb.org, a service outside the stand.
+  data.rcsb.org, a service outside the stand — the same search every four-letter query sets off, so
+  "use" stands for the md's "user" (it brings up the same DGUSER suggestion).
 
   Not translated: "the search input retains focus or a sensible follow-up view is loaded" — the
   box's focus is not claimed; the view that stays current is the Home page with its results.
@@ -44,7 +45,7 @@ Feature: Enter in the Home search box
       | query | suggestions                                                                                                                      |
       | QA    | PDB ID, e.g. 4AKZ                                                                                                                |
       | new   | New Users Today \| New users This Month \| New users This Year \| New users last 3 months \| New user last 7 days \| New users yesterday |
-      | user  | DGUSER-{User Login}                                                                                                              |
+      | use   | DGUSER-{User Login}                                                                                                              |
 
   Scenario: Enter on "a" finds functions and help pages
     When user types "a" into home search

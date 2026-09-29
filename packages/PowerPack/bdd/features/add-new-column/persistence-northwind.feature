@@ -73,7 +73,7 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
     And 1 project named "bdd-anc-all-{run}" should be on the server
     When user presses Escape
     And user closes all views
-    Then no table should be open
+    Then no table should be left in the workspace
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "bdd-anc-all-{run}" into gallery search
@@ -151,7 +151,7 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
     And 1 project named "bdd-anc-top-{run}" should be on the server
     When user presses Escape
     And user closes all views
-    Then no table should be open
+    Then no table should be left in the workspace
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "bdd-anc-top-{run}" into gallery search

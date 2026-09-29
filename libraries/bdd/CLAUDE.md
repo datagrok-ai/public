@@ -28,8 +28,13 @@ src/runtime/            args, locate, gestures, assertions, harness (session, jo
                         guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), the page's own pointer events per stop → steps.json; full shell)
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
-bindings/platform/      the shell: elements, datasets, steps, data, columns, commands, functions, events — always loaded
-bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, events, floor), widgets (shared per-viewer steps)
+bindings/platform/      the shell: elements, datasets, steps (views, projects and the Save dialog, server fixtures, the second
+                        account and signing in as another), data (rows, filter, links between tables), columns, commands,
+                        functions, events, workspace (open tables and views, direct links, files in the user's files or a
+                        space, a dropped or chosen file) — always loaded
+bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, layouts, events, floor), widgets (shared
+                        per-viewer steps, the grid, docking and tabbed panels), formula-lines (the Formula Lines dialog and
+                        what a viewer draws of its lines), filter-panel
 tests/                  node:test via tsx: nouns, compile, project, init, failure, locate (Chromium over a static page)
 playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers)
 ```
@@ -86,7 +91,11 @@ prove it is gone. That covers:
 - entities it creates: projects, tables, layouts, queries, scripts, connections, spaces, groups,
   files it uploads, rows or tables it writes into a database;
 - what the UI makes on the side: the layout and project a query or script save writes, the chat a
-  Chats pane post creates, the grant a Share dialog adds;
+  Chats pane post creates, the grant a Share dialog adds, the picture a Save dialog or the Layouts
+  pane stores (`<pictureId>.png`, which the server keeps when the project or the layout goes — the
+  library's project and layout sweeps delete it; the thumbnails the server cuts from it,
+  `<pictureId>_<width>.png`, have no delete and stay), the notification a share sends (made with
+  Send notifications off unless it is claimed);
 - changes to things the feature does not own: a connection's identifiers configuration, a catalog's
   comment, a shared connection's parameters, the account's settings — put back as they were.
 
@@ -228,9 +237,11 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
 - **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
   is also swept by family — the same name with any run suffix, older than an hour — whenever a
   `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`
-  (a layout's `createdOn` is the browser's clock, the client stamps it), and by the project save
-  (`isStaleFixture`, platform/steps.ts). Fixed names (the spaces, most projects) are swept by their
-  exact name. The `… named "a, b" should be on the server` counts take a list, from one listing.
+  (the server stamps `createdOn` when it saves an entity, whatever the client set, so a claim about
+  what was made since a step compares with the server's clock, `serverNow`, less a margin for the
+  proxy's clock), by the project save (`isStaleFixture`, platform/steps.ts), and once per worker
+  and view family by `saves the layout of the current table view to the server`, whose own layout
+  goes by id at feature end. Fixed names (the spaces, most projects) are swept by their exact name. The `… named "a, b" should be on the server` counts take a list, from one listing.
 - **Groups and roles are cleaned like spaces** (the complete listing, never a name or ID filter —
   `grok.dapi.groups.filter('name = …')` missed a group that existed). Their global permissions are
   revoked before `grok.dapi.groups.delete`, which refuses a role that holds one (GROK-20904). Never
@@ -439,7 +450,14 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   `html`; see that package's bdd README).
 - A sharing feature shares with `DATAGROK_SHARING_LOGIN` or, unset, with the `bddsecond` user
   `global-setup.ts` creates through `POST /public/v1/users` with the dev-key token (a missing
-  login answers 200 with an `ApiError` body; users cannot be deleted, so it stays).
+  login answers 200 with an `ApiError` body; users cannot be deleted, so it stays). A feature signs
+  in as another account on its own page (`user signs in as the sharing user`, `… as "<login>"`,
+  `… as themselves again`): a session minted from the account's dev key replaces the page's, the
+  client's function cache is cleared as a sign-out clears it, and the account the feature started
+  with signs back in first thing at feature end (`atFeatureEnd(…, first)`), so the cleanups
+  registered before the switch run as it. `the sharing user has no notifications, …` deletes the
+  second account's notifications, and refuses an account that is not a bdd fixture. A share that
+  claims nothing about its notification is made with Send notifications off.
 - `pub serve` degrades under a run: the direct port (`:63343`) has served the bundle in 46 s
   while nginx at `:8888` answered from cache in 3 s; a run started while it is starved fails every
   feature at the shell load. `curl -o /dev/null -w '%{time_total}' localhost:63343/login.dart.js_1.part.js`

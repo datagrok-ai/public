@@ -10,7 +10,8 @@ Feature: Annotation region interaction
   One journey on demog-1000 (AGE 18..89, WEIGHT 41.6..165, no blanks) with two nested regions:
   "Outer" spans AGE 20.5..60.5 and "Inner" AGE 30.5..38.5, both the whole WEIGHT range, so the
   centre of Inner lies in both and the centre of Outer in Outer alone. AGE is an integer column, so
-  the half-value bounds put no row on an edge.
+  the half-value bounds put no row on an edge. Shift adds a region to rows selected outside both
+  regions (AGE 70..89), so neither a click that replaced the selection nor one that did nothing passes.
 
   Background:
     Given user is logged in
@@ -50,9 +51,12 @@ Feature: Annotation region interaction
     Then only rows where "AGE" is between 31 and 38 should be selected
     When user clicks on the "region Inner" area of scatter plot viewer holding Control
     Then no rows should be selected
-    When user clicks on the "region Outer" area of scatter plot viewer
+    When user selects rows where "AGE" is between 70 and 89
     And user clicks on the "region Inner" area of scatter plot viewer holding Shift
-    Then only rows where "AGE" is between 21 and 60 should be selected
+    Then some rows where "AGE" is "35" should be selected
+    And some rows where "AGE" is "80" should be selected
+    And no rows where "AGE" is "50" should be selected
+    And 199 rows should be selected
     When user clears the row selection
     Then no errors should have been logged
 

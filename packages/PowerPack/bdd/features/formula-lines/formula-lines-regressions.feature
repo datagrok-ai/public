@@ -4,7 +4,8 @@ Feature: Formula lines regression checks
   renamed while a line is configured (GROK-19334), renaming a column rewrites every formula that
   uses it, a line survives a change of the axis columns untouched (GROK-16214), a band and a line
   survive a logarithmic axis (GROK-20458), and hovering markers next to a line raises nothing
-  (github-2530). The lines are written into the `formulaLines` look property or added from the
+  (github-2530) — HEIGHT = WEIGHT + 100, the line demog's rows lie along, so the markers hovered sit
+  close to it. The lines are written into the `formulaLines` look property or added from the
   axis menu. The `formula lines` reading counts the active items (visible, on the plot's axes),
   whether or not they were drawn; what the last frame drew is the `formula line "<title>"` /
   `formula band <n>` hit area, so the band on a logarithmic axis is claimed by its area.
@@ -113,9 +114,10 @@ Feature: Formula lines regression checks
     Given user adds a scatter plot viewer with:
       | xColumnName  | WEIGHT |
       | yColumnName  | HEIGHT |
-      | formulaLines | [{"type":"line","formula":"${HEIGHT} = ${WEIGHT}"}] |
+      | formulaLines | [{"type":"line","formula":"${HEIGHT} = ${WEIGHT} + 100"}] |
     And user resizes scatter plot viewer to 800 by 500
     Then the "formula lines" reading of scatter plot viewer should be 1
+    And scatter plot viewer should draw 1 formula line
     When user hovers over the "marker of row 1" area of scatter plot viewer
     Then the tooltip should show some columns
     When user hovers over the "marker of row 2" area of scatter plot viewer
