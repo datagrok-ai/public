@@ -536,7 +536,9 @@ COUNT FIRST SEEN LAST TREND STATE`: `FIRST SEEN` is `<version> · MM-DD`, `TREND
 day (`--trend hour` for hours), `STATE` is `open`, `muted → 1.14.3`, `muted until 14:00Z` or
 `resolved`. Grouped without signature it prints `SIGNATURES USERS COUNT NEW FIRST SEEN IN LAST
 TREND TOP ERROR`. `show` prints one signature: versions, occurrences, users, the top groups,
-reports, its alert and the package publish that preceded it. `diff --before/--after` prints the
+reports, its alert and the package publish that preceded it. Over 5,000 occurrences in the window,
+users, groups, sessions and the package come from the latest 5,000 (JSON `sampled: 5000`, and a
+`sampled` line); occurrences, first and last seen stay exact. `diff --before/--after` prints the
 `NEW`, `GONE`, `RISEN` and `REGRESSED` counts with their top signature, then incidents and
 reports; `diff --host a --host b` prints the signatures seen only on each deployment and on both.
 

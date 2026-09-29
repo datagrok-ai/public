@@ -344,5 +344,7 @@ function printShow(d: any): void {
     lines.push(['change', `${d.change.type} ${d.change.package} ${d.change.version} by ${d.change.by} at ${fmtTime(d.change.at)}`]);
   if (d?.sessions !== undefined)
     lines.push(['sessions', String(Array.isArray(d.sessions) ? d.sessions.length : d.sessions)]);
+  if (d?.sampled)
+    lines.push(['sampled', `breakdowns from the latest ${Number(d.sampled).toLocaleString('en-US')} occurrences`]);
   printBlock(lines);
 }

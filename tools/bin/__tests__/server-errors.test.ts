@@ -187,16 +187,17 @@ describe('handleErrors', () => {
     ]);
   });
 
-  it('widens the show block for a long package name', async () => {
+  it('widens the show block for a long package name; says when the breakdowns are sampled', async () => {
     const {connect} = mockConnect(() => ({signature: 'a41f9c3e', error: 'TypeError: x', package: 'UsageAnalysis',
       firstVersion: '2.6.1', firstSeen: utcIso(10, 2), lastSeen: utcIso(10, 47), occurrences: 1234567, users: 1234567890,
-      groups: [], reports: [4815, 4816, 4817, 4818, 4819], alert: null}));
+      groups: [], reports: [4815, 4816, 4817, 4818, 4819], alert: null, sampled: 5000}));
     const {out} = await captureOutput(() => handleErrors(connect, 'show', ['a41f9c'], {}, 'table'));
     expect(out).toEqual([
       'signature    a41f9c         TypeError: x',
       'package      UsageAnalysis  first seen in 2.6.1 at 10:02Z · last seen 10:47Z',
       'occurrences  1234567        users 1234567890  groups (none)',
       'reports      #4815 #4816 #4817 #4818 #4819',
+      'sampled      breakdowns from the latest 5,000 occurrences',
     ]);
   });
 
