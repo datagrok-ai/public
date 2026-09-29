@@ -87,7 +87,7 @@ async function launchSarWithSimilarity(page: import('@playwright/test').Page, va
   // MCL clustering finishes after the model attaches, and Logo Summary Table only exists
   // once it produced a clusters column — so wait for the viewer set, not for a fixed delay.
   await waitForViewers(page, EXPECTED_VIEWERS);
-  return await page.evaluate(() => {
+  return await page.evaluate(async () => {
     const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
     const model = tv.dataFrame.temp['peptidesModel'] as any;
     const viewers = Array.from(tv.viewers).map((v) => v.type);
@@ -107,23 +107,28 @@ async function launchSarWithSimilarity(page: import('@playwright/test').Page, va
     }
     // WebLogo headers grow colHeaderHeight (~130px); sample the canvas top strip for drawn glyphs.
     const colHeaderHeight = tv.grid?.props?.colHeaderHeight ?? 0;
-    let headerHasRender = false;
-    const gridViewer = document.querySelector('[name="viewer-Grid"]');
-    if (gridViewer) {
+    const headerInked = (): boolean => {
+      const gridViewer = document.querySelector('[name="viewer-Grid"]');
+      if (!gridViewer)
+        return false;
       const cs = Array.from(gridViewer.querySelectorAll('canvas')) as HTMLCanvasElement[];
       let best: HTMLCanvasElement | null = null, area = 0;
       for (const c of cs) { const r = c.getBoundingClientRect(); if (r.width * r.height > area) { area = r.width * r.height; best = c; } }
-      if (best && best.width > 0 && best.height > 0) {
-        try {
-          const ctx = best.getContext('2d')!;
-          const h = Math.min(130, best.height);
-          const data = ctx.getImageData(0, 0, best.width, h).data;
-          let nonBg = 0;
-          for (let i = 0; i < data.length; i += 41)
-            if (data[i + 3] > 0 && (data[i] < 250 || data[i + 1] < 250 || data[i + 2] < 250)) nonBg++;
-          headerHasRender = nonBg > 50;
-        } catch (e) { headerHasRender = false; }
-      }
+      if (!best || best.width === 0 || best.height === 0)
+        return false;
+      try {
+        const data = best.getContext('2d')!.getImageData(0, 0, best.width, Math.min(130, best.height)).data;
+        let nonBg = 0;
+        for (let i = 0; i < data.length; i += 41)
+          if (data[i + 3] > 0 && (data[i] < 250 || data[i + 1] < 250 || data[i + 2] < 250)) nonBg++;
+        return nonBg > 50;
+      } catch (e) { return false; }
+    };
+    // Docking the SAR viewers resizes the grid, and a resized canvas stays blank until its next paint.
+    let headerHasRender = headerInked();
+    for (const until = Date.now() + 5000; !headerHasRender && Date.now() < until;) {
+      await new Promise((r) => setTimeout(r, 100));
+      headerHasRender = headerInked();
     }
     const lastError = grok.shell.lastError ? String(grok.shell.lastError) : '';
     return {
@@ -159,7 +164,7 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
         `Similarity=${threshold} did not propagate to the model mclSettings.threshold`).toBe(threshold);
       expect(out.modelPresent, `PeptidesModel did not attach after SAR at Similarity=${threshold}`).toBe(true);
       for (const type of EXPECTED_VIEWERS)
-        expect(out.viewers, `${type} must attach at Similarity=${threshold}`).toContain(type);
+        expect(out.viewers, `${type} must attach at Similarity=${threshold}; last error: ${out.lastError || 'none'}`).toContain(type);
       expect(out.positionsWithStats,
         `MonomerPositionStats is empty at Similarity=${threshold} (WebLogo would render blank)`)
         .toBeGreaterThan(0);
@@ -177,7 +182,8 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
     await openPeptidesTable(page);
     const out = await launchSarWithSimilarity(page, 90);
     expect(out.appliedThreshold, 'Similarity=90 did not propagate to the model').toBe(90);
-    expect(out.viewers, 'Sequence Variability Map must be attached at Similarity=90').toContain('Sequence Variability Map');
+    expect(out.viewers, `Sequence Variability Map must be attached at Similarity=90; last error: ${out.lastError || 'none'}`)
+      .toContain('Sequence Variability Map');
     expect(out.positionsWithStats, 'WebLogo backing stats are empty at Similarity=90').toBeGreaterThan(0);
     expect(out.headerHasRender, 'WebLogo column-headers drew nothing at Similarity=90 (silently-blank regression)').toBe(true);
     assertNoNullReceiverCrash(out.lastError, 90);
