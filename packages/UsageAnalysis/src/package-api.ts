@@ -108,18 +108,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:TopErrorSources', { date });
   }
 
-  export async function eventErrors(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:EventErrors', { date });
-  }
-
-  export async function reportsCount(date: string , event_id: string ): Promise<{count: number, report_number: number}> {
-    return await grok.data.query('UsageAnalysis:ReportsCount', { date, event_id });
-  }
-
-  export async function sameErrors(date: string , event_id: string | null): Promise<number> {
-    return await grok.data.query('UsageAnalysis:SameErrors', { date, event_id });
-  }
-
   export async function topErrors(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:TopErrors', { date });
   }

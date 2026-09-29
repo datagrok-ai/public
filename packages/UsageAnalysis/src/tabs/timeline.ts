@@ -15,7 +15,8 @@ export class TimelineView extends UaView {
   keyInput = ui.input.choice('By', {value: 'action', items: TIMELINE_KEYS, nullable: false});
   idInput = ui.input.string('Id');
   host: HTMLDivElement = ui.box();
-  shown = false;
+  /** `<key>=<id>` of the record shown, for the tab's path. */
+  shownParam?: string;
   private fromUrl: {key: string, value: string} | null = null;
   /** The app's `?<key>=<id>` parameters: the platform passes them to the app function, not in the URL. */
   static urlParams: {[key: string]: string | undefined} = {};
@@ -42,7 +43,7 @@ export class TimelineView extends UaView {
     const form = ui.form([this.keyInput, this.idInput], {classes: 'ua-toolbar'});
     form.append(ui.buttonsInput([ui.button('Show', () => this.load())]));
     this.root.append(ui.divV([ui.div([form], 'ua-toolbar'), this.host], 'ui-box'));
-    if (!this.shown && this.fromUrl)
+    if (!this.shownParam && this.fromUrl)
       this.show(this.fromUrl.key, this.fromUrl.value);
   }
 
@@ -57,9 +58,9 @@ export class TimelineView extends UaView {
     const value = (this.idInput.value ?? '').trim();
     if (!value)
       return;
-    this.shown = true;
-    if (this.uaToolbox)
-      this.uaToolbox.viewHandler.view.path = `/timeline?${key}=${encodeURIComponent(value)}`;
+    this.shownParam = `${key}=${encodeURIComponent(value)}`;
+    if (this.uaToolbox?.viewHandler.getCurrentView() === this)
+      this.uaToolbox.viewHandler.updatePath();
     ui.empty(this.host);
     this.host.append(ui.waitBox(async () => {
       try {

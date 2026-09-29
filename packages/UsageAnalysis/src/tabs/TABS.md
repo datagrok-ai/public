@@ -15,7 +15,7 @@ It builds a `ViewHandler`, calls `handler.init(...)`, and returns `handler.view`
 | `ViewHandler`             | `view-handler.ts`                       | Owns a `DG.MultiView` (the tab strip); registers tabs, routing, per-tab toggles          |
 | `UaToolbox`               | `ua-toolbox.ts`                         | The single shared left toolbox (filter accordion) used by every tab                      |
 | `UaView`                  | `tabs/ua.ts`                            | Base class each tab extends                                                              |
-| Tabs                      | `tabs/*.ts`                             | One file per tab (Overview, Packages, Functions, Events, Clicks, Log, Projects, Metrics) |
+| Tabs                      | `tabs/*.ts`                             | One file per tab (the list in `ViewHandler.init()` below)                                |
 | `UaQueryViewer`           | `viewers/abstract/ua-query-viewer.ts`   | Runs a named UA query and builds a `DG.Viewer`                                           |
 | `UaFilterableQueryViewer` | `viewers/ua-filterable-query-viewer.ts` | A `UaQueryViewer` that re-runs on every filter change                                    |
 
@@ -35,17 +35,23 @@ when created within the Date filter. **New rule...** builds the `POST /logging/c
 function `CaptureRuleAdd`; a row's context panel and context menu offer **Stop...** (`CaptureRuleStop`, active rules
 only) and **Timeline**. `TimelineView` (tab `Timeline`) shows one action, request, session, report or rule
 (`cap-<n>`) in time order from the server function `Timeline`; it routes as `/timeline?<key>=<id>` (the id keeps its
-case; the platform hands the query parameters to `usageAnalysisApp`, which passes them on as `TimelineView.urlParams`). The Clicks tab's **Clicks** sub-tab lists single clicks (`Clicks` query) with their `request_id` (the action
-id); the row's context menu **Timeline** opens that action. The server enforces the permissions on all three
-functions; the packages and groups inputs are hidden on both tabs.
+case; the platform hands the query parameters to `usageAnalysisApp`, which passes them on as
+`TimelineView.urlParams`; other tabs drop the parameter from their path). The Clicks tab's **Clicks** sub-tab lists
+single clicks (`Clicks` query) with their `request_id` (the action id); the row's context menu **Timeline** opens that
+action. The server enforces the permissions on all three functions; the packages and groups inputs are hidden on both
+tabs.
 
 `ErrorsView` (tab `Errors`) is the platform's errors as data, from the server function `ErrorStats` (the
 `GET /errors` query; ViewTelemetry): without Group by, occurrences; with up to three Group by dimensions, one row of
 figures per combination (first seen in, trend, and, by signature, the alert state). Its inputs are the toolbox's
 **Errors** pane (`UaToolbox.addTabPane`), which replaces the Filters pane while the tab is current. A row's context
 panel runs `ErrorStats` narrowed to the row and lists the occurrences (request → Timeline), then the sessions, reports
-and alerts of their signatures (`ErrorSessions`, `ErrorReports`, `ErrorAlerts` in `errors_query.sql`). **Export**
-writes the shown table as CSV, JSON or Parquet (`Arrow:toParquet`, disabled without Arrow); **Save as job...** calls
+and alerts of their signatures (`ErrorSessions`, `ErrorReports`, `ErrorAlerts` in `errors_query.sql`). Those three
+are package queries on `System:Datagrok`, so they follow the rest of the app's access model rather than
+ViewTelemetry: whoever can use that connection (administrators by default) sees them, and anyone else gets an error in
+that pane only. **Export** writes the shown table as CSV (a cell starting with `=`, `+`, `-`, `@`, a tab or a carriage
+return gets a leading `'`, as in the server's CSV), JSON or Parquet (`Arrow:toParquet`, disabled without Arrow);
+**Save as job...** calls
 `ErrorsSaveJob` with the shown query (Since only; cron in UTC). The Clicks tab's **Followed by Error** sub-tab
 (`ClicksFollowedByError`) counts clicks per element and those an error followed within 5 s whose request id is the
 click's action id or `<action>.<n>`; anonymous clicks count users by `anonSession`.
@@ -113,5 +119,6 @@ read-only drilldown fields, reload a target tab's viewer with a derived filter, 
 
 ## Routing
 
-`setUrlParam` / `updatePath` keep `view.path` as `/<tab><rout>?<params>` (lowercased). On load, `init()`
+`setUrlParam` / `updatePath` keep `view.path` as `/<tab><rout>?<params>` (the tab and route lowercased, the
+parameters as they are). On load, `init()`
 parses the first path segment to pick the starting tab (default `Overview`) and applies incoming filter params.

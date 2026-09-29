@@ -14,6 +14,7 @@ export class ClicksView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
   tabControl?: DG.TabControl;
   followedView: string = '';
+  private refreshers: (() => void)[] = [];
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -29,17 +30,29 @@ export class ClicksView extends UaView {
     };
     this.tabControl = ui.tabControl(tabs);
     this.root.appendChild(this.tabControl.root);
+    const refresh = () => {
+      for (const r of this.refreshers)
+        r();
+    };
+    this.tabControl.onTabChanged.subscribe(() => refresh());
+    this.uaToolbox.viewHandler.view.tabs.onTabChanged.subscribe(() => refresh());
   }
 
+  /** A sub-tab built for the applied filter, rebuilt when it is shown after the filter changed. */
   createFilteredElement(build: (filter: UaFilter) => Promise<HTMLElement>): HTMLElement {
-    let current = this.createWaitElement(this.uaToolbox.getFilter(), build);
-    this.uaToolbox.filterStream.subscribe((filter) => {
-      if (!current.parentElement)
+    let shown = this.uaToolbox.filterStream.value;
+    let current = this.createWaitElement(shown, build);
+    const refresh = () => {
+      const filter = this.uaToolbox.filterStream.value;
+      if (filter === shown || !current.isConnected)
         return;
+      shown = filter;
       const next = this.createWaitElement(filter, build);
       current.replaceWith(next);
       current = next;
-    });
+    };
+    this.refreshers.push(refresh);
+    this.uaToolbox.filterStream.subscribe(() => refresh());
     return current;
   }
 

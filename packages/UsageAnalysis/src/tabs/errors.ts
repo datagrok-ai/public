@@ -21,6 +21,7 @@ const MAX_TREND = 60;
 const DRILL_LIMIT = 500;
 const SHOWN = 20;
 const ROUTE = /^([A-Za-z]+\s+)?\//;
+const FORMULA = /^[=+\-@\t\r]/;
 const HEADERS: {[column: string]: string} = {count: 'occurrences', firstVersion: 'first seen in', firstSeen: 'first seen',
   lastSeen: 'last seen', newInRange: 'new', mttrMinutes: 'MTTR, min', requestId: 'request'};
 const DEFAULT_FOLDER = 'System:AppData/Ops/errors/';
@@ -35,7 +36,7 @@ export class ErrorsView extends UaView {
   since = ui.input.choice('Since', {value: '7 days', items: [...Object.keys(SINCE), RANGE], nullable: false});
   from = ui.input.date('From');
   to = ui.input.date('To');
-  group = ui.input.choice<string>('Group', {value: '', items: ['']});
+  group!: DG.InputBase<string>;
   by = ui.input.multiChoice<string>('Group by', {value: ['signature'], items: DIMENSIONS});
   service = ui.input.choice('Service', {value: '', items: ['', 'server', 'client']});
   text: {[name: string]: DG.InputBase<string>} = Object.fromEntries(TEXT_FILTERS.map((f) =>
@@ -57,7 +58,8 @@ export class ErrorsView extends UaView {
 
   async initViewers(path?: string): Promise<void> {
     const groups = (await grok.dapi.groups.list()).filter((g) => !g.personal).map((g) => g.friendlyName).sort();
-    this.group.items = ['', ...groups];
+    this.group = ui.typeAhead('Group', {source: {local: groups}, minLength: 1, limit: 30, highlight: true});
+    this.group.setTooltip('Only errors of this group\'s members');
     this.text.signature.setTooltip('A stack hash or its first 6+ characters');
     this.text.route.setTooltip('"<METHOD> /path" or "/path", without /api');
     this.text.connection.setTooltip('Namespace:Name or the connection id');
@@ -109,8 +111,8 @@ export class ErrorsView extends UaView {
       if (value)
         spec[f] = value;
     }
-    if (this.group.value)
-      spec.group = this.group.value;
+    if (this.group.value?.trim())
+      spec.group = this.group.value.trim();
     if (this.service.value)
       spec.service = this.service.value;
     if (this.minUsers.value)
@@ -318,7 +320,8 @@ export class ErrorsView extends UaView {
     const noTable = () => this.table ? null : 'Nothing to export yet';
     const arrow = DG.Func.find({package: 'Arrow', name: 'toParquet'}).length > 0;
     DG.Menu.popup()
-      .item('CSV', () => DG.Utils.download('errors.csv', this.table!.toCsv(), 'text/csv'), null, {isEnabled: noTable})
+      .item('CSV', () => DG.Utils.download('errors.csv', ErrorsView.toCsv(this.table!), 'text/csv'), null,
+        {isEnabled: noTable})
       .item('JSON', () => DG.Utils.download('errors.json', JSON.stringify(this.table!.toJson()), 'application/json'),
         null, {isEnabled: noTable})
       .item('Parquet', async () => {
@@ -331,6 +334,18 @@ export class ErrorsView extends UaView {
         }
       }, null, {isEnabled: () => noTable() ?? (arrow ? null : 'Install the Arrow package to export Parquet')})
       .show({causedBy: e});
+  }
+
+  /** [t] as CSV, like the server's: a cell a spreadsheet would run as a formula starts with `'`. */
+  static toCsv(t: DG.DataFrame): string {
+    const safe = t.clone();
+    for (const col of safe.columns.toList()) {
+      if (col.type !== DG.TYPE.STRING)
+        continue;
+      const values: (string | null)[] = col.toList();
+      col.init((i) => values[i] && FORMULA.test(values[i]!) ? `'${values[i]}` : values[i]);
+    }
+    return safe.toCsv();
   }
 
   saveProblem(): string | null {

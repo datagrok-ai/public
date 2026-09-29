@@ -92,12 +92,12 @@ export class CaptureView extends UaView {
   }
 
   stopDialog(rule: string): void {
-    const reason = ui.input.string('Reason');
-    ui.dialog(`Stop ${rule}`)
+    const reason = ui.input.string('Reason', {tooltipText: 'Why the rule stops; required'});
+    const dialog = ui.dialog(`Stop ${rule}`)
       .add(reason)
       .onOK(async () => {
         try {
-          await grok.functions.call('CaptureRuleStop', {id: rule, reason: reason.value || null});
+          await grok.functions.call('CaptureRuleStop', {id: rule, reason: reason.value.trim()});
           grok.shell.info(`Stopped ${rule}`);
           this.reshow = rule;
           this.rulesViewer?.reloadViewer();
@@ -107,6 +107,10 @@ export class CaptureView extends UaView {
         }
       })
       .show();
+    const ok = dialog.getButton('OK');
+    ok.disabled = true;
+    ui.tooltip.bind(ok, () => reason.value?.trim() ? 'Stop the rule' : 'Enter the reason');
+    reason.onChanged.subscribe(() => ok.disabled = !reason.value?.trim());
   }
 
   newRuleDialog(): void {

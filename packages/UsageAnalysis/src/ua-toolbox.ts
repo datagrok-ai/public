@@ -139,7 +139,7 @@ export class UaToolbox {
   /** A tab's own filter pane, shown in place of Filters while that tab is current. */
   addTabPane(tab: string, content: HTMLElement): void {
     this.tabPanes[tab] = this.rootAccordion.addPane(tab, () => content, true);
-    this.showPaneOf(tab);
+    this.showPaneOf(this.viewHandler.view.currentView?.name ?? tab);
   }
 
   showPaneOf(tab: string): void {

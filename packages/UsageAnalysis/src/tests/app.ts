@@ -117,4 +117,14 @@ category('Errors', () => {
     expect(JSON.stringify(ErrorsView.rowFilters(t, {by: 'package,route'}, 0)), '{"package":"Chem","route":"GET /queries/{id}"}');
     expect(JSON.stringify(ErrorsView.rowFilters(t, {by: 'package,route'}, 1)), '{"package":"core"}');
   });
+
+  test('CSV export neutralises formulas', async () => {
+    const t = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('error', ['=1+2', '+x', '-y', '@z', 'plain']),
+      DG.Column.fromInt32Array('count', new Int32Array([1, 2, 3, 4, 5])),
+    ]);
+    const lines = ErrorsView.toCsv(t).trim().split('\n');
+    expect(lines.slice(1).map((l) => l.split(',')[0]).join(' '), '\'=1+2 \'+x \'-y \'@z plain');
+    expect(t.get('error', 0), '=1+2');
+  });
 }, {timeout: 60000});

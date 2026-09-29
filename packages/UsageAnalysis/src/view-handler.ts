@@ -17,7 +17,7 @@ import {MetricsView} from './tabs/metrics';
 import {VulnerabilitiesView} from './tabs/vulnerabilities';
 import {StressView} from './tabs/stress-tests';
 import {CaptureView} from './tabs/capture';
-import {TimelineView} from './tabs/timeline';
+import {TIMELINE_KEYS, TimelineView} from './tabs/timeline';
 
 export class ViewHandler {
   public static UA_NAME = 'Usage Analysis';
@@ -209,13 +209,17 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    this.view.path = `/${ViewHandler.urlName(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
+    this.view.path = `/${ViewHandler.urlName(this.getCurrentView())}?${params.join('&')}`;
   }
 
-   updatePath(): void {
+  /** The tab's path with the shared parameters; the Timeline tab adds the record it shows, the others drop it. */
+  updatePath(): void {
     const v = this.getCurrentView();
     const s = this.view.path.split('?');
-    const params = s.length === 2 ? s[1] : null;
-     this.view.path = `/${ViewHandler.urlName(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
+    const params = (s.length === 2 ? s[1].split('&') : [])
+      .filter((p) => p && !TIMELINE_KEYS.includes(p.split('=')[0]));
+    if (v instanceof TimelineView && v.shownParam)
+      params.push(v.shownParam);
+    this.view.path = `/${ViewHandler.urlName(v)}${(v.rout ?? '').toLowerCase()}${params.length ? '?' + params.join('&') : ''}`;
   }
 }
