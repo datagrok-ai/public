@@ -118,7 +118,12 @@ links between script own inputs, since they don't have a well-defined order in t
 _Optional_
 
 Is available only for data link, will force run a link after OnInit
-hook.
+hook. Init happens every time a workflow instance is set up: when it is
+created and each time it is loaded from history, including a nested
+workflow loaded into a running one. A `runOnInit` link therefore reruns
+on load and may overwrite inputs of steps that have not been run yet;
+inputs of a step that has run keep their values and only get a
+consistency mark.
 
 While the [init hook](#init-hook) and the `runOnInit` links run, plain
 data links are not yet active, so values written at that stage do not
@@ -1067,8 +1072,9 @@ the common ancestor, or operate only at the inner level.
 
 ### Init hook
 
-Uses the `onInit` field instead of links and is triggered only once
-when a workflow is created. Usually is used to populate static
+Uses the `onInit` field instead of links and is triggered once per
+init of a workflow instance: when it is created and each time it is
+loaded from history. Usually is used to populate static
 [states](configuration.mdx#states). Otherwise, the same as [data links](#data-links).
 Its writes are visible to [`runOnInit`](#runoninit) links and to derived
 links, but not to plain data links, which become active only after the

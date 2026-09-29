@@ -327,8 +327,9 @@ when its source changes, and tracks it for consistency.
   future. `before(@base, load)` reads the nearest `load` before that
   step, so a second `load` added later in the sequence feeds only the
   analyses after it. `same(@base)/rows` targets the instance itself.
-- `runOnInit` applies the default when the tree is created, and the link
-  reruns when the table changes. Rules run every effect family through
+- `runOnInit` applies the default at every init, including a load from
+  history, where it refreshes analysis steps that have not been run
+  yet; the link reruns when the table changes. Rules run every effect family through
   the same `from`, so `fn` is called even while the table is absent: the
   `?.` guard returns `undefined` and the `when` keeps the write off.
 - `restricted` records the written value, so a user edit is flagged
