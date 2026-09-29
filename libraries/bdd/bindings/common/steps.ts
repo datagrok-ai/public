@@ -122,6 +122,8 @@ export const shouldNotBe = Then('{element} should not be/become {state}', (page:
 export const shouldBecomeVisibleWithin = Then('{element} should become visible within {int} seconds',
   async (page: Page, target: ElementRef, seconds: number) => expectVisible(await locate(page, target), true, pollMs(seconds * 1000)),
   {description: 'for what a computation produces well past the usual budget (a search\'s hits): the budget is the scenario\'s claim about how long it may take'});
+export const waitSeconds = When('user waits {int} second(s)', (page: Page, seconds: number) => page.waitForTimeout(seconds * 1000),
+  {tier: 'ui', description: 'a plain pause, only where the platform gives nothing to wait on (a Properties pane of the previous object landing after a click on a new one); everything else waits for its outcome'});
 export const shouldContainText = Then('{element} should contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text));
 export const shouldNotContainText = Then('{element} should not contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {negate: true}));
 export const shouldHaveText = Then('{element} should have (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {exact: true}));
