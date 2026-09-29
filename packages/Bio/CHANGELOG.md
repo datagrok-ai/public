@@ -1,6 +1,6 @@
 # Bio changelog
 
-## 2.28.3 (2026-09-29)
+## 2.28.4 (2026-09-29)
 
 * MSA header: Numbered positions by the column's position names on the ruler and in the WebLogo tooltip, so a region extracted from a numbered aligned column (Extract Region, or Extract CDR3 from the cell menu) keeps the scheme's numbering, e.g. CDR3 from 105 instead of 1 (in `@datagrok-libraries/bio`)
 * MSA header: Fixed long columns sometimes left without the header: it now repaints once installed, shows on a column wider than the view, and a new column no longer shrinks the shared header height; a scrolled-away header no longer blocks clicks on other columns' headers (in `@datagrok-libraries/bio`)
