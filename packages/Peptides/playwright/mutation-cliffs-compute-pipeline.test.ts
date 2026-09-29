@@ -241,7 +241,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
   });
 
   await softStep('Scenario 1 (step 4): SVM mode switch to Mutation Cliffs + cell-renderer mount survives', async () => {
-    const errorsBefore = await page.evaluate(() => (grok.shell.lastError ?? '') + '');
+    const errorsBefore = await page.evaluate(async () => ((await grok.shell.lastError) ?? '') + '');
     const switched = await page.evaluate((VT) => {
       const svmRoot = document.querySelector('[name="viewer-Sequence-Variability-Map"]') as HTMLElement | null;
       if (!svmRoot) return {error: 'SVM viewer root not found'};
@@ -280,7 +280,7 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
       'renderMutationCliffs mounted; reads from svm.mutationCliffs via mutationCliffsToMaskInfo projection)')
       .toBeGreaterThan(0);
 
-    const errorsAfter = await page.evaluate(() => (grok.shell.lastError ?? '') + '');
+    const errorsAfter = await page.evaluate(async () => ((await grok.shell.lastError) ?? '') + '');
     if (errorsAfter && errorsAfter !== errorsBefore) {
       console.log('[note] grok.shell.lastError surfaced during SVM mode switch (pre-Step-7 capture):',
         errorsAfter.slice(0, 400));
@@ -666,8 +666,8 @@ test('Mutation-cliffs compute pipeline — worker-aggregated cliffs Map + per-po
   });
 
   await softStep('Scenarios 1+2 step 7: no fatal null-receiver / NaN / worker-spawn errors throughout', async () => {
-    const lastError = await page.evaluate(() =>
-      grok.shell.lastError ? String(grok.shell.lastError) : null);
+    const lastError = await page.evaluate(async () =>
+      ((await grok.shell.lastError) ?? null));
     const fatal = lastError && /setTrue|fire.*on (null|undefined)|Cannot read .* (null|undefined)|method not found.*null|NaN|division by zero|worker.*(spawn|failed)|Could not deserialize/i
       .test(lastError);
     expect(fatal,
