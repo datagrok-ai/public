@@ -13,9 +13,9 @@ Feature: A project saved with a table left out, then augmented by dropping the t
   "Save original project" is the selected save mode (a radio of the Save dialog reads no checked
   state).
 
-  Known failure, no ticket (reproduced on localhost 1.28.0 in two runs and by hand): the plus icon
-  that replaces the cross shows no tooltip on hover (it carries "Include table to the project." as
-  its aria-label only), while the cross shows "Exclude table from the project.".
+  The plus icon takes the cross's place under the pointer that pressed it, and a tooltip is not
+  shown for a pointer resting where it last pressed; so the pointer presses into the Name field
+  before it hovers the plus icon again, as a user's next hover lands elsewhere.
 
   The project is named with the run's time (letters and digits only: the Dashboards search misses
   "-" and "_") and removed with its tables and views when the feature starts and ends. It is serial:
@@ -47,9 +47,8 @@ Feature: A project saved with a table left out, then augmented by dropping the t
     Then plus icon in "iris" project table in "Save project" dialog should be visible
     And times icon in "iris" project table in "Save project" dialog should be hidden
 
-  @known-failure
   Scenario: The plus icon that replaces the cross has its tooltip
-    When user moves the pointer away from "iris" project table in "Save project" dialog
+    When user clicks on Name text input in "Save project" dialog
     And user hovers over plus icon in "iris" project table in "Save project" dialog
     Then tooltip should contain text "Include table to the project."
 
