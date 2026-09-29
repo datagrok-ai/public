@@ -33,6 +33,25 @@ category('App', () => {
       await awaitCheck(() => view.root.children.length > 0, `"${tab}" failed to initialize`, 30000);
     });
   }
+
+  test('Timeline tab of a real click', async () => {
+    const allUsers = (await grok.dapi.groups.getGroupsLookup('All users'))[0].id;
+    const clicks = await queries.clicks('this month', [allUsers]);
+    let key = 'action';
+    let id = clicks.col('request_id')!.toList().find((v) => v);
+    if (!id) {
+      const errors: DG.DataFrame = await grok.functions.call('ErrorStats', {spec: JSON.stringify({since: '30d', limit: 50})});
+      key = 'request';
+      id = errors.col('requestId')!.toList().find((v) => v);
+    }
+    expect(id != null, true, 'no click or error with a request id this month');
+    TimelineView.open(handler, key, id);
+    const view = handler.getCurrentView() as TimelineView;
+    await awaitCheck(() => view.host.querySelector('.d4-grid, .d4-viewer-error, .ua-empty') != null,
+      'Timeline did not load', 30000);
+    expect(view.host.querySelector('.d4-viewer-error')?.textContent ?? '', '');
+    expect(view.host.querySelector('.d4-grid') != null, true, `no records for ${key} ${id}`);
+  });
 }, {clear: false, timeout: 60000});
 
 category('Capture', () => {
@@ -136,6 +155,16 @@ category('Errors', () => {
     expect(ErrorsView.cron('weekdays 7:30'), '30 7 * * 1-5');
     expect(ErrorsView.cron('0 7 * * *'), '0 7 * * *');
     expect(ErrorsView.cron('someday'), null);
+    expect(ErrorsView.scheduleText('0 8 * * 1'), 'Mondays 08:00 UTC');
+    expect(ErrorsView.scheduleText('30 7 * * 1-5'), 'Weekdays 07:30 UTC');
+    expect(ErrorsView.scheduleText('*/5 * * * *'), 'cron "*/5 * * * *" UTC');
+    expect(ErrorsView.scheduleText(''), 'no schedule');
+    const logins = [...Array(12).keys()].map((k) => `u${k}`);
+    expect(ErrorsView.usersText(logins), 'u0, u1, u2, u3, u4, u5, u6, u7, u8, u9 +2 more');
+    expect(ErrorsView.usersText([null, '']), 'none');
+    expect(ErrorsView.emptyHint({since: '7d', by: 'user', minUsers: 2}),
+      'Min users is 2 — grouping by user leaves one user per row. Clear it, or choose a longer Since');
+    expect(ErrorsView.emptyHint({since: '7d'}), 'Choose a longer Since');
     const t = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('package', ['Chem', 'core']),
       DG.Column.fromStrings('route', ['GET /queries/{id}', 'socket']),
@@ -152,5 +181,19 @@ category('Errors', () => {
     const lines = ErrorsView.toCsv(t).trim().split('\n');
     expect(lines.slice(1).map((l) => l.split(',')[0]).join(' '), '\'=1+2 \'+x \'-y \'@z plain');
     expect(t.get('error', 0), '=1+2');
+  });
+
+  test('Export takes the grid\'s columns and headers', async () => {
+    const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('signature', ['a41f9c3e-0000-0000-0000-000000000000']),
+      DG.Column.fromInt32Array('count', new Int32Array([7])),
+      DG.Column.fromStrings('requestId', ['x']),
+    ]));
+    grid.col('count')!.name = 'occurrences';
+    grid.col('requestId')!.visible = false;
+    const t = ErrorsView.exportTable(grid);
+    expect(t.columns.names().join(','), 'signature,occurrences');
+    expect(t.get('signature', 0), 'a41f9c');
+    expect(t.get('occurrences', 0), 7);
   });
 }, {timeout: 60000});

@@ -514,6 +514,13 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   max-width: 300px;
 }
 
+.ua-note {
+  color: var(--text-color-light);
+  font-size: 12px;
+  margin: 0 0 4px;
+  max-width: 300px;
+}
+
 .ua-empty {
   flex: 1;
   align-items: center;

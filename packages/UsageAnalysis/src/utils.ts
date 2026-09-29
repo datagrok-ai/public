@@ -91,9 +91,9 @@ export function onRowContextMenu(grid: DG.Grid, handler: (menu: DG.Menu, row: nu
   });
 }
 
-export const GRID_TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss';
+export const GRID_TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss UTC';
 
-/** Shows every date column of [grid] without the zone and milliseconds; the grid keeps the platform's UTC. */
+/** Shows every date column of [grid] without milliseconds, marked UTC: the grid keeps the platform's UTC. */
 export function formatGridTimes(grid: DG.Grid): void {
   for (const col of grid.dataFrame.columns.toList()) {
     if (col.type === DG.TYPE.DATE_TIME && grid.col(col.name))
@@ -103,7 +103,7 @@ export function formatGridTimes(grid: DG.Grid): void {
 
 /** A date column's value as [formatGridTimes] shows it; empty for none. */
 export function formatTime(value: any): string {
-  return value == null ? '' : dayjs(value).toISOString().replace('T', ' ').substring(0, 19);
+  return value == null ? '' : `${dayjs(value).toISOString().replace('T', ' ').substring(0, 19)} UTC`;
 }
 
 /** A line that says why an action is disabled: a disabled button shows no tooltip. */

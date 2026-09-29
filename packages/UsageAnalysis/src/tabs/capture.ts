@@ -6,19 +6,21 @@ import {UaView} from './ua';
 import {TimelineView} from './timeline';
 import {UaToolbox} from '../ua-toolbox';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-import {formatTime, onRowContextMenu, problemLine, showProblem} from '../utils';
+import {formatTime, onRowContextMenu, problemLine, scrollToStartOnFirstDraw, showProblem} from '../utils';
 import '../../css/usage_analysis.css';
 
 const CAPTURE_ITEMS = ['clicks', 'inputs', 'requests', 'calls', 'errors'];
 const SUBJECTS = ['user', 'group', 'package', 'everyone'];
 const ALL_ACTIVITY = 'all activity';
 const SCOPES = [ALL_ACTIVITY, 'view', 'element', 'function', 'error'];
+const TRIGGERS: {[scope: string]: string} = {view: 'the view opens', element: 'the element is clicked',
+  function: 'the function runs', error: 'the error occurs'};
 const NO_LEVEL = 'none';
 const LEVELS = [NO_LEVEL, 'error', 'warning', 'info', 'debug'];
 const CREDENTIALS_FLAG = 'credentials';
 const DURATIONS: {[name: string]: number} = {'30 min': 30, '2 h': 120, '1 d': 1440, '2 d': 2880, '7 d': 10080};
-const HIDDEN_COLUMNS = ['status', 'capture', 'anonymous', 'name', 'max_events', 'window_minutes', 'max_sessions',
-  'created_at', 'expires_at', 'ended_at', 'id', 'stopped_by', 'stop_reason'];
+const HIDDEN_COLUMNS = ['status', 'capture', 'anonymous', 'max_events', 'window_minutes', 'max_sessions',
+  'created_at', 'expires_at', 'ended_at', 'id', 'stopped_by'];
 /** The server's field names in a refusal, as the New rule dialog labels them. */
 const LABELS: [RegExp, string][] = [[/\bsubject\.type\b/g, 'Subject'], [/\bsubject\.value\b/g, 'Who'],
   [/\bscope\.type\b/g, 'Scope'], [/\bscope\.value\b/g, 'Scope value'], [/\b(capture\.)?serverLevel\b/g, 'Server level'],
@@ -30,8 +32,10 @@ export class CaptureView extends UaView {
   rulesViewer?: UaFilterableQueryViewer;
   /** The rule to show again in the context panel once the rules reload. */
   reshow?: string;
-  /** Reasons of the rules stopped here: the server records one a moment after the stop. */
+  /** Reasons of the rules stopped here: the server saves its stop record a moment after the stop. */
   stopReasons: {[rule: string]: string} = {};
+  /** The context panel of the rule shown last. */
+  shown?: HTMLElement;
   /** The New rule dialog's debug flags, read once. */
   debugFlags?: Promise<string[]>;
 
@@ -46,32 +50,46 @@ export class CaptureView extends UaView {
       name: 'Capture rules',
       queryName: 'CaptureRules',
       processDataFrame: (t: DG.DataFrame) => {
+        const rules: string[] = t.col('rule')!.toList();
+        const stopReasons = t.col('stop_reason')!;
+        for (let i = 0; i < t.rowCount; i++) {
+          if (!stopReasons.get(i) && this.stopReasons[rules[i]] && t.get('status', i) === 'stopped')
+            stopReasons.set(i, this.stopReasons[rules[i]], false);
+        }
         t.onCurrentRowChanged.subscribe(() => this.showRule(t, t.currentRowIdx));
-        const i = this.reshow ? t.col('rule')!.toList().indexOf(this.reshow) : -1;
+        const i = this.reshow ? rules.indexOf(this.reshow) : -1;
         this.reshow = undefined;
-        if (i >= 0)
+        if (i >= 0) {
           t.currentRowIdx = i;
+          this.showRule(t, i);
+        }
+        else if (this.shown && grok.shell.o === this.shown)
+          grok.shell.setCurrentObject(null, false, true);
         return t;
       },
       createViewer: (t: DG.DataFrame) => {
         const grid = DG.Viewer.grid(t, {showRowHeader: false, allowRowSelection: false, allowBlockSelection: false});
-        grid.columns.setOrder(['rule', 'author', 'subject', 'scope', 'reason', 'active', 'events']);
+        grid.columns.setOrder(['rule', 'name', 'author', 'subject', 'scope', 'reason', 'active', 'stop_reason', 'events']);
         for (const name of HIDDEN_COLUMNS)
           grid.col(name)!.visible = false;
+        grid.col('name')!.width = 150;
         grid.col('reason')!.width = 250;
-        grid.col('active')!.width = 150;
+        grid.col('active')!.width = 170;
+        grid.col('stop_reason')!.width = 200;
+        grid.col('stop_reason')!.name = 'stop reason';
         grid.onCellPrepare((gc) => {
           if (!gc.isTableCell || gc.gridColumn.column?.name !== 'active' || gc.cell.value !== 'active')
             return;
           const ends = formatTime(t.get('expires_at', gc.cell.rowIndex));
           const today = ends.startsWith(formatTime(new Date()).substring(0, 10));
-          gc.customText = `active · ends ${ends.substring(today ? 11 : 5, 16)}`;
+          gc.customText = `active · ends ${ends.substring(today ? 11 : 5, 16)} UTC`;
         });
         onRowContextMenu(grid, (menu, i) => {
           if (t.get('status', i) === 'active')
             menu.item('Stop...', () => this.stopDialog(t.get('rule', i)));
           menu.item('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'rule', t.get('rule', i)));
         });
+        scrollToStartOnFirstDraw(grid);
         return grid;
       },
     });
@@ -103,14 +121,30 @@ export class CaptureView extends UaView {
     };
     if (t.get('stopped_by', i))
       details['Stopped by'] = t.get('stopped_by', i);
-    const stopReason = t.get('stop_reason', i) ?? (status === 'stopped' ? this.stopReasons[rule] : null);
-    if (stopReason)
-      details['Stop reason'] = stopReason;
+    if (t.get('stop_reason', i))
+      details['Stop reason'] = t.get('stop_reason', i);
     details['Events'] = `${t.get('events', i)} of ${t.get('max_events', i)}`;
-    details['Per session'] = `first ${t.get('window_minutes', i)} min, up to ${t.get('max_sessions', i)} sessions`;
+    const perSession: {[key: string]: HTMLElement} = {'Per session': CaptureView.perSession(t.get('scope', i),
+      t.get('window_minutes', i), t.get('max_sessions', i))};
     const acc = DG.Accordion.create();
-    acc.addPane(rule, () => ui.divV([ui.tableFromMap(details), ui.buttonsInput(buttons)]), true);
-    grok.shell.o = acc.root;
+    acc.addPane(rule, () => ui.divV([ui.tableFromMap({...details, ...perSession}), ui.buttonsInput(buttons)]), true);
+    this.shown = acc.root;
+    // `grok.shell.o = ...` ignores a change within a second of the last one, so a quick second click showed the first row.
+    grok.shell.setCurrentObject(acc.root, true, true);
+  }
+
+  /** What a rule of [scope] captures of each session, with the server's semantics of the window and the limit. */
+  static perSession(scope: string, windowMinutes: number, maxSessions: number): HTMLElement {
+    const type = (scope ?? '').split(' ')[0];
+    const trigger = TRIGGERS[type];
+    const text = trigger ? `${windowMinutes} min from when ${trigger}, up to ${maxSessions} sessions` :
+      'every session, until the rule ends';
+    return ui.tooltip.bind(ui.divText(text), trigger ?
+      `When ${trigger} (${scope}) in a session, that session is captured for the next ${windowMinutes} min, and ` +
+      `each repeat restarts the ${windowMinutes} min; never past the rule's end. Only the first ${maxSessions} ` +
+      'sessions it happens in are captured.' :
+      `A rule without a scope captures every session of its subject until the rule ends; the ${windowMinutes}-min ` +
+      `window and the ${maxSessions}-session limit apply to scoped rules only.`);
   }
 
   stopDialog(rule: string): void {
@@ -181,7 +215,8 @@ export class CaptureView extends UaView {
     ui.setDisplay(flags.root, debugFlags.length > 0);
     const duration = ui.input.choice('For', {value: '1 d', items: Object.keys(DURATIONS), nullable: false});
     const maxEvents = ui.input.int('Max events', {value: 10000});
-    const anonymous = ui.input.bool('Anonymous', {tooltipText: 'Group and everyone rules only: no user, session or IP'});
+    const anonymous = ui.input.bool('Anonymous', {tooltipText: 'No user, session or IP'});
+    const anonymousNote = ui.divText('Only for group and everyone rules', 'ua-note');
     const name = ui.input.string('Name');
     const reason = ui.input.string('Reason', {tooltipText: 'Why this activity is captured; required'});
     const line = problemLine();
@@ -212,8 +247,7 @@ export class CaptureView extends UaView {
       ui.setDisplay(scopeValue.root, scope.value !== ALL_ACTIVITY);
       const canBeAnonymous = subject.value === 'group' || subject.value === 'everyone';
       anonymous.enabled = canBeAnonymous;
-      anonymous.setTooltip(canBeAnonymous ? 'No user, session or IP' :
-        'Only a group or everyone rule can be anonymous');
+      ui.setDisplay(anonymousNote, !canBeAnonymous);
       if (!canBeAnonymous && anonymous.value)
         anonymous.value = false;
       showProblem(ok, line, problem());
@@ -224,6 +258,8 @@ export class CaptureView extends UaView {
       anonymous, name, reason];
     for (const input of inputs) {
       dialog.add(input);
+      if (input === anonymous)
+        dialog.add(anonymousNote);
       input.onChanged.subscribe(() => refresh());
     }
     dialog.add(line);
@@ -247,6 +283,7 @@ export class CaptureView extends UaView {
         const rule = JSON.parse(await grok.functions.call('CaptureRuleAdd', {rule: JSON.stringify(body)}));
         dialog.close();
         grok.shell.info(`Created cap-${rule.number}`);
+        this.reshow = `cap-${rule.number}`;
         this.rulesViewer?.reloadViewer();
       }
       catch (e: any) {

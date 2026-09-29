@@ -30,6 +30,9 @@ const ERROR_COLUMNS = ['error', 'topError'];
 const DEFAULT_FOLDER = 'System:AppData/Ops/errors/';
 const DAYS: {[day: string]: string} = {SUN: '0', MON: '1', TUE: '2', WED: '3', THU: '4', FRI: '5', SAT: '6', DAILY: '*',
   WEEKDAYS: '1-5'};
+const DAY_NAMES: {[day: string]: string} = {'0': 'Sundays', '1': 'Mondays', '2': 'Tuesdays', '3': 'Wednesdays',
+  '4': 'Thursdays', '5': 'Fridays', '6': 'Saturdays', '*': 'Daily', '1-5': 'Weekdays'};
+const USERS_SHOWN = 10;
 
 type Spec = {[name: string]: string | number | undefined};
 
@@ -54,6 +57,7 @@ export class ErrorsView extends UaView {
   saveProblemLine = problemLine();
   host: HTMLDivElement = ui.box();
   table?: DG.DataFrame;
+  shownGrid?: DG.Grid;
   shownSpec?: Spec;
   private runs = 0;
 
@@ -147,6 +151,7 @@ export class ErrorsView extends UaView {
     const spec = this.spec();
     const run = ++this.runs;
     this.table = undefined;
+    this.shownGrid = undefined;
     this.shownSpec = undefined;
     this.refresh();
     grok.shell.o = null;
@@ -159,10 +164,13 @@ export class ErrorsView extends UaView {
         t.name = 'Errors';
         this.table = t;
         this.shownSpec = spec;
+        if (t.rowCount === 0) {
+          this.refresh();
+          return emptyState('No errors match', ErrorsView.emptyHint(spec));
+        }
+        this.shownGrid = this.grid(t, spec);
         this.refresh();
-        return t.rowCount === 0 ?
-          emptyState('No errors match', 'Choose a longer Since, or clear Group and More filters') :
-          this.grid(t, spec).root;
+        return this.shownGrid.root;
       }
       catch (e: any) {
         return ui.divText(`Errors: ${e?.message ?? e}`, 'd4-viewer-error');
@@ -239,6 +247,30 @@ export class ErrorsView extends UaView {
     return grid;
   }
 
+  /** What to change when [spec] finds no errors: the filters it sets beyond Since and Group by. */
+  static emptyHint(spec: Spec): string {
+    const set: string[] = [];
+    const by = spec.by ? (spec.by as string).split(',') : [];
+    if (spec.group)
+      set.push(`Group is ${spec.group}`);
+    if (spec.minUsers) {
+      set.push(`Min users is ${spec.minUsers}` + (by.includes('user') && Number(spec.minUsers) > 1 ?
+        ' — grouping by user leaves one user per row' : ''));
+    }
+    if (spec.minCount)
+      set.push(`Min count is ${spec.minCount}`);
+    if (spec.service)
+      set.push(`Service is ${spec.service}`);
+    for (const f of TEXT_FILTERS) {
+      if (spec[f])
+        set.push(`${f[0].toUpperCase()}${f.substring(1)} is "${spec[f]}"`);
+    }
+    if (spec.regressed)
+      set.push('Regressed is on');
+    return set.length ? `${set.join('; ')}. Clear ${set.length > 1 ? 'them' : 'it'}, or choose a longer Since` :
+      'Choose a longer Since';
+  }
+
   static shortSignature(value: string | null): string {
     return value ? value.replace(/-/g, '').substring(0, 6) : '';
   }
@@ -291,8 +323,14 @@ export class ErrorsView extends UaView {
     const drill: Spec = {...spec, ...filters, by: undefined, trend: undefined, limit: DRILL_LIMIT};
     const occurrences: Promise<DG.DataFrame> = grok.functions.call('ErrorStats', {spec: JSON.stringify(drill)});
     const error: string = t.col('topError') ? t.get('topError', i) : t.get('error', i);
+    const usersSpec: Spec = {...spec, ...filters, by: 'user', trend: undefined, minUsers: undefined,
+      minCount: undefined};
     const acc = DG.Accordion.create();
     acc.addPane(ErrorsView.rowTitle(t, spec, i), () => ui.divV([
+      spec.by ? ui.wait(async () => {
+        const u: DG.DataFrame = await grok.functions.call('ErrorStats', {spec: JSON.stringify(usersSpec)});
+        return ui.divText(`Users: ${ErrorsView.usersText(u.col('user')?.toList() ?? [])}`);
+      }) : null,
       ui.divText(error ?? '', 'ua-error-text'),
       ui.wait(async () => {
         const o = await occurrences;
@@ -365,29 +403,61 @@ export class ErrorsView extends UaView {
     grok.shell.o = acc.root;
   }
 
+  /** Up to [USERS_SHOWN] logins, then `+N more`; `none` for errors without a user. */
+  static usersText(users: (string | null)[]): string {
+    const logins = users.filter((u) => u);
+    if (logins.length === 0)
+      return 'none';
+    const more = logins.length - USERS_SHOWN;
+    return logins.slice(0, USERS_SHOWN).join(', ') + (more > 0 ? ` +${more} more` : '');
+  }
+
   static values(t: DG.DataFrame, name: string): string[] {
     const col = t.col(name);
     return col ? col.categories.filter((v) => v !== '') : [];
   }
 
   exportMenu(e: MouseEvent): void {
-    const noTable = () => this.table ? null : 'Nothing to export yet';
+    const noTable = () => this.shownGrid ? null : 'Nothing to export yet';
     const arrow = DG.Func.find({package: 'Arrow', name: 'toParquet'}).length > 0;
+    const file = (ext: string) => `errors-${new Date().toISOString().substring(0, 10)}.${ext}`;
     DG.Menu.popup()
-      .item('CSV', () => DG.Utils.download('errors.csv', ErrorsView.toCsv(this.table!), 'text/csv'), null,
-        {isEnabled: noTable})
-      .item('JSON', () => DG.Utils.download('errors.json', JSON.stringify(this.table!.toJson()), 'application/json'),
-        null, {isEnabled: noTable})
+      .item('CSV', () => DG.Utils.download(file('csv'), ErrorsView.toCsv(ErrorsView.exportTable(this.shownGrid!)),
+        'text/csv'), null, {isEnabled: noTable})
+      .item('JSON', () => DG.Utils.download(file('json'),
+        JSON.stringify(ErrorsView.exportTable(this.shownGrid!).toJson()), 'application/json'), null, {isEnabled: noTable})
       .item('Parquet', async () => {
         try {
-          const bytes: Uint8Array = await grok.functions.call('Arrow:toParquet', {table: this.table});
-          DG.Utils.download('errors.parquet', bytes as Uint8Array<ArrayBuffer>);
+          const bytes: Uint8Array = await grok.functions.call('Arrow:toParquet',
+            {table: ErrorsView.exportTable(this.shownGrid!)});
+          DG.Utils.download(file('parquet'), bytes as Uint8Array<ArrayBuffer>);
         }
         catch (err: any) {
           grok.shell.error(`Parquet: ${err?.message ?? err}`);
         }
       }, null, {isEnabled: () => noTable() ?? (arrow ? null : 'Install the Arrow package to export Parquet')})
       .show({causedBy: e});
+  }
+
+  /** The columns [grid] shows, in its order, under its headers, with the texts it shows for the signature and the
+   * alert. */
+  static exportTable(grid: DG.Grid): DG.DataFrame {
+    const t = grid.dataFrame;
+    const rows = [...Array(t.rowCount).keys()];
+    const columns: DG.Column[] = [];
+    for (let i = 0; i < grid.columns.length; i++) {
+      const gc = grid.columns.byIndex(i)!;
+      const col = gc.column;
+      if (!gc.visible || !col)
+        continue;
+      const copy = col.name === 'signature' ?
+        DG.Column.fromStrings(gc.name, rows.map((r) => ErrorsView.shortSignature(col.get(r)))) :
+        col.name === 'state' ? DG.Column.fromStrings(gc.name, rows.map((r) => ErrorsView.stateText(t, r))) :
+          col.clone();
+      copy.name = gc.name;
+      columns.push(copy);
+    }
+    return DG.DataFrame.fromColumns(columns);
   }
 
   /** [t] as CSV, like the server's: a cell a spreadsheet would run as a formula starts with `'`. */
@@ -424,8 +494,8 @@ export class ErrorsView extends UaView {
       tooltipText: 'The server writes CSV or JSON. For Parquet, use Export > Parquet in the browser'});
     const path = ui.input.string('Path', {value: DEFAULT_FOLDER,
       tooltipText: '<connection>/<path>; a path ending in / gets <name>-{date}.<format>; {date} is the run\'s UTC date'});
-    const schedule = ui.input.string('Schedule', {placeholder: 'MON 07:00',
-      tooltipText: 'Empty for no schedule, "MON 07:00", "DAILY 07:00", "WEEKDAYS 07:00" or a five-field cron (UTC)'});
+    const schedule = ui.input.string('Schedule, UTC', {placeholder: 'MON 07:00',
+      tooltipText: 'Empty for no schedule, "MON 07:00", "DAILY 07:00", "WEEKDAYS 07:00" or a five-field cron, in UTC'});
     const dialogProblem = (): string | null => {
       if (!name.value?.trim())
         return 'Enter the name';
@@ -451,7 +521,7 @@ export class ErrorsView extends UaView {
       try {
         const job = JSON.parse(await grok.functions.call('ErrorsSaveJob',
           {name: name.value.trim(), spec: JSON.stringify(spec), format: format.value, path: target, cron}));
-        grok.shell.info(`Saved job "${job.name}" ${job.cron ?? '(no schedule)'} → ${job.path}`);
+        grok.shell.info(`Saved job "${job.name}": ${ErrorsView.scheduleText(job.cron)} → ${job.path}`);
       }
       catch (e: any) {
         grok.shell.error(`Save as job: ${e?.message ?? e}`);
@@ -460,6 +530,16 @@ export class ErrorsView extends UaView {
     dialog.show();
     showProblem(dialog.getButton('OK'), line, dialogProblem());
     name.input.focus();
+  }
+
+  /** [cron] in words, `Mondays 08:00 UTC`; `no schedule` for none. */
+  static scheduleText(cron: string | null | undefined): string {
+    if (!cron?.trim())
+      return 'no schedule';
+    const f = cron.trim().split(/\s+/);
+    const pad = (v: string) => v.padStart(2, '0');
+    return f.length === 5 && /^\d+$/.test(f[0]) && /^\d+$/.test(f[1]) && f[2] === '*' && f[3] === '*' &&
+      DAY_NAMES[f[4]] ? `${DAY_NAMES[f[4]]} ${pad(f[1])}:${pad(f[0])} UTC` : `cron "${cron.trim()}" UTC`;
   }
 
   /** `MON 07:00`, `DAILY 07:00`, `WEEKDAYS 07:00` or a five-field cron → cron; null when it is neither. */

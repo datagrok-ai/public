@@ -56,6 +56,8 @@ export class ViewHandler {
       if (urlView)
         urlTab = urlView.name;
     }
+    this.changeTab(urlTab);
+    this.updatePath();
 
     const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
     const toolbox = await toolboxPromise;
@@ -139,7 +141,7 @@ export class ViewHandler {
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
 
-    this.view.tabs.onTabChanged.subscribe((_) => {
+    const onTabChanged = () => {
       const view = this.view.currentView;
       grok.shell.o = null;
       toolbox.toggleCategoriesInput(view.name === 'Packages');
@@ -179,8 +181,9 @@ export class ViewHandler {
         fButtons.style.display = 'flex';
       else
         fButtons.style.display = 'none';
-    });
-    this.changeTab(urlTab);
+    };
+    this.view.tabs.onTabChanged.subscribe(() => onTabChanged());
+    onTabChanged();
   }
 
   static urlName(view: DG.ViewBase): string {

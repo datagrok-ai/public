@@ -80,10 +80,12 @@ export class TimelineView extends UaView {
         if (t.rowCount === 0)
           return emptyState(`No records for ${key} ${value}`, 'Check the id, or choose another By');
         t.name = `Timeline of ${key} ${value}`;
-        TimelineView.splitSource(t);
+        if (!t.col('server'))
+          TimelineView.splitSource(t);
         const grid = DG.Viewer.grid(t, {showRowHeader: false, allowRowSelection: false, allowBlockSelection: false});
         grid.columns.setOrder(['time', 'source', 'server', 'kind', 'summary', 'status', 'ms', 'requestId', 'user']);
-        grid.col('time')!.format = 'yyyy-MM-dd HH:mm:ss.fff';
+        grid.col('time')!.format = 'yyyy-MM-dd HH:mm:ss.fff UTC';
+        grid.col('time')!.width = 190;
         grid.col('summary')!.width = 500;
         grid.col('requestId')!.name = 'request id';
         scrollToStartOnFirstDraw(grid);
@@ -95,7 +97,8 @@ export class TimelineView extends UaView {
     }));
   }
 
-  /** The server writes a server's name as the source: `source` keeps client or server, `server` gets the name. */
+  /** A server older than the `server` column writes a server's name as the source: `source` keeps client or server,
+   * `server` gets the name. */
   static splitSource(t: DG.DataFrame): void {
     const sources: string[] = t.col('source')!.toList();
     t.columns.addNewString('server').init((i) => SOURCES.includes(sources[i]) ? '' : sources[i]);
