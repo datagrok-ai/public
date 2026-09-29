@@ -421,13 +421,28 @@ export function injectTreeForGridUI2(
     sortingSub.unsubscribe();
   }
 
+  function gridOnDataFrameChanged() {
+    for (const sub of dataFrameSubs)
+      sub.unsubscribe();
+    dataFrameSubs = [];
+    const df = grid.dataFrame;
+    if (!df)
+      return;
+    dataFrameSubs.push(df.onCurrentRowChanged.subscribe(dataFrameOnCurrentRowChanged));
+    dataFrameSubs.push(df.onMouseOverRowChanged.subscribe(dataFrameOnMouseOverRowChanged));
+    dataFrameSubs.push(df.onSelectionChanged.subscribe(dataFrameOnSelectionChanged));
+    dataFrameSubs.push(df.onFilterChanged.subscribe(dataFrameOnFilterChanged));
+  }
+
   function treeNeighborOnClosed() {
     grid.removeStatusProvider(TREE_STATUS_NAME);
-    for (const sub of subs)
+    for (const sub of subs.concat(dataFrameSubs))
       sub.unsubscribe();
   }
 
   const subs: Unsubscribable[] = [];
+  // rebound to the grid's table: closing its view or applying a layout nulls it while the table lives on
+  let dataFrameSubs: Unsubscribable[] = [];
   subs.push(treeNb.onClosed.subscribe(treeNeighborOnClosed));
   subs.push(renderer.onCurrentChanged.subscribe(rendererOnCurrentChanged));
   subs.push(renderer.onMouseOverChanged.subscribe(rendererOnMouseOverChanged));
@@ -437,10 +452,8 @@ export function injectTreeForGridUI2(
   subs.push(sortingSub);
 
   subs.push(grid.onRowsResized.subscribe(dataFrameOnFilterChanged));
-  subs.push(grid.dataFrame.onCurrentRowChanged.subscribe(dataFrameOnCurrentRowChanged));
-  subs.push(grid.dataFrame.onMouseOverRowChanged.subscribe(dataFrameOnMouseOverRowChanged));
-  subs.push(grid.dataFrame.onSelectionChanged.subscribe(dataFrameOnSelectionChanged));
-  subs.push(grid.dataFrame.onFilterChanged.subscribe(dataFrameOnFilterChanged));
+  subs.push(grid.onDataFrameChanged.subscribe(gridOnDataFrameChanged));
+  gridOnDataFrameChanged();
 
   return treeNb;
 }

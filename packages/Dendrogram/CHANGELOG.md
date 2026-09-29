@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-15981: Rebind the injected tree's table subscriptions when the grid's table changes
 * GROK-19595: Fixed centroid linkage attaching no tree: the clustering wasm sorted the centroid merges by height while their cluster references kept the merge order (in `@datagrok-libraries/math`)
 * Automation: The tree injected next to a grid reports `tree leaves`, `tree height`, `tree current node`, `tree mouse over node`, `tree selected leaves`, `tree zoom`, `tree top row`, `cut threshold` and its `tree`, `leaf`, `node` and `cut line` areas through the grid's status
 * Automation: Dendrogram viewer reports the tree it draws (`getWidgetStatus`, `isRenderPending`, `onRendered`)
