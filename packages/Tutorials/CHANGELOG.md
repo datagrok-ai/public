@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Peptides SAR: Fixed the step counter (18 declared for 24 steps) and seven steps that completed on their own after 30 minutes with nothing done; the steps' polls now stop when the tutorial is closed
 * R-Groups Analysis: The Distributions pane step resolves the pane when it appears instead of when the step is built — it exists only while a RowGroup is the current object
 * GROK-20416: Steps that point at a rebuilt element (the Add viewer ribbon icon, the aggregation tag) now resolve it per tick instead of caching it, so both the click listener and the highlight follow the new node; the icon is found by its `aria-label`, not by its position in the ribbon
 * Sticky Meta: Fixed the tutorial dying at "Save schema" — step 11 looked up the schema section and the property input with strings that disagreed in case with what the steps tell the learner to type, and the miss threw one line later

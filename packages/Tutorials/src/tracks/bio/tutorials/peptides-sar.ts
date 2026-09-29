@@ -20,7 +20,8 @@ export class PeptidesSarTutorial extends Tutorial {
          identify mutation cliffs and compute statistical distributions of activity values.`;
     }
 
-    get steps() { return 18; }
+    // 24 as launched here; a machine with WebGPU lists one more (Check Use WebGPU), which the counter clamps
+    get steps() { return 24; }
 
     get icon() {
         return '🧬📈';
@@ -156,19 +157,7 @@ export class PeptidesSarTutorial extends Tutorial {
         this.describe('Above each position, the WebLogo shows which monomers occur and how often. Click a letter to select that monomer@position across all viewers.');
     
         const step5Hint = greenHint(gridRoot, paragraphs(['Hover over WebLogo header to preview statistics.','Click a letter to select that <b>monomer@position</b>.']), 'top');
-        const webLogoClick =
-            new Promise<void>((res) => {
-                const timer = setInterval(() => {
-                    if (tv.dataFrame.selection.trueCount > 0) {
-                        clearInterval(timer);
-                        res();
-                    }
-                }, 200);
-                setTimeout(() => {
-                    clearInterval(timer);
-                    res();
-                }, 1800000); // 30 minutes timeout
-            })
+        const webLogoClick = poll(() => tv.dataFrame.selection.trueCount > 0);
 
         await this.action('Click any WebLogo letter', webLogoClick);
         this._removeHints(step5Hint);
@@ -184,35 +173,17 @@ export class PeptidesSarTutorial extends Tutorial {
           ui.divH([okBtn1])
         ]);
         const step6B1 = greenHint(contextPanelRoot, step6B1Content, 'left');
-        const step6B1Prom = new Promise<void>((resolve) => {
-          okBtn1.addEventListener('click', () => resolve());
-            attachRemovingHintListener(step6B1, () => resolve());
-        });
+        const step6B1Prom = nextOrHintGone(okBtn1, step6B1);
         await this.action('Click NEXT to proceed', step6B1Prom);
         this._removeHints(step6B1);
         step6B1.remove();
 
         // Balloon 2 — SAR view root, press Esc to clear selection
         const step6B2 = greenHint(tv.root, paragraphs(['All viewers are synchronized and show your <i>WebLogo</i> selection.',' Press <b>Esc</b> to clear the selection.']), 'top');
-        const escPromise =  new Promise<void>((resolve) => {
-          const onKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-              const sub = tv.dataFrame.selection.onChanged.subscribe(() => {
-                if (tv.dataFrame.selection.trueCount === 0) {
-                  sub.unsubscribe();
-                  document.removeEventListener('keydown', onKey);
-                  resolve();
-                }
-              });
-              if (tv.dataFrame.selection.trueCount === 0) {
-                sub.unsubscribe();
-                document.removeEventListener('keydown', onKey);
-                resolve();
-              }
-            }
-          };
-          document.addEventListener('keydown', onKey);
-        });
+        const escPromise = rxjs.fromEvent<KeyboardEvent>(document, 'keydown').pipe(
+          operators.filter((e) => e.key === 'Escape'),
+          operators.switchMap(() => rxjs.concat(rxjs.of(null), tv.dataFrame.selection.onChanged)),
+          operators.filter(() => tv.dataFrame.selection.trueCount === 0));
         await this.action('Press Esc to clear selection', escPromise);
         this._removeHints(step6B2);
         step6B2.remove();
@@ -227,7 +198,7 @@ export class PeptidesSarTutorial extends Tutorial {
         const svmRoot = (svm ? svm.root : tv.root);
         const step7B1 = greenHint(svmRoot, paragraphs(['The <i>Sequence Variability Map</i> shows mutation distribution.', 'Click the <b>Gear icon</b> to adjust its settings.']), 'right');
         const svmGear = svmRoot.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.querySelector('.grok-icon.grok-font-icon-settings') as HTMLElement;
-        const svmGearClick: Promise<void> = (svmGear ? rxjs.fromEvent(svmGear, 'click') : rxjs.fromEvent(svmRoot, 'click')).pipe(operators.take(1), operators.map(() => void 0)).toPromise();
+        const svmGearClick = rxjs.fromEvent(svmGear ?? svmRoot, 'click');
         await this.action('Open SVM settings (gear)', svmGearClick, svmGear ?? svmRoot);
         this._removeHints(step7B1);
         step7B1.remove();
@@ -239,10 +210,7 @@ export class PeptidesSarTutorial extends Tutorial {
           ui.divH([nextBtn])
         ]);
         const step7B2 = greenHint(contextPanelRoot, step7B2Content, 'left');
-        const step7b2Prom = new Promise<void>((resolve) => {
-            nextBtn.addEventListener('click', () => resolve());
-            attachRemovingHintListener(step7B2, () => resolve());
-        });
+        const step7b2Prom = nextOrHintGone(nextBtn, step7B2);
         await this.action('Click NEXT to proceed', step7b2Prom);
         this._removeHints(step7B2);
         step7B2.remove();
@@ -250,21 +218,11 @@ export class PeptidesSarTutorial extends Tutorial {
         // ########## Step 8: Sequence Variability Map · Mutation Cliffs ##########
         const s81b = paragraphs(['In this mode, each <b>cell</b> shows <b>counts</b> of sequence pairs that differ only at that monomer(row)-position(column) (<b>Size</b>) and their mean activity difference (<b>Color</b>).','<b>Hover/Click</b> any non-empty cell.'], 'Mutation Cliffs');
         const step8B1 = greenHint(svmRoot, s81b, 'top');
-        const mutViewerClickPromise = new Promise<void>((res) => {
-            const timer = setInterval(() => {
-                const o = grok.shell.o;
-                if (o instanceof HTMLElement && o.getElementsByClassName('d4-accordion-title').length > 0 &&
+        const mutViewerClickPromise = poll(() => {
+            const o = grok.shell.o;
+            return o instanceof HTMLElement && o.getElementsByClassName('d4-accordion-title').length > 0 &&
                 Array.from(o.getElementsByClassName('d4-accordion-title')).some((el) => el.textContent?.toLowerCase()?.includes('selection sources') &&
-                el.textContent?.toLowerCase()?.includes('mutation cliffs')) && o.getElementsByClassName('d4-pane-mutation_cliffs_pairs').length > 0)
-                {
-                    clearInterval(timer);
-                    res();
-                }
-            }, 200);
-            setTimeout(() => {
-                clearInterval(timer);
-                res();
-            }, 1800000); // 30 minutes timeout
+                el.textContent?.toLowerCase()?.includes('mutation cliffs')) && o.getElementsByClassName('d4-pane-mutation_cliffs_pairs').length > 0;
         });
         await this.action('Click a Mutation Cliffs cell', mutViewerClickPromise
         );
@@ -277,9 +235,7 @@ export class PeptidesSarTutorial extends Tutorial {
             const step8B2 = greenHint(mutationCliffsPanel, paragraphs(['Mutation Cliffs context panel shows sequence pairs only differring at selected position, their activity distributions, and more']), 'left');
             const step8B2Ok = ui.button('NEXT', () => {});
             step8B2.appendChild(step8B2Ok);
-            const mutPanelNextPromise = new Promise<void>((resolve) => {step8B2Ok.addEventListener('click', () => resolve())
-                attachRemovingHintListener(step8B2, () => resolve());
-            });
+            const mutPanelNextPromise = nextOrHintGone(step8B2Ok, step8B2);
             await this.action('Click NEXT to proceed', mutPanelNextPromise);
 
             this._removeHints(step8B2);
@@ -290,18 +246,7 @@ export class PeptidesSarTutorial extends Tutorial {
         const invariantMapInputRoot = Array.from(svmRoot.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.querySelectorAll('.ui-input-bool.ui-input-root') ?? [])
             .find((r) => (r.textContent ?? '').toLowerCase().includes('invariant map'))!;
         const invariantRadioButton = invariantMapInputRoot.querySelector('input[type="radio"]') as HTMLInputElement;
-        const invariantPromise = new Promise<void>((res) => {
-            const int = setInterval(() => {
-                if ((invariantRadioButton as HTMLInputElement).checked == true || invariantRadioButton.value == 'true') {
-                    clearInterval(int);
-                    res();
-                }
-            }, 200);
-            setTimeout(() => {
-                clearInterval(int);
-                res();
-            }, 1800000); // 30 minutes timeout
-        });
+        const invariantPromise = poll(() => invariantRadioButton.checked || invariantRadioButton.value == 'true');
         const invariantHint = greenHint(invariantRadioButton, paragraphs(['Switch the <i>SVM viewer</i> to <i>Invariant Map</i> mode using the radio button.']), 'top');
         await this.action('Switch SVM mode to Invariant Map', invariantPromise, invariantRadioButton);
         this._removeHints(invariantHint);
@@ -311,10 +256,7 @@ export class PeptidesSarTutorial extends Tutorial {
         const step91Hint = greenHint(svmRoot, paragraphs(['In this mode, each <b>cell</b> shows how many sequences contain that monomer at that position (<b>number</b>) and the mean activity of those sequences (<b>color</b>).','<b>Hover</b> or <b>click</b> any cell to see details'], 'Invariant Map'), 'right');
         const step91Next = ui.button('NEXT', () => {});
         step91Hint.appendChild(step91Next);
-        const step91Prom = new Promise<void>((resolve) => {
-            step91Next.addEventListener('click', () => resolve());
-            attachRemovingHintListener(step91Hint, () => resolve());
-        });
+        const step91Prom = nextOrHintGone(step91Next, step91Hint);
         await this.action('Click NEXT to proceed', step91Prom);
         this._removeHints(step91Hint);
         step91Hint.remove();
@@ -328,7 +270,7 @@ export class PeptidesSarTutorial extends Tutorial {
 
         const step10Hint = greenHint(mprRoot, paragraphs(['The <i>Most Potent Residues</i> viewer highlights the most potent monomers at each position.','Use the <b>gear</b> icon to adjust its settings.']), 'left');
         const mprGear = mprRoot.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.querySelector('.grok-icon.grok-font-icon-settings') as HTMLElement;
-        const mprGearClick: Promise<void> = (mprGear ? rxjs.fromEvent(mprGear, 'click') : rxjs.fromEvent(mprRoot, 'click')).pipe(operators.take(1), operators.map(() => void 0)).toPromise();
+        const mprGearClick = rxjs.fromEvent(mprGear ?? mprRoot, 'click');
         await this.action('Open Most Potent Residues settings (gear)', mprGearClick, mprGear ?? mprRoot);
         this._removeHints(step10Hint);
         step10Hint.remove();
@@ -343,10 +285,7 @@ export class PeptidesSarTutorial extends Tutorial {
         const step10MCLHint = greenHint(mclViewer.root, paragraphs(['This <i>scatterplot</i> shows <i>clusters</i> based on the selected <i>algorithm</i>.','To learn how it works, complete the <b>scatterplot tutorial</b>.']), 'left');
         const step10MCLNext = ui.button('NEXT', () => {});
         step10MCLHint.appendChild(step10MCLNext);
-        const mclNextProm = new Promise<void>((resolve) => {
-            step10MCLNext.addEventListener('click', () => resolve());
-            attachRemovingHintListener(step10MCLHint, () => resolve());
-        });
+        const mclNextProm = nextOrHintGone(step10MCLNext, step10MCLHint);
         await this.action('Click NEXT to proceed', mclNextProm);
         this._removeHints(step10MCLHint);
         step10MCLHint.remove();
@@ -354,20 +293,8 @@ export class PeptidesSarTutorial extends Tutorial {
         const step10LSTHint = greenHint(LSTViewer.root, paragraphs(['The Logo Summary Table details <i>clusters</i>, generates their <i>WebLogos</i>, along with other statistics.',' Click the <b>gear</b> icon to adjust its settings.']), 'left');
         const lstGear = LSTViewer.root.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.querySelector('.grok-icon.grok-font-icon-settings') as HTMLElement;
 
-        const lstGearClick: Promise<void> = (lstGear ? rxjs.fromEvent(lstGear, 'click') : rxjs.fromEvent(LSTViewer.root, 'click')).pipe(operators.take(1), operators.map(() => void 0)).toPromise();
-        const lstContextPromise = new Promise<void>(async (resolve) => {
-            await lstGearClick;
-            const int = setInterval(() => {
-                if (grok.shell.o === LSTViewer) {
-                    clearInterval(int);
-                    resolve();
-                }
-        }, 200);
-        setTimeout(() => {
-            clearInterval(int);
-            resolve();
-        }, 1800000); // 30 minutes timeout
-    });
+        const lstContextPromise = rxjs.fromEvent(lstGear ?? LSTViewer.root, 'click').pipe(operators.take(1),
+            operators.switchMap(() => poll(() => grok.shell.o === LSTViewer)));
         await this.action('Open Logo Summary Table settings (gear)', lstContextPromise, lstGear ?? LSTViewer.root);
         this._removeHints(step10LSTHint);
         step10LSTHint.remove();
@@ -378,21 +305,9 @@ export class PeptidesSarTutorial extends Tutorial {
         const aggColumnsHost = Array.from(contextPanelRoot.getElementsByClassName('property-grid-multi-column-editor') ?? []).find((el) => el.textContent?.toLowerCase()?.includes('0 / 25'));
 
         const aggColumnsButton = aggColumnsHost!.querySelector('button') as HTMLButtonElement;
-        const aggColumnsClick = rxjs.fromEvent(aggColumnsButton, 'click').pipe(operators.take(1)).toPromise();
         const lstHint = greenHint(contextPanelRoot, paragraphs(['Under <b>Aggregations</b>, choose position <b>14</b> (Column named "14") and hit <b>OK</b> to add a <b>pie chart</b> distribution column.'], 'Add aggregated column'), 'left');
-        const lstAggRegationPromise = new Promise<void>(async (resolve) => {
-            await aggColumnsClick;
-            const int = setInterval(() => {
-                if (LSTViewer.props.columns.length > 0) {
-                    clearInterval(int);
-                    resolve();
-                }
-            }, 200);
-            setTimeout(() => {
-                clearInterval(int);
-                resolve();
-            }, 1800000); // 30 minutes timeout
-        });
+        const lstAggRegationPromise = rxjs.fromEvent(aggColumnsButton, 'click').pipe(operators.take(1),
+            operators.switchMap(() => poll(() => LSTViewer.props.columns.length > 0)));
 
         await this.action('Add pie chart aggregation for position 14', lstAggRegationPromise, aggColumnsButton);
         this._removeHints(lstHint);
@@ -402,15 +317,10 @@ export class PeptidesSarTutorial extends Tutorial {
         const lstHorzScroll = LSTViewer.root.querySelector('.d4-range-selector.d4-grid-horz-scroll') as HTMLElement;
         if (lstHorzScroll) {
 
-            const mouseRelease = rxjs.fromEvent(lstHorzScroll, 'mousedown').pipe(operators.take(1),  operators.map(() => void 0)).toPromise();
             const scrollHint = greenHint(lstHorzScroll, paragraphs(['Scroll the Logo Summary Table horizontally to see the newly added pie chart column.']), 'bottom');
             const nextBtn = ui.button('NEXT', () => {});
             scrollHint.appendChild(nextBtn);
-            const scrollPromise = new Promise<void>((resolve) => {
-                mouseRelease.then(() => resolve());
-                nextBtn.addEventListener('click', () => resolve());
-                attachRemovingHintListener(scrollHint, () => resolve());
-            });
+            const scrollPromise = rxjs.merge(rxjs.fromEvent(lstHorzScroll, 'mousedown'), nextOrHintGone(nextBtn, scrollHint));
             await this.action('Scroll horizontally in Logo Summary Table. Click NEXT to proceed to next step', scrollPromise, lstHorzScroll);
             this._removeHints(scrollHint);
             scrollHint.remove();
@@ -429,18 +339,7 @@ export class PeptidesSarTutorial extends Tutorial {
         // expand all sections in settings
         analDialog.root.querySelectorAll('.d4-accordion-pane-content').forEach((el) => (el as HTMLElement).classList.add('expanded'));
         const dendrogramCheckBox = analDialog.root.querySelector('input[name="input-Dendrogram"]') as HTMLInputElement;
-        const dendrogramPromise = new Promise<void>((res) => {
-            const int = setInterval(() => {
-                if (dendrogramCheckBox.checked) {
-                    clearInterval(int);
-                    res();
-                }
-            }, 200);
-            setTimeout(() => {
-                clearInterval(int);
-                res();
-            }, 1800000); // 30 minutes timeout
-        });
+        const dendrogramPromise = poll(() => dendrogramCheckBox.checked);
         await this.action('Check Dendrogram', dendrogramPromise, dendrogramCheckBox);
         const analDialogOk = analDialog.root.querySelector('button.ui-btn.ui-btn-ok') as HTMLButtonElement;
         await this.action('Click OK to re-run analysis', analDialog.onClose, analDialogOk);
@@ -456,10 +355,7 @@ export class PeptidesSarTutorial extends Tutorial {
         const finalHint = greenHint(svmRoot, finalHintDiv, 'top');
         const finalOk = ui.button('OK', () => {});
         finalHint.appendChild(finalOk);
-        await new Promise<void>((resolve) => {
-            finalOk.addEventListener('click', () => resolve());
-            attachRemovingHintListener(finalHint, () => resolve());
-        });
+        await this.firstEvent(nextOrHintGone(finalOk, finalHint));
         this._removeHints(finalHint);
         finalHint.remove();
         
@@ -489,12 +385,11 @@ function paragraphs(texts: string[], title?: string) {
     return ui.divV(items);
 }
 
-function attachRemovingHintListener(hintDiv: HTMLElement, onRemoved: () => void) {
-    const timer = setInterval(() => {
-        if (!document.body.contains(hintDiv)) {
-            clearInterval(timer);
-            onRemoved();
-        }
-    }, 200);
-    setTimeout(() => {clearInterval(timer); onRemoved();}, 1800000); // 30 miunutes timeout
+// observables, not promises: the tutorial unsubscribes a step's stream when it is closed, so no poll outlives it
+function poll(condition: () => boolean): rxjs.Observable<number> {
+    return rxjs.interval(200).pipe(operators.filter(() => condition()));
+}
+
+function nextOrHintGone(next: HTMLElement, hint: HTMLElement): rxjs.Observable<unknown> {
+    return rxjs.merge(rxjs.fromEvent(next, 'click'), poll(() => !document.body.contains(hint)));
 }
