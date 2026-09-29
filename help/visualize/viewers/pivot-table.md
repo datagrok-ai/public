@@ -15,7 +15,7 @@ Aggregate and summarize your data using a pivot viewer.
 ![Pivot table](img/pivot-table.gif)
 
 To add the pivot viewer, click the **Top Menu**, click the **Add a viewer**
-(![Add a viewer](../../uploads/icons/add-viewer-icon-temp.png)) icon and select
+(![Add a viewer](../../uploads/icons/add-viewer-icon.png)) icon and select
 **Pivot Table** from the viewer options. The pivot table is added to the view.
 
 To configure your pivot table, use these fields:

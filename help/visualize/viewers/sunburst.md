@@ -1,11 +1,10 @@
 ---
 title: "Sunburst"
-description: Show hierarchical, multi-level categorical data as concentric rings that support drill-down navigation.
+description: Show hierarchical, multi-level categorical data as concentric rings, and select or filter rows by segment.
 keywords:
   - hierarchical visualization
   - concentric rings
   - multi-level categories
-  - drill down
   - r-groups
 ---
 
@@ -13,7 +12,7 @@ A sunburst viewer shows hierarchical data. Use a sunburst to understand data com
 
 ![Sunburst interactive data exploration](img/sunburst-interactive.gif)
 
-The center represents the top hierarchy, with each outer ring representing subsequent levels. The segment size within a ring shows its relative proportion compared to other categories at that level. Hover over any segment to see details or click it to drill down. To go back to the previous view, click the area in the center. To reset the viewer, press Ctrl+Shift+A.
+The center represents the top hierarchy, with each outer ring representing subsequent levels. The segment size within a ring shows its relative proportion compared to other categories at that level. Hover over any segment to see its row count. Click a segment to select its rows. To filter by a segment instead, switch **On Click** to **Filter** in the viewer's context menu.
 
 Sunburst viewer also works with molecules. For example, you can use it to analyze structures based on shared R-groups.
 
@@ -45,7 +44,7 @@ By default, each hierarchy branch has its own distinct color. However, if a grid
 
 ## Interaction with other viewers
 
-A sunburst responds to data filters and works in sync with other viewers. To select a segment within sunburst, Ctrl+Click it. This action automatically updates other viewers to mirror your selection.
+A sunburst responds to data filters and works in sync with other viewers. To select a segment within sunburst, click it. This action automatically updates other viewers to mirror your selection.
 
 ![Sunburst categories selection](img/sunburst-categories-selection.gif)<!--replace gif so that it also shows filters-->
 
@@ -57,12 +56,13 @@ The sunburst will only reflect selections from other viewers when all data point
 
 ## Viewer controls
 
-| Action                    | Control                             |
-|---------------------------|-------------------------------------|
-| Drill down                | Click                               |
-| Select                    | Ctrl+Click                          |
-| Go back                   | Click the center area of the viewer |
-| Reset the view            | Ctrl+Shift+A                        |
+| Action                                  | Control                                          |
+|-----------------------------------------|--------------------------------------------------|
+| Select the rows of a segment            | Click                                            |
+| Add a segment to the selection          | Ctrl+Click or Shift+Click                        |
+| Remove a segment from the selection     | Ctrl+Shift+Click                                 |
+| Filter by a segment                     | Click, with **On Click** set to **Filter**       |
+| Clear the sunburst's filter             | Double-click an empty area, or **Reset View**    |
 
 ## See also
 

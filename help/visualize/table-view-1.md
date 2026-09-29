@@ -61,7 +61,7 @@ apply them to multiple datasets.
 
 To add a viewer to the **Table View**, on the **Toolbox** click the icon for the
 viewer you want to add. Alternatively, at the top of the screen, click the **Add
-viewer** (![](../uploads/icons/add-viewer-icon-temp.png)) icon and select
+viewer** (![](../uploads/icons/add-viewer-icon.png)) icon and select
 the viewer you want.
 
 ![](../datagrok/navigation/views/img/table-view-add-viewers-dock.gif)
