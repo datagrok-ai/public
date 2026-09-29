@@ -9,18 +9,17 @@ sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.cp.add-new-co
 import {test} from '@playwright/test';
 import '../../bindings/enrichment.js';
 import '../../bindings/home.js';
-import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {acceptCompletion, dragAreaOnto, dragColumnName, dragCornerBy, holdsFormula, keepsWidth, previewComputes, rememberSize, sizeAgainstRemembered, typeAtCaret} from '../../bindings/add-new-column.js';
+import {acceptCompletion, dragColumnName, previewComputes} from '../../bindings/add-new-column.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, hoverOver, pressKeyIn, shouldBe, shouldContainText, shouldHaveValue, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, dragBy, holdsCode, hoverOver, keepsWidth, pressKeyIn, rememberSize, shouldBe, shouldContainText, shouldHaveValue, sizeAgainstRemembered, typeAtCaret, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnTag, hasColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {hoverArea, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {liesWithin} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {dragAreaOntoElement, liesWithin} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Add New Column on demog: the dialog, a formula built by hand, and the input history", () => {
@@ -61,7 +60,7 @@ test.describe("Add New Column on demog: the dialog, a formula built by hand, and
       await session.step(57, "And user remembers the size of preview grid viewer", () => rememberSize(page, el("preview grid viewer")));
       await session.step(58, "And user remembers the size of column list viewer", () => rememberSize(page, el("column list viewer")));
       await session.step(59, "And user remembers the size of functions panel", () => rememberSize(page, el("functions panel")));
-      await session.step(60, "And user drags resize corner of Add New Column dialog by 200 and 150 pixels", () => dragCornerBy(page, el("resize corner of Add New Column dialog"), 200, 150));
+      await session.step(60, "And user drags resize corner of Add New Column dialog by 200 and 150 pixels", () => dragBy(page, el("resize corner of Add New Column dialog"), 200, 150));
       await session.step(61, "Then \"Add New Column\" dialog should be larger than remembered", () => sizeAgainstRemembered(page, el("\"Add New Column\" dialog"), "larger"));
       await session.step(62, "And formula editor should be wider than remembered", () => sizeAgainstRemembered(page, el("formula editor"), "wider"));
       await session.step(63, "And preview grid viewer should be larger than remembered", () => sizeAgainstRemembered(page, el("preview grid viewer"), "larger"));
@@ -73,7 +72,7 @@ test.describe("Add New Column on demog: the dialog, a formula built by hand, and
       await session.step(69, "And preview grid viewer should lie within \"Add New Column\" dialog", () => liesWithin(page, el("preview grid viewer"), el("\"Add New Column\" dialog")));
       await session.step(70, "When user remembers the size of \"Add New Column\" dialog", () => rememberSize(page, el("\"Add New Column\" dialog")));
       await session.step(71, "And user remembers the size of formula editor", () => rememberSize(page, el("formula editor")));
-      await session.step(72, "And user drags resize corner of Add New Column dialog by -300 and -200 pixels", () => dragCornerBy(page, el("resize corner of Add New Column dialog"), -300, -200));
+      await session.step(72, "And user drags resize corner of Add New Column dialog by -300 and -200 pixels", () => dragBy(page, el("resize corner of Add New Column dialog"), -300, -200));
       await session.step(73, "Then \"Add New Column\" dialog should be smaller than remembered", () => sizeAgainstRemembered(page, el("\"Add New Column\" dialog"), "smaller"));
       await session.step(74, "And formula editor should be narrower than remembered", () => sizeAgainstRemembered(page, el("formula editor"), "narrower"));
       await session.step(75, "And formula editor should lie within \"Add New Column\" dialog", () => liesWithin(page, el("formula editor"), el("\"Add New Column\" dialog")));
@@ -87,16 +86,16 @@ test.describe("Add New Column on demog: the dialog, a formula built by hand, and
       await session.step(83, "And user types \"Rou\" into formula editor", () => typeInto(page, "Rou", el("formula editor")));
       await session.step(84, "Then completion list should be visible", () => shouldBe(page, el("completion list"), "visible"));
       await session.step(85, "When user accepts the highlighted completion with Enter", () => acceptCompletion(page, "Enter"));
-      await session.step(86, "Then formula editor should hold the formula \"Round(a)\"", () => holdsFormula(page, el("formula editor"), "Round(a)"));
+      await session.step(86, "Then formula editor should hold the code \"Round(a)\"", () => holdsCode(page, el("formula editor"), "Round(a)"));
       await session.step(87, "And \"Add New Column\" dialog should be visible", () => shouldBe(page, el("\"Add New Column\" dialog"), "visible"));
       await session.step(88, "When user presses Delete in formula editor", () => pressKeyIn(page, "Delete", el("formula editor")));
-      await session.step(89, "And user drags the \"header HEIGHT\" area of grid onto formula editor", () => dragAreaOnto(page, "header HEIGHT", el("grid"), el("formula editor")));
-      await session.step(90, "Then formula editor should hold the formula \"Round(${HEIGHT})\"", () => holdsFormula(page, el("formula editor"), "Round(${HEIGHT})"));
+      await session.step(89, "And user drags the \"header HEIGHT\" area of grid onto formula editor", () => dragAreaOntoElement(page, "header HEIGHT", el("grid"), el("formula editor")));
+      await session.step(90, "Then formula editor should hold the code \"Round(${HEIGHT})\"", () => holdsCode(page, el("formula editor"), "Round(${HEIGHT})"));
       await session.step(91, "When user presses End in formula editor", () => pressKeyIn(page, "End", el("formula editor")));
       await session.step(92, "And user presses ArrowLeft in formula editor", () => pressKeyIn(page, "ArrowLeft", el("formula editor")));
       await session.step(93, "And user types \" + \" at the caret", () => typeAtCaret(page, " + "));
       await session.step(94, "And user drags the \"WEIGHT\" column of column list viewer onto formula editor", () => dragColumnName(page, "WEIGHT", el("column list viewer"), el("formula editor")));
-      await session.step(95, "Then formula editor should hold the formula \"Round(${HEIGHT} + ${WEIGHT})\"", () => holdsFormula(page, el("formula editor"), "Round(${HEIGHT} + ${WEIGHT})"));
+      await session.step(95, "Then formula editor should hold the code \"Round(${HEIGHT} + ${WEIGHT})\"", () => holdsCode(page, el("formula editor"), "Round(${HEIGHT} + ${WEIGHT})"));
       await session.step(96, "And the preview grid should show \"New\" computed as numbers", () => previewComputes(page, "New"));
       await session.step(97, "When user clicks on OK button in \"Add New Column\" dialog", () => clickOn(page, el("OK button in \"Add New Column\" dialog")));
       await session.step(98, "Then \"Add New Column\" dialog should be hidden", () => shouldBe(page, el("\"Add New Column\" dialog"), "hidden"));
@@ -108,12 +107,12 @@ test.describe("Add New Column on demog: the dialog, a formula built by hand, and
       await session.step(104, "When user clicks on \"Add New Column...\" icon", () => clickOn(page, el("\"Add New Column...\" icon")));
       await session.step(105, "Then \"Add New Column\" dialog should be visible", () => shouldBe(page, el("\"Add New Column\" dialog"), "visible"));
       await session.step(106, "And column name input should have value \"\"", () => shouldHaveValue(page, el("column name input"), ""));
-      await session.step(107, "And formula editor should hold the formula \"\"", () => holdsFormula(page, el("formula editor"), ""));
+      await session.step(107, "And formula editor should hold the code \"\"", () => holdsCode(page, el("formula editor"), ""));
       await session.step(108, "When user clicks on \"History\" icon in \"Add New Column\" dialog", () => clickOn(page, el("\"History\" icon in \"Add New Column\" dialog")));
       await session.step(109, "Then input history menu should contain text \"Name: New\"", () => shouldContainText(page, el("input history menu"), "Name: New"));
       await session.step(110, "When user clicks on first menu item in input history menu", () => clickOn(page, el("first menu item in input history menu")));
       await session.step(111, "Then column name input should have value \"New\"", () => shouldHaveValue(page, el("column name input"), "New"));
-      await session.step(112, "And formula editor should hold the formula \"Round(${HEIGHT} + ${WEIGHT})\"", () => holdsFormula(page, el("formula editor"), "Round(${HEIGHT} + ${WEIGHT})"));
+      await session.step(112, "And formula editor should hold the code \"Round(${HEIGHT} + ${WEIGHT})\"", () => holdsCode(page, el("formula editor"), "Round(${HEIGHT} + ${WEIGHT})"));
       await session.step(113, "When user clicks on CANCEL button in \"Add New Column\" dialog", () => clickOn(page, el("CANCEL button in \"Add New Column\" dialog")));
       await session.step(114, "Then no errors should have been logged", () => noErrors(page));
     });

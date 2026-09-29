@@ -46,7 +46,7 @@ Feature: A query's post-process runs on its result
     Given the toolbox pane is hidden
     And the browse panel is open
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    When user clicks on "Refresh" icon inside browse toolbar
+    When user refreshes the browse tree
     And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-pp-{time} tree node inside browse tree
     Then the table should have 77 rows
     And an info balloon containing "PP77" should have been shown

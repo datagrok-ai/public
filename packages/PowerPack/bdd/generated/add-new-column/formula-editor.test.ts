@@ -9,16 +9,16 @@ sub_features_covered: [powerpack.dialogs.add-new-column, GROK-17004]
 import {test} from '@playwright/test';
 import '../../bindings/enrichment.js';
 import '../../bindings/home.js';
-import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {acceptCompletion, dragAreaOnto, highlightStandsOut, highlightsExactly, highlightsInColor, holdsFormula, hoverText, typeAtCaret} from '../../bindings/add-new-column.js';
+import {acceptCompletion, highlightStandsOut, highlightsExactly, highlightsInColor} from '../../bindings/add-new-column.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clearField, clickOn, pasteInto, pressKeyIn, shouldBe, shouldContainText, shouldNotBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clearField, clickOn, holdsCode, hoverText, pasteInto, pressKeyIn, shouldBe, shouldContainText, shouldNotBe, typeAtCaret, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {dragAreaOntoElement} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The formula editor of Add New Column on demog: autocomplete, hints and column highlighting", () => {
@@ -37,7 +37,7 @@ test.describe("The formula editor of Add New Column on demog: autocomplete, hint
       await session.step(26, "And \"Acos\" completion should be visible", () => shouldBe(page, el("\"Acos\" completion"), "visible"));
       await session.step(27, "And \"Avg\" completion should be visible", () => shouldBe(page, el("\"Avg\" completion"), "visible"));
       await session.step(28, "When user accepts the highlighted completion with Enter", () => acceptCompletion(page, "Enter"));
-      await session.step(29, "Then formula editor should hold the formula \"Abs(x)\"", () => holdsFormula(page, el("formula editor"), "Abs(x)"));
+      await session.step(29, "Then formula editor should hold the code \"Abs(x)\"", () => holdsCode(page, el("formula editor"), "Abs(x)"));
       await session.step(30, "And \"Add New Column\" dialog should be visible", () => shouldBe(page, el("\"Add New Column\" dialog"), "visible"));
       await session.step(31, "And completion list should be hidden", () => shouldBe(page, el("completion list"), "hidden"));
       await session.step(32, "And no errors should have been logged", () => noErrors(page));
@@ -47,7 +47,7 @@ test.describe("The formula editor of Add New Column on demog: autocomplete, hint
       await session.step(36, "And user types \"a\" into formula editor", () => typeInto(page, "a", el("formula editor")));
       await session.step(37, "Then \"Acos\" completion should be visible", () => shouldBe(page, el("\"Acos\" completion"), "visible"));
       await session.step(38, "When user clicks on \"Acos\" completion", () => clickOn(page, el("\"Acos\" completion")));
-      await session.step(39, "Then formula editor should hold the formula \"Acos(x)\"", () => holdsFormula(page, el("formula editor"), "Acos(x)"));
+      await session.step(39, "Then formula editor should hold the code \"Acos(x)\"", () => holdsCode(page, el("formula editor"), "Acos(x)"));
       await session.step(40, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Ctrl+Space offers the functions on an empty editor", async () => {
@@ -76,7 +76,7 @@ test.describe("The formula editor of Add New Column on demog: autocomplete, hint
       await session.step(65, "And user types \"a\" into formula editor", () => typeInto(page, "a", el("formula editor")));
       await session.step(66, "Then \"Abs\" completion should be visible", () => shouldBe(page, el("\"Abs\" completion"), "visible"));
       await session.step(67, "When user accepts the highlighted completion with Enter", () => acceptCompletion(page, "Enter"));
-      await session.step(68, "Then formula editor should hold the formula \"Abs(x)\"", () => holdsFormula(page, el("formula editor"), "Abs(x)"));
+      await session.step(68, "Then formula editor should hold the code \"Abs(x)\"", () => holdsCode(page, el("formula editor"), "Abs(x)"));
       await session.step(69, "And \"Add New Column\" dialog should be visible", () => shouldBe(page, el("\"Add New Column\" dialog"), "visible"));
       await session.step(70, "And formula hint should contain text \"Abs(x:\"", () => shouldContainText(page, el("formula hint"), "Abs(x:"));
       await session.step(71, "When user hovers over the text \"Abs\" in formula editor", () => hoverText(page, "Abs", el("formula editor")));
@@ -86,10 +86,10 @@ test.describe("The formula editor of Add New Column on demog: autocomplete, hint
     });
     await run.scenario("A pasted ${col} reference is highlighted, a bare name is not", async () => {
       await session.step(77, "When user pastes \"Abs(age)\" into formula editor", () => pasteInto(page, "Abs(age)", el("formula editor")));
-      await session.step(78, "Then formula editor should hold the formula \"Abs(age)\"", () => holdsFormula(page, el("formula editor"), "Abs(age)"));
+      await session.step(78, "Then formula editor should hold the code \"Abs(age)\"", () => holdsCode(page, el("formula editor"), "Abs(age)"));
       await session.step(79, "And formula editor should highlight the column references \"\"", () => highlightsExactly(page, el("formula editor"), ""));
       await session.step(80, "When user pastes \"Abs(${age})\" into formula editor", () => pasteInto(page, "Abs(${age})", el("formula editor")));
-      await session.step(81, "Then formula editor should hold the formula \"Abs(${age})\"", () => holdsFormula(page, el("formula editor"), "Abs(${age})"));
+      await session.step(81, "Then formula editor should hold the code \"Abs(${age})\"", () => holdsCode(page, el("formula editor"), "Abs(${age})"));
       await session.step(82, "And formula editor should highlight the column references \"${age}\"", () => highlightsExactly(page, el("formula editor"), "${age}"));
       await session.step(83, "And every column reference of formula editor should be drawn in the color of \"--blue-2\"", () => highlightsInColor(page, el("formula editor"), "--blue-2"));
       await session.step(84, "And every column reference of formula editor should differ in color from the plain text of its line", () => highlightStandsOut(page, el("formula editor")));
@@ -97,7 +97,7 @@ test.describe("The formula editor of Add New Column on demog: autocomplete, hint
     });
     await run.scenario("A pasted $[col] reference is highlighted", async () => {
       await session.step(88, "When user pastes \"Avg($[age])\" into formula editor", () => pasteInto(page, "Avg($[age])", el("formula editor")));
-      await session.step(89, "Then formula editor should hold the formula \"Avg($[age])\"", () => holdsFormula(page, el("formula editor"), "Avg($[age])"));
+      await session.step(89, "Then formula editor should hold the code \"Avg($[age])\"", () => holdsCode(page, el("formula editor"), "Avg($[age])"));
       await session.step(90, "And formula editor should highlight the column references \"$[age]\"", () => highlightsExactly(page, el("formula editor"), "$[age]"));
       await session.step(91, "And every column reference of formula editor should be drawn in the color of \"--blue-2\"", () => highlightsInColor(page, el("formula editor"), "--blue-2"));
       await session.step(92, "And every column reference of formula editor should differ in color from the plain text of its line", () => highlightStandsOut(page, el("formula editor")));
@@ -120,7 +120,7 @@ test.describe("The formula editor of Add New Column on demog: autocomplete, hint
       await session.step(109, "When user clears formula editor", () => clearField(page, el("formula editor")));
       await session.step(110, "And user types \"Sin(\" into formula editor", () => typeInto(page, "Sin(", el("formula editor")));
       await session.step(111, "And user presses Escape in formula editor", () => pressKeyIn(page, "Escape", el("formula editor")));
-      await session.step(112, "And user drags the \"header WEIGHT\" area of grid onto formula editor", () => dragAreaOnto(page, "header WEIGHT", el("grid"), el("formula editor")));
+      await session.step(112, "And user drags the \"header WEIGHT\" area of grid onto formula editor", () => dragAreaOntoElement(page, "header WEIGHT", el("grid"), el("formula editor")));
       await session.step(113, "Then formula editor should contain text \"Sin(${WEIGHT}\"", () => shouldContainText(page, el("formula editor"), "Sin(${WEIGHT}"));
       await session.step(114, "And formula editor should highlight the column references \"${WEIGHT}\"", () => highlightsExactly(page, el("formula editor"), "${WEIGHT}"));
       await session.step(115, "And every column reference of formula editor should be drawn in the color of \"--blue-2\"", () => highlightsInColor(page, el("formula editor"), "--blue-2"));

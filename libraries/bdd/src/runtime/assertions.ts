@@ -2,7 +2,7 @@
 import {Locator, Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {editorOf, readExpanded, readSwitch, switchOf} from './gestures.js';
+import {CHECKABLE, editorOf, readExpanded, readSwitch, switchOf, whenPresent} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
 import type {State} from '../states.js';
@@ -120,7 +120,7 @@ async function expectInvalid(loc: Locator, invalid: boolean): Promise<void> {
 }
 
 async function expectChecked(loc: Locator, checked: boolean): Promise<void> {
-  const box = loc.locator('input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]').first();
+  const box = (await whenPresent(loc)).locator(CHECKABLE).first();
   const target = await box.count() > 0 ? box : loc;
   await (checked ? expect(target) : expect(target).not).toBeChecked();
 }

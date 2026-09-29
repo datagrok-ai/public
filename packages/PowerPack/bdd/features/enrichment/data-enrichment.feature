@@ -43,7 +43,7 @@ Feature: Column enrichment of a database table
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---Datagrok tree node inside browse tree is expanded
-    And Schemas tree node inside browse tree is expanded
+    And Databases---Postgres---Datagrok---Schemas tree node inside browse tree is expanded
     And Databases---Postgres---Datagrok---Schemas---public tree node inside browse tree is expanded
     When user scrolls Databases---Postgres---Datagrok---Schemas---public---events tree node inside browse tree to the middle of its list
     And user picks "Get Top 100" from the context menu of Databases---Postgres---Datagrok---Schemas---public---events tree node inside browse tree
@@ -100,10 +100,10 @@ Feature: Column enrichment of a database table
     And user picks "session_id" as the key of the main table in "Enrich session_id" dialog
     Then the join key in "Enrich session_id" dialog should read "session_id = id"
     When user opens the columns of the joined "users_sessions" table in "Enrich session_id" dialog
-    And user toggles the "ip" column in the column list of "Select columns..." dialog
     And user toggles the "started" column in the column list of "Select columns..." dialog
     And user toggles the "ended" column in the column list of "Select columns..." dialog
-    And user toggles the "is_admin" column in the column list of "Select columns..." dialog
+    And user toggles the "is_short" column in the column list of "Select columns..." dialog
+    And user toggles the "user_id" column in the column list of "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
     Then the joined "users_sessions" table in "Enrich session_id" dialog should read "datagrok.public.users_sessions(4/12)"
     When user enters "bdd-enrich-sessions-{time}" into Name input in "Enrich session_id" dialog
@@ -118,10 +118,10 @@ Feature: Column enrichment of a database table
     Given user watches the task bar
     When user clicks on link of "bdd-enrich-sessions-{time}" enrichment
     Then the task bar should have finished "Enriching..."
-    And the table should have the columns "id, friendly_name, session_id, event_type_id, event_time, description, error_message, error_stack_trace, exported_by, ended, ip, is_admin, started"
+    And the table should have the columns "id, friendly_name, session_id, event_type_id, event_time, description, error_message, error_stack_trace, exported_by, ended, is_short, started, user_id"
     And the table should have 50 rows
-    And "ip" column should have no missing values
-    And "started" column should have no missing values
+    And the "started" column should hold, row by row, the "started" of the "users_sessions" table matched on "session_id" = "id"
+    And the "user_id" column should hold, row by row, the "user_id" of the "users_sessions" table matched on "session_id" = "id"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -131,7 +131,7 @@ Feature: Column enrichment of a database table
     And Name input in "Enrich session_id" dialog should have value "bdd-enrich-sessions-{time}"
     And the joined "users_sessions" table in "Enrich session_id" dialog should read "datagrok.public.users_sessions(4/12)"
     When user opens the columns of the joined "users_sessions" table in "Enrich session_id" dialog
-    And user toggles the "is_admin" column in the column list of "Select columns..." dialog
+    And user toggles the "is_short" column in the column list of "Select columns..." dialog
     And user toggles the "type" column in the column list of "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
     Then the joined "users_sessions" table in "Enrich session_id" dialog should read "datagrok.public.users_sessions(4/12)"
@@ -139,10 +139,12 @@ Feature: Column enrichment of a database table
     Then the "Enrich session_id" dialog should close
     And 1 enrichment named "bdd-enrich-sessions-{time}" should be on the server
     And the enrichment "bdd-enrich-sessions-{time}" on the server should select the column "type"
+    And the enrichment "bdd-enrich-sessions-{time}" on the server should not select the column "is_short"
     Given user watches the task bar
     When user clicks on link of "bdd-enrich-sessions-{time}" enrichment
     Then the task bar should have finished "Enriching..."
     And the table should have a column "type"
+    And the "type" column should hold, row by row, the "type" of the "users_sessions" table matched on "session_id" = "id"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -150,7 +152,7 @@ Feature: Column enrichment of a database table
     When user clicks on delete icon of "bdd-enrich-sessions-{time}" enrichment
     Then "bdd-enrich-sessions-{time}" enrichment should be absent
     And 0 enrichments named "bdd-enrich-sessions-{time}" should be on the server
-    And the table should have a column "ip"
+    And the table should have a column "is_short"
     And the table should have a column "type"
     And no errors should have been logged
     And no error or warning balloon should have been shown
@@ -160,7 +162,8 @@ Feature: Column enrichment of a database table
     Then the "events" view should be current
     Given the browse panel is open
     When user double-clicks on Databases---Postgres---Datagrok---BDD-enrich-events-{time} tree node inside browse tree
-    Then the table should have 9 columns
+    Then the "BDD-enrich-events-{time}" view should be current
+    And the table should have 9 columns
     And the context panel should show "BDD-enrich-events-{time}"
     When user clicks on the "header session_id" area of grid
     Then the context panel should show "session_id"
@@ -171,7 +174,7 @@ Feature: Column enrichment of a database table
     And user picks "datagrok > public > users_sessions" from the open menu
     And user picks "session_id" as the key of the main table in "Enrich session_id" dialog
     And user opens the columns of the joined "users_sessions" table in "Enrich session_id" dialog
-    And user toggles the "token_hash" column in the column list of "Select columns..." dialog
+    And user toggles the "is_short" column in the column list of "Select columns..." dialog
     And user toggles the "type" column in the column list of "Select columns..." dialog
     And user toggles the "user_id" column in the column list of "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
@@ -200,7 +203,7 @@ Feature: Column enrichment of a database table
     Given user watches the task bar
     When user clicks on link of "bdd-enrich-types-{time}" enrichment
     Then the task bar should have finished "Enriching..."
-    And "source" column should have no missing values
+    And the "source" column should hold, row by row, the "source" of the "event_types" table matched on "event_type_id" = "id"
     When user drags the "x scroll handle" area of grid by 1000 pixels to the left
     And user clicks on the "header session_id" area of grid
     Then the context panel should show "session_id"
@@ -209,7 +212,8 @@ Feature: Column enrichment of a database table
     And user watches the task bar
     When user clicks on link of "bdd-enrich-tokens-{time}" enrichment
     Then the task bar should have finished "Enriching..."
-    And the table should have the columns "id, friendly_name, session_id, event_type_id, event_time, description, error_message, error_stack_trace, exported_by, error_severity, result.friendly_name, is_error, source, token_hash, type, user_id"
+    And the table should have the columns "id, friendly_name, session_id, event_type_id, event_time, description, error_message, error_stack_trace, exported_by, error_severity, result.friendly_name, is_error, source, is_short, type, user_id"
+    And the "user_id" column should hold, row by row, the "user_id" of the "users_sessions" table matched on "session_id" = "id"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -223,7 +227,7 @@ Feature: Column enrichment of a database table
     Then "bdd-enrich-types-{time}" enrichment should be absent
     And 0 enrichments named "bdd-enrich-types-{time}" should be on the server
     And the table should have a column "source"
-    And the table should have a column "token_hash"
+    And the table should have a column "is_short"
     And no errors should have been logged
 
   Scenario: The enrichment of session_id is offered on the other result of the events table
@@ -234,7 +238,6 @@ Feature: Column enrichment of a database table
     Given "Datagrok" accordion header in context panel is expanded
     And Enrich accordion header in context panel is expanded
     Then "bdd-enrich-tokens-{time}" enrichment should be visible
-    And "bdd-enrich-sessions-{time}" enrichment should be absent
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -242,7 +245,7 @@ Feature: Column enrichment of a database table
     Given the layouts named "BDD-enrich-events-{time}" are deleted when the feature ends
     When user clicks on BDD-enrich-events-{time} view
     Then the "BDD-enrich-events-{time}" view should be current
-    And the table should have a column "token_hash"
+    And the table should have a column "is_short"
     Given the toolbox pane is shown
     And Layouts accordion header in toolbox is expanded
     When user clicks on Save button in layouts pane
@@ -250,11 +253,11 @@ Feature: Column enrichment of a database table
     When user clicks on histogram icon on toolbox
     Then the open tableview should have 1 histogram viewer
     When user drags the "x scroll handle" area of grid by 1000 pixels to the right
-    And user picks "Remove" from the context menu of the "header token_hash" area of grid
-    Then the table should not have a column "token_hash"
+    And user picks "Remove" from the context menu of the "header is_short" area of grid
+    Then the table should not have a column "is_short"
     When user clicks on "BDD-enrich-events-{time}" layout card
     Then the open tableview should have 0 histogram viewers
-    And the table should not have a column "token_hash"
+    And the table should not have a column "is_short"
     And the table should have a column "user_id"
     And no errors should have been logged
     And no error or warning balloon should have been shown
@@ -269,15 +272,19 @@ Feature: Column enrichment of a database table
     And user clicks on OK button in "Save project" dialog
     Then "Save project" dialog should be hidden
     And 1 project named "bdd-enrich-project-{time}" should be on the server
+    And "Share bdd-enrich-project-{time}" dialog should be visible
+    When user presses Escape
+    Then "Share bdd-enrich-project-{time}" dialog should be absent
     When user closes all views
     Given the browse panel is open
     When user refreshes the browse tree
     And user expands "My stuff" tree node inside browse tree
     And user expands "My stuff > My dashboards" tree node inside browse tree
     And user double-clicks on "My stuff > My dashboards > bdd-enrich-project-{time}" tree node inside browse tree
-    Then the table should have a column "type"
+    Then the table should have been reloaded by data sync
+    And the table should have a column "type"
     And the table should have a column "user_id"
-    And the table should not have a column "token_hash"
+    And the table should not have a column "is_short"
     And the table should not have a column "source"
     And an error balloon containing "Could not find enrichment" should have been shown
     And no errors should have been logged

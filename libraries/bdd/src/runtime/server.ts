@@ -3,6 +3,7 @@
    fetch against the server. */
 import {Page} from '@playwright/test';
 import {atFeatureEnd} from './harness.js';
+import {expect, pollMs} from './patience.js';
 
 declare const grok: any;
 
@@ -12,19 +13,32 @@ export interface ServerApi {
   remove(path: string): Promise<void>;
 }
 
-export async function serverRequests(page: Page): Promise<ServerApi> {
-  const {root, token} = await page.evaluate(() => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
-    token: String(grok.dapi.token)}));
+/** With `session`, the requests go as that session's account instead of the page's. */
+export async function serverRequests(page: Page, session?: string): Promise<ServerApi> {
+  const {root, token} = await page.evaluate((s) => ({root: new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''),
+    token: s ?? String(grok.dapi.token)}), session ?? null);
   const headers = {Authorization: token};
+  // a request that fails in transport throws with Playwright's call log, which prints the headers:
+  // the session token must not reach the run's log, report or trace
+  const scrubbed = async <T>(method: string, path: string, request: Promise<T>): Promise<T> => {
+    try {
+      return await request;
+    }
+    catch (error) {
+      const message = String((error as Error)?.message ?? error).split(token).join('<token>')
+        .replace(/(authorization["']?\s*[:=]\s*["']?)[^\s"',}]+/gi, '$1<token>');
+      throw new Error(`${method} ${path}: ${message.split('\n')[0]}`);
+    }
+  };
   const checked = async (method: string, path: string, response: Promise<{ok(): boolean; text(): Promise<string>}>) => {
-    const done = await response;
+    const done = await scrubbed(method, path, response);
     const body = await done.text();
     if (!done.ok() || body.includes('ApiError'))
       throw new Error(`${method} ${path}: ${body.slice(0, 200)}`);
   };
   return {
     async get<T>(path: string): Promise<T> {
-      const got = await page.request.get(`${root}${path}`, {headers});
+      const got = await scrubbed('GET', path, page.request.get(`${root}${path}`, {headers}));
       if (!got.ok())
         throw new Error(`GET ${path} failed: HTTP ${got.status()}`);
       return got.json();
@@ -50,6 +64,32 @@ export async function deleteChatsOf(page: Page, id: string): Promise<void> {
   for (const chat of await chatIdsOf(page, id))
     await api.remove(`/chats/${chat}`);
 }
+
+/** The picture the Save dialog or the Layouts pane stores for an entity (`<pictureId>.png`): the server
+ * keeps it when it deletes the entity, so the feature that made the entity deletes it, read back gone.
+ * The thumbnails the server cuts from it (`<pictureId>_<width>.png`) have no delete of their own. A copy
+ * saved with "Save a copy" shares its original's picture, which an earlier sweep may have taken, so only
+ * a picture still stored is deleted (a storage backend may refuse the delete of a missing file). */
+export async function deletePictures(page: Page, ids: string[]): Promise<void> {
+  if (ids.length === 0)
+    return;
+  const api = await serverRequests(page);
+  const root = await page.evaluate(() => new URL(grok.dapi.root, location.href).href.replace(/\/$/, ''));
+  // a picture the server does not hold is answered 200 with a JSON error, not a 404: stored is an image answer
+  const stored = async (id: string) => {
+    const got = await page.request.get(`${root}/entities/picture/${id}`);
+    return got.ok() && (got.headers()['content-type'] ?? '').startsWith('image/');
+  };
+  for (const id of ids)
+    if (await stored(id))
+      await api.remove(`/entities/picture/${id}`);
+  for (const id of ids)
+    await expect.poll(() => stored(id), {message: `the picture ${id} still on the server`, timeout: pollMs(15000)}).toBe(false);
+}
+
+/** The picture id an entity's pictureUrl names ("…/entities/picture/<id>"); null for the default picture. */
+export const pictureIdOf = (pictureUrl: unknown): string | null =>
+  /\/entities\/picture\/([^/?]+)/.exec(String(pictureUrl ?? ''))?.[1] ?? null;
 
 /** The server's clock, from the Date header of an API answer (whole seconds): what the `createdOn` of an
  * entity the server stamps counts in. The JS API has no getter for it. */
@@ -84,15 +124,26 @@ export function isStaleFixture(entity: {name: string; friendlyName: string; crea
  *  entity the layout belongs to does not take them with it. The signed-in account's layouts whose name
  *  matches `pattern` and that were made since this call go at feature end, each with the wrapper of its
  *  name, and the listing is read again to see them gone. Those matching `stale` and made over an hour
- *  before it are a killed run's: they go now and at the end. */
-export async function deleteLayoutsAtEnd(page: Page, pattern: string, stale?: string): Promise<void> {
-  // the client stamps a layout's createdOn (layout.dart), so the browser's clock is the one to compare
-  const now: number = await page.evaluate(() => Date.now());
-  const sweep = (recent: boolean): Promise<string[]> => page.evaluate(async ([source, old, since, before]) => {
+ *  before it are a killed run's: they go now and at the end. With no `pattern`, only those go, now. */
+export async function deleteLayoutsAtEnd(page: Page, pattern: string | null, stale?: string): Promise<void> {
+  // the server stamps createdOn when it saves an entity (dinq repository_query.dart `save`), whatever the
+  // client set, so its clock is the one to compare; the Date header comes from the proxy in front of it,
+  // which may run on a clock of its own, hence the margin
+  const now = await serverNow(page) - 5000;
+  const sweep = async (recent: boolean): Promise<string[]> => {
+    const {left, pictures} = await sweepPage(recent);
+    await deletePictures(page, [...new Set(pictures.map(pictureIdOf).filter((p): p is string => p !== null))]);
+    return left;
+  };
+  const sweepPage = (recent: boolean): Promise<{left: string[]; pictures: string[]}> => page.evaluate(async ([source, old, since, before]) => {
+    const pictureOf = (window as any).grok_PictureMixin_Get_PictureUrl;
+    if (typeof pictureOf !== 'function')
+      throw new Error('grok_PictureMixin_Get_PictureUrl is gone from the client: a layout\'s picture cannot be found to delete');
     const me = String((await grok.dapi.users.current()).id);
     // the grok name drops what the friendly name keeps ("BDD-Q-layout-1" is "BDDQLayout1")
     const names = (x: any): string[] => [String(x.friendlyName ?? ''), String(x.name ?? '')].filter(Boolean);
-    const created = (x: any): number => x.createdOn ? new Date(x.createdOn.toString()).getTime() : 0;
+    // valueOf keeps the milliseconds a toString() of the dayjs value drops
+    const created = (x: any): number => x.createdOn ? Number(x.createdOn.valueOf()) : 0;
     const named = (x: any, re: string): boolean => names(x).some((n) => new RegExp(re, 'i').test(n));
     const ours = (x: any): boolean => String(x.author?.id ?? '') === me &&
       (since !== null && created(x) >= since && named(x, source) ||
@@ -106,6 +157,7 @@ export async function deleteLayoutsAtEnd(page: Page, pattern: string, stale?: st
           return all.filter(ours);
       }
     };
+    const pictures: string[] = [];
     for (const layout of await listed()) {
       // the wrapper is found by name, so it is taken only when it is ours and of the same run too:
       // "Df" is a name another account may hold on a shared stand
@@ -116,12 +168,16 @@ export async function deleteLayoutsAtEnd(page: Page, pattern: string, stale?: st
         if (project)
           await grok.dapi.projects.delete(project);
       }
+      // the Layouts pane saves a picture of the view with the layout
+      pictures.push(String(pictureOf(layout.dart) ?? ''));
       await grok.dapi.layouts.delete(layout);
     }
-    return (await listed()).map((l) => names(l)[0]);
-  }, [pattern, stale ?? null, recent ? now : null, now - STALE_AFTER_MS] as const);
+    return {left: (await listed()).map((l) => names(l)[0]), pictures};
+  }, [pattern ?? '(?!)', stale ?? null, recent ? now : null, now - STALE_AFTER_MS] as const);
   if (stale)
     await sweep(false);
+  if (pattern === null)
+    return;
   atFeatureEnd(page, async () => {
     const left = await sweep(true);
     if (left.length)

@@ -10,7 +10,8 @@ Feature: The widgets of the Home page
   The page lays the widgets out by their `order`, not in the order they are built: Spotlight first,
   then Reports, Usage and Community. The widget settings are read from the server, which is what a
   reload starts from, and every scenario that hides a widget brings it back through the Customize form;
-  the settings the account had come back when the feature ends in any case.
+  every widget is stored as shown when the feature starts and again when it ends, read back, so a run
+  killed with a widget hidden does not reach the next one.
 
   The tip at the bottom of Spotlight changes with the weekday — a demo on Monday, Friday and the
   weekend, a tutorial on Wednesday, a plain tip on Tuesday and Thursday — so what the tip is claimed to
@@ -25,23 +26,27 @@ Feature: The widgets of the Home page
   System block of Usage lists the services the stand reports (Jupyter, Grok Spawner and Grok Connect
   on dev, none on a local stand), so the block is claimed, not its services.
 
+  The search is typed as "demog": the md's "aspirin" opens a PubChem page in the results, a service
+  outside the stand.
+
   Not translated: the tooltip "Remove" of the close icon (the icon carries it as its aria label, which
-  is how the scenario finds it); "the widget scrolls through recent reports" (the Reports list is
-  claimed to be there, its scrolling is not).
+  is how the scenario finds it); "the widget scrolls through recent reports" (what the list holds is the
+  stand's own reports; its link to the Reports view is claimed).
 
   A page keeps the widget settings it read when it loaded, and writes them all back to the server once
   its widgets are built: a page of the same account that loads while this feature has a widget hidden
   or shown again writes the older setting back. So the feature signs in, on its page, as an
-  administrator account of its own ("bddhomeadmin", a member of Administrators, made once per stand),
-  whose settings no other page reads or writes, and every claim about what is stored is read from the
+  administrator account of its own ("bddhomeadmin", made once per stand since a user cannot be
+  deleted, and a member of Administrators only while the feature runs), whose settings no other page
+  reads or writes, and every claim about what is stored is read from the
   server after the gesture that changed it. The running account comes back when the feature ends. It
   runs @serial with the other features that sign in on their page.
 
   Background:
     Given user is logged in
     And an administrator account "bddhomeadmin" is on the server
-    And user is signed in as "bddhomeadmin" on this page
-    And the widget settings of the Home page come back when the feature ends
+    And user signs in as "bddhomeadmin"
+    And every widget of the Home page is stored as shown, now and when the feature ends
 
   Scenario: The Home page shows the search box and four loaded widgets after a reload
     When user reloads the page
@@ -113,10 +118,10 @@ Feature: The widgets of the Home page
     And no errors should have been logged
 
   Scenario: A search replaces the widgets, and clearing it brings them back
-    When user types "aspirin" into home search
+    When user types "demog" into home search
     Then home widgets panel should be hidden
     And home search results should be visible
-    And the page address should contain "search?q=aspirin"
+    And the page address should contain "search?q=demog"
     And the search should have finished
     When user clears home search
     Then home widgets panel should be visible
@@ -197,7 +202,7 @@ Feature: The widgets of the Home page
     When user switches to the "Home" view
     Then the "Home" view should be current
 
-  Scenario: Reports lists recent reports and opens the reports view
+  Scenario: The Reports widget opens the reports view
     Then "Open Reports" link in Reports home widget should be visible
     When user clicks on "Open Reports" link in Reports home widget
     Then the "Reports" view should be current

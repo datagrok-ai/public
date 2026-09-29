@@ -460,12 +460,22 @@ function optionsNamed(page: Page, option: string): Locator {
     .or(page.locator(withAttr(OPTION, `[aria-label="${cssString(option)}" i]`)));
 }
 
+export const CHECKABLE = 'input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]';
+
+/** The locator once something matches it, so a choice between the element and a control inside it
+ * is made on what the page shows, not on a dialog still building its rows (a Data sync switch is
+ * hidden until the dialog has looked at the table's source). */
+export async function whenPresent(loc: Locator): Promise<Locator> {
+  await expect(loc.first()).toBeAttached();
+  return loc;
+}
+
 export async function setChecked(page: Page, target: ElementRef, checked: boolean): Promise<void> {
-  const loc = await locate(page, target);
+  const loc = await whenPresent(await locate(page, target));
   // the Dart switch keeps its checkbox hidden and takes the click on a div, so it is not settable
   if (await loc.first().locator('.ui-input-switch').count() > 0)
     return setSwitched(page, target, checked);
-  const box = loc.locator('input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]').first();
+  const box = loc.locator(CHECKABLE).first();
   if (await box.count() > 0) {
     await box.setChecked(checked);
     return;
@@ -474,8 +484,8 @@ export async function setChecked(page: Page, target: ElementRef, checked: boolea
 }
 
 export async function toggle(page: Page, target: ElementRef): Promise<void> {
-  const loc = await locate(page, target);
-  const box = loc.locator('.ui-input-switch, input[type="checkbox"], [role="checkbox"], [role="switch"]').first();
+  const loc = await whenPresent(await locate(page, target));
+  const box = loc.locator(`.ui-input-switch, ${CHECKABLE}`).first();
   await (await box.count() > 0 ? box : loc).click();
 }
 

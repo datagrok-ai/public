@@ -1,10 +1,11 @@
 @viewers @realizes:GROK-17281
 Feature: A layout saved before the legend position existed puts every legend on the right
   A layout saved on SPGI_v2 before viewers had a Legend Position (github #3203, GROK-17281) carries
-  a histogram, a pie chart by Stereo Category, a scatter plot colored by it, a bar chart split by it
-  and stacked by Primary Series Name, a line chart and a box plot, none of them with a
-  legendPosition. Applied to SPGI, the five viewers that have a legend read Legend Position
-  "Right". Four of them draw their legend on the right. The pie chart labels its slices and, with
+  a filter panel (its histograms are filter cards), a pie chart by Stereo Category, a scatter plot
+  colored by it, a bar chart split by it and stacked by Primary Series Name, a line chart and a box
+  plot, none of them with a legendPosition. Applied to the spgi dataset (the first hundred rows of
+  SPGI), the five viewers that have a legend read Legend Position "Right", the value the platform
+  gives a look that has none. Four of them draw their legend on the right. The pie chart labels its slices and, with
   Legend Visibility Auto, draws no legend at this size; once its visibility is Always, it draws the
   legend on the right as well.
   The layout is opened from the computer through Open local file of the Browse toolbar: a file

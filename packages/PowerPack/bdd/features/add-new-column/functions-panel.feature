@@ -34,12 +34,12 @@ Feature: The functions and columns of Add New Column on SPGI: insertion, auto-bo
     When user hovers over name of "Abs" function entry
     Then plus of "Abs" function entry should be visible
     When user clicks on plus of "Abs" function entry
-    Then formula editor should hold the formula "Abs(x)"
+    Then formula editor should hold the code "Abs(x)"
     When user clears formula editor
-    Then formula editor should hold the formula ""
+    Then formula editor should hold the code ""
     And the preview grid should not show "Abs(x)"
     When user drags name of "Abs" function entry to formula editor
-    Then formula editor should hold the formula "Abs(x)"
+    Then formula editor should hold the code "Abs(x)"
     And no errors should have been logged
 
   Scenario: Structure brings the Molecule functions up, and getCLogP takes it
@@ -48,13 +48,13 @@ Feature: The functions and columns of Add New Column on SPGI: insertion, auto-bo
     Then the first 5 functions of the functions list should take a "Molecule" first
     When user hovers over name of "getCLogP" function entry
     And user clicks on plus of "getCLogP" function entry
-    Then formula editor should hold the formula "Chem:getCLogP(${Structure})"
+    Then formula editor should hold the code "Chem:getCLogP(${Structure})"
     And the preview grid should show "Chem:getCLogP(${Structure})" computed as numbers
     When user clears formula editor
-    Then formula editor should hold the formula ""
+    Then formula editor should hold the code ""
     And the preview grid should not show "Chem:getCLogP(${Structure})"
     When user drags name of "getCLogP" function entry to formula editor
-    Then formula editor should hold the formula "Chem:getCLogP(${Structure})"
+    Then formula editor should hold the code "Chem:getCLogP(${Structure})"
     And the preview grid should show "Chem:getCLogP(${Structure})" computed as numbers
     And no errors should have been logged
 
@@ -64,13 +64,13 @@ Feature: The functions and columns of Add New Column on SPGI: insertion, auto-bo
     Then the first 5 functions of the functions list should take a "number" first
     When user hovers over name of "Abs" function entry
     And user clicks on plus of "Abs" function entry
-    Then formula editor should hold the formula "Abs(${Chemical Space X})"
+    Then formula editor should hold the code "Abs(${Chemical Space X})"
     And the preview grid should show "Abs(${Chemical Space X})" as the absolute value of "Chemical Space X"
     When user clears formula editor
-    Then formula editor should hold the formula ""
+    Then formula editor should hold the code ""
     And the preview grid should not show "Abs(${Chemical Space X})"
     When user drags name of "Abs" function entry to formula editor
-    Then formula editor should hold the formula "Abs(${Chemical Space X})"
+    Then formula editor should hold the code "Abs(${Chemical Space X})"
     And the preview grid should show "Abs(${Chemical Space X})" as the absolute value of "Chemical Space X"
     And no errors should have been logged
 
@@ -104,12 +104,12 @@ Feature: The functions and columns of Add New Column on SPGI: insertion, auto-bo
     Then the "current row" reading of column list viewer should be 1
     When user hovers over name of "Abs" function entry
     And user clicks on plus of "Abs" function entry
-    Then formula editor should hold the formula "Abs(x)"
+    Then formula editor should hold the code "Abs(x)"
     When user clears formula editor
-    Then formula editor should hold the formula ""
+    Then formula editor should hold the code ""
     And the preview grid should not show "Abs(x)"
     When user drags name of "Abs" function entry to formula editor
-    Then formula editor should hold the formula "Abs(x)"
+    Then formula editor should hold the code "Abs(x)"
     And no errors should have been logged
 
   Scenario: "By relevance" puts the column's functions back on top

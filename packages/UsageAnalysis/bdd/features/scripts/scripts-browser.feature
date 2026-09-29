@@ -95,6 +95,7 @@ Feature: The Scripts view and a script's context panel
     # the dialog fetches the entity's project after it opens; OK before that throws "Not initialized"
     And "Share BddScriptBrowser{time}" dialog should contain text "Full access"
     When user picks the sharing user in "User, group, or email" input in "Share BddScriptBrowser{time}" dialog
+    And user unchecks "Send notifications" input in "Share BddScriptBrowser{time}" dialog
     And user clicks on OK button in "Share BddScriptBrowser{time}" dialog
     Then the "Share BddScriptBrowser{time}" dialog should close
     When user clicks on "BddScriptBrowser{time}" link in gallery

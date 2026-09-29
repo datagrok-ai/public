@@ -2,7 +2,7 @@
    column shows in the context panel, its enrichment rows, and the editor dialog, which is the
    platform's visual query editor cut down to its Data and Join parts. An enrichment is a JSON file
    under System:AppData/PowerPack/enrichments/<connection>/<db>/<schema>/<table>/<column>/; the ones
-   a feature makes are deleted when it ends, with the queries it saved. */
+   a feature makes are deleted when it ends, with the directories their saving made. */
 import {Page} from '@playwright/test';
 import {Given, Then, When, element, kind} from '@datagrok-libraries/bdd';
 import {type ElementRef, atFeatureEnd, escapeRegExp, expect, fixtureFamilies, gestures, isStaleFixture, locate, pollMs}
@@ -35,46 +35,54 @@ function enrichmentFiles(page: Page): Promise<{name: string; path: string; chang
   }, ENRICHMENTS);
 }
 
+/** Deletes the files, then every directory under the enrichments left empty, deepest first, and
+ * returns the ones it deleted that are still there and empty: saving an enrichment makes the path down
+ * to its column, and deleting it through the pane leaves that path behind with no file for a sweep to
+ * find it by. */
+function deleteEnrichmentFiles(page: Page, paths: string[]): Promise<string[]> {
+  return page.evaluate(async ([root, doomed]) => {
+    for (const p of doomed)
+      await grok.dapi.files.delete(p);
+    if (!await grok.dapi.files.exists(root))
+      return [];
+    // deepest first, so a directory whose only content was an emptied one is empty by the time it is checked
+    const swept: string[] = [];
+    const dirs: string[] = (await grok.dapi.files.list(root, true)).filter((f: any) => f.isDirectory).map((f: any) => String(f.fullPath));
+    for (const dir of dirs.sort((a, b) => b.length - a.length)) {
+      if ((await grok.dapi.files.list(dir, false)).length > 0)
+        continue;
+      await grok.dapi.files.delete(dir);
+      swept.push(dir);
+    }
+    // gone, or holding an enrichment again: a save that made its path meanwhile left nothing behind
+    const left: string[] = [];
+    for (const dir of swept)
+      if (await grok.dapi.files.exists(dir) && (await grok.dapi.files.list(dir, false)).length === 0)
+        left.push(dir);
+    return left;
+  }, [ENRICHMENTS, paths] as [string, string[]]);
+}
+
 export const noEnrichments = Given('no enrichment named {string} is on the server', async (page: Page, list: string) => {
   const names = list.split(',').map((n) => n.trim()).filter(Boolean);
   const families = fixtureFamilies(names);
   const sweep = async (stale: boolean): Promise<void> => {
     const doomed = (await enrichmentFiles(page)).filter((f) => names.includes(f.name) ||
       stale && isStaleFixture({name: f.name, friendlyName: f.name, createdOn: f.changed}, families));
-    await page.evaluate(async (paths) => {
-      for (const p of paths)
-        await grok.dapi.files.delete(p);
-    }, doomed.map((f) => f.path));
+    expect(await deleteEnrichmentFiles(page, doomed.map((f) => f.path)), 'the enrichment directories left empty').toEqual([]);
     const left = async (): Promise<string[]> =>
       (await enrichmentFiles(page)).filter((f) => names.includes(f.name)).map((f) => f.name);
     await expect.poll(left, {message: 'the enrichments still on the server'}).toEqual([]);
   };
   await sweep(true);
   atFeatureEnd(page, () => sweep(false));
-}, {tier: 'api', description: 'the enrichments of these names (comma-separated), now and when the feature ends, and a killed run\'s of the same {time} family over an hour old'});
+}, {tier: 'api', description: 'the enrichments of these names (comma-separated) and every empty enrichment directory, now and when the feature ends, and a killed run\'s of the same {time} family over an hour old'});
 
 export const enrichmentsOnServer = Then('{int} enrichment(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
   await expect.poll(() => page.evaluate(async ([root, n]) => (await grok.dapi.files.list(root, true))
     .filter((f: any) => f.name === `${n}.json`).length, [ENRICHMENTS, name] as [string, string]),
   {message: `the enrichment files named ${name}.json`}).toBe(count);
 }, {tier: 'api', description: 'the enrichment files the server keeps under System:AppData/PowerPack/enrichments'});
-
-export const savedQuery = Given('a query {string} on {string} reads {string}', async (page: Page, name: string, connection: string, sql: string) => {
-  const id: string = await page.evaluate(async ([n, c, s]) => {
-    const conn = (await grok.dapi.connections.filter(`name = ${JSON.stringify(c.split(':').pop())}`).list())
-      .find((x: any) => x.nqName === c);
-    if (!conn)
-      throw new Error(`no connection ${c}`);
-    const q = conn.query(n, s);
-    await grok.dapi.queries.save(q);
-    return String(q.id);
-  }, [name, connection, sql] as [string, string, string]);
-  atFeatureEnd(page, () => page.evaluate(async (i) => {
-    const q = await grok.dapi.queries.find(i).catch(() => null);
-    if (q)
-      await grok.dapi.queries.delete(q);
-  }, id));
-}, {tier: 'api', description: 'a SQL query saved on the connection, deleted when the feature ends; an earlier one of the name goes with "no query named"'});
 
 /** The Join part of the dialog: its first row names the two tables, its second the key pair. */
 function joinRows(page: Page, dialog: ElementRef) {
@@ -104,37 +112,65 @@ export const joinReads = Then('the join key in {element} should read {string}', 
   await expect.poll(async () => (await on.innerText()).replace(/\s+/g, ' ').trim(), {message: 'the "on" row of the Join'}).toBe(text);
 }, {description: 'the key pair of the join as shown: "session_id = id" — the main table\'s column on the left'});
 
-export const tableColumnsExactly = Then('the table should have the columns {string}', async (page: Page, list: string) => {
-  const wanted = list.split(',').map((n) => n.trim()).filter(Boolean);
-  await expect.poll(() => page.evaluate(() => (grok.shell.t?.columns.names() ?? ['no current table']) as string[]), {message: 'the columns of the current table',
-    timeout: pollMs(30000)}).toEqual(wanted);
-}, {description: 'exactly these columns, in this order'});
-
-export const scrollToMiddle = When('user scrolls {element} to the middle of its list', async (page: Page, target: ElementRef) => {
-  const loc = (await locate(page, target)).first();
-  await loc.evaluate((e) => e.scrollIntoView({block: 'center'}));
-  await expect.poll(async () => {
-    const box = await loc.boundingBox();
-    const size = page.viewportSize();
-    return !!box && !!size && box.y > 100 && box.y + box.height < size.height - 100;
-  }, {message: `${target.phrase} away from the edges of the window`}).toBe(true);
-}, {tier: 'ui', description: 'the list scrolled until the element sits mid-window, clear of the status bar a node on the last line hides under'});
-
-element('layouts pane', {selector: '.d4-toolbox .d4-pane-layouts',
-  description: 'the Layouts section of the toolbox: its Save button and the cards of the layouts that fit the table'});
-kind('layout card', {
-  selector: '.d4-pane-layouts .grok-suggestions-chart-card',
-  match: ['label'],
-  labelSelector: '.grok-gallery-grid-item-title',
-  description: 'a saved layout in the Layouts section of the toolbox, by its name (the view it was saved from); a click applies it',
-});
-
-export const enrichmentJoins = Then('the enrichment {string} on the server should select the column {string}', async (page: Page, name: string, column: string) => {
-  await expect.poll(() => page.evaluate(async ([root, n]) => {
+/** The fields a saved enrichment selects, read back from its file. */
+function savedFields(page: Page, name: string): Promise<string[]> {
+  return page.evaluate(async ([root, n]) => {
     const files = (await grok.dapi.files.list(root, true)).filter((f: any) => f.name === `${n}.json`);
     if (files.length !== 1)
       return [`${files.length} enrichment files named ${n}.json`];
     return (JSON.parse(await grok.dapi.files.readAsText(files[0].fullPath)).fields ?? []).map((x: string) => String(x));
-  }, [ENRICHMENTS, name] as [string, string]), {message: `the fields the enrichment ${name} selects, as saved`})
-    .toEqual(expect.arrayContaining([expect.stringMatching(new RegExp(`(^|\\.)${escapeRegExp(column)}$`))]));
+  }, [ENRICHMENTS, name] as [string, string]);
+}
+
+const namesColumn = (column: string) => new RegExp(`(^|\\.)${escapeRegExp(column)}$`);
+
+export const enrichmentJoins = Then('the enrichment {string} on the server should select the column {string}', async (page: Page, name: string, column: string) => {
+  await expect.poll(() => savedFields(page, name), {message: `the fields the enrichment ${name} selects, as saved`})
+    .toEqual(expect.arrayContaining([expect.stringMatching(namesColumn(column))]));
 }, {tier: 'api', description: 'the saved configuration, read back: what the next application of the enrichment will join'});
+
+export const enrichmentNotJoins = Then('the enrichment {string} on the server should not select the column {string}', async (page: Page, name: string, column: string) => {
+  await expect.poll(async () => {
+    const fields = await savedFields(page, name);
+    return fields.length === 1 && fields[0].includes('enrichment files named') ? fields : fields.filter((f) => namesColumn(column).test(f));
+  }, {message: `the fields the enrichment ${name} selects that name ${column}, as saved`}).toEqual([]);
+}, {tier: 'api', description: 'a column taken out in the editor is out of the saved configuration too'});
+
+/* What an enrichment put into each row, against the table it joined, read through the connection the
+   current table's query ran on: the joined table's row whose key is the row's key, value for value.
+   A join that put another session's values into a row fails; a column no row got fails too. */
+export const joinedValues = Then('the {string} column should hold, row by row, the {string} of the {string} table matched on {string} = {string}',
+  async (page: Page, column: string, sourceColumn: string, table: string, key: string, sourceKey: string) => {
+    let seen = '';
+    await expect.poll(async () => (seen = await page.evaluate(async ([c, sc, t, k, sk]) => {
+      const df = grok.shell.t;
+      const target = df?.col(c);
+      const keys = df?.col(k);
+      if (!target || !keys)
+        return `the current table has no "${target ? k : c}" column`;
+      const conn = await grok.dapi.connections.find(df.getTag('.data-connection-id'));
+      if (!conn)
+        return 'the current table did not come from a connection';
+      const values = [...new Set(Array.from({length: df.rowCount}, (_, i) => keys.isNone(i) ? null : String(keys.get(i))).filter((v) => v !== null))];
+      if (values.length === 0)
+        return 'no row has a key';
+      const quoted = values.map((v) => `'${String(v).replace(/'/g, '\'\'')}'`).join(', ');
+      const source = await conn.query('bdd-enrichment-check', `select "${sk}", "${sc}" from ${t} where "${sk}" in (${quoted})`).executeTable();
+      const plain = (col: any, i: number): string => col.isNone(i) ? '' : col.type === 'datetime' ? String(col.get(i).valueOf()) : String(col.get(i));
+      const byKey = new Map<string, string>();
+      for (let i = 0; i < source.rowCount; i++)
+        byKey.set(String(source.col(sk).get(i)), plain(source.col(sc), i));
+      const wrong: string[] = [];
+      for (let i = 0; i < df.rowCount; i++) {
+        if (keys.isNone(i))
+          continue;
+        const want = byKey.get(String(keys.get(i))) ?? '(no joined row)';
+        if (plain(target, i) !== want)
+          wrong.push(`row ${i + 1}: ${plain(target, i) || '(empty)'}, ${t}.${sc} is ${want || '(empty)'}`);
+      }
+      return wrong.length === 0 ? 'matches' : `${wrong.length} rows differ: ${wrong.slice(0, 5).join('; ')}`;
+    }, [column, sourceColumn, table, key, sourceKey] as [string, string, string, string, string])) === 'matches',
+    {message: `"${column}" against ${table}.${sourceColumn} by ${key} = ${sourceKey}`, timeout: pollMs(30000)}).toBe(true).catch(() => {
+      throw new Error(`"${column}" against ${table}.${sourceColumn} by ${key} = ${sourceKey}: ${seen}`);
+    });
+  }, {tier: 'api', description: 'every row with a key holds the value the joined table has for that key, read through the table\'s own connection; dates compared to the millisecond'});

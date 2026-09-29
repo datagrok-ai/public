@@ -1,4 +1,4 @@
-@viewers @realizes:viewers.filters
+@viewers @realizes:viewers.filters @realizes:GROK-20977
 Feature: Expression filter over All Columns
   With Column set to All Columns, the expression card looks for its value in every column it can
   compare it with, and keeps the rows where any of them holds it. The table is written below, and
@@ -12,9 +12,11 @@ Feature: Expression filter over All Columns
   Every scenario claims the rule the card committed as well as the rows it keeps, since the card
   filters by the value while it is being typed. Text matches with "equals" and with "=", in any
   case, and "equals" ignores spaces around the value. A number matches with "=" whether it is an
-  integer or a double, and a comparison reaches every numeric column and no date. A value no column
-  holds keeps no row, and Remove All brings every row back. The date is claimed by its count and by
-  its rows through Prediction, whose Medium rows are the same two; there is no row check for dates.
+  integer or a double, and a comparison reaches every numeric column and no date: with 12, Delta
+  passes through Mass alone (12.907) and Gamma, whose Idea ID is 12, does not, so a row passes when
+  any of its numeric columns does. A value no column holds keeps no row, and Remove All brings every
+  row back. The date is claimed by its count and by its rows through Prediction, whose Medium rows
+  are the same two; there is no row check for dates.
   "equals" with a number reaches the numeric columns in All Columns mode, and 0.47 with "=" keeps
   the two rows that show it, in All Columns mode and on Score itself: the card compares a typed
   number in the 32-bit form Score stores (GROK-20977).
@@ -91,6 +93,16 @@ Feature: Expression filter over All Columns
     Then the "categories of Expression" reading of filter panel should be "*  > 1000"
     And 3 rows should pass the filter
     And the filter should pass exactly the rows where "Idea ID" is between 1001 and 1000000
+    And no errors should have been logged
+
+  Scenario: A comparison keeps a row when any of its numeric columns passes it, an integer or a double
+    When user selects "All Columns" in Column input in "Expression" filter card
+    And user selects ">" in Operation input in "Expression" filter card
+    And user types "12" into Value input in "Expression" filter card
+    And user clicks on "Add filter" button in "Expression" filter card
+    Then the "categories of Expression" reading of filter panel should be "*  > 12"
+    And 4 rows should pass the filter
+    And the filter should pass exactly the rows where "Name" is one of "Alpha, Beta, Delta, Epsilon"
     And no errors should have been logged
 
   Scenario: A date keeps the rows registered on it

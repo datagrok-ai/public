@@ -7,19 +7,19 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [powerpack.cp.add-new-column-persists, powerpack.int.add-new-column-datasync-roundtrip, GROK-17109]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/add-new-column.js';
 import '../../bindings/enrichment.js';
 import '../../bindings/home.js';
-import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {everyValueEquals, noTablesOpen} from '../../bindings/add-new-column.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, enterInto, isExpanded, pressKey, pressKeyIn, shouldBe, shouldBeSwitchedOn, shouldBecomeVisibleWithin, switchOn, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {columnTag, hasColumn, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {columnTag, everyValuePlus, hasColumn, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, closeAllViews, noProjectOnServer, projectsOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {noTableLeft} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {doubleClickArea, noBalloons, noErrors, pickFromAreaContextMenu, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -51,8 +51,8 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(44, "And user types \"${Price2} + 100\" into formula editor", () => typeInto(page, "${Price2} + 100", el("formula editor")));
       await session.step(45, "And user clicks on OK button in \"Add New Column\" dialog", () => clickOn(page, el("OK button in \"Add New Column\" dialog")));
       await session.step(46, "Then \"Add New Column\" dialog should be hidden", () => shouldBe(page, el("\"Add New Column\" dialog"), "hidden"));
-      await session.step(47, "And every value of \"Price2\" column should equal \"unitprice\" column plus 100", () => everyValueEquals(page, "Price2", "unitprice", 100));
-      await session.step(48, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValueEquals(page, "Price3", "Price2", 100));
+      await session.step(47, "And every value of \"Price2\" column should equal \"unitprice\" column plus 100", () => everyValuePlus(page, "Price2", "unitprice", 100));
+      await session.step(48, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValuePlus(page, "Price3", "Price2", 100));
       await session.step(49, "When user picks \"Column Properties...\" from the context menu of the \"header unitprice\" area of grid", () => pickFromAreaContextMenu(page, "Column Properties...", "header unitprice", el("grid")));
       await session.step(50, "And user types \"BasePrice\" into \"New name:\" input in \"unitprice\" dialog", () => typeInto(page, "BasePrice", el("\"New name:\" input in \"unitprice\" dialog")));
       await session.step(51, "And user clicks on OK button in \"unitprice\" dialog", () => clickOn(page, el("OK button in \"unitprice\" dialog")));
@@ -64,7 +64,7 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(57, "And user presses Enter", () => pressKey(page, "Enter"));
       await session.step(58, "Then the value of \"BasePrice\" column in row 1 should be \"500\"", () => valueInRow(page, "BasePrice", 1, "500"));
       await session.step(59, "And the value of \"Price3\" column in row 1 should be \"700\"", () => valueInRow(page, "Price3", 1, "700"));
-      await session.step(60, "And every value of \"Price2\" column should equal \"BasePrice\" column plus 100", () => everyValueEquals(page, "Price2", "BasePrice", 100));
+      await session.step(60, "And every value of \"Price2\" column should equal \"BasePrice\" column plus 100", () => everyValuePlus(page, "Price2", "BasePrice", 100));
       await session.step(61, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(62, "And no errors should have been logged", () => noErrors(page));
     });
@@ -80,7 +80,7 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(73, "And 1 project named \"bdd-anc-all-{run}\" should be on the server", () => projectsOnServer(page, 1, session.text("bdd-anc-all-{run}")));
       await session.step(74, "When user presses Escape", () => pressKey(page, "Escape"));
       await session.step(75, "And user closes all views", () => closeAllViews(page));
-      await session.step(76, "Then no table should be open", () => noTablesOpen(page));
+      await session.step(76, "Then no table should be left in the workspace", () => noTableLeft(page));
       await session.step(77, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
       await session.step(78, "Then the \"Projects\" view should be current", () => viewIsCurrent(page, "Projects"));
       await session.step(79, "When user types \"bdd-anc-all-{run}\" into gallery search", () => typeInto(page, session.text("bdd-anc-all-{run}"), el("gallery search")));
@@ -92,8 +92,8 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(85, "And \"Price2\" column should have tag \"formula\" equal to \"${BasePrice} + 100\"", () => columnTag(page, "Price2", "formula", "${BasePrice} + 100"));
       await session.step(86, "And \"Price3\" column should have tag \"formula\" equal to \"${Price2} + 100\"", () => columnTag(page, "Price3", "formula", "${Price2} + 100"));
       await session.step(88, "And the value of \"BasePrice\" column in row 1 should be \"18\"", () => valueInRow(page, "BasePrice", 1, "18"));
-      await session.step(89, "And every value of \"Price2\" column should equal \"BasePrice\" column plus 100", () => everyValueEquals(page, "Price2", "BasePrice", 100));
-      await session.step(90, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValueEquals(page, "Price3", "Price2", 100));
+      await session.step(89, "And every value of \"Price2\" column should equal \"BasePrice\" column plus 100", () => everyValuePlus(page, "Price2", "BasePrice", 100));
+      await session.step(90, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValuePlus(page, "Price3", "Price2", 100));
       await session.step(91, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(92, "And no errors should have been logged", () => noErrors(page));
     });
@@ -108,8 +108,8 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(102, "And user types \"400\" into cell editor", () => typeInto(page, "400", el("cell editor")));
       await session.step(103, "And user presses Enter", () => pressKey(page, "Enter"));
       await session.step(104, "Then the value of \"Price3\" column in row 2 should be \"600\"", () => valueInRow(page, "Price3", 2, "600"));
-      await session.step(105, "And every value of \"Price2\" column should equal \"BasePrice2\" column plus 100", () => everyValueEquals(page, "Price2", "BasePrice2", 100));
-      await session.step(106, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValueEquals(page, "Price3", "Price2", 100));
+      await session.step(105, "And every value of \"Price2\" column should equal \"BasePrice2\" column plus 100", () => everyValuePlus(page, "Price2", "BasePrice2", 100));
+      await session.step(106, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValuePlus(page, "Price3", "Price2", 100));
       await session.step(107, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(108, "And no errors should have been logged", () => noErrors(page));
       await session.step(109, "When user closes all views", () => closeAllViews(page));
@@ -128,8 +128,8 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(122, "And user types \"${Price2} + 100\" into formula editor", () => typeInto(page, "${Price2} + 100", el("formula editor")));
       await session.step(123, "And user clicks on OK button in \"Add New Column\" dialog", () => clickOn(page, el("OK button in \"Add New Column\" dialog")));
       await session.step(124, "Then \"Add New Column\" dialog should be hidden", () => shouldBe(page, el("\"Add New Column\" dialog"), "hidden"));
-      await session.step(125, "And every value of \"Price2\" column should equal \"unitprice\" column plus 100", () => everyValueEquals(page, "Price2", "unitprice", 100));
-      await session.step(126, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValueEquals(page, "Price3", "Price2", 100));
+      await session.step(125, "And every value of \"Price2\" column should equal \"unitprice\" column plus 100", () => everyValuePlus(page, "Price2", "unitprice", 100));
+      await session.step(126, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValuePlus(page, "Price3", "Price2", 100));
       await session.step(127, "When user picks \"Column Properties...\" from the context menu of the \"header unitprice\" area of grid", () => pickFromAreaContextMenu(page, "Column Properties...", "header unitprice", el("grid")));
       await session.step(128, "And user types \"BasePrice\" into \"New name:\" input in \"unitprice\" dialog", () => typeInto(page, "BasePrice", el("\"New name:\" input in \"unitprice\" dialog")));
       await session.step(129, "And user clicks on OK button in \"unitprice\" dialog", () => clickOn(page, el("OK button in \"unitprice\" dialog")));
@@ -141,7 +141,7 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(135, "And user presses Enter", () => pressKey(page, "Enter"));
       await session.step(136, "Then the value of \"BasePrice\" column in row 1 should be \"500\"", () => valueInRow(page, "BasePrice", 1, "500"));
       await session.step(137, "And the value of \"Price3\" column in row 1 should be \"700\"", () => valueInRow(page, "Price3", 1, "700"));
-      await session.step(138, "And every value of \"Price2\" column should equal \"BasePrice\" column plus 100", () => everyValueEquals(page, "Price2", "BasePrice", 100));
+      await session.step(138, "And every value of \"Price2\" column should equal \"BasePrice\" column plus 100", () => everyValuePlus(page, "Price2", "BasePrice", 100));
       await session.step(139, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(140, "And no errors should have been logged", () => noErrors(page));
     });
@@ -157,7 +157,7 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(151, "And 1 project named \"bdd-anc-top-{run}\" should be on the server", () => projectsOnServer(page, 1, session.text("bdd-anc-top-{run}")));
       await session.step(152, "When user presses Escape", () => pressKey(page, "Escape"));
       await session.step(153, "And user closes all views", () => closeAllViews(page));
-      await session.step(154, "Then no table should be open", () => noTablesOpen(page));
+      await session.step(154, "Then no table should be left in the workspace", () => noTableLeft(page));
       await session.step(155, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
       await session.step(156, "Then the \"Projects\" view should be current", () => viewIsCurrent(page, "Projects"));
       await session.step(157, "When user types \"bdd-anc-top-{run}\" into gallery search", () => typeInto(page, session.text("bdd-anc-top-{run}"), el("gallery search")));
@@ -169,8 +169,8 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(163, "And \"Price2\" column should have tag \"formula\" equal to \"${BasePrice} + 100\"", () => columnTag(page, "Price2", "formula", "${BasePrice} + 100"));
       await session.step(164, "And \"Price3\" column should have tag \"formula\" equal to \"${Price2} + 100\"", () => columnTag(page, "Price3", "formula", "${Price2} + 100"));
       await session.step(166, "And the value of \"BasePrice\" column in row 1 should be \"18\"", () => valueInRow(page, "BasePrice", 1, "18"));
-      await session.step(167, "And every value of \"Price2\" column should equal \"BasePrice\" column plus 100", () => everyValueEquals(page, "Price2", "BasePrice", 100));
-      await session.step(168, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValueEquals(page, "Price3", "Price2", 100));
+      await session.step(167, "And every value of \"Price2\" column should equal \"BasePrice\" column plus 100", () => everyValuePlus(page, "Price2", "BasePrice", 100));
+      await session.step(168, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValuePlus(page, "Price3", "Price2", 100));
       await session.step(169, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(170, "And no errors should have been logged", () => noErrors(page));
     });
@@ -185,8 +185,8 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(180, "And user types \"400\" into cell editor", () => typeInto(page, "400", el("cell editor")));
       await session.step(181, "And user presses Enter", () => pressKey(page, "Enter"));
       await session.step(182, "Then the value of \"Price3\" column in row 2 should be \"600\"", () => valueInRow(page, "Price3", 2, "600"));
-      await session.step(183, "And every value of \"Price2\" column should equal \"BasePrice2\" column plus 100", () => everyValueEquals(page, "Price2", "BasePrice2", 100));
-      await session.step(184, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValueEquals(page, "Price3", "Price2", 100));
+      await session.step(183, "And every value of \"Price2\" column should equal \"BasePrice2\" column plus 100", () => everyValuePlus(page, "Price2", "BasePrice2", 100));
+      await session.step(184, "And every value of \"Price3\" column should equal \"Price2\" column plus 100", () => everyValuePlus(page, "Price3", "Price2", 100));
       await session.step(185, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(186, "And no errors should have been logged", () => noErrors(page));
       await session.step(187, "When user closes all views", () => closeAllViews(page));

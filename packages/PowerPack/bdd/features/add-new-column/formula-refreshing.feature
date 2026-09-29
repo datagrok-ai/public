@@ -50,7 +50,7 @@ Feature: A chain of calculated columns recalculates on a formula edit and surviv
     When user clicks on the "header Weight2" area of grid
     Then the context panel should show "Weight2"
     Given Formula pane in context panel is expanded
-    Then formula pane editor in Formula pane in context panel should hold the formula "${WEIGHT} + 100"
+    Then formula pane editor in Formula pane in context panel should hold the code "${WEIGHT} + 100"
     When user types "${WEIGHT} + 200" into formula pane editor in Formula pane in context panel
     And user clicks on Apply button in Formula pane in context panel
     Then "Weight2" column should have tag "formula" equal to "${WEIGHT} + 200"
@@ -105,7 +105,7 @@ Feature: A chain of calculated columns recalculates on a formula edit and surviv
     And 1 project named "bdd-anc-chain-{run}" should be on the server
     When user presses Escape
     And user closes all views
-    Then no table should be open
+    Then no table should be left in the workspace
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "bdd-anc-chain-{run}" into gallery search
@@ -126,6 +126,6 @@ Feature: A chain of calculated columns recalculates on a formula edit and surviv
     When user clicks on the "header Weight3" area of grid
     Then the context panel should show "Weight3"
     Given Formula pane in context panel is expanded
-    Then formula pane editor in Formula pane in context panel should hold the formula "${Weight2} + 50"
+    Then formula pane editor in Formula pane in context panel should hold the code "${Weight2} + 50"
     And no error or warning balloon should have been shown
     And no errors should have been logged

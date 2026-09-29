@@ -9,7 +9,7 @@
     "public.assays.assay_type",
     "public.assays.tid",
     "public.assays.confidence_score",
-    "public.assays.organism",
+    "public.assays.assay_organism",
     "public.assays.description"
   ],
   "joins": [

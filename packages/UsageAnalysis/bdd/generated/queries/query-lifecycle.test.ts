@@ -9,7 +9,6 @@ sub_features_covered: [views.queries]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/nx.js';
 import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
@@ -20,7 +19,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, followingShouldBe, holdsCode, isExpanded, replaceCode, shouldBe, shouldContainText, shouldHaveValue, textAreaHolds} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeCurrentView, contextPanelOpen, contextPanelShows, currentViewType, dialogCloses, noQueryOnServer, queriesOnServer, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeCurrentView, contextPanelOpen, contextPanelShows, currentViewType, dialogCloses, noQueryOnServer, queriesOnServer, refreshBrowse, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu, readingIs} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -99,14 +98,14 @@ test.describe("A SQL query from creation to deletion", () => {
       await session.step(95, "And Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
       await session.step(96, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
       await session.step(97, "And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest tree node inside browse tree")));
-      await session.step(98, "When user clicks on \"Refresh\" icon inside browse toolbar", () => clickOn(page, el("\"Refresh\" icon inside browse toolbar")));
+      await session.step(98, "When user refreshes the browse tree", () => refreshBrowse(page));
       await session.step(99, "And user picks \"Delete\" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree", () => pickFromContextMenu(page, "Delete", el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree"))));
       await session.step(100, "Then \"Are you sure?\" dialog should be visible", () => shouldBe(page, el("\"Are you sure?\" dialog"), "visible"));
       await session.step(101, "And \"Are you sure?\" dialog should contain the text \"BDD-Q-life-renamed-{time}\"", () => shouldContainText(page, el("\"Are you sure?\" dialog"), session.text("BDD-Q-life-renamed-{time}")));
       await session.step(102, "When user clicks on DELETE button in \"Are you sure?\" dialog", () => clickOn(page, el("DELETE button in \"Are you sure?\" dialog")));
       await session.step(103, "Then the \"Are you sure?\" dialog should close", () => dialogCloses(page, "Are you sure?"));
       await session.step(104, "And 0 queries named \"BDD-Q-life-renamed-{time}\" should be on the server", () => queriesOnServer(page, 0, session.text("BDD-Q-life-renamed-{time}")));
-      await session.step(105, "When user clicks on \"Refresh\" icon inside browse toolbar", () => clickOn(page, el("\"Refresh\" icon inside browse toolbar")));
+      await session.step(105, "When user refreshes the browse tree", () => refreshBrowse(page));
       await session.step(106, "Then Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-life-renamed-{time} tree node inside browse tree")), "absent"));
       await session.step(107, "And no errors should have been logged", () => noErrors(page));
       await session.step(108, "And no error or warning balloon should have been shown", () => noBalloons(page));

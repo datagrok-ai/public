@@ -124,10 +124,13 @@ async function abandon(page: Page): Promise<number> {
 
 /** Runs when the feature ends, whatever its scenarios did — for state a step created on the server
  * (a project, an uploaded table); a page that crashed runs none, and the feature fails for them. */
-export function atFeatureEnd(page: Page, cleanup: () => Promise<void>): void {
+export function atFeatureEnd(page: Page, cleanup: () => Promise<void>, first = false): void {
   const list = cleanups.get(page) ?? [];
   cleanups.set(page, list);
-  list.push(cleanup);
+  if (first)
+    list.unshift(cleanup);
+  else
+    list.push(cleanup);
 }
 
 /** The two console errors the browser raises about something that is not the platform's code.

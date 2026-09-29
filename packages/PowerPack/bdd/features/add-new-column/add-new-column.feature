@@ -83,16 +83,16 @@ Feature: Add New Column on demog: the dialog, a formula built by hand, and the i
     And user types "Rou" into formula editor
     Then completion list should be visible
     When user accepts the highlighted completion with Enter
-    Then formula editor should hold the formula "Round(a)"
+    Then formula editor should hold the code "Round(a)"
     And "Add New Column" dialog should be visible
     When user presses Delete in formula editor
     And user drags the "header HEIGHT" area of grid onto formula editor
-    Then formula editor should hold the formula "Round(${HEIGHT})"
+    Then formula editor should hold the code "Round(${HEIGHT})"
     When user presses End in formula editor
     And user presses ArrowLeft in formula editor
     And user types " + " at the caret
     And user drags the "WEIGHT" column of column list viewer onto formula editor
-    Then formula editor should hold the formula "Round(${HEIGHT} + ${WEIGHT})"
+    Then formula editor should hold the code "Round(${HEIGHT} + ${WEIGHT})"
     And the preview grid should show "New" computed as numbers
     When user clicks on OK button in "Add New Column" dialog
     Then "Add New Column" dialog should be hidden
@@ -104,11 +104,11 @@ Feature: Add New Column on demog: the dialog, a formula built by hand, and the i
     When user clicks on "Add New Column..." icon
     Then "Add New Column" dialog should be visible
     And column name input should have value ""
-    And formula editor should hold the formula ""
+    And formula editor should hold the code ""
     When user clicks on "History" icon in "Add New Column" dialog
     Then input history menu should contain text "Name: New"
     When user clicks on first menu item in input history menu
     Then column name input should have value "New"
-    And formula editor should hold the formula "Round(${HEIGHT} + ${WEIGHT})"
+    And formula editor should hold the code "Round(${HEIGHT} + ${WEIGHT})"
     When user clicks on CANCEL button in "Add New Column" dialog
     Then no errors should have been logged

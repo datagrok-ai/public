@@ -145,7 +145,8 @@ function install(): void {
   const early: Balloon[] | undefined = w.__bddBalloons;
   const balloons: Balloon[] = early ?? [];
   const remembered: Record<string, Range | undefined> = {};
-  let layout: any;
+  // by name; '' is the one "saves the layout of the current table view" keeps
+  const layouts = new Map<string, any>();
   let tokens = 0;
   const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
   // the platform's selected-rows orange, as the pixels of a marker or a box drawn in it
@@ -1124,18 +1125,26 @@ function install(): void {
   const takeBalloons = (): Balloon[] => balloons.splice(0, balloons.length);
   /** Puts back what a typed claim read but did not want, so the floor after it still sees them. */
   const putBalloons = (back: Balloon[]): void => { balloons.unshift(...back); };
-  const saveLayout = (): void => { layout = grok.shell.tv.saveLayout(); };
+  const saveLayout = (name = ''): void => { layouts.set(name, grok.shell.tv.saveLayout()); };
   /** Saves through the server and keeps only the id: "loads the saved layout" then fetches what
    * the server stored, so the round-trip covers the serialization too. */
-  const saveLayoutToServer = async (): Promise<string> => {
+  const saveLayoutToServer = async (): Promise<{id: string; family: string}> => {
     const l = grok.shell.tv.saveLayout();
+    // named as a fixture of its run (<view>-<ms>), so the next run sweeps what a killed one left
+    const family = String(l.name || 'layout');
+    l.name = `${family}-${Date.now()}`;
     await grok.dapi.layouts.save(l);
-    layout = {serverId: l.id};
-    return l.id;
+    layouts.set('', {serverId: l.id});
+    return {id: l.id, family};
   };
-  const loadLayout = async (): Promise<void> => {
+  // find() resolves nothing for an id the server does not hold: a rejection is a failed request, not a deletion
+  const layoutOnServer = async (id: string): Promise<boolean> => (await grok.dapi.layouts.find(id)) != null;
+  const forgetLayouts = (): void => layouts.clear();
+  const loadLayout = async (name = ''): Promise<void> => {
+    const layout = layouts.get(name);
     if (!layout)
-      throw new Error('no layout saved in this feature');
+      throw new Error(name === '' ? 'no layout saved in this feature' :
+        `no layout "${name}" was saved; saved: ${[...layouts.keys()].filter(Boolean).join(', ') || 'none'}`);
     const saved = layout.serverId ? await grok.dapi.layouts.find(layout.serverId) : layout;
     if (!saved)
       throw new Error(`the server has no layout ${layout.serverId}`);
@@ -1275,7 +1284,7 @@ function install(): void {
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
-    takeBalloons, putBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, hue, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
+    takeBalloons, putBalloons, saveLayout, saveLayoutToServer, layoutOnServer, loadLayout, forgetLayouts, deleteLayout, ink, hue, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));

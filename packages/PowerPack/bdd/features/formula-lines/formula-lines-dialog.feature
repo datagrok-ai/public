@@ -60,9 +60,14 @@ Feature: The Formula Lines dialog and the look it writes
     Then the "formula lines" reading of scatter plot viewer should be 3
     When user sets "formulaLines" property of scatter plot viewer to '[{"type":"line","formula":"${HEIGHT} = ${WEIGHT} + 100","title":"Light","visible":false},{"type":"line","formula":"${HEIGHT} = ${WEIGHT} + 80","title":"Heavy"},{"type":"band","formula":"${HEIGHT} in (160.9, 177.6)","orientation":"Horizontal","column2":"WEIGHT","title":"Band","visible":false}]'
     Then the "formula lines" reading of scatter plot viewer should be 1
+    And scatter plot viewer should draw 1 formula line
+    And scatter plot viewer should not have a "formula line Light" area
+    And scatter plot viewer should have a "formula line Heavy" area
     And scatter plot viewer should have less ink than before
     When user sets "formulaLines" property of scatter plot viewer to '[{"type":"line","formula":"${HEIGHT} = ${WEIGHT} + 100","title":"Light"},{"type":"line","formula":"${HEIGHT} = ${WEIGHT} + 80","title":"Heavy"},{"type":"band","formula":"${HEIGHT} in (160.9, 177.6)","orientation":"Horizontal","column2":"WEIGHT","title":"Band"}]'
     Then the "formula lines" reading of scatter plot viewer should be 3
+    And scatter plot viewer should draw 3 formula lines
+    And scatter plot viewer should have a "formula line Light" area
     And scatter plot viewer should have more ink than before
     When user sets "formulaLines" property of scatter plot viewer to ""
     Then no errors should have been logged

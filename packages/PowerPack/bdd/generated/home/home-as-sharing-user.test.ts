@@ -9,15 +9,14 @@ sub_features_covered: [powerpack.view.welcome, powerpack.dashboard.spotlight]
 import {test} from '@playwright/test';
 import '../../bindings/add-new-column.js';
 import '../../bindings/enrichment.js';
-import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {everyWidgetHasContent, homeWidgetsAre, sharingUserAllRead, sharingUserAtHand, sharingUserNotIn, signBackIn, signInAsSharingUser, unreadNotificationsOnServer} from '../../bindings/home.js';
-import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {browsePanelOpen, dialogCloses, noProjectOnServer, openDataset, pickSharingUser, refreshBrowse, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {everyWidgetHasContent, homeWidgetsAre} from '../../bindings/home.js';
+import {loggedIn, reloadPage} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, isExpanded, shouldBe, shouldContainText, shouldHaveText, tabShowing} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {browsePanelOpen, dialogCloses, noProjectOnServer, openDataset, pickSharingUser, refreshBrowse, saveAsProject, sharingUserNoNotifications, signInAsSelf, signInAsSharingUser, signedInNotMember, unreadNotifications} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -26,10 +25,9 @@ test.describe("The Home page of a user who is neither a developer nor an adminis
   test("The Home page of a user who is neither a developer nor an administrator", {tag: ["@journey", "@serial", "@realizes:powerpack.view.welcome", "@realizes:powerpack.dashboard.spotlight"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
-    await session.step(28, "Given user is logged in", () => loggedIn(page));
-    await session.step(29, "And the sharing user can sign in on this page", () => sharingUserAtHand(page));
+    await session.step(29, "Given user is logged in", () => loggedIn(page));
     await run.scenario("A project shared with the sharing user, with notifications on", async () => {
-      await session.step(32, "Given the sharing user has no unread notifications", () => sharingUserAllRead(page));
+      await session.step(32, "Given the sharing user has no notifications, now and when the feature ends", () => sharingUserNoNotifications(page));
       await session.step(33, "And user opens demog dataset", () => openDataset(page, ds("demog")));
       await session.step(34, "And no project named \"bdd-home-shared-{time}\" is on the server", () => noProjectOnServer(page, session.text("bdd-home-shared-{time}")));
       await session.step(35, "And user saves the current view as project \"bdd-home-shared-{time}\"", () => saveAsProject(page, session.text("bdd-home-shared-{time}")));
@@ -46,21 +44,26 @@ test.describe("The Home page of a user who is neither a developer nor an adminis
     });
     await run.scenario("The sharing user's Home page has Spotlight and Community only", async () => {
       await session.step(48, "When user signs in as the sharing user", () => signInAsSharingUser(page));
-      await session.step(49, "Then the signed-in user should not be a member of \"Developers\"", () => sharingUserNotIn(page, "Developers"));
-      await session.step(50, "And the signed-in user should not be a member of \"Administrators\"", () => sharingUserNotIn(page, "Administrators"));
+      await session.step(49, "Then the signed-in user should not be a member of \"Developers\"", () => signedInNotMember(page, "Developers"));
+      await session.step(50, "And the signed-in user should not be a member of \"Administrators\"", () => signedInNotMember(page, "Administrators"));
       await session.step(51, "And the Home page should show the widgets \"Spotlight, Community\"", () => homeWidgetsAre(page, "Spotlight, Community"));
       await session.step(52, "And every widget of the Home page should show content", () => everyWidgetHasContent(page));
       await session.step(53, "And no errors should have been logged", () => noErrors(page));
       await session.step(54, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
-    await run.scenario("The share arrives as an unread notification", async () => {
-      await session.step(57, "Then the signed-in user should have 1 unread notification on the server", () => unreadNotificationsOnServer(page, 1));
-      await session.step(58, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("The share arrives as the one unread notification, on the server and in Spotlight", async () => {
+      await session.step(57, "Then the signed-in user should have 1 unread notification on the server", () => unreadNotifications(page, 1));
+      await session.step(58, "When user reloads the page", () => reloadPage(page));
+      await session.step(59, "Then badge of Spotlight home widget should have text \"1\"", () => shouldHaveText(page, el("badge of Spotlight home widget"), "1"));
+      await session.step(60, "When user clicks on Notifications tab in Spotlight home widget", () => clickOn(page, el("Notifications tab in Spotlight home widget")));
+      await session.step(61, "Then the \"Notifications\" tab of Spotlight home widget should be showing", () => tabShowing(page, "Notifications", el("Spotlight home widget")));
+      await session.step(62, "And notifications page of Spotlight home widget should contain text \"bdd-home-shared-{time}\"", () => shouldContainText(page, el("notifications page of Spotlight home widget"), session.text("bdd-home-shared-{time}")));
+      await session.step(63, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Back in the running account, the Home page has all four widgets", async () => {
-      await session.step(61, "When user signs back in", () => signBackIn(page));
-      await session.step(62, "Then the Home page should show the widgets \"Spotlight, Reports, Usage, Community\"", () => homeWidgetsAre(page, "Spotlight, Reports, Usage, Community"));
-      await session.step(63, "And no errors should have been logged", () => noErrors(page));
+      await session.step(66, "When user signs in as themselves again", () => signInAsSelf(page));
+      await session.step(67, "Then the Home page should show the widgets \"Spotlight, Reports, Usage, Community\"", () => homeWidgetsAre(page, "Spotlight, Reports, Usage, Community"));
+      await session.step(68, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

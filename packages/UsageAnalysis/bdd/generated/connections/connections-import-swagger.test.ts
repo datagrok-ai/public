@@ -8,7 +8,6 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/nx.js';
 import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
@@ -17,8 +16,8 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, followingShouldBe, isExpanded, shouldBe, uploadThrough} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {browsePanelOpen, closeAllViews, connectionsOnServer, noConnectionOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {followingShouldBe, isExpanded, shouldBe, uploadThrough} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {browsePanelOpen, closeAllViews, connectionsOnServer, noConnectionOnServer, refreshBrowse, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {closeContextMenu, menuLists, noErrors, openContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -33,7 +32,7 @@ test.describe("Importing an OpenAPI (Swagger) file as a connection", () => {
     await session.step(25, "Then 1 connection named \"BDD-Conn-Swagger\" should be on the server", () => connectionsOnServer(page, 1, "BDD-Conn-Swagger"));
     await session.step(26, "And the \"bdd-swagger.yaml\" view should be current", () => viewIsCurrent(page, "bdd-swagger.yaml"));
     await session.step(27, "When user closes all views", () => closeAllViews(page));
-    await session.step(29, "When user clicks on \"Refresh\" icon inside browse toolbar", () => clickOn(page, el("\"Refresh\" icon inside browse toolbar")));
+    await session.step(29, "When user refreshes the browse tree", () => refreshBrowse(page));
     await session.step(30, "Given Platform tree node inside browse tree is expanded", () => isExpanded(page, el("Platform tree node inside browse tree")));
     await session.step(31, "And Platform---Functions tree node inside browse tree is expanded", () => isExpanded(page, el("Platform---Functions tree node inside browse tree")));
     await session.step(32, "And Platform---Functions---OpenAPI tree node inside browse tree is expanded", () => isExpanded(page, el("Platform---Functions---OpenAPI tree node inside browse tree")));

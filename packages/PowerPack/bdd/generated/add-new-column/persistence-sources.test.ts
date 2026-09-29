@@ -7,19 +7,19 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [powerpack.cp.add-new-column-persists, powerpack.int.add-new-column-datasync-roundtrip, GROK-17109]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/add-new-column.js';
 import '../../bindings/enrichment.js';
 import '../../bindings/home.js';
-import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {everyValueEquals, fileInHome, noTablesOpen} from '../../bindings/add-new-column.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, enterInto, isExpanded, pressKey, pressKeyIn, shouldBe, shouldBeSwitchedOn, shouldBecomeVisibleWithin, switchOn, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {columnTag, hasColumn, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {columnTag, everyValuePlus, hasColumn, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, closeAllViews, noProjectOnServer, projectsOnServer, refreshBrowse, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {copyInUsersFiles, noTableLeft} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {doubleClickArea, noBalloons, noErrors, pickFromAreaContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -30,7 +30,7 @@ test.describe("Calculated columns over a file in My files follow a rename and an
     const run = journey(test, 3, page);
     await session.step(16, "Given user is logged in", () => loggedIn(page));
     await session.step(17, "And no project named \"bdd-anc-home-{run}\" is on the server", () => noProjectOnServer(page, session.text("bdd-anc-home-{run}")));
-    await session.step(18, "And a copy of the \"System:DemoFiles/demog.csv\" file is in the home folder as \"bdd-anc-{run}.csv\"", () => fileInHome(page, "System:DemoFiles/demog.csv", session.text("bdd-anc-{run}.csv")));
+    await session.step(18, "And a copy of the \"System:DemoFiles/demog.csv\" file is in the user's files as \"bdd-anc-{run}.csv\"", () => copyInUsersFiles(page, "System:DemoFiles/demog.csv", session.text("bdd-anc-{run}.csv")));
     await session.step(19, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(20, "And user refreshes the browse tree", () => refreshBrowse(page));
     await session.step(21, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
@@ -49,8 +49,8 @@ test.describe("Calculated columns over a file in My files follow a rename and an
       await session.step(35, "And user types \"${Weight2} + 100\" into formula editor", () => typeInto(page, "${Weight2} + 100", el("formula editor")));
       await session.step(36, "And user clicks on OK button in \"Add New Column\" dialog", () => clickOn(page, el("OK button in \"Add New Column\" dialog")));
       await session.step(37, "Then \"Add New Column\" dialog should be hidden", () => shouldBe(page, el("\"Add New Column\" dialog"), "hidden"));
-      await session.step(38, "And every value of \"Weight2\" column should equal \"WEIGHT\" column plus 100", () => everyValueEquals(page, "Weight2", "WEIGHT", 100));
-      await session.step(39, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 100", () => everyValueEquals(page, "Weight3", "Weight2", 100));
+      await session.step(38, "And every value of \"Weight2\" column should equal \"WEIGHT\" column plus 100", () => everyValuePlus(page, "Weight2", "WEIGHT", 100));
+      await session.step(39, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 100", () => everyValuePlus(page, "Weight3", "Weight2", 100));
       await session.step(40, "When user picks \"Column Properties...\" from the context menu of the \"header WEIGHT\" area of grid", () => pickFromAreaContextMenu(page, "Column Properties...", "header WEIGHT", el("grid")));
       await session.step(41, "And user types \"BaseWeight\" into \"New name:\" input in \"WEIGHT\" dialog", () => typeInto(page, "BaseWeight", el("\"New name:\" input in \"WEIGHT\" dialog")));
       await session.step(42, "And user clicks on OK button in \"WEIGHT\" dialog", () => clickOn(page, el("OK button in \"WEIGHT\" dialog")));
@@ -62,8 +62,8 @@ test.describe("Calculated columns over a file in My files follow a rename and an
       await session.step(48, "And user presses Enter", () => pressKey(page, "Enter"));
       await session.step(49, "Then the value of \"BaseWeight\" column in row 1 should be \"500\"", () => valueInRow(page, "BaseWeight", 1, "500"));
       await session.step(50, "And the value of \"Weight2\" column in row 1 should be \"600\"", () => valueInRow(page, "Weight2", 1, "600"));
-      await session.step(51, "And every value of \"Weight2\" column should equal \"BaseWeight\" column plus 100", () => everyValueEquals(page, "Weight2", "BaseWeight", 100));
-      await session.step(52, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 100", () => everyValueEquals(page, "Weight3", "Weight2", 100));
+      await session.step(51, "And every value of \"Weight2\" column should equal \"BaseWeight\" column plus 100", () => everyValuePlus(page, "Weight2", "BaseWeight", 100));
+      await session.step(52, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 100", () => everyValuePlus(page, "Weight3", "Weight2", 100));
       await session.step(53, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(54, "And no errors should have been logged", () => noErrors(page));
     });
@@ -79,7 +79,7 @@ test.describe("Calculated columns over a file in My files follow a rename and an
       await session.step(65, "And 1 project named \"bdd-anc-home-{run}\" should be on the server", () => projectsOnServer(page, 1, session.text("bdd-anc-home-{run}")));
       await session.step(66, "When user presses Escape", () => pressKey(page, "Escape"));
       await session.step(67, "And user closes all views", () => closeAllViews(page));
-      await session.step(68, "Then no table should be open", () => noTablesOpen(page));
+      await session.step(68, "Then no table should be left in the workspace", () => noTableLeft(page));
       await session.step(69, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
       await session.step(70, "Then the \"Projects\" view should be current", () => viewIsCurrent(page, "Projects"));
       await session.step(71, "When user types \"bdd-anc-home-{run}\" into gallery search", () => typeInto(page, session.text("bdd-anc-home-{run}"), el("gallery search")));
@@ -93,8 +93,8 @@ test.describe("Calculated columns over a file in My files follow a rename and an
       await session.step(79, "And \"Weight2\" column should have tag \"formula\" equal to \"${BaseWeight} + 100\"", () => columnTag(page, "Weight2", "formula", "${BaseWeight} + 100"));
       await session.step(80, "And \"Weight3\" column should have tag \"formula\" equal to \"${Weight2} + 100\"", () => columnTag(page, "Weight3", "formula", "${Weight2} + 100"));
       await session.step(82, "And the value of \"BaseWeight\" column in row 1 should be \"73.19999694824219\"", () => valueInRow(page, "BaseWeight", 1, "73.19999694824219"));
-      await session.step(83, "And every value of \"Weight2\" column should equal \"BaseWeight\" column plus 100", () => everyValueEquals(page, "Weight2", "BaseWeight", 100));
-      await session.step(84, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 100", () => everyValueEquals(page, "Weight3", "Weight2", 100));
+      await session.step(83, "And every value of \"Weight2\" column should equal \"BaseWeight\" column plus 100", () => everyValuePlus(page, "Weight2", "BaseWeight", 100));
+      await session.step(84, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 100", () => everyValuePlus(page, "Weight3", "Weight2", 100));
       await session.step(85, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(86, "And no errors should have been logged", () => noErrors(page));
     });
@@ -111,8 +111,8 @@ test.describe("Calculated columns over a file in My files follow a rename and an
       await session.step(98, "And user presses Enter", () => pressKey(page, "Enter"));
       await session.step(99, "Then the value of \"BaseWeight2\" column in row 2 should be \"400\"", () => valueInRow(page, "BaseWeight2", 2, "400"));
       await session.step(100, "And the value of \"Weight3\" column in row 2 should be \"600\"", () => valueInRow(page, "Weight3", 2, "600"));
-      await session.step(101, "And every value of \"Weight2\" column should equal \"BaseWeight2\" column plus 100", () => everyValueEquals(page, "Weight2", "BaseWeight2", 100));
-      await session.step(102, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 100", () => everyValueEquals(page, "Weight3", "Weight2", 100));
+      await session.step(101, "And every value of \"Weight2\" column should equal \"BaseWeight2\" column plus 100", () => everyValuePlus(page, "Weight2", "BaseWeight2", 100));
+      await session.step(102, "And every value of \"Weight3\" column should equal \"Weight2\" column plus 100", () => everyValuePlus(page, "Weight3", "Weight2", 100));
       await session.step(103, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(104, "And no errors should have been logged", () => noErrors(page));
     });
