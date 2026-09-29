@@ -4,8 +4,7 @@
    Scripts on the server, the console, the alerts and the pane counts are the library's. */
 import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, deleteChatsOf, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
-import {deleteLayoutsAtEnd} from '../helpers/layouts.js';
+import {atFeatureEnd, deleteChatsOf, deleteLayoutsAtEnd, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -25,9 +24,9 @@ export const scriptResult = Then('the script results should show {string} as {st
 }, {description: 'the Results table under the editor after a run: the value column of the output\'s row'});
 
 /* A layout saved from the script view is named after the script's dataframe output ("Df", "Df_1"). */
-export const cleanLayouts = Given('the layouts saved for the script are deleted at the end', async (page: Page) => {
-  deleteLayoutsAtEnd(page, '^Df(_\\d+)?$');
-}, {tier: 'api', description: 'every "Df"-named layout of this account made since the step ran, and the project it belongs to, go when the feature ends'});
+export const cleanLayouts = Given('the layouts saved for the script are deleted at the end', (page: Page) =>
+  deleteLayoutsAtEnd(page, '^Df(_\\d+)?$'),
+{tier: 'api', description: 'every "Df"-named layout of this account made since the step ran, and the project it belongs to, go when the feature ends'});
 
 /* The editor's Save: the ribbon button, done when it reads "Saved"; the script it creates is
    deleted with its chats at feature end. Not in the library: DiffStudio's bindings own the same

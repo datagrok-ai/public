@@ -70,7 +70,10 @@ also trigger the error: they must resolve to the same physical copy. Repeat the 
 does not fix it.
 
 **What the stand needs**: a platform built from `core` at or after 2026-09-10 (the viewer
-features rely on signals the core gained for them); a login — global setup mints a token from the
+features rely on signals the core gained for them), and with `TableView.getSnapshot` skipping a
+hidden view (without it the Save project dialog logs "Unable to find element in cloned iframe" once
+per table view not shown, and a feature that saves a project with several views fails its error
+check); a login — global setup mints a token from the
 dev key of the `localhost` entry in `~/.grok/config.yaml` (or `DATAGROK_SERVER=<name>`), falls back
 to the login form with `DATAGROK_LOGIN`/`DATAGROK_PASSWORD`, and a CI runner passes
 `DATAGROK_AUTH_TOKEN`; another stand through `DATAGROK_URL=https://…`. The datasets the features
@@ -121,7 +124,9 @@ beside them.
 One browser page per worker: the first scenario the worker runs opens it and boots the shell
 (about 4 s), every scenario ends with the shell reset (dialogs and popups closed,
 `grok.shell.closeAll()`, the Home view current), and every later feature starts on that reset
-shell. A dataset is read from the server once per page and every feature gets a clone, with the
+shell — until the page has run `BDD_PAGE_MAX_FEATURES` features (25) or its renderer holds more than
+`BDD_PAGE_MAX_MB` (3000): closed views stay in the renderer's memory, so the next feature then opens a
+new page in the same context. A dataset is read from the server once per page and every feature gets a clone, with the
 semantic types the first detection found. What a feature leaves on the server it puts back itself
 (`atFeatureEnd`). Playwright runs and reports one test per scenario (and per outline row), each
 with its own trace; a `Background` runs before every scenario, as Gherkin says.

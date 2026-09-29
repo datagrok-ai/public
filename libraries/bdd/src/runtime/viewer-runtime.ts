@@ -141,7 +141,9 @@ function install(): void {
   const forced = new WeakMap<HTMLElement, MutationObserver>();
   const listeners = new WeakMap<Element, Record<string, {count: number; sub: any}>>();
   const armed: Record<string, Promise<unknown>> = {};
-  const balloons: Balloon[] = [];
+  // a document loaded after the first install has recorded its balloons from its boot on (installViewerRuntime)
+  const early: Balloon[] | undefined = w.__bddBalloons;
+  const balloons: Balloon[] = early ?? [];
   const remembered: Record<string, Range | undefined> = {};
   let layout: any;
   let tokens = 0;
@@ -1277,7 +1279,32 @@ function install(): void {
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
-  grok.events.onEvent('d4-balloon-shown').subscribe((a: any) => balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+  if (!early) {
+    grok.events.onEvent('d4-balloon-shown').subscribe((a: any) =>
+      balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+  }
+}
+
+/** Runs in every document the page loads after the first install, before the platform's scripts: the
+ * balloons a reload or a navigation shows while the shell boots are recorded, not only the ones shown
+ * after the runtime is installed again. It subscribes as soon as the platform's event bus exists. */
+function recordBalloonsFromBoot(): void {
+  if (window !== window.top)
+    return;
+  const w = window as any;
+  const giveUp = Date.now() + 180_000;
+  const timer = setInterval(() => {
+    if (Date.now() > giveUp)
+      clearInterval(timer);
+    // the JS API is there before the platform's side of it (grok_OnEvent) is
+    if (!w.grok?.events?.onEvent || typeof w.grok_OnEvent !== 'function')
+      return;
+    clearInterval(timer);
+    // set only once subscribed: a shell that booted after this gave up is subscribed by install()
+    const balloons: unknown[] = w.__bddBalloons = [];
+    w.grok.events.onEvent('d4-balloon-shown').subscribe((a: any) =>
+      balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+  }, 10);
 }
 
 const installed = new WeakSet<Page>();
@@ -1292,6 +1319,7 @@ export async function installViewerRuntime(page: Page): Promise<void> {
   installed.add(page);
   if (!watched.has(page)) {
     watched.add(page);
+    await page.addInitScript(recordBalloonsFromBoot);
     page.on('framenavigated', (frame) => {
       if (frame === page.mainFrame())
         installed.delete(page);

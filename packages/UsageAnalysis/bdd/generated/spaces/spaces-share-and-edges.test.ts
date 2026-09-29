@@ -9,6 +9,7 @@ sub_features_covered: [sharing.share-dialog]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
+import '../../bindings/nx.js';
 import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
