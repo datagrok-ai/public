@@ -14,6 +14,8 @@ import {debounceTime} from 'rxjs/operators';
 const CLICK_HEADERS: {[column: string]: string} = {event_time: 'time', event_type: 'type', description: 'element',
   request_id: 'action id'};
 
+const STALE_MS = 30000;
+
 export class ClicksView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
   tabControl?: DG.TabControl;
@@ -45,15 +47,18 @@ export class ClicksView extends UaView {
     this.uaToolbox.viewHandler.view.tabs.onTabChanged.subscribe(() => refresh());
   }
 
-  /** A sub-tab built for the applied filter, rebuilt when it is shown after the filter changed. */
+  /** A sub-tab built for the applied filter, rebuilt when it is shown after the filter changed or
+   * {@link STALE_MS} after it was built. */
   createFilteredElement(build: (filter: UaFilter) => Promise<HTMLElement>): HTMLElement {
     let shown = this.uaToolbox.filterStream.value;
     let current = this.createWaitElement(shown, build);
+    let builtAt = Date.now();
     const refresh = () => {
       const filter = this.uaToolbox.filterStream.value;
-      if (filter === shown || !current.isConnected)
+      if (!current.isConnected || (filter === shown && Date.now() - builtAt < STALE_MS))
         return;
       shown = filter;
+      builtAt = Date.now();
       const next = this.createWaitElement(filter, build);
       current.replaceWith(next);
       current = next;
