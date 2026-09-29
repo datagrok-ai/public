@@ -26,7 +26,7 @@ specific release or test a candidate.
 | Grok Pipe | [`datagrok/grok_pipe`](https://hub.docker.com/r/datagrok/grok_pipe) | `1.22.2` |
 | Grok Spawner | [`datagrok/grok_spawner`](https://hub.docker.com/r/datagrok/grok_spawner) | `2.23.0` |
 | Grok Connect | [`datagrok/grok_connect`](https://hub.docker.com/r/datagrok/grok_connect) | `2.7.0` |
-| Jupyter Kernel Gateway | [`datagrok/jupyter_kernel_gateway`](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) | `1.34.1` |
+| Grok Connect ADBC | [`datagrok/grok_connect_adbc`](https://hub.docker.com/r/datagrok/grok_connect_adbc) | `bleeding-edge` |
 | Grok Registry Proxy | [`datagrok/grok_registry_proxy`](https://hub.docker.com/r/datagrok/grok_registry_proxy) | `1.30.2` |
 | RabbitMQ | [`rabbitmq`](https://hub.docker.com/_/rabbitmq) | `4.0.5-management` |
 
@@ -35,6 +35,10 @@ Docker Hub digests on 2026-08-03). Sub-service rows are pinned rather than track
 `:latest` directly so that an unattended deployment using these exact versions stays
 reproducible. See [tag conventions](#tag-conventions) below for what `:latest`
 points at and the orphan-tag caution before substituting a different numeric version.
+
+Grok Connect ADBC has no numeric release tag yet. The optional
+`datagrok/grok_connect_extended` image (Amazon Neptune and Cloudera Impala connectors) is
+off by default. See [Database connectors](k8s/install-helm-chart.md#database-connectors).
 
 The Helm chart (`oci://registry-1.docker.io/datagrok/datagrok`) is published in the same
 repo as the `datagrok` image, with chart tags suffixed `-helm` to keep the namespaces

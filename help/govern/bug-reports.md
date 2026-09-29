@@ -27,13 +27,8 @@ The report includes logs, stack traces, recent actions, errors, service states, 
 Some content—such as screenshots or table data—may contain sensitive information. Before sending, you can review the report and remove sensitive information:
 
 * Delete the screenshot if needed.
-* For open tables, choose what to include:
-  * Full data
-  * Metadata for all columns
-
-  :::note Note 
-  The table title with row and column count is always included.
-  :::
+* Choose whether to include open tables. Tables aren't included by default. When you include them,
+  each table's metadata and the current layout are always attached, and you choose whether to attach the data.
 
 ## Report an error
 
@@ -62,19 +57,17 @@ Some content—such as screenshots or table data—may contain sensitive informa
    - Add a short note describing what happened.  
    - Remove the screenshot if it contains sensitive information.  
    - Keep the **Email** checkbox selected to send the report to the specified email address(es) (see [Configuring error reporting system](#configuring-error-reporting-system)).
-   - For each open table, choose what information to include in the report:  
-     - data and metadata  
-     - only metadata  
-     - just the table’s title, row count, and column count (included by default)  
+   - To attach open tables, on the **SUMMARY** tab, turn on **Include tables**. Each table's
+     **Metadata** is always included. Clear **Data** for the tables whose contents are confidential.  
    - Review other information before submitting.  
 4. Press **Submit** to send the report.  
 
 :::note Note
-If the **Email** checkbox is not selected, the report is stored internally and can be viewed in the **Reports** application (Browse > Apps > Admin > Reports) on your instance.
+If the **Email** checkbox is not selected, the report is stored internally and can be viewed in the **Reports** application (**Browse** > **Platform** > **Admin** > **Reports**) on your instance.
 :::
 
 :::note Note
-If external sending is not configured, you can save the report as a JSON file using the **Save as JSON** icon and share it with the support team at [support@datagrok.ai](mailto:support@datagrok.ai).
+If external sending is not configured, you can save the report as a JSON file using the **Save as json** icon and share it with the support team at [support@datagrok.ai](mailto:support@datagrok.ai).
 :::
 
 ![Report an error](img/report-an-error.gif)
@@ -102,7 +95,7 @@ request new features, or report an issue through **Feedback**:
 You can enable the auto-reporting system to log internal errors automatically (see [Configuring error reporting system](#configuring-error-reporting-system)).  
 This helps track recurring issues, monitor system stability, and analyze errors locally within your instance.  
 
-Reports are **never sent externally** and can be viewed in the **Reports** application (Browse > Apps > Admin > Reports) on your instance.
+Reports are **never sent externally** and can be viewed in the **Reports** application (**Browse** > **Platform** > **Admin** > **Reports**) on your instance.
 
 ## Configuring error reporting system
 
