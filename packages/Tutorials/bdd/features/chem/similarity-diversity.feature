@@ -15,10 +15,11 @@ Feature: The Similarity and Diversity Search tutorial
   viewers' own properties; the Edit hint looked for a class the viewer does not carry
   (`.similarity-search-edit`, the icon is `chem-similarity-search-edit`), so it showed nothing; the
   menu and icon hints were captured when their step began.
-  Fixed in the core for it: the viewer's gear, Explore and the diversity link were dropped as the
-  current object when they came within 2 s of a property edit, within 1 s of a scripted change, or
-  within the 750 ms the table view waits before it shows the molecule of a moved row — a quick user
-  saw the context panel stay on the old object.
+  The context panel drops a new current object within 2 s of a property edit and within 1 s of a
+  scripted `grok.shell.o =` (by design, GROK-21024), which a feature is faster than: the cards are
+  clicked beside the drawing (a click on the drawing makes the molecule current that way), a grid
+  cell click releases the property-edit guard before Explore, and the 1 s after Explore — which
+  nothing releases or reports — is waited out before the diversity link.
   Not claimed: the panes of the explored molecule's context panel — several are built by server-side
   scripts or outside lookups, which a feature does not run.
 
@@ -44,10 +45,10 @@ Feature: The Similarity and Diversity Search tutorial
     Then the tutorial step "Next, click Chem > Search > Diversity Search..." should be done
     And Chem Diversity Search viewer should be visible
 
-    When user clicks on card 2 of Chem Similarity Search viewer
+    When user clicks on card 2 of Chem Similarity Search viewer beside its drawing
     Then the tutorial step "On the Most similar structures viewer, click the molecule next to the reference molecule" should be done
     And the current row should be the row of the clicked card
-    When user clicks on card 3 of Chem Diversity Search viewer
+    When user clicks on card 3 of Chem Diversity Search viewer beside its drawing
     Then the tutorial step "Now, click any molecule in the diversity viewer" should be done
     And the current row should be the row of the clicked card
 
@@ -70,11 +71,14 @@ Feature: The Similarity and Diversity Search tutorial
     Then the tutorial step "Set new reference molecule" should be done
     And the "scores" reading of Chem Similarity Search viewer should not be as remembered
 
+    When user clicks on a "smiles" cell of grid other than the current one
+    Then the context panel should show the current cell
     When user hovers over card 1 of Chem Similarity Search viewer
     And user clicks on "More" icon in Chem Similarity Search viewer
     And user picks "Explore" from the open menu
     Then the tutorial step "Hover over the reference molecule, click the More icon, and then Explore" should be done
 
+    Given the context panel's freeze after a scripted change has passed
     When user clicks on "Tanimoto, Morgan" link in Chem Diversity Search viewer
     Then the tutorial step "In the top right corner of the diversity viewer, click Tanimoto, Morgan" should be done
     And the context panel should show "Chem Diversity Search"

@@ -19,6 +19,9 @@ Feature: The R-Groups Analysis tutorial
   tooltip (and "dictibutions" is spelt right).
   Needs the trellis plot's positional `cell body <column>,<row>` area (core): the categories here are
   SMILES, which no phrase can spell.
+  The context panel drops a new current object within 2 s of a property edit (by design, GROK-21024),
+  which a feature is faster than: a grid cell click, which releases that guard, comes before the
+  Shift+Drag and before the gear that follows the Histogram pick.
 
   Serial, because a finished tutorial writes its completion record into the account's settings,
   which every page syncs whole.
@@ -66,6 +69,8 @@ Feature: The R-Groups Analysis tutorial
     When user presses Escape
     Then the tutorial step "Press Escape" should be done
 
+    When user clicks on the "cell 1 of R1" area of grid
+    Then the context panel should show the current cell
     When user drags from the "row header 1" area to the "row header 7" area of grid holding Shift
     Then the tutorial step "In the grid, press Shift+Drag Mouse Down" should be done
     And 7 rows should be selected
@@ -78,6 +83,8 @@ Feature: The R-Groups Analysis tutorial
     When user picks "Histogram" in the viewer selector of trellis plot viewer
     Then the tutorial step "In the top-left corner of the trellis plot, select Histogram." should be done
     And the "inner viewer type" reading of trellis plot viewer should be "Histogram"
+    When user clicks on the "cell 8 of R1" area of grid
+    Then the context panel should show the current cell
     When user hovers over trellis plot viewer
     And user clicks on settings icon of trellis plot viewer
     And user clicks on "Histogram" tab in context panel

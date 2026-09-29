@@ -997,6 +997,31 @@ export const clickNthCard = When('user clicks on card {int} of {widget}', async 
   await settle(page, target);
 }, {tier: 'ui', description: 'the Nth result card in the order the viewer lays them out (the `card <row>` areas of a search viewer); its row is remembered'});
 
+/* A click on the molecule drawing of a card makes the molecule current through `grok.shell.o`, which
+   freezes the context panel for a second and drops a gear or a card clicked within it; a click on the
+   card beside the drawing (its score, its margin) only moves the current row. */
+export const clickNthCardBesideDrawing = When('user clicks on card {int} of {widget} beside its drawing', async (page: Page, n: number, target: ElementRef) => {
+  const {name, row} = await nthCard(page, target, n);
+  clickedCardRow.set(page, row);
+  const r = await v.hitArea(page, target, name, true);
+  const point = await page.evaluate(([x, y, w, h]) => {
+    const card = document.elementFromPoint(x + w / 2, y + h / 2)?.closest('[name^="card-"]');
+    // from the bottom up, where the score and the properties sit under the drawing
+    for (let dy = h - 2; dy > 1; dy -= 2) {
+      for (const dx of [w / 2, w / 4, 3 * w / 4, 2, w - 2]) {
+        const e = document.elementFromPoint(x + dx, y + dy);
+        if (e && card?.contains(e) && e.tagName !== 'CANVAS' && !e.closest('.chem-canvas'))
+          return {x: x + dx, y: y + dy};
+      }
+    }
+    return null;
+  }, [r.x, r.y, r.width, r.height]);
+  if (!point)
+    throw new Error(`${name} of ${target.phrase} has no point outside its drawing`);
+  await page.mouse.click(point.x, point.y);
+  await settle(page, target);
+}, {tier: 'ui', description: 'the Nth result card, clicked on a point of the card that is not the molecule drawing (its score, its margin); its row is remembered'});
+
 /* A click on a similarity card makes its row current, and the viewer then searches again around it,
    so the claim is made against the row the card showed when it was clicked. */
 export const currentRowIsClickedCard = Then('the current row should be the row of the clicked card', async (page: Page) => {
@@ -1036,6 +1061,19 @@ export const walkToColumn = When('user moves the current cell of {widget} to the
     {message: `the current column of ${target.phrase}`}).toBe(column);
   await settle(page, target);
 }, {tier: 'ui', description: 'arrow presses in the grid from the current column; the grid scrolls the column into view'});
+
+/* Where the grid is scrolled depends on the row a card or a search made current, so the cell is the
+   first one of the column the grid shows, skipping the current row: a click must move the current cell. */
+export const clickOtherCell = When('user clicks on a {string} cell of {widget} other than the current one', async (page: Page, column: string, target: ElementRef) => {
+  const current = await v.onViewer(page, target, (root) => (window as any).DG.Widget.find(root).dataFrame.currentRowIdx + 1) as number;
+  const re = new RegExp(`^cell (\\d+) of ${column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+  const cells = Object.keys(await v.hitAreas(page, target)).filter((k) => re.test(k) && Number(re.exec(k)![1]) !== current);
+  if (cells.length === 0)
+    throw new Error(`${target.phrase} shows no "${column}" cell other than the current row's`);
+  const c = v.centerOf(await v.hitArea(page, target, cells[0], true));
+  await page.mouse.click(c.x, c.y);
+  await settle(page, target);
+}, {tier: 'ui', description: 'a click on the first cell of the column the grid shows that is not in the current row'});
 
 // --- the dock around a viewer ----------------------------------------------------------------------
 

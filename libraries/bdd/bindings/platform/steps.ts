@@ -397,6 +397,28 @@ export const contextPanelShows = Then('the context panel should show {string}', 
     await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name);
 }, {description: 'the current object (grok.shell.o) is the entity of that name (a viewer: of that type), and the panel shows it'});
 
+/* `grok.shell.o = x` freezes the current object for one second (by design, GROK-21024 closed Won't fix),
+   and a package command sets it that way (Chem's Explore, the search viewers' metric link): the next
+   click that should change the panel is dropped if it comes within that second. Nothing releases the
+   freeze and nothing reads it, so this is the one timed wait — a user never clicks that fast. */
+export const scriptedFreezePassed = Given('the context panel\'s freeze after a scripted change has passed', async (page: Page) => {
+  await page.waitForTimeout(1100);
+}, {description: 'waits out the one-second freeze `grok.shell.o = x` puts on the current object; the platform has no signal for its end'});
+
+/* The table view shows a moved current cell in the panel 750 ms after the move (a debounced handler),
+   and replaces whatever was made current meanwhile — this is the moment a user sees it arrive. */
+export const contextPanelShowsCurrentCell = Then('the context panel should show the current cell', async (page: Page) => {
+  await expect.poll(() => page.evaluate(() => {
+    const o = grok.shell.o as any;
+    const current = grok.shell.t?.currentCell;
+    if (current?.column == null)
+      return 'no current cell';
+    // a grid cell's semantic value carries no cell of its own: it is claimed by its value
+    return o instanceof DG.SemanticValue && o.value === current.value ? 'the current cell' :
+      `${o?.constructor?.name} "${String(o?.value ?? o?.name ?? '').slice(0, 40)}", current cell ${current.column.name} ${current.rowIndex + 1} "${String(current.value).slice(0, 40)}"`;
+  }), {message: 'the current object (grok.shell.o) against the table\'s current cell'}).toBe('the current cell');
+}, {description: 'the current object is the value of the table\'s current cell, as the panel shows it after a row or cell move'});
+
 /* --- the second account ------------------------------------------------------------------------
    A sharing feature needs a user other than the one running it: DATAGROK_SHARING_LOGIN — the same
    variable the hand-written suites read from playwright-tests/.env — or, when it is unset, the
