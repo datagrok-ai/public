@@ -16,12 +16,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {setKeyPair, setLinkTables, tableViewOpened} from '../../bindings/nx.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, doubleClickOn, dragTo, enterInto, isExpanded, selectIn, shouldBe, shouldBeSwitchedOff, shouldBeSwitchedOn, shouldContainText, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
-import {selectedInTable, tableFilterCount, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {selectedInTable, setLinkKeyPair, setLinkTables, tableFilterCount, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, dialogCloses, loadedAsSnapshot, noProjectOnServer, noSpaceOnServer, reloadedByDataSync, savedAsSnapshot, savedWithDataSync, simpleModeOff, spacesOnServer, switchTableView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {tableViewOpened} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {clickArea, clickAreaHolding, infoBalloonText, noBalloons, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -83,7 +83,7 @@ test.describe("Projects uploaded from files in a space, with Data sync on and of
       await session.step(77, "When user picks \"Data > Link Tables...\" from the top menu", () => pickFromTopMenu(page, "Data > Link Tables..."));
       await session.step(78, "Then \"Link Tables\" dialog should be visible", () => shouldBe(page, el("\"Link Tables\" dialog"), "visible"));
       await session.step(79, "When user sets the tables of the Link Tables dialog to \"customers\" and \"orders\"", () => setLinkTables(page, "customers", "orders"));
-      await session.step(80, "And user sets key columns 1 of the Link Tables dialog to \"CustomerID\" and \"CustomerID\"", () => setKeyPair(page, 1, "CustomerID", "CustomerID"));
+      await session.step(80, "And user sets key columns 1 of the Link Tables dialog to \"CustomerID\" and \"CustomerID\"", () => setLinkKeyPair(page, 1, "CustomerID", "CustomerID"));
       await session.step(81, "And user selects \"selection to filter\" in \"Link Type\" input in \"Link Tables\" dialog", () => selectIn(page, "selection to filter", el("\"Link Type\" input in \"Link Tables\" dialog")));
       await session.step(82, "And user clicks on LINK button in \"Link Tables\" dialog", () => clickOn(page, el("LINK button in \"Link Tables\" dialog")));
       await session.step(83, "Then \"Link Tables\" dialog should contain text \"customers -> orders\"", () => shouldContainText(page, el("\"Link Tables\" dialog"), "customers -> orders"));
@@ -157,7 +157,7 @@ test.describe("Projects uploaded from files in a space, with Data sync on and of
       await session.step(77, "When user picks \"Data > Link Tables...\" from the top menu", () => pickFromTopMenu(page, "Data > Link Tables..."));
       await session.step(78, "Then \"Link Tables\" dialog should be visible", () => shouldBe(page, el("\"Link Tables\" dialog"), "visible"));
       await session.step(79, "When user sets the tables of the Link Tables dialog to \"customers\" and \"orders\"", () => setLinkTables(page, "customers", "orders"));
-      await session.step(80, "And user sets key columns 1 of the Link Tables dialog to \"CustomerID\" and \"CustomerID\"", () => setKeyPair(page, 1, "CustomerID", "CustomerID"));
+      await session.step(80, "And user sets key columns 1 of the Link Tables dialog to \"CustomerID\" and \"CustomerID\"", () => setLinkKeyPair(page, 1, "CustomerID", "CustomerID"));
       await session.step(81, "And user selects \"selection to filter\" in \"Link Type\" input in \"Link Tables\" dialog", () => selectIn(page, "selection to filter", el("\"Link Type\" input in \"Link Tables\" dialog")));
       await session.step(82, "And user clicks on LINK button in \"Link Tables\" dialog", () => clickOn(page, el("LINK button in \"Link Tables\" dialog")));
       await session.step(83, "Then \"Link Tables\" dialog should contain text \"customers -> orders\"", () => shouldContainText(page, el("\"Link Tables\" dialog"), "customers -> orders"));
@@ -231,7 +231,7 @@ test.describe("Projects uploaded from files in a space, with Data sync on and of
       await session.step(77, "When user picks \"Data > Link Tables...\" from the top menu", () => pickFromTopMenu(page, "Data > Link Tables..."));
       await session.step(78, "Then \"Link Tables\" dialog should be visible", () => shouldBe(page, el("\"Link Tables\" dialog"), "visible"));
       await session.step(79, "When user sets the tables of the Link Tables dialog to \"customers\" and \"orders\"", () => setLinkTables(page, "customers", "orders"));
-      await session.step(80, "And user sets key columns 1 of the Link Tables dialog to \"CustomerID\" and \"CustomerID\"", () => setKeyPair(page, 1, "CustomerID", "CustomerID"));
+      await session.step(80, "And user sets key columns 1 of the Link Tables dialog to \"CustomerID\" and \"CustomerID\"", () => setLinkKeyPair(page, 1, "CustomerID", "CustomerID"));
       await session.step(81, "And user selects \"selection to filter\" in \"Link Type\" input in \"Link Tables\" dialog", () => selectIn(page, "selection to filter", el("\"Link Type\" input in \"Link Tables\" dialog")));
       await session.step(82, "And user clicks on LINK button in \"Link Tables\" dialog", () => clickOn(page, el("LINK button in \"Link Tables\" dialog")));
       await session.step(83, "Then \"Link Tables\" dialog should contain text \"customers -> orders\"", () => shouldContainText(page, el("\"Link Tables\" dialog"), "customers -> orders"));
@@ -305,7 +305,7 @@ test.describe("Projects uploaded from files in a space, with Data sync on and of
       await session.step(77, "When user picks \"Data > Link Tables...\" from the top menu", () => pickFromTopMenu(page, "Data > Link Tables..."));
       await session.step(78, "Then \"Link Tables\" dialog should be visible", () => shouldBe(page, el("\"Link Tables\" dialog"), "visible"));
       await session.step(79, "When user sets the tables of the Link Tables dialog to \"customers\" and \"orders\"", () => setLinkTables(page, "customers", "orders"));
-      await session.step(80, "And user sets key columns 1 of the Link Tables dialog to \"CustomerID\" and \"CustomerID\"", () => setKeyPair(page, 1, "CustomerID", "CustomerID"));
+      await session.step(80, "And user sets key columns 1 of the Link Tables dialog to \"CustomerID\" and \"CustomerID\"", () => setLinkKeyPair(page, 1, "CustomerID", "CustomerID"));
       await session.step(81, "And user selects \"selection to filter\" in \"Link Type\" input in \"Link Tables\" dialog", () => selectIn(page, "selection to filter", el("\"Link Type\" input in \"Link Tables\" dialog")));
       await session.step(82, "And user clicks on LINK button in \"Link Tables\" dialog", () => clickOn(page, el("LINK button in \"Link Tables\" dialog")));
       await session.step(83, "Then \"Link Tables\" dialog should contain text \"customers -> orders\"", () => shouldContainText(page, el("\"Link Tables\" dialog"), "customers -> orders"));

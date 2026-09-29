@@ -16,13 +16,13 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {saveDialogDataSync, tableViewOpened} from '../../bindings/nx.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, collapse, doubleClickOn, dragTo, enterInto, hoverOver, isExpanded, shouldBe, shouldContainText, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnCount} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {taskBarFinished, watchTaskBar} from '@datagrok-libraries/bdd/bindings/platform/events';
-import {browsePanelOpen, contextPanelShows, dialogCloses, noProjectOnServer, projectsOnServer, savedWithDataSync, simpleModeOff, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, contextPanelShows, dialogCloses, noProjectOnServer, projectsOnServer, saveDialogDataSync, savedWithDataSync, simpleModeOff, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {tableViewOpened} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {infoBalloonText, noBalloons, noErrors, pickFromContextMenu, pointerAway} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
