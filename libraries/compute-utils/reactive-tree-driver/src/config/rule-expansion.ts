@@ -127,6 +127,19 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   const fromAliases = aliasesOf(id, rule.from, 'input');
   const toAliases = aliasesOf(id, rule.to, 'output');
   const from = [...normalizeLinkSpec(rule.from)];
+  const checkExpr = (expr: RuleExpr) => {
+    for (const alias of usedAliases(expr)) {
+      if (!fromAliases.has(alias) && !(alias in (sources ?? {})))
+        throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
+    }
+  };
+  const checkArgs = (alias: string, args: unknown) => {
+    if (args == null)
+      return;
+    if (typeof args !== 'object' || Array.isArray(args))
+      throw new Error(`Rule ${id}: source ${alias} args must map parameters to expressions`);
+    Object.values(args).forEach(checkExpr);
+  };
   const expandedSources: Record<string, RuleSource> = {};
   for (const [alias, source] of Object.entries(sources ?? {})) {
     if (fromAliases.has(alias))
@@ -144,8 +157,15 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       const {name, args} = source.func;
       if (typeof name !== 'string' || !name)
         throw new Error(`Rule ${id}: source ${alias} name must be a function name`);
-      if (args != null && (typeof args !== 'object' || Array.isArray(args) || Object.values(args).some((arg) => !fromAliases.has(arg))))
-        throw new Error(`Rule ${id}: source ${alias} args must map parameters to input aliases`);
+      checkArgs(alias, args);
+      expandedSources[alias] = source;
+      continue;
+    }
+    if ('query' in source) {
+      const {connection, sql, args} = source.query;
+      if (typeof connection !== 'string' || !connection || typeof sql !== 'string' || !sql)
+        throw new Error(`Rule ${id}: source ${alias} needs a connection and sql`);
+      checkArgs(alias, args);
       expandedSources[alias] = source;
       continue;
     }
@@ -175,12 +195,6 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     expandedSources[alias] = {validators: {input, call: CALL}};
   }
 
-  const checkExpr = (expr: RuleExpr) => {
-    for (const alias of usedAliases(expr)) {
-      if (!fromAliases.has(alias) && !(alias in (sources ?? {})))
-        throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
-    }
-  };
   checkExpr(when);
 
   const effectTargets = (effect: RuleEffect) => {

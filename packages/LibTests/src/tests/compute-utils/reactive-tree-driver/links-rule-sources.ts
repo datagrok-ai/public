@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import {category, test, before, expect} from '@datagrok-libraries/test/src/test';
 import {getProcessedConfig} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
@@ -91,26 +92,47 @@ category('ComputeUtils: Driver rule js sources', async () => {
       id: 'bad', type: 'rule', from: 'x:step1/a', to: 't:step1/a',
       effects: [{effect: 'error', targets: 't', message: 'm'}], ...rule,
     }])));
-    await badRule({sources: {v: {func: {args: {a: 'x'}}}}});
-    await badRule({sources: {v: {func: {name: 'LibTests:TestAdd2', args: {a: 'nope'}}}}});
-    await badRule({sources: {v: {func: {name: 'LibTests:TestAdd2', args: ['x']}}}});
+    await badRule({sources: {v: {func: {args: {a: {var: 'x'}}}}}});
+    await badRule({sources: {v: {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'nope'}}}}}});
+    await badRule({sources: {v: {func: {name: 'LibTests:TestAdd2', args: [{var: 'x'}]}}}});
+    await badRule({sources: {v: {query: {sql: 'select 1'}}}});
+    await badRule({sources: {v: {query: {connection: 'System:Datagrok', sql: 'select 1', args: {a: {var: 'nope'}}}}}});
     const pconf: any = await getProcessedConfig(twoSteps([{
       id: 'r', type: 'rule', from: 'x:step1/a', to: 't:step1/a',
-      sources: {v: {func: {name: 'LibTests:TestAdd2', args: {a: 'x', b: 'x'}}}},
+      sources: {v: {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 5}}}},
       effects: [{effect: 'error', targets: 't', message: {var: 'v'}}],
     }]));
-    expectDeepEqual(pconf.links[0].params.sources.v.func.args, {a: 'x', b: 'x'});
+    expectDeepEqual(pconf.links[0].params.sources.v.func.args, {a: {var: 'x'}, b: 5});
   });
 
   test('A func source calls a platform function', async () => {
     const controller = (values: Record<string, any>) => ({getFirst: (name: string) => values[name]}) as any;
-    const sum = {func: {name: 'LibTests:TestAdd2', args: {a: 'x', b: 'y'}}};
-    const pending = resolveSources(controller({x: 1, y: 2}), {sum});
+    const sum = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 5}}};
+    const pending = resolveSources(controller({}), {sum}, {all: {}, x: 1});
     expect(pending instanceof Promise, true);
-    expectDeepEqual(await pending, {sum: 3});
+    expectDeepEqual(await pending, {sum: 6});
     const presets = {func: {name: 'LibTests:TestPresets'}};
     const {presets: df} = await resolveSources(controller({}), {presets}) as any;
     expectDeepEqual(df.col('preset').toList(), ['fast', 'exact']);
+  });
+
+  test('A query source runs sql on a connection', async () => {
+    const controller = () => ({getFirst: () => undefined}) as any;
+    const me = await grok.dapi.users.current();
+    const users = {query: {
+      connection: 'System:Datagrok',
+      sql: 'select login from users where login = @login',
+      args: {login: {var: 'login'}},
+    }};
+    const {users: df} = await resolveSources(controller(), {users}, {all: {}, login: me.login}) as any;
+    expectDeepEqual(df.col('login').toList(), [me.login]);
+    const declared = {query: {
+      connection: 'System:Datagrok',
+      sql: '--input: string login\nselect login from users where login = @login',
+      args: {login: {var: 'login'}},
+    }};
+    const {declared: df2} = await resolveSources(controller(), {declared}, {all: {}, login: me.login}) as any;
+    expectDeepEqual(df2.rowCount, 1);
   });
 
   test('A js source may be async', async () => {

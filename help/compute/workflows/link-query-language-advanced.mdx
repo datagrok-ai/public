@@ -415,7 +415,9 @@ export async function presets() {
 
 - The `func` source calls the function on every run of the rule; the
   `meta.cache` annotation makes the platform load the table once. Nothing
-  in the rule is code.
+  in the rule is code. For a small table the package function can go too:
+  `{func: {name: 'OpenFile', args: {fullPath: 'System:AppData/Pkg/presets.csv'}}}`
+  reads the file directly, at the cost of a read per rerun.
 - The `(template)` query lists every input of the solver except the key,
   and the `_` prefix makes the aliases the io names. `row` returns the
   picked row as an object keyed by column name, and `assign` writes each

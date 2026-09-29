@@ -787,12 +787,21 @@ any expression. Two resolvers exist:
   value of the promise it returns, becomes the alias. Like a handler, it
   runs on every run of the rule's links, so keep `from` to what the rule
   reads when `fn` is slow. `fn` runs even when an argument is absent.
-- `func`: `{name: 'Pkg:Function', args?: {param: <alias>}}`. Calls the
-  platform function with each parameter set to the value of its input
-  alias, and the result becomes the alias. Like `js`, it runs on every
-  run of the rule's links, so a function that loads data should carry a
+- `func`: `{name: 'Pkg:Function', args?: {param: <expression>}}`. Calls
+  the platform function, or a package query, with each parameter set to
+  its expression: `{var: 'key'}` passes an input, anything else is a
+  literal. The result becomes the alias. Like `js`, it runs on every run
+  of the rule's links, so a function that loads data should carry a
   `meta.cache` annotation, which makes the platform load it once. The
-  config stays plain data, with no closures.
+  core `OpenFile` function with a literal `fullPath` loads a file-share
+  table this way. The config stays plain data, with no closures.
+- `query`: `{connection: 'Pkg:Conn', sql: '...', args?: {name: <expression>}}`.
+  Runs the SQL on the connection and the resulting dataframe becomes the
+  alias. `@name` in the text binds to the argument of that name; the
+  values never enter the text. Nothing caches an ad-hoc query, so it
+  runs on every run of the rule's links: keep `from` to the inputs the
+  query reads, and prefer a package query with `meta.cache` for a static
+  table.
 
 ```
 {

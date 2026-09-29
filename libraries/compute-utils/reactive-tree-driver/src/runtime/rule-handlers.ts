@@ -21,7 +21,7 @@ function withContext(
   const base = buildRuleContext(controller);
   if (!sources)
     return run(base);
-  const resolved = resolveSources(controller, sources);
+  const resolved = resolveSources(controller, sources, base);
   if (resolved instanceof Promise)
     return resolved.then((values) => run({...base, ...values}));
   return run({...base, ...resolved});
