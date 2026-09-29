@@ -100,6 +100,12 @@ export class Tags {
 
   static IgnoreFormulaColumnRecalculation = '.%ignore-formula-column-recalculation';
 
+  /** What a formula column does with the rows its formula fails on, as JSON; absent when they are left empty. */
+  static FormulaErrorBehavior = '.%formula-error-behavior';
+
+  /** On a column of per-row error messages: the name of the formula column it belongs to. */
+  static FormulaErrorColumn = '.%formula-error-column';
+
   /** JSON-encoded list of strings to be used in a cell editor.
    * Applicable for string columns only.
    * See also [AutoChoices]. */

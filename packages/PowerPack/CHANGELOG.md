@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21019: Add New Column: Added the gear next to the type that sets what happens to the rows the formula fails on: left empty or filled with a value, optionally with a column of per-row messages
 * GROK-20931: Add New Column: Resizing the dialog now widens only the formula and preview pane; the column and function lists keep their width
 * GROK-20931: Add New Column: Clicking a function in the formula makes it the current object, so its help shows in the context panel
 * GROK-20931: Add New Column: Table-name and column-name selectors pop up automatically for parameters that take a table or a column, or for string parameters with the `TableName` / `ColumnName` semantic type; a column argument is offered from the table named by the parameter's `options.table` sibling (else the call's table argument), filtered by the parameter's column type filter
