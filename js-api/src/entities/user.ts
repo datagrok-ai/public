@@ -101,7 +101,8 @@ export class UserSession extends Entity {
   /** */
   get type(): 'internal' | 'guest' { return api.grok_UserSession_Get_Type(this.dart); }
 
-  /** External Token */
+  /** Always empty on the client: the "Keep Token" token is split between the session JWT and the server.
+   * To call a service with it, use `grok.dapi.fetchProxy` with a `${EXTERNAL_TOKEN}` header placeholder. */
   get externalToken(): string { return api.grok_UserSession_Get_ExternalToken(this.dart); }
 
   /** User */

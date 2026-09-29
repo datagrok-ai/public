@@ -260,6 +260,8 @@ export class Dapi {
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * Useful for circumventing CORS restrictions, and for caching results.
+   * A literal `${EXTERNAL_TOKEN}` in a header value is replaced server-side with the user's
+   * "Keep Token" identity-provider token, e.g. `{Authorization: 'Bearer ${EXTERNAL_TOKEN}'}`.
    * @see [sample](../../../../../packages/ApiSamples/scripts/dapi/fetch.js)
    * @param maxAge - forces server to send Cache-Control in response with configured max-age directive */
   async fetchProxy(url: string, params?: RequestInit, maxAge?: number): Promise<Response> {

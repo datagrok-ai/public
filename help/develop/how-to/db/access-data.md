@@ -249,6 +249,10 @@ grok.dapi.fetchProxy(url, {
 }).then(response => grok.shell.info(response.ok));
 ```
 
+To call a service as the signed-in user, put the `${EXTERNAL_TOKEN}` placeholder in a header
+(for example, `Authorization: 'Bearer ${EXTERNAL_TOKEN}'`). The server replaces it with the
+user's identity-provider token. This requires [Keep Token](../../../deploy/complete-setup/configure-auth.md#keep-token).
+
 ## Reading files
 
 In our [JavaScript API examples](https://public.datagrok.ai/js), you can find methods that provide data for

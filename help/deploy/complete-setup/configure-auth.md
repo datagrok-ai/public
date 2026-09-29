@@ -123,6 +123,28 @@ The server never has direct access to the token contents.
 
 That means, external tokens are never usable by the server without a user-initiated request
 
+#### Calling external services with the kept token
+
+Because the token is split between the browser and the server, plugins can't read it
+(`grok.dapi.users.currentSession()` doesn't return it). Instead, send the request through
+[`grok.dapi.fetchProxy`](../../develop/how-to/db/access-data.md#rest-endpoints) and put the
+`${EXTERNAL_TOKEN}` placeholder in a header. The server swaps in the current user's token
+before it forwards the request:
+
+```javascript
+const response = await grok.dapi.fetchProxy('https://api.example.com/v1/items', {
+  headers: {Authorization: 'Bearer ${EXTERNAL_TOKEN}'},
+});
+```
+
+Use a plain string, not a template literal. In a template literal, JavaScript would try to
+expand `${EXTERNAL_TOKEN}` as a variable.
+
+The placeholder only works for a signed-in user with `Keep Token` enabled. Otherwise the
+request fails and the target service isn't called. The kept token is the OpenID **ID token**
+when the provider returns one, or the access token when it doesn't. Services that accept only
+access tokens issued for their own audience will reject it.
+
 Long-lived sessions are supported without exposing privileged credentials, and Datagrok can integrate seamlessly with
 external systems while preserving user-controlled authorization boundaries.
 
