@@ -4,10 +4,9 @@
    card, layouts kept by name, and the claims that compare what a viewer shows, or how many rows
    pass, with the table itself, across views and across a project round trip. */
 import {Locator, Page} from '@playwright/test';
-import {dataset, element, Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, el, type ElementRef, expect, gestures, pollMs, projectSaveWindow, viewers} from '@datagrok-libraries/bdd/runtime';
-
-dataset('spgi-3624', {path: 'System:DemoFiles/chem/SPGI.csv', description: 'the full SPGI demo table: 3624 molecules, 88 columns, opened as "SPGI"'});
+import {element, Then, When} from '@datagrok-libraries/bdd';
+import {cssString, el, type ElementRef, expect, gestures, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {taskBarFinished, watchTaskBar} from '@datagrok-libraries/bdd/bindings/platform/events';
 
 // the Add New Column dialog's name field has neither a label nor a placeholder
 element('new column name input', {selector: '[name="input-Add-New-Column---Name"]'});
@@ -22,10 +21,10 @@ export const setKeyPair = When('user sets key columns {int} of the Link Tables d
   async (page: Page, row: number, left: string, right: string) => {
     for (const [side, column] of [[0, left], [1, right]] as [number, string][]) {
       const selector = linkDialog(page).locator(`[name="div-selectKeyCol${side}Row${row}"] .d4-column-selector`).first();
-      await expect(selector, `key column ${side === 0 ? 'left' : 'right'} of row ${row} in the Link Tables dialog`).toBeVisible({timeout: 5000});
+      await expect(selector, `key column ${side === 0 ? 'left' : 'right'} of row ${row} in the Link Tables dialog`).toBeVisible({timeout: pollMs(5000)});
       await gestures.openColumnSelector(page, selector);
       await gestures.pickInColumnGrid(page, column, `key column row ${row}`, selector);
-      await expect(selector.locator('.d4-column-selector-column')).toHaveText(column, {timeout: 5000});
+      await expect(selector.locator('.d4-column-selector-column')).toHaveText(column, {timeout: pollMs(5000)});
     }
   }, {tier: 'ui', description: 'picks the left and the right column of the key row N (1-based; "Add" makes a row) through their column pickers and reads each back'});
 
@@ -35,7 +34,7 @@ export const setLinkTables = When('user sets the tables of the Link Tables dialo
     for (const [side, table] of [['Left', left], ['Right', right]]) {
       const select = linkDialog(page).locator(`select[name="input-selectTable${side}"]`).first();
       await select.selectOption({label: table});
-      await expect(select, `the ${side.toLowerCase()} table of the Link Tables dialog`).toHaveValue(table, {timeout: 5000});
+      await expect(select, `the ${side.toLowerCase()} table of the Link Tables dialog`).toHaveValue(table, {timeout: pollMs(5000)});
     }
   }, {tier: 'ui', description: 'chooses the left and the right table of the link being made and reads both back'});
 
@@ -45,7 +44,7 @@ export const addLineChartSplit = When('user adds {string} to the splits of {widg
   const root = await viewers.viewerLocator(page, target);
   await root.hover();
   const add = root.locator('[name="add-split"]').first();
-  await expect(add, 'the empty split selector of the line chart').toBeVisible({timeout: 5000});
+  await expect(add, 'the empty split selector of the line chart').toBeVisible({timeout: pollMs(5000)});
   await viewers.snapshot(page, target);
   await gestures.openColumnSelector(page, add);
   await gestures.pickInColumnGrid(page, column, 'the split selector of the line chart');
@@ -61,12 +60,11 @@ export const tableViewOpened = Then('the {string} table view should open with {i
   await viewers.settleAll(page);
 }, {description: 'polls for a table view of that table for as long as a large file takes to load (up to two minutes), then its row count'});
 
-/** Opened through the project API: the Dashboards gallery search does not find a name that holds
- * "-", and a run-suffixed name holds several. */
+/** Opened through the project API, as the library's own open step does: the chain claims what the
+ * project brings back, and the Dashboards gallery is claimed elsewhere (PowerPack formula-refreshing). */
 export const openSavedProject = When('user opens the project saved as {string}', async (page: Page, name: string) => {
-  projectSaveWindow(page, false);
   await page.evaluate(async (n) => {
-    const found = await (window as any).grok.dapi.projects.filter(`friendlyName = "${n}"`).list();
+    const found = await (window as any).grok.dapi.projects.filter(`friendlyName = ${JSON.stringify(n)}`).list();
     if (found.length !== 1)
       throw new Error(`${found.length} projects are named "${n}" on the server`);
     const project = await (window as any).grok.dapi.projects.find(found[0].id);
@@ -74,13 +72,13 @@ export const openSavedProject = When('user opens the project saved as {string}',
   }, name);
   await page.waitForFunction(() => (window as any).grok.shell.tv?.dataFrame != null, null, {timeout: pollMs(120000)});
   await viewers.settleAll(page);
-}, {tier: 'api', description: 'ends the window a save opened for its preview\'s console noise; the project whose friendly name is this (exactly one must exist); a project with data sync reads its files again, so this waits up to two minutes for a table view, then for its viewers to settle'});
+}, {tier: 'api', description: 'the project whose friendly name is this (exactly one must exist); a project with data sync reads its files again, so this waits up to two minutes for a table view, then for its viewers to settle'});
 
 export const projectLinks = Then('the project saved as {string} should link {string}',
   async (page: Page, name: string, links: string) => {
     const want = links.split(/\s*;\s*/).filter(Boolean).sort();
     await expect.poll(() => page.evaluate(async (n) => {
-      const found = await (window as any).grok.dapi.projects.filter(`friendlyName = "${n}"`).list();
+      const found = await (window as any).grok.dapi.projects.filter(`friendlyName = ${JSON.stringify(n)}`).list();
       if (found.length !== 1)
         return [`${found.length} projects named "${n}"`];
       const project = await (window as any).grok.dapi.projects.find(found[0].id);
@@ -139,8 +137,8 @@ export const saveDialogDataSync = Then('the Save project dialog should save the 
  * the view's own menu (View, Table, Dashboard). */
 export const pickViewTabMenu = When('user picks {string} from the context menu of the current view tab', async (page: Page, path: string) => {
   const name = await page.evaluate(() => String((window as any).grok.shell.v?.name ?? ''));
-  const tab = page.locator(`[name="view-handle: ${name}"]`).filter({visible: true}).last();
-  await expect(tab, `the tab of the current view "${name}"`).toBeVisible({timeout: 5000});
+  const tab = page.locator(`[name="view-handle: ${cssString(name)}"]`).filter({visible: true}).last();
+  await expect(tab, `the tab of the current view "${name}"`).toBeVisible({timeout: pollMs(5000)});
   await tab.click({button: 'right'});
   await viewers.pickMenuPath(page, path);
 }, {tier: 'ui', description: 'right-clicks the tab of the view in front and picks the path in the menu it opens'});
@@ -271,8 +269,8 @@ export const showsSelectedRows = Then('{widget} should show the selected rows of
 }, {description: 'a viewer whose Row Source is Selected: "rows shown" equals the table\'s selection, which must not be empty'});
 
 export const clickViewTab = When('user clicks on the tab of the {string} view', async (page: Page, name: string) => {
-  const tab = page.locator(`[name="view-handle: ${name}"]`).filter({visible: true}).last();
-  await expect(tab, `the tab of the "${name}" view`).toBeVisible({timeout: 5000});
+  const tab = page.locator(`[name="view-handle: ${cssString(name)}"]`).filter({visible: true}).last();
+  await expect(tab, `the tab of the "${name}" view`).toBeVisible({timeout: pollMs(5000)});
   await tab.click();
   await page.waitForFunction((n) => String((window as any).grok.shell.v?.name) === n, name, {timeout: pollMs(5000)});
   await viewers.settleAll(page);
@@ -299,7 +297,7 @@ export const addFormulaLine = When('user adds the formula line {string} in the F
   await dialog.locator('[name="button-Add-new"]').click();
   await viewers.pickMenuPath(page, 'Line');
   const editor = dialog.locator('[name="pane-Line"] textarea').first();
-  await expect(editor, 'the formula editor of the new line').toBeVisible({timeout: 5000});
+  await expect(editor, 'the formula editor of the new line').toBeVisible({timeout: pollMs(5000)});
   await editor.fill(formula);
   await editor.press('Tab');
   await expect.poll(() => listedFormulas(page), {message: 'the formulas the Formula Lines dialog lists'}).toContain(formula);
@@ -311,7 +309,7 @@ export const setFormulaLineRange = When('user sets the range of the selected for
   for (const [input, value] of [[inputs[0], min], [inputs[1], max]] as [Locator, string][]) {
     await input.fill(value);
     await input.press('Tab');
-    await expect(input).toHaveValue(value, {timeout: 5000});
+    await expect(input).toHaveValue(value, {timeout: pollMs(5000)});
   }
 }, {tier: 'ui', description: 'the min and the max field of the Range row of the Format pane'});
 
@@ -332,8 +330,12 @@ export const editFormulaLine = When('user changes the formula line {string} in t
   const st = await status();
   if (!st.first)
     throw new Error('the Formula Lines dialog lists no line');
+  // the dialog makes the line of the viewer's axes current on a timer it starts as it opens (DG.delay(1),
+  // formula-lines.ts): a timer started now fires after it, so a line picked from here on stays picked
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 1)));
   await page.mouse.click(st.first.x, st.first.y);
   await expect.poll(async () => (await status()).current, {message: 'the current line of the list after the click'}).toBe(1);
+  await expect.poll(() => gestures.hasFocus(grid), {message: 'the list holding the focus the Down arrow goes to'}).toBe(true);
   const editor = dialog.locator('[name="pane-Line"] textarea').first();
   const seen: string[] = [];
   for (let i = 0; i < st.rows; i++) {
@@ -461,9 +463,9 @@ export const scaffoldFilterReadingText = Then('the {string} reading of the scaff
 export const setScaffoldBitOperation = When('user sets the scaffold tree filter to combine the checked scaffolds with {string}', async (page: Page, op: string) => {
   const select = page.locator('[name="viewer-Filters"]').filter({visible: true}).first()
     .locator('.d4-filter-element[data-source="Chem:Scaffold Tree Filter"] .chem-scaffold-tree-toolbar select').first();
-  await expect(select, 'the AND / OR choice of the scaffold tree filter').toBeVisible({timeout: 5000});
+  await expect(select, 'the AND / OR choice of the scaffold tree filter').toBeVisible({timeout: pollMs(5000)});
   await select.selectOption({label: op});
-  await expect(select).toHaveValue(op, {timeout: 5000});
+  await expect(select).toHaveValue(op, {timeout: pollMs(5000)});
   await viewers.settleAll(page);
 }, {tier: 'ui', description: 'the AND / OR choice in the toolbar of the Scaffold Tree card, read back'});
 
@@ -496,8 +498,8 @@ export const pickFromLongestCellMenu = When('user picks {string} from the contex
 /** A structure card that holds a molecule draws it on a canvas, which opens the sketcher on a click. */
 export const clickCardStructure = When('user clicks on the structure drawn in the {string} filter card', async (page: Page, caption: string) => {
   const canvas = page.locator('[name="viewer-Filters"]').filter({visible: true}).first()
-    .locator(`[name="filter-card-${caption}"] canvas`).filter({visible: true}).first();
-  await expect(canvas, `the structure drawn in the "${caption}" filter card`).toBeVisible({timeout: 5000});
+    .locator(`[name="filter-card-${cssString(caption)}"] canvas`).filter({visible: true}).first();
+  await expect(canvas, `the structure drawn in the "${caption}" filter card`).toBeVisible({timeout: pollMs(5000)});
   await canvas.click();
 }, {tier: 'ui', description: 'a click on the molecule the substructure card shows'});
 
@@ -506,16 +508,16 @@ export const clickCardStructure = When('user clicks on the structure drawn in th
 export const setRenderingFilterType = When('user sets Filter type to {string} in the Rendering pane of the context panel', async (page: Page, type: string) => {
   const panel = page.locator('.grok-prop-panel').filter({visible: true}).first();
   for (const section of ['Chemistry', 'Rendering']) {
-    const header = panel.locator(`[name="div-section--${section}"]`).first();
-    await expect(header, `the ${section} pane of the context panel`).toBeVisible({timeout: 5000});
+    const header = panel.locator(`[name="div-section--${cssString(section)}"]`).first();
+    await expect(header, `the ${section} pane of the context panel`).toBeVisible({timeout: pollMs(5000)});
     if (!/\bexpanded\b/.test(await header.getAttribute('class') ?? ''))
       await header.click();
-    await expect(header).toHaveClass(/\bexpanded\b/, {timeout: 5000});
+    await expect(header).toHaveClass(/\bexpanded\b/, {timeout: pollMs(5000)});
   }
   const select = panel.locator('[name="pane-Rendering"] select[name="input-Filter-type"]').first();
   await expect(select, 'the Filter type input of the Rendering pane').toBeVisible({timeout: pollMs(30000)});
   await select.selectOption({label: type});
-  await expect(select).toHaveValue(type, {timeout: 5000});
+  await expect(select).toHaveValue(type, {timeout: pollMs(5000)});
 }, {tier: 'ui', description: 'opens Chemistry > Rendering where it is closed, then the Filter type choice, waited for as long as the pane takes to build (up to 30 s), read back'});
 
 /** What each view's filter panel filters by: per view, the cards that filter and their summaries,
@@ -557,9 +559,6 @@ export const panelStatesAsRemembered = Then('the filter panel of every view shou
 
 // --- the chain's five projects ------------------------------------------------------------------------
 
-/* The listing of every project is slow on a shared stand (minutes on dev): the chain lists once
-   before it starts and once to prove the projects gone; in between it finds each project by name. */
-const RUN_SUFFIX = /-(\d{13,}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 const namesOf = (list: string): string[] => list.split(/\s*,\s*/).filter(Boolean);
 
 async function deleteProjectsById(page: Page, ids: string[]): Promise<void> {
@@ -583,45 +582,24 @@ async function projectIdsByName(page: Page, names: string[]): Promise<string[]> 
   return page.evaluate(async (list) => {
     const ids: string[] = [];
     for (const n of list)
-      for (const p of await (window as any).grok.dapi.projects.filter(`friendlyName = "${n}"`).list())
+      for (const p of await (window as any).grok.dapi.projects.filter(`friendlyName = ${JSON.stringify(n)}`).list())
         ids.push(String(p.id));
     return ids;
   }, names);
 }
 
-/** Every project on the server, by one listing: name, friendly name, id and age. */
-async function allProjects(page: Page): Promise<{id: string; name: string; friendlyName: string; age: number}[]> {
-  return page.evaluate(async () => (await (window as any).grok.dapi.projects.list() as any[])
-    .map((p) => ({id: String(p.id), name: String(p.name), friendlyName: String(p.friendlyName),
-      age: Date.now() - (Number(p.createdOn?.valueOf?.() ?? 0) || Date.now())})));
-}
-
-export const chainProjectsCleaned = Given('the projects {string} are deleted now and when the feature ends', async (page: Page, list: string) => {
-  const names = namesOf(list);
-  const families = names.filter((n) => RUN_SUFFIX.test(n)).map((n) => n.replace(RUN_SUFFIX, ''));
-  const leftovers = (await allProjects(page)).filter((p) => names.includes(p.friendlyName) ||
-    (p.age > 60 * 60 * 1000 && RUN_SUFFIX.test(p.friendlyName) && families.includes(p.friendlyName.replace(RUN_SUFFIX, ''))));
-  await deleteProjectsById(page, leftovers.map((p) => p.id));
-  atFeatureEnd(page, async () => deleteProjectsById(page, await projectIdsByName(page, names)));
-}, {tier: 'api', description: 'one listing of the server\'s projects: those of these names, and those of their families (the same name with another run\'s suffix) older than an hour, are deleted with their tables and views; at feature end each name is looked up and deleted again'});
-
 export const deleteChainProjects = When('user deletes the projects {string}', async (page: Page, list: string) => {
   await deleteProjectsById(page, await projectIdsByName(page, namesOf(list)));
 }, {tier: 'api', description: 'each project looked up by its friendly name and deleted with its tables and views'});
 
-export const noChainProjects = Then('none of the projects {string} should be on the server', async (page: Page, list: string) => {
-  const names = namesOf(list);
-  await expect.poll(async () => (await allProjects(page)).filter((p) => names.includes(p.friendlyName) || names.includes(p.name)).map((p) => p.friendlyName),
-    {timeout: pollMs(60000), message: 'projects of these names in the listing of every project'}).toEqual([]);
-}, {description: 'read from the listing of every project, which a filter cannot hide an entity from'});
-
 /** The ribbon's Save dialog uploads after OK and says so in the task bar. */
 export const saveFromDialog = When('user clicks on OK in the Save project dialog and the project uploads', async (page: Page) => {
   const dialog = page.locator('[name="dialog-Save-project"]').filter({visible: true}).last();
+  await watchTaskBar(page);
   await gestures.click(page, el('OK button in "Save project" dialog'));
   await expect(dialog, 'the Save project dialog').toBeHidden({timeout: pollMs(60000)});
-  await expect(page.locator('.d4-task-bar-entry', {hasText: 'Uploading'}), 'the Uploading entry of the task bar').toHaveCount(0, {timeout: pollMs(120000)});
-}, {tier: 'ui', description: 'OK, then the dialog closes and the task bar\'s Uploading entry is gone'});
+  await taskBarFinished(page, 'Uploading');
+}, {tier: 'ui', description: 'OK, then the dialog closes and the task bar\'s Uploading entry has come and gone'});
 
 // --- rows that links carry --------------------------------------------------------------------------
 
@@ -697,18 +675,6 @@ export const drawsFormulaLines = Then('{widget} should draw {int} formula line(s
   });
 }, {description: 'the "formula line <title>" / "formula band <title>" hit areas, which a viewer reports only for an item it drew on screen'});
 
-export const propertyLacks = Then('{string} property of {widget} should not contain {string}', async (page: Page, caption: string, target: ElementRef, text: string) => {
-  const value = await viewers.readProperty(page, target, caption);
-  expect(value, `"${caption}" of ${target.phrase}`).not.toBe('');
-  expect(value, `"${caption}" of ${target.phrase}`).not.toContain(text);
-}, {description: 'the property is set and its value as text holds no such substring'});
-
-export const tableTagLacks = Then('the {string} tag of the table should not contain {string}', async (page: Page, tag: string, text: string) => {
-  const value = await page.evaluate((t) => String((window as any).grok.shell.tv?.dataFrame?.getTag(t) ?? ''), tag);
-  expect(value, `the "${tag}" tag of the current table`).not.toBe('');
-  expect(value, `the "${tag}" tag of the current table`).not.toContain(text);
-}, {description: 'the tag of the table in front is set and holds no such substring'});
-
 export const formulaLineRanges = Then('the formula lines of {widget} should hold {string} over the ranges {string}', async (page: Page, target: ElementRef, formula: string, ranges: string) => {
   const want = ranges.split(/\s*;\s*/).filter(Boolean).sort();
   await expect.poll(async () => {
@@ -716,26 +682,6 @@ export const formulaLineRanges = Then('the formula lines of {widget} should hold
     return (JSON.parse(raw || '[]') as any[]).filter((l) => l.formula === formula).map((l) => `${l.min ?? ''}..${l.max ?? ''}`).sort();
   }, {message: `the items of "formulaLines" of ${target.phrase} with that formula, as min..max`}).toEqual(want);
 }, {description: 'the items of the viewer\'s formulaLines look with exactly this formula, their min..max pairs (";"-separated, any order)'});
-
-// --- a remembered count by name ---------------------------------------------------------------------
-
-export const rememberPassingAs = When('user remembers how many rows pass the filter as {string}', async (page: Page, name: string) => {
-  await viewers.settleAll(page);
-  await page.evaluate((n) => {
-    const w = window as any;
-    w.__nxCounts = {...(w.__nxCounts ?? {}), [n]: {view: String(w.grok.shell.tv.name), count: w.grok.shell.tv.dataFrame.filter.trueCount}};
-  }, name);
-}, {tier: 'api', description: 'the filter count of the table in front, kept under a name with the view it was read in'});
-
-export const passingAsRememberedAs = Then('as many rows as remembered as {string} should pass the filter', async (page: Page, name: string) => {
-  const want = await page.evaluate((n) => ((window as any).__nxCounts ?? {})[n], name) as {view: string; count: number} | undefined;
-  if (!want)
-    throw new Error(`no count was remembered as "${name}"`);
-  await expect.poll(() => page.evaluate((v) => {
-    const tv = Array.from((window as any).grok.shell.tableViews as any[]).find((x) => x.name === v);
-    return tv ? tv.dataFrame.filter.trueCount : `no "${v}" view is open`;
-  }, want.view), {message: `rows passing the filter of the "${want.view}" view's table (remembered as "${name}": ${want.count})`}).toBe(want.count);
-}, {description: 'the filter count of the table of the view the count was read in equals the one remembered under that name'});
 
 // --- Chem filters that compute ------------------------------------------------------------------------
 
@@ -797,13 +743,10 @@ export const formulaColumnsExist = Then('every column the formula of {string} co
   expect(missing, `columns the formula of "${column}" names that the table does not have`).toEqual([]);
 }, {description: 'every ${name} of the column\'s formula tag is a column of the table'});
 
-/** The Save project dialog draws its preview of the view as it opens: the window for that preview's
- * console noise is opened with the dialog. */
 export const openSaveDialog = When('user opens the Save project dialog from the ribbon', async (page: Page) => {
-  projectSaveWindow(page, true);
   await gestures.click(page, el('Save button'));
   await expect(page.locator('[name="dialog-Save-project"]').filter({visible: true}), 'the Save project dialog').toHaveCount(1, {timeout: pollMs(15000)});
-}, {tier: 'ui', description: 'the ribbon\'s Save button; done when the Save project dialog is shown. The preview\'s "cloned iframe" console message is ignored from here until the next project opens'});
+}, {tier: 'ui', description: 'the ribbon\'s Save button; done when the Save project dialog is shown'});
 
 /** A formula line keeps the title it was given when it was made; what it computes is its formula. */
 const formulasOf = (raw: string): string[] => (JSON.parse(raw || '[]') as any[]).map((l) => String(l.formula ?? ''));
@@ -901,8 +844,8 @@ export const noTabbedPanel = Then('no panel of the current view should hold tabs
 }, {description: 'every viewer of the view in front has a panel of its own'});
 
 export const switchTab = When('user switches the tabbed panel to the {string} tab', async (page: Page, title: string) => {
-  const handle = page.locator(`.dock-container-fill .tab-handle[name="view-handle: ${title}"]`).filter({visible: true}).first();
-  await expect(handle, `the "${title}" tab of a tabbed panel`).toBeVisible({timeout: 5000});
+  const handle = page.locator(`.dock-container-fill .tab-handle[name="view-handle: ${cssString(title)}"]`).filter({visible: true}).first();
+  await expect(handle, `the "${title}" tab of a tabbed panel`).toBeVisible({timeout: pollMs(5000)});
   await handle.click();
   await expect.poll(async () => (await tabPanels(page)).some((p) => p.selected === title), {message: `the "${title}" tab selected`}).toBe(true);
   await viewers.settleAll(page);

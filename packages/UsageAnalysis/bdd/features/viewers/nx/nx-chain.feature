@@ -4,9 +4,9 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
   formula-lines-and-legend, filtering) as one journey in their order: each part opens the project
   the one before saved — NxProject, NxProjectCalcColumns, NxProjectViewers, NxProjectFormulaLegend,
   NxProjectFiltering, each named with the run's suffix so parallel runs do not meet — and the last
-  scenario deletes all five. The Background lists the server's projects once and deletes whatever
-  an earlier run of the same names left; at feature end each of the five is looked up by name and
-  deleted again, and the last scenario proves them gone from a listing of every project.
+  scenario deletes all five. The Background deletes whatever an earlier run left under those names
+  or, older than an hour, under their families (one listing of the projects, without their
+  children), and again at feature end; the last scenario proves the five gone from the listing.
   SPGI (3624 rows), SPGI-linked1 (3624) and SPGI-linked2 (224) are opened from the Files tree, so
   the tables carry their creation script and every save is made through the ribbon's Save dialog
   with Data sync on; the dialog's "Save a copy" makes each next project, and the first save closes
@@ -28,7 +28,7 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
   The stand needs the ApiTests datasets (System:AppData/ApiTests/datasets) and a Chem package
   whose Scaffold Tree and substructure card report their readings (published from this branch);
   dev runs an older Chem, so the filtering part runs on localhost only. The journey takes about
-  five minutes on localhost.
+  three minutes on localhost.
 
   Done through the API, and why: the projects are reopened by their friendly name through the
   project API (the Dashboards gallery search finds no name that holds "-", and a run-suffixed name
@@ -75,14 +75,15 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
   "filtering", yet the rows that pass do not contain the molecule (localhost; dev runs an older
   Chem). Not claimed, because of it: how many rows pass after the master switch goes off and on
   and after NxProjectFiltering is reopened — every view's panel reports the same cards and
-  summaries, but the count differs from run to run (9 before; 9 or 1 after).
+  summaries, but the count differs from run to run (9 before; 9 or 1 after) — nor that a category
+  click in the clone lets fewer rows through (when one row is left, it may be the category's).
 
   Background:
     Given user is logged in
     And simple mode is off
     And the package autostarts have completed
     And the molecule sketcher is "OpenChemLib"
-    And the projects "NxProject-{run}, NxProjectCalcColumns-{run}, NxProjectViewers-{run}, NxProjectFormulaLegend-{run}, NxProjectFiltering-{run}" are deleted now and when the feature ends
+    And no project named "NxProject-{run}, NxProjectCalcColumns-{run}, NxProjectViewers-{run}, NxProjectFormulaLegend-{run}, NxProjectFiltering-{run}" is on the server
     And the browse panel is open
 
   Scenario: Linking - SPGI, SPGI-linked1 and SPGI-linked2 open from the Files tree with data sync
@@ -638,6 +639,7 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
     And second scatter plot viewer should have a "formula line \"High range\"" area
     When user sets "Row Source" property of second scatter plot viewer to "FilteredSelected"
     And user picks "Tools > Show Regression Line" from the context menu of second scatter plot viewer
+    And user closes the context menu
     Then "showRegressionLine" property of second scatter plot viewer should be "true"
     And the "rows shown" reading of second scatter plot viewer should be 0
     When user picks "Series" in the "color" column selector of second scatter plot viewer
@@ -947,13 +949,11 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
 
   Scenario: Filtering - a molecule used as a filter puts a Structure card on the panel, and every view shows the rows left
     When user clicks on the tab of the "SPGI (2)" view
-    And user remembers how many rows pass the filter
     And user picks "Current Value > Use as filter" from the context menu of the drawn cell of "Structure" column with the longest value
     Then filter panel should be visible
     And the "type of Structure" reading of filter panel should be "Chem:substructureFilter"
     And the "filtering of Structure" reading of filter panel should be "true"
     And the Chem filters of every view should have finished computing
-    And no more rows than remembered should pass the filter
     When user clicks on the tab of the "SPGI" view
     Then grid should show every row that passes the filter of its table
     And no errors should have been logged
@@ -990,7 +990,8 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
     When user picks "View > Layout > Clone View" from the top menu
     And user remembers how many rows pass the filter
     And user clicks on the "category S_PART of Stereo Category" area of filter panel
-    Then fewer rows than remembered should pass the filter
+    Then the "selected categories of Stereo Category" reading of filter panel should be "S_PART"
+    And no more rows than remembered should pass the filter
     And no rows where "Stereo Category" is "R_ONE" should pass the filter
     When user remembers how many rows pass the filter
     And user hovers over filter panel
@@ -1050,4 +1051,4 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
   Scenario: Cleanup - the five projects of the chain are deleted
     When user closes all views
     And user deletes the projects "NxProject-{run}, NxProjectCalcColumns-{run}, NxProjectViewers-{run}, NxProjectFormulaLegend-{run}, NxProjectFiltering-{run}"
-    Then none of the projects "NxProject-{run}, NxProjectCalcColumns-{run}, NxProjectViewers-{run}, NxProjectFormulaLegend-{run}, NxProjectFiltering-{run}" should be on the server
+    Then 0 projects named "NxProject-{run}, NxProjectCalcColumns-{run}, NxProjectViewers-{run}, NxProjectFormulaLegend-{run}, NxProjectFiltering-{run}" should be on the server

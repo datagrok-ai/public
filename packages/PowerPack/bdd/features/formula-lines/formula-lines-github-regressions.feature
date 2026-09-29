@@ -4,7 +4,8 @@ Feature: Formula Lines dialog regressions from GitHub
   line on a datetime X axis of the scatter plot (github-2487), the dialog's preview following the
   viewer's current axes and switching to the line selected in the list (github-671), and the
   scatter plot and the line chart treating one dataframe line and their previews alike
-  (github-2747). From `PowerPack/formula-lines-ui.md`, on the full SPGI demo table.
+  (github-2747). From `PowerPack/formula-lines-ui.md`, on spgi-100 (the first 100 rows of the SPGI demo
+  table).
 
   The preview inside the dialog is a viewer of its own (`scatter plot viewer in "Formula Lines"
   dialog`, `line chart viewer in ...`) and answers the same readings as the viewer the dialog was
@@ -16,8 +17,8 @@ Feature: Formula Lines dialog regressions from GitHub
 
   SPGI's First Synthesis Date and First Reg Date hold two date formats and load as text, so the
   datetime axis of the first scenario is Competition assay Date, a datetime column of the same
-  table; the vertical line the dialog adds sits at its median, 2018-03-21, which the dialog writes
-  in microseconds (1521590400000000). On Chemical Space X every row has its own value, so the line
+  table; the vertical line the dialog adds sits at its median, 2018-06-09, which the dialog writes
+  in microseconds (1528502400000000). On Chemical Space X every row has its own value, so the line
   chart on it is not aggregated and draws a dataframe line on Average Mass. The line chart pads its
   value axis by a margin that depends on the chart's height, so its preview is matched with it by
   the Y column and the X axis range, not by the Y range.
@@ -35,7 +36,7 @@ Feature: Formula Lines dialog regressions from GitHub
 
   Background:
     Given user is logged in
-    And user opens spgi-full dataset
+    And user opens spgi dataset
 
   Scenario: A vertical line on a datetime X axis is accepted, previewed and drawn
     Given user adds a scatter plot viewer with:
@@ -47,13 +48,13 @@ Feature: Formula Lines dialog regressions from GitHub
     When user clicks on "ADD NEW" button in "Formula Lines" dialog
     And user picks "Line - Vertical" from the open menu
     Then editor of Column input in "Formula Lines" dialog should have text "Competition assay Date"
-    And Value input in "Formula Lines" dialog should have value "1521590400000000"
-    And the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${Competition assay Date} = 1521590400000000.0"
+    And Value input in "Formula Lines" dialog should have value "1528502400000000"
+    And the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${Competition assay Date} = 1528502400000000.0"
     And the "formula lines" reading of scatter plot viewer in "Formula Lines" dialog should be 1
     And no error or warning balloon should have been shown
     When user clicks OK button in "Formula Lines" dialog
     Then the "Formula Lines" dialog should close
-    And "formulaLines" property of scatter plot viewer should contain "${Competition assay Date} = 1521590400000000.0"
+    And "formulaLines" property of scatter plot viewer should contain "${Competition assay Date} = 1528502400000000.0"
     And the "formula lines" reading of scatter plot viewer should be 1
     And the "Competition assay Date" line of scatter plot viewer should lie within its x axis
     When user picks "Tools > Formula Lines..." from the context menu of scatter plot viewer
@@ -71,7 +72,7 @@ Feature: Formula Lines dialog regressions from GitHub
     When user picks "Tools > Formula Lines..." from the context menu of scatter plot viewer
     And user clicks on "ADD NEW" button in "Formula Lines" dialog
     And user picks "Line - Horizontal" from the open menu
-    Then the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${Average Mass} = 390.4"
+    Then the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${Average Mass} = 396.4"
     And the "formula lines" reading of scatter plot viewer in "Formula Lines" dialog should be 1
     When user clicks OK button in "Formula Lines" dialog
     Then the "formula lines" reading of scatter plot viewer should be 1
@@ -82,7 +83,7 @@ Feature: Formula Lines dialog regressions from GitHub
       | invertXAxis | true        |
     Then the "formula lines" reading of scatter plot viewer should be 0
     When user picks "Tools > Formula Lines..." from the context menu of scatter plot viewer
-    Then the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${Average Mass} = 390.4"
+    Then the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${Average Mass} = 396.4"
     And the "formula lines" reading of scatter plot viewer in "Formula Lines" dialog should be 1
     And "xColumnName" property of scatter plot viewer in "Formula Lines" dialog should be "TPSA"
     And "invertXAxis" property of scatter plot viewer in "Formula Lines" dialog should be "true"
@@ -91,7 +92,7 @@ Feature: Formula Lines dialog regressions from GitHub
     And "yColumnName" property of scatter plot viewer in "Formula Lines" dialog should be "Average Mass"
     When user clicks on "ADD NEW" button in "Formula Lines" dialog
     And user picks "Line - Vertical" from the open menu
-    Then the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${TPSA} = 78.1"
+    Then the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${TPSA} = 75.9"
     And the "formula lines" reading of scatter plot viewer in "Formula Lines" dialog should be 1
     And "yColumnName" property of scatter plot viewer in "Formula Lines" dialog should be "Num Heavy Atoms"
     And "yAxisType" property of scatter plot viewer in "Formula Lines" dialog should be "logarithmic"
@@ -99,12 +100,12 @@ Feature: Formula Lines dialog regressions from GitHub
     And the "y axis max" reading of scatter plot viewer in "Formula Lines" dialog should be the same as on scatter plot viewer
     When user clicks on the "cell 2 of title" area of grid in "Formula Lines" dialog
     Then the "current row" reading of grid in "Formula Lines" dialog should be 2
-    And the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${Average Mass} = 390.4"
+    And the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${Average Mass} = 396.4"
     And the "formula lines" reading of scatter plot viewer in "Formula Lines" dialog should be 2
     And "yColumnName" property of scatter plot viewer in "Formula Lines" dialog should be "Average Mass"
     When user clicks on the "cell 1 of title" area of grid in "Formula Lines" dialog
     Then the "current row" reading of grid in "Formula Lines" dialog should be 1
-    And the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${TPSA} = 78.1"
+    And the "current item" reading of scatter plot viewer in "Formula Lines" dialog should be "${TPSA} = 75.9"
     And the "formula lines" reading of scatter plot viewer in "Formula Lines" dialog should be 1
     And "yColumnName" property of scatter plot viewer in "Formula Lines" dialog should be "Num Heavy Atoms"
     When user clicks on first Delete button in "Formula Lines" dialog
@@ -128,7 +129,7 @@ Feature: Formula Lines dialog regressions from GitHub
     And user clicks OK button in "Formula Lines" dialog
     Then the "formula lines" reading of scatter plot viewer should be 1
     And the "formula lines" reading of line chart viewer should be 1
-    And line chart viewer should have a "formula line Average Mass = 390.4" area
+    And line chart viewer should have a "formula line Average Mass = 396.4" area
     And "formulaLines" property of scatter plot viewer should be "[]"
     And "formulaLines" property of line chart viewer should be ""
     When user picks "Tools > Formula Lines..." from the context menu of line chart viewer

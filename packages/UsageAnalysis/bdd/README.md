@@ -61,13 +61,13 @@ checkbox menu items keep the menu open, so close it before dragging on the chart
 `features/viewers/nx/` holds the TestTrack Viewers/NX section. `nx-chain.feature` is its five
 chained md files as one journey on the full SPGI and its two linked tables: each part opens the
 project the one before saved through the Save dialog with data sync, and the last part deletes the
-five projects (their names carry the run's suffix, so parallel runs stay apart). It takes about four
-minutes and needs the ApiTests datasets on the stand and a Chem package whose Scaffold Tree reports
+five projects (their names carry the run's suffix, so parallel runs stay apart). It takes about three
+minutes on a local stand and needs the ApiTests datasets on the stand and a Chem package whose Scaffold Tree reports
 its readings. `legend-backward-compatibility.feature` applies the pre-legend-position layout of
-github #3203 to SPGI. Their fixtures (two saved scaffold trees and the layout) are in
-`fixtures/nx/`, their steps (the Link Tables key pairs, the Formula Lines dialog, the Scaffold Tree
-filter card, rows and filter panels compared across views and a project round trip) in
-`bindings/nx.ts`.
+github #3203 to spgi-100 (the first 100 rows of SPGI). Their fixtures (two saved scaffold trees and
+the layout) are in `fixtures/nx/`, their steps (the Link Tables key pairs, the Formula Lines dialog,
+the Scaffold Tree filter card, rows and filter panels compared across views and a project round
+trip) in `bindings/nx.ts`.
 
 The grid folder, `features/viewers/grid/`, holds ten features on demog-1000. They replace the
 TestTrack grid scenarios `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid.md`,

@@ -17,11 +17,10 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {cleanQueryLayout} from '../../bindings/queries.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, isExpanded, replaceCode, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, currentViewType, entityHasLayout, noQueryOnServer, queriesOnServer, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, currentViewType, entityHasLayout, layoutsDeleted, noQueryOnServer, queriesOnServer, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu, pointerAway, readingIs, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -33,7 +32,7 @@ test.describe("A query's layout", () => {
     await session.step(17, "Given user is logged in", () => loggedIn(page));
     await session.step(18, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(19, "And no query named \"BDD-Q-layout-{time}\" is on the server", () => noQueryOnServer(page, session.text("BDD-Q-layout-{time}")));
-    await session.step(20, "And the layout saved for the query \"BDD-Q-layout-{time}\" is deleted at the end", () => cleanQueryLayout(page, session.text("BDD-Q-layout-{time}")));
+    await session.step(20, "And the layouts named \"BDD-Q-layout-{time}\" are deleted when the feature ends", () => layoutsDeleted(page, session.text("BDD-Q-layout-{time}")));
     await run.scenario("The Layout tab waits for a run, then takes viewers from the toolbox", async () => {
       await session.step(23, "Given Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
       await session.step(24, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));

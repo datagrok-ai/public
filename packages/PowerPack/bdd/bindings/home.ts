@@ -5,7 +5,8 @@
    the same way; the account that started the feature is back when the feature ends, whatever failed. */
 import {Page} from '@playwright/test';
 import {Given, Then, When, element, kind} from '@datagrok-libraries/bdd';
-import {type ElementRef, atFeatureEnd, el, expect, gestures, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, atFeatureEnd, cssString, el, escapeRegExp, expect, gestures, locate, pollMs, viewers}
+  from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 declare const DG: any;
@@ -26,8 +27,6 @@ element('home widgets panel', {selector: '.power-pack-widgets-panel',
   description: 'the widgets and the "Customize widgets..." link under them; hidden while a search is shown'});
 element('home search results', {selector: '.power-pack-search-host',
   description: 'where a search shows what it found; aria-busy until every search path has settled'});
-element('unread notifications counter', {selector: '.pp-notifications-unread-count',
-  description: '"N unread" above the list of the Notifications tab of Spotlight, gone when nothing is unread'});
 
 const SWITCH_BACK = new WeakMap<Page, {token: string; login: string}>();
 
@@ -116,14 +115,24 @@ async function sessionOf(page: Page, login: string): Promise<{root: string; toke
   return {root, token: session.token};
 }
 
-export const sharingUserAllRead = Given('the sharing user has no unread notifications', async (page: Page) => {
+async function markSharingUserRead(page: Page): Promise<{root: string; token: string}> {
   const {root, token} = await sessionOf(page, process.env.DATAGROK_SHARING_LOGIN!);
   const done = await page.request.post(`${root}/users/notifications/current/read`, {headers: {Authorization: token}, data: ''});
   if (!done.ok())
     throw new Error(`marking the notifications of the sharing user read: HTTP ${done.status()}`);
+  return {root, token};
+}
+
+export const sharingUserAllRead = Given('the sharing user has no unread notifications', async (page: Page) => {
+  // registers the running account's sign-in back first: cleanups run in the order they were registered
+  await rememberOwnSession(page);
+  const {root, token} = await markSharingUserRead(page);
   await expect.poll(async () => (await page.request.get(`${root}/users/notifications/current/count_unread`, {headers: {Authorization: token}})).text(),
     {message: 'the unread notifications of the sharing user'}).toBe('0');
-}, {tier: 'api', description: 'everything the second account was notified of before is marked read on the server, so what is unread afterwards is new'});
+  atFeatureEnd(page, async () => {
+    await markSharingUserRead(page);
+  });
+}, {tier: 'api', description: 'everything the second account was notified of before is marked read on the server, so what is unread afterwards is new; what the feature notified it of is marked read when the feature ends'});
 
 export const signInAsSharingUser = When('user signs in as the sharing user', async (page: Page) => {
   const login = process.env.DATAGROK_SHARING_LOGIN!;
@@ -138,7 +147,7 @@ export const signInAsSharingUser = When('user signs in as the sharing user', asy
    kept a member of Administrators, whose Home page has every widget. */
 export const adminAccountOnServer = Given('an administrator account {string} is on the server', async (page: Page, login: string) => {
   const member = await page.evaluate(async (l) => {
-    let user = await grok.dapi.users.filter(`login = "${l}"`).first();
+    let user = await grok.dapi.users.filter(`login = ${JSON.stringify(l)}`).first();
     if (!user) {
       const made = DG.User.create();
       made.login = l;
@@ -147,7 +156,7 @@ export const adminAccountOnServer = Given('an administrator account {string} is 
       made.lastName = '';
       made.status = 'active';
       await grok.dapi.users.save(made);
-      user = await grok.dapi.users.filter(`login = "${l}"`).first();
+      user = await grok.dapi.users.filter(`login = ${JSON.stringify(l)}`).first();
     }
     const admins = (await grok.dapi.groups.list({pageSize: 1000})).find((g: any) => g.friendlyName === 'Administrators' || g.name === 'Administrators');
     const own = await grok.dapi.groups.include('memberships,adminMemberships').find(user.group.id);
@@ -199,13 +208,14 @@ export const homeWidgetsAre = Then('the Home page should show the widgets {strin
 export const everyWidgetHasContent = Then('every widget of the Home page should show content', async (page: Page) => {
   await expect.poll(() => page.evaluate(() => {
     const hosts = [...document.querySelectorAll('.power-pack-widgets-host > .power-pack-widget-host')] as HTMLElement[];
-    return hosts.filter((h) => h.offsetParent !== null).filter((h) => {
+    // Community shows what community.datagrok.ai answers, an outside service (the scope rule)
+    return hosts.filter((h) => h.offsetParent !== null && h.getAttribute('name') !== 'widget-Community').filter((h) => {
       const content = h.querySelector('.power-pack-widget-content') as HTMLElement | null;
       return !content || content.querySelector('.grok-loader') != null ||
         ((content.innerText ?? '').trim() === '' && content.querySelector('canvas') == null);
     }).map((h) => h.getAttribute('name'));
   }), {message: 'the widgets whose content is empty or still loading'}).toEqual([]);
-}, {description: 'each visible widget has finished loading and shows text or a chart'});
+}, {description: 'each visible widget but Community (the community site\'s answer) has finished loading and shows text or a chart'});
 
 const TITLES = {Spotlight: 'activityDashboardWidget'} as Record<string, string>;
 
@@ -252,17 +262,11 @@ export const widgetSettingsRestored = Given('the widget settings of the Home pag
   });
 }, {tier: 'api', description: 'the widget settings of the signed-in account read from the server now, and put back at feature end if they changed'});
 
-export const linksPointTo = Then('every link of {element} should point to {string}', async (page: Page, target: ElementRef, prefix: string) => {
-  const root = (await locate(page, target)).first();
-  await expect.poll(() => root.locator('a').evaluateAll((all) => all.length), {message: `the links of ${target.phrase}`}).toBeGreaterThanOrEqual(3);
-  const off = await root.locator('a').evaluateAll((all, p) => all.map((a) => (a as HTMLAnchorElement).href).filter((h) => !h.startsWith(p)), prefix);
-  expect(off, `the links of ${target.phrase} that do not point to ${prefix}`).toEqual([]);
-}, {description: 'at least three links, and the address of every one starts with the prefix; nothing is opened'});
-
 export const tabShowing = Then('the {string} tab of {element} should be showing', async (page: Page, tab: string, target: ElementRef) => {
   const root = (await locate(page, target)).first();
-  await expect(root.locator(`.d4-tab-header[name="${tab}"]`), `the ${tab} tab header of ${target.phrase}`).toHaveClass(/(^|\s)selected(\s|$)/);
-  const content = root.locator(`[data-source="tab-content-${tab}"]`).first();
+  await expect(root.locator(`.d4-tab-header[name="${cssString(tab)}"]`), `the ${tab} tab header of ${target.phrase}`)
+    .toHaveClass(/(^|\s)selected(\s|$)/);
+  const content = root.locator(`[data-source="tab-content-${cssString(tab)}"]`).first();
   await expect(content, `the ${tab} page of ${target.phrase}`).toBeVisible();
 }, {description: 'the tab header marked selected and the page it names shown, not the one before; what the page lists is a claim of its own'});
 
@@ -288,28 +292,20 @@ export const tipOfTheDay = Then('the tip of the day of {element} should open wha
     await expect.poll(() => page.evaluate(() => String(grok.shell.v?.type ?? '')), {message: 'the current view'}).toBe('datagrok');
     return;
   }
-  await link.click();
-  // the demo app names its view after the demo, the last part of the path the link shows
-  await expect.poll(() => page.evaluate(() => String(grok.shell.v?.name ?? '')),
-    {message: `the view the demo of the day "${name}" opened`, timeout: pollMs(60000)}).toBe(name);
-  await page.evaluate(() => grok.shell.v.close());
-  await expect.poll(() => page.evaluate(() => String(grok.shell.v?.type ?? '')),
-    {message: 'the current view once the demo is closed'}).toBe('datagrok');
-}, {tier: 'ui', description: 'the tip changes with the weekday (a demo Monday, Friday and the weekend, a tutorial Wednesday, a plain tip Tuesday and Thursday): a tutorial has to open the Tutorials panel, a demo the view named as the demo; either is closed again and the Home page is current; a plain tip must carry text and no link'});
+  // a demo runs when opened, and the day's may start a container (scope rule): the claim is the demo it names
+  const demos: string[] = await page.evaluate(() => DG.Func.find({meta: {demoPath: null}})
+    .map((f: any) => String(f.options?.demoPath ?? '').split('|').pop()!.trim()));
+  expect(demos, `the platform's demos, among them the demo of the day "${name}"`).toContain(name);
+}, {tier: 'ui', description: 'the tip changes with the weekday (a demo Monday, Friday and the weekend, a tutorial Wednesday, a plain tip Tuesday and Thursday): a tutorial has to open the Tutorials panel, which is closed again with the Home page current; a demo is not opened (it may need a container), its link has to name one of the platform\'s demos; a plain tip must carry text and no link'});
 
 export const unreadNotificationsOnServer = Then('the signed-in user should have {int} unread notification(s) on the server', async (page: Page, count: number) => {
   await expect.poll(() => page.evaluate(async () => grok.dapi.users.notifications.countUnread()),
     {message: 'the unread notifications of the signed-in account on the server'}).toBe(count);
 }, {tier: 'api'});
 
-export const someUnreadNotifications = Then('the signed-in user should have unread notifications on the server', async (page: Page) => {
-  await expect.poll(() => page.evaluate(async () => grok.dapi.users.notifications.countUnread()),
-    {message: 'the unread notifications of the signed-in account on the server'}).toBeGreaterThan(0);
-}, {tier: 'api'});
-
 export const placeholderStarts = Then('the placeholder of {element} should start with {string}', async (page: Page, target: ElementRef, text: string) => {
   await expect((await locate(page, target)).first(), `the placeholder of ${target.phrase}`)
-    .toHaveAttribute('placeholder', new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    .toHaveAttribute('placeholder', new RegExp(`^${escapeRegExp(text)}`));
 });
 
 /* What another account shared is listed under Shared with me by the name of the account that
@@ -334,11 +330,6 @@ export const expandShared = When('user expands {string} shared by the running ac
 export const openShared = When('user double-clicks on {string} shared by the running account', async (page: Page, path: string) => {
   await gestures.dblclick(page, sharedPhrase(page, path));
 }, {tier: 'ui', description: 'a node under My stuff > Shared with me > <the running account>'});
-
-export const viewOpen = Then('the {string} view should be open', async (page: Page, name: string) => {
-  await expect.poll(() => page.evaluate(() => [...grok.shell.views].map((v: any) => String(v.name))),
-    {message: 'the views open in the shell'}).toContain(name);
-}, {description: 'among the open views, current or not'});
 
 export const containsOneOf = Then('{element} should contain one of the texts {string}', async (page: Page, target: ElementRef, list: string) => {
   const texts = list.split('|').map((t) => t.trim()).filter(Boolean);

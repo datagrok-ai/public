@@ -138,7 +138,8 @@ function launch(project: Project, args: string[], env: Record<string, string> = 
     throw new Error(`no Playwright config in ${LIB_DIR} — run \`npm run build\` in the library`);
   const report = withJsonReport(project, args);
   const child = spawn(process.execPath, [playwrightCli(project), 'test', '--config', config, ...report.args],
-    {cwd: project.root, stdio: 'inherit', env: {...process.env, ...report.env, ...env, BDD_ROOT: project.root}});
+    {cwd: project.root, stdio: 'inherit',
+      env: {...process.env, ...report.env, ...env, BDD_ROOT: project.root, BDD_PROJECT: project.name}});
   return new Promise((resolve) => child.on('exit', (exit) => resolve(exit ?? 1)));
 }
 

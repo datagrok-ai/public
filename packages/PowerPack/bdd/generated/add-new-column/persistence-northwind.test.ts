@@ -8,7 +8,6 @@ sub_features_covered: [powerpack.cp.add-new-column-persists, powerpack.int.add-n
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/enrichment.js';
-import '../../bindings/formula-lines.js';
 import '../../bindings/home.js';
 import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -85,8 +84,8 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(77, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
       await session.step(78, "Then the \"Projects\" view should be current", () => viewIsCurrent(page, "Projects"));
       await session.step(79, "When user types \"bdd-anc-all-{run}\" into gallery search", () => typeInto(page, session.text("bdd-anc-all-{run}"), el("gallery search")));
-      await session.step(80, "Then \"bdd-anc-all-{run}\" project card should become visible within 60 seconds", () => shouldBecomeVisibleWithin(page, el(session.text("\"bdd-anc-all-{run}\" project card")), 60));
-      await session.step(81, "When user double-clicks on \"bdd-anc-all-{run}\" project card", () => doubleClickOn(page, el(session.text("\"bdd-anc-all-{run}\" project card"))));
+      await session.step(80, "Then \"bdd-anc-all-{run}\" gallery card should become visible within 60 seconds", () => shouldBecomeVisibleWithin(page, el(session.text("\"bdd-anc-all-{run}\" gallery card")), 60));
+      await session.step(81, "When user double-clicks on \"bdd-anc-all-{run}\" gallery card", () => doubleClickOn(page, el(session.text("\"bdd-anc-all-{run}\" gallery card"))));
       await session.step(82, "Then the \"products\" view should be current", () => viewIsCurrent(page, "products"));
       await session.step(83, "And the table should have 77 rows", () => rowCount(page, 77));
       await session.step(84, "And the table should have a column \"BasePrice\"", () => hasColumn(page, "BasePrice"));
@@ -162,8 +161,8 @@ test.describe("Calculated columns over a Northwind query result follow a rename 
       await session.step(155, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
       await session.step(156, "Then the \"Projects\" view should be current", () => viewIsCurrent(page, "Projects"));
       await session.step(157, "When user types \"bdd-anc-top-{run}\" into gallery search", () => typeInto(page, session.text("bdd-anc-top-{run}"), el("gallery search")));
-      await session.step(158, "Then \"bdd-anc-top-{run}\" project card should become visible within 60 seconds", () => shouldBecomeVisibleWithin(page, el(session.text("\"bdd-anc-top-{run}\" project card")), 60));
-      await session.step(159, "When user double-clicks on \"bdd-anc-top-{run}\" project card", () => doubleClickOn(page, el(session.text("\"bdd-anc-top-{run}\" project card"))));
+      await session.step(158, "Then \"bdd-anc-top-{run}\" gallery card should become visible within 60 seconds", () => shouldBecomeVisibleWithin(page, el(session.text("\"bdd-anc-top-{run}\" gallery card")), 60));
+      await session.step(159, "When user double-clicks on \"bdd-anc-top-{run}\" gallery card", () => doubleClickOn(page, el(session.text("\"bdd-anc-top-{run}\" gallery card"))));
       await session.step(160, "Then the \"products\" view should be current", () => viewIsCurrent(page, "products"));
       await session.step(161, "And the table should have 77 rows", () => rowCount(page, 77));
       await session.step(162, "And the table should have a column \"BasePrice\"", () => hasColumn(page, "BasePrice"));

@@ -18,7 +18,7 @@ Feature: A layout saved before the legend position existed puts every legend on 
     Given user is logged in
     And simple mode is off
     And the package autostarts have completed
-    And user opens spgi-3624 dataset
+    And user opens spgi dataset
     And the browse panel is open
     When user uploads "fixtures/nx/spgi-legend-position-old.layout" through "Open local file" icon inside browse toolbar
     Then the open tableview should have 1 pie chart viewer

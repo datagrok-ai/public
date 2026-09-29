@@ -17,7 +17,7 @@ Feature: A query's layout
     Given user is logged in
     And the browse panel is open
     And no query named "BDD-Q-layout-{time}" is on the server
-    And the layout saved for the query "BDD-Q-layout-{time}" is deleted at the end
+    And the layouts named "BDD-Q-layout-{time}" are deleted when the feature ends
 
   Scenario: The Layout tab waits for a run, then takes viewers from the toolbox
     Given Databases tree node inside browse tree is expanded

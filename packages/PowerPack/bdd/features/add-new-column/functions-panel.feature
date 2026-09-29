@@ -25,7 +25,7 @@ Feature: The functions and columns of Add New Column on SPGI: insertion, auto-bo
   Background:
     Given user is logged in
     And the package autostarts have completed
-    And user opens SPGI dataset
+    And user opens spgi dataset
     When user clicks on "Add New Column..." icon
     Then "Add New Column" dialog should be visible
     And functions list should be visible

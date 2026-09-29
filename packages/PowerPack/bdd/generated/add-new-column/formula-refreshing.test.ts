@@ -8,7 +8,6 @@ sub_features_covered: [powerpack.cp.add-new-column-persists, GROK-17109]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/enrichment.js';
-import '../../bindings/formula-lines.js';
 import '../../bindings/home.js';
 import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -122,8 +121,8 @@ test.describe("A chain of calculated columns recalculates on a formula edit and 
       await session.step(109, "When user clicks on Dashboards tree node inside browse tree", () => clickOn(page, el("Dashboards tree node inside browse tree")));
       await session.step(110, "Then the \"Projects\" view should be current", () => viewIsCurrent(page, "Projects"));
       await session.step(111, "When user types \"bdd-anc-chain-{run}\" into gallery search", () => typeInto(page, session.text("bdd-anc-chain-{run}"), el("gallery search")));
-      await session.step(112, "Then \"bdd-anc-chain-{run}\" project card should become visible within 60 seconds", () => shouldBecomeVisibleWithin(page, el(session.text("\"bdd-anc-chain-{run}\" project card")), 60));
-      await session.step(113, "When user double-clicks on \"bdd-anc-chain-{run}\" project card", () => doubleClickOn(page, el(session.text("\"bdd-anc-chain-{run}\" project card"))));
+      await session.step(112, "Then \"bdd-anc-chain-{run}\" gallery card should become visible within 60 seconds", () => shouldBecomeVisibleWithin(page, el(session.text("\"bdd-anc-chain-{run}\" gallery card")), 60));
+      await session.step(113, "When user double-clicks on \"bdd-anc-chain-{run}\" gallery card", () => doubleClickOn(page, el(session.text("\"bdd-anc-chain-{run}\" gallery card"))));
       await session.step(114, "Then the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
       await session.step(115, "And the table should have 5850 rows", () => rowCount(page, 5850));
       await session.step(117, "And the value of \"WEIGHT\" column in row 1 should be \"73.19999694824219\"", () => valueInRow(page, "WEIGHT", 1, "73.19999694824219"));

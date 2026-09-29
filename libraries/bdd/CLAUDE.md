@@ -24,6 +24,7 @@ src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [play
 src/runtime/            args, locate, gestures, assertions, harness (session, journey, resetShell, error floor),
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
                         viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
+                        server (endpoints the JS API lacks, layouts, fixture families), memory (BDD_MEMORY_LOG),
                         guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), the page's own pointer events per stop → steps.json; full shell)
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
@@ -106,10 +107,18 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
   menus, `ui.tooltip.hide`, notices removed, `closeAll`, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
-  Datagrok pages in one browser. The renderer never gives back what a feature took (about 2 GB a
-  minute of work, outside the JS heap), so a page older than `BDD_PAGE_MAX_MIN` (2) minutes is
-  closed with its context after its feature and the next feature opens a new one (a new page of
-  the same context shares the old renderer process). A journey
+  Datagrok pages in one browser. The renderer keeps what every feature left (closed views and their
+  viewers stay reachable, ~60 MB a feature; a Chem feature starts RDKit's pool of a worker per core
+  but two, ~1.2 GB on 32 cores), so after `BDD_PAGE_MAX_FEATURES` features (25) or once the renderer,
+  workers included, holds more than `BDD_PAGE_MAX_MB` (3000, read from the OS every third feature at
+  ~0.2 s a reading; 0 turns either off) the page is closed
+  and the next feature opens a new one in the same context (a new renderer process; the storage
+  state and HTTP cache stay, the boot is ~3 s); `BDD_MEMORY_LOG=<file>` writes each feature's process
+  and heap memory (`src/runtime/memory.ts`, `BDD_MEMORY_GC=1` adds the readings after a forced
+  collection). A page whose renderer crashed stays open to Playwright (`isClosed()` is false, every
+  call fails): the harness marks it on `crash`, skips its feature-end cleanups (they call into it;
+  the feature fails naming how many did not run) and replaces it in a new context, since a feature
+  may have signed the old one in as another account. A journey
   scenario that fails closes its dialogs and menus (Escape) before the next scenario starts.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
@@ -218,8 +227,10 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   so recreating the same name otherwise targets a stale node or resolves to two nodes.
 - **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
   is also swept by family — the same name with any run suffix, older than an hour — whenever a
-  `no … named` or `a … named` step runs, and by the project save (`isStaleFixture`,
-  platform/steps.ts). Fixed names (the spaces, most projects) are swept by their exact name.
+  `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`
+  (a layout's `createdOn` is the browser's clock, the client stamps it), and by the project save
+  (`isStaleFixture`, platform/steps.ts). Fixed names (the spaces, most projects) are swept by their
+  exact name. The `… named "a, b" should be on the server` counts take a list, from one listing.
 - **Groups and roles are cleaned like spaces** (the complete listing, never a name or ID filter —
   `grok.dapi.groups.filter('name = …')` missed a group that existed). Their global permissions are
   revoked before `grok.dapi.groups.delete`, which refuses a role that holds one (GROK-20904). Never

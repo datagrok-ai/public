@@ -53,7 +53,8 @@ Feature: A project opened by its direct link
     Given the browse panel is open
     When user refreshes the browse tree
     And user expands "My stuff" tree node inside browse tree
-    And user double-clicks on "My stuff > bdd-direct-link-{time}" tree node inside browse tree
+    And user expands "My stuff > My dashboards" tree node inside browse tree
+    And user double-clicks on "My stuff > My dashboards > bdd-direct-link-{time}" tree node inside browse tree
     Then the project "bdd-direct-link-{time}" should be open
     And the "demog" view should be current
     And the table should have 5850 rows

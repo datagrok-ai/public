@@ -5,7 +5,8 @@
    a feature makes are deleted when it ends, with the queries it saved. */
 import {Page} from '@playwright/test';
 import {Given, Then, When, element, kind} from '@datagrok-libraries/bdd';
-import {type ElementRef, atFeatureEnd, expect, gestures, locate, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, atFeatureEnd, escapeRegExp, expect, fixtureFamilies, gestures, isStaleFixture, locate, pollMs}
+  from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -23,21 +24,34 @@ kind('enrichment', {
   description: 'a row of the Enrich pane by the enrichment\'s name; its link applies it, the pencil edits it, the cross deletes it',
 });
 
-/** Enrichments whose name starts with the prefix, on every column of every connection. */
-async function deleteEnrichments(page: Page, prefix: string): Promise<void> {
-  await page.evaluate(async ([root, p]) => {
+/** The enrichment files on every column of every connection: name (without .json), path, last change. */
+function enrichmentFiles(page: Page): Promise<{name: string; path: string; changed: number}[]> {
+  return page.evaluate(async (root) => {
     if (!await grok.dapi.files.exists(root))
-      return;
-    for (const f of await grok.dapi.files.list(root, true))
-      if (!f.isDirectory && f.name.startsWith(p) && f.name.endsWith('.json'))
-        await grok.dapi.files.delete(f.fullPath);
-  }, [ENRICHMENTS, prefix] as [string, string]);
+      return [];
+    return (await grok.dapi.files.list(root, true)).filter((f: any) => !f.isDirectory && f.name.endsWith('.json'))
+      .map((f: any) => ({name: String(f.name).slice(0, -5), path: String(f.fullPath),
+        changed: f.updatedOn?.valueOf() ?? 0}));
+  }, ENRICHMENTS);
 }
 
-export const noEnrichments = Given('no enrichment whose name starts with {string} is on the server', async (page: Page, prefix: string) => {
-  await deleteEnrichments(page, prefix);
-  atFeatureEnd(page, () => deleteEnrichments(page, prefix));
-}, {tier: 'api', description: 'deletes every enrichment whose name starts with the text, now and when the feature ends'});
+export const noEnrichments = Given('no enrichment named {string} is on the server', async (page: Page, list: string) => {
+  const names = list.split(',').map((n) => n.trim()).filter(Boolean);
+  const families = fixtureFamilies(names);
+  const sweep = async (stale: boolean): Promise<void> => {
+    const doomed = (await enrichmentFiles(page)).filter((f) => names.includes(f.name) ||
+      stale && isStaleFixture({name: f.name, friendlyName: f.name, createdOn: f.changed}, families));
+    await page.evaluate(async (paths) => {
+      for (const p of paths)
+        await grok.dapi.files.delete(p);
+    }, doomed.map((f) => f.path));
+    const left = async (): Promise<string[]> =>
+      (await enrichmentFiles(page)).filter((f) => names.includes(f.name)).map((f) => f.name);
+    await expect.poll(left, {message: 'the enrichments still on the server'}).toEqual([]);
+  };
+  await sweep(true);
+  atFeatureEnd(page, () => sweep(false));
+}, {tier: 'api', description: 'the enrichments of these names (comma-separated), now and when the feature ends, and a killed run\'s of the same {time} family over an hour old'});
 
 export const enrichmentsOnServer = Then('{int} enrichment(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
   await expect.poll(() => page.evaluate(async ([root, n]) => (await grok.dapi.files.list(root, true))
@@ -47,9 +61,8 @@ export const enrichmentsOnServer = Then('{int} enrichment(s) named {string} shou
 
 export const savedQuery = Given('a query {string} on {string} reads {string}', async (page: Page, name: string, connection: string, sql: string) => {
   const id: string = await page.evaluate(async ([n, c, s]) => {
-    for (const q of await grok.dapi.queries.filter(`friendlyName = "${n}"`).list())
-      await grok.dapi.queries.delete(q);
-    const conn = (await grok.dapi.connections.list({pageSize: 1000})).find((x: any) => x.nqName === c);
+    const conn = (await grok.dapi.connections.filter(`name = ${JSON.stringify(c.split(':').pop())}`).list())
+      .find((x: any) => x.nqName === c);
     if (!conn)
       throw new Error(`no connection ${c}`);
     const q = conn.query(n, s);
@@ -61,7 +74,7 @@ export const savedQuery = Given('a query {string} on {string} reads {string}', a
     if (q)
       await grok.dapi.queries.delete(q);
   }, id));
-}, {tier: 'api', description: 'a SQL query saved on the connection (an earlier one of that name replaced), deleted when the feature ends'});
+}, {tier: 'api', description: 'a SQL query saved on the connection, deleted when the feature ends; an earlier one of the name goes with "no query named"'});
 
 /** The Join part of the dialog: its first row names the two tables, its second the key pair. */
 function joinRows(page: Page, dialog: ElementRef) {
@@ -69,12 +82,14 @@ function joinRows(page: Page, dialog: ElementRef) {
 }
 
 export const openJoinedColumns = When('user opens the columns of the joined {string} table in {element}', async (page: Page, table: string, dialog: ElementRef) => {
-  const tag = (await joinRows(page, dialog)).locator('.grok-join-content .d4-tag > div').filter({hasText: new RegExp(`\\.${table}\\b`)}).last();
+  const tag = (await joinRows(page, dialog)).locator('.grok-join-content .d4-tag > div')
+    .filter({hasText: new RegExp(`\\.${escapeRegExp(table)}\\b`)}).last();
   await tag.click();
 }, {tier: 'ui', description: 'a click on the joined table\'s tag, which opens the "Select columns..." dialog of its columns'});
 
 export const joinedTableReads = Then('the joined {string} table in {element} should read {string}', async (page: Page, table: string, dialog: ElementRef, text: string) => {
-  const tag = (await joinRows(page, dialog)).locator('.grok-join-content .d4-tag > div').filter({hasText: new RegExp(`\\.${table}\\b`)}).last();
+  const tag = (await joinRows(page, dialog)).locator('.grok-join-content .d4-tag > div')
+    .filter({hasText: new RegExp(`\\.${escapeRegExp(table)}\\b`)}).last();
   await expect(tag, `the tag of the joined ${table} table`).toHaveText(text);
 }, {description: 'the tag the Join row shows for the table: "datagrok.public.users_sessions(4/12)" — selected of all columns'});
 
@@ -114,16 +129,6 @@ kind('layout card', {
   description: 'a saved layout in the Layouts section of the toolbox, by its name (the view it was saved from); a click applies it',
 });
 
-/** Layouts saved under a name during the feature are deleted when it ends: the Save of the Layouts
- * section names a layout after the view it was saved from. */
-export const layoutsDeleted = Given('the layouts named {string} are deleted when the feature ends', async (page: Page, name: string) => {
-  atFeatureEnd(page, () => page.evaluate(async (n) => {
-    for (const l of await grok.dapi.layouts.list({pageSize: 5000}))
-      if ([l.friendlyName, l.name].some((x: any) => String(x).toLowerCase() === n.toLowerCase()))
-        await grok.dapi.layouts.delete(l);
-  }, name));
-}, {tier: 'api', description: 'every layout of that name (as the Layouts section shows it) is deleted at feature end'});
-
 export const enrichmentJoins = Then('the enrichment {string} on the server should select the column {string}', async (page: Page, name: string, column: string) => {
   await expect.poll(() => page.evaluate(async ([root, n]) => {
     const files = (await grok.dapi.files.list(root, true)).filter((f: any) => f.name === `${n}.json`);
@@ -131,5 +136,5 @@ export const enrichmentJoins = Then('the enrichment {string} on the server shoul
       return [`${files.length} enrichment files named ${n}.json`];
     return (JSON.parse(await grok.dapi.files.readAsText(files[0].fullPath)).fields ?? []).map((x: string) => String(x));
   }, [ENRICHMENTS, name] as [string, string]), {message: `the fields the enrichment ${name} selects, as saved`})
-    .toEqual(expect.arrayContaining([expect.stringMatching(new RegExp(`(^|\.)${column}$`))]));
+    .toEqual(expect.arrayContaining([expect.stringMatching(new RegExp(`(^|\\.)${escapeRegExp(column)}$`))]));
 }, {tier: 'api', description: 'the saved configuration, read back: what the next application of the enrichment will join'});

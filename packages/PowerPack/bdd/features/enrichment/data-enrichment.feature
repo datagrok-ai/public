@@ -9,8 +9,10 @@ Feature: Column enrichment of a database table
   The events come from two queries run from the Browse tree: a saved SQL query over the events that
   have a session, and the visual query Get Top 100 of the events table. The md writes the SQL query in
   the platform's query editor; here it is saved through the API, and running it is the claim. Every
-  enrichment the feature makes starts with "bdd-enrich-" and is deleted when it ends, with the
-  queries and the project.
+  enrichment the feature makes is named "bdd-enrich-...-{time}" and is deleted when it ends, with the
+  queries, the layout and the project. The queries are named "BDD-enrich-...": the Browse tree lists a
+  connection's queries a page at a time by name, capitals first, and System:Datagrok holds more
+  queries than a page, so a lowercase name would sit behind "Load more".
 
   An enrichment is a saved join configuration (help: access/databases, Data enrichment). Applying it
   joins its columns onto the table in place, a left join; a name the table already has comes in as
@@ -29,13 +31,15 @@ Feature: Column enrichment of a database table
 
   Background:
     Given user is logged in
-    And no enrichment whose name starts with "bdd-enrich-" is on the server
-    And a query "bdd-enrich-events-{time}" on "System:Datagrok" reads "select * from events where session_id is not null order by event_time desc limit 50"
-    And a query "bdd-enrich-calls-{time}" on "System:Datagrok" reads "select * from func_calls where session_id is not null limit 20"
+    And no enrichment named "bdd-enrich-users-{time}, bdd-enrich-sessions-{time}, bdd-enrich-tokens-{time}, bdd-enrich-types-{time}" is on the server
+    And no query named "BDD-enrich-events-{time}, BDD-enrich-calls-{time}" is on the server
+    And a query "BDD-enrich-events-{time}" on "System:Datagrok" reads "select * from events where session_id is not null order by event_time desc limit 50"
+    And a query "BDD-enrich-calls-{time}" on "System:Datagrok" reads "select * from func_calls where session_id is not null limit 20"
     And the context panel is open
 
   Scenario: Both queries over the events run from the Browse tree
     Given the browse panel is open
+    And user refreshes the browse tree
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---Datagrok tree node inside browse tree is expanded
@@ -47,12 +51,12 @@ Feature: Column enrichment of a database table
     And the table should have 100 rows
     And the table should have a column "session_id"
     Given the browse panel is open
-    When user double-clicks on Databases---Postgres---Datagrok---bdd-enrich-events-{time} tree node inside browse tree
-    Then the "bdd-enrich-events-{time}" view should be current
+    When user double-clicks on Databases---Postgres---Datagrok---BDD-enrich-events-{time} tree node inside browse tree
+    Then the "BDD-enrich-events-{time}" view should be current
     And the table should have 50 rows
     And the table should have the columns "id, friendly_name, session_id, event_type_id, event_time, description, error_message, error_stack_trace, exported_by"
     And "session_id" column should have no missing values
-    And the context panel should show "bdd-enrich-events-{time}"
+    And the context panel should show "BDD-enrich-events-{time}"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -80,7 +84,7 @@ Feature: Column enrichment of a database table
     And 1 enrichment named "bdd-enrich-users-{time}" should be on the server
     And no errors should have been logged
     When user closes users_sessions view
-    Then the "bdd-enrich-events-{time}" view should be current
+    Then the "BDD-enrich-events-{time}" view should be current
 
   Scenario: An enrichment of session_id is made in the editor and saved
     When user clicks on the "header session_id" area of grid
@@ -152,12 +156,12 @@ Feature: Column enrichment of a database table
     And no error or warning balloon should have been shown
 
   Scenario: A second enrichment of session_id and one of event_type_id apply together
-    When user closes bdd-enrich-events-{time} view
+    When user closes BDD-enrich-events-{time} view
     Then the "events" view should be current
     Given the browse panel is open
-    When user double-clicks on Databases---Postgres---Datagrok---bdd-enrich-events-{time} tree node inside browse tree
+    When user double-clicks on Databases---Postgres---Datagrok---BDD-enrich-events-{time} tree node inside browse tree
     Then the table should have 9 columns
-    And the context panel should show "bdd-enrich-events-{time}"
+    And the context panel should show "BDD-enrich-events-{time}"
     When user clicks on the "header session_id" area of grid
     Then the context panel should show "session_id"
     Given "Datagrok" accordion header in context panel is expanded
@@ -235,19 +239,22 @@ Feature: Column enrichment of a database table
     And no error or warning balloon should have been shown
 
   Scenario: A layout saved before enriched columns are removed does not bring them back
-    Given the layouts named "bdd-enrich-events-{time}" are deleted when the feature ends
-    When user clicks on bdd-enrich-events-{time} view
-    Then the "bdd-enrich-events-{time}" view should be current
+    Given the layouts named "BDD-enrich-events-{time}" are deleted when the feature ends
+    When user clicks on BDD-enrich-events-{time} view
+    Then the "BDD-enrich-events-{time}" view should be current
     And the table should have a column "token_hash"
     Given the toolbox pane is shown
     And Layouts accordion header in toolbox is expanded
     When user clicks on Save button in layouts pane
-    Then "bdd-enrich-events-{time}" layout card should be visible
+    Then "BDD-enrich-events-{time}" layout card should be visible
+    When user clicks on histogram icon on toolbox
+    Then the open tableview should have 1 histogram viewer
     When user drags the "x scroll handle" area of grid by 1000 pixels to the right
     And user picks "Remove" from the context menu of the "header token_hash" area of grid
     Then the table should not have a column "token_hash"
-    When user clicks on "bdd-enrich-events-{time}" layout card
-    Then the table should not have a column "token_hash"
+    When user clicks on "BDD-enrich-events-{time}" layout card
+    Then the open tableview should have 0 histogram viewers
+    And the table should not have a column "token_hash"
     And the table should have a column "user_id"
     And no errors should have been logged
     And no error or warning balloon should have been shown
@@ -255,7 +262,7 @@ Feature: Column enrichment of a database table
   Scenario: A project with the enriched table reopens with the enrichments that still exist
     Given no project named "bdd-enrich-project-{time}" is on the server
     When user closes events view
-    Then the "bdd-enrich-events-{time}" view should be current
+    Then the "BDD-enrich-events-{time}" view should be current
     When user clicks on Save button in toolbar
     Then "Save project" dialog should be visible
     When user enters "bdd-enrich-project-{time}" into Name text input in "Save project" dialog
@@ -266,7 +273,8 @@ Feature: Column enrichment of a database table
     Given the browse panel is open
     When user refreshes the browse tree
     And user expands "My stuff" tree node inside browse tree
-    And user double-clicks on "My stuff > bdd-enrich-project-{time}" tree node inside browse tree
+    And user expands "My stuff > My dashboards" tree node inside browse tree
+    And user double-clicks on "My stuff > My dashboards > bdd-enrich-project-{time}" tree node inside browse tree
     Then the table should have a column "type"
     And the table should have a column "user_id"
     And the table should not have a column "token_hash"
@@ -276,8 +284,8 @@ Feature: Column enrichment of a database table
 
   Scenario: The func_calls with a session run from the Browse tree
     Given the browse panel is open
-    When user double-clicks on Databases---Postgres---Datagrok---bdd-enrich-calls-{time} tree node inside browse tree
-    Then the "bdd-enrich-calls-{time}" view should be current
+    When user double-clicks on Databases---Postgres---Datagrok---BDD-enrich-calls-{time} tree node inside browse tree
+    Then the "BDD-enrich-calls-{time}" view should be current
     And the table should have 20 rows
     And "session_id" column should have no missing values
 

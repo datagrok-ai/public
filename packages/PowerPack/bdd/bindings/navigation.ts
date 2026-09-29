@@ -8,7 +8,8 @@ declare const grok: any;
 
 async function projectPath(page: Page, name: string): Promise<string> {
   const path = await page.evaluate(async (n) => {
-    const found = (await grok.dapi.projects.list({pageSize: 1000}))
+    const filter = `name = ${JSON.stringify(n)} or friendlyName = ${JSON.stringify(n)}`;
+    const found = (await grok.dapi.projects.filter(filter).list())
       .filter((p: any) => [p.friendlyName, p.name].some((x) => String(x).toLowerCase() === n.toLowerCase()));
     return found.length === 1 ? String(found[0].path) : `${found.length} projects named "${n}"`;
   }, name);

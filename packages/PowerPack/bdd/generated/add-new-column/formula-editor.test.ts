@@ -8,7 +8,6 @@ sub_features_covered: [powerpack.dialogs.add-new-column, GROK-17004]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/enrichment.js';
-import '../../bindings/formula-lines.js';
 import '../../bindings/home.js';
 import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';

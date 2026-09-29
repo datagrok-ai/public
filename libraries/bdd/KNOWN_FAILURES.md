@@ -109,6 +109,13 @@ a balloon for an empty current row, and GROK-20964 was an API check inside a UI 
 | --- | --- | --- |
 | [Converted molecules keep their stereochemistry — GROK-20956](../../packages/Chem/bdd/features/transform/notation.feature) | `every molecule of "canonical_smiles_molblock" column should be the same as in "canonical_smiles" column` | Rows 478, 487 and 488: the molblock conversion inverts the vinyl stereocentre of the quinuclidines. RDKit's own: its SMILES → molblock → SMILES round trip flips the centre in 2024.09 and keeps it in 2026.03 (checked in Python), so the tag goes when Chem's RDKit_minimal (1.2.23) is upgraded. |
 
+## Open since 2026-09-28 (`bdd/powerpack-nx-gaps`)
+
+| Scenario | Stops at | Was |
+| --- | --- | --- |
+| [The rows a molecule used as a filter lets through contain that molecule](../../packages/UsageAnalysis/bdd/features/viewers/nx/nx-chain.feature) | `every row that passes the filter should contain the molecule of the cell picked` | Current Value > Use as filter in a view whose table the first view's Scaffold Tree card also filters puts a Structure card that reports the molecule and "filtering", yet rows without the molecule pass (RDKit substructure match over the passing rows). |
+| [After a layout saved before Chemical Space X was renamed, the calculated column's formula names only existing columns](../../packages/UsageAnalysis/bdd/features/viewers/nx/nx-chain.feature) | `every column the formula of "${Spec} result" column refers to should exist` | A layout saved before a column rename, applied after it, writes the old name back into the `formula` tag of a calculated column; a project saved afterwards warns on reopen that the column is missing. |
+
 ## Validation
 
 Final complete suites on four workers, 2026-09-13:

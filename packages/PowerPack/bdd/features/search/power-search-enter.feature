@@ -12,13 +12,14 @@ Feature: Enter in the Home search box
   PowerPack/power-search-enter.md.
 
   What each query shows on a stand is what the stand holds: the categories claimed are the ones every
-  stand has (functions and help pages). "Project[0-9]+" is not read as a pattern, and "1+1" is not
-  evaluated (a formula is evaluated only with parentheses): both finish with nothing shown at all. Of
-  the suggestions, "PDB ID, e.g. 4AKZ" puts 4AKZ into the box, and the search then shows the PDB entry
-  of 4AKZ (a link to it, found through data.rcsb.org, so the stand needs to reach it); the New Users
-  suggestions carry no value of their own and leave the box as it was, so the suggestion walked
-  through is the PDB one. The md's "dem" brings up no suggestion on a stand; "DG" brings up two, which
-  is what the arrow keys need.
+  stand has (functions and help pages). "1+1" is not evaluated (a formula is evaluated only with
+  parentheses) and finishes with nothing shown at all. "Project[0-9]+" is not read as a pattern: what
+  it shows is what the stand's text search finds for it (its projects named "project"), so only its
+  clean finish is claimed; nor are the suggestions of "a", which the stand's packages bring. The
+  md's "dem" brings up no suggestion on a stand; "DG" brings up two, which is what the arrow keys
+  need. Enter takes the highlighted "DGUSER-{User Login}", which puts its fixed part into the box and
+  searches for it. The "PDB ID, e.g. 4AKZ" suggestion is walked past, not taken: its search asks
+  data.rcsb.org, a service outside the stand.
 
   Not translated: "the search input retains focus or a sensible follow-up view is loaded" — the
   box's focus is not claimed; the view that stays current is the Home page with its results.
@@ -45,10 +46,9 @@ Feature: Enter in the Home search box
       | new   | New Users Today \| New users This Month \| New users This Year \| New users last 3 months \| New user last 7 days \| New users yesterday |
       | user  | DGUSER-{User Login}                                                                                                              |
 
-  Scenario: Enter on "a", with no suggestion shown, finds functions and help pages
+  Scenario: Enter on "a" finds functions and help pages
     When user types "a" into home search
     Then the search should have finished
-    And no search suggestion should be shown
     When user presses Enter in home search
     Then home search should have value "a"
     And the search results should list the categories "Functions, Help"
@@ -66,13 +66,14 @@ Feature: Enter in the Home search box
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Enter on "Project[0-9]+", with no suggestion shown, finds nothing
+  Scenario: Enter on "Project[0-9]+", with no suggestion shown, finishes without an error
     When user types "Project[0-9]+" into home search
     Then the search should have finished
     And no search suggestion should be shown
     When user presses Enter in home search
-    Then home widgets panel should be hidden
-    And the search results should show nothing
+    Then home search should have value "Project[0-9]+"
+    And home widgets panel should be hidden
+    And the search should have finished
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -92,11 +93,9 @@ Feature: Enter in the Home search box
     Then the highlighted search suggestion should be "PDB ID, e.g. 4AKZ"
     When user presses ArrowUp in home search
     Then the highlighted search suggestion should be "DGUSER-{User Login}"
-    When user presses ArrowDown in home search
-    And user presses Enter in home search
-    Then home search should have value "4AKZ"
-    And the page address should contain "search?q=4AKZ"
+    When user presses Enter in home search
+    Then home search should have value "DGUSER-"
+    And the page address should contain "search?q=DGUSER-"
     And the search should have finished
-    And "PDB: 4AKZ" link in home search results should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown

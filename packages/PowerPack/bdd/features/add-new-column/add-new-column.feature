@@ -7,8 +7,7 @@ Feature: Add New Column on demog: the dialog, a formula built by hand, and the i
   reopened dialog fills the form back in with what was run. Translated from TestTrack
   PowerPack/add-new-column.md.
 
-  The Name tooltip reads "Сolumn name." with a Cyrillic "С" (U+0421) in the source string, so the
-  check reads it from its second letter. The tooltips claimed are the ones the dialog binds: the name and type inputs, the preview, a
+  The tooltips claimed are the ones the dialog binds: the name and type inputs, the preview, a
   column of the column list, the sort icon, a function of the functions list, and the history, help
   and close icons. The formula editor itself has none on hover (the dialog defines a text for it and
   never binds it), and neither do the two search boxes and OK/CANCEL.
@@ -33,7 +32,7 @@ Feature: Add New Column on demog: the dialog, a formula built by hand, and the i
     And formula editor should be visible
     And formula hint should contain text "Type '$' to select a column"
     When user hovers over column name input
-    Then tooltip should contain text "olumn name."
+    Then tooltip should contain text "Column name."
     When user hovers over column type input
     Then tooltip should contain text "type is determined based on the expression"
     When user hovers over preview grid viewer

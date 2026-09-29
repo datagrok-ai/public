@@ -315,6 +315,7 @@ test.describe("Expression filter over All Columns", () => {
     await session.step(122, "Then the \"categories of Expression\" reading of filter panel should be \"*  equals 634783\"", () => readingReads(page, "categories of Expression", el("filter panel"), "*  equals 634783"));
     await session.step(123, "And 2 rows should pass the filter", () => filterPasses(page, 2));
     await session.step(124, "And the filter should pass exactly the rows where \"Idea ID\" is \"634783\"", () => filterIsExactlyCategory(page, "Idea ID", "634783"));
+    await session.step(125, "And no errors should have been logged", () => noErrors(page));
   });
   test("\"equals\" with a number keeps the rows that hold it [value=15.05460453, column=Mass, count=1]", {tag: ["@viewers", "@realizes:viewers.filters"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -338,6 +339,7 @@ test.describe("Expression filter over All Columns", () => {
     await session.step(122, "Then the \"categories of Expression\" reading of filter panel should be \"*  equals 15.05460453\"", () => readingReads(page, "categories of Expression", el("filter panel"), "*  equals 15.05460453"));
     await session.step(123, "And 1 rows should pass the filter", () => filterPasses(page, 1));
     await session.step(124, "And the filter should pass exactly the rows where \"Mass\" is \"15.05460453\"", () => filterIsExactlyCategory(page, "Mass", "15.05460453"));
+    await session.step(125, "And no errors should have been logged", () => noErrors(page));
   });
   test("A short decimal with \"=\" keeps the rows that show it [column mode=All Columns, rule=*  = 0.47]", {tag: ["@viewers", "@realizes:viewers.filters"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -354,13 +356,14 @@ test.describe("Expression filter over All Columns", () => {
     await session.step(39, "And user picks \"Add Filter | Expression\" from the filter panel menu", () => pickPanelMenu(page, "Add Filter | Expression"));
     await session.step(40, "Then \"Expression\" filter card should be visible", () => shouldBe(page, el("\"Expression\" filter card"), "visible"));
     await session.step(41, "And all rows should pass the filter", () => filterPassesAll(page));
-    await session.step(132, "When user selects \"All Columns\" in Column input in \"Expression\" filter card", () => selectIn(page, "All Columns", el("Column input in \"Expression\" filter card")));
-    await session.step(133, "And user selects \"=\" in Operation input in \"Expression\" filter card", () => selectIn(page, "=", el("Operation input in \"Expression\" filter card")));
-    await session.step(134, "And user types \"0.47\" into Value input in \"Expression\" filter card", () => typeInto(page, "0.47", el("Value input in \"Expression\" filter card")));
-    await session.step(135, "And user clicks on \"Add filter\" button in \"Expression\" filter card", () => clickOn(page, el("\"Add filter\" button in \"Expression\" filter card")));
-    await session.step(136, "Then the \"categories of Expression\" reading of filter panel should be \"*  = 0.47\"", () => readingReads(page, "categories of Expression", el("filter panel"), "*  = 0.47"));
-    await session.step(137, "And 2 rows should pass the filter", () => filterPasses(page, 2));
-    await session.step(138, "And the filter should pass exactly the rows where \"Score\" is between 0.465 and 0.475", () => filterIsExactly(page, "Score", 0.465, 0.475));
+    await session.step(133, "When user selects \"All Columns\" in Column input in \"Expression\" filter card", () => selectIn(page, "All Columns", el("Column input in \"Expression\" filter card")));
+    await session.step(134, "And user selects \"=\" in Operation input in \"Expression\" filter card", () => selectIn(page, "=", el("Operation input in \"Expression\" filter card")));
+    await session.step(135, "And user types \"0.47\" into Value input in \"Expression\" filter card", () => typeInto(page, "0.47", el("Value input in \"Expression\" filter card")));
+    await session.step(136, "And user clicks on \"Add filter\" button in \"Expression\" filter card", () => clickOn(page, el("\"Add filter\" button in \"Expression\" filter card")));
+    await session.step(137, "Then the \"categories of Expression\" reading of filter panel should be \"*  = 0.47\"", () => readingReads(page, "categories of Expression", el("filter panel"), "*  = 0.47"));
+    await session.step(138, "And 2 rows should pass the filter", () => filterPasses(page, 2));
+    await session.step(139, "And the filter should pass exactly the rows where \"Score\" is between 0.465 and 0.475", () => filterIsExactly(page, "Score", 0.465, 0.475));
+    await session.step(140, "And no errors should have been logged", () => noErrors(page));
   });
   test("A short decimal with \"=\" keeps the rows that show it [column mode=Score, rule=${Score} = 0.47]", {tag: ["@viewers", "@realizes:viewers.filters"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -377,12 +380,13 @@ test.describe("Expression filter over All Columns", () => {
     await session.step(39, "And user picks \"Add Filter | Expression\" from the filter panel menu", () => pickPanelMenu(page, "Add Filter | Expression"));
     await session.step(40, "Then \"Expression\" filter card should be visible", () => shouldBe(page, el("\"Expression\" filter card"), "visible"));
     await session.step(41, "And all rows should pass the filter", () => filterPassesAll(page));
-    await session.step(132, "When user selects \"Score\" in Column input in \"Expression\" filter card", () => selectIn(page, "Score", el("Column input in \"Expression\" filter card")));
-    await session.step(133, "And user selects \"=\" in Operation input in \"Expression\" filter card", () => selectIn(page, "=", el("Operation input in \"Expression\" filter card")));
-    await session.step(134, "And user types \"0.47\" into Value input in \"Expression\" filter card", () => typeInto(page, "0.47", el("Value input in \"Expression\" filter card")));
-    await session.step(135, "And user clicks on \"Add filter\" button in \"Expression\" filter card", () => clickOn(page, el("\"Add filter\" button in \"Expression\" filter card")));
-    await session.step(136, "Then the \"categories of Expression\" reading of filter panel should be \"${Score} = 0.47\"", () => readingReads(page, "categories of Expression", el("filter panel"), "${Score} = 0.47"));
-    await session.step(137, "And 2 rows should pass the filter", () => filterPasses(page, 2));
-    await session.step(138, "And the filter should pass exactly the rows where \"Score\" is between 0.465 and 0.475", () => filterIsExactly(page, "Score", 0.465, 0.475));
+    await session.step(133, "When user selects \"Score\" in Column input in \"Expression\" filter card", () => selectIn(page, "Score", el("Column input in \"Expression\" filter card")));
+    await session.step(134, "And user selects \"=\" in Operation input in \"Expression\" filter card", () => selectIn(page, "=", el("Operation input in \"Expression\" filter card")));
+    await session.step(135, "And user types \"0.47\" into Value input in \"Expression\" filter card", () => typeInto(page, "0.47", el("Value input in \"Expression\" filter card")));
+    await session.step(136, "And user clicks on \"Add filter\" button in \"Expression\" filter card", () => clickOn(page, el("\"Add filter\" button in \"Expression\" filter card")));
+    await session.step(137, "Then the \"categories of Expression\" reading of filter panel should be \"${Score} = 0.47\"", () => readingReads(page, "categories of Expression", el("filter panel"), "${Score} = 0.47"));
+    await session.step(138, "And 2 rows should pass the filter", () => filterPasses(page, 2));
+    await session.step(139, "And the filter should pass exactly the rows where \"Score\" is between 0.465 and 0.475", () => filterIsExactly(page, "Score", 0.465, 0.475));
+    await session.step(140, "And no errors should have been logged", () => noErrors(page));
   });
 });

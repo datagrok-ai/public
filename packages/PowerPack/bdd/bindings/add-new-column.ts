@@ -4,14 +4,12 @@
    FunctionsWidget: one row per function, a plus icon revealed on hover, a sort icon), the preview
    grid, and the input history menu. */
 import {Page} from '@playwright/test';
-import {dataset, element, Given, kind, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, type ElementRef, expect, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {element, Given, kind, Then, When} from '@datagrok-libraries/bdd';
+import {type ElementRef, expect, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {putIntoHomeFolder} from '../helpers/home-folder.js';
 
 declare const DG: any;
 declare const grok: any;
-
-dataset('SPGI', {path: 'System:DemoFiles/chem/SPGI.csv',
-  description: '3624 molecules in "Structure" with the numeric, text and date columns of the SPGI demo (Id, Chemist, Species, Whole blood assay 1, Route Admin, Average Mass)'});
 
 element('formula editor', {selector: '.add-new-column-dialog-root .add-new-column-dialog-cm-div .cm-content',
   description: 'the CodeMirror field of the Add New Column dialog'});
@@ -46,9 +44,6 @@ element('resize corner of Add New Column dialog', {selector: '.add-new-column-di
 
 kind('completion', {selector: '.cm-tooltip-autocomplete li', match: ['text'],
   description: 'an entry of the formula editor\'s autocomplete popup, by its label ("Round", "HEIGHT")'});
-kind('project card', {selector: '.d4-gallery-card.entity-project', match: ['label'],
-  labelSelector: '.grok-gallery-grid-item-title',
-  description: 'a card of the Projects gallery (Browse > Dashboards), by the title it shows'});
 kind('function entry', {selector: '.grok-actions-browser-table tr', match: ['label'],
   labelSelector: '[data-entity-type="Func"] label', parts: {plus: '[name="icon-plus"]', name: '[data-entity-type="Func"]'},
   description: 'a row of the functions list, by the function name; "plus of X function entry" is the icon a hover reveals'});
@@ -233,12 +228,7 @@ export const dragCornerBy = When('user drags {element} by {int} and {int} pixels
   const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
   if (!box)
     throw new Error(`${target.phrase} has no box to drag`);
-  const from = {x: box.x + box.width / 2, y: box.y + box.height / 2};
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  for (let i = 1; i <= 10; i++)
-    await page.mouse.move(from.x + dx * i / 10, from.y + dy * i / 10);
-  await page.mouse.up();
+  await viewers.dragFrom(page, viewers.centerOf(box), {dx, dy});
 }, {tier: 'ui', description: 'a pointer drag of the element right and down by those amounts (negative: left and up)'});
 
 export const sizeAgainstRemembered = Then('{element} should be {word} than remembered', async (page: Page, target: ElementRef, how: string) => {
@@ -418,23 +408,11 @@ export const noTablesOpen = Then('no table should be open', async (page: Page) =
     {message: 'the tables open in the workspace'}).toBe('');
 }, {description: 'the workspace holds no table, so what a reopen shows came from the server'});
 
-export const fileInHome = Given('a copy of the {string} file is in the home folder as {string}', async (page: Page, source: string, name: string) => {
-  const path: string = await page.evaluate(async ([src, n]) => {
-    const project = grok.shell.user.project.name;
-    const home = (await grok.dapi.connections.list()).find((c: any) => c.dataSource === 'Files' && c.nqName === `${project}:Home`);
-    if (!home)
-      throw new Error(`no home folder ${project}:Home on this stand`);
-    const target = `${home.nqName}/${n}`;
-    await grok.dapi.files.write(target, await grok.dapi.files.readAsBytes(src));
-    return target;
-  }, [source, name]);
-  atFeatureEnd(page, async () => {
-    await page.evaluate(async (p) => {
-      if (await grok.dapi.files.exists(p))
-        await grok.dapi.files.delete(p);
-    }, path);
-  });
-}, {tier: 'api', description: 'the file written into the "My files" share of the current user, and deleted when the feature ends'});
+export const fileInHome = Given('a copy of the {string} file is in the home folder as {string}', (page: Page, source: string, name: string) =>
+  putIntoHomeFolder(page, name, (path) => page.evaluate(async ([src, p]) => {
+    await grok.dapi.files.write(p, await grok.dapi.files.readAsBytes(src));
+  }, [source, path])),
+{tier: 'api', description: 'the file written into the "My files" share of the current user, and deleted when the feature ends'});
 
 const COMPLETION_INTERACTION_DELAY_MS = 75;
 

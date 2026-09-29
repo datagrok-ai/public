@@ -6,7 +6,9 @@ Feature: Activity Cliffs over molecules and their activity
   Activity cliffs panel. Show only cliffs keeps the rows that take part in one
   and switching it off lets every row through again. The similarity cutoff decides how many pairs count as
   cliffs: 52 of them at 20, two at the default 80 and one at 95. A fresh table carries each run,
-  since a second run plots itself beside the first.
+  since a second run plots itself beside the first. The command ends once the plot is added; the
+  plot's initialization then finds the cliffs, adds the SALI column and only then reports them, so
+  each count is read after that column is there.
 
   Background:
     Given user is logged in
@@ -27,6 +29,7 @@ Feature: Activity Cliffs over molecules and their activity
     Then a new column matching "^Embed_X_" should have been added
     And a new column matching "^Embed_Y_" should have been added
     And the newest column matching "^Embed_X_" should have no missing values
+    And a new column matching "^sali_" should have been added
     And scatter plot viewer should be visible
     And the "cliffs" reading of scatter plot viewer should be 2
     And the "only cliffs" reading of scatter plot viewer should be "false"
@@ -55,6 +58,7 @@ Feature: Activity Cliffs over molecules and their activity
     Then "Similarity cutoff" input in "Activity Cliffs" dialog should have value "20"
     When user clicks on OK button in "Activity Cliffs" dialog
     Then the top menu command should have completed
+    And a new column matching "^sali_" should have been added
     And the "cliffs" reading of scatter plot viewer should be 52
     And no errors should have been logged
 
@@ -64,5 +68,6 @@ Feature: Activity Cliffs over molecules and their activity
     And user enters "95" into "Similarity cutoff" input in "Activity Cliffs" dialog
     And user clicks on OK button in "Activity Cliffs" dialog
     Then the top menu command should have completed
+    And a new column matching "^sali_" should have been added
     And the "cliffs" reading of scatter plot viewer should be 1
     And no errors should have been logged

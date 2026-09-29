@@ -26,7 +26,9 @@ What the stand needs: PowerPack published from the same checkout, Chem (the SPGI
 Molecule functions), the demo files under `System:DemoFiles/` and a "My files" share for the
 current user; `home/` and `io/xlsx-shared-with-me` also the library's sharing account, `home/` an
 administrator account of its own (created once per stand), `enrichment/` the `System:Datagrok`
-connection.
+connection. `home/` signs in as those other accounts, and they see released packages only, not the
+debug version the running account published: PowerPack (the widget hosts' names) and UsageAnalysis
+(the Usage widget) go out with `grok publish <stand> --release`.
 
 Run from the package's `bdd` directory. PowerPack is a package of the `public/` pnpm workspace, so
 it resolves the library with nothing to link:
@@ -43,4 +45,9 @@ The bindings are the package's own screen parts and checks: `bindings/add-new-co
 Add New Column dialog's editor, hint, column list, functions list, preview and input history; the
 column list's rows found by the grid's own readings; the functions list's order and what its top
 rows take; the highlighted column references and their computed color; relations between calculated
-columns checked row by row; a file put into the user's My files share for the feature.
+columns checked row by row. `formula-lines.ts` — the Formula Lines dialog and what it writes;
+`home.ts` — the Home widgets, their stored settings, Spotlight and the other accounts' sign-in;
+`search.ts` — the Home search and its suggestions; `io.ts` — the workbook's entry paths;
+`navigation.ts` — a project's direct link; `enrichment.ts` — the Enrich pane and its editor.
+`helpers/home-folder.ts` puts a file into the account's My files share for a feature and deletes it
+at the end, with a killed run's file of the same name family.

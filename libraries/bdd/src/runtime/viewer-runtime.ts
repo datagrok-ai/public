@@ -1279,8 +1279,10 @@ function install(): void {
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
-  if (!early)
-    grok.events.onEvent('d4-balloon-shown').subscribe((a: any) => balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+  if (!early) {
+    grok.events.onEvent('d4-balloon-shown').subscribe((a: any) =>
+      balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+  }
 }
 
 /** Runs in every document the page loads after the first install, before the platform's scripts: the
@@ -1290,7 +1292,6 @@ function recordBalloonsFromBoot(): void {
   if (window !== window.top)
     return;
   const w = window as any;
-  w.__bddBalloons = [];
   const giveUp = Date.now() + 180_000;
   const timer = setInterval(() => {
     if (Date.now() > giveUp)
@@ -1299,8 +1300,10 @@ function recordBalloonsFromBoot(): void {
     if (!w.grok?.events?.onEvent || typeof w.grok_OnEvent !== 'function')
       return;
     clearInterval(timer);
+    // set only once subscribed: a shell that booted after this gave up is subscribed by install()
+    const balloons: unknown[] = w.__bddBalloons = [];
     w.grok.events.onEvent('d4-balloon-shown').subscribe((a: any) =>
-      w.__bddBalloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+      balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
   }, 10);
 }
 

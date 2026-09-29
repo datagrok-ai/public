@@ -30,7 +30,7 @@ test.describe("A layout saved before the legend position existed puts every lege
     await session.step(18, "Given user is logged in", () => loggedIn(page));
     await session.step(19, "And simple mode is off", () => simpleModeOff(page));
     await session.step(20, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(21, "And user opens spgi-3624 dataset", () => openDataset(page, ds("spgi-3624")));
+    await session.step(21, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
     await session.step(22, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(23, "When user uploads \"fixtures/nx/spgi-legend-position-old.layout\" through \"Open local file\" icon inside browse toolbar", () => uploadThrough(page, "fixtures/nx/spgi-legend-position-old.layout", el("\"Open local file\" icon inside browse toolbar")));
     await session.step(24, "Then the open tableview should have 1 pie chart viewer", () => viewerCount(page, 1, "pie chart"));

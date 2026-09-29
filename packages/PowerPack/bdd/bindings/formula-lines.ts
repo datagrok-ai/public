@@ -1,13 +1,10 @@
-/* The steps the Formula Lines regressions need beyond the library's `viewers` tier: the full SPGI
-   demo table (its date columns), and a reading of one viewer compared with the same reading of
-   another — the preview inside PowerPack's Formula Lines dialog is a viewer of its own, and the
-   claim is that it shows the axes of the viewer it was opened from. */
+/* The steps the Formula Lines regressions need beyond the library's `viewers` tier: a reading of one
+   viewer compared with the same reading of another — the preview inside PowerPack's Formula Lines
+   dialog is a viewer of its own, and the claim is that it shows the axes of the viewer it was opened
+   from. */
 import {Page} from '@playwright/test';
-import {dataset, Then} from '@datagrok-libraries/bdd';
+import {Then} from '@datagrok-libraries/bdd';
 import {ElementRef, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
-
-dataset('spgi-full', {path: 'System:DemoFiles/chem/SPGI.csv',
-  description: 'the full SPGI demo table: 3624 compounds; Competition assay Date is a datetime column, Average Mass, TPSA and Chemical Space X numeric ones'});
 
 async function expectAcross(page: Page, name: string, a: ElementRef, b: ElementRef, same: boolean): Promise<void> {
   let shown = '';

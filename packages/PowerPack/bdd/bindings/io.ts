@@ -5,7 +5,8 @@ import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {Page} from '@playwright/test';
 import {Given, Then, When, element} from '@datagrok-libraries/bdd';
-import {type ElementRef, atFeatureEnd, el, expect, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, el, expect, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {putIntoHomeFolder} from '../helpers/home-folder.js';
 
 declare const grok: any;
 
@@ -14,26 +15,11 @@ element('file drop overlay', {selector: 'xpath=//div[./*[local-name()="svg"]//*[
 
 const bytesOf = (file: string): string => readFileSync(resolve(process.env.BDD_ROOT ?? process.cwd(), file)).toString('base64');
 
-export const fixtureInHome = Given('the {string} file of the project is in the home folder as {string}', async (page: Page, file: string, name: string) => {
-  const path: string = await page.evaluate(async ([b64, n]) => {
-    const project = grok.shell.user.project.name;
-    const home = async () => (await grok.dapi.connections.list()).find((c: any) => c.dataSource === 'Files' && c.nqName === `${project}:Home`);
-    // an account made before the stand kept personal folders has none until the account is saved again,
-    // which is what creates the folder for a new account
-    if (!await home())
-      await grok.dapi.users.save(await grok.dapi.users.find(grok.shell.user.id));
-    const share = await home();
-    if (!share)
-      throw new Error(`no home folder ${project}:Home on this stand`);
-    const target = `${share.nqName}/${n}`;
-    await grok.dapi.files.write(target, Array.from(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))));
-    return target;
-  }, [bytesOf(file), name] as [string, string]);
-  atFeatureEnd(page, () => page.evaluate(async (p) => {
-    if (await grok.dapi.files.exists(p))
-      await grok.dapi.files.delete(p);
-  }, path));
-}, {tier: 'api', description: 'a file of the bdd project (a path under its root) written into the "My files" share of the current user, and deleted when the feature ends'});
+export const fixtureInHome = Given('the {string} file of the project is in the home folder as {string}', (page: Page, file: string, name: string) =>
+  putIntoHomeFolder(page, name, (path) => page.evaluate(async ([b64, p]) => {
+    await grok.dapi.files.write(p, Array.from(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))));
+  }, [bytesOf(file), path] as [string, string])),
+{tier: 'api', description: 'a file of the bdd project (a path under its root) written into the "My files" share of the current user, and deleted when the feature ends'});
 
 export const fixtureInSpace = Given('the {string} file of the project is in the space {string} as {string}', async (page: Page, file: string, space: string, name: string) => {
   await page.evaluate(async ([b64, s, n]) => {
@@ -100,13 +86,3 @@ export const menuFileChooser = When('user picks {string} from the open menu and 
   await viewers.pickMenuPath(page, path);
   await (await chooser).setFiles(resolve(process.env.BDD_ROOT ?? process.cwd(), file));
 }, {tier: 'ui', description: 'the menu command opens the browser\'s file chooser, which is answered with a file of the bdd project'});
-
-/* The Browse tree rebuilds itself after it is shown (the nodes an account had expanded come back),
-   and a node double-clicked while that happens is replaced under the pointer. Refresh rebuilds it
-   once more and says when it is done (onBrowseTreeRefreshed). */
-export const refreshBrowseTree = When('user refreshes the browse tree', async (page: Page) => {
-  const refreshed = await viewers.armEvent(page, 'onBrowseTreeRefreshed', pollMs(15000));
-  await (await locate(page, el('"Refresh" icon inside browse toolbar'))).first().click();
-  if (!await refreshed())
-    throw new Error('the Browse tree did not report the end of its refresh (onBrowseTreeRefreshed)');
-}, {tier: 'ui', description: 'the Refresh icon of the Browse toolbar; done when the tree reports it has been rebuilt'});

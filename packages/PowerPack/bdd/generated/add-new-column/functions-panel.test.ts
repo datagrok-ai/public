@@ -8,7 +8,6 @@ sub_features_covered: [powerpack.dialogs.add-new-column, GROK-17004]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/enrichment.js';
-import '../../bindings/formula-lines.js';
 import '../../bindings/home.js';
 import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -30,7 +29,7 @@ test.describe("The functions and columns of Add New Column on SPGI: insertion, a
     const run = journey(test, 8, page);
     await session.step(26, "Given user is logged in", () => loggedIn(page));
     await session.step(27, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(28, "And user opens SPGI dataset", () => openDataset(page, ds("SPGI")));
+    await session.step(28, "And user opens spgi dataset", () => openDataset(page, ds("spgi")));
     await session.step(29, "When user clicks on \"Add New Column...\" icon", () => clickOn(page, el("\"Add New Column...\" icon")));
     await session.step(30, "Then \"Add New Column\" dialog should be visible", () => shouldBe(page, el("\"Add New Column\" dialog"), "visible"));
     await session.step(31, "And functions list should be visible", () => shouldBe(page, el("functions list"), "visible"));

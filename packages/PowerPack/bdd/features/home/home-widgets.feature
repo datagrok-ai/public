@@ -12,17 +12,18 @@ Feature: The widgets of the Home page
   reload starts from, and every scenario that hides a widget brings it back through the Customize form;
   the settings the account had come back when the feature ends in any case.
 
-  The tip at the bottom of Spotlight changes with the weekday — a demo on Monday and Friday, a
-  tutorial on Wednesday, a plain tip on Tuesday and Thursday — so what the tip is claimed to open
-  depends on the day the feature runs. The Community widget's links are checked by their addresses:
-  the community site is not opened.
+  The tip at the bottom of Spotlight changes with the weekday — a demo on Monday, Friday and the
+  weekend, a tutorial on Wednesday, a plain tip on Tuesday and Thursday — so what the tip is claimed to
+  do depends on the day the feature runs; a demo is not opened, since the day's may start a container.
+  The Community widget shows what the community site answers, an outside service: its title is
+  claimed, not its content.
 
   What a Spotlight tab lists is the account's own history (pins, favorites, activity): each tab is
   claimed to show its own page, not particular items: the Spotlight page shows the account's recent
   items, or, for an account with none, interactive tutorials and demo apps to start with. The
   Workspace hint of the md ("Select a pinned item...") shows only when something is pinned. The
-  System block of Usage lists the services by name (Health Scheduler, Garbage Collector, Credentials
-  Server, Core, Jupyter, Grok Spawner, Grok Connect), not as links, and no Datlas entry.
+  System block of Usage lists the services the stand reports (Jupyter, Grok Spawner and Grok Connect
+  on dev, none on a local stand), so the block is claimed, not its services.
 
   Not translated: the tooltip "Remove" of the close icon (the icon carries it as its aria label, which
   is how the scenario finds it); "the widget scrolls through recent reports" (the Reports list is
@@ -176,17 +177,10 @@ Feature: The widgets of the Home page
     Then the tip of the day of Spotlight home widget should open what it names
     And no errors should have been logged
 
-  Scenario: Community lists links to the community site
-    Then every link of Community home widget should point to "https://community.datagrok.ai/"
-    And Community home widget should contain text "Platform Releases"
-
   Scenario: Usage shows its user and error charts and the state of the services
     Then Usage home widget should contain text "Users"
     And Usage home widget should contain text "Errors"
     And Usage home widget should contain text "System"
-    And Usage home widget should contain text "Jupyter"
-    And Usage home widget should contain text "Grok Spawner"
-    And Usage home widget should contain text "Grok Connect"
     And there should be 2 visible line chart viewer in Usage home widget
     And the "lines" reading of first line chart viewer in Usage home widget should be 1
     And the "rows shown" reading of first line chart viewer in Usage home widget should be at least 1
@@ -195,18 +189,13 @@ Feature: The widgets of the Home page
     And "Open Usage Analysis" link in Usage home widget should be visible
     And no errors should have been logged
 
-  Scenario: Open Usage Analysis in the Usage widget opens the app's Overview view, with nothing logged
+  Scenario: Open Usage Analysis in the Usage widget opens the app's Overview view in front, with nothing logged
     When user clicks on "Open Usage Analysis" link in Usage home widget
-    Then the "Overview" view should be open
-    And the "Home" view should be current
+    Then the "Overview" view should be current
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  # The click, bubbling up to the Home view's root, makes Home current again: the Reports widget
-  # stops that propagation, the Usage widget does not.
-  @known-failure
-  Scenario: The Overview view Open Usage Analysis opened is brought to the front
-    Then the "Overview" view should be current
+    When user switches to the "Home" view
+    Then the "Home" view should be current
 
   Scenario: Reports lists recent reports and opens the reports view
     Then "Open Reports" link in Reports home widget should be visible

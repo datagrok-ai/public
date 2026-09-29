@@ -109,8 +109,8 @@ Feature: A chain of calculated columns recalculates on a formula edit and surviv
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "bdd-anc-chain-{run}" into gallery search
-    Then "bdd-anc-chain-{run}" project card should become visible within 60 seconds
-    When user double-clicks on "bdd-anc-chain-{run}" project card
+    Then "bdd-anc-chain-{run}" gallery card should become visible within 60 seconds
+    When user double-clicks on "bdd-anc-chain-{run}" gallery card
     Then the "demog" view should be current
     And the table should have 5850 rows
     # Data sync reads the file again: the edited cell holds what the file holds, and the chain follows it

@@ -3,7 +3,8 @@ Feature: An Excel workbook opens from Shared with me
   The fifth entry path of TestTrack PowerPack/xlsx-open.md: a workbook someone else shared, opened
   from My stuff > Shared with me. A single file has no Share command, so the running account puts
   the project's workbook (fixtures/xlsx-open-test.xlsx: Customers, Orders, Products) into a space of
-  its own and shares the space with the second account of the stand through the Share dialog. The
+  its own and shares the space with the second account of the stand through the Share dialog, with
+  "Send notifications" off: nothing here claims the notification, and it would stay unread there. The
   second account signs in on the same page, finds the space under the name of the account that
   shared it, opens the workbook from it and gets the same three table views as every other path;
   the running account signs back in at the end, and the space is deleted.
@@ -23,6 +24,7 @@ Feature: An Excel workbook opens from Shared with me
     And Spaces tree node inside browse tree is expanded
     When user picks "Share..." from the context menu of "Spaces > bdd-xlsx-{time}" tree node inside browse tree
     And user picks the sharing user in "User, group, or email" input in "Share bdd-xlsx-{time}" dialog
+    And user unchecks "Send notifications" checkbox in "Share bdd-xlsx-{time}" dialog
     And user clicks on OK button in "Share bdd-xlsx-{time}" dialog
     Then the "Share bdd-xlsx-{time}" dialog should close
     And no error or warning balloon should have been shown

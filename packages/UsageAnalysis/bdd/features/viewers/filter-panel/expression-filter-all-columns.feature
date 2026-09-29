@@ -122,6 +122,7 @@ Feature: Expression filter over All Columns
     Then the "categories of Expression" reading of filter panel should be "*  equals <value>"
     And <count> rows should pass the filter
     And the filter should pass exactly the rows where "<column>" is "<value>"
+    And no errors should have been logged
 
     Examples:
       | value       | column  | count |
@@ -136,6 +137,7 @@ Feature: Expression filter over All Columns
     Then the "categories of Expression" reading of filter panel should be "<rule>"
     And 2 rows should pass the filter
     And the filter should pass exactly the rows where "Score" is between 0.465 and 0.475
+    And no errors should have been logged
 
     Examples:
       | column mode | rule            |

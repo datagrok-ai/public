@@ -9,17 +9,16 @@ sub_features_covered: [powerpack.import.xlsx]
 import {test} from '@playwright/test';
 import '../../bindings/add-new-column.js';
 import '../../bindings/enrichment.js';
-import '../../bindings/formula-lines.js';
 import '../../bindings/home.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {cellOfTable, columnTypeOfTable, dropFile, fixtureInHome, menuFileChooser, noTableViewOpen, refreshBrowseTree, tableViewsOpen} from '../../bindings/io.js';
+import {cellOfTable, columnTypeOfTable, dropFile, fixtureInHome, menuFileChooser, noTableViewOpen, tableViewsOpen} from '../../bindings/io.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, isExpanded, uploadThrough} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {tableColumns, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, refreshBrowse, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -31,7 +30,7 @@ test.describe("An Excel workbook opens from every entry path", () => {
     await session.step(30, "Given no table view is open", () => noTableViewOpen(page));
     await session.step(31, "And the \"fixtures/xlsx-open-test.xlsx\" file of the project is in the home folder as \"xlsx-open-{time}.xlsx\"", () => fixtureInHome(page, "fixtures/xlsx-open-test.xlsx", session.text("xlsx-open-{time}.xlsx")));
     await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(33, "And user refreshes the browse tree", () => refreshBrowseTree(page));
+    await session.step(33, "And user refreshes the browse tree", () => refreshBrowse(page));
     await session.step(34, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
     await session.step(35, "And Files---My-files tree node inside browse tree is expanded", () => isExpanded(page, el("Files---My-files tree node inside browse tree")));
     await session.step(36, "When user double-clicks on Files---My-files---xlsx-open-{time}.xlsx tree node inside browse tree", () => doubleClickOn(page, el(session.text("Files---My-files---xlsx-open-{time}.xlsx tree node inside browse tree"))));

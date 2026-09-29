@@ -34,8 +34,10 @@ Feature: The Home page of a user who is neither a developer nor an administrator
     And no project named "bdd-home-shared-{time}" is on the server
     And user saves the current view as project "bdd-home-shared-{time}"
     And the browse panel is open
+    And user refreshes the browse tree
     And "My stuff" tree node inside browse tree is expanded
-    When user picks "Share..." from the context menu of "My stuff > bdd-home-shared-{time}" tree node inside browse tree
+    And "My stuff > My dashboards" tree node inside browse tree is expanded
+    When user picks "Share..." from the context menu of "My stuff > My dashboards > bdd-home-shared-{time}" tree node inside browse tree
     And user picks the sharing user in "User, group, or email" input in "Share bdd-home-shared-{time}" dialog
     Then "Send notifications" input in "Share bdd-home-shared-{time}" dialog should be checked
     When user clicks on OK button in "Share bdd-home-shared-{time}" dialog

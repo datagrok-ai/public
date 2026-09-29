@@ -9,7 +9,6 @@ sub_features_covered: [viewers.line-chart, viewers.density-plot]
 import {test} from '@playwright/test';
 import '../../bindings/add-new-column.js';
 import '../../bindings/enrichment.js';
-import '../../bindings/formula-lines.js';
 import '../../bindings/home.js';
 import '../../bindings/io.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';

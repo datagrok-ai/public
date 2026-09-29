@@ -17,6 +17,7 @@ Feature: Calculated columns over a file in My files follow a rename and an edit,
     And no project named "bdd-anc-home-{run}" is on the server
     And a copy of the "System:DemoFiles/demog.csv" file is in the home folder as "bdd-anc-{run}.csv"
     And the browse panel is open
+    And user refreshes the browse tree
     And Files tree node inside browse tree is expanded
     And Files---My-files tree node inside browse tree is expanded
     When user double-clicks on Files---My-files---bdd-anc-{run}.csv tree node inside browse tree
@@ -68,8 +69,8 @@ Feature: Calculated columns over a file in My files follow a rename and an edit,
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "bdd-anc-home-{run}" into gallery search
-    Then "bdd-anc-home-{run}" project card should become visible within 60 seconds
-    When user double-clicks on "bdd-anc-home-{run}" project card
+    Then "bdd-anc-home-{run}" gallery card should become visible within 60 seconds
+    When user double-clicks on "bdd-anc-home-{run}" gallery card
     Then the "bdd-anc-{run}" view should be current
     And the table should have 5850 rows
     And the table should have a column "Weight2"

@@ -77,8 +77,8 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "bdd-anc-all-{run}" into gallery search
-    Then "bdd-anc-all-{run}" project card should become visible within 60 seconds
-    When user double-clicks on "bdd-anc-all-{run}" project card
+    Then "bdd-anc-all-{run}" gallery card should become visible within 60 seconds
+    When user double-clicks on "bdd-anc-all-{run}" gallery card
     Then the "products" view should be current
     And the table should have 77 rows
     And the table should have a column "BasePrice"
@@ -155,8 +155,8 @@ Feature: Calculated columns over a Northwind query result follow a rename and an
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "bdd-anc-top-{run}" into gallery search
-    Then "bdd-anc-top-{run}" project card should become visible within 60 seconds
-    When user double-clicks on "bdd-anc-top-{run}" project card
+    Then "bdd-anc-top-{run}" gallery card should become visible within 60 seconds
+    When user double-clicks on "bdd-anc-top-{run}" gallery card
     Then the "products" view should be current
     And the table should have 77 rows
     And the table should have a column "BasePrice"
