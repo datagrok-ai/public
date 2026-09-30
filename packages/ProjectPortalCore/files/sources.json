@@ -1,0 +1,14 @@
+[
+  {
+    "system": "example-sm-registry",
+    "connection": "System:Datagrok",
+    "description": "Every project in the example small-molecule registry",
+    "sql": "WITH reg(code, status, target, therapeutic_area) AS (VALUES\n    ('EXS-KIN1', 'ACTIVE', 'Kinase K1', 'Oncology'),\n    ('EXS-PRO2', 'ACTIVE', 'Protease P2', 'Immunology'),\n    ('EXS-GPC3', 'ACTIVE', 'GPCR G3', 'Neuroscience'),\n    ('EXS-ION4', 'INACTIVE', 'Ion channel C4', 'Neuroscience'),\n    ('EXS-EPI5', 'ACTIVE', 'Bromodomain B5', 'Oncology'))\nSELECT code FROM reg"
+  },
+  {
+    "system": "example-bio-registry",
+    "connection": "System:Datagrok",
+    "description": "Every project in the example biologics registry, whatever its type or modality",
+    "sql": "WITH reg(code, name, project_type, modality, status, gate, target) AS (VALUES\n    ('EXB-101', 'Anti-IL-X antibody', 'Research', 'mAb', 'Active', '3', 'IL-X'),\n    ('EXB-102', 'T-cell engager', 'Research', 'Bispecific', 'Active', NULL, 'CD3 x TAA-1'),\n    ('EXB-103', 'Receptor trap', 'Research', 'Fusion protein', 'On Hold', NULL, 'RTK-2'),\n    ('EXB-104', 'Anti-TS antibody', 'Research', 'mAb', 'Nominated', NULL, 'TS-4'),\n    ('EXB-105', 'Anti-OX antibody', 'Research', 'mAb', 'Active', NULL, 'OX-5'),\n    ('EXB-104', 'Anti-TS antibody', 'Development', 'mAb', 'Active', 'Gate D1', 'TS-4'),\n    ('EXB-105', 'Anti-OX antibody', 'Development', 'mAb', 'Active', 'D1', 'OX-5'),\n    ('EXB-201', 'Antibody Alpha', 'Development', 'mAb', 'Active', 'GD4', 'ALP-1'),\n    ('EXB-202', 'Bispecific Beta', 'Development', 'Bispecific', 'Active', 'D2', 'BET-2'),\n    ('EXB-203', 'Conjugate Gamma', 'Development', 'ADC', 'On Hold', 'D5', 'GAM-3'),\n    ('EXB-204', 'Antibody Delta', 'Commercial', 'mAb', 'Active', 'D7', 'DEL-4'),\n    ('EXB-205', 'Fusion Epsilon', 'Development', 'Fusion protein', 'Active', 'Gate 9z', 'EPS-5'),\n    ('EXB-301', 'Small molecule Zeta', 'Development', 'Small Molecule', 'Active', 'D3', 'ZET-6'),\n    ('EXB-302', 'Unclassified Eta', NULL, NULL, 'Active', NULL, NULL))\nSELECT DISTINCT code FROM reg"
+  }
+]

@@ -1,0 +1,152 @@
+{
+  "code": "EX-BIOC",
+  "name": "Example Biologics Development",
+  "setting": "development",
+  "modalityClass": "biologic",
+  "stageAuthority": "feed",
+  "programNoun": "Project",
+  "workspaceRoot": "Example Biologics Development",
+  "description": "Example portfolio on synthetic data. The registry owns the stage; the portal mirrors it and records every change it observes as a sync transition.",
+  "groups": {
+    "viewers": "Portal EX-BIOC Viewers",
+    "contributors": "Portal EX-BIOC Contributors",
+    "approvers": "Portal EX-BIOC Approvers"
+  },
+  "stageModel": {
+    "code": "EX-BIOC-V1",
+    "name": "Example Biologics Development",
+    "version": "1.0",
+    "setting": "development",
+    "description": "Seven development gates in three phases. Invented for the example.",
+    "stages": [
+      {
+        "code": "D1",
+        "name": "Candidate Acceptance",
+        "ordinal": 1,
+        "phase": "Early development",
+        "governance": "Development Review Board",
+        "aliases": [
+          "Gate D1",
+          "GD1"
+        ],
+        "criteria": [
+          {
+            "code": "transfer_package",
+            "name": "Discovery transfer package",
+            "kind": "document"
+          }
+        ]
+      },
+      {
+        "code": "D2",
+        "name": "Clinical Supply Readiness",
+        "ordinal": 2,
+        "phase": "Early development",
+        "governance": "Program Team",
+        "aliases": [
+          "Gate D2",
+          "GD2"
+        ]
+      },
+      {
+        "code": "D3",
+        "name": "First-in-Human Readiness",
+        "ordinal": 3,
+        "phase": "Early development",
+        "governance": "Development Review Board",
+        "aliases": [
+          "Gate D3",
+          "GD3"
+        ],
+        "criteria": [
+          {
+            "code": "tox_lot",
+            "name": "Toxicology lot released",
+            "kind": "data_condition",
+            "rule": "count(released tox lots) >= 1"
+          },
+          {
+            "code": "ind_quality",
+            "name": "Quality section of the IND drafted",
+            "kind": "document"
+          }
+        ]
+      },
+      {
+        "code": "D4",
+        "name": "Late-Phase Plan",
+        "ordinal": 4,
+        "phase": "Late development",
+        "governance": "Program Team",
+        "aliases": [
+          "Gate D4",
+          "GD4"
+        ]
+      },
+      {
+        "code": "D5",
+        "name": "Process Lock",
+        "ordinal": 5,
+        "phase": "Late development",
+        "governance": "Development Review Board",
+        "aliases": [
+          "Gate D5",
+          "GD5"
+        ],
+        "criteria": [
+          {
+            "code": "process_description",
+            "name": "Locked process description",
+            "kind": "document"
+          }
+        ]
+      },
+      {
+        "code": "D6",
+        "name": "Pivotal Supply Readiness",
+        "ordinal": 6,
+        "phase": "Late development",
+        "governance": "Program Team",
+        "aliases": [
+          "Gate D6",
+          "GD6"
+        ]
+      },
+      {
+        "code": "D7",
+        "name": "Filing and Launch Readiness",
+        "ordinal": 7,
+        "phase": "Registration",
+        "governance": "Development Review Board",
+        "aliases": [
+          "Gate D7",
+          "GD7"
+        ],
+        "criteria": [
+          {
+            "code": "filing_decision",
+            "name": "Filing decision",
+            "kind": "decision"
+          }
+        ]
+      }
+    ]
+  },
+  "feeds": [
+    {
+      "code": "example-bio-development",
+      "system": "example-bio-registry",
+      "connection": "System:Datagrok",
+      "sql": "WITH reg(code, name, project_type, modality, status, gate, target) AS (VALUES\n    ('EXB-101', 'Anti-IL-X antibody', 'Research', 'mAb', 'Active', '3', 'IL-X'),\n    ('EXB-102', 'T-cell engager', 'Research', 'Bispecific', 'Active', NULL, 'CD3 x TAA-1'),\n    ('EXB-103', 'Receptor trap', 'Research', 'Fusion protein', 'On Hold', NULL, 'RTK-2'),\n    ('EXB-104', 'Anti-TS antibody', 'Research', 'mAb', 'Nominated', NULL, 'TS-4'),\n    ('EXB-105', 'Anti-OX antibody', 'Research', 'mAb', 'Active', NULL, 'OX-5'),\n    ('EXB-104', 'Anti-TS antibody', 'Development', 'mAb', 'Active', 'Gate D1', 'TS-4'),\n    ('EXB-105', 'Anti-OX antibody', 'Development', 'mAb', 'Active', 'D1', 'OX-5'),\n    ('EXB-201', 'Antibody Alpha', 'Development', 'mAb', 'Active', 'GD4', 'ALP-1'),\n    ('EXB-202', 'Bispecific Beta', 'Development', 'Bispecific', 'Active', 'D2', 'BET-2'),\n    ('EXB-203', 'Conjugate Gamma', 'Development', 'ADC', 'On Hold', 'D5', 'GAM-3'),\n    ('EXB-204', 'Antibody Delta', 'Commercial', 'mAb', 'Active', 'D7', 'DEL-4'),\n    ('EXB-205', 'Fusion Epsilon', 'Development', 'Fusion protein', 'Active', 'Gate 9z', 'EPS-5'),\n    ('EXB-301', 'Small molecule Zeta', 'Development', 'Small Molecule', 'Active', 'D3', 'ZET-6'),\n    ('EXB-302', 'Unclassified Eta', NULL, NULL, 'Active', NULL, NULL))\nSELECT code, name, status, modality, gate AS stage, target FROM reg\nWHERE project_type IN ('Development', 'Commercial') AND modality IS NOT NULL AND modality <> 'Small Molecule'",
+      "mapping": {
+        "status": {
+          "Active": "active",
+          "Nominated": "transitioned",
+          "On Hold": "on_hold",
+          "Completed": "completed",
+          "Terminated": "terminated"
+        }
+      }
+    }
+  ]
+}

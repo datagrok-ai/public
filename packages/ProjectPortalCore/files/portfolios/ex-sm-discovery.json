@@ -1,0 +1,131 @@
+{
+  "code": "EX-SMD",
+  "name": "Example Small Molecule Discovery",
+  "setting": "discovery",
+  "modalityClass": "small_molecule",
+  "stageAuthority": "portal",
+  "programNoun": "Project",
+  "workspaceRoot": "Example Small Molecule Discovery",
+  "description": "Example portfolio on synthetic data. Its registry has no stage, so gate decisions are made and recorded in the portal.",
+  "groups": {
+    "viewers": "Portal EX-SMD Viewers",
+    "contributors": "Portal EX-SMD Contributors",
+    "approvers": "Portal EX-SMD Approvers"
+  },
+  "stageModel": {
+    "code": "EX-SMD-V1",
+    "name": "Example Small Molecule Discovery",
+    "version": "1.0",
+    "setting": "discovery",
+    "description": "Target validation through preclinical candidate. Criteria are mostly data conditions on the lead set.",
+    "stages": [
+      {
+        "code": "TV",
+        "name": "Target Validation",
+        "ordinal": 1,
+        "phase": "Exploratory",
+        "isGate": false
+      },
+      {
+        "code": "HF",
+        "name": "Hit Finding",
+        "ordinal": 2,
+        "phase": "Exploratory",
+        "criteria": [
+          {
+            "code": "assay_ready",
+            "name": "Primary assay validated (Z' ≥ 0.5)",
+            "kind": "data_condition",
+            "rule": "assay.z_prime >= 0.5"
+          }
+        ]
+      },
+      {
+        "code": "H2L",
+        "name": "Hit-to-Lead",
+        "ordinal": 3,
+        "phase": "Lead generation",
+        "aliases": [
+          "Hit to Lead"
+        ],
+        "criteria": [
+          {
+            "code": "validated_series",
+            "name": "≥1 validated series with SAR",
+            "kind": "data_condition",
+            "rule": "count(series where maturity >= validated) >= 1"
+          },
+          {
+            "code": "potency",
+            "name": "Potency < 1 µM on ≥1 compound",
+            "kind": "data_condition",
+            "rule": "min(IC50) < 1 uM"
+          }
+        ]
+      },
+      {
+        "code": "LO",
+        "name": "Lead Optimization",
+        "ordinal": 4,
+        "phase": "Lead generation",
+        "aliases": [
+          "Lead Opt"
+        ],
+        "criteria": [
+          {
+            "code": "adme_panel",
+            "name": "ADME panel on ≥10 lead-series compounds",
+            "kind": "data_condition",
+            "rule": "count(lead series with solubility, permeability, clearance) >= 10"
+          }
+        ]
+      },
+      {
+        "code": "CS",
+        "name": "Candidate Selection",
+        "ordinal": 5,
+        "phase": "Candidate",
+        "criteria": [
+          {
+            "code": "candidate_profile",
+            "name": "Candidate profile document",
+            "kind": "document"
+          },
+          {
+            "code": "nominate",
+            "name": "Nomination decision",
+            "kind": "decision"
+          }
+        ]
+      },
+      {
+        "code": "PCD",
+        "name": "Preclinical Candidate",
+        "ordinal": 6,
+        "phase": "Candidate",
+        "isTerminal": true,
+        "criteria": [
+          {
+            "code": "dc_decision",
+            "name": "Development candidate decision",
+            "kind": "decision"
+          }
+        ]
+      }
+    ]
+  },
+  "feeds": [
+    {
+      "code": "example-sm-projects",
+      "system": "example-sm-registry",
+      "connection": "System:Datagrok",
+      "sql": "WITH reg(code, status, target, therapeutic_area) AS (VALUES\n    ('EXS-KIN1', 'ACTIVE', 'Kinase K1', 'Oncology'),\n    ('EXS-PRO2', 'ACTIVE', 'Protease P2', 'Immunology'),\n    ('EXS-GPC3', 'ACTIVE', 'GPCR G3', 'Neuroscience'),\n    ('EXS-ION4', 'INACTIVE', 'Ion channel C4', 'Neuroscience'),\n    ('EXS-EPI5', 'ACTIVE', 'Bromodomain B5', 'Oncology'))\nSELECT code, code AS name, status, 'Small Molecule' AS modality, target, therapeutic_area FROM reg",
+      "mapping": {
+        "status": {
+          "ACTIVE": "active",
+          "INACTIVE": "terminated"
+        }
+      }
+    }
+  ]
+}
