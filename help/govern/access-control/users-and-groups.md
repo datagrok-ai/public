@@ -107,7 +107,10 @@ as idempotent shell commands that talk to the platform's public REST API.
 
 ## Groups
 
-A _group_ is a named collection of users that share permissions. To view 
+A _group_ is a named collection of users that share permissions. A
+[role](roles.md) is a special kind of group that carries capabilities rather
+than organizational structure; everything below about membership and nesting
+applies to roles too. To view 
 or manage groups, open the [Groups View](https://public.datagrok.ai/groups?) (**Sidebar > Browse (<FAIcon
 icon="fa-solid fa-compass"/>) > Platform > Groups**).
 
@@ -156,13 +159,13 @@ Regardless of group membership, any user can do the following actions with respe
 
 ### Group types
 
-Datagrok automatically creates several key groups upon deployment, each designed
-with specific roles and permissions:
+Datagrok automatically creates several key groups and one built-in
+[role](roles.md) upon deployment:
 
 * **All users**: This group includes all users and groups and initially comes
   with a basic set of [permissions](access-control.md#permissions).
-* **Administrators**:
-  * During the deployment process, the Administrators group is created and
+* **Administrators** (a role):
+  * During the deployment process, the Administrators role is created and
        granted all available permissions, ensuring complete control over the
        platform.
   * An 'admin' user and password is provided in the deployment script.
@@ -172,16 +175,18 @@ with specific roles and permissions:
      
        :::danger
        
-       Exercise caution when modifying the Administrators group. Modifying
-       or deleting this group without a functional replacement may result in a
+       Exercise caution when modifying the Administrators role. Modifying
+       or deleting this role without a functional replacement may result in a
        loss of all administrative capabilities on the platform.
        
        :::
 
 * **Developers**: Initially created as a child group under Administrators,
-  this group inherits the permissions from its parent group.
+  this group inherits the permissions from its parent.
 
-Members of the Administrators group have global permissions, accessible via **Top Menu > Admin > Global Permissions...** 
+Members of the Administrators role have all global permissions, accessible via **Top Menu > Admin > Global Permissions...**
+Global permissions can be granted to any role, group, or user; we recommend
+granting them to [roles](roles.md) and using groups for sharing.
 
 The following operations require global permissions:
     * Creating a new user - `CreateUser`

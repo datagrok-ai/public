@@ -69,7 +69,7 @@ password, they can reset it using the link on the login form, or a Datagrok Admi
 
 ## Authorization 
 
-_Authorization_ in Datagrok is based on [Role-Based Access Control (RBAC)](https://en.wikipedia.org/wiki/Role-based_access_control) and determines whether a specified user can execute a specified operation against a specified [entity](../../datagrok/concepts/objects.md). This is achieved by defining [user groups](users-and-groups.md#groups) and associating them with [permissions](#permissions) for different entities.
+_Authorization_ in Datagrok is based on [Role-Based Access Control (RBAC)](https://en.wikipedia.org/wiki/Role-based_access_control) and determines whether a specified user can execute a specified operation against a specified [entity](../../datagrok/concepts/objects.md). This is achieved by defining [user groups](users-and-groups.md#groups) and [roles](roles.md) and associating them with [permissions](#permissions) for different entities.
 
 ![Role-based model](../../uploads/security/role-based-model.png "Role-based model")
 
@@ -112,14 +112,20 @@ All permissions are grouped in two categories:
 * **View and use**: Includes only the **View** permission and all entity-specific use permissions
 * **Full access**: Includes all permissions
 
-Entity permissions are granted to [groups](users-and-groups.md#groups) rather
-than individual users, which simplifies security administration. For
-convenience, Datagrok automatically creates a "personal group" for every user in
-the system, named after the user.
+Entity permissions are granted to [groups](users-and-groups.md#groups) and
+[roles](roles.md) rather than individual users, which simplifies security
+administration. For convenience, Datagrok automatically creates a "personal
+group" for every user in the system, named after the user. Avoid sharing with
+personal groups: that access is lost when the person changes role.
 
-Permission sets assigned to a group are inherited by all members of the group.
-Groups can be nested, allowing members of a child group to inherit permissions
-set for a parent group. However, circular membership is forbidden.
+Permission sets assigned to a group or role are inherited by all its members.
+Groups and roles can be nested, allowing members of a child to inherit
+permissions set for a parent. However, circular membership is forbidden.
+
+Permissions are additive: a user's effective permissions are the union of
+everything granted to every group and role they belong to, directly or through
+a parent. There is no deny permission, so one group can't take away what
+another grants.
 
 :::note
 
@@ -131,7 +137,8 @@ To fully control access to external data sources (like [file shares](../../acces
 
 ### Global Permissions
 
-Global permissions define system-wide capabilities in Datagrok. They can be assigned to roles, users or groups. 
+Global permissions define system-wide capabilities in Datagrok. They can be assigned to roles, users or groups; we recommend
+assigning them to [roles](roles.md), and using groups for sharing. 
 These permissions control what users can create, administer, or view across the entire platform.
 
 Permission for admin actions:

@@ -345,6 +345,19 @@ practices serve as version control:
 * **Prefer copies over edits when you don't own the dashboard.** Recipients
   with the **View and use** privilege can always save a copy and continue
   working without touching the original.
+* **Keep canonical dashboards in git.** For dashboards that many people depend
+  on, pull the dashboard as a bundle with the
+  [`grok s` CLI](../../../develop/server-management.md), a directory of JSON
+  with its views, layouts, and tables, and commit it to a repository. Git then
+  gives you history, review, and rollback, and pushing the bundle restores a
+  previous version. For example:
+
+  ```bash
+  grok s pull Chem:TargetDashboard --out ./dashboards --host prod
+  git add dashboards && git commit -m "Target dashboard: new layout"
+  ```
+
+  See the [`pull` and `push` reference](https://github.com/datagrok-ai/public/blob/master/tools/GROK_S.md#migrating-entities-between-instances-pull--push--migrate).
 
 ## Retiring
 

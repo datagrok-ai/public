@@ -139,8 +139,15 @@ grok s healthcheck --module scripting          # filter to one module
 grok s healthcheck --output json               # machine-readable
 ```
 
-Hits `GET /public/v1/healthcheck`. For an anonymous liveness probe (load
-balancer, Kubernetes readiness), use `/admin/health` directly.
+Hits `GET /public/v1/healthcheck`, which reports an overall `status` (`ok` or
+`degraded`), the server version, and each service's status. It always returns
+HTTP 200, so automation should read `status` from the body. This endpoint
+isn't available on servers running 1.27.x or earlier.
+
+For an anonymous liveness probe (load balancer, Kubernetes readiness), use
+`/admin/health` directly. It needs no login and returns a list of services,
+each with its `status` (`Running`, `Failed`, or `Stopped`), `error`, and
+`started` time. Add `?module=<name>` to check a single service.
 
 ### Raw API access
 

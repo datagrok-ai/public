@@ -109,6 +109,13 @@ By default, scheduled functions run with "All users" permissions. Use `schedule.
 - You must be a member of the specified group or role to use `schedule.runAs`
 - Only applies to server-based functions (scripts and queries)
 
+### When a scheduled run fails
+
+Each scheduled run is recorded, and a failed run is recorded with its error.
+Datagrok doesn't notify anyone when a scheduled run fails. If a schedule matters,
+alert on it from your own tooling; for data sources, see
+[Monitor data connections](../../../access/databases/monitor-connections.md).
+
 ## Filtering
 
 You can use these fields to filter functions with [smart search](../../../visualize/table-view-1.md#search-patterns):
