@@ -1,0 +1,324 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "portal",
+  "version": "0.2.0",
+  "extensible": {"tables": true},
+  "tables": {
+    "stage_model": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Stage models",
+      "description": "A named, versioned stage-gate process. Several portfolios may follow one model; a new version is a new model, so programs in flight keep the one they started on.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "description": "e.g. LM-DEV-V1"},
+        "name": {"type": "string", "required": true, "isName": true},
+        "model_version": {"type": "string"},
+        "setting": {"type": "string", "choices": ["discovery", "development", "rollout"], "required": true},
+        "description": {"type": "string", "editor": "textarea"}
+      }
+    },
+    "stage": {
+      "securityMode": "table",
+      "businessKey": ["stage_model_id", "code"],
+      "friendlyName": "Stages",
+      "description": "One stage or gate of a stage model. Codes are unique within a model only: 'LO' in small-molecule discovery and 'LO' in biologics discovery are different rows.",
+      "extensible": true,
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "stage_model_id": {"type": "ref", "ref": "stage_model", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Stage model"},
+        "code": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true, "isName": true},
+        "ordinal": {"type": "int", "required": true, "min": 1, "description": "Position in the model; advancing moves to the next ordinal"},
+        "phase": {"type": "string", "description": "Grouping of stages, e.g. a CMC phase"},
+        "is_gate": {"type": "bool", "default": true, "description": "Entering this stage is a governed decision"},
+        "is_terminal": {"type": "bool", "default": false, "description": "Leaving the model from here hands the program on to another portfolio"},
+        "governance": {"type": "string", "description": "Who decides, e.g. a gate review board"},
+        "aliases": {"type": "string_list", "description": "Unused: string_list values cannot be written from JS today (Types.fromValue reports a JS array as 'list'); see spellings"},
+        "spellings": {"type": "string", "description": "Other spellings a registry feed may use for this stage, separated by |"},
+        "description": {"type": "string", "editor": "textarea"}
+      },
+      "filters": [
+        {"column": "stage_model_id.name", "label": "Stage model"},
+        {"column": "phase"}
+      ]
+    },
+    "gate_criterion": {
+      "securityMode": "table",
+      "businessKey": ["stage_id", "code"],
+      "friendlyName": "Gate criteria",
+      "description": "What must hold to enter a stage.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "stage_id": {"type": "ref", "ref": "stage", "onDelete": "cascade", "required": true, "friendlyName": "Stage"},
+        "code": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true, "isName": true},
+        "kind": {"type": "string", "choices": ["document", "data_condition", "decision"], "required": true},
+        "rule": {"type": "string", "description": "For data conditions: the declarative predicate over the program dataset"},
+        "required": {"type": "bool", "default": true},
+        "modality": {"type": "string", "description": "Applies only to programs of this modality (matches program.modality); empty = every modality"}
+      }
+    },
+    "portfolio": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Portfolios",
+      "description": "The unit of configuration: one registry, one stage model, one set of access groups, one workspace root.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true},
+        "name": {"type": "string", "required": true, "isName": true},
+        "setting": {"type": "string", "choices": ["discovery", "development", "rollout"], "required": true},
+        "modality_class": {"type": "string", "choices": ["small_molecule", "biologic", "any"]},
+        "stage_model_id": {"type": "ref", "ref": "stage_model", "onDelete": "restrict", "required": true, "friendlyName": "Stage model"},
+        "stage_authority": {"type": "string", "choices": ["feed", "portal"], "required": true, "default": "portal",
+          "description": "feed: the registry owns the stage and the portal mirrors it; portal: gate decisions are made and recorded here"},
+        "program_noun": {"type": "string", "default": "Program", "description": "What this portfolio calls a program: Project, Program, Molecule"},
+        "workspace_root": {"type": "string"},
+        "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
+        "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
+        "approvers": {"type": "group", "onDelete": "setnull", "description": "Records gate decisions"},
+        "description": {"type": "string", "editor": "textarea"}
+      }
+    },
+    "registry_feed": {
+      "securityMode": "table",
+      "businessKey": ["portfolio_id", "code"],
+      "friendlyName": "Registry feeds",
+      "description": "A query that yields this portfolio's programs. Two portfolios may read the same source system; their feeds must partition it (see the routing audit).",
+      "columns": {
+        "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "friendlyName": "Portfolio"},
+        "code": {"type": "string", "required": true},
+        "system": {"type": "string", "required": true, "description": "The source system; programs from the same system with the same key are the same thing"},
+        "connection": {"type": "string", "required": true, "description": "Data connection name, resolved on the server at sync time"},
+        "sql": {"type": "string", "required": true, "editor": "textarea"},
+        "mapping": {"type": "json", "description": "Feed column → program field, plus status and stage value maps"},
+        "enabled": {"type": "bool", "default": true},
+        "last_synced_on": {"type": "datetime"}
+      }
+    },
+    "program": {
+      "securityMode": "row",
+      "promotion": "eager",
+      "defaultRowVisibility": "none",
+      "businessKey": ["portfolio_id", "code"],
+      "grants": {"All users": ["view"]},
+      "friendlyName": "Programs",
+      "description": "A program (project) of one portfolio. Private by default; sync shares it with its portfolio's groups.",
+      "constraints": {
+        "sourced_has_ref": {"expr": "source = \"manual\" or external_ref != null", "message": "A synced program needs its registry reference"}
+      },
+      "columns": {
+        "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "restrict", "required": true, "immutable": true, "friendlyName": "Portfolio"},
+        "code": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "stage_model_id": {"type": "ref", "ref": "stage_model", "onDelete": "restrict", "required": true, "friendlyName": "Stage model",
+          "description": "Copied from the portfolio at creation; a model upgrade does not move programs in flight"},
+        "stage_id": {"type": "ref", "ref": "stage", "onDelete": "restrict", "friendlyName": "Stage",
+          "filter": "stage_model_id = $stage_model_id"},
+        "source_stage": {"type": "string", "description": "The stage exactly as the registry spelled it"},
+        "status": {"type": "string", "choices": ["active", "on_hold", "terminated", "completed", "transitioned", "missing_from_feed"], "default": "active"},
+        "modality": {"type": "string"},
+        "target": {"type": "string", "searchable": true},
+        "therapeutic_area": {"type": "string"},
+        "lead": {"type": "user", "onDelete": "setnull"},
+        "source": {"type": "string", "choices": ["feed", "manual"], "default": "manual"},
+        "external_ref": {"type": "string", "description": "<system>:<key> — the program's identity in its source system"},
+        "predecessor_id": {"type": "ref", "ref": "program", "onDelete": "setnull", "friendlyName": "Predecessor",
+          "description": "The program in another portfolio this one continues (e.g. discovery → CMC)"},
+        "last_synced_on": {"type": "datetime"},
+        "details": {"type": "json", "description": "Registry columns the portfolio does not map"}
+      },
+      "filters": [
+        {"column": "portfolio_id.name", "label": "Portfolio"},
+        {"column": "stage_id.name", "label": "Stage"},
+        {"column": "status"},
+        {"column": "modality"},
+        {"column": "therapeutic_area"}
+      ]
+    },
+    "stage_transition": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "friendlyName": "Stage transitions",
+      "description": "The gate log: every stage change of a program, who made it and why. Written once.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true},
+        "from_stage_id": {"type": "ref", "ref": "stage", "onDelete": "restrict", "immutable": true, "friendlyName": "From"},
+        "to_stage_id": {"type": "ref", "ref": "stage", "onDelete": "restrict", "immutable": true, "friendlyName": "To"},
+        "decision": {"type": "string", "choices": ["advance", "recycle", "hold", "terminate", "sync"], "required": true, "immutable": true},
+        "decided_by": {"type": "user", "immutable": true},
+        "decided_on": {"type": "datetime", "immutable": true},
+        "rationale": {"type": "string", "editor": "textarea", "immutable": true}
+      }
+    },
+    "criterion_status": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "gate_criterion_id"],
+      "friendlyName": "Criterion status",
+      "description": "A program's instance of one gate criterion, of any kind. The development profile calls document-kind instances Deliverables.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true},
+        "gate_criterion_id": {"type": "ref", "ref": "gate_criterion", "onDelete": "cascade", "required": true, "friendlyName": "Criterion"},
+        "status": {"type": "string", "choices": ["not_started", "in_progress", "met", "not_met", "waived"], "required": true, "default": "not_started",
+          "description": "Data conditions use only met and not_met"},
+        "owner": {"type": "user", "onDelete": "setnull"},
+        "due_on": {"type": "datetime"},
+        "document": {"type": "file", "description": "The document that satisfies a document criterion, e.g. the CoA"},
+        "evidence": {"type": "string", "editor": "textarea", "description": "Notes: what satisfies the criterion, or why it was waived"}
+      }
+    },
+    "unit_operation": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Unit operations",
+      "description": "Global catalogue of process operations, not per flow: Thaw appears in several flows and has one definition, so runs and recommendations point at the operation.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true},
+        "name": {"type": "string", "required": true, "isName": true},
+        "ordinal": {"type": "int", "description": "Typical process order, for display outside any one flow"},
+        "description": {"type": "string", "editor": "textarea"}
+      }
+    },
+    "run_type": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Run types",
+      "description": "How a run was executed (physical, simulated, digital twin, ...). A table rather than choices because the definitions are the content and a profile adds values without a redeploy.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true},
+        "name": {"type": "string", "required": true, "isName": true},
+        "definition": {"type": "string", "editor": "textarea"},
+        "ordinal": {"type": "int"},
+        "is_execution_mode": {"type": "bool", "default": true, "description": "False for values on another axis (input provenance, a run's role) that are not mutually exclusive execution modes"}
+      }
+    },
+    "process_flow": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Process flows",
+      "description": "A manufacturing flow: an ordered list of unit operations (process_step).",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "description": "e.g. MAB_API"},
+        "name": {"type": "string", "required": true, "isName": true},
+        "process_type": {"type": "string", "required": true, "description": "The profile's split of flows, e.g. Drug Substance / Drug Product. A program runs one flow per process type."},
+        "description": {"type": "string", "editor": "textarea"}
+      }
+    },
+    "process_step": {
+      "securityMode": "table",
+      "businessKey": ["process_flow_id", "step_number"],
+      "friendlyName": "Process steps",
+      "description": "A unit operation at a position in a flow. The workspace tree's leaf level is built from these.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "process_flow_id": {"type": "ref", "ref": "process_flow", "onDelete": "cascade", "required": true, "friendlyName": "Flow"},
+        "unit_operation_id": {"type": "ref", "ref": "unit_operation", "onDelete": "restrict", "required": true, "friendlyName": "Unit operation"},
+        "step_number": {"type": "int", "required": true, "min": 1},
+        "folder_name": {"type": "string", "required": true, "isName": true, "description": "Numbered folder label, e.g. '05 - ProA Affinity Chromatography'"},
+        "branch_group": {"type": "string", "description": "Steps sharing a value are parallel branches"}
+      }
+    },
+    "flow_rule": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Flow rules",
+      "description": "Which flows a program runs, by modality. Resolved at sync into program_flow: one winner per process type, highest priority first.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "description": "<modality or ANY>:<flow code>"},
+        "modality": {"type": "string", "description": "Matches program.modality; empty = any modality"},
+        "process_flow_id": {"type": "ref", "ref": "process_flow", "onDelete": "cascade", "required": true, "friendlyName": "Flow"},
+        "priority": {"type": "int", "default": 0, "description": "Higher wins within a process type"},
+        "note": {"type": "string"}
+      }
+    },
+    "program_flow": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "process_flow_id"],
+      "friendlyName": "Program flows",
+      "description": "The flows a program runs. Sync writes rule rows from flow_rule; a manual row overrides the rules for its process type and sync leaves it alone.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true},
+        "process_flow_id": {"type": "ref", "ref": "process_flow", "onDelete": "restrict", "required": true, "friendlyName": "Flow"},
+        "source": {"type": "string", "choices": ["rule", "manual"], "required": true, "default": "rule"}
+      }
+    },
+    "model": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Models",
+      "description": "Catalogue of models: one identity per model across name variants and versions.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "description": "Func nqName: the stable handle, since Func ids change every package release"},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "package": {"type": "string", "description": "Owning package"},
+        "category": {"type": "string", "description": "Subject-matter family, from the profile"},
+        "description": {"type": "string", "editor": "textarea", "searchable": true},
+        "status": {"type": "string", "choices": ["active", "deprecated", "experimental"], "default": "active"},
+        "owner": {"type": "user", "onDelete": "setnull"}
+      },
+      "filters": [
+        {"column": "category"},
+        {"column": "package"},
+        {"column": "status"}
+      ]
+    },
+    "model_run": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["func_call"],
+      "friendlyName": "Model runs",
+      "description": "Curated projection over a saved FuncCall: one row per scientifically meaningful run, not per invocation.",
+      "columns": {
+        "func_call": {"type": "ref", "ref": "Core.func_calls", "required": true, "immutable": true, "friendlyName": "Run",
+          "description": "The saved FuncCall. A soft reference: it may dangle if the call is hard-deleted, which model_name keeps readable"},
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "restrict", "required": true, "friendlyName": "Program"},
+        "model_id": {"type": "ref", "ref": "model", "onDelete": "setnull", "friendlyName": "Model"},
+        "model_name": {"type": "string", "required": true, "immutable": true, "description": "Func nqName as run, kept because a run is a historical record"},
+        "model_version": {"type": "string", "immutable": true},
+        "title": {"type": "string", "isName": true, "searchable": true},
+        "stage_id": {"type": "ref", "ref": "stage", "onDelete": "restrict", "immutable": true, "friendlyName": "Stage at run",
+          "description": "The program's stage when the run was saved. Written once."},
+        "unit_operation_id": {"type": "ref", "ref": "unit_operation", "onDelete": "restrict", "friendlyName": "Unit operation"},
+        "run_type_id": {"type": "ref", "ref": "run_type", "onDelete": "restrict", "friendlyName": "Run type"},
+        "purpose": {"type": "string", "choices": ["screening", "characterization", "scale-up", "troubleshooting", "verification"],
+          "description": "Why the run was done; orthogonal to how (run type)"},
+        "is_reference": {"type": "bool", "default": false, "description": "Golden batch or benchmark"},
+        "run_author": {"type": "user", "onDelete": "setnull"},
+        "run_started": {"type": "datetime"},
+        "description": {"type": "string", "editor": "textarea", "searchable": true}
+      },
+      "filters": [
+        {"column": "program_id.name", "label": "Program"},
+        {"column": "stage_id.name", "label": "Stage at run"},
+        {"column": "model_id.name", "label": "Model"},
+        {"column": "unit_operation_id.name", "label": "Unit operation"},
+        {"column": "run_type_id.name", "label": "Run type"},
+        {"column": "purpose"}
+      ]
+    },
+    "criterion_artifact": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["criterion_status_id", "model_run_id"],
+      "friendlyName": "Criterion artifacts",
+      "description": "Which runs were considered for a criterion, and which one the team chose. Selection instead of approval. Carries program_id because master security delegates one hop only.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true},
+        "criterion_status_id": {"type": "ref", "ref": "criterion_status", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Criterion"},
+        "model_run_id": {"type": "ref", "ref": "model_run", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Run"},
+        "role": {"type": "string", "choices": ["candidate", "selected", "superseded"], "required": true, "default": "candidate"},
+        "selected_by": {"type": "user", "onDelete": "setnull"},
+        "selected_on": {"type": "datetime"},
+        "rationale": {"type": "string", "editor": "textarea", "description": "Why this run over the others"}
+      }
+    }
+  }
+}

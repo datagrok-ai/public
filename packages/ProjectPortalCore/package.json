@@ -1,0 +1,38 @@
+{
+  "name": "@datagrok/project-portal-core",
+  "friendlyName": "Project Portal Core",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ed Jaeger",
+    "email": "ejaeger@datagrok.ai"
+  },
+  "description": "Project Portal core: several portfolios on one instance, each with its own program registry feeds, stage-gate model and access groups",
+  "dependencies": {
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:"
+  },
+  "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1"
+  },
+  "scripts": {
+    "build": "grok api && grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test",
+    "test:bdd": "cd bdd && npx grok-bdd run --reporter=list"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/ProjectPortalCore"
+  }
+}
