@@ -599,15 +599,15 @@ the dashboard to refine search criteria and interact with data in real-time.
 To save the query output as a dynamic dashboard, do the following:
 
 1. Run a query to open a dataframe and create a desired view of the query output.
-1. On the **Sidebar**, click **Projects** > **Upload**.
-1. In the **Upload project** dialog, enter a name and description (optional) in
+1. On the **Top Menu**, click **SAVE**.
+1. In the **Save project** dialog, enter a name and description (optional) in
    the fields provided.
 1. Select how to store data:
     * Save the data as a static snapshot.
     * Store the data as a creation script by toggling the **Data sync**
       control. The query re-executes each time the project is opened. To learn
       more about dynamic data updates in projects, see [Dynamic data](../../datagrok/navigation/basic-tasks/basic-tasks.md#dynamic-data).
-1. Click **OK** to upload the project.
+1. Click **OK** to save the project.
 1. [Share](#sharing-query-results) the project with others.
 
 ![Dynamic dashboards](img/dynamic-dashboards.gif)
