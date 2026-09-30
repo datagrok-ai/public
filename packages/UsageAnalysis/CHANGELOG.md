@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Translated the Charts, BiostructureViewer and SequenceTranslator TestTrack sections into BDD with the existing bindings only (the packages have no bdd/ yet, so the features live here): Charts viewers in `bdd/features/viewers/{sunburst,radar,timelines,tree,sankey-chord,charts-gallery}`, `bdd/features/biostructure-viewer` and `bdd/features/sequence-translator` — 19 features, 59 tests; the section md were reviewed and reworked first; scenarios that need missing steps or package readings are listed in requests to the developers
 * Home: Fixed the Open Usage Analysis link of the Usage widget, after which Home came back in front of the Overview view it opened
 * Tests: Translated the Viewers/NX TestTrack section into `bdd/features/viewers/nx/`: `nx-chain`, one journey over five saved projects (linked tables, calculated columns, viewers over linked tables, formula lines and legends on tabbed viewers, scaffold and chem filters), and `legend-backward-compatibility` (the legend position of a pre-NX layout); the annotation regions and formula lines features moved to `packages/PowerPack/bdd`
 * GROK-20977: Tests: Added `expression-filter-all-columns.feature`, the Expression filter card with Column set to All Columns over every column type
