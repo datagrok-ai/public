@@ -11,7 +11,7 @@ keywords:
 ---
 
 Datagrok supports [Mailgun email delivery platform](https://www.mailgun.com/), [Amazon SES](https://aws.amazon.com/ses/),
-and different SMTP servers. Configure a local SMTP server or use a cloud solution based on your needs.
+different SMTP servers, and an unauthenticated SMTP relay (Datagrok mailer). Configure a local SMTP server or use a cloud solution based on your needs.
 
 To configure email delivery for Datagrok:
 
@@ -27,6 +27,9 @@ To configure email delivery for Datagrok:
       a verified SES identity
         - Set AWS Region to the region of the SES identity. If empty, Datagrok uses the `AWS_REGION` environment variable
         - Optionally, set Configuration set to an SES configuration set for event tracking
+    - Set Datagrok mailer to relay email through an SMTP relay without authentication, such as a mail
+      container in your deployment. Set Mailer URL to the relay's host name. Datagrok connects to it on port 25
+      without TLS
     - In all other cases, set SMTP
         - Configure SMTP server address/DNS name. If you want to use the host SMTP server with dockerized Datagrok
            set `host.docker.internal`

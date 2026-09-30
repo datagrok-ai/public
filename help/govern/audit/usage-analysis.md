@@ -24,7 +24,7 @@ user experience and optimize performance.
 
 To launch **Usage Analysis**:
 
-1. On the [Browse tree](../../datagrok/navigation/views/browse.md), find **Usage Analysis** under **Apps**.
+1. On the [Browse tree](../../datagrok/navigation/views/browse.md), find **Usage Analysis** under **Platform** > **Admin**.
 1. Right-click **Usage Analysis** and select **Run**.
 
 :::note
@@ -57,6 +57,9 @@ into platform usage:
       the sources of events, with each event color-coded. Using this chart, you can
       identify where the majority of activities originate.
     * **User events**: A [scatterplot](../../visualize/viewers/scatter-plot.md) visualizes events specific to individual users, allowing you to track their activity history and understand their usage patterns better.
+1. **Clicks**: A table counts UI interactions, such as clicks, menu clicks,
+   dialogs, commands, and navigation, by type and target for the selected
+   period. Use it to find features nobody uses.
 1. **Log**: A table lists all log events, which you can filter by user and source.
 1. **System Activity**: The platform's security trail. A table lists logins and logouts, failed
    login attempts, impersonation, admin session start and end, developer key generation,
@@ -64,12 +67,41 @@ into platform usage:
    line chart above it shows how many of each happened over time. Click a row to see the
    record's details (the login that failed and why, which settings changed, the session type)
    on the **Context Panel**.
+1. **Errors**: Lists error events with the top errors, the top error sources,
+   and a summary over time. Click an error to see its details, including the
+   source and whether it was handled.
 1. **Projects**: Provides insights into how users interact with projects on the platform:
     * **Scatterplot** shows a timeline of access events per project. The tooltip displays `access_count`, which is the number of times a project was opened.
     * **Unique Users Per Project**: A [barchart](../../visualize/viewers/bar-chart.md) displays the number of distinct users who accessed each project over the given period.
     * **Access Frequency Daily**: A table lists projects accessed more than once per day by at least one user:
        * **AVG Unique Users Daily** – the average number of such users per day
        * **Days Between Access** – the average time gap between project openings by different users.
+1. **Metrics**: The operational health of the instance, shown as color-banded
+   cards: database size and health, largest tables, storage usage, free disk
+   space, database connections, the function-call queue, request latency per
+   route, errors, sessions, and the slowest and most frequent database
+   statements. The request, queue, and database statistics require
+   administrator privileges. The tab is also available as a separate
+   **Metrics** app.
+1. **Stress**: Results of stress tests recorded on the instance: median
+   duration by build and thread count, and pass/fail for the latest build. The
+   tab is empty unless stress tests report to this instance.
+1. **Vulnerabilities**: Known vulnerabilities (CVEs) in Datagrok's Docker
+   images, loaded from the published [VEX reports](../../datagrok/solutions/teams/it/security.md#vulnerability-disclosures-vex).
+   Select an image to see its individual findings.
+
+### Related admin apps
+
+The Usage Analysis package also installs these apps. They appear under
+**Browse** > **Platform** > **Admin**:
+
+| App              | Purpose                                                                                     |
+|------------------|---------------------------------------------------------------------------------------------|
+| **Metrics**      | Opens the **Metrics** tab on its own                                                        |
+| **Service Logs** | Reads the logs of the platform's service containers                                         |
+| **Cloud Logs**   | Searches this instance's events and, on AWS deployments, the CloudWatch logs and the log archive |
+| **Reports**      | Lists [error reports](../bug-reports.md) submitted by users                                 |
+| **Test Track**   | Tracks manual and automated test runs                                                       |
 
 ### Native Datagrok capabilities
 

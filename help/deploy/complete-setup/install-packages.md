@@ -12,7 +12,9 @@ keywords:
 
 Datagrok is very extensible. You can install any of our [public packages](../../collaborate/public-repository.md) to add new capabilities to your platform.
 
-To explore and install packages, use the Package Manager (on the **Sidebar**, click **Manage** > **Packages**).
+To explore and install packages, go to **Browse** > **Platform** > **Plugins**. To install packages from a script,
+for example when you set up a new instance, use `grok s packages install` (see
+[Server management](../../develop/server-management.md#manage-packages)).
 
 As a start, we suggest installing:
 

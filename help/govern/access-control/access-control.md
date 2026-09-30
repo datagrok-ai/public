@@ -26,11 +26,16 @@ Datagrok provides robust security through its authentication, authorization, and
 
 _Authentication_ is verification of identity by providing credentials. Datagrok supports the following authentication methods:
 
-* **Internal (login/password)**: Sign in with a username and password
-* **Single Sign-On (SSO)**: Custom SSO for enterprise customers
-* **OpenID**: Sign in using [OpenID providers](../../deploy/complete-setup/configure-auth.md#openid-authentication) like Google or Azure AD
+* **Internal (login/password)**: Sign in with a [username and password](../../deploy/complete-setup/configure-auth.md#general-login-password-authentication)
+* **OpenID Connect**: Sign in with [OpenID providers](../../deploy/complete-setup/configure-auth.md#openid-authentication) such as Microsoft Entra ID, Okta, or Google
+* **SAML**: Sign in with a [SAML identity provider](../../deploy/complete-setup/configure-auth.md#saml-authentication)
+* **LDAP**: Sign in with [LDAP or Active Directory](../../deploy/complete-setup/configure-auth.md#ldap-authentication) credentials
+* **Google IAP**: Sign in behind [Google Identity-Aware Proxy](../../deploy/complete-setup/configure-auth.md#iap-authentication)
+* **Key pair**: Sign in from the command line, scripts, and CI with [keypair authentication](keypair-authentication.md)
 
-You can enable all methods separately or combined. After successful
+You can enable all methods separately or combined. With OpenID, Datagrok can also
+[synchronize group membership](../../deploy/complete-setup/configure-auth.md#group-synchronization)
+from the identity provider. After successful
 authentication, Datagrok issues a session token for subsequent API calls,
 ensuring continuous secure access during the session.
 
@@ -68,9 +73,40 @@ password, they can reset it using the link on the login form, or a Datagrok Admi
 
 ## Authorization 
 
-_Authorization_ in Datagrok is based on [Role-Based Access Control (RBAC)](https://en.wikipedia.org/wiki/Role-based_access_control) and determines whether a specified user can execute a specified operation against a specified [entity](../../datagrok/concepts/objects.md). This is achieved by defining [user groups](users-and-groups.md#groups) and associating them with [permissions](#permissions) for different entities.
+_Authorization_ in Datagrok is based on [Role-Based Access Control (RBAC)](https://en.wikipedia.org/wiki/Role-based_access_control) and determines whether a specified user can execute a specified operation against a specified [entity](../../datagrok/concepts/objects.md). This is achieved by putting users into [groups](users-and-groups.md#groups) and granting groups [permissions](#permissions).
 
-![Role-based model](../../uploads/security/role-based-model.png "Role-based model")
+### Groups and roles
+
+Every permission is granted to a group. Users, groups, and roles are all ways of
+putting people into groups:
+
+| Concept            | What it is                                                                                     | Example                            |
+|--------------------|------------------------------------------------------------------------------------------------|------------------------------------|
+| **Personal group** | Created automatically for every user. Sharing something with a user grants it to this group     | `jdoe`                             |
+| **Group**          | A set of users and other groups. Answers "*who* are these people?"                              | `Oncology Discovery`               |
+| **Role**           | A group marked as a role. Holds permissions and is assigned to groups. Answers "*what* may they do?" | `Data Steward`, `Dashboard Author` |
+
+A role nests and inherits exactly like a group does. The difference is how you
+use it:
+
+* **Groups collect people.** Let them mirror your organization. Ideally, they
+  come from your identity provider through
+  [group synchronization](../../deploy/complete-setup/configure-auth.md#group-synchronization).
+* **Roles collect permissions.** Grant [global permissions](#global-permissions)
+  and entity [permissions](#permissions) to a role, then assign the role to
+  groups. Every member of those groups inherits what the role grants.
+
+Group synchronization never matches roles, so a group created in the identity
+provider can't grant itself a Datagrok role. To manage roles, see
+[Roles](users-and-groups.md#roles).
+
+The following table shows how permissions reach a user:
+
+| Permission kind                            | Granted to            | Reaches a user through                                                          |
+|--------------------------------------------|-----------------------|---------------------------------------------------------------------------------|
+| [Global permission](#global-permissions)   | A group or role       | Membership in that group or role, directly or through nested groups             |
+| [Entity permission](#permissions)          | A group or role, on an entity | The same membership, for that entity only                              |
+| Entity permission on a [space](../../datagrok/concepts/project/space.md) | A group or role, on the space | The same membership, for everything the space contains         |
 
 ### Permissions
 
@@ -93,6 +129,23 @@ Data Connection Permissions
 | **Get Schema**            | Read database schema                     |
 | **List Files**            | List files on the file connection        |
 
+Data Connection Write Permissions (**Write access**)
+
+| Permission         | Description                                                            |
+| ------------------ | ---------------------------------------------------------------------- |
+| **Add Rows**       | Insert rows, including bulk inserts, into tables on the data connection |
+| **Change Values**  | Update existing values on the data connection                          |
+| **Remove Rows**    | Delete rows on the data connection                                     |
+| **Truncate Table** | Empty a table on the data connection                                   |
+
+Data Connection Schema Permissions (**Schema changes**)
+
+| Permission       | Description                                              |
+| ---------------- | -------------------------------------------------------- |
+| **Create Table** | Create tables on the data connection                     |
+| **Alter Schema** | Add, rename, or drop columns, keys, and indices          |
+| **Drop Table**   | Drop tables on the data connection                       |
+
 Data Query Permissions
 
 | Permission             | Description       |
@@ -105,13 +158,19 @@ Table Permissions
 | ------------------- | --------------- |
 | **Read Table Data** | Read table data |
 
+Domain Schema Permissions
 
+| Permission | Description                                               |
+| ---------- | --------------------------------------------------------- |
+| **Extend** | Add user-defined tables and columns to this domain schema |
 
-All permissions are grouped in two categories:
-* **View and use**: Includes only the **View** permission and all entity-specific use permissions
-* **Full access**: Includes all permissions
+When you share an entity, permissions are grouped as follows:
+* **View and use**: The **View** permission and all entity-specific use permissions, such as **Execute Data Query** or **Data Connection Query**
+* **Write access**: The data connection write permissions listed above
+* **Schema changes**: The data connection schema permissions listed above
+* **Full access**: All permissions
 
-Entity permissions are granted to [groups](users-and-groups.md#groups) rather
+Entity permissions are granted to [groups and roles](#groups-and-roles) rather
 than individual users, which simplifies security administration. For
 convenience, Datagrok automatically creates a "personal group" for every user in
 the system, named after the user.
@@ -130,8 +189,12 @@ To fully control access to external data sources (like [file shares](../../acces
 
 ### Global Permissions
 
-Global permissions define system-wide capabilities in Datagrok. They can be assigned to roles, users or groups. 
+Global permissions define system-wide capabilities in Datagrok. They can be assigned to roles, users, or groups.
 These permissions control what users can create, administer, or view across the entire platform.
+
+To edit global permissions, you need the **Edit Global Permissions** permission. Go to
+**Settings** > **Global Permissions**, or select a group or role and, on the **Context Panel**,
+expand **Global Permissions** and click **MANAGE**.
 
 Permission for admin actions:
 
@@ -149,6 +212,7 @@ Permission for admin actions:
 | **Admin System Connections** | Edit system data connections such as System:AppData or System:Datagrok |
 | **Admin Sticky Meta**        | Ability to set up Sticky Meta                                          |
 | **Admin Keys**               | Manage server cryptographic keys: create, rotate, move, revoke, delete |
+| **Admin Sync**               | Manage cross-instance sync pairs and run entity sync                   |
 | **Admin Url Aliases**        | Create, re-point, and delete URL aliases                                |
 | **Create Repository**        | Register a new package repository                                      |
 | **Create Group**             | Create a new user group                                                |
@@ -167,6 +231,7 @@ Permissions to create entities:
 | **Create Data Query**          | Create a new data query                       |
 | **Create Dashboard**           | Create a new dashboard                        |
 | **Create Space**               | Create a new space                            |
+| **Create Domain Schema**       | Create a user-managed domain database schema  |
 
 General permissions: 
 
@@ -197,6 +262,22 @@ Permissions to show or hide nodes in Browse Panel:
 | **Browse Dockers**              | Show Dockers section in Browse Panel                   |
 | **Browse Layouts**              | Show Layouts section in Browse Panel                   |
 | **Browse Shared Data**          | Show Shared Data in Browse Panel                       |
+
+The **Browse** permissions only show or hide sections of the **Browse** tree. They don't
+restrict access to the entities themselves. Entity permissions do.
+
+#### Defaults on a new instance
+
+On a new instance, the **All users** group gets these global permissions, so every user can
+work right away:
+
+* **Create Entity**, **Create Script**, **Publish Package**, **Invite User**, **Share With Everyone**
+* **Create Database Connection**, **Create File Connection**, **Create Data Query**, **Create Dashboard**, **Create Space**
+* All **Browse** permissions
+
+All other global permissions go to the **Administrators** role. This suits a small team. For an
+enterprise rollout, review these defaults and move the ones your policy restricts, such as
+**Create Database Connection** or **Share With Everyone**, from **All users** to dedicated roles.
 
 You can set Datagrok global permissions as part of `GROK_PARAMETERS`. To get the template JSON, go to the `/settings` view and click the `{}` button near the server settings section.
 Add any parameter to the `settings` map of `GROK_PARAMETERS`, respecting the hierarchy.
@@ -237,7 +318,8 @@ credentials.
 If your organization already uses a specialized credential vault like AWS or GCP
 Secrets Manager, you can [configure Datagrok to use it](data-connection-credentials.md).
 
-To store credentials in Datagrok's credentials storage programmatically, send a `POST` request to `$(GROK_HOST)/api/credentials/for/$(ENTITY_NAME)` with a raw body containing JSON, such as `{"login": "abc", "password": "123"}`, and headers `{"Authorization": $(API_KEY), "Content-Type": "application/json"}`. Take the API key from your profile page in Datagrok, e.g., [https://public.datagrok.ai/u](https://public.datagrok.ai/u).
+To store credentials in Datagrok's credentials storage programmatically, send a `POST` request to `$(GROK_HOST)/api/credentials/for/$(ENTITY_NAME)` with a raw body containing JSON, such as `{"login": "abc", "password": "123"}`, and headers `{"Authorization": $(TOKEN), "Content-Type": "application/json"}`. For scripts and CI, get the token with
+[keypair authentication](keypair-authentication.md#ci-and-automation) rather than a personal developer key.
 
 See this sample: 
 
@@ -246,9 +328,10 @@ See this sample:
 
 To add credentials from the UI: 
 
-1. From the context menu, select **Credentials...**. The **Manage credentials** dialog opens.
-1. In the dialog, click the group and enter appropriate credentials in the fields provided.
-       >_Note:_ The dialog only shows the [groups](users-and-groups.md#groups) you belong to. To assign credentials for the **All users** group, you must have permissions to edit the connection. To assign credentials for other groups, you must both have permissions to edit the connection and be that group's admin.
+1. Open the editor: for a data connection, right-click it and select **Edit...**, then open the **Credentials** tab.
+   For a package or a Docker container, right-click it and select **Credentials...**.
+1. Select the group and enter the credentials in the fields provided.
+       >_Note:_ Only the [groups](users-and-groups.md#groups) you belong to are listed. To assign credentials for the **All users** group, you must have permissions to edit the connection. To assign credentials for other groups, you must both have permissions to edit the connection and be that group's admin.
 1. Click **OK**.
 
 ![](../img/connection-credentials-by-group.gif)

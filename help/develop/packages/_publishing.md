@@ -26,9 +26,9 @@ of publishing packages to Datagrok.
 When you publish a package, Datagrok creates a _published package_ entity, which is associated with the package and has
 additional metadata, such as the publication date.
 
-Typically, the user can see only one version of a package. Datagrok administrators manage published packages and decide
-which versions should be used. It's possible to roll back to an older version, or assign a particular package version to
-a particular group of users.
+One published version of a package is current, and it's the same for all users. Datagrok administrators decide which
+version is current, and can roll back to an older one (**Browse** > **Platform** > **Plugins**, then the
+**Choose version** icon on the package card).
 
 > **Important**: If the version of a package changes, Datagrok will create an independent instance of each package asset.
 

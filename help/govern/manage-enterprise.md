@@ -49,17 +49,22 @@ After the deployment, sign in as `admin` and complete the setup:
    notifications, and password resets work.
 1. [Install the packages](../deploy/complete-setup/install-packages.md) your
    users need.
-1. Review **Settings** > **Health**. It lists the checks the server runs
-   continuously (Core, Grok Connect, Jupyter, Credentials Server, Grok Spawner,
-   and others). Fix anything that isn't ready before you invite users.
+1. Review the **Health** step of the setup wizard (`/settings/initial/health`).
+   It lists the checks the server runs continuously (Core, Grok Connect,
+   Jupyter, Credentials Server, Grok Spawner, and others). Fix anything that
+   isn't ready before you invite users.
 1. Set [defaults for everyone](access-control/managed-settings.md), such as
    formats, colors, and hidden menu sections, and lock the ones users
    shouldn't change.
+1. Turn on the garbage collector in [server settings](access-control/admin-settings.md#data-retention).
+   It's off by default, so audit records, logs, and old package versions are
+   never deleted and the database keeps growing.
 
-Server-side parameters, such as queue, Docker, and connector settings, are
-described in [Server configuration](../deploy/configuration.md). You can set
-them in the UI or pass them as `GROK_PARAMETERS` to keep them in your
-infrastructure code.
+The server settings pages are listed in
+[Server settings](access-control/admin-settings.md). Server-side parameters,
+such as queue, Docker, and connector settings, are described in
+[Server configuration](../deploy/configuration.md). You can set them in the UI
+or pass them as `GROK_PARAMETERS` to keep them in your infrastructure code.
 
 ## Identity
 
@@ -114,8 +119,9 @@ like a group does. The difference is how you use it:
 
 This separation keeps the identity provider in charge of *who* and Datagrok in
 charge of *what*. Group synchronization never matches roles, so a group created
-in the identity provider can't grant itself a Datagrok role. Only a Datagrok
-administrator can assign a role.
+in the identity provider can't grant itself a Datagrok role. A role is assigned
+by an administrator or by one of the role's own admins, the members marked
+**Can assign**.
 
 Permissions flow down the hierarchy: members of a child group get everything
 granted to the parent. Assigning a role to a group makes that group a member of
@@ -212,7 +218,7 @@ when one breaks:
 | Signal                          | Where                                                                                        |
 |---------------------------------|----------------------------------------------------------------------------------------------|
 | Test a connection now           | Right-click the connection > **Test connection**, or `grok s connections test <id>` from your monitoring job |
-| Grok Connect (the connector service) is up | **Settings** > **Health**, or the [health endpoint](#monitor-the-platform)          |
+| Grok Connect (the connector service) is up The [health endpoints](../develop/server-management.md#server-health) or `grok s healthcheck` |
 | Who ran which query, when, how long it took, and whether it failed | The query's **Activity** and **Usage** panes on the **Context Panel** ([audit](audit/audit.md#accessing-audit-logs)) |
 | Failing queries across the platform | **Usage Analysis** > **Errors** and **Functions** ([Usage Analysis](audit/usage-analysis.md)) |
 | Why a query is slow             | The **Debug** tab of the [query editor](../access/databases/databases.md#query-editor)       |
@@ -279,7 +285,7 @@ Content moves from dev to production in one of two ways:
   entities from one instance into a folder of files, show the difference, and
   push them to another instance, keeping their IDs so a repeated push updates
   rather than duplicates. Credentials never travel with the content. See the
-  [`grok s` reference](https://github.com/datagrok-ai/public/blob/master/tools/GROK_S.md).
+  [Move content between instances](../develop/server-management.md#move-content-between-instances).
 
 ## Monitor the platform
 
@@ -324,11 +330,14 @@ in [Feedback](bug-reports.md#configuring-error-reporting-system).
   [compatible service versions](../deploy/releases/compatibility/compatibility.mdx).
   Upgrade the validation instance first, run your package tests and a smoke test
   of key dashboards, then upgrade production. The database schema migrates
-  automatically on the first start of the new version.
-* **Backups.** Back up the Postgres database (metadata and audit), the
-  credentials store, and the file storage together, so that they can be
-  restored to the same point in time. See
-  [S3 backup](../deploy/complete-setup/configure-s3-backup.md) for AWS.
+  automatically on the first start of the new version, and migrations only run
+  forward: rolling back means restoring the backup taken before the upgrade.
+  See [Upgrade and roll back](../deploy/upgrade.md).
+* **Backups.** Back up the Postgres database (metadata, audit, and encrypted
+  credentials), the file storage, and the server keys together, so that they
+  can be restored to the same point in time. A database restored without its
+  keys loses every stored credential. See
+  [Back up and restore](../deploy/complete-setup/backup.md).
 * **Keys.** Rotate the [server keys](access-control/server-keys.md) that
   encrypt credentials according to your security policy.
 * **Security posture.** Review [Security](../datagrok/solutions/teams/it/security.md)
@@ -339,5 +348,6 @@ in [Feedback](bug-reports.md#configuring-error-reporting-system).
 * [Access control](access-control/access-control.md)
 * [Users and groups](access-control/users-and-groups.md)
 * [Managed settings](access-control/managed-settings.md)
+* [Server settings](access-control/admin-settings.md)
 * [Server management with grok s](../develop/server-management.md)
 * [Enterprise evaluation FAQ](../datagrok/solutions/teams/it/enterprise-evaluation-faq.md)
