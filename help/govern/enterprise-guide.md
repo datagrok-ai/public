@@ -98,38 +98,43 @@ Administrators see everything, so test access restrictions with an ordinary user
 
 ## Data isolation
 
-### Spaces
+### One space per project
 
-A [space](../datagrok/concepts/project/space.md) is a folder with permissions. Child spaces inherit
-the parent's permissions, and an item moved into a space gets the space's permissions. To show a
-dashboard in several spaces, add a link to it rather than a copy.
+We recommend a [space](../datagrok/concepts/project/space.md) for each discovery project, owned by
+the project team's group, with access set from the project record. Create and update these spaces
+from your project system rather than by hand. A scheduled script using the
+[`grok s`](../develop/server-management.md) CLI can do this. It should:
 
-Create the space structure before people start saving content. Otherwise everything stays in
-personal spaces and is shared item by item.
+* Create a space for each new project, and archive the spaces of closed projects. Deleting a space
+  removes its content for everyone.
+* Use the project's ID, not its name, to identify the space, so renaming a project changes only the
+  label
+* Give the owning group edit access and the reader group view access, based on the project's access
+  columns, on every run
+* Have a dry-run mode that lists the changes without making them
+
+If a program has several projects and the program team needs access to all of them, add a program
+space above the project spaces.
+
+Set this up before people start saving content. Otherwise content stays in personal spaces and is
+shared item by item.
+
+### Organizing spaces
+
+A space is a folder with permissions. Child spaces inherit the parent's permissions, and an item
+moved into a space gets the space's permissions. To show a dashboard in several spaces, add a link
+to it rather than a copy.
 
 Because child spaces inherit permissions, every level in the space tree is an access boundary:
 
-* **Add a level only where access differs.** A program or a partnership usually needs its own
-  access. A therapeutic area or a modality usually doesn't.
+* **Add a level only where access differs.** A project or a partnership needs its own access. A
+  therapeutic area or a modality usually doesn't.
 * **Record classifications as properties.** With [sticky meta](catalog/sticky-meta.md), a space can
   have properties such as therapeutic area, target, modality, and phase, and people can search and
-  filter spaces by them. If a program changes therapeutic area, edit the property. Moving the space
+  filter spaces by them. If a project changes therapeutic area, edit the property. Moving the space
   would change who can see it.
 * **Keep properties few.** Add a property only if people search for spaces by it, and don't use
   properties to control access.
-
-### Program spaces from a project table
-
-If your programs are listed in a database table, a scheduled script can create and update a space
-for each one using the [`grok s`](../develop/server-management.md) CLI. We recommend that it:
-
-* Uses the program's ID, not its name, to identify the space, so renaming a program doesn't create a
-  new space
-* Gives the owning group edit access and the reader group view access, based on the table's access
-  columns
-* Archives closed programs instead of deleting them. Deleting a space removes its content for
-  everyone.
-* Has a dry-run mode that lists the changes without making them
 
 ### Where access is enforced
 
