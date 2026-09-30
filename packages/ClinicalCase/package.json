@@ -18,7 +18,7 @@
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
     "jstat": "^1.9.5",
-    "moment": "^2.29.1",
+    "moment": "^2.31.0",
     "rxjs": "catalog:",
     "x2js": "^3.4.4",
     "dayjs": "catalog:",
