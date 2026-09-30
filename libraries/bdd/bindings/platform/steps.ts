@@ -735,6 +735,46 @@ export const openShared = When('user double-clicks on {string} shared by the run
   dblclick(page, sharedByRunningAccount(page, path)),
 {tier: 'ui', description: 'a node under My stuff > Shared with me > <the account the feature started with>'});
 
+/* My stuff names an entity bucket "My scripts" for an account with a home share and "Scripts" for one
+   without (project_meta.dart), so the bucket is resolved to whichever the stand renders. A bucket is
+   listed only while the account owns such an entity, so an absent bucket lists nothing. */
+async function myStuffBucket(page: Page, type: string): Promise<string | null> {
+  const names = [`My-stuff---My-${type.toLowerCase()}`, `My-stuff---${type}`];
+  const tree = page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]');
+  for (const name of names) {
+    if (await tree.locator(`[name="tree-${cssString(name)}"]`).count() > 0)
+      return name;
+  }
+  return null;
+}
+
+async function waitForMyStuffBucket(page: Page, type: string): Promise<string> {
+  let found: string | null = null;
+  await expect.poll(async () => found = await myStuffBucket(page, type),
+    {message: `the "${type}" bucket of My stuff`, timeout: pollMs(15000)}).not.toBeNull();
+  return found!;
+}
+
+const dashed = (s: string) => s.trim().replace(/\s*>\s*/g, '---').replace(/\s+/g, '-');
+
+export const expandMyStuffBucket = When('user expands the {string} bucket of My stuff', async (page: Page, type: string) =>
+  setExpanded(page, el(`${await waitForMyStuffBucket(page, type)} tree node inside browse tree`), true),
+{tier: 'ui', description: 'the bucket of an entity type under My stuff, "Scripts" or "My scripts" as the stand names it'});
+
+export const listedInMyStuffBucket = Then('{string} should be listed in the {string} bucket of My stuff', async (page: Page, name: string, type: string) => {
+  const bucket = await waitForMyStuffBucket(page, type);
+  await expect.poll(() => page.locator(`[name="tree-${cssString(`${bucket}---${dashed(name)}`)}"]`).count(),
+    {message: `${name} under My stuff > ${bucket}`}).toBeGreaterThan(0);
+}, {tier: 'ui', description: 'a node under the bucket of an entity type in My stuff, whichever name the stand gives the bucket'});
+
+export const notListedInMyStuffBucket = Then('{string} should not be listed in the {string} bucket of My stuff', async (page: Page, name: string, type: string) => {
+  const bucket = await myStuffBucket(page, type);
+  if (bucket == null)
+    return;
+  await expect.poll(() => page.locator(`[name="tree-${cssString(`${bucket}---${dashed(name)}`)}"]`).count(),
+    {message: `${name} under My stuff > ${bucket}`}).toBe(0);
+}, {tier: 'ui', description: 'no such node under the bucket of an entity type in My stuff; a bucket the stand does not list at all lists nothing'});
+
 // Space and group name filters miss existing entities, so names are matched after reading every page.
 type NamedSource = 'spaces' | 'models' | 'groups' | 'queries' | 'scripts' | 'connections';
 type CleanupSource = NamedSource | 'projects' | 'tables';
@@ -1101,8 +1141,24 @@ export const packageInstalled = Given('the {string} package is installed', async
   test.skip(!found, `the stand has no ${name} package — the rest of this test needs it`);
 }, {tier: 'api', description: 'a capability gate: a package of that name (or friendly name) is on the stand, or the rest of the test is skipped with the reason'});
 
-export const standReachesConnection = Given('the stand can reach the database of the {string} connection', async (page: Page, name: string) => {
-  const answer = await page.evaluate(async (n) => {
+export const standServesHelp = Given('the stand serves the help pages', async (page: Page) => {
+  // as the help panel reads a page (help_panel.dart): the .md, then the .mdx, and an HTML document is a fallback, not a page
+  const missing = await page.evaluate(async () => {
+    for (const url of ['/help/visualize/viewers/scatter-plot.md', '/help/visualize/viewers/scatter-plot.mdx']) {
+      const response = await fetch(url);
+      const text = await response.text();
+      if (response.ok && !/^\s*(<!--[\s\S]*?-->\s*)*(<!doctype\s+html\b|<html\b)/i.test(text))
+        return '';
+    }
+    return 'the scatter plot help page is not served';
+  });
+  test.skip(missing !== '', `${missing} — the rest of this test reads a help page`);
+}, {tier: 'api', description: 'a capability gate: the stand serves the help pages the help panel reads, or the rest of the test is skipped with the reason'});
+
+/** The answer of the connection's Grok Connect test, or "N connections named ..." when the name does not
+ * resolve to one connection. */
+async function connectionTestAnswer(page: Page, name: string): Promise<string> {
+  return page.evaluate(async (n) => {
     let found = (await grok.dapi.connections.list({pageSize: 5000})).filter((c: any) => c.friendlyName === n || c.name === n);
     // a name learners share (a tutorial's connection) lists other users' copies too: the running user's own is the fixture
     if (found.length > 1) {
@@ -1118,11 +1174,20 @@ export const standReachesConnection = Given('the stand can reach the database of
       return error?.message ?? String(error);
     }
   }, name);
+}
+
+export const standReachesConnection = Given('the stand can reach the database of the {string} connection', async (page: Page, name: string) => {
+  const answer = await connectionTestAnswer(page, name);
   // the connection itself is the feature's own fixture: its absence is a failure, not a missing capability
   if (/^\d+ connections named/.test(answer))
     throw new Error(`the capability gate needs the connection: ${answer}`);
   test.skip(answer.trim().toLowerCase() !== 'ok', `the stand cannot reach the database of "${name}" (${answer.slice(0, 200)}) — the rest of this test needs it`);
 }, {tier: 'api', description: 'a capability gate: the connection answers its Grok Connect test with "ok", or the rest of the test is skipped with the answer'});
+
+export const standHasReachableConnection = Given('the stand has a reachable {string} connection', async (page: Page, name: string) => {
+  const answer = await connectionTestAnswer(page, name);
+  test.skip(answer.trim().toLowerCase() !== 'ok', `the stand has no reachable "${name}" connection (${answer.slice(0, 200)}) — the rest of this test needs it`);
+}, {tier: 'api', description: 'a capability gate for a connection a package brings rather than the feature: absent or unreachable, the rest of the test is skipped with the reason'});
 
 export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));

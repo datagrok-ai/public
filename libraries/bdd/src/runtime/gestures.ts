@@ -506,8 +506,10 @@ export async function focus(page: Page, target: ElementRef): Promise<void> {
 
 export async function pressIn(page: Page, target: ElementRef, key: string): Promise<void> {
   // a d4 grid (the spreadsheet, a categorical filter card) listens for keys on its overlay canvas,
-  // which is what a click focuses: the element's root never sees them
-  const overlay = (await locate(page, target)).locator('canvas[name="overlay"]').filter({visible: true}).first();
+  // which is what a click focuses: the element's root never sees them. Other viewers have an overlay
+  // too (the box plot's T) and listen on their root, so only the grid's — beside its scroll bars — counts
+  const overlay = (await locate(page, target)).locator(':has(> .d4-grid-horz-scroll) > canvas[name="overlay"]')
+    .filter({visible: true}).first();
   if (await overlay.count() > 0) {
     await overlay.press(normalizeKey(key));
     return;

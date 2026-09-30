@@ -132,7 +132,8 @@ export class CalculatedColumnsTutorial extends Tutorial {
       'qualified function name.');
   }
 
-  /** Applying a formula runs AddNewColumnList, which returns the column along with its error column. */
+  /** The Add dialog runs AddNewColumn, its Edit mode EditColumnFormula, and applying a formula from the pane
+   * AddNewColumnList, which returns the column along with its error column. */
   private formulaApplied(name: string, min: number, max: number): Observable<DG.FuncCall> {
     const tolerance = 1e-3;
     return grok.functions.onAfterRunAction.pipe(filter((call) => {

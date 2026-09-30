@@ -2,7 +2,6 @@
 
 ## v.next
 
-* Calculated Columns: Fixed the two formula-edit steps never completing — applying a formula now runs AddNewColumnList (a list of columns), not AddNewColumn
 * Scripting: Fixed the step counter (11 declared for 10 steps)
 * Dashboards: Fixed: the connection step named the menu item "Add connection..." — it is "New connection..."; the Dashboards step looked its tree row up before "Close all" rebuilt the tree and could miss the click
 * Data Connectors: Fixed: the counter was 12 for 11 steps; the connection step named the menu item "Add connection..." — it is "New connection..."
@@ -17,7 +16,7 @@
 * Filters: Fixed: the row-count and bin-selection steps completed on any selection event; the indicator and reset hints were captured when their step began and could point at nothing
 * Grid Customization: Fixed: the row-selection step asked for a plain click on a row number, which makes the row current and selects nothing; it asks for a Shift+click now. The new-row and remove-rows hints follow their controls instead of the nodes captured when the step began
 * Viewers: Fixed: the counter never reached its last step (20 declared for 20 actions); three selection steps completed on any selection event, so the tail of one gesture could tick the next; the gallery's search box was captured when its step began
-* Calculated Columns: Fixed: the expression step was declared twice — the first copy was skipped or shown depending on the dialog's layout, shifting every step number after it — and the Edit step pointed at a button called "Edit" while the pane says "Edit in dialog" (no highlight); both fixed
+* Calculated Columns: Fixed: the expression step was declared twice — the first copy was skipped or shown depending on the dialog's layout, shifting every step number after it — and the Edit step pointed at a button called "Edit" while the pane says "Edit in dialog" (no highlight); both fixed. The two formula-edit steps also never completed once applying a formula ran AddNewColumnList (a list of columns) instead of AddNewColumn
 * GROK-20419: Embedded Viewers: The last step pointed at a gear icon no element carries, so it showed no highlight; it now points at the inner plot's Color selector in the Trellis strip and says so, and the Trellis plot is found even when it is added after the menu click
 * Added a BDD project (`bdd/`): the tutorials walked from their cards to the congratulations, each step claimed both as ticked and as done on the platform
 * Demo app: A demo started from the Browse tree fires the `demo-loaded` custom event with the demo's `path` once it has run and its view is named

@@ -37,10 +37,11 @@ kind('cliff molecule', {
 
 kind('model card', {
   aliases: ['model cards'],
-  selector: '.diff-studio-hub-card',
+  selector: ':not([name="section-Recent"]) > .diff-studio-hub-card',
   match: ['label'],
   labelSelector: '.diff-studio-hub-card-header',
-  description: 'a model of the Diff Studio hub (templates and library), by its name; a double-click runs it',
+  description: 'a model of the Diff Studio hub (templates and library), by its name; a double-click runs it. '
+    + 'The account\'s Recent section repeats models already run, so its cards are left out',
 });
 
 kind('tour button', {

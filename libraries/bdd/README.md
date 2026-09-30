@@ -36,6 +36,9 @@ capability — never at the top of a feature — so the steps before them run ev
 and the rest of the test is reported skipped with the reason when the stand has not got it.
 `Given the "Chem" package is installed` gates on a package the feature needs but does not test; it
 may stand in the Background when every scenario needs it, and never names the package under test.
+`Given the stand has a reachable "<name>" connection` is the connection gate for a connection a package
+brings rather than the feature (absent skips too), and `Given the stand serves the help pages` gates a
+claim on the help panel's content.
 
 **Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
 database rows, the layout or chat the UI makes on the side, a setting or configuration of something

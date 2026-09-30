@@ -15,6 +15,7 @@ Feature: Scaffold Tree colors, blocked generation and two tables
     And user picks "Chem > Analyze > Scaffold Tree" from the top menu
 
   Scenario: Coloring a scaffold adds the colors column
+    Given the stand runs the "Jupyter" service
     When user hovers over Scaffold Tree viewer
     And user clicks on "Generate" icon inside Scaffold Tree viewer
     Then Scaffold Tree viewer should have finished building its tree

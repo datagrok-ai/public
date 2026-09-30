@@ -85,7 +85,10 @@ that needs it and skips the rest of the test where the stand has not got it (`te
 `failure.ts` lets it through the harness and a journey). A third gate, `the {string} package is
 installed`, is for a package a feature needs but does not test (a Chem demo on a stand without Chem,
 as the minimal CI stack is); it may sit in the Background when every scenario needs that package, and
-never names the package under test, whose absence is a failure. Nothing else skips (agreed 2026-09-28).
+never names the package under test, whose absence is a failure. Two more, agreed 2026-09-30: `the stand has
+a reachable {string} connection` for a connection a package brings (its absence skips, unlike the feature's
+own fixture connection), and `the stand serves the help pages` before a claim on the help panel (a dev stack
+serves none). Nothing else skips.
 
 A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in

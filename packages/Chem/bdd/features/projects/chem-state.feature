@@ -22,6 +22,7 @@ Feature: A saved project brings back the Chem state it was saved with
     And user presses Enter in molecule input of sketcher dialog
     And user clicks on OK button in sketcher dialog
     Then 17 rows should pass the filter
+    Given the stand runs the "Jupyter" service
     When user picks "Chem > Analyze > Scaffold Tree" from the top menu
     And user hovers over Scaffold Tree viewer
     And user clicks on "Generate" icon inside Scaffold Tree viewer

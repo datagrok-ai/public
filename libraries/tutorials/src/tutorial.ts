@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {fromEvent, interval, Observable, Subject, Subscription} from 'rxjs';
+import {from, fromEvent, interval, Observable, Subject, Subscription} from 'rxjs';
 import {filter, first, map} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
@@ -458,8 +458,7 @@ export abstract class Tutorial extends DG.Widget {
     }
     descriptionDiv.scrollIntoView();
 
-    const done = completed instanceof Promise ? completed.then(() => true) : this.firstEvent(completed);
-    const succeeded = await done;
+    const succeeded = await this.firstEvent(completed instanceof Promise ? from(completed) : completed);
     if (this.closed)
       return;
 
@@ -476,6 +475,8 @@ export abstract class Tutorial extends DG.Widget {
     if (hint != null)
       this._removeHints(this.activeHints);
     sub.unsubscribe();
+    if (!succeeded)
+      throw new Error(`Step "${instructions}" could not complete`);
 
     // if (this.manualMode && manual !== false) {
     //   const nextStepIcon = ui.iconFA('forward', undefined, 'Next step');
