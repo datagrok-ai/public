@@ -7,7 +7,10 @@ import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debo
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
-import {calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps} from './links-dependencies';
+import {
+  calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps,
+  pruneLinkedTargets,
+} from './links-dependencies';
 
 export interface LinksData {
   uuid: string;
@@ -119,9 +122,9 @@ export class LinksState {
 
   public updateLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
     const newLinks = this.createStateLinks(state);
+    pruneLinkedTargets(state, newLinks);
     if (this.defaultValidators) {
-      const validators = createDefaultValidators(state, this.logger);
-      newLinks.push(...validators);
+      newLinks.push(...createDefaultValidators(state, this.logger));
     }
     return this.mergeLinks(oldLinks, newLinks, 'link');
   }

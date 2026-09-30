@@ -300,7 +300,9 @@ are left to the lookup below.
 The remaining three examples are form features done with a
 [rule](./link-types#rules) and a [`js` source](./link-types#sources): a
 default computed from another step, an option list computed from data,
-and a lookup table that fills several inputs from one key.
+and a lookup table that fills several inputs from one key. Within one step,
+the function's own annotations already do all three, see
+[Annotation values](./link-types#annotation-values).
 
 ### Computed default from an upstream step
 
@@ -393,7 +395,7 @@ bare `solver` id is the first solver of the workflow:
   type: 'rule',
   runOnInit: true,
   from: 'key:solver/preset',
-  to: ['k:solver/preset', '_(template):solver/inputs(Pkg:Solver, preset)'],
+  to: ['k:solver/preset', '_(template):solver/inputs(Pkg:Solver, preset|$nonscalar|$linked)'],
   sources: {presets: {file: 'System:AppData/Pkg/presets.csv'}},
   effects: [
     {effect: 'items', targets: 'k', items: {column: [{var: 'presets'}, 'preset']}},
@@ -408,7 +410,10 @@ bare `solver` id is the first solver of the workflow:
 - The `file` source reads no input, so the table is loaded once per
   link and reused on every rerun. Nothing in the rule is code.
 - The `(template)` query lists every input of the solver except the key,
-  and the `_` prefix makes the aliases the io names. `row` returns the
+  and the `_` prefix makes the aliases the io names. `$nonscalar` leaves
+  out dataframe and column inputs, and `$linked` leaves out the inputs
+  another data link writes, so a value fed from a previous step is not
+  overwritten by the row. `row` returns the
   picked row as an object keyed by column name, and `assign` writes each
   key to the alias of the same name and ignores the rest, so the `preset`
   column is skipped, and a column added to the script and the table needs

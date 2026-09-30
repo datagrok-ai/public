@@ -118,6 +118,28 @@ export namespace funcs {
     return await grok.functions.call('LibTests:TestNamedValidators', { x, y });
   }
 
+  export async function mockCities(region: string ): Promise<any> {
+    return await grok.functions.call('LibTests:MockCities', { region });
+  }
+
+  export async function mockCars(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:MockCars', {});
+  }
+
+  /**
+   * @param {string} metric
+   *   choices: ["euclidean", "minkowski"]
+   * @param {string} speed
+   *   choices: ["slow", "fast"]
+   * @param {string} city
+   *   choices: LibTests:MockCities
+   * @param {string} model
+   *   choices: LibTests:MockCars()
+   */
+  export async function testValueAnnotations(calc: number , bare: string , metric: string , speed: string , region: string , city: string , model: string , mpg: number , cyl: number ): Promise<string> {
+    return await grok.functions.call('LibTests:TestValueAnnotations', { calc, bare, metric, speed, region, city, model, mpg, cyl });
+  }
+
   export async function mockValidatorBool(x: number ): Promise<boolean> {
     return await grok.functions.call('LibTests:MockValidatorBool', { x });
   }

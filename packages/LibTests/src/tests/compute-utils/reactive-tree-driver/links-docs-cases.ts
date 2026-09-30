@@ -218,7 +218,7 @@ category('ComputeUtils: Driver docs cases', async () => {
       type: 'rule',
       runOnInit: true,
       from: 'key:solver/mode',
-      to: ['k:solver/mode', '_(template):solver/inputs(LibTests:TestAnnotatedInputs, mode|v|df)'],
+      to: ['k:solver/mode', '_(template):solver/inputs(LibTests:TestAnnotatedInputs, mode|$nonscalar|$linked)'],
       sources: {presets: {js: {args: [], fn: () => presets}}},
       effects: [
         {effect: 'items', targets: 'k', items: {column: [{var: 'presets'}, 'mode']}},

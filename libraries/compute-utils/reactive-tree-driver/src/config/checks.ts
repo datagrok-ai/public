@@ -203,7 +203,7 @@ function parseNumber(val: string | undefined): number | undefined {
   return Number.isNaN(num) ? undefined : num;
 }
 
-function parseChoices(val: string | undefined): any[] | undefined {
+export function parseChoices(val: string | undefined): any[] | undefined {
   if (val == null)
     return undefined;
   try {

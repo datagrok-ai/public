@@ -596,6 +596,7 @@ input or output:
 |------|--------|
 | `hidden: true` | Hide the input from the script UI. If the input is a dataframe with one or more `viewer:` panels, those panels are hidden too. A hidden input is treated as optional regardless of its annotation: the default missing-value check and any validator link targeting it no longer block the run or show up in the UI, and the function is called with whatever value the input holds, possibly `null`. |
 | `items: string[]` | For choice inputs, replace the dropdown options. Example: `{ items: ['one', 'two', 'three'] }`. |
+| `emptyChoice: boolean` | For choice inputs, offer an empty option that clears the value. Without the key the input keeps its own setting. The driver sets it for choices from annotations. |
 
 Any other key/value pair is forwarded to the viewer hook unchanged, so
 custom viewer integrations can define their own meta keys.
@@ -741,7 +742,7 @@ Each effect writes to its `targets`, one or more `to` aliases.
 | `verdicts` | validator | `source`, a `validators` [source](#sources) | Adds each verdict, `isError` ones as errors, the rest as warnings. | No message. |
 | `set` | data | `value`, `restriction` | Writes the value. | Clears the restriction and keeps the value. |
 | `clear` | data | `restriction` | Writes `null`. | Nothing. |
-| `assign` | data | `values`, `restriction`, `targets` optional | Writes each key of the object to the target of that name. | Clears the restrictions and keeps the values. |
+| `assign` | data | `values`, `restriction`, `targets` and `ignoreCase` optional | Writes each key of the object to the target of that name, ignoring case with `ignoreCase: true`. | Clears the restrictions and keeps the values. |
 
 `restriction` is a [consistency](#consistency) restriction, `none` by
 default. A `message` that evaluates to an array adds one message per
@@ -767,6 +768,13 @@ next to the `from` aliases.
   clients and in mock mode) through a `call` input the expansion adds. The
   value is a list of `{message, isError, isHelper}`, empty when the input
   is absent.
+- `choices`: `{input: <alias>}`. The platform evaluates the `choices`
+  annotation of the io behind `input` (`FuncCall.evalParamChoices`, 1.28.0
+  or later) through a `call` input the expansion adds. The value is
+  `{items, values, inList, row}`: the item strings, the value of each, whether
+  the current value is listed, and its `propagateChoice` lookup row. The list
+  is evaluated again only when an input it depends on changes. Without a
+  FuncCall, as in mock mode, the value is absent.
 - `js`: `{args: [...], fn: (...values) => any}`. `fn` is called with the
   values of the `args` input aliases, even absent ones, and its result, or
   the value of the promise it returns, becomes the alias.
@@ -887,7 +895,7 @@ the same validator links, messages and severities.
 | `validator` (regex literal) | the string matches `/pattern/flags` | Must match /pattern/flags | |
 | `validator` (expression) | the GrokScript expression is not `false` and not a string | the expression text, or the string it returned. "Error during validation" when it fails. | Evaluated with [`scriptVerdict`](#expressions) over `value` and the step's inputs by name. Platform 1.28.0 or later, skipped with one console warning on older clients. |
 | `visible` | the GrokScript expression is not `false` | none. The input is hidden through meta, which also makes it optional. | A meta link, not a validator. Same evaluation and platform requirement as the expression validator. |
-| `choices` | the value is in the list | Must be one of: ... | Only a literal list. Function-backed choices are ignored. |
+| `choices` | the value is in the list | Must be one of: ... | A literal list. Choices the platform evaluates get a warning instead, see [Annotation values](#annotation-values). |
 | `type`, `semType` | the column has the kind | Column must be ... | Kinds as in [`columnIs`](#expressions). |
 | `table` | the column's name is among the table's columns | Column does not belong to the table | An annotation names a parameter, defaulting to the first dataframe input. A `check` names the table io with a query. |
 | `allowNulls: false` | the column has no missing values | Column has missing values | |
@@ -924,6 +932,71 @@ expands into one link per option, `<id>::min`, `<id>::table` and so on,
 with `value:<io>` and, for `table`, `table:<query>` as inputs and
 `target:<io>` as output. Each is a validator link, except `visible`, which
 becomes a meta link that ignores `message`, `severity` and `debounce`.
+
+### Annotation values
+
+A new step gets the values its function form shows when it opens. The
+driver evaluates each annotation `default` with the platform
+(`FuncCall.evalParamDefault`, 1.28.0 or later), and a default that is not an
+expression, such as `= high`, is taken as its literal text. Initial values
+of the step win over defaults. Runs loaded from history keep their values.
+Choices never fill a value: they are metadata, so an empty choice input
+stays empty and the required check reports it. Compute2 offers an empty
+option in every choice input from an annotation, static or evaluated.
+
+Choices the platform evaluates (a function, a query or a file) become
+[rules](#rules) on the step, expanded and run like rules of the config.
+For an input `model` of `Pkg:Solver` with `propagateChoice: all`, they are:
+
+```
+{
+  id: '::model:choices',
+  type: 'rule',
+  debounce: 0,
+  from: '_(template):inputs(Pkg:Solver)',
+  to: 'model_target:model',
+  sources: {model_choices: {choices: {input: 'model'}}},
+  effects: [
+    {effect: 'items', targets: 'model_target', items: {var: 'model_choices.items'}, when: {'!!': {var: 'model_choices'}}},
+    {effect: 'meta', targets: 'model_target', meta: {emptyChoice: true}},
+    {
+      effect: 'warning', targets: 'model_target', message: 'Not in the lookup table',
+      when: {and: [{'!!': {var: 'model_choices'}}, {'!': {var: 'model_choices.inList'}}]},
+    },
+  ],
+},
+{
+  id: '::model:lookup',
+  type: 'rule',
+  runOnInit: true,
+  from: 'model:model',
+  to: '_(template):inputs(Pkg:Solver, model|$nonscalar|$linked)',
+  sources: {model_choices: {choices: {input: 'model'}}},
+  effects: [{
+    effect: 'assign', values: {var: 'model_choices.row'}, ignoreCase: true, restriction: 'restricted',
+    when: {'!!': {var: 'model_choices.row'}},
+  }],
+}
+```
+
+The first rule reads every input of the step, so the list is evaluated
+again when an input it depends on changes, sets it as the input's items
+with an empty option, and warns while the value is not in it (the message
+is "Not in the list of choices" without `propagateChoice`). The second
+exists only with `propagateChoice: all`. It writes the picked row into the
+step's other scalar inputs whose names match its columns, and `$linked`
+leaves out the inputs a data link of the config writes.
+
+Where the driver differs from the function form:
+
+| Case | Function form | Driver |
+|---|---|---|
+| Lookup at init | The initial value fills nothing | The row is written at init, and again when a run loads, where a step that already ran only gets the restrictions |
+| Lookup trigger | Only a pick in the dropdown | Any change of the value, including one written by a link |
+| Lookup writes | Plain values | `restricted` values |
+| Empty choice input | The first item | Stays empty |
+| Value not in the list | Replaced by the first item | Kept, with a warning |
+| Bare-word default such as `= high` | No value | The word |
 
 ## Actions
 

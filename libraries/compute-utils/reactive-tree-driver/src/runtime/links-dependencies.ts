@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import {v4 as uuidv4} from 'uuid';
 import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {LinkSpec, MatchInfo, matchNodeLink} from './link-matching';
+import {LinkSpec, MatchedIO, MatchInfo} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
 import {parseLinkIO} from '../config/LinkSpec';
@@ -85,6 +85,49 @@ export function calculateIoDependencies(state: BaseTree<StateTreeNode>, links: L
     }
   }
   return deps;
+}
+
+const isUnlinked = (link: Link, alias: string) => !!link.matchInfo.spec.to?.find((io) => io.name === alias)?.unlinked;
+
+const targetKey = (state: BaseTree<StateTreeNode>, link: Link, info: MatchedIO) =>
+  `${state.getNode([...link.prefix, ...info.path]).getItem().uuid}/${info.ioName}`;
+
+// ios written by data links of the config, keyed by node uuid and io name; `$linked` outputs yield to them
+function dataLinkTargets(state: BaseTree<StateTreeNode>, links: Link[]) {
+  const targets = new Set<string>();
+  for (const link of links) {
+    if ((link.matchInfo.spec.type ?? 'data') !== 'data')
+      continue;
+    for (const [alias, infos] of Object.entries(link.matchInfo.outputs)) {
+      if (isUnlinked(link, alias))
+        continue;
+      for (const info of infos)
+        targets.add(targetKey(state, link, info));
+    }
+  }
+  return targets;
+}
+
+/** Drops from `$linked` outputs the ios that other data links write. */
+export function pruneLinkedTargets(state: BaseTree<StateTreeNode>, links: Link[]) {
+  const written = dataLinkTargets(state, links);
+  for (const link of links) {
+    const {outputs, outputsUUID} = link.matchInfo;
+    for (const [alias, infos] of Object.entries(outputs)) {
+      if (!isUnlinked(link, alias))
+        continue;
+      const kept = infos.map((info) => !written.has(targetKey(state, link, info)));
+      if (kept.every((keep) => keep))
+        continue;
+      if (kept.some((keep) => keep)) {
+        outputs[alias] = infos.filter((_, idx) => kept[idx]);
+        outputsUUID.set(alias, (outputsUUID.get(alias) ?? []).filter((_, idx) => kept[idx]));
+      } else {
+        delete outputs[alias];
+        outputsUUID.delete(alias);
+      }
+    }
+  }
 }
 
 export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?: DriverLogger) {
