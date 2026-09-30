@@ -625,6 +625,12 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
     }, LONG);
 
     it('logger diff --version <n>', async () => {
+      if (!versionBefore) {
+        const none = await grok(['logger', 'diff', '--version', '1']);
+        expect(none.code).toBe(1);
+        expect(none.out + none.err).toContain('Logger settings version 1 not found');
+        return;
+      }
       const r = await ok(['logger', 'diff', '--version', String(versionBefore)]);
       expect(r.out.length).toBeGreaterThan(0);
       const rows: any[] = await json(['logger', 'diff', '--version', String(versionBefore)]);
@@ -678,7 +684,9 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
     }, LONG);
 
     it('logger history --limit 20', async () => {
-      const t = table((await ok(['logger', 'history', '--limit', '20'])).out);
+      const r = await ok(['logger', 'history', '--limit', '20']);
+      if (!versionBefore) { expect(r.out.trim()).toBe('(no results)'); return; }
+      const t = table(r.out);
       expect(t.columns).toEqual(['VERSION', 'CHANGED', 'BY', 'SOURCE', 'REASON', 'CHANGES']);
       expect(t.rows.length).toBeGreaterThan(0);
       expect(t.rows.length).toBeLessThanOrEqual(20);
@@ -704,7 +712,8 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       seed.overrides.push(created.id);
       const overrides: any[] = await json(['logger', 'overrides']);
       const newest = overrides.reduce((a, b) => Date.parse(a.createdAt) >= Date.parse(b.createdAt) ? a : b);
-      if (SHARED && newest.id !== created.id) return;
+      const lastBase = ((await json(['logger', 'history', '--limit', '1'])) as any[])[0];
+      if (SHARED && (newest.id !== created.id || Date.parse(lastBase?.changedAt) > Date.parse(created.createdAt))) return;
       const r = await ok(['logger', 'revert']);
       expect(r.out).toMatch(/^reverted /m);
       expect(((await json(['logger', 'overrides'])) as any[]).some((o) => o.id === created.id)).toBe(false);
