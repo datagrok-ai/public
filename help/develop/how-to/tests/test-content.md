@@ -9,10 +9,9 @@ keywords:
   - upgrade verification
 ---
 
-A dashboard is only as reliable as the queries behind it. If a query fails, or a column it returns is
-renamed, the dashboards built on it break (see
+When a query fails, or a column it returns is renamed, the dashboards that use it break (see
 [what happens when the source query changes](../../../datagrok/concepts/project/dashboard.md)).
-Testing the queries catches most of those problems before users see them.
+Adding tests to your important queries finds these problems before users do.
 
 ## Add a test to a query
 
@@ -33,17 +32,11 @@ scripts and other functions, and a test that evaluates to `false` also fails (se
 
 ## Run the tests
 
-Tests on the queries in a package run with the package's tests: interactively in
-[Test Manager](test-packages.md#test-manager), or from the command line with `grok test`, for
-example before an upgrade reaches production.
+Tests on queries in a package run with the package's other tests: in
+[Test Manager](test-packages.md#test-manager), or from the command line with `grok test`. Run them
+on your test server before an upgrade reaches production.
 
-:::note Coming next
-
-We're extending the built-in alerts so query tests also run on a schedule and alert the query's
-owner when one fails, the same way [connection monitoring](../../../access/databases/monitor-connections.md)
-does.
-
-:::
+Datagrok doesn't run query tests on a schedule.
 
 ## See also
 

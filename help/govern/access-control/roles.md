@@ -21,13 +21,13 @@ jobs:
 | **Typically come from** | Your identity provider, through [group synchronization](../../deploy/complete-setup/configure-auth.md#group-synchronization) | Datagrok administrators |
 | **Examples** | Oncology, Chemistry, a partner program | Authors, Consumers, Developers |
 
-For example, Priya is a chemist in the _Oncology_ group with the _Authors_ role. The group decides
-what she can see: Oncology's spaces, dashboards, and database credentials. The role decides what
-she can do: create and share dashboards and queries. When she transfers to Immunology, her group
-changes and she sees Immunology's data instead, but she can still author. When she becomes her
-team's assay owner, an administrator adds the _Content Owners_ role, and she can publish canonical
-queries without seeing any new data. See
-[Running Datagrok in the enterprise](../enterprise-guide.md#who-gets-in) for the recommended model.
+For example, Priya is a chemist in the _Oncology_ group with the _Authors_ role. The group
+determines what she can see: Oncology's spaces, dashboards, and database credentials. The role
+determines what she can do: create and share dashboards and queries. If she moves to Immunology,
+her group changes and she sees Immunology's data instead, and she can still create dashboards. If
+she becomes her team's assay owner, an administrator adds the _Content Owners_ role, and she can
+publish shared queries without getting access to any new data. See
+[Running Datagrok in the enterprise](../enterprise-guide.md#groups-and-roles).
 
 Roles are available in Datagrok 1.27.0 and later.
 
@@ -81,9 +81,9 @@ the Browse panel, you need **Browse Roles**. Both are held by the Administrators
 Roles interact with the rest of the platform as follows:
 
 * **Group synchronization never touches roles.** OpenID, Entra ID, and Google Workspace sync match,
-  create, and remove groups only. Roles, including Administrators, are never matched, so sync can't
-  grant or remove a capability, and it can't lock you out. (The separate Keycloak synchronization is
-  different: it maps Datagrok roles to Keycloak realm roles.)
+  create, and remove groups only. Roles, including Administrators, are never matched, so sync doesn't
+  grant or remove capabilities. (Keycloak synchronization is different: it maps Datagrok roles to
+  Keycloak realm roles.)
 * **Scheduled functions can run as a role.** When you
   [schedule a function](../../datagrok/concepts/functions/functions.md), you can choose a group or
   role to run it as, if you're a member.

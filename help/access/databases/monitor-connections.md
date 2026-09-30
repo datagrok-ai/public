@@ -1,6 +1,6 @@
 ---
 title: "Monitor data connections"
-description: Test a data connection on demand, and let Datagrok check your critical connections continuously and alert when one becomes unreachable.
+description: Test a data connection on demand, or tag it so Datagrok tests it every five minutes and raises an alert when it fails.
 keywords:
   - monitor data connections
   - connection health
@@ -9,9 +9,8 @@ keywords:
   - grok s connections test
 ---
 
-Dashboards and apps are only as healthy as the data sources behind them. Datagrok holds the
-credentials for your [connections](databases.md), so it's also the place to find out when one stops
-working.
+This page shows how to check that a [data connection](databases.md) works, on demand or
+continuously.
 
 ## Test a connection on demand
 
@@ -20,25 +19,24 @@ working.
   [`grok s` CLI](../../develop/server-management.md). It prints `ok` when the connection works, and
   the error otherwise.
 
-A test confirms that Datagrok can reach the source and sign in. It doesn't run a query, so it won't
-notice a missing table or a revoked grant. To cover those, add
-[tests to the queries](../../develop/how-to/tests/test-content.md) that matter.
+A test checks that Datagrok can reach the source and sign in. It doesn't run a query, so it doesn't
+detect a missing table or a revoked grant. For those, add
+[tests to your queries](../../develop/how-to/tests/test-content.md).
 
 ## Monitor connections continuously
 
-:::note Available in the next release
+:::note Bleeding-edge build
 
-Continuous connection monitoring is available on the current bleeding-edge build and ships in the
-next release.
+Connection monitoring is available on the bleeding-edge build and not yet in a stable release.
 
 :::
 
-Tag a connection `monitor`, and Datagrok tests it every five minutes, the same way the **TEST**
-button does. If two tests in a row fail, Datagrok raises an alert that names the connection and the
-kind of failure: authentication, network, timeout, or driver. The alert closes by itself on the
-first successful test, so a single network blip never raises one.
+Add the `monitor` tag to a connection, and Datagrok tests it every five minutes, the same way the
+**TEST** button does. After two failed tests in a row, Datagrok raises an alert with the connection
+name and the type of failure: authentication, network, timeout, or driver. The alert closes after
+the next successful test. Requiring two failures avoids alerts for a single dropped request.
 
-Tag every connection that a production dashboard depends on.
+Tag every connection that production dashboards use.
 
 ## See also
 
