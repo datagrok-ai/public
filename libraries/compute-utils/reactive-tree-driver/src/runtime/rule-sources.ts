@@ -79,6 +79,13 @@ type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];
 type JsSource = Extract<RuleSource, {js: any}>['js'];
 type FuncSource = Extract<RuleSource, {func: any}>['func'];
 type QuerySource = Extract<RuleSource, {query: any}>['query'];
+type TableSource = Extract<RuleSource, {table: any}>['table'];
+
+function resolveTable(spec: TableSource) {
+  if (spec instanceof DG.DataFrame)
+    return spec;
+  return typeof spec === 'string' ? DG.DataFrame.fromCsv(spec) : DG.DataFrame.fromCsv(spec.csv, spec.options);
+}
 
 function resolveFile(path: string) {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(path) ? grok.data.loadTable(path) : grok.data.files.openTable(path);
@@ -86,7 +93,7 @@ function resolveFile(path: string) {
 
 // a source that reads no input is loaded once per link
 function isConstant(source: RuleSource) {
-  if ('file' in source)
+  if ('file' in source || 'table' in source)
     return true;
   const args = 'func' in source ? source.func.args : 'query' in source ? source.query.args : undefined;
   return args !== undefined && Object.values(args).every((expr) => !usedAliases(expr).length);
@@ -128,6 +135,8 @@ async function resolveQuery(spec: QuerySource, ctx: RuleContext) {
   return connection.query('adhoc', sql).apply(args);
 }
 
+const sourceKinds = ['validators', 'js', 'func', 'query', 'file', 'table'];
+
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
  *  Returns a plain object when nothing had to be awaited. */
 export function resolveSources(
@@ -136,7 +145,7 @@ export function resolveSources(
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];
   for (const [alias, source] of Object.entries(sources ?? {})) {
-    if (!('validators' in source) && !('js' in source) && !('func' in source) && !('query' in source) && !('file' in source))
+    if (!sourceKinds.some((kind) => kind in source))
       throw new Error(`Unknown rule source ${JSON.stringify(source)} for alias ${alias}`);
     const cache = controller.sourceCache;
     const constant = !!cache && isConstant(source);
@@ -148,7 +157,8 @@ export function resolveSources(
         'func' in source ? resolveFunc(source.func, ctx) :
           'query' in source ? resolveQuery(source.query, ctx) :
             'file' in source ? resolveFile(source.file) :
-              resolveValidators(controller, source.validators);
+              'table' in source ? resolveTable(source.table) :
+                resolveValidators(controller, source.validators);
       if (constant) {
         cache.set(alias, value);
         if (value instanceof Promise)

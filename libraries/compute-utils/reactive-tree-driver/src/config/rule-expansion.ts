@@ -1,3 +1,4 @@
+import * as DG from 'datagrok-api/dg';
 import {LinkSpecString} from '../data/common-types';
 import {
   PipelineCheckConfiguration, PipelineHandlerConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationInput,
@@ -164,6 +165,14 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     if ('file' in source) {
       if (typeof source.file !== 'string' || !source.file)
         throw new Error(`Rule ${id}: source ${alias} file must be a path`);
+      expandedSources[alias] = source;
+      continue;
+    }
+    if ('table' in source) {
+      const {table} = source;
+      const csv = typeof table === 'string' ? table : (table as {csv?: unknown} | null)?.csv;
+      if (!(table instanceof DG.DataFrame) && (typeof csv !== 'string' || !csv))
+        throw new Error(`Rule ${id}: source ${alias} table must be a dataframe or CSV text`);
       expandedSources[alias] = source;
       continue;
     }

@@ -201,7 +201,9 @@ export type RuleSource =
   /** Runs `sql` on the connection; `args` binds the query's `@name` parameters. */
   {query: {connection: string, sql: string, args?: Record<string, RuleExpr>}} |
   /** Loads a table from a file share path or a URL, once per link. */
-  {file: string};
+  {file: string} |
+  /** A table given in the config: a dataframe, or CSV text parsed with optional import options, once per link. */
+  {table: DG.DataFrame | string | {csv: string, options?: DG.CsvImportOptions}};
 
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';
