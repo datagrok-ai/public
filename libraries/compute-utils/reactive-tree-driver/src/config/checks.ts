@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {RuleEffect, RuleExpr, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
+import {RuleEffect, RuleExpr, RuleLogic, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
 
 /** The annotation options the driver validates. Keys and values match the function
  *  annotation syntax; `check` links use the same object. */
@@ -39,11 +39,11 @@ export type ExpandedCheck = {
   needsCall: boolean;
   /** The check's expression reads the step's other inputs by name. */
   needsInputs: boolean;
-  params: {when: RuleExpr, effects: RuleEffect[], sources?: Record<string, RuleSource>};
+  params: {when: RuleLogic, effects: RuleEffect[], sources?: Record<string, RuleSource>};
 };
 
 export type CheckExtras = {
-  when?: RuleExpr;
+  when?: RuleLogic;
   message?: RuleExpr;
   severity?: CheckSeverity;
 };
@@ -74,7 +74,7 @@ type Condition = {
   needsTable: boolean;
   needsCall: boolean;
   needsInputs?: boolean;
-  when: RuleExpr;
+  when: RuleLogic;
   /** Ready-made effects for non-validator families. */
   effects?: RuleEffect[];
   /** A fixed message, or the alias of a source whose verdicts carry the messages. */
@@ -87,7 +87,7 @@ type Condition = {
 
 function conditions(options: CheckOptions): Condition[] {
   const out: Condition[] = [];
-  const add = (key: CheckKey, when: RuleExpr, message: string, needsTable = false) =>
+  const add = (key: CheckKey, when: RuleLogic, message: string, needsTable = false) =>
     out.push({key, needsTable, needsCall: false, when: {and: [present, when]}, message});
   if (options.nullable === false)
     out.push({key: 'required', needsTable: false, needsCall: false, when: {missing: [VALUE]}, message: 'Missing value'});
@@ -172,7 +172,7 @@ export function expandChecks(options: CheckOptions, extras: CheckExtras = {}): E
     else if (verdicts != null && extras.message == null && extras.severity == null)
       effects.push({effect: 'verdicts', targets: [TARGET], source: verdicts});
     else {
-      const text = extras.message ?? verdictMessage ?? message ?? {map: [{var: verdicts}, {var: 'message'}]};
+      const text = extras.message ?? verdictMessage ?? message ?? {map: [{var: verdicts!}, {var: 'message'}]};
       effects.push({effect: extras.severity ?? 'error', targets: [TARGET], message: text});
     }
     return {

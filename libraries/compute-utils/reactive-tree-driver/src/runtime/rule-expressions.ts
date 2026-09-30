@@ -174,7 +174,7 @@ export function buildRuleContext(controller: IControllerBase): RuleContext {
 const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
 
 /** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `all.` prefix stripped. */
-export function usedAliases(expr: RuleExpr): string[] {
+export function usedAliases(expr: RuleExpr | undefined): string[] {
   const aliases = new Set<string>();
   const addPath = (path: any) => {
     if (typeof path !== 'string' || !path)

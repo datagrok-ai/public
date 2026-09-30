@@ -127,7 +127,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   const fromAliases = aliasesOf(id, rule.from, 'input');
   const toAliases = aliasesOf(id, rule.to, 'output');
   const from = [...normalizeLinkSpec(rule.from)];
-  const checkExpr = (expr: RuleExpr) => {
+  const checkExpr = (expr: RuleExpr | undefined) => {
     for (const alias of usedAliases(expr)) {
       if (!fromAliases.has(alias) && !(alias in (sources ?? {})))
         throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
