@@ -170,10 +170,11 @@ replaces it, including changes a colleague saved in the meantime. Until that cha
 * To keep a result reproducible, save with data sync off. The data is stored with the layout.
 * Save layouts to the gallery, so you can reapply them after a bad edit.
 
-For anything that needs change control, such as NCA, QSAR, curve fitting, a scoring model, or a
-critical dashboard, use a package. Packages are [versioned](../develop/develop.md#version-control):
-each publish creates a version, an administrator chooses the active version and can roll back, and
-a version can be assigned to one group before everyone gets it. See
+Calculations that decisions rely on, such as NCA, QSAR, curve fitting, or a scoring model, belong in
+a package maintained by developers rather than in a script edited inside a dashboard. Packages are
+[versioned](../develop/develop.md#version-control): each publish creates a version, an administrator
+chooses the active version and can roll back, and a version can be assigned to one group before
+everyone gets it. See
 [publishing packages](../develop/how-to/packages/publish-packages.md) and the
 [versioning policy](../develop/dev-process/versioning-policy.md).
 

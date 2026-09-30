@@ -345,9 +345,6 @@ practices serve as version control:
 * **Prefer copies over edits when you don't own the dashboard.** Recipients
   with the **View and use** privilege can always save a copy and continue
   working without touching the original.
-* **Ship critical dashboards in a package.** A package is versioned: every
-  publish creates a version, and an administrator can roll back to an earlier
-  one (see [version control](../../../develop/develop.md#version-control)).
 
 ## Retiring
 
