@@ -5,8 +5,12 @@ title: "Box plot"
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the
 five number summary: minimum, first quartile, median, third quartile, and maximum.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Box plot');`
+
+:::
 
 General:
 
@@ -36,6 +40,12 @@ To find out which groups differ:
 
 The same analyses are available as dialogs under **ML** > **Analyze** > **Group Comparison**. See
 [Group comparison](../../explore/group-comparison.md).
+
+## Formula lines
+
+To mark a threshold or a range on the value axis, right-click the box plot and select
+**Tools** > **Formula Lines...**. To learn more, see
+[formula lines](scatter-plot.md#formula-lines) and [annotation regions](scatter-plot.md#annotation-regions).
 
 ## Inverted whiskers
 

@@ -51,6 +51,7 @@ and built to support interactive exploration of vast amounts of scientific data.
 |<h4>**Edit**</h4>||
 | Edit cell                              | Double-click                    |
 | Copy cell value                        | Ctrl+C                          |
+| Copy a rendered cell, such as a molecule, as an image | Ctrl+Shift+C |
 | Paste into cell                        | Ctrl+V                          |
 | Add a row (requires `Allow Edit` set to `true`) | Enter or click the **plus** **(+)** icon in the bottom row |
 | [Undo](../../datagrok/navigation/undo.md)  | Ctrl+Z                      |
@@ -59,6 +60,7 @@ and built to support interactive exploration of vast amounts of scientific data.
 |<h4>**Resize and reorder**</h4>||
 | Reorder columns   | Drag the column header.<br/>Selected columns are repositioned simultaneously next to each other   |
 | Resize columns                 | Drag the right border of the column header.<br/>Selected columns are resized simultaneously      |
+| Resize a column group          | Drag the right border of the group header.<br/>All columns in the group get the same width      |
 | Resize row height              | Drag the border of the row header     |
 |<h4>**Column properties**</h4>||
 | Open                           | <kbd>F2</kbd>                   |
@@ -255,7 +257,7 @@ For more details, including formula syntax, read [Add new column](../../transfor
 
 Group columns together by selecting them and then choosing the "Group columns..." action 
 in the context panel. You can also specify group color. Once columns are grouped, group name will appear above 
-columns names. You can use it for selecting and moving all columns at once.
+columns names. You can use it for selecting and moving all columns at once. To resize all columns of the group, drag the right border of the group header.
 
 You can quickly show or hide groups of columns from [filters](filters.md).
 
@@ -670,17 +672,14 @@ You can color code columns with these schemes:
 
 To color code a column, right-click its header and select the desired scheme
 from the **Color Coding** submenu. This applies color to the
-column's background. To customize color-coding settings, right-click the column's header, choose **Edit** from the **Color Coding** submenu, and adjust the settings.
+column's background.
 
-![Color Coding](img/grid-color-coding-new.gif)
+To customize color-coding settings, right-click the column's header, choose **Edit** from the **Color Coding** submenu, and adjust the settings.
+To color the text instead, set **Apply to** to `text`. To color only the area behind the text, set it to `text background`.
 
-To copy color coding from one column to others, use the **Pick Up Coloring** and
-**Apply Coloring** commands from the column's **Color Coding** menu. These
-commands copy both standard and custom color-coding, including the **Off** setting
-which removes color coding. Note that you can't transfer settings
-between numeric and categorical columns. The **Apply Coloring** command remains
-inactive if no color coding has been picked up. These settings are retained for
-a viewer instance but are not saved through layout serialization. <!-- //TODO rewrite the last sentence for clarity-->
+To apply the same color-coding settings to other columns, use Pick Up / Apply Coloring from the column's Color Coding menu.
+
+![Color coding](img/grid-color-coding.gif)
 
 ### Show, hide, or reorder columns
 

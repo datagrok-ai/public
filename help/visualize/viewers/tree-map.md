@@ -23,8 +23,12 @@ among many categories. Use a treemap to spot irregularities or patterns.
 1. Go to **Tables** and expand the **Viewers** panel.
 1. Locate the **Treemap** icon and click it.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Treemap');`
+
+:::
 
 Initially, the viewer picks up the first categorical column in the corresponding
 table and builds a treemap.

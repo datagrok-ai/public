@@ -27,9 +27,8 @@ Datagrok provides robust security through its authentication, authorization, and
 _Authentication_ is verification of identity by providing credentials. Datagrok supports the following authentication methods:
 
 * **Internal (login/password)**: Sign in with a username and password
-* **OAuth**: Sign in using Google, Facebook, GitHub, or OpenID accounts
 * **Single Sign-On (SSO)**: Custom SSO for enterprise customers
-* **OpenID**: Sign in using OpenID providers like Azure AD 
+* **OpenID**: Sign in using [OpenID providers](../../deploy/complete-setup/configure-auth.md#openid-authentication) like Google or Azure AD
 
 You can enable all methods separately or combined. After successful
 authentication, Datagrok issues a session token for subsequent API calls,
@@ -142,12 +141,15 @@ Permission for admin actions:
 | **Edit User**                | Edit a user from Users list or with API                                |
 | **Edit Group**               | Edit any user group, add or remove members                             |
 | **Edit Global Permissions**  | Edit this list of permissions                                          |
+| **Edit Settings**            | Edit client and group settings, and push group defaults                |
 | **Start Admin Session**      | Ability to temporarily disable permissions check                       |
 | **Edit Plugins Settings**    | Change Datagrok server-side settings                                   |
 | **Publish Package**          | Install a package or deploy with Datagrok tools                        |
 | **Delete Comments**          | Delete comments in any chat inside Datagrok                            |
 | **Admin System Connections** | Edit system data connections such as System:AppData or System:Datagrok |
 | **Admin Sticky Meta**        | Ability to set up Sticky Meta                                          |
+| **Admin Keys**               | Manage server cryptographic keys: create, rotate, move, revoke, delete |
+| **Admin Url Aliases**        | Create, re-point, and delete URL aliases                                |
 | **Create Repository**        | Register a new package repository                                      |
 | **Create Group**             | Create a new user group                                                |
 | **Create Role**              | Create a new user role                                                 |

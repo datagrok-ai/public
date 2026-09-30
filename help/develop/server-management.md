@@ -51,9 +51,13 @@ servers:
     key: <developer-key>
 ```
 
-Add a new entry with `grok config --server --alias <name> --server <url> --key <key>`,
-or pass `--host <alias-or-url>` to any `grok s` command to override the default.
-The developer key is the one shown on your **User Profile** page next to **API Key**.
+To add a server, run `grok login <server>`. It enrolls a keypair and writes the entry for you, with no
+`key:` field. See [Keypair authentication](../govern/access-control/keypair-authentication.md).
+Pass `--host <alias-or-url>` to any `grok s` command to override the default.
+
+The developer key is deprecated. As a legacy fallback, copy it from **Developer key...** on your profile and add
+an entry with `grok config add --alias <name> --server <url> --key <key>`. Datagrok 1.28 and later accept the
+developer key only from datagrok-tools 6.6.0 or later.
 
 ## Common workflows
 

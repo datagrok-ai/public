@@ -86,13 +86,19 @@ Only [Administrators](#group-types) with global permissions can add or remove us
 
 ### Disabling accounts
 
-To disable a user account, log in as [administrator](#group-types), go to
-**Browse** > **Platform** > **Users**, right-click the user, and select **Block**.
-The blocked user can't log in and won't count toward the license. 
+To disable a user account, go to **Browse** > **Platform** > **Users**, right-click the user,
+and select **Disable...**. You need the **Edit User** [global permission](access-control.md#global-permissions),
+and you can't disable your own account. The disabled user can't log in, all their active sessions
+end immediately, and they won't count toward the license. 
 
-All assets that the user has created will continue to be available in the system.
-Administrators can [share](../../datagrok/navigation/basic-tasks/basic-tasks.md#share) 
-them with others if necessary.  
+Nothing is deleted: the assets the user owns stay available and shared the same way.
+The **Disable user** dialog lists them under **Owned entities**, so you can move them to a space,
+one by one or all at once with **Move all to**. Turn on Admin mode first: otherwise, the dialog warns
+**Admin mode is off.**, lists only the entities shared with you, and can't move them.
+You can also [share](../../datagrok/navigation/basic-tasks/basic-tasks.md#share) 
+the assets with others later.  
+
+To restore access, right-click the user and select **Enable**. The user signs in with their existing credentials.
 
 Currently, there is no way to permanently delete a user. We are planning 
 to implement it in the future versions.
@@ -247,7 +253,7 @@ To create an invitation link:
 
       For example:
 
-      `public.datagrok.ai/?groupPassword=w0TDE6RcpH8XO0ZIBSauVLos`
+      `public.datagrok.ai/?groupPassword=<password>`
     
 1. Copy the URL and distribute to recipients.
 

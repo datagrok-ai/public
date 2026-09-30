@@ -42,11 +42,13 @@ Categorical filter displays a list of unique column values with checkboxes, allo
 Each categorical filter group has a search field for filtered values. Click the Search icon to the right of the filter
 caption to open it. This icon appears when you hover the mouse over the filter.
 
-If you start typing text in the field, the filter shows all values that partially contain this text. If you
-type words separated by commas, the filter shows only values that exactly match each word.
+As you type, the filter shows the values that contain the text. To search for several values at
+once, separate them with commas. The filter then shows the values that contain any of them. Use
+`*` as a wildcard.
 
-You can also paste multi-line text from the clipboard into the search field. The filter then
-displays only values that exactly match each line. The checkbox on the left of the search field controls whether to select
+You can also paste a list of values, for example a column copied from Excel. Each line becomes a
+separate search term, and a term can be a part of the value, such as a fragment of a compound ID.
+The checkbox on the left of the search field controls whether to select
 filtered values only. When enabled, the filter automatically selects
 only values that match the search criteria. When disabled, the search filters values
 without selecting them.
@@ -202,6 +204,9 @@ For partial search or filtering, use the `regex` operation. Copy a list of value
 table or Excel file and paste it directly into **Value**. Datagrok automatically converts the list
 into a regular expression, no manual formatting is required.
 
+The `contains` operation also accepts a comma-separated list and matches the values that
+contain any item of the list.
+
 ![Filtering by a pasted list of partial values](img/expression-filter-partial-match.gif)
 
 </TabItem>
@@ -227,6 +232,7 @@ Hierarchical filter organizes column values in a tree-like structure. Use this f
 The hierarchical filter can be added from the filters hamburger menu. After the filter is added, it detects existing hierarchies based on the values (for example `Country`, `City`, `Street`). 
 
 * To rearrange, add or remove columns, click on the 'tree' icon in the filter, enable needed columns and arrange them in the desired order.
+* To find a category at any level, click the **Search** icon and type a part of its name. The filter shows the matching categories with their parents expanded.
 * To navigate around the categories/subcategories, you can use your mouse or up/down arrows.
 * To expand/collapse the categories, click on the `>` icon on the left of the category name or use the right/left arrow buttons.
 * To toggle the category, click on the checkbox on the left of the category name or use the space bar.

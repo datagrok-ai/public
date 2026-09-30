@@ -1,7 +1,7 @@
 ---
 title: "Configure SMTP"
 sidebar_position: 2
-description: Configure Mailgun or an SMTP server so Datagrok can send signup, confirmation, and password-reset emails.
+description: Configure Mailgun, Amazon SES, or an SMTP server so Datagrok can send signup, confirmation, and password-reset emails.
 keywords:
   - smtp server setup
   - mailgun integration
@@ -10,9 +10,8 @@ keywords:
   - sender email address
 ---
 
-Datagrok supports [Mailgun email delivery platform](https://www.mailgun.com/) and different SMTP servers,
-including [Amazon SES](https://aws.amazon.com/ses/). Configure a local SMTP server or use a cloud solution based on your
-needs.
+Datagrok supports [Mailgun email delivery platform](https://www.mailgun.com/), [Amazon SES](https://aws.amazon.com/ses/),
+and different SMTP servers. Configure a local SMTP server or use a cloud solution based on your needs.
 
 To configure email delivery for Datagrok:
 
@@ -23,6 +22,11 @@ To configure email delivery for Datagrok:
 5. Email Service:  
     - Set Mailgun if you use their integration
         - Configure Mailgun Domain and Mailgun key got from the Mailgun interface
+    - Set SES to send through Amazon SES without SMTP credentials. Datagrok calls the SES v2 API with the
+      IAM role of its pod or instance. That role needs the `ses:SendEmail` permission, and Sender Email must be
+      a verified SES identity
+        - Set AWS Region to the region of the SES identity. If empty, Datagrok uses the `AWS_REGION` environment variable
+        - Optionally, set Configuration set to an SES configuration set for event tracking
     - In all other cases, set SMTP
         - Configure SMTP server address/DNS name. If you want to use the host SMTP server with dockerized Datagrok
            set `host.docker.internal`

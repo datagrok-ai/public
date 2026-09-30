@@ -37,6 +37,23 @@ To reorder the fields in the Forms viewer, go to Forms viewer settings, open the
 
 ![Forms viewer](img/reorder_fields_in_forms_viewer.gif)
 
+To make molecules and other rendered values larger, set **Renderer Size** in the **Context Panel**.
+
+## Pinning rows
+
+To keep a row in view, right-click its form and select **Pin Row**. The pinned form stays in place
+when you scroll. To unpin the row, right-click it and select **Unpin Row**.
+
+![Pinning a row in the Forms viewer](img/forms-pin-rows.gif)
+
+:::note
+
+The layout saves a pinned row by the value of the field you right-clicked. To restore the pin when
+you open the layout, right-click a field with unique values, such as an ID. If the value isn't
+unique, the viewer shows a warning, and the layout doesn't restore the pin.
+
+:::
+
 ## Sorting
 
 The forms viewer displays rows in the following priority order 
