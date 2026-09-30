@@ -91,6 +91,27 @@ corresponding sections of the help system:
 - [Text functions](functions/text-functions.md)
 - [TimeSpan functions](functions/timespan-functions.md)
 
+## Rows that fail
+
+A formula can fail on some rows, for example when `DateParse(${Sample Date})` meets "n/a". Such rows stay
+empty. To change what happens to them, click the gear icon next to the column type:
+
+* **If a row fails**: **Leave empty**, or **Use value** to fill the failed rows with a value of the column type.
+* **Error column**: adds a string column with each failed row's message next to the result.
+
+The gear turns blue when either is set. Then the line below the editor tells you how many preview rows failed
+and shows the first message, and with an error column, a warning after you click **OK** reports how many rows
+failed. Click **Change...** to edit the setting. The setting is saved with the column, so recalculations, layouts,
+and projects keep it.
+
+From JavaScript, pass `onError` to `addNewCalculated`. `{mode: 'stop'}` rejects the call on the first failed row
+and adds no column.
+
+```javascript
+await df.columns.addNewCalculated('parsed', 'DateParse(${Sample Date})',
+  {type: 'datetime', onError: {mode: 'value', value: dayjs.utc('1900-01-01'), errorColumn: true}});
+```
+
 ## Videos
 
 [![Add New Columns](../uploads/youtube/add_new_columns.png "Open on Youtube")](https://www.youtube.com/watch?v=-yTTaS_WOU4)

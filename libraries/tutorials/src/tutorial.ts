@@ -71,6 +71,7 @@ export abstract class Tutorial extends DG.Widget {
   activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
   closed: boolean = false;
+  private currentRun: Promise<void> | null = null;
   completed: boolean = false;
   activeHints: HTMLElement[] = [];
   progressDiv: HTMLDivElement = ui.divV([], 'tutorials-root-progress');
@@ -92,7 +93,7 @@ export abstract class Tutorial extends DG.Widget {
       try {
         const parsedInfo = JSON.parse(info);
         neededStatus = parsedInfo.isCompleted;
-      } catch (e) {
+      } catch {
 
       } finally {
         this.status = !!neededStatus;
@@ -143,6 +144,23 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   async start(): Promise<void> {
+    while (this.currentRun != null) {
+      this.closed = true;
+      this.onClose.next();
+      this._closeAll();
+      await this.currentRun.catch(() => {});
+      this.clearRoot();
+    }
+    const run: Promise<void> = this._start().finally(() => {
+      if (this.currentRun === run)
+        this.currentRun = null;
+    });
+    this.currentRun = run;
+    await run;
+  }
+
+  private async _start(): Promise<void> {
+    this.closed = false;
     this._addHeader();
 
     const tutorials = this.track?.tutorials;
@@ -178,19 +196,23 @@ export abstract class Tutorial extends DG.Widget {
     }
 
     const id = tutorials.indexOf(this);
+    if (this.closed)
+      return;
 
     if (this.demoTable) {
       this._t = await grok.data.getDemoTable(this.demoTable);
       grok.shell.addTableView(this._t);
       this._setViewPath();
     }
-    this.closed = false;
 
     try {
       await this._run();
     } catch (error) {
       // If the tutorial was closed during execution, exit without error
-      if (!this.closed) return Promise.reject(error);
+      if (!this.closed) {
+        this.showFailure(error);
+        return;
+      }
     }
 
     this.endSection();
@@ -491,6 +513,23 @@ export abstract class Tutorial extends DG.Widget {
       ($(this.headerDiv).empty(), $(this.progressDiv).empty()) : $(el).empty());
   }
 
+  private showFailure(error: any): void {
+    const details = `Tutorial "${this.name}" failed at step ${this.progress.value}: ${error?.stack ?? error}`;
+    const restart = ui.bigButton('Restart', () => {
+      this._closeAll();
+      this.clearRoot();
+      this.start();
+    });
+    const copy = ui.button([ui.iconFA('copy'), 'Copy details'], () => navigator.clipboard.writeText(details));
+    const title = ui.element('b');
+    title.textContent = 'This tutorial can\'t continue';
+    (this.currentSection ?? this.activity).append(ui.divV([
+      title,
+      ui.divText('Something went wrong. Restart to try again, or copy the details for support.'),
+      ui.divH([restart, copy]),
+    ], 'tutorials-failure'));
+  }
+
   /** Resolves true when the step's event came, false when its stream failed (the step could not
    * complete, and is shown so), and does not settle as a success when the tutorial is closed. */
   firstEvent(eventStream: Observable<any>): Promise<boolean> {
@@ -562,7 +601,8 @@ export abstract class Tutorial extends DG.Widget {
   protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
     const pane = grok.shell.sidebar.getPane(paneName);
     const command = this.getElement(pane.content, `div.d4-toggle-button[data-view=${commandName}]`) ??
-      this.getElement(pane.content, 'div.d4-toggle-button', (idx, el) => el.textContent?.toLowerCase() === commandName.toLowerCase())!;
+      this.getElement(pane.content, 'div.d4-toggle-button',
+        (idx, el) => el.textContent?.toLowerCase() === commandName.toLowerCase())!;
     return [pane.header, command];
   }
 
@@ -744,7 +784,7 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to select a menu item in the context menu. */
   protected async contextMenuAction(instructions: string, label: string,
     hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<void> {
-    const commandClick = new Promise<void>((resolve, reject) => {
+    const commandClick = new Promise<void>((resolve) => {
       const sub = grok.events.onContextMenu.subscribe((data) => {
         data.args.menu.onContextMenuItemClick.pipe(
           filter((mi) => (new DG.Menu(mi)).toString().toLowerCase() === label.toLowerCase()),

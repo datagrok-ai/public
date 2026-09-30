@@ -149,19 +149,26 @@ export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | Pip
 export type RuleExpr = any;
 export type RuleTargets = string | string[];
 
-export type RuleMetaEffect =
+/** An effect's own condition, combined with the rule's `when`. */
+type RuleEffectWhen = {when?: RuleExpr};
+
+export type RuleMetaEffect = RuleEffectWhen & (
   | {effect: 'hide' | 'show', targets: RuleTargets}
   | {effect: 'items', targets: RuleTargets, items: RuleExpr}
-  | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>};
+  | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>});
 
-export type RuleValidatorEffect =
+export type RuleValidatorEffect = RuleEffectWhen & (
   | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr}
   /** Writes a source's verdicts: `isError` items as errors, the rest as warnings. */
-  | {effect: 'verdicts', targets: RuleTargets, source: string};
+  | {effect: 'verdicts', targets: RuleTargets, source: string});
 
-export type RuleDataEffect =
+export type RuleDataEffect = RuleEffectWhen & (
   | {effect: 'set', targets: RuleTargets, value: RuleExpr, restriction?: RestrictionType}
-  | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType};
+  | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType}
+  /** Writes each key of the `values` object to the target alias of the same name;
+   *  keys without a target are ignored, targets without a key are left as they are.
+   *  Without `targets` every `to` alias is a target. */
+  | {effect: 'assign', targets?: RuleTargets, values: RuleExpr, restriction?: RestrictionType});
 
 export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
 
@@ -172,7 +179,13 @@ export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
  *  rule; a returned promise is awaited. */
 export type RuleSource =
   {validators: {input: string, names?: string[], call?: string}} |
-  {js: {args: string[], fn: (...values: any[]) => any}};
+  {js: {args: string[], fn: (...values: any[]) => any}} |
+  /** Calls the platform function `name`; `args` maps its parameters to expressions over the inputs. */
+  {func: {name: string, args?: Record<string, RuleExpr>}} |
+  /** Runs `sql` on the connection; `args` binds the query's `@name` parameters. */
+  {query: {connection: string, sql: string, args?: Record<string, RuleExpr>}} |
+  /** Loads a table from a file share path or a URL, once per link. */
+  {file: string};
 
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';

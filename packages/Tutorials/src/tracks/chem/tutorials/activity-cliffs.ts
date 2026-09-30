@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable, interval} from 'rxjs';
+import {BehaviorSubject, Observable, interval} from 'rxjs';
 import $ from 'cash-dom';
 import { _package } from '../../../package';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
@@ -64,28 +64,20 @@ export class ActivityCliffsTutorial extends Tutorial {
     this.describe(`In the <b>Activity Cliffs</b> dialog, you can specify parameters like the similarity
     cutoff or the dimensionality reduction algorithm. For this tutorial, let's continue with the default settings.`);
 
-    await this.action('Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
-
+    // the analysis can finish before the next step starts, so the plot is captured from the moment OK is clicked
     let v: DG.ScatterPlotViewer;
-    await this.action('Wait for analysis to complete', new Observable((subscriber: any) => {
-      // the analysis adds the plot while the previous step is still resolving, and onViewerAdded is
-      // a hot stream — so a plot that is already there has to be checked for, not waited for
-      const existing = Array.from(grok.shell.tv?.viewers ?? [])
-        .find((x) => x.type === DG.VIEWER.SCATTER_PLOT) as DG.ScatterPlotViewer | undefined;
-      if (existing != null) {
-        v = existing;
-        subscriber.next(true);
-        return;
-      }
-      const sub = grok.events.onViewerAdded
-        .pipe(filter((data: DG.EventData) => data.args.viewer.type === DG.VIEWER.SCATTER_PLOT))
-        .subscribe((data: DG.EventData) => {
-          v = data.args.viewer;
-          sub.unsubscribe();
-          subscriber.next(true);
-        });
-      return () => sub.unsubscribe();
-    }));
+    const plotAdded = new BehaviorSubject<boolean>(false);
+    const plotSub = grok.events.onViewerAdded
+      .pipe(filter((data: DG.EventData) => data.args.viewer.type === DG.VIEWER.SCATTER_PLOT))
+      .subscribe((data: DG.EventData) => {
+        v = data.args.viewer;
+        plotSub.unsubscribe();
+        plotAdded.next(true);
+      });
+
+    await this.action('Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
+    await this.action('Wait for analysis to complete', plotAdded.pipe(filter((added) => added)));
+    plotSub.unsubscribe();
 
     this.title('Start analyzing the results', true);
     this.describe(`Activity cliffs are visualized on an interactive scatterplot,

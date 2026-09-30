@@ -206,7 +206,9 @@ export const panelHasNoCardOfType = Then('the filter panel should have no {strin
 /* --- every view's filter panel, across a project round trip ------------------------------------------
    Per table view, the cards that filter and their summaries, read from each panel's own readings. A
    Scaffold Tree card (Chem) has no caption among the panel's readings: its tree says what it filters
-   by. Kept in the test run, not in the page, and forgotten when the feature ends. */
+   by. Not the table's own list of filters (`df.rows.filters`): a panel of a view restored with a
+   project joins it only once it is attached, so it holds what was shown, not what was saved. Kept in
+   the test run, not in the page, and forgotten when the feature ends. */
 async function panelStates(page: Page): Promise<Record<string, string>> {
   return page.evaluate(() => {
     const w = window as any;
@@ -227,8 +229,6 @@ async function panelStates(page: Page): Promise<Record<string, string>> {
         });
       out[tv.name] = `${values['active'] === false ? 'off: ' : ''}${[...cards.map((c) => `${c} [${values[`summary of ${c}`] ?? ''}]`), ...trees].join('; ')}`;
     }
-    const df = w.grok.shell.tv?.dataFrame;
-    out['(table filters)'] = df ? Array.from(df.rows.filters as Iterable<string>).map(String).sort().join(' | ') : '';
     return out;
   });
 }

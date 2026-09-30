@@ -803,6 +803,44 @@ body.dartium .power-pack-widgets-host.ui-div {
     color: rgb(255, 153, 0);
 }
 
+.add-new-column-failure {
+    gap: 6px;
+    align-items: baseline;
+    font-size: 12px;
+}
+
+.add-new-column-dialog-root .add-new-column-error-behavior-icon {
+    position: relative;
+    margin-left: 6px;
+    color: var(--grey-4);
+    cursor: pointer;
+}
+
+.add-new-column-dialog-root .add-new-column-error-behavior-icon.add-new-column-error-behavior-set {
+    color: var(--blue-1);
+}
+
+.add-new-column-error-behavior-icon.add-new-column-error-behavior-set::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--orange-2);
+}
+
+.add-new-column-error-popup {
+    padding: 6px 8px 2px 8px;
+    min-width: 340px;
+}
+
+.add-new-column-error-popup .ui-input-root:not(.ui-input-choice) .ui-input-label {
+    position: relative;
+    top: 1px;
+}
+
 .cm-hint-div {
     padding-top: 2px;
     min-height: 33px;

@@ -118,7 +118,12 @@ links between script own inputs, since they don't have a well-defined order in t
 _Optional_
 
 Is available only for data link, will force run a link after OnInit
-hook.
+hook. Init happens every time a workflow instance is set up: when it is
+created and each time it is loaded from history, including a nested
+workflow loaded into a running one. A `runOnInit` link therefore reruns
+on load and may overwrite inputs of steps that have not been run yet;
+inputs of a step that has run keep their values and only get a
+consistency mark.
 
 While the [init hook](#init-hook) and the `runOnInit` links run, plain
 data links are not yet active, so values written at that stage do not
@@ -687,8 +692,9 @@ runtime never sees the rule itself.
 
 ### Expressions
 
-`when` and every value-bearing effect field (`items`, `meta` values,
-`message`, `value`) is a [JSON Logic](https://jsonlogic.com/) expression.
+`when`, an effect's own `when` and every value-bearing effect field
+(`items`, `meta` values, `message`, `value`, `values`) is a
+[JSON Logic](https://jsonlogic.com/) expression.
 Plain literals are valid expressions and evaluate to themselves. The data
 available to `var` is:
 
@@ -708,6 +714,12 @@ Three extra operations are registered:
 - `len`: length of a string or array, or the row count of a dataframe.
 - `columnIs`: a column and a kind; `true` when the column has that kind.
 - `nulls`: a column; its number of missing values (`0` for anything else).
+- `column`: a dataframe and a column name; the column's values as a list,
+  empty when either is absent.
+- `row`: a dataframe, a key column name and a key; the first row whose
+  key cell equals the key, as an object keyed by column name, or `null`.
+  Cells and keys are compared as they are, then as strings, so a numeric
+  column matches a string key.
 - `regex`: a string, a pattern and optional flags; `true` when the string
   matches.
 - `script`: a GrokScript expression string, evaluated synchronously over the
@@ -723,8 +735,30 @@ type such as `Molecule`. `var` paths walk into platform objects, so
 `col.name`, `col.type` and `col.semType` are valid references.
 
 Truthiness of `when` follows JSON Logic rules. `when` omitted or `null`
-means the rule is always on. All effects of one rule share its `when`;
-split effects with different conditions into separate rules.
+means the rule is always on. An effect may carry its own `when`, and it
+is on only while both the rule's and its own condition hold. Off means
+the same at either level: `items`, `meta`, messages, `set` and `assign`
+are not applied, `clear` does nothing, while `hide` and `show` still
+write the visibility, so an off `hide` shows the input.
+
+`assign` is `set` for an object: `values` evaluates to an object, and
+each key that names a target alias is written to that alias, with the
+effect's `restriction`. Keys with no target are ignored, targets with no
+key are left as they are. Without `targets` every `to` alias of the rule
+is a target, which pairs with a `(template)` query whose aliases are the
+io names:
+
+```
+{
+  id: 'preset',
+  type: 'rule',
+  from: 'key:solver/preset',
+  to: '_(template):solver/inputs(Pkg:Solver, preset)',
+  sources: {row: {js: {args: ['key'], fn: rowOf}}},
+  when: {'!!': {var: 'row'}},
+  effects: [{effect: 'assign', values: {var: 'row'}, restriction: 'restricted'}],
+}
+```
 
 A validator `message` that evaluates to an array yields one item per
 element, and an empty array yields nothing, so a message can be built
@@ -753,6 +787,26 @@ any expression. Two resolvers exist:
   value of the promise it returns, becomes the alias. Like a handler, it
   runs on every run of the rule's links, so keep `from` to what the rule
   reads when `fn` is slow. `fn` runs even when an argument is absent.
+- `func`: `{name: 'Pkg:Function', args?: {param: <expression>}}`. Calls
+  the platform function, or a package query, with each parameter set to
+  its expression: `{var: 'key'}` passes an input, anything else is a
+  literal. The result becomes the alias. Like `js`, it runs on every run
+  of the rule's links, so a function that loads data should carry a
+  `meta.cache` annotation, which makes the platform load it once. The
+  core `OpenFile` function with a literal `fullPath` loads a file-share
+  table this way. The config stays plain data, with no closures.
+- `query`: `{connection: 'Pkg:Conn', sql: '...', args?: {name: <expression>}}`.
+  Runs the SQL on the connection and the resulting dataframe becomes the
+  alias. `@name` in the text binds to the argument of that name; the
+  values never enter the text.
+- `file`: `'System:AppData/Pkg/presets.csv'`, or a URL. Loads the table
+  and it becomes the alias.
+
+A source that reads no input, a `file`, or a `func` or `query` whose
+arguments hold no `var`, is resolved once per link and the value is
+reused on every later run. The others run whenever the rule's links
+run, so keep `from` to what they read, and give a function that loads
+data a `meta.cache` annotation so the platform loads it once.
 
 ```
 {
@@ -787,7 +841,8 @@ and `r::data`, one per effect family present. Each copies `from`, `not`,
 `base`, `nodePriority` and `dataFrameMutations`, keeps only the `to`
 entries its effects target, and carries `{when, effects}` in
 [`params`](#params). `debounce` is passed to the validator link and
-`runOnInit` to the data link. The `(call)` and `(template)` flags are not
+`runOnInit` to the data link. A `(template)` query expands as in any
+link, and its aliases are targeted one by one. The `(call)` flag is not
 allowed in rule queries; the `call` input a [source](#sources) needs is
 added by the expansion.
 
@@ -1067,8 +1122,9 @@ the common ancestor, or operate only at the inner level.
 
 ### Init hook
 
-Uses the `onInit` field instead of links and is triggered only once
-when a workflow is created. Usually is used to populate static
+Uses the `onInit` field instead of links and is triggered once per
+init of a workflow instance: when it is created and each time it is
+loaded from history. Usually is used to populate static
 [states](configuration.mdx#states). Otherwise, the same as [data links](#data-links).
 Its writes are visible to [`runOnInit`](#runoninit) links and to derived
 links, but not to plain data links, which become active only after the
