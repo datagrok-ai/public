@@ -60,3 +60,5 @@ build new viewers on top of Datagrok using Grok JS API, or develop custom applic
 
 Built-in admin tools let you change hundreds of parameters and defaults that are exposed by the platform. Use jobs or
 alerts to automate anything.
+
+[Learn how to manage an enterprise instance](../../../../govern/manage-enterprise.md).
