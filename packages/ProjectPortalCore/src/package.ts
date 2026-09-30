@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {loadAllPortfolios, loadPortfolioSet, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio} from './portal';
+import {loadAllPortfolios, loadPortfolioSet, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans} from './portal';
 import {portalDb} from './generated/db';
 import {portalAppView} from './views/portal-view';
 import {installStyles} from './views/styles';
@@ -43,8 +43,8 @@ export async function loadPortfolioConfigs(configs: string): Promise<string> {
 //input: string code
 //input: bool dryRun = false
 //output: string report
-export async function syncPortfolioFunc(code: string, dryRun: boolean = false): Promise<string> {
-  return (await syncPortfolio(code, dryRun)).map(summarizePlan).join('\n');
+export async function syncPortfolio(code: string, dryRun: boolean = false): Promise<string> {
+  return (await syncPortfolioPlans(code, dryRun)).map(summarizePlan).join('\n');
 }
 
 //name: syncAllPortfolios
@@ -55,7 +55,7 @@ export async function syncAllPortfolios(): Promise<string> {
   const order = (s?: string) => s === 'discovery' ? 0 : s === 'development' ? 1 : 2;
   const out: string[] = [];
   for (const p of portfolios.sort((a, b) => order(a.setting) - order(b.setting)))
-    out.push((await syncPortfolio(p.code)).map(summarizePlan).join('\n'));
+    out.push((await syncPortfolioPlans(p.code)).map(summarizePlan).join('\n'));
   return out.join('\n');
 }
 

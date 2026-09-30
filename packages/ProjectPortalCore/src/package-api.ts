@@ -32,8 +32,8 @@ export namespace funcs {
   /**
    * Runs one portfolio's registry feeds and applies (or with dryRun only plans) the result
    */
-  export async function syncPortfolioFunc(code: string , dryRun: boolean ): Promise<string> {
-    return await grok.functions.call('ProjectPortalCore:SyncPortfolioFunc', { code, dryRun });
+  export async function syncPortfolio(code: string , dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SyncPortfolio', { code, dryRun });
   }
 
   /**
