@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Calculated Columns: Fixed the two formula-edit steps never completing — applying a formula now runs AddNewColumnList (a list of columns), not AddNewColumn
 * Scripting: Fixed the step counter (11 declared for 10 steps)
 * Dashboards: Fixed: the connection step named the menu item "Add connection..." — it is "New connection..."; the Dashboards step looked its tree row up before "Close all" rebuilt the tree and could miss the click
 * Data Connectors: Fixed: the counter was 12 for 11 steps; the connection step named the menu item "Add connection..." — it is "New connection..."

@@ -40,9 +40,8 @@ Feature: The Calculated Columns tutorial
     And the table should have a column "Height, m"
     And every value of "Height, m" column should lie between 1.699 and 1.701
 
-    # the new column is the last one, past the right edge of the grid: End scrolls the grid to it
-    When user clicks on the "cell 1 of AGE" area of grid
-    And user presses End
+    # the new column is the last one: the grid may or may not have scrolled to it on its own
+    When user scrolls the grid to the "Height, m" column
     And user clicks on the "header Height, m" area of grid
     Then the tutorial step "Click on the \"Height, m\" column header" should be done
     And the context panel should show "Height, m"

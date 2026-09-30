@@ -106,10 +106,10 @@ Feature: The Browse panel and the icons of its toolbar
       //language: javascript
       let x = 1;
       """
-    Then My-stuff---Scripts---BDD-Browse-Script-{run} tree node inside browse tree should be absent
+    Then My-stuff---My-scripts---BDD-Browse-Script-{run} tree node inside browse tree should be absent
     When user refreshes the browse tree
-    And user expands My-stuff---Scripts tree node inside browse tree
-    Then My-stuff---Scripts---BDD-Browse-Script-{run} tree node inside browse tree should be visible
+    And user expands My-stuff---My-scripts tree node inside browse tree
+    Then My-stuff---My-scripts---BDD-Browse-Script-{run} tree node inside browse tree should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
     # the tree remembers what was open per user: put My stuff back as the other features expect it

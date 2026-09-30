@@ -100,14 +100,9 @@ export class CalculatedColumnsTutorial extends Tutorial {
       'Note that the column type is not updated automatically during editing.<br>Some mathematical functions, ' +
       'such as <i>Div, Mul</i>, and <i>Pow</i>, have equivalent operators. Check out our wiki to learn more about ' +
       ui.link('operators', 'https://datagrok.ai/help/transform/functions/operators').outerHTML;
-    const tolerance = 1e-3;
 
     await this.action('Edit the formula to use the "HEIGHT" column values and click "OK"',
-      grok.functions.onAfterRunAction.pipe(filter((call) => {
-        const column = call.outputs.get('result');
-        return call.func.name === 'AddNewColumn' && column.name === columnName &&
-          Math.abs(column.min - 1.275) < tolerance && Math.abs(column.max - 2.033) < tolerance;
-      })), editDlg.inputs.filter((input) => input.caption == '')[2]?.root, formulaWithColInfo);
+      this.formulaApplied(columnName, 1.275, 2.033), editDlg.inputs.filter((input) => input.caption == '')[2]?.root, formulaWithColInfo);
 
     await this.action('Change the "HEIGHT" value in the first row to "170"', this.t!.onValuesChanged.pipe(filter(() =>
       this.t!.cell(0, 'HEIGHT').value === 170)), null, 'Now we will examine in which circumstances the values of a ' +
@@ -120,21 +115,14 @@ export class CalculatedColumnsTutorial extends Tutorial {
     const columnNameBMI = 'BMI';
     await this.dlgInputAction(addNCDlgBMI, `Name a column "${columnNameBMI}"`, '', columnNameBMI);
 
-    await this.action('Enter the BMI formula and click "OK"', grok.functions.onAfterRunAction.pipe(filter((call) => {
-      const column = call.outputs.get('result');
-      return call.func.name === 'AddNewColumn' && column.name === columnNameBMI &&
-        Math.abs(column.min - 12.891) < tolerance && Math.abs(column.max - 62.932) < tolerance;
-      })), addNCDlgBMI.inputs.filter((input) => input.caption == '')[2]?.root, 'The body mass index (BMI) is ' +
+    await this.action('Enter the BMI formula and click "OK"', this.formulaApplied(columnNameBMI, 12.891, 62.932),
+      addNCDlgBMI.inputs.filter((input) => input.caption == '')[2]?.root, 'The body mass index (BMI) is ' +
       `calculated as mass (kg) divided by height (m) raised to power 2:<br>BMI = weight / height^2<br>Use the "WEIGHT" and "${columnName}" ` +
       'columns and functions "Div" and "Pow" (or the corresponding operators). We will use this new column to ' +
       'check what happens when we change the column metadata.');
 
     await this.action(`Update the formula for "${columnName}" to round the values to 2 decimal places`,
-      grok.functions.onAfterRunAction.pipe(filter((call) => {
-        const column = call.outputs.get('result');
-        return call.func.name === 'AddNewColumn' && column.name === columnName &&
-          Math.abs(column.min - 1.279) < tolerance && Math.abs(column.max - 2.029) < tolerance;
-      })), null, 'You can apply the new formula from the <b>Formula</b> pane of the context panel. Use the ' +
+      this.formulaApplied(columnName, 1.279, 2.029), null, 'You can apply the new formula from the <b>Formula</b> pane of the context panel. Use the ' +
       '"RoundFloat" function with two arguments (the previous expression column and the number of decimal places).' + 
       `Enter the new formula and click \'APPLY\' button. Pay attention to the "${columnNameBMI}" column. ` +
       `When we change the formula of the underlying column (that is, its metadata), re-calculation is triggered automatically.`);
@@ -142,5 +130,17 @@ export class CalculatedColumnsTutorial extends Tutorial {
     this.describe('Calculated columns can be based on various functions: core functions (shown in the function search), ' +
       'platform commands, scripts, and package functions. Aside from core functions, you need to specify a fully-' +
       'qualified function name.');
+  }
+
+  /** Applying a formula runs AddNewColumnList, which returns the column along with its error column. */
+  private formulaApplied(name: string, min: number, max: number): Observable<DG.FuncCall> {
+    const tolerance = 1e-3;
+    return grok.functions.onAfterRunAction.pipe(filter((call) => {
+      if (!['AddNewColumn', 'AddNewColumnList', 'EditColumnFormula'].includes(call.func.name))
+        return false;
+      const result = call.outputs.get('result');
+      const column = (Array.isArray(result) ? result : [result]).find((c) => c?.name === name);
+      return column != null && Math.abs(column.min - min) < tolerance && Math.abs(column.max - max) < tolerance;
+    }));
   }
 }

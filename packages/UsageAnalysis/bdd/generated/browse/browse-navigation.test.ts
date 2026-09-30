@@ -114,10 +114,10 @@ test.describe("The Browse panel and the icons of its toolbar", () => {
     await session.step(102, "Given no script named \"BDD-Browse-Script-{run}\" is on the server", () => noScriptOnServer(page, session.text("BDD-Browse-Script-{run}")));
     await session.step(103, "And My stuff tree node inside browse tree is expanded", () => isExpanded(page, el("My stuff tree node inside browse tree")));
     await session.step(104, "And a script \"BDD-Browse-Script-{run}\" is on the server:", () => scriptOnServer(page, session.text("BDD-Browse-Script-{run}"), "//language: javascript\nlet x = 1;"));
-    await session.step(109, "Then My-stuff---Scripts---BDD-Browse-Script-{run} tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("My-stuff---Scripts---BDD-Browse-Script-{run} tree node inside browse tree")), "absent"));
+    await session.step(109, "Then My-stuff---My-scripts---BDD-Browse-Script-{run} tree node inside browse tree should be absent", () => shouldBe(page, el(session.text("My-stuff---My-scripts---BDD-Browse-Script-{run} tree node inside browse tree")), "absent"));
     await session.step(110, "When user refreshes the browse tree", () => refreshBrowse(page));
-    await session.step(111, "And user expands My-stuff---Scripts tree node inside browse tree", () => expand(page, el("My-stuff---Scripts tree node inside browse tree")));
-    await session.step(112, "Then My-stuff---Scripts---BDD-Browse-Script-{run} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("My-stuff---Scripts---BDD-Browse-Script-{run} tree node inside browse tree")), "visible"));
+    await session.step(111, "And user expands My-stuff---My-scripts tree node inside browse tree", () => expand(page, el("My-stuff---My-scripts tree node inside browse tree")));
+    await session.step(112, "Then My-stuff---My-scripts---BDD-Browse-Script-{run} tree node inside browse tree should be visible", () => shouldBe(page, el(session.text("My-stuff---My-scripts---BDD-Browse-Script-{run} tree node inside browse tree")), "visible"));
     await session.step(113, "And no errors should have been logged", () => noErrors(page));
     await session.step(114, "And no error or warning balloon should have been shown", () => noBalloons(page));
     await session.step(116, "When user collapses My stuff tree node inside browse tree", () => collapse(page, el("My stuff tree node inside browse tree")));
