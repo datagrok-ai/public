@@ -51,7 +51,7 @@ Steps:
 
    * Expected result: a Biostructure viewer is docked. It shows a **Data file** input
      (`.bsv-viewer-splash`) and no Mol\* engine yet. In the viewer settings (gear icon),
-     **Data > Ligand Column Name** names the molecule column.
+     **Data > Ligand** names the molecule column.
 
 3. In **Data file**, choose `1bdq.pdb` from **App Data > BiostructureViewer > samples**.
 

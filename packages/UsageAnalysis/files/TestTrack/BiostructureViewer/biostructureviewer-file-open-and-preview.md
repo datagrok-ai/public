@@ -23,9 +23,9 @@ realized_as: []
 
 Double-clicking a structure file runs the package file handler chosen by the extension;
 single-clicking shows a preview. `.pdb`, `.mmcif` and `.xyz` open in a separate view titled
-**Mol\*** that holds the Mol\* engine (no table, no grid). `.pdbqt` with docking poses opens
-as a table of poses. NGL-only formats preview with the NGL engine. A `.pdb` file also has the
-context menu item **Open table residues**.
+with the file name (`1bdq.pdb`) that holds the Mol\* engine (no table, no grid). `.pdbqt`
+with docking poses opens as a table of poses. NGL-only formats preview with the NGL engine.
+A `.pdb` file also has the context menu item **Open table residues**.
 
 Regression guard for GROK-14442 (`.pdb` was routed to the `.pdbqt` importer), GROK-16968
 (structure files stopped opening), GROK-17654 (PDB/CIF preview broken), GROK-18999 (empty
@@ -84,15 +84,15 @@ Steps:
 
 1. In **App Data > BiostructureViewer > samples**, double-click `1bdq.pdb`.
 
-   * Expected result: a new view **Mol\*** becomes current and holds the Mol\* engine
+   * Expected result: a new view titled `1bdq.pdb` becomes current and holds the Mol\* engine
      (`.msp-plugin`, `.msp-viewport`). The view has no grid. No **Open file** dialog appears
      (that dialog belongs to the `.pdbqt` importer). No error balloon.
 
 2. Close the view. Double-click `1RQ9.mmcif`; after closing that view, double-click
    `caffeine.xyz`.
 
-   * Expected result: each time a **Mol\*** view with the Mol\* engine opens. No error
-     balloon.
+   * Expected result: each time a view titled with the file name and holding the Mol\* engine
+     opens. No error balloon.
 
 ### Scenario 4 — Double-click a PDBQT opens the poses as a table (GROK-14442, reverse direction)
 
@@ -102,7 +102,7 @@ Steps:
 
    * Expected result: a table view opens with **2** rows and a column named `molecule`. A
      dialog **Open file** appears with the text "Docking target structure required to display
-     ligand poses from pdbqt data." No **Mol\*** view is opened.
+     ligand poses from pdbqt data." No structure view is opened.
 
 2. Click **CANCEL** in the dialog.
 
@@ -119,8 +119,9 @@ Steps:
 
    * Expected result: no error balloon; no console error containing `reading 'children'`.
 
-3. Go back to **Browse > Files**, click `1bdq.pdb` once again, open **Help** from the
-   sidebar and close it.
+3. Go back to **Browse > Files**, click `1bdq.pdb` once again, press **F1** to open the
+   help panel and press **F1** again to close it (**Help** in the sidebar opens the
+   datagrok.ai help site in a new browser tab instead).
 
    * Expected result: same as step 2; the `1bdq.pdb` preview can still be opened.
 
@@ -130,9 +131,9 @@ Steps:
 
 1. In **Demo > bio > ngl-formats**, double-click `1blu.mmtf`.
 
-   * Expected result: a new view **NGL** becomes current and shows the structure in an NGL
-     host (`.d4-ngl-viewer` with a `canvas`). No error balloon; no console error containing
-     `ext '' unknown`.
+   * Expected result: a new view becomes current (its title is empty) and shows the structure
+     in an NGL host (`.d4-ngl-viewer` with a `canvas`). No error balloon; no console error
+     containing `ext '' unknown`.
 
 2. Close the view and double-click `1lee.ccp4`.
 
@@ -159,10 +160,9 @@ Steps:
   table view with 2 rows exists", not "exactly one view".
 - Scenario 1: where the Files browser shows the preview's name is to be matched on the stand;
   the NGL previews of Scenario 2 are created without a name, so their title is not asserted.
-- Scenario 6 is a suspected defect, verify on the stand: by code reading, the double-click
-  handler for NGL-only formats (`viewNglUI`) creates the **NGL** view but does not put the NGL
-  host into it, and loads the file without its extension, so an empty **NGL** view or an
-  `ext '' unknown` error is likely instead of the expected result.
+- Scenario 6: by code reading an empty view or an `ext '' unknown` error was suspected
+  (`viewNglUI`); on the stand a double-click on `1blu.mmtf` and `1lee.ccp4` opens a view with an
+  NGL canvas and no error. The view's title is empty, not **NGL**.
 - Scenario 7 is a suspected defect, verify on the stand: by code reading, `compId` is created
   as an integer column while three-letter residue names are written into it, so the column
   may come out empty.

@@ -19,7 +19,7 @@ realized_as:
 
 The NGL viewer does not take its structure from a Molecule3D column. It gets it from the grid
 cell menu **Show > NGL** (the cell value is passed to the viewer), from the table's `.pdb` tag,
-or from a local file picked with its **Open...** link. Its **Ligand Column Name** accepts
+or from a local file picked with its **Open...** link. Its **Ligand** property accepts
 Molecule (small-molecule) columns only.
 
 NGL file previews and double-click opening are covered by
@@ -53,7 +53,7 @@ Steps:
 
    * Expected result: the settings show `ball+stick`. No error balloon, no console error.
 
-4. In the category **Data**, open the **Ligand Column Name** choice.
+4. In the category **Data**, open the **Ligand** choice.
 
    * Expected result: the `pdb` column is not offered (the property accepts Molecule columns
      only).

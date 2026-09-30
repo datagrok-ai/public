@@ -48,15 +48,16 @@ centre, for example `F | Caucasian`.
 4. **Verify:** the tooltip shows `18` and `Black`.
 5. In the Context Panel, open the **Hierarchy** dialog, leave only **RACE** checked, click **OK**.
 6. **Verify:** 4 segments; `Caucasian` holds 896 rows.
-7. Set **Hierarchy** back to **SEX**, **RACE**.
+7. Open the **Hierarchy** dialog, check **SEX**, drag it above **RACE** and click **OK** (the
+   dialog keeps RACE, already in the hierarchy, first and appends SEX after it).
 8. **Verify:** 10 segments; no errors in the console.
 
 ### 2. Only categorical columns can build the hierarchy (github-2954, GROK-18010, GROK-18009)
 
 1. Open `System:AppData/Charts/ae.csv` and add a **Sunburst**.
 2. Open the **Hierarchy** dialog.
-3. **Verify:** the date column `AESTDTC` and the numeric columns `AESEQ` and `AESTDY` are not in
-   the list; `AESEV` is.
+3. **Verify:** the date column `AEENDTC` and the numeric columns `AESEQ` and `AESTDY` are not in
+   the list; `AESEV` is (`AESTDTC` holds text in this file and is listed).
 4. Click **Cancel**.
 5. Open `System:AppData/Chem/tests/spgi-100.csv` and add a **Sunburst**.
 6. Open the **Hierarchy** dialog, click **None**, check **Core** and **R101**, click **OK**.
@@ -124,8 +125,8 @@ centre, for example `F | Caucasian`.
 1. Go to the `spgi-100` view. Set the Sunburst's **Hierarchy** to **Stereo Category** only.
 2. **Verify:** segments `R_ONE` and `S_UNKN` are painted in different colors.
 3. Add a **Scatter plot** and set its **Color** to **Stereo Category**.
-4. In the scatter plot legend, right-click `R_ONE` to open its color picker, then click
-   **Cancel**.
+4. In the scatter plot legend, hover `R_ONE` and click the palette icon that appears to open its
+   color picker, then click **Cancel**.
 5. **Verify:** segments `R_ONE` and `S_UNKN` of the Sunburst are still painted in different
    colors.
 6. Close the Sunburst and add a new **Sunburst** with **Hierarchy** = **Stereo Category**.

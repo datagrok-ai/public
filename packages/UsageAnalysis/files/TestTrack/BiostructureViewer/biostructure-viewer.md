@@ -57,7 +57,7 @@ Steps:
 
 3. Open the viewer settings (gear icon on the viewer title bar).
 
-   * Expected result: in the **Data** category, **Biostructure Id Column Name** is `pdb`;
+   * Expected result: in the **Data** category, **Biostructure Id** is `pdb`;
      in the **Style** category, **Representation** is `cartoon`.
 
 4. Make row 3 current by clicking it in the grid.
@@ -111,15 +111,15 @@ Steps:
 
 ## Automation notes
 
-- Property labels are written as the settings panel is expected to show them (camel-case
-  names split into words: `biostructureIdColumnName` → **Biostructure Id Column Name**); match
-  them once on the stand.
+- Property labels are written as the settings panel shows them: the panel drops the
+  "Column Name" suffix (`biostructureIdColumnName` → **Biostructure Id**,
+  `ligandColumnName` → **Ligand**).
 - The representation choices come from the Mol\* built-in representation list
   (`cartoon`, `ball-and-stick`, `molecular-surface`, …); the exact list shown in the
   dropdown is to be matched on the stand.
 - Scenario 1 step 4 and Scenario 3 check only that the viewer keeps working; what is drawn in
   the viewport is not asserted.
-- The viewer also sets **Ligand Column Name** to `pdb` (the same Molecule3D column it takes the
+- The viewer also sets **Ligand** to `pdb` (the same Molecule3D column it takes the
   structure from); this is not asserted here.
 
 ---

@@ -20,8 +20,9 @@ to save an SDF when a strand cannot be converted.
 ## Setup
 
 - No table is needed for Blocks A–D and F. Block E needs
-  `System:AppData/SequenceTranslator/samples/bulk-translation-axolabs.csv` (5 rows,
-  column `AxolabsSequences`, e.g. `(GalNAc)AfCfpGfsUfacgu`).
+  `System:AppData/SequenceTranslator/samples/bulk-translation-axolabs.csv` (6 rows:
+  5 sequences and an empty last row; column `AxolabsSequences`, e.g.
+  `(GalNAc)AfCfpGfsUfacgu`).
 - The apps are in **Browse > Apps**, group **Peptides > Oligo Toolkit**: **Oligo
   Toolkit** (all three tools as tabs), **Oligo Translator**, **Oligo Pattern**,
   **Oligo Structure**.
@@ -61,8 +62,8 @@ to save an SDF when a strand cannot be converted.
 1. Type `RNA1{r(A)p.r(C)p.r(G)p.r(U)}$$$$`.
    * Expected result: the **Nucleotides** row reads `ACGU` (as in Block B).
 2. Clear the input and type, character by character, the sequence
-   `<GROK-20958 input: to be picked on dev>` — a sequence in a detected format that
-   contains a code with no monomer in the Oligo Toolkit library.
+   `RNA1{r(A)p.r(C)p.[meI]}$$$$` — a sequence in a detected format (HELM) that
+   contains a code with no monomer in the Oligo Toolkit library (`meI`).
    * Expected result: no error balloon at any intermediate or final state. The
      FORMAT / SEQUENCE table no longer shows the `ACGU` row of step 1 (it is not left
      from the previous input). The structure picture is empty.
@@ -120,10 +121,9 @@ to save an SDF when a strand cannot be converted.
 
 ## Automation notes
 
-- Block C: the input string is not fixed yet. It must be detected as a format
-  (e.g. HELM, which starts with `RNA`) and contain a monomer that has no entry in the
-  Oligo Toolkit monomer library, so its translations fall back to `<?>` codes. Pick it
-  on dev once and replace the placeholder.
+- Block C: the input string `RNA1{r(A)p.r(C)p.[meI]}$$$$` was read on localhost with
+  the sample monomer library: it is detected as HELM, and `meI` (a peptide monomer)
+  has no entry in the Oligo Toolkit library.
 - Block B step 4 and Block F: `NOTASEQUENCE` is not detected as any format with the
   sample monomer library (`monomers-sample`); if dev uses a different library, check
   once that it is still undetected.

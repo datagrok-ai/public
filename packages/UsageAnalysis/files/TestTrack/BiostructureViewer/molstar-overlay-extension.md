@@ -28,7 +28,7 @@ lets Escape leave the expanded viewport. **Reset Camera** is covered by the smok
 1. Open **Browse > Files > App Data > BiostructureViewer** and double-click `pdb_data.csv`
    (6 rows: `pdb_id` detected as PDB_ID, `pdb` detected as Molecule3D).
 2. Click **Add viewer** in the toolbox, search `Biostructure` and click it. The viewer takes
-   the `pdb` column by itself (settings **Data > Biostructure Id Column Name** = `pdb`) and
+   the `pdb` column by itself (settings **Data > Biostructure Id** = `pdb`) and
    shows row 1 (1QBS, HIV-1 protease with an inhibitor).
 3. Wait until the overlay button row (`.msp-viewport-controls-buttons`) is present in the
    viewer.
@@ -157,15 +157,16 @@ Steps:
 
 ## Automation notes
 
-- Scenario 2: by code, the **Layout Show Controls** property drives the Mol\* layout, but no
-  code writes the button state back into the property; whether the property follows the
-  button is not verified on the stand and is not asserted.
+- Scenario 2: the **Layout Show Controls** property drives the Mol\* layout, but the
+  button state is not written back into the property: after **Toggle Controls Panel** the
+  property still reads off (seen on the stand). Not asserted.
 - Scenario 3: what the selection mode highlights in the structure is not asserted, only the
   button state.
 - Scenario 5: the popover is attached to `document.body` (class `bsv-bs-popover`), not to the
   viewer; an outside click closes it, which is why step 6 may need to reopen it.
 - Scenario 6: the viewer does not pass the Mol\* "show expand" option, so the button relies on
-  the Mol\* default; an earlier live check listed five overlay buttons without
-  **Toggle Expanded Viewport**. Its presence is to be checked on the stand.
+  the Mol\* default; on the stand the viewer shows seven overlay buttons, **Toggle Expanded
+  Viewport** among them (Binding site, Reset Camera, Screenshot / State Snapshot, Toggle
+  Controls Panel, Toggle Expanded Viewport, Settings / Controls Info, Toggle Selection Mode).
 - The button tooltips come from the bundled `@rcsb/rcsb-molstar` version; match them once on
   the stand after a Mol\* upgrade.

@@ -84,16 +84,16 @@ menu (Convert, Combine Sequences) run on a custom-notation column.
 ### Block E — Per-cell context actions
 
 1. Right-click the `oligo_helm (oligo)` cell of row `siR-0001`.
-   * Expected result: the menu contains **Copy | Copy as HELM**, **Copy | Copy as
-     Image**, **Actions | Edit HELM** and **Enumerate Oligos** (other entries may be
-     present too).
-2. Click **Copy | Copy as HELM**.
+   * Expected result: the menu contains **Current Value > Copy as HELM**, **Current
+     Value > Copy as Image**, **Current Value > Edit HELM** and **Enumerate Oligos**
+     (other entries may be present too).
+2. Click **Current Value > Copy as HELM**.
    * Expected result: info balloon **HELM copied to clipboard**. The clipboard holds
      the cell's HELM: it starts with `RNA1{`, contains `|RNA2{`, and ends with `$$$$`.
-3. Right-click the cell again and click **Copy | Copy as Image**.
+3. Right-click the cell again and click **Current Value > Copy as Image**.
    * Expected result: info balloon **Image copied to clipboard**; the clipboard holds
      a PNG image. No error balloon.
-4. Right-click the cell and click **Actions | Edit HELM**. In the HELM Web Editor,
+4. Right-click the cell and click **Current Value > Edit HELM**. In the HELM Web Editor,
    click **CANCEL**.
    * Expected result: the full-screen editor opens loaded with the duplex and closes
      on CANCEL; the cell value is unchanged.
@@ -127,7 +127,7 @@ rows; column `seqs` in custom notation, e.g. `C(1)-T-G-Aca-F-Y-P-C(1)-meI`).
 4. Open **Bio | PolyTool | Combine Sequences...** again. In the first row set
    **Table** = `cyclized` (**Column** becomes `seqs`). Click the **+** icon at the end
    of the row, and in the new row set **Table** = `cyclized`, **Column** = `seqs`.
-   Keep **Separator** = `-`. Click **OK**.
+   Set **Separator** = `-` (it is empty by default). Click **OK**.
    * Expected result: a new table view **Combined Sequences** opens with one column
      **Combined Sequences** and **196** rows (14 × 14). The first value is the first
      `seqs` value, `-`, and the first `seqs` value again.
@@ -158,10 +158,9 @@ rows; column `seqs` in custom notation, e.g. `C(1)-T-G-Aca-F-Y-P-C(1)-meI`).
 - Block B: the duplex drawing and the monomer tooltip are canvas-only; they are
   checked by a person. Automated checks lean on the **Duplex** row of Block C, which
   is the text form of the same alignment.
-- Block C steps 5–6: the full **Duplex** text for `siR-0038` and `siR-0040` is not
-  pinned here — only the `overhangs:` / `(from HELM pairs)` parts. Exact text:
-  `<to be read on dev>` (format is `<N> bp, overhangs: … (auto-aligned)` or
-  `<N> bp, blunt (from HELM pairs)`).
+- Block C steps 5–6: the full **Duplex** text, read on localhost (SequenceTranslator
+  1.11.5): `siR-0038` — `19 bp, overhangs: 3' antisense +2, 3' sense +2 (auto-aligned)`;
+  `siR-0040` — `19 bp, blunt (from HELM pairs)`.
 - Block E step 3: whether a shared step can read an image from the clipboard is not
   settled; if not, the check is the balloon alone.
 - Block E step 4: writing an edited HELM back on OK needs a way to change a monomer

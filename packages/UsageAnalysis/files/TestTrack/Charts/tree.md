@@ -32,7 +32,8 @@ sets **Row Source** to match.
 2. On the Menu Ribbon, click **Add viewer** and select **Tree**.
 3. Click the **Gear** icon of the Tree. In the Context Panel, click the **...** button of
    **Hierarchy**. In the **Select columns...** dialog click **None**, check **CONTROL**, **SEX**
-   and **RACE**, and drag the rows so the order is CONTROL, SEX, RACE. Click **OK**.
+   and **RACE** in that order (the dialog keeps the order the columns are checked in). Click
+   **OK**.
 
 ## Scenarios
 
@@ -116,8 +117,8 @@ sets **Row Source** to match.
 - The Tree in a saved layout (GROK-19226) is not checked here; the project round trip in
   scenario 4 covers saving the Tree. A layout step can be added once the Tree is checked
   manually in a layout on dev.
-- Setup step 3 depends on the **Select columns...** dialog keeping the row order the user drags;
-  checked columns are otherwise listed in table order (SEX, RACE, CONTROL).
+- Setup step 3 depends on the **Select columns...** dialog keeping the order the columns are
+  checked in; no row needs dragging.
 
 ---
 {

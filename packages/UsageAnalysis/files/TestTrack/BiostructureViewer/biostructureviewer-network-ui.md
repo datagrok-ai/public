@@ -44,7 +44,7 @@ Steps:
 2. Click **Add viewer** in the toolbox, search `Biostructure` and click it.
 
    * Expected result: the viewer loads the structure of the current row (`1QBS`) and holds the
-     Mol\* engine. In the settings, **Data > Biostructure Id Column Name** is `pdb_id` and
+     Mol\* engine. In the settings, **Data > Biostructure Id** is `pdb_id` and
      **Data > Biostructure Data Provider** names one of the RCSB providers (RCSB PDB, RCSB
      mmCIF, RCSB bCIF). No error balloon.
 

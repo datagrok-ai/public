@@ -34,8 +34,8 @@ the app view keeps its content when the user switches away and back.
 1. In `chem_enum_cores`, right-click the cell `C1C2CN([*:2])CC2CN1[*:1]` and choose
    **Enumerate Markush Structure...**.
    * Expected result: the **Markush Enumerator** dialog opens with exactly one core
-     card in **Cores**, subtitled `core 1 · R1, R2`. **Enumerator type** is
-     **Cartesian**. **OK** is disabled.
+     card in **Cores**, marked with the R-numbers **R1** and **R2**. **Enumerator
+     type** is **Cartesian**. **OK** is disabled.
 2. In **R-Groups**, click the import (folder) icon. In **Import R-Groups** set
    **Table** = `chem_enum_rgroups`, **Column** = `R1`, **Target R#** = `1`, and click
    **OK**. Repeat with **Column** = `R2`, **Target R#** = `2`.
@@ -68,7 +68,7 @@ the app view keeps its content when the user switches away and back.
      the **Enumerator type** selector.
 3. Click **Enumerate** in the ribbon.
    * Expected result: an **Enumerate** dialog opens with **Output** = **New table**,
-     **Table name**, **Remove duplicates** and a **Run** button. Close it with
+     **Table name**, **Remove duplicates** and an **OK** button. Close it with
      **CANCEL**.
 4. Switch to the `chem_enum_cores` table view, then back to the Markush Enumerator
    view.
