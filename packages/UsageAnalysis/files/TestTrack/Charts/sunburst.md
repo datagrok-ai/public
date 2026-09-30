@@ -1,223 +1,194 @@
 ---
 feature: charts
 target_layer: playwright
+pyramid_layer: ui-smoke
 coverage_type: regression
 priority: p0
-realizes_atlas: [charts.cp.configure-via-property-panel, charts.cp.persist-via-project-save-reopen]
+realizes_atlas: [charts.cp.configure-via-property-panel, charts.cp.click-segment-to-select-or-filter, charts.cp.persist-via-project-save-reopen]
 realizes: [charts.viewer.sunburst]
 realized_as:
   - sunburst-spec.ts
-pyramid_layer: integration
-ui_coverage_responsibility:
-  - add-viewer-sunburst
-  - viewer-property-panel-gear
-  - select-columns-dialog
-  - viewer-context-menu-reset-view
-  - viewer-save-layout
-  - viewer-apply-layout
-ui_coverage_delegated_to:
-  sunburst-multi-selection: charts-ui.md
-  sunburst-empty-category-click: charts-ui.md
-produced_from: migrated
-original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/sunburst.md
-migration_date: 2026-05-07
-source_text_fixes: []
-candidate_helpers: []
-unresolved_ambiguities:
-  - step-8-old-layout-fixture-sourcing-issue-2979
-  - old-layout-file-location-ticket-commentary
-  - inherit-from-grid-toggle-visibility-on-spgi-v2-vs-demog
-  - helper-candidate-selecthierarchycolumns-viewer-columns
-scope_reductions: []
 related_bugs:
   - github-2954
+  - github-2992
+  - github-2994
+  - github-3097
   - github-3412
+  - GROK-15543
+  - GROK-18009
+  - GROK-18010
 ---
 
 # Sunburst viewer
 
-Multi-subsystem Sunburst integration scenario: viewer creation, property
-panel + Select Columns dialog, hierarchy rendering, inherit-from-grid
-coloring, include-nulls toggle, view reset (double-click + context
-menu), multi-selection gestures (Click / Ctrl+Click / Ctrl+Shift+Click),
-empty-category select/filter, project save → close-all → reopen
-restoration, layout save + apply, old-layout compatibility (issue #2979),
-and collaborative filtering (internal viewer filter ∧ panel filter).
-
-This is an integration-level scenario: Sunburst is exercised together
-with the property panel, the Select Columns dialog, Layouts, Projects,
-and Filters — not as an isolated single-viewer smoke test.
+The Sunburst draws a categorical hierarchy as nested rings: one ring per hierarchy column, one
+segment per distinct value under its parent. A click on a segment selects its rows (On Click =
+Select) or filters the table to them (On Click = Filter); Ctrl+Click toggles a segment,
+Shift+Click adds one, Ctrl+Shift+Click removes one. Double-click on empty space or **Reset View**
+in the context menu clears the viewer's own filter. Segments are named by their path from the
+centre, for example `F | Caucasian`.
 
 ## Setup
 
-1. Authenticate as test user.
-2. Open `System:DemoFiles/demog.csv` (target table for inherit-from-grid
-   and collaborative-filtering sub-flows).
-3. Open `System:DemoFiles/chem/SPGI.csv` (primary source driving
-   hierarchy / nulls / project-save sub-flows).
-4. For each opened table view, add a **Sunburst** viewer via
-   **Add viewer** → **Sunburst**.
-5. Cleanup: delete any project saved during the run (Step in
-   `### Project save and reopen`); restore default layouts.
+1. Open `System:DemoFiles/demog-1000.csv` (1000 rows: SEX F 553 / M 447; F | Caucasian 480,
+   F | Other 48, F | Black 18, F | Asian 7, M | Caucasian 416, M | Other 14, M | Black 9,
+   M | Asian 8).
+2. On the Menu Ribbon, click **Add viewer** and select **Sunburst**.
+3. Click the **Gear** icon of the Sunburst. In the Context Panel, click the **...** button of
+   **Hierarchy**. In the **Select columns...** dialog click **None**, check **SEX** and **RACE**
+   (SEX above RACE) and click **OK**.
 
 ## Scenarios
 
-### Viewer creation smoke
+### 1. Hierarchy draws one segment per value with its row count
 
-1. Confirm the Sunburst viewer is present on **SPGI_v2.csv** without
-   console errors.
-2. Confirm the Sunburst viewer is present on **demog.csv** without
-   console errors.
+1. **Verify:** the viewer shows 10 segments: `F`, `M`, and the eight `SEX | RACE` pairs.
+2. **Verify:** segment `F` holds 553 rows, `M` 447, `F | Caucasian` 480, `M | Asian` 8.
+3. Hover segment `F | Black`.
+4. **Verify:** the tooltip shows `18` and `Black`.
+5. In the Context Panel, open the **Hierarchy** dialog, leave only **RACE** checked, click **OK**.
+6. **Verify:** 4 segments; `Caucasian` holds 896 rows.
+7. Set **Hierarchy** back to **SEX**, **RACE**.
+8. **Verify:** 10 segments; no errors in the console.
 
-### Property panel opens
+### 2. Only categorical columns can build the hierarchy (github-2954, GROK-18010, GROK-18009)
 
-1. Click the **Gear** icon in the Sunburst viewer (SPGI_v2 view).
-2. Verify the context panel with viewer properties opens and shows
-   the Sunburst property set.
-
-### Table switching
-
-1. With the property panel open, switch the bound table between
-   **SPGI_v2.csv** and **demog.csv** via the property panel's table
-   selector.
-2. Verify the viewer re-renders against the new bound table without
+1. Open `System:AppData/Charts/ae.csv` and add a **Sunburst**.
+2. Open the **Hierarchy** dialog.
+3. **Verify:** the date column `AESTDTC` and the numeric columns `AESEQ` and `AESTDY` are not in
+   the list; `AESEV` is.
+4. Click **Cancel**.
+5. Open `System:AppData/Chem/tests/spgi-100.csv` and add a **Sunburst**.
+6. Open the **Hierarchy** dialog, click **None**, check **Core** and **R101**, click **OK**.
+7. **Verify:** the viewer draws segments (it is not blank and shows no message) and its hierarchy
+   is `Core, R101`.
+8. Open the **Hierarchy** dialog again and, while it is open, set **Table** in the Context Panel
+   to `demog-1000`. Close the dialog with **Cancel**.
+9. **Verify:** the Sunburst is bound to `demog-1000`, draws segments, and the console has no
    errors.
 
-### Hierarchy configuration via Select Columns dialog
+### 3. Click, Ctrl+Click, Shift+Click and Ctrl+Shift+Click select segments
 
-1. On the SPGI_v2 Sunburst, open the **Select Columns** dialog from
-   the property panel.
-2. Choose 2–4 columns and click **OK**.
-3. Verify the hierarchy updates to reflect the selected columns
-   (rings ordered top-to-bottom by selection order).
-4. Reopen the **Select Columns** dialog and use the search box to
-   locate a column, then click **Cancel**.
-5. Verify no hierarchy changes are applied.
-6. Verify segment label text is fully visible when there is enough
-   space, otherwise hidden with a tooltip showing the value on hover.
-7. Verify structural columns render at the correct ring size relative
-   to their nesting level.
+1. Go back to the `demog-1000` view. Clear the selection (press **Escape** in the grid).
+2. Click segment `F`.
+3. **Verify:** 553 rows are selected, only rows where SEX is F.
+4. Ctrl+Click segment `M | Asian`.
+5. **Verify:** 561 rows are selected.
+6. Ctrl+Shift+Click segment `M | Asian`.
+7. **Verify:** 553 rows are selected.
+8. Shift+Click segment `M | Other`.
+9. **Verify:** 567 rows are selected.
+10. Click segment `F | Black` (no key held).
+11. **Verify:** 18 rows are selected: a plain click replaces the selection.
 
-### Inherit from grid (demog.csv)
+### 4. On Click = Filter; double-click and Reset View clear it (github-2994, github-3097)
 
-1. On the **demog.csv** Sunburst, open the **Select Columns** dialog
-   and choose the **SEX** column; click **OK**.
-2. Enable the **Inherit from grid** property in the Sunburst property
-   panel.
-3. Apply categorical coloring to the **SEX** column in the grid.
-4. Verify the Sunburst viewer reflects the grid colors for the SEX
-   ring.
-5. Change the categorical coloring on the grid SEX column.
-6. Verify the Sunburst viewer updates to reflect the new colors.
+1. Clear the selection. In the Context Panel, set **On Click** to **Filter**.
+2. **Verify:** **Row Source** has switched to **All**.
+3. Click segment `F | Black`.
+4. **Verify:** 18 rows pass the filter; the Sunburst still shows all 10 segments.
+5. Double-click on empty space in the Sunburst (a corner of the viewer, outside the rings).
+6. **Verify:** 1000 rows pass the filter.
+7. Click segment `M`.
+8. **Verify:** 447 rows pass the filter.
+9. Right-click the Sunburst and choose **Reset View**.
+10. **Verify:** 1000 rows pass the filter.
+11. Set **On Click** back to **Select**.
+12. **Verify:** **Row Source** is **Filtered**.
 
-### Include nulls (SPGI_v2.csv)
+### 5. Empty values: Include Nulls and a click on the empty segment (github-2992)
 
-1. On the SPGI_v2 Sunburst, open **Select Columns** and choose the
-   **Core** and **R101** columns; click **OK**.
-2. Enable the **Include nulls** property.
-3. Verify grey segments appear for null values in either column.
-4. Disable the **Include nulls** property.
-5. Verify the grey null segments disappear.
+1. Go to the `spgi-100` view. Close its Sunburst and add a new **Sunburst**. Set **Hierarchy**
+   to **Stereo Category**, **Series** (Stereo Category above Series).
+2. **Verify:** **Include Nulls** is on; 17 segments; `S_PART` holds 10 rows, `R_ONE` 36.
+3. Clear the selection, then click the empty (grey) segment under `S_PART`.
+4. **Verify:** 3 rows are selected: Stereo Category is S_PART and Series is empty.
+5. Turn **Include Nulls** off.
+6. **Verify:** 14 segments; `S_PART` holds 7 rows, `R_ONE` 33, `S_UNKN` 17.
+7. Turn **Include Nulls** on.
+8. **Verify:** 17 segments again.
 
-### View reset
+### 6. Viewer filter and Filter Panel combine (GROK-15543)
 
-1. Drill into the Sunburst by clicking a ring segment, then
-   double-click on empty space inside the viewer.
-2. Verify the view resets to its initial (top-level) state.
-3. Drill in again, then open the viewer context menu and click
-   **Reset View**.
-4. Verify the view resets to its initial state.
+1. Go to the `demog-1000` view. Set **On Click** to **Filter** and click segment `F`.
+2. **Verify:** 553 rows pass the filter.
+3. Open the Filter Panel and keep only **Caucasian** in the **RACE** filter.
+4. **Verify:** 480 rows pass the filter (F and Caucasian).
+5. Remove the **RACE** filter card.
+6. **Verify:** 553 rows pass the filter: the Sunburst's own filter is still on.
+7. Double-click on empty space in the Sunburst.
+8. **Verify:** 1000 rows pass the filter.
 
-### Multi-selection behaviour
+### 7. Editing a scatter plot's legend color does not strip the Sunburst's colors (github-3412)
 
-> **Moved to** `charts-ui.md` (ui-only, canvas-gesture). The
-> Click / Ctrl+Click / Ctrl+Shift+Click on canvas Sunburst segments
-> has no automatable JS-API equivalent that exercises the actual
-> hit-test + modifier-key dispatch. Manual scenario maintained
-> separately; this section intentionally left blank in the
-> playwright-layer scenario.
+1. Go to the `spgi-100` view. Set the Sunburst's **Hierarchy** to **Stereo Category** only.
+2. **Verify:** segments `R_ONE` and `S_UNKN` are painted in different colors.
+3. Add a **Scatter plot** and set its **Color** to **Stereo Category**.
+4. In the scatter plot legend, right-click `R_ONE` to open its color picker, then click
+   **Cancel**.
+5. **Verify:** segments `R_ONE` and `S_UNKN` of the Sunburst are still painted in different
+   colors.
+6. Close the Sunburst and add a new **Sunburst** with **Hierarchy** = **Stereo Category**.
+7. **Verify:** segments `R_ONE` and `S_UNKN` are painted in different colors.
 
-### Select / filter on empty category (SPGI_v2.csv)
+### 8. Hierarchy survives project save and reopen; a layout restores it
 
-> **Moved to** `charts-ui.md` (ui-only, canvas-gesture). Clicking
-> the grey null-segment is canvas hit-testing on the null-category
-> bucket — `df.selection.set` proxy does not verify the canvas
-> hit-test routing. Manual scenario maintained separately.
+1. Close all views. Open `System:DemoFiles/demog-1000.csv`, add a **Sunburst** with
+   **Hierarchy** = **SEX**, **RACE** and **On Click** = **Filter**.
+2. Click **SAVE** on the ribbon, enter `SunburstRoundTrip1` as the name, click **OK**. In the
+   **Share** dialog, click **Cancel**.
+3. Close all. Go to **Browse > Dashboards**, find `SunburstRoundTrip1` and double-click it.
+4. **Verify:** the Sunburst is back, bound to `demog-1000`, hierarchy `SEX, RACE`, **On Click**
+   = Filter, 10 segments.
+5. Save the layout: **View > Layout > Save to Gallery**.
+6. Set **Hierarchy** to **RACE** only.
+7. **Verify:** 4 segments.
+8. Open **View > Layout > Open Gallery** and apply the saved layout.
+9. **Verify:** hierarchy is `SEX, RACE` again, 10 segments.
 
-### Project save and reopen
+## Cleanup
 
-1. On the SPGI_v2 Sunburst, configure 3–4 hierarchy columns via
-   **Select Columns**.
-2. Save the project (Save Project dialog → keep defaults → **OK**).
-   Cancel any auto-share dialog that opens.
-3. Close all views.
-4. Reopen the saved project from **Browse > Dashboards** (or the
-   recent-projects list).
-5. Verify the Sunburst viewer is restored with the same hierarchy
-   columns, bound table, and visible state.
+1. Close all.
+2. In **Browse > Dashboards**, right-click `SunburstRoundTrip1`, choose **Delete Project** and
+   click **DELETE**.
+3. In the layout gallery, delete the layout saved in scenario 8.
 
-### Layout save and apply
+## Expected results
 
-1. With the SPGI_v2 Sunburst still configured, save the current
-   layout (via the **Layouts** menu / **Save** action — not Ctrl+S
-   which saves the project).
-2. Reset or change the Sunburst configuration (e.g. clear hierarchy
-   columns) so the layout's effect is observable.
-3. Apply the saved layout.
-4. Verify the Sunburst viewer is restored to the configuration
-   captured by the layout (hierarchy columns, properties).
+- The segments and their row counts match the hierarchy columns; the tooltip names the segment
+  and its count.
+- The **Hierarchy** dialog lists only categorical (string and boolean) columns.
+- Click replaces the selection, Ctrl+Click toggles, Shift+Click adds, Ctrl+Shift+Click removes.
+- On Click = Filter filters the table and sets Row Source to All; On Click = Select sets it to
+  Filtered. Double-click on empty space and **Reset View** clear the Sunburst's filter.
+- Include Nulls drops rows with an empty value in any hierarchy column from every count.
+- The Sunburst's filter and the Filter Panel combine with AND.
+- A scatter plot's color picker does not strip the colors of the Sunburst's segments.
+- Hierarchy and On Click survive a project save and reopen; a layout restores the hierarchy.
 
-### Old layout compatibility (issue #2979)
+## Automation notes
 
-1. Apply / open the layout from issue
-   [#2979](https://github.com/datagrok-ai/public/issues/2979) on
-   the corresponding source table.
-2. Verify the Sunburst viewer shows the columns the layout encodes,
-   AND the columns presented in the **Select Columns** dialog are
-   in sync with what the viewer is rendering.
+- Segment names are the values joined by ` | ` from the centre outwards; the empty value's name
+  is empty, so the empty segment under `S_PART` is `S_PART | ` (trailing space). An empty
+  segment on the first ring has no name and cannot be addressed, which is why scenario 5 uses
+  an empty value on the second ring.
+- Segment areas, `segments`, `segment names`, `rows of segment <path>`, `hierarchy columns`,
+  `on click`, `include nulls` and `rows shown` are readings of the Sunburst's widget status.
+- Scenario 2 step 3 needs a step that reads which columns the **Select columns...** dialog
+  lists.
+- Scenario 2 steps 8-9 (GROK-18009) rely on the **Select columns...** dialog being non-modal,
+  so the Context Panel stays usable while it is open.
+- Scenario 7 compares the colors of two segment areas; the Sunburst has no color column
+  property, its segment colors come from the column's categorical colors. Opening the picker
+  from a scatter plot legend item needs a legend right-click step.
+- `ae.csv` is `packages/Charts/files/ae.csv`; `spgi-100.csv` is
+  `packages/Chem/files/tests/spgi-100.csv`. The `demog-1000.csv` counts were taken from
+  `packages/ApiTests/files/datasets/demog-1000.csv`, assumed to match the DemoFiles copy.
+- The Sunburst help page describes drill-down on click; the steps follow the viewer code, where
+  a click selects or filters and there is no drill-down.
 
-> NOTE: The layout fixture for issue #2979 is referenced by URL in
-> the original scenario but is NOT stored in the repo or
-> `System:DemoFiles`. Provisioning is unresolved. Downstream
-> Automator must either commit a fixture layout, provision via
-> `grok.dapi.layouts`, or `test.skip` this scenario citing the
-> missing fixture.
-
-### Collaborative filtering (demog.csv)
-
-1. On the **demog.csv** Sunburst, configure 2–3 hierarchy columns
-   via **Select Columns**.
-2. Click a Sunburst segment to apply an internal viewer filter
-   (`onClick` action set to **Filter**, or use the segment's
-   filter context-menu entry).
-3. Open the panel filter (filter widget) on the same view and
-   apply a filter on a different column.
-4. Verify the filter set in effect is the **intersection** of the
-   internal Sunburst filter and the panel filter — the grid shows
-   only rows matching both, and the Sunburst re-renders against
-   the intersection.
-
-## Notes
-
-- Sibling scenarios: `radar.md` owns the Add-Viewer + property-panel
-  smoke coverage for the Charts section; this scenario is the
-  integration-level counterpart and isn't meant to be merged into the
-  smoke test.
-- This runs at the playwright/UI-driving layer because the "Project
-  save and reopen" and "Layout save and apply" steps need real UI
-  navigation and menus, not just JS-API calls.
-- `github-2954` (Sunburst date-column hierarchy handling) isn't
-  specifically tested here — see `sunburst-date-column-bug.md`.
-  `github-3412` (Sunburst × Scatterplot color-state pollution) isn't
-  tested here either — see `sunburst-scatterplot-color-pollution-bug.md`.
-- Setup Step 5 is self-cleaning: it deletes any project saved during
-  the run.
-- Project save/reopen is tested per-viewer rather than once centrally
-  — the same save/reopen serialization bug class can manifest
-  differently per viewer type. See also `radar-save-reopen-bug.md` for
-  the Radar-specific GROK-18085 reproduction.
-- The spec currently drives the DOM via `page.evaluate` +
-  `dispatchEvent` rather than `page.locator(...).click()`. Refactoring
-  to locator-based clicks is deferred to a follow-up pass (planned
-  alongside the same refactor for `tree-spec.ts`) to avoid scope creep
-  in this change.
+---
+{
+  "order": 30,
+  "datasets": ["System:DemoFiles/demog-1000.csv", "System:AppData/Charts/ae.csv", "System:AppData/Chem/tests/spgi-100.csv"]
+}
