@@ -6,6 +6,7 @@
   "stageAuthority": "portal",
   "programNoun": "Program",
   "workspaceRoot": "Example Biologics Discovery",
+  "workstreams": ["Protein Engineering", "Biology", "Biophysics", "Developability"],
   "description": "Example portfolio on synthetic data. Shares a registry with Example Biologics Development and takes only its research slice; the registry's development gate code is kept as source_stage but does not place the program.",
   "groups": {
     "viewers": "Portal EX-BIOD Viewers",
