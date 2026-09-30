@@ -46,7 +46,10 @@ dashboards and queries.
 * When she becomes her team's assay owner, an administrator adds the _Content Owners_ role. She can
   publish the team's shared queries, and her data access is unchanged.
 
-Grant capabilities on roles and use groups for sharing. Groups and roles can be nested; keep it to
+A role is a group with a role flag, and permissions work the same way for both. The difference is a
+convention, plus one rule: group synchronization never adds anyone to a role, so capabilities can't
+change through your identity provider by accident. Grant capabilities on roles and use groups for
+sharing. Groups and roles can be nested; keep it to
 two or three levels so that it stays clear who can see what.
 
 Every user has a personal group. Don't share with it: access given to one person is lost when they
