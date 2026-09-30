@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {loadAllPortfolios, loadPortfolioSet, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans} from './portal';
 import {portalDb} from './generated/db';
+import {buildPortfolioWorkspace, summarizeWorkspace} from './workspace';
 import {portalAppView} from './views/portal-view';
 import {installStyles} from './views/styles';
 export * from './package.g';
@@ -72,4 +73,24 @@ export async function portfolioRoutingAudit(): Promise<string> {
 //output: string report
 export async function routingAuditOf(sources: string): Promise<string> {
   return summarizeRouting(await routingAudit(JSON.parse(sources)));
+}
+
+//name: buildWorkspace
+//description: Creates the portfolio's Spaces tree (root, a folder per program, its workstreams) and shares the root with the portfolio's groups. Additive and idempotent; dryRun previews what would be created
+//input: string code
+//input: bool dryRun = false
+//output: string report
+export async function buildWorkspace(code: string, dryRun: boolean = false): Promise<string> {
+  return summarizeWorkspace(await buildPortfolioWorkspace(code, dryRun));
+}
+
+//name: buildAllWorkspaces
+//description: Builds the workspace of every loaded portfolio that declares a workspaceRoot, one after another
+//output: string report
+export async function buildAllWorkspaces(): Promise<string> {
+  const portfolios = (await portalDb.portfolios.query({})).filter((p) => p.workspace_root);
+  const out: string[] = [];
+  for (const p of portfolios.sort((a, b) => a.code.localeCompare(b.code)))
+    out.push(summarizeWorkspace(await buildPortfolioWorkspace(p.code)));
+  return out.join('\n');
 }

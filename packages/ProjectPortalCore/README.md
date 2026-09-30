@@ -38,6 +38,11 @@ one customer runs discovery and CMC together.
 - **Fail closed.**
   - `program` rows are private to their author until they are shared.
   - Sync shares each new program with its portfolio's groups: approvers ⊂ contributors ⊂ viewers, with View to viewers and Edit to contributors.
+- **A workspace per portfolio.**
+  - `buildWorkspace` creates a Spaces tree: the portfolio's `workspaceRoot`, a folder per program named `CODE · Name`, and the portfolio's `workstreams` under each program.
+  - Compounds, plates, results and predictions are never folders.
+  - It is additive: it creates what is missing and never renames, moves or deletes. It records each program's folder on the program row (`space_id`), so a program renamed in its registry keeps its folder, and the report names the difference.
+  - The root is shared View to viewers and Edit to contributors, and its folders inherit that. Unlike program rows, spaces accept the grant, so the workspace is isolated per portfolio today.
 
 ## Configuration
 
@@ -77,6 +82,8 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
+| `buildWorkspace(code, dryRun)` | Builds one portfolio's workspace. With `dryRun` it lists what it would create. Refused while another build of the same root runs. |
+| `buildAllWorkspaces` | Builds the workspace of every portfolio that declares a `workspaceRoot` |
 
 ## Tests
 
@@ -84,11 +91,12 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Configuration rules, the sync planner, and gate rules. These are pure functions.
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
-  - Isolation between portfolios, run as a throwaway restricted user.
+  - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds.
+  - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-09-30, 39 of the 42 package tests and all 7 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-09-30, 47 of the 50 package tests and all 7 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

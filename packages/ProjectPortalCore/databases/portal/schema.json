@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -74,7 +74,8 @@
         "stage_authority": {"type": "string", "choices": ["feed", "portal"], "required": true, "default": "portal",
           "description": "feed: the registry owns the stage and the portal mirrors it; portal: gate decisions are made and recorded here"},
         "program_noun": {"type": "string", "default": "Program", "description": "What this portfolio calls a program: Project, Program, Molecule"},
-        "workspace_root": {"type": "string"},
+        "workspace_root": {"type": "string", "description": "Name of the root space the workspace builder creates the portfolio's tree under"},
+        "workstreams": {"type": "string", "description": "Folders the builder creates under every program, '|'-separated (Chemistry|Biology|DMPK)"},
         "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
         "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
         "approvers": {"type": "group", "onDelete": "setnull", "description": "Records gate decisions"},
@@ -127,6 +128,7 @@
         "predecessor_id": {"type": "ref", "ref": "program", "onDelete": "setnull", "friendlyName": "Predecessor",
           "description": "The program in another portfolio this one continues (e.g. discovery → CMC)"},
         "last_synced_on": {"type": "datetime"},
+        "space_id": {"type": "string", "description": "The program's folder in its portfolio workspace, recorded by the builder so a renamed program keeps its folder"},
         "details": {"type": "json", "description": "Registry columns the portfolio does not map"}
       },
       "filters": [

@@ -56,4 +56,18 @@ export namespace funcs {
   export async function routingAuditOf(sources: string ): Promise<string> {
     return await grok.functions.call('ProjectPortalCore:RoutingAuditOf', { sources });
   }
+
+  /**
+   * Creates the portfolio's Spaces tree (root, a folder per program, its workstreams) and shares the root with the portfolio's groups. Additive and idempotent; dryRun previews what would be created
+   */
+  export async function buildWorkspace(code: string , dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:BuildWorkspace', { code, dryRun });
+  }
+
+  /**
+   * Builds the workspace of every loaded portfolio that declares a workspaceRoot, one after another
+   */
+  export async function buildAllWorkspaces(): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:BuildAllWorkspaces', {});
+  }
 }

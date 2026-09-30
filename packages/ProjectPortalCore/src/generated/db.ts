@@ -170,6 +170,7 @@ export interface PortfolioRow {
   stage_authority: PortfolioStageAuthority;
   program_noun?: string;
   workspace_root?: string;
+  workstreams?: string;
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -186,6 +187,7 @@ export interface PortfolioInsert {
   stage_authority: PortfolioStageAuthority;
   program_noun?: string;
   workspace_root?: string;
+  workstreams?: string;
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -194,7 +196,7 @@ export interface PortfolioInsert {
 
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
-  'viewers' | 'contributors' | 'approvers' | 'description';
+  'workstreams' | 'viewers' | 'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -246,8 +248,9 @@ export type RegistryFeedExpand = {
   'portfolio_id': {'portfolio_id.code'?: string; 'portfolio_id.name'?: string;
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
-    'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
+    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -272,6 +275,7 @@ export interface ProgramRow {
   external_ref?: string;
   predecessor_id?: string;
   last_synced_on?: Dayjs;
+  space_id?: string;
   details?: {[key: string]: any};
 }
 
@@ -292,20 +296,22 @@ export interface ProgramInsert {
   external_ref?: string;
   predecessor_id?: string;
   last_synced_on?: Dayjs | string;
+  space_id?: string;
   details?: {[key: string]: any};
 }
 
 export type ProgramColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'portfolio_id' | 'code' |
   'name' | 'stage_model_id' | 'stage_id' | 'source_stage' | 'status' | 'modality' | 'target' | 'therapeutic_area' |
-  'lead' | 'source' | 'external_ref' | 'predecessor_id' | 'last_synced_on' | 'details';
+  'lead' | 'source' | 'external_ref' | 'predecessor_id' | 'last_synced_on' | 'space_id' | 'details';
 
 /** Expand keys of `portal.program` → fields each adds to the row (consumed by query()/builder). */
 export type ProgramExpand = {
   'portfolio_id': {'portfolio_id.code'?: string; 'portfolio_id.name'?: string;
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
-    'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
+    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -321,7 +327,7 @@ export type ProgramExpand = {
     'predecessor_id.modality'?: string; 'predecessor_id.target'?: string; 'predecessor_id.therapeutic_area'?: string;
     'predecessor_id.lead'?: string; 'predecessor_id.source'?: ProgramSource; 'predecessor_id.external_ref'?: string;
     'predecessor_id.predecessor_id'?: string; 'predecessor_id.last_synced_on'?: Dayjs;
-    'predecessor_id.details'?: {[key: string]: any}};
+    'predecessor_id.space_id'?: string; 'predecessor_id.details'?: {[key: string]: any}};
   'details:program': {program?: ProgramRow[]};
   'details:stage_transition': {stage_transition?: StageTransitionRow[]};
   'details:criterion_status': {criterion_status?: CriterionStatusRow[]};
@@ -367,7 +373,7 @@ export type StageTransitionExpand = {
     'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
     'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
     'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
-    'program_id.details'?: {[key: string]: any}};
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'from_stage_id': {'from_stage_id.stage_model_id'?: string; 'from_stage_id.code'?: string;
     'from_stage_id.name'?: string; 'from_stage_id.ordinal'?: number; 'from_stage_id.phase'?: string;
     'from_stage_id.is_gate'?: boolean; 'from_stage_id.is_terminal'?: boolean; 'from_stage_id.governance'?: string;
@@ -418,7 +424,7 @@ export type CriterionStatusExpand = {
     'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
     'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
     'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
-    'program_id.details'?: {[key: string]: any}};
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'gate_criterion_id': {'gate_criterion_id.stage_id'?: string; 'gate_criterion_id.code'?: string;
     'gate_criterion_id.name'?: string; 'gate_criterion_id.kind'?: GateCriterionKind;
     'gate_criterion_id.rule'?: string; 'gate_criterion_id.required'?: boolean; 'gate_criterion_id.modality'?: string};
@@ -614,7 +620,7 @@ export type ProgramFlowExpand = {
     'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
     'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
     'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
-    'program_id.details'?: {[key: string]: any}};
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'process_flow_id': {'process_flow_id.code'?: string; 'process_flow_id.name'?: string;
     'process_flow_id.process_type'?: string; 'process_flow_id.description'?: string};
 };
@@ -711,7 +717,7 @@ export type ModelRunExpand = {
     'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
     'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
     'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
-    'program_id.details'?: {[key: string]: any}};
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'model_id': {'model_id.code'?: string; 'model_id.name'?: string; 'model_id.package'?: string;
     'model_id.category'?: string; 'model_id.description'?: string; 'model_id.status'?: ModelStatus;
     'model_id.owner'?: string};
@@ -766,7 +772,7 @@ export type CriterionArtifactExpand = {
     'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
     'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
     'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
-    'program_id.details'?: {[key: string]: any}};
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'criterion_status_id': {'criterion_status_id.program_id'?: string;
     'criterion_status_id.gate_criterion_id'?: string; 'criterion_status_id.status'?: CriterionStatusStatus;
     'criterion_status_id.owner'?: string; 'criterion_status_id.due_on'?: Dayjs;

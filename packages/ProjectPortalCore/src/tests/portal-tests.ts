@@ -5,6 +5,8 @@ import {loadAllPortfolios, portfolioByCode, programContext, readSources, recordD
   setCriterion, shareProgram, stagesOf, syncPortfolio, verdictFor} from '../portal';
 import {_package} from '../package-test';
 import {withRestrictedUser} from './restricted-user';
+import {buildPortfolioWorkspace} from '../workspace';
+import {programFolderName} from '../model/workspace-plan';
 
 /** The three example portfolios, loaded and synced once per run. Their feeds are synthetic
  * registries written as VALUES on System:Datagrok, so every stand has them. Discovery syncs before
@@ -209,5 +211,89 @@ category('Portal: isolation between portfolios', () => {
     } finally {
       await portalDb.programs.delete(ins.id);
     }
+  });
+});
+
+category('Portal: workspace', () => {
+  before(async () => { await setUp(); });
+
+  const ROOT = 'Example Small Molecule Discovery';
+  const WORKSTREAMS = ['Chemistry', 'Biology', 'DMPK', 'CompChem'];
+  const subspaces = async (id: string) =>
+    await grok.dapi.spaces.id(id).children.ofTypes('Project', false).list({pageSize: 1000});
+
+  test('a folder per program, its workstreams beneath; a second build creates nothing', async () => {
+    const first = await buildPortfolioWorkspace('EX-SMD');
+    expect(first.failed, 0, first.entries.filter((e) => e.status !== 'ok').map((e) => e.status).join('; '));
+    const programs = await programsOf('EX-SMD');
+    for (const p of programs) {
+      expect(!!p.space_id, true, `${p.code} has no folder recorded`);
+      const names = (await subspaces(p.space_id!)).map((s) => s.friendlyName ?? s.name).sort().join();
+      expect(names, [...WORKSTREAMS].sort().join(), `${p.code}'s workstreams`);
+    }
+    const again = await buildPortfolioWorkspace('EX-SMD');
+    expect(again.created, 0, again.entries.filter((e) => e.action === 'create').map((e) => e.path).join());
+    expect(again.reused, 1 + programs.length * (1 + WORKSTREAMS.length));
+  });
+
+  test('a preview names what it would create and creates nothing', async () => {
+    await buildPortfolioWorkspace('EX-SMD');
+    const sm = await portfolioByCode('EX-SMD');
+    const code = `WS-${Date.now() % 1e9}`;
+    const [ins] = await portalDb.programs.insert({portfolio_id: sm.id, code, name: 'Preview only',
+      stage_model_id: sm.stage_model_id, source: 'manual'});
+    try {
+      const preview = await buildPortfolioWorkspace('EX-SMD', true);
+      const folder = `${ROOT}/${programFolderName({code, name: 'Preview only'})}`;
+      expect(preview.entries.filter((e) => e.action === 'create').map((e) => e.path).sort().join(),
+        [folder, ...WORKSTREAMS.map((w) => `${folder}/${w}`)].sort().join());
+      expect((await portalDb.programs.get(ins.id)).space_id ?? null, null, 'a preview recorded a folder');
+      const again = await buildPortfolioWorkspace('EX-SMD', true);
+      expect(again.created, 1 + WORKSTREAMS.length, 'the first preview created something');
+    } finally {
+      await portalDb.programs.delete(ins.id);
+    }
+  });
+
+  test('a program renamed in its registry keeps its folder', async () => {
+    await buildPortfolioWorkspace('EX-SMD');
+    const p = await programOf('EX-SMD', 'EXS-KIN1');
+    await portalDb.programs.update(p.id, {name: `${p.name} (renamed)`});
+    try {
+      const r = await buildPortfolioWorkspace('EX-SMD');
+      expect(r.created, 0, 'the rename made a second folder');
+      expect((await portalDb.programs.get(p.id)).space_id, p.space_id);
+      expect(r.notes.some((n) => n.startsWith('EXS-KIN1:') && n.includes('not renamed')), true, r.notes.join('; '));
+    } finally {
+      await portalDb.programs.update(p.id, {name: p.name});
+    }
+  });
+
+  test('two builds under one root at once: the second is refused', async () => {
+    const results = await Promise.allSettled([buildPortfolioWorkspace('EX-SMD'), buildPortfolioWorkspace('EX-SMD')]);
+    expect(results.filter((r) => r.status === 'rejected').length, 1);
+    expect(String((results.find((r) => r.status === 'rejected') as PromiseRejectedResult).reason)
+      .includes('already running'), true);
+  });
+
+  test('the workspace is visible to the portfolio\'s viewers and to nobody else', async () => {
+    await buildPortfolioWorkspace('EX-SMD');
+    const sm = await portfolioByCode('EX-SMD');
+    const ran = await withRestrictedUser('pportal', async (u) => {
+      const roots = () => u.asUser(() => grok.dapi.spaces.filter(`name = "${ROOT}"`).list());
+      expect((await roots()).length, 0, 'an outsider sees the workspace');
+      const viewers = await grok.dapi.groups.find(sm.viewers!);
+      const personal = await grok.dapi.groups.find(u.group);
+      await grok.dapi.groups.includeTo(personal, viewers);
+      try {
+        const seen = await roots();
+        expect(seen.length, 1, 'a viewer does not see the workspace');
+        const folders = await u.asUser(() => subspaces(seen[0].id));
+        expect(folders.length, (await programsOf('EX-SMD')).length, 'a viewer does not see the program folders');
+      } finally {
+        await grok.dapi.groups.excludeFrom(personal, viewers);
+      }
+    });
+    expect(ran !== null, true, 'no restricted session could be created on this stand');
   });
 });

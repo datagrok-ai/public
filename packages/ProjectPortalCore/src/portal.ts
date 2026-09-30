@@ -141,7 +141,8 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
   const portfolioId = await upsertByKey(portalDb.portfolios, {code: c.code}, {
     name: c.name, setting: c.setting, modality_class: c.modalityClass ?? null, stage_model_id: modelId,
     stage_authority: c.stageAuthority, program_noun: c.programNoun ?? 'Program',
-    workspace_root: c.workspaceRoot ?? null, description: c.description ?? null,
+    workspace_root: c.workspaceRoot ?? null, workstreams: (c.workstreams ?? []).join('|') || null,
+    description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,
   });
   for (const f of c.feeds) {

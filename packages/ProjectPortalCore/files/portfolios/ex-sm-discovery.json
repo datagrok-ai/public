@@ -6,6 +6,7 @@
   "stageAuthority": "portal",
   "programNoun": "Project",
   "workspaceRoot": "Example Small Molecule Discovery",
+  "workstreams": ["Chemistry", "Biology", "DMPK", "CompChem"],
   "description": "Example portfolio on synthetic data. Its registry has no stage, so gate decisions are made and recorded in the portal.",
   "groups": {
     "viewers": "Portal EX-SMD Viewers",

@@ -2,6 +2,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {PortfolioConfig, StageModelConfig, validatePortfolioSet, validateStageModel} from '../model/config';
 import {planSync, PlanInput, ProgramRef, resolveStage, StageRef} from '../model/sync-plan';
 import {checkDecision, GateInput, GateStage} from '../model/gates';
+import {findProgramFolder, programFolderName} from '../model/workspace-plan';
 import {readPortfolioFiles} from '../portal';
 import {_package} from '../package-test';
 
@@ -212,5 +213,31 @@ category('Portal: gate rules', () => {
 
   test('a terminated program takes no decisions', async () => {
     expect(checkDecision(base({programStatus: 'terminated', criterionStates: {c1: 'met'}})).allowed, false);
+  });
+});
+
+category('Portal: workspace plan', () => {
+  test('a program folder leads with its code', async () => {
+    expect(programFolderName({code: 'EXS-KIN1', name: 'Kinase inhibitor'}), 'EXS-KIN1 · Kinase inhibitor');
+    expect(programFolderName({code: 'EXS-KIN1', name: 'EXS-KIN1'}), 'EXS-KIN1');
+    expect(programFolderName({code: 'EXS-KIN1', name: ' '}), 'EXS-KIN1');
+  });
+
+  test('the recorded folder wins over the name; the name is matched as the server stores it', async () => {
+    const program = {id: 'p', code: 'EXS-KIN1', name: 'Kinase inhibitor', spaceId: 's1'};
+    const renamed = {id: 's1', name: 'EXSKIN1Oldname', friendlyName: 'EXS-KIN1 · Old name'};
+    const byName = {id: 's2', name: 'EXSKIN1Kinaseinhibitor', friendlyName: null};
+    expect(findProgramFolder(program, [byName, renamed])?.space.id, 's1');
+    expect(findProgramFolder({...program, spaceId: null}, [byName, renamed])?.space.id, 's2');
+    expect(findProgramFolder({...program, spaceId: 'gone'}, [renamed]), null);
+  });
+
+  test('workstreams must name distinct spaces under a root', async () => {
+    const m = model('M', ['A']);
+    const errs = (extra: Partial<PortfolioConfig>) => validatePortfolioSet([portfolio('P', m, extra)]).join('; ');
+    expect(errs({workspaceRoot: 'R', workstreams: ['Chemistry', 'DMPK']}), '');
+    expect(errs({workspaceRoot: 'R', workstreams: ['Comp Chem', 'CompChem']}).includes('declared twice'), true);
+    expect(errs({workspaceRoot: 'R', workstreams: ['--']}).includes('no letters or digits'), true);
+    expect(errs({workstreams: ['Chemistry']}).includes('need a workspaceRoot'), true);
   });
 });

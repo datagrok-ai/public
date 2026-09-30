@@ -57,7 +57,10 @@ export interface PortfolioConfig {
   modalityClass?: 'small_molecule' | 'biologic' | 'any';
   stageAuthority: StageAuthority;
   programNoun?: string;
+  /** The root space the workspace builder creates this portfolio's tree under. */
   workspaceRoot?: string;
+  /** Folders created under every program's folder: workstreams, never compounds (FR-26). */
+  workstreams?: string[];
   description?: string;
   groups?: {viewers?: string, contributors?: string, approvers?: string};
   /** Where a program goes when it leaves this portfolio's terminal stage. */
@@ -110,6 +113,21 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
     for (const [raw, status] of Object.entries(f.mapping?.status ?? {})) {
       if (!(PROGRAM_STATUSES as string[]).includes(status))
         errors.push(`feed ${f.code}: status "${raw}" maps to "${status}", which is not a program status`);
+    }
+  }
+  if (c.workstreams !== undefined) {
+    if (!c.workspaceRoot)
+      errors.push('workstreams need a workspaceRoot to hang under');
+    const seen = new Set<string>();
+    for (const w of c.workstreams) {
+      const key = normalizeSpaceName(w ?? '').toLowerCase();
+      if (!key)
+        errors.push(`workstream "${w}" has no letters or digits, so it cannot name a space`);
+      else if (seen.has(key))
+        errors.push(`workstream "${w}" is declared twice (space names ignore case and punctuation)`);
+      else if (w.includes('|'))
+        errors.push(`workstream "${w}" may not contain '|'`);
+      seen.add(key);
     }
   }
   if (c.stageAuthority === 'feed' && (c.feeds ?? []).length === 0)
@@ -205,4 +223,10 @@ export function normalizeStageSpelling(s: string): string {
 
 export function isProgramField(column: string): boolean {
   return PROGRAM_FIELDS.has(column);
+}
+
+/** The form the server stores a space name under: every character but letters and digits dropped,
+ * case kept. Two names with the same form cannot be siblings. */
+export function normalizeSpaceName(name: string): string {
+  return String(name ?? '').replace(/[^A-Za-z0-9]/g, '');
 }
