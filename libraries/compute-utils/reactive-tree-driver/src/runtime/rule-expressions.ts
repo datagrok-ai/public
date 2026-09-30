@@ -86,7 +86,8 @@ function registerOps() {
     const missing: string[] = [];
     for (const entry of spec ?? []) {
       const [name, kind] = Array.isArray(entry) ? entry : [entry];
-      if (!columnsOf(df, kind).some((col) => col.name === name))
+      const col = df instanceof DG.DataFrame ? df.col(name) : null;
+      if (!col || (kind != null && !columnIs(col, kind)))
         missing.push(kind == null ? name : `${name} (${kind})`);
     }
     return missing;

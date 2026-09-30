@@ -710,7 +710,7 @@ Rules add these operations to JSON Logic:
 |---|---|---|
 | `literal` | any value | The value, unevaluated. JSON Logic reads a one-key object as an operation, and the TypeScript types accept no other objects, so wrap object values: `{literal: {var: 'x'}}` is an object, not a lookup. |
 | `columns` | dataframe, optional kind | Names of the columns of that kind. |
-| `columnsMissing` | dataframe, list of `[name, kind]` pairs or bare names | A description of every entry with no matching column, such as `smiles (Molecule)`. Empty when the table fits, so `{'!!': {columnsMissing: [...]}}` is a schema check, and the same expression in `cat` names the offending columns. |
+| `columnsMissing` | dataframe, list of `[name, kind]` pairs or bare names | A description of every entry with no matching column, such as `smiles (Molecule)`. Names match ignoring case, as in `df.col`. Empty when the table fits, so `{'!!': {columnsMissing: [...]}}` is a schema check, and the same expression in `cat` names the offending columns. |
 | `columnIs` | column, kind | `true` when the column has the kind. |
 | `nulls` | column | Its number of missing values, `0` for anything else. |
 | `column` | dataframe, column name | The column's values as a list, empty when either is absent. |

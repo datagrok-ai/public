@@ -421,6 +421,8 @@ category('ComputeUtils: Driver links rule', async () => {
     expectDeepEqual(evaluate({columnsMissing: [{var: 'missing'}, spec]}, ctx),
       ['x (double)', 'n (string)', 's (Text)', 'q', 'x']);
     expectDeepEqual(evaluate({columnsMissing: [{var: 'df'}, []]}, ctx), []);
+    expectDeepEqual(evaluate({column: [{var: 'df'}, 'S']}, ctx), ['a', 'b', 'c']);
+    expectDeepEqual(evaluate({columnsMissing: [{var: 'df'}, [['X', 'double'], 'S', ['N', 'string']]]}, ctx), ['N (string)']);
     expectDeepEqual(evaluate({column: [{var: 'df'}, 's']}, ctx), ['a', 'b', 'c']);
     expectDeepEqual(evaluate({column: [{var: 'df'}, 'missing']}, ctx), []);
     expectDeepEqual(evaluate({column: [{var: 'missing'}, 's']}, ctx), []);
