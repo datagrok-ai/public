@@ -1,16 +1,18 @@
-/** the Nelder-Mead optimizer */
+/** the fitting optimizer dispatcher */
 import * as DG from 'datagrok-api/dg';
 
 import {OptimizationResult, OutputTargetItem, ValueBoundsData} from './optimizer-misc';
-import {LOSS, ReproSettings, EarlyStoppingSettings} from './constants';
+import {LOSS, METHOD, ReproSettings, EarlyStoppingSettings} from './constants';
+import {OPTIMIZERS} from './optimizer-registry';
 import {ExecutorChoice, MainExecutor, canHandle, runWithSharedPool}
   from './worker/executor';
 
-export async function performNelderMeadOptimization(
+export async function performOptimization(
   {
     objectiveFunc,
     inputsBounds,
     samplesCount = 1,
+    method = METHOD.NELDER_MEAD,
     settings,
     reproSettings,
     earlyStoppingSettings,
@@ -30,6 +32,7 @@ export async function performNelderMeadOptimization(
     objectiveFunc: (x: Float64Array) => Promise<number|undefined>;
     inputsBounds: Record<string, ValueBoundsData>;
     samplesCount: number,
+    method?: METHOD,
     settings: Map<string, number>;
     reproSettings: ReproSettings;
     earlyStoppingSettings: EarlyStoppingSettings;
@@ -43,6 +46,7 @@ export async function performNelderMeadOptimization(
     objectiveFunc,
     inputsBounds,
     samplesCount,
+    method,
     settings,
     reproSettings,
     earlyStoppingSettings,
@@ -51,8 +55,10 @@ export async function performNelderMeadOptimization(
     lossType,
   };
 
-  const useWorker = executor === 'worker' ||
-    (executor === 'auto' && canHandle(execArgs));
+  // A forced worker arm still can't run a method it doesn't implement
+  const useWorker = (executor === 'worker') ?
+    OPTIMIZERS.get(method)!.supportsWorker :
+    (executor === 'auto') && canHandle(execArgs);
 
   if (useWorker)
     return runWithSharedPool(execArgs);

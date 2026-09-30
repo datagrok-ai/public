@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Fitting: Added the L-BFGS-B, PSO, L-BFGS and Adam methods (sci-comp optimizers) to the Fitting View, `runOptimizerFinalized` (`method` param) and Diff Studio fitting; input ranges are passed to the optimizer as native bounds (L-BFGS-B) or a smooth penalty
 * RTD: Added the `visible` and GrokScript `validator` checks (`script`/`scriptVerdict` rule operations over `grok.functions.scriptSync`, platform 1.28+), `vars` on `check` links, and `isClientAtLeast` in utils
 * RTD: Added the `validators` check (named validator functions called directly; annotation-derived ones through `FuncCall.evalParamValidators`, platform 1.28+, skipped on older clients), rule `sources` (`validators` and `js` resolvers) with the `verdicts` effect, and array validator messages
 * RTD: Added `check` links and annotation-derived default validators sharing one expansion (`nullable`, `min`/`max`, regex `validator`, static `choices`, column `type`/`semType`/`table`/`allowNulls`), the `regex`, `nulls` and `columnIs` rule operations, the platform column kinds in `columns`/`columnsMissing`, and `nullable: true` annotations now make an input optional

@@ -24,7 +24,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {ExecutorArgs, LOSS, OptimizerInputsConfig, OptimizerOutputsConfig,
+import {ExecutorArgs, LOSS, METHOD, OptimizerInputsConfig, OptimizerOutputsConfig,
   WorkerExecutor, WorkerPool, runWithEphemeralPool} from './imports';
 import {makeExpDecayFunc, makeMultiOutputFunc} from './script-fixtures';
 import {assertResultParity} from './parity-assertions';
@@ -54,6 +54,7 @@ async function buildExpDecayArgs(seed: number): Promise<ExecutorArgs> {
     objectiveFunc: async () => 0, // worker arm ignores this; main-arm fallback only
     inputsBounds: inputBounds,
     samplesCount: 4,
+    method: METHOD.NELDER_MEAD,
     settings: defaultNmSettings(),
     reproSettings: {reproducible: true, seed},
     earlyStoppingSettings: noEarlyStopping(),
@@ -84,6 +85,7 @@ async function buildMultiOutputArgs(seed: number, lossType: LOSS = LOSS.RMSE): P
     objectiveFunc: async () => 0,
     inputsBounds: inputBounds,
     samplesCount: 4,
+    method: METHOD.NELDER_MEAD,
     settings: defaultNmSettings(),
     reproSettings: {reproducible: true, seed},
     earlyStoppingSettings: noEarlyStopping(),

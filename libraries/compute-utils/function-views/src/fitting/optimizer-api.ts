@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
-import {EarlyStoppingSettings, LOSS, ReproSettings} from './constants';
+import {EarlyStoppingSettings, LOSS, METHOD, ReproSettings} from './constants';
 import {makeConstFunction} from './cost-functions';
-import {performNelderMeadOptimization} from './optimizer';
+import {performOptimization} from './optimizer';
 import {OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig} from './optimizer-misc';
-import {nelderMeadSettingsOpts} from './optimizer-nelder-mead';
+import {OPTIMIZERS} from './optimizer-registry';
 import {defaultEarlyStoppingSettings, defaultRandomSeedSettings} from './fitting-utils';
 import {finalizeOptimizationResult, FinalizedFitting} from './finalize';
 import type {ExecutorChoice} from './worker/executor';
@@ -18,6 +18,9 @@ export type OptimizerParams = {
   outputTargets: OptimizerOutputsConfig;
   samplesCount?: number;
   similarity?: number;
+  /** Default Nelder-Mead */
+  method?: METHOD;
+  /** Settings of the method; missing ones take the defaults of its `settingsOpts` */
   settings?: Map<string, number>;
   reproSettings?: Partial<ReproSettings>;
   earlyStoppingSettings?: Partial<EarlyStoppingSettings>;
@@ -25,6 +28,7 @@ export type OptimizerParams = {
    * Default 'auto' — canHandle routes JS-language scripts annotated with
    * `//meta.workerSafe: true` to the worker arm; everything else falls back
    * to MainExecutor. Pass 'main' or 'worker' to force a specific arm.
+   * Only Nelder-Mead has the worker arm: other methods always run on main.
    */
   executor?: ExecutorChoice;
 };
@@ -36,6 +40,7 @@ type ResolvedParams = {
   outputTargets: OptimizerOutputsConfig;
   samplesCount: number;
   similarity: number;
+  method: METHOD;
   settings: Map<string, number>;
   reproSettings: ReproSettings;
   earlyStoppingSettings: EarlyStoppingSettings;
@@ -45,11 +50,15 @@ type ResolvedParams = {
 function resolveParams(params: OptimizerParams): ResolvedParams {
   const {func, inputBounds, outputTargets, executor = 'auto', reproSettings, earlyStoppingSettings} = params;
   const lossType = params.lossType ?? LOSS.RMSE;
+  const method = params.method ?? METHOD.NELDER_MEAD;
+  const descriptor = OPTIMIZERS.get(method);
+  if (descriptor === undefined)
+    throw new Error(`Unknown fitting method: '${method}'. Available: ${[...OPTIMIZERS.keys()].join(', ')}`);
 
   const defaultsOverrides = JSON.parse(func.options['fittingSettings'] || '{}');
 
   const settings = params.settings ?? new Map<string, number>();
-  nelderMeadSettingsOpts.forEach((opts, key) => {
+  descriptor.settingsOpts.forEach((opts, key) => {
     if (settings.get(key) == null)
       settings.set(key, defaultsOverrides[key] ?? opts.default);
   });
@@ -63,7 +72,7 @@ function resolveParams(params: OptimizerParams): ResolvedParams {
 
   return {
     lossType, func, inputBounds, outputTargets,
-    samplesCount, similarity, settings,
+    samplesCount, similarity, method, settings,
     reproSettings: reproSettingsFull,
     earlyStoppingSettings: earlyStoppingSettingsFull,
     executor,
@@ -72,9 +81,10 @@ function resolveParams(params: OptimizerParams): ResolvedParams {
 
 async function runRawOptimizer(p: ResolvedParams): Promise<OptimizationResult> {
   const objectiveFunc = makeConstFunction(p.lossType, p.func, p.inputBounds, p.outputTargets);
-  return performNelderMeadOptimization({
+  return performOptimization({
     objectiveFunc,
     inputsBounds: p.inputBounds,
+    method: p.method,
     settings: p.settings,
     samplesCount: p.samplesCount,
     reproSettings: p.reproSettings,

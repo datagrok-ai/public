@@ -19,6 +19,7 @@
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
+    "diff-grok": "^1.4.0",
     "fast-equals": "^5.2.2",
     "fflate": "^0.8.2",
     "lodash.clonedeepwith": "^4.5.0",

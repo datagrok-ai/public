@@ -2,21 +2,25 @@
 // doesn't re-export these from its public index, so tests reach in via deep
 // paths. When files move, only this barrel needs to change.
 
-export {performNelderMeadOptimization} from
+export {performOptimization} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer';
 export {nelderMeadSettingsOpts, optimizeNM} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-nelder-mead';
 export {optimizeNMSync} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-nelder-mead-sync';
-export {makeBoundsChecker} from
+export {OPTIMIZERS} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-registry';
+export {getOptimizerBounds, makeBoundsChecker} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-sampler';
 export type {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig,
   OutputTargetItem, ValueBoundsData} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-misc';
 export type {EarlyStoppingSettings, ReproSettings} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/constants';
-export {LOSS} from
+export {LOSS, METHOD} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/constants';
+export {getFittedParamsFinalized} from
+  '@datagrok-libraries/compute-utils/function-views/src/fitting/diff-studio/nelder-mead';
 export {makeConstFunction} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/cost-functions';
 export {runOptimizer, runOptimizerFinalized} from

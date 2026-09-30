@@ -7,7 +7,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {canHandle, LOSS} from './imports';
+import {canHandle, LOSS, METHOD} from './imports';
 import type {ExecutorArgs, OptimizerOutputsConfig} from './imports';
 import {makeExpDecayFunc} from './script-fixtures';
 import {rangeBound, defaultNmSettings, noEarlyStopping, reproSettings} from './utils';
@@ -32,6 +32,7 @@ function makeArgs(overrides: Partial<ExecutorArgs> = {}): ExecutorArgs {
     objectiveFunc: async () => 0,
     inputsBounds: {a: rangeBound(0, 5, 'a'), b: rangeBound(0, 5, 'b')},
     samplesCount: 1,
+    method: METHOD.NELDER_MEAD,
     settings: defaultNmSettings(),
     reproSettings: reproSettings(),
     earlyStoppingSettings: noEarlyStopping(),
@@ -112,5 +113,10 @@ category('ComputeUtils: Fitting / canHandle', () => {
 
   test('rejects when lossType missing', async () => {
     expect(canHandle(makeArgs({lossType: undefined})), false);
+  });
+
+  test('rejects methods without the worker arm', async () => {
+    for (const method of [METHOD.LBFGSB, METHOD.PSO, METHOD.LBFGS, METHOD.ADAM])
+      expect(canHandle(makeArgs({method})), false, `${method} must not be routed to the worker`);
   });
 });

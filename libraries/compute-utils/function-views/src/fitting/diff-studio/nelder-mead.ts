@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames, getInputVector} from 'diff-grok';
-import {EarlyStoppingSettings, LOSS, ReproSettings, STOP_AFTER_DEFAULT} from '../constants';
+import {EarlyStoppingSettings, LOSS, METHOD, ReproSettings, STOP_AFTER_DEFAULT} from '../constants';
 import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
 import {sampleParams, sampleParamsWithFormulaBounds} from '../optimizer-sampler';
@@ -46,12 +46,13 @@ function getInputVec(variedInputNames: string[],
   return getInputVector(allInputs, ivp);
 }
 
-/** Return fitted params of Diff Studio model using the Nelder-Mead method */
+/** Return fitted params of Diff Studio model using the specified method */
 export async function getFittedParams(
   {loss,
     ivp,
     ivp2ww,
     pipelineCreator,
+    method,
     settings,
     bounds,
     variedInputNames,
@@ -67,6 +68,7 @@ export async function getFittedParams(
     ivp: IVP;
     ivp2ww: IVP2WebWorker;
     pipelineCreator: PipelineCreator;
+    method: METHOD;
     settings: Map<string, number>;
     bounds: Record<string, ValueBoundsData>,
     variedInputNames: string[];
@@ -147,6 +149,7 @@ export async function getFittedParams(
     return new Promise<void>((resolve, reject) => {
       const data: FittingWorkerData = {
         task: {
+          method: method,
           settingNames: settingNames,
           settingVals: settingVals,
           loss: loss,
@@ -222,7 +225,7 @@ export async function getFittedParams(
 } // getFittedParams
 
 /** DiffGrok counterpart of `runOptimizerFinalized`: runs the in-webworker
- *  Nelder-Mead and applies shared post-processing (sort + similarity filter
+ *  optimization and applies shared post-processing (sort + similarity filter
  *  + materialize FuncCalls). Use this from new callers; legacy callers can
  *  keep using `getFittedParams` and post-process themselves. */
 export async function getFittedParamsFinalized(

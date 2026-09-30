@@ -1,5 +1,5 @@
 import {IVP2WebWorker, Pipeline} from 'diff-grok';
-import {EarlyStoppingSettings} from '../constants';
+import {EarlyStoppingSettings, METHOD} from '../constants';
 import {ValueBoundsData} from '../optimizer-misc';
 
 export const ARG_IDX = 0;
@@ -18,8 +18,9 @@ export enum RESULT_CODE {
   FAILED = 1,
 };
 
-/** Nelder-Mead input for optimization in workers */
+/** Input for optimization in workers */
 export type NelderMeadInput = {
+  method: METHOD,
   settingNames: string[],
   settingVals: number[],
   loss: string,

@@ -1,10 +1,10 @@
 /* eslint-disable valid-jsdoc */
 import {IVP, IVP2WebWorker, solveIvp, applyPipeline} from 'diff-grok';
-import {optimizeNM} from '../optimizer-nelder-mead';
+import {OPTIMIZERS} from '../optimizer-registry';
 import {ARG_COL_IDX, ARG_INP_COUNT, NelderMeadInput} from './defs';
 import {Extremum, ValueBoundsData} from '../optimizer-misc';
 import {COST_FUNC_THRESH, LOSS} from '../constants';
-import {makeBoundsChecker, sampleParamsWithFormulaBounds} from '../optimizer-sampler';
+import {getOptimizerBounds, makeBoundsChecker} from '../optimizer-sampler';
 
 /** Return true if in-worker fitting is applicable */
 export function isWorkerApplicable(ivp: IVP | undefined, ivpWW: IVP2WebWorker | undefined): boolean {
@@ -115,7 +115,7 @@ export function getBatches(points: Float64Array[], batchesCount: number): Float6
   return batches;
 } // getBatches
 
-/** Perform Neldel-Mead optimization */
+/** Perform optimization using the task's method */
 export async function fit(task: NelderMeadInput, start: Float64Array): Promise<Extremum> {
   const ivp = task.ivp2ww;
   const pipeline = task.pipeline;
@@ -187,7 +187,10 @@ export async function fit(task: NelderMeadInput, start: Float64Array): Promise<E
     (task.earlyStoppingSettings.costFuncThreshold ?? COST_FUNC_THRESH) :
     undefined;
 
-  const res = await optimizeNM(costFunc, start, settings, threshold);
+  // The costOutside cutoff above stays a safety net over the native/penalty bounds
+  const {optimizer, wantsBounds} = OPTIMIZERS.get(task.method)!;
+  const optBounds = wantsBounds ? getOptimizerBounds(bounds) : undefined;
+  const res = await optimizer(costFunc, start, settings, threshold, optBounds);
 
   return res;
 } // fit

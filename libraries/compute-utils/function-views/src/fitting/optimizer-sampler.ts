@@ -1,4 +1,4 @@
-import {ValueBoundsData} from './optimizer-misc';
+import type {BoundValue, OptimizerBounds, ValueBoundsData} from './optimizer-misc';
 import {evalBoundFormula, getAccData, getFixedContext, makeBoundsChecker}
   from './bounds-checker';
 
@@ -79,4 +79,20 @@ export function sampleParamsWithFormulaBounds(
   }
 
   return params;
+}
+
+/** Box bounds of the varied inputs, ordered as the sampled points. Formula bounds depend on the point,
+ *  so they are left unbounded here and enforced by the objective's bounds check only. */
+export function getOptimizerBounds(inputs: Record<string, ValueBoundsData>): OptimizerBounds {
+  const {nonFormulaBounds, formulaBounds} = getAccData(inputs);
+  const dim = nonFormulaBounds.length + formulaBounds.length;
+  const lower = new Float64Array(dim).fill(-Infinity);
+  const upper = new Float64Array(dim).fill(Infinity);
+
+  for (const [, boundsIdx, bound] of nonFormulaBounds) {
+    lower[boundsIdx] = (bound.bottom as BoundValue).value;
+    upper[boundsIdx] = (bound.top as BoundValue).value;
+  }
+
+  return {lower, upper};
 }

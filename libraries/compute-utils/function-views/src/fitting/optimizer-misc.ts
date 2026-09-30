@@ -31,11 +31,19 @@ export type OptimizationTask = {
   samplesCount: number
 };
 
+/** Box bounds of the varied inputs, ±Infinity where unbounded */
+export type OptimizerBounds = {
+  lower: Float64Array,
+  upper: Float64Array,
+};
+
 export interface IOptimizer {
   (objectiveFunc: (x: Float64Array) => Promise<number|undefined>,
     paramsInitial: Float64Array,
     settings: Map<string, number>,
     threshold?: number,
+    bounds?: OptimizerBounds,
+    isCanceled?: () => boolean,
   ): Promise<Extremum>;
 };
 

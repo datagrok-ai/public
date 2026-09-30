@@ -6,7 +6,7 @@
 // that only have a closure-based `objectiveFunc` keep working.
 
 import * as DG from 'datagrok-api/dg';
-import {performNelderMeadOptimization, LOSS} from './imports';
+import {performOptimization, LOSS, METHOD} from './imports';
 import type {OptimizationResult, ValueBoundsData,
   EarlyStoppingSettings, ReproSettings, OutputTargetItem} from './imports';
 
@@ -18,6 +18,8 @@ export type FittingArgs = {
   objectiveFunc: (x: Float64Array) => Promise<number | undefined>;
   inputsBounds: Record<string, ValueBoundsData>;
   samplesCount: number;
+  // Nelder-Mead when absent
+  method?: METHOD;
   settings: Map<string, number>;
   reproSettings: ReproSettings;
   earlyStoppingSettings: EarlyStoppingSettings;
@@ -30,10 +32,11 @@ export type FittingArgs = {
 
 export async function runFitting(executor: Executor, args: FittingArgs): Promise<OptimizationResult> {
   const wantsWorker = executor === 'worker' && args.func != null;
-  return performNelderMeadOptimization({
+  return performOptimization({
     objectiveFunc: args.objectiveFunc,
     inputsBounds: args.inputsBounds,
     samplesCount: args.samplesCount,
+    method: args.method,
     settings: args.settings,
     reproSettings: args.reproSettings,
     earlyStoppingSettings: args.earlyStoppingSettings,

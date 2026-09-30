@@ -3,12 +3,18 @@
 
 export enum METHOD {
    NELDER_MEAD = 'Nelder-Mead',
-   GRAD_DESC = 'Gradient descent',
+   LBFGSB = 'L-BFGS-B',
+   PSO = 'PSO',
+   LBFGS = 'L-BFGS',
+   ADAM = 'Adam',
  };
 
 export const methodTooltip = new Map([
   [METHOD.NELDER_MEAD, 'The Nelder-Mead method'],
-  [METHOD.GRAD_DESC, 'The gradient descent method'],
+  [METHOD.LBFGSB, 'Limited-memory BFGS with box bounds: a gradient method that keeps inputs within their ranges'],
+  [METHOD.PSO, 'Particle swarm optimization: a derivative-free global search, robust but requires more model runs'],
+  [METHOD.LBFGS, 'Limited-memory BFGS: a gradient method; input ranges are enforced by a penalty'],
+  [METHOD.ADAM, 'Adaptive moment estimation: a first-order gradient method; input ranges are enforced by a penalty'],
 ]);
 
 export enum LOSS {

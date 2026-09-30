@@ -291,6 +291,9 @@ importers:
       '@datagrok-libraries/arrow':
         specifier: workspace:^
         version: link:../arrow
+      '@datagrok-libraries/sci-comp':
+        specifier: workspace:^
+        version: link:../sci-comp
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../utils
@@ -2581,6 +2584,9 @@ importers:
       dayjs:
         specifier: 'catalog:'
         version: 1.11.23
+      diff-grok:
+        specifier: ^1.4.0
+        version: 1.4.0
       fast-equals:
         specifier: ^5.2.2
         version: 5.4.2

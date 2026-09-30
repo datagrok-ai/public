@@ -10,8 +10,9 @@
 import * as DG from 'datagrok-api/dg';
 import {Extremum, OptimizationResult, ValueBoundsData, OutputTargetItem}
   from '../optimizer-misc';
-import {optimizeNM} from '../optimizer-nelder-mead';
-import {ReproSettings, EarlyStoppingSettings, LOSS} from '../constants';
+import {OPTIMIZERS} from '../optimizer-registry';
+import {getOptimizerBounds} from '../optimizer-sampler';
+import {ReproSettings, EarlyStoppingSettings, LOSS, METHOD} from '../constants';
 import {buildFailsDataFrame, getInputsData, sampleSeeds} from '../fitting-utils';
 import {EarlyStopTracker} from '../early-stop-tracker';
 import {WorkerPool, defaultPoolSize, RunReply} from './pool';
@@ -28,6 +29,7 @@ export interface ExecutorArgs {
   objectiveFunc: (x: Float64Array) => Promise<number | undefined>;
   inputsBounds: Record<string, ValueBoundsData>;
   samplesCount: number;
+  method: METHOD;
   settings: Map<string, number>;
   reproSettings: ReproSettings;
   earlyStoppingSettings: EarlyStoppingSettings;
@@ -55,6 +57,7 @@ function isWorkerSafe(func: DG.Func): boolean {
 }
 
 export function canHandle(args: ExecutorArgs): boolean {
+  if (!OPTIMIZERS.get(args.method)!.supportsWorker) return false;
   if (typeof navigator === 'undefined' || (navigator.hardwareConcurrency ?? 0) < 2)
     return false;
   if (!(args.func && args.func instanceof DG.Script)) return false;
@@ -70,24 +73,27 @@ export function canHandle(args: ExecutorArgs): boolean {
 export class MainExecutor implements Executor {
   async run(args: ExecutorArgs): Promise<OptimizationResult> {
     const params = sampleSeeds(args.samplesCount, args.inputsBounds, args.reproSettings);
+    const {optimizer, wantsBounds} = OPTIMIZERS.get(args.method)!;
+    const bounds = wantsBounds ? getOptimizerBounds(args.inputsBounds) : undefined;
 
     const tracker = new EarlyStopTracker(args.earlyStoppingSettings);
     const warnings: string[] = [];
     const failedInitPoint: Float64Array[] = [];
-    // Pass the threshold into NM so it short-circuits at cost ≤ threshold.
+    // Pass the threshold into the optimizer so it short-circuits at cost ≤ threshold.
     // Without this, the two arms diverge at the same seed.
-    const nmThreshold = args.earlyStoppingSettings.useEarlyStopping ?
+    const threshold = args.earlyStoppingSettings.useEarlyStopping ?
       args.earlyStoppingSettings.costFuncThreshold :
       undefined;
 
     let percentage = 0;
     const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
+    const isCanceled = () => (pi as any).canceled === true;
 
     for (let i = 0; i < args.samplesCount; ++i) {
       try {
-        if ((pi as any).canceled) break;
+        if (isCanceled()) break;
 
-        const extremum = await optimizeNM(args.objectiveFunc, params[i], args.settings, nmThreshold);
+        const extremum = await optimizer(args.objectiveFunc, params[i], args.settings, threshold, bounds, isCanceled);
         if (tracker.accept(extremum)) break;
 
         percentage = Math.floor(100 * (i + 1) / args.samplesCount);

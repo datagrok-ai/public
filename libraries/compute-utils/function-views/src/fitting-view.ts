@@ -14,7 +14,7 @@ import {getDefaultValue} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
   INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE, TIMEOUT} from './fitting/constants';
 
-import {nelderMeadSettingsOpts} from './fitting/optimizer-nelder-mead';
+import {OPTIMIZERS} from './fitting/optimizer-registry';
 import {getCategoryWidget, getShowInfoWidget, getLossFuncDf, lightenRGB,
   getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar, getRandomSeedSettings,
   getEarlyStoppingInputs,
@@ -641,16 +641,7 @@ export class FittingView {
   private randInputs: ReturnType<typeof getRandomSeedSettings> = getRandomSeedSettings();
   private earlyStoppingInputs: ReturnType<typeof getEarlyStoppingInputs> = getEarlyStoppingInputs();
 
-  private showFailsBtn = ui.button('Issues', () => {
-    switch (this.method) {
-    case METHOD.NELDER_MEAD:
-      this.showNelderMeadFails();
-      break;
-
-    default:
-      throw new Error(`Not implemented the '${this.method}' method`);
-    }
-  }, 'Show issues');
+  private showFailsBtn = ui.button('Issues', () => this.showFails(), 'Show issues');
 
   private gridClickSubscription: any = null;
   private gridCellChangeSubscription: any = null;
@@ -687,20 +678,15 @@ export class FittingView {
   private helpDN: DG.DockNode | undefined = undefined;
 
   private method = METHOD.NELDER_MEAD;
-  private methodInput = ui.input.choice(TITLE.METHOD, {value: this.method, items: [METHOD.NELDER_MEAD], onValueChanged: (value) => {
+  private methodInput = ui.input.choice(TITLE.METHOD, {value: this.method, items: [...OPTIMIZERS.keys()], onValueChanged: (value) => {
     this.method = value;
     this.showHideSettingInputs();
     this.methodInput.setTooltip(methodTooltip.get(this.method)!);
+    this.updateApplicabilityState();
   }});
 
-  // The Nelder-Mead method settings
-  private nelderMeadSettings = new Map<string, number>();
-
-  // Gradient descent settings
-  private gradDescentSettings = {
-    iterCount: 10,
-    learningRate: 0.0001,
-  };
+  // Settings of each method
+  private methodSettings = new Map<METHOD, Map<string, number>>();
 
   private defaultsOverrides: Record<string, any> = {};
 
@@ -791,7 +777,8 @@ export class FittingView {
       return;
     }
 
-    nelderMeadSettingsOpts.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
+    OPTIMIZERS.forEach(({settingsOpts}, method) => this.methodSettings.set(method,
+      new Map([...settingsOpts].map(([key, opts]) => [key, opts.default]))));
     this.parseDefaultsOverrides();
 
     this.randInputs = getRandomSeedSettings(this.defaultsOverrides);
@@ -898,13 +885,14 @@ export class FittingView {
     return false;
   } // isOptimizationApplicable
 
-  /** Generate UI for the Nelder-Mead method settings */
-  private generateNelderMeadSettingsInputs(): void {
+  /** Generate UI for the method settings */
+  private generateSettingsInputs(method: METHOD): void {
     const inputs: DG.InputBase[] = [];
+    const settings = this.methodSettings.get(method)!;
 
     let needsInitalUpdate = false;
 
-    nelderMeadSettingsOpts.forEach((opts, key) => {
+    OPTIMIZERS.get(method)!.settingsOpts.forEach((opts, key) => {
       const inp = ui.input.forProperty(DG.Property.fromOptions({
         name: opts.caption,
         inputType: opts.inputType,
@@ -919,82 +907,37 @@ export class FittingView {
       inp.nullable = false;
 
       if (this.defaultsOverrides[key] != null) {
-        this.nelderMeadSettings.set(key, this.defaultsOverrides[key]);
+        settings.set(key, this.defaultsOverrides[key]);
         needsInitalUpdate = true;
       }
 
       inp.onChanged.subscribe((value) => {
-        this.nelderMeadSettings.set(key, value);
+        settings.set(key, value);
         this.updateApplicabilityState();
       });
 
       inputs.push(inp);
     });
 
-    this.settingsInputs.set(METHOD.NELDER_MEAD, inputs);
+    this.settingsInputs.set(method, inputs);
     if (needsInitalUpdate)
       this.updateApplicabilityState();
-  } // generateNelderMeadSettingsInputs
+  } // generateSettingsInputs
 
-  /** Check correctness of the Nelder-Mead settings */
-  private areNelderMeadSettingsCorrect(): boolean {
-    for (const [key, val] of this.nelderMeadSettings) {
-      if ((val === null) || (val === undefined) || (val > nelderMeadSettingsOpts.get(key)!.max) || (val < nelderMeadSettingsOpts.get(key)!.min)) {
-        this.updateRunIconDisabledTooltip(`Invalid "${key}": check method settings`);
+  /** Check correctness of the current method settings */
+  private areMethodSettingsCorrect(): boolean {
+    const settingsOpts = OPTIMIZERS.get(this.method)!.settingsOpts;
+
+    for (const [key, val] of this.methodSettings.get(this.method)!) {
+      const opts = settingsOpts.get(key)!;
+      if ((val === null) || (val === undefined) || (val > opts.max) || (val < opts.min)) {
+        this.updateRunIconDisabledTooltip(`Invalid "${opts.caption}": check method settings`);
         return false;
       }
     }
 
     return true;
-  }
-
-  /** Generate UI for the gradient descent method */
-  private generateGradDescentSettingsInputs(): void {
-    const iterInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'iterations',
-      inputType: 'Int',
-      defaultValue: this.defaultsOverrides.iterCount ?? this.gradDescentSettings.iterCount,
-      min: 1,
-      max: 10000,
-    }));
-    iterInp.onChanged.subscribe((value) => this.gradDescentSettings.iterCount = value);
-
-    const learningRateInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'Learning rate',
-      inputType: 'Float',
-      defaultValue: this.defaultsOverrides.learningRate ?? this.gradDescentSettings.learningRate,
-      min: 1e-6,
-      max: 1000,
-    }));
-    learningRateInp.onChanged.subscribe((value) => this.gradDescentSettings.learningRate = value);
-
-    this.settingsInputs.set(METHOD.GRAD_DESC, [iterInp, learningRateInp]);
-  } // generateGradDescentSettingsInputs
-
-  /** Check correctness of the gradient descent settings */
-  private areGradDescentSettingsCorrect(): boolean {
-    return false;
-  }
-
-  /** Check correctness of the method settings */
-  private areMethodSettingsCorrect(): boolean {
-    switch (this.method) {
-    case METHOD.NELDER_MEAD:
-      return this.areNelderMeadSettingsCorrect();
-
-    case METHOD.GRAD_DESC:
-      return this.areGradDescentSettingsCorrect();
-
-    default:
-      return true;
-    }
   } // areMethodSettingsCorrect
-
-  /** Create UI for each method */
-  private generateSettingInputs(): void {
-    this.generateNelderMeadSettingsInputs();
-    this.generateGradDescentSettingsInputs();
-  }
 
   /** Show settings UI of the current method */
   private showHideSettingInputs(): void {
@@ -1242,7 +1185,7 @@ export class FittingView {
     this.fittingSettingsDiv.appendChild(this.earlyStoppingInputs.stopAtFirst.root);
 
     // Add input related to the methods
-    this.generateSettingInputs();
+    OPTIMIZERS.forEach((_, method) => this.generateSettingsInputs(method));
     this.showHideSettingInputs();
     form.appendChild(this.fittingSettingsDiv);
     this.settingsInputs.forEach((array) => array.forEach((input) => {
@@ -1617,9 +1560,7 @@ export class FittingView {
       const costTooltip = this.loss === LOSS.MAD ? 'scaled maximum absolute deviation' : 'scaled root mean square error';
 
       let fin: FinalizedFitting;
-
-      if (this.method !== METHOD.NELDER_MEAD)
-        throw new Error(`Not implemented the '${this.method}' method`);
+      const settings = this.methodSettings.get(this.method)!;
 
       // Perform optimization. Both arms return a FinalizedFitting (sorted +
       // similarity-filtered + materialized FuncCalls) — no post-processing here.
@@ -1631,7 +1572,8 @@ export class FittingView {
             ivp: this.diffGrok.ivp,
             ivp2ww: this.diffGrok.ivpWW,
             pipelineCreator: this.diffGrok.pipelineCreator,
-            settings: this.nelderMeadSettings,
+            method: this.method,
+            settings,
             variedInputNames,
             bounds: inputBounds,
             fixedInputs: inputs,
@@ -1655,7 +1597,8 @@ export class FittingView {
             outputTargets,
             samplesCount: this.samplesCount,
             similarity: this.similarity,
-            settings: this.nelderMeadSettings,
+            method: this.method,
+            settings,
             reproSettings: this.randInputs.settings,
             earlyStoppingSettings: this.earlyStoppingInputs.settings,
           });
@@ -1668,7 +1611,8 @@ export class FittingView {
           outputTargets,
           samplesCount: this.samplesCount,
           similarity: this.similarity,
-          settings: this.nelderMeadSettings,
+          method: this.method,
+          settings,
           reproSettings: this.randInputs.settings,
           earlyStoppingSettings: this.earlyStoppingInputs.settings,
         });
@@ -2100,8 +2044,8 @@ export class FittingView {
     }
   } // clearPrev
 
-  /** Show fails of the Nelder-Mead fails */
-  private showNelderMeadFails(): void {
+  /** Show fails of the fitting method */
+  private showFails(): void {
     if (this.failsDF === null)
       return;
 
@@ -2109,16 +2053,17 @@ export class FittingView {
     const view = grok.shell.addTableView(this.failsDF);
 
     // add method's settings
+    const settingsOpts = OPTIMIZERS.get(this.method)!.settingsOpts;
     view.addViewer(DG.Viewer.form(DG.DataFrame.fromColumns(
-      Object.entries(this.nelderMeadSettings).map((e) => DG.Column.fromFloat64Array(nelderMeadSettingsOpts.get(e[0])?.caption ?? e[0], new Float64Array([e[1]]))),
-    )), {description: 'The Nelder-Mead method settings', showNavigation: false});
+      [...this.methodSettings.get(this.method)!].map(([key, val]) => DG.Column.fromFloat64Array(settingsOpts.get(key)?.caption ?? key, new Float64Array([val]))),
+    )), {description: `The ${this.method} method settings`, showNavigation: false});
 
     // create tooltips
     const count = this.getFittedInputs().length;
     const tooltips = new Map<string, string>();
     this.failsDF.columns.names().forEach((name, idx) => {
       if (idx < count)
-        tooltips.set(name, `Initial value of "${name}" used in the Nelder-Mead method`);
+        tooltips.set(name, `Initial value of "${name}" used in the ${this.method} method`);
       else if (idx > count)
         tooltips.set(name, `Value of "${name}" (fixed input)`);
       else
@@ -2137,5 +2082,5 @@ export class FittingView {
         }
       }
     });
-  } // showNelderMeadFails
+  } // showFails
 }
