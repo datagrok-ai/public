@@ -8,7 +8,6 @@ keywords:
   - global permissions
   - create role
   - administrators role
-  - license tiers
 ---
 
 A _role_ is a named set of capabilities you assign to people. Roles and
@@ -20,10 +19,14 @@ jobs:
 | **Describe** | Your organization: departments, sites, teams, programs | What someone is allowed to do |
 | **Carry** | Sharing: who can view and edit a space, query, connection, or dashboard | Capabilities: [global permissions](access-control.md#global-permissions) and access to functions and packages |
 | **Typically come from** | Your identity provider, through [group synchronization](../../deploy/complete-setup/configure-auth.md#group-synchronization) | Datagrok administrators |
-| **Examples** | Oncology, Chemistry, a partner program | Authors, Consumers, Developers, a license tier |
+| **Examples** | Oncology, Chemistry, a partner program | Authors, Consumers, Developers |
 
-Keeping the two apart means an organizational change, such as a reorganization or a new site, never
-silently changes what anyone is allowed to do. It also makes entitlements countable. See
+For example, Priya is a chemist in the _Oncology_ group with the _Authors_ role. The group decides
+what she can see: Oncology's spaces, dashboards, and database credentials. The role decides what
+she can do: create and share dashboards and queries. When she transfers to Immunology, her group
+changes and she sees Immunology's data instead, but she can still author. When she becomes her
+team's assay owner, an administrator adds the _Content Owners_ role, and she can publish canonical
+queries without seeing any new data. See
 [Running Datagrok in the enterprise](../enterprise-guide.md#who-gets-in) for the recommended model.
 
 Roles are available in Datagrok 1.27.0 and later.
@@ -87,22 +90,7 @@ Roles interact with the rest of the platform as follows:
 * **Automation.** In the API, a role is a group with a role flag, and the group endpoints return
   and accept roles. The [`grok s groups`](../../develop/server-management.md#manage-users-and-groups)
   commands work on roles too: `groups save` with `"isRole": true` in the JSON creates a role, and
-  `add-members` and `list-members` manage its members. That lets you script license-tier
-  reconciliation.
-
-## Example: license tiers as roles
-
-With an enterprise license, everyone has the same entitlement and you don't need tiers. If your
-license defines tiers of users, create one role per tier and follow two rules:
-
-1. Every user holds exactly one tier role, assigned individually, because it represents a seat.
-2. Capabilities are granted on roles and nowhere else. Groups carry sharing only.
-
-Because permissions are additive, rule 2 is what makes a lower tier meaningful. To count
-utilization, list each tier role's members (for example with `grok s groups list-members`),
-compare them with active users in
-[Usage Analysis](../audit/usage-analysis.md), and [block](users-and-groups.md#disabling-accounts)
-dormant users to reclaim their seats.
+  `add-members` and `list-members` manage its members.
 
 ## See also
 

@@ -112,9 +112,8 @@ By default, scheduled functions run with "All users" permissions. Use `schedule.
 ### When a scheduled run fails
 
 Each scheduled run is recorded, and a failed run is recorded with its error.
-Datagrok doesn't notify anyone when a scheduled run fails. If a schedule matters,
-alert on it from your own tooling; for data sources, see
-[Monitor data connections](../../../access/databases/monitor-connections.md).
+Datagrok doesn't yet send an alert when a scheduled run fails. If the run
+depends on a data source, [monitor its connection](../../../access/databases/monitor-connections.md).
 
 ## Filtering
 

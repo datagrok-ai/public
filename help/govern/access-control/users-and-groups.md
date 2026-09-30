@@ -107,10 +107,11 @@ as idempotent shell commands that talk to the platform's public REST API.
 
 ## Groups
 
-A _group_ is a named collection of users that share permissions. A
-[role](roles.md) is a special kind of group that carries capabilities rather
-than organizational structure; everything below about membership and nesting
-applies to roles too. To view 
+A _group_ is a named collection of users that share permissions. Groups
+usually mirror your organization: _Oncology_, _Chemistry_, a partner program.
+A [role](roles.md) works the same way but describes what people can do rather
+than where they sit, for example _Authors_ or _Developers_. Everything below
+about membership and nesting applies to roles too. To view 
 or manage groups, open the [Groups View](https://public.datagrok.ai/groups?) (**Sidebar > Browse (<FAIcon
 icon="fa-solid fa-compass"/>) > Platform > Groups**).
 

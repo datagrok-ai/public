@@ -15,7 +15,7 @@ keywords:
 
 A Datagrok deployment at enterprise scale comes down to five decisions:
 
-1. [**Who gets in**](#who-gets-in): identity, groups, roles, and, if your license has tiers, which seat each person holds
+1. [**Who gets in**](#who-gets-in): identity, groups, roles, and, if your license has tiers, seat counting
 2. [**What they can see**](#what-they-can-see): isolation between programs, partners, and data classes
 3. [**What they can change**](#what-they-can-change): content ownership and lifecycle
 4. [**How you know it's healthy**](#how-you-know-its-healthy): audit, usage, and operational signal
@@ -48,62 +48,64 @@ else builds on. Every user also gets an automatic personal group. Don't share wi
 access granted that way disappears when the person changes role, and nobody notices until someone
 can't open their program's data.
 
-### Independent axes
+### An example
 
-We recommend modeling users along axes that never mix:
+Priya is a medicinal chemist in Oncology.
 
-| Axis | Modeled as | Example | Source |
-|---|---|---|---|
-| **Structure** | Groups | Oncology, a site, Chemistry | Synced from your identity provider |
-| **Role** | Roles | Authors, Consumers, Developers | Built in Datagrok |
-| **License tier** (only if your license has tiers) | Roles | Full, Standard, Viewer | Built in Datagrok, exactly one per user |
+* **Her groups** come from your identity provider: _Oncology_ and _PRAME program_. They decide what
+  she can see: the PRAME space and its dashboards, and the Oncology credential on the shared
+  warehouse connection.
+* **Her role** is assigned in Datagrok: _Authors_. It decides what she can do: create dashboards and
+  queries and share them.
 
-Structure and role describe your organization. Keeping them separate means an organizational
-change never silently changes what anyone is allowed to do. The same principle applies to every
-capability: grant it on roles, and use groups only for sharing.
+When she transfers to Immunology, your identity provider moves her groups. At her next login she
+loses the PRAME data and gains Immunology's. Her role doesn't change, so she can still author, and
+no Datagrok administrator is involved.
 
-### If your license has tiers
+When she becomes the assay owner for her team, an administrator adds the _Content Owners_ role. She
+can now publish the team's canonical queries, and she sees no new data.
 
-With an enterprise license, everyone has the same entitlement and you can skip this section. If
-your license defines tiers of users, model the tier as a third axis. License tier is a commercial
-fact, and keeping it separate from structure and role means "who is entitled to what" stays
-answerable as the organization changes shape underneath.
+An org change moves groups, a job change moves roles, and neither changes the other by accident.
+Grant every capability on roles, and use groups only for sharing.
 
-Datagrok has no built-in license-tier object. A tier is a convention built from roles, and it holds
-only if two rules hold:
+### License tiers
 
-1. **Every user holds exactly one tier role.** Assign it per person, since it represents a seat.
-   No tier role, no seat.
-2. **Capabilities are granted on roles and nowhere else.** Structure groups carry content sharing
-   only, never **Create Dashboard**, **Create Script**, **Publish Package**, or the **Browse**
-   permissions.
+With an enterprise license, everyone has the same entitlement and you can skip this section.
 
-:::caution Permissions are additive
+If your license defines tiers of users, keep the tier assignment where you keep other entitlements:
+in your identity provider, as one group per tier, for example `DG-Tier-Full` and `DG-Tier-Viewer`.
+In Datagrok, the tier groups are for counting seats only. They carry no permissions, so assigning a
+tier never changes what anyone can do.
 
-A user's effective permissions are the union of every group and role they hold. There is no deny.
-A "Viewer" tier role cannot take away a capability that another group or role already granted.
-Rule 2 is what makes a tier mean something, and your admin process, not the product, holds that
-line.
+Seat utilization is then three numbers per tier:
 
-:::
+* **Provisioned**: members of the tier group in your identity provider
+* **Active**: provisioned users who signed in during the last 30 days, from the sign-in records in
+  the [audit trail](audit/audit.md)
+* **Dormant**: the difference. To reclaim a seat, remove the person from the tier group and
+  [block the user](access-control/users-and-groups.md#disabling-accounts). A blocked user can't sign
+  in and stops counting toward the license, and their work stays in the system.
 
-With those rules in place, utilization becomes three numbers per tier: provisioned (tier-role
-members), active in the last N days (from [Usage Analysis](audit/usage-analysis.md)), and dormant.
-Reconcile monthly. To reclaim a seat, [block the user](access-control/users-and-groups.md#disabling-accounts):
-a blocked user can't sign in and stops counting toward the license, and their work stays in the
-system and stays shareable.
+How the tier groups get into Datagrok matters for the count:
 
-Write down the mapping from each tier to its exact permission set. It is the artifact that makes
-tiers auditable.
+* **Login-time [group synchronization](../deploy/complete-setup/configure-auth.md#group-synchronization)**
+  updates a person's groups only when they sign in. Someone who has never signed in isn't in the
+  group yet, and someone who left the tier, or the company, stays in it because they never sign in
+  again. That's fine for structure groups, but it makes the tier count drift upward.
+* **A scheduled reconciliation job** reads the tier groups from your directory and applies them with
+  `grok s groups add-members` and `remove-members` (see
+  [Sync an AD group with Datagrok](../develop/server-management.md#sync-an-ad-group-with-datagrok)).
+  Membership then matches the directory on every run, including people who haven't signed in, and
+  the same job can block people who have left. We can provide this job for your directory.
 
 ### Identity and group sync
 
 Set up single sign-on with your identity provider, and let
 [group synchronization](../deploy/complete-setup/configure-auth.md#group-synchronization) maintain
-the structure axis:
+your structure groups:
 
 * Sync runs at sign-in, so a membership change takes effect at the user's next login. If you need
-  changes to land sooner, or want to rebuild a server's users and groups from files, add a
+  changes to land sooner, or need accurate counts (see [License tiers](#license-tiers)), add a
   [scheduled reconciliation job](../develop/server-management.md#sync-an-ad-group-with-datagrok).
 * Groups and memberships an administrator created by hand are never removed by sync, and roles are
   never matched. Sync cannot lock you out.
@@ -145,12 +147,13 @@ access boundary, whether you meant it to be one or not.
   access boundary. A therapeutic area or a modality usually isn't; it's a way of looking at the
   portfolio.
 * **Put classifications on the space as metadata instead.** With
-  [sticky meta](catalog/sticky-meta.md), therapeutic area, target, modality, and phase become typed,
-  searchable properties. Reclassifying a program is then an edit, not a move that silently
-  inherits a different parent's permissions.
-* **Treat every copied attribute as a cache.** Copy a field onto a space only if people need to find
-  spaces by it before any data loads. Read everything else live from your system of record, and keep
-  access-controlling fields out of metadata entirely.
+  [sticky meta](catalog/sticky-meta.md), a space can carry properties such as therapeutic area,
+  target, modality, and phase, and people can search and filter spaces by them. If a program moves
+  to a different therapeutic area, you edit the property. Moving the space instead would change who
+  can see it.
+* **Keep metadata small.** Add a property to a space only if people search for spaces by it. Other
+  program details belong in your system of record, and nothing that controls access should be
+  stored as metadata.
 
 ### Provision program spaces from your system of record
 
@@ -202,10 +205,10 @@ the meantime.
 
 :::
 
-Build your process around that:
+These practices cover most needs:
 
-* **Save a copy before a restructuring**, named for its purpose. Share the copy once it's accepted,
-  and retire the original.
+* **Save a copy before restructuring a dashboard**, named for its purpose. Share the copy once it's
+  accepted, and retire the original.
 * **Snapshot anything that must be reproducible** by saving with data sync off, which freezes the
   data together with the layout. A live dashboard can't be reproduced later.
 * **Keep layouts in the gallery.** A layout is a separate object, so it survives a bad edit and can
@@ -213,11 +216,11 @@ Build your process around that:
 * **Give each canonical dashboard one owner.** Assay and program owners hold edit rights; everyone
   else runs it. This is the control that prevents forked copies from drifting apart.
 
-### Put decision-grade logic in packages
+### Put critical content in packages
 
-Anything a decision rests on, such as NCA, QSAR, curve fitting, or a scoring model, belongs in a
-package or a script rather than a hand-edited dashboard. Packages are
-[properly versioned](../develop/develop.md#version-control): every publish creates a version record,
+A dashboard or query that many people rely on can be shipped in a package, and so can anything a
+decision rests on, such as NCA, QSAR, curve fitting, or a scoring model. Packages are
+[versioned](../develop/develop.md#version-control): every publish creates a version record,
 several versions can be deployed at once, an administrator chooses the active one and can roll
 back, and a specific version can be assigned to a specific group to pilot an upgrade. Publish from
 git or from CI (see [publishing packages](../develop/how-to/packages/publish-packages.md) and the
@@ -225,33 +228,26 @@ git or from CI (see [publishing packages](../develop/how-to/packages/publish-pac
 
 ## How you know it's healthy
 
-The platform already records:
+The platform records:
 
 * **An [audit trail](audit/audit.md)** of every action on every object (created, edited, deleted,
-  shared, executed), structured and queryable
-* **A security trail**: sign-ins and sign-outs, failed logins with reason, impersonation, admin
-  sessions, key generation, and settings changes
-* **[Usage Analysis](audit/usage-analysis.md)**: active and new users, package and function usage,
-  per-project access frequency, and function timings
+  shared, executed), and a security trail of sign-ins, failed logins, impersonation, admin sessions,
+  and settings changes
 * **Health checks**: `/admin/health` lists each service's status and needs no login, for load
   balancer and Kubernetes probes; `grok s healthcheck` summarizes it for operators (see
   [server health](../develop/server-management.md#server-health))
-* **Log export** to CloudWatch or Google Cloud Logging, by record type
+* **Log export** to CloudWatch or Google Cloud Logging
   (see [log export](access-control/data-connection-credentials.md#for-logs-export-to-cloudwatch))
-* **Per-group log verbosity**, so you can turn up detail for one team without flooding the rest
 
-We recommend alerting on problems rather than watching dashboards of metrics:
+The next release adds built-in alerts, so you don't have to build them yourself:
 
-* A service goes unhealthy or stops reporting
+* A service becomes unhealthy
 * One error reaches several users at once, which usually means a bad package upgrade
-* A route or connection slows down or starts failing
-* Repeated failed logins, unexpected admin sessions, or settings changes
+* Repeated failed logins for one account
+* A [data connection becomes unreachable](../access/databases/monitor-connections.md)
 
-Separately, review active versus provisioned users monthly. If your license has tiers, it's the
-same number that drives your tier reconciliation.
-
-For step-by-step guidance, see [Monitor data connections](../access/databases/monitor-connections.md)
-and [Test dashboards and queries](../develop/how-to/tests/test-content.md).
+We're extending the same alerts to failing [query tests](../develop/how-to/tests/test-content.md)
+and failed scheduled runs. If you need to know about a problem that isn't on this list, tell us.
 
 ## Where work happens
 
