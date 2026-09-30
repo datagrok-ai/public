@@ -503,8 +503,10 @@ today, UTC), `--until-version` or `--forever`, and always a `--reason`; it print
 `muted <kind:key> until <…> — <reason>`. Muting through any server applies to all of them. A key
 may itself contain colons: `connection:ELN:Prod` is kind `connection`, key `ELN:Prod`. A `kind:key`
 is looked up among the open, acknowledged and muted alerts (the key exactly, else a unique key
-prefix) before the alert is addressed by its id; no match, or several, exits 1 (the several are
-listed so one can be picked by id).
+prefix; a report's alert also by the report number, `report:4820`) before the alert is addressed
+by its id; no match, or several, exits 1 (the several are listed so one can be picked by id). An id
+prefix must be unique: alerts opened together (an incident and its auto-report) can share the first
+characters, and then a longer prefix is asked for.
 `detection` prints `SERVER HOST NAME VERSION LAST SEEN LIVE ELIGIBLE OWNER`, with `*` on the lease
 holder: live servers, and those that stopped or were last seen within the last hour (`--all` for
 every row). With several `--host`s the `HOST` column is the alias as typed, and aliases that reach
@@ -515,7 +517,7 @@ the same database (their server lists share a server id) print once, as `HOST a,
 ```bash
 grok s errors list --user alice --since 2h                # occurrences: TIME USER SOURCE SIG ERROR PACKAGE VERSION ROUTE SERVER REQ
 grok s errors top --since 7d --by signature,package --min-users 2 --limit 5
-grok s errors top --route "POST /api/queries/{id}/run" --since 1h --by connection
+grok s errors top --route "POST /api/public/v1/functions/{name}/call" --since 1h --by connection
 grok s errors top --since 30d --group Chemists --by package
 grok s errors show a41f9c --since 24h
 grok s errors diff --before 2026-09-14..2026-09-20 --after 2026-09-21..2026-09-27
@@ -564,7 +566,7 @@ grok s logger diff --version 12                           # vs a history version
 grok s logger diff --host prod --host val
 grok s logger overrides
 grok s logger history --limit 20
-grok s logger revert                                      # undo the most recent change
+grok s logger revert                                      # undo the most recent change or override
 grok s logger revert --override <id>
 ```
 
@@ -573,7 +575,8 @@ replace or `+a,-b` to edit; mixing both is refused. Debug flags are the platform
 query hash storage credentials ...`; the server refuses unknown names); `queries` and `files` are
 accepted for `query` and `storage`. `--for`/`--until` make a time-boxed override (at most 7 days); a user, session or
 package scope without them lasts one hour; scope `all` or `group:<name>` without them changes the
-base settings. A setting the deployment locks is refused with `<lock> is locked by deployment
+base settings; a base change that changes nothing prints `(no change: …)`, and a second base
+change within 5 s of the previous one is refused ("wait for 5 seconds"), exit 1. A setting the deployment locks is refused with `<lock> is locked by deployment
 configuration` and exit 1. `server` is the only target for now. Needs
 `EditPluginsSettings`.
 

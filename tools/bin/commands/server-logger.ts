@@ -331,10 +331,11 @@ async function loggerSet(connect: Connect, argv: any, output: OutputFormat): Pro
     set[`userGroupSettings.${gid}.${prop}`] = v;
   const res = await logging.setPolicy({set, reason}).catch(lockRefusal);
   if (output !== 'table') { printOutput(res, output); return true; }
+  if (res?.version == null) { console.log('(no change: the base settings already have these values)'); return true; }
   const named = {...policy, groups: {...policy?.groups, [gid]: policy?.groups?.[gid] ?? scope.value ?? 'All users'}};
   for (const [path, v] of Object.entries(set))
     console.log(`~ ${displayPath(path, named)}  ${valueText(v)}`);
-  if (res?.version !== undefined) console.log(`policy version ${res.version}`);
+  console.log(`policy version ${res.version}`);
   return true;
 }
 
