@@ -1,37 +1,54 @@
 ---
 title: "Export logs to Amazon CloudWatch"
-description: Configure Log Export Blocks to send Datagrok logs to Amazon CloudWatch log groups and streams.
+description: Configure Log sync to send Datagrok logs to Amazon CloudWatch, Google Cloud Logging, or any OpenTelemetry (OTLP) collector.
 keywords:
   - cloudwatch logging
-  - log export blocks
+  - log sync
   - aws log groups
-  - putlogevents
+  - opentelemetry
   - centralized logging
 ---
 
-Datagrok can send logs to [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) according to the **Log Export Blocks** you can create.
+Datagrok can send logs to [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) through **Log sync**. The same
+settings also send logs to Google Cloud Logging or to any OpenTelemetry (OTLP) collector.
+
+Datagrok sends events to each destination as they are posted. Events don't need to be saved to the database first.
 
 > Note: You need an already configured CloudWatch instance and a created Log group with streams.
 
-To export logs, create a connection to AWS and configure **Log Export Blocks** in **Settings**.
-
 ## To create a connection to AWS
 
-  1. Go to **Data** > **Databases**.
+A connection is optional. Without one, Datagrok authenticates with the instance role.
 
-  2. Right-click the **AWS** data source and select the context action **Add new connection**.
+  1. Go to **Browse** > **Databases**.
+
+  2. Right-click the **AWS** data source and select **New connection...**.
 
   3. Fill the form with the region and credentials of the IAM user that has [PutLogEvents](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html) permission.
 
-## To configure **Log Export Blocks**
+## To configure **Log sync**
 
-1. Go to **Settings** > **Logger** > **Export logs to CloudWatch**. Click **Add new export block** link. The **Log Export Block** appears. It consists of several fields where you can specify the level, type of logs, as well parameters by which events will be filtered and sent to the Log group and stream. Moreover, you can configure maximum number of log events in a batch. 
-    <br />You can create several Log Export Blocks to export different types of logs to different Log groups or streams. Log sending is done in the order of forms. So it's better to put more specific cases above more generalized ones.
+1. Go to **Settings** > **Logger** and expand **Log sync**.
+2. Click **Add new sync block**. A new destination appears.
+3. Set **Cloud** to **Amazon CloudWatch**, then fill in **Log Group** and **Stream**.
+4. Select the **Levels** to sync. Optionally, narrow the events with **Event type** and **Params**, and set **Batch Size** and **Format**.
+5. Optionally, choose a **Connection**.
+6. Click **Save and apply**.
 
-   ![How to find CW settings](./log-export-cw.gif "Export logs to CloudWatch")
-2. Fill out **Log Export Block** with the necessary information and choose the appropriate connection to **AWS**.
-3. Click **Apply** button. It schedules the job which exports log events every minute. 
-   
+![Adding a CloudWatch destination in Log sync](./log-export-cw.gif "Export logs to CloudWatch")
+
+You can add several destinations to send different levels to different log groups, streams, or clouds.
+For **Google Cloud Logging**, set **Log Name** and a connection. For **OpenTelemetry (OTLP)**, set **Endpoint** and **Auth**.
+
+Only posted levels can be synced. **Log settings** on the same page control what is posted. They apply per user or group
+and offer the **Standard**, **Verbose**, and **Custom** presets.
+
+:::note
+
+On a platform-managed instance, the **Log sync** section is hidden. The deployment owns the destinations.
+
+:::
+
 ## To disable log sending
 
-   1. Toggle **Enabled** in the **Log Export Block**. It disables log sending without the need to remove the block.
+To pause a destination without deleting it, turn off **Enabled** in its block. To delete it, click **Remove this destination**.

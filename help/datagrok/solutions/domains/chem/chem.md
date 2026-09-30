@@ -454,6 +454,10 @@ To configure a similarity or diversity viewer, click the **Gear** icon at the vi
 
 By default, a reference molecule follows the current row. If you click a different molecule, the similarity viewer updates accordingly. To lock in a specific reference molecule, clear the **Follow Current Row** control. To sketch a custom reference molecule, click the **Edit** icon on the reference molecule card.
 
+To select the similar molecules in the table, click the **Select all similar** (![Select all similar icon](img/similarity-select-all-icon.png)) icon at the
+viewer's top. To filter the table to them, click the **Filter table to similar set**
+(![Filter table to similar set icon](img/similarity-filter-icon.png)) icon. Click it again to remove the filter.
+
 You can enhance the viewer cards by incorporating column data. To do so, use the **Molecule Properties** control. If a column is color-coded, its format is reflected on the card's value. To adjust how the color is shown (either as a background or text), use the **Apply Color To** control. To remove highlighting, clear the color-coding from the corresponding column in the dataset.
 
 ![similarity_search_add_fields](img/simsearch-colors.gif)
@@ -737,11 +741,32 @@ To set up a custom configuration:
 <details>
 <summary>How to use</summary>
 
-1. In the **Menu Ribbon**, open the **Chem** menu and select **Analyze structure** > **Elemental Analysis...** A parameter input dialog opens.
+1. In the **Menu Ribbon**, open the **Chem** menu and select **Analyze** > **Elemental Analysis...** A parameter input dialog opens.
 1. In the dialog:
    1. Select the source table and the molecular column that you want to analyze.
    1. Select the desired visualization option. You can choose between a standalone viewer (select **Radar View**) and sparklines (select **Radar Grid**), both of which use a radar viewer.
 1. Click **OK** to execute the analysis. New columns with atom counts and molecule charges are added to the spreadsheet and plotted on a radar chart using the selected visualization option.
+
+</details>
+
+### Pharmacophores
+
+Pharmacophore features show the parts of a molecule that can interact with a target: hydrogen bond donors and
+acceptors, hydrophobic and aromatic interactions, positive and negative ionizable groups, and halogen bond donors.
+Datagrok highlights them on the structure, so you can see which molecules of a series have an interaction that
+others lack. To see the features of one molecule, click it and expand **Biology** > **Pharmacophores** in the
+**Context Panel**.
+
+![Pharmacophores](img/pharmacophores.gif)
+
+<details>
+<summary>How to use</summary>
+
+1. In the **Menu Ribbon**, open the **Chem** menu and select **Analyze** > **Pharmacophores...** A parameter input
+   dialog opens.
+1. In the dialog, select the table and the molecule column, and check the feature types you want to detect.
+1. Click **OK**. Datagrok adds a molecule column with the features highlighted, and a boolean column for each
+   feature type that tells whether the molecule has it.
 
 </details>
 
@@ -756,7 +781,7 @@ The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules w
 <details>
 <summary>How to use</summary>
 
-1. Open the **Chem** menu and select **Analyze SAR** > **Activity Cliffs**.
+1. Open the **Chem** menu and select **Analyze** > **Activity Cliffs...**
 1. In the parameter input dialog, specify the following:
    1. Select the source table, molecular column, and activity data column to analyze.
    1. Set the similarity cutoff.
@@ -1081,7 +1106,7 @@ or [plugin docs](https://github.com/datagrok-ai/public/blob/master/packages/Dock
 
 **Step 2. Run docking**
 
-1. Go to **Top Menu** > **Chem** > **Docking...**
+1. Go to **Top Menu** > **Chem** > **Docking** > **AutoDock...**
 1. In the dialog, select the ligand column, choose a target, and set the number of conformations
 1. Click **OK** to start docking 
 
@@ -1180,16 +1205,14 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 
   New numeric columns can be added for immediate charting and filtering such as physical chemical properties (Top menu: Chem → Calculate → Chemical Properties...) or ADME properties with the Admetica plugin (Top menu: Chem → Admetica → Calculate...). Custom properties, like Ligand Efficiency (LE) or Lipophilic Ligand Efficiency (LLE), can be calculated using the [Add New Column](../../../../transform/add-new-column.md) feature.  Viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md), [radar](../../../../visualize/viewers/radar.md) or [row-level pie bar charts](../../../../visualize/viewers/grid.md#summary-columns), are especially useful for examining the profile of properties.  
 
-* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. Desirability functions can be either drawn manually or constructed automatically from a labeled dataset using probabilistic MPO. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. Desirability functions can be either drawn manually or constructed automatically from a labeled dataset using data-driven MPO. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
 
   <details>
-  <summary> Probabilistic MPO </summary>
+  <summary> Data-driven MPO </summary>
 
   Probabilistic MPO ([pMPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)) is a data-driven method for constructing desirability profiles from labeled datasets, in which statistically significant and non-redundant molecular descriptors are identified through significance testing and correlation filtering. It then combines these descriptors into weighted desirability functions, enabling robust multi-parameter optimization and compound ranking based on balanced property trade-offs.
 
-  Build a desirability profile using the interactive pMPO application available via `Chem -> Calculate -> Train pMPO...`:
-
-  ![Pareto front](mpo-probabilistic.png)
+  To build a desirability profile from a labeled dataset, create an MPO profile with the **Data-driven** method. For details, see [Build a data-driven profile](mpo.md#build-a-data-driven-profile).
 
   </details>
 
@@ -1275,7 +1298,7 @@ Datagrok supports [chemical structure curation](https://pubs.acs.org/doi/10.1021
 
 To perform chemical structure curation:
 
-1. Navigate to **Menu Ribbon** > **Chem** > **Transform** > **Curate**.
+1. Navigate to **Menu Ribbon** > **Chem** > **Transform** > **Curate...**
 1. In the **CurateChemStructures** dialog, select from the available options and click **OK**. This action adds a new column containing curated structures.
 
 ![Curation](chem_curation_demo.gif "Curation")<!--replace with new UI-->
@@ -1291,7 +1314,7 @@ You can generate a dataset based on the preferred structure.
 
 To perform chemical structure mutation:
 
-1. Navigate to **Menu Ribbon** > **Chem** > **Transform** > **Mutate**.
+1. Navigate to **Menu Ribbon** > **Chem** > **Transform** > **Mutate...**
 1. In the **Mutate** dialog, draw or paste the desired structure and set other parameters, including the number of mutated molecules. Each mutation step can have randomized mutation mechanisms and places (select the **Randomize** checkbox).
 1. Click **OK** to execute. A new table with mutated structures opens.
 
@@ -1299,20 +1322,22 @@ To perform chemical structure mutation:
 
 ### Virtual synthesis
 
-You can use the `Chem: TwoComponentReaction` function to apply specified chemical reactions to a pair of columns containing molecules in a virtual synthesis workflow. The output table contains a row for each product yielded by the reaction for the given inputs.
+To run a reaction between molecules from two columns, use **Chem** > **Transform** > **Reactions** > **Two-Component Reaction...**. To apply a reaction with one reactant to a molecule column, use **Chem** > **Transform** > **Reactions** > **Transformation...**. Both dialogs include a library of common reactions, and you can add your own.
 
-![Reactions](../../../../uploads/chem/reactions.png "Reactions")
+![Two-Component Reaction](img/two-component-reaction.png "Two-Component Reaction")
 
 <details>
 <summary>How to use</summary>
 
-1. Open the **Two Component Reaction** dialog by executing the `Chem: TwoComponentReaction` function in the **Console**. This opens a parameter input dialog.
+1. On the **Top Menu**, select **Chem** > **Transform** > **Reactions** > **Two-Component Reaction...**. A dialog opens.
 1. In the dialog:
-   1. Select the reactants to use.
-   1. Enter a reaction in the field provided.
-   1. Choose whether to combine the reactants from two sets, or sequentially, and whether to randomize, by checking or clearing the Matrix Expansion and Randomize checkboxes.
-   1. Set other parameters, such as seed, the number of maximum random reactions.
-   1. Click **OK** to execute.
+   1. In **Table 1** and **Reactant 1**, select the first reactant column. In **Table 2** and **Reactant 2**, select the second one.
+   1. In **Combination Mode**, select **pairwise** to react row 1 with row 1, row 2 with row 2, and so on, or **matrix** to react every molecule of the first column with every molecule of the second.
+   1. To strip salts and water from the reactants first, keep **Remove salts and water** selected.
+   1. Select a reaction card. To find a reaction, type in **Search reaction** or filter by category. To add a reaction, click **+ New Reaction**. The **Reaction Preview** shows the reaction and example products.
+   1. Click **OK**.
+
+In the **pairwise** mode, the products are added to the first table as a new column. In the **matrix** mode, a new table opens with the **Reactant 1**, **Reactant 2**, and **Product** columns.
 
 </details>
 

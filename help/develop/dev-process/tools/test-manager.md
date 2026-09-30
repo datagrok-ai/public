@@ -16,9 +16,9 @@ keywords:
 
 The **Test Manager** is a powerful tool designed to assist in test reproduction, debugging, and profiling. It enables you to execute any package test efficiently. 
 
-To access **Test Manager**, navigate through the following path in the **Browser**:
+To access **Test Manager**, navigate through the following path in **Browse**:
 
-**Apps** > **Admin** > **Test Manager**
+**Platform** > **Admin** > **Test Manager**
 
 ![Opening Test Manager](tm-open.gif)
 

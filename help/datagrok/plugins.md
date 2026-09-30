@@ -86,7 +86,7 @@ keywords:
 
 |Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|-------------------|---------------|---|
-|[Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | General | Required| Cheminformatics support ([wiki](solutions/domains/chem/chem.md)).<br/>Comes with OpenChemLib sketcher | Stable|
+|[Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | General | Required| Cheminformatics support ([wiki](solutions/domains/chem/chem.md)).<br/>Uses Ketcher as the default sketcher | Stable|
 |[Ketcher Sketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) | Sketchers | Recommended| Integration with [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) (Apache license, version 2.0) | Stable|
 |[Marvin](https://github.com/datagrok-ai/labs/tree/master/packages/Marvin) | Sketchers | Optional| Integration with Marvin JS (commercial 3rd party license) | Stable|
 |[Chem Draw Sketcher](https://github.com/datagrok-ai/labs/tree/master/packages/ChemDraw) | Sketchers | Optional| Integration with ChemDraw (commercial 3rd party license) | Stable|
