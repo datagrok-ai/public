@@ -132,8 +132,6 @@ To fully control access to external data sources (like [file shares](../../acces
 
 Global permissions define system-wide capabilities in Datagrok. They can be assigned to roles, users or groups. 
 These permissions control what users can create, administer, or view across the entire platform.
-To edit them, go to **Settings** > **Global Permissions**, or select a group and, in the **Context Panel**,
-expand the **Global Permissions** pane and click **MANAGE**.
 
 Permission for admin actions:
 

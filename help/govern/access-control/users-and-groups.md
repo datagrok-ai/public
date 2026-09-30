@@ -187,9 +187,7 @@ with specific roles and permissions:
 * **Developers**: Initially created as a child group under Administrators,
   this group inherits the permissions from its parent group.
 
-Members of the Administrators group have [global permissions](access-control.md#global-permissions). To edit them, go to
-**Settings** > **Global Permissions**, or select a group and, in the **Context Panel**, expand the
-**Global Permissions** pane and click **MANAGE**.
+Members of the Administrators group have global permissions, accessible via **Top Menu > Admin > Global Permissions...** 
 
 The following operations require global permissions:
     * Creating a new user - `CreateUser`
