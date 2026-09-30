@@ -49,8 +49,10 @@ dashboards and queries.
 A role is a group with a role flag, and permissions work the same way for both. The difference is a
 convention, plus one rule: group synchronization never adds anyone to a role, so capabilities can't
 change through your identity provider by accident. Grant capabilities on roles and use groups for
-sharing. Groups and roles can be nested; keep it to
-two or three levels so that it stays clear who can see what.
+sharing. The Priya example holds only if administrators follow this convention.
+
+Groups and roles can be nested; keep it to two or three levels so that it stays clear who can see
+what.
 
 Every user has a personal group. Don't share with it: access given to one person is lost when they
 change jobs.

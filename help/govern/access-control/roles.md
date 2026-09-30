@@ -11,17 +11,20 @@ keywords:
 ---
 
 A _role_ is a named set of capabilities you assign to people. Roles and
-[groups](users-and-groups.md#groups) share the same membership mechanics, but they do different
-jobs:
+[groups](users-and-groups.md#groups) share the same membership mechanics, and technically either
+can be granted any permission: a group can hold a global permission, and a space or connection can
+be shared with a role. We recommend using them for different jobs:
 
-| | Groups | Roles |
+| By convention | Groups | Roles |
 |---|---|---|
 | **Describe** | Your organization: departments, sites, teams, programs | What someone is allowed to do |
 | **Carry** | Sharing: who can view and edit a space, query, connection, or dashboard | Capabilities: [global permissions](access-control.md#global-permissions) and access to functions and packages |
 | **Typically come from** | Your identity provider, through [group synchronization](../../deploy/complete-setup/configure-auth.md#group-synchronization) | Datagrok administrators |
 | **Examples** | Oncology, Chemistry, a partner program | Authors, Consumers, Developers |
 
-For example, Priya is a chemist in the _Oncology_ group with the _Authors_ role. The group
+If administrators follow this convention, a change in someone's organization never changes what
+they can do, and a change in their job never changes what they can see. For example, Priya is a
+chemist in the _Oncology_ group with the _Authors_ role. The group
 determines what she can see: Oncology's spaces, dashboards, and database credentials. The role
 determines what she can do: create and share dashboards and queries. If she moves to Immunology,
 her group changes and she sees Immunology's data instead, and she can still create dashboards. If

@@ -185,9 +185,11 @@ Datagrok automatically creates several key groups and one built-in
 * **Developers**: Initially created as a child group under Administrators,
   this group inherits the permissions from its parent.
 
-Members of the Administrators role have all global permissions, accessible via **Top Menu > Admin > Global Permissions...**
-Global permissions can be granted to any role, group, or user; we recommend
-granting them to [roles](roles.md) and using groups for sharing.
+Members of the Administrators role have all global permissions. To edit them, go to
+**Settings** > **Global Permissions**, or select a role or group and, in the **Context Panel**,
+expand the **Global Permissions** pane and click **MANAGE**. You can grant global permissions
+to any role, group, or user. We recommend granting them to [roles](roles.md) and using groups
+for sharing.
 
 The following operations require global permissions:
     * Creating a new user - `CreateUser`
