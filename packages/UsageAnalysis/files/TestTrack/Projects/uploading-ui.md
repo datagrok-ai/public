@@ -23,14 +23,14 @@ from Browse, verify content, then delete the project.
 
 1. Open two files from the local machine (drag onto the platform or
    File > Open)
-2. Save them as one project named `UI_Local_NoSync`
-3. Reopen the project — `UI_Local_NoSync` opens the stored snapshot tables
+2. Save them as one project named `uiLocalNoSync`
+3. Reopen the project — `uiLocalNoSync` opens the stored snapshot tables
 4. Delete the created project
 
 ## Project from an SDF file
 
 1. Open `System:AppData/Chem/mol1K.sdf` from Files
-2. Save it as a project named `UI_Sdf_Sync` with Data Sync on
+2. Save it as a project named `uiSdfSync` with Data Sync on
 3. Reopen the project — molecules render, no errors
 4. Delete the created project
 
@@ -38,21 +38,16 @@ from Browse, verify content, then delete the project.
 
 1. In Browse > Databases, run **Get Top 100** on a demo DB table (e.g.
    Northwind `orders`)
-2. Save the result as a project — `UI_Top100_Sync` with Data Sync on, then
-   `UI_Top100_NoSync` with it off
+2. Save the result as a project — `uiTop100Sync` with Data Sync on, then
+   `uiTop100NoSync` with it off
 3. Reopen each project — with Sync on the query re-executes; with Sync off
    the stored result opens
 4. Delete both created projects
 
-## Upload dialog from the Scratchpad
+## Automation notes
 
-1. Open any table; open the Dashboards panel (from the Sidebar) and click the **Save** button near the New Dashboard project
-2. In the dialog: enter the name `UI_Scratchpad_Upload`, enter a description,
-   turn on the **Presentation mode** switch, click OK
-3. In the Share dialog that opens, click OK
-4. Reopen the project — the name and description are shown on its card, and
-   opening it starts in presentation mode
-5. Delete the created project
+- The SDF and **Get Top 100** cases need no local files and can be
+  automated; only the local-files case needs the OS file picker.
 
 ---
 {

@@ -29,7 +29,14 @@ and a clone built from them.
 1. Log in as the test user.
 2. Names in this test: project `integration`, Space `integration`,
    script `integrationScript`.
-3. **Create the Space.**
+3. **NorthwindTest** (steps 3 and 4) exists only on dev. On other
+   stands use the Datagrok database instead: in step 3 open
+   **Browse > Databases > Postgres > Datagrok > Schemas > public** and
+   use `entity_types` in place of `products`; in step 4 create a query
+   on `entity_types` with **New SQL Query...** and run it in place of
+   **PostgresAll**. On dev the Datagrok database path is **Datagrok >
+   Catalogs > datagrok > public**.
+4. **Create the Space.**
    - In **Browse**, right-click **Spaces** and choose **Create
      Space...**.
    - Enter `integration` as the name.
@@ -39,7 +46,7 @@ and a clone built from them.
      tree.
    - In the **Move entity** dialog, select **Copy**.
    - Click **YES**.
-4. **Create the script.**
+5. **Create the script.**
    - Go to **Browse > Platform > Functions > Scripts**.
    - Click **NEW** and choose **JavaScript Script...**.
    - Replace the template with the text below.
@@ -87,6 +94,7 @@ and a clone built from them.
    - Set **Aggregate** to `count(OrderID)`.
    - Click **ADD** in the top-right corner of the viewer.
    - **Verify:** the view *orders aggregation* opens.
+   - Write down its row count from the status bar.
 
 7. **Aggregate rows.**
    - Click the `demog` view tab.
@@ -96,6 +104,7 @@ and a clone built from them.
    - Set **Aggregate** to `avg(AGE)`.
    - Click **ADD**.
    - **Verify:** a new view with the aggregated table opens.
+   - Write down its row count.
 
 8. **Join two tables.**
    - Open **Data > Join Tables...**.
@@ -106,12 +115,11 @@ and a clone built from them.
    - Set **Join Type** to `inner`.
    - Click **OK**.
    - **Verify:** the join result opens as a new view.
+   - Write down its row count.
 
 9. **Clone a table.**
-   - Click the `products` view tab.
-   - Click `products` at the left of the status bar.
-   - In the **Context Panel**, expand **Actions**.
-   - Click **Clone**.
+   - Right-click the `products` view tab (`entity_types` off dev) and
+     choose **Table > Clone**.
    - **Verify:** the view `products (2)` opens.
 
 10. **Check the workspace.**
@@ -139,6 +147,8 @@ and a clone built from them.
     - **Verify:** **Content** lists nine tables.
     - Double-click the `integration` tile.
     - **Verify:** nine views open, each with rows.
+    - **Verify:** the pivot, the aggregate and the join views have the
+      row counts written down in steps 6–8.
     - **Verify:** no error balloon appears.
 
 13. **Cleanup.**

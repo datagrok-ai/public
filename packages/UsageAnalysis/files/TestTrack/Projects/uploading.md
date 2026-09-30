@@ -66,30 +66,37 @@ files and `customerid` in the query **PostgresAll** (830 rows).
 
 ## Scenario 1: Two linked tables
 
-| Project | Data sync | Creation script | Folder 1 | Item 1 | Folder 2 | Item 2 | Filtered |
-|---|---|---|---|---|---|---|---|
-| `TestCase1Sync` | ON | shown | Files > Demo > northwind | `customers.csv` | Files > Demo > northwind | `orders.csv` | 10 |
-| `TestCase1NoSync` | OFF | not shown | Files > Demo > northwind | `customers.csv` | Files > Demo > northwind | `orders.csv` | 10 |
-| `TestCase2Sync` | ON | shown | Databases > Postgres > NorthwindTest | `PostgresAll` | Databases > Postgres > NorthwindTest | `PostgresAll` | 11 |
-| `TestCase2NoSync` | OFF | not shown | Databases > Postgres > NorthwindTest | `PostgresAll` | Databases > Postgres > NorthwindTest | `PostgresAll` | 11 |
-| `TestCase3Sync` | ON | shown | Files > Demo > northwind | `customers.csv` | Databases > Postgres > NorthwindTest | `PostgresAll` | 10 |
-| `TestCase3NoSync` | OFF | not shown | Files > Demo > northwind | `customers.csv` | Databases > Postgres > NorthwindTest | `PostgresAll` | 10 |
-| `TestCase4Sync` | ON | shown | Spaces > uploading | `customers.csv` | Spaces > uploading | `orders.csv` | 10 |
-| `TestCase4NoSync` | OFF | not shown | Spaces > uploading | `customers.csv` | Spaces > uploading | `orders.csv` | 10 |
-| `TestCase5Sync` | ON | shown | Spaces > uploading | `customers.csv` | Files > Demo > northwind | `orders.csv` | 10 |
-| `TestCase5NoSync` | OFF | not shown | Spaces > uploading | `customers.csv` | Files > Demo > northwind | `orders.csv` | 10 |
-| `TestCase6Sync` | ON | shown | Spaces > uploading | `customers.csv` | Databases > Postgres > NorthwindTest | `PostgresAll` | 10 |
-| `TestCase6NoSync` | OFF | not shown | Spaces > uploading | `customers.csv` | Databases > Postgres > NorthwindTest | `PostgresAll` | 10 |
+| Project | Data sync | Creation script | Folder 1 | Item 1 | Folder 2 | Item 2 | Filtered | Rows after reopen | Filtered after reopen |
+|---|---|---|---|---|---|---|---|---|---|
+| `TestCase1Sync` | ON | shown | Files > Demo > northwind | `customers.csv` | Files > Demo > northwind | `orders.csv` | 10 | 1 and 2 | 10 |
+| `TestCase1NoSync` | OFF | not shown | Files > Demo > northwind | `customers.csv` | Files > Demo > northwind | `orders.csv` | 10 | 1 and 2 | 10 |
+| `TestCase2Sync` | ON | shown | Databases > Postgres > NorthwindTest | `PostgresAll` | Databases > Postgres > NorthwindTest | `PostgresAll` | 11 | 3 and 4 | 24 |
+| `TestCase2NoSync` | OFF | not shown | Databases > Postgres > NorthwindTest | `PostgresAll` | Databases > Postgres > NorthwindTest | `PostgresAll` | 11 | 3 and 4 | 24 |
+| `TestCase3Sync` | ON | shown | Files > Demo > northwind | `customers.csv` | Databases > Postgres > NorthwindTest | `PostgresAll` | 10 | 1 and 2 | 10 |
+| `TestCase3NoSync` | OFF | not shown | Files > Demo > northwind | `customers.csv` | Databases > Postgres > NorthwindTest | `PostgresAll` | 10 | 1 and 2 | 10 |
+| `TestCase4Sync` | ON | shown | Spaces > uploading | `customers.csv` | Spaces > uploading | `orders.csv` | 10 | 1 and 2 | 10 |
+| `TestCase4NoSync` | OFF | not shown | Spaces > uploading | `customers.csv` | Spaces > uploading | `orders.csv` | 10 | 1 and 2 | 10 |
+| `TestCase5Sync` | ON | shown | Spaces > uploading | `customers.csv` | Files > Demo > northwind | `orders.csv` | 10 | 1 and 2 | 10 |
+| `TestCase5NoSync` | OFF | not shown | Spaces > uploading | `customers.csv` | Files > Demo > northwind | `orders.csv` | 10 | 1 and 2 | 10 |
+| `TestCase6Sync` | ON | shown | Spaces > uploading | `customers.csv` | Databases > Postgres > NorthwindTest | `PostgresAll` | 10 | 1 and 2 | 10 |
+| `TestCase6NoSync` | OFF | not shown | Spaces > uploading | `customers.csv` | Databases > Postgres > NorthwindTest | `PostgresAll` | 10 | 1 and 2 | 10 |
+
+The query **PostgresAll** is always run with a right-click on it in
+the Browse tree and **Run** (it has no parameters, so it runs at once).
+A second double-click on the same query opens a table without a
+**Data sync** switch in the Save dialog.
 
 1. **Open the first table.**
    - In **Browse**, go to **Folder 1**.
-   - Double-click **Item 1**.
+   - Double-click **Item 1** (for `PostgresAll`: right-click it and
+     choose **Run**).
    - **Verify:** a table view opens with rows.
 
 2. **Open the second table.**
    - At the bottom of the left panel, click the **Browse** tab.
    - In **Browse**, go to **Folder 2**.
-   - Double-click **Item 2**.
+   - Double-click **Item 2** (for `PostgresAll`: right-click it and
+     choose **Run**).
    - **Verify:** a second table view opens with rows.
 
 3. **Link the tables.**
@@ -132,10 +139,11 @@ files and `customerid` in the query **PostgresAll** (830 rows).
    - Click **CANCEL**.
 
 7. **Check the link again.**
-   - Click the first row of the first table.
-   - Shift-click its second row.
+   - In the first table, click the first row of **Rows after reopen**.
+   - Shift-click the second one.
    - Click the view tab of the second table.
-   - **Verify:** the status bar shows **Filtered:** **Filtered**.
+   - **Verify:** the status bar shows **Filtered:** **Filtered after
+     reopen**.
 
 8. **Close.**
    - Right-click the left sidebar and select **Close All**.
@@ -205,6 +213,7 @@ files and `customerid` in the query **PostgresAll** (830 rows).
    - Set **Aggregate** to `count(orderid)`.
    - Click **ADD**.
    - **Verify:** a new view with one row per customer opens.
+   - Write down its row count.
 
 3. **Save.**
    - Click **SAVE** on the ribbon.
@@ -220,7 +229,8 @@ files and `customerid` in the query **PostgresAll** (830 rows).
    - Type **Project** into the search box.
    - Click the refresh icon.
    - Double-click the **Project** tile.
-   - **Verify:** both views open with rows.
+   - **Verify:** both views open; `orders` has 830 rows and the
+     aggregated table has the row count written down in step 2.
    - Click **SAVE** on the ribbon.
    - **Verify:** the **CREATION SCRIPT** block under each table is
      **Creation script**.
@@ -253,3 +263,9 @@ files and `customerid` in the query **PostgresAll** (830 rows).
 - After reopening, all tables of the case are there with data.
 - Links between tables still filter after reopening.
 - Pivot and aggregate results are saved inside the project.
+
+## Automation notes
+
+- TestCase2 selects rows 3 and 4 after the reopen, not rows 1 and 2:
+  a filter the project merely restored cannot then pass for a link
+  that still works.
