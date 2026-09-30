@@ -22,7 +22,7 @@ Datagrok supports secure connections to **AWS** and **GCP**, allowing you to:
 - Configure log exports to **CloudWatch** or **Google Cloud Logging**.
 - Securely provide credentials for other Datagrok connections by fetching them from the respective secrets manager.
 
-> **Note:** You must be a member of the **Administrators** or **Developers** group to create these connections.
+> **Note:** To create or edit these connections, you need the **Create Security Connection** [global permission](access-control.md#global-permissions).
 
 ---
 
@@ -58,8 +58,8 @@ The IAM or task role used by Datagrok must have the necessary permissions for th
 
 #### For logs export to CloudWatch
 
-1. Navigate to **Settings → Log → Log Export → Add New Export Block**.
-2. Select **Amazon CloudWatch** and choose the AWS connection in the **Connection** field.
+1. Navigate to **Settings** > **Logger** > **Log sync** and click **Add new sync block**.
+2. In **Cloud**, select **Amazon CloudWatch** and choose the AWS connection in the **Connection** field.
 
 ---
 
@@ -93,8 +93,8 @@ The service account (or impersonated account) must have the necessary permission
 
 #### For logs export to Google Cloud Logging
 
-1. Navigate to **Settings → Log → Log Export → Add New Export Block**.
-2. Select **Google Cloud Logging** and choose the GCP connection in the **Connection** field.
+1. Navigate to **Settings** > **Logger** > **Log sync** and click **Add new sync block**.
+2. In **Cloud**, select **Google Cloud Logging** and choose the GCP connection in the **Connection** field.
 
 ---
 

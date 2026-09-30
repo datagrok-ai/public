@@ -136,7 +136,10 @@ browsers, including Chrome, Edge, and Safari.
 
 ##### <b>Q: How is logging and monitoring handled?</b>
 
-Datagrok uses [AWS CloudWatch](https://aws.amazon.com/cloudwatch/) to collect and analyze logs and metrics.  
+Datagrok sends logs, audit events, alerts, and a heartbeat to Amazon CloudWatch, Google Cloud Logging, or any
+OpenTelemetry collector (see [Export logs](../../govern/audit/audit.md#export-logs)). Health endpoints report the status
+of every service, and [Usage Analysis](../../govern/audit/usage-analysis.md) shows user activity, errors, and server
+metrics. See [Monitor the platform](../../govern/manage-enterprise.md#monitor-the-platform).
 
 ##### <b>Q: How are backups and restores managed?</b>
 
@@ -306,9 +309,11 @@ and executes the incident management process.
 
 ##### <b>Q: How are security logs collected and monitored?</b>
 
-AWS resources use centralized logging. Currently, there is no proactive log
-review, but reporting of failed logins with alert thresholds is being
-implemented.  
+Sign-ins, failed sign-ins, impersonation, admin sessions, and settings changes
+are recorded in the [audit log](../../govern/audit/audit.md) and listed on the
+**System Activity** tab of [Usage Analysis](../../govern/audit/usage-analysis.md).
+When one account keeps failing to sign in, the server opens a `login` alert.
+To review these records in your SIEM, [export the logs](../../govern/audit/audit.md#export-logs).
 
 ## Transform
 

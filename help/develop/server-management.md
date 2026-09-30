@@ -35,6 +35,7 @@ Install with `npm install -g datagrok-tools`, then configure a server.
 | Hit any undocumented endpoint                              | `grok s raw GET /api/users/current`                        |
 | Check server and per-module health                         | `grok s healthcheck [--module <name>]`                     |
 | Bulk operations in one round-trip                          | `grok s batch <entity> <verb> --json items.json`           |
+| Promote content from dev to production                     | `grok s migrate <entity> --from dev --to prod`             |
 
 ## Configuration
 
@@ -143,8 +144,39 @@ grok s healthcheck --module scripting          # filter to one module
 grok s healthcheck --output json               # machine-readable
 ```
 
-Hits `GET /public/v1/healthcheck`. For an anonymous liveness probe (load
-balancer, Kubernetes readiness), use `/admin/health` directly.
+The server runs its health checks every 60 seconds: **Core** (the database
+and the server isolates), **Grok Connect**, **Jupyter**, **Credentials
+Server**, **Garbage Collector**, and **Grok Spawner**, plus any checks that
+plugins register. You can see the same results on the **Health** page of the setup wizard,
+which stays available at `/settings/initial/health`.
+Two endpoints expose them, both under the API root (for example,
+`https://datagrok.example.com/api`):
+
+| Endpoint                     | Sign-in  | Caching          | Response                                                                 |
+|------------------------------|----------|------------------|--------------------------------------------------------------------------|
+| `GET /admin/health`          | Not required | Up to 60 seconds | JSON array, one object per service                                  |
+| `GET /public/v1/healthcheck` | Required | None             | `{status, server, version, time, services}`, where `services` is the same array |
+
+Both accept `?module=<key>` to return a single service. Each service object has
+`key`, `type` (`Service` or `Plugin`), `name`, `description`, `enabled`,
+`started`, `time`, and `status`, which is one of:
+
+| Status             | Meaning                                                      |
+|--------------------|--------------------------------------------------------------|
+| **Running**        | The last check passed                                        |
+| **Failed**         | The last check failed. See the `error` field                 |
+| **Stopped**        | The service is turned off                                    |
+| **Not applicable** | The service isn't part of this deployment                    |
+| **Postponed**      | The check is waiting, for example for the service to start    |
+
+`/public/v1/healthcheck` sets `status` to `degraded` when any service is
+**Failed**, and to `ok` otherwise. It always answers with HTTP 200, so monitors
+must read `status` from the body.
+
+Use `/admin/health` for anonymous probes, such as load balancer health checks
+and Kubernetes readiness probes. Use `/public/v1/healthcheck` or
+`grok s healthcheck` for synthetic monitoring that needs the version and an
+overall status.
 
 ### Raw API access
 
@@ -171,6 +203,56 @@ grok s connections list --output json \
 
 Every subcommand on this page is idempotent — re-running a script that already
 ran is safe.
+
+## Move content between instances
+
+To promote content built in the UI, such as connections, queries, scripts,
+dashboards, spaces, and layouts, from one instance to another (for example,
+from dev to production), use `grok s pull`, `diff`, `push`, and `migrate`.
+Content travels as a **bundle**: a folder with one JSON file per entity that
+you can review, commit to Git, and push again later.
+
+```bash
+grok s pull Chem:TargetDashboard --out ./release --host dev   # instance → folder
+grok s diff ./release --host prod                             # what a push would change
+grok s push ./release --host prod --dry-run                   # print the plan only
+grok s push ./release --host prod --creds ./creds.yaml        # folder → instance
+grok s migrate Chem:TargetDashboard --from dev --to prod      # pull and push in one step
+```
+
+A selected entity brings its dependencies: a dashboard brings its tables,
+views, and layouts, a query brings its connection, and every entity brings the
+groups that hold permissions on it. Select by name, or with `--type`,
+`--namespace`, `--space`, `--author`, `--tag`, or `--since`.
+
+Entities keep the **same ID** on both instances, so pushing the same bundle
+again updates rather than duplicates, and an unchanged bundle writes nothing.
+When the target already has an entity with the same name but a different ID,
+`--on-conflict` decides what happens:
+
+| `--on-conflict`  | Result                                                                   |
+|------------------|--------------------------------------------------------------------------|
+| `fail` (default) | Nothing is written. All conflicts are listed                             |
+| `skip`           | The existing entity is kept. Anything that depends on it fails           |
+| `adopt`          | The bundle entity is written into the existing one                       |
+| `duplicate`      | A second copy is created next to the existing one                        |
+
+What doesn't travel:
+
+* **Credentials.** Passwords and other secrets are never pulled. Supply them for
+  the target in a YAML file passed with `--creds`, with values like
+  `${PROD_PASSWORD}` resolved from environment variables, or set them in the UI
+  after the push.
+* **Users and packages.** Create users and publish packages on the target
+  first. Content owned by a user who doesn't exist on the target is saved under
+  the account that runs the push. Package content moves with the package
+  itself, not with a bundle.
+* **Files inside file shares.** Only standalone files are copied.
+* **Removals.** A push adds and updates. Links that exist only on the target
+  are kept.
+
+For moving a whole instance, conflict handling, and the bundle format, see the
+[full reference](https://github.com/datagrok-ai/public/blob/master/tools/GROK_S.md#migrating-entities-between-instances-pull--push--migrate).
 
 ## Sync an AD group with Datagrok
 

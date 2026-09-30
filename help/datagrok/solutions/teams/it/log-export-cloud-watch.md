@@ -14,7 +14,8 @@ settings also send logs to Google Cloud Logging or to any OpenTelemetry (OTLP) c
 
 Datagrok sends events to each destination as they are posted. Events don't need to be saved to the database first.
 
-> Note: You need an already configured CloudWatch instance and a created Log group with streams.
+Without a connection, Datagrok authenticates with the instance role and creates the log group and stream if they don't
+exist. With a connection, create the log group and stream in CloudWatch first.
 
 ## To create a connection to AWS
 
@@ -39,6 +40,8 @@ A connection is optional. Without one, Datagrok authenticates with the instance 
 
 You can add several destinations to send different levels to different log groups, streams, or clouds.
 For **Google Cloud Logging**, set **Log Name** and a connection. For **OpenTelemetry (OTLP)**, set **Endpoint** and **Auth**.
+OpenTelemetry destinations also receive alert and heartbeat records regardless of the selected levels, unless you turn
+off **Alerts**. For every setting, see [Export logs](../../../../govern/audit/audit.md#export-logs).
 
 Only posted levels can be synced. **Log settings** on the same page control what is posted. They apply per user or group
 and offer the **Standard**, **Verbose**, and **Custom** presets.
