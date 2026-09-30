@@ -107,10 +107,11 @@ Feature: The Grid Customization tutorial
     When user presses F4
     Then context panel should be hidden
     # row 1 of demog is a "None" severity; 3302 rows share it
+    Given the tutorial step "Find the SEVERITY column and select all rows with the \"None\" value" should not be done yet
     When user presses Control+Home in grid
     And user presses End in grid
     And user clicks on the "cell 1 of SEVERITY" area of grid
-    And user presses Shift+Enter
+    And user presses Shift+Enter in grid
     Then the tutorial step "Find the SEVERITY column and select all rows with the \"None\" value" should be done
     And 3302 rows should be selected
     And all rows where "SEVERITY" is "None" should be selected

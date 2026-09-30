@@ -1,7 +1,7 @@
 @tutorials @serial @realizes:tutorials.calculated-columns
 Feature: The Calculated Columns tutorial
   Walks Data Transformation > Calculated Columns from its card to the end: a column from a constant
-  formula, its formula edited to read HEIGHT, a data edit that does not recalculate it, a BMI
+  formula, its formula edited to read HEIGHT, a data edit that recalculates it, a BMI
   column built on it, and a formula change that does recalculate the BMI. Each step is claimed as
   ticked and as done on the table — the column, its formula and its values; the BMI values before
   and after the formula change prove the metadata change recalculated the column that depends on it.
@@ -40,8 +40,12 @@ Feature: The Calculated Columns tutorial
     And the table should have a column "Height, m"
     And every value of "Height, m" column should lie between 1.699 and 1.701
 
-    # the new column is the last one: the grid may or may not have scrolled to it on its own
-    When user scrolls the grid to the "Height, m" column
+    # the step listens for the header click only once it is listed. The new column is the last one: a
+    # scroll alone does not hold, since the grid returns to its current cell, so the current cell moves
+    # there — a click on any cell the grid shows, then End
+    Given the tutorial step "Click on the \"Height, m\" column header" should not be done yet
+    When user clicks on the first "cell" area of grid
+    And user presses End
     And user clicks on the "header Height, m" area of grid
     Then the tutorial step "Click on the \"Height, m\" column header" should be done
     And the context panel should show "Height, m"
@@ -61,8 +65,8 @@ Feature: The Calculated Columns tutorial
     And user presses Enter
     Then the tutorial step "Change the \"HEIGHT\" value in the first row to \"170\"" should be done
     And the "HEIGHT" cell of row 1 should be displayed as "170.000"
-    # a data edit does not recalculate the column: row 1 still holds 160.484 / 100
-    And the "Height, m" cell of row 1 should be displayed as "1.605"
+    # a data edit recalculates the column that reads it: row 1 was 160.484 / 100
+    And the "Height, m" cell of row 1 should be displayed as "1.700"
 
     When user clicks on add-new-column icon
     Then the tutorial step "Add a new column that calculates BMI" should be done

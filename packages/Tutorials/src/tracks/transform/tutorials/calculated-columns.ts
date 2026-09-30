@@ -106,10 +106,9 @@ export class CalculatedColumnsTutorial extends Tutorial {
 
     await this.action('Change the "HEIGHT" value in the first row to "170"', this.t!.onValuesChanged.pipe(filter(() =>
       this.t!.cell(0, 'HEIGHT').value === 170)), null, 'Now we will examine in which circumstances the values of a ' +
-      'calculated column get re-calculated. There is a distinction between column data and metadata changes. As ' +
-      'you can see, the value of height in meters in the first row doesn\'t change along with our value change. ' +
-      'However, if you want to refresh computations after a value change, you can click the <b>Apply</b> button ' +
-      'in the <b>Formula</b> pane of the context panel.');
+      'calculated column get re-calculated. As you can see, the value of height in meters in the first row follows ' +
+      'the value you entered: a calculated column is recalculated when the data its formula reads changes. It is ' +
+      'also recalculated when the formula itself changes, which the next steps show.');
 
     const addNCDlgBMI = await this.openAddNCDialog('Add a new column that calculates BMI');
     const columnNameBMI = 'BMI';
