@@ -428,8 +428,8 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       expect(t.rows.some((r) => r.ERROR.includes(`${TAG}Solo`))).toBe(true);
     }, LONG);
 
-    it.skipIf(SHARED)('errors top --since 7d --by signature,package --min-users 2', async () => {
-      const t = table((await ok(['errors', 'top', '--since', '7d', '--by', 'signature,package', '--min-users', '2'])).out);
+    it.skipIf(SHARED)('errors top --since 7d --by signature,package --min-users 2 --package <this run package>', async () => {
+      const t = table((await ok(['errors', 'top', '--since', '7d', '--by', 'signature,package', '--min-users', '2', '--package', seed.pkg!])).out);
       expect(t.columns.slice(0, 7)).toEqual(['SIG', 'PACKAGE', 'ERROR', 'USERS', 'COUNT', 'FIRST SEEN', 'LAST']);
       const mine = t.rows.find((r) => r.ERROR.includes(`${TAG}Shared`));
       expect(mine).toBeTruthy();
