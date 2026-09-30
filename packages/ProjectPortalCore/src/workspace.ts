@@ -66,8 +66,10 @@ async function shareRoot(root: DG.Project, portfolio: PortfolioRow, notes: strin
 }
 
 async function writeAttributes(space: DG.Project, attributes: Record<string, string>): Promise<boolean> {
+  // they come back namespaced: portal_stage is read as default:portal_stage
   const current = await space.getProperties().catch(() => ({} as Record<string, any>));
-  if (Object.entries(attributes).every(([k, v]) => String(current[k] ?? '') === v))
+  const read = (k: string) => String(current[k] ?? current[`default:${k}`] ?? '');
+  if (Object.entries(attributes).every(([k, v]) => read(k) === v))
     return false;
   await space.setProperties(attributes);
   return true;

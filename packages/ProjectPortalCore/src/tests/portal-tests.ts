@@ -234,6 +234,7 @@ category('Portal: workspace', () => {
     const again = await buildPortfolioWorkspace('EX-SMD');
     expect(again.created, 0, again.entries.filter((e) => e.action === 'create').map((e) => e.path).join());
     expect(again.reused, 1 + programs.length * (1 + WORKSTREAMS.length));
+    expect(again.notes.some((n) => n.startsWith('attributes written')), false, again.notes.join('; '));
   });
 
   test('a preview names what it would create and creates nothing', async () => {
