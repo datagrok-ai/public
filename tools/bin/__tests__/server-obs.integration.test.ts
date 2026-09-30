@@ -392,6 +392,12 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       expect(rows[0]?.resolveReason).toBe('duplicate of 4819');
     }, LONG);
 
+    it.skipIf(SHARED)('alerts resolve report:<missing number>  # not found, never a key prefix', async () => {
+      const r = await grok(['alerts', 'resolve', 'report:98765432', '--reason', 'no such report']);
+      expect(r.code).toBe(1);
+      expect(r.out + r.err).toContain('No open alert report:98765432');
+    }, LONG);
+
     it.skipIf(!HOST2)('alerts list --host a --host b  # several stands, HOST column', async () => {
       const r = await ok(['alerts', 'list', '--status', 'all', '--since', '7d', '--host', HOST, '--host', HOST2]);
       const t = table(r.out);
