@@ -219,8 +219,8 @@ export class PortalView {
     const reasons = named(divV(verdict.reasons.map((r) => span(r, 'pp-reason'))), 'gate-reasons');
     const decide = (d: Decision) => async () => {
       try {
-        await recordDecision(program.id, d, null, rationale.value);
-        grok.shell.info(`${program.name}: ${d} recorded`);
+        const done = await recordDecision(program.id, d, null, rationale.value);
+        grok.shell.info(`${program.name}: ${d} recorded${done.workspace ? `\n${done.workspace}` : ''}`);
         await this.openPortfolio(this.portfolio!.code);
         await this.openProgram(program.id);
       } catch (e: any) {

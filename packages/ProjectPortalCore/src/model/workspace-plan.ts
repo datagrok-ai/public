@@ -59,3 +59,91 @@ export function programAttributes(portfolioCode: string, p: WorkspaceProgram): R
 export function parseWorkstreams(stored: string | null | undefined): string[] {
   return (stored ?? '').split('|').map((w) => w.trim()).filter((w) => w.length > 0);
 }
+
+/** A stage folder path as declared: segments under the program's folder, '/'-separated. */
+export function splitFolderPath(path: string): string[] {
+  return String(path ?? '').split('/').map((s) => s.trim()).filter((s) => s.length > 0);
+}
+
+export const MAX_FOLDER_DEPTH = 3;
+
+/** Problems with one stage's folder paths, as sentences. */
+export function validateStageFolders(stageCode: string, folders: string[]): string[] {
+  const errors: string[] = [];
+  const seen = new Set<string>();
+  for (const f of folders) {
+    const parts = splitFolderPath(f);
+    if (parts.length === 0)
+      errors.push(`stage ${stageCode}: folder "${f}" is empty`);
+    else if (parts.length > MAX_FOLDER_DEPTH)
+      errors.push(`stage ${stageCode}: folder "${f}" is deeper than ${MAX_FOLDER_DEPTH} levels`);
+    else if (f.includes('|'))
+      errors.push(`stage ${stageCode}: folder "${f}" may not contain '|'`);
+    else if (parts.some((p) => normalizeSpaceName(p) === ''))
+      errors.push(`stage ${stageCode}: folder "${f}" has a segment with no letters or digits`);
+    const key = parts.map((p) => normalizeSpaceName(p).toLowerCase()).join('/');
+    if (seen.has(key))
+      errors.push(`stage ${stageCode}: folder "${f}" is declared twice`);
+    seen.add(key);
+  }
+  return errors;
+}
+
+export interface StageFolders {
+  code: string;
+  ordinal: number;
+  folders: string[];
+}
+
+/** The folders a program at [ordinal] has earned: those of every stage up to and including its
+ * own (PORT-35). An unstaged program has none. A stage reached later only adds; a program that
+ * recycles keeps what it had, since the builder never removes a folder. */
+export function stageFolderPaths(stages: StageFolders[], ordinal: number | null): string[][] {
+  if (ordinal === null)
+    return [];
+  const out: string[][] = [];
+  const seen = new Set<string>();
+  for (const s of [...stages].sort((a, b) => a.ordinal - b.ordinal)) {
+    if (s.ordinal > ordinal)
+      break;
+    for (const f of s.folders) {
+      const parts = splitFolderPath(f);
+      const key = parts.map((p) => normalizeSpaceName(p).toLowerCase()).join('/');
+      if (parts.length && !seen.has(key)) {
+        seen.add(key);
+        out.push(parts);
+      }
+    }
+  }
+  return out;
+}
+
+export interface Orphan {
+  path: string;
+  kind: 'unclaimed' | 'park';
+  reason: string;
+}
+
+const PARK_STATUSES = ['terminated', 'transitioned', 'missing_from_feed', 'completed'];
+
+/** What a prune-or-park pass would look at (FR-22), as a report only: root folders no program of
+ * the portfolio claims, and folders of programs that have ended or left their feed. Nothing below
+ * a program folder is judged: people put their own folders there. */
+export function findOrphans(root: string, children: SpaceRef[], programs: WorkspaceProgram[]): Orphan[] {
+  const claimed = new Map<string, WorkspaceProgram>();
+  for (const p of programs) {
+    const found = findProgramFolder(p, children);
+    if (found)
+      claimed.set(found.space.id, p);
+  }
+  const out: Orphan[] = [];
+  for (const c of [...children].sort((a, b) => (a.friendlyName ?? a.name).localeCompare(b.friendlyName ?? b.name))) {
+    const label = `${root}/${c.friendlyName ?? c.name}`;
+    const p = claimed.get(c.id);
+    if (!p)
+      out.push({path: label, kind: 'unclaimed', reason: 'no program of the portfolio claims it'});
+    else if (PARK_STATUSES.includes(p.status ?? ''))
+      out.push({path: label, kind: 'park', reason: `${p.code} is ${p.status}`});
+  }
+  return out;
+}

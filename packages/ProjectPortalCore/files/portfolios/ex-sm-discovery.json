@@ -60,7 +60,8 @@
             "kind": "data_condition",
             "rule": "assay.z_prime >= 0.5"
           }
-        ]
+        ],
+        "folders": ["Biology/Assay Development"]
       },
       {
         "code": "H2L",
@@ -126,11 +127,7 @@
             "rule": "solubility, permeability (Papp) and clearance (CLint) on ≥10 lead-set compounds",
             "condition": {
               "scope": "lead_set",
-              "measured": [
-                "solubility_um",
-                "papp",
-                "clint"
-              ],
+              "measured": ["solubility_um", "papp", "clint"],
               "minCount": 10
             }
           },
@@ -151,7 +148,8 @@
               ]
             }
           }
-        ]
+        ],
+        "folders": ["DMPK/In vivo PK"]
       },
       {
         "code": "CS",
@@ -169,7 +167,8 @@
             "name": "Nomination decision",
             "kind": "decision"
           }
-        ]
+        ],
+        "folders": ["Candidate Package"]
       },
       {
         "code": "PCD",
@@ -183,7 +182,8 @@
             "name": "Development candidate decision",
             "kind": "decision"
           }
-        ]
+        ],
+        "folders": ["Candidate Package/Development Handover"]
       }
     ]
   },

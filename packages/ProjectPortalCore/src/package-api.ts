@@ -72,6 +72,13 @@ export namespace funcs {
   }
 
   /**
+   * Reports, and never touches, the folders a prune-or-park pass would look at: root folders no program of the portfolio claims, and folders of programs that have ended or left their feed
+   */
+  export async function workspaceOrphans(code: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:WorkspaceOrphans', { code });
+  }
+
+  /**
    * Builds the workspace of every loaded portfolio that declares a workspaceRoot, one after another
    */
   export async function buildAllWorkspaces(): Promise<string> {

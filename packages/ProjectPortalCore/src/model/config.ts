@@ -2,6 +2,7 @@
  * pure checks: nothing here touches the platform, so the rules hold wherever the file is read. */
 import {DataCondition, ProgramDataConfig, validateCondition} from './conditions';
 import {validateWorkUnits, WorkUnitFeedConfig, WorkUnitKind} from './work-units';
+import {validateStageFolders} from './workspace-plan';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -36,6 +37,9 @@ export interface StageConfig {
   aliases?: string[];
   description?: string;
   criteria?: CriterionConfig[];
+  /** Folders added under a program's folder once it reaches this stage, '/'-separated paths
+   * (Candidate Package, DMPK/In vivo PK). Never compounds (FR-26). */
+  folders?: string[];
 }
 
 export interface StageModelConfig {
@@ -201,6 +205,7 @@ export function validateStageModel(m: StageModelConfig): string[] {
         errors.push(`${where}: "${spelling}" would resolve to both ${owner} and ${s.code}`);
       spellings.set(key, s.code);
     }
+    errors.push(...validateStageFolders(s.code, s.folders ?? []).map((e) => `${where}: ${e}`));
     const criteria = new Set<string>();
     for (const cr of s.criteria ?? []) {
       if (criteria.has(cr.code))

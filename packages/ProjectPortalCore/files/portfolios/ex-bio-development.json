@@ -104,7 +104,8 @@
             "name": "Quality section of the IND drafted",
             "kind": "document"
           }
-        ]
+        ],
+        "folders": ["Regulatory/IND"]
       },
       {
         "code": "D4",
@@ -133,7 +134,8 @@
             "name": "Locked process description",
             "kind": "document"
           }
-        ]
+        ],
+        "folders": ["Drug Substance/Process Lock"]
       },
       {
         "code": "D6",
@@ -162,7 +164,8 @@
             "name": "Filing decision",
             "kind": "decision"
           }
-        ]
+        ],
+        "folders": ["Regulatory/BLA"]
       }
     ]
   },

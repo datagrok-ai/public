@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits} from './portal';
 import {portalDb} from './generated/db';
-import {buildPortfolioWorkspace, summarizeWorkspace} from './workspace';
+import {buildPortfolioWorkspace, summarizeWorkspace, workspaceOrphans as orphansOf} from './workspace';
 import {summarizeReadiness} from './model/readiness';
 import {summarizeWorkUnitPlan} from './model/work-units';
 import {portalAppView} from './views/portal-view';
@@ -102,6 +102,14 @@ export async function routingAuditOf(sources: string): Promise<string> {
 //output: string report
 export async function buildWorkspace(code: string, dryRun: boolean = false): Promise<string> {
   return summarizeWorkspace(await buildPortfolioWorkspace(code, dryRun));
+}
+
+//name: workspaceOrphans
+//description: Reports, and never touches, the folders a prune-or-park pass would look at: root folders no program of the portfolio claims, and folders of programs that have ended or left their feed
+//input: string code
+//output: string report
+export async function workspaceOrphans(code: string): Promise<string> {
+  return summarizeWorkspace(await orphansOf(code));
 }
 
 //name: buildAllWorkspaces

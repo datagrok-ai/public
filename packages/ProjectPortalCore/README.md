@@ -44,6 +44,8 @@ one customer runs discovery and CMC together.
   - Compounds, plates, results and predictions are never folders.
   - It is additive: it creates what is missing and never renames, moves or deletes. It records each program's folder on the program row (`space_id`), so a program renamed in its registry keeps its folder, and the report names the difference.
   - The root is shared View to viewers and Edit to contributors, and its folders inherit that. Unlike program rows, spaces accept the grant, so the workspace is isolated per portfolio today.
+  - **It grows with the stage (PORT-35).** A stage declares `folders`, paths under the program's folder (`Candidate Package`, `DMPK/In vivo PK`). A program has the folders of every stage it has reached: the builder adds them, and a gate decision that advances a program adds the new stage's folders at once when its workspace exists. A program that recycles keeps them.
+  - **Orphans are reported, never touched (FR-22).** Every full build, and `workspaceOrphans`, lists root folders no program claims and the folders of programs that are terminated, transitioned, completed or missing from their feed. Pruning or parking them is a separate, explicit step this package does not take.
 
 ### Work units
 
@@ -124,6 +126,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
 | `buildWorkspace(code, dryRun)` | Builds one portfolio's workspace. With `dryRun` it lists what it would create. Refused while another build of the same root runs. |
+| `workspaceOrphans(code)` | The folders a prune-or-park pass would look at; a report, nothing is changed |
 | `buildAllWorkspaces` | Builds the workspace of every portfolio that declares a `workspaceRoot` |
 
 ## Tests
@@ -134,12 +137,12 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Readiness on the example data: hit-to-lead and lead-optimization conditions, development lots, the gate.
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
-  - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds.
+  - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds, stage folders from the builder and on advance, the orphan report.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-01, 74 of the 77 package tests and all 10 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-01, 81 of the 84 package tests and all 10 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

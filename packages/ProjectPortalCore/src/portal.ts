@@ -10,6 +10,8 @@ import {FeedRow, planSync, ProgramRef, StageRef, summarizePlan, SyncPlan} from '
 import {checkDecision, Decision, GateVerdict, CriterionState, nextStage, statusAfter} from './model/gates';
 import {DataCondition, DataRow, DEFAULT_LEAD_ROLES, ProgramDataConfig} from './model/conditions';
 import {computeReadiness, Readiness} from './model/readiness';
+// workspace.ts imports from here too; the cycle is safe because neither uses the other at load
+import {buildPortfolioWorkspace, summarizeWorkspace} from './workspace';
 import {planWorkUnits, WorkUnitKind, WorkUnitPlan, WorkUnitRef, WORK_UNIT_FIELDS} from './model/work-units';
 import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
 
@@ -122,6 +124,7 @@ export async function loadStageModel(m: StageModelConfig, report: string[]): Pro
       name: s.name, ordinal: s.ordinal, phase: s.phase ?? null, is_gate: s.isGate ?? true,
       is_terminal: s.isTerminal ?? false, governance: s.governance ?? null,
       spellings: (s.aliases ?? []).join('|') || null,
+      folders: (s.folders ?? []).join('|') || null,
       description: s.description ?? null,
     });
     for (const c of s.criteria ?? []) {
@@ -519,9 +522,11 @@ export function verdictFor(ctx: ProgramContext, decision: Decision, targetStageI
   });
 }
 
-/** Records a gate decision after checking it again server-side of the UI. */
+/** Records a gate decision after checking it again server-side of the UI. An advance grows the
+ * program's workspace by the folders of the stage it entered (FR-14), when the workspace exists;
+ * a failure there is reported on the verdict, not thrown: the decision stands. */
 export async function recordDecision(programId: string, decision: Decision, targetStageId: string | null,
-  rationale: string): Promise<GateVerdict> {
+  rationale: string): Promise<GateVerdict & {workspace?: string}> {
   const ctx = await programContext(programId);
   const verdict = verdictFor(ctx, decision, targetStageId, rationale);
   if (!verdict.allowed)
@@ -542,6 +547,15 @@ export async function recordDecision(programId: string, decision: Decision, targ
     ...(verdict.toStageId ? {stage_id: verdict.toStageId} : {}),
     ...(status !== ctx.program.status ? {status} : {}),
   });
+  const entered = ctx.stages.find((s) => s.id === verdict.toStageId);
+  if (decision === 'advance' && entered?.folders && ctx.portfolio.workspace_root && ctx.program.space_id) {
+    try {
+      const r = await buildPortfolioWorkspace(ctx.portfolio.code, false, programId);
+      return {...verdict, workspace: summarizeWorkspace(r)};
+    } catch (e: any) {
+      return {...verdict, workspace: `workspace not grown: ${e?.message ?? e}`};
+    }
+  }
   return verdict;
 }
 

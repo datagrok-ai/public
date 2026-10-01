@@ -105,6 +105,7 @@ export interface StageRow {
   governance?: string;
   aliases?: string[];
   spellings?: string;
+  folders?: string;
   description?: string;
 }
 
@@ -120,11 +121,13 @@ export interface StageInsert {
   governance?: string;
   aliases?: string[];
   spellings?: string;
+  folders?: string;
   description?: string;
 }
 
 export type StageColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'stage_model_id' | 'code' |
-  'name' | 'ordinal' | 'phase' | 'is_gate' | 'is_terminal' | 'governance' | 'aliases' | 'spellings' | 'description';
+  'name' | 'ordinal' | 'phase' | 'is_gate' | 'is_terminal' | 'governance' | 'aliases' | 'spellings' | 'folders' |
+  'description';
 
 /** Expand keys of `portal.stage` → fields each adds to the row (consumed by query()/builder). */
 export type StageExpand = {
@@ -175,7 +178,7 @@ export type GateCriterionExpand = {
   'stage_id': {'stage_id.stage_model_id'?: string; 'stage_id.code'?: string; 'stage_id.name'?: string;
     'stage_id.ordinal'?: number; 'stage_id.phase'?: string; 'stage_id.is_gate'?: boolean;
     'stage_id.is_terminal'?: boolean; 'stage_id.governance'?: string; 'stage_id.aliases'?: string[];
-    'stage_id.spellings'?: string; 'stage_id.description'?: string};
+    'stage_id.spellings'?: string; 'stage_id.folders'?: string; 'stage_id.description'?: string};
   'details:criterion_status': {criterion_status?: CriterionStatusRow[]};
 };
 
@@ -353,7 +356,7 @@ export type ProgramExpand = {
   'stage_id': {'stage_id.stage_model_id'?: string; 'stage_id.code'?: string; 'stage_id.name'?: string;
     'stage_id.ordinal'?: number; 'stage_id.phase'?: string; 'stage_id.is_gate'?: boolean;
     'stage_id.is_terminal'?: boolean; 'stage_id.governance'?: string; 'stage_id.aliases'?: string[];
-    'stage_id.spellings'?: string; 'stage_id.description'?: string};
+    'stage_id.spellings'?: string; 'stage_id.folders'?: string; 'stage_id.description'?: string};
   'lead': {'lead.login'?: string; 'lead.firstName'?: string; 'lead.lastName'?: string; 'lead.status'?: string;
     'lead.createdOn'?: Dayjs; 'lead.picture'?: string; 'lead.group'?: string; 'lead.author'?: string};
   'predecessor_id': {'predecessor_id.portfolio_id'?: string; 'predecessor_id.code'?: string;
@@ -416,11 +419,12 @@ export type StageTransitionExpand = {
   'from_stage_id': {'from_stage_id.stage_model_id'?: string; 'from_stage_id.code'?: string;
     'from_stage_id.name'?: string; 'from_stage_id.ordinal'?: number; 'from_stage_id.phase'?: string;
     'from_stage_id.is_gate'?: boolean; 'from_stage_id.is_terminal'?: boolean; 'from_stage_id.governance'?: string;
-    'from_stage_id.aliases'?: string[]; 'from_stage_id.spellings'?: string; 'from_stage_id.description'?: string};
+    'from_stage_id.aliases'?: string[]; 'from_stage_id.spellings'?: string; 'from_stage_id.folders'?: string;
+    'from_stage_id.description'?: string};
   'to_stage_id': {'to_stage_id.stage_model_id'?: string; 'to_stage_id.code'?: string; 'to_stage_id.name'?: string;
     'to_stage_id.ordinal'?: number; 'to_stage_id.phase'?: string; 'to_stage_id.is_gate'?: boolean;
     'to_stage_id.is_terminal'?: boolean; 'to_stage_id.governance'?: string; 'to_stage_id.aliases'?: string[];
-    'to_stage_id.spellings'?: string; 'to_stage_id.description'?: string};
+    'to_stage_id.spellings'?: string; 'to_stage_id.folders'?: string; 'to_stage_id.description'?: string};
   'decided_by': {'decided_by.login'?: string; 'decided_by.firstName'?: string; 'decided_by.lastName'?: string;
     'decided_by.status'?: string; 'decided_by.createdOn'?: Dayjs; 'decided_by.picture'?: string;
     'decided_by.group'?: string; 'decided_by.author'?: string};
@@ -964,7 +968,7 @@ export type ModelRunExpand = {
   'stage_id': {'stage_id.stage_model_id'?: string; 'stage_id.code'?: string; 'stage_id.name'?: string;
     'stage_id.ordinal'?: number; 'stage_id.phase'?: string; 'stage_id.is_gate'?: boolean;
     'stage_id.is_terminal'?: boolean; 'stage_id.governance'?: string; 'stage_id.aliases'?: string[];
-    'stage_id.spellings'?: string; 'stage_id.description'?: string};
+    'stage_id.spellings'?: string; 'stage_id.folders'?: string; 'stage_id.description'?: string};
   'unit_operation_id': {'unit_operation_id.code'?: string; 'unit_operation_id.name'?: string;
     'unit_operation_id.ordinal'?: number; 'unit_operation_id.description'?: string};
   'run_type_id': {'run_type_id.code'?: string; 'run_type_id.name'?: string; 'run_type_id.definition'?: string;
