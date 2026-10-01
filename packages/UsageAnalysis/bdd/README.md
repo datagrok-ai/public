@@ -29,7 +29,13 @@ stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and t
 error matrix), translated from the manual cases, each feature naming what it left out and why.
 Two of its scenarios are `@full-stand` (they name the providers and the Platform sections a full
 stand carries): a smaller stand runs with `grok-bdd run --grep-invert "@full-stand"`, and a scenario
-whose package the stand lacks skips at its package gate. `features/guides/` holds the
+whose package the stand lacks skips at its package gate.
+`features/sticky-meta/` the Sticky Meta TestTrack section (an entity type and a schema from creation
+to deletion, metadata on a molecule cell, as sticky columns and on selected rows, what survives a
+clone, a new view, an exported file, a project, a space, a reload and another account signing
+in on the page, and the Database meta of a NorthwindTest schema, table and column); written with the
+library's vocabulary only, they make and delete their type and schema through the UI, and
+`features/sticky-meta/MISSING.md` lists the steps and signals they still need. `features/guides/` holds the
 answers to "how do I …" questions as scenarios: `grok-bdd guide features/guides/<name>.feature`
 films one into `guides/<feature>/<scenario>/guide.mp4` with the numbered steps and pictures beside
 it (`steps.md`), `--help-pages` re-films every `@help:`-tagged one into the help tree; `INDEX.md`
@@ -89,6 +95,7 @@ PowerGrid and are claimed in `packages/PowerGrid/bdd/features/grid/summary-colum
 | `grid-persistence` | four colour codings, row height, missing-value colour, min/max stats rows, a moved, a hidden, a widened and a pinned column, two pinned rows and a sort, all back from a layout loaded over a fresh view and from a project |
 | `grid-forms-column` | Design a Form... (the designer view, Close and Apply, Edit), Default HTML Form, Custom HTML Form... |
 | `grid-context-menu` | a right click below the current row makes the clicked row current and keeps the scroll; the Current Value actions act on the right-clicked cell — Chem's Copy as SMILES on the `smiles` demo file, Helm's Edit Helm... on the `helm-peptides` one (the stand needs both packages) |
+
 `features/viewers/filter-panel/` stands in for the TestTrack scenarios of
 `files/TestTrack/Viewers/FilterPanel/` — `panel-core-ladder.md`, `add-remove-entry-points.md`,
 `filter-type-selection-modes.md`, `hierarchical-and-combined-boolean.md`,
