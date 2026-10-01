@@ -93,7 +93,7 @@ empty path. These forms are equivalent:
 |------------|---------|------------|
 | `optional` | A query with no match does not prevent the link from being created; the alias reads as absent. | Any query. |
 | `call`     | Match the node (the FuncCall) itself rather than a script io. In `funccall` actions it is required for inputs read as `DG.FuncCall` and for the `setFuncCall` output. In every other link type it must be combined with `optional`, and the controller exposes only a `hasCall(name)` presence check. | `from` of any link; `to` of `funccall` actions only. Not in `base`, `showWhen`, `hideWhen` or rule queries, not with `template`. Accepted in `not` without effect. |
-| `template` | Expand the last segment into one query per io: a `\|`-list of io names, or an `outputs()` / `inputs()` wildcard. The alias is the prefix plus the io name; a `_` prefix gives the io names alone. | `from` and `to` of data links and rules. |
+| `template` | Expand the last segment into one query per io: a `\|`-list of io names, or an `outputs()` / `inputs()` wildcard. The alias is the prefix plus the io name; a `_` prefix gives the io names alone. | `from` of data, validator, meta, node meta and pipeline validator links; `to` of data, validator and meta links; `from` and `to` of rules. |
 
 ### Where a query appears
 

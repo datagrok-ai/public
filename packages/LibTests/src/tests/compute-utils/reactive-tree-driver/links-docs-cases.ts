@@ -206,7 +206,6 @@ category('ComputeUtils: Driver docs cases', async () => {
   });
 
   test('Lookup table fills sibling inputs', async () => {
-    // the docs load the table through a func source; a sync js source keeps virtual time
     const presets = DG.DataFrame.fromColumns([
       DG.Column.fromList('string', 'mode', ['fast', 'exact']),
       DG.Column.fromList('double', 'a', [1, 10]),

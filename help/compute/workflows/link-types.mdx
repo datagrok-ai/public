@@ -880,8 +880,9 @@ input hidden via meta are suppressed like every other validator, including
 by a `visible` check on the same input.
 
 Annotation-derived expression checks see every input of the step under its
-parameter name plus `value`. A `check` link names the inputs its expression
-reads in `vars`:
+parameter name plus `value`, except inputs named `value`, `table`, `target`
+or `call`, names the check uses itself. A `check` link names the inputs its
+expression reads in `vars`:
 
 ```
 {id: 'foo', type: 'check', io: 'solver/foo', check: {validator: 'bar > 3'}, vars: {bar: 'solver/bar'}}
@@ -931,7 +932,7 @@ are handled differently:
 |---|---|---|
 | When the inputs are filled | Only when a key is picked in the dropdown | Whenever the key changes, including a change made by a link, and when the step is created or a run is loaded |
 | Editing a filled input by hand | Nothing marks it | Flagged as inconsistent with the lookup, see [Consistency](#consistency) |
-| An input another step feeds through a link | Not applicable, a form has no links | Keeps the linked value: the lookup skips it, even before the link has a value |
+| An input that a data link of the workflow writes, from another step or the same one | Not applicable, a form has no links | Keeps the value the link writes: the lookup skips it, even before the link has a value |
 | A cell that does not fit its input's type | The input is emptied | The input keeps its value, and the key shows a warning |
 | A date input | Not filled | Filled from a date cell, or from text or a timestamp that reads as a date; any other cell is handled as one that does not fit |
 | A second key with `propagateChoice: all` | Each key fills the inputs, the last pick wins | Only the first key fills inputs, the option on later keys is ignored with a warning |
