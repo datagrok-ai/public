@@ -19,6 +19,9 @@ one customer runs discovery and CMC together.
 | `registry_feed` | SQL against a named connection that yields the portfolio's programs. | table |
 | `program` | Keyed by `(portfolio_id, code)`. `predecessor_id` links a program that continues in another portfolio. | **row, private by default** |
 | `stage_transition` | The gate log: every stage change, including `sync` changes observed in a registry. Written once. | master → program |
+| `compound` | A projection of the compound registry, keyed `(system, code)`. Never minted, never promoted, never a folder. | table |
+| `program_compound` | A compound in a program, with its role: explored, hit, lead, backup, candidate, tool, discontinued. Many-to-many. | master → program |
+| `compound_role_change` | Every role change: who, when, why, from the feed or by hand. Written once. | master → program |
 | `campaign`, `series`, `study`, `process_stage` | Work units under a program, keyed `(program_id, code)`. A campaign is open-ended and reaches an `outcome`; a study is closed-ended and completes. | master → program |
 | `criterion_status` | Met / waived / not met per program and criterion. | master → program |
 
@@ -59,6 +62,21 @@ kind, each row naming its `program` by code. They sync after the programs, by th
 - series maturity is checked against the portfolio's `seriesMaturity`, and drift is warned.
 
 A work unit is never a folder of compounds (FR-26). The program page lists the units by kind.
+
+### Compounds in programs
+
+A portfolio's `compoundFeed` (registry `system`, `connection`, `sql`) returns one row per program and
+compound: `program`, `compound` (the registration code), `role`, and `name`, `smiles`, `aliases`,
+`batches` when present. Sync runs after the programs and work units:
+- one `compound` row per registry code, however many programs hold it; a tool compound serves several programs with a different role in each;
+- the registry moves a role, and the change is logged in `compound_role_change`;
+- `setCompoundRole` changes a role by hand, with a rationale; that link becomes manual, and later syncs report the registry's role without overwriting it (the `program_flow` rule);
+- a link the feed drops is flagged `missing_from_feed`, never deleted.
+
+Which programs hold a compound is under each program's security; the compound rows themselves are
+readable by all users, as a registry usually is. Rows are written one by one, which suits a
+portfolio's lead and candidate sets, not a full 10⁶-compound registry (NFR-01): bulk binding waits
+on EMS over external databases (PLAT-13).
 
 ### Data conditions and readiness
 
@@ -121,18 +139,20 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `loadPortfolios` | Loads this package's portfolio files: groups, stage models, portfolios, feeds. Idempotent. |
 | `loadPortfolioConfigs(configs)` | Loads portfolios handed over by another package, as a JSON array, checked as a set |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
-| `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit feeds. With `dryRun` it prints the plan without applying it. |
+| `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
 | `buildWorkspace(code, dryRun)` | Builds one portfolio's workspace. With `dryRun` it lists what it would create. Refused while another build of the same root runs. |
 | `workspaceOrphans(code)` | The folders a prune-or-park pass would look at; a report, nothing is changed |
+| `setCompoundRole(portfolio, program, compound, role, rationale)` | Changes a compound's role in a program by hand, logged |
 | `buildAllWorkspaces` | Builds the workspace of every portfolio that declares a `workspaceRoot` |
 
 ## Tests
 
 - **`grok test`: package tests.**
   - Configuration rules, the sync planner, gate rules, data conditions and readiness. These are pure functions.
+  - Compounds on the example data: roles, a compound in two programs, history, a manual change, idempotence.
   - Work units on the example data: series, campaigns, studies, process stages; a rejected row; idempotence.
   - Readiness on the example data: hit-to-lead and lead-optimization conditions, development lots, the gate.
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
@@ -142,7 +162,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-01, 81 of the 84 package tests and all 10 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-01, 91 of the 94 package tests and all 11 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

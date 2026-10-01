@@ -12,6 +12,7 @@ import {DataCondition, DataRow, DEFAULT_LEAD_ROLES, ProgramDataConfig} from './m
 import {computeReadiness, Readiness} from './model/readiness';
 // workspace.ts imports from here too; the cycle is safe because neither uses the other at load
 import {buildPortfolioWorkspace, summarizeWorkspace} from './workspace';
+import {CompoundPlan, CompoundRef, CompoundRole, COMPOUND_ROLES, LinkRef, planCompounds} from './model/compounds';
 import {planWorkUnits, WorkUnitKind, WorkUnitPlan, WorkUnitRef, WORK_UNIT_FIELDS} from './model/work-units';
 import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
 
@@ -157,6 +158,11 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
   for (const f of c.feeds) {
     await upsertByKey(portalDb.registryFeeds, {portfolio_id: portfolioId, code: f.code},
       {system: f.system, connection: f.connection, sql: f.sql, mapping: f.mapping ?? null, enabled: true, target: 'program'});
+  }
+  if (c.compoundFeed) {
+    await upsertByKey(portalDb.registryFeeds, {portfolio_id: portfolioId, code: COMPOUND_FEED},
+      {system: c.compoundFeed.system, connection: c.compoundFeed.connection, sql: c.compoundFeed.sql, mapping: null,
+        enabled: true, target: 'compound'});
   }
   for (const f of c.workUnitFeeds ?? []) {
     await upsertByKey(portalDb.registryFeeds, {portfolio_id: portfolioId, code: f.code},
@@ -394,6 +400,111 @@ export async function syncWorkUnits(code: string, dryRun = false): Promise<WorkU
     await portalDb.registryFeeds.update(feed.id, {last_synced_on: now as any});
   }
   return plans;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Compounds in programs
+
+/** The registry_feed code a portfolio's compound feed is stored under. */
+export const COMPOUND_FEED = 'compounds';
+
+const quoted = (xs: string[]) => xs.map((x) => `"${x.replace(/"/g, '\\"')}"`).join(', ');
+
+async function inBatches<T>(keys: string[], run: (batch: string[]) => Promise<T[]>): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < keys.length; i += 100)
+    out.push(...await run(keys.slice(i, i + 100)));
+  return out;
+}
+
+/** Plans (and unless [dryRun], applies) the portfolio's compound feed: compounds by registry and
+ * code, links by program and compound, role changes logged. */
+export async function syncCompounds(code: string, dryRun = false): Promise<CompoundPlan | null> {
+  const portfolio = await portfolioByCode(code);
+  const feed = (await portalDb.registryFeeds.query({filter: `portfolio_id = "${portfolio.id}"`}))
+    .find((f) => f.target === 'compound' && f.enabled !== false);
+  if (!feed)
+    return null;
+  const rows = await runFeed({connection: feed.connection, sql: feed.sql});
+  const programs = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+  const byCode = new Map(programs.map((p) => [p.code, p.id]));
+  const codes = [...new Set(rows.map((r) => r.compound).filter((c) => c !== null && c !== undefined).map(String))];
+  const known = await inBatches(codes, (b) =>
+    portalDb.compounds.query({filter: `system = "${feed.system}" and code in (${quoted(b)})`}));
+  const compounds = new Map<string, CompoundRef>(known.map((c) => [c.code, {id: c.id, code: c.code,
+    values: {name: c.name ?? null, smiles: c.smiles ?? null, aliases: c.aliases ?? null, batches: c.batches ?? null,
+      details: (c.details as any) ?? null}}]));
+  const linkRows = await inBatches(programs.map((p) => p.id), (b) =>
+    portalDb.programCompounds.query({filter: `program_id in (${quoted(b)})`}));
+  const links: LinkRef[] = linkRows.map((l) => ({id: l.id, programId: l.program_id, compoundId: l.compound_id,
+    role: (l.role ?? null) as CompoundRole | null, source: l.source ?? null, missingFromFeed: l.missing_from_feed ?? false}));
+  // links to compounds of this system that are not in the feed any more still need their codes
+  const missingIds = links.map((l) => l.compoundId).filter((id) => ![...compounds.values()].some((c) => c.id === id));
+  for (const c of await inBatches([...new Set(missingIds)], (b) => portalDb.compounds.query({filter: `id in (${quoted(b)})`}))) {
+    if (c.system === feed.system)
+      compounds.set(c.code, {id: c.id, code: c.code, values: {}});
+  }
+  const plan = planCompounds({portfolio: code, system: feed.system, rows, programs: byCode, compounds, links});
+  if (dryRun)
+    return plan;
+
+  const now = new Date().toISOString();
+  const me = DG.User.current().id;
+  const idOf = new Map([...compounds.values()].map((c) => [c.code, c.id]));
+  for (const v of plan.compoundInserts) {
+    const [r] = await portalDb.compounds.insert({...v, last_synced_on: now} as any);
+    idOf.set(v.code, (r as any).existingId ?? r.id);
+  }
+  for (const u of plan.compoundUpdates)
+    await portalDb.compounds.update(u.id, {...u.changes, last_synced_on: now} as any);
+  for (const l of plan.linkInserts) {
+    const compoundId = idOf.get(l.compoundCode)!;
+    await portalDb.programCompounds.insert({program_id: l.programId, compound_id: compoundId, role: l.role,
+      role_since: now as any, source: 'feed', last_synced_on: now as any});
+    await portalDb.compoundRoleChanges.insert({program_id: l.programId, compound_id: compoundId, to_role: l.role,
+      changed_by: me, changed_on: now as any, source: 'feed', rationale: `Registry ${feed.system}`});
+  }
+  for (const c of plan.roleChanges) {
+    await portalDb.programCompounds.update(c.linkId, {role: c.to, role_since: now as any, last_synced_on: now as any});
+    await portalDb.compoundRoleChanges.insert({program_id: c.programId, compound_id: idOf.get(c.compoundCode)!,
+      from_role: c.from ?? undefined, to_role: c.to, changed_by: me, changed_on: now as any, source: 'feed',
+      rationale: `Registry ${feed.system}`});
+  }
+  for (const r of plan.linkReturned)
+    await portalDb.programCompounds.update(r.id, {missing_from_feed: false, last_synced_on: now as any});
+  for (const m of plan.linkMissing)
+    await portalDb.programCompounds.update(m.id, {missing_from_feed: true});
+  await portalDb.registryFeeds.update(feed.id, {last_synced_on: now as any});
+  return plan;
+}
+
+/** Changes a compound's role in a program by hand, and logs it with the rationale. The link becomes
+ * manual: a later sync reports the registry's role but does not overwrite this one. */
+export async function setCompoundRole(programId: string, compoundId: string, role: CompoundRole, rationale: string): Promise<void> {
+  if (!COMPOUND_ROLES.includes(role))
+    throw new Error(`role "${role}" is not one of ${COMPOUND_ROLES.join(', ')}`);
+  if (!rationale?.trim())
+    throw new Error('A role change needs a rationale');
+  const now = new Date().toISOString();
+  const link = (await portalDb.programCompounds.query({filter: `program_id = "${programId}" and compound_id = "${compoundId}"`}))[0];
+  if (link?.role === role)
+    return;
+  // from now on the registry no longer moves this compound's role in this program
+  if (link)
+    await portalDb.programCompounds.update(link.id, {role, role_since: now as any, source: 'manual', missing_from_feed: false});
+  else
+    await portalDb.programCompounds.insert({program_id: programId, compound_id: compoundId, role, role_since: now as any, source: 'manual'});
+  await portalDb.compoundRoleChanges.insert({program_id: programId, compound_id: compoundId, from_role: link?.role ?? undefined,
+    to_role: role, changed_by: DG.User.current().id, changed_on: now as any, source: 'manual', rationale});
+}
+
+/** A program's compounds with their roles, the compound rows joined in. */
+export async function compoundsOf(programId: string): Promise<{link: any, compound: any}[]> {
+  const links = await portalDb.programCompounds.query({filter: `program_id = "${programId}"`});
+  const compounds = await inBatches([...new Set(links.map((l) => l.compound_id))], (b) =>
+    portalDb.compounds.query({filter: `id in (${quoted(b)})`}));
+  const byId = new Map(compounds.map((c) => [c.id, c]));
+  return links.map((link) => ({link, compound: byId.get(link.compound_id)})).filter((x) => x.compound);
 }
 
 // ---------------------------------------------------------------------------------------------

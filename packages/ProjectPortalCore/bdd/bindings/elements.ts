@@ -40,3 +40,5 @@ app.element('ADME panel criterion detail', {selector: u2('criterion-detail-adme-
 app.element('work units', {selector: u2('work-units')});
 app.element('KIN-A series', {selector: u2('unit-series-kin-a')});
 app.element('TOX-201 study', {selector: u2('unit-study-tox-201')});
+app.element('compound roles', {selector: u2('compound-roles')});
+app.element('EXC-3001 compound', {selector: u2('compound-exc-3001')});

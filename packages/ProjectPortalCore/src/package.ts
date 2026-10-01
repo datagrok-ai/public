@@ -1,11 +1,12 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits} from './portal';
+import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, portfolioByCode} from './portal';
 import {portalDb} from './generated/db';
 import {buildPortfolioWorkspace, summarizeWorkspace, workspaceOrphans as orphansOf} from './workspace';
 import {summarizeReadiness} from './model/readiness';
 import {summarizeWorkUnitPlan} from './model/work-units';
+import {CompoundRole, summarizeCompoundPlan} from './model/compounds';
 import {portalAppView} from './views/portal-view';
 import {installStyles} from './views/styles';
 export * from './package.g';
@@ -45,11 +46,12 @@ export async function loadPortfolioConfigs(configs: string): Promise<string> {
 async function syncOne(code: string, dryRun = false): Promise<string> {
   const programs = (await syncPortfolioPlans(code, dryRun)).map(summarizePlan);
   const units = (await syncWorkUnits(code, dryRun)).map(summarizeWorkUnitPlan);
-  return [...programs, ...units].join('\n');
+  const compounds = await syncCompounds(code, dryRun);
+  return [...programs, ...units, ...(compounds ? [summarizeCompoundPlan(compounds)] : [])].join('\n');
 }
 
 //name: syncPortfolio
-//description: Runs one portfolio's registry feeds, then its work-unit feeds, and applies (or with dryRun only plans) the result
+//description: Runs one portfolio's registry feeds, then its work-unit and compound feeds, and applies (or with dryRun only plans) the result
 //input: string code
 //input: bool dryRun = false
 //output: string report
@@ -78,6 +80,27 @@ export async function syncAllPortfolios(): Promise<string> {
 export async function programReadiness(portfolio: string, program: string, stage?: string): Promise<string> {
   const r = await readinessOf(portfolio, program, stage || undefined);
   return summarizeReadiness(r.program.code, r.stage.name, r.readiness);
+}
+
+//name: setCompoundRole
+//description: Changes a compound's role in a program (explored, hit, lead, backup, candidate, tool, discontinued) and logs who, when and why
+//input: string portfolio
+//input: string program
+//input: string compound {description: Registration code}
+//input: string role
+//input: string rationale
+//output: string report
+export async function setCompoundRole(portfolio: string, program: string, compound: string, role: string,
+  rationale: string): Promise<string> {
+  const pf = await portfolioByCode(portfolio);
+  const p = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "${program}"`}))[0];
+  if (!p)
+    throw new Error(`${portfolio} has no program ${program}, or it is not shared with you`);
+  const c = (await portalDb.compounds.query({filter: `code = "${compound}"`}));
+  if (c.length !== 1)
+    throw new Error(c.length ? `${compound} is registered in ${c.length} registries` : `no compound ${compound} is known to the portal`);
+  await setRole(p.id, c[0].id, role as CompoundRole, rationale);
+  return `${program}/${compound}: ${role}`;
 }
 
 //name: portfolioRoutingAudit

@@ -5,12 +5,13 @@
 - Data conditions are evaluated: a portfolio declares a program dataset (`programData`, SQL with `@program`), and a criterion a structured `condition` (scope program / lead set / series, `where`, `measured`, `minCount`, `minSeries`)
 - Readiness: `programReadiness` evaluates every criterion of a stage and returns a score and a gap list; the gate uses the evaluated conditions and records what the data said on advance
 - Criteria may be limited to a modality (`modality`)
-- App: the gate panel shows readiness and the gaps; any stage on the track shows what entering it takes; the program page lists its work units
+- App: the gate panel shows readiness and the gaps; any stage on the track shows what entering it takes; the program page lists its work units and its compounds by role
 - Work units: `campaign`, `series`, `study`, `process_stage` under a program; a portfolio enables a subset (`workUnits`) and feeds them (`workUnitFeeds`), synced after the programs; flagged, never deleted, when a feed drops them
 - Workspace grows with the stage: stages declare `folders`; the builder adds those of every stage a program has reached, and an advance adds the new stage's at once (PORT-35)
 - Orphan report: `workspaceOrphans`, and every full build, list root folders no program claims and folders of ended programs; nothing is pruned or parked (FR-22)
-- `portal` schema 0.2.2: `gate_criterion.condition`, `portfolio.program_data`; 0.2.3: the work-unit tables, `portfolio.work_units`, `portfolio.series_maturity`, `registry_feed.target`; 0.2.4: `stage.folders`
-- Examples: stage folders (EX-SMD: Biology/Assay Development, DMPK/In vivo PK, Candidate Package; EX-BIOC: Regulatory/IND, Drug Substance/Process Lock, Regulatory/BLA); series and campaigns (EX-SMD), campaigns (EX-BIOD), studies and process stages (EX-BIOC); EX-SMD compounds by series and role (hit-to-lead and lead-optimization conditions, an optional hERG margin); EX-BIOC lots for the tox-lot condition
+- Compounds in programs: `compound` (a registry projection, never minted or promoted), `program_compound` with a role, `compound_role_change` history; a portfolio's `compoundFeed` syncs them; `setCompoundRole` changes a role by hand and the registry no longer overwrites it
+- `portal` schema 0.2.2: `gate_criterion.condition`, `portfolio.program_data`; 0.2.3: the work-unit tables, `portfolio.work_units`, `portfolio.series_maturity`, `registry_feed.target`; 0.2.4: `stage.folders`; 0.2.5: `compound`, `program_compound`, `compound_role_change`
+- Examples: EX-SMD compounds with roles, batches and a tool compound in two projects; stage folders (EX-SMD: Biology/Assay Development, DMPK/In vivo PK, Candidate Package; EX-BIOC: Regulatory/IND, Drug Substance/Process Lock, Regulatory/BLA); series and campaigns (EX-SMD), campaigns (EX-BIOD), studies and process stages (EX-BIOC); EX-SMD compounds by series and role (hit-to-lead and lead-optimization conditions, an optional hERG margin); EX-BIOC lots for the tox-lot condition
 
 ## 0.2.0 (2026-09-30)
 

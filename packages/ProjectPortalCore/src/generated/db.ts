@@ -17,7 +17,7 @@ export type PortfolioModalityClass = 'small_molecule' | 'biologic' | 'any';
 
 export type PortfolioStageAuthority = 'feed' | 'portal';
 
-export type RegistryFeedTarget = 'program' | 'campaign' | 'series' | 'study' | 'process_stage';
+export type RegistryFeedTarget = 'program' | 'campaign' | 'series' | 'study' | 'process_stage' | 'compound';
 
 export type ProgramStatus = 'active' | 'on_hold' | 'terminated' | 'completed' | 'transitioned' | 'missing_from_feed';
 
@@ -46,6 +46,12 @@ export type StudySource = 'feed' | 'manual';
 export type ProcessStageStatus = 'not_started' | 'in_development' | 'locked' | 'transferred';
 
 export type ProcessStageSource = 'feed' | 'manual';
+
+export type ProgramCompoundRole = 'explored' | 'hit' | 'lead' | 'backup' | 'candidate' | 'tool' | 'discontinued';
+
+export type ProgramCompoundSource = 'feed' | 'manual';
+
+export type CompoundRoleChangeSource = 'feed' | 'manual';
 
 export type ProgramFlowSource = 'rule' | 'manual';
 
@@ -373,6 +379,8 @@ export type ProgramExpand = {
   'details:series': {series?: SeriesRow[]};
   'details:study': {study?: StudyRow[]};
   'details:process_stage': {process_stage?: ProcessStageRow[]};
+  'details:program_compound': {program_compound?: ProgramCompoundRow[]};
+  'details:compound_role_change': {compound_role_change?: CompoundRoleChangeRow[]};
   'details:program_flow': {program_flow?: ProgramFlowRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};
@@ -674,6 +682,135 @@ export type ProcessStageExpand = {
     'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'unit_operation_id': {'unit_operation_id.code'?: string; 'unit_operation_id.name'?: string;
     'unit_operation_id.ordinal'?: number; 'unit_operation_id.description'?: string};
+};
+
+/** Row of `portal.compound`. */
+export interface CompoundRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  system: string;
+  code: string;
+  name?: string;
+  smiles?: string;
+  aliases?: string;
+  batches?: string;
+  last_synced_on?: Dayjs;
+  details?: {[key: string]: any};
+}
+
+/** Insert payload for `portal.compound`. */
+export interface CompoundInsert {
+  system: string;
+  code: string;
+  name?: string;
+  smiles?: string;
+  aliases?: string;
+  batches?: string;
+  last_synced_on?: Dayjs | string;
+  details?: {[key: string]: any};
+}
+
+export type CompoundColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'system' | 'code' |
+  'name' | 'smiles' | 'aliases' | 'batches' | 'last_synced_on' | 'details';
+
+/** Expand keys of `portal.compound` → fields each adds to the row (consumed by query()/builder). */
+export type CompoundExpand = {
+  'details:program_compound': {program_compound?: ProgramCompoundRow[]};
+  'details:compound_role_change': {compound_role_change?: CompoundRoleChangeRow[]};
+};
+
+/** Row of `portal.program_compound`. */
+export interface ProgramCompoundRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  compound_id: string;
+  role: ProgramCompoundRole;
+  role_since?: Dayjs;
+  source?: ProgramCompoundSource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs;
+}
+
+/** Insert payload for `portal.program_compound`. */
+export interface ProgramCompoundInsert {
+  program_id: string;
+  compound_id: string;
+  role: ProgramCompoundRole;
+  role_since?: Dayjs | string;
+  source?: ProgramCompoundSource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs | string;
+}
+
+export type ProgramCompoundColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'compound_id' | 'role' | 'role_since' | 'source' | 'missing_from_feed' | 'last_synced_on';
+
+/** Expand keys of `portal.program_compound` → fields each adds to the row (consumed by query()/builder). */
+export type ProgramCompoundExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'compound_id': {'compound_id.system'?: string; 'compound_id.code'?: string; 'compound_id.name'?: string;
+    'compound_id.smiles'?: string; 'compound_id.aliases'?: string; 'compound_id.batches'?: string;
+    'compound_id.last_synced_on'?: Dayjs; 'compound_id.details'?: {[key: string]: any}};
+};
+
+/** Row of `portal.compound_role_change`. */
+export interface CompoundRoleChangeRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  compound_id: string;
+  from_role?: string;
+  to_role: string;
+  changed_by?: string;
+  changed_on?: Dayjs;
+  source: CompoundRoleChangeSource;
+  rationale?: string;
+}
+
+/** Insert payload for `portal.compound_role_change`. */
+export interface CompoundRoleChangeInsert {
+  program_id: string;
+  compound_id: string;
+  from_role?: string;
+  to_role: string;
+  changed_by?: string;
+  changed_on?: Dayjs | string;
+  source: CompoundRoleChangeSource;
+  rationale?: string;
+}
+
+export type CompoundRoleChangeColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'compound_id' | 'from_role' | 'to_role' | 'changed_by' | 'changed_on' | 'source' | 'rationale';
+
+/** Expand keys of `portal.compound_role_change` → fields each adds to the row (consumed by query()/builder). */
+export type CompoundRoleChangeExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'compound_id': {'compound_id.system'?: string; 'compound_id.code'?: string; 'compound_id.name'?: string;
+    'compound_id.smiles'?: string; 'compound_id.aliases'?: string; 'compound_id.batches'?: string;
+    'compound_id.last_synced_on'?: Dayjs; 'compound_id.details'?: {[key: string]: any}};
+  'changed_by': {'changed_by.login'?: string; 'changed_by.firstName'?: string; 'changed_by.lastName'?: string;
+    'changed_by.status'?: string; 'changed_by.createdOn'?: Dayjs; 'changed_by.picture'?: string;
+    'changed_by.group'?: string; 'changed_by.author'?: string};
 };
 
 /** Row of `portal.unit_operation`. */
@@ -1069,6 +1206,15 @@ export type PortalTransactionOp =
   {op: 'insert'; table: 'process_stage'; ref?: string; values: DG.DomainTxValues<ProcessStageInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'process_stage'; id: string; values: DG.DomainTxValues<Partial<ProcessStageRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'process_stage'; id: string} |
+  {op: 'insert'; table: 'compound'; ref?: string; values: DG.DomainTxValues<CompoundInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'compound'; id: string; values: DG.DomainTxValues<Partial<CompoundRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'compound'; id: string} |
+  {op: 'insert'; table: 'program_compound'; ref?: string; values: DG.DomainTxValues<ProgramCompoundInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'program_compound'; id: string; values: DG.DomainTxValues<Partial<ProgramCompoundRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'program_compound'; id: string} |
+  {op: 'insert'; table: 'compound_role_change'; ref?: string; values: DG.DomainTxValues<CompoundRoleChangeInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'compound_role_change'; id: string; values: DG.DomainTxValues<Partial<CompoundRoleChangeRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'compound_role_change'; id: string} |
   {op: 'insert'; table: 'unit_operation'; ref?: string; values: DG.DomainTxValues<UnitOperationInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'unit_operation'; id: string; values: DG.DomainTxValues<Partial<UnitOperationRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'unit_operation'; id: string} |
@@ -1134,6 +1280,15 @@ export const portalDb = {
   },
   get processStages() {
     return grok.dapi.domains.table<ProcessStageRow, ProcessStageInsert, ProcessStageColumn, ProcessStageExpand>('portal.process_stage');
+  },
+  get compounds() {
+    return grok.dapi.domains.table<CompoundRow, CompoundInsert, CompoundColumn, CompoundExpand>('portal.compound');
+  },
+  get programCompounds() {
+    return grok.dapi.domains.table<ProgramCompoundRow, ProgramCompoundInsert, ProgramCompoundColumn, ProgramCompoundExpand>('portal.program_compound');
+  },
+  get compoundRoleChanges() {
+    return grok.dapi.domains.table<CompoundRoleChangeRow, CompoundRoleChangeInsert, CompoundRoleChangeColumn, CompoundRoleChangeExpand>('portal.compound_role_change');
   },
   get unitOperations() {
     return grok.dapi.domains.table<UnitOperationRow, UnitOperationInsert, UnitOperationColumn, UnitOperationExpand>('portal.unit_operation');

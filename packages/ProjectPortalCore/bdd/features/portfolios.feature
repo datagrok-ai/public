@@ -54,3 +54,9 @@ Feature: Several portfolios on one instance
     And user clicks on EXB-201 card
     Then work units should contain text "Process stages (4)"
     And TOX-201 study should contain text "completed"
+
+  Scenario: A project lists its compounds by role, never as folders
+    When user clicks on small molecule discovery portfolio
+    And user clicks on EXS-KIN1 card
+    Then compound roles should contain text "6 lead"
+    And EXC-3001 compound should contain text "tool"

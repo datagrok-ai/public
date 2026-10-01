@@ -3,6 +3,7 @@
 import {DataCondition, ProgramDataConfig, validateCondition} from './conditions';
 import {validateWorkUnits, WorkUnitFeedConfig, WorkUnitKind} from './work-units';
 import {validateStageFolders} from './workspace-plan';
+import {CompoundFeedConfig, validateCompoundFeed} from './compounds';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -83,6 +84,8 @@ export interface PortfolioConfig {
   workUnitFeeds?: WorkUnitFeedConfig[];
   /** The ordered series maturity vocabulary, e.g. hit → validated → lead → optimized → candidate. */
   seriesMaturity?: string[];
+  /** The registry feed of the compounds each program holds, with their roles. */
+  compoundFeed?: CompoundFeedConfig;
   /** The program dataset query that data conditions are evaluated over. */
   programData?: ProgramDataConfig;
   stageModel: StageModelConfig;
@@ -151,6 +154,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
     }
   }
   errors.push(...validateWorkUnits(c.workUnits, c.workUnitFeeds, c.seriesMaturity));
+  errors.push(...validateCompoundFeed(c.compoundFeed));
   if (c.programData !== undefined) {
     need(c.programData.connection, 'programData: connection');
     need(c.programData.sql, 'programData: sql');

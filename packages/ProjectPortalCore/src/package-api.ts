@@ -30,7 +30,7 @@ export namespace funcs {
   }
 
   /**
-   * Runs one portfolio's registry feeds, then its work-unit feeds, and applies (or with dryRun only plans) the result
+   * Runs one portfolio's registry feeds, then its work-unit and compound feeds, and applies (or with dryRun only plans) the result
    */
   export async function syncPortfolio(code: string , dryRun: boolean ): Promise<string> {
     return await grok.functions.call('ProjectPortalCore:SyncPortfolio', { code, dryRun });
@@ -48,6 +48,14 @@ export namespace funcs {
    */
   export async function programReadiness(portfolio: string , program: string , stage?: string ): Promise<string> {
     return await grok.functions.call('ProjectPortalCore:ProgramReadiness', { portfolio, program, stage });
+  }
+
+  /**
+   * Changes a compound's role in a program (explored, hit, lead, backup, candidate, tool, discontinued) and logs who, when and why
+   * @param {string} compound - Registration code
+   */
+  export async function setCompoundRole(portfolio: string , program: string , compound: string , role: string , rationale: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SetCompoundRole', { portfolio, program, compound, role, rationale });
   }
 
   /**

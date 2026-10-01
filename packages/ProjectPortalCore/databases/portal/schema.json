@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -98,8 +98,8 @@
         "system": {"type": "string", "required": true, "description": "The source system; programs from the same system with the same key are the same thing"},
         "connection": {"type": "string", "required": true, "description": "Data connection name, resolved on the server at sync time"},
         "sql": {"type": "string", "required": true, "editor": "textarea"},
-        "target": {"type": "string", "choices": ["program", "campaign", "series", "study", "process_stage"], "default": "program",
-          "description": "What the feed delivers: programs, or one kind of work unit keyed by program code"},
+        "target": {"type": "string", "choices": ["program", "campaign", "series", "study", "process_stage", "compound"], "default": "program",
+          "description": "What the feed delivers: programs, one kind of work unit, or compounds in programs, keyed by program code"},
         "mapping": {"type": "json", "description": "Feed column → program field, plus status and stage value maps"},
         "enabled": {"type": "bool", "default": true},
         "last_synced_on": {"type": "datetime"}
@@ -262,6 +262,56 @@
         "details": {"type": "json", "description": "Feed columns the work unit does not map"}
       },
       "filters": [{"column": "program_id.name", "label": "Program"}, {"column": "process_type"}, {"column": "status"}]
+    },
+    "compound": {
+      "securityMode": "table",
+      "businessKey": ["system", "code"],
+      "friendlyName": "Compounds",
+      "description": "A projection of the customer's compound registry: the portal never mints a compound. Never promoted and never a folder; which programs hold it is in program_compound, under each program's security.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "system": {"type": "string", "required": true, "immutable": true, "description": "The registry the code belongs to"},
+        "code": {"type": "string", "required": true, "immutable": true, "searchable": true, "description": "Registration code"},
+        "name": {"type": "string", "isName": true, "searchable": true},
+        "smiles": {"type": "string", "semType": "Molecule"},
+        "aliases": {"type": "string", "searchable": true, "description": "Other identifiers, '|'-separated"},
+        "batches": {"type": "string", "description": "Batch codes, '|'-separated"},
+        "last_synced_on": {"type": "datetime"},
+        "details": {"type": "json", "description": "Registry columns the portal does not map"}
+      }
+    },
+    "program_compound": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "compound_id"],
+      "friendlyName": "Program compounds",
+      "description": "A compound in a program, with its role there. Many-to-many: a tool compound serves several programs. Every role change is logged in compound_role_change.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "compound_id": {"type": "ref", "ref": "compound", "onDelete": "restrict", "required": true, "immutable": true, "friendlyName": "Compound"},
+        "role": {"type": "string", "choices": ["explored", "hit", "lead", "backup", "candidate", "tool", "discontinued"], "required": true, "default": "explored"},
+        "role_since": {"type": "datetime"},
+        "source": {"type": "string", "choices": ["feed", "manual"], "default": "manual"},
+        "missing_from_feed": {"type": "bool", "default": false},
+        "last_synced_on": {"type": "datetime"}
+      },
+      "filters": [{"column": "program_id.name", "label": "Program"}, {"column": "role"}]
+    },
+    "compound_role_change": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "friendlyName": "Compound role changes",
+      "description": "The history of a compound's role in a program: who changed it, when, why. Written once.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true},
+        "compound_id": {"type": "ref", "ref": "compound", "onDelete": "restrict", "required": true, "immutable": true},
+        "from_role": {"type": "string", "immutable": true},
+        "to_role": {"type": "string", "required": true, "immutable": true},
+        "changed_by": {"type": "user", "immutable": true},
+        "changed_on": {"type": "datetime", "immutable": true},
+        "source": {"type": "string", "choices": ["feed", "manual"], "required": true, "immutable": true},
+        "rationale": {"type": "string", "editor": "textarea", "immutable": true}
+      }
     },
     "unit_operation": {
       "securityMode": "table",

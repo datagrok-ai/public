@@ -82,4 +82,13 @@ test.describe("Several portfolios on one instance", () => {
     await session.step(55, "Then work units should contain text \"Process stages (4)\"", () => shouldContainText(page, el("work units"), "Process stages (4)"));
     await session.step(56, "And TOX-201 study should contain text \"completed\"", () => shouldContainText(page, el("TOX-201 study"), "completed"));
   });
+  test("A project lists its compounds by role, never as folders", {tag: ["@portal"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(9, "Given user opens the Project Portal app", () => openApp(page));
+    enter(page, "Project Portal app");
+    await session.step(59, "When user clicks on small molecule discovery portfolio", () => clickOn(page, el("small molecule discovery portfolio")));
+    await session.step(60, "And user clicks on EXS-KIN1 card", () => clickOn(page, el("EXS-KIN1 card")));
+    await session.step(61, "Then compound roles should contain text \"6 lead\"", () => shouldContainText(page, el("compound roles"), "6 lead"));
+    await session.step(62, "And EXC-3001 compound should contain text \"tool\"", () => shouldContainText(page, el("EXC-3001 compound"), "tool"));
+  });
 });

@@ -8,7 +8,8 @@ import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
 import {programContext, ProgramContext, programData, readinessFor, recordDecision, setCriterion, stagesOf,
-  summarizePlan, syncPortfolio, syncWorkUnits, verdictFor, enabledWorkUnits, workUnitsOf} from '../portal';
+  summarizePlan, syncPortfolio, syncWorkUnits, verdictFor, enabledWorkUnits, workUnitsOf, compoundsOf, syncCompounds} from '../portal';
+import {COMPOUND_ROLES, summarizeCompoundPlan} from '../model/compounds';
 import {summarizeWorkUnitPlan, WORK_UNIT_LABELS, WorkUnitKind} from '../model/work-units';
 import {CriterionReadiness, Readiness} from '../model/readiness';
 import {DataRow} from '../model/conditions';
@@ -169,7 +170,8 @@ export class PortalView {
     const readiness = await this.readinessOf(ctx, viewedStage);
     const units = await Promise.all(enabledWorkUnits(ctx.portfolio).map(async (kind) =>
       ({kind, rows: await workUnitsOf(kind, [id]).catch(() => [])})));
-    this.renderDetail(ctx, transitions, successors, readiness, units);
+    const compounds = await compoundsOf(id).catch(() => []);
+    this.renderDetail(ctx, transitions, successors, readiness, units, compounds);
   }
 
   /** Readiness for the viewed stage: the context already holds the next stage's. */
@@ -187,7 +189,8 @@ export class PortalView {
   }
 
   private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
-    readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = []): void {
+    readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = [],
+    compounds: {link: any, compound: any}[] = []): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -266,6 +269,7 @@ export class PortalView {
       rationale,
       divH([advance, hold, terminate], 'pp-actions'),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units)] : []),
+      ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
       span('History', 'pp-heading'),
       transitions.length ? history : span('No transitions yet', 'pp-muted'),
     );
@@ -292,6 +296,23 @@ export class PortalView {
         ], 'pp-unit'), `unit-${slug(kind)}-${slug(u.code)}`))),
       ], 'pp-unit-group'), `units-${slug(kind)}`);
     }), 'pp-units'), 'work-units');
+  }
+
+  /** Compounds by role: a count per role, and the ones that matter by name (lead and beyond).
+   * Rows, never folders (FR-26). */
+  private compounds(items: {link: any, compound: any}[]): HTMLElement {
+    const counts = COMPOUND_ROLES.map((r) => [r, items.filter((x) => x.link.role === r).length] as const).filter(([, n]) => n > 0);
+    const shown = items.filter((x) => ['candidate', 'lead', 'backup', 'tool'].includes(x.link.role))
+      .sort((a, b) => COMPOUND_ROLES.indexOf(b.link.role) - COMPOUND_ROLES.indexOf(a.link.role) ||
+        a.compound.code.localeCompare(b.compound.code)).slice(0, 12);
+    return named(divV([
+      named(divH(counts.map(([r, n]) => badge(`${n} ${r}`, {variant: r === 'candidate' || r === 'lead' ? 'success' :
+        r === 'discontinued' ? 'warning' : 'default'})), 'pp-card-meta'), 'compound-roles'),
+      ...shown.map((x) => named(divH([span(x.compound.code), badge(x.link.role, {variant: 'accent'}),
+        ...(x.compound.name && x.compound.name !== x.compound.code ? [span(x.compound.name, 'pp-muted')] : []),
+        ...(x.link.missing_from_feed ? [badge('missing from feed', {variant: 'error'})] : []),
+      ], 'pp-unit'), `compound-${slug(x.compound.code)}`)),
+    ], 'pp-units'), 'program-compounds');
   }
 
   /** One criterion of the gate: its state, and for a data condition what the data says. A computed
@@ -342,7 +363,9 @@ export class PortalView {
     try {
       const plans = await syncPortfolio(code);
       const units = await syncWorkUnits(code);
-      grok.shell.info([...plans.map(summarizePlan), ...units.map(summarizeWorkUnitPlan)].join('\n'));
+      const compounds = await syncCompounds(code);
+      grok.shell.info([...plans.map(summarizePlan), ...units.map(summarizeWorkUnitPlan),
+        ...(compounds ? [summarizeCompoundPlan(compounds)] : [])].join('\n'));
       await this.load(code);
     } catch (e: any) {
       grok.shell.error(e?.message ?? String(e));
