@@ -17,7 +17,7 @@ A connector can work with a database, an Excel file, a CSV file, a web service,
 or basically anything that provides data. Datagrok currently
 supports over 30 different connectors, and the list is quickly growing. Most
 data connectors are open-sourced and can be found on
-[GitHub](https://github.com/datagrok-ai/public/tree/master/connectors) (MIT
+[GitHub](https://github.com/datagrok-ai/grok-connect/tree/master/jdbc) (MIT
 license). The supported connectors with their specific parameters are:
 
 | Data Source                   | Server | Port | DB | Browse Schema | Cache Schema | Cache Results | SSL | Connection String | Login | Password | Other Parameters                                    |

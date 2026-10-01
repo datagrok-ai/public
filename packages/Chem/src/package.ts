@@ -2209,7 +2209,7 @@ export class PackageFunctions {
   })
   static copyAsAction(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
-    const formats = ['Smiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
+    const formats = ['Smiles', 'CXSmiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
     const menu = DG.Menu.popup();
 
     formats.forEach((format) => {
@@ -2232,6 +2232,19 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
     const smiles = !DG.chem.isMolBlock(value.value) && !_isSmarts(value.value) ? value.value :
       _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+    navigator.clipboard.writeText(smiles);
+    grok.shell.info('Smiles copied to clipboard');
+  }
+
+  @grok.decorators.func({
+    name: 'Copy as CXSMILES',
+    description: 'Copies structure as smiles',
+    meta: {'action': 'Copy as CXSMILES', 'exclude-actions-panel': 'true'},
+  })
+  static copyAsCXSmiles(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
+    const smiles =
+      _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.CxSmiles, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smiles);
     grok.shell.info('Smiles copied to clipboard');
   }
