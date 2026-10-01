@@ -5,9 +5,10 @@
 - Data conditions are evaluated: a portfolio declares a program dataset (`programData`, SQL with `@program`), and a criterion a structured `condition` (scope program / lead set / series, `where`, `measured`, `minCount`, `minSeries`)
 - Readiness: `programReadiness` evaluates every criterion of a stage and returns a score and a gap list; the gate uses the evaluated conditions and records what the data said on advance
 - Criteria may be limited to a modality (`modality`)
-- App: the gate panel shows readiness and the gaps; any stage on the track shows what entering it takes
-- `portal` schema 0.2.2: `gate_criterion.condition`, `portfolio.program_data`
-- Examples: EX-SMD compounds by series and role (hit-to-lead and lead-optimization conditions, an optional hERG margin); EX-BIOC lots for the tox-lot condition
+- App: the gate panel shows readiness and the gaps; any stage on the track shows what entering it takes; the program page lists its work units
+- Work units: `campaign`, `series`, `study`, `process_stage` under a program; a portfolio enables a subset (`workUnits`) and feeds them (`workUnitFeeds`), synced after the programs; flagged, never deleted, when a feed drops them
+- `portal` schema 0.2.2: `gate_criterion.condition`, `portfolio.program_data`; 0.2.3: the work-unit tables, `portfolio.work_units`, `portfolio.series_maturity`, `registry_feed.target`
+- Examples: series and campaigns (EX-SMD), campaigns (EX-BIOD), studies and process stages (EX-BIOC); EX-SMD compounds by series and role (hit-to-lead and lead-optimization conditions, an optional hERG margin); EX-BIOC lots for the tox-lot condition
 
 ## 0.2.0 (2026-09-30)
 

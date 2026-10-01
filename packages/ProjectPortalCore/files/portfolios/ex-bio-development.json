@@ -13,6 +13,21 @@
     "contributors": "Portal EX-BIOC Contributors",
     "approvers": "Portal EX-BIOC Approvers"
   },
+  "workUnits": ["study", "process_stage"],
+  "workUnitFeeds": [
+    {
+      "code": "example-bio-studies",
+      "kind": "study",
+      "connection": "System:Datagrok",
+      "sql": "SELECT * FROM (VALUES\n    ('EXB-201', 'TOX-201', 'GLP toxicology, 4 weeks', 'toxicology', 'completed', '2026-03-31', '2026-03-20', 'No adverse findings at the top dose'),\n    ('EXB-201', 'STAB-201', 'Drug product stability, 12 months', 'stability', 'running', '2027-02-28', NULL, NULL),\n    ('EXB-104', 'TOX-104', 'GLP toxicology, 4 weeks', 'toxicology', 'planned', '2027-01-31', NULL, NULL))\n  AS u(program, code, name, type, status, planned_end, completed_on, result_summary)"
+    },
+    {
+      "code": "example-bio-process",
+      "kind": "process_stage",
+      "connection": "System:Datagrok",
+      "sql": "SELECT * FROM (VALUES\n    ('EXB-201', 'USP', 'Upstream', 'Drug Substance', 1, 'locked'),\n    ('EXB-201', 'DSP', 'Purification', 'Drug Substance', 2, 'locked'),\n    ('EXB-201', 'FORM', 'Formulation', 'Drug Product', 1, 'in_development'),\n    ('EXB-201', 'FILL', 'Fill and finish', 'Drug Product', 2, 'not_started'))\n  AS u(program, code, name, process_type, ordinal, status)"
+    }
+  ],
   "programData": {
     "connection": "System:Datagrok",
     "sql": "SELECT * FROM (VALUES\n    ('EXB-104', 'EXL-104-01', 'engineering', true),\n    ('EXB-104', 'EXL-104-02', 'tox', false),\n    ('EXB-201', 'EXL-201-01', 'engineering', true),\n    ('EXB-201', 'EXL-201-02', 'tox', true),\n    ('EXB-201', 'EXL-201-03', 'gmp', true),\n    ('EXB-202', 'EXL-202-01', 'tox', true))\n  AS d(program, lot, purpose, released)\nWHERE program = @program"

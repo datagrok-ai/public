@@ -1,10 +1,11 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans} from './portal';
+import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits} from './portal';
 import {portalDb} from './generated/db';
 import {buildPortfolioWorkspace, summarizeWorkspace} from './workspace';
 import {summarizeReadiness} from './model/readiness';
+import {summarizeWorkUnitPlan} from './model/work-units';
 import {portalAppView} from './views/portal-view';
 import {installStyles} from './views/styles';
 export * from './package.g';
@@ -40,13 +41,20 @@ export async function loadPortfolioConfigs(configs: string): Promise<string> {
   return loadPortfolioSet(JSON.parse(configs));
 }
 
+/** Programs first, so work units find the programs they hang under. */
+async function syncOne(code: string, dryRun = false): Promise<string> {
+  const programs = (await syncPortfolioPlans(code, dryRun)).map(summarizePlan);
+  const units = (await syncWorkUnits(code, dryRun)).map(summarizeWorkUnitPlan);
+  return [...programs, ...units].join('\n');
+}
+
 //name: syncPortfolio
-//description: Runs one portfolio's registry feeds and applies (or with dryRun only plans) the result
+//description: Runs one portfolio's registry feeds, then its work-unit feeds, and applies (or with dryRun only plans) the result
 //input: string code
 //input: bool dryRun = false
 //output: string report
 export async function syncPortfolio(code: string, dryRun: boolean = false): Promise<string> {
-  return (await syncPortfolioPlans(code, dryRun)).map(summarizePlan).join('\n');
+  return syncOne(code, dryRun);
 }
 
 //name: syncAllPortfolios
@@ -57,7 +65,7 @@ export async function syncAllPortfolios(): Promise<string> {
   const order = (s?: string) => s === 'discovery' ? 0 : s === 'development' ? 1 : 2;
   const out: string[] = [];
   for (const p of portfolios.sort((a, b) => order(a.setting) - order(b.setting)))
-    out.push((await syncPortfolioPlans(p.code)).map(summarizePlan).join('\n'));
+    out.push(await syncOne(p.code));
   return out.join('\n');
 }
 

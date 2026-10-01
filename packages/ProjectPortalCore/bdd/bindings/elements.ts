@@ -37,3 +37,6 @@ app.element('H2L step', {selector: u2('step-h2l')});
 app.element('LO step', {selector: u2('step-lo')});
 app.element('potency criterion', {selector: u2('criterion-potency')});
 app.element('ADME panel criterion detail', {selector: u2('criterion-detail-adme-panel')});
+app.element('work units', {selector: u2('work-units')});
+app.element('KIN-A series', {selector: u2('unit-series-kin-a')});
+app.element('TOX-201 study', {selector: u2('unit-study-tox-201')});

@@ -17,6 +17,15 @@
     "to": "EX-BIOC",
     "fromStage": "CN"
   },
+  "workUnits": ["campaign"],
+  "workUnitFeeds": [
+    {
+      "code": "example-bio-campaigns",
+      "kind": "campaign",
+      "connection": "System:Datagrok",
+      "sql": "SELECT * FROM (VALUES\n    ('EXB-101', 'PD-101', 'Phage display panning', 'screening', 'active', 'open', 'Binders below 10 nM', '2026-05-04'),\n    ('EXB-102', 'PD-102', 'Phage display panning', 'screening', 'closed', 'succeeded', 'Binders below 10 nM', '2026-02-16'))\n  AS u(program, code, name, type, status, outcome, objective, started_on)"
+    }
+  ],
   "stageModel": {
     "code": "EX-BIOD-V1",
     "name": "Example Biologics Discovery",

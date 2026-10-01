@@ -30,7 +30,7 @@ export namespace funcs {
   }
 
   /**
-   * Runs one portfolio's registry feeds and applies (or with dryRun only plans) the result
+   * Runs one portfolio's registry feeds, then its work-unit feeds, and applies (or with dryRun only plans) the result
    */
   export async function syncPortfolio(code: string , dryRun: boolean ): Promise<string> {
     return await grok.functions.call('ProjectPortalCore:SyncPortfolio', { code, dryRun });

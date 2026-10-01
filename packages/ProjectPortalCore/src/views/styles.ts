@@ -35,6 +35,10 @@ const CSS = `
 .pp-criterion-block { gap: 2px; }
 .pp-criterion-detail { padding-left: 8px; gap: 1px; }
 .pp-gap { font-size: 11px; color: var(--u2-text-muted, #888); }
+.pp-units { gap: 6px; }
+.pp-unit-group { gap: 2px; }
+.pp-unit-kind { font-size: 12px; font-weight: 600; }
+.pp-unit { gap: 4px; align-items: center; flex-wrap: wrap; font-size: 12px; }
 .pp-criterion { gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; }
 .pp-reason { color: var(--u2-error, #c0392b); font-size: 12px; }
 .pp-actions { gap: 6px; }

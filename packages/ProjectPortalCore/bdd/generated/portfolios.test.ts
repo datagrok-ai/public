@@ -69,4 +69,17 @@ test.describe("Several portfolios on one instance", () => {
     await session.step(45, "And user clicks on open workspace button", () => clickOn(page, el("open workspace button")));
     await session.step(46, "Then the open view should be the space \"EXS-KIN1\"", () => currentSpace(page, "EXS-KIN1"));
   });
+  test("A program shows the work units its portfolio uses", {tag: ["@portal"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(9, "Given user opens the Project Portal app", () => openApp(page));
+    enter(page, "Project Portal app");
+    await session.step(49, "When user clicks on small molecule discovery portfolio", () => clickOn(page, el("small molecule discovery portfolio")));
+    await session.step(50, "And user clicks on EXS-KIN1 card", () => clickOn(page, el("EXS-KIN1 card")));
+    await session.step(51, "Then work units should contain text \"Campaigns (2)\"", () => shouldContainText(page, el("work units"), "Campaigns (2)"));
+    await session.step(52, "And KIN-A series should contain text \"validated\"", () => shouldContainText(page, el("KIN-A series"), "validated"));
+    await session.step(53, "When user clicks on biologics development portfolio", () => clickOn(page, el("biologics development portfolio")));
+    await session.step(54, "And user clicks on EXB-201 card", () => clickOn(page, el("EXB-201 card")));
+    await session.step(55, "Then work units should contain text \"Process stages (4)\"", () => shouldContainText(page, el("work units"), "Process stages (4)"));
+    await session.step(56, "And TOX-201 study should contain text \"completed\"", () => shouldContainText(page, el("TOX-201 study"), "completed"));
+  });
 });

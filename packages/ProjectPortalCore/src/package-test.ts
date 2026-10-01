@@ -5,6 +5,7 @@ import './tests/model-tests';
 import './tests/portal-tests';
 import './tests/schema-tests';
 import './tests/readiness-tests';
+import './tests/work-unit-tests';
 
 export let _package = new DG.Package();
 export { tests };

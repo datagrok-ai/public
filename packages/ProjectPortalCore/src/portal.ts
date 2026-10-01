@@ -10,6 +10,7 @@ import {FeedRow, planSync, ProgramRef, StageRef, summarizePlan, SyncPlan} from '
 import {checkDecision, Decision, GateVerdict, CriterionState, nextStage, statusAfter} from './model/gates';
 import {DataCondition, DataRow, DEFAULT_LEAD_ROLES, ProgramDataConfig} from './model/conditions';
 import {computeReadiness, Readiness} from './model/readiness';
+import {planWorkUnits, WorkUnitKind, WorkUnitPlan, WorkUnitRef, WORK_UNIT_FIELDS} from './model/work-units';
 import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
@@ -146,12 +147,18 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     stage_authority: c.stageAuthority, program_noun: c.programNoun ?? 'Program',
     workspace_root: c.workspaceRoot ?? null, workstreams: (c.workstreams ?? []).join('|') || null,
     program_data: c.programData ?? null,
+    work_units: (c.workUnits ?? []).join('|') || null, series_maturity: (c.seriesMaturity ?? []).join('|') || null,
     description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,
   });
   for (const f of c.feeds) {
     await upsertByKey(portalDb.registryFeeds, {portfolio_id: portfolioId, code: f.code},
-      {system: f.system, connection: f.connection, sql: f.sql, mapping: f.mapping ?? null, enabled: true});
+      {system: f.system, connection: f.connection, sql: f.sql, mapping: f.mapping ?? null, enabled: true, target: 'program'});
+  }
+  for (const f of c.workUnitFeeds ?? []) {
+    await upsertByKey(portalDb.registryFeeds, {portfolio_id: portfolioId, code: f.code},
+      {system: f.system ?? `${c.code}-${f.kind}`, connection: f.connection, sql: f.sql, mapping: null, enabled: true,
+        target: f.kind});
   }
   report.push(`portfolio ${c.code}: ${c.feeds.length} feed(s)`);
   return report.join('\n');
@@ -258,7 +265,7 @@ export async function syncPortfolio(code: string, dryRun = false): Promise<SyncP
   const stageRefs: StageRef[] = stages.map((s) => ({id: s.id, code: s.code, name: s.name, ordinal: s.ordinal,
     aliases: (s.spellings ?? '').split('|').filter((a) => a.length > 0)}));
   const plans: SyncPlan[] = [];
-  for (const feed of feeds.filter((f) => f.enabled !== false)) {
+  for (const feed of feeds.filter((f) => f.enabled !== false && (f.target ?? 'program') === 'program')) {
     const rows = await runFeed({connection: feed.connection, sql: feed.sql});
     const all = await portalDb.programs.query({filter: `external_ref like "${feed.system}:%"`});
     const mine = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`}))
@@ -312,6 +319,78 @@ async function applyPlan(plan: SyncPlan, portfolio: PortfolioRow): Promise<void>
     if (!plan.overlaps.some((o) => o.code === l.code))
       await portalDb.programs.update(l.predecessorId, {status: 'transitioned'}).catch(() => undefined);
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Work units
+
+/** The table client of one work-unit kind. */
+export function workUnitTable(kind: WorkUnitKind) {
+  switch (kind) {
+  case 'campaign': return portalDb.campaigns;
+  case 'series': return portalDb.serieses;
+  case 'study': return portalDb.studies;
+  case 'process_stage': return portalDb.processStages;
+  }
+}
+
+export const enabledWorkUnits = (p: PortfolioRow): WorkUnitKind[] =>
+  (p.work_units ?? '').split('|').filter((k) => k.length > 0) as WorkUnitKind[];
+
+/** Every work unit of [kind] under [programIds]. */
+export async function workUnitsOf(kind: WorkUnitKind, programIds: string[]): Promise<Record<string, any>[]> {
+  if (programIds.length === 0)
+    return [];
+  const out: Record<string, any>[] = [];
+  // keep the filter short: a portfolio may hold hundreds of programs
+  for (let i = 0; i < programIds.length; i += 100) {
+    const ids = programIds.slice(i, i + 100).map((id) => `"${id}"`).join(', ');
+    out.push(...await (workUnitTable(kind) as any).query({filter: `program_id in (${ids})`}));
+  }
+  return out;
+}
+
+/** Plans (and unless [dryRun], applies) every work-unit feed of one portfolio. Feeds of a kind the
+ * portfolio does not enable are skipped and reported. */
+export async function syncWorkUnits(code: string, dryRun = false): Promise<WorkUnitPlan[]> {
+  const portfolio = await portfolioByCode(code);
+  const enabled = enabledWorkUnits(portfolio);
+  const feeds = (await portalDb.registryFeeds.query({filter: `portfolio_id = "${portfolio.id}"`}))
+    .filter((f) => f.enabled !== false && f.target && f.target !== 'program')
+    .sort((a, b) => a.code.localeCompare(b.code));
+  if (feeds.length === 0)
+    return [];
+  const programs = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+  const byCode = new Map(programs.map((p) => [p.code, p.id]));
+  const maturity = (portfolio.series_maturity ?? '').split('|').filter((m) => m.length > 0);
+  const plans: WorkUnitPlan[] = [];
+  for (const feed of feeds) {
+    const kind = feed.target as WorkUnitKind;
+    if (!enabled.includes(kind))
+      continue;
+    const fields = Object.keys(WORK_UNIT_FIELDS[kind]);
+    const existing: WorkUnitRef[] = (await workUnitsOf(kind, programs.map((p) => p.id))).map((u) => ({
+      id: u.id, programId: u.program_id, code: u.code, source: u.source ?? null, missingFromFeed: u.missing_from_feed ?? false,
+      values: Object.fromEntries(['name', 'details', ...fields].map((f) => [f, u[f] ?? null]))}));
+    const rows = await runFeed({connection: feed.connection, sql: feed.sql});
+    const plan = planWorkUnits({portfolio: code, kind, feed: feed.code, rows, programs: byCode, existing,
+      seriesMaturity: kind === 'series' ? maturity : undefined});
+    plans.push(plan);
+    if (dryRun)
+      continue;
+    const table = workUnitTable(kind) as any;
+    const now = new Date().toISOString();
+    for (const v of plan.inserts)
+      await table.insert({...v, source: 'feed', last_synced_on: now});
+    for (const u of plan.updates)
+      await table.update(u.id, {...u.changes, last_synced_on: now});
+    for (const r of plan.returned)
+      await table.update(r.id, {missing_from_feed: false, last_synced_on: now});
+    for (const m of plan.missing)
+      await table.update(m.id, {missing_from_feed: true});
+    await portalDb.registryFeeds.update(feed.id, {last_synced_on: now as any});
+  }
+  return plans;
 }
 
 // ---------------------------------------------------------------------------------------------

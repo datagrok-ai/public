@@ -17,6 +17,8 @@ export type PortfolioModalityClass = 'small_molecule' | 'biologic' | 'any';
 
 export type PortfolioStageAuthority = 'feed' | 'portal';
 
+export type RegistryFeedTarget = 'program' | 'campaign' | 'series' | 'study' | 'process_stage';
+
 export type ProgramStatus = 'active' | 'on_hold' | 'terminated' | 'completed' | 'transitioned' | 'missing_from_feed';
 
 export type ProgramSource = 'feed' | 'manual';
@@ -24,6 +26,26 @@ export type ProgramSource = 'feed' | 'manual';
 export type StageTransitionDecision = 'advance' | 'recycle' | 'hold' | 'terminate' | 'sync';
 
 export type CriterionStatusStatus = 'not_started' | 'in_progress' | 'met' | 'not_met' | 'waived';
+
+export type CampaignType = 'screening' | 'hit_triage' | 'dmta_cycle' | 'library' | 'other';
+
+export type CampaignStatus = 'planned' | 'active' | 'paused' | 'closed';
+
+export type CampaignOutcome = 'open' | 'succeeded' | 'abandoned';
+
+export type CampaignSource = 'feed' | 'manual';
+
+export type SeriesStatus = 'active' | 'backup' | 'deprioritized' | 'dropped';
+
+export type SeriesSource = 'feed' | 'manual';
+
+export type StudyStatus = 'planned' | 'running' | 'completed' | 'cancelled';
+
+export type StudySource = 'feed' | 'manual';
+
+export type ProcessStageStatus = 'not_started' | 'in_development' | 'locked' | 'transferred';
+
+export type ProcessStageSource = 'feed' | 'manual';
 
 export type ProgramFlowSource = 'rule' | 'manual';
 
@@ -173,6 +195,8 @@ export interface PortfolioRow {
   program_noun?: string;
   workspace_root?: string;
   workstreams?: string;
+  work_units?: string;
+  series_maturity?: string;
   program_data?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
@@ -191,6 +215,8 @@ export interface PortfolioInsert {
   program_noun?: string;
   workspace_root?: string;
   workstreams?: string;
+  work_units?: string;
+  series_maturity?: string;
   program_data?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
@@ -200,7 +226,8 @@ export interface PortfolioInsert {
 
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
-  'workstreams' | 'program_data' | 'viewers' | 'contributors' | 'approvers' | 'description';
+  'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'viewers' | 'contributors' | 'approvers' |
+  'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -227,6 +254,7 @@ export interface RegistryFeedRow {
   system: string;
   connection: string;
   sql: string;
+  target?: RegistryFeedTarget;
   mapping?: {[key: string]: any};
   enabled?: boolean;
   last_synced_on?: Dayjs;
@@ -239,13 +267,14 @@ export interface RegistryFeedInsert {
   system: string;
   connection: string;
   sql: string;
+  target?: RegistryFeedTarget;
   mapping?: {[key: string]: any};
   enabled?: boolean;
   last_synced_on?: Dayjs | string;
 }
 
 export type RegistryFeedColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'portfolio_id' |
-  'code' | 'system' | 'connection' | 'sql' | 'mapping' | 'enabled' | 'last_synced_on';
+  'code' | 'system' | 'connection' | 'sql' | 'target' | 'mapping' | 'enabled' | 'last_synced_on';
 
 /** Expand keys of `portal.registry_feed` → fields each adds to the row (consumed by query()/builder). */
 export type RegistryFeedExpand = {
@@ -253,9 +282,9 @@ export type RegistryFeedExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.program_data'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -315,9 +344,9 @@ export type ProgramExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.program_data'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -337,6 +366,10 @@ export type ProgramExpand = {
   'details:program': {program?: ProgramRow[]};
   'details:stage_transition': {stage_transition?: StageTransitionRow[]};
   'details:criterion_status': {criterion_status?: CriterionStatusRow[]};
+  'details:campaign': {campaign?: CampaignRow[]};
+  'details:series': {series?: SeriesRow[]};
+  'details:study': {study?: StudyRow[]};
+  'details:process_stage': {process_stage?: ProcessStageRow[]};
   'details:program_flow': {program_flow?: ProgramFlowRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};
@@ -440,6 +473,205 @@ export type CriterionStatusExpand = {
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};
 };
 
+/** Row of `portal.campaign`. */
+export interface CampaignRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  code: string;
+  name: string;
+  type?: CampaignType;
+  status?: CampaignStatus;
+  outcome?: CampaignOutcome;
+  objective?: string;
+  started_on?: Dayjs;
+  source?: CampaignSource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs;
+  details?: {[key: string]: any};
+}
+
+/** Insert payload for `portal.campaign`. */
+export interface CampaignInsert {
+  program_id: string;
+  code: string;
+  name: string;
+  type?: CampaignType;
+  status?: CampaignStatus;
+  outcome?: CampaignOutcome;
+  objective?: string;
+  started_on?: Dayjs | string;
+  source?: CampaignSource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs | string;
+  details?: {[key: string]: any};
+}
+
+export type CampaignColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' | 'code' |
+  'name' | 'type' | 'status' | 'outcome' | 'objective' | 'started_on' | 'source' | 'missing_from_feed' |
+  'last_synced_on' | 'details';
+
+/** Expand keys of `portal.campaign` → fields each adds to the row (consumed by query()/builder). */
+export type CampaignExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+};
+
+/** Row of `portal.series`. */
+export interface SeriesRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  code: string;
+  name: string;
+  maturity?: string;
+  status?: SeriesStatus;
+  scaffold?: string;
+  source?: SeriesSource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs;
+  details?: {[key: string]: any};
+}
+
+/** Insert payload for `portal.series`. */
+export interface SeriesInsert {
+  program_id: string;
+  code: string;
+  name: string;
+  maturity?: string;
+  status?: SeriesStatus;
+  scaffold?: string;
+  source?: SeriesSource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs | string;
+  details?: {[key: string]: any};
+}
+
+export type SeriesColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' | 'code' |
+  'name' | 'maturity' | 'status' | 'scaffold' | 'source' | 'missing_from_feed' | 'last_synced_on' | 'details';
+
+/** Expand keys of `portal.series` → fields each adds to the row (consumed by query()/builder). */
+export type SeriesExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+};
+
+/** Row of `portal.study`. */
+export interface StudyRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  code: string;
+  name: string;
+  type?: string;
+  status?: StudyStatus;
+  planned_end?: Dayjs;
+  completed_on?: Dayjs;
+  result_summary?: string;
+  source?: StudySource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs;
+  details?: {[key: string]: any};
+}
+
+/** Insert payload for `portal.study`. */
+export interface StudyInsert {
+  program_id: string;
+  code: string;
+  name: string;
+  type?: string;
+  status?: StudyStatus;
+  planned_end?: Dayjs | string;
+  completed_on?: Dayjs | string;
+  result_summary?: string;
+  source?: StudySource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs | string;
+  details?: {[key: string]: any};
+}
+
+export type StudyColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' | 'code' |
+  'name' | 'type' | 'status' | 'planned_end' | 'completed_on' | 'result_summary' | 'source' | 'missing_from_feed' |
+  'last_synced_on' | 'details';
+
+/** Expand keys of `portal.study` → fields each adds to the row (consumed by query()/builder). */
+export type StudyExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+};
+
+/** Row of `portal.process_stage`. */
+export interface ProcessStageRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  code: string;
+  name: string;
+  process_type?: string;
+  ordinal?: number;
+  status?: ProcessStageStatus;
+  unit_operation_id?: string;
+  source?: ProcessStageSource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs;
+  details?: {[key: string]: any};
+}
+
+/** Insert payload for `portal.process_stage`. */
+export interface ProcessStageInsert {
+  program_id: string;
+  code: string;
+  name: string;
+  process_type?: string;
+  ordinal?: number;
+  status?: ProcessStageStatus;
+  unit_operation_id?: string;
+  source?: ProcessStageSource;
+  missing_from_feed?: boolean;
+  last_synced_on?: Dayjs | string;
+  details?: {[key: string]: any};
+}
+
+export type ProcessStageColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'code' | 'name' | 'process_type' | 'ordinal' | 'status' | 'unit_operation_id' | 'source' | 'missing_from_feed' |
+  'last_synced_on' | 'details';
+
+/** Expand keys of `portal.process_stage` → fields each adds to the row (consumed by query()/builder). */
+export type ProcessStageExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'unit_operation_id': {'unit_operation_id.code'?: string; 'unit_operation_id.name'?: string;
+    'unit_operation_id.ordinal'?: number; 'unit_operation_id.description'?: string};
+};
+
 /** Row of `portal.unit_operation`. */
 export interface UnitOperationRow {
   id: string;
@@ -466,6 +698,7 @@ export type UnitOperationColumn = 'id' | 'version' | 'created_on' | 'updated_on'
 
 /** Expand keys of `portal.unit_operation` → fields each adds to the row (consumed by query()/builder). */
 export type UnitOperationExpand = {
+  'details:process_stage': {process_stage?: ProcessStageRow[]};
   'details:process_step': {process_step?: ProcessStepRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
 };
@@ -820,6 +1053,18 @@ export type PortalTransactionOp =
   {op: 'insert'; table: 'criterion_status'; ref?: string; values: DG.DomainTxValues<CriterionStatusInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'criterion_status'; id: string; values: DG.DomainTxValues<Partial<CriterionStatusRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'criterion_status'; id: string} |
+  {op: 'insert'; table: 'campaign'; ref?: string; values: DG.DomainTxValues<CampaignInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'campaign'; id: string; values: DG.DomainTxValues<Partial<CampaignRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'campaign'; id: string} |
+  {op: 'insert'; table: 'series'; ref?: string; values: DG.DomainTxValues<SeriesInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'series'; id: string; values: DG.DomainTxValues<Partial<SeriesRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'series'; id: string} |
+  {op: 'insert'; table: 'study'; ref?: string; values: DG.DomainTxValues<StudyInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'study'; id: string; values: DG.DomainTxValues<Partial<StudyRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'study'; id: string} |
+  {op: 'insert'; table: 'process_stage'; ref?: string; values: DG.DomainTxValues<ProcessStageInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'process_stage'; id: string; values: DG.DomainTxValues<Partial<ProcessStageRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'process_stage'; id: string} |
   {op: 'insert'; table: 'unit_operation'; ref?: string; values: DG.DomainTxValues<UnitOperationInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'unit_operation'; id: string; values: DG.DomainTxValues<Partial<UnitOperationRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'unit_operation'; id: string} |
@@ -873,6 +1118,18 @@ export const portalDb = {
   },
   get criterionStatuses() {
     return grok.dapi.domains.table<CriterionStatusRow, CriterionStatusInsert, CriterionStatusColumn, CriterionStatusExpand>('portal.criterion_status');
+  },
+  get campaigns() {
+    return grok.dapi.domains.table<CampaignRow, CampaignInsert, CampaignColumn, CampaignExpand>('portal.campaign');
+  },
+  get serieses() {
+    return grok.dapi.domains.table<SeriesRow, SeriesInsert, SeriesColumn, SeriesExpand>('portal.series');
+  },
+  get studies() {
+    return grok.dapi.domains.table<StudyRow, StudyInsert, StudyColumn, StudyExpand>('portal.study');
+  },
+  get processStages() {
+    return grok.dapi.domains.table<ProcessStageRow, ProcessStageInsert, ProcessStageColumn, ProcessStageExpand>('portal.process_stage');
   },
   get unitOperations() {
     return grok.dapi.domains.table<UnitOperationRow, UnitOperationInsert, UnitOperationColumn, UnitOperationExpand>('portal.unit_operation');

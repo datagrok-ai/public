@@ -1,6 +1,7 @@
 /** A portfolio as its configuration file declares it (files/portfolios/*.json). Pure data and
  * pure checks: nothing here touches the platform, so the rules hold wherever the file is read. */
 import {DataCondition, ProgramDataConfig, validateCondition} from './conditions';
+import {validateWorkUnits, WorkUnitFeedConfig, WorkUnitKind} from './work-units';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -72,6 +73,12 @@ export interface PortfolioConfig {
   groups?: {viewers?: string, contributors?: string, approvers?: string};
   /** Where a program goes when it leaves this portfolio's terminal stage. */
   handoff?: {to: string, fromStage: string};
+  /** Work units the portfolio uses (FR-06); none when absent. */
+  workUnits?: WorkUnitKind[];
+  /** Feeds that deliver work units from a source system, keyed by program code. */
+  workUnitFeeds?: WorkUnitFeedConfig[];
+  /** The ordered series maturity vocabulary, e.g. hit → validated → lead → optimized → candidate. */
+  seriesMaturity?: string[];
   /** The program dataset query that data conditions are evaluated over. */
   programData?: ProgramDataConfig;
   stageModel: StageModelConfig;
@@ -139,6 +146,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
       seen.add(key);
     }
   }
+  errors.push(...validateWorkUnits(c.workUnits, c.workUnitFeeds, c.seriesMaturity));
   if (c.programData !== undefined) {
     need(c.programData.connection, 'programData: connection');
     need(c.programData.sql, 'programData: sql');

@@ -8,7 +8,8 @@ import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
 import {programContext, ProgramContext, programData, readinessFor, recordDecision, setCriterion, stagesOf,
-  summarizePlan, syncPortfolio, verdictFor} from '../portal';
+  summarizePlan, syncPortfolio, syncWorkUnits, verdictFor, enabledWorkUnits, workUnitsOf} from '../portal';
+import {summarizeWorkUnitPlan, WORK_UNIT_LABELS, WorkUnitKind} from '../model/work-units';
 import {CriterionReadiness, Readiness} from '../model/readiness';
 import {DataRow} from '../model/conditions';
 import {Decision, nextStage} from '../model/gates';
@@ -166,7 +167,9 @@ export class PortalView {
       .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
     const successors = await portalDb.programs.query({filter: `predecessor_id = "${id}"`}).catch(() => []);
     const readiness = await this.readinessOf(ctx, viewedStage);
-    this.renderDetail(ctx, transitions, successors, readiness);
+    const units = await Promise.all(enabledWorkUnits(ctx.portfolio).map(async (kind) =>
+      ({kind, rows: await workUnitsOf(kind, [id]).catch(() => [])})));
+    this.renderDetail(ctx, transitions, successors, readiness, units);
   }
 
   /** Readiness for the viewed stage: the context already holds the next stage's. */
@@ -184,7 +187,7 @@ export class PortalView {
   }
 
   private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
-    readiness: Readiness | null): void {
+    readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = []): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -262,9 +265,33 @@ export class PortalView {
       reasons,
       rationale,
       divH([advance, hold, terminate], 'pp-actions'),
+      ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units)] : []),
       span('History', 'pp-heading'),
       transitions.length ? history : span('No transitions yet', 'pp-muted'),
     );
+  }
+
+  /** The program's campaigns, series, studies and process stages, as the portfolio enables them. */
+  private workUnits(units: {kind: WorkUnitKind, rows: Record<string, any>[]}[]): HTMLElement {
+    const unitVariant = (s?: string): BadgeVariant => ['active', 'running', 'in_development'].includes(s ?? '') ?
+      'success' : ['closed', 'completed', 'locked', 'transferred'].includes(s ?? '') ? 'accent' :
+        ['dropped', 'cancelled', 'paused', 'deprioritized'].includes(s ?? '') ? 'warning' : 'default';
+    return named(divV(units.map(({kind, rows}) => {
+      const sorted = [...rows].sort((a, b) => (a.process_type ?? '').localeCompare(b.process_type ?? '') ||
+        (a.ordinal ?? 0) - (b.ordinal ?? 0) || a.code.localeCompare(b.code));
+      return named(divV([
+        span(`${WORK_UNIT_LABELS[kind]} (${rows.length})`, 'pp-unit-kind'),
+        ...(rows.length === 0 ? [span('None yet', 'pp-muted')] : sorted.map((u) => named(divH([
+          span(u.name === u.code ? u.code : `${u.code} · ${u.name}`),
+          ...(u.status ? [badge(String(u.status).replace('_', ' '), {variant: unitVariant(u.status)})] : []),
+          ...(u.maturity ? [badge(u.maturity, {variant: 'accent'})] : []),
+          ...(u.outcome && u.outcome !== 'open' ? [badge(u.outcome, {variant: u.outcome === 'succeeded' ? 'success' : 'warning'})] : []),
+          ...(u.type ? [span(String(u.type).replace('_', ' '), 'pp-muted')] : []),
+          ...(u.process_type ? [span(u.process_type, 'pp-muted')] : []),
+          ...(u.missing_from_feed ? [badge('missing from feed', {variant: 'error'})] : []),
+        ], 'pp-unit'), `unit-${slug(kind)}-${slug(u.code)}`))),
+      ], 'pp-unit-group'), `units-${slug(kind)}`);
+    }), 'pp-units'), 'work-units');
   }
 
   /** One criterion of the gate: its state, and for a data condition what the data says. A computed
@@ -314,7 +341,8 @@ export class PortalView {
     const pi = DG.TaskBarProgressIndicator.create(`Syncing ${this.portfolio.name}`);
     try {
       const plans = await syncPortfolio(code);
-      grok.shell.info(plans.map(summarizePlan).join('\n'));
+      const units = await syncWorkUnits(code);
+      grok.shell.info([...plans.map(summarizePlan), ...units.map(summarizeWorkUnitPlan)].join('\n'));
       await this.load(code);
     } catch (e: any) {
       grok.shell.error(e?.message ?? String(e));

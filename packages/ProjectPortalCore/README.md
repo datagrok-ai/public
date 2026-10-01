@@ -19,6 +19,7 @@ one customer runs discovery and CMC together.
 | `registry_feed` | SQL against a named connection that yields the portfolio's programs. | table |
 | `program` | Keyed by `(portfolio_id, code)`. `predecessor_id` links a program that continues in another portfolio. | **row, private by default** |
 | `stage_transition` | The gate log: every stage change, including `sync` changes observed in a registry. Written once. | master → program |
+| `campaign`, `series`, `study`, `process_stage` | Work units under a program, keyed `(program_id, code)`. A campaign is open-ended and reaches an `outcome`; a study is closed-ended and completes. | master → program |
 | `criterion_status` | Met / waived / not met per program and criterion. | master → program |
 
 ### Rules that make several portfolios work
@@ -43,6 +44,19 @@ one customer runs discovery and CMC together.
   - Compounds, plates, results and predictions are never folders.
   - It is additive: it creates what is missing and never renames, moves or deletes. It records each program's folder on the program row (`space_id`), so a program renamed in its registry keeps its folder, and the report names the difference.
   - The root is shared View to viewers and Edit to contributors, and its folders inherit that. Unlike program rows, spaces accept the grant, so the workspace is isolated per portfolio today.
+
+### Work units
+
+A portfolio enables the work units it uses (`workUnits`): discovery typically campaign and series,
+development study and process stage. `workUnitFeeds` deliver them from a source system, one feed per
+kind, each row naming its `program` by code. They sync after the programs, by the same rules:
+- keyed by program and code, so a re-run changes nothing;
+- the kind's own columns are mapped and checked against their choices; anything else lands in `details`;
+- a row for a program the portfolio does not hold is rejected and reported;
+- a unit its feed stops delivering is flagged `missing_from_feed`, never deleted; a unit added by hand is left alone;
+- series maturity is checked against the portfolio's `seriesMaturity`, and drift is warned.
+
+A work unit is never a folder of compounds (FR-26). The program page lists the units by kind.
 
 ### Data conditions and readiness
 
@@ -105,7 +119,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `loadPortfolios` | Loads this package's portfolio files: groups, stage models, portfolios, feeds. Idempotent. |
 | `loadPortfolioConfigs(configs)` | Loads portfolios handed over by another package, as a JSON array, checked as a set |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
-| `syncPortfolio(code, dryRun)` | Runs one portfolio's feeds. With `dryRun` it prints the plan without applying it. |
+| `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit feeds. With `dryRun` it prints the plan without applying it. |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
@@ -116,6 +130,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 
 - **`grok test`: package tests.**
   - Configuration rules, the sync planner, gate rules, data conditions and readiness. These are pure functions.
+  - Work units on the example data: series, campaigns, studies, process stages; a rejected row; idempotence.
   - Readiness on the example data: hit-to-lead and lead-optimization conditions, development lots, the gate.
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
@@ -124,7 +139,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-01, 63 of the 66 package tests and all 9 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-01, 74 of the 77 package tests and all 10 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

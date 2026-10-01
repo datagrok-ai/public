@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -77,6 +77,8 @@
         "program_noun": {"type": "string", "default": "Program", "description": "What this portfolio calls a program: Project, Program, Molecule"},
         "workspace_root": {"type": "string", "description": "Name of the root space the workspace builder creates the portfolio's tree under"},
         "workstreams": {"type": "string", "description": "Folders the builder creates under every program, '|'-separated (Chemistry|Biology|DMPK)"},
+        "work_units": {"type": "string", "description": "Work units the portfolio uses, '|'-separated: campaign, series, study, process_stage"},
+        "series_maturity": {"type": "string", "description": "The ordered series maturity vocabulary, '|'-separated (hit|validated|lead|optimized|candidate)"},
         "program_data": {"type": "json", "description": "The program dataset query data conditions are evaluated over: connection, sql with @program, leadRoles"},
         "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
         "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
@@ -95,6 +97,8 @@
         "system": {"type": "string", "required": true, "description": "The source system; programs from the same system with the same key are the same thing"},
         "connection": {"type": "string", "required": true, "description": "Data connection name, resolved on the server at sync time"},
         "sql": {"type": "string", "required": true, "editor": "textarea"},
+        "target": {"type": "string", "choices": ["program", "campaign", "series", "study", "process_stage"], "default": "program",
+          "description": "What the feed delivers: programs, or one kind of work unit keyed by program code"},
         "mapping": {"type": "json", "description": "Feed column → program field, plus status and stage value maps"},
         "enabled": {"type": "bool", "default": true},
         "last_synced_on": {"type": "datetime"}
@@ -172,6 +176,91 @@
         "document": {"type": "file", "description": "The document that satisfies a document criterion, e.g. the CoA"},
         "evidence": {"type": "string", "editor": "textarea", "description": "Notes: what satisfies the criterion, or why it was waived"}
       }
+    },
+    "campaign": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "code"],
+      "friendlyName": "Campaigns",
+      "description": "Iterative and open-ended work under a program: a screen, a hit triage, a DMTA cycle. Success is a state it reaches (outcome), not a completion.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "code": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "type": {"type": "string", "choices": ["screening", "hit_triage", "dmta_cycle", "library", "other"], "default": "other"},
+        "status": {"type": "string", "choices": ["planned", "active", "paused", "closed"], "default": "active"},
+        "outcome": {"type": "string", "choices": ["open", "succeeded", "abandoned"], "default": "open", "description": "What the campaign reached; an open campaign may still succeed"},
+        "objective": {"type": "string", "editor": "textarea"},
+        "started_on": {"type": "datetime"},
+        "source": {"type": "string", "choices": ["feed", "manual"], "default": "manual"},
+        "missing_from_feed": {"type": "bool", "default": false, "description": "Its feed no longer delivers it; kept, never deleted"},
+        "last_synced_on": {"type": "datetime"},
+        "details": {"type": "json", "description": "Feed columns the work unit does not map"}
+      },
+      "filters": [{"column": "program_id.name", "label": "Program"}, {"column": "type"}, {"column": "status"}, {"column": "outcome"}]
+    },
+    "series": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "code"],
+      "friendlyName": "Series",
+      "description": "A chemical series of a program: compounds sharing a scaffold. A work unit, never a folder of compounds (FR-26).",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "code": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "maturity": {"type": "string", "description": "The portfolio's series maturity vocabulary, e.g. hit, validated, lead, optimized, candidate"},
+        "status": {"type": "string", "choices": ["active", "backup", "deprioritized", "dropped"], "default": "active"},
+        "scaffold": {"type": "string", "semType": "Molecule", "description": "Core structure as SMILES"},
+        "source": {"type": "string", "choices": ["feed", "manual"], "default": "manual"},
+        "missing_from_feed": {"type": "bool", "default": false, "description": "Its feed no longer delivers it; kept, never deleted"},
+        "last_synced_on": {"type": "datetime"},
+        "details": {"type": "json", "description": "Feed columns the work unit does not map"}
+      },
+      "filters": [{"column": "program_id.name", "label": "Program"}, {"column": "maturity"}, {"column": "status"}]
+    },
+    "study": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "code"],
+      "friendlyName": "Studies",
+      "description": "Designed, closed-ended work under a program: an in vivo PK study, a tox study, a stability study. Success is completion.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "code": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "type": {"type": "string", "description": "e.g. in vivo PK, efficacy, toxicology, stability"},
+        "status": {"type": "string", "choices": ["planned", "running", "completed", "cancelled"], "default": "planned"},
+        "planned_end": {"type": "datetime"},
+        "completed_on": {"type": "datetime"},
+        "result_summary": {"type": "string", "editor": "textarea"},
+        "source": {"type": "string", "choices": ["feed", "manual"], "default": "manual"},
+        "missing_from_feed": {"type": "bool", "default": false, "description": "Its feed no longer delivers it; kept, never deleted"},
+        "last_synced_on": {"type": "datetime"},
+        "details": {"type": "json", "description": "Feed columns the work unit does not map"}
+      },
+      "filters": [{"column": "program_id.name", "label": "Program"}, {"column": "type"}, {"column": "status"}]
+    },
+    "process_stage": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "code"],
+      "friendlyName": "Process stages",
+      "description": "A stage of a program's manufacturing process, e.g. upstream, purification, formulation.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "code": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "process_type": {"type": "string", "description": "e.g. Drug Substance, Drug Product"},
+        "ordinal": {"type": "int", "description": "Order within its process type"},
+        "status": {"type": "string", "choices": ["not_started", "in_development", "locked", "transferred"], "default": "not_started"},
+        "unit_operation_id": {"type": "ref", "ref": "unit_operation", "onDelete": "setnull", "friendlyName": "Unit operation"},
+        "source": {"type": "string", "choices": ["feed", "manual"], "default": "manual"},
+        "missing_from_feed": {"type": "bool", "default": false, "description": "Its feed no longer delivers it; kept, never deleted"},
+        "last_synced_on": {"type": "datetime"},
+        "details": {"type": "json", "description": "Feed columns the work unit does not map"}
+      },
+      "filters": [{"column": "program_id.name", "label": "Program"}, {"column": "process_type"}, {"column": "status"}]
     },
     "unit_operation": {
       "securityMode": "table",
