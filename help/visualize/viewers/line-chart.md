@@ -247,9 +247,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Statistical Process Rule Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
 | Regression Line Color | number |  |
-| Regression Line Transparency | number |  |
 | Moving Average Line Color | number |  |
-| Moving Average Line Transparency | number |  |
 | Annotation Font | string |  |
 | Formula Font | string |  |
 | **Tooltip** | | |

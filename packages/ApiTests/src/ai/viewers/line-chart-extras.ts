@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectChoices, expectCleared, expectFiresWithin, expectRoundTrip, look, until, withTableView} from '../helpers';
+import {alphaOf, demog, expectChoices, expectCleared, expectFiresWithin, expectRoundTrip, look, reloadLayoutWithLook, until, withTableView} from '../helpers';
 
 // LineChart prop JSON-shape round-trips not covered by line-chart-js-api.ts.
 category('AI: Viewers: LineChart extras', () => {
@@ -35,6 +35,20 @@ category('AI: Viewers: LineChart extras', () => {
     const cleared = look(c);
     expectCleared(cleared['yAxisTitle']);
     expectCleared(cleared['y2AxisTitle']);
+  });
+
+  test('removed line transparencies move into the color alpha', async () => {
+    const c = v();
+    c.setOptions({regressionLineTransparency: 0.2, movingAverageLineTransparency: 0.6});
+    expect(alphaOf(c.props.regressionLineColor), 204);
+    expect(alphaOf(c.props.movingAverageLineColor), 102);
+    expect('regressionLineTransparency' in look(c), false);
+
+    await withTableView(demog(), (tv) => {
+      tv.lineChart({x: 'age', yColumnNames: ['height']});
+      const lc = reloadLayoutWithLook(tv, DG.VIEWER.LINE_CHART, {regressionLineTransparency: 0.5, regressionLineColor: 0xFFFF0000});
+      expect((lc.props.regressionLineColor >>> 0).toString(16), '80ff0000');
+    });
   });
 
   test('markerOpacity 0..100 boundary round-trip', async () => {

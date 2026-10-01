@@ -355,7 +355,6 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
 | Marker Type | string |  |
 | Marker Default Size | number | By default - automatic sizing based on current dataframe |
-| Marker Opacity | number |  |
 | Jitter Size | number | Randomly shift (x, y) marker position up to the *Jitter Size* pixels. Useful when multiple points fall on the same exact position. If *Jitter Size Y* is defined, then *Jitter Size* shifts x only. |
 | Jitter Size Y | number | Randomly shift y marker position up to the *Jitter Size Y* pixels. |
 | Marker Draw Border | boolean |  |
@@ -432,9 +431,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Label Font | string |  |
 | Controls Font | string | Viewer controls elements font. |
 | Regression Line Color | number |  |
-| Regression Line Transparency | number |  |
 | Moving Average Line Color | number |  |
-| Moving Average Line Transparency | number |  |
 | Annotation Font | string |  |
 | Formula Font | string |  |
 | **Tooltip** | | |
