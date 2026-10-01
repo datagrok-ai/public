@@ -141,9 +141,10 @@ Use a plain string, not a template literal. In a template literal, JavaScript wo
 expand `${EXTERNAL_TOKEN}` as a variable.
 
 The placeholder only works for a signed-in user with `Keep Token` enabled. Otherwise the
-request fails and the target service isn't called. The kept token is the OpenID **ID token**
-when the provider returns one, or the access token when it doesn't. Services that accept only
-access tokens issued for their own audience will reject it.
+request fails and the target service isn't called. The kept token is the provider's
+**access token**, issued by the authorization server set in the configuration endpoint. Its
+audience and claims, such as groups, are whatever that server puts in access tokens for the
+requested scopes. If a claim your service needs is missing, add its scope to `Scopes`.
 
 Long-lived sessions are supported without exposing privileged credentials, and Datagrok can integrate seamlessly with
 external systems while preserving user-controlled authorization boundaries.
