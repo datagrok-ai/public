@@ -17,9 +17,9 @@
     "email": "vmakarichev@datagrok.ai"
   },
   "scripts": {
-    "build": "grok build",
+    "build": "grok api && grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src",
+    "lint": "eslint --ext .ts,.tsx src --ignore-pattern src/generated/",
     "test": "grok test"
   },
   "canEdit": [

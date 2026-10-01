@@ -1,0 +1,93 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "forge",
+  "version": "0.1.2",
+  "tables": {
+    "model": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "defaultRowVisibility": "none",
+      "friendlyName": "Models",
+      "description": "A trained predictive model: everything needed to apply it, plus the training summary shown in the catalog",
+      "grants": {"All users": ["view", "edit"]},
+      "columns": {
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true, "friendlyName": "Name"},
+        "description": {"type": "string", "editor": "textarea", "searchable": true},
+        "engine_name": {"type": "string", "required": true, "friendlyName": "Engine", "description": "Engine id: the mlname meta of its functions"},
+        "engine_namespace": {"type": "string", "required": true, "description": "Package of the train function (function engines) or its namespace (script engines)"},
+        "engine_kind": {"type": "string", "required": true, "choices": ["function", "script"]},
+        "task": {"type": "string", "required": true, "choices": ["regression", "classification"], "friendlyName": "Task"},
+        "target_name": {"type": "string", "required": true, "friendlyName": "Target"},
+        "target": {"type": "json", "description": "{name, type, semType?, categories?}"},
+        "features": {"type": "json", "description": "{columns: [{name, type, semType?}]} in training order"},
+        "feature_count": {"type": "int", "min": 0},
+        "options": {"type": "json", "description": "Preparation replay; keys compatible with the old models: preprocessingInfo, postprocessingInfo, positiveClass, negativeClass, binaryClassificationThreshold, targetType, allowNulls"},
+        "hyperparameters": {"type": "json", "description": "{<train function input>: value}"},
+        "metrics": {"type": "json", "description": "{validation: {<metric id>: number}, train?: {<metric id>: number}}; ids: mse, rmse, mae, r2, accuracy, f1, auc"},
+        "seed": {"type": "int"},
+        "splitting": {"type": "json", "description": "{scheme: none|kfold|holdout, folds?, trainFraction?, isStratified?}"},
+        "storage_mode": {"type": "string", "required": true, "choices": ["none", "reference", "copy"], "default": "none", "friendlyName": "Data storage"},
+        "dataset_name": {"type": "string"},
+        "row_count": {"type": "int", "min": 0, "friendlyName": "Training rows"},
+        "dataset_ref": {"type": "json", "description": "reference mode: {kind: file|query|script, id?, path?, params?, script?}"},
+        "dataset_table_id": {"type": "string", "description": "copy mode: id of the uploaded table; no foreign key, existence is checked on read"},
+        "dataset_fingerprint": {"type": "json", "description": "{rowCount, columnCount, hash, columns: [{name, type, min?, max?, mean?, categories?}]}"},
+        "blob": {"type": "file", "description": "file://System:DomainFiles/forge/model/<uuid>/model.bin"},
+        "has_training_rows": {"type": "bool", "default": false, "description": "The blob embeds training rows (SVM, KNN)"},
+        "legacy_id": {"type": "string", "unique": true, "description": "Id of the migrated core model"}
+      },
+      "filters": [
+        {"column": "engine_name", "label": "Engine"},
+        {"column": "task", "label": "Task"},
+        {"column": "storage_mode", "label": "Data storage"},
+        {"column": "created_on", "type": "range", "label": "Created"}
+      ]
+    },
+    "training_run": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "defaultRowVisibility": "none",
+      "friendlyName": "Training runs",
+      "description": "One training attempt, saved as a model or not",
+      "grants": {"All users": ["view", "edit"]},
+      "columns": {
+        "model_id": {"type": "ref", "ref": "model", "onDelete": "setnull", "friendlyName": "Model"},
+        "engine_name": {"type": "string", "required": true, "friendlyName": "Engine"},
+        "engine_namespace": {"type": "string", "required": true},
+        "engine_kind": {"type": "string", "required": true, "choices": ["function", "script"]},
+        "task": {"type": "string", "required": true, "choices": ["regression", "classification"]},
+        "target_name": {"type": "string", "required": true, "friendlyName": "Target"},
+        "features": {"type": "json"},
+        "options": {"type": "json"},
+        "hyperparameters": {"type": "json"},
+        "seed": {"type": "int"},
+        "splitting": {"type": "json"},
+        "metrics": {"type": "json"},
+        "dataset_name": {"type": "string"},
+        "row_count": {"type": "int", "min": 0},
+        "dataset_fingerprint": {"type": "json"},
+        "status": {"type": "string", "required": true, "choices": ["completed", "failed", "cancelled"]},
+        "error": {"type": "string"},
+        "started_on": {"type": "datetime", "required": true},
+        "duration_ms": {"type": "int", "min": 0}
+      }
+    },
+    "application": {
+      "securityMode": "master",
+      "delegate": "model_id",
+      "audit": false,
+      "friendlyName": "Applications",
+      "description": "One application of a model to a table: who, when, how many rows; secured by the model",
+      "columns": {
+        "model_id": {"type": "ref", "ref": "model", "required": true, "onDelete": "cascade", "friendlyName": "Model"},
+        "table_name": {"type": "string"},
+        "row_count": {"type": "int", "required": true, "min": 0},
+        "column_name": {"type": "string", "description": "Name of the prediction column"},
+        "source": {"type": "string", "required": true, "choices": ["ui", "api"], "default": "ui"},
+        "status": {"type": "string", "required": true, "choices": ["completed", "failed"], "default": "completed"},
+        "error": {"type": "string"},
+        "duration_ms": {"type": "int", "min": 0}
+      }
+    }
+  }
+}

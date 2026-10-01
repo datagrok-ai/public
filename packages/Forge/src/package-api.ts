@@ -8,7 +8,17 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function info(): Promise<void> {
-    return await grok.functions.call('Forge:Info', {});
+  /**
+   * Predictive modeling: engines and the model catalog
+   */
+  export async function forgeApp(): Promise<DG.View> {
+    return await grok.functions.call('Forge:ForgeApp', {});
+  }
+
+  /**
+   * Opens the Forge app
+   */
+  export async function forgeModels(): Promise<void> {
+    return await grok.functions.call('Forge:ForgeModels', {});
   }
 }
