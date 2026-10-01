@@ -3,6 +3,7 @@
 ## 0.2.0 (2026-09-30)
 
 - Workspace builder: a Spaces tree per portfolio (root, a folder per program, its workstreams), additive and idempotent, with a preview; the root is shared with the portfolio's groups
+- App: the address carries the open portfolio's code, and the gate panel opens the program's workspace
 - `portal` schema 0.2.1: `portfolio.workstreams`, `program.space_id`
 - Portfolio files take `workstreams`. The examples declare Chemistry, Biology, DMPK, CompChem (EX-SMD); Protein Engineering, Biology, Biophysics, Developability (EX-BIOD); Drug Substance, Drug Product, Analytical, Regulatory (EX-BIOC)
 

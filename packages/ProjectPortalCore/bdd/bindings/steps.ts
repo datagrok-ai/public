@@ -74,3 +74,13 @@ export const sidePanelsHidden = Given('the side panels are hidden', async (page:
     }, before);
   });
 }, {tier: 'ui', description: 'hides the browse tree, context panel and help for the rest of the feature'});
+
+export const addressEndsWith = Then('the address should end with {string}', async (page: Page, tail: string) => {
+  await expect.poll(() => new URL(page.url()).pathname.endsWith(tail),
+    {message: `the address ends with ${tail}`}).toBe(true);
+}, {description: 'the path of the browser address, so a board can be bookmarked and shared'});
+
+export const currentSpace = Then('the open view should be the space {string}', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(() => grok.shell.v?.project?.friendlyName ?? grok.shell.v?.name ?? ''),
+    {message: 'the open view'}).toBe(name);
+}, {description: 'the Spaces view the Browse tree opens for a space, by the space\'s display name'});

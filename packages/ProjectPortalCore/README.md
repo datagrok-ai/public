@@ -75,7 +75,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 
 | Function | What it does |
 |---|---|
-| `Project Portal` (app) | Portfolios, the selected portfolio's own board, and the gate for the selected program |
+| `Project Portal` (app) | Portfolios, the selected portfolio's own board, and the gate for the selected program, with a link to the program's workspace. `/apps/ProjectPortalCore/Portal/<code>` opens one portfolio. |
 | `loadPortfolios` | Loads this package's portfolio files: groups, stage models, portfolios, feeds. Idempotent. |
 | `loadPortfolioConfigs(configs)` | Loads portfolios handed over by another package, as a JSON array, checked as a set |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's feeds. With `dryRun` it prints the plan without applying it. |
@@ -96,7 +96,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-09-30, 47 of the 50 package tests and all 7 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-09-30, 47 of the 50 package tests and all 8 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

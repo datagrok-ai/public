@@ -34,3 +34,13 @@ Feature: Several portfolios on one instance
     And EXB-101 card in unstaged column should be visible
     When user clicks on EXB-101 card
     Then program detail should contain text "Registry stage: 3"
+
+  Scenario: A portfolio has its own address, and a program opens its workspace
+    When user clicks on small molecule discovery portfolio
+    Then the address should end with "/Portal/EX-SMD"
+    When user clicks on biologics discovery portfolio
+    Then the address should end with "/Portal/EX-BIOD"
+    When user clicks on small molecule discovery portfolio
+    And user clicks on EXS-KIN1 card
+    And user clicks on open workspace button
+    Then the open view should be the space "EXS-KIN1"

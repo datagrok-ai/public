@@ -29,4 +29,5 @@ app.element('gate criteria', {selector: u2('gate-criteria')});
 app.element('gate reasons', {selector: u2('gate-reasons')});
 app.element('transition history', {selector: u2('transition-history')});
 app.element('advance button', {selector: u2('advance-button')});
+app.element('open workspace button', {selector: u2('open-workspace-button')});
 app.element('assay criterion met button', {selector: u2('mark-met-assay-ready')});

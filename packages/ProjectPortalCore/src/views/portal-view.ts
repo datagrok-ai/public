@@ -24,12 +24,16 @@ const statusVariant: Record<string, BadgeVariant> = {
 /** Automation names are derived from codes: 'SM-DISC' → 'sm-disc', 'Program A' → 'program-a'. */
 export const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+const APP_PATH = '/apps/ProjectPortalCore/Portal';
+
 export class PortalView {
   readonly root = named(divH([], 'pp-root'), 'portal');
   private readonly portfolioList = named(divV([], 'pp-portfolios'), 'portfolio-list');
   private readonly board = named(divV([], 'pp-board'), 'stage-board');
   private readonly detail = named(divV([], 'pp-detail'), 'program-detail');
   readonly status = signal('Loading portfolios…');
+  /** The app's address: the open portfolio's code is its last segment, so a board can be linked. */
+  readonly path = signal(APP_PATH);
 
   private portfolios: PortfolioRow[] = [];
   private models = new Map<string, StageModelRow>();
@@ -77,6 +81,7 @@ export class PortalView {
       return;
     this.portfolio = p;
     this.selected = null;
+    this.path.value = `${APP_PATH}/${p.code}`;
     for (const el of Array.from(this.portfolioList.querySelectorAll('.pp-portfolio')))
       el.classList.toggle('pp-selected', (el as HTMLElement).dataset.u2Name === `portfolio-${slug(code)}`);
     [this.stages, this.programs] = await Promise.all([
@@ -215,10 +220,15 @@ export class PortalView {
     for (const s of successors)
       lineage.push(named(span(`Continued as ${s.code} in another portfolio`, 'pp-lineage'), 'lineage-successor'));
 
+    const workspace = program.space_id ?
+      named(button('Open workspace', () => void this.openWorkspace(program.space_id!)), 'open-workspace-button') :
+      named(span('No workspace yet: build it with buildWorkspace', 'pp-muted'), 'no-workspace');
+
     this.detail.replaceChildren(
       named(span(program.name, 'pp-title'), 'program-title'),
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
+      workspace,
       ...(program.source_stage ? [span(`Registry stage: ${program.source_stage}`, 'pp-muted')] : []),
       ...lineage,
       track,
@@ -230,6 +240,17 @@ export class PortalView {
       span('History', 'pp-heading'),
       transitions.length ? history : span('No transitions yet', 'pp-muted'),
     );
+  }
+
+  /** Opens the program's folder the way the Browse tree does. A folder deleted by hand is reported,
+   * not recreated: the builder is the one place that creates folders. */
+  private async openWorkspace(spaceId: string): Promise<void> {
+    const space = await grok.dapi.spaces.find(spaceId).catch(() => null);
+    if (!space) {
+      grok.shell.warning('This program\'s workspace folder is gone; rebuild the portfolio\'s workspace');
+      return;
+    }
+    grok.shell.addView(DG.SpaceView.forProject(space));
   }
 
   private async mark(programId: string, criterionId: string, state: 'met' | 'waived'): Promise<void> {
@@ -260,7 +281,7 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   const sync = named(button('Sync', () => void portal.sync()), 'sync-button');
   sync.title = 'Run this portfolio\'s registry feeds';
   const view = appView({name: 'Project Portal', content, ribbon: [[sync]], status: portal.status,
-    path: '/apps/ProjectPortalCore/Portal'});
+    path: portal.path});
   await portal.load(portfolioCode);
   (view as any).portal = portal;
   return view;

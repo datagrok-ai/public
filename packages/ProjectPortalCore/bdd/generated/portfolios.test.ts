@@ -11,7 +11,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {boardStages, openApp} from '../bindings/steps.js';
+import {addressEndsWith, boardStages, currentSpace, openApp} from '../bindings/steps.js';
 import {clickOn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -55,5 +55,18 @@ test.describe("Several portfolios on one instance", () => {
     await session.step(34, "And EXB-101 card in unstaged column should be visible", () => shouldBe(page, el("EXB-101 card in unstaged column"), "visible"));
     await session.step(35, "When user clicks on EXB-101 card", () => clickOn(page, el("EXB-101 card")));
     await session.step(36, "Then program detail should contain text \"Registry stage: 3\"", () => shouldContainText(page, el("program detail"), "Registry stage: 3"));
+  });
+  test("A portfolio has its own address, and a program opens its workspace", {tag: ["@portal"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(9, "Given user opens the Project Portal app", () => openApp(page));
+    enter(page, "Project Portal app");
+    await session.step(39, "When user clicks on small molecule discovery portfolio", () => clickOn(page, el("small molecule discovery portfolio")));
+    await session.step(40, "Then the address should end with \"/Portal/EX-SMD\"", () => addressEndsWith(page, "/Portal/EX-SMD"));
+    await session.step(41, "When user clicks on biologics discovery portfolio", () => clickOn(page, el("biologics discovery portfolio")));
+    await session.step(42, "Then the address should end with \"/Portal/EX-BIOD\"", () => addressEndsWith(page, "/Portal/EX-BIOD"));
+    await session.step(43, "When user clicks on small molecule discovery portfolio", () => clickOn(page, el("small molecule discovery portfolio")));
+    await session.step(44, "And user clicks on EXS-KIN1 card", () => clickOn(page, el("EXS-KIN1 card")));
+    await session.step(45, "And user clicks on open workspace button", () => clickOn(page, el("open workspace button")));
+    await session.step(46, "Then the open view should be the space \"EXS-KIN1\"", () => currentSpace(page, "EXS-KIN1"));
   });
 });
