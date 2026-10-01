@@ -1057,10 +1057,7 @@ class Editor {
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula2'));
     }
 
-    mainPane.append(this.inlineInputs(
-      this.areaInputColor(itemIdx, 'Region Color', 'fillColor', DG.Color.toHtml(DG.Color.gray)),
-      this.inputOpacity(itemIdx, false),
-    ));
+    mainPane.append(this.inputColorOpacity(itemIdx, false));
     mainPane.append(this.inlineInputs(
       this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)),
       this.inputLineWidth(itemIdx),
@@ -1113,7 +1110,7 @@ class Editor {
         mainPane.append(this.inputColumn2(itemIdx));
 
       /** Preparing the "Format" panel — Color + Opacity share a row when wide enough */
-      formatPane.append(this.inlineInputs(this.inputColor(itemIdx), this.inputOpacity(itemIdx)));
+      formatPane.append(this.inputColorOpacity(itemIdx));
       if (caption !== ITEM_CAPTION.BAND)
         formatPane.append(this.inputStyle(itemIdx));
       formatPane.append(this.inputRange(itemIdx));
@@ -1162,20 +1159,48 @@ class Editor {
     return ibFormula.root;
   }
 
-  /** Creates color picker for item color */
-  private inputColor(itemIdx: number): HTMLElement {
-    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+  /** Color + Opacity on one row. The color's alpha channel edits the same opacity as the slider;
+   *  the stored color stays opaque, since the renderers apply `opacity` on top of the color's own alpha. */
+  private inputColorOpacity(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
+    const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
+    const defaultColor = isFormulaLine ? '#000000' : DG.Color.toHtml(DG.Color.gray);
+    const fillColor = (item as any).fillColor as number | undefined;
+    const color = (isFormulaLine ? (item as DG.FormulaLine).color : fillColor ? DG.Color.toHtml(fillColor) : undefined) ?? defaultColor;
+    const withAlpha = (hex: string): string => {
+      const alpha = Math.round((item.opacity ?? 30) * 255 / 100);
+      return hex.slice(0, 7) + (alpha === 255 ? '' : alpha.toString(16).padStart(2, '0'));
+    };
 
-    const ibColor = ui.input.color('Color', {value: item.color ?? '#000000',
+    const elOpacity = ui.element('input');
+    elOpacity.type = 'range';
+    elOpacity.min = 0;
+    elOpacity.max = 100;
+    elOpacity.value = item.opacity ?? 30;
+    elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
+
+    const ibColor = ui.input.color(isFormulaLine ? 'Color' : 'Region Color', {value: withAlpha(color), useAlphaChannel: true,
       onValueChanged: (value) => {
-        item.color = value;
-        this.onItemChangedAction(itemIdx, true);
+        if (/^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value)) {
+          item.opacity = elOpacity.value = value.length === 9 ? Math.round(parseInt(value.slice(7), 16) * 100 / 255) : 100;
+          value = value.slice(0, 7);
+        }
+        if (isFormulaLine)
+          (item as DG.FormulaLine).color = value;
+        else
+          (item as any).fillColor = DG.Color.fromHtml(value);
+        this.onItemChangedAction(itemIdx, isFormulaLine);
       }});
+    (ibColor.input as HTMLInputElement).placeholder = defaultColor;
 
-    const elColor = ibColor.input as HTMLInputElement;
-    elColor.placeholder = '#000000';
+    elOpacity.addEventListener('input', () => {
+      item.opacity = parseInt(elOpacity.value);
+      ibColor.notify = false;
+      ibColor.value = withAlpha(ibColor.value);
+      ibColor.notify = true;
+      this.onItemChangedAction(itemIdx, isFormulaLine);
+    });
 
-    return ibColor.root;
+    return this.inlineInputs(ibColor.root, ui.div([ui.label('Opacity', 'ui-label ui-input-label'), elOpacity], 'ui-input-root'));
   }
 
   private areaInputColor(itemIdx: number, header: string = 'Color', key: keyof DG.AnnotationRegion, defaultColor: string = '#000000'): HTMLElement {
@@ -1205,25 +1230,6 @@ class Editor {
     elWidth.setAttribute('style', 'padding-right: 24px;');
 
     return ibWidth.root;
-  }
-
-  /** Creates range slider for item opacity */
-  private inputOpacity(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
-    const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
-    const elOpacity = ui.element('input');
-    elOpacity.type = 'range';
-    elOpacity.min = 0;
-    elOpacity.max = 100;
-    elOpacity.value = item.opacity ?? 30;
-    elOpacity.addEventListener('input', () => {
-      item.opacity = parseInt(elOpacity.value);
-      this.onItemChangedAction(itemIdx, isFormulaLine);
-    });
-    elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
-
-    const label = ui.label('Opacity', 'ui-label ui-input-label');
-
-    return ui.div([label, elOpacity], 'ui-input-root');
   }
 
   /** Pairs ui-input-roots on a single row when there's enough width; wraps to

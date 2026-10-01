@@ -883,6 +883,7 @@ export namespace input {
     additionalColumnProperties: (input, x) => setAdditionalColumnProperties(input, x),
     showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
+    useAlphaChannel: (input, x) => api.grok_ColorInput_SetUseAlphaChannel(input.dart, x),
     allowNew: (input, x) => api.grok_TagsInput_Set_Allow_New(input.dart, x),
     multiValue: (input, x) => api.grok_TagsInput_Set_MultiValue(input.dart, x),
     acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
@@ -990,6 +991,8 @@ export namespace input {
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
     showOnlyColorBox?: boolean;
+    /** Adds an alpha (opacity) channel to the picker; the value becomes "#rrggbbaa" for non-opaque colors. */
+    useAlphaChannel?: boolean;
   }
 
   export interface IFilesInputInitOptions<T> extends IInputInitOptions<T> {
@@ -1242,14 +1245,14 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
 
 /** Creates a color picker bound to {@link colorDiv}: clicking the element opens the picker,
  * and its background updates live to preview the selected color. */
-export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Callback | null, onCancel: Callback | null = null): HTMLElement {
-  return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
+export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Callback | null, onCancel: Callback | null = null, useAlphaChannel: boolean = false): HTMLElement {
+  return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel, useAlphaChannel);
 }
 
 /** Opens a standalone color picker modal immediately, without a trigger element.
  * Use when there is no persistent UI element to bind to (e.g. editing a canvas-rendered grid cell). */
-export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Callback | null = null, onCancel: Callback | null = null): void {
-  api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel);
+export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Callback | null = null, onCancel: Callback | null = null, useAlphaChannel: boolean = false): void {
+  api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel, useAlphaChannel);
 }
 
 /** Legend editor for categorical color patterns ({category: color}). */

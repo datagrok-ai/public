@@ -637,8 +637,8 @@ export interface IDartApi {
   grok_Project_Close(p: any): any;
   grok_Shell_Get_Projects(): any;
   grok_Project_AddTableView(p: any, t: any): any;
-  grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
-  grok_ColorPicker_Show(color: any, onChanged: any, onOk: any, onCancel: any): any;
+  grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any, useAlphaChannel: any): any;
+  grok_ColorPicker_Show(color: any, onChanged: any, onOk: any, onCancel: any, useAlphaChannel: any): any;
   grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_TaskBarProgressIndicator_Create(name: String, cancelable: Bool, pausable: Bool, spinner: Bool): any;
   grok_TaskBarProgressIndicator_Close(pi: any): any;
@@ -748,6 +748,7 @@ export interface IDartApi {
   grok_ColumnsInput_SetAdditionalColumnProperties(input: any, props: any): any;
   grok_ColumnsInput_SetShowSelectedColsOnTop(input: any, x: any): any;
   grok_ColorInput_SetShowOnlyColorBox(input: any, x: any): any;
+  grok_ColorInput_SetUseAlphaChannel(input: any, x: any): any;
   grok_FilesInput_Set_AcceptExtensions(input: any, x: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any, table?: any): any;
