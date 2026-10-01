@@ -78,6 +78,25 @@ category('ComputeUtils: Driver links check expressions', async () => {
     expect(evaluate({scriptVerdict: 'nope > 1'}, ctx({bar: 2})), 'Error during validation: "nope > 1"');
   });
 
+  test('Enabled hides an input, combined with visible', async () => {
+    const pconf =
+      await getProcessedConfig({id: 'p', type: 'static', steps: [{id: 's', nqName: 'LibTests:TestEnabledInputs'}]});
+    const hidden: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      StateTree.loadOrCreateCalls(tree, true).subscribe();
+      tree.init().subscribe();
+      const bridge = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      const snap = () => hidden.push([bridge.meta.en.value?.hidden, bridge.meta.both.value?.hidden]);
+      [2, 1, 0].forEach((k, idx) => {
+        cold(`${'-'.repeat(2 * idx + 1)}a`).subscribe(() => bridge.setState('k', k, 'none'));
+        cold(`${'-'.repeat(2 * idx + 2)}a`).subscribe(snap);
+      });
+    });
+    expectDeepEqual(hidden, [[false, false], [true, true], [true, true]]);
+  });
+
   test('Expression checks run as default links', async () => {
     const pconf = await getProcessedConfig({id: 'p', type: 'static', steps: [{id: 's', nqName: EXPRESSIONS}]});
     const snapshots: any[] = [];

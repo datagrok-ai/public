@@ -555,3 +555,11 @@ export function MockValidatorThrow(x: number): string {
 export function TestExpressionInputs(k: number, hv: number, foo: number, bar: number, code: string): number {
   return k;
 }
+
+//input: int k = 2
+//input: int en = 1 {enabled: k > 1}
+//input: int both = 1 {visible: k > 0; enabled: k > 1}
+//output: int res
+export function TestEnabledInputs(k: number, en: number, both: number): number {
+  return en;
+}

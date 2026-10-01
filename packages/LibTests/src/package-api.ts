@@ -177,4 +177,8 @@ export namespace funcs {
   export async function testExpressionInputs(k: number , hv: number , foo: number , bar: number , code: string ): Promise<number> {
     return await grok.functions.call('LibTests:TestExpressionInputs', { k, hv, foo, bar, code });
   }
+
+  export async function testEnabledInputs(k: number , en: number , both: number ): Promise<number> {
+    return await grok.functions.call('LibTests:TestEnabledInputs', { k, en, both });
+  }
 }

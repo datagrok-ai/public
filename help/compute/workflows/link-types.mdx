@@ -864,6 +864,7 @@ same.
 | `validator` (regex literal) | the string matches `/pattern/flags` | Must match /pattern/flags | |
 | `validator` (expression) | the GrokScript expression is not `false` and not a string | the expression text, or the string it returned. "Error during validation" when it fails. | Sees `value` and the step's inputs by name. |
 | `visible` | the GrokScript expression is not `false` | none | Hides the input. A hidden input is not required. Sees the same variables as the expression validator. |
+| `enabled` (annotation) | the GrokScript expression is not `false` | none | In a workflow the input is hidden, as with `visible`, where the function form disables it instead. With both annotations the input is hidden when either is `false`. |
 | `choices` | the value is in the list | Must be one of: ... | A literal list. Choices the platform evaluates get a warning instead, see [Annotation values](#annotation-values). |
 | `type`, `semType` | the column has the kind | Column must be ... | Kinds as in [`columnIs`](#expressions). |
 | `table` | the column's name is among the table's columns | Column does not belong to the table | An annotation names a parameter, defaulting to the first dataframe input. A `check` names the table io with a query. |
