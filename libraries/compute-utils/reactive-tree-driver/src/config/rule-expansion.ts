@@ -9,6 +9,7 @@ import {parseLinkIO} from './LinkSpec';
 import {FuncCallIODescription, IOType, expandDeferredIOs, normalizeLinkSpec} from './config-processing-utils';
 import {ruleDataHandler, ruleMetaHandler, ruleValidatorHandler} from '../runtime/rule-handlers';
 import {ruleTargets, usedAliases} from '../runtime/rule-expressions';
+import {DriverLogger, reportError} from '../data/Logger';
 
 const metaEffects = new Set(['hide', 'show', 'items', 'meta']);
 const validatorEffects = new Set(['error', 'warning', 'notification', 'verdicts']);
@@ -27,10 +28,10 @@ export function isCheckLink(
 }
 
 /** The rules a step's annotations stand for: for each input whose choices the platform evaluates,
- *  the item list with an empty option and a warning for a value outside it, and for
- *  `propagateChoice: all` the lookup writing the picked row into the other scalar inputs. */
+ *  the item list with an empty option and a warning for a value outside it, and for the first
+ *  `propagateChoice: all` input the lookup writing the picked row into the other scalar inputs. */
 export function annotationRules(
-  nqName: string, io: FuncCallIODescription[],
+  nqName: string, io: FuncCallIODescription[], logger?: DriverLogger,
 ): PipelineRuleConfiguration<LinkSpecString>[] {
   // without the platform evaluation (before 1.28) the rules would only ever be off
   if (typeof (DG.FuncCall.prototype as any).evalParamChoices !== 'function')
@@ -38,7 +39,17 @@ export function annotationRules(
   const inputs = io.filter((item) => item.direction === 'input');
   // aliases next to the io names the template queries produce
   const free = (name: string): string => inputs.some((other) => other.id === name) ? free(`${name}_`) : name;
-  return inputs.filter((item) => item.dynamicChoices).flatMap(({id, dynamicChoices}) => {
+  // the first lookup already writes every other scalar input, so a second one would have no targets of its own
+  const lookupKey = inputs.find((item) => item.dynamicChoices?.propagate)?.id;
+  for (const item of inputs) {
+    if (item.dynamicChoices?.propagate && item.id !== lookupKey) {
+      reportError('warning', 'configProcessing',
+        `Step ${nqName}: propagateChoice on '${item.id}' is ignored, '${lookupKey}' already fills the step's inputs`,
+        logger);
+    }
+  }
+  return inputs.filter((item) => item.dynamicChoices).flatMap(({id}) => {
+    const lookup = id === lookupKey;
     const choices = free(`${id}_choices`);
     const target = free(`${id}_target`);
     const source = {[choices]: {choices: {input: id}}};
@@ -54,12 +65,16 @@ export function annotationRules(
         {effect: 'meta', targets: target, meta: {emptyChoice: true}},
         {
           effect: 'warning', targets: target,
-          message: dynamicChoices!.propagate ? 'Not in the lookup table' : 'Not in the list of choices',
+          message: lookup ? 'Not in the lookup table' : 'Not in the list of choices',
           when: {and: [{'!!': {var: choices}}, {'!': {var: `${choices}.inList`}}]},
         },
+        ...(lookup ? [{
+          effect: 'warning' as const, targets: target, message: {var: `${choices}.rowErrors`},
+          when: {'!!': {var: choices}},
+        }] : []),
       ],
     }];
-    if (dynamicChoices!.propagate) {
+    if (lookup) {
       rules.push({
         id: `::${id}:lookup`,
         type: 'rule',

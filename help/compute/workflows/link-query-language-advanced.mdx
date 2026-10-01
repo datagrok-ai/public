@@ -417,7 +417,8 @@ bare `solver` id is the first solver of the workflow:
   picked row as an object keyed by column name, and `assign` writes each
   key to the alias of the same name and ignores the rest, so the `preset`
   column is skipped, and a column added to the script and the table needs
-  no rule change.
+  no rule change. An input with no column keeps its value without a
+  restriction.
 - `runOnInit` applies the annotation's default key at init. A key that is
   not in the `preset` column turns the effect's `when` off, and an
   `assign` that is off clears its restrictions while keeping the values,

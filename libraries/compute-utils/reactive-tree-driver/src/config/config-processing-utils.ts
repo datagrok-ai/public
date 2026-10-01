@@ -149,7 +149,7 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
   const io = getFuncCallIO(conf.nqName);
-  const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io)];
+  const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io, logger)];
   const links = allLinks.length ? expandLinks(allLinks).map((link) => processLinkData(link)) : undefined;
   const actions = processStepActions(conf.actions ?? [], logger);
   const func = DG.Func.byName(conf.nqName);

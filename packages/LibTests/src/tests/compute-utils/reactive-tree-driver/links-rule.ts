@@ -287,7 +287,7 @@ category('ComputeUtils: Driver links rule', async () => {
     ]);
   });
 
-  test('Assign spreads an object over same-named targets', async () => {
+  test('Assign spreads an object over same-named targets, releasing the others', async () => {
     const pconf = await getProcessedConfig(twoSteps([{
       id: 'r',
       type: 'rule',
@@ -313,7 +313,7 @@ category('ComputeUtils: Driver links rule', async () => {
       expectObservable(outBridge.getStateChanges('a')).toBe('ab', {a: undefined, b: 1});
       expectObservable(outBridge.getStateChanges('b')).toBe('a-b', {a: undefined, b: -1});
     });
-    expectDeepEqual(restrictions, [['restricted', 'restricted'], [undefined, undefined]]);
+    expectDeepEqual(restrictions, [[undefined, 'restricted'], [undefined, undefined]]);
   });
 
   test('Assign matches keys ignoring case on request', async () => {

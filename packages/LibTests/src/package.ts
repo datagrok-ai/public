@@ -479,6 +479,38 @@ export function TestValueAnnotations(calc: number, bare: string, metric: string,
   return `${model} ${mpg} ${cyl}`;
 }
 
+//output: dataframe res
+export function MockCarsTyped(): DG.DataFrame {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'model', ['Mazda', 'Volvo']),
+    DG.Column.fromList('string', 'cyl', ['4', 'abc']),
+    DG.Column.fromList('double', 'mpg', [21.5, 30]),
+    DG.Column.fromList('int', 'name', [1, 2]),
+    DG.Column.fromList('string', 'flag', ['true', 'no']),
+    DG.Column.fromList('string', 'engine', ['E1', 'E2']),
+  ]);
+}
+
+//output: dataframe res
+export function MockEngines(): DG.DataFrame {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'engine', ['E1', 'E2']),
+    DG.Column.fromList('int', 'cyl', [8, 10]),
+  ]);
+}
+
+//input: string model {choices: LibTests:MockCarsTyped(); propagateChoice: all}
+//input: string engine {choices: LibTests:MockEngines(); propagateChoice: all}
+//input: int cyl
+//input: int mpg
+//input: string name
+//input: bool flag
+//output: string res
+export function TestLookupAnnotations(model: string, engine: string, cyl: number, mpg: number, name: string,
+  flag: boolean): string {
+  return `${model} ${engine}`;
+}
+
 //input: int x
 //output: bool res
 export function MockValidatorBool(x: number): boolean {

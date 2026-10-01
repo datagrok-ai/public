@@ -76,7 +76,7 @@ function resolveValidators(
 }
 
 export type ChoicesVerdict = {
-  items: string[], values: Record<string, any>, inList: boolean, row: Record<string, any> | null,
+  items: string[], values: Record<string, any>, inList: boolean, row: Record<string, any> | null, rowErrors: string[],
 };
 type ChoicesResult = Awaited<ReturnType<DG.FuncCall['evalParamChoices']>>;
 type ChoicesEntry = {deps: string[], values: any[], result: Promise<ChoicesResult>, landed?: ChoicesResult};
@@ -86,12 +86,55 @@ type ChoicesEntry = {deps: string[], values: any[], result: Promise<ChoicesResul
 const choicesCache = new WeakMap<DG.FuncCall, Map<string, ChoicesEntry>>();
 let warnedNoChoices = false;
 
-function choicesVerdict(r: ChoicesResult, value: any): ChoicesVerdict {
+const notConverted = Symbol('notConverted');
+
+// mirrors the form, which parses the cell's text with the input's editor; a cell it would empty is reported
+function convertCell(cell: any, type: string): any {
+  if (cell == null)
+    return null;
+  if (type === DG.TYPE.BOOL)
+    return cell === true || cell === 'true';
+  if (cell === '' && type !== DG.TYPE.STRING)
+    return null;
+  switch (type) {
+  case DG.TYPE.INT:
+  case DG.TYPE.FLOAT:
+  case DG.TYPE.NUM: {
+    const num = typeof cell === 'number' ? cell : typeof cell === 'string' && cell.trim() ? Number(cell) : NaN;
+    return Number.isFinite(num) && (type !== DG.TYPE.INT || Number.isInteger(num)) ? num : notConverted;
+  }
+  case DG.TYPE.STRING:
+    if (typeof cell === 'string')
+      return cell;
+    return typeof cell === 'number' || typeof cell === 'boolean' ? String(cell) : notConverted;
+  default:
+    return cell;
+  }
+}
+
+function convertRow(call: DG.FuncCall, cells: Record<string, any>) {
+  const types = new Map(call.func.inputs.map((prop) => [prop.name.toLowerCase(), prop.propertyType as string]));
+  const row: Record<string, any> = {};
+  const rowErrors: string[] = [];
+  for (const [column, cell] of Object.entries(cells)) {
+    const type = types.get(column.toLowerCase());
+    const value = type ? convertCell(cell, type) : cell;
+    if (value === notConverted)
+      rowErrors.push(`${column}: ${JSON.stringify(cell)} is not a valid ${type}`);
+    else
+      row[column] = value;
+  }
+  return {row, rowErrors};
+}
+
+function choicesVerdict(call: DG.FuncCall, r: ChoicesResult, value: any): ChoicesVerdict {
   const key = value == null || value === '' ? undefined : String(value);
+  const cells = key === undefined ? undefined : r.lookup?.[key];
+  const {row, rowErrors} = cells ? convertRow(call, cells) : {row: null, rowErrors: []};
   return {
     items: r.items, values: r.values,
     inList: key === undefined || r.items.includes(key),
-    row: key === undefined ? null : r.lookup?.[key] ?? null,
+    row, rowErrors,
   };
 }
 
@@ -126,7 +169,8 @@ function resolveChoices(
     byIo.set(io, created);
     entry = created;
   }
-  return entry.landed ? choicesVerdict(entry.landed, value) : entry.result.then((r) => choicesVerdict(r, value));
+  return entry.landed ? choicesVerdict(call, entry.landed, value) :
+    entry.result.then((r) => choicesVerdict(call, r, value));
 }
 
 type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];

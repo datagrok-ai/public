@@ -5,12 +5,14 @@ import {resolveSources} from '@datagrok-libraries/compute-utils/reactive-tree-dr
 import {getProcessedConfig} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
+import {DriverLogger} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {createTestScheduler} from '../../../test-utils';
 
 const VALUES = 'LibTests:TestValueAnnotations';
+const LOOKUP = 'LibTests:TestLookupAnnotations';
 const created = ['calc', 'bare', 'metric', 'speed', 'region', 'city', 'model'];
 
 async function newCallInputs(initialValues?: Record<string, any>) {
@@ -46,7 +48,9 @@ category('ComputeUtils: Driver value annotations', async () => {
       getMatchedPositions: () => [{path: [], position: 0, ioName: io}],
     } as any, {c: {choices: {input: 'value', call: 'call'}}});
     const first = await choices('city', 'EU-1');
-    expectDeepEqual(first.c, {items: ['EU-1', 'EU-2'], values: {'EU-1': 'EU-1', 'EU-2': 'EU-2'}, inList: true, row: null});
+    expectDeepEqual(first.c, {
+      items: ['EU-1', 'EU-2'], values: {'EU-1': 'EU-1', 'EU-2': 'EU-2'}, inList: true, row: null, rowErrors: [],
+    });
     const cached = choices('city', 'Nope');
     expect(cached instanceof Promise, false);
     expect(cached.c.inList, false);
@@ -58,6 +62,45 @@ category('ComputeUtils: Driver value annotations', async () => {
     expectDeepEqual((await choices('model', 'Volvo')).c.row, {mpg: 30, CYL: 4});
     expect((await choices('model', 'Nope')).c.row === null, true);
     expect(choices('model', null).c.inList, true);
+  });
+
+  test('Lookup rows are converted to the input types', async () => {
+    const fc = DG.Func.byName(LOOKUP).prepare();
+    const lookup = async (value: string) => (await resolveSources({
+      hasCall: (name: string) => name === 'call',
+      getFirst: (name: string) => name === 'call' ? fc : value,
+      getMatchedPositions: () => [{path: [], position: 0, ioName: 'model'}],
+    } as any, {c: {choices: {input: 'value', call: 'call'}}})).c;
+    const mazda = await lookup('Mazda');
+    const volvo = await lookup('Volvo');
+    expectDeepEqual([mazda.row, mazda.rowErrors], [
+      {cyl: 4, name: '1', flag: true, engine: 'E1'}, ['mpg: 21.5 is not a valid int'],
+    ]);
+    expectDeepEqual([volvo.row, volvo.rowErrors], [
+      {mpg: 30, name: '2', flag: false, engine: 'E2'}, ['cyl: "abc" is not a valid int'],
+    ]);
+  });
+
+  test('Only the first propagateChoice key gets a lookup', async () => {
+    const logger = new DriverLogger();
+    const config: PipelineConfiguration = {id: 'pipeline1', type: 'static', steps: [{id: 'step', nqName: LOOKUP}]};
+    const pconf: any = await getProcessedConfig(config, logger);
+    const links = pconf.steps[0].links;
+    expectDeepEqual(links.map((link: any) => link.id), [
+      '::model:choices::meta', '::model:choices::validator', '::model:lookup::data',
+      '::engine:choices::meta', '::engine:choices::validator',
+    ]);
+    const byId = Object.fromEntries(links.map((link: any) => [link.id, link]));
+    expectDeepEqual(byId['::model:choices::validator'].params.effects[1], {
+      effect: 'warning', targets: 'model_target', message: {var: 'model_choices.rowErrors'},
+      when: {'!!': {var: 'model_choices'}},
+    });
+    expectDeepEqual(byId['::engine:choices::validator'].params.effects.map((effect: any) => effect.message),
+      ['Not in the list of choices']);
+    expectDeepEqual(byId['::model:lookup::data'].to.map((item: any) => item.name),
+      ['engine', 'cyl', 'mpg', 'name', 'flag']);
+    expectDeepEqual(logger.errors.map((item) => [item.severity, item.message]), [['warning',
+      `Step ${LOOKUP}: propagateChoice on 'engine' is ignored, 'model' already fills the step's inputs`]]);
   });
 
   test('Dynamic choices become rules on the step', async () => {

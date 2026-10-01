@@ -120,6 +120,8 @@ export const ruleDataHandler: Handler = ({controller}) => {
               target in values ? target : undefined;
             if (key !== undefined)
               controller.setAll(target, values[key], effect.restriction ?? 'none');
+            else
+              controller.clearRestriction(target);
           }
         }
       }

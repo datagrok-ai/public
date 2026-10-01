@@ -140,6 +140,24 @@ export namespace funcs {
     return await grok.functions.call('LibTests:TestValueAnnotations', { calc, bare, metric, speed, region, city, model, mpg, cyl });
   }
 
+  export async function mockCarsTyped(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:MockCarsTyped', {});
+  }
+
+  export async function mockEngines(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:MockEngines', {});
+  }
+
+  /**
+   * @param {string} model
+   *   choices: LibTests:MockCarsTyped()
+   * @param {string} engine
+   *   choices: LibTests:MockEngines()
+   */
+  export async function testLookupAnnotations(model: string , engine: string , cyl: number , mpg: number , name: string , flag: boolean ): Promise<string> {
+    return await grok.functions.call('LibTests:TestLookupAnnotations', { model, engine, cyl, mpg, name, flag });
+  }
+
   export async function mockValidatorBool(x: number ): Promise<boolean> {
     return await grok.functions.call('LibTests:MockValidatorBool', { x });
   }
