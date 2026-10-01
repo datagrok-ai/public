@@ -13,7 +13,7 @@ export class DataConnectorsTutorial extends Tutorial {
   get description() {
     return 'Direct connection to data sources and databases using the connector server';
   }
-  get steps() { return 12; }
+  get steps() { return 11; }
 
   get icon() {
     return '💾🔗';
@@ -47,7 +47,7 @@ export class DataConnectorsTutorial extends Tutorial {
     })[0];
 
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
-      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
+      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "New connection..."`);
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -60,10 +60,10 @@ export class DataConnectorsTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
-    const starbucksNodes = $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
-      el.textContent === 'Starbucks');
+    const starbucksNode = () => $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
+      el.textContent === 'Starbucks').last()[0] ?? null;
     const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection',
-      'DataQueryView', starbucksNodes[starbucksNodes.length - 1],
+      'DataQueryView', starbucksNode,
       'Open the context menu on Postgres | Starbucks and click "New Query..."');
 
     // UI generation delay

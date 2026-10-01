@@ -11,7 +11,7 @@ import {randomUUID} from 'node:crypto';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
 import {leave} from './args.js';
-import {failure, isWaitFailure, journeyFailure} from './failure.js';
+import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf} from './failure.js';
 import * as guide from './guide.js';
 import {explain} from './locate.js';
 import {logMemory, rendererMb} from './memory.js';
@@ -62,6 +62,10 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
         await test.step(name, options?.knownFailure ? () => whileExpectedToFail(body) : body);
       }
       catch (e) {
+        // a capability gate's skip ends the journey as skipped, unless an earlier scenario failed: a skip
+        // must not hide that failure
+        if (isSkip(e))
+          throw failed.length > 0 ? journeyFailure(failed, scenarios, `the rest was skipped at "${name}": ${reasonOf(e)}`) : e;
         if (!options?.knownFailure)
           failed.push({name, error: e});
         // a scenario that stopped midway leaves its dialog or menu over the viewers the next one uses;
@@ -88,7 +92,9 @@ export async function knownFailure(body: () => Promise<void>): Promise<void> {
   try {
     await whileExpectedToFail(body);
   }
-  catch {
+  catch (e) {
+    if (isSkip(e))
+      throw e;
     return;
   }
   throw new Error(KNOWN_FAILURE_PASSED);
@@ -106,7 +112,7 @@ const HOME_VIEW = 'datagrok';
 // what Escape closes: dialogs and popup menus of both UI generations
 const CLOSABLE = '[data-u2="dialog"], [data-u2="menu"], .d4-dialog, .d4-menu-popup';
 // transient notifications, taken away as their close icons would
-const NOTICES = '[data-u2="notify"] > *, .d4-balloon';
+const NOTICES = '[data-u2="notify"] > *, .d4-balloon, .ui-hint-popup';
 
 const errors = new WeakMap<Page, string[]>();
 const cleanups = new WeakMap<Page, (() => Promise<void>)[]>();
@@ -304,6 +310,8 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
           await body();
         }
         catch (e) {
+          if (isSkip(e))
+            throw e;
           const shown = isWaitFailure(e) && page && usable(page) ? await explain(page).catch(() => '') : '';
           throw failure(`${path || 'feature'}:${line}`, title, e, shown, file ? `${file}:${line}:1` : '');
         }
@@ -377,6 +385,11 @@ export async function resetShell(page: Page): Promise<void> {
     w.ui?.tooltip?.hide?.();
     for (const e of document.querySelectorAll(notices))
       e.remove();
+    // a demo's script panel is docked, not a view, and its script keeps going: its own Back button closes and cancels it
+    for (const script of document.querySelectorAll('.demo-app-script'))
+      (script.querySelector('.tutorials-root-header > button') as HTMLElement | null)?.click();
+    if (w.grok.shell.windows.presentationMode)
+      w.grok.shell.windows.presentationMode = false;
     w.grok.shell.closeAll();
     return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
       .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');

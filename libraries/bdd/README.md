@@ -29,6 +29,19 @@ function called and its result checked),
 is a package test or an `ApiTests` test, never a feature. The same goes for a TestTrack case marked
 `manual-only` or `apitest`. The rule and its reasons are in `CLAUDE.md`, "What never becomes a feature".
 
+**A stand that lacks a capability skips, it does not fail.** The suites run on CI, dev, local stands
+and public, which differ: `Given the stand runs the "Jupyter" service` and `Given the stand can reach
+the database of the "<name>" connection` are gates placed right before the first step that needs the
+capability — in the Background only when every scenario needs it from its first step — so the steps before
+them run everywhere and fail as usual,
+and the rest of the test is reported skipped with the reason when the stand has not got it. The service
+gate goes by the health the stand reports; a stand that reports none (a dev stack) lets the test go on.
+`Given the "Chem" package is installed` gates on a package the feature needs but does not test; it
+may stand in the Background when every scenario needs it, and never names the package under test.
+`Given the stand has a reachable "<name>" connection` is the connection gate for a connection a package
+brings rather than the feature (absent skips too), and `Given the stand serves the help pages` gates a
+claim on the help panel's content.
+
 **Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
 database rows, the layout or chat the UI makes on the side, a setting or configuration of something
 it does not own — is removed or restored at feature end and swept again at its start, and the
