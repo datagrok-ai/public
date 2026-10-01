@@ -907,7 +907,8 @@ The driver differs from the form in a few cases.
 | When defaults apply | When the form opens | When the step is created. Initial values of the step win, and runs loaded from history keep their values |
 | Bare-word default such as `= high` | No value | The word |
 | Empty choice input | The first item | Stays empty, and the required check reports it |
-| Value not in the list | Replaced by the first item | Kept, with a warning |
+| Value not in a list the platform evaluates (a function, a query or a file) | Replaced by the first item | Kept, with a warning |
+| Value not in a literal list such as `["slow", "fast"]` | Replaced by the first item | Kept, with an error that blocks the run, see [Checks](#checks) |
 | Clearing a choice | Not possible | Every choice input has an empty option |
 
 #### Lookup tables
