@@ -331,6 +331,7 @@ export type PipelineConfigurationBase<S> = {
   customExports?: CustomExport[];
   disableHistory?: boolean;
   disableDefaultExport?: boolean;
+  compactView?: boolean;
   approversGroup?: string; // not used rn
 };
 
