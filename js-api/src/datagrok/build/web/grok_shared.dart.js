@@ -76870,8 +76870,8 @@
     },
     CompilableFunc: {
       "^": "Object;contextParam:CompilableFunc_contextParam<,method:CompilableFunc_method*",
-      getCompiled$1: function($call) {
-        var getFuncsOrLists, params, t1, i, t2, valuesLength, values, namedParams, j, t3, j0, functions, functionLists, namedFunctions, namedFunctionLists;
+      getCompiled$1: ["super$CompilableFunc$getCompiled", function($call) {
+        var getFuncsOrLists, params, t1, i, t2, valuesLength, values, namedParams, j, t3, j0, functions, functionLists, namedFunctions, namedFunctionLists, direct;
         getFuncsOrLists = new N.CompilableFunc_getCompiled_getFuncsOrLists();
         params = J.toList$0$ax(J.map$1$ax($call.get$func().get$inputParams(), new N.CompilableFunc_getCompiled_closure($call)));
         t1 = J.getInterceptor$asx(params);
@@ -76932,7 +76932,56 @@
         for (i = 0; i < t2; ++i)
           getFuncsOrLists.call$4(values, functions, functionLists, i);
         namedParams.forEach$1(0, new N.CompilableFunc_getCompiled_closure3(getFuncsOrLists, namedParams, namedFunctions, namedFunctionLists));
-        return new N.CompilableFunc_getCompiled_closure4(this, values, namedParams, functions, functionLists, namedFunctions, namedFunctionLists);
+        if (namedParams.get$isEmpty(namedParams) && functionLists.get$isEmpty(functionLists) && t2 <= 4) {
+          direct = this.compileDirect$1(new H.MappedListIterable(values, new N.CompilableFunc_getCompiled_closure4(), [H.getTypeArgumentByIndex(values, 0), null]).toList$0(0));
+          if (direct != null)
+            return direct;
+        }
+        return new N.CompilableFunc_getCompiled_closure5(this, values, namedParams, functions, functionLists, namedFunctions, namedFunctionLists);
+      }],
+      compileDirect$1: function(args) {
+        var m, t1, a, b, c;
+        m = this.get$method(this);
+        t1 = args.length;
+        switch (t1) {
+          case 0:
+            return new N.CompilableFunc_compileDirect_closure(m);
+          case 1:
+            if (0 >= t1)
+              return H.ioore(args, 0);
+            return new N.CompilableFunc_compileDirect_closure0(m, args[0]);
+          case 2:
+            if (0 >= t1)
+              return H.ioore(args, 0);
+            a = args[0];
+            if (1 >= t1)
+              return H.ioore(args, 1);
+            return new N.CompilableFunc_compileDirect_closure1(m, a, args[1]);
+          case 3:
+            if (0 >= t1)
+              return H.ioore(args, 0);
+            a = args[0];
+            if (1 >= t1)
+              return H.ioore(args, 1);
+            b = args[1];
+            if (2 >= t1)
+              return H.ioore(args, 2);
+            return new N.CompilableFunc_compileDirect_closure2(m, a, b, args[2]);
+          case 4:
+            if (0 >= t1)
+              return H.ioore(args, 0);
+            a = args[0];
+            if (1 >= t1)
+              return H.ioore(args, 1);
+            b = args[1];
+            if (2 >= t1)
+              return H.ioore(args, 2);
+            c = args[2];
+            if (3 >= t1)
+              return H.ioore(args, 3);
+            return new N.CompilableFunc_compileDirect_closure3(m, a, b, c, args[3]);
+        }
+        return;
       },
       processCompilableFunc$6: function(values, functions, functionLists, namedValues, namedFunctions, namedFunctionLists) {
         var t1, t2;
@@ -77019,9 +77068,51 @@
       }
     },
     CompilableFunc_getCompiled_closure4: {
+      "^": "Closure:0;",
+      call$1: [function(v) {
+        return !!J.getInterceptor(v).$isFunction ? v : new N.CompilableFunc_getCompiled__closure(v);
+      }, null, null, 2, 0, null, 7, "call"]
+    },
+    CompilableFunc_getCompiled__closure: {
+      "^": "Closure:2;v",
+      call$0: [function() {
+        return this.v;
+      }, null, null, 0, 0, null, "call"]
+    },
+    CompilableFunc_getCompiled_closure5: {
       "^": "Closure:2;$this,values,namedParams,functions,functionLists,namedFunctions,namedFunctionLists",
       call$0: [function() {
         return this.$this.processCompilableFunc$6(this.values, this.functions, this.functionLists, this.namedParams, this.namedFunctions, this.namedFunctionLists);
+      }, null, null, 0, 0, null, "call"]
+    },
+    CompilableFunc_compileDirect_closure: {
+      "^": "Closure:2;m",
+      call$0: [function() {
+        return this.m.call$0();
+      }, null, null, 0, 0, null, "call"]
+    },
+    CompilableFunc_compileDirect_closure0: {
+      "^": "Closure:2;m,a",
+      call$0: [function() {
+        return this.m.call$1(this.a.call$0());
+      }, null, null, 0, 0, null, "call"]
+    },
+    CompilableFunc_compileDirect_closure1: {
+      "^": "Closure:2;m,a,b",
+      call$0: [function() {
+        return this.m.call$2(this.a.call$0(), this.b.call$0());
+      }, null, null, 0, 0, null, "call"]
+    },
+    CompilableFunc_compileDirect_closure2: {
+      "^": "Closure:2;m,a,b,c",
+      call$0: [function() {
+        return this.m.call$3(this.a.call$0(), this.b.call$0(), this.c.call$0());
+      }, null, null, 0, 0, null, "call"]
+    },
+    CompilableFunc_compileDirect_closure3: {
+      "^": "Closure:2;m,a,b,c,d",
+      call$0: [function() {
+        return this.m.call$4(this.a.call$0(), this.b.call$0(), this.c.call$0(), this.d.call$0());
       }, null, null, 0, 0, null, "call"]
     },
     CompilableFunc_processCompilableFunc_getValues: {
@@ -81891,6 +81982,19 @@
         t4 = this.ifFalse.get.call$1(run);
         J.$set$2$x(t1, run, this._IfFunc_method.call$3(t2, t3, t4));
       },
+      compileDirect$1: function(args) {
+        var t1, c, t;
+        t1 = args.length;
+        if (0 >= t1)
+          return H.ioore(args, 0);
+        c = args[0];
+        if (1 >= t1)
+          return H.ioore(args, 1);
+        t = args[1];
+        if (2 >= t1)
+          return H.ioore(args, 2);
+        return new N._IfFunc_compileDirect_closure(c, t, args[2]);
+      },
       processCompilableFunc$6: function(values, functions, functionLists, namedValues, namedFunctions, namedFunctionLists) {
         var t1, t2, i, t3;
         for (t1 = functions.get$keys(functions), t1 = t1.get$iterator(t1), t2 = values.length; t1.moveNext$0();) {
@@ -81929,6 +82033,12 @@
       call$3: [function(c, t, f) {
         return c === true ? t : f;
       }, null, null, 6, 0, null, 3, 8, 17, "call"]
+    },
+    _IfFunc_compileDirect_closure: {
+      "^": "Closure:2;c,t,f",
+      call$0: [function() {
+        return this.c.call$0() === true ? this.t.call$0() : this.f.call$0();
+      }, null, null, 0, 0, null, "call"]
     },
     _EqualsFunc: {
       "^": "FuncSync_CompilableFunc1;tags@,condition,a,b,result*,method:_EqualsFunc_method*,CompilableFunc_contextParam,CompilableFunc_method,source,helpUrl,description,dialogFunc,checkEnabled,batchEstimatorFunc,toolbox,topMenu,_nameLowerCase,_descriptionLowerCase,needsValidation,saveLog,isBatchable,maxBatchSize,shortcut,synonyms,params,options,aux,runs,Func_recurrence,Func_recurrenceRunAs,Func_nextRunTime,Func_lastRunTime,isDataTransformationValue,_inputParams,_outputParams,_roleSet,_paramMap,isCancelable,AuthorMixin_author,AuthorMixin_createdOn,AuthorMixin_updatedOn,ScheduleMixin_recurrence,ScheduleMixin_recurrenceRunAs,ScheduleMixin_nextRunTime,ScheduleMixin_lastRunTime,GrokJsObject__jsObject,TagsMixin__tags,TagsMixin_entityTags,Entity_id,securityObject,_bindId,projectRelations,isDeleted,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors,_grok_shared$_name,_friendlyName,namespace,Model_id,Model_included,Model_isOnServer,Model_isDirty",
@@ -82923,6 +83033,24 @@
         }
         return t1;
       },
+      getCompiled$1: function($call) {
+        var t1, $name, sem, t2, context;
+        t1 = {};
+        $name = J.$index$asx($call.get$paramMap(), $.GetCurrentRowFieldFunc_FIELD);
+        $name = $name == null ? $name : J.get$value$x($name);
+        sem = J.$index$asx($call.get$paramMap(), $.GetCurrentRowFieldFunc_SEM_TYPE);
+        sem = sem == null ? sem : J.get$value$x(sem);
+        if (typeof $name === "string")
+          t2 = sem != null && typeof sem !== "string";
+        else
+          t2 = true;
+        if (t2)
+          return this.super$CompilableFunc$getCompiled($call);
+        context = J.get$context$x($call);
+        t1.table = null;
+        t1.column = null;
+        return new N.GetCurrentRowFieldFunc_getCompiled_closure(t1, this, $name, sem, context);
+      },
       runImplSync$1: function(run) {
         var fieldValue, semTypeValue, t1, t2;
         fieldValue = J.$get$1$x(this.field, run);
@@ -82947,6 +83075,32 @@
           return O.SemanticValue$fromCell(cell, null);
         return J.get$value$x(cell);
       }, null, null, 6, 0, null, 7, 93, 27, "call"]
+    },
+    GetCurrentRowFieldFunc_getCompiled_closure: {
+      "^": "Closure:2;_box_0,$this,name,sem,context",
+      call$0: [function() {
+        var t1, row, t2, t3, t4, table;
+        t1 = this.context;
+        row = t1.get$currentRow();
+        t2 = row.get$dataFrame();
+        t3 = this._box_0;
+        t4 = t3.table;
+        if (t2 == null ? t4 != null : t2 !== t4) {
+          table = row.get$dataFrame();
+          t3.table = table;
+          t3.column = J.$index$asx(table, this.name);
+        }
+        t2 = t3.column;
+        if (t2 != null) {
+          t4 = this.sem;
+          t2 = t4 != null && J.$eq$(t2.get$semType(), t4) === true;
+        } else
+          t2 = true;
+        if (t2)
+          return this.$this.GetCurrentRowFieldFunc_method.call$3(this.name, this.sem, t1);
+        t1 = t3.column;
+        return t1 instanceof N.StringColumn || t1.isNone$1(row.get$idx()) !== true ? J.$index$asx(t3.column, row.get$idx()) : null;
+      }, null, null, 0, 0, null, "call"]
     },
     GetColumnFunc: {
       "^": "FuncSync_CompilableFunc6;saveLog:GetColumnFunc_saveLog@,_params,value*,result*,contextParam:GetColumnFunc_contextParam<,method:GetColumnFunc_method*,CompilableFunc_contextParam,CompilableFunc_method,source,helpUrl,description,dialogFunc,checkEnabled,batchEstimatorFunc,toolbox,topMenu,_nameLowerCase,_descriptionLowerCase,needsValidation,saveLog,isBatchable,maxBatchSize,shortcut,synonyms,params,options,aux,runs,Func_recurrence,Func_recurrenceRunAs,Func_nextRunTime,Func_lastRunTime,isDataTransformationValue,_inputParams,_outputParams,_roleSet,_paramMap,isCancelable,AuthorMixin_author,AuthorMixin_createdOn,AuthorMixin_updatedOn,ScheduleMixin_recurrence,ScheduleMixin_recurrenceRunAs,ScheduleMixin_nextRunTime,ScheduleMixin_lastRunTime,GrokJsObject__jsObject,TagsMixin__tags,TagsMixin_entityTags,Entity_id,securityObject,_bindId,projectRelations,isDeleted,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors,_grok_shared$_name,_friendlyName,namespace,Model_id,Model_included,Model_isOnServer,Model_isDirty",
@@ -83685,7 +83839,7 @@
         return P._asyncStart($async$vectorCall$1, $async$completer);
       },
       scalarCall$2$columnName: function($call, columnName) {
-        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, _box_0, getValue, getValueSync, sync, $restore, i, value, x, preCalcColumns, t1, t2, c, columns, t3, columnTypes, nonScalarCols, valueTypes, data, sinceYield, t4, pr, newPr, t5, t6, t7, exception, pid, outType, nonScalar, $async$exception;
+        var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, _box_0, getValue, getValueSync, sync, $restore, i, value, x, preCalcColumns, t1, t2, c, columns, t3, columnTypes, nonScalarCols, valueTypes, data, sinceYield, rowNumber, currentRow, ifOutputType, t4, t5, pr, newPr, t6, t7, t8, exception, pid, nonScalar, $async$exception;
         var $async$scalarCall$2$columnName = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
           if ($async$errorCode === 1) {
             $async$currentError = $async$result;
@@ -83783,7 +83937,13 @@
                   sinceYield._core$_start = 0 + t2;
                   sinceYield._core$_stop = null;
                   $restore = new N.FuncBatchRunner_scalarCall_restore($async$self, $call, preCalcColumns);
-                  i = 0, t2 = columnTypes.length, t3 = valueTypes.length, t4 = nonScalarCols.length, pr = 0;
+                  J.$indexSet$ax(t1.get$context($call), "currentTable", $async$self.table);
+                  J.$indexSet$ax(t1.get$context($call), "row", 0);
+                  t1.get$context($call).set$currentRow(J.$index$asx(J.get$rows$x($async$self.table), 0));
+                  rowNumber = J.$index$asx(t1.get$context($call).get$variables(), "row");
+                  currentRow = J.$index$asx(t1.get$context($call).get$variables(), "currentRow");
+                  ifOutputType = $call.get$func() instanceof N._IfFunc ? $async$self.getIfFuncOutputParam$1($call) : null;
+                  i = 0, t1 = columnTypes.length, t2 = valueTypes.length, t3 = nonScalarCols.length, t4 = J.getInterceptor$x(currentRow), t5 = J.getInterceptor$x(rowNumber), pr = 0;
                 case 5:
                   // for condition
                   if (!J.$lt$n(i, $async$self.table.get$rowCount())) {
@@ -83796,18 +83956,18 @@
                 case 8:
                   // then
                   newPr = J.round$0$n(J.$mul$ns(i, c));
-                  t5 = J.getInterceptor$n(newPr);
-                  $async$goto = t5.$sub(newPr, pr) > 2 ? 10 : 11;
+                  t6 = J.getInterceptor$n(newPr);
+                  $async$goto = t6.$sub(newPr, pr) > 2 ? 10 : 11;
                   break;
                 case 10:
                   // then
-                  t5 = $async$self.progressValue + t5.$sub(newPr, pr);
-                  $async$self.progressValue = t5;
-                  J.update$1$x($async$self.progress, t5);
-                  t5 = sinceYield._core$_stop;
-                  t6 = t5 == null;
-                  t7 = t6 ? $.Primitives_timerTicks.call$0() : t5;
-                  $async$goto = J.$gt$n(J.$tdiv$n(J.$mul$ns(J.$sub$n(t7, sinceYield._core$_start), 1000), $.Stopwatch__frequency), 50) === true ? 12 : 13;
+                  t6 = $async$self.progressValue + t6.$sub(newPr, pr);
+                  $async$self.progressValue = t6;
+                  J.update$1$x($async$self.progress, t6);
+                  t6 = sinceYield._core$_stop;
+                  t7 = t6 == null;
+                  t8 = t7 ? $.Primitives_timerTicks.call$0() : t6;
+                  $async$goto = J.$gt$n(J.$tdiv$n(J.$mul$ns(J.$sub$n(t8, sinceYield._core$_start), 1000), $.Stopwatch__frequency), 50) === true ? 12 : 13;
                   break;
                 case 12:
                   // then
@@ -83815,7 +83975,7 @@
                   return P._asyncAwait(N.delay(0), $async$scalarCall$2$columnName);
                 case 14:
                   // returning from await.
-                  sinceYield._core$_start = t6 ? $.Primitives_timerTicks.call$0() : t5;
+                  sinceYield._core$_start = t7 ? $.Primitives_timerTicks.call$0() : t6;
                 case 13:
                   // join
                   pr = newPr;
@@ -83823,9 +83983,8 @@
                   // join
                 case 9:
                   // join
-                  t1.get$context($call).set$currentRow(J.$index$asx(J.get$rows$x($async$self.table), i));
-                  J.$indexSet$ax(t1.get$context($call), "row", J.$add$ns(J.$index$asx(J.get$rows$x($async$self.table), i).get$idx(), 1));
-                  J.$indexSet$ax(t1.get$context($call), "currentTable", $async$self.table);
+                  t4.set$value(currentRow, J.$index$asx(J.get$rows$x($async$self.table), i));
+                  t5.set$value(rowNumber, J.$add$ns(i, 1));
                   value = null;
                   $async$handler = 16;
                   $async$goto = sync === true ? 19 : 21;
@@ -83858,9 +84017,9 @@
                     $restore.call$0();
                     throw H.wrapException(new N.FormulaRowException(i, x));
                   }
-                  t5 = $async$self.rowErrors;
-                  if (t5 != null)
-                    t5.$indexSet(0, i, H.S(x));
+                  t6 = $async$self.rowErrors;
+                  if (t6 != null)
+                    t6.$indexSet(0, i, H.S(x));
                   // goto after finally
                   $async$goto = 18;
                   break;
@@ -83882,14 +84041,14 @@
                   } else {
                     pid = 0;
                     while (true) {
-                      t5 = J.get$length$asx($call.get$outputParams());
-                      if (typeof t5 !== "number") {
-                        $async$returnValue = H.iae(t5);
+                      t6 = J.get$length$asx($call.get$outputParams());
+                      if (typeof t6 !== "number") {
+                        $async$returnValue = H.iae(t6);
                         // goto return
                         $async$goto = 1;
                         break $async$outer;
                       }
-                      if (!(pid < t5))
+                      if (!(pid < t6))
                         break;
                       if (pid >= data.length) {
                         $async$returnValue = H.ioore(data, pid);
@@ -83897,59 +84056,56 @@
                         $async$goto = 1;
                         break $async$outer;
                       }
-                      t5 = data[pid];
-                      t6 = i;
-                      J.$indexSet$ax(t5, t6, value == null ? null : J.elementAt$1$ax(value, pid));
+                      t6 = data[pid];
+                      t7 = i;
+                      J.$indexSet$ax(t6, t7, value == null ? null : J.elementAt$1$ax(value, pid));
                       ++pid;
                     }
                   }
                   pid = 0;
                   while (true) {
-                    t5 = J.get$length$asx($call.get$outputParams());
-                    if (typeof t5 !== "number") {
-                      $async$returnValue = H.iae(t5);
+                    t6 = J.get$length$asx($call.get$outputParams());
+                    if (typeof t6 !== "number") {
+                      $async$returnValue = H.iae(t6);
                       // goto return
                       $async$goto = 1;
                       break $async$outer;
                     }
-                    if (!(pid < t5))
+                    if (!(pid < t6))
                       break;
                     c$1: {
-                      if ($call.get$func() instanceof N._IfFunc) {
-                        outType = $async$self.getIfFuncOutputParam$1($call);
-                        if (C.JSArray_methods.contains$1($.$get$validColumnTypes(), outType)) {
-                          if (pid >= t3) {
-                            $async$returnValue = H.ioore(valueTypes, pid);
-                            // goto return
-                            $async$goto = 1;
-                            break $async$outer;
-                          }
-                          valueTypes[pid] = outType;
-                          if (pid >= t2) {
-                            $async$returnValue = H.ioore(columnTypes, pid);
-                            // goto return
-                            $async$goto = 1;
-                            break $async$outer;
-                          }
-                          columnTypes[pid] = outType;
-                          break c$1;
+                      if (C.JSArray_methods.contains$1($.$get$validColumnTypes(), ifOutputType)) {
+                        if (pid >= t2) {
+                          $async$returnValue = H.ioore(valueTypes, pid);
+                          // goto return
+                          $async$goto = 1;
+                          break $async$outer;
                         }
+                        valueTypes[pid] = ifOutputType;
+                        if (pid >= t1) {
+                          $async$returnValue = H.ioore(columnTypes, pid);
+                          // goto return
+                          $async$goto = 1;
+                          break $async$outer;
+                        }
+                        columnTypes[pid] = ifOutputType;
+                        break c$1;
                       }
-                      t5 = J.get$runtimeType$(value).toString$0(0);
-                      if (pid >= t3) {
+                      t6 = J.get$runtimeType$(value).toString$0(0);
+                      if (pid >= t2) {
                         $async$returnValue = H.ioore(valueTypes, pid);
                         // goto return
                         $async$goto = 1;
                         break $async$outer;
                       }
-                      valueTypes[pid] = t5;
+                      valueTypes[pid] = t6;
                       if (value instanceof P.DateTime)
                         valueTypes[pid] = "datetime";
                       if (value instanceof N.BigInt)
                         valueTypes[pid] = "bigint";
                       if (J.$eq$(J.get$resultType$x($call.get$func()), "qnum") === true) {
                         valueTypes[pid] = "qnum";
-                        if (pid >= t2) {
+                        if (pid >= t1) {
                           $async$returnValue = H.ioore(columnTypes, pid);
                           // goto return
                           $async$goto = 1;
@@ -83957,22 +84113,22 @@
                         }
                         columnTypes[pid] = "qnum";
                       }
-                      if (pid >= t2) {
+                      if (pid >= t1) {
                         $async$returnValue = H.ioore(columnTypes, pid);
                         // goto return
                         $async$goto = 1;
                         break $async$outer;
                       }
                       if (columnTypes[pid] == null && value != null) {
-                        t5 = valueTypes[pid];
-                        columnTypes[pid] = t5;
-                        if (!N.Types_isNumerical(t5)) {
-                          t6 = J.getInterceptor(t5);
-                          t5 = t6.$eq(t5, "string") === true || t6.$eq(t5, "datetime") === true || t6.$eq(t5, "bool") === true || t6.$eq(t5, "qnum") === true;
+                        t6 = valueTypes[pid];
+                        columnTypes[pid] = t6;
+                        if (!N.Types_isNumerical(t6)) {
+                          t7 = J.getInterceptor(t6);
+                          t6 = t7.$eq(t6, "string") === true || t7.$eq(t6, "datetime") === true || t7.$eq(t6, "bool") === true || t7.$eq(t6, "qnum") === true;
                         } else
-                          t5 = true;
-                        if (!t5) {
-                          if (pid >= t4) {
+                          t6 = true;
+                        if (!t6) {
+                          if (pid >= t3) {
                             $async$returnValue = H.ioore(nonScalarCols, pid);
                             // goto return
                             $async$goto = 1;
@@ -83999,8 +84155,8 @@
                 case 7:
                   // after for
                   if (!$async$self.dropResults) {
-                    t1 = columns.length;
-                    t3 = columnName == null;
+                    t2 = columns.length;
+                    t4 = columnName == null;
                     t5 = $async$self.columnNames;
                     pid = 0;
                     while (true) {
@@ -84013,14 +84169,14 @@
                       }
                       if (!(pid < t6))
                         break;
-                      if (pid >= t4) {
+                      if (pid >= t3) {
                         $async$returnValue = H.ioore(nonScalarCols, pid);
                         // goto return
                         $async$goto = 1;
                         break $async$outer;
                       }
                       nonScalar = nonScalarCols[pid];
-                      if (pid >= t2) {
+                      if (pid >= t1) {
                         $async$returnValue = H.ioore(columnTypes, pid);
                         // goto return
                         $async$goto = 1;
@@ -84029,7 +84185,7 @@
                       t6 = columnTypes[pid];
                       if (t6 == null)
                         t6 = "string";
-                      if (t3) {
+                      if (t4) {
                         if (pid >= t5.length) {
                           $async$returnValue = H.ioore(t5, pid);
                           // goto return
@@ -84041,7 +84197,7 @@
                         t7 = columnName;
                       t7 = N.__col(t6, t7, $async$self.table.get$rowCount());
                       J.init$1$x(t7, new N.FuncBatchRunner_scalarCall_closure0(data, pid, nonScalar));
-                      if (pid >= t1) {
+                      if (pid >= t2) {
                         $async$returnValue = H.ioore(columns, pid);
                         // goto return
                         $async$goto = 1;
@@ -169898,8 +170054,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "71c23f8da958356f0ab6ba78c99cb51717a02fbf");
-        t2.set$date(t1, "2026-09-30T22:47:29.400Z");
+        t2.set$commit(t1, "f98337ae1bf2946e590e169bd53fcaffc8136f73");
+        t2.set$date(t1, "2026-10-01T22:47:36.028Z");
         t2.set$version(t1, "1.27.11");
         return t1;
       }, null, null, 0, 0, null, "call"]
