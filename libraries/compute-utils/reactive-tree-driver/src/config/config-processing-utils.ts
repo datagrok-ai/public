@@ -4,8 +4,8 @@ import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-type
 import {callHandler, indexFromEnd} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
-import {expandLinks} from './rule-expansion';
-import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks} from './checks';
+import {annotationRules, expandLinks} from './rule-expansion';
+import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
 import {DriverLogger, reportError} from '../data/Logger';
@@ -21,6 +21,8 @@ export type FuncCallIODescription = {
   direction: 'input' | 'output';
   /** Annotation options the driver validates, present only when the parameter declares any. */
   checks?: CheckOptions;
+  /** Choices the platform evaluates (a function, query or file); `propagate` for `propagateChoice: all`. */
+  dynamicChoices?: {propagate: boolean};
 }
 
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<never>;
@@ -146,9 +148,10 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
-  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
-  const actions = processStepActions(conf.actions ?? [], logger);
   const io = getFuncCallIO(conf.nqName);
+  const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io)];
+  const links = allLinks.length ? expandLinks(allLinks).map((link) => processLinkData(link)) : undefined;
+  const actions = processStepActions(conf.actions ?? [], logger);
   const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
   let viewersHook = conf.viewersHook;
@@ -196,6 +199,10 @@ function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
       checks.table = defaultTable;
     if (Object.keys(checks).length)
       io.checks = checks;
+    const choices = p.property.options?.choices;
+    const scalar = DG.TYPES_SCALAR.has(p.property.propertyType);
+    if (typeof choices === 'string' && choices && !parseChoices(choices) && scalar)
+      io.dynamicChoices = {propagate: p.property.options.propagateChoice === 'all'};
     return io;
   });
   const outputs = wu(fc.outputParams.values()).map((p) => (
@@ -308,6 +315,8 @@ export function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkI
     seenTemplateNames.add(templateName);
     const direction: 'input' | 'output' = lastSeg.ioExpand === 'inputs' ? 'input' : 'output';
     const excludeSet = new Set(lastSeg.excludeIds ?? []);
+    const kinds = new Set(lastSeg.excludeKinds ?? []);
+    const unlinked = kinds.has('linked');
     let targetIO: FuncCallIODescription[];
     try {
       targetIO = getFuncCallIO(lastSeg.nqName!);
@@ -315,11 +324,16 @@ export function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkI
       throw new Error(`Link ${linkId}: ${(e as Error).message}`);
     }
     return targetIO
-      .filter((d) => d.direction === direction && !excludeSet.has(d.id))
+      .filter((d) => d.direction === direction && !excludeSet.has(d.id) &&
+        !(kinds.has('nonscalar') && !DG.TYPES_SCALAR.has(d.type as DG.TYPE)))
       .map((d) => {
         const nname = isAnonymous ? d.id : io.name + d.id;
         const nlastSegment: LinkSelectorSegment = {type: 'selector', selector: 'first', ids: [d.id], stopIds: []};
-        return {name: nname, segments: [...io.segments.slice(0, -1), nlastSegment], flags: io.flags, templateName};
+        const segments = [...io.segments.slice(0, -1), nlastSegment];
+        // a dropped io must not fail the match, so `$linked` entries are optional
+        if (unlinked)
+          return {name: nname, segments, flags: [...(io.flags ?? []), 'optional' as const], templateName, unlinked};
+        return {name: nname, segments, flags: io.flags, templateName};
       });
   });
 }

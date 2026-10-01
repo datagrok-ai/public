@@ -114,12 +114,17 @@ category('ComputeUtils: Driver links check expressions', async () => {
   test('Check links with expressions read vars', async () => {
     const pconf: any = await getProcessedConfig(twoSteps([
       {id: 'gate', type: 'check', io: 'step1/a', check: {validator: 'other > 3'}, vars: {other: 'step1/b'}},
-      {id: 'vis', type: 'check', io: 'step1/b', check: {visible: 'other > 3'}, vars: {other: 'step1/a'}},
+      {
+        id: 'vis', type: 'check', io: 'step1/b', check: {visible: 'other > 3'}, vars: {other: 'step1/a'},
+        message: 'ignored', severity: 'warning', debounce: 100,
+      },
     ]));
     expectDeepEqual(pconf.links.map((link: any) => [link.id, link.type, link.from.map((io: any) => io.name)]), [
       ['gate::validator', 'validator', ['value', 'other']],
       ['vis::visible', 'meta', ['value', 'other']],
     ]);
+    expect(pconf.links[1].debounce === 100, false);
+    expectDeepEqual(pconf.links[1].params.effects, [{effect: 'hide', targets: ['target']}]);
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;

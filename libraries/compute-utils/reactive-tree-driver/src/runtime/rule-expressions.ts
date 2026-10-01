@@ -86,7 +86,8 @@ function registerOps() {
     const missing: string[] = [];
     for (const entry of spec ?? []) {
       const [name, kind] = Array.isArray(entry) ? entry : [entry];
-      if (!columnsOf(df, kind).some((col) => col.name === name))
+      const col = df instanceof DG.DataFrame ? df.col(name) : null;
+      if (!col || (kind != null && !columnIs(col, kind)))
         missing.push(kind == null ? name : `${name} (${kind})`);
     }
     return missing;
@@ -174,7 +175,7 @@ export function buildRuleContext(controller: IControllerBase): RuleContext {
 const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
 
 /** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `all.` prefix stripped. */
-export function usedAliases(expr: RuleExpr): string[] {
+export function usedAliases(expr: RuleExpr | undefined): string[] {
   const aliases = new Set<string>();
   const addPath = (path: any) => {
     if (typeof path !== 'string' || !path)

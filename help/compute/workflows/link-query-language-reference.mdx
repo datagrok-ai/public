@@ -75,7 +75,7 @@ empty path. These forms are equivalent:
 | `after*`    | reference   | non-`base`      | many nodes | Every following sibling whose id matches.<br/>*e.g.* `after*(@base, nextStep)` |
 | `after+`    | reference   | non-`base`      | one node | The immediately following sibling, only when its id matches.<br/>*e.g.* `after+(@base, nextStep)` |
 | `#SELECTOR` | tag variant | any path        | as the selector | The same matching on [tags](./configuration#tags), with AND across tags, descending through nesting.<br/>*e.g.* `#all(metric&primary)` |
-| `outputs(nqName)`, `inputs(nqName)` | io wildcard | last segment of `from` / `to`, with `(template)` | one query per io | Every output or input the script `nqName` declares, minus an optional `\|`-list of exclusions.<br/>*e.g.* `inputs(Pkg:Script, debug\|verbose)` |
+| `outputs(nqName)`, `inputs(nqName)` | io wildcard | last segment of `from` / `to`, with `(template)` | one query per io | Every output or input the script `nqName` declares, minus an optional `\|`-list of exclusions. An exclusion is an io name, `$nonscalar` (dataframes, columns and other non-scalar ios), or `$linked` (ios that a data link without `$linked` writes, dropped after matching).<br/>*e.g.* `inputs(Pkg:Script, debug\|verbose)`, `inputs(Pkg:Solver, preset\|$nonscalar\|$linked)` |
 
 - Reference selectors take the base query name as their first argument,
   prefixed with `@`. Plain selectors must not take one.
@@ -107,7 +107,7 @@ empty path. These forms are equivalent:
 | `actions` of validators | a node, any selector | `optional` |
 | `showWhen`, `hideWhen` of actions | a node; no io wildcards | `optional` |
 | `from` / `to` of `funccall` actions | a node with `call`, or a script io | `optional`, `call` |
-| `from` / `to` of rules | a script io | `optional` only; `call` is added by the expansion for validator sources |
+| `from` / `to` of rules | a script io | `optional`, `template`; `call` is added by the expansion for validator sources |
 | `io`, `check.table` and `vars` values of checks | a script io | none; written without an alias |
 
 Two rules hold across the table. `base` is evaluated first and must

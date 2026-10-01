@@ -98,10 +98,14 @@ export const InputForm = Vue.defineComponent({
         .forEach((param) => {
           const input = form.getInput(param.property.name);
           const paramItems = meta[param.property.name]?.['items'];
+          const emptyChoice = meta[param.property.name]?.['emptyChoice'];
           if (input.inputType === DG.InputType.Choice) {
             input.notify = false;
             const currentValue = param.value;
             try {
+              // set before the items, so the empty option leads the list
+              if (emptyChoice != null)
+                input.nullable = !!emptyChoice;
               if (paramItems)
                 (input as DG.ChoiceInput<any>).items = paramItems;
               else if (param.property.options.choices && skipInit.value) {
@@ -111,8 +115,10 @@ export const InputForm = Vue.defineComponent({
                   items = JSON.parse(param.property.options.choices);
                   isParsed = true;
                 } catch {}
-                if (isParsed)
+                if (isParsed) {
+                  input.nullable = true;
                   (input as DG.ChoiceInput<any>).items = items;
+                }
               }
             } catch(e) {
               console.error(e);

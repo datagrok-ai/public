@@ -75,10 +75,72 @@ function resolveValidators(
   return annotationVerdicts(controller, spec);
 }
 
+export type ChoicesVerdict = {
+  items: string[], values: Record<string, any>, inList: boolean, row: Record<string, any> | null,
+};
+type ChoicesResult = Awaited<ReturnType<DG.FuncCall['evalParamChoices']>>;
+type ChoicesEntry = {deps: string[], values: any[], result: Promise<ChoicesResult>, landed?: ChoicesResult};
+
+// one evaluation per call and io, shared by the links reading it and redone only when a param
+// named in its `dependsOn` changes, as the function form does
+const choicesCache = new WeakMap<DG.FuncCall, Map<string, ChoicesEntry>>();
+let warnedNoChoices = false;
+
+function choicesVerdict(r: ChoicesResult, value: any): ChoicesVerdict {
+  const key = value == null || value === '' ? undefined : String(value);
+  return {
+    items: r.items, values: r.values,
+    inList: key === undefined || r.items.includes(key),
+    row: key === undefined ? null : r.lookup?.[key] ?? null,
+  };
+}
+
+function resolveChoices(
+  controller: IControllerBase, spec: ChoicesSource,
+): ChoicesVerdict | Promise<ChoicesVerdict> | undefined {
+  if (!spec.call || !controller.hasCall(spec.call))
+    return undefined;
+  const call = controller.getFirst<DG.FuncCall | undefined>(spec.call);
+  const io = controller.getMatchedPositions(spec.input)[0]?.ioName;
+  if (!call || !io)
+    return undefined;
+  if (typeof (call as any).evalParamChoices !== 'function') {
+    if (!warnedNoChoices) {
+      warnedNoChoices = true;
+      console.warn('RTD: FuncCall.evalParamChoices is not available on this platform, annotation choices are skipped');
+    }
+    return undefined;
+  }
+  const value = controller.getFirst(spec.input);
+  const byIo = choicesCache.get(call) ?? new Map<string, ChoicesEntry>();
+  choicesCache.set(call, byIo);
+  let entry = byIo.get(io);
+  if (!entry || entry.deps.some((dep, idx) => call.inputs[dep] !== entry!.values[idx])) {
+    const snapshot = Object.fromEntries(call.func.inputs.map((prop) => [prop.name, call.inputs[prop.name]]));
+    const created: ChoicesEntry = {deps: [], values: [], result: call.evalParamChoices(io)};
+    created.result.then((r) => {
+      created.deps = r.dependsOn;
+      created.values = r.dependsOn.map((dep) => snapshot[dep]);
+      created.landed = r;
+    }, () => byIo.delete(io));
+    byIo.set(io, created);
+    entry = created;
+  }
+  return entry.landed ? choicesVerdict(entry.landed, value) : entry.result.then((r) => choicesVerdict(r, value));
+}
+
 type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];
+type ChoicesSource = Extract<RuleSource, {choices: any}>['choices'];
 type JsSource = Extract<RuleSource, {js: any}>['js'];
 type FuncSource = Extract<RuleSource, {func: any}>['func'];
 type QuerySource = Extract<RuleSource, {query: any}>['query'];
+type TableSource = Extract<RuleSource, {table: any}>['table'];
+
+function resolveTable(spec: TableSource) {
+  if (spec instanceof DG.DataFrame)
+    return spec;
+  return typeof spec === 'string' ? DG.DataFrame.fromCsv(spec) : DG.DataFrame.fromCsv(spec.csv, spec.options);
+}
 
 function resolveFile(path: string) {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(path) ? grok.data.loadTable(path) : grok.data.files.openTable(path);
@@ -86,7 +148,7 @@ function resolveFile(path: string) {
 
 // a source that reads no input is loaded once per link
 function isConstant(source: RuleSource) {
-  if ('file' in source)
+  if ('file' in source || 'table' in source)
     return true;
   const args = 'func' in source ? source.func.args : 'query' in source ? source.query.args : undefined;
   return args !== undefined && Object.values(args).every((expr) => !usedAliases(expr).length);
@@ -128,6 +190,8 @@ async function resolveQuery(spec: QuerySource, ctx: RuleContext) {
   return connection.query('adhoc', sql).apply(args);
 }
 
+const sourceKinds = ['validators', 'choices', 'js', 'func', 'query', 'file', 'table'];
+
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
  *  Returns a plain object when nothing had to be awaited. */
 export function resolveSources(
@@ -136,7 +200,7 @@ export function resolveSources(
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];
   for (const [alias, source] of Object.entries(sources ?? {})) {
-    if (!('validators' in source) && !('js' in source) && !('func' in source) && !('query' in source) && !('file' in source))
+    if (!sourceKinds.some((kind) => kind in source))
       throw new Error(`Unknown rule source ${JSON.stringify(source)} for alias ${alias}`);
     const cache = controller.sourceCache;
     const constant = !!cache && isConstant(source);
@@ -148,7 +212,9 @@ export function resolveSources(
         'func' in source ? resolveFunc(source.func, ctx) :
           'query' in source ? resolveQuery(source.query, ctx) :
             'file' in source ? resolveFile(source.file) :
-              resolveValidators(controller, source.validators);
+              'table' in source ? resolveTable(source.table) :
+                'choices' in source ? resolveChoices(controller, source.choices) :
+                  resolveValidators(controller, source.validators);
       if (constant) {
         cache.set(alias, value);
         if (value instanceof Promise)

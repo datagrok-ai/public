@@ -294,6 +294,9 @@ importers:
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../utils
+      '@types/json-logic-js':
+        specifier: ^2.0.8
+        version: 2.0.8
       '@types/lodash.clonedeepwith':
         specifier: ^4.5.9
         version: 4.5.9
@@ -361,9 +364,6 @@ importers:
       '@datagrok-libraries/codegen-async-to-sync':
         specifier: workspace:^
         version: link:../codegen-async-to-sync
-      '@types/json-logic-js':
-        specifier: ^2.0.8
-        version: 2.0.8
       '@types/lodash.isequal':
         specifier: ^4.5.8
         version: 4.5.8

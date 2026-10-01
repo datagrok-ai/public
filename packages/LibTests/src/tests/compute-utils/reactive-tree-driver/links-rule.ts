@@ -316,6 +316,30 @@ category('ComputeUtils: Driver links rule', async () => {
     expectDeepEqual(restrictions, [['restricted', 'restricted'], [undefined, undefined]]);
   });
 
+  test('Assign matches keys ignoring case on request', async () => {
+    const rule = (ignoreCase?: boolean) => getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: 'm:step1/a',
+      to: '_(template):step2/a|b',
+      sources: {row: {js: {args: ['m'], fn: (m: number) => ({A: m, b: m + 1})}}},
+      effects: [{effect: 'assign', values: {var: 'row'}, ignoreCase}],
+    }]));
+    const written: any[] = [];
+    for (const pconf of [await rule(), await rule(true)]) {
+      testScheduler.run((helpers) => {
+        const {cold} = helpers;
+        const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+        tree.init().subscribe();
+        const inStore = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+        const outStore = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+        cold('-a').subscribe(() => inStore.setState('a', 1));
+        cold('--a').subscribe(() => written.push([outStore.getState('a'), outStore.getState('b')]));
+      });
+    }
+    expectDeepEqual(written, [[undefined, 2], [1, 2]]);
+  });
+
   test('Assign honours explicit targets', async () => {
     const pconf = await getProcessedConfig(twoSteps([{
       id: 'r',
@@ -421,6 +445,8 @@ category('ComputeUtils: Driver links rule', async () => {
     expectDeepEqual(evaluate({columnsMissing: [{var: 'missing'}, spec]}, ctx),
       ['x (double)', 'n (string)', 's (Text)', 'q', 'x']);
     expectDeepEqual(evaluate({columnsMissing: [{var: 'df'}, []]}, ctx), []);
+    expectDeepEqual(evaluate({column: [{var: 'df'}, 'S']}, ctx), ['a', 'b', 'c']);
+    expectDeepEqual(evaluate({columnsMissing: [{var: 'df'}, [['X', 'double'], 'S', ['N', 'string']]]}, ctx), ['N (string)']);
     expectDeepEqual(evaluate({column: [{var: 'df'}, 's']}, ctx), ['a', 'b', 'c']);
     expectDeepEqual(evaluate({column: [{var: 'df'}, 'missing']}, ctx), []);
     expectDeepEqual(evaluate({column: [{var: 'missing'}, 's']}, ctx), []);

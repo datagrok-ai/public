@@ -447,6 +447,38 @@ export function TestNamedValidators(x: number, y: number): number {
   return x + y;
 }
 
+// annotation values
+
+//input: string region
+//output: list<string> res
+export function MockCities(region: string): string[] {
+  return region ? [`${region}-1`, `${region}-2`] : [];
+}
+
+//output: dataframe res
+export function MockCars(): DG.DataFrame {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'model', ['Mazda', 'Volvo']),
+    DG.Column.fromList('int', 'mpg', [21, 30]),
+    DG.Column.fromList('int', 'CYL', [6, 4]),
+  ]);
+}
+
+//input: int calc = 2 + 2
+//input: string bare = high
+//input: string metric = minkowski {choices: ["euclidean", "minkowski"]}
+//input: string speed {choices: ["slow", "fast"]}
+//input: string region = "EU"
+//input: string city {choices: LibTests:MockCities}
+//input: string model {choices: LibTests:MockCars(); propagateChoice: all}
+//input: int mpg
+//input: int cyl
+//output: string res
+export function TestValueAnnotations(calc: number, bare: string, metric: string, speed: string, region: string,
+  city: string, model: string, mpg: number, cyl: number): string {
+  return `${model} ${mpg} ${cyl}`;
+}
+
 //input: int x
 //output: bool res
 export function MockValidatorBool(x: number): boolean {
