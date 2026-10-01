@@ -2,7 +2,7 @@
 
 ## v.next
 
-* TreeWizard: Opt-in compact view for single-step workflows (`compactView: true`; no tree or navigation; save, share and export unified on the step ribbon)
+* TreeWizard: Opt-in compact view for single-step workflows (`compactView: true`; no tree or navigation; save, share, history and export on the step ribbon, history always available)
 * RFV: Default Excel export includes validation and consistency
 
 ## 1.6.0 (2026-09-23)
