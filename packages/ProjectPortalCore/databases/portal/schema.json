@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -54,7 +54,8 @@
         "code": {"type": "string", "required": true},
         "name": {"type": "string", "required": true, "isName": true},
         "kind": {"type": "string", "choices": ["document", "data_condition", "decision"], "required": true},
-        "rule": {"type": "string", "description": "For data conditions: the declarative predicate over the program dataset"},
+        "rule": {"type": "string", "description": "For data conditions: the rule as a person reads it"},
+        "condition": {"type": "json", "description": "For data conditions: the rule as the portal evaluates it over the program dataset (scope, where, measured, minCount). Without it the criterion is recorded by hand"},
         "required": {"type": "bool", "default": true},
         "modality": {"type": "string", "description": "Applies only to programs of this modality (matches program.modality); empty = every modality"}
       }
@@ -76,6 +77,7 @@
         "program_noun": {"type": "string", "default": "Program", "description": "What this portfolio calls a program: Project, Program, Molecule"},
         "workspace_root": {"type": "string", "description": "Name of the root space the workspace builder creates the portfolio's tree under"},
         "workstreams": {"type": "string", "description": "Folders the builder creates under every program, '|'-separated (Chemistry|Biology|DMPK)"},
+        "program_data": {"type": "json", "description": "The program dataset query data conditions are evaluated over: connection, sql with @program, leadRoles"},
         "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
         "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
         "approvers": {"type": "group", "onDelete": "setnull", "description": "Records gate decisions"},

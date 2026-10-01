@@ -128,6 +128,7 @@ export interface GateCriterionRow {
   name: string;
   kind: GateCriterionKind;
   rule?: string;
+  condition?: {[key: string]: any};
   required?: boolean;
   modality?: string;
 }
@@ -139,12 +140,13 @@ export interface GateCriterionInsert {
   name: string;
   kind: GateCriterionKind;
   rule?: string;
+  condition?: {[key: string]: any};
   required?: boolean;
   modality?: string;
 }
 
 export type GateCriterionColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'stage_id' |
-  'code' | 'name' | 'kind' | 'rule' | 'required' | 'modality';
+  'code' | 'name' | 'kind' | 'rule' | 'condition' | 'required' | 'modality';
 
 /** Expand keys of `portal.gate_criterion` → fields each adds to the row (consumed by query()/builder). */
 export type GateCriterionExpand = {
@@ -171,6 +173,7 @@ export interface PortfolioRow {
   program_noun?: string;
   workspace_root?: string;
   workstreams?: string;
+  program_data?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -188,6 +191,7 @@ export interface PortfolioInsert {
   program_noun?: string;
   workspace_root?: string;
   workstreams?: string;
+  program_data?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -196,7 +200,7 @@ export interface PortfolioInsert {
 
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
-  'workstreams' | 'viewers' | 'contributors' | 'approvers' | 'description';
+  'workstreams' | 'program_data' | 'viewers' | 'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -249,8 +253,9 @@ export type RegistryFeedExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
-    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.workstreams'?: string; 'portfolio_id.program_data'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -310,8 +315,9 @@ export type ProgramExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
-    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.workstreams'?: string; 'portfolio_id.program_data'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -427,7 +433,8 @@ export type CriterionStatusExpand = {
     'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'gate_criterion_id': {'gate_criterion_id.stage_id'?: string; 'gate_criterion_id.code'?: string;
     'gate_criterion_id.name'?: string; 'gate_criterion_id.kind'?: GateCriterionKind;
-    'gate_criterion_id.rule'?: string; 'gate_criterion_id.required'?: boolean; 'gate_criterion_id.modality'?: string};
+    'gate_criterion_id.rule'?: string; 'gate_criterion_id.condition'?: {[key: string]: any};
+    'gate_criterion_id.required'?: boolean; 'gate_criterion_id.modality'?: string};
   'owner': {'owner.login'?: string; 'owner.firstName'?: string; 'owner.lastName'?: string; 'owner.status'?: string;
     'owner.createdOn'?: Dayjs; 'owner.picture'?: string; 'owner.group'?: string; 'owner.author'?: string};
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};

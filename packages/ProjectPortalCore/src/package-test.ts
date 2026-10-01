@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import './tests/model-tests';
 import './tests/portal-tests';
 import './tests/schema-tests';
+import './tests/readiness-tests';
 
 export let _package = new DG.Package();
 export { tests };

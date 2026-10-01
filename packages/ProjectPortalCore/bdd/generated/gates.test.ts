@@ -43,4 +43,18 @@ test.describe("Gate decisions follow the portfolio", () => {
     await session.step(27, "When user clicks on assay criterion met button", () => clickOn(page, el("assay criterion met button")));
     await session.step(28, "Then advance button should be enabled", () => shouldBe(page, el("advance button"), "enabled"));
   });
+  test("Data conditions are evaluated from the program's data", {tag: ["@portal"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(8, "Given user opens the Project Portal app", () => openApp(page));
+    enter(page, "Project Portal app");
+    await session.step(31, "When user clicks on small molecule discovery portfolio", () => clickOn(page, el("small molecule discovery portfolio")));
+    await session.step(32, "And user clicks on EXS-KIN1 card", () => clickOn(page, el("EXS-KIN1 card")));
+    await session.step(33, "And user clicks on LO step", () => clickOn(page, el("LO step")));
+    await session.step(34, "Then gate heading should contain text \"What entering Lead Optimization takes\"", () => shouldContainText(page, el("gate heading"), "What entering Lead Optimization takes"));
+    await session.step(35, "And readiness score should contain text \"0 of 1 required\"", () => shouldContainText(page, el("readiness score"), "0 of 1 required"));
+    await session.step(36, "And ADME panel criterion detail should contain text \"EXC-1006 lacks\"", () => shouldContainText(page, el("ADME panel criterion detail"), "EXC-1006 lacks"));
+    await session.step(37, "When user clicks on H2L step", () => clickOn(page, el("H2L step")));
+    await session.step(38, "Then readiness score should contain text \"2 of 2 required\"", () => shouldContainText(page, el("readiness score"), "2 of 2 required"));
+    await session.step(39, "And potency criterion should contain text \"from data\"", () => shouldContainText(page, el("potency criterion"), "from data"));
+  });
 });

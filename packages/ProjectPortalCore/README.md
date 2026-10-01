@@ -14,7 +14,7 @@ one customer runs discovery and CMC together.
 |---|---|---|
 | `stage_model` | A named, versioned stage-gate process. Portfolios may share one. | table, all users view |
 | `stage` | A stage or gate of a model. Keyed by `(stage_model_id, code)`, so `LO` exists in both discovery models. | table |
-| `gate_criterion` | What must hold to enter a stage: `document`, `data_condition` or `decision`. | table |
+| `gate_criterion` | What must hold to enter a stage: `document`, `data_condition` or `decision`. A data condition may carry a structured `condition` the portal evaluates. | table |
 | `portfolio` | Setting, stage model, **stage authority** (`feed` or `portal`), groups, program noun. | table |
 | `registry_feed` | SQL against a named connection that yields the portfolio's programs. | table |
 | `program` | Keyed by `(portfolio_id, code)`. `predecessor_id` links a program that continues in another portfolio. | **row, private by default** |
@@ -43,6 +43,32 @@ one customer runs discovery and CMC together.
   - Compounds, plates, results and predictions are never folders.
   - It is additive: it creates what is missing and never renames, moves or deletes. It records each program's folder on the program row (`space_id`), so a program renamed in its registry keeps its folder, and the report names the difference.
   - The root is shared View to viewers and Edit to contributors, and its folders inherit that. Unlike program rows, spaces accept the grant, so the workspace is isolated per portfolio today.
+
+### Data conditions and readiness
+
+A data condition is evaluated, not ticked. The portfolio declares a **program dataset**
+(`programData`): one SQL on a named connection, with `@program` standing for the program's code,
+returning one row per compound, lot or whatever unit the criteria count. A criterion's `condition`
+is a declarative predicate over those rows, the one rule language of 07 §2.10:
+
+```json
+{"scope": "lead_set", "measured": ["solubility_um", "papp", "clint"], "minCount": 10}
+{"scope": "series", "where": [{"column": "series_maturity", "op": "in", "value": ["validated", "lead"]}], "minCount": 3}
+{"where": [{"column": "purpose", "op": "=", "value": "tox"}, {"column": "released", "op": "=", "value": true}]}
+```
+
+- **Scope.** `program` counts every row. `lead_set` counts rows whose `role` is a lead role (`leadRoles`,
+  default lead, backup, candidate). `series` groups rows by `series`, and needs `minSeries` series
+  (default 1) to reach `minCount` each.
+- **Operators.** `<` `<=` `>` `>=` `=` `!=` `in` `not_in` `present` `absent`. A blank never compares.
+- **Measured.** A row qualifies only with a value in every measured column; the rows that miss one
+  are named in the gap list.
+- **Readiness** (`programReadiness`) evaluates every criterion of a stage: data conditions from the
+  data, documents and decisions from `criterion_status`. A recorded waiver wins; a recorded "met"
+  does not outvote the data. It returns met over required, a score, and the gap list.
+- **The gate uses it.** Advancing needs the evaluated conditions met (or waived). On advance the
+  portal writes what the data said into `criterion_status.evidence`, beside the decision.
+- A data condition with only a free-text `rule` is still recorded by hand.
 
 ## Configuration
 
@@ -78,6 +104,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `Project Portal` (app) | Portfolios, the selected portfolio's own board, and the gate for the selected program, with a link to the program's workspace. `/apps/ProjectPortalCore/Portal/<code>` opens one portfolio. |
 | `loadPortfolios` | Loads this package's portfolio files: groups, stage models, portfolios, feeds. Idempotent. |
 | `loadPortfolioConfigs(configs)` | Loads portfolios handed over by another package, as a JSON array, checked as a set |
+| `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's feeds. With `dryRun` it prints the plan without applying it. |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
@@ -88,7 +115,8 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 ## Tests
 
 - **`grok test`: package tests.**
-  - Configuration rules, the sync planner, and gate rules. These are pure functions.
+  - Configuration rules, the sync planner, gate rules, data conditions and readiness. These are pure functions.
+  - Readiness on the example data: hit-to-lead and lead-optimization conditions, development lots, the gate.
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
   - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds.
@@ -96,7 +124,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-09-30, 47 of the 50 package tests and all 8 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-01, 63 of the 66 package tests and all 9 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

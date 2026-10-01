@@ -7,7 +7,9 @@ import {
   FeedConfig, PortfolioConfig, SourceConfig, StageModelConfig, validatePortfolio, validatePortfolioSet,
 } from './model/config';
 import {FeedRow, planSync, ProgramRef, StageRef, summarizePlan, SyncPlan} from './model/sync-plan';
-import {checkDecision, Decision, GateVerdict, CriterionState, statusAfter} from './model/gates';
+import {checkDecision, Decision, GateVerdict, CriterionState, nextStage, statusAfter} from './model/gates';
+import {DataCondition, DataRow, DEFAULT_LEAD_ROLES, ProgramDataConfig} from './model/conditions';
+import {computeReadiness, Readiness} from './model/readiness';
 import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
@@ -123,7 +125,8 @@ export async function loadStageModel(m: StageModelConfig, report: string[]): Pro
     });
     for (const c of s.criteria ?? []) {
       await upsertByKey(portalDb.gateCriterions, {stage_id: stageId, code: c.code},
-        {name: c.name, kind: c.kind, rule: c.rule ?? null, required: c.required ?? true});
+        {name: c.name, kind: c.kind, rule: c.rule ?? null, condition: c.condition ?? null,
+          required: c.required ?? true, modality: c.modality ?? null});
     }
   }
   report.push(`stage model ${m.code}: ${m.stages.length} stages`);
@@ -142,6 +145,7 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     name: c.name, setting: c.setting, modality_class: c.modalityClass ?? null, stage_model_id: modelId,
     stage_authority: c.stageAuthority, program_noun: c.programNoun ?? 'Program',
     workspace_root: c.workspaceRoot ?? null, workstreams: (c.workstreams ?? []).join('|') || null,
+    program_data: c.programData ?? null,
     description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,
   });
@@ -311,15 +315,55 @@ async function applyPlan(plan: SyncPlan, portfolio: PortfolioRow): Promise<void>
 }
 
 // ---------------------------------------------------------------------------------------------
-// Gate decisions
+// Program data and readiness
+
+/** A SQL string literal: the program code goes into the portfolio's query as a quoted value. */
+const sqlLiteral = (v: string) => `'${v.replace(/'/g, '\'\'')}'`;
+
+/** One program's rows of its portfolio's program dataset; null when the portfolio declares none. */
+export async function programData(portfolio: PortfolioRow, programCode: string): Promise<DataRow[] | null> {
+  const config = portfolio.program_data as ProgramDataConfig | undefined;
+  if (!config?.sql)
+    return null;
+  return runSql(config.connection, config.sql.replace(/@program\b/g, sqlLiteral(programCode)));
+}
+
+export interface ContextCriterion {
+  id: string;
+  stageId: string;
+  code: string;
+  name: string;
+  kind: string;
+  required: boolean;
+  rule: string | null;
+  condition: DataCondition | null;
+}
+
+/** Whether a criterion declared for [modality] applies to a program of [programModality]. */
+export const appliesTo = (modality: string | null | undefined, programModality: string | null | undefined) =>
+  !modality || (programModality ?? '').toLowerCase().replace(/[^a-z0-9]/g, '') ===
+    modality.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 export interface ProgramContext {
   program: ProgramRow;
   portfolio: PortfolioRow;
   stages: StageRow[];
-  criteria: {id: string, stageId: string, code: string, name: string, kind: string, required: boolean}[];
+  /** The criteria that apply to this program: every stage, filtered by modality. */
+  criteria: ContextCriterion[];
+  /** Criterion states as recorded, with the next stage's evaluated data conditions folded in. */
   states: Record<string, CriterionState>;
+  /** As recorded in criterion_status. */
+  recorded: Record<string, CriterionState>;
+  /** Readiness for the next stage, or null at the end of the model. */
+  readiness: Readiness | null;
   approver: boolean;
+}
+
+export function readinessFor(ctx: Pick<ProgramContext, 'portfolio' | 'criteria' | 'recorded'>, stageId: string | null,
+  rows: DataRow[] | null, dataError?: string): Readiness {
+  const leadRoles = (ctx.portfolio.program_data as ProgramDataConfig | undefined)?.leadRoles ?? DEFAULT_LEAD_ROLES;
+  return computeReadiness(stageId, ctx.criteria.filter((c) => c.stageId === stageId), ctx.recorded, rows,
+    leadRoles, dataError);
 }
 
 export async function programContext(programId: string): Promise<ProgramContext> {
@@ -332,14 +376,59 @@ export async function programContext(programId: string): Promise<ProgramContext>
   const stageIds = stages.map((s) => `"${s.id}"`).join(', ');
   const criteria = stageIds === '' ? [] :
     await portalDb.gateCriterions.query({filter: `stage_id in (${stageIds})`});
-  return {
-    program, portfolio, stages,
-    criteria: criteria.map((c) => ({id: c.id, stageId: c.stage_id, code: c.code, name: c.name, kind: c.kind,
-      required: c.required !== false})),
-    states: Object.fromEntries(states.map((s) => [s.gate_criterion_id, s.status as CriterionState])),
+  const recorded = Object.fromEntries(states.map((s) => [s.gate_criterion_id, s.status as CriterionState]));
+  const ctx: ProgramContext = {
+    program, portfolio, stages, recorded, states: recorded, readiness: null,
+    criteria: criteria.filter((c) => appliesTo(c.modality, program.modality)).map((c) => ({
+      id: c.id, stageId: c.stage_id, code: c.code, name: c.name, kind: c.kind, required: c.required !== false,
+      rule: c.rule ?? null, condition: (c.condition as DataCondition | undefined) ?? null})),
     approver: await isApprover(portfolio),
   };
+  const next = nextStage(stages.map((s) => ({id: s.id, code: s.code, name: s.name, ordinal: s.ordinal})),
+    program.stage_id ?? null);
+  if (next) {
+    const needsData = ctx.criteria.some((c) => c.stageId === next.id && c.condition);
+    let rows: DataRow[] | null = null;
+    let dataError: string | undefined;
+    if (needsData) {
+      try {
+        rows = await programData(portfolio, program.code);
+      } catch (e: any) {
+        dataError = e?.message ?? String(e);
+      }
+    }
+    ctx.readiness = readinessFor(ctx, next.id, rows, dataError);
+    ctx.states = ctx.readiness.states;
+  }
+  return ctx;
 }
+
+/** Readiness of a program for [stageCode], or for its next stage. */
+export async function programReadiness(portfolioCode: string, programCode: string, stageCode?: string):
+  Promise<{program: ProgramRow, stage: StageRow, readiness: Readiness}> {
+  const portfolio = await portfolioByCode(portfolioCode);
+  const program = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${programCode}"`}))[0];
+  if (!program)
+    throw new Error(`${portfolioCode} has no program ${programCode}, or it is not shared with you`);
+  const ctx = await programContext(program.id);
+  const stage = stageCode ? ctx.stages.find((s) => s.code === stageCode) :
+    ctx.stages.find((s) => s.id === ctx.readiness?.stageId);
+  if (!stage)
+    throw new Error(stageCode ? `${stageCode} is not a stage of ${programCode}'s model` : `${programCode} is at its last stage`);
+  if (stage.id === ctx.readiness?.stageId)
+    return {program, stage, readiness: ctx.readiness};
+  let rows: DataRow[] | null = null;
+  let dataError: string | undefined;
+  try {
+    rows = await programData(portfolio, program.code);
+  } catch (e: any) {
+    dataError = e?.message ?? String(e);
+  }
+  return {program, stage, readiness: readinessFor(ctx, stage.id, rows, dataError)};
+}
+
+// ---------------------------------------------------------------------------------------------
+// Gate decisions
 
 export function verdictFor(ctx: ProgramContext, decision: Decision, targetStageId?: string | null,
   rationale?: string): GateVerdict {
@@ -359,6 +448,13 @@ export async function recordDecision(programId: string, decision: Decision, targ
   if (!verdict.allowed)
     throw new Error(verdict.reasons.join('; '));
   const now = new Date().toISOString();
+  // what the data said when the gate was passed, kept beside the decision
+  if (decision === 'advance' && ctx.readiness) {
+    for (const c of ctx.readiness.criteria.filter((c) => c.basis === 'evaluated' && c.result)) {
+      await portalDb.criterionStatuses.upsert({program_id: programId, gate_criterion_id: c.id,
+        status: c.state === 'met' ? 'met' : 'not_met', evidence: `Evaluated at the gate ${now.slice(0, 10)}: ${c.result!.summary}`});
+    }
+  }
   await portalDb.stageTransitions.insert({program_id: programId, from_stage_id: ctx.program.stage_id,
     to_stage_id: verdict.toStageId ?? ctx.program.stage_id, decision, decided_by: DG.User.current().id,
     decided_on: now as any, rationale});

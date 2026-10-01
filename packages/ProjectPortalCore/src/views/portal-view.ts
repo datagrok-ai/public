@@ -7,8 +7,10 @@ import {badge, button, Control, divV, divH, signal, span} from '@datagrok-librar
 import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
-import {programContext, ProgramContext, recordDecision, setCriterion, stagesOf, summarizePlan,
-  syncPortfolio, verdictFor} from '../portal';
+import {programContext, ProgramContext, programData, readinessFor, recordDecision, setCriterion, stagesOf,
+  summarizePlan, syncPortfolio, verdictFor} from '../portal';
+import {CriterionReadiness, Readiness} from '../model/readiness';
+import {DataRow} from '../model/conditions';
 import {Decision, nextStage} from '../model/gates';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
@@ -41,6 +43,10 @@ export class PortalView {
   private stages: StageRow[] = [];
   private programs: ProgramRow[] = [];
   private selected: string | null = null;
+  /** The stage whose criteria the gate panel shows; null = the program's next stage. */
+  private viewedStage: string | null = null;
+  /** The selected program's dataset, read once per open; undefined = not read yet. */
+  private data: {rows: DataRow[] | null, error?: string} | undefined;
 
   constructor() {
     this.root.append(this.portfolioList, this.board, this.detail);
@@ -145,8 +151,11 @@ export class PortalView {
     return el;
   }
 
-  async openProgram(id: string): Promise<void> {
+  async openProgram(id: string, viewedStage: string | null = null): Promise<void> {
+    if (id !== this.selected)
+      this.data = undefined;
     this.selected = id;
+    this.viewedStage = viewedStage;
     for (const el of Array.from(this.board.querySelectorAll('.pp-card')))
       el.classList.remove('pp-selected');
     const program = this.programs.find((x) => x.id === id);
@@ -156,37 +165,49 @@ export class PortalView {
     const transitions = (await portalDb.stageTransitions.query({filter: `program_id = "${id}"`}))
       .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
     const successors = await portalDb.programs.query({filter: `predecessor_id = "${id}"`}).catch(() => []);
-    this.renderDetail(ctx, transitions, successors);
+    const readiness = await this.readinessOf(ctx, viewedStage);
+    this.renderDetail(ctx, transitions, successors, readiness);
   }
 
-  private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[]): void {
+  /** Readiness for the viewed stage: the context already holds the next stage's. */
+  private async readinessOf(ctx: ProgramContext, stageId: string | null): Promise<Readiness | null> {
+    if (stageId === null || stageId === ctx.readiness?.stageId)
+      return ctx.readiness;
+    if (ctx.criteria.some((c) => c.stageId === stageId && c.condition) && this.data === undefined) {
+      try {
+        this.data = {rows: await programData(ctx.portfolio, ctx.program.code)};
+      } catch (e: any) {
+        this.data = {rows: null, error: e?.message ?? String(e)};
+      }
+    }
+    return readinessFor(ctx, stageId, this.data?.rows ?? null, this.data?.error);
+  }
+
+  private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
+    readiness: Readiness | null): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
     const stageName = (id?: string | null) => stages.find((s) => s.id === id)?.name ?? '—';
 
+    const viewed = stages.find((s) => s.id === (readiness?.stageId ?? null)) ?? null;
     const track = named(divH(stages.map((s) => {
       const cls = s.id === program.stage_id ? 'pp-step pp-step-current' :
         current && s.ordinal < current.ordinal ? 'pp-step pp-step-done' : 'pp-step';
-      const step = span(s.code, cls);
-      step.title = s.name;
+      const step = named(span(s.code, cls + (s.id === viewed?.id ? ' pp-step-viewed' : '')), `step-${slug(s.code)}`);
+      step.title = `${s.name}: show what entering it takes`;
+      step.onclick = () => void this.openProgram(program.id, s.id === next?.id ? null : s.id);
       return step;
     }), 'pp-track'), 'stage-track');
 
-    const criteria = next ? ctx.criteria.filter((c) => c.stageId === next.id) : [];
-    const criteriaList = named(divV(criteria.map((c) => {
-      const state = ctx.states[c.id] ?? 'not_started';
-      const row = named(divH([
-        badge(state, {variant: state === 'met' ? 'success' : state === 'waived' ? 'accent' : state === 'not_met' ? 'error' : state === 'in_progress' ? 'warning' : 'default'}),
-        span(`${c.name}${c.required ? '' : ' (optional)'}`),
-        span(c.kind.replace('_', ' '), 'pp-muted'),
-      ], 'pp-criterion'), `criterion-${slug(c.code)}`);
-      if (ctx.approver && ctx.portfolio.stage_authority === 'portal') {
-        row.append(named(button('Met', () => void this.mark(program.id, c.id, 'met')), `mark-met-${slug(c.code)}`),
-          named(button('Waive', () => void this.mark(program.id, c.id, 'waived')), `mark-waived-${slug(c.code)}`));
-      }
-      return row;
-    }), 'pp-criteria'), 'gate-criteria');
+    const editable = ctx.approver && ctx.portfolio.stage_authority === 'portal';
+    const criteriaList = named(divV((readiness?.criteria ?? []).map((c) => this.criterionRow(program.id, c, editable)),
+      'pp-criteria'), 'gate-criteria');
+    const score = readiness ? named(divH([
+      span(`${readiness.requiredMet} of ${readiness.requiredTotal} required met or waived`),
+      badge(`${Math.round(readiness.score * 100)}%`,
+        {variant: readiness.score === 1 ? 'success' : readiness.score === 0 ? 'error' : 'warning'}),
+    ], 'pp-readiness'), 'readiness-score') : null;
 
     const rationale = named(document.createElement('textarea'), 'rationale-input');
     rationale.placeholder = 'Rationale';
@@ -232,14 +253,42 @@ export class PortalView {
       ...(program.source_stage ? [span(`Registry stage: ${program.source_stage}`, 'pp-muted')] : []),
       ...lineage,
       track,
-      span(next ? `Gate to ${next.name}` : 'No further stage', 'pp-heading'),
-      criteria.length ? criteriaList : span('No criteria declared', 'pp-muted'),
+      named(span(!viewed ? 'No further stage' : viewed.id === next?.id ? `Gate to ${viewed.name}` :
+        `What entering ${viewed.name} takes`, 'pp-heading'), 'gate-heading'),
+      ...(score && readiness!.criteria.length ? [score] : []),
+      readiness?.criteria.length ? criteriaList : span('No criteria declared', 'pp-muted'),
+      ...(readiness?.dataError ? [named(span(`Program data could not be read: ${readiness.dataError}`, 'pp-reason'),
+        'data-error')] : []),
       reasons,
       rationale,
       divH([advance, hold, terminate], 'pp-actions'),
       span('History', 'pp-heading'),
       transitions.length ? history : span('No transitions yet', 'pp-muted'),
     );
+  }
+
+  /** One criterion of the gate: its state, and for a data condition what the data says. A computed
+   * condition can only be waived; "Met" is for what a person records. */
+  private criterionRow(programId: string, c: CriterionReadiness, editable: boolean): HTMLElement {
+    const variant: BadgeVariant = c.state === 'met' ? 'success' : c.state === 'waived' ? 'accent' :
+      c.state === 'not_met' ? 'error' : c.state === 'in_progress' ? 'warning' : 'default';
+    const row = named(divH([
+      badge(c.state.replace('_', ' '), {variant}),
+      span(`${c.name}${c.required ? '' : ' (optional)'}`),
+      span(c.basis === 'evaluated' ? 'from data' : c.kind.replace('_', ' '), 'pp-muted'),
+    ], 'pp-criterion'), `criterion-${slug(c.code)}`);
+    if (editable) {
+      if (c.basis === 'recorded' && c.state !== 'met' && c.state !== 'waived')
+        row.append(named(button('Met', () => void this.mark(programId, c.id, 'met')), `mark-met-${slug(c.code)}`));
+      if (c.state !== 'waived' && c.state !== 'met')
+        row.append(named(button('Waive', () => void this.mark(programId, c.id, 'waived')), `mark-waived-${slug(c.code)}`));
+    }
+    if (!c.result && !c.gap)
+      return row;
+    const lines = [c.result ? span(c.result.summary, 'pp-muted') : span(c.gap, 'pp-muted')];
+    if (c.result && !c.result.met && c.result.gaps.length)
+      lines.push(span(c.gap.slice(c.result.summary.length + 2), 'pp-gap'));
+    return divV([row, named(divV(lines, 'pp-criterion-detail'), `criterion-detail-${slug(c.code)}`)], 'pp-criterion-block');
   }
 
   /** Opens the program's folder the way the Browse tree does. A folder deleted by hand is reported,
@@ -255,7 +304,7 @@ export class PortalView {
 
   private async mark(programId: string, criterionId: string, state: 'met' | 'waived'): Promise<void> {
     await setCriterion(programId, criterionId, state);
-    await this.openProgram(programId);
+    await this.openProgram(programId, this.viewedStage);
   }
 
   async sync(): Promise<void> {

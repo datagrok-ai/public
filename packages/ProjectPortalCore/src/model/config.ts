@@ -1,5 +1,6 @@
 /** A portfolio as its configuration file declares it (files/portfolios/*.json). Pure data and
  * pure checks: nothing here touches the platform, so the rules hold wherever the file is read. */
+import {DataCondition, ProgramDataConfig, validateCondition} from './conditions';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -13,8 +14,14 @@ export interface CriterionConfig {
   code: string;
   name: string;
   kind: CriterionKind;
+  /** The rule as a person reads it. */
   rule?: string;
+  /** The rule as the portal evaluates it over the program dataset; data conditions only. Without
+   * it, a data condition is recorded met or waived by hand. */
+  condition?: DataCondition;
   required?: boolean;
+  /** Applies only to programs of this modality; empty means every modality. */
+  modality?: string;
 }
 
 export interface StageConfig {
@@ -65,6 +72,8 @@ export interface PortfolioConfig {
   groups?: {viewers?: string, contributors?: string, approvers?: string};
   /** Where a program goes when it leaves this portfolio's terminal stage. */
   handoff?: {to: string, fromStage: string};
+  /** The program dataset query that data conditions are evaluated over. */
+  programData?: ProgramDataConfig;
   stageModel: StageModelConfig;
   feeds: FeedConfig[];
 }
@@ -130,6 +139,15 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
       seen.add(key);
     }
   }
+  if (c.programData !== undefined) {
+    need(c.programData.connection, 'programData: connection');
+    need(c.programData.sql, 'programData: sql');
+    if (c.programData.sql && !c.programData.sql.includes('@program'))
+      errors.push('programData: sql must select one program\'s rows with @program');
+  }
+  const conditions = (c.stageModel?.stages ?? []).flatMap((s) => (s.criteria ?? []).filter((cr) => cr.condition));
+  if (conditions.length > 0 && !c.programData)
+    errors.push(`${conditions.length} criteria declare a condition but the portfolio has no programData to evaluate it over`);
   if (c.stageAuthority === 'feed' && (c.feeds ?? []).length === 0)
     errors.push('stageAuthority "feed" needs at least one feed');
   if (c.handoff) {
@@ -182,8 +200,12 @@ export function validateStageModel(m: StageModelConfig): string[] {
       criteria.add(cr.code);
       if (!['document', 'data_condition', 'decision'].includes(cr.kind))
         errors.push(`${where}: criterion ${s.code}/${cr.code} has kind "${cr.kind}"`);
-      if (cr.kind === 'data_condition' && !cr.rule)
+      if (cr.kind === 'data_condition' && !cr.rule && !cr.condition)
         errors.push(`${where}: data condition ${s.code}/${cr.code} has no rule`);
+      if (cr.condition && cr.kind !== 'data_condition')
+        errors.push(`${where}: criterion ${s.code}/${cr.code} is a ${cr.kind}; only data conditions take a condition`);
+      else if (cr.condition)
+        errors.push(...validateCondition(cr.condition).map((e) => `${where}: condition ${s.code}/${cr.code}: ${e}`));
     }
   }
   return errors;

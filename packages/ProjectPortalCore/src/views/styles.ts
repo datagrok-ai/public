@@ -29,6 +29,12 @@ const CSS = `
 .pp-step { font-size: 11px; padding: 2px 6px; border-radius: 3px; background: var(--u2-surface-2, rgba(0,0,0,.05)); }
 .pp-step-done { background: var(--u2-success-bg, #d8f0de); }
 .pp-step-current { background: var(--u2-accent, #2083d5); color: #fff; font-weight: 600; }
+.pp-step { cursor: pointer; }
+.pp-step-viewed { outline: 2px solid var(--u2-accent, #2083d5); outline-offset: 1px; }
+.pp-readiness { gap: 6px; align-items: center; font-size: 12px; }
+.pp-criterion-block { gap: 2px; }
+.pp-criterion-detail { padding-left: 8px; gap: 1px; }
+.pp-gap { font-size: 11px; color: var(--u2-text-muted, #888); }
 .pp-criterion { gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; }
 .pp-reason { color: var(--u2-error, #c0392b); font-size: 12px; }
 .pp-actions { gap: 6px; }

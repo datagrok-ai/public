@@ -1,9 +1,10 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {loadAllPortfolios, loadPortfolioSet, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans} from './portal';
+import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans} from './portal';
 import {portalDb} from './generated/db';
 import {buildPortfolioWorkspace, summarizeWorkspace} from './workspace';
+import {summarizeReadiness} from './model/readiness';
 import {portalAppView} from './views/portal-view';
 import {installStyles} from './views/styles';
 export * from './package.g';
@@ -58,6 +59,17 @@ export async function syncAllPortfolios(): Promise<string> {
   for (const p of portfolios.sort((a, b) => order(a.setting) - order(b.setting)))
     out.push((await syncPortfolioPlans(p.code)).map(summarizePlan).join('\n'));
   return out.join('\n');
+}
+
+//name: programReadiness
+//description: Readiness of one program for a stage (default: its next stage): every criterion met, waived or open, data conditions evaluated over the program dataset, and the gap list
+//input: string portfolio
+//input: string program
+//input: string stage {optional: true}
+//output: string report
+export async function programReadiness(portfolio: string, program: string, stage?: string): Promise<string> {
+  const r = await readinessOf(portfolio, program, stage || undefined);
+  return summarizeReadiness(r.program.code, r.stage.name, r.readiness);
 }
 
 //name: portfolioRoutingAudit

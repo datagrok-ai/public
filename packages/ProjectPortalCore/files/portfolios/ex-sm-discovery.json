@@ -13,6 +13,15 @@
     "contributors": "Portal EX-SMD Contributors",
     "approvers": "Portal EX-SMD Approvers"
   },
+  "programData": {
+    "connection": "System:Datagrok",
+    "leadRoles": [
+      "lead",
+      "backup",
+      "candidate"
+    ],
+    "sql": "SELECT * FROM (VALUES\n    ('EXS-KIN1', 'EXC-1001', 'KIN-A', 'validated', 'lead', 0.02, 45, 12.0, 8, 22),\n    ('EXS-KIN1', 'EXC-1002', 'KIN-A', 'validated', 'lead', 0.035, 60, 9.5, 11, NULL),\n    ('EXS-KIN1', 'EXC-1003', 'KIN-A', 'validated', 'lead', 0.05, 30, 15.1, 6, 35),\n    ('EXS-KIN1', 'EXC-1004', 'KIN-A', 'validated', 'lead', 0.11, 80, 7.2, 14, NULL),\n    ('EXS-KIN1', 'EXC-1005', 'KIN-A', 'validated', 'lead', 0.24, 25, 11.0, 9, 18),\n    ('EXS-KIN1', 'EXC-1006', 'KIN-A', 'validated', 'lead', 0.3, NULL, NULL, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1007', 'KIN-A', 'validated', 'backup', 0.45, 55, NULL, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1008', 'KIN-A', 'validated', 'backup', 0.5, 40, 8.8, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1101', 'KIN-B', 'hit', 'explored', 3.2, NULL, NULL, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1102', 'KIN-B', 'hit', 'explored', 8.0, NULL, NULL, NULL, NULL),\n    ('EXS-KIN1', 'EXC-1103', 'KIN-B', 'hit', 'explored', 12.5, NULL, NULL, NULL, NULL),\n    ('EXS-PRO2', 'EXC-2001', 'PRO-A', 'hit', 'explored', 2.5, NULL, NULL, NULL, NULL),\n    ('EXS-PRO2', 'EXC-2002', 'PRO-A', 'hit', 'explored', 4.0, NULL, NULL, NULL, NULL),\n    ('EXS-PRO2', 'EXC-2003', 'PRO-A', 'hit', 'explored', 12.0, NULL, NULL, NULL, NULL),\n    ('EXS-GPC3', 'EXC-3001', 'GPC-A', 'validated', 'lead', 0.4, 70, 14.0, 7, 30),\n    ('EXS-GPC3', 'EXC-3002', 'GPC-A', 'validated', 'lead', 0.8, 52, 10.2, 12, 4.5),\n    ('EXS-GPC3', 'EXC-3003', 'GPC-A', 'validated', 'backup', 1.5, 95, 18.3, 5, 40))\n  AS d(program, compound, series, series_maturity, role, ic50_um, solubility_um, papp, clint, herg_ic50_um)\nWHERE program = @program"
+  },
   "stageModel": {
     "code": "EX-SMD-V1",
     "name": "Example Small Molecule Discovery",
@@ -54,13 +63,38 @@
             "code": "validated_series",
             "name": "≥1 validated series with SAR",
             "kind": "data_condition",
-            "rule": "count(series where maturity >= validated) >= 1"
+            "rule": "≥1 series at validated maturity or beyond with ≥3 compounds",
+            "condition": {
+              "scope": "series",
+              "where": [
+                {
+                  "column": "series_maturity",
+                  "op": "in",
+                  "value": [
+                    "validated",
+                    "lead",
+                    "optimized",
+                    "candidate"
+                  ]
+                }
+              ],
+              "minCount": 3
+            }
           },
           {
             "code": "potency",
             "name": "Potency < 1 µM on ≥1 compound",
             "kind": "data_condition",
-            "rule": "min(IC50) < 1 uM"
+            "rule": "IC50 < 1 µM on ≥1 compound",
+            "condition": {
+              "where": [
+                {
+                  "column": "ic50_um",
+                  "op": "<",
+                  "value": 1
+                }
+              ]
+            }
           }
         ]
       },
@@ -77,7 +111,33 @@
             "code": "adme_panel",
             "name": "ADME panel on ≥10 lead-series compounds",
             "kind": "data_condition",
-            "rule": "count(lead series with solubility, permeability, clearance) >= 10"
+            "rule": "solubility, permeability (Papp) and clearance (CLint) on ≥10 lead-set compounds",
+            "condition": {
+              "scope": "lead_set",
+              "measured": [
+                "solubility_um",
+                "papp",
+                "clint"
+              ],
+              "minCount": 10
+            }
+          },
+          {
+            "code": "herg_margin",
+            "name": "hERG IC50 ≥ 10 µM on a lead-set compound",
+            "kind": "data_condition",
+            "rule": "hERG IC50 ≥ 10 µM on ≥1 lead-set compound",
+            "required": false,
+            "condition": {
+              "scope": "lead_set",
+              "where": [
+                {
+                  "column": "herg_ic50_um",
+                  "op": ">=",
+                  "value": 10
+                }
+              ]
+            }
           }
         ]
       },

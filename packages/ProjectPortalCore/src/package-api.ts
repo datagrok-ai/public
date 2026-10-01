@@ -44,6 +44,13 @@ export namespace funcs {
   }
 
   /**
+   * Readiness of one program for a stage (default: its next stage): every criterion met, waived or open, data conditions evaluated over the program dataset, and the gap list
+   */
+  export async function programReadiness(portfolio: string , program: string , stage?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ProgramReadiness', { portfolio, program, stage });
+  }
+
+  /**
    * For each source system, the keys no portfolio feed takes and the keys two feeds both take
    */
   export async function portfolioRoutingAudit(): Promise<string> {
