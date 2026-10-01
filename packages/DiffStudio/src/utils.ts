@@ -59,7 +59,6 @@ export function sanitizeModelFileName(name: string): string {
  *  Windows) would otherwise take "PK-PD.ivp" for a new file and overwrite the library's "pk-pd.ivp". */
 export function unusedFileName(name: string, files: string[]): string {
   const taken = new Set(files.map((f) => f.toLowerCase()));
-  /** Whether an IVP file of this name is already in the folder, in any case. */
   const isTaken = (candidate: string) => taken.has(`${candidate}.${MISC.MODEL_FILE_EXT}`.toLowerCase());
   if (!isTaken(name))
     return name;

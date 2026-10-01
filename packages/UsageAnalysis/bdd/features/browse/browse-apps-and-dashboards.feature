@@ -44,10 +44,9 @@ Feature: The Apps and Dashboards sections of the Browse tree
     And no error or warning balloon should have been shown
 
   # Browse-ModelHub-01: the Model Catalog opening from Apps is where GROK-17896 / GROK-17664 were.
-  # Tagged so a stand without the Compute package can exclude it rather than go red.
-  @compute
   Scenario: The Model Hub opens from the Compute group
-    Given Apps tree node inside browse tree is expanded
+    Given the "Compute2" package is installed
+    And Apps tree node inside browse tree is expanded
     And Apps---Compute tree node inside browse tree is expanded
     When user clicks on Apps---Compute---Model-Hub tree node inside browse tree
     Then the "Model Hub" view should be current
@@ -75,7 +74,9 @@ Feature: The Apps and Dashboards sections of the Browse tree
     And no error or warning balloon should have been shown
 
   Scenario: The application list comes back within five seconds of opening Apps
-    Given user collapses Apps tree node inside browse tree
+    Given the "Compute2" package is installed
+    And the "Chem" package is installed
+    And user collapses Apps tree node inside browse tree
     And Apps---Compute tree node inside browse tree should be hidden
     When user expands Apps tree node inside browse tree
     Then Apps---Compute tree node inside browse tree should become visible within 5 seconds
@@ -83,7 +84,8 @@ Feature: The Apps and Dashboards sections of the Browse tree
     And no errors should have been logged
 
   Scenario: An application's tooltip says what it does and which package it comes from
-    Given Apps tree node inside browse tree is expanded
+    Given the "Chem" package is installed
+    And Apps tree node inside browse tree is expanded
     And Apps---Chem tree node inside browse tree is expanded
     And Apps---Chem---Reactions tree node inside browse tree is expanded
     When user hovers over Apps---Chem---Reactions---Reaction-Enumerator tree node inside browse tree
@@ -93,8 +95,8 @@ Feature: The Apps and Dashboards sections of the Browse tree
     And tooltip should contain text "Chem"
     And no errors should have been logged
 
-  @chem
   Scenario: A dashboard the Chem package ships opens from the Dashboards gallery with its viewers
+    Given the "Chem" package is installed
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
     When user types "chemical_space_demo" into gallery search
@@ -103,25 +105,27 @@ Feature: The Apps and Dashboards sections of the Browse tree
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  @chem
+  # each dashboard is searched by its own name: a shorter search brings up every dashboard of the stand that matches
   Scenario: The context panel follows from one dashboard to the next
-    Given the context panel is open
+    Given the "Chem" package is installed
+    And the context panel is open
     When user clicks on Dashboards tree node inside browse tree
     Then the "Projects" view should be current
-    When user types "demo" into gallery search
+    When user types "chemical_space_demo" into gallery search
     And user clicks on "ChemicalSpaceDemo" gallery card
     Then the context panel should show "chemical_space_demo"
-    When user clicks on "DemoActivityCliffs" gallery card
+    When user types "demo_activity_cliffs" into gallery search
+    And user clicks on "DemoActivityCliffs" gallery card
     Then the context panel should show "demo_activity_cliffs"
     And context panel should not contain text "chemical_space_demo"
     When user clears gallery search
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 
-  @compute
   Rule: A model the feature saves is in the Model Hub
     Background:
-      Given a script "BddModel{time}" is on the server:
+      Given the "Compute2" package is installed
+      And a script "BddBrowseModel" is on the server:
         """
         //language: javascript
         //meta.role: model
@@ -136,32 +140,32 @@ Feature: The Apps and Dashboards sections of the Browse tree
     Scenario: The Model Hub catalog lists the model
       When user clicks on Apps---Compute---Model-Hub tree node inside browse tree
       Then the "Model Hub" view should be current
-      And "BddModel{time}" link should be visible
+      And "BddBrowseModel" link should be visible
       And no errors should have been logged
 
     Scenario: Uncategorized opens to the model, a hover explains it and a click previews it
       Given Apps---Compute---Model-Hub tree node inside browse tree is expanded
       When user expands Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree
-      Then Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree should be visible
-      When user hovers over Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree
+      Then Apps---Compute---Model-Hub---Uncategorized---BddBrowseModel tree node inside browse tree should be visible
+      When user hovers over Apps---Compute---Model-Hub---Uncategorized---BddBrowseModel tree node inside browse tree
       Then tooltip should contain text "A model a BDD feature saved"
-      When user clicks on Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree
-      Then the "BddModel{time} preview" view should be current
+      When user clicks on Apps---Compute---Model-Hub---Uncategorized---BddBrowseModel tree node inside browse tree
+      Then the "BddBrowseModel preview" view should be current
       And no errors should have been logged
       And no error or warning balloon should have been shown
 
     Scenario: A double click keeps the model's view and its menu offers Run
       Given Apps---Compute---Model-Hub tree node inside browse tree is expanded
       And Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree is expanded
-      When user double-clicks on Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree
-      Then the "BddModel{time} preview" view should be current
+      When user double-clicks on Apps---Compute---Model-Hub---Uncategorized---BddBrowseModel tree node inside browse tree
+      Then the "BddBrowseModel preview" view should be current
       When user clicks on Dashboards tree node inside browse tree
       Then Projects view should be visible
-      And "BddModel{time} preview" view should be present
+      And "BddBrowseModel preview" view should be present
       # the click on Dashboards moved the tree: the model's group is opened again before its menu
       Given Apps---Compute---Model-Hub---Uncategorized tree node inside browse tree is expanded
-      And Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree should be visible
-      When user right-clicks on Apps---Compute---Model-Hub---Uncategorized---BddModel{time} tree node inside browse tree
+      And Apps---Compute---Model-Hub---Uncategorized---BddBrowseModel tree node inside browse tree should be visible
+      When user right-clicks on Apps---Compute---Model-Hub---Uncategorized---BddBrowseModel tree node inside browse tree
       Then the open menu should list "Run..."
       When user closes the context menu
       Then no errors should have been logged

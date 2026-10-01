@@ -9,14 +9,15 @@ Feature: The Visualization demos open from Browse > Apps > Demo with their viewe
   colour, which the pixel reading of a selection does not know, so the scatter plot is the witness).
 
   The @full-stand rows read a demo file a smaller stand's System:DemoFiles may lack (Line Chart,
-  Correlation Plot, Chord and Sankey read energy_uk.csv-like files, Word Cloud word_cloud.csv, Network
-  Diagram got-s1-edges.csv and fetches its node pictures from an outside image service), or draw
-  base-map tiles from an outside tile server (Map); they claim the viewer and that it reports no error.
+  Correlation Plot, Chord and Sankey read energy_uk.csv-like files, Word Cloud word_cloud.csv); they
+  claim the viewer and that it reports no error. Left out by the rule: Network Diagram (it fetches its
+  node pictures from an outside image service) and Map (base-map tiles from an outside tile server).
   Data Annotations is a server project only a dev stand carries, not a demo function.
 
   Background:
     Given user is logged in
     And the browse panel is open
+    And the "Tutorials" package is installed
     And Apps tree node inside browse tree is expanded
     And Apps---Demo tree node inside browse tree is expanded
     And Apps---Demo---Visualization tree node inside browse tree is expanded
@@ -78,11 +79,9 @@ Feature: The Visualization demos open from Browse > Apps > Demo with their viewe
       | package   | group                   | section                 | demo             | node             | viewer           |
       | Tutorials | General                 | General                 | Line Chart       | Line-Chart       | line chart       |
       | Tutorials | Statistical             | Statistical             | Correlation Plot | Correlation-Plot | correlation plot |
-      | Tutorials | Data-Flow-and-Hierarchy | Data Flow and Hierarchy | Network Diagram  | Network-Diagram  | network diagram  |
       | Charts    | General                 | General                 | Chord            | Chord            | chord            |
       | Charts    | General                 | General                 | Sankey           | Sankey           | sankey           |
       | Charts    | General                 | General                 | Word Cloud       | Word-Cloud       | word cloud       |
-      | Gis       | Geographical            | Geographical            | Map              | Map              | map              |
 
   # apps.md 2: "select points on charts — selected cells or points highlight properly"
   Scenario: Rows selected in the Scatter Plot demo reach its scatter plot

@@ -206,7 +206,7 @@ export async function rememberReading(page: Page, target: ElementRef, name: stri
     const r = await readingOf(page, target, name);
     last = r instanceof MissingReading ? String(r) : '';
     return last === '';
-  }, {timeout: pollMs(5000)}).toBe(true).catch(() => { throw new Error(last); });
+  }, {timeout: pollMs(5000)}).toBe(true).catch((e) => { throw last ? new Error(last) : e; });
   return onViewer(page, target, (el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
 }
 

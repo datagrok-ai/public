@@ -19,8 +19,10 @@ Feature: The schemas of a connection and the schema view
     And the browse panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
+    # expanding the connection loads its schema, which logs an error where the database is out of reach, and the
+    # tree keeps it expanded for every later feature on the page
+    And the stand has a reachable "CHEMBL" connection
     And Databases---Postgres---CHEMBL tree node inside browse tree is expanded
-    And the stand can reach the database of the "CHEMBL" connection
 
   Scenario: The Schemas group lists the connection's schemas
     Given Databases---Postgres---CHEMBL---Schemas tree node inside browse tree is expanded

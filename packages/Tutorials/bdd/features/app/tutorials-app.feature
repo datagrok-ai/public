@@ -15,6 +15,7 @@ Feature: The Tutorials application
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end
+    And the "recentViewerSettings" user settings are put back at feature end
 
   Scenario: Browse > Apps > Tutorials lists every track and tutorial
     Given the Tutorials app is closed
@@ -47,7 +48,7 @@ Feature: The Tutorials application
     # the next is the first tutorial of the track not completed yet, after the finished one first
     When user clicks on Start button in Tutorials panel
     Then tutorial title should contain text "Embedded Viewers"
-    And the tutorial progress should be 1 of 10
+    And the tutorial progress should be 1 of 9
     And the tutorial step "Open scatter plot" should not be done yet
     When user closes the tutorial
     Then the "Scatter Plot" tutorial card should show it is done

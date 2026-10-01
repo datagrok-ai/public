@@ -25,7 +25,7 @@ Feature: The Data Aggregation tutorial
 
   Scenario: A learner completes the Data Aggregation tutorial
     When user starts the "Data Aggregation" tutorial
-    Then the tutorial progress should be 1 of 12
+    Then the tutorial progress should be 1 of 11
     When user picks "Data > Aggregate Rows..." from the top menu
     Then the tutorial step "Open Aggregation Editor" should be done
     And the open tableview should have 1 pivot table viewer
@@ -78,6 +78,6 @@ Feature: The Data Aggregation tutorial
 
     And the "Data Aggregation" tutorial should be completed
     And the tutorial should have listed 11 steps
-    And the tutorial progress should be 12 of 12
+    And the tutorial progress should be 11 of 11
     And no hint should be shown
     And no errors should have been logged

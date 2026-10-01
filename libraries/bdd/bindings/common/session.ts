@@ -42,6 +42,8 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
     // squeeze it to its title bar; a feature that needs one opens it
     grok.shell.windows.showConsole = false;
     grok.shell.windows.showHelp = false;
+    if (grok.shell.windows.presentationMode)
+      grok.shell.windows.presentationMode = false;
   }, simpleMode);
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
   await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
@@ -113,7 +115,7 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
   // scenario's — and a boot balloon left on screen covers the top right corner
   takeErrors(page);
   await takeBalloons(page);
-  await page.evaluate(() => document.querySelectorAll('.d4-balloon').forEach((b) => b.remove()));
+  await page.evaluate(() => (window as any).DG.Balloon.closeAll());
 }, {tier: 'ui', description: 'the error floor starts here: "no errors should have been logged" counts from this step; a page an earlier feature left signed in as another account signs the running one back in first'});
 
 /** The browser's reload: a new session of the shell with nothing in memory, for a reopen that has

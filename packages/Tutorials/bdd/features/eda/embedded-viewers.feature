@@ -25,7 +25,7 @@ Feature: The Embedded Viewers tutorial
 
   Scenario: A learner completes the Embedded Viewers tutorial
     When user starts the "Embedded Viewers" tutorial
-    Then the tutorial progress should be 1 of 10
+    Then the tutorial progress should be 1 of 9
     When user clicks on scatter-plot icon in toolbox
     Then the tutorial step "Open scatter plot" should be done
     When user clicks on histogram icon in toolbox
@@ -62,6 +62,8 @@ Feature: The Embedded Viewers tutorial
     # narrow for its strip: the inner Color selector lies past the dock's edge, hidden, and so is its
     # hint. The learner makes room first.
     Given the toolbox pane is hidden
+    # F4 toggles the panel, which an earlier feature on the page may have left either way
+    And the context panel is open
     When user presses F4
     Then context panel should be hidden
     And color column selector in trellis plot viewer should be hinted
@@ -75,6 +77,6 @@ Feature: The Embedded Viewers tutorial
 
     And the "Embedded Viewers" tutorial should be completed
     And the tutorial should have listed 9 steps
-    And the tutorial progress should be 10 of 10
+    And the tutorial progress should be 9 of 9
     And no hint should be shown
     And no errors should have been logged

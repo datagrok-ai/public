@@ -9,6 +9,7 @@ import {Given, Then, When} from '../../src/registry.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 
 declare const grok: any;
+declare const DG: any;
 
 const LOADING = '.grok-view-browse .d4-tree-view-group-host[data-state="loading"], .layout-browse .d4-tree-view-group-host[data-state="loading"]';
 
@@ -21,12 +22,13 @@ export const browseTreeLoaded = Then('the browse tree should have finished loadi
   {description: 'no group of the tree carries data-state="loading" — the end anchor after anything that rebuilds it'});
 
 /* Favorites belong to the account and outlive a feature: a feature that stars an entity takes it out
-   of the favorites before it starts and again at its end, and reads the list back. */
+   of the favorites before it starts, and at its end leaves the favorites as it found them — a fixture
+   it starred comes out, an entity the account had starred (the home share) goes back — the list read back. */
 async function removeFavorite(page: Page, name: string): Promise<void> {
   await page.evaluate(async (n) => {
     for (const favorite of await grok.dapi.entities.getFavorites())
       if (favorite.friendlyName === n || favorite.name === n)
-        await (window as any).grok_Favorites_Remove(favorite.dart, null);
+        await DG.Favorites.remove(favorite);
   }, name);
   await expect.poll(() => favoriteNames(page).then((names) => names.includes(name)),
     {message: `"${name}" among the account's favorites`, timeout: pollMs(30000)}).toBe(false);
@@ -38,9 +40,25 @@ function favoriteNames(page: Page): Promise<string[]> {
 }
 
 export const notFavorite = Given('{string} is not in favorites', async (page: Page, name: string) => {
-  atFeatureEnd(page, () => removeFavorite(page, name));
+  // the starred entities are kept in the page, which the feature keeps, to be starred again at its end
+  const had = await page.evaluate(async (n) => {
+    const starred = (await grok.dapi.entities.getFavorites()).filter((f: any) => f.friendlyName === n || f.name === n);
+    ((window as any).__bddFavorites ??= {})[n] = starred;
+    return starred.length > 0;
+  }, name);
+  atFeatureEnd(page, async () => {
+    await removeFavorite(page, name);
+    if (!had)
+      return;
+    await page.evaluate(async (n) => {
+      for (const entity of (window as any).__bddFavorites?.[n] ?? [])
+        await DG.Favorites.add(entity);
+    }, name);
+    await expect.poll(() => favoriteNames(page).then((names) => names.includes(name)),
+      {message: `"${name}" back among the account's favorites`, timeout: pollMs(30000)}).toBe(true);
+  });
   await removeFavorite(page, name);
-}, {tier: 'api', description: 'the entity is taken out of the account\'s favorites now and at feature end, the list read back'});
+}, {tier: 'api', description: 'the entity is taken out of the account\'s favorites now; at feature end the favorites are as the feature found them, the list read back'});
 
 export const favoriteOnServer = Then('{string} should be in favorites on the server', async (page: Page, name: string) => {
   await expect.poll(() => favoriteNames(page).then((names) => names.includes(name)),
@@ -84,6 +102,8 @@ export const rememberAddress = When('user remembers the page address', async (pa
   const address = await page.evaluate(() => location.pathname + location.search);
   if (address === '/' || address === '')
     throw new Error('the page address is the root: nothing open has an address to remember');
+  if (!rememberedAddress.has(page))
+    atFeatureEnd(page, async () => { rememberedAddress.delete(page); });
   rememberedAddress.set(page, address);
 }, {tier: 'ui', description: 'the path and query the platform wrote into the address bar for what is open'});
 

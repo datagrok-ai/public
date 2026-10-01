@@ -12,6 +12,8 @@ Feature: The Parameter Optimization tutorial
 
   Background:
     Given user is logged in
+    And the "Compute2" package is installed
+    And the "DiffStudio" package is installed
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end

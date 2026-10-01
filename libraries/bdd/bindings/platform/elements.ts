@@ -17,9 +17,6 @@ element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases:
 element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
   description: 'the tree inside the browse panel — the scope for a node phrase ("Files tree node inside browse tree")'});
 element('context panel', {selector: '.grok-prop-panel', aliases: ['property panel']});
-element('context panel header', {selector: '.panel-base:has(> .panel-content .grok-prop-panel) > .panel-titlebar',
-  aliases: ['context panel title bar'],
-  description: 'the title bar of the context panel: Back, Forward, Clone and detach, Collapse all, Expand all, Show Help, Favorites, Close (icons by aria-label); they show only while the pointer is on the bar'});
 element('favorite star', {selector: '.d4-star', aliases: ['favorites star'],
   description: 'the star beside an entity\'s name in the context panel that adds it to favorites and takes it out; it carries no aria state, only `fas` (a favorite) or `fal`, so claim the favorites on the server'});
 element('browse panel close icon', {selector: '.grok-browse-header .panel-titlebar-button-close',
@@ -96,6 +93,12 @@ kind('viewer card', {aliases: ['viewer cards'], selector: '[name^="viewer-card-"
   labelSelector: '.card-label', description: 'a card of the Add viewer gallery, by the viewer name it shows ("Radar" viewer card)'});
 kind('viewer tag', {aliases: ['viewer tags'], selector: '[name^="viewer-tag-"]', match: ['text'],
   description: 'a tag of the Add viewer gallery that filters its cards ("Charts" viewer tag)'});
+
+/* The model cards of the Diff Studio hub (templates and the library), by the label in the card's header. A
+   model run before has a second card in the account's Recent section, which is left out. */
+kind('model card', {aliases: ['model cards', 'hub card', 'hub cards'],
+  selector: '.diff-studio-hub-card:not([name="section-Recent"] > .diff-studio-hub-card)',
+  match: ['label'], labelSelector: '.diff-studio-hub-card-header'});
 
 element('hint popup', {selector: '.ui-hint-popup', aliases: ['hint balloon'],
   description: 'a popup ui.hints.addHint shows beside an element (the tour of the viewers a tutorial added)'});

@@ -5,6 +5,7 @@ import { filter } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import wu from 'wu';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
+import {selectionMade} from './utils';
 
 
 export class FiltersTutorial extends Tutorial {
@@ -16,7 +17,7 @@ export class FiltersTutorial extends Tutorial {
       'and visual assessment of column values';
   }
 
-  get steps() { return 18; }
+  get steps() { return 17; }
 
   get icon() {
     return '🔍🎚️';
@@ -92,7 +93,7 @@ export class FiltersTutorial extends Tutorial {
       'get selected, taking into account the current filter. They are highlighted ' +
       'in orange both in filters and other viewers.';
     await this.action('Click on a non-empty row count',
-      this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.anyTrue)), null, rowCountSelect);
+      selectionMade(this.t!), null, rowCountSelect);
 
     await this.action('Filter the dataset to only females of Asian or Black origin',
       this.t!.onFilterChanged.pipe(filter(() => {
@@ -127,7 +128,7 @@ export class FiltersTutorial extends Tutorial {
       'clicking, you will toggle the bin\'s selection. Note that other filters reflect the proportion ' +
       'of the selected rows.';
     await this.action('Select one of the histogram bins',
-      this.t!.onSelectionChanged.pipe(filter(() => this.t!.selection.anyTrue)), null, selectionInfo);
+      selectionMade(this.t!), null, selectionInfo);
 
     const indicatorsInfo = 'Current and mouse-over records are shown below the histogram ' +
       'bins as green and gray circles. These indicators can be used for quick data profiling.';

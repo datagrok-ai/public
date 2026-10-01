@@ -13,7 +13,7 @@ export class ScatterPlotTutorial extends Tutorial {
   get description() {
     return 'A graph in which the values of two variables are plotted along two axes';
   }
-  get steps() { return 11; }
+  get steps() { return 10; }
 
   get icon() {
     return '📈🔹';

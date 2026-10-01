@@ -459,8 +459,10 @@ export abstract class Tutorial extends DG.Widget {
     descriptionDiv.scrollIntoView();
 
     const succeeded = await this.firstEvent(completed instanceof Promise ? from(completed) : completed);
-    if (this.closed)
+    if (this.closed) {
+      sub.unsubscribe();
       return;
+    }
 
     entry.removeAttribute('aria-current');
     if (succeeded) {
@@ -672,16 +674,10 @@ export abstract class Tutorial extends DG.Widget {
   /** A helper method to access choice inputs in a view. */
   protected async choiceInputAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = '') {
-    let inputRoot = null;
-    let select: HTMLSelectElement;
-    $(root).find('.ui-input-root .ui-input-label span').each((idx, el) => {
-      if (el.innerText === caption) {
-        inputRoot = el.parentElement?.parentElement;
-        if (inputRoot)
-          select = this.getElement(inputRoot, 'select') as HTMLSelectElement;
-      }
-    });
-    if (select! == null) {
+    const inputRoot = await this.awaitElement(root, 'div.ui-input-root', (idx, inp) =>
+      $(inp).find('.ui-input-label span')[0]?.innerText === caption && $(inp).find('select').length > 0);
+    const select = inputRoot == null ? null : this.getElement(inputRoot, 'select') as HTMLSelectElement;
+    if (select == null) {
       console.error('Tutorial step skipped: no choice input', this.name, caption);
       return;
     }

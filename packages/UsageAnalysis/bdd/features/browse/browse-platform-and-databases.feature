@@ -7,7 +7,8 @@ Feature: The Platform and Databases sections of the Browse tree
   The two "lists" scenarios are tagged @full-stand: they name what a full stand carries, and a
   minimal stack has fewer providers and fewer Platform sections. Everything else here holds on any
   stand — the old spec claimed only Postgres, and Plugins/Credentials/Functions/Users/Groups/Roles,
-  for the same reason.
+  for the same reason — or is gated on what it needs: a package, or the database of a connection
+  outside the stand.
 
   Browse-DB-04 (a saved query opens from the tree) is claimed on the Orders query of the Dbtests
   package's NorthwindTest connection, which the queries features run on too; Browse-DB-05 on a
@@ -85,10 +86,13 @@ Feature: The Platform and Databases sections of the Browse tree
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  # expanding the connection reads its schema from db.datagrok.ai, outside the stand (PostgresTest is its grok name:
+  # two more connections are called NorthwindTest)
   Scenario: A saved query opens from the tree with its details
     Given the context panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
+    And the stand has a reachable "PostgresTest" connection
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     When user clicks on Databases---Postgres---NorthwindTest---Orders tree node inside browse tree
     Then the context panel should show "Orders"
@@ -101,6 +105,7 @@ Feature: The Platform and Databases sections of the Browse tree
     Given the context panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
+    And the stand has a reachable "PostgresTest" connection
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded
@@ -123,7 +128,6 @@ Feature: The Platform and Databases sections of the Browse tree
       | Credentials       | Credentials  |
       | Functions         | Functions    |
       | Roles             | Roles        |
-      | Notebooks         | Notebooks    |
       | MCP-Servers       | MCP Servers  |
       | Predictive-models | Models       |
       | Sync              | Sync         |
@@ -131,6 +135,16 @@ Feature: The Platform and Databases sections of the Browse tree
       | URL-Aliases       | URL Aliases  |
       | Settings          | Settings     |
       | Sticky-Meta       | Schemas      |
+
+  # the tree lists Notebooks only where a package registers the notebooks functions
+  Scenario: Platform > Notebooks opens the Notebooks view
+    Given the "Notebooks" package is installed
+    And the context panel is open
+    And Platform tree node inside browse tree is expanded
+    When user clicks on Platform---Notebooks tree node inside browse tree
+    Then the "Notebooks" view should be current
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   # Browse-Tree-07, through the second account: a plain user who was given nothing of what the
   # first account owns does not get the first account's connection in the tree at all
@@ -151,13 +165,14 @@ Feature: The Platform and Databases sections of the Browse tree
     Then the running account should be signed in
 
   Scenario: The Plugins view lists the installed packages and offers no Delete for one
-    Given Platform tree node inside browse tree is expanded
+    Given the "PowerPack" package is installed
+    And the "Tutorials" package is installed
+    And Platform tree node inside browse tree is expanded
     When user clicks on Platform---Plugins tree node inside browse tree
     Then the "Plugins" view should be current
     And the following elements should be visible:
       | "PowerPack" gallery card |
-      | "Tutorials" gallery card  |
-      | "DevTools" gallery card   |
+      | "Tutorials" gallery card |
     When user opens the context menu of "PowerPack" gallery card
     Then the open menu should list "Uninstall"
     And the open menu should not list "Delete"

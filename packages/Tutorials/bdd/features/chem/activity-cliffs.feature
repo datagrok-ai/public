@@ -19,6 +19,7 @@ Feature: The Activity Cliffs tutorial
 
   Background:
     Given user is logged in
+    And the "Chem" package is installed
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end
@@ -44,8 +45,10 @@ Feature: The Activity Cliffs tutorial
     Then the tutorial step "To view only the cliffs, toggle Show only cliffs." should be done
     And the "only cliffs" reading of scatter plot viewer should be "true"
 
-    When user drags a zoom box over the "view" area of scatter plot viewer
+    When user remembers the "x axis span" reading of scatter plot viewer
+    And user drags a zoom box over the "view" area of scatter plot viewer
     Then the tutorial step "Press Use Alt + Mouse Drag to zoom in" should be done
+    And the "x axis span" reading of scatter plot viewer should be lower than remembered
 
     When user hovers over the first free "line" area of scatter plot viewer
     Then the tutorial step "Hover over the green line to see the pair of molecules" should be done
@@ -57,6 +60,7 @@ Feature: The Activity Cliffs tutorial
     # current row to change: the other molecule is the one that moves it
     When user clicks on second cliff molecule in context panel
     Then the tutorial step "On the Context Panel, click any molecule" should be done
+    And second cliff molecule in context panel should show the current row
 
     When user clicks on "15 cliffs" button in scatter plot viewer
     Then the tutorial step "At the top right corner of the scatterplot, click 15 CLIFFS" should be done

@@ -11,7 +11,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     return `Multivariate analysis models a response variable from many predictors at once, including predictors
     that correlate with each other. Learn to run partial least squares (PLS) regression and interpret its results.`;
   }
-  get steps() { return 8; }
+  get steps() { return 7; }
 
   get icon() {
     return '📊🔀';
@@ -34,7 +34,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const plsDlg = await this.openDialog('Click on "ML | Analyze | Multivariate Analysis..."',
-      'Multivariate Analysis (PLS)', this.getMenuItem('ML', true));
+      'Multivariate Analysis (PLS)', () => this.getMenuItem('ML', true));
 
     plsDlg.root.hidden = true;
 

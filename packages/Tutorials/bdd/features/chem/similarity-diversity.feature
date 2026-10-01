@@ -9,8 +9,7 @@ Feature: The Similarity and Diversity Search tutorial
   Translated from playwright-tests/e2e/tutorials/similarity-diversity.test.ts, which clicked the cards
   at guessed offsets and the column picker's canvas by pixels. RDKit runs in the browser.
 
-  Fixed in the tutorial for this translation: the counter never reached its last step (12 declared
-  for 12 actions); the gear step completed on a click on any gear of the page; the Follow Current Row
+  Fixed in the tutorial for this translation: the gear step completed on a click on any gear of the page; the Follow Current Row
   and Molecule Properties steps waited for texts in the context panel ("1 / 31") and now read the
   viewers' own properties; the Edit hint looked for a class the viewer does not carry
   (`.similarity-search-edit`, the icon is `chem-similarity-search-edit`), so it showed nothing; the
@@ -28,6 +27,7 @@ Feature: The Similarity and Diversity Search tutorial
 
   Background:
     Given user is logged in
+    And the "Chem" package is installed
     And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
@@ -37,7 +37,7 @@ Feature: The Similarity and Diversity Search tutorial
 
   Scenario: A learner completes the Similarity and Diversity Search tutorial
     When user starts the "Similarity and Diversity Search" tutorial
-    Then the tutorial progress should be 1 of 13
+    Then the tutorial progress should be 1 of 12
     When user picks "Chem > Search > Similarity Search..." from the top menu
     Then the tutorial step "On the Top Menu, click Chem > Search > Similarity Search..." should be done
     And Chem Similarity Search viewer should be visible
@@ -51,6 +51,9 @@ Feature: The Similarity and Diversity Search tutorial
     When user clicks on card 3 of Chem Diversity Search viewer beside its drawing
     Then the tutorial step "Now, click any molecule in the diversity viewer" should be done
     And the current row should be the row of the clicked card
+    # the table view puts the moved current cell into the panel 750 ms later, over a viewer made current meanwhile;
+    # after another molecule nothing changes that a claim could read (the shell keeps an object of the same type)
+    When user waits 1 second
 
     When user hovers over Chem Similarity Search viewer
     And user clicks on settings icon of Chem Similarity Search viewer
@@ -78,8 +81,10 @@ Feature: The Similarity and Diversity Search tutorial
     And user picks "Explore" from the open menu
     Then the tutorial step "Hover over the reference molecule, click the More icon, and then Explore" should be done
 
-    Given the context panel's freeze after a scripted change has passed
-    When user clicks on "Tanimoto, Morgan" link in Chem Diversity Search viewer
+    # Explore made the molecule current through grok.shell.o, which drops the next change within a second
+    # (freezeCurrentObjectUntil) and announces nothing when the second is over
+    When user waits 1 second
+    And user clicks on "Tanimoto, Morgan" link in Chem Diversity Search viewer
     Then the tutorial step "In the top right corner of the diversity viewer, click Tanimoto, Morgan" should be done
     And the context panel should show "Chem Diversity Search"
     When user clicks on "..." button in "Molecule Properties" property
@@ -98,6 +103,6 @@ Feature: The Similarity and Diversity Search tutorial
 
     And the "Similarity and Diversity Search" tutorial should be completed
     And the tutorial should have listed 12 steps
-    And the tutorial progress should be 13 of 13
+    And the tutorial progress should be 12 of 12
     And no hint should be shown
     And no errors should have been logged

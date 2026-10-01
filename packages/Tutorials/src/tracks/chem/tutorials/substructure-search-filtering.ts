@@ -18,7 +18,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     'Specifically for molecules, Datagrok uses integrated sketchers to filter by substructure.';
   }
 
-  get steps() {return 11;}
+  get steps() {return 10;}
 
   get icon() {
     return '🔍🧪';

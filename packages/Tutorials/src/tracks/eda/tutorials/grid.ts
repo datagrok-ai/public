@@ -18,7 +18,7 @@ export class GridTutorial extends Tutorial {
   }
 
   get steps(): number {
-    return 31;
+    return 30;
   }
 
   get icon(): string {

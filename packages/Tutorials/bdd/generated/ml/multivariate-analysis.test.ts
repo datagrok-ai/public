@@ -18,7 +18,7 @@ import {clickOn, enterInto, selectIn, shouldBe, shouldContainText, typeInto} fro
 import {hasColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {noHintShown, userSettingsPutBack} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {noHintShown, packageInstalled, userSettingsPutBack} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
@@ -27,13 +27,14 @@ test.describe("The Multivariate Analysis tutorial", () => {
   const session = feature(test, "features/ml/multivariate-analysis.feature", import.meta.url);
   test("A learner completes the Multivariate Analysis tutorial", {tag: ["@tutorials", "@serial", "@realizes:tutorials.multivariate-analysis"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(23, "Given user is logged in", () => loggedIn(page));
+    await session.step(22, "Given user is logged in", () => loggedIn(page));
+    await session.step(23, "And the \"Eda\" package is installed", () => packageInstalled(page, "Eda"));
     await session.step(24, "And the \"tutorials\" user settings are put back at feature end", () => userSettingsPutBack(page, "tutorials"));
     await session.step(25, "And the \"achievement-badges\" user settings are put back at feature end", () => userSettingsPutBack(page, "achievement-badges"));
     await session.step(26, "And the \"Multivariate Analysis\" tutorial is not completed yet", () => tutorialNotCompleted(page, "Multivariate Analysis"));
     await session.step(27, "And the Tutorials app is open", () => tutorialsOpen(page));
     await session.step(30, "When user starts the \"Multivariate Analysis\" tutorial", () => startTutorial(page, "Multivariate Analysis"));
-    await session.step(31, "Then the tutorial progress should be 1 of 8", () => tutorialProgress(page, 1, 8));
+    await session.step(31, "Then the tutorial progress should be 1 of 7", () => tutorialProgress(page, 1, 7));
     await session.step(32, "When user picks \"ML > Analyze > Multivariate Analysis...\" from the top menu", () => pickFromTopMenu(page, "ML > Analyze > Multivariate Analysis..."));
     await session.step(33, "Then the tutorial step \"Click on \\\"ML | Analyze | Multivariate Analysis...\\\"\" should be done", () => stepDone(page, "Click on \"ML | Analyze | Multivariate Analysis...\""));
     await session.step(34, "And \"Multivariate Analysis (PLS)\" dialog should be visible", () => shouldBe(page, el("\"Multivariate Analysis (PLS)\" dialog"), "visible"));
@@ -73,7 +74,7 @@ test.describe("The Multivariate Analysis tutorial", () => {
     await session.step(72, "Then the tutorial step \"Explore each viewer\" should be done", () => stepDone(page, "Explore each viewer"));
     await session.step(74, "And the \"Multivariate Analysis\" tutorial should be completed", () => tutorialCompleted(page, "Multivariate Analysis"));
     await session.step(75, "And the tutorial should have listed 7 steps", () => tutorialStepsListed(page, 7));
-    await session.step(76, "And the tutorial progress should be 8 of 8", () => tutorialProgress(page, 8, 8));
+    await session.step(76, "And the tutorial progress should be 7 of 7", () => tutorialProgress(page, 7, 7));
     await session.step(77, "And no hint should be shown", () => noHintShown(page));
     await session.step(78, "And no errors should have been logged", () => noErrors(page));
   });

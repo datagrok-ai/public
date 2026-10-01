@@ -18,6 +18,7 @@ Feature: The Calculated Columns tutorial
 
   Background:
     Given user is logged in
+    And the "PowerPack" package is installed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end
     And the "Calculated Columns" tutorial is not completed yet
@@ -25,7 +26,7 @@ Feature: The Calculated Columns tutorial
 
   Scenario: A learner completes the Calculated Columns tutorial
     When user starts the "Calculated Columns" tutorial
-    Then the tutorial progress should be 1 of 13
+    Then the tutorial progress should be 1 of 12
     And add-new-column icon should be hinted
     When user clicks on add-new-column icon
     Then "Add New Column" dialog should be visible
@@ -44,6 +45,7 @@ Feature: The Calculated Columns tutorial
     # scroll alone does not hold, since the grid returns to its current cell, so the current cell moves
     # there — a click on any cell the grid shows, then End
     Given the tutorial step "Click on the \"Height, m\" column header" should not be done yet
+    And the context panel is open
     When user clicks on the first "cell" area of grid
     And user presses End
     And user clicks on the "header Height, m" area of grid
@@ -92,6 +94,6 @@ Feature: The Calculated Columns tutorial
 
     And the "Calculated Columns" tutorial should be completed
     And the tutorial should have listed 12 steps
-    And the tutorial progress should be 13 of 13
+    And the tutorial progress should be 12 of 12
     And no hint should be shown
     And no errors should have been logged

@@ -2,9 +2,9 @@
    progress and completion, the completion record it writes, and closing it. Everything a tutorial
    asks the learner to do is ordinary platform UI and uses the library's vocabulary; step entries,
    cards and the panel are named in elements.ts. */
-import type {Page} from '@playwright/test';
+import {type Page, test} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, atFeatureEnd, expect, locate, pollMs, reportedServices, serviceGap} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 declare const DG: any;
@@ -67,6 +67,15 @@ export const startTutorial = When('user starts the {string} tutorial', async (pa
   await expect(page.locator('.grok-tutorial-entry[aria-current="step"]').first(), 'the first step of the tutorial').toBeVisible({timeout: pollMs(60000)});
 }, {tier: 'ui', description: 'clicks the tutorial\'s card in the Tutorials panel (opening the panel first if needed) and waits for its first step'});
 
+/* A tutorial with a service prerequisite reads the service health the stand reports before it starts
+   (Tutorial.checkService) and refuses to start unless the service is reported running, so a dev stack,
+   which reports no health at all, refuses too. This gate is as strict as that check; the library's
+   service gate lets such a stand go on. */
+export const tutorialServiceReported = Given('the stand reports the {string} service the tutorial requires', async (page: Page, service: string) => {
+  const gap = serviceGap(await reportedServices(page), service, true);
+  test.skip(gap !== '', `the tutorial will not start: the stand does not report the ${service} service running (${gap})`);
+}, {tier: 'api', description: 'a capability gate as strict as the tutorial\'s own prerequisite check: a stand that reports no service health skips too'});
+
 export const tutorialNotCompleted = Given('the {string} tutorial is not completed yet', async (page: Page, name: string) => {
   await page.evaluate(([key, n]) => {
     if (grok.userSettings.getValue(key, n) != null)
@@ -85,7 +94,7 @@ export const tutorialProgress = Then('the tutorial progress should be {int} of {
 
 export const tutorialCompleted = Then('the {string} tutorial should be completed', async (page: Page, name: string) => {
   await expect(page.locator('.tutorials-root h3', {hasText: 'Congratulations!'}), 'the congratulations').toBeVisible();
-  await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('.grok-tutorial-entry[role="checkbox"]')]
+  await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('.grok-tutorial-entry[role="checkbox"]'))
     .filter((e) => e.getAttribute('aria-checked') !== 'true').map((e) => e.getAttribute('aria-label'))), {message: 'steps not done'}).toEqual([]);
   await expect.poll(() => page.evaluate(([key, n]) => {
     const record = grok.userSettings.getValue(key, n);
@@ -194,48 +203,11 @@ export const stickySchemaExists = Then('the Sticky Meta schema {string} should e
     {message: `the "${schema}" schema on the server`}).toBe(true);
 }, {tier: 'api', description: 'the schema is saved on the server'});
 
-/* The Data Connectors tutorial saves a connection and a query under fixed names that learners share: on
-   a stand where people took the tutorial by hand there are "Starbucks" connections of other users. Only
-   the running user's own are removed — the query first, then its connection — now and at feature end. */
-async function removeOwnConnection(page: Page, connection: string, query: string): Promise<void> {
-  await page.evaluate(async ([connection, query]) => {
-    const me = (await grok.dapi.users.current()).id;
-    const mine = (e: any) => e.author?.id === me;
-    for (const q of await grok.dapi.queries.list())
-      if ((q.friendlyName === query || q.name === query) && mine(q))
-        await grok.dapi.queries.delete(q);
-    for (const c of await grok.dapi.connections.list())
-      if ((c.friendlyName === connection || c.name === connection) && mine(c))
-        await grok.dapi.connections.delete(c);
-  }, [connection, query]);
-  await expect.poll(() => page.evaluate(async ([connection, query]) => {
-    const me = (await grok.dapi.users.current()).id;
-    const mine = (e: any) => e.author?.id === me;
-    return (await grok.dapi.queries.list()).filter((q: any) => (q.friendlyName === query || q.name === query) && mine(q)).length +
-      (await grok.dapi.connections.list()).filter((c: any) => (c.friendlyName === connection || c.name === connection) && mine(c)).length;
-  }, [connection, query]), {message: `the user's own "${connection}" connection and "${query}" query`, timeout: pollMs(30000)}).toBe(0);
-}
-
-export const ownConnectionGone = Given('the user\'s own connection {string} and query {string} are removed now and at feature end',
-  async (page: Page, connection: string, query: string) => {
-    await removeOwnConnection(page, connection, query);
-    atFeatureEnd(page, () => removeOwnConnection(page, connection, query));
-  }, {tier: 'api', description: 'only what the running user authored: other users\' entities of the same name stay'});
-
-async function removeOwnProject(page: Page, project: string): Promise<void> {
-  await page.evaluate(async (project) => {
-    const me = (await grok.dapi.users.current()).id;
-    for (const p of await grok.dapi.projects.list())
-      if ((p.friendlyName === project || p.name === project) && p.author?.id === me)
-        await grok.dapi.projects.delete(p);
-  }, project);
-  await expect.poll(() => page.evaluate(async (project) => {
-    const me = (await grok.dapi.users.current()).id;
-    return (await grok.dapi.projects.list()).filter((p: any) => (p.friendlyName === project || p.name === project) && p.author?.id === me).length;
-  }, project), {message: `the user's own "${project}" project`, timeout: pollMs(30000)}).toBe(0);
-}
-
-export const ownProjectGone = Given('the user\'s own project {string} is removed now and at feature end', async (page: Page, project: string) => {
-  await removeOwnProject(page, project);
-  atFeatureEnd(page, () => removeOwnProject(page, project));
-}, {tier: 'api', description: 'only what the running user authored: other users\' dashboards of the same name stay'});
+export const cliffMoleculeIsCurrent = Then('{element} should show the current row', async (page: Page, target: ElementRef) => {
+  const label = await (await locate(page, target)).getAttribute('aria-label') ?? '';
+  const row = Number(/ of row (\d+)$/.exec(label)?.[1] ?? 0);
+  if (row === 0)
+    throw new Error(`${target.phrase} names no row: its label is "${label}"`);
+  await expect.poll(() => page.evaluate(() => grok.shell.t?.currentRowIdx ?? -1), {message: `the current row (${target.phrase} is row ${row})`})
+    .toBe(row - 1);
+}, {description: 'an element named by its row ("molecule of row 12", numbered as the grid numbers rows) shows the table\'s current row'});

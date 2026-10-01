@@ -19,6 +19,8 @@ Feature: The Peptides SAR tutorial
 
   Background:
     Given user is logged in
+    And the "Bio" package is installed
+    And the "Peptides" package is installed
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end

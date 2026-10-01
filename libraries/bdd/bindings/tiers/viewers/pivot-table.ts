@@ -22,6 +22,7 @@ import type {Page} from '@playwright/test';
 import {expect} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
 import {el, type ElementRef} from '../../../src/runtime/args.js';
+import {atFeatureEnd} from '../../../src/runtime/harness.js';
 import {exactText} from '../../../src/runtime/locate.js';
 import * as gestures from '../../../src/runtime/gestures.js';
 import * as viewers from '../../../src/runtime/viewers.js';
@@ -169,10 +170,11 @@ export const pickFromHistory = When('user picks {string} from the history menu o
     await settle(page, target);
   }, {tier: 'ui', description: 'the command bar\'s history icon and one of its entries'});
 
-export const clearSavedParameters = Given('user clears the saved pivot table parameters',
-  (page: Page) => page.evaluate((key) => {
-    window.localStorage.removeItem(key);
-  }, HISTORY_KEY), {tier: 'api', description: 'the saved configurations live in localStorage and outlive a feature'});
+export const clearSavedParameters = Given('user clears the saved pivot table parameters', async (page: Page) => {
+  const clear = (): Promise<void> => page.evaluate((key) => { window.localStorage.removeItem(key); }, HISTORY_KEY);
+  await clear();
+  atFeatureEnd(page, clear);
+}, {tier: 'api', description: 'the saved configurations live in localStorage and outlive a feature: cleared now and again at feature end'});
 
 // --- the in-cell viewer columns ----------------------------------------------------------------------
 

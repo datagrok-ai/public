@@ -104,6 +104,24 @@ export async function serverNow(page: Page): Promise<number> {
   return time;
 }
 
+/** What a capability gate makes of the service health a stand reports (`grok.dapi.admin.getServiceInfos()`):
+ * '' when the named service is enabled and Running, else why not. A stand that reports no health at all (a
+ * dev stack whose datlas runs without `checkHealth`) says nothing about the service: a lenient gate lets the
+ * test go on, a strict one (a tutorial, which refuses to start on such a stand) counts it as absent. */
+export function serviceGap(services: {name: string; enabled: boolean; status: string}[], name: string, strict = false): string {
+  if (services.length === 0)
+    return strict ? 'the stand reports no service health' : '';
+  const service = services.find((s) => s.name === name);
+  if (service == null)
+    return 'absent';
+  return service.enabled && service.status === 'Running' ? '' : `${service.enabled ? '' : 'disabled, '}${service.status}`;
+}
+
+/** The service health the page's stand reports, for `serviceGap`. */
+export const reportedServices = (page: Page): Promise<{name: string; enabled: boolean; status: string}[]> =>
+  page.evaluate(async () => (await grok.dapi.admin.getServiceInfos())
+    .map((s: any) => ({name: String(s.name), enabled: !!s.enabled, status: String(s.status)})));
+
 /* A fixture name ends in its run's {run} or {time}. A run that was killed never reached its
    feature-end cleanup, so the fixtures of the same family that are older than any live feature go too. */
 export const RUN_SUFFIX = /-(\d{13,}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;

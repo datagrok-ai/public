@@ -9,8 +9,7 @@ Feature: The Substructure Search and Filtering tutorial
   columns by a pixel offset on the column picker's canvas. The structure goes in as SMILES through
   the sketcher's molecule field, as in the Chem features; RDKit runs in the browser.
 
-  Fixed in the tutorial for this translation: the counter never reached its last step (10 declared
-  for 10 actions); switching the card off completed on any class change of the card — it now waits
+  Fixed in the tutorial for this translation: switching the card off completed on any class change of the card — it now waits
   for the card to say it is off; three hints were captured when their step began; two typos in the
   step texts ("flter", "filers").
 
@@ -19,6 +18,7 @@ Feature: The Substructure Search and Filtering tutorial
 
   Background:
     Given user is logged in
+    And the "Chem" package is installed
     And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
@@ -28,7 +28,7 @@ Feature: The Substructure Search and Filtering tutorial
 
   Scenario: A learner completes the Substructure Search and Filtering tutorial
     When user starts the "Substructure Search and Filtering" tutorial
-    Then the tutorial progress should be 1 of 11
+    Then the tutorial progress should be 1 of 10
     When user picks "Chem > Search > Substructure Search..." from the top menu
     Then the tutorial step "Click Chem > Search > Substructure Search…" should be done
     And sketcher dialog should be visible
@@ -93,6 +93,6 @@ Feature: The Substructure Search and Filtering tutorial
 
     And the "Substructure Search and Filtering" tutorial should be completed
     And the tutorial should have listed 10 steps
-    And the tutorial progress should be 11 of 11
+    And the tutorial progress should be 10 of 10
     And no hint should be shown
     And no errors should have been logged

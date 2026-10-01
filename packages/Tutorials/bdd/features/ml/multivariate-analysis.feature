@@ -9,8 +9,7 @@ Feature: The Multivariate Analysis tutorial
   predictors by probing the column picker's canvas pixel by pixel and claimed nothing about the
   analysis. PLS runs in the browser (a WASM web worker), not on the server.
 
-  Fixed in the tutorial for this translation: the counter never reached its last step (7 declared
-  for 7 actions); the tour took the charts two seconds after RUN by their position, which a slower
+  Fixed in the tutorial for this translation: the tour took the charts two seconds after RUN by their position, which a slower
   first run or another docking left short or wrong — it now waits for the charts and finds them by
   title; and its texts were one off from the charts (the Scores text was split in two, so every
   chart after Scores showed the text of the one before).
@@ -21,6 +20,7 @@ Feature: The Multivariate Analysis tutorial
 
   Background:
     Given user is logged in
+    And the "Eda" package is installed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end
     And the "Multivariate Analysis" tutorial is not completed yet
@@ -28,7 +28,7 @@ Feature: The Multivariate Analysis tutorial
 
   Scenario: A learner completes the Multivariate Analysis tutorial
     When user starts the "Multivariate Analysis" tutorial
-    Then the tutorial progress should be 1 of 8
+    Then the tutorial progress should be 1 of 7
     When user picks "ML > Analyze > Multivariate Analysis..." from the top menu
     Then the tutorial step "Click on \"ML | Analyze | Multivariate Analysis...\"" should be done
     And "Multivariate Analysis (PLS)" dialog should be visible
@@ -73,6 +73,6 @@ Feature: The Multivariate Analysis tutorial
 
     And the "Multivariate Analysis" tutorial should be completed
     And the tutorial should have listed 7 steps
-    And the tutorial progress should be 8 of 8
+    And the tutorial progress should be 7 of 7
     And no hint should be shown
     And no errors should have been logged

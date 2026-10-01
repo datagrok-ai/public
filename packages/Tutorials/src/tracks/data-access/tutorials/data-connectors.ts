@@ -60,10 +60,10 @@ export class DataConnectorsTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
-    const starbucksNodes = $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
-      el.textContent === 'Starbucks');
+    const starbucksNode = () => $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
+      el.textContent === 'Starbucks').last()[0] ?? null;
     const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection',
-      'DataQueryView', starbucksNodes[starbucksNodes.length - 1],
+      'DataQueryView', starbucksNode,
       'Open the context menu on Postgres | Starbucks and click "New Query..."');
 
     // UI generation delay

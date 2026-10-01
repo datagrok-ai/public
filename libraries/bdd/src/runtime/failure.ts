@@ -57,11 +57,11 @@ export function failure(at: string, step: string, e: unknown, shown = '', frame 
   return new StepFailure(at, step, shown ? `${reason}\n${shown}` : reason, e, frame);
 }
 
-/** The journey's verdict: every failed scenario with its step report; the first failure's feature
- * line is the only frame. */
-export function journeyFailure(failed: {name: string; error: unknown}[], scenarios: number): Error {
+/** The journey's verdict: every failed scenario with its step report, and where a capability gate
+ * skipped the rest, if one did; the first failure's feature line is the only frame. */
+export function journeyFailure(failed: {name: string; error: unknown}[], scenarios: number, skipped = ''): Error {
   const list = failed.map((f) => `${f.name}\n${indent(f.error instanceof StepFailure ? f.error.message : reasonOf(f.error))}`);
-  const e = new Error(`${failed.length} of ${scenarios} scenarios failed\n\n${list.join('\n\n')}`);
+  const e = new Error(`${failed.length} of ${scenarios} scenarios failed\n\n${list.join('\n\n')}${skipped ? `\n\n${skipped}` : ''}`);
   const first = failed.map((f) => f.error).find((x): x is StepFailure => x instanceof StepFailure && x.frame !== '');
   e.stack = e.message + (first ? `\n    at ${first.frame}` : '');
   return e;

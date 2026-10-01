@@ -34,7 +34,7 @@ test.describe("The Data Aggregation tutorial", () => {
     await session.step(23, "And user clears the saved pivot table parameters", () => clearSavedParameters(page));
     await session.step(24, "And the Tutorials app is open", () => tutorialsOpen(page));
     await session.step(27, "When user starts the \"Data Aggregation\" tutorial", () => startTutorial(page, "Data Aggregation"));
-    await session.step(28, "Then the tutorial progress should be 1 of 12", () => tutorialProgress(page, 1, 12));
+    await session.step(28, "Then the tutorial progress should be 1 of 11", () => tutorialProgress(page, 1, 11));
     await session.step(29, "When user picks \"Data > Aggregate Rows...\" from the top menu", () => pickFromTopMenu(page, "Data > Aggregate Rows..."));
     await session.step(30, "Then the tutorial step \"Open Aggregation Editor\" should be done", () => stepDone(page, "Open Aggregation Editor"));
     await session.step(31, "And the open tableview should have 1 pivot table viewer", () => viewerCount(page, 1, "pivot table"));
@@ -78,7 +78,7 @@ test.describe("The Data Aggregation tutorial", () => {
     await session.step(77, "And the \"history entries\" reading of pivot table viewer should contain \"med(WEIGHT)\"", () => readingContains(page, "history entries", el("pivot table viewer"), "med(WEIGHT)"));
     await session.step(79, "And the \"Data Aggregation\" tutorial should be completed", () => tutorialCompleted(page, "Data Aggregation"));
     await session.step(80, "And the tutorial should have listed 11 steps", () => tutorialStepsListed(page, 11));
-    await session.step(81, "And the tutorial progress should be 12 of 12", () => tutorialProgress(page, 12, 12));
+    await session.step(81, "And the tutorial progress should be 11 of 11", () => tutorialProgress(page, 11, 11));
     await session.step(82, "And no hint should be shown", () => noHintShown(page));
     await session.step(83, "And no errors should have been logged", () => noErrors(page));
   });

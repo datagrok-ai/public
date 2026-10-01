@@ -16,7 +16,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
     return 'Learn about calculated columns, how to add them to a dataframe, and how to edit predefined formulas.';
   }
   get steps(): number {
-    return 13;
+    return 12;
   }
 
   get icon(): string {

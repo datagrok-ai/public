@@ -268,7 +268,6 @@ export class DemoView extends DG.ViewBase {
         grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
         this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
       }
-      // the demo's function has run and its view is named: what a test waits for instead of a delay
       grok.events.fireCustomEvent('demo-loaded', {path: viewPath, func: func.name});
     }
   }

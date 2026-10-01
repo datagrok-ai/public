@@ -26,7 +26,7 @@ Feature: The Grid Customization tutorial
 
   Scenario: A learner completes the Grid Customization tutorial
     When user starts the "Grid Customization" tutorial
-    Then the tutorial progress should be 1 of 31
+    Then the tutorial progress should be 1 of 30
 
     When user clicks on the "cell 1 of AGE" area of grid
     And user presses ArrowDown
@@ -104,8 +104,11 @@ Feature: The Grid Customization tutorial
     # the tutorial opens the context panel here; beside it, the Tutorials panel and the toolbox, the
     # last columns lie past the grid's edge: the learner makes room
     Given the toolbox pane is hidden
+    And the context panel is open
     When user presses F4
     Then context panel should be hidden
+    # the grid takes the room a moment after the panel goes; a gesture aimed before that lands a column off
+    And the "x scroll span" reading of grid should be 1
     # row 1 of demog is a "None" severity; 3302 rows share it
     Given the tutorial step "Find the SEVERITY column and select all rows with the \"None\" value" should not be done yet
     When user presses Control+Home in grid
@@ -181,6 +184,6 @@ Feature: The Grid Customization tutorial
 
     And the "Grid Customization" tutorial should be completed
     And the tutorial should have listed 30 steps
-    And the tutorial progress should be 31 of 31
+    And the tutorial progress should be 30 of 30
     And no hint should be shown
     And no errors should have been logged

@@ -4,6 +4,7 @@ import {type Locator, type Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
+import {expectState} from '../../src/runtime/assertions.js';
 import {click, dblclick, editorOf, setExpanded} from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
@@ -11,7 +12,7 @@ import {cssString, escapeRegExp, exactText, locate} from '../../src/runtime/loca
 import {armEvent} from '../../src/runtime/viewer-menus.js';
 import {pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
 import {RUN_SUFFIX, deleteChatsOf, deleteLayoutsAtEnd, deletePictures, fixtureFamilies, isStaleFixture, pictureIdOf,
-  serverNow, serverRequests} from '../../src/runtime/server.js';
+  reportedServices, serverNow, serverRequests, serviceGap} from '../../src/runtime/server.js';
 import {signInWithSession} from '../common/session.js';
 import {taskBarFinished, watchTaskBar} from './events.js';
 
@@ -155,11 +156,13 @@ export const closeAllViews = When('user closes all views', async (page: Page) =>
 
 /** A project of these names, or of their families and older than an hour, is what a run that never
  * reached its feature end left behind: it goes, with the tables and the views it holds. One listing
- * without children serves every name — with them the complete listing takes minutes on dev. */
-async function deleteLeftoverProjects(page: Page, names: string[]): Promise<void> {
+ * without children serves every name — with them the complete listing takes minutes on dev.
+ * `own` keeps to the running user's projects, for a name other users have too. */
+async function deleteLeftoverProjects(page: Page, names: string[], own = false): Promise<void> {
   const families = fixtureFamilies(names);
-  const leftovers = async () => (await serverEntities(page, 'projects', '', false)).filter((project) =>
-    names.some((name) => [project.name, project.friendlyName].includes(name)) || isStaleFixture(project, families));
+  const owner = own ? await currentOwner(page) : undefined;
+  const leftovers = async () => (await serverEntities(page, 'projects', '', false, own)).filter((project) => (!owner || ownedBy(project, owner)) &&
+    (names.some((name) => [project.name, project.friendlyName].includes(name)) || isStaleFixture(project, families)));
   const pictures = new Set<string>();
   for (const leftover of await leftovers()) {
     const picture = await page.evaluate(async (id) => {
@@ -231,6 +234,15 @@ export const noProjectOnServer = Given('no project named {string} is on the serv
   atFeatureEnd(page, cleanup);
   await cleanup();
 }, {tier: 'api', description: 'deletes the projects an earlier run left under those names (comma-separated; with their tables and views), and again when the feature ends — for a save made through the Save dialog'});
+
+/* The "user's own" cleanups are for names a feature does not choose — a tutorial dictates them, and
+   people who took it by hand saved theirs under the same names: those of other users stay. */
+export const ownProjectGone = Given('the user\'s own project {string} is removed now and at feature end', async (page: Page, name: string) => {
+  silent(page);
+  const cleanup = () => deleteLeftoverProjects(page, [name], true);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'the running user\'s projects of that name go now and at feature end, with their tables, views and pictures; other users\' and packages\' stay'});
 
 export const projectsOnServer = Then('{int} project(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
   expectNamedCount(page, 'projects', 'projects', name, count),
@@ -409,12 +421,11 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
     // page, and the setter ignores a value it already has: off, then on, builds it
     grok.shell.windows.showBrowse = false;
     grok.shell.windows.showBrowse = true;
-    // a table view docks its Toolbox as a tab over Browse: bring the Browse tab to the front
+    // a table view docks its Toolbox as a tab over Browse: bring the Browse tab to the front (a tab handle
+    // selects on click; a mousedown would arm the dock's undock drag with nothing to release it)
     const tab = document.querySelector('.tab-handle[name="view-handle: Browse"]') as HTMLElement | null;
-    if (tab && !tab.classList.contains('tab-handle-selected')) {
-      tab.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+    if (tab && !tab.classList.contains('tab-handle-selected'))
       tab.click();
-    }
     return was;
   });
   await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});
@@ -515,17 +526,11 @@ export const contextPanelShows = Then('the context panel should show {string}', 
     return o == null ? 'nothing' : `${o.constructor?.name ?? typeof o} "${o instanceof DG.Viewer ? o.type : o.friendlyName || o.name || o.type || ''}"`;
   }), {message: `the current object (grok.shell.o), which the context panel renders`}).toMatch(new RegExp(`"${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"$`));
   // a viewer's panel is its property grid, with no header naming it: the text is claimed for entities
-  if (!await page.evaluate(() => grok.shell.o instanceof DG.Viewer))
+  if (await page.evaluate(() => grok.shell.o instanceof DG.Viewer))
+    await expect(page.locator('.grok-prop-panel .property-grid').first(), 'the viewer\'s properties in the context panel').toBeVisible();
+  else
     await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name);
-}, {description: 'the current object (grok.shell.o) is the entity of that name (a viewer: of that type), and the panel shows it'});
-
-/* `grok.shell.o = x` freezes the current object for one second (by design, GROK-21024 closed Won't fix),
-   and a package command sets it that way (Chem's Explore, the search viewers' metric link): the next
-   click that should change the panel is dropped if it comes within that second. Nothing releases the
-   freeze and nothing reads it, so this is the one timed wait — a user never clicks that fast. */
-export const scriptedFreezePassed = Given('the context panel\'s freeze after a scripted change has passed', async (page: Page) => {
-  await page.waitForTimeout(1100);
-}, {description: 'waits out the one-second freeze `grok.shell.o = x` puts on the current object; the platform has no signal for its end'});
+}, {description: 'the current object (grok.shell.o) is the entity of that name (a viewer: of that type), and the panel shows it (a viewer: its property grid)'});
 
 /* The table view shows a moved current cell in the panel 750 ms after the move (a debounced handler),
    and replaces whatever was made current meanwhile — this is the moment a user sees it arrive. */
@@ -535,8 +540,11 @@ export const contextPanelShowsCurrentCell = Then('the context panel should show 
     const current = grok.shell.t?.currentCell;
     if (current?.column == null)
       return 'no current cell';
-    // a grid cell's semantic value carries no cell of its own: it is claimed by its value
-    return o instanceof DG.SemanticValue && o.value === current.value ? 'the current cell' :
+    // a semantic value that carries its cell is claimed by it (two rows can hold one value), else by its value
+    const cell = o instanceof DG.SemanticValue ? o.cell : null;
+    const same = cell?.column != null ? cell.rowIndex === current.rowIndex && cell.column.name === current.column.name :
+      o instanceof DG.SemanticValue && o.value === current.value;
+    return same ? 'the current cell' :
       `${o?.constructor?.name} "${String(o?.value ?? o?.name ?? '').slice(0, 40)}", current cell ${current.column.name} ${current.rowIndex + 1} "${String(current.value).slice(0, 40)}"`;
   }), {message: 'the current object (grok.shell.o) against the table\'s current cell'}).toBe('the current cell');
 }, {description: 'the current object is the value of the table\'s current cell, as the panel shows it after a row or cell move'});
@@ -673,6 +681,15 @@ export const signInAsSelf = When('user signs in as themselves again', async (pag
 }, {tier: 'api', description: 'the shell reloads under the session the feature started with'});
 
 const signedInLogin = (page: Page): Promise<string> => page.evaluate(async () => String((await grok.dapi.users.current()).login));
+/** A user's own entity is named in the namespace of the user's home project, or in none; one a package
+ * ships carries the package's, and its author is whoever published the package. */
+type Owner = {id: string; namespace: string};
+const currentOwner = (page: Page): Promise<Owner> => page.evaluate(async () => {
+  const user = await grok.dapi.users.current();
+  return {id: String(user.id), namespace: String(user.project?.name ?? '')};
+});
+const ownedBy = (entity: ServerEntity, owner: Owner): boolean => entity.author === owner.id &&
+  (!entity.nqName!.includes(':') || entity.nqName!.startsWith(`${owner.namespace}:`));
 
 export const sharingUserSignedIn = Then('the sharing user should be signed in', async (page: Page) => {
   expect(await signedInLogin(page), 'the account the server sees behind the page').toBe(sharingLogin());
@@ -771,19 +788,24 @@ export const notListedInMyStuffBucket = Then('{string} should not be listed in t
   const bucket = await myStuffBucket(page, type);
   if (bucket == null)
     return;
+  // a collapsed bucket has not loaded its children, so it lists nothing whatever is on the server
+  await expectState(page, el(`${bucket} tree node inside browse tree`), 'expanded');
   await expect.poll(() => page.locator(`[name="tree-${cssString(`${bucket}---${dashed(name)}`)}"]`).count(),
     {message: `${name} under My stuff > ${bucket}`}).toBe(0);
-}, {tier: 'ui', description: 'no such node under the bucket of an entity type in My stuff; a bucket the stand does not list at all lists nothing'});
+}, {tier: 'ui', description: 'no such node under the expanded bucket of an entity type in My stuff (a collapsed one fails the claim); a bucket the stand does not list at all lists nothing'});
 
 // Space and group name filters miss existing entities, so names are matched after reading every page.
 type NamedSource = 'spaces' | 'models' | 'groups' | 'queries' | 'scripts' | 'connections';
 type CleanupSource = NamedSource | 'projects' | 'tables';
-type ServerEntity = {id: string; name: string; friendlyName: string; createdOn: number; children?: string[]};
+type ServerEntity = {id: string; name: string; friendlyName: string; author?: string; nqName?: string; createdOn: number;
+  children?: string[]};
 type CleanupStage = {source: CleanupSource; ids: string[]};
 
+/** `authors` reads who made each one and its namespace, for the user's own cleanups: a group or a space
+ * can have no author, whose getter then throws. */
 async function serverEntities(page: Page, source: CleanupSource, filter = '',
-  children = true): Promise<ServerEntity[]> {
-  return page.evaluate(async ([src, query, withChildren]) => {
+  children = true, authors = false): Promise<ServerEntity[]> {
+  return page.evaluate(async ([src, query, withChildren, withAuthors]) => {
     try {
       // The tables gallery hides system tables, including training artifacts.
       let data = (src === 'tables' ? grok.dapi.entities : grok.dapi[src]).order('id');
@@ -797,7 +819,8 @@ async function serverEntities(page: Page, source: CleanupSource, filter = '',
         const entities = await data.list({pageSize: 1000, pageNumber});
         for (const entity of entities)
           result.push({id: entity.id, name: entity.name, friendlyName: entity.friendlyName,
-            createdOn: entity.createdOn?.valueOf() ?? 0,
+            author: withAuthors ? String(entity.author?.id ?? '') : undefined,
+            nqName: withAuthors ? String(entity.nqName ?? '') : undefined, createdOn: entity.createdOn?.valueOf() ?? 0,
             // a project can hold a child whose entity is gone: one of those must not fail the listing
             children: src === 'projects' && withChildren ?
               entity.children.filter(Boolean).map((child: any) => child.id) : undefined});
@@ -809,7 +832,7 @@ async function serverEntities(page: Page, source: CleanupSource, filter = '',
       // Dart ApiException loses its message when Playwright serializes it directly.
       throw new Error(`${src} list: ${(error as any)?.message ?? String(error)}`);
     }
-  }, [source, filter, children] as [CleanupSource, string, boolean]);
+  }, [source, filter, children, authors] as [CleanupSource, string, boolean, boolean]);
 }
 
 /* groups.delete refuses a group holding a global permission, and an entity delete orphans the grant. */
@@ -820,29 +843,22 @@ async function deleteGlobalGrantsOf(page: Page, entity: ServerEntity): Promise<v
       await api.remove(`/privileges/permissions/${grant.id}`);
 }
 
-function namedCleanup(page: Page, source: NamedSource, what: string, names: string[]): () => Promise<void> {
+/** `own` keeps to the running user's entities, for a name other users have too. */
+function namedCleanup(page: Page, source: NamedSource, what: string, names: string[], own = false): () => Promise<void> {
   const families = fixtureFamilies(names);
   let createdAfter: number | undefined;
-  let authorId: string;
+  let owner: Owner | undefined;
   const pending = new Map<string, CleanupStage[]>();
   return async () => {
     await expect.poll(async () => {
       try {
-        if (source === 'models' && createdAfter === undefined) {
-          authorId = await page.evaluate(async () => {
-            try {
-              return String((await grok.dapi.users.current()).id);
-            }
-            catch (error) {
-              throw new Error(`cleanup owner lookup: ${(error as any)?.message ?? String(error)}`);
-            }
-          });
-          // the server's Date header is in whole seconds
+        if ((source === 'models' || own) && owner === undefined)
+          owner = await currentOwner(page);
+        // the server's Date header is in whole seconds
+        if (source === 'models' && createdAfter === undefined)
           createdAfter = await serverNow(page) + 1000;
-        }
-        const named = (await serverEntities(page, source))
-          .filter((entity) => names.includes(entity.friendlyName) || names.includes(entity.name) ||
-            isStaleFixture(entity, families));
+        const named = (await serverEntities(page, source, '', true, own)).filter((entity) => (!own || ownedBy(entity, owner!)) &&
+          (names.includes(entity.friendlyName) || names.includes(entity.name) || isStaleFixture(entity, families)));
         for (const entity of named) {
           if (pending.has(entity.id))
             continue;
@@ -861,7 +877,7 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
               catch (error) {
                 throw new Error(`model ${id} trainedOn lookup: ${(error as any)?.message ?? String(error)}`);
               }
-            }, [entity.id, authorId, createdAfter!] as [string, string, number]);
+            }, [entity.id, owner!.id, createdAfter!] as [string, string, number]);
             const wrappers = await serverEntities(page, 'projects',
               `isEntity = true and isPackage = false and relations.entity.id = "${entity.id}"`);
             for (const wrapper of wrappers)
@@ -1054,6 +1070,21 @@ export const connectionsOnServer = Then('{int} connection(s) named {string} shou
   expectNamedCount(page, 'connections', 'connections', name, count),
 {tier: 'api', description: 'what the server holds, not what the tree draws'});
 
+// a connection's queries go before it: the query's line comes first, and the cleanups run in that order
+export const ownQueryGone = Given('the user\'s own query {string} is removed now and at feature end', async (page: Page, name: string) => {
+  silent(page);
+  const cleanup = namedCleanup(page, 'queries', 'queries', [name], true);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'the running user\'s queries of that name go now and at feature end, with their chats — verified gone; other users\' and packages\' stay'});
+
+export const ownConnectionGone = Given('the user\'s own connection {string} is removed now and at feature end', async (page: Page, name: string) => {
+  silent(page);
+  const cleanup = namedCleanup(page, 'connections', 'connections', [name], true);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+}, {tier: 'api', description: 'the running user\'s connections of that name go now and at feature end, with their chats — verified gone; other users\' and packages\' stay'});
+
 /** A script saved through the JS API: the doc string is the script, with the `name:` header set to
  * the name the feature uses (its comment character follows the language of the body). */
 export const scriptOnServer = Given('a script {string} is on the server:', async (page: Page, name: string, body: string) => {
@@ -1123,23 +1154,22 @@ export const connectionDataSource = Then('the {string} connection on the server 
 
 /* --- capability gates ---------------------------------------------------------------------------
    The suites run on stands that differ: not every one runs Jupyter or reaches an outside database.
-   A gate goes right before the first step that needs the capability — never at the top of a feature,
-   so the steps before it run on every stand and fail as usual — and skips the rest of the test with
-   the reason when the stand has not got it. Nothing else skips. */
+   A gate goes right before the first step that needs the capability — in the Background only when every
+   scenario needs it from its first step — so the steps before it run on every stand and fail as usual, and
+   it skips the rest of the test with the reason when the stand has not got it. Nothing else skips. */
 
 export const standRunsService = Given('the stand runs the {string} service', async (page: Page, service: string) => {
-  const status = await page.evaluate(async (name) => {
-    const info = (await grok.dapi.admin.getServiceInfos()).find((s: any) => s.name === name);
-    return info == null ? 'absent' : info.enabled && info.status === 'Running' ? '' : `${info.enabled ? '' : 'disabled, '}${info.status}`;
-  }, service);
-  test.skip(status !== '', `the stand does not run the ${service} service (${status}) — the rest of this test needs it`);
-}, {tier: 'api', description: 'a capability gate: the service is enabled and Running, as the platform reports it, or the rest of the test is skipped with the reason'});
+  const gap = serviceGap(await reportedServices(page), service);
+  test.skip(gap !== '', `the stand does not run the ${service} service (${gap}) — the rest of this test needs it`);
+}, {tier: 'api', description: 'a capability gate: skips the rest of the test when the stand reports the service absent, disabled or not Running; a stand that reports no service health at all (a dev stack) lets it go on'});
 
 export const packageInstalled = Given('the {string} package is installed', async (page: Page, name: string) => {
-  const found = await page.evaluate(async (n) => (await grok.dapi.packages.list({pageSize: 1000}))
-    .some((p: any) => p.name === n || p.friendlyName === n), name);
-  test.skip(!found, `the stand has no ${name} package — the rest of this test needs it`);
-}, {tier: 'api', description: 'a capability gate: a package of that name (or friendly name) is on the stand, or the rest of the test is skipped with the reason'});
+  // an installed package has its functions registered; the server's package list also holds what a registry
+  // offers for installing, and reading it costs a second per gate
+  const found = await page.evaluate((n) => DG.Func.find({package: n}).length > 0 ||
+    DG.Func.find().some((f: any) => f.package?.friendlyName === n), name);
+  test.skip(!found, `the stand has no ${name} package installed — the rest of this test needs it`);
+}, {tier: 'api', description: 'a capability gate: a package of that name (or friendly name) is installed on the stand (its functions are registered), or the rest of the test is skipped with the reason'});
 
 export const standServesHelp = Given('the stand serves the help pages', async (page: Page) => {
   // as the help panel reads a page (help_panel.dart): the .md, then the .mdx, and an HTML document is a fallback, not a page
@@ -1616,9 +1646,6 @@ async function openConsole(page: Page): Promise<void> {
     await expect(input, 'the console input, which takes the focus once the console is up').toBeFocused();
 }
 
-export const userOpensConsole = When('user opens the console', (page: Page) => openConsole(page),
-  {tier: 'ui', description: 'the Backquote key when the console is closed; ends once the console has taken the focus into its input, as it does when it opens'});
-
 export const closeConsole = When('user closes the console', async (page: Page) => {
   const input = page.locator('.d4-console-wrapper input.ui-input-editor').filter({visible: true});
   if (await input.count() > 0) {
@@ -1741,9 +1768,9 @@ export const userSettingsPutBack = Given('the {string} user settings are put bac
   });
 }, {tier: 'api', description: 'the whole map is remembered now and written back at feature end, the server read back until it holds it'});
 
-/* `grok.shell.settings` are the account's own (Settings > Beta and the rest), kept on the server: a
-   demo or a feature that flips one (Domain Databases turns on `enableDomainDatabases`) leaves it for
-   every later session of the account, so the value is remembered and put back at feature end. */
+/* `grok.shell.settings` are the user's own (Settings > Beta and the rest), kept in the browser's localStorage
+   (`grok-settings`): a demo or a feature that flips one (Domain Databases turns on `enableDomainDatabases`)
+   leaves it for every later feature on the worker's page, so the value is remembered and put back at feature end. */
 export const shellSettingPutBack = Given('the {string} shell setting is put back at feature end', async (page: Page, name: string) => {
   const before = await page.evaluate((n) => (grok.shell.settings as any)[n], name);
   atFeatureEnd(page, async () => {

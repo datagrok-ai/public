@@ -21,13 +21,13 @@ Feature: The Scatter Plot tutorial
 
   Scenario: A learner completes the Scatter Plot tutorial
     When user starts the "Scatter Plot" tutorial
-    Then the tutorial progress should be 1 of 11
+    Then the tutorial progress should be 1 of 10
     And the tutorial step "Open scatter plot" should not be done yet
     And scatter-plot icon in toolbox should be hinted
     When user clicks on scatter-plot icon in toolbox
     Then the open tableview should have 1 scatter plot viewer
     And the tutorial step "Open scatter plot" should be done
-    And the tutorial progress should be 2 of 11
+    And the tutorial progress should be 2 of 10
 
     When user picks "HEIGHT" in the "x" column selector of scatter plot viewer
     Then the tutorial step "Set X to HEIGHT" should be done
@@ -66,6 +66,6 @@ Feature: The Scatter Plot tutorial
 
     And the "Scatter Plot" tutorial should be completed
     And the tutorial should have listed 10 steps
-    And the tutorial progress should be 11 of 11
+    And the tutorial progress should be 10 of 10
     And no hint should be shown
     And no errors should have been logged

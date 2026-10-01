@@ -28,6 +28,7 @@ Feature: The R-Groups Analysis tutorial
 
   Background:
     Given user is logged in
+    And the "Chem" package is installed
     And the molecule sketcher is "OpenChemLib"
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end

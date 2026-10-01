@@ -51,8 +51,5 @@ export const customFired = Then('the {string} custom event should have fired', a
    `path` once a demo started from the tree has run and its view is named — the event says which demo,
    so a claim can tell the demo it opened from one left over from before. */
 export const customFiredWith = Then('the {string} custom event should have fired with {word} {string}', async (page: Page, id: string, key: string, value: string) => {
-  const args = await expectCustomEvent(page, id, pollMs(60000)) as Record<string, unknown> | null;
-  const got = args == null ? undefined : args[key];
-  if (String(got) !== value)
-    throw new Error(`the "${id}" custom event carried ${key} "${got}", not "${value}"`);
-}, {description: 'fired since "listens for" (up to 60 s), and its last arguments hold that value under that key'});
+  await expectCustomEvent(page, id, pollMs(60000), (args) => String((args as Record<string, unknown> | null)?.[key]) === value);
+}, {description: 'fired since "listens for" with that value under that key (up to 60 s): a firing with another value, left over from before, is waited past'});

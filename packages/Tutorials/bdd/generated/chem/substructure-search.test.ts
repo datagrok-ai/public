@@ -17,7 +17,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, pressKeyIn, shouldBe, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {filterPanelHas, filterPasses, filterPassesAll, selectedPassFilter, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {autostartsCompleted, noHintShown, sketcherIs, userSettingsPutBack} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {autostartsCompleted, noHintShown, packageInstalled, sketcherIs, userSettingsPutBack} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {enterCardBound, openCardSettings, pickCardIndicatorMenu, pickSearchType} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
 import {clickArea, hoverArea, noErrors, pickFromAreaContextMenu, readingNotAsRemembered, readingReads, rememberReading} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {pickFromViewerMenu, toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
@@ -27,7 +27,8 @@ test.describe("The Substructure Search and Filtering tutorial", () => {
   const session = feature(test, "features/chem/substructure-search.feature", import.meta.url);
   test("A learner completes the Substructure Search and Filtering tutorial", {tag: ["@tutorials", "@serial", "@realizes:tutorials.substructure-search-filtering"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(21, "Given user is logged in", () => loggedIn(page));
+    await session.step(20, "Given user is logged in", () => loggedIn(page));
+    await session.step(21, "And the \"Chem\" package is installed", () => packageInstalled(page, "Chem"));
     await session.step(22, "And the molecule sketcher is \"OpenChemLib\"", () => sketcherIs(page, "OpenChemLib"));
     await session.step(23, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(24, "And the \"tutorials\" user settings are put back at feature end", () => userSettingsPutBack(page, "tutorials"));
@@ -35,7 +36,7 @@ test.describe("The Substructure Search and Filtering tutorial", () => {
     await session.step(26, "And the \"Substructure Search and Filtering\" tutorial is not completed yet", () => tutorialNotCompleted(page, "Substructure Search and Filtering"));
     await session.step(27, "And the Tutorials app is open", () => tutorialsOpen(page));
     await session.step(30, "When user starts the \"Substructure Search and Filtering\" tutorial", () => startTutorial(page, "Substructure Search and Filtering"));
-    await session.step(31, "Then the tutorial progress should be 1 of 11", () => tutorialProgress(page, 1, 11));
+    await session.step(31, "Then the tutorial progress should be 1 of 10", () => tutorialProgress(page, 1, 10));
     await session.step(32, "When user picks \"Chem > Search > Substructure Search...\" from the top menu", () => pickFromTopMenu(page, "Chem > Search > Substructure Search..."));
     await session.step(33, "Then the tutorial step \"Click Chem > Search > Substructure Search…\" should be done", () => stepDone(page, "Click Chem > Search > Substructure Search…"));
     await session.step(34, "And sketcher dialog should be visible", () => shouldBe(page, el("sketcher dialog"), "visible"));
@@ -87,7 +88,7 @@ test.describe("The Substructure Search and Filtering tutorial", () => {
     await session.step(92, "And every selected row should pass the filter", () => selectedPassFilter(page));
     await session.step(94, "And the \"Substructure Search and Filtering\" tutorial should be completed", () => tutorialCompleted(page, "Substructure Search and Filtering"));
     await session.step(95, "And the tutorial should have listed 10 steps", () => tutorialStepsListed(page, 10));
-    await session.step(96, "And the tutorial progress should be 11 of 11", () => tutorialProgress(page, 11, 11));
+    await session.step(96, "And the tutorial progress should be 10 of 10", () => tutorialProgress(page, 10, 10));
     await session.step(97, "And no hint should be shown", () => noHintShown(page));
     await session.step(98, "And no errors should have been logged", () => noErrors(page));
   });

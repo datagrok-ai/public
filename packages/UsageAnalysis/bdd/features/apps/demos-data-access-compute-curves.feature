@@ -14,6 +14,7 @@ Feature: The Data Access, Compute and Curves demos open from Browse > Apps > Dem
   Background:
     Given user is logged in
     And the browse panel is open
+    And the "Tutorials" package is installed
     And Apps tree node inside browse tree is expanded
     And Apps---Demo tree node inside browse tree is expanded
 

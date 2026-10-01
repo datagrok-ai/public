@@ -15,7 +15,7 @@ export class EmbeddedViewersTutorial extends Tutorial {
     return 'Find out how to use viewers in tooltips and inside other viewers';
   }
   get steps(): number {
-    return 10;
+    return 9;
   }
 
   get icon(): string {

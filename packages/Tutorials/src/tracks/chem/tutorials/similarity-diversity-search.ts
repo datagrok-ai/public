@@ -21,7 +21,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     'while Diversity Search shows N molecules of different chemical classes in the dataset.';
   }
 
-  get steps() {return 13;}
+  get steps() {return 12;}
 
   get icon() {
     return '🔍🧬';

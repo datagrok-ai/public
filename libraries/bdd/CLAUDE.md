@@ -79,10 +79,14 @@ the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (ch
 filtering, editing and removing nodes), which no package test reaches. Similar things should stay/be translated as well, as long as they actually test ui.
 
 A UI walk that an outside dependency interrupts halfway (a tutorial whose last step runs SQL on an
-outside host or Python in Jupyter) keeps its UI part: a capability gate (`the stand runs the {string}
-service`, `the stand can reach the database of the {string} connection`) goes right before the step
-that needs it and skips the rest of the test where the stand has not got it (`test.skip`; `isSkip` in
-`failure.ts` lets it through the harness and a journey). A third gate, `the {string} package is
+outside host) keeps its UI part: a capability gate (`the stand runs the {string} service`, `the stand
+can reach the database of the {string} connection`) goes right before the step that needs it and skips
+the rest of the test where the stand has not got it (`test.skip`; `isSkip` in `failure.ts` lets it
+through the harness; a journey that skips after a failed scenario reports that failure). Python in
+Jupyter stays out even behind a gate (the lead, 2026-10-01): the Scripting tutorial ends before its
+run. The service gate reads the health the stand reports (`serviceGap` in `server.ts`); a dev stack
+reports none (datlas runs without `checkHealth`), and that lets the test go on rather than skip — a
+tutorial, which itself refuses to start on such a stand, gates with the Tutorials project's strict copy. A third gate, `the {string} package is
 installed`, is for a package a feature needs but does not test (a Chem demo on a stand without Chem,
 as the minimal CI stack is); it may sit in the Background when every scenario needs that package, and
 never names the package under test, whose absence is a failure. Two more, agreed 2026-09-30: `the stand has

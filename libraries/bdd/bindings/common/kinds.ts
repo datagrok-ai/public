@@ -287,7 +287,8 @@ kind('card', {
 kind('gallery card', {
   selector: '.d4-gallery-card, .grok-app-card',
   match: ['dart', 'label', 'text'],
-  labelSelector: '.grok-gallery-grid-item-title, .grok-package-name',
+  // a package card's name block also holds its version
+  labelSelector: '.grok-gallery-grid-item-title, .grok-package-name > div:first-child',
   dartNames: ['div-{q}'],
 });
 /** The toggles of the status bar's windows manager (Tabs, Toolbox, Context Panel, Console,

@@ -10,7 +10,8 @@ Feature: Opening what the address names
   address taken again after every view was closed. A query's string parameter goes in quoted, as the
   platform writes it itself (`?shipCountry=%22Germany%22`); unquoted, the value is read as a
   variable. The parameterized query is the Dbtests package's PostgresByStringChoices on the
-  NorthwindTest connection, which the queries features run on too: Germany has 122 orders.
+  NorthwindTest connection (PostgresTest), which the queries features run on too: Germany has 122
+  orders; a stand that does not reach its database skips the scenario.
 
   Background:
     Given user is logged in
@@ -19,12 +20,12 @@ Feature: Opening what the address names
   # (/p/admin.bdd-x-y/...) whose path parse stops at the first dash ("Unable to get project asset
   # "bdd"") — a candidate finding, not claimed until it is walked by hand
   Scenario: The address of an open project opens it again after everything was closed
-    Given no project named "bddbrowseroute{time}" is on the server
+    Given no project named "bddbrowseroute" is on the server
     And user opens demog-1000 dataset
     And user adds a scatter plot viewer
-    When user saves the current view as project "bddbrowseroute{time}"
+    When user saves the current view as project "bddbrowseroute"
     And user closes all views
-    And user opens the "bddbrowseroute{time}" project
+    And user opens the "bddbrowseroute" project
     Then the page address should contain "bddbrowseroute"
     When user remembers the page address
     And user closes all views
@@ -43,6 +44,8 @@ Feature: Opening what the address names
     And no error or warning balloon should have been shown
 
   Scenario: A query address runs the query with the parameter it carries
+    # the query runs on db.datagrok.ai, outside the stand
+    Given the stand has a reachable "PostgresTest" connection
     When user opens the address "/func/Dbtests.PostgresByStringChoices?shipCountry=%22Germany%22"
     Then the "PostgresByStringChoices" view should be current
     And the table should have 122 rows

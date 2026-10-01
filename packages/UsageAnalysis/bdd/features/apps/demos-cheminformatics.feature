@@ -13,6 +13,7 @@ Feature: The Cheminformatics demos open from Browse > Apps > Demo with their con
   Background:
     Given user is logged in
     And the browse panel is open
+    And the "Tutorials" package is installed
     And the "Chem" package is installed
     And Apps tree node inside browse tree is expanded
     And Apps---Demo tree node inside browse tree is expanded

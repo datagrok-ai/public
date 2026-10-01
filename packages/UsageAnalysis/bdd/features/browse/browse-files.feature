@@ -62,14 +62,14 @@ Feature: The Files section of the Browse tree
     And no error or warning balloon should have been shown
 
   Scenario: A file written on the server shows in the tree after Refresh
-    Given a file "System:AppData/UsageAnalysis/bdd-browse-{run}.txt" with text "written by a feature" is on the server
+    Given a file "System:AppData/UsageAnalysis/bdd-browse-refresh.txt" with text "written by a feature" is on the server
     And Files---App-Data tree node inside browse tree is expanded
     When user refreshes the browse tree
     # Refresh brings a folder open inside a section back collapsed (a candidate finding, see
     # browse-navigation.feature), so the path is opened again
     And Files---App-Data tree node inside browse tree is expanded
     And user expands Files---App-Data---UsageAnalysis tree node inside browse tree
-    Then Files---App-Data---UsageAnalysis---bdd-browse-{run}.txt tree node inside browse tree should be visible
+    Then Files---App-Data---UsageAnalysis---bdd-browse-refresh.txt tree node inside browse tree should be visible
     When user collapses Files---App-Data tree node inside browse tree
     Then no errors should have been logged
     And no error or warning balloon should have been shown

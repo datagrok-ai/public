@@ -119,6 +119,25 @@ export const fileOnServer = Given('a file {string} with text {string} is on the 
     {message: `the file ${path} on the server`, timeout: pollMs(30000)}).toBe(true);
 }, {tier: 'api', description: 'written through the files API (the tree is not told); deleted at feature end, verified gone'});
 
+/* A file a product keeps in the user's home on the side (Diff Studio's list of recent models,
+   `diff-studio-recent.d42`): the feature leaves it as it found it — the same bytes put back, or a file
+   that was not there deleted — read back at feature end. */
+export const homeFilePutBack = Given('the file {string} of the user\'s home is put back at feature end', async (page: Page, name: string) => {
+  const path: string = await page.evaluate((n) => `${grok.shell.user.project.name}:Home/${n}`, name);
+  const before: number[] | null = await page.evaluate(async (p) =>
+    await grok.dapi.files.exists(p) ? Array.from(await grok.dapi.files.readAsBytes(p) as Uint8Array) : null, path);
+  atFeatureEnd(page, async () => {
+    if (before == null) {
+      await deleteServerFile(page, path);
+      return;
+    }
+    await page.evaluate(async ([p, bytes]) => { await grok.dapi.files.write(p, bytes); }, [path, before] as [string, number[]]);
+    await expect.poll(() => page.evaluate(async ([p, bytes]) => await grok.dapi.files.exists(p) &&
+      JSON.stringify(Array.from(await grok.dapi.files.readAsBytes(p) as Uint8Array)) === JSON.stringify(bytes), [path, before] as [string, number[]]),
+    {message: `the file ${path} as it was before the feature`, timeout: pollMs(30000)}).toBe(true);
+  });
+}, {tier: 'api', description: 'the file in the account\'s home folder is remembered now and put back at feature end (deleted if it was not there), read back'});
+
 async function putIntoUsersFiles(page: Page, name: string, write: (path: string) => Promise<void>): Promise<void> {
   const home: string = await page.evaluate(async () => {
     const project = grok.shell.user.project.name;

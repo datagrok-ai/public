@@ -28,8 +28,8 @@ panel itself (its toolbar, the tree and its keyboard, browsing versus persistent
 stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and the per-section
 error matrix), translated from the manual cases, each feature naming what it left out and why.
 Two of its scenarios are `@full-stand` (they name the providers and the Platform sections a full
-stand carries) and one is `@compute` (the Model Hub needs the Compute package): a smaller stand
-runs with `grok-bdd run --grep-invert "@full-stand|@compute"`. `features/guides/` holds the
+stand carries): a smaller stand runs with `grok-bdd run --grep-invert "@full-stand"`, and a scenario
+whose package the stand lacks skips at its package gate. `features/guides/` holds the
 answers to "how do I …" questions as scenarios: `grok-bdd guide features/guides/<name>.feature`
 films one into `guides/<feature>/<scenario>/guide.mp4` with the numbered steps and pictures beside
 it (`steps.md`), `--help-pages` re-films every `@help:`-tagged one into the help tree; `INDEX.md`

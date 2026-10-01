@@ -13,6 +13,7 @@ import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {el} from '../../../src/runtime/args.js';
+import {atFeatureEnd} from '../../../src/runtime/harness.js';
 import {cssString, exactText, locate} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
 import * as guide from '../../../src/runtime/guide.js';
@@ -279,9 +280,10 @@ export const pickInAreaSelector = When('user picks {string} in the column select
     const c = v.centerOf(await v.hitArea(page, target, area, true));
     const loc = await v.viewerLocator(page, target);
     const found = await loc.evaluate((root, p) => {
+      for (const marked of Array.from(document.querySelectorAll('[data-bdd-selector]')))
+        marked.removeAttribute('data-bdd-selector');
       for (const s of Array.from(root.querySelectorAll('.d4-column-selector')) as HTMLElement[]) {
         const r = s.getBoundingClientRect();
-        s.removeAttribute('data-bdd-selector');
         if (p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom) {
           s.setAttribute('data-bdd-selector', '');
           return true;
@@ -1100,6 +1102,8 @@ export const currentRowIsHovered = Then('the {string} reading of {widget} should
    card is named by its place: "card 2 of <viewer>" is the second card drawn. */
 async function nthCard(page: Page, target: ElementRef, n: number): Promise<{name: string; row: number}> {
   let names: string[] = [];
+  // a search viewer lays its cards out again after a click: their order is read off a finished frame
+  await settle(page, target);
   await expect.poll(async () => {
     names = Object.keys(await v.hitAreas(page, target)).filter((k) => /^card \d+$/.test(k));
     return names.length >= n;
@@ -1110,20 +1114,18 @@ async function nthCard(page: Page, target: ElementRef, n: number): Promise<{name
 
 const clickedCardRow = new WeakMap<Page, number>();
 
-export const clickNthCard = When('user clicks on card {int} of {widget}', async (page: Page, n: number, target: ElementRef) => {
-  const {name, row} = await nthCard(page, target, n);
+function rememberClickedCard(page: Page, row: number): void {
+  if (!clickedCardRow.has(page))
+    atFeatureEnd(page, async () => { clickedCardRow.delete(page); });
   clickedCardRow.set(page, row);
-  const c = v.centerOf(await v.hitArea(page, target, name, true));
-  await page.mouse.click(c.x, c.y);
-  await settle(page, target);
-}, {tier: 'ui', description: 'the Nth result card in the order the viewer lays them out (the `card <row>` areas of a search viewer); its row is remembered'});
+}
 
 /* A click on the molecule drawing of a card makes the molecule current through `grok.shell.o`, which
    freezes the context panel for a second and drops a gear or a card clicked within it; a click on the
    card beside the drawing (its score, its margin) only moves the current row. */
 export const clickNthCardBesideDrawing = When('user clicks on card {int} of {widget} beside its drawing', async (page: Page, n: number, target: ElementRef) => {
   const {name, row} = await nthCard(page, target, n);
-  clickedCardRow.set(page, row);
+  rememberClickedCard(page, row);
   const r = await v.hitArea(page, target, name, true);
   const point = await page.evaluate(([x, y, w, h]) => {
     const card = document.elementFromPoint(x + w / 2, y + h / 2)?.closest('[name^="card-"]');
@@ -1186,6 +1188,7 @@ export const walkToColumn = When('user moves the current cell of {widget} to the
 /* Where the grid is scrolled depends on the row a card or a search made current, so the cell is the
    first one of the column the grid shows, skipping the current row: a click must move the current cell. */
 export const clickOtherCell = When('user clicks on a {string} cell of {widget} other than the current one', async (page: Page, column: string, target: ElementRef) => {
+  await settle(page, target);
   const current = await v.onViewer(page, target, (root) => (window as any).DG.Widget.find(root).dataFrame.currentRowIdx + 1) as number;
   const re = new RegExp(`^cell (\\d+) of ${column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
   const cells = Object.keys(await v.hitAreas(page, target)).filter((k) => re.test(k) && Number(re.exec(k)![1]) !== current);

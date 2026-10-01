@@ -2,9 +2,12 @@
 Feature: The Sticky Meta tutorial
   Walks Data access > Sticky Meta from its card to the end: an entity type made under Browse >
   Platform > Sticky Meta > Types, a schema for it under Schemas with one string property, a molecule
-  of a table annotated through the Sticky meta pane, and the annotation read back in the cell's
-  tooltip. Each step is claimed as ticked and as done — the dialogs, the fields, what is saved, the
-  pane and the tooltip.
+  of a table annotated through the Sticky meta pane, and the cell hovered. Each step is claimed as
+  ticked and as done — the dialogs, the fields, the type and the schema on the server, the pane and
+  its saved state.
+  Not claimed: the annotation read back. The tutorial's last step asks for the cell's tooltip, which
+  shows the molecule; the annotation has a tooltip of its own on the dot drawn in the cell's corner,
+  and the grid reports no area for that dot.
   Translated from playwright-tests/e2e/stickymeta (the TestTrack Sticky Meta cases walked the same
   screens outside the tutorial).
 
@@ -14,6 +17,7 @@ Feature: The Sticky Meta tutorial
 
   Background:
     Given user is logged in
+    And the "Chem" package is installed
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end

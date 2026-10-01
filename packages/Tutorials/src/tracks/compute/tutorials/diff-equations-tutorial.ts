@@ -374,7 +374,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       return;
 
     inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
-    // by caption: the eta parameter the learner added shifts every input after Predator
+    // found by caption, since the eta parameter the learner added shifts every input after Predator
     const editorOf = (caption: string) => (Array.from(inputRoots) as HTMLElement[])
       .find((r) => r.querySelector('label')?.textContent?.trim().toLowerCase() === caption.toLowerCase())
       ?.querySelector('input[class="ui-input-editor"]') as HTMLInputElement;

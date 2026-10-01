@@ -3,9 +3,9 @@
    tier (`grok-bdd list-steps`); what is left here is a second table on the same column object and
    the hierarchical card, whose tree is not a grid and reports no hit areas: its rows are addressed
    by a "/"-separated path of the labels the product draws. */
-import {expect, Locator, Page} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {exactText, viewers} from '@datagrok-libraries/bdd/runtime';
+import {exactText, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 const PANEL = '[name="viewer-Filters"]';
 

@@ -69,7 +69,8 @@ Feature: The Browse panel and the icons of its toolbar
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Find path reveals and selects the node of the object that is open
+  # the node was selected by the click that opened the file, so its selection is not Find path's to claim
+  Scenario: Find path reveals the node of the object that is open
     Given Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
     When user clicks on Files---Demo---demog.csv tree node inside browse tree
@@ -78,7 +79,6 @@ Feature: The Browse panel and the icons of its toolbar
     Then Files---Demo---demog.csv tree node inside browse tree should be hidden
     When user clicks on "Find path" icon inside browse toolbar
     Then Files---Demo---demog.csv tree node inside browse tree should be visible
-    And Files---Demo---demog.csv tree node inside browse tree should be selected
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -101,6 +101,8 @@ Feature: The Browse panel and the icons of its toolbar
   Scenario: Refresh brings in a script saved on the server meanwhile
     Given no script named "BDD-Browse-Script-{run}" is on the server
     And My stuff tree node inside browse tree is expanded
+    # a bucket loads its children when it opens: open before the script exists, it can learn of it only by Refresh
+    And user expands the "Scripts" bucket of My stuff
     And a script "BDD-Browse-Script-{run}" is on the server:
       """
       //language: javascript

@@ -1,5 +1,6 @@
+import * as DG from 'datagrok-api/dg';
 import {fromEvent, Observable, timer} from 'rxjs';
-import {distinctUntilChanged, filter, map, switchMap, take, timeout} from 'rxjs/operators';
+import {debounceTime, distinctUntilChanged, filter, map, switchMap, take, timeout} from 'rxjs/operators';
 
 /**
  * Emits (and completes) when the element returned by `get` is clicked.
@@ -24,4 +25,15 @@ export function elementClick(get: () => HTMLElement | null, timeoutMs = 30000): 
     switchMap((el) => fromEvent(el, 'click', {capture: true})),
     take(1),
   );
+}
+
+/**
+ * Emits when the learner has made a selection in this step: the selection settles (the events of one
+ * drag arrive as one) on rows other than the ones selected when the step began, so the tail of the
+ * previous step's gesture does not complete it.
+ */
+export function selectionMade(t: DG.DataFrame): Observable<unknown> {
+  const before = t.selection.toBinaryString();
+  return t.onSelectionChanged.pipe(debounceTime(300),
+    filter(() => t.selection.anyTrue && t.selection.toBinaryString() !== before));
 }

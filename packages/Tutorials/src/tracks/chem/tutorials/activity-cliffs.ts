@@ -55,7 +55,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     Let's launch the Activity Cliffs tool.`);
 
     const d = await this.openDialog('On the Top Menu, click Chem > Analyze > Activity Cliffs...',
-    'Activity Cliffs', this.getMenuItem('Chem', true));
+    'Activity Cliffs', () => this.getMenuItem('Chem', true));
 
     // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">
     //Learn more about exploring chemical data</a><br>

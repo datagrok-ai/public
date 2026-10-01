@@ -2,19 +2,18 @@
 Feature: The Data Connectors tutorial
   Walks Data access > Data Connectors from its card to the end: a Postgres connection added from the
   Browse tree's context menu and filled in, a query created on it from the same menu and named, and the
-  query run. Each step is claimed as ticked and as done — the dialog, every field, the connection and
-  the query view, and the rows the query brings.
+  query run. Each step is claimed as ticked and as done — the dialog, every field, the connection on
+  the server and the query's editor.
   Translated from playwright-tests/e2e/tutorials/data-connectors.test.ts. The connection's parameters
   are the ones the tutorial shows the learner (a public demo database).
 
   The tutorial needs Grok Connect (its prerequisite), and the query runs on db.datagrok.ai, outside the
-  stand: where the stand cannot reach it, the walk ends
-  there (skipped, not failed). The connection and the query have fixed names learners share, so only the
-  running user's own are removed, before the walk and after it.
+  stand: where the stand cannot reach it, the walk ends there (skipped, not failed). The connection
+  and the query have fixed names learners share, so only the running user's own are removed, before
+  the walk and after it; an account that sees other users' (an administrator, on a stand where people
+  took the tutorial by hand) finds more than one in the tree and on the server, and the walk fails.
   Fixed in the tutorial for this translation: the counter was 12 for 11 steps; it told the learner to
   click "Add connection...", and the menu item is "New connection...".
-  Fails at "no errors should have been logged" while GROK-20982 is open: the Activity count of the new
-  connection and query (/log/count) answers with an error body that the client parses as a number.
   Walked end to end on a local stand with the Grok Connect prerequisite lifted, since that stand
   reports no service health.
 
@@ -26,13 +25,14 @@ Feature: The Data Connectors tutorial
     And the package autostarts have completed
     And the "tutorials" user settings are put back at feature end
     And the "achievement-badges" user settings are put back at feature end
-    And the user's own connection "Starbucks" and query "Get Starbucks US" are removed now and at feature end
+    And the user's own query "Get Starbucks US" is removed now and at feature end
+    And the user's own connection "Starbucks" is removed now and at feature end
     And the "Data Connectors" tutorial is not completed yet
     And the Tutorials app is open
 
   Scenario: A learner completes the Data Connectors tutorial
     # the tutorial will not start without the connector service (its prerequisite)
-    Given the stand runs the "Grok Connect" service
+    Given the stand reports the "Grok Connect" service the tutorial requires
     When user starts the "Data Connectors" tutorial
     Then the tutorial progress should be 1 of 11
     Given the tutorial step "Create a connection to Postgres server" should not be done yet
@@ -58,6 +58,7 @@ Feature: The Data Connectors tutorial
     Given the tutorial step "Create a data query to the \"Starbucks\" data connection" should not be done yet
     When user picks "New Query..." from the context menu of Databases---Postgres---Starbucks tree node inside browse tree
     Then the tutorial step "Create a data query to the \"Starbucks\" data connection" should be done
+    And code editor should be visible
     Given the tutorial step "Set \"Name\" to \"Get Starbucks US\"" should not be done yet
     When user enters "Get Starbucks US" into "Name" input
     Then the tutorial step "Set \"Name\" to \"Get Starbucks US\"" should be done

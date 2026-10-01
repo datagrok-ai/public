@@ -49,7 +49,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     Let’s launch the RGA tool.`);
 
     const d = await this.openDialog('On the Top Menu, click Chem > Analyze > R-Groups Analysis...', 'R-Groups Analysis',
-      this.getMenuItem('Chem', true));
+      () => this.getMenuItem('Chem', true));
 
     this.title('Specify the scaffold', true);
     this.describe(`In the sketcher, you have two options to specify the scaffold:<br>

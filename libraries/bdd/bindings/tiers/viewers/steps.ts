@@ -189,6 +189,8 @@ async function firstAreaOf(page: Page, target: ElementRef, kind: string, free = 
     name = names.find((n) => n.startsWith(`${kind} `) && (!free || !others.some((o) => overlaps(areas[n], areas[o]))));
     return name != null ? 'found' : `${target.phrase} reports no "${kind} …" area; it has: ${names.slice(0, 20).join(', ')}`;
   }, {message: `the first "${kind}" area of ${target.phrase}`}).toBe('found');
+  if (!firstAreaTaken.has(page))
+    atFeatureEnd(page, async () => { firstAreaTaken.delete(page); });
   firstAreaTaken.set(page, name!);
   return name!;
 }

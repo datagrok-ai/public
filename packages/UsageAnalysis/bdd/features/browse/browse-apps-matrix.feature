@@ -6,6 +6,9 @@ Feature: Every application a stand runs in the browser opens from Browse > Apps 
   row names its node, the view the application opens, and two things only that application draws:
   its own inputs and buttons, the list it fills, the form it builds. The manual note of
   browse_manual_tests2.md section 6 (a double click as well as a single one) is its own outline.
+  What depends on the stand is not claimed: Metabolic Graph by its Escher menu, not by the labels of the
+  map its version ships; the Hit Triage apps by their campaign form, not by the inputs of the template's
+  data source; the Reports browser by its toolbar and its empty details, not by the reports the stand holds.
 
   Each row starts with the capability gate on its package: a stand without the package skips the
   row with the reason instead of failing it. Covered by their own packages' features: MPO profiles
@@ -41,18 +44,18 @@ Feature: Every application a stand runs in the browser opens from Browse > Apps 
       | Chem               | Apps---Chem   | Apps---Chem---Reactions    | Apps---Chem---Reactions---Reaction-Enumerator      | Reaction Enumerator      | "Number of steps" input            | "Next: Reactions" button        |
       | Chem               | Apps---Chem   | Apps---Chem---Reactions    | Apps---Chem---Reactions---Transformation-Reactions | Transformation Reactions | "Molecules" input                  | "Run Reaction" button           |
       | Chem               | Apps---Chem   | Apps---Chem---Reactions    | Apps---Chem---Reactions---Two-Component-Reactions  | Two-Component Reactions  | "Reactant 1" input                 | "Run Reaction" button           |
-      | HitTriage          | Apps---Chem   | Apps---Chem                | Apps---Chem---Hit-Triage                           | Hit Triage               | "Number Of Molecules" input        | "Start" button                  |
-      | HitTriage          | Apps---Chem   | Apps---Chem                | Apps---Chem---Hit-Design                           | Hit Design               | "Target molecules" input           | "Start" button                  |
-      | HitTriage          | Apps---Peptides | Apps---Peptides          | Apps---Peptides---PeptiHit                         | PeptiHit                 | "Chemist" input                    | "Start" button                  |
-      | HitTriage          | Apps---Peptides | Apps---Peptides          | Apps---Peptides---PepTriage                        | PepTriage                | "Peptide Count" input              | "Start" button                  |
+      | HitTriage          | Apps---Chem   | Apps---Chem                | Apps---Chem---Hit-Triage                           | Hit Triage               | "Campaign Name" input              | "Start" button                  |
+      | HitTriage          | Apps---Chem   | Apps---Chem                | Apps---Chem---Hit-Design                           | Hit Design               | "Template" input                   | "Start" button                  |
+      | HitTriage          | Apps---Peptides | Apps---Peptides          | Apps---Peptides---PeptiHit                         | PeptiHit                 | "Template" input                   | "Start" button                  |
+      | HitTriage          | Apps---Peptides | Apps---Peptides          | Apps---Peptides---PepTriage                        | PepTriage                | "Campaign Name" input              | "Start" button                  |
       | SequenceTranslator | Apps---Peptides | Apps---Peptides---Oligo-Toolkit | Apps---Peptides---Oligo-Toolkit---Oligo-Translator | Oligo Translator    | "Input format" input               | "Convert" button                |
       | SequenceTranslator | Apps---Peptides | Apps---Peptides---Oligo-Toolkit | Apps---Peptides---Oligo-Toolkit---Oligo-Pattern    | Oligo Pattern       | "Sense strand length" input        | "Edit strands" button           |
       | SequenceTranslator | Apps---Peptides | Apps---Peptides---Oligo-Toolkit | Apps---Peptides---Oligo-Toolkit---Oligo-Structure  | Oligo Structure     | "AS direction" input               | "Save SDF" button               |
-      | Metabolicgraph     | Apps---Misc   | Apps---Misc                | Apps---Misc---MetabolicGraph                       | Metabolic Graph          | "PGK" text                         | "ICDHyr" text                   |
+      | Metabolicgraph     | Apps---Misc   | Apps---Misc                | Apps---Misc---MetabolicGraph                       | Metabolic Graph          | "Map" text                         | "Model" text                    |
       | Flow               | Apps          | Apps                       | Apps---Flow                                        | Flow                     | "Create your first flow" button    | "Workflow demo" text            |
       | Plates             | Apps---Plates | Apps---Plates              | Apps---Plates---Search-plates                      | Search Plates            | "Imaging device" input             | "Plate cell count" input        |
       | Plates             | Apps---Plates | Apps---Plates              | Apps---Plates---Search-analyses                    | Search Analyses          | "IC50" input                       | "Hill Slope" input              |
-      | U2demo             | Apps---Dev    | Apps---Dev                 | Apps---Dev---Reports-Browser                       | Reports                  | first item in list                 | first row actions               |
+      | U2demo             | Apps---Dev    | Apps---Dev                 | Apps---Dev---Reports-Browser                       | Reports                  | "Reload from the server" icon button | "Select a report to see its details." text |
       | U2demo             | Apps---Dev    | Apps---Dev                 | Apps---Dev---U2-Designer                           | U2 Designer              | "nameInput" element                | "Save" button                   |
 
   Scenario Outline: A double click keeps <view> open through the next click in the tree

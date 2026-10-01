@@ -35,6 +35,7 @@ Feature: The shell's modes around the Browse panel
 
   Scenario: F7 enters presentation mode and leaves it
     Given user opens demog-1000 dataset
+    And status bar should be visible
     When user presses F7
     Then status bar should be hidden
     And "back to design mode" link should be visible

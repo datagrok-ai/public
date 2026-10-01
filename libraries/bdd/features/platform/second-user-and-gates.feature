@@ -4,6 +4,9 @@ Feature: The second account and the capability gates
   the rest of a test on a stand that has not got what it needs. Needs a second account
   (DATAGROK_SHARING_LOGIN, or the bddsecond user the setup creates with a dev key).
 
+  The service gate is not walked here: what it does depends on the health the stand reports, and a
+  dev stack reports none, which lets the test go on. Its verdict is unit-tested (tests/steps.test.ts).
+
   Background:
     Given user is logged in
 
@@ -14,10 +17,6 @@ Feature: The second account and the capability gates
     When user signs in as themselves again
     Then the running account should be signed in
     And no errors should have been logged
-
-  Scenario: A service the stand does not run skips the rest of the test
-    Given the stand runs the "No Such Service" service
-    Then the "No such view" view should be current
 
   Scenario: A package the stand does not have skips the rest of the test
     Given the "NoSuchPackageAnywhere" package is installed

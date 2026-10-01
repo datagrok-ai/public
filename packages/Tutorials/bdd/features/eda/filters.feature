@@ -28,7 +28,7 @@ Feature: The Filters tutorial
 
   Scenario: A learner completes the Filters tutorial
     When user starts the "Filters" tutorial
-    Then the tutorial progress should be 1 of 18
+    Then the tutorial progress should be 1 of 17
     When user clicks on scatter-plot icon in toolbox
     Then the tutorial step "Open scatter plot" should be done
     When user clicks on histogram icon in toolbox
@@ -79,9 +79,12 @@ Feature: The Filters tutorial
     Then the tutorial step "Hover over the histogram bins" should be done
     # the rows under the hovered bin are highlighted on the other viewers
     And scatter plot viewer should have repainted
-    When user clicks on the "bin 3" area of histogram viewer in filter panel
+    # the rows of the count clicked before are still selected: the bin's own selection is the change
+    And the tutorial step "Select one of the histogram bins" should not be done yet
+    When user remembers the "rows selected" reading of scatter plot viewer
+    And user clicks on the "bin 3" area of histogram viewer in filter panel
     Then the tutorial step "Select one of the histogram bins" should be done
-    And some rows should be selected
+    And the "rows selected" reading of scatter plot viewer should not be as remembered
     And the "selected bin 3" area of histogram viewer in filter panel should be painted
 
     When user clicks on the "cell 4 of AGE" area of grid
@@ -117,6 +120,6 @@ Feature: The Filters tutorial
 
     And the "Filters" tutorial should be completed
     And the tutorial should have listed 17 steps
-    And the tutorial progress should be 18 of 18
+    And the tutorial progress should be 17 of 17
     And no hint should be shown
     And no errors should have been logged

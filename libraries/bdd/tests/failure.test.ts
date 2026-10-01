@@ -64,3 +64,10 @@ test('a capability gate\'s skip is told apart from a failure, so the harness let
   assert.ok(!isSkip(new Error(IN_PAGE)));
   assert.ok(!isSkip(null));
 });
+
+test('a journey a gate cut short still reports the scenarios that failed before it, and where it stopped', () => {
+  const e = journeyFailure([{name: 'Coloring', error: new Error('boom')}], 4,
+    'the rest was skipped at "Generate": the stand does not run the Jupyter service');
+  assert.equal(e.message, '1 of 4 scenarios failed\n\nColoring\n  boom\n\n' +
+    'the rest was skipped at "Generate": the stand does not run the Jupyter service');
+});

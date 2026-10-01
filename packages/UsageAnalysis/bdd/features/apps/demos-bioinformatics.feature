@@ -14,6 +14,7 @@ Feature: The Bioinformatics demos open from Browse > Apps > Demo with their cont
   Background:
     Given user is logged in
     And the browse panel is open
+    And the "Tutorials" package is installed
     And Apps tree node inside browse tree is expanded
     And Apps---Demo tree node inside browse tree is expanded
     And Apps---Demo---Bioinformatics tree node inside browse tree is expanded
