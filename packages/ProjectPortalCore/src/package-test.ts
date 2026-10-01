@@ -8,6 +8,7 @@ import './tests/readiness-tests';
 import './tests/work-unit-tests';
 import './tests/workspace-growth-tests';
 import './tests/compound-tests';
+import './tests/portfolio-table-tests';
 
 export let _package = new DG.Package();
 export { tests };

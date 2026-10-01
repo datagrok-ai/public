@@ -84,3 +84,30 @@ export const currentSpace = Then('the open view should be the space {string}', a
   await expect.poll(() => page.evaluate(() => grok.shell.v?.project?.friendlyName ?? grok.shell.v?.name ?? ''),
     {message: 'the open view'}).toBe(name);
 }, {description: 'the Spaces view the Browse tree opens for a space, by the space\'s display name'});
+
+/** The open portfolio table's viewers by title: those over the programs and those over its linked tables. */
+export const tableViewers = Then('the portfolio table should show the viewers {string}', async (page: Page, titles: string) => {
+  const expected = titles.split(',').map((s) => s.trim());
+  await expect.poll(() => page.evaluate(() => {
+    const tv = grok.shell.tv;
+    const viewers = [...Array.from(tv?.viewers ?? []), ...(tv?.extraViewers ?? [])] as any[];
+    return viewers.filter((v) => v.root.isConnected && v.root.offsetHeight > 0).map((v) => v.props.title);
+  }).then((shown: string[]) => expected.filter((t) => !shown.includes(t))),
+  {message: 'viewers of the portfolio table not shown'}).toEqual([]);
+}, {description: 'every titled viewer is on screen in the current portfolio table view'});
+
+export const matrixFollows = Then('the readiness matrix should show the programs that pass the filter', async (page: Page) => {
+  await expect.poll(() => page.evaluate(() => {
+    const tv = grok.shell.tv;
+    const t = tv?.portfolioTables;
+    if (!t)
+      return 'not a portfolio table';
+    const ids = (df: any) => {
+      const out: string[] = [];
+      for (let i = df.filter.findNext(-1, true); i !== -1; i = df.filter.findNext(i, true))
+        out.push(df.get('id', i));
+      return out.sort().join();
+    };
+    return ids(t.readiness) === ids(tv.dataFrame) ? 'same' : `${ids(t.readiness)} ≠ ${ids(tv.dataFrame)}`;
+  }), {message: 'the readiness matrix against the programs'}).toBe('same');
+}, {description: 'the readiness matrix is a linked table: its rows passing the filter are those of the programs'});

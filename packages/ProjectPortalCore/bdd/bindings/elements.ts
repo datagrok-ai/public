@@ -42,3 +42,6 @@ app.element('KIN-A series', {selector: u2('unit-series-kin-a')});
 app.element('TOX-201 study', {selector: u2('unit-study-tox-201')});
 app.element('compound roles', {selector: u2('compound-roles')});
 app.element('EXC-3001 compound', {selector: u2('compound-exc-3001')});
+
+app.element('table button', {selector: u2('table-button')});
+app.element('all portfolios button', {selector: u2('all-portfolios-button')});

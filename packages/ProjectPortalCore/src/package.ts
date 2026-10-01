@@ -9,6 +9,8 @@ import {summarizeWorkUnitPlan} from './model/work-units';
 import {CompoundRole, summarizeCompoundPlan} from './model/compounds';
 import {portalAppView} from './views/portal-view';
 import {installStyles} from './views/styles';
+import {portfolioTableView, TABLE_SEGMENT} from './views/portfolio-table-view';
+import {portfolioTables} from './portfolio-table';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -23,8 +25,22 @@ export const _package = new DG.Package();
 //output: view result
 export async function projectPortalApp(path?: string): Promise<DG.ViewBase> {
   installStyles();
-  const code = path?.split('/').filter((s) => s.length > 0).pop();
-  return portalAppView(code);
+  const segments = path?.split('/').filter((s) => s.length > 0) ?? [];
+  // .../Portal/<code>/table: the portfolio table; .../Portal/table: every portfolio's
+  if (segments[segments.length - 1] === TABLE_SEGMENT) {
+    const code = segments[segments.length - 2];
+    const known = code ? await portalDb.portfolios.getByKey({code}) : null;
+    return portfolioTableView(known ? code : null);
+  }
+  return portalAppView(segments.pop());
+}
+
+//name: portfolioTable
+//description: The programs of a portfolio (or, without one, of every portfolio you can see) as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace
+//input: string portfolio {optional: true}
+//output: dataframe result
+export async function portfolioTable(portfolio?: string): Promise<DG.DataFrame> {
+  return (await portfolioTables(portfolio || undefined)).programs;
 }
 
 //name: loadPortfolios

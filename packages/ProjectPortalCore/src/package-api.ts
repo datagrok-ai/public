@@ -16,6 +16,13 @@ export namespace funcs {
   }
 
   /**
+   * The programs of a portfolio (or, without one, of every portfolio you can see) as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace
+   */
+  export async function portfolioTable(portfolio?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:PortfolioTable', { portfolio });
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {

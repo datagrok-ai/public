@@ -14,6 +14,7 @@ import {summarizeWorkUnitPlan, WORK_UNIT_LABELS, WorkUnitKind} from '../model/wo
 import {CriterionReadiness, Readiness} from '../model/readiness';
 import {DataRow} from '../model/conditions';
 import {Decision, nextStage} from '../model/gates';
+import {openPortfolioTable} from './portfolio-table-view';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -52,6 +53,23 @@ export class PortalView {
 
   constructor() {
     this.root.append(this.portfolioList, this.board, this.detail);
+  }
+
+  /** The program page; the portfolio table docks it beside its grid. */
+  get detailRoot(): HTMLElement {
+    return this.detail;
+  }
+
+  /** The open portfolio's code, or null before one is open. */
+  get portfolioCode(): string | null {
+    return this.portfolio?.code ?? null;
+  }
+
+  /** Opens [programId] of [portfolioCode], switching portfolios first when needed. */
+  async showProgram(portfolioCode: string, programId: string): Promise<void> {
+    if (this.portfolio?.code !== portfolioCode)
+      await this.openPortfolio(portfolioCode);
+    await this.openProgram(programId);
   }
 
   async load(portfolioCode?: string): Promise<void> {
@@ -380,7 +398,11 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   const content = new Control(portal.root);
   const sync = named(button('Sync', () => void portal.sync()), 'sync-button');
   sync.title = 'Run this portfolio\'s registry feeds';
-  const view = appView({name: 'Project Portal', content, ribbon: [[sync]], status: portal.status,
+  const table = named(button('Table', () => void openPortfolioTable(portal.portfolioCode)), 'table-button');
+  table.title = 'This portfolio as a table, with filters and analytics';
+  const all = named(button('All portfolios', () => void openPortfolioTable(null)), 'all-portfolios-button');
+  all.title = 'Every portfolio you can see as one table';
+  const view = appView({name: 'Project Portal', content, ribbon: [[sync], [table, all]], status: portal.status,
     path: portal.path});
   await portal.load(portfolioCode);
   (view as any).portal = portal;

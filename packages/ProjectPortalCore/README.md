@@ -104,6 +104,20 @@ is a declarative predicate over those rows, the one rule language of 07 §2.10:
   portal writes what the data said into `criterion_status.evidence`, beside the decision.
 - A data condition with only a free-text `rule` is still recorded by hand.
 
+### The portfolio table
+
+The Table button on the board opens the portfolio as a Datagrok table view, at
+`/apps/ProjectPortalCore/Portal/<code>/table`. All portfolios opens every portfolio you can see as
+one table, at `/apps/ProjectPortalCore/Portal/table`; there, the portfolio column is a filter.
+- **Rows.** One per program: stage (a category in the model's order), days in stage, next stage, required criteria met over total, a readiness score and a ready flag, compounds by role, work units by kind, whether a workspace exists. Unstaged programs read `Unstaged`.
+- **Days in stage** count from the last transition into the current stage (`stage_transitions`), or from the program's creation when it never moved.
+- **Readiness** is the gate panel's own computation (`readinessFor`).
+- **Fast to read.** The data is read in a fixed number of batched queries. Only the program dataset is read per program, a few at a time, because its SQL selects by `@program`.
+- **Filters and viewers.** The view opens with the filter panel, programs by stage and modality, days in stage, the readiness matrix (programs × the criteria of their next stage, state as color) and compounds by role.
+  - The matrix and the compound roles are tables of their own, linked to the programs by id, so the filters drive every viewer.
+- **Clicking a row** opens the program's page beside the grid, the same page the board shows.
+- `portfolioTable(portfolio)` returns the same programs table to scripts.
+
 ## Configuration
 
 Portfolios are data, not code. Each portfolio is a JSON file: its groups, stage model (stages and
@@ -135,9 +149,10 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 
 | Function | What it does |
 |---|---|
-| `Project Portal` (app) | Portfolios, the selected portfolio's own board, and the gate for the selected program, with a link to the program's workspace. `/apps/ProjectPortalCore/Portal/<code>` opens one portfolio. |
+| `Project Portal` (app) | Portfolios, the selected portfolio's own board, and the gate for the selected program, with a link to the program's workspace. `/apps/ProjectPortalCore/Portal/<code>` opens one portfolio; `.../<code>/table` its table, `.../Portal/table` every portfolio's. |
 | `loadPortfolios` | Loads this package's portfolio files: groups, stage models, portfolios, feeds. Idempotent. |
 | `loadPortfolioConfigs(configs)` | Loads portfolios handed over by another package, as a JSON array, checked as a set |
+| `portfolioTable(portfolio)` | The programs of a portfolio, or without one of every portfolio you can see, as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
@@ -155,6 +170,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Compounds on the example data: roles, a compound in two programs, history, a manual change, idempotence.
   - Work units on the example data: series, campaigns, studies, process stages; a rejected row; idempotence.
   - Readiness on the example data: hit-to-lead and lead-optimization conditions, development lots, the gate.
+  - The portfolio table: one row per program, stage order, readiness and days in stage against `programReadiness` and the transition log, compounds and work units, filters, the linked readiness matrix, and a restricted user's rows.
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
   - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds, stage folders from the builder and on advance, the orphan report.
@@ -162,7 +178,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-01, 91 of the 94 package tests and all 11 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-01, 101 of the 104 package tests and all 12 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.
@@ -180,3 +196,5 @@ declares its own `permissions p`, so `p.func_id` resolves against the wrong tabl
    - The workaround is to hold stage spellings in `stage.spellings` as a `|`-separated string.
 3. **The npm-installed `grok` lags the repo.** It rejects current `domain-schema.schema.json` manifests, Grit's included. Use the workspace build at `node_modules/.bin/grok`.
 4. **`dapi.connections.filter('name = "X"')` matches the friendly name.** `findConnection` in `src/portal.ts` falls back to an exact match.
+5. **A range filter over an all-zero numeric column drops every row.** A column of `[0, 0, 0]` in the filter panel leaves 0 rows passing; `[5, 5, 5]` keeps all three. The portfolio table leaves a numeric column out of the filter panel until its values vary.
+6. **The bar chart sorts categories by name, not by the column's category order.** Sorting by category ignores `setCategoryOrder`, while the box plot respects it. The table's bar chart splits on a hidden `stage in order` column (`01 D1`, `02 D2`).
