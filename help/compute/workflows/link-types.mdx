@@ -117,22 +117,10 @@ links between script own inputs, since they don't have a well-defined order in t
 
 _Optional_
 
-Is available only for data link, will force run a link after OnInit
-hook. Init happens every time a workflow instance is set up: when it is
-created and each time it is loaded from history, including a nested
-workflow loaded into a running one. A `runOnInit` link therefore reruns
-on load and may overwrite inputs of steps that have not been run yet;
-inputs of a step that has run keep their values and only get a
-consistency mark.
-
-While the [init hook](#init-hook) and the `runOnInit` links run, plain
-data links are not yet active, so values written at that stage do not
-propagate through them. A data link that must carry an init value
-further, for example from a [state](configuration.mdx#states) into a
-script input, needs `runOnInit` itself; a chain of such links needs the
-flag on every link. Meta, validator and other derived links react to
-init writes as usual, and plain data links react to every change made
-after init.
+For data links and rules: runs the link once at init, after the
+[init hook](#init-hook), even when nothing it reads has changed. See
+[Init hook](#init-hook) for when init happens and how its writes are
+handled.
 
 #### `params`
 
@@ -1134,13 +1122,49 @@ the common ancestor, or operate only at the inner level.
 
 ### Init hook
 
-Uses the `onInit` field instead of links and is triggered once per
-init of a workflow instance: when it is created and each time it is
-loaded from history. Usually is used to populate static
-[states](configuration.mdx#states). Otherwise, the same as [data links](#data-links).
-Its writes are visible to [`runOnInit`](#runoninit) links and to derived
-links, but not to plain data links, which become active only after the
-init stage.
+Uses the `onInit` field instead of links. It is usually used to
+populate [states](configuration.mdx#states), and otherwise works like a
+[data link](#data-links). This section is the one place that describes
+init, for the hook and for [`runOnInit`](#runoninit) links alike.
+
+**When init runs.** Every workflow, including each nested one, runs its
+init when it is:
+
+- created;
+- loaded from history;
+- added to a running workflow, as a new step of a dynamic workflow or
+  as a nested workflow loaded into it.
+
+Each time, the workflow's init hook runs first, then its `runOnInit`
+links. The rules are the same for a top-level workflow and a nested one.
+
+**What init writes.** A value written at init is a change like any
+other: data links that read it pass it on, and validators and meta links
+react to it. So a state filled by the init hook reaches script inputs
+through ordinary links, without `runOnInit`. Use `runOnInit` for a link
+that must compute its value at init even though nothing it reads
+changes, for example a default derived from another step.
+
+**When a workflow is created or loaded**, a plain data link runs only
+when something it reads changes. Links that nothing at init touches keep
+the values that were loaded.
+
+**When a part is added to a running workflow**, its links and the links
+from the rest of the workflow into it also run once, so the new part is
+filled from the values already in the workflow.
+
+**What a write does to a loaded value.** Init and `runOnInit` links run
+again on every load, so their writes can meet values that were saved:
+
+- an input of a step that has not been run takes the new value;
+- an input of a step that has run keeps its value; when the link brings
+  a different one, the input is marked inconsistent and can be reset to
+  it, see [Consistency](#consistency).
+
+An init hook that writes a value that differs on every load, such as
+the current time or the current user, therefore marks the steps that
+consume it as inconsistent after each load. Feed such values only into
+inputs where that is expected.
 
 
 ### Return hook

@@ -99,13 +99,10 @@ export class LinksState {
       this.linksUpdates.next(true);
       const metaMap = this.toLinksMap(links.filter((link) => !this.isDataLink(link)));
       const initLinks = this.toLinksMap(links.filter((link) => this.isOnInitDataLink(link)));
-      // data links stay inactive while init hooks run, so init writes
-      // reach only runOnInit links and the derived (non-data) links
       return concat(
-        of(this.wireLinks(state, (link) => !this.isDataLink(link))),
+        of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, initLinks, false),
-        defer(() => of(this.activateLinks())),
         (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
@@ -331,20 +328,14 @@ export class LinksState {
   }
 
 
-  public wireLinks(state: BaseTree<StateTreeNode>, activate: (link: Link) => boolean = () => true) {
+  public wireLinks(state: BaseTree<StateTreeNode>) {
     for (const [, link] of this.links) {
       link.wire(state, this);
-      if (activate(link))
-        link.setActive();
+      link.setActive();
     }
     for (const [, action] of this.actions)
       action.wire(state, this);
     this.triggerPipelineValidators();
-  }
-
-  public activateLinks() {
-    for (const [, link] of this.links)
-      link.setActive();
   }
 
   private triggerPipelineValidators() {

@@ -172,7 +172,8 @@ array. Each `id` becomes addressable from
 [LQL queries](./link-query-language) at the same path level as a script IO — but it
 lives on the workflow itself, not on any script. Use states for:
 
-- values populated once by the [`onInit`](./link-types#init-hook) hook (for
+- values populated by the [`onInit`](./link-types#init-hook) hook each
+  time the workflow is created or loaded (for
   example, the current user, a server-loaded constant, the workflow start
   time);
 - derived values computed from one or more downstream scripts (a summary
