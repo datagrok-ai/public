@@ -29,6 +29,15 @@ function whose `help`/`readme` option supplies its help panel content (it has no
 The type guard `isPipelineActionConfig()` identifies action configs before processing; after processing
 they are regular static pipeline configs.
 
+## Rules, Checks and Annotations Internals
+
+User docs (`help/compute/workflows/link-types.mdx`) describe behaviour only; the mechanics live here.
+
+- **Rule expansion** (`src/config/rule-expansion.ts`): rule `r` becomes up to three links, `r::meta`, `r::validator`, `r::data`, one per effect family. Each copies `from`, `not`, `base`, `nodePriority`, `dataFrameMutations`, keeps only the `to` entries its effects target, and carries `when`/`effects`/`sources` in `params`. `debounce` goes to the validator link, `runOnInit` to the data link. `(call)` is not allowed in rule queries; the expansion adds the `call` input that `validators`/`choices` sources without `names` need.
+- **Sources** (`src/runtime/rule-sources.ts`): every expanded link resolves its sources on each run before `when`, so one rule may resolve a source up to three times. `file`, `table`, and `func`/`query` whose `args` read no alias are loaded once per link. Synchronous results (no call made, sync `js`) keep the link batchable. `choices` returns `{items, values, inList, row, rowErrors}` via `FuncCall.evalParamChoices`, cached per call and io until a `dependsOn` input changes; `row` cells are converted to the input types like the form's editors parse text.
+- **Checks** (`src/config/checks.ts`): annotation options and `check` links share `expandChecks`; a `check` `c` becomes `c::min`, `c::table`, ... with `value:<io>` (and `table:<query>`) inputs and `target:<io>` output; `visible` becomes a meta link. Reserved `vars` names: `value`, `table`, `target`, `call`.
+- **Annotation rules** (`annotationRules` in `rule-expansion.ts`): evaluated choices become `::<io>:choices` (items, `emptyChoice` meta, not-in-list warning, `rowErrors` warning on the lookup key) and, for the first `propagateChoice: all` input only, `::<io>:lookup` (`runOnInit`, `assign` with `ignoreCase` and `restricted` into `inputs(nq, key|$nonscalar|$linked)`). They must stay expressible as hand-written rules.
+
 ## Testing Rules
 
 Tests live in `packages/LibTests/src/tests/compute-utils/reactive-tree-driver/`, NOT alongside the RTD source.
