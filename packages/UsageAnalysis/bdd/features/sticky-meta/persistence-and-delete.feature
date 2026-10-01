@@ -26,6 +26,10 @@ Feature: Sticky metadata belongs to the molecule, not to the table that shows it
   resolved with Clear values for the schema, so the case's "delete the fields, save" is claimed as the
   platform does it — the values stay, and Clear values removes them.
 
+  The cell's dialog and pane list one section per schema that matches molecules, and a section has no
+  container of its own, so its fields are named across all of them: the feature needs a stand where its
+  schema is the only one matching molecules (dev has four more — MISSING.md, section 8).
+
   The entity type and the schema are made through the UI in the Background and deleted through the UI
   in the last scenarios; the project and the space are removed by their steps when the feature ends.
 

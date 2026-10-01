@@ -24,6 +24,9 @@ Feature: Database meta of a database schema, of a table and of its column
   no connection yet); the schema scenario closes the views before each reload, so the claims are about
   the Database meta, and the error is reported on its own.
 
+  NorthwindTest is the PostgresTest connection the DBTests package brings; a stand without it (the CI
+  stack) skips the feature at its first step, with the reason.
+
   The values are the run's own and the last scenarios put every field back empty through the pane;
   the server-side restore the library does not have yet is in sticky-meta/MISSING.md. Serial: the
   schema, the table and the column are shared by every feature that reads NorthwindTest.
@@ -34,7 +37,8 @@ Feature: Database meta of a database schema, of a table and of its column
     And the context panel is open
 
   Scenario: A schema's Database meta is saved, kept after a reload and cleared
-    Given Databases tree node inside browse tree is expanded
+    Given the stand has a reachable "PostgresTest" connection
+    And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     Then Databases---Postgres---NorthwindTest---Orders tree node inside browse tree should be visible

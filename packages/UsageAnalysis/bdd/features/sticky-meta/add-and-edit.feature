@@ -14,6 +14,10 @@ Feature: Sticky metadata on a molecule cell, as sticky columns and on several ro
   claimed. The batch edit is claimed in the sticky columns and again after the table is reopened, so
   what reached the server is read, not what the view keeps.
 
+  The cell's dialog and pane list one section per schema that matches molecules, and a section has no
+  container of its own, so its fields are named across all of them: the feature needs a stand where its
+  schema is the only one matching molecules (dev has four more — MISSING.md, section 8).
+
   The entity type and the schema are made through the UI in the Background and deleted through the UI
   in the last scenarios, which a journey runs even after a failure; the server-side sweep the library
   does not have yet is in sticky-meta/MISSING.md. Serial: a schema matching molecules adds a section

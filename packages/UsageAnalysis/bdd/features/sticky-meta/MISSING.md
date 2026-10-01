@@ -132,6 +132,23 @@ Database meta. Not reproduced yet by a plain reload and a click outside the suit
 `NullError: method not found: 'PackageEntityMixin_id' on null` was reported on a project save as
 GROK-15609 (Won't fix, no stack).
 
+## 8. Other schemas that match molecules on the stand
+
+The cell's Sticky meta dialog and pane show one section per schema matching the molecule
+(`stickyMetaEditorForCell`), and a section is not a container: its header and its inputs are siblings
+in one form. `Rating input in "Sticky meta" dialog`, `Save button in "Sticky meta" dialog` and
+`"Add rating as a column" button` therefore name the fields of every matching schema. On a stand where
+only the feature's schema matches molecules (a local or CI stand) they are unique; on dev on
+2026-10-01 four more schemas matched — "Molecule meta", "Highlight", "TestSchema1" (the TestTrack
+fixture with its own rating/notes/verified/review_date) and "schema for tutorial" (left by a hand walk
+of the tutorial) — and `add-and-edit` and `persistence-and-delete` failed there on five Save buttons
+and on TestSchema1's Rating, while `schema-and-type` and `database-meta` passed. Wanted, either:
+
+- a container per schema in the editor, named after the schema (as `div-section--<name>`), so a
+  feature scopes its phrases: `Rating input in "bdd-sm-cells-{time}" section in "Sticky meta" dialog`;
+- or a Given that names the schemas matching molecules other than the feature's own and skips the
+  feature with the reason (a stand-state gate), when cleaning the stand is not the feature's to do.
+
 ## Not translated
 
 - A server restart (the primary copy-clone-delete case): a feature cannot cause one.
