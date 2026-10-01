@@ -153,14 +153,13 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
           key: 'validators', family: 'validator', needsTable: false, needsCall: true, needsInputs: false,
           params: {
             when: {'!': {missing: [VALUE]}},
-            sources: {verdicts: {validators: {input: VALUE, call: CALL}}},
-            effects: [{effect: 'verdicts', targets: [TARGET], source: 'verdicts'}],
+            sources: {$verdicts: {validators: {input: VALUE, call: CALL}}},
+            effects: [{effect: 'verdicts', targets: [TARGET], source: '$verdicts'}],
           },
         });
       }
-      // a GrokScript expression sees every input of the step under its own name
-      const reserved = new Set([VALUE, TABLE, TARGET, CALL]);
-      const stepInputs = ios.filter((other) => other.direction === 'input' && !reserved.has(other.id));
+      // a GrokScript expression sees every input of the step under its own name; `value` is the checked one
+      const stepInputs = ios.filter((other) => other.direction === 'input' && other.id !== VALUE);
       return expanded.map(({key, family, needsTable, needsCall, needsInputs, params}) => {
         const spec: LinkSpec = {
           id: `::${io.id}:${key}`,

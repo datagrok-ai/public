@@ -98,25 +98,25 @@ category('ComputeUtils: Driver links check', async () => {
     const present = {'!': {missing: ['value']}};
     expectDeepEqual(expanded[0].params, {
       when: {missing: ['value']},
-      effects: [{effect: 'error', targets: ['target'], message: 'Missing value'}],
+      effects: [{effect: 'error', targets: ['$target'], message: 'Missing value'}],
     });
     expectDeepEqual(expanded[1].params, {
       when: {and: [present, {'<': [{var: 'value'}, 0]}]},
-      effects: [{effect: 'error', targets: ['target'], message: 'Must be at least 0'}],
+      effects: [{effect: 'error', targets: ['$target'], message: 'Must be at least 0'}],
     });
     expectDeepEqual(expanded[3].params.when, {and: [present, {'!': {regex: [{var: 'value'}, '^a', 'i']}}]});
     expectDeepEqual(expanded[4].params.when, {and: [present, {'!': {in: [{var: 'value'}, ['x', 'y']]}}]});
     expectDeepEqual(expanded[5].params.when, {and: [present, {'!': {columnIs: [{var: 'value'}, 'numerical']}}]});
     expectDeepEqual(expanded[7].params.when, {and: [present, {and: [
-      {'!': {missing: ['table']}},
-      {'!': {in: [{var: 'value.name'}, {columns: [{var: 'table'}]}]}},
+      {'!': {missing: ['$table']}},
+      {'!': {in: [{var: 'value.name'}, {columns: [{var: '$table'}]}]}},
     ]}]});
     expectDeepEqual(expanded[8].params.when, {and: [present, {'>': [{nulls: {var: 'value'}}, 0]}]});
 
-    const custom = expandChecks({min: 1}, {when: {var: 'table'}, message: 'Too small', severity: 'warning'});
+    const custom = expandChecks({min: 1}, {when: {var: '$table'}, message: 'Too small', severity: 'warning'});
     expectDeepEqual(custom[0].params, {
-      when: {and: [{var: 'table'}, {and: [present, {'<': [{var: 'value'}, 1]}]}]},
-      effects: [{effect: 'warning', targets: ['target'], message: 'Too small'}],
+      when: {and: [{var: '$table'}, {and: [present, {'<': [{var: 'value'}, 1]}]}]},
+      effects: [{effect: 'warning', targets: ['$target'], message: 'Too small'}],
     });
     expectDeepEqual(expandChecks({nullable: true}), []);
     expectDeepEqual(expandChecks({optional: true}), []);
@@ -143,7 +143,7 @@ category('ComputeUtils: Driver links check', async () => {
   });
 
   test('Runtime operations', async () => {
-    const ctx = (data: Record<string, any>) => ({all: {}, ...data});
+    const ctx = (data: Record<string, any>) => ({$all: {}, ...data});
     expect(evaluate({regex: [{var: 'v'}, '^[0-9]{4}$']}, ctx({v: '1234'})), true);
     expect(evaluate({regex: [{var: 'v'}, '^[a-z]+$', 'i']}, ctx({v: 'ABC'})), true);
     expect(evaluate({regex: [{var: 'v'}, '^[0-9]{4}$']}, ctx({v: '12'})), false);
@@ -314,12 +314,12 @@ category('ComputeUtils: Driver links check', async () => {
     const [check] = expandChecks({validators: ['Pkg:f']});
     expect(check.key, 'validators');
     expect(check.needsCall, false);
-    expectDeepEqual(check.params.sources, {verdicts: {validators: {input: 'value', names: ['Pkg:f']}}});
+    expectDeepEqual(check.params.sources, {$verdicts: {validators: {input: 'value', names: ['Pkg:f']}}});
     expectDeepEqual(check.params.when, {'!': {missing: ['value']}});
-    expectDeepEqual(check.params.effects, [{effect: 'verdicts', targets: ['target'], source: 'verdicts'}]);
+    expectDeepEqual(check.params.effects, [{effect: 'verdicts', targets: ['$target'], source: '$verdicts'}]);
     const [lowered] = expandChecks({validators: ['Pkg:f']}, {severity: 'notification'});
     expectDeepEqual(lowered.params.effects,
-      [{effect: 'notification', targets: ['target'], message: {map: [{var: 'verdicts'}, {var: 'message'}]}}]);
+      [{effect: 'notification', targets: ['$target'], message: {map: [{var: '$verdicts'}, {var: 'message'}]}}]);
     expect(expandChecks({min: 0})[0].needsCall, false);
   });
 
@@ -331,7 +331,7 @@ category('ComputeUtils: Driver links check', async () => {
     expect(link.id, 'named::validators');
     expectDeepEqual(link.from.map((io: any) => [io.name, io.flags ?? []]), [['value', []]]);
     expectDeepEqual(link.params.sources,
-      {verdicts: {validators: {input: 'value', names: ['LibTests:MockValidator']}}});
+      {$verdicts: {validators: {input: 'value', names: ['LibTests:MockValidator']}}});
     await expectThrowsAsync(() => getProcessedConfig(twoSteps([
       {id: 'bad', type: 'check', io: 'step1/a', check: {validators: 'LibTests:MockValidator' as any}},
     ])));
@@ -405,8 +405,8 @@ category('ComputeUtils: Driver links check', async () => {
     }]));
     const namedLink = pconf.links.find((link: any) => link.id === 'named::validator');
     expectDeepEqual(namedLink.from.map((io: any) => [io.name, io.flags ?? []]),
-      [['x', []], ['call', ['call', 'optional']]]);
-    expectDeepEqual(namedLink.params.sources, {v: {validators: {input: 'x', call: 'call'}}});
+      [['x', []], ['$call', ['call', 'optional']]]);
+    expectDeepEqual(namedLink.params.sources, {v: {validators: {input: 'x', call: '$call'}}});
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
@@ -433,7 +433,7 @@ category('ComputeUtils: Driver links check', async () => {
     await badRule({sources: {v: {other: {}}}});
     await badRule({sources: {v: {validators: {input: 'x'}}},
       effects: [{effect: 'verdicts', targets: 't', source: 'w'}]});
-    await badRule({from: ['x:step1/a', 'call:step1/b'], sources: {v: {validators: {input: 'x'}}}});
+    await badRule({sources: {$v: {validators: {input: 'x'}}}});
   });
 
   test('Check links give the same results as annotations', async () => {

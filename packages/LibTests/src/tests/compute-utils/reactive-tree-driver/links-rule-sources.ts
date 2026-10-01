@@ -114,7 +114,7 @@ category('ComputeUtils: Driver rule js sources', async () => {
   test('A func source calls a platform function', async () => {
     const controller = (values: Record<string, any>) => ({getFirst: (name: string) => values[name]}) as any;
     const sum = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 5}}};
-    const pending = resolveSources(controller({}), {sum}, {all: {}, x: 1});
+    const pending = resolveSources(controller({}), {sum}, {$all: {}, x: 1});
     expect(pending instanceof Promise, true);
     expectDeepEqual(await pending, {sum: 6});
     const presets = {func: {name: 'LibTests:TestPresets'}};
@@ -130,14 +130,14 @@ category('ComputeUtils: Driver rule js sources', async () => {
       sql: 'select login from users where login = @login',
       args: {login: {var: 'login'}},
     }};
-    const {users: df} = await resolveSources(controller(), {users}, {all: {}, login: me.login}) as any;
+    const {users: df} = await resolveSources(controller(), {users}, {$all: {}, login: me.login}) as any;
     expectDeepEqual(df.col('login').toList(), [me.login]);
     const declared = {query: {
       connection: 'System:Datagrok',
       sql: '--input: string login\nselect login from users where login = @login',
       args: {login: {var: 'login'}},
     }};
-    const {declared: df2} = await resolveSources(controller(), {declared}, {all: {}, login: me.login}) as any;
+    const {declared: df2} = await resolveSources(controller(), {declared}, {$all: {}, login: me.login}) as any;
     expectDeepEqual(df2.rowCount, 1);
   });
 
@@ -211,8 +211,8 @@ category('ComputeUtils: Driver rule js sources', async () => {
       const controller = () => ({getFirst: () => undefined, sourceCache: cache}) as any;
       const fixed = {func: {name: 'LibTests:TestAdd2', args: {a: 1, b: 2}}};
       const varying = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 2}}};
-      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {all: {}, x: 1}), {fixed: 3, varying: 3});
-      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {all: {}, x: 5}), {fixed: 3, varying: 7});
+      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {$all: {}, x: 1}), {fixed: 3, varying: 3});
+      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {$all: {}, x: 5}), {fixed: 3, varying: 7});
       expect(calls, 3);
       expect(cache.has('fixed'), true);
       expect(cache.has('varying'), false);

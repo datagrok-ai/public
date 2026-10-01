@@ -28,7 +28,9 @@ NAME(FLAGS)?:PATH
 ```
 
 - `NAME` is the query alias, an identifier (`[_a-zA-Z][a-zA-Z_0-9]*`).
-  Aliases are distinct within a link, across `from` and `to`.
+  Aliases are distinct within a link, across `from` and `to`. A leading
+  `$`, as in `$call`, marks names the driver adds; rules and checks
+  reject it in aliases they are given.
 - `FLAGS` is an optional comma-separated subset of `optional`, `call`
   and `template`.
 - `PATH` is a list of `/`-separated segments, relative to the link's host

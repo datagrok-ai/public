@@ -687,7 +687,7 @@ effects at init. In TypeScript, `PipelineRuleConfiguration` and
 `meta` values, `message`, `value`, `values`) are
 [JSON Logic](https://jsonlogic.com/) expressions. Plain literals evaluate
 to themselves. `var` reads `<alias>`, the first matched value of a `from`
-query or the value of a [source](#sources), and `all.<alias>`, all matched
+query or the value of a [source](#sources), and `$all.<alias>`, all matched
 values of a `from` query. Paths walk into platform objects, so `col.name`,
 `col.type` and `col.semType` are valid references.
 
@@ -823,8 +823,8 @@ Config processing rejects a rule when, for example:
 - a source is of an unknown kind, misses what its kind needs (`fn`,
   `name`, a path, a table, or `connection` and `sql`), or names an
   unknown input
-- a `from` alias is named `call` while a `validators` source without
-  `names` or a `choices` source needs that name
+- an alias or a source name starts with `$`, which is reserved for the
+  names the driver adds
 
 Two rules that write the same effect to the same input conflict. For
 value effects (`set`, `clear`, `assign`) the driver logs a duplicate
@@ -880,9 +880,9 @@ input hidden via meta are suppressed like every other validator, including
 by a `visible` check on the same input.
 
 Annotation-derived expression checks see every input of the step under its
-parameter name plus `value`, except inputs named `value`, `table`, `target`
-or `call`, names the check uses itself. A `check` link names the inputs its
-expression reads in `vars`:
+parameter name plus `value`, the checked input. As in the function form,
+`value` wins over an input named `value`. A `check` link names the inputs
+its expression reads in `vars`:
 
 ```
 {id: 'foo', type: 'check', io: 'solver/foo', check: {validator: 'bar > 3'}, vars: {bar: 'solver/bar'}}
@@ -892,7 +892,8 @@ expression reads in `vars`:
 A `check` link takes `io` (the checked io, a query without an alias),
 `check` (the options above), and `vars` (variable name to io query for
 expressions). It optionally takes `message`, `severity` (`error` by
-default), `when` (a JSON Logic condition over `value` and `table` that
+default), `when` (a JSON Logic condition over `value` and, for a column
+check, `$table` that
 turns every option of the link on or off), `debounce` (`0` by default),
 and the [common options](#common-options) `not`, `base` and
 `nodePriority`. `message`, `severity` and `debounce` do not apply to

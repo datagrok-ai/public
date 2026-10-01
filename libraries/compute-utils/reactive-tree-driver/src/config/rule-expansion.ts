@@ -126,8 +126,10 @@ function expandCheck(check: PipelineCheckConfiguration<LinkSpecString>): Pipelin
   if (!expanded.length)
     throw new Error(`Check ${id}: no options to check`);
   const vars = Object.entries(check.vars ?? {}).map(([alias, query]) => {
-    if ([VALUE, TABLE, TARGET, CALL].includes(alias))
-      throw new Error(`Check ${id}: vars alias ${alias} is reserved`);
+    if (alias === VALUE)
+      throw new Error(`Check ${id}: vars alias ${VALUE} is the checked io`);
+    if (alias.startsWith('$'))
+      throw new Error(`Check ${id}: vars alias ${alias} is reserved for the driver`);
     return `${alias}:${singleQuery(id, `vars.${alias}`, query)}`;
   });
   return expanded.map(({key, family, needsTable, needsInputs, params}) => {
@@ -163,6 +165,8 @@ function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOTy
       const badFlag = parsed.flags?.find((flag) => flag !== 'optional' && flag !== 'template');
       if (badFlag)
         throw new Error(`Rule ${ruleId}: (${badFlag}) flag is not allowed in rule queries (${raw})`);
+      if (parsed.name.startsWith('$'))
+        throw new Error(`Rule ${ruleId}: alias ${parsed.name} is reserved for the driver`);
       aliases.set(parsed.name, raw);
     }
   }
@@ -208,6 +212,8 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   };
   const expandedSources: Record<string, RuleSource> = {};
   for (const [alias, source] of Object.entries(sources ?? {})) {
+    if (alias.startsWith('$'))
+      throw new Error(`Rule ${id}: source alias ${alias} is reserved for the driver`);
     if (fromAliases.has(alias))
       throw new Error(`Rule ${id}: source alias ${alias} collides with an input alias`);
     if ('js' in source) {
@@ -264,8 +270,6 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       }
     }
     // annotation validators and choices need the step's FuncCall: derive it from the input's query
-    if (fromAliases.has(CALL))
-      throw new Error(`Rule ${id}: input alias ${CALL} is reserved for sources`);
     const raw = fromAliases.get(input)!;
     const tail = raw.slice(raw.indexOf(':') + 1);
     const cut = tail.lastIndexOf('/');

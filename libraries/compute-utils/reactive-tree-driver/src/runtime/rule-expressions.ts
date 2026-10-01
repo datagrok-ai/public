@@ -6,13 +6,13 @@ import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleTargets} from '../config/PipelineConfiguration';
 
 export type RuleContext = Record<string, any> & {
-  all: Record<string, any[]>,
+  $all: Record<string, any[]>,
 };
 
 let opsRegistered = false;
 
 // the context of the expression being evaluated, read by the script ops
-let activeCtx: RuleContext = {all: {}};
+let activeCtx: RuleContext = {$all: {}};
 let scriptSupport: boolean | undefined;
 
 // GrokScript with a variables map is js-api 1.28+; the same method ignores the map on
@@ -27,7 +27,7 @@ function hasScriptSupport(): boolean {
 }
 
 function scriptVariables(ctx: RuleContext): Record<string, any> {
-  return Object.fromEntries(Object.entries(ctx).filter(([key]) => key !== 'all' && key !== 'literals'));
+  return Object.fromEntries(Object.entries(ctx).filter(([key]) => !key.startsWith('$')));
 }
 
 /** Evaluates a GrokScript expression over the rule context; `undefined` when unsupported or failing. */
@@ -140,7 +140,7 @@ function extractLiterals(expr: any, literals: any[]): any {
     return expr;
   if (isLiteral(expr)) {
     literals.push(expr[LITERAL]);
-    return {var: `literals.${literals.length - 1}`};
+    return {var: `$literals.${literals.length - 1}`};
   }
   return Object.fromEntries(Object.entries(expr).map(([key, value]) => [key, extractLiterals(value, literals)]));
 }
@@ -152,7 +152,7 @@ export function evaluate(expr: RuleExpr, ctx: RuleContext): any {
   const previous = activeCtx;
   activeCtx = ctx;
   try {
-    return jsonLogic.apply(logic, literals.length ? {...ctx, literals} : ctx);
+    return jsonLogic.apply(logic, literals.length ? {...ctx, $literals: literals} : ctx);
   } finally {
     activeCtx = previous;
   }
@@ -163,25 +163,25 @@ export function isOn(when: RuleExpr | undefined, ctx: RuleContext): boolean {
 }
 
 export function buildRuleContext(controller: IControllerBase): RuleContext {
-  const ctx: RuleContext = {all: {}};
+  const ctx: RuleContext = {$all: {}};
   for (const name of controller.getMatchedInputs()) {
     const all = controller.getAll(name) ?? [];
     ctx[name] = all[0];
-    ctx.all[name] = all;
+    ctx.$all[name] = all;
   }
   return ctx;
 }
 
 const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
 
-/** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `all.` prefix stripped. */
+/** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `$all.` prefix stripped. */
 export function usedAliases(expr: RuleExpr | undefined): string[] {
   const aliases = new Set<string>();
   const addPath = (path: any) => {
     if (typeof path !== 'string' || !path)
       return;
     const segments = path.split('.');
-    const root = segments[0] === 'all' ? segments[1] : segments[0];
+    const root = segments[0] === '$all' ? segments[1] : segments[0];
     if (root)
       aliases.add(root);
   };

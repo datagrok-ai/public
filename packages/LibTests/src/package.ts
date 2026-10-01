@@ -435,6 +435,22 @@ export async function TestAnnotatedInputs(a: number, b: number, c: number, v: nu
   return 1;
 }
 
+// inputs named like the driver's own aliases and expression keys
+
+//input: string region = "EU"
+//input: string city {choices: LibTests:MockCities}
+//input: string call
+//input: string all
+//input: double table
+//input: double target
+//input: double literals
+//input: int x {validator: table + target > 0}
+//output: string res
+export function TestReservedNames(region: string, city: string, call: string, all: string, table: number,
+  target: number, literals: number, x: number): string {
+  return city;
+}
+
 //input: int x
 //output: string res
 export function MockValidator(x: number): string | null {

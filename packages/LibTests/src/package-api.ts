@@ -110,6 +110,14 @@ export namespace funcs {
     return await grok.functions.call('LibTests:TestAnnotatedInputs', { a, b, c, v, code, mode, df, col, mol });
   }
 
+  /**
+   * @param {string} city
+   *   choices: LibTests:MockCities
+   */
+  export async function testReservedNames(region: string , city: string , call: string , all: string , table: number , target: number , literals: number , x: number ): Promise<string> {
+    return await grok.functions.call('LibTests:TestReservedNames', { region, city, call, all, table, target, literals, x });
+  }
+
   export async function mockValidator(x: number ): Promise<string> {
     return await grok.functions.call('LibTests:MockValidator', { x });
   }

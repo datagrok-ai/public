@@ -39,7 +39,7 @@ category('ComputeUtils: Driver links rule', async () => {
       effects: [
         {effect: 'hide', targets: 't1'},
         {effect: 'items', targets: ['t2'], items: ['x', 'y']},
-        {effect: 'error', targets: 't1', message: {cat: ['bad ', {var: 'all.n'}]}},
+        {effect: 'error', targets: 't1', message: {cat: ['bad ', {var: '$all.n'}]}},
         {effect: 'set', targets: 't2', value: {var: 'm'}},
       ],
     }]));
@@ -164,7 +164,7 @@ category('ComputeUtils: Driver links rule', async () => {
     }])), /hide\/show applied twice/);
     await getProcessedConfig(twoSteps([{
       id: 'ok', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
-      when: {missing_some: [1, ['m', 'all.m']]},
+      when: {missing_some: [1, ['m', '$all.m']]},
       effects: [{effect: 'meta', targets: 't', meta: {cfg: {literal: {var: 'not an alias'}}}}],
     }]));
     await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
@@ -429,7 +429,7 @@ category('ComputeUtils: Driver links rule', async () => {
       DG.Column.fromList('string', 's', ['a', 'b', 'c']),
     ]);
     df.col('s')!.semType = 'Text';
-    const ctx = {all: {}, df, s: 'abcd', list: [1, 2]};
+    const ctx = {$all: {}, df, s: 'abcd', list: [1, 2]};
     expectDeepEqual(evaluate({columns: [{var: 'df'}]}, ctx), ['x', 'n', 's']);
     expectDeepEqual(evaluate({columns: [{var: 'df'}, 'numerical']}, ctx), ['x', 'n']);
     expectDeepEqual(evaluate({columns: [{var: 'df'}, 'categorical']}, ctx), ['s']);
@@ -510,7 +510,7 @@ category('ComputeUtils: Driver links rule', async () => {
   });
 
   test('Literal escape and null condition', async () => {
-    const ctx = {all: {}, m: 1};
+    const ctx = {$all: {}, m: 1};
     expectDeepEqual(evaluate({literal: {foo: 1}}, ctx), {foo: 1});
     expectDeepEqual(evaluate({if: [{'>': [{var: 'm'}, 0]}, {literal: {var: 'kept'}}, 'no']}, ctx), {var: 'kept'});
     expectDeepEqual(evaluate([{literal: {a: 1}}, {literal: {b: 2}}], ctx), [{a: 1}, {b: 2}]);

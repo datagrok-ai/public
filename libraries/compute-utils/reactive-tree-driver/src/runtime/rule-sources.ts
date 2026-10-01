@@ -246,7 +246,7 @@ const sourceKinds = ['validators', 'choices', 'js', 'func', 'query', 'file', 'ta
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
  *  Returns a plain object when nothing had to be awaited. */
 export function resolveSources(
-  controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {all: {}},
+  controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {$all: {}},
 ): Record<string, any> | Promise<Record<string, any>> {
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];

@@ -52,11 +52,12 @@ export const checkOptionKeys: (keyof CheckOptions)[] =
   ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'visible', 'choices', 'type', 'semType', 'table', 'allowNulls'];
 
 // aliases shared by annotation-derived and config checks
+// `value` follows the platform's validator expressions; the rest are the driver's own names
 export const VALUE = 'value';
-export const TABLE = 'table';
-export const TARGET = 'target';
-export const CALL = 'call';
-const VERDICTS = 'verdicts';
+export const TABLE = '$table';
+export const TARGET = '$target';
+export const CALL = '$call';
+const VERDICTS = '$verdicts';
 
 const present = {'!': {missing: [VALUE]}};
 const value = {var: VALUE};
