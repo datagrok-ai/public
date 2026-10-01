@@ -2198,6 +2198,27 @@ importers:
         specifier: ^18.3.7
         version: 18.3.7(@types/react@18.3.31)
 
+  packages/Forge:
+    dependencies:
+      '@datagrok-libraries/test':
+        specifier: workspace:^
+        version: link:../../libraries/test
+      '@datagrok-libraries/utils':
+        specifier: workspace:^
+        version: link:../../libraries/utils
+      cash-dom:
+        specifier: 'catalog:'
+        version: 8.1.5
+      datagrok-api:
+        specifier: workspace:^
+        version: link:../../js-api
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.23
+      rxjs:
+        specifier: 'catalog:'
+        version: 6.6.7
+
   packages/GIS:
     dependencies:
       '@datagrok-libraries/test':

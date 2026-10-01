@@ -1,0 +1,37 @@
+{
+  "name": "@datagrok/forge",
+  "friendlyName": "Forge",
+  "version": "0.0.1",
+  "description": "Predictive modeling: train, apply and manage machine learning models",
+  "license": "MIT",
+  "dependencies": {
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:"
+  },
+  "author": {
+    "name": "Viktor Makarichev",
+    "email": "vmakarichev@datagrok.ai"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Forge"
+  },
+  "category": "Machine Learning"
+}
