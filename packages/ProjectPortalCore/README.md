@@ -118,6 +118,36 @@ one table, at `/apps/ProjectPortalCore/Portal/table`; there, the portfolio colum
 - **Clicking a row** opens the program's page beside the grid, the same page the board shows.
 - `portfolioTable(portfolio)` returns the same programs table to scripts.
 
+### Model runs
+
+A model run is saved to a program with `saveModelRun(call, portfolio, program, ...)`. The package
+ships one model to try it on: `FedBatchTiter` (`scripts/fed-batch-titer.js`, `meta.role: model`),
+a synthetic fed-batch titer model for EX-BIOC. It takes feed rate, temperature, duration and seeding
+density, and returns the final titer, peak cell density, final viability and a daily time course.
+The numbers are invented for the example.
+
+Saving a run does four things:
+- **Annotates the call.** The call's options carry `portalPortfolio`, `portalProgram`, `portalStage`
+  (the stage at run), `portalUnitOperation`, `portalRunType`, `portalPurpose`, and the `title`,
+  `description` and `tags` the Compute run history shows. Options persist with the call and can be
+  queried (`options.portalProgram = "EXB-203"`).
+- **Saves it.** Dataframe inputs and outputs are uploaded first and shared with the portfolio's
+  viewers. The call itself has no ACL.
+- **Links it into the workspace.** The run is linked, not moved, into the folder the program's
+  current stage declares (a run at D5 goes to `Drug Substance/Process Lock`), into a folder named in
+  `folder`, or into the program folder.
+- **Records a `model_run`.** The row carries the stage at run, unit operation, run type, purpose
+  and the catalogued `model` (by the function's nqName). A gate criterion selects it with
+  `selectRunForCriterion`: the run becomes the `selected` artifact, an earlier one `superseded`,
+  and the criterion is met unless it was waived.
+
+`model_run.func_call`, the soft reference to the saved call, cannot be written today (platform
+gap, see Tests). Every row also holds `run_id`, the call's id as plain text. The insert tries the
+soft reference first and writes the row without it when the server refuses, so the reference is
+written once the platform is fixed. **Migration debt:** rows without `func_call` need it backfilled
+from `run_id` then (`func_call` is write-once through the API, so this is a SQL migration), after
+which `func_call` can be made required again.
+
 ## Configuration
 
 Portfolios are data, not code. Each portfolio is a JSON file: its groups, stage model (stages and
@@ -161,6 +191,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `buildWorkspace(code, dryRun)` | Builds one portfolio's workspace. With `dryRun` it lists what it would create. Refused while another build of the same root runs. |
 | `workspaceOrphans(code)` | The folders a prune-or-park pass would look at; a report, nothing is changed |
 | `setCompoundRole(portfolio, program, compound, role, rationale)` | Changes a compound's role in a program by hand, logged |
+| `saveModelRun(call, portfolio, program, unitOperation, runType, purpose, title, folder)` | Annotates, saves and links a run into the program's workspace, and records it as a `model_run` |
 | `buildAllWorkspaces` | Builds the workspace of every portfolio that declares a `workspaceRoot` |
 
 ## Tests
@@ -175,10 +206,11 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
   - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds, stage folders from the builder and on advance, the orphan report.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
+  - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-01, 101 of the 104 package tests and all 12 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-01, 108 of the 111 package tests and all 12 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.
@@ -186,7 +218,8 @@ The two isolation tests fail because of a platform gap, not a portal bug:
 
 The third, saving a model run, fails on a second platform gap: the server's existence check for a
 soft reference to `Core.func_calls` aliases its target `p`, and the permission subquery it embeds
-declares its own `permissions p`, so `p.func_id` resolves against the wrong table.
+declares its own `permissions p`, so `p.func_id` resolves against the wrong table. The test stays as
+the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model runs).
 
 ## Known platform issues found building this
 
@@ -198,3 +231,9 @@ declares its own `permissions p`, so `p.func_id` resolves against the wrong tabl
 4. **`dapi.connections.filter('name = "X"')` matches the friendly name.** `findConnection` in `src/portal.ts` falls back to an exact match.
 5. **A range filter over an all-zero numeric column drops every row.** A column of `[0, 0, 0]` in the filter panel leaves 0 rows passing; `[5, 5, 5]` keeps all three. The portfolio table leaves a numeric column out of the filter panel until its values vary.
 6. **The bar chart sorts categories by name, not by the column's category order.** Sorting by category ignores `setCategoryOrder`, while the box plot respects it. The table's bar chart splits on a hidden `stage in order` column (`01 D1`, `02 D2`).
+7. **A space that links a FuncCall cannot list its linked children.** `GET /spaces/{id}/children?includeLinked=true`
+   fails with `Converting object to an encodable object failed` once the space links a run (`addEntity(id, true)`),
+   with or without a `types` filter that selects FuncCall, so `children.ofTypes('FuncCall', true)` fails too.
+   Browse asks for linked children the same way (`project_meta.dart`), so a folder holding a run probably cannot be
+   browsed until this is fixed; not checked in the UI. `grok.dapi.projects.find(id).links` does list the run, and the
+   tests use it.

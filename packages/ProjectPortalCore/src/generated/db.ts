@@ -1050,7 +1050,8 @@ export interface ModelRunRow {
   created_on: Dayjs;
   updated_on: Dayjs;
   author_id: string;
-  func_call: string;
+  func_call?: string;
+  run_id?: string;
   program_id: string;
   model_id?: string;
   model_name: string;
@@ -1068,7 +1069,8 @@ export interface ModelRunRow {
 
 /** Insert payload for `portal.model_run`. */
 export interface ModelRunInsert {
-  func_call: string;
+  func_call?: string;
+  run_id?: string;
   program_id: string;
   model_id?: string;
   model_name: string;
@@ -1084,7 +1086,7 @@ export interface ModelRunInsert {
   description?: string;
 }
 
-export type ModelRunColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'func_call' |
+export type ModelRunColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'func_call' | 'run_id' |
   'program_id' | 'model_id' | 'model_name' | 'model_version' | 'title' | 'stage_id' | 'unit_operation_id' |
   'run_type_id' | 'purpose' | 'is_reference' | 'run_author' | 'run_started' | 'description';
 
@@ -1158,12 +1160,12 @@ export type CriterionArtifactExpand = {
     'criterion_status_id.gate_criterion_id'?: string; 'criterion_status_id.status'?: CriterionStatusStatus;
     'criterion_status_id.owner'?: string; 'criterion_status_id.due_on'?: Dayjs;
     'criterion_status_id.document'?: string; 'criterion_status_id.evidence'?: string};
-  'model_run_id': {'model_run_id.func_call'?: string; 'model_run_id.program_id'?: string;
-    'model_run_id.model_id'?: string; 'model_run_id.model_name'?: string; 'model_run_id.model_version'?: string;
-    'model_run_id.title'?: string; 'model_run_id.stage_id'?: string; 'model_run_id.unit_operation_id'?: string;
-    'model_run_id.run_type_id'?: string; 'model_run_id.purpose'?: ModelRunPurpose;
-    'model_run_id.is_reference'?: boolean; 'model_run_id.run_author'?: string; 'model_run_id.run_started'?: Dayjs;
-    'model_run_id.description'?: string};
+  'model_run_id': {'model_run_id.func_call'?: string; 'model_run_id.run_id'?: string;
+    'model_run_id.program_id'?: string; 'model_run_id.model_id'?: string; 'model_run_id.model_name'?: string;
+    'model_run_id.model_version'?: string; 'model_run_id.title'?: string; 'model_run_id.stage_id'?: string;
+    'model_run_id.unit_operation_id'?: string; 'model_run_id.run_type_id'?: string;
+    'model_run_id.purpose'?: ModelRunPurpose; 'model_run_id.is_reference'?: boolean;
+    'model_run_id.run_author'?: string; 'model_run_id.run_started'?: Dayjs; 'model_run_id.description'?: string};
   'selected_by': {'selected_by.login'?: string; 'selected_by.firstName'?: string; 'selected_by.lastName'?: string;
     'selected_by.status'?: string; 'selected_by.createdOn'?: Dayjs; 'selected_by.picture'?: string;
     'selected_by.group'?: string; 'selected_by.author'?: string};

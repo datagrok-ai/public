@@ -94,6 +94,19 @@ export namespace funcs {
   }
 
   /**
+   * Saves a model run to a program: annotates the call (portfolio, program, stage at run, unit operation, run type, purpose), saves it, links it into the program's workspace (the current stage's folder when there is one) and records it as a model run a gate criterion can select
+   * @param {any} call - A call that has run
+   * @param {string} unitOperation - Unit operation code
+   * @param {string} runType - Run type code
+   * @param {string} purpose
+   *   choices: ["screening", "characterization", "scale-up", "troubleshooting", "verification"]
+   * @param {string} folder - Folder under the program's folder, '/'-separated, by default the current stage's
+   */
+  export async function saveModelRun(call: any , portfolio: string , program: string , unitOperation?: string , runType?: string , purpose?: string , title?: string , folder?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SaveModelRun', { call, portfolio, program, unitOperation, runType, purpose, title, folder });
+  }
+
+  /**
    * Builds the workspace of every loaded portfolio that declares a workspaceRoot, one after another
    */
   export async function buildAllWorkspaces(): Promise<string> {

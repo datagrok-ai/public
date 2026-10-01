@@ -241,3 +241,17 @@ export function summarizeWorkspace(r: WorkspaceReport): string {
   }
   return lines.join('\n');
 }
+
+/** The folder at [parts] under [folderId], segment by segment under either spelling; null when a
+ * segment is missing (the stage has not been built into the workspace yet). Never creates. */
+export async function findSubfolder(folderId: string, parts: string[]): Promise<DG.Project | null> {
+  let current: DG.Project | null = null;
+  let parentId = folderId;
+  for (const part of parts) {
+    current = (await subspaces(parentId)).find((c) => isSpaceNamed(asRef(c), part)) ?? null;
+    if (!current)
+      return null;
+    parentId = current.id;
+  }
+  return current;
+}

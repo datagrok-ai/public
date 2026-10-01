@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -421,8 +421,10 @@
       "friendlyName": "Model runs",
       "description": "Curated projection over a saved FuncCall: one row per scientifically meaningful run, not per invocation.",
       "columns": {
-        "func_call": {"type": "ref", "ref": "Core.func_calls", "required": true, "immutable": true, "friendlyName": "Run",
-          "description": "The saved FuncCall. A soft reference: it may dangle if the call is hard-deleted, which model_name keeps readable"},
+        "func_call": {"type": "ref", "ref": "Core.func_calls", "immutable": true, "friendlyName": "Run",
+          "description": "The saved FuncCall. A soft reference: it may dangle if the call is hard-deleted, which model_name keeps readable. Empty while the platform refuses the soft reference (soft-ref alias bug); run_id holds the id then"},
+        "run_id": {"type": "string", "unique": true, "immutable": true, "friendlyName": "Run id",
+          "description": "The saved FuncCall's id as plain text, always written. Migration debt: the fallback while func_call cannot be written; once it can, func_call is backfilled from it"},
         "program_id": {"type": "ref", "ref": "program", "onDelete": "restrict", "required": true, "friendlyName": "Program"},
         "model_id": {"type": "ref", "ref": "model", "onDelete": "setnull", "friendlyName": "Model"},
         "model_name": {"type": "string", "required": true, "immutable": true, "description": "Func nqName as run, kept because a run is a historical record"},

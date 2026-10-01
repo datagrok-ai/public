@@ -11,6 +11,8 @@ import {portalAppView} from './views/portal-view';
 import {installStyles} from './views/styles';
 import {portfolioTableView, TABLE_SEGMENT} from './views/portfolio-table-view';
 import {portfolioTables} from './portfolio-table';
+import {saveModelRun as saveRun, summarizeSavedRun} from './model-runs';
+import {RunPurpose} from './model/model-runs';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -149,6 +151,24 @@ export async function buildWorkspace(code: string, dryRun: boolean = false): Pro
 //output: string report
 export async function workspaceOrphans(code: string): Promise<string> {
   return summarizeWorkspace(await orphansOf(code));
+}
+
+//name: saveModelRun
+//description: Saves a model run to a program: annotates the call (portfolio, program, stage at run, unit operation, run type, purpose), saves it, links it into the program's workspace (the current stage's folder when there is one) and records it as a model run a gate criterion can select
+//input: funccall call {description: A call that has run}
+//input: string portfolio
+//input: string program
+//input: string unitOperation {optional: true; description: Unit operation code}
+//input: string runType {optional: true; description: Run type code}
+//input: string purpose {optional: true; choices: ["screening", "characterization", "scale-up", "troubleshooting", "verification"]}
+//input: string title {optional: true}
+//input: string folder {optional: true; description: Folder under the program's folder, '/'-separated, by default the current stage's}
+//output: string report
+export async function saveModelRun(call: DG.FuncCall, portfolio: string, program: string, unitOperation?: string,
+  runType?: string, purpose?: string, title?: string, folder?: string): Promise<string> {
+  return summarizeSavedRun(await saveRun(call, portfolio, program, {unitOperation: unitOperation || undefined,
+    runType: runType || undefined, purpose: (purpose || undefined) as RunPurpose | undefined,
+    title: title || undefined, folder: folder || undefined}));
 }
 
 //name: buildAllWorkspaces
