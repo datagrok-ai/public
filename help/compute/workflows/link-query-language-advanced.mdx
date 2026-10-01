@@ -331,15 +331,16 @@ when its source changes, and tracks it for consistency.
   analyses after it. `same(@base)/rows` targets the instance itself.
 - `runOnInit` applies the default at every init, including a load from
   history, where it refreshes analysis steps that have not been run
-  yet; the link reruns when the table changes. Rules run every effect family through
-  the same `from`, so `fn` is called even while the table is absent: the
-  `?.` guard returns `undefined` and the `when` keeps the write off.
+  yet; the link reruns when the table changes. A rule's sources run
+  whenever `from` changes, even while its `when` is off, so `fn` is
+  called even while the table is absent: the `?.` guard returns
+  `undefined` and the `when` keeps the write off.
 - `restricted` records the written value, so a user edit is flagged
   inconsistent and can be reset. `none` writes an untracked default.
   See [Consistency](./link-types#consistency).
 - A default that needs a platform function returns its promise:
   `fn: (df) => grok.functions.call('Pkg:DefaultRows', {table: df})`. The
-  data link awaits it.
+  rule waits for it.
 
 For a static workflow drop `base` and write `from: 'table:load/table'`
 and `to: 't:analysis/rows'`.
@@ -368,14 +369,12 @@ the annotation cannot: clearing a value that fell out of the list.
 }
 ```
 
-- The `items` effect expands into a meta link: the list replaces the
-  dropdown items of every analysis step's `column` input, and changes
-  with the table.
-- The `clear` effect expands into a data link. It reads the current value
-  through `column:same(@base)/column` and clears it when it is not in the
-  list. The clear changes the value it reads, which reruns the link, but
-  the value is now absent, so the effect's `when` is off and the loop
-  ends. The rule has no `when` of its own, so the items stay on.
+- The `items` effect replaces the dropdown items of every analysis
+  step's `column` input with the list, which changes with the table.
+- The `clear` effect reads the current value through
+  `column:same(@base)/column` and clears it when it is not in the list.
+  The clear changes the value it reads, which reruns the rule, but the
+  value is now absent, so the effect's `when` is off and the loop ends. The rule has no `when` of its own, so the items stay on.
 - One source serves both effects, which keeps the two lists identical. A
   list produced by a platform function returns its promise, as in the
   previous case. The rule's `from` names the dependencies, the same role

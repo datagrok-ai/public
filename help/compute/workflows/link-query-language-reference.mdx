@@ -107,7 +107,7 @@ empty path. These forms are equivalent:
 | `actions` of validators | a node, any selector | `optional` |
 | `showWhen`, `hideWhen` of actions | a node; no io wildcards | `optional` |
 | `from` / `to` of `funccall` actions | a node with `call`, or a script io | `optional`, `call` |
-| `from` / `to` of rules | a script io | `optional`, `template`; `call` is added by the expansion for validator sources |
+| `from` / `to` of rules | a script io | `optional`, `template` |
 | `io`, `check.table` and `vars` values of checks | a script io | none; written without an alias |
 
 Two rules hold across the table. `base` is evaluated first and must
@@ -160,7 +160,10 @@ IOSegment ::= IOSelector
 TagSpec ::= '#' TagSelectorType '(' TagSelectorArgs ')'
 TagSelectorArgs ::= (RefArg (',' TagIds)?) | TagIds
 TagSelectorType ::= "after*" | "after" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
-IOSelector ::= IOSelectorType '(' IOSelectorNqName (',' TargetIds?)? ')'
+IOSelector ::= IOSelectorType '(' IOSelectorNqName (',' ExcludeIds?)? ')'
+ExcludeIds ::= ExcludeArg ('|' ExcludeArg)*
+ExcludeArg ::= Id | ExcludeKind
+ExcludeKind ::= '$' Id
 IOSelectorType ::= "inputs" | "outputs"
 IOSelectorNqName ::= Id ':' Id
 Selector ::= SelectorType '(' SelectorArgs? ')'

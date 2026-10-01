@@ -128,8 +128,7 @@ _Optional_
 
 A static object attached to the link and readable from the handler with
 [`getParam`](#getparam). Lets one handler serve several links with
-different configuration. [Rules](#rules) use it to pass their condition
-and effects to the built-in handlers.
+different configuration.
 
 
 ### Common controller methods
@@ -781,8 +780,9 @@ plain JavaScript. Each alias becomes an expression variable next to the
 
 A source runs whenever an input in `from` changes, even while the rule is
 off. Keep `from` to what the sources read, and give a function that loads
-data a `meta.cache` annotation. A `file`, a `table`, and a `func` or
-`query` whose `args` read no alias are loaded once. A source that fails
+data a `meta.cache` annotation. A `file` and a `table` are loaded once,
+and so is a `func` or `query` whose `args` are given and read no alias. A
+`func` or `query` without `args` runs on every change. A source that fails
 is reported, no effect is applied, and the next change tries again.
 
 ```
@@ -808,8 +808,10 @@ validators pass.
 
 ### Rule errors
 
-Config processing rejects a rule when:
+Config processing rejects a rule when, for example:
 
+- the rule has a `handler`: rules always use their built-in behaviour
+- a query uses a flag other than `optional` and `template`
 - `effects` is empty, or an effect is unknown, targets an unknown `to`
   alias, or has no `targets` and is not `assign`
 - a `to` alias is targeted by no effect, or by `hide`/`show` twice
@@ -818,9 +820,16 @@ Config processing rejects a rule when:
 - a source alias repeats a `from` alias, a `js` source reads an alias
   that is not in `from`, or `verdicts` names a source that is not
   `validators`
+- a source is of an unknown kind, misses what its kind needs (`fn`,
+  `name`, a path, a table, or `connection` and `sql`), or names an
+  unknown input
+- a `from` alias is named `call` while a `validators` source without
+  `names` or a `choices` source needs that name
 
-Two rules writing the same effect to the same input conflict, and
-processing does not detect it. In the debug log, a rule `r` shows as
+Two rules that write the same effect to the same input conflict. For
+value effects (`set`, `clear`, `assign`) the driver logs a duplicate
+target warning when the workflow is built; other conflicts are not
+detected, and which value wins is unspecified. In the debug log, a rule `r` shows as
 `r::meta`, `r::validator` and `r::data`.
 
 ## Checks
