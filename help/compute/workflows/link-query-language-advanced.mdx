@@ -411,7 +411,8 @@ bare `solver` id is the first solver of the workflow:
   link and reused on every rerun. Nothing in the rule is code.
 - The `(template)` query lists every input of the solver except the key,
   and the `_` prefix makes the aliases the io names. `$nonscalar` leaves
-  out dataframe and column inputs, and `$linked` leaves out the inputs
+  out inputs that are not numbers, strings, booleans or dates, such as
+  dataframes and columns, and `$linked` leaves out the inputs
   another data link writes, so a value fed from a previous step is not
   overwritten by the row. `row` returns the
   picked row as an object keyed by column name, and `assign` writes each

@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 import {category, test, before, expect} from '@datagrok-libraries/test/src/test';
 import {makeFuncCall} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {resolveSources} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-sources';
@@ -71,14 +72,18 @@ category('ComputeUtils: Driver value annotations', async () => {
       getFirst: (name: string) => name === 'call' ? fc : value,
       getMatchedPositions: () => [{path: [], position: 0, ioName: 'model'}],
     } as any, {c: {choices: {input: 'value', call: 'call'}}})).c;
+    // dates compare by instant
+    const plain = (row: Record<string, any>) => Object.fromEntries(Object.entries(row)
+      .map(([key, value]) => [key, dayjs.isDayjs(value) ? value.valueOf() : value]));
     const mazda = await lookup('Mazda');
     const volvo = await lookup('Volvo');
-    expectDeepEqual([mazda.row, mazda.rowErrors], [
-      {cyl: 4, name: '1', flag: true, engine: 'E1'}, ['mpg: 21.5 is not a valid int'],
-    ]);
-    expectDeepEqual([volvo.row, volvo.rowErrors], [
-      {mpg: 30, name: '2', flag: false, engine: 'E2'}, ['cyl: "abc" is not a valid int'],
-    ]);
+    expectDeepEqual([plain(mazda.row), mazda.rowErrors], [{
+      cyl: 4, name: '1', flag: true, engine: 'E1',
+      made: Date.parse('2020-05-01T00:00:00Z'), when: Date.parse('2021-03-04T05:06:07Z'),
+    }, ['mpg: 21.5 is not a valid int']]);
+    expectDeepEqual([plain(volvo.row), volvo.rowErrors], [{
+      mpg: 30, name: '2', flag: false, engine: 'E2', when: Date.parse('2022-01-02T00:00:00Z'),
+    }, ['cyl: "abc" is not a valid int', 'made: "not a date" is not a valid datetime']]);
   });
 
   test('Only the first propagateChoice key gets a lookup', async () => {
@@ -98,7 +103,7 @@ category('ComputeUtils: Driver value annotations', async () => {
     expectDeepEqual(byId['::engine:choices::validator'].params.effects.map((effect: any) => effect.message),
       ['Not in the list of choices']);
     expectDeepEqual(byId['::model:lookup::data'].to.map((item: any) => item.name),
-      ['engine', 'cyl', 'mpg', 'name', 'flag']);
+      ['engine', 'cyl', 'mpg', 'name', 'flag', 'when', 'made']);
     expectDeepEqual(logger.errors.map((item) => [item.severity, item.message]), [['warning',
       `Step ${LOOKUP}: propagateChoice on 'engine' is ignored, 'model' already fills the step's inputs`]]);
   });

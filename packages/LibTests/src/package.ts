@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
@@ -481,14 +482,18 @@ export function TestValueAnnotations(calc: number, bare: string, metric: string,
 
 //output: dataframe res
 export function MockCarsTyped(): DG.DataFrame {
-  return DG.DataFrame.fromColumns([
+  const df = DG.DataFrame.fromColumns([
     DG.Column.fromList('string', 'model', ['Mazda', 'Volvo']),
     DG.Column.fromList('string', 'cyl', ['4', 'abc']),
     DG.Column.fromList('double', 'mpg', [21.5, 30]),
     DG.Column.fromList('int', 'name', [1, 2]),
     DG.Column.fromList('string', 'flag', ['true', 'no']),
     DG.Column.fromList('string', 'engine', ['E1', 'E2']),
+    DG.Column.fromList('string', 'made', ['2020-05-01T00:00:00Z', 'not a date']),
   ]);
+  const dates = ['2021-03-04T05:06:07Z', '2022-01-02T00:00:00Z'];
+  df.columns.addNewDateTime('when').init((i: number) => dayjs(dates[i]));
+  return df;
 }
 
 //output: dataframe res
@@ -505,9 +510,11 @@ export function MockEngines(): DG.DataFrame {
 //input: int mpg
 //input: string name
 //input: bool flag
+//input: datetime when
+//input: datetime made
 //output: string res
 export function TestLookupAnnotations(model: string, engine: string, cyl: number, mpg: number, name: string,
-  flag: boolean): string {
+  flag: boolean, when: dayjs.Dayjs, made: dayjs.Dayjs): string {
   return `${model} ${engine}`;
 }
 

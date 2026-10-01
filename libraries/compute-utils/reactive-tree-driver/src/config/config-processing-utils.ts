@@ -302,6 +302,9 @@ function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
 // Deferred IO selector expansion
 // ---------------------------------------------------------------------------
 
+// `$nonscalar` keeps dates, which the platform's scalar list leaves out
+const templateScalarTypes = new Set<string>([...DG.TYPES_SCALAR, DG.TYPE.DATE_TIME]);
+
 export function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed[] {
   const seenTemplateNames = new Set<string | number>();
   let anonIdx = 0;
@@ -325,7 +328,7 @@ export function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkI
     }
     return targetIO
       .filter((d) => d.direction === direction && !excludeSet.has(d.id) &&
-        !(kinds.has('nonscalar') && !DG.TYPES_SCALAR.has(d.type as DG.TYPE)))
+        !(kinds.has('nonscalar') && !templateScalarTypes.has(d.type)))
       .map((d) => {
         const nname = isAnonymous ? d.id : io.name + d.id;
         const nlastSegment: LinkSelectorSegment = {type: 'selector', selector: 'first', ids: [d.id], stopIds: []};

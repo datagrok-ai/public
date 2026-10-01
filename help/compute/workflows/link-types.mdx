@@ -914,8 +914,9 @@ The driver differs from the form in a few cases.
 #### Lookup tables
 
 With `propagateChoice: all`, the value of the key input selects a row of
-the lookup table, and the row fills the step's other inputs whose names
-match its columns. The filled inputs are handled differently:
+the lookup table, and the row fills the step's other number, string,
+boolean and date inputs whose names match its columns. The filled inputs
+are handled differently:
 
 | Case | Function form | Driver |
 |---|---|---|
@@ -923,6 +924,7 @@ match its columns. The filled inputs are handled differently:
 | Editing a filled input by hand | Nothing marks it | Flagged as inconsistent with the lookup, see [Consistency](#consistency) |
 | An input another step feeds through a link | Not applicable, a form has no links | Keeps the linked value: the lookup skips it, even before the link has a value |
 | A cell that does not fit its input's type | The input is emptied | The input keeps its value, and the key shows a warning |
+| A date input | Not filled | Filled from a date cell, or from text or a timestamp that reads as a date; any other cell is handled as one that does not fit |
 | A second key with `propagateChoice: all` | Each key fills the inputs, the last pick wins | Only the first key fills inputs, the option on later keys is ignored with a warning |
 
 ## Actions

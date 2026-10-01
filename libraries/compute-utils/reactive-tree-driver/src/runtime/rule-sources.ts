@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleSource} from '../config/PipelineConfiguration';
 import {evaluate, RuleContext, usedAliases} from './rule-expressions';
@@ -107,6 +108,12 @@ function convertCell(cell: any, type: string): any {
     if (typeof cell === 'string')
       return cell;
     return typeof cell === 'number' || typeof cell === 'boolean' ? String(cell) : notConverted;
+  case DG.TYPE.DATE_TIME: {
+    // evalParamChoices leaves datetime cells as platform objects, which toJs turns into dayjs
+    const date = typeof cell === 'string' || typeof cell === 'number' || cell instanceof Date ? dayjs(cell) :
+      dayjs.isDayjs(cell) ? cell : DG.toJs(cell);
+    return dayjs.isDayjs(date) && date.isValid() ? date : notConverted;
+  }
   default:
     return cell;
   }

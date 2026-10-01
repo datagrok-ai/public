@@ -154,8 +154,8 @@ export namespace funcs {
    * @param {string} engine
    *   choices: LibTests:MockEngines()
    */
-  export async function testLookupAnnotations(model: string , engine: string , cyl: number , mpg: number , name: string , flag: boolean ): Promise<string> {
-    return await grok.functions.call('LibTests:TestLookupAnnotations', { model, engine, cyl, mpg, name, flag });
+  export async function testLookupAnnotations(model: string , engine: string , cyl: number , mpg: number , name: string , flag: boolean , when: any , made: any ): Promise<string> {
+    return await grok.functions.call('LibTests:TestLookupAnnotations', { model, engine, cyl, mpg, name, flag, when, made });
   }
 
   export async function mockValidatorBool(x: number ): Promise<boolean> {
