@@ -910,7 +910,9 @@ work without any links in the config, also in runs with no form on screen.
 Validation options are covered by [Checks](#checks). Computed defaults,
 evaluated choices and lookups need platform 1.28.0 or later.
 
-The driver differs from the form in a few cases:
+The driver differs from the form in a few cases.
+
+#### Defaults and choices
 
 | Case | Function form | Driver |
 |---|---|---|
@@ -919,12 +921,20 @@ The driver differs from the form in a few cases:
 | Empty choice input | The first item | Stays empty, and the required check reports it |
 | Value not in the list | Replaced by the first item | Kept, with a warning |
 | Clearing a choice | Not possible | Every choice input has an empty option |
-| Lookup at init | Fills nothing | Fills the inputs from the row of the current value |
-| Lookup trigger | A pick in the dropdown | Any change of the value, including one made by a link |
-| Values a lookup fills | Plain values | Tracked for [consistency](#consistency), so an edit by hand is flagged |
-| Inputs a data link of the config writes | Filled by the lookup | Left to the link |
-| A cell that does not fit its input | The input is emptied | The value is kept, with a warning |
-| A second `propagateChoice: all` input | Its own lookup, the last pick wins | Ignored, with a warning |
+
+#### Lookup tables
+
+With `propagateChoice: all`, the value of the key input selects a row of
+the lookup table, and the row fills the step's other inputs whose names
+match its columns. The filled inputs are handled differently:
+
+| Case | Function form | Driver |
+|---|---|---|
+| When the inputs are filled | Only when a key is picked in the dropdown | Whenever the key changes, including a change made by a link, and when the step is created or a run is loaded |
+| Editing a filled input by hand | Nothing marks it | Flagged as inconsistent with the lookup, see [Consistency](#consistency) |
+| An input another step feeds through a link | Not applicable, a form has no links | Keeps the linked value: the lookup skips it, even before the link has a value |
+| A cell that does not fit its input's type | The input is emptied | The input keeps its value, and the key shows a warning |
+| A second key with `propagateChoice: all` | Each key fills the inputs, the last pick wins | Only the first key fills inputs, the option on later keys is ignored with a warning |
 
 ## Actions
 
