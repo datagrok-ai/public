@@ -44,6 +44,8 @@ const CSS = `
 .pp-actions { gap: 6px; }
 .pp-history-row, .pp-lineage { font-size: 12px; }
 .pp-detail textarea { width: 100%; box-sizing: border-box; }
+/* a long gate panel scrolls; its rows must not shrink (the rationale box collapsed to a line) */
+.pp-detail > * { flex-shrink: 0; }
 `;
 
 let installed = false;
