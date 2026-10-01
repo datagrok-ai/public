@@ -8,6 +8,10 @@ import {applyDefaultFloatFormats, ConsistencyInfo, injectInputBaseStatus, isInpu
 import {BehaviorSubject} from 'rxjs';
 import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
 
+// same reading as the driver's required check
+const isOptionalParam = (prop: DG.Property) =>
+  prop.options?.optional === 'true' || prop.options?.nullable === 'true';
+
 declare global {
   namespace JSX {
     interface IntrinsicElements {
@@ -103,9 +107,11 @@ export const InputForm = Vue.defineComponent({
             input.notify = false;
             const currentValue = param.value;
             try {
-              // set before the items, so the empty option leads the list
+              // before the items, so the empty option leads the list; the meta overrides the annotation
               if (emptyChoice != null)
                 input.nullable = !!emptyChoice;
+              else if (skipInit.value)
+                input.nullable = isOptionalParam(param.property);
               if (paramItems)
                 (input as DG.ChoiceInput<any>).items = paramItems;
               else if (param.property.options.choices && skipInit.value) {
@@ -115,10 +121,8 @@ export const InputForm = Vue.defineComponent({
                   items = JSON.parse(param.property.options.choices);
                   isParsed = true;
                 } catch {}
-                if (isParsed) {
-                  input.nullable = true;
+                if (isParsed)
                   (input as DG.ChoiceInput<any>).items = items;
-                }
               }
             } catch(e) {
               console.error(e);

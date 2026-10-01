@@ -132,7 +132,6 @@ category('ComputeUtils: Driver value annotations', async () => {
     const byId = Object.fromEntries(links.map((link: any) => [link.id, link]));
     expectDeepEqual(byId['::city:choices::meta'].params.effects, [
       {effect: 'items', targets: 'city_target', items: {var: 'city_choices.items'}, when: {'!!': {var: 'city_choices'}}},
-      {effect: 'meta', targets: 'city_target', meta: {emptyChoice: true}},
     ]);
     expectDeepEqual(byId['::city:choices::validator'].debounce, 0);
     expectDeepEqual(byId['::model:choices::validator'].params.effects[0].message, 'Not in the lookup table');

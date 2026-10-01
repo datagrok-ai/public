@@ -583,7 +583,7 @@ input or output:
 |------|--------|
 | `hidden: true` | Hide the input from the script UI. If the input is a dataframe with one or more `viewer:` panels, those panels are hidden too. A hidden input is treated as optional regardless of its annotation: the default missing-value check and any validator link targeting it no longer block the run or show up in the UI, and the function is called with whatever value the input holds, possibly `null`. |
 | `items: string[]` | For choice inputs, replace the dropdown options. Example: `{ items: ['one', 'two', 'three'] }`. |
-| `emptyChoice: boolean` | For choice inputs, offer an empty option that clears the value. Without the key the input keeps its own setting. The driver sets it for choices from annotations. |
+| `emptyChoice: boolean` | For choice inputs, offer an empty option that clears the value, or remove it. Without the key, the input has an empty option when its annotation says `nullable: true` or `optional: true`. The key never changes the value itself. |
 
 Any other key/value pair is forwarded to the viewer hook unchanged, so
 custom viewer integrations can define their own meta keys.
@@ -919,7 +919,7 @@ The driver differs from the form in a few cases.
 | Empty choice input | The first item | Stays empty, and the required check reports it |
 | Value not in a list the platform evaluates (a function, a query or a file) | Replaced by the first item | Kept, with a warning |
 | Value not in a literal list such as `["slow", "fast"]` | Replaced by the first item | Kept, with an error that blocks the run, see [Checks](#checks) |
-| Clearing a choice | Not possible | Every choice input has an empty option |
+| Clearing an optional choice (`nullable: true` or `optional: true`) | Not possible | The dropdown has an empty option; an `emptyChoice` meta can turn it off |
 
 #### Lookup tables
 
