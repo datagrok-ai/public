@@ -2,18 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import {GroupAssignment} from '../analysis/experiment-setup';
 import {computePCA} from '../analysis/pca';
 
-/** Local interface for area annotation region (may not be in installed datagrok-api types). */
-interface AreaAnnotationRegionDef {
-  type: string;
-  area: [number, number][];
-  fillColor: string;
-  opacity: number;
-  outlineColor: string;
-  outlineWidth: number;
-  x: string;
-  y: string;
-}
-
 /** Group colors for PCA plot ellipses and styling. */
 const GROUP_COLORS: string[] = ['#2196F3', '#FF5722'];
 
@@ -140,25 +128,21 @@ export function createPcaPlot(
 
       const ellipsePoints = confidenceEllipse(xVals, yVals);
       if (ellipsePoints) {
-        const color = GROUP_COLORS[g % GROUP_COLORS.length];
-        const region: AreaAnnotationRegionDef = {
+        const color = DG.Color.fromHtml(GROUP_COLORS[g % GROUP_COLORS.length]);
+        const region: DG.AreaAnnotationRegion = {
           type: 'area',
           area: ellipsePoints,
-          fillColor: color,
-          opacity: 0.15,
+          fillColor: DG.Color.setAlpha(color, 38),
           outlineColor: color,
           outlineWidth: 1,
           x: pc1ColName,
           y: pc2ColName,
         };
-        // annotationRegions API may not be available in all datagrok-api versions
-        (sp.meta as any).annotationRegions?.add(region);
+        sp.meta.annotationRegions.add(region);
       }
     }
   } catch (e: any) {
-    // Ellipse rendering is best-effort — the annotationRegions API may not be
-    // exposed in the installed datagrok-api. Log the underlying error so this
-    // doesn't silently mask unrelated bugs in the ellipse math or column reads.
+    // Ellipse rendering is best-effort; log so a failure in the ellipse math or column reads is not silent.
     console.warn('PCA: could not add confidence ellipses:', e?.message ?? e);
   }
 

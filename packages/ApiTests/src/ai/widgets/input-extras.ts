@@ -72,4 +72,13 @@ category('AI: Widgets: Input Extras', () => {
     // Headless DOM may not clamp; accept either clamped in-range or unchanged value.
     expect(sv == null || (sv >= 0 && sv <= 10) || sv === 99, true);
   });
+
+  test('color input with an alpha channel keeps #rrggbbaa', async () => {
+    const input = ui.input.color('c', {value: '#ff000080', useAlphaChannel: true});
+    expect(input.value, '#ff000080');
+    expect((DG.Color.fromHtml(input.value) >>> 24) & 0xFF, 0x80);
+    input.value = '#00ff00';
+    expect(input.value, '#00ff00');
+    expectNoThrow(() => ui.colorPicker(DG.Color.fromHtml('#0000ff40'), () => {}, ui.div(), null, null, true));
+  });
 }, {owner: 'agolovko@datagrok.ai'});

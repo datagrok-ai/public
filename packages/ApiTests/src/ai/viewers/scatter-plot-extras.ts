@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, df, expectChoices, expectRoundTrip, until} from '../helpers';
+import {alphaOf, demog, df, expectChoices, expectRoundTrip, look, reloadLayoutWithLook, until, withTableView} from '../helpers';
 
 // ScatterPlot prop JSON-shape round-trips not covered by scatter-plot-js-api.ts.
 category('AI: Viewers: ScatterPlot extras', () => {
@@ -51,10 +51,51 @@ category('AI: Viewers: ScatterPlot extras', () => {
     });
   });
 
-  test('markerOpacity/jitterSize/jitterSizeY/markerBorderWidth boundary round-trip', async () => {
+  test('jitterSize/jitterSizeY/markerBorderWidth boundary round-trip', async () => {
     const c = v();
-    expectRoundTrip(c, {markerOpacity: 0, jitterSize: 0, jitterSizeY: 0, markerBorderWidth: 1});
-    expectRoundTrip(c, {markerOpacity: 100, jitterSize: 50, jitterSizeY: 50, markerBorderWidth: 10});
+    expectRoundTrip(c, {jitterSize: 0, jitterSizeY: 0, markerBorderWidth: 1});
+    expectRoundTrip(c, {jitterSize: 50, jitterSizeY: 50, markerBorderWidth: 10});
+  });
+
+  test('removed markerOpacity / line transparencies move into the color alpha', async () => {
+    const c = v();
+    c.setOptions({markerOpacity: 30, regressionLineTransparency: 0.5, movingAverageLineTransparency: 0.75});
+    for (const color of ['filteredRowsColor', 'selectedRowsColor', 'filteredOutRowsColor', 'missingValueColor', 'whiskerColor'])
+      expect(alphaOf((c.props as any)[color]), 76);
+    expect(alphaOf(c.props.regressionLineColor), 128);
+    expect(alphaOf(c.props.movingAverageLineColor), 64);
+    for (const removed of ['markerOpacity', 'regressionLineTransparency', 'movingAverageLineTransparency'])
+      expect(removed in look(c), false);
+
+    await withTableView(demog(), (tv) => {
+      tv.scatterPlot({x: 'height', y: 'weight'});
+      const sp = reloadLayoutWithLook(tv, DG.VIEWER.SCATTER_PLOT, {markerOpacity: 50, filteredRowsColor: 0xFFFF0000});
+      expect((sp.props.filteredRowsColor >>> 0).toString(16), '7fff0000');
+      expect(alphaOf(sp.props.selectedRowsColor), 127);
+    });
+  });
+
+  test('removed markerOpacity / line transparencies still read and write through props', async () => {
+    const c = v();
+    c.props.markerOpacity = 50;
+    expect(c.props.markerOpacity, 50);
+    expect(alphaOf(c.props.filteredRowsColor), 127);
+    expect(alphaOf(c.props.selectedRowsColor), 127);
+    c.props.regressionLineTransparency = 0.25;
+    expect(c.props.regressionLineTransparency, 0.25);
+    expect(alphaOf(c.props.regressionLineColor), 191);
+    c.props.movingAverageLineTransparency = 0.5;
+    expect(alphaOf(c.props.movingAverageLineColor), 128);
+  });
+
+  test('zero opacity keeps alpha 1: alpha 0 means a color written without alpha', async () => {
+    const c = v();
+    c.props.markerOpacity = 0;
+    expect(c.props.markerOpacity, 0);
+    expect(alphaOf(c.props.filteredRowsColor), 1);
+    c.setOptions({regressionLineTransparency: 1});
+    expect(alphaOf(c.props.regressionLineColor), 1);
+    expect(c.props.regressionLineTransparency, 1);
   });
 
   test('selection visibility bools combined round-trip', async () => {

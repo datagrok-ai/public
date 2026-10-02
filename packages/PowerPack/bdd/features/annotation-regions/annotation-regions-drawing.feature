@@ -167,19 +167,17 @@ Feature: Drawing and editing annotation regions
     And the "region Adults" area of scatter plot viewer should not contain the color "#FF8800"
     When user picks "Edit..." from the context menu of the "left edge of region Adults" area of scatter plot viewer
     Then "Formula Lines" dialog should be visible
-    When user enters "#ff8800" into Region Color input in "Formula Lines" dialog
+    When user enters "#ff880099" into Region Color input in "Formula Lines" dialog
     And user enters "#003366" into Outline Color input in "Formula Lines" dialog
     And user enters "3" into Width input in "Formula Lines" dialog
-    And user drags the slider of Opacity input in "Formula Lines" dialog to 60
     And user enters "#ff0000" into Color input in "Formula Lines" dialog
     And user clicks OK button in "Formula Lines" dialog
     Then the "Formula Lines" dialog should close
     And the "region Adults" area of scatter plot viewer should contain the color "#FF8800"
-    And "annotationRegions" property of scatter plot viewer should contain "\"fillColor\""
     And "annotationRegions" property of scatter plot viewer should contain "\"outlineColor\""
     And "annotationRegions" property of scatter plot viewer should contain "\"outlineWidth\":3"
     And "annotationRegions" property of scatter plot viewer should contain "\"headerColor\""
-    And "annotationRegions" property of scatter plot viewer should contain "\"opacity\""
+    And "annotationRegions" property of scatter plot viewer should contain "\"fillColor\":2583660544"
     And scatter plot viewer should have repainted
     And scatter plot viewer should have a "region Adults" area
     And no errors should have been logged

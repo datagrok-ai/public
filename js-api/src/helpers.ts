@@ -12,8 +12,10 @@ export interface FormulaLine {
   type?: string;
   title?: string;
   description?: string;
+  /** HTML color; `#rrggbbaa` sets the opacity. A band color without an alpha (`#rrggbb`) is drawn at 30%. */
   color?: string;
   visible?: boolean;
+  /** @deprecated Use the alpha of {@link color} (`#rrggbbaa`); still folded into it when set. */
   opacity?: number;
   zIndex?: number;
   min?: number;
@@ -39,14 +41,18 @@ export interface AnnotationRegion {
   id?: string;
   type?: string;
   header?: string;
-  headerColor?: string;
-  fillColor?: string;
+  /** ARGB integer. */
+  headerColor?: number;
+  /** ARGB integer; a translucent alpha is the region's opacity. An opaque or alpha-less fill
+   *  is drawn at 30% unless {@link opacity} is set. */
+  fillColor?: number;
   outlineWidth?: number;
   outlineColor?: number;
   xMap?: string;
   yMap?: string;
   hidden?: boolean;
   description?: string;
+  /** Opacity of {@link fillColor} (0..100), overriding its alpha; use 100 for an opaque fill. */
   opacity?: number;
   isDataFrameRegion?: boolean;
   zIndex?: number;
