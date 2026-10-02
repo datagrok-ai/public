@@ -78,21 +78,21 @@ the **Context Panel**. To highlight thresholds and areas of interest, add
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Axis Font | string |  |
-| Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Misc** | | |
 | Bins | number |  |
-| **Data** | | |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
-| Table | string |  |
-| **Description** | | |
-| Show Title | boolean |  |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Data** | | |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
+| Table | string |  |
+| **Description** | | |
+| Show Title | boolean |  |
 
 See also:
 

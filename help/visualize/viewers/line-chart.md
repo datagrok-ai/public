@@ -175,8 +175,6 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Y Selectors | boolean |  |
 | Show Aggr Selectors | boolean |  |
 | Show Split Selector | boolean |  |
-| Interpolation | lineinterpolationmode |  |
-| Spline Tension | number |  |
 | Y Axis Custom Tickmarks | list |  |
 | **Size** | | |
 | Markers Size Column Name | string |  |
@@ -194,19 +192,8 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Line Width | number |  |
 | Line Transparency | number |  |
 | Line Coloring Type | string |  |
-| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
-| Show Regression Line Equation | boolean |  |
-| Show Determination Coefficient | boolean | Coefficient of determination (r²) of the fit. |
-| Show Spearman Correlation | boolean |  |
-| Show Pearson Correlation | boolean |  |
-| Show Mean Absolute Error | boolean |  |
-| Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
-| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
-| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
-| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
-| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
-| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
+| Interpolation | lineinterpolationmode |  |
+| Spline Tension | number |  |
 | **SPC** | | |
 | Show Statistical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
@@ -245,13 +232,13 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Statistical Process Line Color | number |  |
 | Statistical Process Area Color | number |  |
 | Statistical Process Rule Color | number |  |
-| Controls Font | string | Viewer controls elements font. |
 | Regression Line Color | number |  |
 | Regression Line Transparency | number |  |
 | Moving Average Line Color | number |  |
 | Moving Average Line Transparency | number |  |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls scatter plot tooltip visibility |
 | Show Labels | visibilitymode |  |
@@ -267,6 +254,21 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Statistics** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Determination Coefficient | boolean | Coefficient of determination (r²) of the fit. |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Regression Zero Intercept | boolean | Forces the line through the origin (y = a·x). r² is then computed against the uncentered total sum of squares (Σy²) and is not comparable with the free-intercept r². |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 | **Description** | | |
 | Show Title | boolean |  |
 

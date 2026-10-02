@@ -146,19 +146,19 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Selected Bins Color | number |  |
 | Values Color | number |  |
 | Filtered Out Color | number |  |
-| Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
-| **Legend** | | |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
-| **Description** | | |
-| Show Title | boolean |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| **Description** | | |
+| Show Title | boolean |  |
 
 See also:
 

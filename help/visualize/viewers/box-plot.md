@@ -181,23 +181,23 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Control Band Color | number | Color of the band highlighting the control group in control comparisons mode. |
 | Linear Color Scheme | list |  |
 | Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column's color coding is used. |
-| Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls box plot tooltip visibility |
 | Show Labels | visibilitymode |  |
 | Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
-| **Legend** | | |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
-| **Description** | | |
-| Show Title | boolean |  |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| **Description** | | |
+| Show Title | boolean |  |
 
 See also:
 

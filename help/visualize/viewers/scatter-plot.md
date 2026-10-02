@@ -375,21 +375,6 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Lines Order Column Name | string | When defined, a line would be drawn for each series (defined by the categorical color column) using the order specified by "Lines Order" |
 | Lines By Column Name | string | When defined, lines are split into separate series by this categorical column instead of the color column. |
 | Lines Width | number | Defines the width of the lines connecting the markers. See **Lines Width**. |
-| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
-| Show Regression Line Equation | boolean |  |
-| Show Determination Coefficient | boolean | Coefficient of determination (r²) of the fit. |
-| Show Spearman Correlation | boolean |  |
-| Show Pearson Correlation | boolean |  |
-| Show Mean Absolute Error | boolean |  |
-| Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
-| Regression Common Slope | boolean | Fit the per-category regression lines by ANCOVA: one common (pooled) slope, each line through its group's adjusted mean, with a *Regression Confidence Level* band. Needs numerical X and Y. |
-| Regression Confidence Level | number | Confidence level (%) of the band around each common-slope line. |
-| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
-| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
-| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
-| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
-| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 | **Selection** | | |
 | Show Current Point | boolean | Controls the indication of the current row |
 | Show Mouse Over Point | boolean | Controls the indication of the mouse-over row |
@@ -430,13 +415,13 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Y Axis Width | number | Requires *Auto Axis Size* to be turned off. |
 | Axis Font | string |  |
 | Label Font | string |  |
-| Controls Font | string | Viewer controls elements font. |
 | Regression Line Color | number |  |
 | Regression Line Transparency | number |  |
 | Moving Average Line Color | number |  |
 | Moving Average Line Transparency | number |  |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls scatter plot tooltip visibility |
 | Show Labels | visibilitymode |  |
@@ -444,16 +429,33 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
 | Tooltip Delay | number | Delay in milliseconds before showing row tooltip |
 | Row Group Tooltip | string |  |
-| **Legend** | | |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
-| **Description** | | |
-| Show Title | boolean |  |
+| **Statistics** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Determination Coefficient | boolean | Coefficient of determination (r²) of the fit. |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Regression Zero Intercept | boolean | Forces the line through the origin (y = a·x). r² is then computed against the uncentered total sum of squares (Σy²) and is not comparable with the free-intercept r². |
+| Regression Common Slope | boolean | Gives all category lines the same slope, with a confidence band. Fitted by ANCOVA. Needs numerical X and Y. |
+| Regression Confidence Level | number | Confidence level (%) of the band around each common-slope line. |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| **Description** | | |
+| Show Title | boolean |  |
 
 
 See also:
