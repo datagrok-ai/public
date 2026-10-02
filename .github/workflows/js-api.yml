@@ -126,7 +126,9 @@ jobs:
       - run: pnpm turbo run build --filter=datagrok-api
       - run: pnpm run check-links
         working-directory: ./js-api
+      # A ratchet guards what gets merged; once a regression is on master it must not block every publish.
       - run: pnpm run inventory
+        if: github.event_name == 'pull_request'
         working-directory: ./js-api
       - run: pnpm run lint
         working-directory: ./js-api

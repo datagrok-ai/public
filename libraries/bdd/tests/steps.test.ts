@@ -11,7 +11,8 @@ import {mouseOverRowIs} from '../bindings/platform/columns.js';
 import {newestMatchingDistinct, newestMatchingFilled} from '../bindings/platform/commands.js';
 import {setTableTag, tableTagIsFile} from '../bindings/platform/data.js';
 import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
-import {fixtureFamilies, isStaleFixture, openTableOf} from '../bindings/platform/steps.js';
+import {openTableOf} from '../bindings/platform/steps.js';
+import {fixtureFamilies, isStaleFixture, serviceGap} from '../src/runtime/server.js';
 import {el} from '../src/runtime/args.js';
 import {select} from '../src/runtime/gestures.js';
 import {locate} from '../src/runtime/locate.js';
@@ -187,4 +188,15 @@ test('a fixture of a dead run is stale after an hour; a live, a foreign or an un
   assert.equal(isStaleFixture(at('BDD-GL-Renamed-1789900000000', old), families, now), false);
   assert.equal(isStaleFixture(at('BDD-GL-Group', old), families, now), false);
   assert.equal(isStaleFixture(at('BDD-GL-Group-1789900000000', 0), families, now), false);
+});
+
+test('a service gate skips on a service the stand reports missing or down, and lets a stand that reports none go on', () => {
+  const services = [{name: 'Jupyter', enabled: true, status: 'Running'}, {name: 'Grok Spawner', enabled: false, status: 'Running'},
+    {name: 'Grok Connect', enabled: true, status: 'Failed'}];
+  assert.equal(serviceGap(services, 'Jupyter'), '');
+  assert.equal(serviceGap(services, 'Grok Spawner'), 'disabled, Running');
+  assert.equal(serviceGap(services, 'Grok Connect'), 'Failed');
+  assert.equal(serviceGap(services, 'No Such Service'), 'absent');
+  assert.equal(serviceGap([], 'Jupyter'), '');
+  assert.equal(serviceGap([], 'Jupyter', true), 'the stand reports no service health');
 });

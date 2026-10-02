@@ -141,7 +141,7 @@ export function findNextSubStep(state: PipelineState): NodeWithPath | undefined 
   return _findTreeNode([state], suitableForNavStep);
 }
 
-// A workflow that resolves to one script through a chain of one-child static pipelines
+// A workflow with `compactView` that resolves to one script through a chain of one-child static pipelines
 // (e.g. a root that only refs another provider) is rendered by TreeWizard in compact mode.
 type SinglePipelineChain = PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData>[];
 
@@ -156,7 +156,7 @@ export function resolveSingleStep(
     chain.push(current);
     current = current.steps[0];
   }
-  return {step: current, chain};
+  return chain[0]?.compactView ? {step: current, chain} : undefined;
 }
 
 export type PipelineWithAdd = PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData>;

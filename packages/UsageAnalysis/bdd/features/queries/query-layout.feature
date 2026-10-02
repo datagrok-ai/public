@@ -17,7 +17,7 @@ Feature: A query's layout
     Given user is logged in
     And the browse panel is open
     And no query named "BDD-Q-layout-{time}" is on the server
-    And the layout saved for the query "BDD-Q-layout-{time}" is deleted at the end
+    And the layouts named "BDD-Q-layout-{time}" are deleted when the feature ends
 
   Scenario: The Layout tab waits for a run, then takes viewers from the toolbox
     Given Databases tree node inside browse tree is expanded
@@ -47,7 +47,7 @@ Feature: A query's layout
     Given the toolbox pane is hidden
     And the browse panel is open
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
-    When user clicks on "Refresh" icon inside browse toolbar
+    When user refreshes the browse tree
     And user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-layout-{time} tree node inside browse tree
     Then the current view should be a TableView view
     And the table should have 77 rows

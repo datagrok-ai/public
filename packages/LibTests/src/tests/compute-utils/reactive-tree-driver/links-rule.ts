@@ -39,7 +39,7 @@ category('ComputeUtils: Driver links rule', async () => {
       effects: [
         {effect: 'hide', targets: 't1'},
         {effect: 'items', targets: ['t2'], items: ['x', 'y']},
-        {effect: 'error', targets: 't1', message: {cat: ['bad ', {var: 'all.n'}]}},
+        {effect: 'error', targets: 't1', message: {cat: ['bad ', {var: '$all.n'}]}},
         {effect: 'set', targets: 't2', value: {var: 'm'}},
       ],
     }]));
@@ -65,6 +65,61 @@ category('ComputeUtils: Driver links rule', async () => {
       effects: [{effect: 'show', targets: 't'}],
     }]));
     expectDeepEqual(pconf.links!.map((l) => l.id), ['r::meta']);
+  });
+
+  test('Effect when is kept by expansion and checked', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: ['t:step2/a', 'u:step2/b'],
+      when: {'>': [{var: 'm'}, 0]},
+      effects: [
+        {effect: 'hide', targets: 't'},
+        {effect: 'set', targets: 'u', value: {var: 'm'}, when: {'>': [{var: 'm'}, 1]}},
+      ],
+    }]));
+    const data = pconf.links!.find((l) => l.id === 'r::data')!;
+    expectDeepEqual(data.params!.effects[0].when, {'>': [{var: 'm'}, 1]});
+    await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
+      effects: [{effect: 'hide', targets: 't', when: {'>': [{var: 'q'}, 0]}}],
+    }])), /unknown input alias q/);
+  });
+
+  test('Template queries expand into rule aliases', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: '_(template):step2/a|b',
+      effects: [
+        {effect: 'set', targets: 'a', value: {var: 'm'}},
+        {effect: 'set', targets: 'b', value: {var: 'm'}},
+      ],
+    }, {
+      id: 'w', type: 'rule', from: 'm:step1/a', to: 'x_(template):step2/inputs(LibTests:TestMul2, b)',
+      effects: [{effect: 'hide', targets: 'x_a'}],
+    }]));
+    const [data, meta] = pconf.links!;
+    expectDeepEqual(data.id, 'r::data');
+    expectDeepEqual(data.to.map((io) => io.name), ['a', 'b']);
+    expectDeepEqual(meta.id, 'w::meta');
+    expectDeepEqual(meta.to.map((io) => io.name), ['x_a']);
+    await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: '_(template):step2/a|b',
+      effects: [{effect: 'set', targets: 'a', value: {var: 'm'}}],
+    }])), /output alias b is not targeted/);
+  });
+
+  test('Assign validation', async () => {
+    await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
+      effects: [{effect: 'assign', values: {var: 'nope'}}],
+    }])), /unknown input alias nope/);
+    await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
+      effects: [{effect: 'set', value: 1} as any],
+    }])), /effect set needs targets/);
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: ['t:step2/a', 'u:step2/b'],
+      effects: [{effect: 'assign', values: {var: 'm'}}],
+    }]));
+    expectDeepEqual(pconf.links![0].to.map((io) => io.name), ['t', 'u']);
   });
 
   test('Reject invalid rules', async () => {
@@ -109,13 +164,13 @@ category('ComputeUtils: Driver links rule', async () => {
     }])), /hide\/show applied twice/);
     await getProcessedConfig(twoSteps([{
       id: 'ok', type: 'rule', from: 'm:step1/a', to: 't:step2/a',
-      when: {missing_some: [1, ['m', 'all.m']]},
+      when: {missing_some: [1, ['m', '$all.m']]},
       effects: [{effect: 'meta', targets: 't', meta: {cfg: {literal: {var: 'not an alias'}}}}],
     }]));
     await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
-      id: 'r', type: 'rule', from: 'm(template):step1/a|b', to: 't:step2/a',
+      id: 'r', type: 'rule', from: 'm(call,optional):step1', to: 't:step2/a',
       effects: [{effect: 'hide', targets: 't'}],
-    }])), /\(template\) flag is not allowed/);
+    }])), /\(call\) flag is not allowed/);
   });
 
   test('Hide and show toggle with the condition', async () => {
@@ -141,6 +196,172 @@ category('ComputeUtils: Driver links rule', async () => {
       });
       expectObservable(outBridge.meta.a).toBe('ab-c', {a: undefined, b: {hidden: true}, c: {hidden: false}});
       expectObservable(outBridge.meta.b).toBe('ab-c', {a: undefined, b: {hidden: false}, c: {hidden: true}});
+    });
+  });
+
+  test('Effect when drives hide and show without a rule condition', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: 'm:step1/a',
+      to: ['t:step2/a', 'u:step2/b'],
+      effects: [
+        {effect: 'hide', targets: 't', when: {'>': [{var: 'm'}, 0]}},
+        {effect: 'show', targets: 'u', when: {'>': [{var: 'm'}, 0]}},
+      ],
+    }]));
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inNode = tree.nodeTree.getNode([{idx: 0}]);
+      const outBridge = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      cold('-a-b').subscribe((v) => {
+        inNode.getItem().getStateStore().setState('a', v === 'a' ? 1 : -1);
+      });
+      expectObservable(outBridge.meta.a).toBe('ab-c', {a: undefined, b: {hidden: true}, c: {hidden: false}});
+      expectObservable(outBridge.meta.b).toBe('ab-c', {a: undefined, b: {hidden: false}, c: {hidden: true}});
+    });
+  });
+
+  test('Effect when narrows the rule condition for data effects', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: 'm:step1/a',
+      to: ['t:step2/a', 'u:step2/b'],
+      when: {'>': [{var: 'm'}, 0]},
+      effects: [
+        {effect: 'set', targets: 't', value: {var: 'm'}},
+        {effect: 'set', targets: 'u', value: {var: 'm'}, when: {'>': [{var: 'm'}, 1]}},
+      ],
+    }]));
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inStore = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const outStore = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+      cold('-a').subscribe(() => inStore.setState('a', 1));
+      cold('--a').subscribe(() => inStore.setState('a', 2));
+      cold('---a').subscribe(() => inStore.setState('a', -1));
+      expectObservable(outStore.getStateChanges('a')).toBe('abc', {a: undefined, b: 1, c: 2});
+      expectObservable(outStore.getStateChanges('b')).toBe('a-b', {a: undefined, b: 2});
+    });
+  });
+
+  test('Effect when narrows the rule condition for validators', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: ['a1:step1/a', 'b1:step1/b'],
+      to: ['t:step1/a', 'u:step1/b'],
+      when: {'<': [{var: 'a1'}, {var: 'b1'}]},
+      debounce: 0,
+      effects: [
+        {effect: 'error', targets: 't', message: 'too small'},
+        {effect: 'warning', targets: 'u', message: 'negative', when: {'<': [{var: 'a1'}, 0]}},
+      ],
+    }]));
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+      const store = node.getStateStore();
+      cold('-a').subscribe(() => {
+        store.setState('b', 2);
+        store.setState('a', 1);
+      });
+      cold('--a').subscribe(() => snapshots.push(node.validationInfo$.value));
+      cold('---a').subscribe(() => store.setState('a', -1));
+      cold('----a').subscribe(() => snapshots.push(node.validationInfo$.value));
+    });
+    expectDeepEqual(snapshots, [
+      {a: {errors: [{description: 'too small'}], warnings: [], notifications: []}},
+      {
+        a: {errors: [{description: 'too small'}], warnings: [], notifications: []},
+        b: {errors: [], warnings: [{description: 'negative'}], notifications: []},
+      },
+    ]);
+  });
+
+  test('Assign spreads an object over same-named targets, releasing the others', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: 'm:step1/a',
+      to: '_(template):step2/a|b',
+      sources: {row: {js: {args: ['m'], fn: (m: number) => m > 0 ? {a: m, zzz: 1} : {b: m}}}},
+      when: {'!=': [{var: 'm'}, 0]},
+      effects: [{effect: 'assign', values: {var: 'row'}, restriction: 'restricted'}],
+    }]));
+    const restrictions: any[] = [];
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inStore = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const outBridge = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      const snap = () => restrictions.push(['a', 'b'].map((io) => outBridge.inputRestrictions$.value[io]?.type));
+      cold('-a').subscribe(() => inStore.setState('a', 1));
+      cold('--a').subscribe(() => inStore.setState('a', -1));
+      cold('---a').subscribe(snap);
+      cold('----a').subscribe(() => inStore.setState('a', 0));
+      cold('-----a').subscribe(snap);
+      expectObservable(outBridge.getStateChanges('a')).toBe('ab', {a: undefined, b: 1});
+      expectObservable(outBridge.getStateChanges('b')).toBe('a-b', {a: undefined, b: -1});
+    });
+    expectDeepEqual(restrictions, [[undefined, 'restricted'], [undefined, undefined]]);
+  });
+
+  test('Assign matches keys ignoring case on request', async () => {
+    const rule = (ignoreCase?: boolean) => getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: 'm:step1/a',
+      to: '_(template):step2/a|b',
+      sources: {row: {js: {args: ['m'], fn: (m: number) => ({A: m, b: m + 1})}}},
+      effects: [{effect: 'assign', values: {var: 'row'}, ignoreCase}],
+    }]));
+    const written: any[] = [];
+    for (const pconf of [await rule(), await rule(true)]) {
+      testScheduler.run((helpers) => {
+        const {cold} = helpers;
+        const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+        tree.init().subscribe();
+        const inStore = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+        const outStore = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+        cold('-a').subscribe(() => inStore.setState('a', 1));
+        cold('--a').subscribe(() => written.push([outStore.getState('a'), outStore.getState('b')]));
+      });
+    }
+    expectDeepEqual(written, [[undefined, 2], [1, 2]]);
+  });
+
+  test('Assign honours explicit targets', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: 'm:step1/a',
+      to: '_(template):step2/a|b',
+      sources: {row: {js: {args: ['m'], fn: (m: number) => ({a: m, b: m})}}},
+      effects: [
+        {effect: 'assign', targets: 'a', values: {var: 'row'}},
+        {effect: 'clear', targets: 'b'},
+      ],
+    }]));
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inStore = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const outStore = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+      cold('-a').subscribe(() => outStore.setState('b', 5));
+      cold('--a').subscribe(() => inStore.setState('a', 3));
+      expectObservable(outStore.getStateChanges('a')).toBe('a-b', {a: undefined, b: 3});
+      expectObservable(outStore.getStateChanges('b')).toBe('abc', {a: undefined, b: 5, c: null});
     });
   });
 
@@ -208,7 +429,7 @@ category('ComputeUtils: Driver links rule', async () => {
       DG.Column.fromList('string', 's', ['a', 'b', 'c']),
     ]);
     df.col('s')!.semType = 'Text';
-    const ctx = {all: {}, df, s: 'abcd', list: [1, 2]};
+    const ctx = {$all: {}, df, s: 'abcd', list: [1, 2]};
     expectDeepEqual(evaluate({columns: [{var: 'df'}]}, ctx), ['x', 'n', 's']);
     expectDeepEqual(evaluate({columns: [{var: 'df'}, 'numerical']}, ctx), ['x', 'n']);
     expectDeepEqual(evaluate({columns: [{var: 'df'}, 'categorical']}, ctx), ['s']);
@@ -224,6 +445,16 @@ category('ComputeUtils: Driver links rule', async () => {
     expectDeepEqual(evaluate({columnsMissing: [{var: 'missing'}, spec]}, ctx),
       ['x (double)', 'n (string)', 's (Text)', 'q', 'x']);
     expectDeepEqual(evaluate({columnsMissing: [{var: 'df'}, []]}, ctx), []);
+    expectDeepEqual(evaluate({column: [{var: 'df'}, 'S']}, ctx), ['a', 'b', 'c']);
+    expectDeepEqual(evaluate({columnsMissing: [{var: 'df'}, [['X', 'double'], 'S', ['N', 'string']]]}, ctx), ['N (string)']);
+    expectDeepEqual(evaluate({column: [{var: 'df'}, 's']}, ctx), ['a', 'b', 'c']);
+    expectDeepEqual(evaluate({column: [{var: 'df'}, 'missing']}, ctx), []);
+    expectDeepEqual(evaluate({column: [{var: 'missing'}, 's']}, ctx), []);
+    expectDeepEqual(evaluate({row: [{var: 'df'}, 's', 'b']}, ctx), {x: 2, n: 2, s: 'b'});
+    expectDeepEqual(evaluate({row: [{var: 'df'}, 'n', '3']}, ctx), {x: 3, n: 3, s: 'c'});
+    expectDeepEqual(evaluate({row: [{var: 'df'}, 's', 'zz']}, ctx), null);
+    expectDeepEqual(evaluate({row: [{var: 'df'}, 'missing', 'a']}, ctx), null);
+    expectDeepEqual(evaluate({row: [{var: 'df'}, 's', {var: 'missing'}]}, ctx), null);
   });
 
   test('Rules validate dataframe columns and feed dropdown items', async () => {
@@ -279,7 +510,7 @@ category('ComputeUtils: Driver links rule', async () => {
   });
 
   test('Literal escape and null condition', async () => {
-    const ctx = {all: {}, m: 1};
+    const ctx = {$all: {}, m: 1};
     expectDeepEqual(evaluate({literal: {foo: 1}}, ctx), {foo: 1});
     expectDeepEqual(evaluate({if: [{'>': [{var: 'm'}, 0]}, {literal: {var: 'kept'}}, 'no']}, ctx), {var: 'kept'});
     expectDeepEqual(evaluate([{literal: {a: 1}}, {literal: {b: 2}}], ctx), [{a: 1}, {b: 2}]);

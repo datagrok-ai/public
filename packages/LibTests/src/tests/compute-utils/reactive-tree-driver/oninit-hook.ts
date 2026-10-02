@@ -183,7 +183,25 @@ category('ComputeUtils: Driver hooks running', async () => {
     ],
   });
 
-  test('onInit writes do not reach plain data links', async () => {
+  const runOnInitConfig: PipelineConfiguration = {
+    id: 'pipeline1',
+    type: 'static',
+    steps: [
+      {id: 'step1', nqName: 'LibTests:TestAdd2'},
+      {id: 'step2', nqName: 'LibTests:TestMul2'},
+    ],
+    links: [
+      {
+        id: 'l0', from: [], to: 'out0:step1/a', runOnInit: true,
+        handler({controller}) {
+          controller.setAll('out0', 7);
+        },
+      },
+      {id: 'l2', from: 'in2:step1/a', to: 'out2:step2/a'},
+    ],
+  };
+
+  test('onInit writes reach plain data links', async () => {
     const pconf = await getProcessedConfig(initChainConfig(false));
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
@@ -198,7 +216,7 @@ category('ComputeUtils: Driver hooks running', async () => {
       cold('--a').subscribe(() => root.setState('s', 9));
       cold('---a').subscribe(snap);
     });
-    expectDeepEqual(snapshots, [[5, undefined, undefined], [9, 9, 9]]);
+    expectDeepEqual(snapshots, [[5, 5, 5], [9, 9, 9]]);
   });
 
   test('onInit writes reach runOnInit links and chain through them', async () => {
@@ -216,24 +234,8 @@ category('ComputeUtils: Driver hooks running', async () => {
     expectDeepEqual(snapshots, [[5, 5, 5]]);
   });
 
-  test('runOnInit link writes do not reach plain data links', async () => {
-    const pconf = await getProcessedConfig({
-      id: 'pipeline1',
-      type: 'static',
-      steps: [
-        {id: 'step1', nqName: 'LibTests:TestAdd2'},
-        {id: 'step2', nqName: 'LibTests:TestMul2'},
-      ],
-      links: [
-        {
-          id: 'l0', from: [], to: 'out0:step1/a', runOnInit: true,
-          handler({controller}) {
-            controller.setAll('out0', 7);
-          },
-        },
-        {id: 'l2', from: 'in2:step1/a', to: 'out2:step2/a'},
-      ],
-    });
+  test('runOnInit link writes reach plain data links', async () => {
+    const pconf = await getProcessedConfig(runOnInitConfig);
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
@@ -246,7 +248,83 @@ category('ComputeUtils: Driver hooks running', async () => {
       cold('--a').subscribe(() => step1.setState('a', 8));
       cold('---a').subscribe(snap);
     });
-    expectDeepEqual(snapshots, [[7, undefined], [8, 8]]);
+    expectDeepEqual(snapshots, [[7, 7], [8, 8]]);
+  });
+
+  // the same pipeline as the root, as a static nested step, and as a dynamic item added after init
+  const placements = ['root', 'nested', 'added'] as const;
+  type Placement = typeof placements[number];
+
+  const placed = (inner: PipelineConfiguration, placement: Placement): PipelineConfiguration =>
+    placement === 'root' ? inner :
+      placement === 'nested' ? {id: 'outer', type: 'static', steps: [inner]} :
+        {id: 'outer', type: 'parallel', stepTypes: [inner]};
+
+  async function valuesAfterInit(inner: PipelineConfiguration, read: (stores: any[]) => any[]) {
+    const results: Record<string, any[]> = {};
+    for (const placement of placements) {
+      const pconf = await getProcessedConfig(placed(inner, placement));
+      testScheduler.run((helpers) => {
+        const {cold} = helpers;
+        const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+        tree.init().subscribe();
+        if (placement === 'added')
+          cold('-a').subscribe(() => tree.addSubTree(tree.nodeTree.root.getItem().uuid, inner.id, 0).subscribe());
+        cold('100ms a').subscribe(() => {
+          const base = placement === 'root' ? [] : [{idx: 0}];
+          const stores = [base, [...base, {idx: 0}], [...base, {idx: 1}]]
+            .map((path) => tree.nodeTree.getNode(path).getItem().getStateStore());
+          results[placement] = read(stores);
+        });
+      });
+    }
+    return results;
+  }
+
+  const sameEverywhere = (expected: any[]) => Object.fromEntries(placements.map((placement) => [placement, expected]));
+
+  test('onInit writes reach plain data links at root, nested and added', async () => {
+    const results = await valuesAfterInit(initChainConfig(false),
+      ([pipeline, step1, step2]) => [pipeline.getState('s'), step1.getState('a'), step2.getState('a')]);
+    expectDeepEqual(results, sameEverywhere([5, 5, 5]));
+  });
+
+  test('runOnInit link writes reach plain data links at root, nested and added', async () => {
+    const results = await valuesAfterInit(runOnInitConfig,
+      ([, step1, step2]) => [step1.getState('a'), step2.getState('a')]);
+    expectDeepEqual(results, sameEverywhere([7, 7]));
+  });
+
+  test('onInit writes chain through runOnInit links at root, nested and added', async () => {
+    const results = await valuesAfterInit(initChainConfig(true),
+      ([pipeline, step1, step2]) => [pipeline.getState('s'), step1.getState('a'), step2.getState('a')]);
+    expectDeepEqual(results, sameEverywhere([5, 5, 5]));
+  });
+
+  test('A plain link from the workflow fills an added item', async () => {
+    const pconf = await getProcessedConfig({
+      id: 'outer',
+      type: 'parallel',
+      stepTypes: [{
+        id: 'pipeline1',
+        type: 'static',
+        steps: [{id: 'step1', nqName: 'LibTests:TestAdd2'}],
+      }],
+      states: ['src'],
+      links: [{id: 'feed', base: 'base:expand(pipeline1)', from: 'in:src', to: 'out:same(@base)/step1/a'}],
+    });
+    let value: any;
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      cold('-a').subscribe(() => tree.nodeTree.root.getItem().getStateStore().setState('src', 3));
+      cold('--a').subscribe(() => tree.addSubTree(tree.nodeTree.root.getItem().uuid, 'pipeline1', 0).subscribe());
+      cold('100ms a').subscribe(() => {
+        value = tree.nodeTree.getNode([{idx: 0}, {idx: 0}]).getItem().getStateStore().getState('a');
+      });
+    });
+    expectDeepEqual(value, 3);
   });
 
   test('Run onReturn hook', async () => {

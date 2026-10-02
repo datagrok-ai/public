@@ -183,6 +183,25 @@ export const valueInRow = Then('the value of {string} column in row {int} should
   expect(f.values[row - 1], `"${column}" in row ${row}`).toBe(value);
 }, {description: 'rows count from 1; a number reads as the platform prints it'});
 
+/** A table the current view does not show has no grid to read: the column's own format gives the text. */
+export const displayedInRowOfTable = Then('the {string} cell of row {int} of table {string} should be displayed as {string}',
+  async (page: Page, column: string, row: number, table: string, text: string) => {
+    await expect.poll(() => page.evaluate(([c, r, t]) => {
+      const df = (grok.shell.tables as any[]).find((x) => x.name === t);
+      if (!df)
+        return `no table ${t}`;
+      const col = df.col(c);
+      return col ? String(col.getString(r - 1)) : `no column ${c} in ${t}`;
+    }, [column, row, table] as [string, number, string]), {message: `${column} of row ${row} of ${table}`}).toBe(text);
+  }, {description: 'the value as the column formats it ("1200.00", "no"); rows count from 1'});
+
+export const columnTypeOfTable = Then('{string} column of table {string} should have type {string}', async (page: Page, column: string, table: string, type: string) => {
+  await expect.poll(() => page.evaluate(([c, t]) => {
+    const df = (grok.shell.tables as any[]).find((x) => x.name === t);
+    return df?.col(c)?.type ?? `no column ${c} in ${t}`;
+  }, [column, table] as [string, string]), {message: `the type of ${column} in ${table}`}).toBe(type);
+}, {description: 'the storage type of a column of an open table by name'});
+
 export const maxInRow = Then('{string} column should have its maximum in row {int}', async (page: Page, column: string, row: number) => {
   const f = await columnFacts(page, column);
   const max = Math.max(...f.numbers.filter((n): n is number => n !== null));
@@ -206,6 +225,52 @@ export const hasNoColumn = Then('the table should not have a column {string}', a
 export const columnCount = Then('the table should have {int} column(s)', async (page: Page, count: number) => {
   await expect.poll(async () => (await columnNames(page)).length, {message: 'columns of the current table'}).toBe(count);
 });
+
+export const columnsExactly = Then('the table should have the columns {string}', async (page: Page, list: string) => {
+  await expect.poll(() => page.evaluate(() => (grok.shell.t?.columns.names() ?? ['no current table']) as string[]),
+    {message: 'the columns of the current table', timeout: pollMs(30000)}).toEqual(list.split(',').map((n) => n.trim()).filter(Boolean));
+}, {description: 'exactly these columns, in this order — what a join or an enrichment left, polled as long as it takes to arrive'});
+
+/* Two columns row by row: a calculated column against the one it was computed from. The columns are
+   32-bit floats, so a value is compared to a tolerance; an empty source cell gives an empty value. */
+async function expectRowByRow(page: Page, column: string, source: string, op: 'plus' | 'log10minus', delta: number, tolerance: number): Promise<void> {
+  const bad = await page.evaluate(([c, s, o, d, tol]) => {
+    const df = grok.shell.t;
+    const a = df.col(c); const b = df.col(s);
+    if (!a || !b)
+      return `no "${a ? s : c}" column; the table has ${df.columns.names().join(', ')}`;
+    for (let i = 0; i < df.rowCount; i++) {
+      const x = a.get(i); const y = b.get(i);
+      if (b.isNone(i)) {
+        if (!a.isNone(i))
+          return `row ${i + 1}: ${s} is empty and ${c} is ${x}`;
+      }
+      else if (!(Math.abs(x - (o === 'plus' ? y + d : Math.log10(y) - d)) <= tol))
+        return `row ${i + 1}: ${c} is ${x}, ${s} is ${y}`;
+    }
+    return df.rowCount > 0 ? '' : 'the table has no rows';
+  }, [column, source, op, delta, tolerance] as [string, string, string, number, number]);
+  expect(bad, `${column} against ${op === 'plus' ? `${source} + ${delta}` : `log10(${source}) - ${delta}`}`).toBe('');
+}
+
+export const everyValuePlus = Then('every value of {string} column should equal {string} column plus {float}',
+  (page: Page, column: string, source: string, delta: number) => expectRowByRow(page, column, source, 'plus', delta, 1e-3),
+  {description: 'row by row to a thousandth, an empty source cell giving an empty value'});
+
+export const everyValueLog = Then('every value of {string} column should be the decimal log of {string} column minus {float}',
+  (page: Page, column: string, source: string, delta: number) => expectRowByRow(page, column, source, 'log10minus', delta, 1e-4),
+  {description: 'row by row to four decimals, an empty source cell giving an empty value'});
+
+export const formulaColumnsExist = Then('every column the formula of {string} column refers to should exist', async (page: Page, column: string) => {
+  const missing = await page.evaluate((c) => {
+    const df = grok.shell.t;
+    const formula = String(df?.col(c)?.getTag('formula') ?? '');
+    if (!formula)
+      return [`"${c}" has no formula`];
+    return Array.from(formula.matchAll(/\$\{([^}]+)\}/g), (m) => m[1]).filter((n) => !df.col(n));
+  }, column);
+  expect(missing, `columns the formula of "${column}" names that the table does not have`).toEqual([]);
+}, {description: 'every ${name} of the column\'s formula tag is a column of the current table'});
 
 // --- the current row ---------------------------------------------------------------------------------
 

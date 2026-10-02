@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Hit Design, PeptiHit: Fixed the "Campaing Name" typo in the new-campaign form
 * AI: Exposed AI view functions on all four Hit apps — the landing views list/open/create/delete campaigns and templates, and the campaign table views get a hit-specific vocabulary (state, molecules, stages, status, save, submit) plus a search/call bridge to the standard table commands.
 
 ## 1.10.6 (2026-07-16)

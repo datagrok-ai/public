@@ -63,6 +63,7 @@ Feature: Sharing a space, and what it refuses
     When user picks "Share..." from the context menu of BDD-Share tree node inside browse tree
     Then share access selector should contain text "View and use"
     When user picks the sharing user in "User, group, or email" input in "Share BDD-Share" dialog
+    And user unchecks "Send notifications" input in "Share BDD-Share" dialog
     And user clicks on OK button in "Share BDD-Share" dialog
     Then "Share BDD-Share" dialog should be hidden
     When user clicks on BDD-Share tree node inside browse tree

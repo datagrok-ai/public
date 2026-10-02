@@ -8,7 +8,8 @@ features: the data and the viewer opened once, the scenarios in order as soft st
 `viewers/grid/grid-context-menu.feature` is not a translation but the reproduction of a bug
 (2026-09-22: a right click put the current row back where it was and scrolled there), kept as the
 proof that a right-clicked cell becomes current and that the Current Value actions of Chem and Helm
-act on it — the stand needs those two packages;
+act on it — the stand needs those two packages; annotation regions and formula lines are PowerPack's
+and live in `packages/PowerPack/bdd/features/`;
 `features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
 (seven viewers sharing one legend column, the legend under filters, its placement, molecules in
 it; the section's scatter plot and line chart cases went into those viewers' legend features);
@@ -27,8 +28,14 @@ panel itself (its toolbar, the tree and its keyboard, browsing versus persistent
 stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and the per-section
 error matrix), translated from the manual cases, each feature naming what it left out and why.
 Two of its scenarios are `@full-stand` (they name the providers and the Platform sections a full
-stand carries) and one is `@compute` (the Model Hub needs the Compute package): a smaller stand
-runs with `grok-bdd run --grep-invert "@full-stand|@compute"`. `features/guides/` holds the
+stand carries): a smaller stand runs with `grok-bdd run --grep-invert "@full-stand"`, and a scenario
+whose package the stand lacks skips at its package gate.
+`features/sticky-meta/` the Sticky Meta TestTrack section (an entity type and a schema from creation
+to deletion, metadata on a molecule cell, as sticky columns and on selected rows, what survives a
+clone, a new view, an exported file, a project, a space, a reload and another account signing
+in on the page, and the Database meta of a NorthwindTest schema, table and column); written with the
+library's vocabulary only, they make and delete their type and schema through the UI, and
+`features/sticky-meta/MISSING.md` lists the steps and signals they still need. `features/guides/` holds the
 answers to "how do I …" questions as scenarios: `grok-bdd guide features/guides/<name>.feature`
 films one into `guides/<feature>/<scenario>/guide.mp4` with the numbered steps and pictures beside
 it (`steps.md`), `--help-pages` re-films every `@help:`-tagged one into the help tree; `INDEX.md`
@@ -57,6 +64,17 @@ The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the 
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
 
+`features/viewers/nx/` holds the TestTrack Viewers/NX section. `nx-chain.feature` is its five
+chained md files as one journey on the full SPGI and its two linked tables: each part opens the
+project the one before saved through the Save dialog with data sync, and the last part deletes the
+five projects (their names carry the run's suffix, so parallel runs stay apart). It takes about three
+minutes on a local stand and needs the ApiTests datasets on the stand and a Chem package whose Scaffold Tree reports
+its readings. `legend-backward-compatibility.feature` applies the pre-legend-position layout of
+github #3203 to spgi-100 (the first 100 rows of SPGI). Their fixtures (two saved scaffold trees and
+the layout) are in `fixtures/nx/`, their steps (the Link Tables key pairs, the Formula Lines dialog,
+the Scaffold Tree filter card, rows and filter panels compared across views and a project round
+trip) in `bindings/nx.ts`.
+
 The grid folder, `features/viewers/grid/`, holds ten features on demog-1000. They replace the
 TestTrack grid scenarios `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid.md`,
 `grid-appearance-summary-persist.md`, `grid-cell-appearance.md`, `grid-columns-style-persist.md`,
@@ -77,6 +95,7 @@ PowerGrid and are claimed in `packages/PowerGrid/bdd/features/grid/summary-colum
 | `grid-persistence` | four colour codings, row height, missing-value colour, min/max stats rows, a moved, a hidden, a widened and a pinned column, two pinned rows and a sort, all back from a layout loaded over a fresh view and from a project |
 | `grid-forms-column` | Design a Form... (the designer view, Close and Apply, Edit), Default HTML Form, Custom HTML Form... |
 | `grid-context-menu` | a right click below the current row makes the clicked row current and keeps the scroll; the Current Value actions act on the right-clicked cell — Chem's Copy as SMILES on the `smiles` demo file, Helm's Edit Helm... on the `helm-peptides` one (the stand needs both packages) |
+
 `features/viewers/filter-panel/` stands in for the TestTrack scenarios of
 `files/TestTrack/Viewers/FilterPanel/` — `panel-core-ladder.md`, `add-remove-entry-points.md`,
 `filter-type-selection-modes.md`, `hierarchical-and-combined-boolean.md`,

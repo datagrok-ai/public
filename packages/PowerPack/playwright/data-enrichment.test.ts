@@ -736,6 +736,16 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
       } catch (_) { /* swallow */ }
     }
 
+    // an enrichment is a file, System:AppData/PowerPack/enrichments/<connection>/<db>/<schema>/<table>/<column>/<name>.json
+    try {
+      await page.evaluate(async (names) => {
+        const grok = (window as any).grok;
+        for (const f of await grok.dapi.files.list('System:AppData/PowerPack/enrichments/', true))
+          if (!f.isDirectory && names.includes(String(f.name).replace(/\.json$/, '')))
+            await grok.dapi.files.delete(f.fullPath);
+      }, [enrichmentName1, enrichmentName2, enrichmentName3, `PersistEnrich${stamp}`]);
+    } catch (_) { /* best effort */ }
+
     if (provisionedQueryCleanup) {
       try { await provisionedQueryCleanup(); } catch (_) { /* best effort */ }
     }

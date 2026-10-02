@@ -166,6 +166,10 @@ export class VulnerabilitiesView extends UaView {
     return root;
   }
 
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    return UaView.csvFiles({'images': this.summaryDf, [this.detailsDf?.name ?? 'cves']: this.detailsDf});
+  }
+
   private async refresh(): Promise<void> {
     this.summaryHost.innerHTML = '';
     this.summaryHost.append(ui.loader());
@@ -232,6 +236,7 @@ export class VulnerabilitiesView extends UaView {
   }
 
   private async loadDetails(image: VexImage): Promise<void> {
+    this.detailsDf = null;
     this.detailsHeader.innerHTML = '';
     this.detailsHeader.append(
       ui.divText(`${image.repo}:${image.tag}`, 'ua-metrics-panel-title'),

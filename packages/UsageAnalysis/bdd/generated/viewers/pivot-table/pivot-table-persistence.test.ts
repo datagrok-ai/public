@@ -16,10 +16,10 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {pivotedAggregationMatches} from '../../../bindings/pivot-table.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {pivotedAggregationMatches} from '@datagrok-libraries/bdd/bindings/tiers/viewers/pivot-table';
 import {addViewer, clickArea, closeContextMenu, loadLayout, noErrors, pickFromAreaContextMenu, readingAsRemembered, readingDoesNotRead, readingIs, readingReads, rememberReading, saveLayoutToServer, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
