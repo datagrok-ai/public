@@ -199,9 +199,14 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 export class InputForm extends DartWrapper {
   constructor(dart: any) { super(dart); }
 
-  /** Creates an InputForm for the specified function call. */
-  static async forFuncCall(funcCall: FuncCall, options?: { twoWayBinding?: boolean, skipDefaultInit?: boolean, skipTableAutoFill?: boolean }): Promise<InputForm> {
-    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart, options?.twoWayBinding ?? true, options?.skipDefaultInit ?? false, options?.skipTableAutoFill ?? false));
+  /** Creates an InputForm for the specified function call.
+   * @param options.skipLogic - renders inputs and binds them to the call, nothing else: no default or
+   * auto-filled values, no choice or default functions, no validation, no `visible`/`enabled` expressions.
+   * The host sets values, items, visibility, enabled state and validation status itself.
+   * Implies `skipDefaultInit` and `skipTableAutoFill`. */
+  static async forFuncCall(funcCall: FuncCall, options?: { twoWayBinding?: boolean, skipDefaultInit?: boolean, skipTableAutoFill?: boolean, skipLogic?: boolean }): Promise<InputForm> {
+    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart, options?.twoWayBinding ?? true,
+      options?.skipDefaultInit ?? false, options?.skipTableAutoFill ?? false, options?.skipLogic ?? false));
   }
 
   static forInputs(inputs: InputBase[]): InputForm {

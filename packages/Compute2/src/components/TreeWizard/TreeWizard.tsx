@@ -875,6 +875,7 @@ export const TreeWizard = Vue.defineComponent({
                 isReadonly={chosenStepState.value.isReadonly}
                 isBlocked={treeMutationsLocked.value || isGlobalLocked.value}
                 skipInit={true}
+                skipLogic={true}
                 history={rfvHistory.value}
                 hideDefaultExport={!!singleStep.value?.chain[0]?.disableDefaultExport}
                 onUpdate:funcCall={onFuncCallChange}
