@@ -139,7 +139,7 @@ function pickFallbackNumericColumn(df: DG.DataFrame, exclude: (string | undefine
   return col ? col.name : null;
 }
 
-/** Returns `color` with `alpha` (0..1) applied via `DG.Color`, or undefined if it can't be parsed. */
+/** Returns `color` with its alpha scaled by `alpha` (0..1), or undefined if it can't be parsed. */
 function dimColor(color: string | undefined | null, alpha: number): string | undefined {
   if (!color)
     return undefined;
@@ -147,11 +147,21 @@ function dimColor(color: string | undefined | null, alpha: number): string | und
     const c = DG.Color.fromHtml(color.trim());
     if (c == null || Number.isNaN(c))
       return undefined;
-    const a = Math.max(8, Math.min(255, Math.round(alpha * 255)));
-    return DG.Color.toHtml(DG.Color.setAlpha(c, a));
+    return htmlWithAlpha(DG.Color.setAlpha(c, Math.max(8, Math.round(DG.Color.a(c) * alpha))));
   } catch {
     return undefined;
   }
+}
+
+/** `#rrggbb` for an opaque color, `#rrggbbaa` otherwise (`DG.Color.toHtml` drops a zero alpha). */
+function htmlWithAlpha(c: number): string {
+  const a = DG.Color.a(c);
+  return DG.Color.toHtml(DG.Color.setAlpha(c, 255)) + (a === 255 ? '' : a.toString(16).padStart(2, '0'));
+}
+
+/** A region color written as 0xRRGGBB carries no alpha and means opaque, as the renderers read it. */
+function opaqueIfNoAlpha(c: number): number {
+  return DG.Color.a(c) === 0 ? DG.Color.setAlpha(c, 255) : c;
 }
 
 export const DEFAULT_OPTIONS: EditorOptions = {
@@ -922,21 +932,17 @@ class Preview {
 
     // Render the other formula lines as ghosts so the user keeps context for the line being edited.
     // Bands and regions are not ghosted; ghosts are only added when the current item is a line.
-    // Color is dimmed in-place when possible (also fades the title); `opacity` is the fallback.
     const GHOST = 0.4;
-    const fadeOpacity = (cur: number | undefined): number => Math.max(3, Math.round((cur ?? 30) * GHOST));
     const addLineGhost = (line: DG.FormulaLine | undefined): void => {
       if (!line || !line.visible || line.type === ITEM_TYPE.BAND)
         return;
       try {
         const g = structuredClone(line);
-        const dimmed = dimColor(g.color, GHOST);
-        if (dimmed) {
-          g.color = dimmed;
-          g.opacity = 100;
-        } else
-          g.opacity = fadeOpacity(g.opacity);
-
+        const dimmed = dimColor(g.color, GHOST * (g.opacity ?? 100) / 100);
+        if (!dimmed)
+          return;
+        g.color = dimmed;
+        delete g.opacity;
         this.viewer.meta.formulaLines.add(g);
       } catch {}
     };
@@ -1057,7 +1063,7 @@ class Editor {
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula2'));
     }
 
-    mainPane.append(this.inputColorOpacity(itemIdx, false));
+    mainPane.append(this.inputColor(itemIdx, false));
     mainPane.append(this.inlineInputs(
       this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)),
       this.inputLineWidth(itemIdx),
@@ -1109,8 +1115,7 @@ class Editor {
       if (caption === ITEM_CAPTION.BAND)
         mainPane.append(this.inputColumn2(itemIdx));
 
-      /** Preparing the "Format" panel — Color + Opacity share a row when wide enough */
-      formatPane.append(this.inputColorOpacity(itemIdx));
+      formatPane.append(this.inputColor(itemIdx));
       if (caption !== ITEM_CAPTION.BAND)
         formatPane.append(this.inputStyle(itemIdx));
       formatPane.append(this.inputRange(itemIdx));
@@ -1159,31 +1164,21 @@ class Editor {
     return ibFormula.root;
   }
 
-  /** Color + Opacity on one row. The color's alpha channel edits the same opacity as the slider;
-   *  the stored color stays opaque, since the renderers apply `opacity` on top of the color's own alpha. */
-  private inputColorOpacity(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
+  /** A line's or band's color, or a region's fill; the alpha is the opacity. An `opacity` saved before the alpha
+   *  replaced it is folded in the way the renderers fold it, and dropped on the first edit. */
+  private inputColor(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
     const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
     const defaultColor = isFormulaLine ? '#000000' : DG.Color.toHtml(DG.Color.gray);
-    const fillColor = (item as any).fillColor as number | undefined;
-    const color = (isFormulaLine ? (item as DG.FormulaLine).color : fillColor ? DG.Color.toHtml(fillColor) : undefined) ?? defaultColor;
-    const withAlpha = (hex: string): string => {
-      const alpha = Math.round((item.opacity ?? 30) * 255 / 100);
-      return hex.slice(0, 7) + (alpha === 255 ? '' : alpha.toString(16).padStart(2, '0'));
-    };
+    const fill = (item as DG.AnnotationRegion).fillColor as unknown as number | undefined;
+    let c = isFormulaLine ? DG.Color.fromHtml((item as DG.FormulaLine).color ?? defaultColor) : fill ?? DG.Color.gray;
+    if (isFormulaLine && item.opacity != null)
+      c = DG.Color.setAlpha(c, Math.round(DG.Color.a(c) * item.opacity / 100));
+    else if (!isFormulaLine && (item.opacity != null || fill == null || DG.Color.a(fill) === 0))
+      c = DG.Color.setAlpha(c, Math.round((item.opacity ?? 30) * 255 / 100));
 
-    const elOpacity = ui.element('input');
-    elOpacity.type = 'range';
-    elOpacity.min = 0;
-    elOpacity.max = 100;
-    elOpacity.value = item.opacity ?? 30;
-    elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
-
-    const ibColor = ui.input.color(isFormulaLine ? 'Color' : 'Region Color', {value: withAlpha(color), useAlphaChannel: true,
+    const ibColor = ui.input.color(isFormulaLine ? 'Color' : 'Region Color', {value: htmlWithAlpha(c), useAlphaChannel: true,
       onValueChanged: (value) => {
-        if (/^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value)) {
-          item.opacity = elOpacity.value = value.length === 9 ? Math.round(parseInt(value.slice(7), 16) * 100 / 255) : 100;
-          value = value.slice(0, 7);
-        }
+        delete item.opacity;
         if (isFormulaLine)
           (item as DG.FormulaLine).color = value;
         else
@@ -1191,21 +1186,13 @@ class Editor {
         this.onItemChangedAction(itemIdx, isFormulaLine);
       }});
     (ibColor.input as HTMLInputElement).placeholder = defaultColor;
-
-    elOpacity.addEventListener('input', () => {
-      item.opacity = parseInt(elOpacity.value);
-      ibColor.notify = false;
-      ibColor.value = withAlpha(ibColor.value);
-      ibColor.notify = true;
-      this.onItemChangedAction(itemIdx, isFormulaLine);
-    });
-
-    return this.inlineInputs(ibColor.root, ui.div([ui.label('Opacity', 'ui-label ui-input-label'), elOpacity], 'ui-input-root'));
+    return ibColor.root;
   }
 
   private areaInputColor(itemIdx: number, header: string = 'Color', key: keyof DG.AnnotationRegion, defaultColor: string = '#000000'): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
-    const ibColor = ui.input.color(header, {value: item[key] ? DG.Color.toHtml(item[key] as number) : defaultColor,
+    const ibColor = ui.input.color(header, {
+      value: item[key] ? htmlWithAlpha(opaqueIfNoAlpha(item[key] as number)) : defaultColor, useAlphaChannel: true,
       onValueChanged: (value) => {
         (item as any)[key] = DG.Color.fromHtml(value);
         this.onItemChangedAction(itemIdx, false);

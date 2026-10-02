@@ -20,9 +20,8 @@ demog.meta.formulaLines.addLine({
   formula: '${height} = 0.69 * max($[weight])',
 
   zIndex: -45,         // Line depth. The viewer's chart has a depth of 0.
-  color: '#ff0000',    // Line color.
+  color: '#ff0000cc',  // Line color, '#rrggbb' or '#rrggbbaa' (the alpha is the opacity).
   visible: true,       // Visibility.
-  opacity: 80,         // Opacity [0..100], where 0 - invisible, 100 - opaque.
 
   // Line boundaries along the value axis. In this example, the line will be drawn for a "Weight" between 50 and 300 kg.
   min: 50,
@@ -49,9 +48,8 @@ demog.meta.formulaLines.addBand({
   formula: '${height} in(175, 185)',
 
   zIndex: -15,             // Line depth. The viewer's chart has a depth of 0.
-  color: '#FFD700',        // Band background color.
+  color: '#FFD700',        // Band background color; '#FFD7004d' would make it translucent.
   max: 160,                // Maximum band size.
-  opacity: 100,            // Opacity [0..100], where 0 - invisible, 100 - opaque.
 
   // Parameters specific to Bands:
   column2: 'weight'     // Second column for which the band will be drawn.
@@ -60,9 +58,8 @@ demog.meta.formulaLines.addBand({
 demog.meta.formulaLines.addLine({
   title: 'Blue Line',
   formula: '${weight} = 180',
-  color: '#0000ff',
-  width: 4,
-  opacity: 50
+  color: '#0000ff80',
+  width: 4
 });
 
 demog.meta.formulaLines.addLine({
@@ -107,7 +104,6 @@ demog.meta.formulaLines.addLine({
   zIndex: -45,
   width: 1,
   visible: false,     // This line will not be displayed.
-  opacity: 80
 });
 
 demog.meta.formulaLines.addLine({
@@ -150,8 +146,7 @@ demog.meta.formulaLines.addBand({
   formula: '${weight} < 80',
   column2: 'height',
   zIndex: -45,
-  color: '#FFC0CB',
-  opacity: 30,
+  color: '#FFC0CB4d',
   min: 130
 });
 
@@ -161,8 +156,7 @@ demog.meta.formulaLines.addBand({
   formula: '${weight} > max',
   column2: 'height',
   zIndex: -45,
-  color: '#7FFFD4',
-  opacity: 30,
+  color: '#7FFFD44d',
   max: 160
 });
 

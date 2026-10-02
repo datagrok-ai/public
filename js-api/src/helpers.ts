@@ -14,6 +14,7 @@ export interface FormulaLine {
   description?: string;
   color?: string;
   visible?: boolean;
+  /** @deprecated Use the alpha of {@link color} (`#rrggbbaa`); still folded into it when set. */
   opacity?: number;
   zIndex?: number;
   min?: number;
@@ -47,6 +48,7 @@ export interface AnnotationRegion {
   yMap?: string;
   hidden?: boolean;
   description?: string;
+  /** @deprecated Use the alpha of {@link fillColor}; still applied when set. */
   opacity?: number;
   isDataFrameRegion?: boolean;
   zIndex?: number;
