@@ -37,11 +37,12 @@ export async function TestAnalysisReportForCurrentDay(date: any) : Promise<any> 
 //input: string session { optional: true }
 //input: string report { optional: true }
 //input: string rule { optional: true }
+//input: string error { optional: true }
 //output: view result
 //meta.role: adminApp,app
 //meta.url: /
-export function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, action?: string, request?: string, session?: string, report?: string, rule?: string) : any {
-  return PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects, action, request, session, report, rule);
+export function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, action?: string, request?: string, session?: string, report?: string, rule?: string, error?: string) : any {
+  return PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects, action, request, session, report, rule, error);
 }
 
 //name: Release

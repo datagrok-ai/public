@@ -9,6 +9,7 @@ import '../css/test_track.css';
 import '../css/click_events_widget.css';
 import {ViewHandler} from './view-handler';
 import {TimelineView} from './tabs/timeline';
+import {ErrorsView} from './tabs/errors';
 import {TestTrack} from './test-track/app';
 import {ReportsWidget} from './widgets/reports-widget';
 import {ReportingApp} from './reporting/reporting_app';
@@ -118,8 +119,10 @@ export class PackageFunctions {
     @grok.decorators.param({'options': {'optional': true}}) request?: string,
     @grok.decorators.param({'options': {'optional': true}}) session?: string,
     @grok.decorators.param({'options': {'optional': true}}) report?: string,
-    @grok.decorators.param({'options': {'optional': true}}) rule?: string): DG.ViewBase | null {
+    @grok.decorators.param({'options': {'optional': true}}) rule?: string,
+    @grok.decorators.param({'options': {'optional': true}}) error?: string): DG.ViewBase | null {
     TimelineView.urlParams = {action, request, session, report, rule};
+    ErrorsView.urlError = error;
     const handler = new ViewHandler();
     handler.view.parentCall = grok.functions.getCurrentCall();
     handler.init(date, groups, packages, tags, categories, projects, path);

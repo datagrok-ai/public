@@ -60,10 +60,16 @@ export class ErrorsView extends UaView {
   shownGrid?: DG.Grid;
   shownSpec?: Spec;
   private runs = 0;
+  /** The error a link names, opened once the first result shows. */
+  private linked?: string;
+  /** The app's `?error=<stack hash>` parameter, which alert links carry (`/apps/usage/errors?error=...`): the
+   * platform passes it to the app function, not in the URL. */
+  static urlError?: string;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Errors';
+    this.linked = ErrorsView.urlError;
   }
 
   async initViewers(path?: string): Promise<void> {
@@ -77,6 +83,8 @@ export class ErrorsView extends UaView {
     this.text.route.setTooltip('"<METHOD> /path" or "/path", without /api');
     this.text.connection.setTooltip('Namespace:Name or the connection id');
     this.text.function.setTooltip('The function\'s nqName');
+    if (this.linked)
+      this.text.signature.value = this.linked;
     const main: DG.InputBase[] = [this.since, this.from, this.to, this.group, this.by];
     const more: DG.InputBase[] = [this.service, ...Object.values(this.text), this.minUsers, this.minCount,
       this.regressed, this.trend];
@@ -170,6 +178,10 @@ export class ErrorsView extends UaView {
         }
         this.shownGrid = this.grid(t, spec);
         this.refresh();
+        if (this.linked) {
+          this.linked = undefined;
+          t.currentRowIdx = 0;
+        }
         return this.shownGrid.root;
       }
       catch (e: any) {
