@@ -56,7 +56,9 @@ export interface FeedRecords {
   /** Batch scorings (F-22): one per scoring run. */
   predictions?: {runId: string, model: string, version: string, count: number, by: string | null, on: When}[];
   documents: {id: string, title: string, version?: string | null, status: string, linkedBy: string | null, linkedOn: When,
-    approvedBy?: string | null, approvedOn?: When}[];
+    approvedBy?: string | null, approvedOn?: When,
+    /** A generated evidence table found stale (F-41): when, and what changed. */
+    staleOn?: When, stale?: string | null}[];
   snapshots: {id: string, label: string, by: string | null, on: When}[];
   roleChanges: {id: string, compound: string, from: string | null, to: string, by: string | null, on: When}[];
   /** Sync runs of the portfolio: this program's change in each, and the new-data lines about it. */
@@ -125,6 +127,10 @@ export function programFeedEntries(r: FeedRecords): FeedEntry[] {
     if (d.approvedOn) {
       push({key: `document-approved:${d.id}`, at: d.approvedOn, kind: 'document', who: d.approvedBy ?? null,
         text: `Document approved: ${title}`, ref: {kind: 'document', id: d.id}});
+    }
+    if (d.staleOn && d.stale) {
+      push({key: `document-stale:${d.id}:${d.staleOn}`, at: d.staleOn, kind: 'document', who: null,
+        text: `Evidence changed since written: ${title}: ${d.stale}`, ref: {kind: 'document', id: d.id}});
     }
   }
   for (const s of r.snapshots)

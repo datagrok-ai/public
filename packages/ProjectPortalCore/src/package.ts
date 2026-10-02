@@ -35,7 +35,7 @@ import {describeSnapshotRow, snapshotsFrame, snapshotsOf, takeSnapshot} from './
 import {documentsFrame, documentsOf, linkDocumentTo, loadExampleDocuments as loadExamples} from './documents';
 import {describeDocument} from './model/documents';
 import {provenanceOf} from './provenance';
-import {generateEvidenceTableFor, summarizeGenerated} from './evidence-tables';
+import {checkEvidenceChangesOf, generateEvidenceTableFor, summarizeGenerated} from './evidence-tables';
 import {openProvenanceDialog} from './views/provenance-dialog';
 import {predictionsFrame, scoreCompounds as scoreProgram} from './predictions';
 import {feedFrame, feedUserNames, myFeedOf, programFeedOf, programOf} from './feed';
@@ -374,6 +374,14 @@ export async function generateEvidenceTable(portfolio: string, program: string, 
   const r = await generateEvidenceTableFor(p, criterion);
   r.df.setTag('portal.report', summarizeGenerated(p, r));
   return r.df;
+}
+
+//name: checkEvidenceChanges
+//description: Compares each generated evidence table of a portfolio's programs with the evidence now (another run selected, a newer snapshot, a data verdict changed, a decision added or gone), marks it stale or current, and tells a stale document's author and the program's followers once in the platform's notifications. The sync does this after every run
+//input: string code
+//output: string report
+export async function checkEvidenceChanges(code: string): Promise<string> {
+  return (await checkEvidenceChangesOf(await portfolioByCode(code))).summary;
 }
 
 //name: provenance

@@ -2,6 +2,9 @@
 
 ## 0.3.0 (unreleased)
 
+- "Evidence changed since written" (F-41, FR-73): a generated evidence table's recorded sources are compared with the evidence now (another run selected, a newer snapshot, a data verdict changed, a decision added or gone). A stale document shows **stale**, what changed and **Regenerate** on its card, and an entry in the activity feed. After every sync and on `checkEvidenceChanges(code)` its author and the program's followers are told in the platform's notifications, once per state of the evidence
+- `portal` schema 0.2.26: `document.evidence_check`. Additive, no migration script
+
 - Evidence tables generated into documents (F-40, FR-72): for a document criterion, the run selected for it (inputs and outputs with units), the newest snapshot (the criterion as frozen, its rows), the gate's data conditions as evaluated now and the decisions citing it, as one table. Written as a CSV and a Markdown file into the program's workspace folder and linked as a new draft version of a document over the criterion; the document records each source with a content hash (`document.generated`). Generating again supersedes older generated drafts. Pure assembly in `src/model/evidence-tables.ts`
 - Document cards: **Generate evidence table**; **Table** on a generated document opens it as a table view. `generateEvidenceTable(portfolio, program, criterion)` returns the table
 - `portal` schema 0.2.25: `document.generated`. Additive, no migration script

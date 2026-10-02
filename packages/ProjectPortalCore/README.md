@@ -377,6 +377,8 @@ document can say which runs, data and decisions it rests on.
 - **What it records.** `document.generated`: the criterion, when and by whom, each source (`run`, `snapshot`, `condition:<code>`, `decision:<id>`) with its soft reference and a content hash, one hash over all of them, and the CSV's path and SHA-256.
 - **Again.** Generating again makes the next version. Older generated drafts of the criterion are superseded at once; an approved one stays approved until the new version is approved, which supersedes it the usual way.
 - **In the app.** **Generate evidence table** on each document card (contributors and approvers); **Table** on a generated document opens its CSV as a table view. `generateEvidenceTable(portfolio, program, criterion)` does the same and returns the table.
+- **Evidence changed since written** (F-41, FR-73). The same sources are read again and compared with the record: another run selected, a newer snapshot, a data verdict that changed, a decision added or no longer citing it. Any difference makes the document stale. The card shows **stale** and what changed, with **Regenerate** (the next version; older drafts superseded, an approved one kept until the new one is approved). The program page stores what it finds on `document.evidence_check`; the activity feed shows a stale document as an entry.
+- **Who is told.** After every sync (as for new data) and on `checkEvidenceChanges(code)`, each stale document's author and the program's followers are told in the platform's notifications, once per state of the evidence. Superseded documents are not checked.
 - Pure assembly in `src/model/evidence-tables.ts`; the platform side in `src/evidence-tables.ts`. Needs the program's workspace folder.
 
 ### Approval workflow
@@ -526,6 +528,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `waitingForMe()` | The pending requests the current user may review, oldest first |
 | `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` | Links a file as a document of the program, or changes the document over it; approving meets its criterion unless waived |
 | `generateEvidenceTable(portfolio, program, criterion)` | Generates the evidence table of a document criterion into a new draft document version in the program folder (CSV and Markdown) and returns the table |
+| `checkEvidenceChanges(code)` | Marks each generated evidence table of the portfolio stale or current against the evidence now; tells a stale one's author and the program's followers once. The sync runs it too |
 | `provenance(kind, id, depth)` | What a portal record rests on and what rests on it, `depth` steps each way, as `{start, nodes, edges}` |
 | `showProvenance(kind, id)` | The same in a dialog, each record clickable |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |

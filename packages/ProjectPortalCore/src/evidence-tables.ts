@@ -3,11 +3,13 @@
  * frozen table, the gate's data conditions as readiness evaluates them, the decisions citing it),
  * writes the table as a CSV and a Markdown file into the program's workspace folder, and links the
  * Markdown file as a new draft version of a document over the criterion, recording which evidence
- * it was generated from. The rules live in ./model/evidence-tables. */
+ * it was generated from. Then (F-41) compares a generated document's record with the evidence now,
+ * marks it stale and tells its author and the program's followers. The rules live in
+ * ./model/evidence-tables. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {DocumentRow, portalDb, ProgramRow} from './generated/db';
+import {DocumentRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {ContextCriterion, ProgramContext, programContext, programData, readinessFor} from './portal';
 import {programAccess} from './program-roles';
 import {selectedRunsOf} from './evidence';
@@ -18,8 +20,10 @@ import {DataRow} from './model/conditions';
 import {
   evidenceCsv, evidenceFileName, evidenceHash, EvidenceInputs, evidenceMarkdown, EvidenceRow, evidenceSources,
   evidenceTableRows, evidenceTableTitle, EVIDENCE_COLUMNS, GeneratedRecord, MAX_SNAPSHOT_ROWS, nextGeneratedVersion,
-  RunParam, supersededOnRegenerate,
+  RunParam, supersededOnRegenerate, compareEvidence, describeChanges, EvidenceChange, EvidenceCheck, RecordedSource,
+  shouldNotify, staleMessage,
 } from './model/evidence-tables';
+import {notifyUser} from './notify';
 
 /** The kind a generated table takes: `evidence_table` when the portfolio declares it, else `other`. */
 export const EVIDENCE_KIND = 'evidence_table';
@@ -210,4 +214,118 @@ export async function evidenceTableOf(d: DocumentRow): Promise<DG.DataFrame> {
 export function summarizeGenerated(program: ProgramRow, r: GeneratedTable): string {
   return [`${program.code}: ${r.document.title} v${r.version} generated as a draft, ${r.df.rowCount} rows` +
     (r.superseded ? `; ${r.superseded} older draft(s) superseded` : ''), ...r.notes.map((n) => `  ${n}`)].join('\n');
+}
+
+// ---------------------------------------------------------------------------------------------
+// Evidence changed since written (F-41)
+
+/** The last check stored on a generated document, if any. */
+export const checkOf = (d: Pick<DocumentRow, 'evidence_check'>): EvidenceCheck | null =>
+  (d.evidence_check as EvidenceCheck | undefined)?.state ? d.evidence_check as EvidenceCheck : null;
+
+/** What changed since each generated document of the program was written, by document id, with the
+ * evidence hash now. Superseded documents are not checked. Each criterion's evidence is read once. */
+export async function evidenceChangesOf(ctx: ProgramContext, docs?: DocumentRow[]):
+  Promise<Map<string, {changes: EvidenceChange[], hash: string}>> {
+  const rows = docs ?? await documentsOf(ctx.program.id);
+  const out = new Map<string, {changes: EvidenceChange[], hash: string}>();
+  const now = new Map<string, RecordedSource[] | null>();
+  for (const d of rows) {
+    const g = generatedOf(d);
+    if (!g || d.status === 'superseded')
+      continue;
+    if (!now.has(g.criterion)) {
+      const c = ctx.criteria.find((x) => x.id === g.criterion);
+      now.set(g.criterion, c ? evidenceSources(await evidenceInputsOf(ctx, c, {docs: rows})) : null);
+    }
+    const current = now.get(g.criterion);
+    // a criterion that no longer applies: nothing to compare with
+    if (current)
+      out.set(d.id, {changes: compareEvidence(g.sources, current), hash: evidenceHash(current)});
+  }
+  return out;
+}
+
+/** The check of one document as it is stored; null when the stored one already says the same. */
+export function nextCheck(d: DocumentRow, r: {changes: EvidenceChange[], hash: string}): EvidenceCheck | null {
+  const before = checkOf(d);
+  const state = r.changes.length ? 'stale' : 'current';
+  if (before && before.state === state && before.hash === r.hash)
+    return null;
+  return {state, hash: r.hash, changes: r.changes.map((c) => c.text), checkedOn: new Date().toISOString(),
+    notified: before?.notified ?? null, notifiedOn: before?.notifiedOn ?? null};
+}
+
+/** Stores what the program page found, without telling anyone: the feed then shows a stale document
+ * before the next sync. A user who may not write documents leaves it to the sync. */
+export async function storeChecks(docs: DocumentRow[], found: Map<string, {changes: EvidenceChange[], hash: string}>): Promise<void> {
+  for (const d of docs) {
+    const r = found.get(d.id);
+    const check = r ? nextCheck(d, r) : null;
+    if (check)
+      await portalDb.documents.update(d.id, {evidence_check: check as any}).catch(() => undefined);
+  }
+}
+
+export interface EvidenceChangeCheck {
+  /** Generated documents checked. */
+  documents: number;
+  stale: {program: string, document: string, line: string}[];
+  notified: string[];
+  errors: string[];
+  summary: string;
+}
+
+/** Checks every generated document of a portfolio's programs against the evidence now, stores the
+ * result on each, and tells each stale document's author and the program's followers once per state
+ * of the evidence, in the platform's notifications. */
+export async function checkEvidenceChangesOf(portfolio: PortfolioRow, opts: {notify?: boolean} = {}): Promise<EvidenceChangeCheck> {
+  const programs = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+  const out: EvidenceChangeCheck = {documents: 0, stale: [], notified: [], errors: [], summary: ''};
+  const ids = programs.map((p) => `"${p.id}"`).join(', ');
+  const docs = ids ? (await portalDb.documents.query({filter: `program_id in (${ids})`})).filter((d) => generatedOf(d) &&
+    d.status !== 'superseded') : [];
+  const tell = new Map<string, string[]>();
+  for (const program of programs) {
+    const mine = docs.filter((d) => d.program_id === program.id);
+    if (!mine.length)
+      continue;
+    try {
+      const ctx = await programContext(program.id);
+      const found = await evidenceChangesOf(ctx, mine);
+      const followers = opts.notify === false ? [] : (await portalDb.follows.query({filter: `program_id = "${program.id}"`}))
+        .filter((f) => f.active !== false).map((f) => f.user_id);
+      for (const d of mine) {
+        const r = found.get(d.id);
+        if (!r)
+          continue;
+        out.documents++;
+        let check = nextCheck(d, r);
+        const state = check ?? checkOf(d)!;
+        if (state.state === 'stale') {
+          const line = `${program.code}: ${d.title}${d.doc_version ? ` v${d.doc_version}` : ''}: ${describeChanges(r.changes)}`;
+          out.stale.push({program: program.code, document: d.id, line});
+          if (opts.notify !== false && shouldNotify(state, checkOf(d))) {
+            for (const u of new Set([d.written_by, ...followers].filter((x): x is string => !!x)))
+              tell.set(u, [...tell.get(u) ?? [], line]);
+            check = {...state, notified: state.hash, notifiedOn: new Date().toISOString()};
+          }
+        }
+        if (check)
+          await portalDb.documents.update(d.id, {evidence_check: check as any});
+      }
+    } catch (e: any) {
+      out.errors.push(`${program.code} (${e?.message ?? e})`);
+    }
+  }
+  for (const [u, lines] of tell) {
+    const r = await notifyUser(u, staleMessage(portfolio, lines));
+    const who = await grok.dapi.users.find(u).then((x) => x.login).catch(() => u);
+    out.notified.push(`${who}: ${r.detail}`);
+  }
+  out.summary = `${portfolio.code} evidence: ` + (out.documents === 0 ? 'no generated documents' :
+    out.stale.length ? out.stale.map((s) => s.line).join('; ') : `${out.documents} generated document(s), none stale`) +
+    (out.notified.length ? `; told: ${out.notified.join(', ')}` : '') +
+    (out.errors.length ? `; not checked: ${out.errors.join(', ')}` : '');
+  return out;
 }

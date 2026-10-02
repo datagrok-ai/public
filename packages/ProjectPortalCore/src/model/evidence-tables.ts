@@ -4,7 +4,11 @@
  * gate's data conditions, and the decisions that cite the criterion, its run or its documents. The
  * table is written as a CSV and a Markdown file and linked as a new draft version of a document;
  * the document records which evidence it was generated from, each source with a content hash.
- * Pure: the caller reads the records and writes the files. */
+ *
+ * "Evidence changed since written" (F-41, FR-73): later the same sources are read again and compared
+ * with the record: another run selected, a newer snapshot, a data verdict that changed, a decision
+ * added or gone. Any difference makes the document stale. Pure: the caller reads the records and
+ * writes the files. */
 import {formatRunValue} from './run-selection';
 
 /** Where a row of the table comes from. */
@@ -228,3 +232,62 @@ export function supersededOnRegenerate(docs: {id: string, status: string, genera
     .map((d) => d.id);
 }
 
+/** One difference between the evidence a document was generated from and the evidence now. */
+export interface EvidenceChange {
+  key: string;
+  kind: EvidenceSourceKind;
+  change: 'changed' | 'added' | 'removed';
+  text: string;
+}
+
+/** What changed since the document was written; empty when nothing did. */
+export function compareEvidence(recorded: RecordedSource[], current: RecordedSource[]): EvidenceChange[] {
+  const out: EvidenceChange[] = [];
+  const now = new Map(current.map((s) => [s.key, s]));
+  const then = new Map(recorded.map((s) => [s.key, s]));
+  for (const r of recorded) {
+    const c = now.get(r.key);
+    if (!c) {
+      out.push({key: r.key, kind: r.kind, change: 'removed', text: r.kind === 'run' ? `the run selection was removed (was ${r.name})` :
+        r.kind === 'snapshot' ? `the snapshot ${r.name} is gone` : r.kind === 'decision' ? `decision ${r.name} no longer cites it` :
+          `data condition ${r.key.slice('condition:'.length)} no longer applies`});
+    } else if (c.hash !== r.hash) {
+      out.push({key: r.key, kind: r.kind, change: 'changed', text: r.kind === 'run' ?
+        (c.ref === r.ref ? `run ${c.name} selected again` : `another run selected: ${c.name} (was ${r.name})`) :
+        r.kind === 'snapshot' ? (c.ref === r.ref ? `snapshot ${c.name} changed` : `a newer snapshot: ${c.name} (was ${r.name})`) :
+          r.kind === 'data_condition' ? `${r.key.slice('condition:'.length)} is now ${(c.state ?? '').replace(/_/g, ' ')}` +
+            ` (was ${(r.state ?? '').replace(/_/g, ' ')})` : `decision ${c.name} changed`});
+    }
+  }
+  for (const c of current.filter((x) => !then.has(x.key))) {
+    out.push({key: c.key, kind: c.kind, change: 'added', text: c.kind === 'run' ? `a run selected: ${c.name}` :
+      c.kind === 'snapshot' ? `a snapshot taken: ${c.name}` : c.kind === 'decision' ? `decision added: ${c.name}` :
+        `data condition ${c.key.slice('condition:'.length)} added: ${(c.state ?? '').replace(/_/g, ' ')}`});
+  }
+  return out;
+}
+
+/** `Evidence changed since written: another run selected: Feed 2 (was Feed 4); a snapshot taken: …` */
+export const describeChanges = (changes: EvidenceChange[]): string =>
+  changes.length ? `Evidence changed since written: ${changes.map((c) => c.text).join('; ')}` : 'Evidence unchanged since written';
+
+/** The last check of a generated document, stored on `document.evidence_check`. */
+export interface EvidenceCheck {
+  state: 'current' | 'stale';
+  /** The evidence hash now. */
+  hash: string;
+  changes: string[];
+  checkedOn: string;
+  /** The evidence hash the author and followers were last told about; they are told once per hash. */
+  notified?: string | null;
+  notifiedOn?: string | null;
+}
+
+/** Whether a check should tell people: the document is stale and this state of the evidence was not told yet. */
+export const shouldNotify = (check: Pick<EvidenceCheck, 'state' | 'hash'>, previous: Pick<EvidenceCheck, 'notified'> | null | undefined) =>
+  check.state === 'stale' && previous?.notified !== check.hash;
+
+/** The notification text for one user: one line per stale document. */
+export function staleMessage(portfolio: {code: string, name: string}, lines: string[]): string {
+  return [`Evidence changed in ${portfolio.name} (${portfolio.code})`, ...lines].join('\n');
+}

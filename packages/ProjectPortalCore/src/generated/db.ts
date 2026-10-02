@@ -1627,6 +1627,7 @@ export interface DocumentRow {
   approved_on?: Dayjs;
   note?: string;
   generated?: {[key: string]: any};
+  evidence_check?: {[key: string]: any};
 }
 
 /** Insert payload for `portal.document`. */
@@ -1646,11 +1647,12 @@ export interface DocumentInsert {
   approved_on?: Dayjs | string;
   note?: string;
   generated?: {[key: string]: any};
+  evidence_check?: {[key: string]: any};
 }
 
 export type DocumentColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
   'gate_criterion_id' | 'kind' | 'title' | 'doc_version' | 'status' | 'path' | 'folder' | 'written_by' |
-  'linked_by' | 'linked_on' | 'approved_by' | 'approved_on' | 'note' | 'generated';
+  'linked_by' | 'linked_on' | 'approved_by' | 'approved_on' | 'note' | 'generated' | 'evidence_check';
 
 /** Expand keys of `portal.document` → fields each adds to the row (consumed by query()/builder). */
 export type DocumentExpand = {

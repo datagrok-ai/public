@@ -223,6 +223,13 @@ export namespace funcs {
   }
 
   /**
+   * Compares each generated evidence table of a portfolio's programs with the evidence now (another run selected, a newer snapshot, a data verdict changed, a decision added or gone), marks it stale or current, and tells a stale document's author and the program's followers once in the platform's notifications. The sync does this after every run
+   */
+  export async function checkEvidenceChanges(code: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:CheckEvidenceChanges', { code });
+  }
+
+  /**
    * What a portal object rests on and what rests on it, depth steps each way: data, runs, models, documents, criteria, decisions, the program. Returns {start, nodes, edges}; an edge runs from what a node rests on to the node
    * @param {string} kind
    *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]

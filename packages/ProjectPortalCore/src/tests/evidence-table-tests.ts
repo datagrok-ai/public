@@ -3,15 +3,18 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {
   contentHash, evidenceCsv, evidenceFileName, evidenceHash, EvidenceInputs, evidenceMarkdown, evidenceSources,
-  evidenceTableRows, MAX_SNAPSHOT_ROWS, nextGeneratedVersion, supersededOnRegenerate,
+  evidenceTableRows, MAX_SNAPSHOT_ROWS, nextGeneratedVersion, supersededOnRegenerate, compareEvidence, describeChanges,
+  shouldNotify,
 } from '../model/evidence-tables';
+import {mergeFeeds, programFeedEntries} from '../model/feed';
 import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, programContext} from '../portal';
 import {buildPortfolioWorkspace, subspaces} from '../workspace';
 import {saveModelRun, selectRunForCriterion} from '../model-runs';
 import {snapshotsOf, takeSnapshot} from '../snapshots';
 import {documentCardsOf, documentsOf, folderFiles} from '../documents';
-import {evidenceTableOf, generatedOf, generateEvidenceTableFor} from '../evidence-tables';
+import {checkOf, evidenceChangesOf, evidenceTableOf, generatedOf, generateEvidenceTableFor} from '../evidence-tables';
+import {programFeedOf} from '../feed';
 import {PortalView} from '../views/portal-view';
 import {_package} from '../package-test';
 
@@ -87,6 +90,36 @@ category('Portal: evidence table rules', () => {
       {id: 'c', status: 'draft', generated: false, criterionId: 'c'}, {id: 'd', status: 'rejected', generated: true, criterionId: 'c'},
       {id: 'e', status: 'draft', generated: true, criterionId: 'x'}, {id: 'f', status: 'submitted', generated: true, criterionId: 'c'}];
     expect(supersededOnRegenerate(docs, 'c').join(), 'a,d');
+  });
+
+  test('what changed since written: another run, a newer snapshot, a verdict, a decision added or gone', async () => {
+    const then = evidenceSources(inputs());
+    expect(compareEvidence(then, evidenceSources(inputs())).length, 0);
+    expect(describeChanges([]), 'Evidence unchanged since written');
+    const now = evidenceSources(inputs({
+      run: {...inputs().run!, runId: 'r-2', title: 'Feed 2', selectedOn: '2026-10-03T00:00:00.000Z'},
+      snapshot: {...inputs().snapshot!, id: 's-2', label: 'P-1 2026-10-03', takenOn: '2026-10-03T00:00:00.000Z', sha256: 'def'},
+      conditions: [{...inputs().conditions[0], state: 'met'}],
+      decisions: [{id: 'd-2', decision: 'advance', on: '2026-10-03T00:00:00.000Z'}],
+    }));
+    expect(describeChanges(compareEvidence(then, now)), 'Evidence changed since written: another run selected: Feed 2 (was Feed 4); ' +
+      'a newer snapshot: P-1 2026-10-03 (was P-1 2026-10-02 09:00); tox is now met (was not met); ' +
+      'decision hold 2026-10-01 no longer cites it; decision added: advance 2026-10-03');
+    expect(compareEvidence(then, evidenceSources(inputs({run: null}))).map((c) => `${c.change} ${c.text}`).join(),
+      'removed the run selection was removed (was Feed 4)');
+    // told once per state of the evidence
+    expect(shouldNotify({state: 'stale', hash: 'h2'}, {notified: 'h1'}), true);
+    expect(shouldNotify({state: 'stale', hash: 'h2'}, {notified: 'h2'}), false);
+    expect(shouldNotify({state: 'current', hash: 'h3'}, null), false);
+  });
+
+  test('a stale document is an entry in the activity feed', async () => {
+    const e = mergeFeeds(programFeedEntries({program: {id: 'p', code: 'P-1'}, stages: [], decisions: [], evidence: [], runs: [],
+      selections: [], documents: [{id: 'd', title: 'Evidence table, PD', version: '1', status: 'draft', linkedBy: 'u',
+        linkedOn: '2026-10-02T08:00:00Z', staleOn: '2026-10-02T09:00:00Z', stale: 'another run selected: Feed 2 (was Feed 4)'}],
+      snapshots: [], roleChanges: [], syncs: [], news: []}));
+    expect(e.map((x) => x.text).join(' | '), 'Evidence changed since written: Evidence table, PD v1: another run selected: Feed 2 ' +
+      '(was Feed 4) | Document linked: Evidence table, PD v1');
   });
 });
 
@@ -193,5 +226,43 @@ category('Portal: evidence tables', () => {
     let refused = '';
     await generateEvidenceTableFor(program, 'tox_lot').catch((e) => refused = e.message);
     expect(refused, 'criterion tox_lot is a data condition; evidence tables are generated for document criteria');
+  });
+
+  test('another run selected: the table is stale, its author told once, in the feed; regenerating makes it current', async () => {
+    const feed2 = await saveRun(2, 'Feed 2');
+    const ctx = await programContext(program.id);
+    const pd = ctx.criteria.find((c) => c.code === 'process_description')!;
+    const v2 = (await documentsOf(program.id)).find((d) => generatedOf(d)?.criterion === pd.id && d.status === 'draft')!;
+    expect(v2.doc_version, '2');
+    expect((await evidenceChangesOf(ctx)).get(v2.id)?.changes.length, 0, 'current before anything changes');
+    await selectRunForCriterion(program.id, pd.id, feed2.modelRun.id, 'lower feed holds the titer');
+    const found = (await evidenceChangesOf(await programContext(program.id))).get(v2.id)!;
+    expect(describeChanges(found.changes), 'Evidence changed since written: another run selected: Feed 2 (was Feed 4)');
+    const report: string = await grok.functions.call('ProjectPortalCore:checkEvidenceChanges', {code: 'EX-BIOC'});
+    expect(report.includes(`${program.code}: Evidence table, Locked process description v2: Evidence changed since written`), true, report);
+    expect(/told: \S+: notified/.test(report), true, report);
+    const check = checkOf(await portalDb.documents.get(v2.id))!;
+    expect(`${check.state} ${check.notified === check.hash}`, 'stale true');
+    // told once: the same state of the evidence is not told again
+    const again: string = await grok.functions.call('ProjectPortalCore:checkEvidenceChanges', {code: 'EX-BIOC'});
+    expect(again.includes('told:'), false, again);
+    const bioc = await portfolioByCode('EX-BIOC');
+    const feed = await programFeedOf(bioc, program);
+    expect(feed.some((x) => x.text.startsWith('Evidence changed since written: Evidence table, Locked process description v2')), true);
+    // the card says so and offers a new version
+    const v = new PortalView();
+    await v.load('EX-BIOC');
+    await v.showProgram('EX-BIOC', program.id);
+    const q = (n: string) => v.root.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
+    const card = q('document-card-process-description')?.textContent ?? '';
+    expect(card.includes('stale') && card.includes('another run selected: Feed 2 (was Feed 4)'), true, card);
+    expect(!!q('regenerate-document-process-description-0'), true);
+    const r = await generateEvidenceTableFor(program, pd.id);
+    expect(`${r.version} ${r.superseded}`, '3 1');
+    const after = await evidenceChangesOf(await programContext(program.id));
+    expect(after.get(r.document.id)?.changes.length, 0);
+    expect(after.has(v2.id), false, 'a superseded version is not checked');
+    expect((await grok.functions.call('ProjectPortalCore:checkEvidenceChanges', {code: 'EX-BIOC'}) as string)
+      .includes(`${program.code}: Evidence table, Locked process description`), false);
   });
 });

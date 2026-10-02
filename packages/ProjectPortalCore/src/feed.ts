@@ -76,7 +76,9 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
     }),
     documents: documents.map((d) => ({id: d.id, title: d.title, version: d.doc_version ?? null, status: d.status,
       linkedBy: d.linked_by ?? d.author_id, linkedOn: iso(d.linked_on ?? d.created_on), approvedBy: d.approved_by ?? null,
-      approvedOn: d.status !== 'draft' ? iso(d.approved_on) : null})),
+      approvedOn: d.status !== 'draft' ? iso(d.approved_on) : null,
+      ...((d.evidence_check as any)?.state === 'stale' && d.status !== 'superseded' ?
+        {staleOn: iso((d.evidence_check as any).checkedOn), stale: ((d.evidence_check as any).changes ?? []).join('; ')} : {})})),
     snapshots: snapshots.map((s) => ({id: s.id, label: s.label, by: s.taken_by ?? s.author_id, on: iso(s.taken_on)})),
     roleChanges: roleChanges.map((c) => ({id: c.id, compound: compounds.find((x) => x.id === c.compound_id)?.code ?? c.compound_id,
       from: c.from_role ?? null, to: c.to_role, by: c.changed_by ?? null, on: iso(c.changed_on ?? c.created_on)})),

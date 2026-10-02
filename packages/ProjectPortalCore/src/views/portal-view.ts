@@ -51,7 +51,8 @@ import {documentCardsOf, documentsOf, setDocumentStatus, vocabularyOf} from '../
 import {describeDocument, DocumentCard, DocumentStatus} from '../model/documents';
 import {DocumentRow} from '../generated/db';
 import {openDocumentFile, openLinkDocumentDialog} from './document-dialog';
-import {evidenceTableOf, generatedOf, generateEvidenceTableFor, summarizeGenerated} from '../evidence-tables';
+import {evidenceChangesOf, evidenceTableOf, generatedOf, generateEvidenceTableFor, storeChecks, summarizeGenerated} from '../evidence-tables';
+import {describeChanges, EvidenceChange} from '../model/evidence-tables';
 import {programAccess} from '../program-roles';
 import {openProvenanceDialog} from './provenance-dialog';
 import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
@@ -320,8 +321,13 @@ export class PortalView {
     const snapshots = await snapshotsOf(id).catch(() => [] as ProgramSnapshotRow[]);
     // documents: the cards of the current and next gate's document criteria, and the rest
     const docRows = await documentsOf(id).catch(() => [] as DocumentRow[]);
+    // generated evidence tables whose evidence changed since written (F-41); what is found is stored
+    const changed = docRows.some((d) => generatedOf(d)) ? await evidenceChangesOf(ctx, docRows).catch(() => null) : null;
+    if (changed)
+      await storeChecks(docRows, changed).catch(() => undefined);
     const documents = {rows: docRows, cards: await documentCardsOf(ctx, docRows).catch(() => [] as DocumentCard[]),
-      contributor: (await programAccess(ctx.portfolio, id).catch(() => null))?.contributor ?? false};
+      contributor: (await programAccess(ctx.portfolio, id).catch(() => null))?.contributor ?? false,
+      changes: new Map([...changed ?? new Map()].map(([k, v]) => [k, v.changes]))};
     // the evidence behind each decision, and what the next one would rest on
     const evidence = await evidenceOf(id).catch(() => new Map<string, EvidenceLine[]>());
     const suggested = ctx.approver && ctx.portfolio.stage_authority === 'portal' ? await suggestedEvidence(id, ctx.readiness,
@@ -437,7 +443,8 @@ export class PortalView {
     recommendation: ProgramRecommendation | null = null, news: {since: string | null, lines: string[]} | null = null,
     evidence: {lines: Map<string, EvidenceLine[]>, suggested: EvidenceItem[]} = {lines: new Map(), suggested: []},
     snapshots: ProgramSnapshotRow[] = [],
-    documents: {rows: DocumentRow[], cards: DocumentCard[], contributor: boolean} = {rows: [], cards: [], contributor: false}): void {
+    documents: {rows: DocumentRow[], cards: DocumentCard[], contributor: boolean, changes?: Map<string, EvidenceChange[]>} =
+    {rows: [], cards: [], contributor: false}): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -1027,7 +1034,8 @@ export class PortalView {
   /** One card per document criterion of the current and the next gate: its state, the documents
    * over it (each opens; a draft has Approve for approvers), what is missing, the run selected for
    * it and the decisions that cite it; Link document adds one. Documents no card shows follow. */
-  private documents(ctx: ProgramContext, d: {rows: DocumentRow[], cards: DocumentCard[], contributor: boolean}): HTMLElement[] {
+  private documents(ctx: ProgramContext, d: {rows: DocumentRow[], cards: DocumentCard[], contributor: boolean,
+    changes?: Map<string, EvidenceChange[]>}): HTMLElement[] {
     const {program} = ctx;
     const canLink = ctx.approver || d.contributor;
     const vocabulary = vocabularyOf(ctx);
@@ -1072,6 +1080,22 @@ export class PortalView {
         table.title = 'Open the evidence table this document was generated with';
         table.onclick = () => void evidenceTableOf(row).then((df) => grok.shell.addTableView(df)).catch(failed);
         items.push(table);
+        // its evidence changed since it was written: stale, and a new version offered (F-41)
+        const changes = d.changes?.get(row.id) ?? [];
+        if (changes.length && row.status !== 'superseded') {
+          items.push(named(badge('stale', {variant: 'warning'}), `stale-${name}`));
+          const why = named(span(describeChanges(changes), 'pp-gap'), `${name}-changes`);
+          items.push(why);
+          if (canLink && row.status !== 'submitted') {
+            const again = named(span('Regenerate', 'pp-link'), `regenerate-${name}`);
+            again.title = 'Generate the table again from the evidence now, as a new draft version';
+            again.onclick = () => void generateEvidenceTableFor(program, generatedOf(row)!.criterion).then((r) => {
+              grok.shell.info(summarizeGenerated(program, r));
+              return reopen();
+            }).catch(failed);
+            items.push(again);
+          }
+        }
       }
       if ((row.status === 'draft' || row.status === 'rejected') && submits && canLink) {
         const submit = named(span('Submit for approval', 'pp-link'), `submit-${name}`);

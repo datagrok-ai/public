@@ -15,6 +15,7 @@ import {
 import {autoAdvance, autoAdvanceOf} from './auto-advance';
 import {notifyUser} from './notify';
 import {checkNewDataOf} from './new-data';
+import {checkEvidenceChangesOf} from './evidence-tables';
 
 export type SyncTrigger = 'schedule' | 'manual';
 
@@ -110,6 +111,17 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
       result.newData = n.news.filter((x) => !seen.has(x.line) && !!seen.add(x.line)).map((x) => ({program: x.program, line: x.line}));
     } catch (e: any) {
       grok.log.warning(`Project Portal: new data of ${code} not checked: ${e?.message ?? e}`);
+    }
+  }
+
+  // generated documents whose evidence changed: marked stale, their author and followers told (F-41)
+  if (!result.error) {
+    try {
+      const ev = await checkEvidenceChangesOf(portfolio);
+      if (ev.documents > 0)
+        result.report += `\n${ev.summary}`;
+    } catch (e: any) {
+      grok.log.warning(`Project Portal: evidence of ${code} not checked: ${e?.message ?? e}`);
     }
   }
 
