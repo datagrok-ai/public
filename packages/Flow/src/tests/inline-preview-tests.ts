@@ -665,6 +665,40 @@ category('Flow: inline preview', () => {
     }
   }, {timeout: 60000});
 
+  test('autorun on: a ready node runs as dropped; its in-node preview keeps the bottom panel closed (live)', async () => {
+    const func = grok.functions.register({
+      signature: 'widget ffAutorunDropWidget()',
+      run: () => DG.Widget.fromRoot(ui.divText('ff-autorun-drop')),
+    });
+    const view = new FuncFlowView();
+    const host = ui.div([view.root], {style: {
+      width: '900px', height: '600px', position: 'absolute', left: '-10000px',
+    }});
+    document.body.appendChild(host);
+    try {
+      await until(() => (view as any).flow != null, 10000);
+      const flow = (view as any).flow as FlowEditor;
+      const ctrl = (view as any).executionController as ExecutionController;
+      (view as any).toggleAutorun();
+
+      const node = await addNode(flow, ensureFuncNodeType(func));
+      await flow.selectNode(node.id);
+      await flow.setInlinePreview(node.id, true);
+
+      expect(await until(() =>
+        ctrl.state.getNodeState(node.id)?.status === NodeExecStatus.completed, 15000), true,
+      `the dropped node ran with no further edit (status=${ctrl.state.getNodeState(node.id)?.status ?? 'none'})`);
+      expect(await until(() =>
+        portalEl(host, node.id)?.textContent?.includes('ff-autorun-drop') === true, 5000), true,
+      'its widget renders in the node');
+      expect(view.outputPreview.panelState, 'hidden',
+        'the run does not pop the bottom panel open for a node previewing in-node');
+    } finally {
+      (view as any).flow?.destroy?.();
+      host.remove();
+    }
+  }, {timeout: 60000});
+
   test('the autorun mode saves with the flow and reopens live', async () => {
     const doc = (autorun?: boolean): any => ({
       version: '2.0', name: 't', description: '', author: '', created: '', modified: '',

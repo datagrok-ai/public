@@ -3,6 +3,8 @@
 ## v.next
 
 * Added: Functions that output a view support the in-node preview (⊞ toggle), like viewer, widget and graphics outputs
+* Fixed: With autorun on, a node dropped ready to run (all inputs defaulted — e.g. Gasteiger Partial Charges) did not run until it was edited; it now runs at once
+* Fixed: A run popped the bottom output panel open for the selected node even when its in-node preview already shows the result
 * Fixed: The mouse wheel over an on-node editor (the sketcher, the HELM box, any inline value input) zoomed the canvas instead of going to the editor — the node's editor host now keeps the wheel, like the in-node preview already did
 * Added: To Semantic Value utility node — wraps any value into a `DG.SemanticValue` of a configurable semantic type (default Molecule) via `DG.SemanticValue.fromValueType`
 * Improved: An input node whose Choices qualifier is a reference (a `Pkg:func()` call or a `query("…")` — e.g. the organism input of Biologics' Assays by Organism query) now resolves it into the real item list in the value editor, node body and panel alike; a Property Input adopting such a parameter keeps the reference (and, for query references, the owning query's connection) instead of dropping it — including when the platform hands the reference JSON-escaped — and references never leak into the emitted `//input:` header
