@@ -101,6 +101,7 @@ export async function exportPortfolioConfig(code: string): Promise<PortfolioConf
     programNoun: p.program_noun, workspaceRoot: p.workspace_root, workstreams: orNull(split(p.workstreams)),
     description: p.description, schedule: p.schedule, owners: orNull(split(p.owners)),
     autoAdvance: p.auto_advance as any,
+    personas: p.personas as any,
     groups: Object.keys(groups).length ? groups : undefined,
     handoff: p.handoff as any,
     workUnits: orNull(split(p.work_units)) as WorkUnitKind[] | undefined,

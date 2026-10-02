@@ -41,6 +41,14 @@ export namespace funcs {
    * One program's governed data as a table named after it: the portfolio's program dataset, or with dataset one of the further datasets it declares. The query runs as you, on a connection shared with you
    * @param {string} dataset - Dataset code
    */
+  export async function programData(portfolio: string , program: string , dataset?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ProgramData', { portfolio, program, dataset });
+  }
+
+  /**
+   * The same as programData, under the name earlier builds registered it by
+   * @param {string} dataset - Dataset code
+   */
   export async function programDataTable(portfolio: string , program: string , dataset?: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('ProjectPortalCore:ProgramDataTable', { portfolio, program, dataset });
   }

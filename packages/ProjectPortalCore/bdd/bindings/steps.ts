@@ -263,3 +263,23 @@ export const notFollowed = Given('the user does not follow {string} in the {stri
       await unfollowAll(page, program, portfolio);
     });
   }, {tier: 'api', description: 'turns off the user\'s follows of the program and its series, now and at the end of the feature'});
+
+/** Forgets the user's mode and persona, so the portal is in Advanced with the persona from the portfolio. */
+async function clearPreferences(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    for (const key of ['mode', 'persona']) {
+      // deleting a key that is not there throws
+      if (grok.userSettings.getValue('ProjectPortalCore', key) != null)
+        grok.userSettings.delete('ProjectPortalCore', key);
+    }
+    await grok.userSettings.flush();
+  });
+}
+
+export const preferencesCleared = Given('the user\'s portal mode and persona are not set', async (page: Page) => {
+  silent(page);   // set-up a person does not do: kept out of guide videos
+  await clearPreferences(page);
+  atFeatureEnd(page, async () => {
+    await clearPreferences(page);
+  });
+}, {tier: 'api', description: 'clears the remembered mode and persona from the user\'s settings, now and at the end of the feature'});

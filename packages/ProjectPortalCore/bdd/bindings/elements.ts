@@ -110,3 +110,10 @@ app.element('solubility estimate card link', {selector: u2('recommended-card-pro
 app.element('follow button', {selector: u2('follow-button')});
 app.element('what\'s new', {selector: u2('whats-new')});
 app.element('KIN-A follow link', {selector: u2('follow-series-kin-a')});
+
+app.element('mode input', {selector: u2('mode-input')});
+app.element('persona input', {selector: u2('persona-input')});
+app.element('quick actions', {selector: u2('quick-actions')});
+app.element('quick actions heading', {selector: u2('quick-actions-heading')});
+app.element('more button', {selector: u2('more-button')});
+app.element('saved runs heading', {selector: u2('saved-runs-heading')});

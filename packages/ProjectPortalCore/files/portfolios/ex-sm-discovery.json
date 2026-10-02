@@ -16,6 +16,10 @@
     "contributors": "Portal EX-SMD Contributors",
     "approvers": "Portal EX-SMD Approvers"
   },
+  "personas": {
+    "default": "chemist",
+    "groups": [{"group": "Portal EX-SMD Approvers", "persona": "lead"}]
+  },
   "workUnits": ["campaign", "series"],
   "seriesMaturity": ["hit", "validated", "lead", "optimized", "candidate"],
   "workUnitFeeds": [

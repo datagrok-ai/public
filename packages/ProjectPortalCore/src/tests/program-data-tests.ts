@@ -81,6 +81,13 @@ category('Portal: program data', () => {
     expect(viewersFor(t).map((v) => v.type).join(), 'Scatter plot,Histogram', 'discovery defaults');
   });
 
+  test('the function is programData; programDataTable, the name earlier builds registered, still answers', async () => {
+    const params = {portfolio: 'EX-SMD', program: 'EXS-KIN1', dataset: 'assays'};
+    const t: DG.DataFrame = await grok.functions.call('ProjectPortalCore:programData', params);
+    const old: DG.DataFrame = await grok.functions.call('ProjectPortalCore:programDataTable', params);
+    expect(`${t.rowCount} ${old.rowCount} ${t.name === old.name}`, '8 8 true');
+  });
+
   test('a further dataset by code; an unknown one and a portfolio without data are refused', async () => {
     const t = await programTable('EX-SMD', 'EXS-KIN1', 'assays');
     expect(t.df.rowCount, 8);

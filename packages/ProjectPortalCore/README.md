@@ -258,6 +258,37 @@ A user follows a program, or one of its series, and hears when new results land 
 - **Program page.** **Follow**/**Unfollow** beside Open workspace, and Follow/Unfollow on each series row. A follower sees *What's new since your last visit* once per open of the program; the visit is then recorded.
 - `followProgram(portfolio, program, series)` and `unfollowProgram(...)` do the same by code.
 
+### Modes and quick actions per persona
+
+The board has a **Mode** and a **Persona** select (F-08, FR-30–32). Both are the user's own and are
+remembered in the platform's user settings (`grok.userSettings`, entry `ProjectPortalCore`), so they
+follow the user to another browser.
+
+- **Advanced** (the default) shows the whole program page, as before.
+- **Simple** keeps the heavier sections behind **More**: missing assays and suggested models, needs attention, saved runs, history. The gate, the work units and the compounds stay. The ribbon drops Sync history, Export and All portfolios.
+- **Quick actions** head the program page: one card per action the persona uses most, each opening something the page already does. A card that cannot be used now is dimmed and says why on hover.
+
+| Persona | Cards |
+|---|---|
+| Chemist | Open data (the SAR table), needs attention, missing assays, suggested models, follow |
+| Biologist | Open further data (assay results), open data, missing assays, follow, open workspace |
+| Modeler | Suggested models, save a run, choose a run, missing assays, open data |
+| Process scientist | Save a run, choose a run, open data, open workspace, follow |
+| Lead | Gate decision, portfolio table, needs attention, follow, open workspace |
+
+- **Which persona.** The one the user chose. Until they choose, the portfolio's mapping of groups to personas decides (the first group the user is in), then its default, then the setting: chemist in discovery, process scientist in development.
+- **A portfolio may declare its own** (optional):
+
+```json
+"personas": {"default": "chemist",
+  "groups": [{"group": "Portal EX-SMD Approvers", "persona": "lead"}],
+  "cards": {"modeler": ["suggested_models", "save_run",
+    {"name": "Portfolio as a table", "function": "ProjectPortalCore:portfolioTable"}]}}
+```
+
+  A card is an action code (`open_data`, `open_other_data`, `needs_attention`, `missing_assays`, `suggested_models`, `save_run`, `choose_run`, `follow`, `open_workspace`, `gate_decision`, `portfolio_table`) or a function. A function gets `portfolio`, `program` and `stage` when it has inputs by those names; a view it returns opens, a table opens as a table view. A persona the file leaves out keeps the core's cards.
+- EX-SMD and EX-BIOC map their approvers to the lead persona; their defaults are chemist and process scientist.
+
 ### Stage advance driven by data
 
 Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
@@ -359,7 +390,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `loadPortfolios` | Loads this package's portfolio files: groups, stage models, portfolios, feeds. Idempotent. |
 | `loadPortfolioConfigs(configs)` | Loads portfolios handed over by another package, as a JSON array, checked as a set |
 | `portfolioTable(portfolio)` | The programs of a portfolio, or without one of every portfolio you can see, as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace |
-| `programData(portfolio, program, dataset)` | One program's rows of the program dataset, or of a further dataset by code, as a table named after the program |
+| `programData(portfolio, program, dataset)` | One program's rows of the program dataset, or of a further dataset by code, as a table named after the program. Before 0.3.0 it was registered as `programDataTable`; that name still works |
 | `openProgramData(portfolio, program, dataset)` | Opens that table as a table view with the portfolio's viewers |
 | `recommendModels(portfolio, program, stage, series, task)` | Catalogued models that fit the program, best first, a model predicting an assay the gate lacks first |
 | `missingAssays(portfolio, program, stage, series)` | The columns the gate's open data conditions need and rows lack, with the suggested models that predict each |
@@ -406,6 +437,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Auto-advance: the rules (one stage, never past `through`, waivers, recorded criteria, held and unstaged programs, the setting), and on EX-SMD a dry run, a real pass with its gate-log entry and evidence, a sync that advances and its history, and the example put back.
   - Profiles: the rules (normal form, readable diff lines by kind, bundle checks, refusal, a handoff to a loaded portfolio), and on the examples the export of each EX file equal to the file, the functions on an edited EX-SMD, and a bundle dry-run, refused, imported and put back.
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
+  - Modes and personas: the rules (the persona from groups, default and setting; cards from the defaults, the portfolio and functions; the config check; what Simple hides), and on EXS-KIN1 the settings remembered, the program page's cards for a chemist and a modeler, Simple with More and back, and a function card that opens a table.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
@@ -414,7 +446,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 199 of the 202 package tests and all 23 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 208 of the 211 package tests and all 24 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.
@@ -458,5 +490,6 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
    afterwards is refused without a migration. `follow` keeps rows and turns them off instead.
 13. **`FuncCall.edit()` runs a call whose inputs are all set** instead of showing its dialog. The portal's Run builds
    the dialog with `buildEditor`.
-14. **A package function registers under its TypeScript name.** A different `//name:` header is ignored, so the
-   function documented as `programData` is callable as `ProjectPortalCore:programDataTable`.
+14. **A package function registers under its TypeScript name.** A different `//name:` header is ignored. The
+   function documented as `programData` was therefore registered as `programDataTable`; since 0.3.0 the TypeScript
+   function is named `programData`, and `programDataTable` stays as a second function for scripts that use it.

@@ -15,6 +15,10 @@
     "contributors": "Portal EX-BIOC Contributors",
     "approvers": "Portal EX-BIOC Approvers"
   },
+  "personas": {
+    "default": "process_scientist",
+    "groups": [{"group": "Portal EX-BIOC Approvers", "persona": "lead"}]
+  },
   "workUnits": ["study", "process_stage"],
   "workUnitFeeds": [
     {

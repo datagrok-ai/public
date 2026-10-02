@@ -227,6 +227,7 @@ export interface PortfolioRow {
   owners?: string;
   handoff?: {[key: string]: any};
   auto_advance?: {[key: string]: any};
+  personas?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -253,6 +254,7 @@ export interface PortfolioInsert {
   owners?: string;
   handoff?: {[key: string]: any};
   auto_advance?: {[key: string]: any};
+  personas?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -262,7 +264,7 @@ export interface PortfolioInsert {
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
   'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' | 'attention' | 'schedule' |
-  'owners' | 'handoff' | 'auto_advance' | 'viewers' | 'contributors' | 'approvers' | 'description';
+  'owners' | 'handoff' | 'auto_advance' | 'personas' | 'viewers' | 'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -322,8 +324,9 @@ export type RegistryFeedExpand = {
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
-    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -387,8 +390,9 @@ export type ProgramExpand = {
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
-    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -1289,8 +1293,9 @@ export type SyncRunExpand = {
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
-    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
   'run_by': {'run_by.login'?: string; 'run_by.firstName'?: string; 'run_by.lastName'?: string;
     'run_by.status'?: string; 'run_by.createdOn'?: Dayjs; 'run_by.picture'?: string; 'run_by.group'?: string;
     'run_by.author'?: string};

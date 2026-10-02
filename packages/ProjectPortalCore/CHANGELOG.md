@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- Simple and Advanced mode, quick actions per persona (F-08, FR-30–32): the board's Mode and Persona selects, remembered per user in the platform's user settings. Simple keeps missing assays, suggested models, attention, saved runs and history behind More, and drops Sync history, Export and All portfolios from the ribbon; Advanced (the default) shows everything. Quick-action cards for chemist, biologist, modeler, process scientist and lead head the program page, each opening an existing action (open data, needs attention, missing assays, suggested models, save a run, choose a run, follow, open workspace, gate decision, portfolio table); one that cannot be used says why
+- `personas` (optional) in a portfolio file: groups mapped to personas, a default persona, and cards per persona, including function cards (`{name, function}`) that get the program's portfolio, program and stage. Without it the persona comes from the user's choice, else the setting
+- `portal` schema 0.2.16: `portfolio.personas`. Additive, no migration script
+- EX-SMD and EX-BIOC map their approvers to the lead persona
+- `programData(portfolio, program, dataset)` is now registered under that name, as documented; `programDataTable`, the name it was registered under by mistake, stays as a second function
+
 - New-data notification (F-11, FR-83): a user follows a program, or one of its series, from the program page (**Follow**, and Follow on each series row) or with `followProgram`/`unfollowProgram`. After every sync, and on `checkNewData(code)`, each followed program's dataset is read once and compared with each follow's snapshot (rows, filled values, and the largest value of `programData.watermark` when declared); followers with news get one notification per portfolio in the platform's notifications. Only growth is news; following takes a baseline. The program page shows *What's new since your last visit* to a follower
 - `programData.watermark` (optional): a column that only grows, so a replaced row counts as new
 - `portal` schema 0.2.15: table `follow`. Additive, no migration script

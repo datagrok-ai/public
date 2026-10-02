@@ -32,6 +32,11 @@ import {ProgramRecommendation, recommendFor, runModelFor} from '../recommend';
 import {describeMissing} from '../model/recommend';
 import {follow, myFollows, unfollow, whatsNew, WorkUnitRef} from '../new-data';
 import {FollowRow} from '../generated/db';
+import {ADVANCED_BOARD_BUTTONS, BoardButton, MORE_SECTIONS, PageSection, Persona, PERSONA_LABELS, PERSONAS, PORTAL_MODES,
+  PersonaConfig, PortalMode, QuickActionCode, QuickCard, quickCards, sectionShown} from '../model/personas';
+import {personaIn, runFunctionCard, savedMode, saveMode, savePersona} from '../personas';
+import {missingAssayFrame, recommendationFrame} from '../recommend';
+import {attentionFrame} from '../attention';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -73,6 +78,16 @@ export class PortalView {
   private news: {since: string | null, lines: string[]} | null | undefined;
   /** The selected program's dataset, read once per open; undefined = not read yet. */
   private data: {rows: DataRow[] | null, error?: string} | undefined;
+  /** Simple or Advanced, remembered per user. */
+  private mode: PortalMode = savedMode();
+  /** The persona whose quick actions head the program page, in the open portfolio. */
+  private persona: {persona: Persona, chosen: boolean} | null = null;
+  /** In Simple mode, whether More is open on the program page. */
+  private moreOpen = false;
+  /** Draws the program page again from what was last read: a change of mode or persona reads nothing. */
+  private redraw: (() => void) | null = null;
+  /** Ribbon buttons Simple mode hides; the app view hands them over. */
+  readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
   constructor() {
     this.root.append(this.portfolioList, this.board, this.detail);
@@ -130,6 +145,8 @@ export class PortalView {
       return;
     this.portfolio = p;
     this.selected = null;
+    this.redraw = null;
+    this.persona = await personaIn(p).catch(() => ({persona: 'lead' as Persona, chosen: false}));
     this.path.value = `${APP_PATH}/${p.code}`;
     for (const el of Array.from(this.portfolioList.querySelectorAll('.pp-portfolio')))
       el.classList.toggle('pp-selected', (el as HTMLElement).dataset.u2Name === `portfolio-${slug(code)}`);
@@ -154,6 +171,7 @@ export class PortalView {
       badge(`${model?.code ?? ''}`, {variant: 'accent'}),
       badge(p.stage_authority === 'feed' ? 'stages from registry' : 'stages decided here',
         {variant: p.stage_authority === 'feed' ? 'warning' : 'success'}),
+      this.preferences(),
     ], 'pp-board-header'), 'board-header');
     const columns = divH([], 'pp-columns');
     const unstaged = this.programs.filter((x) => !x.stage_id);
@@ -247,8 +265,57 @@ export class PortalView {
     }
     const news = follows.length ? this.news ?? null : null;
     this.follows = follows;
-    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs, choices, attention,
-      recommendation, news);
+    this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
+      choices, attention, recommendation, news);
+    this.redraw();
+  }
+
+  /** Mode and persona, on the board header. */
+  private preferences(): HTMLElement {
+    const mode = this.select('mode', 'Mode', PORTAL_MODES.map((m) => ({code: m, name: m === 'simple' ? 'Simple' : 'Advanced'})),
+      this.mode);
+    mode.title = 'Simple keeps analytics, runs and history behind More; remembered for you';
+    mode.onchange = () => this.setMode(mode.value as PortalMode);
+    const persona = this.select('persona', 'Persona', PERSONAS.map((p) => ({code: p, name: PERSONA_LABELS[p]})),
+      this.persona?.persona ?? '');
+    persona.title = this.persona?.chosen ? 'Your persona: it picks the quick actions; remembered for you' :
+      'Picked from your groups in this portfolio; choose one to keep it';
+    persona.onchange = () => this.setPersona(persona.value as Persona);
+    return named(divH([mode.parentElement!, persona.parentElement!], 'pp-preferences'), 'preferences');
+  }
+
+  /** A labelled native select; its wrapper carries the name, as in the dialogs. */
+  private select(name: string, label: string, options: {code: string, name: string}[], value: string): HTMLSelectElement {
+    const el = document.createElement('select');
+    el.className = 'pp-select pp-select-small';
+    el.append(...options.map((o) => Object.assign(document.createElement('option'), {value: o.code, textContent: o.name})));
+    el.value = value;
+    named(divH([span(label, 'pp-muted'), el], 'pp-preference'), `${name}-input`);
+    return el;
+  }
+
+  get currentMode(): PortalMode {
+    return this.mode;
+  }
+
+  setMode(mode: PortalMode): void {
+    this.mode = mode;
+    this.moreOpen = false;
+    saveMode(mode);
+    this.applyBoardButtons();
+    this.redraw?.();
+  }
+
+  setPersona(persona: Persona): void {
+    this.persona = {persona, chosen: true};
+    savePersona(persona);
+    this.redraw?.();
+  }
+
+  /** Simple mode leaves the keepers' buttons (sync history, export, all portfolios) off the ribbon. */
+  applyBoardButtons(): void {
+    for (const [key, el] of this.boardButtons)
+      el.style.display = this.mode === 'simple' && ADVANCED_BOARD_BUTTONS.includes(key) ? 'none' : '';
   }
 
   /** The portfolio's attention rules over the program's data, read once per open; null without rules. */
@@ -375,15 +442,33 @@ export class PortalView {
       [span(`Nothing new since your last visit${news.since ? ` (${news.since.slice(0, 16).replace('T', ' ')} UTC)` : ''}`, 'pp-muted')],
     'pp-units'), 'whats-new') : null;
 
-    const saveRun = named(button('Save a run…', () => void openSaveRunDialog({
+    const openSave = () => void openSaveRunDialog({
       context: {portfolio: ctx.portfolio.code, program: program.code},
       onSaved: async (_r, line) => {
         this.savedLine.set(program.id, line);
         if (this.selected === program.id)
           await this.openProgram(program.id, this.viewedStage);
       },
-    }).catch((e) => grok.shell.error(e?.message ?? String(e)))), 'save-a-run-button');
+    }).catch((e) => grok.shell.error(e?.message ?? String(e)));
+    const saveRun = named(button('Save a run…', openSave), 'save-a-run-button');
     saveRun.title = 'Save a run of a catalogued model, made in this session, to this program';
+
+    const gateHeading = named(span(!viewed ? 'No further stage' : viewed.id === next?.id ? `Gate to ${viewed.name}` :
+      `What entering ${viewed.name} takes`, 'pp-heading'), 'gate-heading');
+    const quick = this.quickActions(ctx, {next, spaceLive, choices, attention, recommendation, followed,
+      openSave, gate: () => {
+        gateHeading.scrollIntoView({block: 'start'});
+        rationale.focus();
+      }});
+
+    // Simple mode keeps the heavier sections behind More
+    const shown = (x: PageSection) => sectionShown(this.mode, x, this.moreOpen);
+    const more = this.mode === 'simple' ? named(button(this.moreOpen ? 'Less' : `More (${MORE_SECTIONS.length})`, () => {
+      this.moreOpen = !this.moreOpen;
+      this.redraw?.();
+    }), 'more-button') : null;
+    if (more)
+      more.title = this.moreOpen ? 'Back to the simple page' : 'Missing assays and suggested models, attention, saved runs, history';
 
     this.detail.replaceChildren(
       named(span(program.name, 'pp-title'), 'program-title'),
@@ -391,12 +476,12 @@ export class PortalView {
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
       named(divH([workspace, followButton], 'pp-actions'), 'program-actions'),
       ...(newsLine ? [newsLine] : []),
+      ...quick,
       ...(data.length ? [named(divH(data, 'pp-actions pp-data-actions'), 'program-data-actions')] : []),
       ...(program.source_stage ? [span(`Registry stage: ${program.source_stage}`, 'pp-muted')] : []),
       ...lineage,
       track,
-      named(span(!viewed ? 'No further stage' : viewed.id === next?.id ? `Gate to ${viewed.name}` :
-        `What entering ${viewed.name} takes`, 'pp-heading'), 'gate-heading'),
+      gateHeading,
       ...(score && readiness!.criteria.length ? [score] : []),
       readiness?.criteria.length ? criteriaList : span('No criteria declared', 'pp-muted'),
       ...(readiness?.dataError ? [named(span(`Program data could not be read: ${readiness.dataError}`, 'pp-reason'),
@@ -404,17 +489,109 @@ export class PortalView {
       reasons,
       rationale,
       divH([advance, hold, terminate], 'pp-actions'),
-      ...(recommendation ? this.recommendation(recommendation) : []),
-      ...(attention ? this.attention(ctx.portfolio.code, program.code, attention) : []),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
-      named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
-      divH([saveRun], 'pp-actions'),
-      ...(this.savedLine.has(program.id) ? [named(span(this.savedLine.get(program.id)!, 'pp-muted'), 'save-run-result')] : []),
-      runs.length ? this.savedRuns(runs) : named(span('No runs saved to this program yet', 'pp-muted'), 'no-saved-runs'),
-      span('History', 'pp-heading'),
-      transitions.length ? history : span('No transitions yet', 'pp-muted'),
+      ...(more ? [divH([more], 'pp-actions')] : []),
+      ...(recommendation && shown('recommendation') ? this.recommendation(recommendation) : []),
+      ...(attention && shown('attention') ? this.attention(ctx.portfolio.code, program.code, attention) : []),
+      ...(shown('saved_runs') ? [
+        named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
+        divH([saveRun], 'pp-actions'),
+        ...(this.savedLine.has(program.id) ? [named(span(this.savedLine.get(program.id)!, 'pp-muted'), 'save-run-result')] : []),
+        runs.length ? this.savedRuns(runs) : named(span('No runs saved to this program yet', 'pp-muted'), 'no-saved-runs'),
+      ] : []),
+      ...(shown('history') ? [
+        span('History', 'pp-heading'),
+        transitions.length ? history : span('No transitions yet', 'pp-muted'),
+      ] : []),
     );
+  }
+
+  /** The persona's quick-action cards for this program: each opens something the page already
+   * does. A card that cannot be used now says why on hover. */
+  private quickActions(ctx: ProgramContext, s: {next: {id: string, name: string} | null, spaceLive: boolean,
+    choices: Map<string, CriterionRuns>, attention: {result: ProgramAttention | null, error?: string} | null,
+    recommendation: ProgramRecommendation | null, followed: boolean, openSave: () => void, gate: () => void}): HTMLElement[] {
+    if (!this.persona)
+      return [];
+    const {program, portfolio} = ctx;
+    const noun = (portfolio.program_noun ?? 'program').toLowerCase();
+    const datasets = datasetsOf(portfolio);
+    const main = datasets.find((d) => d.code === MAIN_DATASET);
+    const other = datasets.find((d) => d.code !== MAIN_DATASET);
+    const run = [...s.choices.entries()][0];
+    const r = s.recommendation;
+    const a = s.attention;
+    const unavailable: Partial<Record<QuickActionCode, string>> = {};
+    if (!main)
+      unavailable.open_data = 'The portfolio declares no program dataset';
+    if (!other)
+      unavailable.open_other_data = 'The portfolio declares no further dataset';
+    if (!a)
+      unavailable.needs_attention = 'The portfolio declares no attention rules';
+    else if (!a.result)
+      unavailable.needs_attention = `Program data could not be read: ${a.error}`;
+    else if (a.result.count === 0)
+      unavailable.needs_attention = 'Nothing needs attention';
+    if (!r || !r.missing.length)
+      unavailable.missing_assays = `Nothing missing for ${s.next?.name ?? 'the gate'}`;
+    if (!r || !r.models.length)
+      unavailable.suggested_models = 'No catalogued model fits this program';
+    if (!run)
+      unavailable.choose_run = 'No criterion of this gate rests on a run';
+    else if (run[1].refused.length)
+      unavailable.choose_run = run[1].refused.join('; ');
+    if (!s.spaceLive)
+      unavailable.open_workspace = 'No workspace yet';
+    if (!s.next)
+      unavailable.gate_decision = 'No further stage';
+    const labels: Partial<Record<QuickActionCode, {label?: string, description?: string}>> = {
+      open_data: {label: main ? `Open ${main.name}` : undefined, description: `This ${noun}'s rows as a table`},
+      open_other_data: other ? {label: `Open ${other.name}`, description: other.description ?? `${other.name} of this ${noun}`} : {},
+      needs_attention: a?.result ? {label: `Needs attention (${a.result.count})`} : {},
+      missing_assays: r?.missing.length ? {label: `Missing assays (${r.missing.length})`} : {},
+      suggested_models: r?.models.length ? {label: `Suggested models (${r.models.length})`,
+        description: r.models.slice(0, 2).map((m) => m.name).join(', ')} : {},
+      follow: s.followed ? {label: 'Unfollow', description: 'Stop hearing about new results'} : {},
+      gate_decision: s.next ? {label: `Gate to ${s.next.name}`, description: ctx.approver && portfolio.stage_authority === 'portal' ?
+        'Readiness, then advance, hold or terminate' : 'Readiness; the approvers decide'} : {},
+      choose_run: run ? {description: ctx.criteria.find((c) => c.id === run[0])?.name} : {},
+    };
+    const failed = (e: any) => grok.shell.error(e?.message ?? String(e));
+    const act: Record<QuickActionCode, () => void> = {
+      open_data: () => void openProgramTable(portfolio.code, program.code, MAIN_DATASET).catch(failed),
+      open_other_data: () => void openProgramTable(portfolio.code, program.code, other!.code).catch(failed),
+      needs_attention: () => grok.shell.addTableView(attentionFrame(a!.result!, attentionRulesOf(portfolio),
+        `${program.code} · Needs attention`)),
+      missing_assays: () => grok.shell.addTableView(missingAssayFrame(r!)),
+      suggested_models: () => grok.shell.addTableView(recommendationFrame(r!)),
+      save_run: s.openSave,
+      choose_run: () => {
+        const c = ctx.criteria.find((x) => x.id === run![0])!;
+        void openChooseRunDialog({programId: program.id, criterion: {id: c.id, code: c.code, name: c.name,
+          runFilter: c.runFilter}, runs: run![1], onSelected: () => this.openProgram(program.id, this.viewedStage)}).catch(failed);
+      },
+      follow: () => void this.toggleFollow(ctx, null),
+      open_workspace: () => void this.openWorkspace(program.space_id!),
+      gate_decision: s.gate,
+      portfolio_table: () => void openPortfolioTable(portfolio.code),
+    };
+    const cards = quickCards(this.persona.persona, portfolio.personas as PersonaConfig | undefined, unavailable, labels);
+    const stage = ctx.stages.find((x) => x.id === program.stage_id)?.code ?? null;
+    const card = (c: QuickCard) => {
+      const el = named(divV([span(c.label, 'pp-quick-label'), span(c.description, 'pp-muted')],
+        c.unavailable ? 'pp-quick pp-quick-off' : 'pp-quick'), `quick-${slug(c.key)}`);
+      el.title = c.unavailable ?? c.description;
+      if (!c.unavailable) {
+        el.onclick = c.action ? act[c.action] : () => void runFunctionCard(c.function!,
+          {portfolio: portfolio.code, program: program.code, stage}).catch(failed);
+      }
+      return el;
+    };
+    return [
+      named(span(`Quick actions · ${PERSONA_LABELS[this.persona.persona]}`, 'pp-heading'), 'quick-actions-heading'),
+      named(divH(cards.map(card), 'pp-quick-cards'), 'quick-actions'),
+    ];
   }
 
   /** Missing assays for the shown gate (what would close it), then the catalogued models that fit
@@ -693,6 +870,10 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   all.title = 'Every portfolio you can see as one table';
   const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, exportButton], [table, all]], status: portal.status,
     path: portal.path});
+  portal.boardButtons.set('sync_history', history);
+  portal.boardButtons.set('export', exportButton);
+  portal.boardButtons.set('all_portfolios', all);
+  portal.applyBoardButtons();
   await portal.load(portfolioCode);
   (view as any).portal = portal;
   return view;

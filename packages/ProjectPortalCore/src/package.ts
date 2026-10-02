@@ -96,8 +96,20 @@ export async function portfolioTable(portfolio?: string): Promise<DG.DataFrame> 
 //input: string program
 //input: string dataset {optional: true; description: Dataset code; default: the program dataset}
 //output: dataframe result
-export async function programDataTable(portfolio: string, program: string, dataset?: string): Promise<DG.DataFrame> {
+export async function programData(portfolio: string, program: string, dataset?: string): Promise<DG.DataFrame> {
   return (await programTable(portfolio, program, dataset || undefined)).df;
+}
+
+// A function registers under its TypeScript name, so programData was callable only as programDataTable
+// before 0.3.0; the old name stays for scripts that use it.
+//name: programDataTable
+//description: The same as programData, under the name earlier builds registered it by
+//input: string portfolio
+//input: string program
+//input: string dataset {optional: true; description: Dataset code; default: the program dataset}
+//output: dataframe result
+export async function programDataTable(portfolio: string, program: string, dataset?: string): Promise<DG.DataFrame> {
+  return programData(portfolio, program, dataset);
 }
 
 //name: openProgramData

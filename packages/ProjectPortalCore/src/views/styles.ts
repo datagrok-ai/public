@@ -75,6 +75,15 @@ const CSS = `
 .pp-compare-box { overflow-x: auto; }
 .pp-compare tr.pp-differs td { font-weight: 600; }
 .pp-criterion-run { gap: 4px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+.pp-preferences { gap: 8px; align-items: center; margin-left: auto; }
+.pp-preference { gap: 4px; align-items: center; }
+.pp-select-small { height: 22px; font-size: 12px; flex: 0 0 auto; }
+.pp-quick-cards { gap: 6px; flex-wrap: wrap; }
+.pp-quick { flex: 0 0 132px; gap: 2px; padding: 6px; border: 1px solid var(--u2-border, #e0e0e0); border-radius: 5px; cursor: pointer; font-size: 12px; }
+.pp-quick:hover { background: var(--u2-hover, rgba(0,0,0,.04)); }
+.pp-quick-label { font-weight: 600; color: var(--u2-accent, #2083d5); }
+.pp-quick-off { cursor: default; opacity: .5; }
+.pp-quick-off:hover { background: none; }
 `;
 
 let installed = false;

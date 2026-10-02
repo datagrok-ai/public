@@ -20,6 +20,7 @@ import './tests/auto-advance-tests';
 import './tests/profile-tests';
 import './tests/recommend-tests';
 import './tests/new-data-tests';
+import './tests/persona-tests';
 
 export let _package = new DG.Package();
 export { tests };
