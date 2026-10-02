@@ -53,6 +53,9 @@ import {DocumentRow} from '../generated/db';
 import {openDocumentFile, openLinkDocumentDialog} from './document-dialog';
 import {programAccess} from '../program-roles';
 import {openProvenanceDialog} from './provenance-dialog';
+import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
+import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
+import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -111,6 +114,11 @@ export class PortalView {
   /** The evidence the next decision on [programId] carries: suggested items the decider unticked,
    * and links added by hand. Kept across redraws of the same program. */
   private picked: {programId: string, off: Set<string>, links: EvidenceItem[], snapshot?: boolean} = {programId: '', off: new Set(), links: []};
+  /** The selected program's activity, read on each open, and how the Activity section is filtered
+   * and paged; the filter is kept while the same program stays open. */
+  private feed: {programId: string, entries: FeedEntry[], names: Map<string, string>, error?: string, kind: string,
+    series: string, page: number, compounds: Map<string, string[]>} =
+    {programId: '', entries: [], names: new Map(), kind: '', series: '', page: 0, compounds: new Map()};
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
@@ -302,6 +310,16 @@ export class PortalView {
     const evidence = await evidenceOf(id).catch(() => new Map<string, EvidenceLine[]>());
     const suggested = ctx.approver && ctx.portfolio.stage_authority === 'portal' ? await suggestedEvidence(id, ctx.readiness,
       ctx.stages.find((s) => s.id === ctx.readiness?.stageId)?.name ?? '').catch(() => []) : [];
+    // the program's activity, from its own records
+    if (this.feed.programId !== id)
+      this.feed = {programId: id, entries: [], names: new Map(), kind: '', series: '', page: 0, compounds: new Map()};
+    try {
+      this.feed.entries = await programFeedOf(ctx.portfolio, ctx.program);
+      this.feed.names = await feedUserNames(this.feed.entries);
+      this.feed.error = undefined;
+    } catch (e: any) {
+      this.feed.error = e?.message ?? String(e);
+    }
     this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
       choices, attention, recommendation, news, {lines: evidence, suggested}, snapshots, documents);
     this.redraw();
@@ -521,7 +539,7 @@ export class PortalView {
       this.redraw?.();
     }), 'more-button') : null;
     if (more)
-      more.title = this.moreOpen ? 'Back to the simple page' : 'Missing assays and suggested models, attention, saved runs, roles, snapshots, history';
+      more.title = this.moreOpen ? 'Back to the simple page' : 'Missing assays and suggested models, attention, saved runs, roles, snapshots, activity, history';
 
     this.detail.replaceChildren(
       named(span(program.name, 'pp-title'), 'program-title'),
@@ -558,6 +576,7 @@ export class PortalView {
       ] : []),
       ...(shown('roles') ? this.programRoles(ctx) : []),
       ...(shown('snapshots') ? this.snapshots(ctx, snapshots) : []),
+      ...(shown('feed') ? this.activity(ctx, units.find((u) => u.kind === 'series')?.rows.map((r) => String(r.code)) ?? []) : []),
       ...(shown('history') ? [
         span('History', 'pp-heading'),
         transitions.length ? history : span('No transitions yet', 'pp-muted'),
@@ -735,7 +754,11 @@ export class PortalView {
       const b = named(span(on ? 'Unfollow' : 'Follow', 'pp-link'), `follow-series-${slug(code)}`);
       b.title = on ? 'Stop being notified of new data in this series' : 'Be notified when new results land in this series';
       b.onclick = () => void this.toggleFollow(ctx, {kind: 'series', code});
-      return [b];
+      // what is new in the series: the Activity section narrowed to it
+      const a = named(span('Activity', 'pp-link'), `series-activity-${slug(code)}`);
+      a.title = 'What happened in this series: its work-unit changes, new data and compound roles';
+      a.onclick = () => void this.setFeedSeries(ctx, code, true);
+      return [b, a];
     };
     const unitVariant = (s?: string): BadgeVariant => ['active', 'running', 'in_development'].includes(s ?? '') ?
       'success' : ['closed', 'completed', 'locked', 'transferred'].includes(s ?? '') ? 'accent' :
@@ -1105,6 +1128,47 @@ export class PortalView {
     return out;
   }
 
+  /** Activity: the program's feed, newest first, filtered by kind and narrowed to one series. */
+  private activity(ctx: ProgramContext, series: string[]): HTMLElement[] {
+    const f = this.feed;
+    const heading = named(span('Activity', 'pp-heading'), 'feed-heading');
+    if (f.error)
+      return [heading, named(span(`The activity could not be read: ${f.error}`, 'pp-reason'), 'feed-error')];
+    const scoped = f.series ? filterFeed(f.entries, {series: f.series, seriesCompounds: f.compounds.get(f.series) ?? []}) : f.entries;
+    const shown = filterFeed(scoped, {kinds: f.kind ? [f.kind as FeedKind] : null});
+    heading.textContent = `Activity (${shown.length})`;
+    const controls: HTMLElement[] = [feedSelect('feed-kind-input', 'Show', kindOptions(scoped), f.kind, (v) => {
+      f.kind = v;
+      f.page = 0;
+      this.redraw?.();
+    })];
+    if (series.length) {
+      controls.push(feedSelect('feed-series-input', 'Series', [{code: '', name: `Whole ${(ctx.portfolio.program_noun ?? 'program').toLowerCase()}`},
+        ...series.map((c) => ({code: c, name: c}))], f.series, (v) => void this.setFeedSeries(ctx, v, false)));
+    }
+    return [heading, named(divH(controls, 'pp-actions'), 'feed-filters'),
+      ...feedList({entries: shown, names: f.names, page: f.page, prefix: 'feed',
+        onPage: (n) => {
+          f.page = n;
+          this.redraw?.();
+        },
+        onTrace: (e) => this.provenance(e.ref!.kind, e.ref!.id)})];
+  }
+
+  /** Narrows Activity to one series (its compounds from the program data, read once), or back to the program. */
+  private async setFeedSeries(ctx: ProgramContext, series: string, scroll: boolean): Promise<void> {
+    const f = this.feed;
+    f.series = series;
+    f.page = 0;
+    if (series && !f.compounds.has(series))
+      f.compounds.set(series, await seriesCompounds(ctx.portfolio, ctx.program, series).catch(() => []));
+    if (this.mode === 'simple')
+      this.moreOpen = true;
+    this.redraw?.();
+    if (scroll)
+      this.detail.querySelector('[data-u2-name="feed-heading"]')?.scrollIntoView({block: 'start'});
+  }
+
   /** Follows or unfollows the program, or one of its series, then redraws the page. */
   private async toggleFollow(ctx: ProgramContext, unit: WorkUnitRef | null): Promise<void> {
     try {
@@ -1136,6 +1200,17 @@ export class PortalView {
   private async mark(programId: string, criterionId: string, state: 'met' | 'waived'): Promise<void> {
     await setCriterion(programId, criterionId, state);
     await this.openProgram(programId, this.viewedStage);
+  }
+
+  /** My feed: everything the user follows; a program in it opens here. */
+  myFeed(): void {
+    void openMyFeedDialog({
+      openProgram: async (code, programId) => {
+        const p = await portalDb.programs.get(programId);
+        await this.showProgram(code || (await portalDb.portfolios.get(p.portfolio_id)).code, programId);
+      },
+      trace: (kind, id) => this.provenance(kind, id),
+    }).catch((e) => grok.shell.error(e?.message ?? String(e)));
   }
 
   /** The open portfolio as a portfolio file. */
@@ -1183,7 +1258,9 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   table.title = 'This portfolio as a table, with filters and analytics';
   const all = named(button('All portfolios', () => void openPortfolioTable(null)), 'all-portfolios-button');
   all.title = 'Every portfolio you can see as one table';
-  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, exportButton], [table, all]], status: portal.status,
+  const feed = named(button('My feed', () => portal.myFeed()), 'my-feed-button');
+  feed.title = 'What happened in the programs and series you follow, newest first';
+  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, exportButton], [table, all], [feed]], status: portal.status,
     path: portal.path});
   portal.boardButtons.set('sync_history', history);
   portal.boardButtons.set('export', exportButton);

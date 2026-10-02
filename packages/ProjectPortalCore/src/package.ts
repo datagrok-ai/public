@@ -36,6 +36,8 @@ import {documentsFrame, documentsOf, linkDocumentTo, loadExampleDocuments as loa
 import {describeDocument} from './model/documents';
 import {provenanceOf} from './provenance';
 import {openProvenanceDialog} from './views/provenance-dialog';
+import {feedFrame, feedUserNames, myFeedOf, programFeedOf, programOf} from './feed';
+import {parseKinds} from './model/feed';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -191,6 +193,32 @@ export async function followProgram(portfolio: string, program: string, series?:
 //output: string report
 export async function unfollowProgram(portfolio: string, program: string, series?: string): Promise<string> {
   return followByCode(portfolio, program, series || null, true);
+}
+
+//name: programFeed
+//description: A program's activity, newest first, from the portal's own records: gate decisions, evidence, runs saved and selected, documents, snapshots, compound role changes, registry and work-unit changes seen by the sync, new data. Kinds are comma-separated; a series narrows it to what is about that series
+//input: string portfolio
+//input: string program
+//input: string series {optional: true; description: Series code}
+//input: string kinds {optional: true; description: Comma-separated: decision, evidence, run, selection, document, snapshot, compound, work_unit, registry, new_data}
+//input: int limit {optional: true; default: 100}
+//output: dataframe result
+export async function programFeed(portfolio: string, program: string, series?: string, kinds?: string,
+  limit?: number): Promise<DG.DataFrame> {
+  const {portfolio: pf, program: p} = await programOf(portfolio, program);
+  const entries = (await programFeedOf(pf, p, {series: series || null, kinds: parseKinds(kinds)})).slice(0, limit || 100);
+  return feedFrame(entries, await feedUserNames(entries), `${p.code} · Activity${series ? ` · ${series}` : ''}`);
+}
+
+//name: myFeed
+//description: The activity of everything you follow, newest first: each followed program's feed, or only a followed series' part of it. Kinds are comma-separated, as for programFeed
+//input: string kinds {optional: true}
+//input: int limit {optional: true; default: 100}
+//output: dataframe result
+export async function myFeed(kinds?: string, limit?: number): Promise<DG.DataFrame> {
+  const {entries} = await myFeedOf({kinds: parseKinds(kinds)});
+  const shown = entries.slice(0, limit || 100);
+  return feedFrame(shown, await feedUserNames(shown), 'My feed');
 }
 
 /** A program of a portfolio by code, under row security. */

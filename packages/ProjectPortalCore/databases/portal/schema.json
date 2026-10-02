@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.20",
+  "version": "0.2.21",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -512,7 +512,7 @@
         "unresolved_spellings": {"type": "string", "description": "CODE=\"spelling\", '|'-separated"},
         "error": {"type": "string", "editor": "textarea", "description": "Why the run stopped; empty when it finished"},
         "summary": {"type": "string", "editor": "textarea", "description": "The run's report, as syncPortfolio returns it"},
-        "changes": {"type": "json", "description": "Per-program changes and standing overlaps: {programs: [{program, created, fields, stage, missing, units, compounds}], overlaps: [...]}"},
+        "changes": {"type": "json", "description": "Per-program changes, standing overlaps and what followers were told: {programs: [{program, created, fields, stage, missing, units, compounds, advanced}], overlaps: [...], newData: [{program, line}]}"},
         "notified": {"type": "string", "description": "Who was told about the run, or why nobody was"}
       }
     },
@@ -548,6 +548,7 @@
         "checked": {"type": "json", "description": "The data as last checked for news: {rows, values, mark}"},
         "checked_on": {"type": "datetime"},
         "last_news": {"type": "string", "description": "What the last notification said"},
+        "news_on": {"type": "datetime", "description": "When last_news was told; the activity feed shows it"},
         "seen": {"type": "json", "description": "The data at the user's last visit to the program page: {rows, values, mark}"},
         "seen_on": {"type": "datetime"}
       }

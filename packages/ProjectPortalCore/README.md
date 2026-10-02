@@ -258,6 +258,18 @@ A user follows a program, or one of its series, and hears when new results land 
 - **Program page.** **Follow**/**Unfollow** beside Open workspace, and Follow/Unfollow on each series row. A follower sees *What's new since your last visit* once per open of the program; the visit is then recorded.
 - `followProgram(portfolio, program, series)` and `unfollowProgram(...)` do the same by code.
 
+### Activity feed
+
+What happened to a program, newest first, read from the portal's own records (F-21, FR-81). No
+event store: each record already says who did what and when.
+
+- **Kinds.** Gate decisions (by an approver, the registry or the data), evidence, runs saved, runs selected for a criterion, documents linked and approved, snapshots, compound role changes, registry changes and work-unit changes the sync saw, and new data. Evidence attached within two minutes of its decision is folded into the decision's entry ("with 2 pieces of evidence"); evidence added later is its own entry.
+- **Sources.** `stage_transition`, `evidence`, `model_run`, `criterion_artifact`, `document`, `program_snapshot`, `compound_role_change`, the portfolio's last 50 `sync_run` rows (each run's change for the program, and the new-data lines followers were told, kept in `sync_run.changes.newData`), and each follow's last news with `follow.news_on`. The same news line told twice within 15 minutes (two followers, or a sync and a check) is one entry. Stage moves and role changes are read from the gate log and the role history, not from the sync's changes, so nothing shows twice.
+- **A series.** Narrowed to a series, the feed keeps what is tagged with it (`series KIN-A: new`, `EXS-KIN1 series KIN-A: 2 new values`) and what is about its compounds (from the program dataset's `series` and `compound` columns): the series' "what is new".
+- **Program page.** *Activity (n)* with a kind filter (each kind with its count), a series filter when the program has series, eight entries a page, Newer/Older. An entry over a record has **Provenance**. Each series row has **Activity**, which narrows the section to it. In Simple mode the section is behind More.
+- **My feed.** The ribbon's **My feed** opens everything the user follows: each followed program's feed, or for a program followed only by series, the series' part. A click on the program code opens it.
+- **Functions.** `programFeed(portfolio, program, series, kinds, limit)` and `myFeed(kinds, limit)` return the feed as a table (at, portfolio, program, kind, what, who, work unit, record); `kinds` is comma-separated.
+
 ### Modes and quick actions per persona
 
 The board has a **Mode** and a **Persona** select (F-08, FR-30–32). Both are the user's own and are
@@ -469,6 +481,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
 | `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |
 | `unfollowProgram(portfolio, program, series)` | Stops following |
+| `programFeed(portfolio, program, series, kinds, limit)` | The program's activity, newest first, as a table; a series narrows it to that series, `kinds` (comma-separated) to those kinds |
+| `myFeed(kinds, limit)` | The activity of everything you follow, newest first |
 | `programAttention(portfolio, program)` | The items of one program that trip the portfolio's attention rules, one row per item and rule |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
@@ -516,6 +530,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Provenance: the rules (the graph's edges, a cited record deleted since, a walk from a decision up to the data and down to the program, depth, the tree, starts from evidence, a run id and a compound code, the text), and on EX-BIOC a document resting on the run selected for its criterion and its model, the run's output table, and on EX-SMD a decision's readiness and snapshot up to the program data, a start from evidence, the function, the dialog and the program page's links.
   - Program roles: the rules (the strongest role, roles only add, who may change them, grants and what changes), and on EXS-KIN1 a throwaway user made viewer, contributor and approver (access in the app, the folder's grant, the folder seen as that user), a downgrade, removal; a non-approver refused; the functions.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
+  - Activity feed: the rules (entries from each kind of record, evidence folded into its decision, news told twice counted once, newest first, a series' part, kinds, pages), and on EXS-KIN1 new data a check found in the program's feed and the follower's, a series follow that sees only its series, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
@@ -523,7 +538,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 245 of the 248 package tests and all 29 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 251 of the 254 package tests and all 30 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

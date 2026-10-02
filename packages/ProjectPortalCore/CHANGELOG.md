@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- Activity feed (F-21, FR-80/81/83): a program's activity, newest first, read from the portal's own records: gate decisions (by an approver, the registry or the data) with their evidence, evidence added later, runs saved and selected, documents linked and approved, snapshots, compound role changes, registry and work-unit changes the sync saw, and new data. No event store. Pure entries, merge, filter and pages in `src/model/feed.ts`
+- The program page's *Activity*: a kind filter, a series filter (the series' "what is new": its work units, its news, its compounds), pages of eight, Provenance on an entry over a record; **Activity** on each series row. The ribbon's **My feed**: everything the user follows, a followed series narrowing its program to the series
+- `programFeed(portfolio, program, series, kinds, limit)` and `myFeed(kinds, limit)` return it as a table
+- The sync keeps what followers were told in `sync_run.changes.newData`; a follow keeps when its last news was told (`follow.news_on`)
+- `portal` schema 0.2.21: `follow.news_on`. Additive, no migration script
+
 - Provenance (F-28, FR-75): from a program, decision, piece of evidence, model run, snapshot, document or compound, the portal's records as a graph walked both ways: what it rests on (the program data and the compound in it, a snapshot of the data, a run's input tables and model, the run selected for a criterion, the document answering it, the criterion, every piece of a decision's evidence) and what rests on it (a run's output tables, documents, decisions, the program a decision moved). Pure graph and walk in `src/model/provenance.ts`
 - The provenance dialog: *Rests on* and *Used by* as indented trees; each record opens (a run's call, a snapshot, a document's file, the program data, a model card, a table, a program on its page) and **Trace** starts again from it. **Provenance** on the program page, on each decision and piece of evidence in the history, and on each saved run, document and snapshot
 - `provenance(kind, id, depth)` returns `{start, nodes, edges}`; `showProvenance(kind, id)` opens the dialog

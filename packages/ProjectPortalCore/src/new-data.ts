@@ -35,6 +35,11 @@ export async function myFollows(programId: string): Promise<FollowRow[]> {
   return (await myRows(programId)).filter(isActive);
 }
 
+/** Every active follow of the current user, across programs: what "my feed" reads. */
+export async function myFollowsAll(): Promise<FollowRow[]> {
+  return (await portalDb.follows.query({filter: `user_id = "${me()}"`})).filter(isActive);
+}
+
 async function programByCode(portfolioCode: string, programCode: string): Promise<{portfolio: PortfolioRow, program: ProgramRow}> {
   const portfolio = await portfolioByCode(portfolioCode);
   const program = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${programCode}"`}))[0];
@@ -94,7 +99,7 @@ export interface NewDataCheck {
   /** Follows looked at. */
   follows: number;
   /** Per follow with news: who, and the line. */
-  news: {user: string, line: string}[];
+  news: {user: string, program: string, line: string}[];
   /** Per user told: how it went. */
   notified: string[];
   /** Programs whose data could not be read. */
@@ -137,8 +142,9 @@ export async function checkNewDataOf(portfolio: PortfolioRow, opts: {notify?: bo
       if (n.baseline)
         baselines++;
       if (line)
-        out.news.push({user: f.user_id, line});
-      await portalDb.follows.update(f.id, {checked: n.now, checked_on: now as any, ...(line ? {last_news: line} : {})});
+        out.news.push({user: f.user_id, program: program.code, line});
+      await portalDb.follows.update(f.id, {checked: n.now, checked_on: now as any,
+        ...(line ? {last_news: line, news_on: now as any} : {})});
     }
   }
   const users = [...new Set(out.news.map((x) => x.user))];

@@ -159,3 +159,12 @@ app.element('provenance start', {selector: u2('provenance-start')});
 app.element('provenance rests on', {selector: u2('provenance-up')});
 app.element('provenance used by', {selector: u2('provenance-down')});
 app.element('first used-by record', {selector: u2('provenance-down-0-open')});
+
+app.element('feed project card', {selector: u2('program-bdd-feed')});
+app.element('activity heading', {selector: u2('feed-heading')});
+app.element('activity entries', {selector: u2('feed-entries')});
+app.element('activity kind input', {selector: u2('feed-kind-input')});
+app.element('my feed button', {selector: u2('my-feed-button')});
+app.element('my feed dialog', {selector: u2('my-feed-dialog')});
+app.element('my feed entries', {selector: u2('my-feed-entries')});
+app.element('first my feed program link', {selector: u2('my-feed-program-0')});

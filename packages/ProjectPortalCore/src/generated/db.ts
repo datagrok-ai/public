@@ -1386,6 +1386,7 @@ export interface FollowRow {
   checked?: {[key: string]: any};
   checked_on?: Dayjs;
   last_news?: string;
+  news_on?: Dayjs;
   seen?: {[key: string]: any};
   seen_on?: Dayjs;
 }
@@ -1400,12 +1401,14 @@ export interface FollowInsert {
   checked?: {[key: string]: any};
   checked_on?: Dayjs | string;
   last_news?: string;
+  news_on?: Dayjs | string;
   seen?: {[key: string]: any};
   seen_on?: Dayjs | string;
 }
 
 export type FollowColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'user_id' | 'program_id' |
-  'work_unit_kind' | 'work_unit_code' | 'active' | 'checked' | 'checked_on' | 'last_news' | 'seen' | 'seen_on';
+  'work_unit_kind' | 'work_unit_code' | 'active' | 'checked' | 'checked_on' | 'last_news' | 'news_on' | 'seen' |
+  'seen_on';
 
 /** Expand keys of `portal.follow` → fields each adds to the row (consumed by query()/builder). */
 export type FollowExpand = {

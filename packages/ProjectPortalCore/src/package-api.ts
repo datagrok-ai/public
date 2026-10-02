@@ -112,6 +112,22 @@ export namespace funcs {
   }
 
   /**
+   * A program's activity, newest first, from the portal's own records: gate decisions, evidence, runs saved and selected, documents, snapshots, compound role changes, registry and work-unit changes seen by the sync, new data. Kinds are comma-separated; a series narrows it to what is about that series
+   * @param {string} series - Series code
+   * @param {string} kinds - Comma-separated: decision, evidence, run, selection, document, snapshot, compound, work_unit, registry, new_data
+   */
+  export async function programFeed(portfolio: string , program: string , series?: string , kinds?: string , limit?: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ProgramFeed', { portfolio, program, series, kinds, limit });
+  }
+
+  /**
+   * The activity of everything you follow, newest first: each followed program's feed, or only a followed series' part of it. Kinds are comma-separated, as for programFeed
+   */
+  export async function myFeed(kinds?: string , limit?: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:MyFeed', { kinds, limit });
+  }
+
+  /**
    * Gives a group, or a user by login, a role on one program (viewer, contributor, approver), on top of the portfolio's groups; none removes it. Only the portfolio's approvers may. The program's workspace folder is shared to match
    * @param {string} principal - Group name or user login
    * @param {string} role

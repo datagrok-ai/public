@@ -31,6 +31,8 @@ export interface SyncRunResult {
   changes: ProgramChange[];
   error: string | null;
   notified?: string;
+  /** What followers were told after the run, one line per program or series, for the activity feed. */
+  newData?: {program: string, line: string}[];
 }
 
 const ms = (v: any): number | null => {
@@ -101,6 +103,8 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
       const n = await checkNewDataOf(portfolio);
       if (n.follows > 0)
         result.report += `\n${n.summary}`;
+      const seen = new Set<string>();
+      result.newData = n.news.filter((x) => !seen.has(x.line) && !!seen.add(x.line)).map((x) => ({program: x.program, line: x.line}));
     } catch (e: any) {
       grok.log.warning(`Project Portal: new data of ${code} not checked: ${e?.message ?? e}`);
     }
@@ -112,7 +116,8 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
         created: result.counts.created, updated: result.counts.updated, flagged: result.counts.flagged,
         unresolved: result.counts.unresolved, unresolved_spellings: result.counts.unresolvedSpellings.join('|') || undefined,
         error: result.error ?? undefined, summary: result.report || undefined,
-        changes: {programs: result.changes, overlaps: result.counts.overlaps}});
+        changes: {programs: result.changes, overlaps: result.counts.overlaps,
+          ...(result.newData?.length ? {newData: result.newData} : {})}});
     } catch (e: any) {
       result.historyError = `sync history not completed: ${e?.message ?? e}`;
     }
