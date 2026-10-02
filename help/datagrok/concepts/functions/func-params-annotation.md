@@ -348,10 +348,6 @@ queries:
 --input: string company = Query("SELECT name FROM companies ORDER BY revenue DESC LIMIT 1")
 ```
 
-For string and date parameters, an initial value that is not an expression is taken as written, so the
-quotes are optional: `= high`, `= hello world`, and `= 2024-01-01` work like `= "high"`. To call a
-function instead, write `Func()` or a qualified name such as `Package:Func`.
-
 ### Nullable vs Optional
 
 It’s important to distinguish between **nullable** and **optional** parameters:

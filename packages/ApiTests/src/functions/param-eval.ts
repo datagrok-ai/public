@@ -18,7 +18,7 @@ grok.functions.register({
 });
 
 const host = grok.functions.register({
-  signature: 'string paramEvalHost(string region, string city, string fruit, string name, int x, int broken, string word, string phrase)',
+  signature: 'string paramEvalHost(string region, string city, string fruit, string name, int x, int broken)',
   run: () => '',
 });
 
@@ -33,10 +33,6 @@ for (const input of host.inputs) {
     input.options['default'] = '2 + 2';
   else if (input.name === 'broken')
     input.options['default'] = 'paramEvalNoSuchFunc(1)';
-  else if (input.name === 'word')
-    input.options['default'] = 'minkowski';
-  else if (input.name === 'phrase')
-    input.options['default'] = 'hello world';
 }
 
 grok.functions.register({
@@ -137,12 +133,6 @@ category('Functions: ParamEval', () => {
   test('default from broken command rejects', async () => {
     const call = host.prepare();
     await expectRejection(() => call.evalParamDefault('broken'));
-  });
-
-  test('default taken as written when it is not an expression', async () => {
-    const call = host.prepare();
-    expect(await call.evalParamDefault('word'), 'minkowski');
-    expect(await call.evalParamDefault('phrase'), 'hello world');
   });
 }, {owner: 'askalkin@datagrok.ai'});
 
