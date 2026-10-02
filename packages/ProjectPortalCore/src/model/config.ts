@@ -9,6 +9,7 @@ import {CriterionArtifactKind, RunFilter, validateRunCriterion} from './run-sele
 import {ProgramDatasetConfig, validateProgramDatasets} from './program-data';
 import {AttentionRule, validateAttentionRules} from './attention';
 import {validateSchedule} from './sync-runs';
+import {AutoAdvanceConfig, validateAutoAdvance} from './auto-advance';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -109,6 +110,9 @@ export interface PortfolioConfig {
   schedule?: string;
   /** User logins told, in the platform's notifications, about a scheduled sync that changed something. */
   owners?: string[];
+  /** Stage advance driven by data, off when absent: a program moves one stage when the data alone
+   * meets the next gate, never past `through`. Portal authority only. */
+  autoAdvance?: AutoAdvanceConfig;
   /** The portfolio's model catalogue: unit operations, run types, models and their cards. Checked
    * and loaded with the set, so a model may name a unit operation another portfolio declares. */
   catalogue?: ModelCatalogueConfig;
@@ -191,6 +195,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
     errors.push(`${conditions.length} criteria declare a condition but the portfolio has no programData to evaluate it over`);
   errors.push(...validateAttentionRules(c.attention));
   errors.push(...validateSchedule(c.schedule, c.owners));
+  errors.push(...validateAutoAdvance(c.autoAdvance, c.stageAuthority, (c.stageModel?.stages ?? []).map((s) => s.code)));
   if ((c.attention ?? []).length > 0 && !c.programData)
     errors.push(`${c.attention!.length} attention rules are declared but the portfolio has no programData to evaluate them over`);
   if (c.stageAuthority === 'feed' && (c.feeds ?? []).length === 0)

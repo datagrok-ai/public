@@ -127,6 +127,15 @@ export function describeSchedule(s: Schedule): string {
 // ---------------------------------------------------------------------------------------------
 // What a run changed
 
+/** Adds the programs a run advanced by data to its changes, keeping them sorted by program. */
+export function withAdvances(changes: ProgramChange[], advances: {program: string, from: string | null, to: string}[]):
+  ProgramChange[] {
+  const by = new Map(changes.map((c) => [c.program, {...c}]));
+  for (const a of advances)
+    by.set(a.program, {...(by.get(a.program) ?? {program: a.program}), advanced: {from: a.from, to: a.to}});
+  return [...by.values()].sort((a, b) => a.program.localeCompare(b.program));
+}
+
 /** One program's changes in a run: the hook data-driven stage advance and new-data notification read. */
 export interface ProgramChange {
   program: string;
@@ -139,6 +148,8 @@ export interface ProgramChange {
   missing?: boolean;
   units?: {created: string[], updated: string[], missing: string[]};
   compounds?: {added: string[], roleChanges: {compound: string, from: string | null, to: string}[], missing: string[]};
+  /** Moved one stage by its data after the sync (autoAdvance): stage codes, from and to. */
+  advanced?: {from: string | null, to: string};
 }
 
 export interface SyncRunCounts {
@@ -255,6 +266,8 @@ export function describeChange(c: ProgramChange): string {
     if (k.missing.length)
       parts.push(`compounds missing ${k.missing.join(', ')}`);
   }
+  if (c.advanced)
+    parts.push(`advanced by data ${c.advanced.from ?? '—'} → ${c.advanced.to}`);
   return `${c.program}: ${parts.join('; ')}`;
 }
 
@@ -270,11 +283,14 @@ export function describeCounts(c: SyncRunCounts, error?: string | null): string 
 export const standingIssues = (c: Pick<SyncRunCounts, 'unresolvedSpellings' | 'overlaps'>): string[] =>
   [...c.unresolvedSpellings, ...c.overlaps].sort();
 
-/** Whether the owners hear about a run: it failed, changed or flagged something, or its standing
- * issues (unresolved spellings, overlaps) differ from the run before. A quiet run that finds what
- * the last one found says nothing. */
-export function worthNotifying(run: {counts: SyncRunCounts, error?: string | null}, previousIssues: string[] | null): boolean {
+/** Whether the owners hear about a run: it failed, changed or flagged something, advanced a program
+ * by data, or its standing issues (unresolved spellings, overlaps) differ from the run before. A
+ * quiet run that finds what the last one found says nothing. */
+export function worthNotifying(run: {counts: SyncRunCounts, error?: string | null, changes?: ProgramChange[]},
+  previousIssues: string[] | null): boolean {
   if (run.error)
+    return true;
+  if (run.changes?.some((c) => c.advanced))
     return true;
   const c = run.counts;
   if (c.created + c.updated + c.flagged > 0)

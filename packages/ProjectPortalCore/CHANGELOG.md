@@ -2,6 +2,11 @@
 
 ## 0.3.0 (unreleased)
 
+- Stage advance driven by data (opt-in, off by default): a portal-authority portfolio may declare `autoAdvance: {through, countWaivers}`. After each sync, and on `autoAdvancePortfolio(code, dryRun)`, an active program whose next gate is met from its data alone moves one stage, never past `through`; a waiver counts only with `countWaivers`, a criterion recorded met by hand never does, held, ended and unstaged programs stay. The move is recorded like an approver's advance (gate log, criterion evidence, workspace folders) with source `data` and the evidence. The sync's report, history and owner notification name each move; Sync history has a preview
+- The gate log records who moved a program: `approver`, `registry` or `data`
+- `portal` schema 0.2.12: `portfolio.auto_advance`, `stage_transition.source`, `stage_transition.evidence`. Additive, no migration script
+- EX-SMD lets data advance through Hit-to-Lead
+
 - Scheduled sync (F-01): a portfolio may declare a `schedule` (an interval such as `every 6h`, or a cron line in UTC) and `owners` (user logins). `syncDuePortfolios(codes)` syncs only the portfolios whose schedule is due; a portfolio without one is never touched
 - Sync history: every sync, by schedule or by hand, is recorded (started, finished, trigger, who, counts of created, updated and flagged rows, unresolved spellings, error, report, per-program changes). The board's **Sync history** shows schedule, next slot, owners and runs; `syncHistory(portfolio)` returns them. `syncPortfolio` returns the same report as before
 - Owners are notified in the platform's notifications after a scheduled run that changed something, failed, or found new standing issues

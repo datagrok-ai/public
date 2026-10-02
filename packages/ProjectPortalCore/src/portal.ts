@@ -172,6 +172,7 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     program_datasets: c.programDatasets ? {datasets: c.programDatasets} : null,
     attention: c.attention?.length ? {rules: c.attention} : null,
     schedule: c.schedule ?? null, owners: (c.owners ?? []).join('|') || null,
+    auto_advance: c.autoAdvance ?? null,
     work_units: (c.workUnits ?? []).join('|') || null, series_maturity: (c.seriesMaturity ?? []).join('|') || null,
     description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,
@@ -347,7 +348,7 @@ async function applyPlan(plan: SyncPlan, portfolio: PortfolioRow): Promise<void>
     if (programId) {
       await portalDb.stageTransitions.insert({program_id: programId, from_stage_id: s.fromStageId ?? undefined,
         to_stage_id: s.toStageId ?? undefined, decision: 'sync', decided_by: me, decided_on: now as any,
-        rationale: `Registry ${plan.system}`});
+        rationale: `Registry ${plan.system}`, source: 'registry'});
     }
   }
   for (const m of plan.missing)
@@ -666,11 +667,18 @@ export function verdictFor(ctx: ProgramContext, decision: Decision, targetStageI
   });
 }
 
+/** Who records a decision: an approver in the app (the default), or the program's data on an
+ * auto-advance, which also keeps what the data said beside the transition. */
+export interface DecisionSource {
+  source: 'approver' | 'data';
+  evidence?: string;
+}
+
 /** Records a gate decision after checking it again server-side of the UI. An advance grows the
  * program's workspace by the folders of the stage it entered (FR-14), when the workspace exists;
  * a failure there is reported on the verdict, not thrown: the decision stands. */
 export async function recordDecision(programId: string, decision: Decision, targetStageId: string | null,
-  rationale: string): Promise<GateVerdict & {workspace?: string}> {
+  rationale: string, by: DecisionSource = {source: 'approver'}): Promise<GateVerdict & {workspace?: string}> {
   const ctx = await programContext(programId);
   const verdict = verdictFor(ctx, decision, targetStageId, rationale);
   if (!verdict.allowed)
@@ -685,7 +693,7 @@ export async function recordDecision(programId: string, decision: Decision, targ
   }
   await portalDb.stageTransitions.insert({program_id: programId, from_stage_id: ctx.program.stage_id,
     to_stage_id: verdict.toStageId ?? ctx.program.stage_id, decision, decided_by: DG.User.current().id,
-    decided_on: now as any, rationale});
+    decided_on: now as any, rationale, source: by.source, evidence: by.evidence});
   const status = statusAfter(decision, (ctx.program.status ?? 'active') as any);
   await portalDb.programs.update(programId, {
     ...(verdict.toStageId ? {stage_id: verdict.toStageId} : {}),

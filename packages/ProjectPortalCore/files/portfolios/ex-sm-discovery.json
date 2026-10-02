@@ -10,6 +10,7 @@
   "description": "Example portfolio on synthetic data. Its registry has no stage, so gate decisions are made and recorded in the portal.",
   "schedule": "every 6h",
   "owners": ["admin"],
+  "autoAdvance": {"through": "H2L", "countWaivers": false},
   "groups": {
     "viewers": "Portal EX-SMD Viewers",
     "contributors": "Portal EX-SMD Contributors",

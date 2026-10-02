@@ -16,6 +16,7 @@ import './tests/run-selection-tests';
 import './tests/program-data-tests';
 import './tests/attention-tests';
 import './tests/sync-run-tests';
+import './tests/auto-advance-tests';
 
 export let _package = new DG.Package();
 export { tests };

@@ -114,6 +114,13 @@ export namespace funcs {
   }
 
   /**
+   * Stage advance driven by data, for a portfolio that declares autoAdvance: each active program whose next gate is met from its data alone moves one stage, never past autoAdvance.through, logged with source data and the evidence. With dryRun (the default) it only says what would move and why the rest stay
+   */
+  export async function autoAdvancePortfolio(code: string , dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:AutoAdvancePortfolio', { code, dryRun });
+  }
+
+  /**
    * A portfolio's sync runs, newest first: when, by schedule or by hand, who, counts of created, updated and flagged rows, unresolved spellings, error
    */
   export async function syncHistory(portfolio: string ): Promise<DG.DataFrame> {

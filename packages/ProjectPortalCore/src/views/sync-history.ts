@@ -4,10 +4,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {badge, divH, divV, span} from '@datagrok-libraries/u2';
+import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
 import {PortfolioRow, SyncRunRow} from '../generated/db';
 import {dueState, syncRunsOf} from '../sync-runs';
 import {describeChange, describeSchedule, ProgramChange} from '../model/sync-runs';
+import {autoAdvance, autoAdvanceOf, summarizeAutoAdvanceResult} from '../auto-advance';
+import {describeAutoAdvanceConfig} from '../model/auto-advance';
+import {stagesOf} from '../portal';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -67,6 +70,15 @@ export async function syncHistoryPanel(portfolio: PortfolioRow, limit = 20): Pro
     state.scheduleError ? `Schedule "${portfolio.schedule}" cannot be read: ${state.scheduleError}` :
       'No schedule: syncs only when asked';
   const owners = (portfolio.owners ?? '').split('|').filter((o) => o.length > 0);
+  const advance = autoAdvanceOf(portfolio);
+  const through = advance ? (await stagesOf(portfolio.stage_model_id)).find((s) => s.code === advance.through)?.name : undefined;
+  const preview = named(divV([], 'pp-units'), 'auto-advance-preview');
+  const previewButton = named(button('Preview advance by data', () => {
+    preview.replaceChildren(span('Checking each program\'s next gate…', 'pp-muted'));
+    autoAdvance(portfolio.code, true)
+      .then((r) => preview.replaceChildren(...summarizeAutoAdvanceResult(r).split('\n').map((l) => span(l.trim(), 'pp-muted'))))
+      .catch((e) => preview.replaceChildren(span(e?.message ?? String(e), 'pp-reason')));
+  }), 'auto-advance-preview-button');
   const rows = runs.map((r, i) => {
     const changes = programChanges(r);
     const overlaps = (r.changes as {overlaps?: string[]} | undefined)?.overlaps ?? [];
@@ -89,6 +101,8 @@ export async function syncHistoryPanel(portfolio: PortfolioRow, limit = 20): Pro
   return named(divV([
     named(span(schedule), 'sync-schedule'),
     named(span(owners.length ? `Owners: ${owners.join(', ')}` : 'No owners declared', 'pp-muted'), 'sync-owners'),
+    named(span(describeAutoAdvanceConfig(advance, through), 'pp-muted'), 'sync-auto-advance'),
+    ...(advance ? [previewButton, preview] : []),
     span(`Runs (${runs.length}${runs.length === limit ? '+' : ''})`, 'pp-heading'),
     runs.length ? named(divV(rows, 'pp-units'), 'sync-runs') : named(span('Never synced', 'pp-muted'), 'no-sync-runs'),
   ], 'pp-sync-history'), 'sync-history');

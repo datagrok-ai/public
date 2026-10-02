@@ -93,3 +93,6 @@ app.element('sync history dialog', {selector: u2('sync-history-dialog')});
 app.element('sync schedule', {selector: u2('sync-schedule')});
 app.element('sync owners', {selector: u2('sync-owners')});
 app.element('latest sync run', {selector: u2('sync-run-0')});
+app.element('sync auto-advance', {selector: u2('sync-auto-advance')});
+app.element('preview advance by data button', {selector: u2('auto-advance-preview-button')});
+app.element('advance by data preview', {selector: u2('auto-advance-preview')});

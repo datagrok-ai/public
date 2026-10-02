@@ -298,9 +298,16 @@ export class PortalView {
     const terminate = named(button('Terminate', decide('terminate')), 'terminate-button');
     hold.disabled = terminate.disabled = !ctx.approver || ctx.portfolio.stage_authority === 'feed';
 
-    const history = named(divV(transitions.map((t) => span(
-      `${(t.decided_on ?? t.created_on)?.format?.('YYYY-MM-DD') ?? ''} · ${t.decision}: ${stageName(t.from_stage_id)} → ` +
-      `${stageName(t.to_stage_id)}${t.rationale ? ` — ${t.rationale}` : ''}`, 'pp-history-row'))), 'transition-history');
+    const history = named(divV(transitions.map((t) => {
+      const row = span(
+        `${(t.decided_on ?? t.created_on)?.format?.('YYYY-MM-DD') ?? ''} · ${t.decision}: ${stageName(t.from_stage_id)} → ` +
+        `${stageName(t.to_stage_id)}${t.source === 'data' ? ' (by data)' : ''}${t.rationale ? ` — ${t.rationale}` : ''}`,
+        'pp-history-row');
+      // what the data said when it advanced the program
+      if (t.evidence)
+        row.title = t.evidence;
+      return row;
+    })), 'transition-history');
 
     const lineage: HTMLElement[] = [];
     if (program.predecessor_id)

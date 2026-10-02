@@ -22,6 +22,7 @@ import {attentionFrame, attentionRulesOf, programAttentionOf} from './attention'
 import {recordedSync, summarizeDue, syncDue} from './sync-runs';
 import {syncHistoryFrame} from './views/sync-history';
 import {span} from '@datagrok-libraries/u2';
+import {autoAdvance, autoAdvanceOf, summarizeAutoAdvanceResult} from './auto-advance';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -159,7 +160,9 @@ async function syncOne(code: string, dryRun = false): Promise<string> {
   const programs = (await syncPortfolioPlans(code, dryRun)).map(summarizePlan);
   const units = (await syncWorkUnits(code, dryRun)).map(summarizeWorkUnitPlan);
   const compounds = await syncCompounds(code, dryRun);
-  return [...programs, ...units, ...(compounds ? [summarizeCompoundPlan(compounds)] : [])].join('\n');
+  // what data would advance, judged on the programs as they stand before the sync
+  const advance = autoAdvanceOf(await portfolioByCode(code)) ? [summarizeAutoAdvanceResult(await autoAdvance(code, true))] : [];
+  return [...programs, ...units, ...(compounds ? [summarizeCompoundPlan(compounds)] : []), ...advance].join('\n');
 }
 
 //name: syncPortfolio
@@ -190,6 +193,15 @@ export async function syncAllPortfolios(): Promise<string> {
 export async function syncDuePortfolios(codes?: string): Promise<string> {
   const list = (codes ?? '').split(',').map((c) => c.trim()).filter((c) => c.length > 0);
   return summarizeDue(await syncDue(list.length ? list : undefined));
+}
+
+//name: autoAdvancePortfolio
+//description: Stage advance driven by data, for a portfolio that declares autoAdvance: each active program whose next gate is met from its data alone moves one stage, never past autoAdvance.through, logged with source data and the evidence. With dryRun (the default) it only says what would move and why the rest stay
+//input: string code
+//input: bool dryRun = true
+//output: string report
+export async function autoAdvancePortfolio(code: string, dryRun: boolean = true): Promise<string> {
+  return summarizeAutoAdvanceResult(await autoAdvance(code, dryRun));
 }
 
 //name: syncHistory

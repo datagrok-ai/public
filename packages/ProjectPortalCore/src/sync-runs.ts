@@ -10,8 +10,9 @@ import {summarizeWorkUnitPlan} from './model/work-units';
 import {summarizeCompoundPlan} from './model/compounds';
 import {
   describeChange, describeCounts, describeSchedule, isDue, nextRun, parseSchedule, ProgramChange, Schedule,
-  standingIssues, summarizeRun, SyncRunCounts, worthNotifying,
+  standingIssues, summarizeRun, SyncRunCounts, withAdvances, worthNotifying,
 } from './model/sync-runs';
+import {autoAdvance, autoAdvanceOf} from './auto-advance';
 
 export type SyncTrigger = 'schedule' | 'manual';
 
@@ -76,6 +77,20 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
     result = {...result, report, counts, changes};
   } catch (e: any) {
     result.error = e?.message ?? String(e);
+  }
+  // a portfolio that opts in lets its programs advance by data once the feeds are in
+  if (!result.error && autoAdvanceOf(portfolio)) {
+    try {
+      const a = await autoAdvance(code, false);
+      const moved = a.outcomes.filter((o) => o.to);
+      result.changes = withAdvances(result.changes, moved.map((o) => ({program: o.program, from: o.from?.code ?? null, to: o.to!.code})));
+      const failed = a.outcomes.filter((o) => o.error);
+      result.report += `\n${code} auto-advance: ${moved.length ? moved.map((o) => `${o.program} ${o.from?.code ?? '—'} → ${o.to!.code}`).join(', ') :
+        `none of ${a.outcomes.length} program(s) met its next gate by data`}` +
+        (failed.length ? `; not recorded: ${failed.map((o) => `${o.program} (${o.error})`).join(', ')}` : '');
+    } catch (e: any) {
+      result.report += `\n${code} auto-advance not applied: ${e?.message ?? e}`;
+    }
   }
 
   if (runId) {

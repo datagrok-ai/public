@@ -27,6 +27,8 @@ export type ProgramSource = 'feed' | 'manual';
 
 export type StageTransitionDecision = 'advance' | 'recycle' | 'hold' | 'terminate' | 'sync';
 
+export type StageTransitionSource = 'approver' | 'registry' | 'data';
+
 export type CriterionStatusStatus = 'not_started' | 'in_progress' | 'met' | 'not_met' | 'waived';
 
 export type CampaignType = 'screening' | 'hit_triage' | 'dmta_cycle' | 'library' | 'other';
@@ -221,6 +223,7 @@ export interface PortfolioRow {
   attention?: {[key: string]: any};
   schedule?: string;
   owners?: string;
+  auto_advance?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -245,6 +248,7 @@ export interface PortfolioInsert {
   attention?: {[key: string]: any};
   schedule?: string;
   owners?: string;
+  auto_advance?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -254,7 +258,7 @@ export interface PortfolioInsert {
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
   'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' | 'attention' | 'schedule' |
-  'owners' | 'viewers' | 'contributors' | 'approvers' | 'description';
+  'owners' | 'auto_advance' | 'viewers' | 'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -313,8 +317,9 @@ export type RegistryFeedExpand = {
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
-    'portfolio_id.owners'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
-    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.owners'?: string; 'portfolio_id.auto_advance'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -377,8 +382,9 @@ export type ProgramExpand = {
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
-    'portfolio_id.owners'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
-    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.owners'?: string; 'portfolio_id.auto_advance'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -423,6 +429,8 @@ export interface StageTransitionRow {
   decided_by?: string;
   decided_on?: Dayjs;
   rationale?: string;
+  source?: StageTransitionSource;
+  evidence?: string;
 }
 
 /** Insert payload for `portal.stage_transition`. */
@@ -434,10 +442,12 @@ export interface StageTransitionInsert {
   decided_by?: string;
   decided_on?: Dayjs | string;
   rationale?: string;
+  source?: StageTransitionSource;
+  evidence?: string;
 }
 
 export type StageTransitionColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
-  'from_stage_id' | 'to_stage_id' | 'decision' | 'decided_by' | 'decided_on' | 'rationale';
+  'from_stage_id' | 'to_stage_id' | 'decision' | 'decided_by' | 'decided_on' | 'rationale' | 'source' | 'evidence';
 
 /** Expand keys of `portal.stage_transition` → fields each adds to the row (consumed by query()/builder). */
 export type StageTransitionExpand = {
@@ -1264,8 +1274,9 @@ export type SyncRunExpand = {
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
-    'portfolio_id.owners'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
-    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.owners'?: string; 'portfolio_id.auto_advance'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
   'run_by': {'run_by.login'?: string; 'run_by.firstName'?: string; 'run_by.lastName'?: string;
     'run_by.status'?: string; 'run_by.createdOn'?: Dayjs; 'run_by.picture'?: string; 'run_by.group'?: string;
     'run_by.author'?: string};

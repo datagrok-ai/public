@@ -225,9 +225,27 @@ may also declare a `schedule` and `owners` (F-01):
 - **`syncDuePortfolios(codes)`** syncs the portfolios whose schedule is due, discovery first. A portfolio without a schedule is never touched; `codes` (comma-separated) narrows the check further. A sync is due when the portfolio has never synced, or the next slot after the last run's start has come. Any run counts, by hand or failed.
 - **Sync history.** Every sync, by schedule or by hand, is a `sync_run` row: started, finished, trigger, who, counts of created, updated and flagged rows, unresolved stage spellings, error, the report, and the per-program changes. A dry run is not recorded, and a sync never fails because its history could not be written. The board's **Sync history** shows the schedule, the next slot, the owners and the last 20 runs. `syncHistory(portfolio)` returns the runs as a table.
 - **Owners are notified** in the platform's notifications (the bell) after a scheduled run that changed or flagged something, failed, or found different unresolved spellings or overlaps than the run before. The server lets a user notify another user only with the Edit users permission; otherwise the run records who could not be reached.
-- **Per-program changes** (new, fields changed, stage moved, no longer in the feed, work units, compounds added, role changes) are on the result and in `sync_run.changes`. Data-driven stage advance and new-data notification will read them.
+- **Per-program changes** (new, fields changed, stage moved, no longer in the feed, work units, compounds added, role changes, advanced by data) are on the result and in `sync_run.changes`. New-data notification will read them.
 - **Nothing runs by itself yet.** The platform schedules only server-side scripts and queries (`#schedule:`), not a package's JavaScript functions, so the package cannot register its own schedule. Something must call `syncDuePortfolios` (see Known platform issues).
 - The examples declare schedules: EX-SMD every 6 h, EX-BIOD daily at 06:00 UTC, EX-BIOC weekdays at 06:00 UTC. Owner: `admin`.
+
+### Stage advance driven by data
+
+Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
+limit stage, so the top gates still need an approver:
+
+```json
+"autoAdvance": {"through": "H2L", "countWaivers": false}
+```
+
+- **When a program moves.** It is active, already in its model, and its next stage is not past `through`. That stage has required criteria, and every one was evaluated met from the program's data. It moves one stage per pass.
+- **What never counts.** A waiver, unless `countWaivers` is true: a waiver is a person's call. A criterion recorded met by hand, a document or a decision: not data. A stage with no required criteria: nothing for data to decide.
+- **What never moves.** Held, terminated, completed, transitioned or missing programs. Unstaged programs: entering the model is a decision. Programs whose data cannot be read.
+- **How it is recorded.** Like an approver's advance (`recordDecision`): a `stage_transition` with `decision` advance and `source` data, `evidence` naming each criterion and what the data said, the data conditions' results kept on `criterion_status`, and the new stage's folders added to the workspace. Approvers' decisions are logged with source `approver`, registry changes with `registry`.
+- **When it runs.** After every sync of the portfolio, by hand or by schedule; the run's report and history name each program it moved (`EXS-GPC3: advanced by data HF → H2L`), and owners hear of it. Or on call: `autoAdvancePortfolio(code, dryRun)`. A dry run (the default) lists what would move and why each other program stays. Applying needs the caller to be an approver, as a manual advance does.
+- **In the app.** Sync history says how far data advances stages and has **Preview advance by data**. The program's history marks a move `(by data)`; hover for the evidence.
+- **It is a field, not a third stage authority.** Stage authority says who owns the stage (registry or portal); auto-advance is a way the portal decides, so the gate rules, the approver groups and the feed's handling stay as they are.
+- The example EX-SMD lets data advance through Hit-to-Lead. Its programs are unstaged, so nothing moves until an approver places one in the model; a program at Hit Finding whose data shows a validated series and a sub-micromolar compound then enters Hit-to-Lead on the next sync.
 
 ### Choosing the run a criterion rests on
 
@@ -309,6 +327,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
 | `syncDuePortfolios(codes)` | Syncs only the portfolios whose schedule is due, records each run, notifies owners of a run that changed something |
 | `syncHistory(portfolio)` | A portfolio's sync runs as a table, newest first |
+| `autoAdvancePortfolio(code, dryRun)` | Advances each program whose next gate the data alone meets, one stage, never past `autoAdvance.through`. `dryRun` (default) says what would move and why the rest stay |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
@@ -336,6 +355,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
   - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
   - Scheduled sync: the rules (intervals and cron in UTC, when a sync is due, a run's counts and per-program changes, when owners hear of it), and on EX-SMD and EX-BIOD a recorded run, a due and a not-yet-due schedule, a platform notification, the function and the history panel.
+  - Auto-advance: the rules (one stage, never past `through`, waivers, recorded criteria, held and unstaged programs, the setting), and on EX-SMD a dry run, a real pass with its gate-log entry and evidence, a sync that advances and its history, and the example put back.
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
