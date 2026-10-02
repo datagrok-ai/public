@@ -151,8 +151,8 @@ category('ComputeUtils: Driver docs cases', async () => {
       from: 'table:before(@base, load)/res',
       to: 't:same(@base)/v',
       sources: {rows: {js: {args: ['table'], fn: (df?: DG.DataFrame) => df?.rowCount}}},
-      when: {'!': {missing: ['table']}},
-      effects: [{effect: 'set', targets: 't', value: {var: 'rows'}, restriction: 'restricted'}],
+      when: 'not(missing(table))',
+      effects: ['set(t, rows, restriction: "restricted")'],
     }]));
     const values: any[] = [];
     testScheduler.run(({cold}) => {
@@ -179,11 +179,8 @@ category('ComputeUtils: Driver docs cases', async () => {
       to: 'c:same(@base)/mode',
       sources: {columns: {js: {args: ['table'], fn: (df?: DG.DataFrame) => df ? df.columns.names() : []}}},
       effects: [
-        {effect: 'items', targets: 'c', items: {var: 'columns'}},
-        {
-          effect: 'clear', targets: 'c',
-          when: {and: [{'!': {missing: ['column']}}, {'!': {in: [{var: 'column'}, {var: 'columns'}]}}]},
-        },
+        'items(c, columns)',
+        'clear(c, when: and(not(missing(column)), not(in(column, columns))))',
       ],
     }]));
     const values: any[] = [];
@@ -220,11 +217,8 @@ category('ComputeUtils: Driver docs cases', async () => {
       to: ['k:solver/mode', '_(template):solver/inputs(LibTests:TestAnnotatedInputs, mode|$nonscalar|$linked)'],
       sources: {presets: {js: {args: [], fn: () => presets}}},
       effects: [
-        {effect: 'items', targets: 'k', items: {column: [{var: 'presets'}, 'mode']}},
-        {
-          effect: 'assign', values: {row: [{var: 'presets'}, 'mode', {var: 'key'}]}, restriction: 'restricted',
-          when: {in: [{var: 'key'}, {column: [{var: 'presets'}, 'mode']}]},
-        },
+        'items(k, column(presets, "mode"))',
+        'assign(row(presets, "mode", key), restriction: "restricted", when: in(key, column(presets, "mode")))',
       ],
     }]));
     const values: any[] = [];

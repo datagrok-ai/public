@@ -159,9 +159,9 @@ type RuleOps =
   | {scriptVerdict: string}
   | {len: RuleExpr};
 
-/** JSON Logic expression. */
+/** JSON Logic expression, or formula text such as `'gt(m, 0)'`. */
 export type RuleLogic = RulesLogic<RuleOps>;
-/** JSON Logic expression or a plain literal. */
+/** JSON Logic expression or a plain literal; in value fields a string starting with `=` is a formula. */
 export type RuleExpr = RuleLogic | RuleExpr[];
 export type RuleTargets = string | string[];
 
@@ -211,8 +211,10 @@ export type RuleSource =
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';
   when?: RuleLogic;
-  sources?: Record<string, RuleSource>;
-  effects: RuleEffect[];
+  /** Source objects, or source calls such as `'file("System:AppData/Pkg/presets.csv")'`. */
+  sources?: Record<string, RuleSource | string>;
+  /** Effect objects, or effect calls such as `'set(t, m, restriction: "restricted")'`. */
+  effects: (RuleEffect | string)[];
   debounce?: number;
   runOnInit?: boolean;
   handler?: undefined;

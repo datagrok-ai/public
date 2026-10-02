@@ -6,6 +6,7 @@ import {
 } from './PipelineConfiguration';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
 import {parseLinkIO} from './LinkSpec';
+import {compileCheckFormulas, compileRuleFormulas} from './rule-formula';
 import {FuncCallIODescription, IOType, expandDeferredIOs, normalizeLinkSpec} from './config-processing-utils';
 import {ruleDataHandler, ruleMetaHandler, ruleValidatorHandler} from '../runtime/rule-handlers';
 import {ruleTargets, usedAliases} from '../runtime/rule-expressions';
@@ -94,7 +95,8 @@ export function annotationRules(
 export function expandLinks(
   links: PipelineLinkConfigurationInput<LinkSpecString>[],
 ): PipelineLinkConfiguration<LinkSpecString>[] {
-  return links.flatMap((link) => isRuleLink(link) ? expandRule(link) : isCheckLink(link) ? expandCheck(link) : [link]);
+  return links.flatMap((link) => isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
+    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link]);
 }
 
 function singleQuery(id: string, field: string, query: LinkSpecString | undefined): string | undefined {
@@ -187,8 +189,11 @@ function effectExpressions(effect: RuleEffect): RuleExpr[] {
   }
 }
 
+// expects compiled formulas: every effect and source is an object
 function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLinkConfiguration<LinkSpecString>[] {
-  const {id, when, effects, sources} = rule;
+  const {id, when} = rule;
+  const effects = rule.effects as RuleEffect[];
+  const sources = rule.sources as Record<string, RuleSource> | undefined;
   if (rule.handler)
     throw new Error(`Rule ${id}: handler is not allowed, rules use built-in handlers`);
   if (!effects?.length)
@@ -197,10 +202,19 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   const fromAliases = aliasesOf(id, rule.from, 'input');
   const toAliases = aliasesOf(id, rule.to, 'output');
   const from = [...normalizeLinkSpec(rule.from)];
+  const isAlias = (name: string) => fromAliases.has(name) || Object.hasOwn(sources ?? {}, name);
   const checkExpr = (expr: RuleExpr | undefined) => {
-    for (const alias of usedAliases(expr)) {
-      if (!fromAliases.has(alias) && !(alias in (sources ?? {})))
+    const fields = new Set<string>();
+    for (const alias of usedAliases(expr, fields)) {
+      if (!isAlias(alias))
         throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
+    }
+    // reduce's own names are not aliases there
+    for (const name of fields) {
+      if (isAlias(name) && name !== 'current' && name !== 'accumulator') {
+        throw new Error(`Rule ${id}: ${name} inside map, filter, all, some, none or reduce is a field of the ` +
+          `element, not the alias ${name}; read the field with var("${name}")`);
+      }
     }
   };
   const checkArgs = (alias: string, args: unknown) => {
