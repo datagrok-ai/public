@@ -31,6 +31,7 @@ import './tests/prediction-tests';
 import './tests/approval-tests';
 import './tests/parking-tests';
 import './tests/evidence-table-tests';
+import './tests/pinning-tests';
 
 export let _package = new DG.Package();
 export { tests };

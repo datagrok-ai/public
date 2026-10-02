@@ -93,6 +93,15 @@ const CSS = `
 .pp-provenance > * { flex-shrink: 0; }
 .pp-provenance-tree { gap: 2px; }
 .pp-document-card { gap: 2px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--u2-border, #eee); }
+.pp-my-programs { width: 100%; height: 100%; overflow-y: auto; }
+.pp-my-programs .pp-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; align-items: start; padding: 2px; }
+.pp-tile { gap: 3px; }
+.pp-tile-stage { font-size: 12px; }
+.pp-tile-track { gap: 2px; flex-wrap: nowrap; }
+.pp-tile-seg { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--u2-surface-2, rgba(0,0,0,.08)); }
+.pp-tile-seg-done { background: var(--u2-success, #5cb85c); }
+.pp-tile-seg-current { background: var(--u2-accent, #2083d5); }
+.pp-pinned-mark { color: var(--u2-accent, #2083d5); font-size: 11px; }
 `;
 
 let installed = false;

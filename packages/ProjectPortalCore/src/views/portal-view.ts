@@ -65,6 +65,9 @@ import {decideOrPropose, requestsOf, submitDocument, userNames} from '../approva
 import {approvalOf, describeApproval, needsApproval, reviewsOf} from '../model/approvals';
 import {openWaitingDialog, requestItem} from './approvals-dialog';
 import {openWorkspaceDialog} from './workspace-dialog';
+import {myPins, setPinned} from '../pinning';
+import {PinHolders, whyNotPinnable} from '../model/pinning';
+import {buildPortfolioWorkspace, summarizeWorkspace} from '../workspace';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -136,6 +139,10 @@ export class PortalView {
   private approvals: {rows: ApprovalRequestRow[], names: Map<string, string>} = {rows: [], names: new Map()};
   /** What the last proposal or review on this page did, by program id. */
   private approvalLine = new Map<string, string>();
+  /** The folders pinned in the user's Workspace, by space id: read with the board and on each program open. */
+  private pins = new Map<string, PinHolders>();
+  /** The open portfolio's viewers group, which an approver may pin a program for. */
+  private viewersGroup: DG.Group | null = null;
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
@@ -200,10 +207,12 @@ export class PortalView {
     this.path.value = `${APP_PATH}/${p.code}`;
     for (const el of Array.from(this.portfolioList.querySelectorAll('.pp-portfolio')))
       el.classList.toggle('pp-selected', (el as HTMLElement).dataset.u2Name === `portfolio-${slug(code)}`);
-    [this.stages, this.programs] = await Promise.all([
+    [this.stages, this.programs, this.pins] = await Promise.all([
       stagesOf(p.stage_model_id),
       portalDb.programs.query({filter: `portfolio_id = "${p.id}"`}),
+      myPins().catch(() => new Map<string, PinHolders>()),
     ]);
+    this.viewersGroup = null;
     this.renderBoard();
     this.detail.replaceChildren(span(`Select a ${(p.program_noun ?? 'program').toLowerCase()}`, 'pp-muted'));
     const model = this.models.get(p.stage_model_id);
@@ -254,6 +263,7 @@ export class PortalView {
         badge(x.status ?? 'active', {variant: statusVariant[x.status ?? 'active'] ?? 'default'}),
         ...(x.modality ? [span(x.modality, 'pp-muted')] : []),
         ...(x.predecessor_id ? [badge('continued', {variant: 'accent'})] : []),
+        ...(x.space_id && this.pins.has(x.space_id) ? [named(span('pinned', 'pp-pinned-mark'), `pinned-${slug(x.code)}`)] : []),
       ], 'pp-card-meta'),
     ], 'pp-card'), `program-${slug(x.code)}`);
     if (x.id === this.selected)
@@ -274,8 +284,12 @@ export class PortalView {
     for (const el of Array.from(this.board.querySelectorAll('.pp-card')))
       el.classList.remove('pp-selected');
     const program = this.programs.find((x) => x.id === id);
-    if (program)
+    if (program) {
       this.board.querySelector(`[data-u2-name="program-${slug(program.code)}"]`)?.classList.add('pp-selected');
+      // .../Portal/<portfolio>/<program>: the program's page can be linked
+      if (this.portfolio)
+        this.path.value = `${APP_PATH}/${this.portfolio.code}/${program.code}`;
+    }
     const ctx = await programContext(id);
     const transitions = (await portalDb.stageTransitions.query({filter: `program_id = "${id}"`}))
       .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
@@ -318,6 +332,10 @@ export class PortalView {
     const news = follows.length ? this.news ?? null : null;
     this.follows = follows;
     this.roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
+    // pinned or not is the platform's favorite, which the Workspace may have changed since
+    this.pins = await myPins().catch(() => this.pins);
+    if (this.roles.manage && ctx.portfolio.viewers && this.viewersGroup?.id !== ctx.portfolio.viewers)
+      this.viewersGroup = await grok.dapi.groups.find(ctx.portfolio.viewers).catch(() => null);
     const snapshots = await snapshotsOf(id).catch(() => [] as ProgramSnapshotRow[]);
     // documents: the cards of the current and next gate's document criteria, and the rest
     const docRows = await documentsOf(id).catch(() => [] as DocumentRow[]);
@@ -603,8 +621,9 @@ export class PortalView {
       named(span(program.name, 'pp-title'), 'program-title'),
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
-      named(divH([workspace, followButton, named(button('Provenance', () => this.provenance('program', program.id)),
-        'program-provenance-button')], 'pp-actions'), 'program-actions'),
+      named(divH([workspace, ...this.buildFolder(ctx, spaceLive), followButton, ...this.pinButtons(ctx, spaceLive),
+        named(button('Provenance', () => this.provenance('program', program.id)), 'program-provenance-button')],
+      'pp-actions'), 'program-actions'),
       ...(newsLine ? [newsLine] : []),
       ...quick,
       ...(data.length ? [named(divH(data, 'pp-actions pp-data-actions'), 'program-data-actions')] : []),
@@ -1380,6 +1399,67 @@ export class PortalView {
       this.detail.querySelector('[data-u2-name="feed-heading"]')?.scrollIntoView({block: 'start'});
   }
 
+  /** Pin to my Workspace / Unpin, and for an approver the same for the portfolio's viewers. A
+   * program without a folder cannot be pinned; the button says why. */
+  private pinButtons(ctx: ProgramContext, spaceLive: boolean): HTMLElement[] {
+    const held = ctx.program.space_id ? this.pins.get(ctx.program.space_id) : undefined;
+    const reason = whyNotPinnable({spaceId: ctx.program.space_id, spaceLive});
+    const mine = !!held?.mine;
+    const pin = named(button(mine ? 'Unpin' : 'Pin to my Workspace', () => void this.togglePin(ctx, !mine, null)), 'pin-button');
+    pin.disabled = !!reason && !mine;
+    pin.title = reason && !mine ? `Cannot pin: ${reason}` : mine ? 'Take its folder out of your Workspace and its tile off Home' :
+      'Its folder goes in your Workspace, and its tile in My programs on Home';
+    const g = this.viewersGroup;
+    if (!this.roles.manage || !g)
+      return [pin];
+    const gName = g.friendlyName || g.name;
+    const forGroup = !!held?.groups.includes(gName);
+    const groupPin = named(button(forGroup ? `Unpin for ${gName}` : `Pin for ${gName}`,
+      () => void this.togglePin(ctx, !forGroup, g)), 'pin-group-button');
+    groupPin.disabled = !!reason && !forGroup;
+    groupPin.title = reason && !forGroup ? `Cannot pin: ${reason}` :
+      `${forGroup ? 'Take it out of' : 'Put it in'} the Workspace of everyone in ${gName}`;
+    return [pin, groupPin];
+  }
+
+  private async togglePin(ctx: ProgramContext, pinned: boolean, group: DG.Group | null): Promise<void> {
+    try {
+      grok.shell.info(await setPinned(ctx.portfolio, ctx.program, pinned, group));
+      this.pins = await myPins().catch(() => this.pins);
+      if (this.portfolio?.id === ctx.portfolio.id)
+        this.renderBoard();
+      await this.openProgram(ctx.program.id, this.viewedStage);
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? String(e));
+    }
+  }
+
+  /** For an approver, when the program has no folder: builds this program's folders only. */
+  private buildFolder(ctx: ProgramContext, spaceLive: boolean): HTMLElement[] {
+    if (spaceLive || !this.roles.manage || !ctx.portfolio.workspace_root)
+      return [];
+    const b = named(button('Build its folder', async () => {
+      try {
+        grok.shell.info(summarizeWorkspace(await buildPortfolioWorkspace(ctx.portfolio.code, false, ctx.program.id)));
+        const fresh = await portalDb.programs.get(ctx.program.id);
+        this.programs = this.programs.map((x) => x.id === fresh.id ? fresh : x);
+        await this.openProgram(ctx.program.id, this.viewedStage);
+      } catch (e: any) {
+        grok.shell.error(e?.message ?? String(e));
+      }
+    }), 'build-folder-button');
+    b.title = 'Create this program\'s folder and its workstream folders in the portfolio\'s workspace; then it can be pinned';
+    return [b];
+  }
+
+  /** Opens the program with [code] in the open portfolio; false when it has none. */
+  async openProgramByCode(code: string): Promise<boolean> {
+    const p = this.programs.find((x) => x.code === code);
+    if (p)
+      await this.openProgram(p.id);
+    return !!p;
+  }
+
   /** Follows or unfollows the program, or one of its series, then redraws the page. */
   private async toggleFollow(ctx: ProgramContext, unit: WorkUnitRef | null): Promise<void> {
     try {
@@ -1468,7 +1548,21 @@ export class PortalView {
   }
 }
 
-export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase> {
+/** The portal behind each open app view, by the view's root: the shell hands out a new wrapper
+ * for a view each time, so a property set on the view object does not come back. */
+const portals = new WeakMap<HTMLElement, PortalView>();
+
+/** The Project Portal app view already open, and its portal; null when none is. */
+export function openPortal(): {view: DG.ViewBase, portal: PortalView} | null {
+  for (const view of Array.from(grok.shell.views)) {
+    const portal = portals.get(view.root);
+    if (portal)
+      return {view, portal};
+  }
+  return null;
+}
+
+export async function portalAppView(portfolioCode?: string, programCode?: string): Promise<DG.ViewBase> {
   const portal = new PortalView();
   const content = new Control(portal.root);
   const sync = named(button('Sync', () => void portal.sync()), 'sync-button');
@@ -1496,6 +1590,9 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   portal.boardButtons.set('all_portfolios', all);
   portal.applyBoardButtons();
   await portal.load(portfolioCode);
+  if (programCode && portal.portfolioCode === portfolioCode && !(await portal.openProgramByCode(programCode)))
+    portal.status.value = `${portfolioCode} has no program ${programCode}, or it is not shared with you`;
   (view as any).portal = portal;
+  portals.set(view.root, portal);
   return view;
 }

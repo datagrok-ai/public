@@ -483,6 +483,36 @@ export namespace funcs {
   }
 
   /**
+   * Pins the program's workspace folder in your Workspace (a platform favorite), so its tile shows in My programs on Home. With a group, pins it for everyone in that group: the portfolio's approvers only. A program without a folder cannot be pinned
+   * @param {string} group - Group name
+   */
+  export async function pinProgram(portfolio: string , program: string , group?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:PinProgram', { portfolio, program, group });
+  }
+
+  /**
+   * Takes the program's workspace folder out of your Workspace, or a group's, and its tile off Home
+   * @param {string} group - Group name
+   */
+  export async function unpinProgram(portfolio: string , program: string , group?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:UnpinProgram', { portfolio, program, group });
+  }
+
+  /**
+   * The programs whose folders are pinned in your Workspace (by you or for your groups) that you can see, across portfolios: stage on its track, status, readiness for the next gate, attention, new data
+   */
+  export async function pinnedPrograms(): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:PinnedPrograms', {});
+  }
+
+  /**
+   * Home widget: a tile per pinned program, with its stage, readiness for the next gate, attention and new data; a click opens its page
+   */
+  export async function myProgramsWidget(): Promise<any> {
+    return await grok.functions.call('ProjectPortalCore:MyProgramsWidget', {});
+  }
+
+  /**
    * Saves a model run to a program: annotates the call (portfolio, program, stage at run, unit operation, run type, purpose), saves it, links it into the program's workspace (the current stage's folder when there is one) and records it as a model run a gate criterion can select
    * @param {any} call - A call that has run
    * @param {string} unitOperation - Unit operation code

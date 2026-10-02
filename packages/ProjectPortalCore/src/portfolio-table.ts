@@ -15,6 +15,7 @@ import {Readiness, ReadinessState} from './model/readiness';
 import {COMPOUND_ROLES} from './model/compounds';
 import {WORK_UNIT_LABELS, WorkUnitKind} from './model/work-units';
 import {existingSpaces} from './workspace';
+import {myPins} from './pinning';
 import {attentionFor, attentionRulesOf} from './attention';
 import {ProgramAttention} from './model/attention';
 
@@ -27,7 +28,7 @@ const DAY_MS = 24 * 3600 * 1000;
 
 const quoted = (xs: string[]) => xs.map((x) => `"${x.replace(/"/g, '\\"')}"`).join(', ');
 
-async function inBatches<T>(keys: string[], run: (filter: string) => Promise<T[]>): Promise<T[]> {
+export async function inBatches<T>(keys: string[], run: (filter: string) => Promise<T[]>): Promise<T[]> {
   const out: T[] = [];
   for (let i = 0; i < keys.length; i += BATCH)
     out.push(...await run(quoted(keys.slice(i, i + BATCH))));
@@ -53,7 +54,7 @@ export const COL = {
   source: 'source', sourceStage: 'source stage', enteredStage: 'entered stage', daysInStage: 'days in stage',
   requiredMet: 'required met', requiredTotal: 'required total', readiness: 'readiness', ready: 'ready',
   gaps: 'gaps', compounds: 'compounds', workspace: 'workspace', continued: 'continued',
-  attention: 'attention', attentionRules: 'attention rules',
+  attention: 'attention', attentionRules: 'attention rules', pinned: 'pinned',
 } as const;
 
 export const roleColumn = (role: string) => `${role} compounds`;
@@ -74,6 +75,8 @@ export interface ProgramFacts {
   hasWorkspace?: boolean;
   /** What trips the portfolio's attention rules; null when it declares none. */
   attention?: ProgramAttention | null;
+  /** Its folder is pinned in the user's Workspace, by them or for one of their groups. */
+  pinned?: boolean;
 }
 
 export interface PortfolioTables {
@@ -88,16 +91,20 @@ export interface PortfolioTables {
   facts: ProgramFacts[];
 }
 
-/** Everything the table needs for [portfolioCode], or for every portfolio the user can see. */
-export async function portfolioFacts(portfolioCode?: string, now = Date.now()):
+/** Everything the table needs for [portfolioCode], or for every portfolio the user can see. With
+ * [programIds], only those programs (the ones the user can see), and only their portfolios. */
+export async function portfolioFacts(portfolioCode?: string, now = Date.now(), programIds?: string[]):
   Promise<{portfolios: PortfolioRow[], stages: Map<string, StageRow[]>, facts: ProgramFacts[]}> {
-  const portfolios = portfolioCode ? [await portfolioByCode(portfolioCode)] :
+  const all = portfolioCode ? [await portfolioByCode(portfolioCode)] :
     (await portalDb.portfolios.query({limit: LIMIT})).sort((a, b) => a.name.localeCompare(b.name));
+  const chosen = programIds ? await inBatches(programIds, (b) => portalDb.programs.query({filter: `id in (${b})`, limit: LIMIT}))
+    .then((rows) => rows.filter((r) => all.some((p) => p.id === r.portfolio_id))) : null;
+  const portfolios = chosen ? all.filter((p) => chosen.some((r) => r.portfolio_id === p.id)) : all;
   const portfolioOf = new Map(portfolios.map((p) => [p.id, p]));
   const modelIds = [...new Set(portfolios.map((p) => p.stage_model_id))];
   const [stageRows, programs] = await Promise.all([
     inBatches(modelIds, (b) => portalDb.stages.query({filter: `stage_model_id in (${b})`, limit: LIMIT})),
-    inBatches(portfolios.map((p) => p.id), (b) => portalDb.programs.query({filter: `portfolio_id in (${b})`, limit: LIMIT})),
+    chosen ?? inBatches(portfolios.map((p) => p.id), (b) => portalDb.programs.query({filter: `portfolio_id in (${b})`, limit: LIMIT})),
   ]);
   const stages = new Map<string, StageRow[]>(modelIds.map((m) =>
     [m, stageRows.filter((s) => s.stage_model_id === m).sort((a, b) => a.ordinal - b.ordinal)]));
@@ -148,9 +155,14 @@ export async function portfolioFacts(portfolioCode?: string, now = Date.now()):
     };
   });
 
-  const live = await existingSpaces(facts.map((f) => f.program.space_id)).catch(() => new Set<string>());
-  for (const f of facts)
+  const [live, pins] = await Promise.all([
+    existingSpaces(facts.map((f) => f.program.space_id)).catch(() => new Set<string>()),
+    myPins().catch(() => new Map<string, never>()),
+  ]);
+  for (const f of facts) {
     f.hasWorkspace = !!f.program.space_id && live.has(f.program.space_id);
+    f.pinned = f.hasWorkspace && pins.has(f.program.space_id!);
+  }
 
   // readiness for the next stage, exactly as the gate panel computes it (readinessFor)
   const criteriaOf = new Map<string, {modality: string | null, criterion: ContextCriterion}[]>();
@@ -238,6 +250,7 @@ export function buildTables(portfolios: PortfolioRow[], stages: Map<string, Stag
     col(S, COL.attentionRules, (x) => x.attention?.rules.filter((r) => r.items.length)
       .map((r) => `${r.name} ${r.items.length}`).join('; ') || null),
     col(DG.COLUMN_TYPE.BOOL, COL.workspace, (x) => x.hasWorkspace ?? false),
+    col(DG.COLUMN_TYPE.BOOL, COL.pinned, (x) => x.pinned ?? false),
     col(DG.COLUMN_TYPE.BOOL, COL.continued, (x) => !!x.program.predecessor_id),
   ]);
   programs.name = name;

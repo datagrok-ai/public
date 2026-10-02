@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- Pinned programs: pinning a program pins its workspace folder, as a platform favorite (the user's, or a group's by a portfolio approver); nothing is stored in the portal, so a pin made in the Workspace or with the star is the same pin. Program page: **Pin to my Workspace** / **Unpin**, **Pin for <viewers>** and **Build its folder** for approvers; a program without a folder says why it cannot be pinned. Board cards say *pinned*; the portfolio table has a `pinned` column
+- Home widget **My programs** (`myProgramsWidget`, `meta.role: dashboard`): a tile per pinned program across portfolios with stage on its track, status, next-gate readiness, attention and unseen new data; a click opens the program. Read in a few batched calls, readiness and attention from the portfolio table's facts. Functions `pinProgram`, `unpinProgram`, `pinnedPrograms`. Pure rules in `src/model/pinning.ts`
+- The app's address now names the program: `/apps/ProjectPortalCore/Portal/<portfolio>/<program>` opens its page
+
 - "Evidence changed since written" (F-41, FR-73): a generated evidence table's recorded sources are compared with the evidence now (another run selected, a newer snapshot, a data verdict changed, a decision added or gone). A stale document shows **stale**, what changed and **Regenerate** on its card, and an entry in the activity feed. After every sync and on `checkEvidenceChanges(code)` its author and the program's followers are told in the platform's notifications, once per state of the evidence
 - `portal` schema 0.2.26: `document.evidence_check`. Additive, no migration script
 

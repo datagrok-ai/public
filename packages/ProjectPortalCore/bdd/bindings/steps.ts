@@ -387,3 +387,37 @@ export const rootFolder = Given('a folder {string} no program claims under the w
       await grok.dapi.spaces.id(root.id).addSubspace(n);
     }, [name, portfolio]);
   }, {tier: 'api', description: 'an empty folder at the top of the portfolio\'s workspace; unparked if parked and deleted at the end of the feature'});
+
+/** Whether [program]'s folder is among the user's own favorites; pins it or not when [set] is given. */
+async function pinnedOwn(page: Page, program: string, portfolio: string, set?: boolean): Promise<boolean> {
+  return page.evaluate(async ([c, p, s]) => {
+    const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+    const row = (await grok.dapi.domains.table('portal.program').query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`}))[0];
+    const space = await grok.dapi.spaces.find(row.space_id);
+    const on = (await grok.dapi.entities.getFavorites(DG.User.current().group)).some((e: any) => e.id === space.id);
+    if (s !== null && s !== on)
+      await (s ? DG.Favorites.add(space) : DG.Favorites.remove(space));
+    return on;
+  }, [program, portfolio, set ?? null] as [string, string, boolean | null]);
+}
+
+export const notPinned = Given('the user has not pinned {string} in the {string} portfolio',
+  async (page: Page, program: string, portfolio: string) => {
+    silent(page);   // set-up a person does not do: kept out of guide videos
+    const was = await pinnedOwn(page, program, portfolio, false);
+    // the user's favorites end as they were found
+    atFeatureEnd(page, async () => {
+      await pinnedOwn(page, program, portfolio, was);
+    });
+  }, {tier: 'api', description: 'unpins the program\'s folder from the user\'s own favorites; at the end of the feature, puts back what was there'});
+
+export const openHome = When('user opens Home', async (page: Page) => {
+  await page.evaluate(() => {
+    const home = Array.from(grok.shell.views as any[]).find((v) => v.name === 'Home');
+    if (home)
+      grok.shell.v = home;
+    else
+      grok.shell.route('/');
+  });
+  await page.locator('[data-u2-name="my-programs"]').waitFor({timeout: 60000});
+}, {tier: 'ui', description: 'the platform\'s Home view with its widgets'});

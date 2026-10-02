@@ -274,6 +274,32 @@ A user follows a program, or one of its series, and hears when new results land 
 - **Program page.** **Follow**/**Unfollow** beside Open workspace, and Follow/Unfollow on each series row. A follower sees *What's new since your last visit* once per open of the program; the visit is then recorded.
 - `followProgram(portfolio, program, series)` and `unfollowProgram(...)` do the same by code.
 
+### Pinned programs: My programs on Home
+
+Pinning a program pins its workspace folder. The pin is a platform favorite on the folder, the user's own or a
+group's; the portal stores nothing. A pin made or removed anywhere (the program page, the star, the Workspace) is
+the same pin.
+
+- **Program page.** **Pin to my Workspace** / **Unpin** beside Follow, in the app and in the portfolio table's
+  program panel. A program without a built folder cannot be pinned; the button says why. An approver also gets
+  **Pin for <the portfolio's viewers>** (a group favorite) and, when the folder is missing, **Build its folder**
+  (this program's folders only).
+- **Board and table.** A pinned program's card says *pinned*; the portfolio table has a `pinned` column.
+- **Home.** The **My programs** widget: a tile per pinned program the user can see, across portfolios. A tile shows
+  code and name, portfolio, stage and its place on the track, status, the next gate's readiness (or *ready*), the
+  attention count and *new data* when a followed program has news the user has not seen. A group's pin is marked
+  *for <group>*. A click opens the program's page. With nothing pinned, the widget says how to pin.
+- **How it is read.** One call for the user's favorites, one for their groups' (`getFavoritesForGroups`), the
+  programs by `space_id`, then the portfolio table's facts for those programs only, so readiness and attention are
+  the table's (`readinessFor`). A program row the user cannot see gives no tile.
+- **The widget** is a `meta.role: dashboard` function (`myProgramsWidget`, `meta.order: 2`), which Home lists.
+  The user removes it with its close icon and brings it back under *Customize widgets…*; Home has no reordering.
+  It reads again each time Home comes back into view.
+- **Address.** `/apps/ProjectPortalCore/Portal/<portfolio>/<program>` opens a program's page; the app keeps the
+  address current as programs are opened.
+- `pinProgram(portfolio, program, group)`, `unpinProgram(...)` and `pinnedPrograms()` do the same by code. Pure
+  rules in `src/model/pinning.ts`.
+
 ### Activity feed
 
 What happened to a program, newest first, read from the portal's own records (F-21, FR-81). No
@@ -505,7 +531,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 
 | Function | What it does |
 |---|---|
-| `Project Portal` (app) | Portfolios, the selected portfolio's own board, and the gate for the selected program, with a link to the program's workspace. `/apps/ProjectPortalCore/Portal/<code>` opens one portfolio; `.../<code>/table` its table, `.../Portal/table` every portfolio's. |
+| `Project Portal` (app) | Portfolios, the selected portfolio's own board, and the gate for the selected program, with a link to the program's workspace. `/apps/ProjectPortalCore/Portal/<code>` opens one portfolio, `.../<code>/<program>` one program's page; `.../<code>/table` its table, `.../Portal/table` every portfolio's. |
 | `loadPortfolios` | Loads this package's portfolio files: groups, stage models, portfolios, feeds. Idempotent. |
 | `loadPortfolioConfigs(configs)` | Loads portfolios handed over by another package, as a JSON array, checked as a set |
 | `portfolioTable(portfolio)` | The programs of a portfolio, or without one of every portfolio you can see, as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace |
@@ -558,6 +584,10 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `parkOrphans(code, dryRun, folders)` | Moves those folders (or the ones named) into `_Parked/<date>` under the root and records each move; never deletes. Dry run by default; approvers apply |
 | `unparkFolder(id)` | Moves a parked folder back where it was; approvers only |
 | `parkedFolders(code, all)` | The portfolio's parked folders, and with `all` those restored since |
+| `pinProgram(portfolio, program, group)` | Pins the program's folder in your Workspace (a favorite), or a group's (approvers only), so it gets a tile in My programs |
+| `unpinProgram(portfolio, program, group)` | Takes the pin away |
+| `pinnedPrograms()` | Your pinned programs across portfolios: stage and step, status, next gate's readiness, attention, new data |
+| `myProgramsWidget` | The My programs widget on Home |
 | `setCompoundRole(portfolio, program, compound, role, rationale)` | Changes a compound's role in a program by hand, logged |
 | `saveModelRun(call, portfolio, program, unitOperation, runType, purpose, title, folder)` | Annotates, saves and links a run into the program's workspace, and records it as a `model_run` |
 | `saveRunToProgram(call)` | Opens the save-to-program dialog for a run |
@@ -576,6 +606,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
   - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds, stage folders from the builder and on advance, the orphan report.
+  - Pinned programs: the rules (what can be pinned, who pins for a group, pins from the user's and the groups' favorites, a tile's track, readiness and address, tiles that follow the pins, unseen news), and on EX-SMD a pin and unpin of EXS-PRO2 through favorites (its tile, `pinnedPrograms`, the table's `pinned` column), an unpin in the platform taking the tile away, a pin for the viewers group, a program without a folder refused, and a program's address opening its page. The admin's favorites are put back.
   - Parking: the rules (where each orphan goes, already parked, only some, who may, unparking over a folder of the same name, the parking folder never an orphan, the summary), and on EX-SMD a throwaway folder previewed, parked, left out of the report and the build, unparked with `_Parked` removed and the tree as before; a terminated scratch program's folder parked and not rebuilt; a non-approver refused.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
@@ -651,3 +682,6 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
    function is named `programData`, and `programDataTable` stays as a second function for scripts that use it.
 15. **Deleting a user setting that is not there throws.** `grok.userSettings.delete(name, key)` fails with
    `Cannot read properties of null` when the key is absent. The portal deletes only a key it has read.
+16. **`in (...)` over a string column of uuid-shaped values fails.** `space_id in ("…", "…")` on `program.space_id`
+   (a string) answers `operator does not exist: text = uuid`; `space_id = "…"` works. The pinned programs are read
+   with `=` joined by `or`, 50 at a time.

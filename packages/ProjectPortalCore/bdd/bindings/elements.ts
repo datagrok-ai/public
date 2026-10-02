@@ -203,3 +203,8 @@ app.element('scratch evidence project card', {selector: u2('program-bdd-et')});
 app.element('generate process description evidence button', {selector: u2('generate-evidence-process-description')});
 app.element('scratch stale evidence project card', {selector: u2('program-bdd-et2')});
 app.element('regenerate process description evidence link', {selector: u2('regenerate-document-process-description-0')});
+
+app.element('pin button', {selector: u2('pin-button')});
+app.element('EXS-KIN1 pinned mark', {selector: u2('pinned-exs-kin1')});
+app.element('my programs widget', {selector: u2('my-programs')});
+app.element('EXS-KIN1 tile', {selector: u2('pinned-tile-exs-kin1')});

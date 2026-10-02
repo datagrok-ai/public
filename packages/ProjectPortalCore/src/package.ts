@@ -45,6 +45,9 @@ import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as 
 import {reviewsOf} from './model/approvals';
 import {parkedFoldersOf, parkedFrame, parkOrphans as park, summarizeParkResult, unparkFolder as unpark} from './parking';
 import {ApprovalRequestRow} from './generated/db';
+import {pinByCode} from './pinning';
+import {pinnedFrame, pinnedTiles} from './pinned-programs';
+import {MyProgramsWidget} from './views/my-programs-widget';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -97,7 +100,12 @@ export async function projectPortalApp(path?: string): Promise<DG.ViewBase> {
     const known = code ? await portalDb.portfolios.getByKey({code}) : null;
     return portfolioTableView(known ? code : null);
   }
-  return portalAppView(segments.pop());
+  // .../Portal/<code>/<program>: the program's page in its portfolio
+  const [prev, last] = segments.slice(-2).map((x) => decodeURIComponent(x));
+  if (prev && last && !(await portalDb.portfolios.getByKey({code: last}).catch(() => null)) &&
+    await portalDb.portfolios.getByKey({code: prev}).catch(() => null))
+    return portalAppView(prev, last);
+  return portalAppView(last ?? prev);
 }
 
 //name: portfolioTable
@@ -731,6 +739,47 @@ export async function unparkFolder(id: string): Promise<string> {
 //output: dataframe result
 export async function parkedFolders(code: string, all: boolean = false): Promise<DG.DataFrame> {
   return parkedFrame(await parkedFoldersOf(await portfolioByCode(code), all), `${code} · Parked folders`);
+}
+
+//name: pinProgram
+//description: Pins the program's workspace folder in your Workspace (a platform favorite), so its tile shows in My programs on Home. With a group, pins it for everyone in that group: the portfolio's approvers only. A program without a folder cannot be pinned
+//input: string portfolio
+//input: string program
+//input: string group {optional: true; description: Group name; default: you}
+//output: string report
+export async function pinProgram(portfolio: string, program: string, group?: string): Promise<string> {
+  return pinByCode(portfolio, program, true, group || null);
+}
+
+//name: unpinProgram
+//description: Takes the program's workspace folder out of your Workspace, or a group's, and its tile off Home
+//input: string portfolio
+//input: string program
+//input: string group {optional: true; description: Group name; default: you}
+//output: string report
+export async function unpinProgram(portfolio: string, program: string, group?: string): Promise<string> {
+  return pinByCode(portfolio, program, false, group || null);
+}
+
+//name: pinnedPrograms
+//description: The programs whose folders are pinned in your Workspace (by you or for your groups) that you can see, across portfolios: stage on its track, status, readiness for the next gate, attention, new data
+//output: dataframe result
+export async function pinnedPrograms(): Promise<DG.DataFrame> {
+  return pinnedFrame(await pinnedTiles());
+}
+
+//name: myProgramsWidget
+//friendlyName: My programs
+//description: Home widget: a tile per pinned program, with its stage, readiness for the next gate, attention and new data; a click opens its page
+//output: widget result
+//meta.role: dashboard
+//meta.order: 2
+export async function myProgramsWidget(): Promise<DG.Widget | null> {
+  // a user who sees no portfolio gets no widget
+  if (!(await portalDb.portfolios.count({}).catch(() => 0)))
+    return null;
+  installStyles();
+  return new MyProgramsWidget();
 }
 
 //name: saveModelRun
