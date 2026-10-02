@@ -54,30 +54,45 @@ export async function deserializeRestrictions(str: string): Promise<Record<strin
   return restrictions;
 }
 
-// TODO: probably move to core
-export function getFuncallDefaults(func: DG.Func) {
-  const defaultValues: Record<string, any> = {};
-  for (const prop of func.inputs) {
-    const name = prop.name;
-    if (prop.options.default)
-    // sometimes it is parsable, sometimes not
-    {
-      try {
-        defaultValues[name] = JSON.parse(prop.options.default);
-      } catch {
-        defaultValues[name] = prop.options.default;
-      }
+// the platform evaluates the annotation's default as GrokScript (1.28+); a bare word such as
+// `= high` is not an expression and falls back to its literal text, as annotation authors intend
+async function annotationDefault(fc: DG.FuncCall, prop: DG.Property) {
+  const text = prop.options.default;
+  if (typeof (fc as any).evalParamDefault === 'function') {
+    try {
+      return await fc.evalParamDefault(prop.name);
+    } catch {
+      // not an expression: use the literal text
     }
   }
-  return defaultValues;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function setDefault(fc: DG.FuncCall, name: string, value: any) {
+  try {
+    fc.setParamValue(name, value);
+  } catch (e) {
+    console.warn(`RTD: default of ${name} does not fit the input`, e);
+  }
+}
+
+/** The annotation defaults of a new call; initial values win. Choices never fill a value: they are metadata. */
+async function initNewCall(fc: DG.FuncCall, initialValues: Record<string, any>) {
+  const defaults = fc.func.inputs.filter((prop) => prop.options.default != null && !(prop.name in initialValues));
+  const values = await Promise.all(defaults.map((prop) => annotationDefault(fc, prop)));
+  defaults.forEach((prop, idx) => setDefault(fc, prop.name, values[idx]));
 }
 
 export async function makeFuncCall(
-  nqName: string, isReadonly: boolean,
+  nqName: string, isReadonly: boolean, initialValues: Record<string, any> = {},
 ): Promise<AdapterInitData> {
   const func = DG.Func.byName(nqName);
-  const defaultValues = getFuncallDefaults(func);
-  const fc = func.prepare(defaultValues);
+  const fc = func.prepare(initialValues);
+  await initNewCall(fc, initialValues);
   fc.newId();
   const adapter = new FuncCallAdapter(fc, isReadonly);
   return {adapter, restrictions: {}, runError: undefined, isOutputOutdated: true};

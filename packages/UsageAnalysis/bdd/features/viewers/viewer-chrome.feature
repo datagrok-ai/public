@@ -117,6 +117,7 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
     Then <viewer> viewer should not be docked along the left edge of the view
     When user docks <viewer> viewer to the left edge of the view
     Then <viewer> viewer should be docked along the left edge of the view
+    Given the stand serves the help pages
     When user opens the help of <viewer> viewer
     Then help panel should contain text "<help>"
     And no errors should have been logged

@@ -1,0 +1,210 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/apps/demos-bioinformatics.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+sub_features_covered: [views.browse]
+--- */
+import {test} from '@playwright/test';
+import '../../bindings/connections.js';
+import '../../bindings/grid.js';
+import '../../bindings/spaces.js';
+import '../../bindings/tile-viewer.js';
+import '../../bindings/trellis-plot.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {currentRowIs, makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
+import {customFiredWith, listenCustom} from '@datagrok-libraries/bdd/bindings/platform/events';
+import {browsePanelOpen, packageInstalled, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {noBalloons, noErrors, reportsNoError} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {el, feature} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("The Bioinformatics demos open from Browse > Apps > Demo with their content", () => {
+  const session = feature(test, "features/apps/demos-bioinformatics.feature", import.meta.url);
+  test("The Peptide SAR demo opens with its Sequence Variability Map viewer and its table [package=Peptides, demo=Peptide SAR, node=Peptide-SAR, viewer=Sequence Variability Map, rows=647]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"Peptides\" package is installed", () => packageInstalled(page, "Peptides"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---Peptide-SAR tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Peptide-SAR tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Peptide SAR\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Peptide SAR"));
+    await session.step(27, "And the \"Peptide SAR\" view should be current", () => viewIsCurrent(page, "Peptide SAR"));
+    await session.step(28, "And Sequence Variability Map viewer should be visible", () => shouldBe(page, el("Sequence Variability Map viewer"), "visible"));
+    await session.step(29, "And the table should have 647 rows", () => rowCount(page, 647));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("The Sequence Activity Cliffs demo opens with its scatter plot viewer and its table [package=Bio, demo=Sequence Activity Cliffs, node=Sequence-Activity-Cliffs, viewer=scatter plot, rows=729]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"Bio\" package is installed", () => packageInstalled(page, "Bio"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---Sequence-Activity-Cliffs tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Sequence-Activity-Cliffs tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Sequence Activity Cliffs\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Sequence Activity Cliffs"));
+    await session.step(27, "And the \"Sequence Activity Cliffs\" view should be current", () => viewIsCurrent(page, "Sequence Activity Cliffs"));
+    await session.step(28, "And scatter plot viewer should be visible", () => shouldBe(page, el("scatter plot viewer"), "visible"));
+    await session.step(29, "And the table should have 729 rows", () => rowCount(page, 729));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("The siRNA demo opens with its form viewer and its table [package=Bio, demo=siRNA, node=siRNA, viewer=form, rows=35]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"Bio\" package is installed", () => packageInstalled(page, "Bio"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---siRNA tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---siRNA tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | siRNA\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | siRNA"));
+    await session.step(27, "And the \"siRNA\" view should be current", () => viewIsCurrent(page, "siRNA"));
+    await session.step(28, "And form viewer should be visible", () => shouldBe(page, el("form viewer"), "visible"));
+    await session.step(29, "And the table should have 35 rows", () => rowCount(page, 35));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("The Antibodies demo opens with its Sequence Position Statistics viewer and its table [package=Bio, demo=Antibodies, node=Antibodies, viewer=Sequence Position Statistics, rows=493]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"Bio\" package is installed", () => packageInstalled(page, "Bio"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---Antibodies tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Antibodies tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Antibodies\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Antibodies"));
+    await session.step(27, "And the \"Antibodies\" view should be current", () => viewIsCurrent(page, "Antibodies"));
+    await session.step(28, "And Sequence Position Statistics viewer should be visible", () => shouldBe(page, el("Sequence Position Statistics viewer"), "visible"));
+    await session.step(29, "And the table should have 493 rows", () => rowCount(page, 493));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("The Sequence Space demo opens with its scatter plot viewer and its table [package=Bio, demo=Sequence Space, node=Sequence-Space, viewer=scatter plot, rows=540]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"Bio\" package is installed", () => packageInstalled(page, "Bio"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---Sequence-Space tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Sequence-Space tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Sequence Space\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Sequence Space"));
+    await session.step(27, "And the \"Sequence Space\" view should be current", () => viewIsCurrent(page, "Sequence Space"));
+    await session.step(28, "And scatter plot viewer should be visible", () => shouldBe(page, el("scatter plot viewer"), "visible"));
+    await session.step(29, "And the table should have 540 rows", () => rowCount(page, 540));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("The Similarity, Diversity demo opens with its Sequence Similarity Search viewer and its table [package=Bio, demo=Similarity, Diversity, node=Similarity,-Diversity, viewer=Sequence Similarity Search, rows=1000]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"Bio\" package is installed", () => packageInstalled(page, "Bio"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---Similarity,-Diversity tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Similarity,-Diversity tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Similarity, Diversity\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Similarity, Diversity"));
+    await session.step(27, "And the \"Similarity, Diversity\" view should be current", () => viewIsCurrent(page, "Similarity, Diversity"));
+    await session.step(28, "And Sequence Similarity Search viewer should be visible", () => shouldBe(page, el("Sequence Similarity Search viewer"), "visible"));
+    await session.step(29, "And the table should have 1000 rows", () => rowCount(page, 1000));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("The Atomic Level demo opens with its grid viewer and its table [package=Bio, demo=Atomic Level, node=Atomic-Level, viewer=grid, rows=6]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"Bio\" package is installed", () => packageInstalled(page, "Bio"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---Atomic-Level tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Atomic-Level tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Atomic Level\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Atomic Level"));
+    await session.step(27, "And the \"Atomic Level\" view should be current", () => viewIsCurrent(page, "Atomic Level"));
+    await session.step(28, "And grid viewer should be visible", () => shouldBe(page, el("grid viewer"), "visible"));
+    await session.step(29, "And the table should have 6 rows", () => rowCount(page, 6));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("The Docking Conformations demo opens with its NGL viewer and its table [package=BiostructureViewer, demo=Docking Conformations, node=Docking-Conformations, viewer=NGL, rows=7395]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"BiostructureViewer\" package is installed", () => packageInstalled(page, "BiostructureViewer"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---Docking-Conformations tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Docking-Conformations tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Docking Conformations\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Docking Conformations"));
+    await session.step(27, "And the \"Docking Conformations\" view should be current", () => viewIsCurrent(page, "Docking Conformations"));
+    await session.step(28, "And NGL viewer should be visible", () => shouldBe(page, el("NGL viewer"), "visible"));
+    await session.step(29, "And the table should have 7395 rows", () => rowCount(page, 7395));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("The Proteins demo opens with its Biostructure viewer and its table [package=BiostructureViewer, demo=Proteins, node=Proteins, viewer=Biostructure, rows=6]", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(23, "Given the \"BiostructureViewer\" package is installed", () => packageInstalled(page, "BiostructureViewer"));
+    await session.step(24, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(25, "When user clicks on Apps---Demo---Bioinformatics---Proteins tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Proteins tree node inside browse tree")));
+    await session.step(26, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Proteins\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Proteins"));
+    await session.step(27, "And the \"Proteins\" view should be current", () => viewIsCurrent(page, "Proteins"));
+    await session.step(28, "And Biostructure viewer should be visible", () => shouldBe(page, el("Biostructure viewer"), "visible"));
+    await session.step(29, "And the table should have 6 rows", () => rowCount(page, 6));
+    await session.step(30, "And no errors should have been logged", () => noErrors(page));
+    await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+  test("A row made current in the Similarity, Diversity demo is the one its search starts from", {tag: ["@apps", "@demos", "@realizes:views.browse"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the \"Tutorials\" package is installed", () => packageInstalled(page, "Tutorials"));
+    await session.step(18, "And Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
+    await session.step(19, "And Apps---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo tree node inside browse tree")));
+    await session.step(20, "And Apps---Demo---Bioinformatics tree node inside browse tree is expanded", () => isExpanded(page, el("Apps---Demo---Bioinformatics tree node inside browse tree")));
+    await session.step(46, "Given the \"Bio\" package is installed", () => packageInstalled(page, "Bio"));
+    await session.step(47, "And user listens for \"demo-loaded\" custom event", () => listenCustom(page, "demo-loaded"));
+    await session.step(48, "When user clicks on Apps---Demo---Bioinformatics---Similarity,-Diversity tree node inside browse tree", () => clickOn(page, el("Apps---Demo---Bioinformatics---Similarity,-Diversity tree node inside browse tree")));
+    await session.step(49, "Then the \"demo-loaded\" custom event should have fired with path \"Bioinformatics | Similarity, Diversity\"", () => customFiredWith(page, "demo-loaded", "path", "Bioinformatics | Similarity, Diversity"));
+    await session.step(50, "When user makes row 3 current", () => makeRowCurrent(page, 3));
+    await session.step(51, "Then row 3 should be current", () => currentRowIs(page, 3));
+    await session.step(52, "And Sequence Similarity Search viewer should report no error", () => reportsNoError(page, el("Sequence Similarity Search viewer")));
+    await session.step(53, "And no errors should have been logged", () => noErrors(page));
+    await session.step(54, "And no error or warning balloon should have been shown", () => noBalloons(page));
+  });
+});

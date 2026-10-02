@@ -102,10 +102,10 @@ export class DBExplorer {
         });
       });
       this.schemasLoaded = true;
-    } catch (_e) {
+    } catch (e) {
       this.loadingFailed = true;
-      console.warn('Failed to load DB schema, Object handlers not registered');
-      console.error(_e);
+      // a database the stand cannot reach only means its object handlers are not offered
+      console.warn('Failed to load DB schema, Object handlers not registered', e);
     }
     if (this.connection)
       this.objHandlers.forEach((handler) => handler.connectionNqName = this.connection!.nqName); // set for detection in isApplicable

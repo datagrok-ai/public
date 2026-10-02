@@ -2,11 +2,13 @@
 
 ## v.next
 
-* RTD: Added the `visible` and GrokScript `validator` checks (`script`/`scriptVerdict` rule operations over `grok.functions.scriptSync`, platform 1.28+), `vars` on `check` links, and `isClientAtLeast` in utils
-* RTD: Added the `validators` check (named validator functions called directly; annotation-derived ones through `FuncCall.evalParamValidators`, platform 1.28+, skipped on older clients), rule `sources` (`validators` and `js` resolvers) with the `verdicts` effect, and array validator messages
-* RTD: Added `check` links and annotation-derived default validators sharing one expansion (`nullable`, `min`/`max`, regex `validator`, static `choices`, column `type`/`semType`/`table`/`allowNulls`), the `regex`, `nulls` and `columnIs` rule operations, the platform column kinds in `columns`/`columnsMissing`, and `nullable: true` annotations now make an input optional
-* RTD: Plain data links stay inactive while the init hook and `runOnInit` links run, so init writes no longer propagate through them
-* RTD: Added declarative `rule` links (JSON Logic conditions expanding into meta/validator/data links), `params`/`getParam` controller support, and validation suppression for inputs hidden via meta
+* RTD: Added declarative `rule` links: JSON Logic conditions with per-effect `when`; `hide`/`show`/`items`/`meta`, `error`/`warning`/`notification`/`verdicts` and `set`/`clear`/`assign` effects; `(template)` queries; `validators`, `choices`, `js`, `func`, `query`, `file` and `table` sources; the `literal`, `columns`, `columnsMissing`, `columnIs`, `nulls`, `column`, `row`, `len`, `regex`, `script` and `scriptVerdict` operations; array messages; driver-added names use a `$` prefix, as in `$all.<alias>`
+* RTD: Added `check` links and annotation-derived default validators sharing one expansion (`nullable`/`optional`, `min`/`max`, regex and GrokScript `validator`, `visible` (also read from `enabled`, which hides the input), `validators`, static `choices`, column `type`/`semType`/`table`/`allowNulls`); `nullable: true` annotations now make an input optional; GrokScript checks and annotation validators need platform 1.28+ and are skipped on older clients
+* RTD: Added annotation-derived rules for choices the platform evaluates: the items, a warning for values outside the list, and the `propagateChoice: all` lookup (the first such key of a step; cells converted to the input types)
+* RTD: Added `$nonscalar` and `$linked` exclusions to the `inputs()`/`outputs()` io wildcards
+* RTD: Added `params`/`getParam` controller support, and `isClientAtLeast` in utils
+* RTD: Fixed computed annotation defaults (`= 2 + 2`, `= Pkg:f()`) being written as text, which failed step creation for numeric inputs; new steps evaluate defaults through the platform
+* RTD: Fixed inputs hidden via meta blocking the run with validation errors the user could not see; their validation is now suppressed
 
 ## 1.47.0 (2026-09-23)
 

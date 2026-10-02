@@ -8,6 +8,10 @@ import {applyDefaultFloatFormats, ConsistencyInfo, injectInputBaseStatus, isInpu
 import {BehaviorSubject} from 'rxjs';
 import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
 
+// same reading as the driver's required check
+const isOptionalParam = (prop: DG.Property) =>
+  prop.options?.optional === 'true' || prop.options?.nullable === 'true';
+
 declare global {
   namespace JSX {
     interface IntrinsicElements {
@@ -28,6 +32,10 @@ export const InputForm = Vue.defineComponent({
       default: true,
     },
     skipTableAutoFill: {
+      type: Boolean,
+      default: false,
+    },
+    skipLogic: {
       type: Boolean,
       default: false,
     },
@@ -65,6 +73,7 @@ export const InputForm = Vue.defineComponent({
     const isReadonly = Vue.computed(() => props.isReadonly);
     const skipInit = Vue.computed(() => props.skipInit);
     const skipTableAutoFill = Vue.computed(() => props.skipTableAutoFill);
+    const skipLogic = Vue.computed(() => props.skipLogic);
     const formRef = Vue.shallowRef<InputFormT | undefined>(undefined);
 
     const callMetaValues = useUnwrappedCallMeta(() => props.callMeta);
@@ -98,13 +107,19 @@ export const InputForm = Vue.defineComponent({
         .forEach((param) => {
           const input = form.getInput(param.property.name);
           const paramItems = meta[param.property.name]?.['items'];
+          const emptyChoice = meta[param.property.name]?.['emptyChoice'];
           if (input.inputType === DG.InputType.Choice) {
             input.notify = false;
             const currentValue = param.value;
             try {
+              // before the items, so the empty option leads the list; the meta overrides the annotation
+              if (emptyChoice != null)
+                input.nullable = !!emptyChoice;
+              else if (skipInit.value)
+                input.nullable = isOptionalParam(param.property);
               if (paramItems)
                 (input as DG.ChoiceInput<any>).items = paramItems;
-              else if (param.property.options.choices && skipInit.value) {
+              else if (param.property.options.choices && (skipInit.value || skipLogic.value)) {
                 let items = undefined;
                 let isParsed = false;
                 try {
@@ -147,6 +162,7 @@ export const InputForm = Vue.defineComponent({
       <dg-input-form
         skipInit={skipInit.value}
         skipTableAutoFill={skipTableAutoFill.value}
+        skipLogic={skipLogic.value}
         funcCall={currentCall.value}
         onFormReplaced={formReplacedCb}
         onInputChanged={(ev: CustomEvent<DG.EventData<DG.InputArgs>>) => emit('inputChanged', ev.detail)}

@@ -51,7 +51,7 @@ export class DashboardTutorial extends Tutorial {
       (el.textContent ?? '')?.startsWith('Postgres'))[0]!;
 
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
-      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
+      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "New connection..."`);
 
     await this.dlgInputAction(dlg, `Set "Name" to "${connectionName}"`, 'Name', connectionName);
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
@@ -61,10 +61,10 @@ export class DashboardTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
-    const starbucksNodes = $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
-      el.textContent === 'Starbucks');
+    const starbucksNode = () => $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
+      el.textContent === connectionName).last()[0] ?? null;
     const dqv = await this.openViewByType(`Create a data query to the "${connectionName}" data connection`,
-      'DataQueryView', starbucksNodes[starbucksNodes.length - 1],
+      'DataQueryView', starbucksNode,
       `Open the context menu on Postgres | ${connectionName} and click "New Query..."`);
 
     await this.textInpAction(dqv.root, `Set "Name" to "${queryName}"`, 'Name', queryName);
@@ -97,7 +97,8 @@ export class DashboardTutorial extends Tutorial {
         elementClick(() => browseSidebar), browseSidebar);
 
     const paramEditorDlg = await this.openDialog('Find the created query in the browse view, right-click it and hit Run',
-      queryName, $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.includes(queryName))[0]!);
+      queryName, () => $('div.d4-tree-view-item-label')
+        .filter((idx, el) => (el.textContent ?? '').includes(queryName))[0] ?? null);
 
     await this.dlgInputAction(paramEditorDlg, 'Set state to "NY"', 'State', 'NY');
 
@@ -151,9 +152,11 @@ export class DashboardTutorial extends Tutorial {
     await this.action('Close the project', grok.events.onProjectClosed.pipe(filter(isSavedProject)), null, closeProjectDescription);
 
     await DG.delay(1000);
-    const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
+    // the tree is rebuilt after Close all, so the row is looked up on every poll; a click anywhere in it counts
+    const dashboardsNode = () => ($('div.d4-tree-view-item-label')
+      .filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]?.closest('.d4-tree-view-node') as HTMLElement) ?? null;
 
-    await this.action('Open browse and click on Dashboards', elementClick(() => dashboardsLabel), dashboardsLabel);
+    await this.action('Open browse and click on Dashboards', elementClick(dashboardsNode), dashboardsNode);
 
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter(isSavedProject)), null,

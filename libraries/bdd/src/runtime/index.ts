@@ -13,4 +13,4 @@ export {columnsSince, menuNames, openTopMenu, pickTopMenu, waitCommand} from './
 export {expectCustomEvent, listenCustomEvent} from './events.js';
 export {silent} from './guide.js';
 export {serverRequests, chatIdsOf, deleteChatsOf, deleteLayoutsAtEnd, serverNow, fixtureFamilies, isStaleFixture,
-  RUN_SUFFIX, STALE_AFTER_MS} from './server.js';
+  RUN_SUFFIX, STALE_AFTER_MS, serviceGap, reportedServices} from './server.js';

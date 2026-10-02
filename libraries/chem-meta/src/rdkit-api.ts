@@ -42,7 +42,7 @@ export interface RDMol {
   //   allBondsExplicit: bool, allHsExplicit: bool, doRandom: bool, rootedAtAtom: int,
   //   includeDativeBonds: bool, ignoreAtomMapNumbers: bool
   get_smiles(details?: string): string;
-  get_cxsmiles(): string;
+  get_cxsmiles(details?: string): string;
   get_smarts(): string;
   get_cxsmarts(): string;
   get_molblock(details?: string): string;

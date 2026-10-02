@@ -1339,7 +1339,8 @@
 
 /* "How to combine" holds three separate forms, which size their columns independently. The width
    below keeps them out of .ui-form-condensed; the pins that follow align their columns with each
-   other. !important beats the platform's own per-form inline widths, applied async after layout. */
+   other. !important beats the platform's own per-form inline widths, applied async after layout.
+   A checkbox's editor is only the box, so it keeps its own width. */
 .chem-enumerator .chem-enum-combine-pane .ui-form {
   min-width: var(--chem-enum-form-min-width);
 }
@@ -1351,7 +1352,7 @@
   text-align: right !important;
   margin-right: 8px !important;
 }
-.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > .ui-input-editor {
+.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root:not(.ui-input-bool) > .ui-input-editor {
   flex-grow: 0 !important;
   width: var(--chem-enum-editor-width) !important;
   min-width: var(--chem-enum-editor-width) !important;

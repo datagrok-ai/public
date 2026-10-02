@@ -16,7 +16,7 @@ export class AggregationTutorial extends Tutorial {
     return 'Learn different ways of data aggregation and pivoting';
   }
   get steps(): number {
-    return 12;
+    return 11;
   }
 
   get icon(): string {

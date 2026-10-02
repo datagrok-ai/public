@@ -4,7 +4,7 @@ import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {
   CHANGED_DOT_STYLE, clampRounds, combinationLimitsChanged, DataKey, estimateProductCount, MAX_ROUNDS, Mode,
-  MODE_LABEL, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
+  MODE_LABEL, panelHeader, productFiltersChangedCount, cyclesLabel, roundsLabel, tabPanel,
 } from './shared';
 
 export interface StrategySummaryDeps {
@@ -50,7 +50,7 @@ export class StrategySummary {
       this.deps.overrideCountFor(overrides, mode, r, key);
 
     const card = ui.div([], {style: {maxWidth: '480px'}});
-    card.appendChild(ui.divText(`${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`,
+    card.appendChild(ui.divText(`${MODE_LABEL[mode]} · ${roundsLabel(rounds)}${cyclesLabel(config)}`,
       {style: {fontWeight: 'bold', fontSize: '13px', marginBottom: '10px'}}));
     if (rounds > MAX_ROUNDS) {
       card.appendChild(ui.divText(

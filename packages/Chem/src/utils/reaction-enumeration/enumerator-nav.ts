@@ -26,6 +26,8 @@ export interface EnumeratorNavDeps {
   reagentsInput: DG.InputBase<DG.DataFrame | null>;
   numRoundsInput: DG.InputBase<number | null>;
   depthFirstInput: DG.InputBase<boolean>;
+  applyUntilFailsInput: DG.InputBase<boolean>;
+  maxCyclesInput: DG.InputBase<number | null>;
   configInfoIcon: HTMLElement;
   // Getters, not snapshots: both field groups are rebuilt wholesale on every YAML load, so the
   // lazy form builder must re-read them rather than capture the arrays present at construction.
@@ -190,8 +192,9 @@ export class EnumeratorNav {
         this.deps.configInfoIcon,
       ], {style: {alignItems: 'center', gap: '4px'}}),
       ui.divV([this.stratDepthCard.root, this.stratBreadthCard.root, this.reagentsModeNote], {style: {gap: '6px'}}),
-      ui.div([ui.form([this.deps.numRoundsInput])],
-        {style: {marginLeft: `${CHEM_ENUM_NESTED_ACCORDION_INDENT}px`}}),
+      ui.div([ui.form([
+        this.deps.numRoundsInput, this.deps.applyUntilFailsInput, this.deps.maxCyclesInput,
+      ])], {style: {marginLeft: `${CHEM_ENUM_NESTED_ACCORDION_INDENT}px`}}),
       limitsAccordion.root,
       // First pane in the chain — no Back target.
       navRow(null, mkNextBtn(() => this.accReactionsPane, 'Reactions')),

@@ -127,6 +127,12 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
 
   const doneBtn = ui.button('done', () => popup.remove(), 'Go to the next step');
 
+  // named as runDescriber names its buttons, so a tour of either kind is walked the same way
+  for (const [btn, role] of [[nextBtn, 'next'], [prevBtn, 'prev'], [doneBtn, 'done']] as [HTMLButtonElement, string][]) {
+    btn.setAttribute('name', `button-tour-${role}`);
+    btn.setAttribute('aria-label', role);
+  }
+
   const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
   btnsDiv.classList.add('tutorials-sci-comp-btns-div');
 

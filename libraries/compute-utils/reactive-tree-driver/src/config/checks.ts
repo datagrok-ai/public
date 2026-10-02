@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {RuleEffect, RuleExpr, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
+import {RuleEffect, RuleExpr, RuleLogic, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
 
 /** The annotation options the driver validates. Keys and values match the function
  *  annotation syntax; `check` links use the same object. */
@@ -39,11 +39,11 @@ export type ExpandedCheck = {
   needsCall: boolean;
   /** The check's expression reads the step's other inputs by name. */
   needsInputs: boolean;
-  params: {when: RuleExpr, effects: RuleEffect[], sources?: Record<string, RuleSource>};
+  params: {when: RuleLogic, effects: RuleEffect[], sources?: Record<string, RuleSource>};
 };
 
 export type CheckExtras = {
-  when?: RuleExpr;
+  when?: RuleLogic;
   message?: RuleExpr;
   severity?: CheckSeverity;
 };
@@ -52,11 +52,12 @@ export const checkOptionKeys: (keyof CheckOptions)[] =
   ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'visible', 'choices', 'type', 'semType', 'table', 'allowNulls'];
 
 // aliases shared by annotation-derived and config checks
+// `value` follows the platform's validator expressions; the rest are the driver's own names
 export const VALUE = 'value';
-export const TABLE = 'table';
-export const TARGET = 'target';
-export const CALL = 'call';
-const VERDICTS = 'verdicts';
+export const TABLE = '$table';
+export const TARGET = '$target';
+export const CALL = '$call';
+const VERDICTS = '$verdicts';
 
 const present = {'!': {missing: [VALUE]}};
 const value = {var: VALUE};
@@ -74,7 +75,7 @@ type Condition = {
   needsTable: boolean;
   needsCall: boolean;
   needsInputs?: boolean;
-  when: RuleExpr;
+  when: RuleLogic;
   /** Ready-made effects for non-validator families. */
   effects?: RuleEffect[];
   /** A fixed message, or the alias of a source whose verdicts carry the messages. */
@@ -87,7 +88,7 @@ type Condition = {
 
 function conditions(options: CheckOptions): Condition[] {
   const out: Condition[] = [];
-  const add = (key: CheckKey, when: RuleExpr, message: string, needsTable = false) =>
+  const add = (key: CheckKey, when: RuleLogic, message: string, needsTable = false) =>
     out.push({key, needsTable, needsCall: false, when: {and: [present, when]}, message});
   if (options.nullable === false)
     out.push({key: 'required', needsTable: false, needsCall: false, when: {missing: [VALUE]}, message: 'Missing value'});
@@ -172,7 +173,7 @@ export function expandChecks(options: CheckOptions, extras: CheckExtras = {}): E
     else if (verdicts != null && extras.message == null && extras.severity == null)
       effects.push({effect: 'verdicts', targets: [TARGET], source: verdicts});
     else {
-      const text = extras.message ?? verdictMessage ?? message ?? {map: [{var: verdicts}, {var: 'message'}]};
+      const text = extras.message ?? verdictMessage ?? message ?? {map: [{var: verdicts!}, {var: 'message'}]};
       effects.push({effect: extras.severity ?? 'error', targets: [TARGET], message: text});
     }
     return {
@@ -203,7 +204,7 @@ function parseNumber(val: string | undefined): number | undefined {
   return Number.isNaN(num) ? undefined : num;
 }
 
-function parseChoices(val: string | undefined): any[] | undefined {
+export function parseChoices(val: string | undefined): any[] | undefined {
   if (val == null)
     return undefined;
   try {
@@ -230,8 +231,10 @@ export function parseAnnotationChecks(prop: DG.Property): CheckOptions {
   }
   if (options.validator)
     checks.validator = options.validator;
-  if (options.visible)
-    checks.visible = options.visible;
+  // workflows hide an input the form would disable: a disable without a value has no place in data links
+  const shown = [options.visible, options.enabled].filter(Boolean);
+  if (shown.length)
+    checks.visible = shown.length > 1 ? `(${shown[0]}) && (${shown[1]})` : shown[0];
   // the platform keeps `validators` as an array; other options arrive as strings
   const validators = Array.isArray(options.validators) ? options.validators : parseChoices(options.validators);
   if (validators?.length && validators.every((name: unknown) => typeof name === 'string'))

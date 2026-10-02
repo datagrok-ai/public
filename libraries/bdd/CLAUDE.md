@@ -31,7 +31,8 @@ bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart con
 bindings/platform/      the shell: elements, datasets, steps (views, projects and the Save dialog, server fixtures, the second
                         account and signing in as another), data (rows, filter, links between tables), columns, commands,
                         functions, events, workspace (open tables and views, direct links, files in the user's files or a
-                        space, a dropped or chosen file) — always loaded
+                        space, a dropped or chosen file), browse (the tree's loading state, favorites,
+                        moving by address) — always loaded
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, layouts, events, floor), widgets (shared
                         per-viewer steps, the grid, docking and tabbed panels), formula-lines (the Formula Lines dialog and
                         what a viewer draws of its lines), filter-panel
@@ -76,6 +77,22 @@ when translating, not when looking for gaps, not when a TestTrack case asks for 
 One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer's tree comes from
 the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,
 filtering, editing and removing nodes), which no package test reaches. Similar things should stay/be translated as well, as long as they actually test ui.
+
+A UI walk that an outside dependency interrupts halfway (a tutorial whose last step runs SQL on an
+outside host) keeps its UI part: a capability gate (`the stand runs the {string} service`, `the stand
+can reach the database of the {string} connection`) goes right before the step that needs it and skips
+the rest of the test where the stand has not got it (`test.skip`; `isSkip` in `failure.ts` lets it
+through the harness; a journey that skips after a failed scenario reports that failure). Python in
+Jupyter stays out even behind a gate (the lead, 2026-10-01): the Scripting tutorial ends before its
+run. The service gate reads the health the stand reports (`serviceGap` in `server.ts`); a dev stack
+reports none (datlas runs without `checkHealth`), and that lets the test go on rather than skip — a
+tutorial, which itself refuses to start on such a stand, gates with the Tutorials project's strict copy. A third gate, `the {string} package is
+installed`, is for a package a feature needs but does not test (a Chem demo on a stand without Chem,
+as the minimal CI stack is); it may sit in the Background when every scenario needs that package, and
+never names the package under test, whose absence is a failure. Two more, agreed 2026-09-30: `the stand has
+a reachable {string} connection` for a connection a package brings (its absence skips, unlike the feature's
+own fixture connection), and `the stand serves the help pages` before a claim on the help panel (a dev stack
+serves none). Nothing else skips.
 
 A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in

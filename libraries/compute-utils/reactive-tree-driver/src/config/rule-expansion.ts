@@ -1,3 +1,4 @@
+import * as DG from 'datagrok-api/dg';
 import {LinkSpecString} from '../data/common-types';
 import {
   PipelineCheckConfiguration, PipelineHandlerConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationInput,
@@ -5,9 +6,10 @@ import {
 } from './PipelineConfiguration';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
 import {parseLinkIO} from './LinkSpec';
-import {IOType, expandDeferredIOs, normalizeLinkSpec} from './config-processing-utils';
+import {FuncCallIODescription, IOType, expandDeferredIOs, normalizeLinkSpec} from './config-processing-utils';
 import {ruleDataHandler, ruleMetaHandler, ruleValidatorHandler} from '../runtime/rule-handlers';
 import {ruleTargets, usedAliases} from '../runtime/rule-expressions';
+import {DriverLogger, reportError} from '../data/Logger';
 
 const metaEffects = new Set(['hide', 'show', 'items', 'meta']);
 const validatorEffects = new Set(['error', 'warning', 'notification', 'verdicts']);
@@ -23,6 +25,70 @@ export function isCheckLink(
   link: PipelineLinkConfigurationInput<LinkSpecString>,
 ): link is PipelineCheckConfiguration<LinkSpecString> {
   return link.type === 'check';
+}
+
+/** The rules a step's annotations stand for: for each input whose choices the platform evaluates,
+ *  the item list and a warning for a value outside it, and for the first
+ *  `propagateChoice: all` input the lookup writing the picked row into the other scalar inputs. */
+export function annotationRules(
+  nqName: string, io: FuncCallIODescription[], logger?: DriverLogger,
+): PipelineRuleConfiguration<LinkSpecString>[] {
+  // without the platform evaluation (before 1.28) the rules would only ever be off
+  if (typeof (DG.FuncCall.prototype as any).evalParamChoices !== 'function')
+    return [];
+  const inputs = io.filter((item) => item.direction === 'input');
+  // aliases next to the io names the template queries produce
+  const free = (name: string): string => inputs.some((other) => other.id === name) ? free(`${name}_`) : name;
+  // the first lookup already writes every other scalar input, so a second one would have no targets of its own
+  const lookupKey = inputs.find((item) => item.dynamicChoices?.propagate)?.id;
+  for (const item of inputs) {
+    if (item.dynamicChoices?.propagate && item.id !== lookupKey) {
+      reportError('warning', 'configProcessing',
+        `Step ${nqName}: propagateChoice on '${item.id}' is ignored, '${lookupKey}' already fills the step's inputs`,
+        logger);
+    }
+  }
+  return inputs.filter((item) => item.dynamicChoices).flatMap(({id}) => {
+    const lookup = id === lookupKey;
+    const choices = free(`${id}_choices`);
+    const target = free(`${id}_target`);
+    const source = {[choices]: {choices: {input: id}}};
+    const rules: PipelineRuleConfiguration<LinkSpecString>[] = [{
+      id: `::${id}:choices`,
+      type: 'rule',
+      debounce: 0,
+      from: `_(template):inputs(${nqName})`,
+      to: `${target}:${id}`,
+      sources: source,
+      effects: [
+        {effect: 'items', targets: target, items: {var: `${choices}.items`}, when: {'!!': {var: choices}}},
+        {
+          effect: 'warning', targets: target,
+          message: lookup ? 'Not in the lookup table' : 'Not in the list of choices',
+          when: {and: [{'!!': {var: choices}}, {'!': {var: `${choices}.inList`}}]},
+        },
+        ...(lookup ? [{
+          effect: 'warning' as const, targets: target, message: {var: `${choices}.rowErrors`},
+          when: {'!!': {var: choices}},
+        }] : []),
+      ],
+    }];
+    if (lookup) {
+      rules.push({
+        id: `::${id}:lookup`,
+        type: 'rule',
+        runOnInit: true,
+        from: `${id}:${id}`,
+        to: `_(template):inputs(${nqName}, ${id}|$nonscalar|$linked)`,
+        sources: source,
+        effects: [{
+          effect: 'assign', values: {var: `${choices}.row`}, ignoreCase: true, restriction: 'restricted',
+          when: {'!!': {var: `${choices}.row`}},
+        }],
+      });
+    }
+    return rules;
+  });
 }
 
 export function expandLinks(
@@ -60,8 +126,10 @@ function expandCheck(check: PipelineCheckConfiguration<LinkSpecString>): Pipelin
   if (!expanded.length)
     throw new Error(`Check ${id}: no options to check`);
   const vars = Object.entries(check.vars ?? {}).map(([alias, query]) => {
-    if ([VALUE, TABLE, TARGET, CALL].includes(alias))
-      throw new Error(`Check ${id}: vars alias ${alias} is reserved`);
+    if (alias === VALUE)
+      throw new Error(`Check ${id}: vars alias ${VALUE} is the checked io`);
+    if (alias.startsWith('$'))
+      throw new Error(`Check ${id}: vars alias ${alias} is reserved for the driver`);
     return `${alias}:${singleQuery(id, `vars.${alias}`, query)}`;
   });
   return expanded.map(({key, family, needsTable, needsInputs, params}) => {
@@ -97,6 +165,8 @@ function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOTy
       const badFlag = parsed.flags?.find((flag) => flag !== 'optional' && flag !== 'template');
       if (badFlag)
         throw new Error(`Rule ${ruleId}: (${badFlag}) flag is not allowed in rule queries (${raw})`);
+      if (parsed.name.startsWith('$'))
+        throw new Error(`Rule ${ruleId}: alias ${parsed.name} is reserved for the driver`);
       aliases.set(parsed.name, raw);
     }
   }
@@ -127,7 +197,7 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   const fromAliases = aliasesOf(id, rule.from, 'input');
   const toAliases = aliasesOf(id, rule.to, 'output');
   const from = [...normalizeLinkSpec(rule.from)];
-  const checkExpr = (expr: RuleExpr) => {
+  const checkExpr = (expr: RuleExpr | undefined) => {
     for (const alias of usedAliases(expr)) {
       if (!fromAliases.has(alias) && !(alias in (sources ?? {})))
         throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
@@ -142,6 +212,8 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
   };
   const expandedSources: Record<string, RuleSource> = {};
   for (const [alias, source] of Object.entries(sources ?? {})) {
+    if (alias.startsWith('$'))
+      throw new Error(`Rule ${id}: source alias ${alias} is reserved for the driver`);
     if (fromAliases.has(alias))
       throw new Error(`Rule ${id}: source alias ${alias} collides with an input alias`);
     if ('js' in source) {
@@ -167,6 +239,14 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       expandedSources[alias] = source;
       continue;
     }
+    if ('table' in source) {
+      const {table} = source;
+      const csv = typeof table === 'string' ? table : (table as {csv?: unknown} | null)?.csv;
+      if (!(table instanceof DG.DataFrame) && (typeof csv !== 'string' || !csv))
+        throw new Error(`Rule ${id}: source ${alias} table must be a dataframe or CSV text`);
+      expandedSources[alias] = source;
+      continue;
+    }
     if ('query' in source) {
       const {connection, sql, args} = source.query;
       if (typeof connection !== 'string' || !connection || typeof sql !== 'string' || !sql)
@@ -175,30 +255,30 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       expandedSources[alias] = source;
       continue;
     }
-    if (!('validators' in source))
+    if (!('validators' in source) && !('choices' in source))
       throw new Error(`Rule ${id}: unknown source kind for alias ${alias}`);
-    const {input, names} = source.validators;
+    const {input} = 'choices' in source ? source.choices : source.validators;
     if (!fromAliases.has(input))
       throw new Error(`Rule ${id}: source ${alias} references unknown input alias ${input}`);
-    if (names != null && (!Array.isArray(names) || names.some((name) => typeof name !== 'string')))
-      throw new Error(`Rule ${id}: source ${alias} names must be an array of function names`);
-    if (names) {
-      expandedSources[alias] = {validators: {input, names}};
-      continue;
+    if ('validators' in source) {
+      const {names} = source.validators;
+      if (names != null && (!Array.isArray(names) || names.some((name) => typeof name !== 'string')))
+        throw new Error(`Rule ${id}: source ${alias} names must be an array of function names`);
+      if (names) {
+        expandedSources[alias] = {validators: {input, names}};
+        continue;
+      }
     }
-    // the annotation's validators need the step's FuncCall: derive it from the input's query
-    if (fromAliases.has(CALL))
-      throw new Error(`Rule ${id}: input alias ${CALL} is reserved for sources`);
+    // annotation validators and choices need the step's FuncCall: derive it from the input's query
     const raw = fromAliases.get(input)!;
     const tail = raw.slice(raw.indexOf(':') + 1);
     const cut = tail.lastIndexOf('/');
-    if (cut < 0)
-      throw new Error(`Rule ${id}: source ${alias} needs an io query for ${input}`);
-    const callQuery = `${CALL}(call,optional):${tail.slice(0, cut)}`;
+    // a query without a node path addresses an io of the node the rule is defined on
+    const callQuery = `${CALL}(call,optional):${cut < 0 ? '.' : tail.slice(0, cut)}`;
     parseLinkIO(callQuery, 'input');
     if (!from.includes(callQuery))
       from.push(callQuery);
-    expandedSources[alias] = {validators: {input, call: CALL}};
+    expandedSources[alias] = 'choices' in source ? {choices: {input, call: CALL}} : {validators: {input, call: CALL}};
   }
 
   checkExpr(when);
