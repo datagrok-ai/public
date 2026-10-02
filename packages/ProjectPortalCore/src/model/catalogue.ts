@@ -4,7 +4,7 @@
 
 import {ModelApplicability, validateApplicability} from './recommend';
 
-export const APPROVAL_STATES = ['draft', 'in_review', 'approved', 'retired'] as const;
+export const APPROVAL_STATES = ['draft', 'in_review', 'approved', 'rejected', 'retired'] as const;
 export type ApprovalState = typeof APPROVAL_STATES[number];
 
 export const MODEL_STATUSES = ['active', 'deprecated', 'experimental'] as const;

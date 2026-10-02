@@ -12,6 +12,7 @@ import {validateSchedule} from './sync-runs';
 import {AutoAdvanceConfig, validateAutoAdvance} from './auto-advance';
 import {PersonaConfig, validatePersonas} from './personas';
 import {DocumentKindConfig, validateDocumentKinds} from './documents';
+import {ApprovalConfig, validateApproval} from './approvals';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -124,6 +125,9 @@ export interface PortfolioConfig {
   /** The kinds of document the portfolio's programs hold (F-27). Optional: without it, one kind per
    * document criterion of the stage model, and `other`. */
   documentKinds?: DocumentKindConfig[];
+  /** The optional approval workflow (F-30), off when absent: the gate decisions and artifacts that
+   * a second person approves before they take effect, and how many approvers that takes. */
+  approval?: ApprovalConfig;
   stageModel: StageModelConfig;
   feeds: FeedConfig[];
 }
@@ -207,6 +211,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
   errors.push(...validateSchedule(c.schedule, c.owners));
   errors.push(...validatePersonas(c.personas));
   errors.push(...validateDocumentKinds(c.documentKinds));
+  errors.push(...validateApproval(c.approval, c.stageAuthority));
   errors.push(...validateAutoAdvance(c.autoAdvance, c.stageAuthority, (c.stageModel?.stages ?? []).map((s) => s.code)));
   if ((c.attention ?? []).length > 0 && !c.programData)
     errors.push(`${c.attention!.length} attention rules are declared but the portfolio has no programData to evaluate them over`);

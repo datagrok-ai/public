@@ -2,6 +2,13 @@
 
 ## 0.3.0 (unreleased)
 
+- Approval workflow (F-30, FR-57), optional per portfolio: `approval: {decisions, artifacts, approvers}`. A gate decision of a listed kind is proposed instead of taking effect, with its evidence frozen; another approver (portfolio or program) approves or rejects it with a rationale, never the proposer, who may withdraw it. On the last approval it goes through `recordDecision` (gate log, evidence, workspace folders); the proposer is told. Pure rules in `src/model/approvals.ts`
+- Advance by data in a portfolio that asks for approval of advance proposes the move (source `data`) once; any approver may approve it
+- Documents: draft → submitted → approved or rejected where the portfolio asks; model cards: draft → in review → approved or rejected (`submitModelCard`). Reloading the catalogue keeps an approval the workflow set
+- Program page: **Propose advance** / **Propose termination**, *Waiting for approval* with Approve, Reject and Withdraw, who proposed and approved a decision in the history, **Submit for approval** on a document. Ribbon: **Waiting for me**. Functions `proposeDecision`, `submitDocument`, `submitModelCard`, `reviewRequest`, `withdrawRequest`, `approvalRequests`, `waitingForMe`
+- EX-BIOD asks for one approver on advance, terminate, documents and model cards
+- `portal` schema 0.2.23: table `approval_request`, `portfolio.approval`; `document.status` adds submitted and rejected, `model_card.approval` adds rejected (choices only). Additive, no migration script
+
 - Predictions (F-22, FR-58/103), discovery: a `prediction` record (model × model version × compound → value, units, the scoring run). `scoreCompounds(portfolio, program, model)` runs a catalogued model whose card names what it predicts (`appliesTo.predicts`) once over the program dataset, saves the call as a model run, and stores one prediction per compound, idempotently per model version. Pure rules in `src/model/predictions.ts`
 - Program page: **Score** on a suggested model; *Predictions* with predicted against measured per model and column (count, mean absolute error, r), the compounds side by side, a scatter plot, the run's provenance; predictions beside each compound listed; a missing assay shows the stored predictions first. `programPredictions(...)` returns them as a table; `missingAssays` gains a `predicted` column
 - Provenance: a scoring run's predictions as a node under the run. Activity feed: a `prediction` entry per scoring run

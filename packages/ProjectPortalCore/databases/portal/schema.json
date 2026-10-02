@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.22",
+  "version": "0.2.23",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -91,6 +91,7 @@
         "auto_advance": {"type": "json", "description": "Stage advance driven by data, off when empty: {through: stage code, countWaivers}. Portal authority only"},
         "personas": {"type": "json", "description": "Quick actions per persona: {default, groups: [{group, persona}], cards: {persona: [action code or {name, function, description}]}}"},
         "document_kinds": {"type": "json", "description": "The portfolio's document vocabulary: {kinds: [{code, name, description}]}. Empty: one kind per document criterion, and other"},
+        "approval": {"type": "json", "description": "Optional approval workflow (F-30), off when empty: {decisions: [advance, terminate, ...], artifacts: [document, model_card], approvers: N}. A decision or artifact of a listed kind is proposed, and takes effect once N approvers other than the proposer approve"},
         "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
         "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
         "approvers": {"type": "group", "onDelete": "setnull", "description": "Records gate decisions"},
@@ -452,7 +453,7 @@
         "supersedes": {"type": "string", "description": "The model version this one replaces"},
         "limitations": {"type": "string", "editor": "textarea"},
         "owner": {"type": "string", "description": "The person or team who answers for the model"},
-        "approval": {"type": "string", "choices": ["draft", "in_review", "approved", "retired"], "required": true, "default": "draft"},
+        "approval": {"type": "string", "choices": ["draft", "in_review", "approved", "rejected", "retired"], "required": true, "default": "draft", "description": "in_review while an approval request is pending (F-30); rejected when an approver turned it down"},
         "approved_on": {"type": "datetime"},
         "applies_to": {"type": "json", "description": "Where the model applies, for recommendation: {tasks, stages, modalities, workUnits, predicts, rank}; a key left out matches anything"}
       },
@@ -624,7 +625,7 @@
         "kind": {"type": "string", "required": true, "description": "From the portfolio's document vocabulary"},
         "title": {"type": "string", "required": true, "isName": true, "searchable": true},
         "doc_version": {"type": "string", "friendlyName": "Version", "description": "The document's own version: 1.0, 0.3"},
-        "status": {"type": "string", "choices": ["draft", "approved", "superseded"], "required": true, "default": "draft"},
+        "status": {"type": "string", "choices": ["draft", "submitted", "approved", "rejected", "superseded"], "required": true, "default": "draft", "description": "submitted while an approval request is pending, rejected when an approver turned it down (portfolios with an approval workflow, F-30)"},
         "path": {"type": "string", "required": true, "description": "The file's full path as the platform reads it: System:AppData/..., or a space file Space:Program:Files/name"},
         "folder": {"type": "string", "description": "The program's workspace folder (space id) when the file is in it"},
         "written_by": {"type": "user", "onDelete": "setnull", "friendlyName": "Author"},
@@ -656,6 +657,33 @@
         "run_id": {"type": "string", "immutable": true, "description": "The saved call's id, as on model_run"},
         "predicted_on": {"type": "datetime", "immutable": true},
         "predicted_by": {"type": "user", "immutable": true}
+      }
+    },
+    "approval_request": {
+      "securityMode": "table",
+      "friendlyName": "Approval requests",
+      "description": "The optional approval workflow (F-30, FR-57): a gate decision proposed, or a document or model card submitted, in a portfolio that opts in. It takes effect once enough approvers other than the proposer approve; one rejection ends it. Read and written by the app, which checks who may review.",
+      "grants": {"All users": ["view", "edit"]},
+      "filters": [{"column": "kind"}, {"column": "status"}],
+      "columns": {
+        "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Portfolio"},
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "immutable": true, "friendlyName": "Program", "description": "Empty for a model card"},
+        "kind": {"type": "string", "choices": ["decision", "document", "model_card"], "required": true, "immutable": true},
+        "decision": {"type": "string", "choices": ["advance", "recycle", "hold", "terminate"], "immutable": true, "description": "The gate decision proposed"},
+        "to_stage_id": {"type": "ref", "ref": "stage", "onDelete": "restrict", "immutable": true, "friendlyName": "To", "description": "The stage an advance or recycle goes to, as proposed"},
+        "target": {"type": "string", "immutable": true, "description": "Soft reference: the document's or the model card's id"},
+        "title": {"type": "string", "required": true, "isName": true, "immutable": true, "searchable": true, "description": "What is proposed, in one line"},
+        "rationale": {"type": "string", "editor": "textarea", "immutable": true},
+        "source": {"type": "string", "choices": ["person", "data"], "default": "person", "immutable": true, "description": "Who proposed it: a person, or the program's data (auto-advance), which any approver may then approve"},
+        "evidence": {"type": "json", "immutable": true, "description": "What the decision rests on, as proposed: {items: [...], text}"},
+        "proposed_by": {"type": "user", "immutable": true},
+        "proposed_on": {"type": "datetime", "immutable": true},
+        "approvals_needed": {"type": "int", "default": 1, "immutable": true},
+        "status": {"type": "string", "choices": ["pending", "approved", "rejected", "withdrawn"], "required": true, "default": "pending"},
+        "reviews": {"type": "json", "description": "Each review: {items: [{by, on, verdict, rationale}]}"},
+        "closed_on": {"type": "datetime"},
+        "result": {"type": "string", "editor": "textarea", "description": "What approving did (the decision recorded, the document approved), or why it could not"},
+        "stage_transition_id": {"type": "ref", "ref": "stage_transition", "onDelete": "setnull", "friendlyName": "Decision", "description": "The gate-log entry the approved decision wrote"}
       }
     }
   }

@@ -234,6 +234,67 @@ export namespace funcs {
   }
 
   /**
+   * Proposes a gate decision in a portfolio that asks for approval of it (approval.decisions). It takes effect once another approver approves it with reviewRequest. Approvers only
+   * @param {string} decision
+   *   choices: ["advance", "recycle", "hold", "terminate"]
+   * @param {string} stage - The stage code an advance or recycle goes to
+   */
+  export async function proposeDecision(portfolio: string , program: string , decision: string , rationale: string , stage?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ProposeDecision', { portfolio, program, decision, rationale, stage });
+  }
+
+  /**
+   * Submits a program's document (by its file path) for approval, in a portfolio that asks for approval of documents: draft or rejected becomes submitted. Contributors and approvers
+   * @param {string} path - The document's file path, as linked
+   */
+  export async function submitDocument(portfolio: string , program: string , path: string , rationale?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SubmitDocument', { portfolio, program, path, rationale });
+  }
+
+  /**
+   * Submits a model card for approval, in a portfolio whose catalogue holds the model and that asks for approval of model cards: draft or rejected becomes in review. Contributors and approvers of that portfolio
+   * @param {string} model - The model's catalogue code (Package:Function)
+   * @param {string} version - Default: the model's current version
+   */
+  export async function submitModelCard(portfolio: string , model: string , version?: string , rationale?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SubmitModelCard', { portfolio, model, version, rationale });
+  }
+
+  /**
+   * Approves or rejects an approval request with a rationale. On the last approval it takes effect: the decision is recorded (evidence, workspace), the document or model card approved. The proposer may not review their own request. Approvers only
+   * @param {string} request - The request's id
+   * @param {string} verdict
+   *   choices: ["approve", "reject"]
+   */
+  export async function reviewRequest(request: string , verdict: string , rationale: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ReviewRequest', { request, verdict, rationale });
+  }
+
+  /**
+   * Withdraws a pending approval request; only its proposer may. A document or model card goes back to draft
+   * @param {string} request - The request's id
+   */
+  export async function withdrawRequest(request: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:WithdrawRequest', { request });
+  }
+
+  /**
+   * The approval requests of a portfolio, or of one of its programs: kind, what, status, progress, who proposed it and when, the reviews, the result
+   * @param {string} status
+   *   choices: ["pending", "approved", "rejected", "withdrawn"]
+   */
+  export async function approvalRequests(portfolio: string , program?: string , status?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ApprovalRequests', { portfolio, program, status });
+  }
+
+  /**
+   * The approval requests the current user may review now, across portfolios, oldest first
+   */
+  export async function waitingForMe(): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:WaitingForMe', {});
+  }
+
+  /**
    * Links the example documents the package ships to the EX-BIOC programs they name. EX-* portfolios only; idempotent
    */
   export async function loadExampleDocuments(): Promise<string> {

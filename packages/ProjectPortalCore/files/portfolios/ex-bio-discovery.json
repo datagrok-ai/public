@@ -10,6 +10,7 @@
   "description": "Example portfolio on synthetic data. Shares a registry with Example Biologics Development and takes only its research slice; the registry's development gate code is kept as source_stage but does not place the program.",
   "schedule": "0 6 * * *",
   "owners": ["admin"],
+  "approval": {"decisions": ["advance", "terminate"], "artifacts": ["document", "model_card"], "approvers": 1},
   "groups": {
     "viewers": "Portal EX-BIOD Viewers",
     "contributors": "Portal EX-BIOD Contributors",

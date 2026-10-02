@@ -27,6 +27,7 @@ import {EvidenceItem} from './model/evidence';
 // snapshots.ts imports from here too; the cycle is safe because neither uses the other at load
 import {summaryOf, takeSnapshot} from './snapshots';
 import {snapshotEvidence} from './model/snapshots';
+import {approvalOf, needsApproval} from './model/approvals';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -183,6 +184,7 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     schedule: c.schedule ?? null, owners: (c.owners ?? []).join('|') || null,
     auto_advance: c.autoAdvance ?? null, handoff: c.handoff ?? null, personas: c.personas ?? null,
     document_kinds: c.documentKinds?.length ? {kinds: c.documentKinds} : null,
+    approval: c.approval ?? null,
     work_units: (c.workUnits ?? []).join('|') || null, series_maturity: (c.seriesMaturity ?? []).join('|') || null,
     description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,
@@ -692,6 +694,9 @@ export interface DecisionSource {
   items?: EvidenceItem[];
   /** Take a program snapshot now (F-32), before the decision changes anything, and attach it. */
   snapshot?: boolean;
+  /** The approval request this decision carries out (F-30). In a portfolio that asks for approval of
+   * the decision, recordDecision refuses it without one: propose it instead (decideOrPropose). */
+  approvedRequest?: string;
 }
 
 export type RecordedDecision = GateVerdict & {
@@ -709,6 +714,12 @@ export type RecordedDecision = GateVerdict & {
 export async function recordDecision(programId: string, decision: Decision, targetStageId: string | null,
   rationale: string, by: DecisionSource = {source: 'approver'}): Promise<RecordedDecision> {
   const ctx = await programContext(programId);
+  if (needsApproval(approvalOf(ctx.portfolio.approval), 'decision', decision)) {
+    // only the request being approved carries it out: pending, for this program and decision
+    const request = by.approvedRequest ? await portalDb.approvalRequests.get(by.approvedRequest).catch(() => null) : null;
+    if (!request || request.status !== 'pending' || request.program_id !== programId || request.decision !== decision)
+      throw new Error(`${ctx.portfolio.code} asks for approval of ${decision}: propose it, and another approver approves it`);
+  }
   const verdict = verdictFor(ctx, decision, targetStageId, rationale);
   if (!verdict.allowed)
     throw new Error(verdict.reasons.join('; '));

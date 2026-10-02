@@ -39,6 +39,10 @@ import {openProvenanceDialog} from './views/provenance-dialog';
 import {predictionsFrame, scoreCompounds as scoreProgram} from './predictions';
 import {feedFrame, feedUserNames, myFeedOf, programFeedOf, programOf} from './feed';
 import {parseKinds} from './model/feed';
+import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as review, submitDocument as submitDoc,
+  submitModelCard as submitCard, userNames, waitingForMe as waitingOf, withdrawRequest as withdraw} from './approvals';
+import {reviewsOf} from './model/approvals';
+import {ApprovalRequestRow} from './generated/db';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -375,6 +379,93 @@ export async function provenance(kind: string, id: string, depth?: number): Prom
 export async function showProvenance(kind: string, id: string): Promise<void> {
   installStyles();
   await openProvenanceDialog(kind, id);
+}
+
+//name: proposeDecision
+//description: Proposes a gate decision in a portfolio that asks for approval of it (approval.decisions). It takes effect once another approver approves it with reviewRequest. Approvers only
+//input: string portfolio
+//input: string program
+//input: string decision {choices: ["advance", "recycle", "hold", "terminate"]}
+//input: string rationale
+//input: string stage {optional: true; description: The stage code an advance or recycle goes to; default: the next or previous stage}
+//output: string report
+export async function proposeDecision(portfolio: string, program: string, decision: string, rationale: string,
+  stage?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const to = stage ? (await portalDb.stages.query({filter: `stage_model_id = "${p.stage_model_id}" and code = "${stage}"`}))[0] : null;
+  if (stage && !to)
+    throw new Error(`${stage} is not a stage of ${program}'s model`);
+  return (await propose(p.id, decision as any, rationale, {toStageId: to?.id ?? null})).line;
+}
+
+//name: submitDocument
+//description: Submits a program's document (by its file path) for approval, in a portfolio that asks for approval of documents: draft or rejected becomes submitted. Contributors and approvers
+//input: string portfolio
+//input: string program
+//input: string path {description: The document's file path, as linked}
+//input: string rationale {optional: true}
+//output: string report
+export async function submitDocument(portfolio: string, program: string, path: string, rationale?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const doc = (await documentsOf(p.id)).find((d) => d.path === path.trim());
+  if (!doc)
+    throw new Error(`${program} has no document at ${path}`);
+  return (await submitDoc(p, doc.id, rationale || undefined)).line;
+}
+
+//name: submitModelCard
+//description: Submits a model card for approval, in a portfolio whose catalogue holds the model and that asks for approval of model cards: draft or rejected becomes in review. Contributors and approvers of that portfolio
+//input: string portfolio
+//input: string model {description: The model's catalogue code (Package:Function)}
+//input: string version {optional: true; description: Default: the model's current version}
+//input: string rationale {optional: true}
+//output: string report
+export async function submitModelCard(portfolio: string, model: string, version?: string, rationale?: string): Promise<string> {
+  return (await submitCard(await portfolioByCode(portfolio), model, version || null, rationale || undefined)).line;
+}
+
+//name: reviewRequest
+//description: Approves or rejects an approval request with a rationale. On the last approval it takes effect: the decision is recorded (evidence, workspace), the document or model card approved. The proposer may not review their own request. Approvers only
+//input: string request {description: The request's id}
+//input: string verdict {choices: ["approve", "reject"]}
+//input: string rationale
+//output: string report
+export async function reviewRequest(request: string, verdict: string, rationale: string): Promise<string> {
+  const r = await review(request, verdict as any, rationale);
+  return [r.line, ...(r.notified ? [`  proposer: ${r.notified}`] : [])].join('\n');
+}
+
+//name: withdrawRequest
+//description: Withdraws a pending approval request; only its proposer may. A document or model card goes back to draft
+//input: string request {description: The request's id}
+//output: string report
+export async function withdrawRequest(request: string): Promise<string> {
+  return `${(await withdraw(request)).title}: withdrawn`;
+}
+
+//name: approvalRequests
+//description: The approval requests of a portfolio, or of one of its programs: kind, what, status, progress, who proposed it and when, the reviews, the result
+//input: string portfolio
+//input: string program {optional: true}
+//input: string status {optional: true; choices: ["pending", "approved", "rejected", "withdrawn"]}
+//output: dataframe result
+export async function approvalRequests(portfolio: string, program?: string, status?: string): Promise<DG.DataFrame> {
+  const pf = await portfolioByCode(portfolio);
+  const rows: ApprovalRequestRow[] = program ? await requestsOf((await programByCode(portfolio, program)).id) :
+    (await portalDb.approvalRequests.query({filter: `portfolio_id = "${pf.id}"`}))
+      .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
+  const shown = rows.filter((r) => !status || r.status === status);
+  return requestsFrame(shown, await userNames(shown.flatMap((r) => [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])),
+    `${program ?? portfolio} · Approval requests`);
+}
+
+//name: waitingForMe
+//description: The approval requests the current user may review now, across portfolios, oldest first
+//output: dataframe result
+export async function waitingForMe(): Promise<DG.DataFrame> {
+  const rows = await waitingOf();
+  return requestsFrame(rows, await userNames(rows.flatMap((r) => [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])),
+    'Waiting for me');
 }
 
 //name: loadExampleDocuments

@@ -86,12 +86,15 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
   if (!result.error && autoAdvanceOf(portfolio)) {
     try {
       const a = await autoAdvance(code, false);
-      const moved = a.outcomes.filter((o) => o.to);
+      const moved = a.outcomes.filter((o) => o.to && !o.proposal);
+      const proposed = a.outcomes.filter((o) => o.to && o.proposal);
       result.changes = withAdvances(result.changes, moved.map((o) => ({program: o.program, from: o.from?.code ?? null, to: o.to!.code})));
       const failed = a.outcomes.filter((o) => o.error);
       result.report += `\n${code} auto-advance: ${moved.length ? moved.map((o) => `${o.program} ${o.from?.code ?? '—'} → ${o.to!.code}`).join(', ') :
-        `none of ${a.outcomes.length} program(s) met its next gate by data`}` +
-        (failed.length ? `; not recorded: ${failed.map((o) => `${o.program} (${o.error})`).join(', ')}` : '');
+        proposed.length ? 'none moved' : `none of ${a.outcomes.length} program(s) met its next gate by data`}` +
+        (failed.length ? `; not recorded: ${failed.map((o) => `${o.program} (${o.error})`).join(', ')}` : '') +
+        (proposed.length ? `; waiting for approval: ${proposed.map((o) => `${o.program} ${o.from?.code ?? '—'} → ${o.to!.code}` +
+          `${o.proposal === 'pending' ? ' (proposed earlier)' : ''}`).join(', ')}` : '');
     } catch (e: any) {
       result.report += `\n${code} auto-advance not applied: ${e?.message ?? e}`;
     }

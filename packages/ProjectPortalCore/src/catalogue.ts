@@ -86,16 +86,23 @@ export async function loadCatalogue(c: MergedCatalogue, report: string[]): Promi
         outputs: params.outputs.map((p) => p.name)}))
         report.push(`model ${m.code} ${card.version}: ${problem}`);
     }
+    // a card the approval workflow (F-30) has acted on keeps its approval: the file does not undo it
+    const stored = await portalDb.modelCards.getByKey({model_id: modelId, model_version: card.version});
+    const reviewed = stored ? (await portalDb.approvalRequests.query({filter: `kind = "model_card" and target = "${stored.id}"`})
+      .catch(() => [])).length > 0 : false;
     await upsertByKey(portalDb.modelCards, {model_id: modelId, model_version: card.version}, {
       question: card.question ?? null, intended_use: card.intendedUse ?? null,
       inputs: storedParams(func || card.inputs?.length ? cardParams(card.inputs, params.inputs) : null),
       outputs: storedParams(func || card.outputs?.length ? cardParams(card.outputs, params.outputs) : null),
       applicability: card.applicability ?? null, performance: card.performance ?? null,
       lineage: card.lineage ?? null, supersedes: card.supersedes ?? null, limitations: card.limitations ?? null,
-      owner: card.owner ?? null, approval: card.approval ?? 'draft',
-      approved_on: card.approvedOn ? new Date(card.approvedOn).toISOString() : null,
+      owner: card.owner ?? null,
+      ...(reviewed ? {} : {approval: card.approval ?? 'draft',
+        approved_on: card.approvedOn ? new Date(card.approvedOn).toISOString() : null}),
       applies_to: card.appliesTo ?? null,
     });
+    if (reviewed && stored?.approval !== (card.approval ?? 'draft'))
+      report.push(`model ${m.code} ${card.version}: approval kept as ${stored!.approval} (set by the approval workflow, not the file)`);
     cards++;
   }
   report.push(`model catalogue: ${c.unitOperations.length} unit operation(s), ${c.runTypes.length} run type(s), ` +

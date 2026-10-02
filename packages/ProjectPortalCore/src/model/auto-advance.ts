@@ -54,6 +54,9 @@ export interface AutoAdvanceOutcome {
   reason: string;
   /** What the data said, a line per required criterion; set when it moves. */
   evidence: string;
+  /** In a portfolio that asks for approval of an advance (F-30) the move is proposed, not made:
+   * `new` proposed in this pass, `pending` already waiting, `would` in a dry run. */
+  proposal?: 'new' | 'pending' | 'would';
 }
 
 /** Whether one program moves by data, and to where. A program moves one stage at most, and only
@@ -107,7 +110,9 @@ export function planAutoAdvance(input: AutoAdvanceInput): AutoAdvanceOutcome {
 
 /** One line per program: `EXS-GPC3: HF → H2L by data` or `EXS-KIN1 stays: unstaged: …`. */
 export function describeAutoAdvance(o: AutoAdvanceOutcome): string {
-  return o.to ? `${o.program}: ${o.from?.code ?? '—'} → ${o.to.code} by data` : `${o.program} stays: ${o.reason}`;
+  const proposal = o.proposal ? {new: ', proposed for approval', pending: ', already proposed and waiting for approval',
+    would: ', to be proposed for approval'}[o.proposal] : '';
+  return o.to ? `${o.program}: ${o.from?.code ?? '—'} → ${o.to.code} by data${proposal}` : `${o.program} stays: ${o.reason}`;
 }
 
 /** The report of one pass over a portfolio: the moves first, then the programs that stay. */
@@ -116,8 +121,10 @@ export function summarizeAutoAdvance(portfolio: string, config: AutoAdvanceConfi
   if (!config)
     return `${portfolio}: stages advance only by decision (no autoAdvance)`;
   const moved = outcomes.filter((o) => o.to);
+  const proposed = moved.filter((o) => o.proposal).length;
   const head = `${portfolio}: ${moved.length} of ${outcomes.length} program(s) ${dryRun ? 'would advance' : 'advanced'} by data` +
-    ` (through ${config.through}${config.countWaivers ? ', waivers count' : ''})`;
+    ` (through ${config.through}${config.countWaivers ? ', waivers count' : ''})` +
+    (proposed ? `; ${proposed} of them ${dryRun ? 'would be' : 'are'} proposals waiting for approval` : '');
   return [head, ...moved.map(describeAutoAdvance), ...outcomes.filter((o) => !o.to).map(describeAutoAdvance)]
     .map((l, i) => i === 0 ? l : `  ${l}`).join('\n');
 }

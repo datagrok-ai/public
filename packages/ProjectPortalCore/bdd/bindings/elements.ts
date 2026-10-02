@@ -175,3 +175,16 @@ app.element('predictions heading', {selector: u2('predictions-heading')});
 app.element('solubility predictions fit', {selector: u2('prediction-fit-projectportalcore-solubilityestimate-solubility-um')});
 app.element('missing solubility prediction', {selector: u2('missing-assay-adme-panel-solubility-um-predicted')});
 app.element('solubility predicted vs measured button', {selector: u2('predicted-vs-measured-projectportalcore-solubilityestimate-solubility-um')});
+
+app.element('approval project card', {selector: u2('program-bdd-approval')});
+app.element('binding criterion met button', {selector: u2('mark-met-binding')});
+app.element('approval setting', {selector: u2('approval-setting')});
+app.element('approval result', {selector: u2('approval-result')});
+app.element('pending approvals', {selector: u2('pending-approvals')});
+app.element('no pending approvals', {selector: u2('no-pending-approvals')});
+app.element('closed approvals', {selector: u2('closed-approvals')});
+app.element('first approval approve button', {selector: u2('approval-0-approve')});
+app.element('first approval withdraw button', {selector: u2('approval-0-withdraw')});
+app.element('waiting for me button', {selector: u2('waiting-button')});
+app.element('waiting dialog', {selector: u2('waiting-dialog')});
+app.element('waiting list', {selector: u2('waiting-list')});

@@ -7,7 +7,7 @@ import {badge, button, Control, divV, divH, signal, span} from '@datagrok-librar
 import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
-import {ContextCriterion, programContext, ProgramContext, programData, readinessFor, recordDecision, setCriterion, stagesOf,
+import {ContextCriterion, programContext, ProgramContext, programData, readinessFor, setCriterion, stagesOf,
   verdictFor, enabledWorkUnits, workUnitsOf, compoundsOf} from '../portal';
 import {COMPOUND_ROLES} from '../model/compounds';
 import {WORK_UNIT_LABELS, WorkUnitKind} from '../model/work-units';
@@ -58,6 +58,10 @@ import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
 import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
 import {openPredictedVsMeasured, predictionsOf, scoreCompounds} from '../predictions';
 import {describeFit, describePrediction, Prediction, predictedVsMeasured, withPredictions} from '../model/predictions';
+import {ApprovalRequestRow} from '../generated/db';
+import {decideOrPropose, requestsOf, submitDocument, userNames} from '../approvals';
+import {approvalOf, describeApproval, needsApproval, reviewsOf} from '../model/approvals';
+import {openWaitingDialog, requestItem} from './approvals-dialog';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -125,6 +129,10 @@ export class PortalView {
   private predictions: Prediction[] = [];
   /** What the last scoring on this page did, by program id. */
   private scoreLine = new Map<string, string>();
+  /** The selected program's approval requests (F-30), newest first, and the names of the people in them. */
+  private approvals: {rows: ApprovalRequestRow[], names: Map<string, string>} = {rows: [], names: new Map()};
+  /** What the last proposal or review on this page did, by program id. */
+  private approvalLine = new Map<string, string>();
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
@@ -335,6 +343,10 @@ export class PortalView {
     } catch (e: any) {
       this.feed.error = e?.message ?? String(e);
     }
+    // the approval workflow's requests about this program, when the portfolio asks for approvals
+    const requests = await requestsOf(id).catch(() => [] as ApprovalRequestRow[]);
+    this.approvals = {rows: requests, names: await userNames(requests.flatMap((r) =>
+      [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])).catch(() => new Map<string, string>())};
     this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
       choices, attention, recommendation, news, {lines: evidence, suggested}, snapshots, documents);
     this.redraw();
@@ -454,12 +466,22 @@ export class PortalView {
     rationale.rows = 2;
     const verdict = verdictFor(ctx, 'advance');
     const reasons = named(divV(verdict.reasons.map((r) => span(r, 'pp-reason'))), 'gate-reasons');
+    const approval = approvalOf(ctx.portfolio.approval);
+    const waiting = this.approvals.rows.find((r) => r.kind === 'decision' && r.status === 'pending') ?? null;
     const decide = (d: Decision) => async () => {
       try {
         const items = [...evidence.suggested, ...this.picked.links].filter((e) => !this.picked.off.has(evidenceKey(e)));
-        const done = await recordDecision(program.id, d, null, rationale.value, {source: 'approver', items,
+        // in a portfolio that asks for approval of this decision, it is proposed instead (F-30)
+        const out = await decideOrPropose(program.id, d, rationale.value, {source: 'approver', items,
           snapshot: !!this.picked.snapshot});
         this.picked = {programId: program.id, off: new Set(), links: []};
+        if (out.proposed) {
+          this.approvalLine.set(program.id, out.proposed.line);
+          grok.shell.info(out.proposed.line);
+          await this.openProgram(program.id);
+          return;
+        }
+        const done = out.recorded!;
         const ev = done.evidence;
         grok.shell.info(`${program.name}: ${d} recorded${ev?.written ? ` with ${ev.written} piece(s) of evidence` : ''}` +
           `${ev?.errors.length ? `\n${ev.errors.join('\n')}` : ''}${done.workspace ? `\n${done.workspace}` : ''}`);
@@ -469,17 +491,29 @@ export class PortalView {
         grok.shell.error(e?.message ?? String(e));
       }
     };
-    const advance = named(button(next ? `Advance to ${next.name}` : 'Advance', decide('advance'), {primary: true}),
-      'advance-button');
-    advance.disabled = !verdict.allowed;
-    const hold = named(button('Hold', decide('hold')), 'hold-button');
-    const terminate = named(button('Terminate', decide('terminate')), 'terminate-button');
-    hold.disabled = terminate.disabled = !ctx.approver || ctx.portfolio.stage_authority === 'feed';
+    const proposes = (d: Decision) => needsApproval(approval, 'decision', d);
+    const advance = named(button(`${proposes('advance') ? 'Propose advance' : 'Advance'}${next ? ` to ${next.name}` : ''}`,
+      decide('advance'), {primary: true}), 'advance-button');
+    advance.disabled = !verdict.allowed || !!waiting;
+    const hold = named(button(proposes('hold') ? 'Propose hold' : 'Hold', decide('hold')), 'hold-button');
+    const terminate = named(button(proposes('terminate') ? 'Propose termination' : 'Terminate', decide('terminate')),
+      'terminate-button');
+    hold.disabled = terminate.disabled = !ctx.approver || ctx.portfolio.stage_authority === 'feed' || !!waiting;
+    for (const [b, d] of [[advance, 'advance'], [hold, 'hold'], [terminate, 'terminate']] as [HTMLButtonElement, Decision][]) {
+      if (waiting)
+        b.title = `"${waiting.title}" is waiting for approval`;
+      else if (proposes(d))
+        b.title = `${ctx.portfolio.code} asks for approval: this proposes it, and another approver approves it`;
+    }
 
+    const approvedBy = new Map(this.approvals.rows.filter((r) => r.stage_transition_id).map((r) => [r.stage_transition_id!,
+      ` (proposed by ${r.source === 'data' ? 'data' : this.approvals.names.get(r.proposed_by ?? '') ?? 'someone'}, approved by ` +
+      `${reviewsOf(r.reviews).filter((x) => x.verdict === 'approve').map((x) => this.approvals.names.get(x.by) ?? 'someone').join(', ')})`]));
     const history = named(divV(transitions.map((t, i) => {
       const row = span(
         `${(t.decided_on ?? t.created_on)?.format?.('YYYY-MM-DD') ?? ''} · ${t.decision}: ${stageName(t.from_stage_id)} → ` +
-        `${stageName(t.to_stage_id)}${t.source === 'data' ? ' (by data)' : ''}${t.rationale ? ` — ${t.rationale}` : ''}`,
+        `${stageName(t.to_stage_id)}${t.source === 'data' ? ' (by data)' : ''}${approvedBy.get(t.id) ?? ''}` +
+        `${t.rationale ? ` — ${t.rationale}` : ''}`,
         'pp-history-row');
       // what the data said when it advanced the program
       if (t.evidence)
@@ -577,6 +611,7 @@ export class PortalView {
       rationale,
       ...(picker ? [picker] : []),
       divH([advance, hold, terminate], 'pp-actions'),
+      ...this.approvalSection(ctx, approval),
       ...(documents.cards.length || documents.rows.length ? this.documents(ctx, documents) : []),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
@@ -958,6 +993,35 @@ export class PortalView {
     ]), `criterion-run-${slug(c.code)}`);
   }
 
+  /** Waiting for approval (F-30): the program's pending requests, each with Approve and Reject for
+   * an approver who did not propose it and Withdraw for the proposer, then the last few decided.
+   * Shown in both modes; nothing when the portfolio asks for no approvals and nothing was asked. */
+  private approvalSection(ctx: ProgramContext, approval: ReturnType<typeof approvalOf>): HTMLElement[] {
+    const {program} = ctx;
+    const rows = this.approvals.rows;
+    if (!approval && !rows.length)
+      return [];
+    const me = DG.User.current().id;
+    const pending = rows.filter((r) => r.status === 'pending');
+    const closed = rows.filter((r) => r.status !== 'pending').slice(0, 3);
+    const done = async (line: string) => {
+      this.approvalLine.set(program.id, line);
+      await this.openPortfolio(this.portfolio!.code);
+      await this.openProgram(program.id, this.viewedStage);
+    };
+    const item = (r: ApprovalRequestRow, name: string) => requestItem(r, {names: this.approvals.names, name, onDone: done,
+      canReview: ctx.approver && (r.source === 'data' || r.proposed_by !== me) && !reviewsOf(r.reviews).some((x) => x.by === me),
+      canWithdraw: r.source !== 'data' && r.proposed_by === me});
+    return [
+      named(span(`Waiting for approval (${pending.length})`, 'pp-heading'), 'approvals-heading'),
+      named(span(describeApproval(approval), 'pp-muted'), 'approval-setting'),
+      ...(this.approvalLine.has(program.id) ? [named(span(this.approvalLine.get(program.id)!, 'pp-muted'), 'approval-result')] : []),
+      pending.length ? named(divV(pending.map((r, i) => item(r, `approval-${i}`)), 'pp-units'), 'pending-approvals') :
+        named(span('Nothing is waiting for approval', 'pp-muted'), 'no-pending-approvals'),
+      ...(closed.length ? [named(divV(closed.map((r, i) => item(r, `approval-closed-${i}`)), 'pp-units'), 'closed-approvals')] : []),
+    ];
+  }
+
   /** One card per document criterion of the current and the next gate: its state, the documents
    * over it (each opens; a draft has Approve for approvers), what is missing, the run selected for
    * it and the decisions that cite it; Link document adds one. Documents no card shows follow. */
@@ -965,11 +1029,13 @@ export class PortalView {
     const {program} = ctx;
     const canLink = ctx.approver || d.contributor;
     const vocabulary = vocabularyOf(ctx);
+    // a portfolio that asks for approval of documents: submit, and another approver approves (F-30)
+    const submits = needsApproval(approvalOf(ctx.portfolio.approval), 'document');
     const failed = (e: any) => grok.shell.error(e?.message ?? String(e));
     const reopen = () => this.openProgram(program.id, this.viewedStage);
     const linkButton = (criterion: {id: string, code: string, name: string} | null, name: string) => {
       const b = named(button(criterion ? 'Link document…' : 'Link a document…', () => void openLinkDocumentDialog({program,
-        criterion, vocabulary, approver: ctx.approver, onLinked: reopen}).catch(failed)), name);
+        criterion, vocabulary, approver: ctx.approver && !submits, onLinked: reopen}).catch(failed)), name);
       b.disabled = !canLink;
       b.title = canLink ? 'Link a file of the program folder or a path, or upload one, as a document' :
         'Only contributors and approvers link documents';
@@ -981,7 +1047,15 @@ export class PortalView {
       open.title = row.path;
       open.onclick = () => void openDocumentFile(row).catch(failed);
       const items: HTMLElement[] = [open, this.provenanceLink('document', row.id, `provenance-${name}`)];
-      if (row.status === 'draft' && ctx.approver) {
+      if ((row.status === 'draft' || row.status === 'rejected') && submits && canLink) {
+        const submit = named(span('Submit for approval', 'pp-link'), `submit-${name}`);
+        submit.title = `${ctx.portfolio.code} asks for approval of documents: another approver approves it`;
+        submit.onclick = () => void submitDocument(program, row.id).then((x) => {
+          this.approvalLine.set(program.id, x.line);
+          return reopen();
+        }).catch(failed);
+        items.push(submit);
+      } else if (row.status === 'draft' && ctx.approver && !submits) {
         const approve = named(span('Approve', 'pp-link'), `approve-${name}`);
         approve.title = 'Approve this version: meets the criterion unless waived, supersedes the older approved one';
         approve.onclick = () => void setDocumentStatus(program, row.id, 'approved').then(reopen).catch(failed);
@@ -1288,6 +1362,12 @@ export class PortalView {
     await this.openProgram(programId, this.viewedStage);
   }
 
+  /** Waiting for me: the approval requests the user may review, across portfolios. */
+  waitingForMe(): void {
+    void openWaitingDialog({openProgram: (code, programId) => this.showProgram(code, programId)})
+      .catch((e) => grok.shell.error(e?.message ?? String(e)));
+  }
+
   /** My feed: everything the user follows; a program in it opens here. */
   myFeed(): void {
     void openMyFeedDialog({
@@ -1346,7 +1426,10 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   all.title = 'Every portfolio you can see as one table';
   const feed = named(button('My feed', () => portal.myFeed()), 'my-feed-button');
   feed.title = 'What happened in the programs and series you follow, newest first';
-  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, exportButton], [table, all], [feed]], status: portal.status,
+  const waiting = named(button('Waiting for me', () => portal.waitingForMe()), 'waiting-button');
+  waiting.title = 'Proposed decisions and submitted documents and model cards you may approve';
+  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, exportButton], [table, all], [feed, waiting]],
+    status: portal.status,
     path: portal.path});
   portal.boardButtons.set('sync_history', history);
   portal.boardButtons.set('export', exportButton);

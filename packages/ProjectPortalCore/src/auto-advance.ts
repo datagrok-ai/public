@@ -6,6 +6,8 @@ import {portalDb, PortfolioRow} from './generated/db';
 import {isApprover, portfolioByCode, programContext, recordDecision} from './portal';
 import {AutoAdvanceConfig, AutoAdvanceOutcome, planAutoAdvance, summarizeAutoAdvance} from './model/auto-advance';
 import {ProgramStatus} from './model/config';
+import {approvalOf, needsApproval} from './model/approvals';
+import {proposeDecision, requestsOf} from './approvals';
 
 export interface AutoAdvanceResult {
   portfolio: string;
@@ -52,6 +54,23 @@ export async function autoAdvance(code: string, dryRun: boolean): Promise<AutoAd
     const outcome = planAutoAdvance({program: {code: p.code, status, stageId: p.stage_id ?? null},
       stages: ctx.stages.map((s) => ({id: s.id, code: s.code, name: s.name, ordinal: s.ordinal})), config,
       readiness: ctx.readiness});
+    // where an advance needs approval, data proposes it and an approver approves (F-30)
+    if (outcome.to && needsApproval(approvalOf(portfolio.approval), 'decision', 'advance')) {
+      const waiting = (await requestsOf(p.id).catch(() => [])).some((r) => r.kind === 'decision' && r.status === 'pending');
+      if (dryRun || waiting) {
+        result.outcomes.push({...outcome, proposal: waiting ? 'pending' : 'would'});
+        continue;
+      }
+      try {
+        await proposeDecision(p.id, 'advance',
+          `Advanced by data: every required criterion of ${outcome.to.name} met from the program's data`,
+          {source: 'data', evidence: outcome.evidence, toStageId: outcome.to.id});
+        result.outcomes.push({...outcome, proposal: 'new'});
+      } catch (e: any) {
+        result.outcomes.push({...outcome, to: null, reason: `not proposed: ${e?.message ?? e}`, error: e?.message ?? String(e)});
+      }
+      continue;
+    }
     if (outcome.to && !dryRun) {
       try {
         const r = await recordDecision(p.id, 'advance', outcome.to.id,

@@ -364,6 +364,22 @@ files with a version and a status, not at a tick.
 - **Functions.** `programDocuments(portfolio, program)` lists a program's documents; `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` links a file or changes the document over it. `loadExampleDocuments()` links the synthetic EX-BIOC documents in `files/documents/` (EX-* portfolios only).
 - `document` is master-secured through the program, like the gate log.
 
+### Approval workflow
+
+A portfolio may ask for a second person (F-30, FR-57). It is the ArtifactAlignment pattern
+(publish, pending, approved) rebuilt on the portal's own tables. Off by default: without `approval`
+every decision and approval takes effect at once, as before.
+
+- **Opting in.** `approval: {decisions: ["advance", "terminate"], artifacts: ["document", "model_card"], approvers: 1}`. `decisions` are gate decisions (advance, recycle, hold, terminate; portal authority only). `artifacts` are documents and model cards. `approvers` is how many approvers other than the proposer must approve (1 to 5, default 1).
+- **A decision becomes a proposal.** An approver's advance or terminate is stored in `approval_request` as pending, with its rationale, the stage it goes to, and the evidence frozen now (the gate panel's ticks, a snapshot taken now). The program does not move. Only one decision per program waits at a time. `recordDecision` refuses such a decision unless it carries out the pending request.
+- **Review.** Another approver (a portfolio approver or a program approver) approves or rejects it with a rationale. The proposer cannot; they may withdraw it. On the last approval it goes through `recordDecision` as the reviewer: gate log (source as proposed), evidence, workspace folders. A rejection is logged on the request; nothing changes. The proposer is told in the platform's notifications. If the decision cannot take effect any more (the gate is no longer met), the review is not kept and the request stays pending.
+- **Advance by data.** In a portfolio with both `autoAdvance` and approval of advance, data proposes the move instead of making it (source `data`), once per program. Any approver may approve a proposal by data, the one who ran the sync included. The sync report says "waiting for approval".
+- **Documents.** A draft or rejected document is **Submitted for approval** (contributors and approvers): draft → submitted → approved or rejected. Approving goes through the same path as before: the criterion is met, the older version superseded. A submitted document cannot be changed or approved directly.
+- **Model cards.** `submitModelCard(portfolio, model, version)`: draft → in review → approved or rejected, for a model in the portfolio's catalogue. Reloading the catalogue keeps an approval the workflow set.
+- **In the app.** The gate panel's buttons say **Propose advance to …** and **Propose termination**, and are off while a decision waits. *Waiting for approval* on the program page (both modes) lists the program's requests: Approve and Reject with a rationale for an approver who did not propose it, Withdraw for the proposer, the last three closed. The history says who proposed and who approved a decision. The ribbon's **Waiting for me** lists every pending request the user may review, across portfolios.
+- **Example.** EX-BIOD asks for one approver on advance, terminate, documents and model cards. No existing test or scenario decides in EX-BIOD.
+- `approval_request` is table-secured, View and Edit for all users, like `program_role`: the app checks who proposes and reviews. Master security through the program would hide a request from every approver but the program's author until GROK-21041 is fixed.
+
 ### Provenance
 
 From any portal record, what it rests on and what rests on it (F-28, FR-75): data → model run →
@@ -486,6 +502,13 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `snapshotProgram(portfolio, program, label, note)` | Freezes the program now: stage, criteria, selected runs, and the program dataset as a file in its workspace folder |
 | `programSnapshots(portfolio, program)` | The program's snapshots, newest first |
 | `programDocuments(portfolio, program)` | The program's documents: criterion, kind, title, version, status, path |
+| `proposeDecision(portfolio, program, decision, rationale, stage)` | Proposes a gate decision in a portfolio that asks for approval of it; approvers only |
+| `submitDocument(portfolio, program, path, rationale)` | Submits a document for approval (draft or rejected → submitted); contributors and approvers |
+| `submitModelCard(portfolio, model, version, rationale)` | Submits a model card for approval (draft or rejected → in review) |
+| `reviewRequest(request, verdict, rationale)` | Approves or rejects a request; on the last approval it takes effect. Never the proposer |
+| `withdrawRequest(request)` | Withdraws a pending request; its proposer only |
+| `approvalRequests(portfolio, program, status)` | A portfolio's or program's requests: what, status, progress, proposer, reviews, result |
+| `waitingForMe()` | The pending requests the current user may review, oldest first |
 | `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` | Links a file as a document of the program, or changes the document over it; approving meets its criterion unless waived |
 | `provenance(kind, id, depth)` | What a portal record rests on and what rests on it, `depth` steps each way, as `{start, nodes, edges}` |
 | `showProvenance(kind, id)` | The same in a dialog, each record clickable |
@@ -543,6 +566,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Program snapshots: the rules (criteria frozen in stage order, recorded or evaluated; the file name; the table check; the summary), and on EX-SMD a snapshot of EXS-KIN1 with its SAR table in the program folder, read back intact and then noticed changed, the functions and the dialog, and a decision that takes a snapshot of a program without a workspace.
   - Documents: the rules (the vocabulary, what a document needs, who may link and approve, what a status does to the criterion, superseding, order, the cards, a document as evidence, the config check), and on EX-BIOC the example documents and EXB-201's card, a scratch project's draft, approval, a newer version, a waived criterion, the refusals and the functions, and a file uploaded into EXB-201's folder.
   - Provenance: the rules (the graph's edges, a cited record deleted since, a walk from a decision up to the data and down to the program, depth, the tree, starts from evidence, a run id and a compound code, the text), and on EX-BIOC a document resting on the run selected for its criterion and its model, the run's output table, and on EX-SMD a decision's readiness and snapshot up to the program data, a start from evidence, the function, the dialog and the program page's links.
+  - Approval workflow: the rules (the config check, what needs approval, who may propose and review, N approvers and one rejection, withdrawal, Waiting for me, a proposal by data), and on EX-BIOD a scratch program's advance proposed, refused to its proposer and to a non-approver, approved by another person and recorded; a rejection; a hold recorded at once; a document submitted and approved, meeting its criterion; a model card approved and kept on reload; and on EX-SMD an advance by data proposed once and recorded on approval.
   - Program roles: the rules (the strongest role, roles only add, who may change them, grants and what changes), and on EXS-KIN1 a throwaway user made viewer, contributor and approver (access in the app, the folder's grant, the folder seen as that user), a downgrade, removal; a non-approver refused; the functions.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
   - Predictions: the rules (output columns, units, what a scoring stores and keeps, the latest version, predicted against measured, missing assays), and on EXS-KIN1 a solubility scoring stored against its saved run, the same version again running nothing, predicted vs measured and the missing assay's stored prediction, the functions, and the provenance from the run to the model and the predictions.
@@ -554,7 +578,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 259 of the 262 package tests and all 31 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 272 of the 275 package tests and all 32 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

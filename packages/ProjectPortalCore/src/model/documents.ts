@@ -10,8 +10,11 @@
 import type {CriterionState} from './gates';
 import type {EvidenceItem} from './evidence';
 
-export type DocumentStatus = 'draft' | 'approved' | 'superseded';
+export type DocumentStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'superseded';
+/** The statuses a document is linked or set to directly. `submitted` and `rejected` come only from
+ * the approval workflow (F-30), in portfolios that ask for approval of documents. */
 export const DOCUMENT_STATUSES: DocumentStatus[] = ['draft', 'approved', 'superseded'];
+export const REVIEW_STATUSES: DocumentStatus[] = ['submitted', 'rejected'];
 
 /** One kind of document a portfolio knows: `process_description`, `ind_quality`. */
 export interface DocumentKindConfig {
@@ -114,7 +117,7 @@ export function criterionAfter(current: CriterionState | null | undefined, statu
     return null;
   if (status === 'approved')
     return current === 'met' ? null : 'met';
-  if (status === 'draft' && (!current || current === 'not_started'))
+  if ((status === 'draft' || status === 'submitted') && (!current || current === 'not_started'))
     return 'in_progress';
   return null;
 }
@@ -143,9 +146,9 @@ export function supersededBy(docs: DocumentRef[], approved: DocumentRef): string
     (d.criterionId ?? null) === (approved.criterionId ?? null)).map((d) => d.id);
 }
 
-/** Approved first, then drafts, then superseded; newest version first within each. */
+/** Approved first, then submitted, drafts, rejected and superseded; newest version first within each. */
 export function orderDocuments<T extends Pick<DocumentRef, 'status' | 'version' | 'title' | 'on'>>(docs: T[]): T[] {
-  const rank = (d: T) => ['approved', 'draft', 'superseded'].indexOf(d.status);
+  const rank = (d: T) => ['approved', 'submitted', 'draft', 'rejected', 'superseded'].indexOf(d.status);
   return [...docs].sort((a, b) => rank(a) - rank(b) || compareVersions(b.version, a.version) ||
     String(b.on ?? '').localeCompare(String(a.on ?? '')) || a.title.localeCompare(b.title));
 }
@@ -204,7 +207,9 @@ export function documentCards(criteria: CardCriterion[], gates: {current: {id: s
       const state = states[c.id] ?? 'not_started';
       const approved = mine.some((d) => d.status === 'approved');
       const missing = state === 'waived' || approved ? '' :
-        mine.some((d) => d.status === 'draft') ? 'only drafts: approving one meets the criterion' :
+        mine.some((d) => d.status === 'submitted') ? 'submitted: waiting for approval' :
+          mine.some((d) => d.status === 'draft') ? 'only drafts: approving one meets the criterion' :
+            mine.some((d) => d.status === 'rejected') ? 'rejected: link a new version, or submit it again' :
           mine.length ? 'only superseded documents' : 'no document yet';
       out.push({criterionId: c.id, code: c.code, name: c.name, required: c.required, stage: stage.name, gate, state,
         documents: mine, missing, run: runs[c.id] ?? null,

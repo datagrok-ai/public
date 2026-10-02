@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import {DocumentRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {ProgramContext, programContext, portfolioByCode} from './portal';
 import {programAccess} from './program-roles';
+import {approvalOf, needsApproval} from './model/approvals';
 import {existingSpaces} from './workspace';
 // evidence.ts imports from here too; the cycle is safe because neither uses the other at load
 import {selectedRunsOf} from './evidence';
@@ -51,7 +52,8 @@ export interface LinkedDocument {
  * Contributors and approvers link drafts; approvers approve. Approving meets the criterion unless
  * it was waived, and supersedes the older approved document of the same kind and criterion. */
 export async function linkDocumentTo(program: ProgramRow, input: Partial<DocumentInput> & {path: string,
-  folder?: string | null, note?: string | null, criterion?: string | null}): Promise<LinkedDocument> {
+  folder?: string | null, note?: string | null, criterion?: string | null},
+  opts: {approvedRequest?: string} = {}): Promise<LinkedDocument> {
   const ctx = await programContext(program.id);
   const access = await programAccess(ctx.portfolio, program.id);
   const vocabulary = vocabularyOf(ctx);
@@ -60,7 +62,18 @@ export async function linkDocumentTo(program: ProgramRow, input: Partial<Documen
   // the criterion by id or code; one that does not apply to the program is refused
   const named = input.criterionId ?? input.criterion ?? (existing ? existing.gate_criterion_id ?? null : null);
   const criterion = named ? ctx.criteria.find((c) => c.id === named || c.code === named) ?? null : undefined;
-  const status: DocumentStatus = input.status ?? (existing?.status as DocumentStatus | undefined) ?? 'draft';
+  if (existing?.status === 'submitted' && !opts.approvedRequest)
+    throw new Error(`"${existing.title}" is waiting for approval: approve, reject or withdraw the request first`);
+  // a rejected document is changed back into a draft; submitted and rejected are the workflow's
+  const was = existing?.status === 'rejected' || existing?.status === 'submitted' ? 'draft' : existing?.status;
+  const status: DocumentStatus = input.status ?? (was as DocumentStatus | undefined) ?? 'draft';
+  // in a portfolio that asks for approval of documents, only an approved request approves one
+  if (status === 'approved' && existing?.status !== 'approved' &&
+    needsApproval(approvalOf(ctx.portfolio.approval), 'document')) {
+    const request = opts.approvedRequest ? await portalDb.approvalRequests.get(opts.approvedRequest).catch(() => null) : null;
+    if (!request || request.status !== 'pending' || request.kind !== 'document' || request.target !== existing?.id)
+      throw new Error(`${ctx.portfolio.code} asks for approval of documents: submit it, and another approver approves it`);
+  }
   const doc: DocumentInput = {path, criterionId: criterion?.id ?? null, status,
     kind: input.kind || existing?.kind || defaultKindFor(criterion?.code, vocabulary),
     title: input.title?.trim() || existing?.title || path.split(/[/\\:]/).filter((s) => s).pop() || path,

@@ -18,7 +18,7 @@ const named = <T extends HTMLElement>(el: T, name: string): T => {
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 const approvalVariant: Record<string, BadgeVariant> = {
-  draft: 'warning', in_review: 'accent', approved: 'success', retired: 'error',
+  draft: 'warning', in_review: 'accent', approved: 'success', rejected: 'error', retired: 'error',
 };
 const statusVariant: Record<string, BadgeVariant> = {active: 'success', experimental: 'warning', deprecated: 'error'};
 
