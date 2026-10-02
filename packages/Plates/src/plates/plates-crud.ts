@@ -325,11 +325,13 @@ function dfFromRows(rows: {[key: string]: any}[]): DG.DataFrame {
     .map((key) => typedColumn(key, rows.map((r) => r[key] ?? null))));
 }
 
-function pivotedDf(rows: ({[key: string]: any} & {props?: {[key: string]: any}})[]): DG.DataFrame {
-  if (rows.length === 0)
-    return DG.DataFrame.create();
-  const df = dfFromRows(rows.map(({props, ...rest}) =>
-    ({...rest, '~properties': JSON.stringify(props ?? {})})));
+const PLATE_COLUMNS = ['plate_id', 'barcode', 'description'];
+const WELL_COLUMNS = ['plate_id', 'barcode', 'row', 'col'];
+
+/** The fixed `columns` are passed explicitly so that a result without rows still has them. */
+function pivotedDf(columns: string[], rows: ({[key: string]: any} & {props?: {[key: string]: any}})[]): DG.DataFrame {
+  const df = DG.DataFrame.fromColumns(columns.map((key) => typedColumn(key, rows.map((r) => r[key] ?? null))));
+  df.columns.add(typedColumn('~properties', rows.map((r) => JSON.stringify(r.props ?? {}))));
   for (const key of new Set(rows.flatMap((r) => Object.keys(r.props ?? {}))))
     df.columns.add(typedColumn(key, rows.map((r) => r.props?.[key] ?? null)));
   return df;
@@ -345,7 +347,7 @@ export async function queryWells(query: PlateQuery): Promise<DG.DataFrame> {
   if (wellIds !== null)
     pivotPlateIds = intersect(pivotPlateIds, new Set([...wellIds].map((k) => k.split('|')[0])));
   if (pivotPlateIds !== null && pivotPlateIds.size === 0)
-    return pivotedDf([]);
+    return pivotedDf(WELL_COLUMNS, []);
 
   const wellRows = await queryAll((limit, offset) => {
     const q = pltsDb.plateWellValues.query();
@@ -371,7 +373,7 @@ export async function queryWells(query: PlateQuery): Promise<DG.DataFrame> {
 
   const sorted = [...wells.values()]
     .sort((a, b) => a.plate_id.localeCompare(b.plate_id) || a.row - b.row || a.col - b.col);
-  return pivotedDf(sorted.map((w) => ({plate_id: w.plate_id, barcode: barcodes.get(w.plate_id) ?? '',
+  return pivotedDf(WELL_COLUMNS, sorted.map((w) => ({plate_id: w.plate_id, barcode: barcodes.get(w.plate_id) ?? '',
     row: w.row, col: w.col, props: w.props})));
 }
 
@@ -388,7 +390,7 @@ export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
       matched = intersect(matched, ids);
   }
   if (matched !== null && matched.size === 0)
-    return pivotedDf([]);
+    return pivotedDf(PLATE_COLUMNS, []);
 
   const plateRows = await queryAll((limit, offset) => {
     const q = pltsDb.plates.query();
@@ -414,7 +416,7 @@ export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
     detailsByPlate.set(d.plate_id, props);
   }
 
-  return pivotedDf(plateRows.map((p) => ({plate_id: p.id, barcode: p.barcode ?? '',
+  return pivotedDf(PLATE_COLUMNS, plateRows.map((p) => ({plate_id: p.id, barcode: p.barcode ?? '',
     description: p.description ?? '', props: detailsByPlate.get(p.id) ?? {}})));
 }
 

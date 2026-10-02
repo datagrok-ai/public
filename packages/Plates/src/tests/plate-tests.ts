@@ -2,8 +2,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {Plate} from '../plate/plate';
+import {allProperties, initPlates, queryPlates, queryWells} from '../plates/plates-crud';
+import {StringInListMatcher} from '../plates/matchers';
 
 // @ts-ignore
 import * as jStat from 'jstat';
@@ -95,6 +97,25 @@ category('plates', () => {
 
     expect(excelToNum('AA'), 26);
     expect(excelToNum('BA'), 52);
+  });
+});
+
+category('plates crud', () => {
+  test('queryPlates keeps the plate columns when nothing matches', async () => {
+    const df = await queryPlates({plateMatchers: [], wellMatchers: [],
+      analysisMatchers: [{analysisName: 'No such analysis'}]});
+    expect(df.rowCount, 0);
+    expectArray(df.columns.names(), ['plate_id', 'barcode', 'description', '~properties']);
+  });
+
+  test('queryWells keeps the well columns when nothing matches', async () => {
+    await initPlates();
+    const property = allProperties.find((p) => p.scope === 'well' && p.type === DG.COLUMN_TYPE.STRING);
+    expect(property != null, true, 'No well-scoped string property to search by');
+    const df = await queryWells({plateMatchers: [], analysisMatchers: [],
+      wellMatchers: [{property: property!, matcher: new StringInListMatcher(['No such value'])}]});
+    expect(df.rowCount, 0);
+    expectArray(df.columns.names(), ['plate_id', 'barcode', 'row', 'col', '~properties']);
   });
 });
 
