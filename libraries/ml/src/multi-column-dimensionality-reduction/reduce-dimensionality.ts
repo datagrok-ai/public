@@ -22,10 +22,24 @@ export type DimRedUiOptions = {
   clusterColName?: string,
 }
 
+const RESERVED_EMBED_COLS_NAMES = '.reservedEmbedColsNames';
+
+/** Reserves the returned pair until the run adding its columns releases it, so one started meanwhile picks another. */
 export function getEmbeddingColsNames(df: DG.DataFrame) {
   const axes = ['Embed_X', 'Embed_Y'];
-  const colNameInd = df.columns.names().filter((it: string) => it.includes(axes[0])).length + 1;
-  return axes.map((it) => `${it}_${colNameInd}`);
+  const reserved: string[] = df.temp[RESERVED_EMBED_COLS_NAMES] ?? [];
+  const isTaken = (name: string) => df.columns.contains(name) || reserved.includes(name);
+  let colNameInd = df.columns.names().filter((it: string) => it.includes(axes[0])).length + 1;
+  while (axes.some((it) => isTaken(`${it}_${colNameInd}`)))
+    colNameInd++;
+  const names = axes.map((it) => `${it}_${colNameInd}`);
+  df.temp[RESERVED_EMBED_COLS_NAMES] = reserved.concat(names);
+  return names;
+}
+
+export function releaseEmbeddingColsNames(df: DG.DataFrame, names: string[]) {
+  const reserved: string[] = df.temp[RESERVED_EMBED_COLS_NAMES] ?? [];
+  df.temp[RESERVED_EMBED_COLS_NAMES] = reserved.filter((it) => !names.includes(it));
 }
 
 export function getEmbeddingViewerName(columns: DG.Column[], method: DimReductionMethods) {
@@ -59,8 +73,8 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
     const pg = DG.TaskBarProgressIndicator.create(
       `Initializing ${uiOptions.scatterPlotName ?? 'dimensionality reduction'} ...`);
     let scatterPlot: DG.ScatterPlotViewer | undefined = undefined;
+    const embedColsNames = uiOptions.embedColsNames ?? getEmbeddingColsNames(table);
     try {
-      const embedColsNames = uiOptions.embedColsNames ?? getEmbeddingColsNames(table);
       function progressFunc(_nEpoch: number, epochsLength: number, embeddings: number[][]) {
         let embedXCol: DG.Column | null = null;
         let embedYCol: DG.Column | null = null;
@@ -211,6 +225,8 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
       pg.close();
       if (scatterPlot)
         ui.setUpdateIndicator((scatterPlot as DG.ScatterPlotViewer).root, false);
+    } finally {
+      releaseEmbeddingColsNames(table, embedColsNames);
     }
   };
   return new Promise<DG.ScatterPlotViewer | undefined>(async (resolve, reject) => {
@@ -226,7 +242,10 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
               reject(e);
             }
           })
-          .onCancel(() => resolve(undefined))
+          .onCancel(() => {
+            releaseEmbeddingColsNames(table, uiOptions.embedColsNames ?? []);
+            resolve(undefined);
+          })
           .show();
       } else {
         const res = await doReduce();

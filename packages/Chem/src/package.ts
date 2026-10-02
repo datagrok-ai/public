@@ -1330,6 +1330,7 @@ export class PackageFunctions {
     }
 
     const runActCliffs = async (): Promise<void> => {
+      const axesNames = getEmbeddingColsNames(table);
       await DG.Func.find({name: 'activityCliffsTransform'})[0].prepare({
         table: table,
         molecules: molecules,
@@ -1363,7 +1364,6 @@ export class PackageFunctions {
       }) as DG.ScatterPlotViewer;
     };
 
-    const axesNames = getEmbeddingColsNames(table);
     if (table.rowCount > fastRowCount && !isTest) {
       ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
       Do you want to continue?`))
