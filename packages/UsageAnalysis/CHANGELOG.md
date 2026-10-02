@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20884: Errors: the alert state shows the problem's status (muted, not a problem, fixed); the Alerts pane shows each alert's problem and when its condition cleared
 * GROK-20884: Rebuilt the Errors tab over the server's `ErrorStats`: occurrences, or figures by up to three dimensions (first-seen version, trend sparkline, alert state), filtered by Since or From - To, Group and the other inputs of its toolbox pane
 * GROK-20884: Errors: Added the row context panel with the occurrences, sessions, reports and alerts of the row, each linking to the Timeline tab
 * GROK-20884: Errors: Added Export as CSV (formula cells neutralised), JSON or Parquet (with the Arrow package), and Save as job... for an optionally scheduled export (`ErrorsSaveJob`)

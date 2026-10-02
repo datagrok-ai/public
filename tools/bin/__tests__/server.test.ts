@@ -197,17 +197,35 @@ describe('resolveManifestSources', () => {
 });
 
 describe('observability dispatch', () => {
-  it('answers `grok s alerts --help` with the command usage', async () => {
-    const {server} = await import('../commands/server');
+  it('answers `grok s o alerts --help` with the command usage, and `grok s o` with the list', async () => {
+    const {server, O_USAGE} = await import('../commands/server');
     const {ALERTS_USAGE} = await import('../commands/server-alerts');
     const lines: string[] = [];
     const log = vi.spyOn(console, 'log').mockImplementation((s: any) => { lines.push(String(s)); });
     try {
-      expect(await server({_: ['s', 'alerts'], help: true})).toBe(true);
+      expect(await server({_: ['s', 'o', 'alerts'], help: true})).toBe(true);
+      expect(await server({_: ['s', 'o']})).toBe(true);
     } finally {
       log.mockRestore();
     }
-    expect(lines).toEqual([ALERTS_USAGE]);
+    expect(lines).toEqual([ALERTS_USAGE, O_USAGE]);
+  });
+
+  it('points the old spelling and an unknown observability command to grok s o', async () => {
+    const {server} = await import('../commands/server');
+    const err: string[] = [];
+    const write = vi.spyOn(process.stderr, 'write').mockImplementation((s: any) => { err.push(String(s)); return true; });
+    const before = process.exitCode;
+    try {
+      expect(await server({_: ['s', 'alerts', 'list']})).toBe(true);
+      expect(process.exitCode).toBe(1);
+      expect(await server({_: ['s', 'o', 'users', 'list']})).toBe(true);
+    } finally {
+      write.mockRestore();
+      process.exitCode = before;
+    }
+    expect(err.join('')).toMatch(/grok s alerts is now grok s o alerts/);
+    expect(err.join('')).toMatch(/Unknown command 'o users'/);
   });
 
   it('answers a bare `grok s --help` with success', async () => {
@@ -221,7 +239,7 @@ describe('observability dispatch', () => {
     }
   });
 
-  it('refuses a repeated --host outside alerts, errors and logger', async () => {
+  it('refuses a repeated --host outside grok s o alerts, problems, errors and logger', async () => {
     const {server} = await import('../commands/server');
     const err: string[] = [];
     const write = vi.spyOn(process.stderr, 'write').mockImplementation((s: any) => { err.push(String(s)); return true; });
@@ -233,6 +251,6 @@ describe('observability dispatch', () => {
       write.mockRestore();
       process.exitCode = before;
     }
-    expect(err.join('')).toMatch(/--host may repeat only for alerts, errors and logger/);
+    expect(err.join('')).toMatch(/--host may repeat only for grok s o alerts, problems, errors and logger/);
   });
 });

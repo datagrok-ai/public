@@ -34,13 +34,14 @@ const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'obsit-'));
 const TAG = `ObsIt${Date.now().toString(36)}`;
 const W7 = SHARED ? '1d' : '7d';
 const LONG = 180_000;
+const OBS = ['alerts', 'problems', 'errors', 'logger', 'capture', 'timeline'];
 
 interface Run {code: number | null; out: string; err: string; bytes: Buffer}
 
-/** `grok s <args>` against [host] (HOST unless the args name their own `--host`, or false for none). */
+/** `grok s o <args>` for the observability commands, else `grok s <args>`, against [host] (HOST unless the args name their own `--host`, or false for none). */
 function grok(args: string[], opts: {host?: string | false; env?: Record<string, string>; timeoutMs?: number} = {}): Promise<Run> {
   const host = opts.host === undefined ? HOST : opts.host;
-  const full = ['s', ...args, ...(host && !args.includes('--host') ? ['--host', host] : [])];
+  const full = ['s', ...(OBS.includes(args[0]) ? ['o'] : []), ...args, ...(host && !args.includes('--host') ? ['--host', host] : [])];
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [GROK, ...full], {env: {...process.env, ...opts.env}, cwd: TMP});
     const out: Buffer[] = [];

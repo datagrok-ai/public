@@ -10,11 +10,16 @@ const ALERT = {id: 'a41f9c00-0000-4000-8000-000000000001', kind: 'error-incident
 describe('muteBody', () => {
   const now = new Date(Date.UTC(2026, 9, 1, 9, 30));
 
-  it('takes exactly one of --for, --until, --until-version, --forever', () => {
-    expect(() => muteBody({reason: 'r'}, now)).toThrow(/exactly one/);
-    expect(() => muteBody({reason: 'r', for: '2h', forever: true}, now)).toThrow(/exactly one/);
+  it('takes at most one of --for, --until, --until-version, and a reason', () => {
+    expect(() => muteBody({reason: 'r', for: '2h', until: '14:00'}, now)).toThrow(/at most one/);
+    expect(() => muteBody({reason: 'r', for: '2h', forever: true}, now)).toThrow(/at most one/);
     expect(() => muteBody({for: '2h'}, now)).toThrow(/--reason/);
-    expect(() => muteBody({reason: 'r', 'until-version': ''}, now)).toThrow(/exactly one/);
+    expect(() => muteBody({reason: 'r', 'until-version': ''}, now)).toThrow(/at most one/);
+  });
+
+  it('mutes until lifted without an end, --forever included', () => {
+    expect(muteBody({reason: 'noise'}, now)).toEqual({body: {reason: 'noise'}, until: 'until lifted'});
+    expect(muteBody({reason: 'noise', forever: true}, now)).toEqual({body: {reason: 'noise'}, until: 'until lifted'});
   });
 
   it('resolves --for and --until to an absolute time', () => {
@@ -26,16 +31,16 @@ describe('muteBody', () => {
     expect(() => muteBody({reason: 'r', until: 'tomorrow'}, now)).toThrow(/ISO time/);
   });
 
-  it('passes a version and forever through', () => {
+  it('passes a version through', () => {
     expect(muteBody({reason: 'fixed', 'until-version': '1.14.3'}, now)).toEqual({body: {reason: 'fixed', untilVersion: '1.14.3'}, until: 'until 1.14.3'});
-    expect(muteBody({reason: 'noise', forever: true}, now)).toEqual({body: {reason: 'noise', forever: true}, until: 'forever'});
   });
 });
 
 describe('rows', () => {
   it('prints the fixed alert columns, summary cut at 60', () => {
     const row = alertRow(ALERT);
-    expect(Object.keys(row)).toEqual(['KIND', 'KEY', 'SEV', 'AUDIENCE', 'STATUS', 'OPENED', 'BY', 'SUMMARY']);
+    expect(Object.keys(row)).toEqual(['KIND', 'KEY', 'SEV', 'AUDIENCE', 'STATUS', 'OPENED', 'CLEARED', 'BY', 'SUMMARY']);
+    expect(alertRow({...ALERT, clearedAt: utcIso(10, 40)}).CLEARED).toBe('10:40Z');
     expect(row).toMatchObject({KIND: 'error-incident', KEY: 'a41f9c', OPENED: '10:05Z', BY: 'datlas-2'});
     expect(row.SUMMARY.length).toBe(60);
     expect(row.SUMMARY.endsWith('…')).toBe(true);
@@ -97,14 +102,14 @@ describe('handleAlerts', () => {
     expect(exitCode).toBe(1);
   });
 
-  it('looks a kind:key id up among open alerts, then mutes it by id', async () => {
+  it('looks a kind:key id up among open alerts, then mutes its problem by the alert id', async () => {
     const {connect, calls} = mockConnect((m) => m === 'GET'
       ? [{id: 'E1', kind: 'connection', key: 'ELN:Prod', status: 'open'}]
-      : {id: 'E1', kind: 'connection', key: 'ELN:Prod', status: 'muted'});
+      : {id: 'E1', kind: 'connection', key: 'ELN:Prod', status: 'resolved'});
     const {out} = await captureOutput(() => handleAlerts(connect, 'mute', ['connection:ELN:Prod'],
       {until: '2026-10-04T06:00', reason: 'monthly ELN maintenance'}, 'table'));
     expect(calls.map((c) => [c.method, c.path])).toEqual([
-      ['GET', '/alerts?kind=connection&key=ELN%3AProd&status=open%2Cacknowledged%2Cmuted'],
+      ['GET', '/alerts?kind=connection&key=ELN%3AProd&status=open%2Cacknowledged'],
       ['POST', '/alerts/E1/mute'],
     ]);
     expect(calls[1].body).toEqual({reason: 'monthly ELN maintenance', until: new Date(Date.UTC(2026, 9, 4, 6, 0)).toISOString()});
@@ -116,7 +121,7 @@ describe('handleAlerts', () => {
     await expect(handleAlerts(none.connect, 'ack', ['report:4820'], {}, 'table')).rejects.toThrow('No open alert report:4820');
     expect(none.calls.length).toBe(1);
     const two = mockConnect(() => [{id: 'A1', kind: 'error-incident', key: 'a41f9c01', status: 'open'},
-      {id: 'A2', kind: 'error-incident', key: 'a41f9c02', status: 'muted'}]);
+      {id: 'A2', kind: 'error-incident', key: 'a41f9c02', status: 'acknowledged'}]);
     await expect(handleAlerts(two.connect, 'get', ['error-incident:a41f9c'], {}, 'table'))
       .rejects.toThrow(/Several open alerts match error-incident:a41f9c; pass an id:\n {2}A1 .*\n {2}A2 /);
     expect(two.calls.length).toBe(1);
@@ -135,6 +140,16 @@ describe('handleAlerts', () => {
     expect(calls.map((c) => [c.path, c.body])).toEqual([['/alerts/a41f9c00/ack', {reason: undefined}], ['/alerts/a41f9c00/resolve', {reason: 'fixed'}]]);
     expect(ack.out).toEqual(['acknowledged error-incident:a41f9c']);
     expect(res.out).toEqual(['resolved error-incident:a41f9c — fixed']);
+  });
+
+  it('unmutes by the newest alert of an identity, resolved or not', async () => {
+    const {connect, calls} = mockConnect((m) => m === 'GET' ? [{id: 'E1', kind: 'connection', key: 'ELN:Prod', status: 'resolved'}]
+      : {id: 'E1', kind: 'connection', key: 'ELN:Prod', status: 'resolved'});
+    await captureOutput(() => handleAlerts(connect, 'unmute', ['connection:ELN:Prod'], {}, 'table'));
+    expect(calls.map((c) => [c.method, c.path])).toEqual([
+      ['GET', '/alerts?kind=connection&key=ELN%3AProd&status=all&limit=1'],
+      ['POST', '/alerts/E1/unmute'],
+    ]);
   });
 
   it('refuses several hosts for a transition', async () => {
@@ -166,6 +181,6 @@ describe('handleAlerts', () => {
     const {connect} = mockConnect(() => ({}));
     const {err, result} = await captureOutput(() => handleAlerts(connect, 'frobnicate', [], {}, 'table'));
     expect(result).toBe(false);
-    expect(err.join('\n')).toMatch(/Usage: grok s alerts/);
+    expect(err.join('\n')).toMatch(/Usage: grok s o alerts/);
   });
 });

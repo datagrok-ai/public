@@ -135,6 +135,6 @@ describe('handlers', () => {
     expect(calls[0].path).toBe('/log/timeline?report=4820');
     const bad = await captureOutput(() => handleTimeline(connect, undefined, [], {}, 'table'));
     expect(bad.result).toBe(false);
-    expect(bad.err.join('\n')).toMatch(/Usage: grok s timeline/);
+    expect(bad.err.join('\n')).toMatch(/Usage: grok s o timeline/);
   });
 });

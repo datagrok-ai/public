@@ -1,4 +1,4 @@
-/// REST clients for the observability routes (`/alerts`, `/errors`, `/logging`, `/log/timeline`).
+/// REST clients for the observability routes (`/alerts`, `/problems`, `/errors`, `/logging`, `/log/timeline`).
 import {NodeApiClient, buildQuery} from './node-dapi';
 
 export type Query = Record<string, string | number | boolean | undefined>;
@@ -16,6 +16,12 @@ export class NodeAlertsClient {
   transition(id: string, action: 'ack' | 'mute' | 'unmute' | 'resolve', body: Record<string, any>): Promise<any> {
     return this.client.post(`/alerts/${seg(id)}/${action}`, body);
   }
+
+  problems(q: Query = {}): Promise<any[]> { return this.client.get(`/problems${buildQuery(q)}`); }
+  problem(id: string): Promise<any> { return this.client.get(`/problems/${seg(id)}`); }
+
+  /** `{status, reason?, until?, untilVersion?}`. */
+  setStatus(id: string, body: Record<string, any>): Promise<any> { return this.client.post(`/problems/${seg(id)}/status`, body); }
 }
 
 export class NodeErrorsClient {

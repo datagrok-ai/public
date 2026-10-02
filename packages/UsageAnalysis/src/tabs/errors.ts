@@ -49,7 +49,7 @@ export class ErrorsView extends UaView {
     [f, ui.input.string(f[0].toUpperCase() + f.substring(1))]));
   minUsers = ui.input.int('Min users');
   minCount = ui.input.int('Min count');
-  regressed = ui.input.bool('Regressed', {tooltipText: 'Only signatures unmuted by a newer version in the window'});
+  regressed = ui.input.bool('Regressed', {tooltipText: 'Only signatures that came back in the window after a fix, or on the version their mute waited for'});
   trend = ui.input.choice('Trend', {value: 'day', items: ['day', 'hour'], nullable: false});
   applyButton = ui.bigButton('Apply', () => this.load());
   applyProblem = problemLine();
@@ -285,8 +285,11 @@ export class ErrorsView extends UaView {
     return buckets;
   }
 
+  /** The problem's status when it is not active, else its latest alert's status. */
   static stateText(t: DG.DataFrame, i: number): string {
     const state = t.get('state', i);
+    if (state === 'not-a-problem')
+      return 'not a problem';
     if (state !== 'muted')
       return state ?? '';
     const version = t.get('stateVersion', i);
@@ -397,8 +400,9 @@ export class ErrorsView extends UaView {
       const a = signatures.length ? await queries.errorAlerts(signatures) : DG.DataFrame.create();
       if (a.rowCount === 0)
         return ui.divText('No alerts');
-      return ui.table([...Array(a.rowCount).keys()], (k) => [a.get('kind', k), a.get('status', k),
-        formatTime(a.get('opened_at', k)), a.get('summary', k) ?? ''], ['kind', 'status', 'opened', 'summary']);
+      return ui.table([...Array(a.rowCount).keys()], (k) => [a.get('kind', k), a.get('status', k), a.get('problem', k) ?? '',
+        formatTime(a.get('opened_at', k)), a.get('cleared_at', k) ? formatTime(a.get('cleared_at', k)) : '', a.get('summary', k) ?? ''],
+      ['kind', 'status', 'problem', 'opened', 'cleared', 'summary']);
     }));
     grok.shell.o = acc.root;
   }

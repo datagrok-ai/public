@@ -100,8 +100,9 @@ limit 50
 --friendlyName: Error Alerts
 --input: list<string> signatures
 --connection: System:Datagrok
-select a.kind, a.key, a.status, a.severity, a.summary, a.opened_at, a.resolved_at
+select a.kind, a.key, a.status, p.status as problem, a.severity, a.summary, a.opened_at, a.cleared_at, a.resolved_at
 from alerts a
+left join problems p on p.id = a.problem_id
 where (a.kind = 'error-incident' and a.key = any(array(select left(s, 12) from unnest(@signatures::text[]) s)))
   or (a.kind = 'report' and a.key in (select r.id::text from reports r where r.error_stack_trace_hash::text = any(@signatures::text[])))
 order by a.opened_at desc

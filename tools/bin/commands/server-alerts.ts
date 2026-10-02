@@ -1,20 +1,22 @@
-/// `grok s alerts ...` — the deployment's alert state (AlertsRouter, `/alerts`).
+/// `grok s o alerts ...` — the alerts the deployment's problems raised (AlertsRouter, `/alerts`).
 import {NodeAlertsClient} from '../utils/node-observability';
 import {Connect, eachHost, forEachHost, hostList, singleHost} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
 import {fmtTime, fmtDateTime, hasValue, parseDuration, parseTime, printBlock, sinceArg, truncate} from '../utils/obs-format';
 
-export const ALERTS_USAGE = `Usage: grok s alerts <verb> [args]
-  list [--status open,acknowledged|muted|resolved|all] [--kind <k>] [--since 24h] [--limit n] [--host a --host b ...]
+export const ALERTS_USAGE = `Usage: grok s o alerts <verb> [args]
+  list [--status open,acknowledged|resolved|all] [--kind <k>] [--since 24h] [--limit n] [--host a --host b ...]
   get <id|kind:key>
   ack <id|kind:key> [--reason <text>]
-  mute <id|kind:key> --reason <text> (--for 2h | --until <iso|HH:MM> | --until-version <v> | --forever)
-  unmute <id|kind:key> [--reason <text>]
-  resolve <id|kind:key> [--reason <text>]
+  resolve <id|kind:key> [--reason <text>]   a condition that still holds raises a new alert on its next check
+  mute <id|kind:key> --reason <text> [--for 2h | --until <iso|HH:MM> | --until-version <v>]
+                                           mutes the alert's problem, which resolves the alert; no end: until lifted
+  unmute <id|kind:key> [--reason <text>]   makes the alert's problem active again
   detection [--all] [--host a --host b ...]      live servers and those stopped or last seen within 1 h;
                                                 --all lists every server; hosts on one database print once
-Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod), which names an open,
-acknowledged or muted alert (its key exactly, else a unique key prefix).`;
+An alert stays open until a person resolves it; CLEARED says its condition ended. Problems: grok s o problems.
+Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod), which names an open or
+acknowledged alert (its key exactly, else a unique key prefix); unmute also finds a resolved one.`;
 
 const PAST: Record<string, string> = {ack: 'acknowledged', unmute: 'unmuted', resolve: 'resolved'};
 
@@ -62,13 +64,13 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
     case 'resolve': {
       if (!id) return usage(`${verb} <id|kind:key> [--reason <text>]`);
       const reason = optString(argv.reason);
-      const t = await target(connect, argv, verb, id);
+      const t = await target(connect, argv, verb, id, verb === 'unmute' ? 'all' : undefined);
       const alert = await t.alerts.transition(t.id, verb, {reason});
       report(alert, `${PAST[verb]} ${identity(alert, id)}${reason ? ` — ${reason}` : ''}`, output);
       return true;
     }
     case 'mute': {
-      if (!id) return usage('mute <id|kind:key> --reason <text> (--for 2h | --until <iso|HH:MM> | --until-version <v> | --forever)');
+      if (!id) return usage('mute <id|kind:key> --reason <text> [--for 2h | --until <iso|HH:MM> | --until-version <v>]');
       const {body, until} = muteBody(argv);
       const t = await target(connect, argv, verb, id);
       const alert = await t.alerts.transition(t.id, 'mute', body);
@@ -81,17 +83,18 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
 }
 
 /** The alert an id names; `kind:key` cannot travel in the path, so it is looked up among the open alerts first. */
-async function target(connect: Connect, argv: any, verb: string, id: string): Promise<{alerts: NodeAlertsClient; id: string}> {
+async function target(connect: Connect, argv: any, verb: string, id: string, status?: string): Promise<{alerts: NodeAlertsClient; id: string}> {
   const alerts = (await connect(singleHost(argv, `alerts ${verb}`))).alerts;
-  return {alerts, id: await alertId(alerts, id)};
+  return {alerts, id: await alertId(alerts, id, status)};
 }
 
-export async function alertId(alerts: NodeAlertsClient, id: string): Promise<string> {
+/** [status] `all`: the newest alert of the identity, open or not. */
+export async function alertId(alerts: NodeAlertsClient, id: string, status: string = 'open,acknowledged'): Promise<string> {
   const colon = id.indexOf(':');
   if (colon < 0) return id;
-  const matches: any[] = await alerts.list({kind: id.slice(0, colon), key: id.slice(colon + 1), status: 'open,acknowledged,muted'}) ?? [];
+  const matches: any[] = await alerts.list({kind: id.slice(0, colon), key: id.slice(colon + 1), status, limit: status === 'all' ? 1 : undefined}) ?? [];
   if (!matches.length)
-    throw new Error(`No open alert ${id}`);
+    throw new Error(status === 'all' ? `No alert ${id}` : `No open alert ${id}`);
   if (matches.length > 1)
     throw new Error(`Several open alerts match ${id}; pass an id:\n` +
       matches.map((a) => `  ${a?.id}  ${a?.kind}:${a?.key}  ${a?.status}  ${truncate(a?.summary, 60)}`).join('\n'));
@@ -99,7 +102,7 @@ export async function alertId(alerts: NodeAlertsClient, id: string): Promise<str
 }
 
 function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s alerts ${line}`));
+  printError(new Error(`Usage: grok s o alerts ${line}`));
   return false;
 }
 
@@ -117,16 +120,16 @@ function report(alert: any, line: string, output: OutputFormat): void {
   else console.log(line);
 }
 
-/** Exactly one of `--for`, `--until`, `--until-version`, `--forever`, and a reason. */
+/** A reason and at most one of `--for`, `--until`, `--until-version`; none (or `--forever`) mutes until a person lifts it. */
 export function muteBody(argv: any, now: Date = new Date()): {body: Record<string, any>; until: string} {
-  const given = ['for', 'until', 'until-version'].filter((k) => hasValue(argv[k])).concat(argv.forever === true ? ['forever'] : []);
-  if (given.length !== 1)
-    throw new Error('alerts mute takes exactly one of --for <duration>, --until <iso|HH:MM>, --until-version <v>, --forever');
+  const given = ['for', 'until', 'until-version'].filter((k) => k in argv);
+  if (given.length > 1 || given.some((k) => !hasValue(argv[k])) || (given.length && argv.forever === true))
+    throw new Error('mute takes at most one of --for <duration>, --until <iso|HH:MM>, --until-version <v>');
   const reason = optString(argv.reason);
   if (!reason)
-    throw new Error('alerts mute needs --reason <text>');
-  if (argv.forever === true)
-    return {body: {reason, forever: true}, until: 'forever'};
+    throw new Error('mute needs --reason <text>');
+  if (!given.length)
+    return {body: {reason}, until: 'until lifted'};
   if (hasValue(argv['until-version']))
     return {body: {reason, untilVersion: String(argv['until-version'])}, until: `until ${argv['until-version']}`};
   const until = hasValue(argv.for)
@@ -145,6 +148,7 @@ export function alertRow(a: any): Record<string, any> {
     AUDIENCE: a?.audience ?? '',
     STATUS: a?.status ?? '',
     OPENED: fmtTime(a?.openedAt),
+    CLEARED: fmtTime(a?.clearedAt),
     BY: a?.openedOnServerName ?? '',
     SUMMARY: truncate(a?.summary, 60),
   };
@@ -187,10 +191,12 @@ function printAlert(a: any): void {
     ['opened', `${fmtDateTime(a?.openedAt)}${a?.openedOnServerName ? ` on ${a.openedOnServerName}` : ''}` +
       `  · last seen ${fmtDateTime(a?.lastSeen)}  · ${a?.occurrences ?? 0} occurrences`],
   ];
+  if (a?.clearedAt) lines.push(['cleared', `${fmtDateTime(a.clearedAt)} — the condition ended; open until resolved`]);
   if (a?.ackedAt) lines.push(['acknowledged', fmtDateTime(a.ackedAt)]);
   if (a?.resolvedAt) lines.push(['resolved', `${fmtDateTime(a.resolvedAt)}${a?.resolveReason ? ` — ${a.resolveReason}` : ''}`]);
   if (a?.url) lines.push(['url', a.url]);
   if (a?.details) lines.push(['details', JSON.stringify(a.details)]);
   lines.push(['id', a?.id ?? '']);
+  if (a?.problemId) lines.push(['problem', a.problemId]);
   printBlock(lines);
 }
