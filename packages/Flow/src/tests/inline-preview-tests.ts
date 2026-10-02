@@ -7,7 +7,9 @@ import * as ui from 'datagrok-api/ui';
 import {ClassicPreset} from 'rete';
 import {category, test, expect, expectFloat, before} from '@datagrok-libraries/utils/src/test';
 
-import {registerBuiltinNodes, registerAllFunctions, createNode, getRegisteredFuncs} from '../rete/node-factory';
+import {
+  registerBuiltinNodes, registerAllFunctions, createNode, getRegisteredFuncs, ensureFuncNodeType,
+} from '../rete/node-factory';
 import {FlowEditor} from '../rete/flow-editor';
 import {
   FlowNode, supportsInlinePreview, inlinePreviewEnabled, inlinePreviewSize,
@@ -93,11 +95,12 @@ category('Flow: inline preview', () => {
     registerAllFunctions();
   });
 
-  test('only viewer-, widget- and graphics-producing nodes support the in-node preview', async () => {
+  test('only viewer-, widget-, view- and graphics-producing nodes support the in-node preview', async () => {
     const viewer = createNode('Viewers/Scatter Plot')!;
     expect(supportsInlinePreview(viewer), true, 'a viewer node supports it');
 
     expect(supportsInlinePreview(outputNodeOf('widget')), true, 'a widget output supports it');
+    expect(supportsInlinePreview(outputNodeOf('view')), true, 'a view output supports it');
     expect(supportsInlinePreview(outputNodeOf('graphics')), true,
       'a graphics output supports it (Gasteiger-style scripts)');
 
@@ -624,6 +627,40 @@ category('Flow: inline preview', () => {
       try {
         grok.shell.closeTable(shellTable);
       } catch {/* best effort */}
+      destroyEditor(e);
+    }
+  }, {timeout: 60000});
+
+  test('a live run mounts a view output inside the node and the panel yields (live)', async () => {
+    const func = grok.functions.register({
+      signature: 'view ffInlinePreviewView()',
+      run: () => {
+        const v = DG.View.create();
+        v.root.appendChild(ui.divText('ff-inline-view-content'));
+        return v;
+      },
+    });
+    const e = makeWiredEditor();
+    try {
+      const node = await addNode(e.flow, ensureFuncNodeType(func));
+      expect(supportsInlinePreview(node), true, 'the view-outputting func is preview-capable');
+      await e.flow.setInlinePreview(node.id, true);
+
+      expect(e.ctrl.runAutorun(new Set(), SETTINGS), 'started', 'the run starts');
+      expect(await until(() =>
+        e.ctrl.state.getNodeState(node.id)?.status === NodeExecStatus.completed, 15000), true,
+      `the view node completed (error=${e.ctrl.state.getNodeState(node.id)?.error ?? ''})`);
+
+      const root = (): HTMLElement | null => e.ctrl.inlinePreviewRoot(node.id);
+      expect(await until(() => root() != null, 5000), true, 'the live view root was captured');
+      expect(root()!.textContent?.includes('ff-inline-view-content'), true, 'it is the root the function built');
+      expect(await until(() => portalEl(e.container, node.id)?.contains(root()!) === true, 5000), true,
+        'the view is mounted in the node preview portal');
+
+      const [outKey, summary] = Object.entries(e.ctrl.state.getNodeState(node.id)!.outputs!)[0];
+      expect(buildPreview(outKey, summary)?.dataset.testid, 'ff-preview-inline-note',
+        'the bottom panel yields with a note while the node hosts the view');
+    } finally {
       destroyEditor(e);
     }
   }, {timeout: 60000});

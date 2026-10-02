@@ -563,8 +563,9 @@ value), `properties.viewerLook` (the accumulated options, look keys minus `#type
   `node.properties.viewerLook`. The property panel's `addViewerNodePane` edits the curated subset
   directly. (Empirically: `fromType`/`scatter` are async; passing a look to `fromType` throws —
   `setOptions` is the only reliable applier.)
-- **In-node preview** (viewer nodes AND any func whose output socket is `viewer`/`widget`/`graphics`
-  — `supportsInlinePreview` in [scheme.ts](src/rete/scheme.ts)): a title-bar **⊞ toggle** (and a node
+- **In-node preview** (viewer nodes AND any func whose output socket is `viewer`/`widget`/`view`/`graphics`
+  — `supportsInlinePreview` in [scheme.ts](src/rete/scheme.ts); a `view` is captured like a widget,
+  `{type: 'widget'}` with the live `DG.View`, and its `.root` is what mounts): a title-bar **⊞ toggle** (and a node
   context-menu item) sets `properties['inlinePreview']`, which reserves a container box at the
   bottom of the node body (size persisted in `properties['inlinePreviewSize']`, default 300×300)
   showing the **captured live root** (`ExecutionController.inlinePreviewRoot`, reached through
