@@ -170054,9 +170054,9 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "f98337ae1bf2946e590e169bd53fcaffc8136f73");
-        t2.set$date(t1, "2026-10-01T22:47:36.028Z");
-        t2.set$version(t1, "1.27.11");
+        t2.set$commit(t1, "6d948caf1b7d3218dfbb9d13609479d8cb3e858f");
+        t2.set$date(t1, "2026-10-02T22:47:17.205Z");
+        t2.set$version(t1, "1.27.12");
         return t1;
       }, null, null, 0, 0, null, "call"]
     },
