@@ -33,3 +33,8 @@ test-console-output.log
 # Generated files
 src/env.ts
 
+# bdd (grok-bdd) run artifacts
+bdd/guides/
+bdd/test-results/
+bdd/e2e/
+bdd/.auth.json

@@ -13,5 +13,7 @@ import json
 jsonMap = json.loads(cobraModel)
 model = model_from_dict(jsonMap)
 
-optgp = OptGPSampler(model, thinning, seed=42, n_samples=nSamples)
+# One chain, like the WebAssembly sampler, which returns these exact samples for the same seed.
+# cobra's default runs one short chain per CPU core, which biases small runs towards the warmup points.
+optgp = OptGPSampler(model, thinning, processes=1, seed=42)
 res = optgp.sample(nSamples)

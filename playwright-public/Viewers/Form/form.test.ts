@@ -1,0 +1,138 @@
+/* ---
+realizes: [viewers.form]
+--- */
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '@datagrok-libraries/test/src/playwright/shared-page';
+import {openDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
+
+test.use(specTestOptions);
+
+const VIEWER_NAME = 'Form';
+const VIEWER = `[name="viewer-${VIEWER_NAME}"]`;
+const datasetPath = 'System:DemoFiles/demog.csv';
+
+const TEXT_COLUMNS = ['USUBJID', 'SEX', 'RACE', 'DIS_POP'];
+
+async function fieldValue(page: Page, column: string): Promise<string> {
+  return page.evaluate(({sel, col}) => {
+    const root = document.querySelector(sel) as HTMLElement;
+    const el = root.querySelector(`[name="input-${col.replace(/_/g, '-')}"]`) as HTMLElement | null;
+    if (!el) return '';
+    const input = (el as HTMLInputElement).value !== undefined ? (el as HTMLInputElement).value : null;
+    const inner = el.querySelector('input') as HTMLInputElement | null;
+    return (input || inner?.value || el.innerText || '').trim();
+  }, {sel: VIEWER, col: column});
+}
+
+async function rowValues(page: Page, columns: string[]): Promise<Record<string, string>> {
+  return page.evaluate((cols) => {
+    const df = (window as any).grok.shell.t;
+    const i = df.currentRowIdx;
+    const out: Record<string, string> = {};
+    for (const c of cols) out[c] = String(df.col(c).get(i));
+    return out;
+  }, columns);
+}
+
+const currentRow = (page: Page) => page.evaluate(() => (window as any).grok.shell.t.currentRowIdx);
+
+test('Form viewer', async ({page}) => {
+  test.setTimeout(600_000);
+
+  await openDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
+
+  await softStep('Add Form from the Viewers toolbox', async () => {
+    await page.locator('[name="icon-form"]').first().click();
+    await page.locator(VIEWER).first().waitFor({timeout: 30_000});
+
+    const columns = await page.evaluate(() =>
+      (window as any).grok.shell.t.columns.names() as string[]);
+    for (const column of columns)
+      await expect(page.locator(`${VIEWER} [name="div-${column.replace(/_/g, '-')}"]`).first())
+        .toBeVisible();
+  });
+
+  await softStep('The fields show the current row', async () => {
+    const expected = await rowValues(page, TEXT_COLUMNS);
+    for (const column of TEXT_COLUMNS)
+      expect(await fieldValue(page, column)).toBe(expected[column]);
+  });
+
+  await softStep('The next and previous arrows walk the rows', async () => {
+    const startRow = await currentRow(page);
+    const startValues = await rowValues(page, TEXT_COLUMNS);
+
+    await page.locator(`${VIEWER} [name="icon-chevron-right"]`).first().click();
+    await expect.poll(() => currentRow(page), {timeout: 8000}).toBe(startRow + 1);
+
+    const nextValues = await rowValues(page, TEXT_COLUMNS);
+    for (const column of TEXT_COLUMNS)
+      expect(await fieldValue(page, column)).toBe(nextValues[column]);
+    expect(nextValues['USUBJID']).not.toBe(startValues['USUBJID']);
+
+    await page.locator(`${VIEWER} [name="icon-chevron-left"]`).first().click();
+    await expect.poll(() => currentRow(page), {timeout: 8000}).toBe(startRow);
+    expect(await fieldValue(page, 'USUBJID')).toBe(startValues['USUBJID']);
+  });
+
+  await softStep('Picking a row in the grid updates the form', async () => {
+    await page.evaluate(() => { (window as any).grok.shell.t.currentRowIdx = 42; });
+    await expect.poll(() => currentRow(page), {timeout: 8000}).toBe(42);
+
+    const expected = await rowValues(page, TEXT_COLUMNS);
+    for (const column of TEXT_COLUMNS)
+      expect(await fieldValue(page, column)).toBe(expected[column]);
+  });
+
+  await softStep('The row selector selects the row on show', async () => {
+    const selected = () =>
+      page.evaluate(() => (window as any).grok.shell.t.selection.trueCount as number);
+    await page.evaluate(() => (window as any).grok.shell.t.selection.setAll(false));
+    await expect.poll(selected, {timeout: 5000}).toBe(0);
+
+    await page.locator(`${VIEWER} [name="icon-square"]`).first().click();
+    await expect.poll(selected, {timeout: 8000}).toBe(1);
+
+    const row = await currentRow(page);
+    expect(await page.evaluate((i) => (window as any).grok.shell.t.selection.get(i), row)).toBe(true);
+
+    await page.locator(`${VIEWER} [name="icon-square"]`).first().click();
+    await expect.poll(selected, {timeout: 8000}).toBe(0);
+  });
+
+  await softStep('Show Navigation hides the toolbar', async () => {
+    await v.ensurePropertyCategory(page, VIEWER_NAME, 'misc', 'show-navigation');
+    expect(await v.togglePropertyGridCheckbox(page, 'show-navigation')).toBe(false);
+    await expect(page.locator(`${VIEWER} [name="icon-chevron-right"]`).first()).toBeHidden();
+
+    expect(await v.togglePropertyGridCheckbox(page, 'show-navigation')).toBe(true);
+    await expect(page.locator(`${VIEWER} [name="icon-chevron-right"]`).first()).toBeVisible();
+  });
+
+  await softStep('Show Next Row Arrow hides just that arrow', async () => {
+    await v.ensurePropertyCategory(page, VIEWER_NAME, 'misc', 'show-next-row-arrow');
+    expect(await v.togglePropertyGridCheckbox(page, 'show-next-row-arrow')).toBe(false);
+    await expect(page.locator(`${VIEWER} [name="icon-chevron-right"]`).first()).toBeHidden();
+    await expect(page.locator(`${VIEWER} [name="icon-chevron-left"]`).first()).toBeVisible();
+
+    expect(await v.togglePropertyGridCheckbox(page, 'show-next-row-arrow')).toBe(true);
+    await expect(page.locator(`${VIEWER} [name="icon-chevron-right"]`).first()).toBeVisible();
+  });
+
+  await softStep('Close the viewer from its title bar', async () => {
+    await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'Close');
+    await expect(page.locator(VIEWER)).toHaveCount(0);
+  });
+
+  // the context panel keeps the closed viewer's property grid, and neither shell.o = null nor
+  // rebinding shell.o drops it (measured 2026-09-03); the next spec's openViewerProperties then
+  // skips the gear and edits a dead grid, so the stale node is removed here
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll('.property-grid'))) e.remove();
+  });
+  await v.closeAllAndWait(page);
+
+  v.finishSpec();
+});

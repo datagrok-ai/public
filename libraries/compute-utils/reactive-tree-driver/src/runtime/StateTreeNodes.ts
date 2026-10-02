@@ -1,6 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, combineLatest, merge, Observable, Subject, of} from 'rxjs';
 import dayjs from 'dayjs';
 import {v4 as uuidv4} from 'uuid';
@@ -87,8 +84,8 @@ export class FuncCallNode implements IStoreProvider {
       takeUntil(this.closed$),
     ).subscribe(this.consistencyInfo$);
 
-    this.instancesWrapper.validations$.pipe(
-      map((validations) => this.convertValidations(validations)),
+    combineLatest([this.instancesWrapper.validations$, this.instancesWrapper.hiddenIOs$]).pipe(
+      map(([validations, hidden]) => this.convertValidations(validations, hidden)),
       takeUntil(this.closed$),
     ).subscribe(this.validationInfo$);
 
@@ -220,10 +217,11 @@ export class FuncCallNode implements IStoreProvider {
 
   private convertValidations(
     validationsIn: Record<string, Record<string, ValidationResult | undefined>>,
+    hidden: Set<string>,
   ) {
     const validationArrays = Object.values(validationsIn).reduce((acc, val) => {
       for (const [k, v] of Object.entries(val)) {
-        if (v) {
+        if (v && !hidden.has(k)) {
           if (acc[k])
             acc[k].push(v);
           else
@@ -372,6 +370,7 @@ export class PipelineNodeBase implements IStoreProvider {
       disableHistory: !!this.config.disableHistory,
       customExports: this.config.customExports,
       forceNavigate: !!this.config.forceNavigate,
+      compactView: !!this.config.compactView,
     };
     return res;
   }

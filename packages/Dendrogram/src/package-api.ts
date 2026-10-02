@@ -9,22 +9,30 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Compute a condensed pairwise distance matrix between rows of the input table.
-  */
+   * Compute a condensed pairwise distance matrix between rows of the input table.
+   * @param {string} distance_name
+   *   choices: ['euclidean', 'manhattan']
+   */
   export async function distanceScript(data: DG.DataFrame , distance_name: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Dendrogram:DistanceScript', { data, distance_name });
   }
 
   /**
-  Cluster rows of the input table hierarchically and return the tree in Newick format.
-  */
+   * Cluster rows of the input table hierarchically and return the tree in Newick format.
+   * @param {string} distance_name
+   *   choices: ['euclidean', 'manhattan']
+   * @param {string} linkage_name
+   *   choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']
+   */
   export async function hierarchicalClusteringScript(data: DG.DataFrame , distance_name: string , linkage_name: string ): Promise<string> {
     return await grok.functions.call('Dendrogram:HierarchicalClusteringScript', { data, distance_name, linkage_name });
   }
 
   /**
-  Cluster observations hierarchically from a precomputed distance matrix and return the tree in Newick format.
-  */
+   * Cluster observations hierarchically from a precomputed distance matrix and return the tree in Newick format.
+   * @param {string} linkage_name
+   *   choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']
+   */
   export async function hierarchicalClusteringByDistanceScript(data: DG.DataFrame , size: number , linkage_name: string ): Promise<string> {
     return await grok.functions.call('Dendrogram:HierarchicalClusteringByDistanceScript', { data, size, linkage_name });
   }
@@ -36,8 +44,8 @@ export namespace funcs {
   }
 
   /**
-  Dendrogram tree visualization
-  */
+   * Dendrogram tree visualization
+   */
   export async function dendrogram(): Promise<any> {
     return await grok.functions.call('Dendrogram:Dendrogram', {});
   }
@@ -55,64 +63,69 @@ export namespace funcs {
   }
 
   /**
-  Test/demo app for Dendrogram
-  */
+   * Test/demo app for Dendrogram
+   */
   export async function dendrogramApp(): Promise<void> {
     return await grok.functions.call('Dendrogram:DendrogramApp', {});
   }
 
   /**
-  Test/demo app for Dendrogram Large
-  */
+   * Test/demo app for Dendrogram Large
+   */
   export async function dendrogramLargeApp(): Promise<void> {
     return await grok.functions.call('Dendrogram:DendrogramLargeApp', {});
   }
 
   /**
-  Test/demo app for TreeForGrid (custom renderer)
-  */
+   * Test/demo app for TreeForGrid (custom renderer)
+   */
   export async function treeForGridApp(): Promise<void> {
     return await grok.functions.call('Dendrogram:TreeForGridApp', {});
   }
 
   /**
-  Test/demo app for TreeForGridFilter (custom renderer)
-  */
+   * Test/demo app for TreeForGridFilter (custom renderer)
+   */
   export async function treeForGridFilterApp(): Promise<void> {
     return await grok.functions.call('Dendrogram:TreeForGridFilterApp', {});
   }
 
   /**
-  Test/demo app for TreeForGridCutApp (custom renderer, cutting slider)
-  */
+   * Test/demo app for TreeForGridCutApp (custom renderer, cutting slider)
+   */
   export async function treeForGridCutApp(): Promise<void> {
     return await grok.functions.call('Dendrogram:TreeForGridCutApp', {});
   }
 
   /**
-  Test/demo app for hierarchical clustering (inject tree to grid)
-  */
+   * Test/demo app for hierarchical clustering (inject tree to grid)
+   */
   export async function hierarchicalClusteringApp(): Promise<void> {
     return await grok.functions.call('Dendrogram:HierarchicalClusteringApp', {});
   }
 
   /**
-  Test/demo app for hierarchical clustering (inject tree to grid)
-  */
+   * Test/demo app for hierarchical clustering (inject tree to grid)
+   */
   export async function hierarchicalClusteringSequencesApp(): Promise<void> {
     return await grok.functions.call('Dendrogram:HierarchicalClusteringSequencesApp', {});
   }
 
   /**
-  Calculates hierarchical clustering on features and injects tree to grid
-  */
+   * Calculates hierarchical clustering on features and injects tree to grid
+   * @param {string} distance
+   *   choices: ["euclidean","manhattan"]
+   * @param {string} linkage
+   *   choices: ["single","complete","average","weighted","centroid","median","ward"]
+   */
   export async function hierarchicalClustering(df: DG.DataFrame , colNameList: string[] , distance: string , linkage: string ): Promise<void> {
     return await grok.functions.call('Dendrogram:HierarchicalClustering', { df, colNameList, distance, linkage });
   }
 
   /**
-  Opens Newick file
-  */
+   * Parse a Newick (.nwk/.newick) tree file into a dataframe and open it as a dendrogram.
+   * @param {string} fileContent - Newick file contents
+   */
   export async function importNewick(fileContent: string ): Promise<any> {
     return await grok.functions.call('Dendrogram:ImportNewick', { fileContent });
   }
@@ -122,29 +135,29 @@ export namespace funcs {
   }
 
   /**
-  Calculates hierarchical clustering on features and injects tree to grid
-  */
+   * Calculates hierarchical clustering on features and injects tree to grid
+   */
   export async function hierarchicalClusteringSequences(): Promise<void> {
     return await grok.functions.call('Dendrogram:HierarchicalClusteringSequences', {});
   }
 
   /**
-  Calculates hierarchical clustering on features and injects tree to grid
-  */
+   * Calculates hierarchical clustering on features and injects tree to grid
+   */
   export async function hierarchicalClusteringMolecules(): Promise<void> {
     return await grok.functions.call('Dendrogram:HierarchicalClusteringMolecules', {});
   }
 
   /**
-  Calculates hierarchical clustering on features and injects tree to grid
-  */
+   * Calculates hierarchical clustering on features and injects tree to grid
+   */
   export async function hierarchicalClustering2(): Promise<void> {
     return await grok.functions.call('Dendrogram:HierarchicalClustering2', {});
   }
 
   /**
-  Heatmap is a spreadsheet (grid) that contains colors instead of numbers and strings. For numerical data, the higher values are colored red, and the lower ones appear blue. The central value is assigned a light color so that darker colors indicate a larger distance from the center. For categorical data, each possible value is set to one color from a qualitative palette.
-  */
+   * Heatmap is a spreadsheet (grid) that contains colors instead of numbers and strings. For numerical data, the higher values are colored red, and the lower ones appear blue. The central value is assigned a light color so that darker colors indicate a larger distance from the center. For categorical data, each possible value is set to one color from a qualitative palette.
+   */
   export async function heatMapDemo(): Promise<void> {
     return await grok.functions.call('Dendrogram:HeatMapDemo', {});
   }

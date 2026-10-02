@@ -86,8 +86,8 @@ export function checkFileIsPlate(content: string) : boolean {
 //name: Plates
 //output: view result
 //meta.role: app
-export function platesApp() : any {
-  return PackageFunctions.platesApp();
+export async function platesApp() : Promise<any> {
+  return await PackageFunctions.platesApp();
 }
 
 //input: dynamic treeNode 

@@ -3,6 +3,7 @@ export {DEFAULT_FLOAT_FORMAT} from './src/InputForm/utils';
 export * from './src/Viewer/Viewer';
 export * from './src/RibbonPanel/RibbonPanel';
 export * from './src/RibbonMenu/RibbonMenu';
+export * from './src/ViewService/ViewService';
 export * from './src/elements';
 export * from './src/DockManager/DockManager';
 export * from './src/MarkDown/MarkDown';

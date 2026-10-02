@@ -20,7 +20,7 @@ title = "Datagrok gitleaks configuration"
 [extend]
 useDefault = true
 
-[allowlist]
+[[allowlists]]
 description = "Datagrok data fixtures and placeholder values"
 
 # Structural non-secret classes — data fixtures, test code, minified vendor JS,
@@ -68,3 +68,12 @@ stopwords = [
   "replace_me",
   "your-",
 ]
+
+# Typesense search-only key of the help site, public by design (it ships to the
+# browser). Matched by exact value rather than by line in .gitleaksignore, so
+# editing the Docusaurus configs does not break the scan. No `paths` here on
+# purpose: gitleaks skips path-matched files entirely, even with condition AND.
+[[allowlists]]
+description = "Typesense search-only key (Docusaurus configs)"
+targetRules = ["generic-api-key"]
+regexes = ['''^23vmY72BpQAytsutm24pCUNJJXh2txjU$''']

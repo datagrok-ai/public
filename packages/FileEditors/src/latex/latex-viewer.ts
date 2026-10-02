@@ -147,7 +147,7 @@ export class LatexViewer {
   private async saveFile(): Promise<void> {
     if (this.isPlatformFile) {
       try {
-        const source = new DG.FileSource();
+        const source = new DG.FilesDataSource();
 
         await source.writeAsText(this.file, this.editorView!.state.doc.toString());
         grok.shell.info('Saved');

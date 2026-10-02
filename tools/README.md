@@ -26,7 +26,9 @@ npm install datagrok-tools -g
 
    A new folder `<package-name>` will be created automatically as well as its contents.
 3. Run `npm install` in your package directory to get the required dependencies (the command is called
-   automatically after package creation, if it ran successfully, skip this step).
+   automatically after package creation, if it ran successfully, skip this step). Inside the
+   [public repository](https://github.com/datagrok-ai/public) the packages form one pnpm workspace: run
+   `pnpm install` once at the repository root instead, and build with `grok build`.
 4. Start working on the functionality of your package. Use `grok add` to create function templates.
 5. Once you have completed the work on your package, upload it by running:
 
@@ -92,14 +94,19 @@ For more information on configuring connections, refer to the [Connections](http
   ```
 
   Options:
-  - `--build` or `--rebuild`: boolean flags that indicate whether a local webpack bundle should be used or it should
-    be generated on the server side
+  - the package is built locally before upload (`npm run build`, or `pnpm run build` inside the workspace);
+    `--skip-build` uploads the existing `dist/` as is, `--rebuild` asks the server to build instead
   - `--debug` or `--release`: boolean flags that determine whether to publish a debug version of the package visible
     only to the developer or a release version accessible by all eligible users and user groups
   - `--key`: a string containing a developer key that is not listed in the config file, e.g., the key for a new server
   - `--suffix`: a string containing package version hash
 
   Running `grok publish` is the same as running `grok publish defaultHost --build --debug`.
+- `report` works with user error reports on a Datagrok instance (the instance is a server alias from
+  `config.yaml`): `grok report fetch <instance> <number>` downloads the report zip, `grok report read
+  <zip|json|instance number>` prints one normalized JSON object (flags `--extract-screenshot`,
+  `--extract-d42`, `--extract-client-log`), `grok report resolve <instance> <number>` marks it resolved.
+  `ticket`, `comment`, `label`, `attach` talk to JIRA with `JIRA_TOKEN`. See `grok report --help`.
 - `check` checks package content (function signatures, import statements of external modules,
   etc.). The check is also run during package publication.
 - `init` modifies a package template by adding config files for linters, IDE, and so on

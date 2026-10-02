@@ -63,6 +63,14 @@ export function filterBuilder() : any {
   return PackageFunctions.filterBuilder();
 }
 
+//description: The u2 app behind a /domains/<schema>/<table>[/<keyOrId>] address
+//tags: domainRoutes
+//input: string address 
+//output: view result
+export async function domainRouteView(address: string) : Promise<any> {
+  return await PackageFunctions.domainRouteView(address);
+}
+
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {

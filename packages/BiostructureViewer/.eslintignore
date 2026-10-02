@@ -1,6 +1,0 @@
-src/**/*.d.ts*
-
-src/libs/**/*
-
-package.g.ts
-package-api.ts

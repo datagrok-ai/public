@@ -53,8 +53,8 @@ export namespace funcs {
   }
 
   /**
-  editor for Performing conversion of sequences in custom notation to molfiles
-  */
+   * editor for Performing conversion of sequences in custom notation to molfiles
+   */
   export async function polyToolConvertTopMenu(): Promise<void> {
     return await grok.functions.call('SequenceTranslator:PolyToolConvertTopMenu', {});
   }
@@ -64,26 +64,31 @@ export namespace funcs {
   }
 
   /**
-  Convert a column of sequences in custom notation to HELM and/or molfiles
-  */
+   * Convert a column of sequences in custom notation to HELM and/or molfiles
+   * @param {boolean} generateHelm - Also produce a HELM column alongside the molfiles
+   * @param {boolean} chiralityEngine - Use the chirality engine when building structures
+   */
   export async function polyToolConvert2(table: DG.DataFrame , seqCol: DG.Column , generateHelm: boolean , chiralityEngine: boolean , rules: any ): Promise<DG.Column> {
     return await grok.functions.call('SequenceTranslator:PolyToolConvert2', { table, seqCol, generateHelm, chiralityEngine, rules });
   }
 
   /**
-  Dialog for configuring enumeration of a HELM sequence
-  */
+   * Dialog for configuring enumeration of a HELM sequence
+   */
   export async function polyToolEnumerateHelmTopMenu(): Promise<void> {
     return await grok.functions.call('SequenceTranslator:PolyToolEnumerateHelmTopMenu', {});
   }
 
   /**
-  Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
-  */
+   * Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
+   */
   export async function chemEnumerateMarkushTopMenu(): Promise<void> {
     return await grok.functions.call('SequenceTranslator:ChemEnumerateMarkushTopMenu', {});
   }
 
+  /**
+   * @param {DG.DataFrame} df - Input data table
+   */
   export async function polyToolColumnChoice(df: DG.DataFrame , macroMolecule: DG.Column ): Promise<void> {
     return await grok.functions.call('SequenceTranslator:PolyToolColumnChoice', { df, macroMolecule });
   }
@@ -113,15 +118,15 @@ export namespace funcs {
   }
 
   /**
-  Enumerate provided HELM sequence on provided positions with provided monomers and generates new table
-  */
+   * Enumerate provided HELM sequence on provided positions with provided monomers and generates new table
+   */
   export async function enumerateSingleHelmSequence(helmSequence: string , positions: any , monomerLists: any , toAtomicLevel: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('SequenceTranslator:EnumerateSingleHelmSequence', { helmSequence, positions, monomerLists, toAtomicLevel });
   }
 
   /**
-  Enumerate provided HELM sequence on all positions with natural amino acids and generates new table. Generated table has sequence column called "Enumerated", and molecule column called "Molfile(Enumerated) if toAtomicLevel is set to true. Keywords: Optimize, enumerate, HELM optimization, Maximize Minimize property. When you want to optimize certain peptide using for example logS, set toAtomicLevel to true and use generated molecule column to calculate given property using chem package functions.
-  */
+   * Enumerate provided HELM sequence on all positions with natural amino acids and generates new table. Generated table has sequence column called "Enumerated", and molecule column called "Molfile(Enumerated) if toAtomicLevel is set to true. Keywords: Optimize, enumerate, HELM optimization, Maximize Minimize property. When you want to optimize certain peptide using for example logS, set toAtomicLevel to true and use generated molecule column to calculate given property using chem package functions.
+   */
   export async function enumerateSingleHelmSequenceWithNaturalAAs(helmSequence: string , toAtomicLevel: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('SequenceTranslator:EnumerateSingleHelmSequenceWithNaturalAAs', { helmSequence, toAtomicLevel });
   }
@@ -131,64 +136,80 @@ export namespace funcs {
   }
 
   /**
-  Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells
-  */
+   * Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells
+   */
   export async function oligoNucleotideCellRenderer(): Promise<any> {
     return await grok.functions.call('SequenceTranslator:OligoNucleotideCellRenderer', {});
   }
 
   /**
-  OligoNucleotide
-  */
+   * OligoNucleotide
+   */
   export async function editOligoNucleotideCell(cell: any ): Promise<void> {
     return await grok.functions.call('SequenceTranslator:EditOligoNucleotideCell', { cell });
   }
 
   /**
-  Edit the oligonucleotide HELM in the HELM Web Editor
-  */
+   * Edit the oligonucleotide HELM in the HELM Web Editor
+   * @param {any} value
+   *   semType: OligoNucleotide
+   */
   export async function openOligoHelmEditor(value: any ): Promise<void> {
     return await grok.functions.call('SequenceTranslator:OpenOligoHelmEditor', { value });
   }
 
   /**
-  Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
-  */
+   * Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
+   * @param {any} value
+   *   semType: OligoNucleotide
+   */
   export async function oligoNucleotidePanel(value: any ): Promise<any> {
     return await grok.functions.call('SequenceTranslator:OligoNucleotidePanel', { value });
   }
 
   /**
-  Sense and antisense full molecular structures rendered separately
-  */
+   * Sense and antisense full molecular structures rendered separately
+   * @param {any} value
+   *   semType: OligoNucleotide
+   */
   export async function oligoNucleotideStructuresPanel(value: any ): Promise<any> {
     return await grok.functions.call('SequenceTranslator:OligoNucleotideStructuresPanel', { value });
   }
 
   /**
-  Copy the HELM string of an oligo cell to the clipboard
-  */
+   * Copy the HELM string of an oligo cell to the clipboard
+   * @param {any} value
+   *   semType: OligoNucleotide
+   */
   export async function copyOligoAsHelm(value: any ): Promise<void> {
     return await grok.functions.call('SequenceTranslator:CopyOligoAsHelm', { value });
   }
 
   /**
-  Copy a high-resolution image of the oligo duplex
-  */
+   * Copy a high-resolution image of the oligo duplex
+   * @param {any} value
+   *   semType: OligoNucleotide
+   */
   export async function copyOligoAsImage(value: any ): Promise<void> {
     return await grok.functions.call('SequenceTranslator:CopyOligoAsImage', { value });
   }
 
   /**
-  Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view
-  */
+   * Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view
+   * @param {DG.Column} helmCol
+   *   semType: Macromolecule
+   */
   export async function convertHelmToOligoNucleotide(table: DG.DataFrame , helmCol: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('SequenceTranslator:ConvertHelmToOligoNucleotide', { table, helmCol });
   }
 
   /**
-  Combine separate sense + antisense HELM columns into one OligoNucleotide column
-  */
+   * Combine separate sense + antisense HELM columns into one OligoNucleotide column
+   * @param {DG.Column} senseCol
+   *   semType: Macromolecule
+   * @param {DG.Column} antiCol
+   *   semType: Macromolecule
+   */
   export async function combineSenseAntisenseToOligoNucleotide(table: DG.DataFrame , senseCol: DG.Column , antiCol: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('SequenceTranslator:CombineSenseAntisenseToOligoNucleotide', { table, senseCol, antiCol });
   }

@@ -44,6 +44,12 @@ export const TREE_NODE_LABEL_ANY = `${TREE_NODE_GROUP_LABEL}, ${TREE_NODE_ITEM_L
 export const TREE_NODE_CONTAINER = '.d4-tree-view-node';
 export const TREE_EXPAND_ARROW = '.d4-tree-view-tri';
 export const TREE_EXPAND_ARROW_EXPANDED = '.d4-tree-view-tri.d4-tree-view-tri-expanded';
+// The group's children host. Its data-state is the readiness signal — "loaded" only once every
+// child the expansion asked for is in the DOM. TREE_EXPAND_ARROW_EXPANDED is user intent: the
+// class is added synchronously by the click, before the request goes out.
+export const TREE_CHILDREN_HOST_CLASS = 'd4-tree-view-group-host';
+export const TREE_CHILDREN_HOST = `.${TREE_CHILDREN_HOST_CLASS}`;
+export const TREE_CHILDREN_LOADED = `${TREE_CHILDREN_HOST}[data-state="loaded"]`;
 export const TREE_NODE_DROP = '.d4-tree-view-node.d4-tree-drop';
 
 // Динамические локаторы — по имени узла.

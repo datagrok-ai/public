@@ -8,7 +8,7 @@ category('Dev panel', () => {
   const subs = [];
   const delayDuration = 1000;
   const entities: EntityType[] = [];
-  const showPropertyPanel = grok.shell.windows.showProperties;
+  const showPropertyPanel = grok.shell.windows.showContextPanel;
   let currentEntity: EntityType;
   let devPane: DG.AccordionPane;
 
@@ -28,7 +28,7 @@ category('Dev panel', () => {
       df.col('age'),
       DG.View.create(),
     ].filter((ent) => ent != null));
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showContextPanel = true;
   });
 
   test('Dev panel opens', () => new Promise(async (resolve, reject) => {
@@ -97,6 +97,6 @@ category('Dev panel', () => {
 
   after(async () => {
     subs.forEach((sub) => sub.unsubscribe());
-    grok.shell.windows.showProperties = showPropertyPanel;
+    grok.shell.windows.showContextPanel = showPropertyPanel;
   });
 });

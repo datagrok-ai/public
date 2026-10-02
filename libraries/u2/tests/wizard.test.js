@@ -211,3 +211,27 @@ wizard('dialog mode: finishes, cancels on close, and disposes clean', () => {
 
   scope.dispose();
 });
+
+wizard('a `done` step is terminal: no BACK, no CANCEL, and NEXT reads CLOSE', () => {
+  const scope = new Scope();
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'one', title: 'One', content: content('One', 'free')},
+      {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+    ],
+    onFinish: () => outcome.push('finish'),
+    onCancel: () => outcome.push('cancel'),
+  }));
+  w.openInDialog('Import');
+  assert.equal(footer(w, 'NEXT').textContent, 'NEXT');
+  assert.notEqual(footer(w, 'CANCEL').style.display, 'none');
+  w.next();
+  assert.equal(footer(w, 'FINISH'), undefined, 'the work is done: there is nothing to finish');
+  assert.equal(footer(w, 'CLOSE').textContent, 'CLOSE');
+  assert.equal(footer(w, 'BACK').style.display, 'none', 'nothing to go back to');
+  assert.equal(footer(w, 'CANCEL').style.display, 'none', 'and nothing to cancel');
+  footer(w, 'CLOSE').click();
+  assert.deepEqual(outcome, ['finish']);
+  scope.dispose();
+});

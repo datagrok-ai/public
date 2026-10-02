@@ -1,15 +1,23 @@
 const path = require('path');
 const fs = require('fs');
-const rspack = require('@rspack/core');
+const {rspack, loaders} = require('@datagrok/build-config');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 
 // Resolve linked-or-npm-installed lib paths to their real on-disk location so
 // module.rules[].include matches via the resolved path (not the node_modules symlink).
 // Skips libs that aren't installed (e.g., transitive lib was uninstalled).
+// Transitive file: deps of linked libs (e.g. arrow via compute-utils) are not
+// hoisted into this package's node_modules, so fall back to the repo path.
 const realLib = (pkg) => {
-  try { return fs.realpathSync(path.resolve(__dirname, 'node_modules', pkg)); }
-  catch { return null; }
+  const candidates = [
+    path.resolve(__dirname, 'node_modules', pkg),
+    path.resolve(__dirname, '../../libraries', pkg.split('/').pop()),
+  ];
+  for (const p of candidates) {
+    try { return fs.realpathSync(p); } catch {}
+  }
+  return null;
 };
 const SOURCE_LIBS = [
   '@datagrok-libraries/compute-utils',
@@ -88,8 +96,7 @@ module.exports = (env = {}) => {
         {test: /\.tsx$/, include: includePaths, loader: 'babel-loader', options: babelTsx},
         {test: /\.ts$/, include: includePaths, loader: 'builtin:swc-loader', options: swcTs},
         {test: /\.jsx$/, loader: 'babel-loader', options: babelJsx},
-        {test: /\.css$/, use: ['style-loader', 'css-loader', 'postcss-loader'], type: 'javascript/auto'},
-        {test: /\.(mjs|js)$/, enforce: 'pre', use: ['source-map-loader']},
+        {test: /\.css$/, use: [loaders.style, loaders.css, 'postcss-loader'], type: 'javascript/auto'},
       ],
     },
     plugins: [

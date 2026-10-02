@@ -124,7 +124,9 @@ export abstract class FormulaLinesHelper {
   }
 
   removeAt(idx: number, count: number = 1) {
-    this.items = this.items.slice(idx, idx + count - 1);
+    const items = this.items;
+    items.splice(idx, count);
+    this.items = items;
   }
 
   removeWhere(predicate: (value: FormulaLine, index: number, array: FormulaLine[]) => boolean) {
@@ -172,7 +174,9 @@ export abstract class AnnotationRegionsHelper {
   }
 
   removeAt(idx: number, count: number = 1) {
-    this.items = this.items.slice(idx, idx + count - 1);
+    const items = this.items;
+    items.splice(idx, count);
+    this.items = items;
   }
 
   removeWhere(predicate: (value: AnnotationRegion, index: number, array: AnnotationRegion[]) => boolean) {

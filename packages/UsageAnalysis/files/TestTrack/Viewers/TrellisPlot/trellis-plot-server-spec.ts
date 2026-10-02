@@ -60,7 +60,9 @@ test('Trellis plot — layout round-trip, project save dialog, Multi Curve inner
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   const onPageError = (e: Error) => { pageErrors.push(String(e)); };
-  const onConsole = (m: any) => { if (m.type() === 'error') consoleErrors.push(m.text()); };
+  // a stand that ships no help docs 404s on the context help page, which is not the viewer's error
+  const helpDoc404 = (m: any) => /Failed to load resource/.test(m.text()) && /\/help\/.*\.md$/.test(m.location().url);
+  const onConsole = (m: any) => { if (m.type() === 'error' && !helpDoc404(m)) consoleErrors.push(m.text()); };
   page.on('pageerror', onPageError);
   page.on('console', onConsole);
 

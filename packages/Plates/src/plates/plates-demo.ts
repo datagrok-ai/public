@@ -16,6 +16,10 @@ import {FIT_FUNCTION_4PL_REGRESSION, IFitSeries} from '@datagrok-libraries/stati
 
 export async function __createDummyPlateData() {
   await initPlates();
+  if (plateTypes.length === 0) {
+    await grok.functions.call('Plates:SetupPltsSchema');
+    await initPlates(true);
+  }
   await createDummyPlates();
   await createDummyPlatesFromExcel();
 

@@ -22,7 +22,7 @@ export class DockNode {
     this.dart = dart;
   }
 
-  /** @returns {DockContainer} */
+
   get container(): DockContainer {
     return new DockContainer(api.grok_DockNode_Get_Container(this.dart));
   }
@@ -32,18 +32,17 @@ export class DockNode {
     return api.grok_DockNode_DetachFromParent(this.dart);
   }
 
-  /** Removes a child node.
-   * @param {DockNode} childNode */
+  /** Removes a child node. */
   removeChild(childNode: DockNode): void {
-    return api.grok_DockNode_RemoveChild(this.dart, childNode);
+    return api.grok_DockNode_RemoveChild(this.dart, childNode.dart);
   }
 
-  /** @returns {DockNode} */
+
   get parent(): DockNode {
     return toJs(api.grok_DockNode_Parent(this.dart));
   }
 
-  /** @returns {Iterable.<DockNode>} */
+
   get children(): Iterable<DockNode> {
     return _toIterable(api.grok_DockNode_Children(this.dart));
   }
@@ -62,8 +61,7 @@ export class DockContainer {
     this.dart = dart;
   }
 
-  /** Container element.
-   * @returns {HTMLDivElement} */
+  /** Container element. */
   get containerElement(): HTMLDivElement {
     return api.grok_DockContainer_Get_ContainerElement(this.dart);
   }
@@ -89,7 +87,7 @@ export class DockContainer {
   }
 
   /** Removes a dock container from the dock layout hierarchy
-   *  @returns {DockNode} - the node that was removed from the dock tree */
+   *  @returns the node that was removed from the dock tree */
   //remove() { return new DockNode(api.grok_DockContainer_Remove(this.dart)); }
 
   setActiveChild(child: DockContainer): void {
@@ -122,10 +120,12 @@ export class DockManager {
     this.dart = dart;
   }
 
+  /** The element that hosts the docked panels. */
   get element(): HTMLDivElement {
     return api.grok_DockManager_Get_Element(this.dart);
   }
 
+  /** The root of the dock tree. */
   get rootNode(): DockNode {
     return toJs(api.grok_DockManager_Get_RootNode(this.dart));
   }
@@ -147,16 +147,14 @@ export class DockManager {
 
   /**
    * Docks the element relative to the reference node.
-   * @param {HTMLElement | Viewer} element - Element to dock
+   * @param element - Element to dock
    * @param options - `killOnClose`: kill the element when its pane is closed via the ✕
    * button — runs cleanups registered with {@link Widget.registerCleanup} and detaches
    * nested widgets. Off by default; panes that are closed and later reused must not opt in.
-   * @param {DockType} dockType - Dock type (left | right | top | down | fill).
-   * @param {DockNode|null} refNode - reference node
-   * @param {number} ratio - Ratio of the area to take (relative to the reference node).
-   * @param {string=} title - Name of the resulting column. Default value is agg(colName).
-   * @returns {DockNode}
-   * */
+   * @param dockType - Dock type (left | right | top | down | fill).
+   * @param refNode - reference node
+   * @param ratio - Ratio of the area to take (relative to the reference node).
+   * @param title - Caption of the docked panel. */
   dock(element: HTMLElement | Viewer, dockType: DockType = DG.DOCK_TYPE.LEFT, refNode: DockNode | null = null,
        title?: string, ratio: number = 0.5, options?: IDockOptions): DockNode {
     if (options?.killOnClose) {
@@ -168,8 +166,7 @@ export class DockManager {
 
   /**
    * Undocks the element.
-   * @param {HTMLElement | DockNode} object - Element to undock
-   * */
+   * @param object - Element to undock */
   close(object: HTMLElement | DockNode): void {
     // @ts-ignore
     if (object.dart === undefined)
@@ -181,13 +178,13 @@ export class DockManager {
 
   /**
    * Finds the node of an element.
-   * @param {HTMLElement} element - Element to find the node for.
-   * @returns {DockNode} if node is found, undefined otherwise.
-   * */
+   * @param element - Element to find the node for.
+   * @returns if node is found, undefined otherwise. */
   findNode(element: HTMLElement): DockNode | undefined {
     return toJs(api.grok_DockManager_FindNode(this.dart, element));
   }
 
+  /** Fires when a docked panel is closed; emits its content element. */
   get onClosed(): rxjs.Observable<HTMLElement> { return api.grok_DockManager_OnElementClosed(this.dart); }
 
   /** Fires when a panel becomes visible: its tab is selected, it is docked into a visible
@@ -200,11 +197,11 @@ export class DockManager {
 
   // /**
   //  * Docks the element relative to the reference node.
-  //  * @param {DockType} dockType - Dock type (left | right | top | down | fill).
-  //  * @param {number} ratio - Ratio of the area to take (relative to the reference node).
-  //  * @param {string=} title - Name of the resulting column. Default value is agg(colName).
-  //  * @returns {DockNode}
-  //  * */
+  //  * @param dockType - Dock type (left | right | top | down | fill).
+  //  * @param ratio - Ratio of the area to take (relative to the reference node).
+  //  * @param title - Name of the resulting column. Default value is agg(colName).
+  //
+  //  *  */
   // dockDialog(element, dockType, refNode, title = '') {
   //     return new DockNode(api.grok_DockManager_DockDialog(this.dart, refNode == null ? null : refNode.dart, element, dockType, title));
   // }

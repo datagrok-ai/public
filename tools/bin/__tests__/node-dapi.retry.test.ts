@@ -30,6 +30,22 @@ describe('fetchOrRetry', () => {
     await expect(client.get('/projects/x')).rejects.toThrow('HTTP 503');
   });
 
+  it('caps the wait between attempts so a long budget is not minutes asleep', async () => {
+    const waits: number[] = [];
+    vi.stubGlobal('setTimeout', ((fn: any, ms: number) => { waits.push(ms); return (fn(), 0); }) as any);
+    process.env['GROK_HTTP_BACKOFF'] = '1000';
+    process.env['GROK_HTTP_BACKOFF_MAX'] = '4000';
+    process.env['GROK_HTTP_RETRIES'] = '6';
+    try {
+      stub(() => shed(503));
+      await expect(new NodeApiClient(URL, 'token').get('/projects/x')).rejects.toThrow('HTTP 503');
+      expect(waits).toEqual([1000, 2000, 4000, 4000, 4000, 4000]);
+    } finally {
+      delete process.env['GROK_HTTP_BACKOFF_MAX'];
+      delete process.env['GROK_HTTP_RETRIES'];
+    }
+  });
+
   it('does not retry a status the server meant', async () => {
     const spy = stub(() => new Response('{"message":"nope"}', {status: 403, headers: {'content-type': 'application/json'}}));
     const client = new NodeApiClient(URL, 'token');
@@ -57,6 +73,22 @@ describe('fetchOrRetry', () => {
     stub(() => new Response('{"message":"Invalid session"}', {status: 401, headers: {'content-type': 'application/json'}}));
     const client = new NodeApiClient(URL, 'stale');
     await expect(client.get('/projects/x')).rejects.toThrow('Invalid session');
+  });
+
+  it('reads the body of every answer it does not return, so no connection is left checked out', async () => {
+    // undici holds the socket until the body is consumed; an abandoned one leaks a connection and
+    // the requests that follow queue before they start, where no deadline can reach them.
+    const seen: Response[] = [];
+    const make = (r: Response) => { seen.push(r); return r; };
+    stub(
+      () => make(new Response('{"message":"Invalid session"}', {status: 401, headers: {'content-type': 'application/json'}})),
+      () => make(ok({token: 'fresh'})),
+      () => make(new Response(null, {status: 204})),
+    );
+    const client = new NodeApiClient(URL, 'stale', 'dev-key');
+    expect(await client.get('/projects/x')).toBeNull();
+    const unread = seen.filter((r) => r.body && !r.bodyUsed);
+    expect(unread).toEqual([]);
   });
 
   it('names the route when a request never answers', async () => {

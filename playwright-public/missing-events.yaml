@@ -9,12 +9,31 @@
 # plus the firing point in the source. A cap that merely looked slow is not
 # evidence — measure before adding.
 
-revision: 2
+revision: 4
 
 gaps:
   - id: context-menu-constructed-not-in-js-api
     status: proposed
     found: 2026-08-20
+    revised: 2026-09-22
+    revision_note: |
+      Attempted on 2026-09-22 and backed out: surfacing the event id is NOT enough, and the
+      proposal below is wrong on two counts.
+      1. CONTEXT_MENU_CONSTRUCTED is fired on the WIDGET's own bus only
+         (viewer_base/popup_menu_mixin.dart:44), and that bus is a plain `new EventBus()` with no
+         routeTo, while grok_OnEvent listens on AppEvents.eventBus. A grok.events getter for it can
+         never emit, so it would be a trap rather than a channel. It is reachable today, but only
+         object-scoped: viewer.onEvent('d4-context-menu-constructed').
+      2. The global `grok.events.onContextMenu` already fires AFTER construction, not during it:
+         popup_menu_mixin fires the widget-bus CONTEXT_MENU as the add-your-items hook, and the
+         global one comes later, from Menu.show() (widgets/menu/menu.dart:1121). What the DOM-reading
+         specs actually raced is the POPUP, not the item tree - Menu.show() defers the DOM work to a
+         Timer.run. The signal for that already exists and is already exposed:
+         EVENT_TYPE.CONTEXT_MENU_SHOWN / grok.events.onContextMenuShown (menu.dart:1193, fired once
+         the popup is in the DOM and positioned).
+      Next step is therefore to re-measure the named specs against onContextMenuShown before asking
+      for anything. The Browse tree builds its menu itself (tree_view.dart:399) and fires neither, so
+      tree.test.ts / db.test.ts / fav.test.ts need a separate look.
     site: |
       public/packages/UsageAnalysis/files/TestTrack/Viewers/BarChart/bar-chart-spec.ts
       ("Context menu" step), and every context-menu step in Viewers/PcPlot/.
@@ -74,6 +93,89 @@ gaps:
       ACCORDION_CONSTRUCTED fires for it, or add a dedicated fire-only event when the
       property grid finishes rendering. Until then polling .property-grid is the
       correct rung-2 wait and should not be flagged.
+
+  - id: tree-children-loaded-had-no-signal
+    status: done
+    found: 2026-09-16
+    fixed: 2026-09-22
+    site: |
+      public/playwright-public/browse/helpers.ts:164-189 (the expand helper 15 of 21 browse specs
+      call), apps_matrix.test.ts:204-251, demo_apps.test.ts:145-146, fav.test.ts:67-77.
+      Full survey: BROWSE_CORE_SIGNALS.md gap 1, 73 tests blocked.
+    action: expand a Browse tree group, then read or count its children
+    symptom: |
+      d4-tree-view-tri-expanded is added synchronously by the click, before the group has any
+      children and before the request goes out, so it marked user intent, not readiness. The
+      helper observed the wrong attribute, gave up after 800 ms and fell back to a 400 ms sleep;
+      the matrix suite escalated to expand/collapse/re-expand plus a 12 s poll.
+    root_cause: |
+      core/client/d4/lib/src/widgets/tree_view/tree_view.dart - the `expanded` setter fired
+      NODE_EXPANDING and setExpanded() in one synchronous turn, while the listener that calls
+      loadSource() awaited the server. The platform polled itself for the same fact in three
+      places: browse_panel.dart _ensureNodeLoaded (20 x 100 ms), awaitChildrenLoaded (50 ms
+      Timer.periodic) and awaitGroupLoaded (75 ms Timer.periodic).
+    fix: |
+      TreeViewGroup.loadChildren() is now the one chokepoint every lazy population runs through.
+      It reports on childrenHost:
+        data-state="loading" | "loaded" | "error"   (never absent; a group with no lazy source
+                                                     starts at "loaded", and a re-expand or a
+                                                     "Load more" goes back to "loading")
+      and fires CHILD_NODE_CHILDREN_LOADED on the node's own bus and on the root group's bus. The
+      Browse tree root is routed to EventBus.global (browse_panel.dart:33), so it also arrives as
+      EVENT_TYPE.TREE_NODE_CHILDREN_LOADED / grok.events.onTreeNodeChildrenLoaded; a tree that does
+      not route reaches Dart listeners only.
+      The three in-core pollers are gone: TreeViewGroup.awaitChildren({timeout: 5000}) replaced
+      them at all 31 call sites, which was the acceptance test for the signal. The Settings
+      deep-link poller (browse_panel_routing.dart parseSettingsPath, 20 x 100 ms) went with them.
+      Locator: `.d4-tree-view-group-host[data-state="loaded"]`.
+
+  - id: browse-tree-refresh-had-no-completion
+    status: done
+    found: 2026-09-16
+    fixed: 2026-09-22
+    site: |
+      public/playwright-public/browse/nav.test.ts:155-156 (2500 ms sleep after Refresh),
+      :135-136 (1500 ms after Locate current object), files.test.ts:108-114 (icon-sync clicked
+      twice, two seconds each). BROWSE_CORE_SIGNALS.md gaps 2 and 3.
+    action: click Refresh or Locate-current-object in the Browse ribbon, then read the tree
+    symptom: |
+      The Refresh handler awaited refresh() and then chained parsePath() WITHOUT awaiting it, so
+      nothing marked either boundary. GROK-16261 ("the tree remembers expand/collapse state")
+      had to be downgraded to an annotation (nav.test.ts:168-174).
+    fix: |
+      browse_panel.dart initRibbon now awaits the whole chain in both handlers and fires
+      AppEvents.BROWSE_TREE_REFRESHED with args.reason = 'refresh' | 'find-path', exposed as
+      EVENT_TYPE.BROWSE_TREE_REFRESHED / grok.events.onBrowseTreeRefreshed.
+
+  - id: package-viewers-had-no-status-surface
+    status: done
+    found: 2026-09-16
+    fixed: 2026-09-22
+    site: |
+      Chem activity-cliffs.test.ts:71-103 (scans the scatter plot canvas for the series' green
+      pixels), viewers.test.ts:319-337 (walks 4 radii x 4 directions to hit a sunburst ring),
+      Chem similarity/diversity specs (molecule cards addressed by position), and the PowerPack
+      viewer gallery (cards and tags matched on class and text content).
+      Full survey: TUTORIALS_CORE_SIGNALS.md section 4.
+    action: read what a package viewer drew, or click one of its parts
+    symptom: |
+      Nineteen core viewers ship a *_status.dart, but the package side had almost nothing:
+      Chem/src and libraries/ml/src had no addStatusProvider or getWidgetStatus at all, and
+      PowerPack none. With nothing named, a spec scans pixels or sweeps geometry - which passes
+      whether or not the feature works, because a blank canvas has no green pixels either.
+    fix: |
+      libraries/utils render-lines-on-sp.ts - ScatterPlotLinesRenderer registers a
+      `lines-on-scatter-plot` provider on the scatter plot it draws onto: a `line <i>` /
+      `line <from>-<to>` hit area per line the frame actually stroked (recorded at the stroke, so
+      a line skipped for being too short is not reported), plus `lines`, `lines drawn`,
+      `current line`, `hovered line`. `lines drawn` is what replaces the pixel scan.
+      libraries/ml search-base-viewer.ts - `isRenderPending` / `onRendered` and a `search-results`
+      provider: `card <row>` areas plus `cards`, `current card`, `selected cards`, `target column`,
+      `limit`. A subclass opts in by marking each card with `data-row`; Chem's similarity and
+      diversity viewers do.
+      Charts sunburst - sunburst-status.ts, `segment <path>` areas on a point the sector confirms
+      it contains, plus `isRenderPending` / `onRendered` / `renderError`.
+      PowerPack - the viewer gallery and the status-bar toggles are named.
 
   - id: dialog-shown-not-fired-from-dart
     status: needs-confirmation

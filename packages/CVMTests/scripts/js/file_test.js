@@ -7,6 +7,6 @@
 //input: string dec = "."
 //condition: file.isFile && file.name.endsWith("csv")
 //output: int num_lines
-let data = await new DG.FileSource().readAsText('System:AppData/' + file.path);
+let data = await new DG.FilesDataSource().readAsText('System:AppData/' + file.path);
 let d = await DG.DataFrame.fromCsv(data, {delimiter: separator, decimalSeparator: dec, headerRow: header});
 let num_lines = d.rowCount;

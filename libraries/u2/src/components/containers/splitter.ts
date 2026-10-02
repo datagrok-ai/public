@@ -37,7 +37,8 @@ export class Splitter extends Control {
   private _frame = 0;
   private _hoverTimer = 0;
 
-  constructor(panels: HTMLElement[], options: SplitterOptions) {
+  /** A panel given as a `Control` is owned: disposed with the splitter. */
+  constructor(panels: (HTMLElement | Control)[], options: SplitterOptions) {
     super();
     this._horizontal = options.direction === 'horizontal';
     this._minSize = options.minSize ?? 60;
@@ -51,9 +52,11 @@ export class Splitter extends Control {
     this.root.dataset.u2 = 'splitter';
 
     for (const content of panels) {
+      if (Control.is(content))
+        this.own(() => content.dispose());
       const panel = document.createElement('div');
       panel.className = 'u2-splitter-panel';
-      panel.append(content);
+      panel.append(Control.is(content) ? content.root : content);
       this._panels.push(panel);
       this.root.append(panel);
     }

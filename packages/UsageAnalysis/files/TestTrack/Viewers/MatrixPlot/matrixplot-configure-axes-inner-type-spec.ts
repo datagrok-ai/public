@@ -105,20 +105,20 @@ test('Matrix Plot — Column Sets, Cell Plot Type', async ({page}: {page: Page})
   await softStep('Scenario 2 — change X via the Select columns dialog (real clicks; GROK-20438 labels)', async () => {
     await page.locator('[name="prop-view-x"] button').click();
     await page.locator('[name^="dialog-Select-columns"]').waitFor({timeout: 8000});
-    const rect = await page.evaluate(() => {
-      const g = document.querySelector('[name^="dialog-Select-columns"] [name="viewer-Grid"]')!;
-      const r = g.getBoundingClientRect();
-      return {top: r.top, right: r.right, height: r.height};
-    });
+    // Only the drawn checkbox toggles, not its whole cell: aim at the cell centre the grid reports.
+    const checkbox = (row: number) => page.evaluate((i) => {
+      const host = document.querySelector('[name^="dialog-Select-columns"] [name="viewer-Grid"]') as HTMLElement;
+      const grid = (window as any).DG.Widget.find(host);
+      const c = host.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
+      const b = grid.cell('x', i).bounds;
+      return {x: c.x + b.x + b.width / 2, y: c.y + b.y + b.height / 2};
+    }, row);
 
-    const headerH = 24;
-    const rowH = (rect.height - headerH) / 4;
-    const clickX = rect.right - 38;
-    const rowY = (i: number) => rect.top + headerH + rowH * i + rowH / 2;
-
-    await page.mouse.click(clickX, rowY(2));
+    const weight = await checkbox(2);
+    await page.mouse.click(weight.x, weight.y);
     await v.pollValue(() => readSets(page), (s) => s.x.length === 3, 500, 100);
-    await page.mouse.click(clickX, rowY(3));
+    const started = await checkbox(3);
+    await page.mouse.click(started.x, started.y);
     await v.pollValue(() => readSets(page), (s) => s.x.length === 2, 500, 100);
 
     const live = await readSets(page);

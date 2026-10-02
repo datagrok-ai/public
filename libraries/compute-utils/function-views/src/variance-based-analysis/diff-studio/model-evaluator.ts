@@ -54,7 +54,7 @@ export class ModelEvaluator {
     );
     const workers = new Array(nThreads)
       .fill(null)
-      .map((_) => new Worker(new URL('workers/analysis.ts', import.meta.url)));
+      .map((_) => new Worker(new URL('./workers/analysis', import.meta.url)));
 
     // Create tasks for workers
     const tasks = this.getTasks(samplesCount, nThreads);

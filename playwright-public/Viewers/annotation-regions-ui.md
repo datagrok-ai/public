@@ -1,8 +1,13 @@
-# Annotation regions — Manual UI tests
+---
+feature: annotation-regions
+target_layer: manual-only
+coverage_type: smoke
+manual_only_reason: |
+  These scenarios require visual verification of canvas positions and cannot
+  be reliably automated.
+---
 
-These scenarios require visual verification and cannot be reliably automated
-without a `viewer.worldToScreen()` helper that maps data coordinates to screen
-coordinates on the canvas.
+# Annotation regions — Manual UI tests
 
 ## Hover interaction
 
@@ -24,3 +29,9 @@ Prerequisite: Scatter Plot with two overlapping rectangle regions.
 3. Click the overlap area — expected: selection is the union of markers from both regions
 4. Ctrl+click on a selected region — expected: markers of that region are removed from the selection
 
+
+---
+{
+  "order": 29,
+  "datasets": ["System:DemoFiles/demog.csv"]
+}

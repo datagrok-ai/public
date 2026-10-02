@@ -9,16 +9,11 @@ EDA (Exploratory Data Analysis) is a Datagrok package providing statistical anal
 ## Build Commands
 
 ```bash
-npm install                # Install dependencies
-npm run build              # Full build: grok api && grok check --soft && webpack
-npm run build-eda          # Webpack only
-npm run build-all          # Build js-api, libraries, then this package
-
-npm run link-all           # Link local datagrok-api and libraries
-
-npm run debug-eda          # Build and publish to default server
-npm run debug-eda-local    # Build and publish to local server
-npm run release-eda        # Build and publish as release
+grok setup                 # Once per checkout, at the repository root (pnpm workspace, see packages/BUILD.MD)
+grok build                 # This package and the libraries it depends on, in order, cached
+grok build --typecheck     # Build and type-check
+pnpm run lint              # ESLint check
+grok publish <server>      # Build and deploy a debug version
 
 npm test                   # Run tests against localhost
 grok test                  # Run all tests

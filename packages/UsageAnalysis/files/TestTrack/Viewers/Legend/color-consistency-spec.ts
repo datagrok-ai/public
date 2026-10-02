@@ -9,13 +9,15 @@ import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {addLegendViewers} from './legend-setup';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 test.use(specTestOptions);
 
 test('Legend color consistency', async ({page}) => {
   test.setTimeout(600_000);
 
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
   await addLegendViewers(page, {
     column: 'Stereo Category',

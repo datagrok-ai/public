@@ -89,14 +89,21 @@ Feature: Box plot selection and highlight
     When user moves the pointer away from box plot viewer
     And user sets "Show Mouse Over Point" property of box plot viewer to "true"
 
-  Scenario: A hover on a bar chart leaves the box plot alone
+  Scenario: A hover on a bar chart highlights its rows in the box plot only while the row group is shown
     When user adds a bar chart viewer with:
       | Split | RACE |
     And user sets "Marker Color Column" property of box plot viewer to "RACE"
     And user takes a snapshot of box plot viewer
     And user hovers over the "bar Caucasian" area of bar chart viewer
+    Then box plot viewer should have repainted by at least 2000 pixels
+    When user moves the pointer away from bar chart viewer
+    And user sets "Show Mouse Over Row Group" property of box plot viewer to "false"
+    And user takes a snapshot of box plot viewer
+    And user hovers over the "bar Caucasian" area of bar chart viewer
     Then box plot viewer should not have repainted
-    When user clicks on close icon of bar chart viewer
+    When user moves the pointer away from bar chart viewer
+    And user sets "Show Mouse Over Row Group" property of box plot viewer to "true"
+    And user clicks on close icon of bar chart viewer
     Then bar chart viewer should be absent
     When user sets "Marker Color Column" property of box plot viewer to ""
 

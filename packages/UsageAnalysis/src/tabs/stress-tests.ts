@@ -15,6 +15,7 @@ export class StressView extends UaView {
   private boxHeader!: HTMLElement;
   private regressionHost!: HTMLElement;
   private summaryDf: DG.DataFrame | null = null;
+  private rawDf: DG.DataFrame | null = null;
 
   constructor(uaToolbox?: UaToolbox, ctx?: ReleaseContext) {
     super(uaToolbox);
@@ -54,6 +55,10 @@ export class StressView extends UaView {
     await this.refresh();
   }
 
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    return UaView.csvFiles({'summary': this.summaryDf, 'latest-build': this.rawDf});
+  }
+
   private async refresh(): Promise<void> {
     await Promise.all([this.loadSummary(), this.loadBox()]);
   }
@@ -66,6 +71,7 @@ export class StressView extends UaView {
   }
 
   private async loadSummary(): Promise<void> {
+    this.summaryDf = null;
     this.byBuildHost.innerHTML = '';
     this.byBuildHost.append(ui.loader());
     this.summaryHost.innerHTML = '';
@@ -100,10 +106,12 @@ export class StressView extends UaView {
   }
 
   private async loadBox(): Promise<void> {
+    this.rawDf = null;
     this.boxHost.innerHTML = '';
     this.boxHost.append(ui.loader());
     try {
       const df = await queries.stressTestsRaw(null);
+      this.rawDf = df;
       this.boxHost.innerHTML = '';
       if (df.rowCount === 0) {
         this.boxHost.append(ui.divText('No stress runs in the latest build.', 'ua-metrics-degraded'));

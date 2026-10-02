@@ -2,10 +2,11 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Tutorials
+//input: string path { meta.url: true; optional: true }
 //meta.role: app
 //top-menu: Help | Tutorials @Toolbox Help | Tutorials
-export function trackOverview() : void {
-  PackageFunctions.trackOverview();
+export function trackOverview(path?: string) : void {
+  PackageFunctions.trackOverview(path);
 }
 
 //output: widget result

@@ -94,8 +94,10 @@ export function config(args: ConfigArgs) {
   const askRegistry = args.registry != null;
   const interactiveMode = args['_'].length === 1 && (nOptions < 1 ||
     nOptions === 1 && (args.reset || askRegistry) || nOptions === 2 && args.reset && askRegistry);
+  // `--key` is optional: a server reached with a keypair (`grok login`) has no
+  // developer key to record. minimist mirrors -k into both `key` and `k`.
   const hasAddServerCommand = args['_'].length === 2 && args['_'][1] === 'add' &&
-    args.server && args.key && args.k && args.alias && (nOptions >= 4 && nOptions <= 6);
+    args.server && args.alias && (nOptions >= 2 && nOptions <= 6);
   if (!interactiveMode && !hasAddServerCommand) return false;
 
   if (!fs.existsSync(grokDir)) 
@@ -113,7 +115,7 @@ export function config(args: ConfigArgs) {
       color.error('URL parsing error. Please, provide a valid server URL.');
       return false;
     }
-    const server: {url: string, key: string, registry?: string} = {url: args.server!, key: args.key!};
+    const server: {url: string, key: string, registry?: string} = {url: args.server!, key: args.key ?? ''};
     if (args.registry != null) {
       const registry = typeof args.registry === 'string' ? args.registry : defaultRegistry(args.server!);
       if (registry)

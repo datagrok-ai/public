@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "mpo",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "tables": {
     "profile": {
       "securityMode": "row",
@@ -10,6 +10,7 @@
       "businessKey": ["name"],
       "friendlyName": "MPO Profiles",
       "description": "An MPO desirability profile: a named set of scored properties and how they aggregate.",
+      "grants": {"All users": ["view", "edit", "delete"]},
       "columns": {
         "name": {"type": "string", "required": true, "isName": true,
           "description": "Profile name; unique."},
@@ -18,8 +19,8 @@
           "description": "How per-property desirability scores combine."},
         "format_version": {"type": "int", "friendlyName": "Format version",
           "description": "Profile format version; newer-format profiles are not loaded by older clients."},
-        "properties": {"type": "string", "required": true,
-          "description": "The scored properties and their desirability curves, as JSON."}
+        "properties": {"type": "json", "required": true,
+          "description": "The scored properties and their desirability curves, keyed by property name."}
       }
     }
   }

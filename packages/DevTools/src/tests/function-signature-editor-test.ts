@@ -37,7 +37,7 @@ count = table.shape[0] * table.shape[1]`);
       }
     }
     if (!b) throw new Error('Failed: FSE button does not exist');
-  }, {owner:'ppolovyi@datagrok.ai'});
+  }, {owner:'oserhiienko@datagrok.ai'});
 
   test('open', async () => {
     const v = DG.ScriptView.create(script);
@@ -60,7 +60,7 @@ count = table.shape[0] * table.shape[1]`);
       !!currentView.root.querySelector('[name="CODE"]') &&
       !!currentView.root.querySelector('[name="UI"]');
     expect(allTabsExist, true);
-  }, {owner:'ppolovyi@datagrok.ai'});
+  }, {owner:'oserhiienko@datagrok.ai'});
 
   test('close', async () => {
     const v = DG.ScriptView.create(script);
@@ -87,5 +87,5 @@ count = table.shape[0] * table.shape[1]`);
     editorButton.click();
     await awaitCheck(() => !!currentView.root.querySelector('.CodeMirror.cm-s-default'),
       'Code button did not open view', 2000);
-  }, {owner:'ppolovyi@datagrok.ai'});
+  }, {owner:'oserhiienko@datagrok.ai'});
 });

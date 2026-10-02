@@ -16,122 +16,146 @@ migration_date: 2026-05-04
 related_bugs: []
 ---
 
-# Complex — Multi-source integration
+# Complex — one project from many sources
 
-Opens tables from eight different sources in a single workspace —
-file share, Space, database table, saved query, script, pivot table,
-aggregate rows, a join, and a clone — and verifies they can all
-coexist, be saved together as one project with Data Sync on, and
-reload correctly after a close and reopen. This is the section's main
-check that heterogeneous data sources don't interfere with each other
-inside a project; it deliberately runs longer than the other
-scenarios in this file because that broad source coverage is the
-point.
-
-UI coverage delegated to `projects-ui-smoke.md`.
+Opens tables from nine sources in one workspace, saves them together
+as one project with Data sync, and checks that everything comes back
+after a reopen. The sources are a file, a file from a Space, a database
+table, a saved query and a script, plus a pivot, an aggregate, a join
+and a clone built from them.
 
 ## Setup
 
-1. Authenticate as test user.
-2. Project name: `integration-test-${Date.now()}`.
-3. **Source provisioning** — all required prerequisites are created
-   by the spec itself (no external package or DB env dependency):
-   - Files: `System:AppData/Chem/tests/spgi-100.csv` and
-     `System:DemoFiles/demog.csv` (file presence is not a
-     prerequisite per project-wide convention).
-   - Space: inline-created `test-projects-demo-integration-*`
-     populated with `demog.csv` (Spaces prelude pattern; subject to
-     the platform-level Spaces blocker — defensive env-skip per
-     `projects-lifecycle-spaces-spec.ts` pattern).
-   - DB table: `System:Datagrok / public.groups` opened ad-hoc via
-     `helpers/openers.ts:openTableFromDbTable`.
-   - Saved query: provisioned in-test via
-     `helpers/openers.ts:provisionSystemDatagrokQuery({sql:
-     SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE})`.
-   - Dataframe-output script: provisioned in-test via
-     `helpers/openers.ts:provisionDataframeScript`.
-4. Cleanup: delete project; delete inline Space; invoke
-   `provisionedQuery.cleanup()` and
-   `deleteProvisionedScript(provisionedScript.scriptId)`.
+1. Log in as the test user.
+2. Names in this test: project `integration`, Space `integration`,
+   script `integrationScript`.
+3. **Create the Space.**
+   - In **Browse**, right-click **Spaces** and choose **Create
+     Space...**.
+   - Enter `integration` as the name.
+   - Click **OK**.
+   - Go to **Browse > Files > Demo > northwind**.
+   - Drag `customers.csv` onto the `integration` Space in the Browse
+     tree.
+   - In the **Move entity** dialog, select **Copy**.
+   - Click **YES**.
+4. **Create the script.**
+   - Go to **Browse > Platform > Functions > Scripts**.
+   - Click **NEW** and choose **JavaScript Script...**.
+   - Replace the template with the text below.
+   - Click **SAVE** in the editor.
 
-## Scenarios
+   ```
+   //name: integrationScript
+   //language: javascript
+   //output: dataframe df
+   df = await grok.data.getDemoTable('demog.csv');
+   ```
 
-### Main flow — multi-source integration
+## Scenario
 
-0. **Provision in-test prerequisites.** Create the saved query and
-   the dataframe-output script via the helpers listed in Setup
-   point 3.
-1. **Open 8 tables from heterogeneous sources.**
-   - File share: `System:AppData/Chem/tests/spgi-100.csv` (via
-     `helpers/openers.ts:openTableFromFile`).
-   - Space: `test-projects-demo-integration-* > demog.csv`
-     (prelude-created; defer / env-skip if Spaces blocker active).
-   - DB table: `System:Datagrok / public.groups` opened via
-     `openTableFromDbTable` (mirrors `Browse > Databases` double-
-     click).
-   - Query: run the provisioned saved query via
-     `openTableFromDbQuery(page, provisionedQuery.queryNqName)`.
-   - Script: run the provisioned script via
-     `openTableFromScript(page, provisionedScript.resolvedNqName)`.
-   - Pivot: configure Pivot Table on the demog table > **Add**
-     (use `addAggregateToWorkspace({via: 'pivot-viewer'})`).
-   - Aggregate: configure Aggregate Rows on the script-output
-     table > **Add** (use `addAggregateToWorkspace({via: 'menu'})`).
-   - Join: Join the spgi-100 table with the DB-table on a
-     common-name key column (or any plausible join condition);
-     produce as new tab.
-   - Clone: right-click any open table > **Clone** to produce
-     an independent copy.
-   - Verify `grok.shell.tables.length >= 8` after all 8 sources
-     are open.
-2. **Save project with Data Sync ON (the integration save).**
-   Save Project, name from Setup, Data Sync **ON** for every
-   applicable table (some tables — derived Pivot/Aggregate/Join,
-   Clone — do not have Data Sync configurable at that level;
-   their parents do). Click **OK**. Cancel auto-share.
-3. **Verify save persisted with all 8 tables.** Verify
-   `(await grok.dapi.projects.find(<id>)).relations.length` is
-   the expected count (depends on parent vs derived counting
-   semantics; assert `>= 5` for parent tables at minimum:
-   spgi, demog, db-table, query-result, script-result).
-4. **Close all views and reopen the integration project.** Close
-   via `grok.shell.closeAll()`. Reopen via
-   `Browse > Dashboards`. Verify all parent tables load (5+);
-   verify derivations (Pivot, Aggregate, Join, Clone) restore
-   correctly. **Multi-source co-existence assertion:** all 8
-   tabs are present in the workspace; no missing-source errors.
-5. **Cleanup.** Delete the project. Delete the inline Space.
-   Invoke `provisionedQuery.cleanup()` and
-   `deleteProvisionedScript(provisionedScript.scriptId)`.
+1. **Open a file.**
+   - Go to **Browse > Files > Demo > northwind**.
+   - Double-click `orders.csv`.
+   - **Verify:** the `orders` view opens with 830 rows.
 
-### Expected results
+2. **Open a file from the Space.**
+   - Go to **Browse > Spaces > integration**.
+   - Double-click `customers.csv`.
+   - **Verify:** the `customers` view opens with 91 rows.
 
-- 8 heterogeneous sources can coexist in one project.
-- Save Project with Data Sync ON persists all sources +
-  derivations.
-- Reopen restores all 8 tables / tabs without errors.
-- No source-class interaction conflicts (e.g. Spaces +
-  System:Datagrok + Files all coexist; Pivot + Aggregate + Join
-  all derive correctly; Clone is independent).
+3. **Open a database table.**
+   - Go to **Browse > Databases > Postgres > NorthwindTest > Schemas >
+     public**.
+   - Right-click `products` and choose **Get All**.
+   - **Verify:** the `products` view opens.
 
-## Notes
+4. **Run a saved query.**
+   - Go to **Browse > Databases > Postgres > NorthwindTest**.
+   - Double-click the query **PostgresAll**.
+   - **Verify:** the result view opens with 830 rows.
 
-- **Self-contained source provisioning.** The Query and Script
-  prerequisites are created and deleted within the spec; the DB
-  table is on the built-in `System:Datagrok` connection. No
-  Samples package dependency.
-- **Why this is not tied to a specific bug.** None of the known
-  GROK bugs target multi-source co-existence specifically — each is
-  source-specific or operation-specific. This scenario covers that
-  gap proactively: regressions in multi-source coordination would be
-  caught here.
-- **UI coverage delegated.** No UI surface beyond Save Project is
-  exercised here. The Pivot / Aggregate / Join / Clone UI surfaces
-  are owned by `uploading.md`'s source-matrix Cases 8 and 9.
-- **Spaces blocker.** The case involving Spaces (Step 1's second
-  sub-bullet) defensively skips in environments affected by the
-  platform-level Spaces bug tracked for `projects-lifecycle-spaces-spec.ts`,
-  until that bug is fixed.
-- **No related bug.** Pure proactive multi-source coverage.
-- **Self-cleaning.** Step 5 deletes the project, the Space, and the
-  provisioned query and script.
+5. **Run the script.**
+   - Go to **Browse > Platform > Functions > Scripts**.
+   - Right-click `integrationScript` and choose **Run...**.
+   - **Verify:** the `demog` view opens with 5,850 rows.
+
+6. **Add a pivot table.**
+   - Click the `orders` view tab.
+   - In **Toolbox > Viewers**, click **Pivot table**.
+   - In the viewer, set **Group by** to `ShipCountry`.
+   - Set **Aggregate** to `count(OrderID)`.
+   - Click **ADD** in the top-right corner of the viewer.
+   - **Verify:** the view *orders aggregation* opens.
+
+7. **Aggregate rows.**
+   - Click the `demog` view tab.
+   - Open **Data > Aggregate Rows...**.
+   - **Verify:** the **Pivot table** panel opens.
+   - Set **Group by** to `RACE`.
+   - Set **Aggregate** to `avg(AGE)`.
+   - Click **ADD**.
+   - **Verify:** a new view with the aggregated table opens.
+
+8. **Join two tables.**
+   - Open **Data > Join Tables...**.
+   - In **Tables**, set the first table to `orders`.
+   - Set the second table to `customers`.
+   - In **Key Columns**, set the key of `orders` to `CustomerID`.
+   - Set the key of `customers` to `CustomerID`.
+   - Set **Join Type** to `inner`.
+   - Click **OK**.
+   - **Verify:** the join result opens as a new view.
+
+9. **Clone a table.**
+   - Click the `products` view tab.
+   - Click `products` at the left of the status bar.
+   - In the **Context Panel**, expand **Actions**.
+   - Click **Clone**.
+   - **Verify:** the view `products (2)` opens.
+
+10. **Check the workspace.**
+    - On the left sidebar, click the **Dashboards** icon.
+    - **Verify:** **New Dashboard** lists nine tables.
+    - **Verify:** no other project node is listed.
+
+11. **Save.**
+    - Click **SAVE** on the ribbon.
+    - **Verify:** each of the nine tables has its own **Data sync**
+      toggle.
+    - Enter `integration` as the name.
+    - Leave **Data sync** ON for every table.
+    - Click **OK**.
+    - **Verify:** the balloon *Project "integration" uploaded.* appears.
+    - In the **Share** dialog, click **CANCEL**.
+
+12. **Reopen.**
+    - Right-click the left sidebar and select **Close All**.
+    - Go to **Browse > Dashboards**.
+    - Type `integration` into the search box.
+    - Click the refresh icon.
+    - Click the `integration` tile.
+    - In the **Context Panel**, expand **Content**.
+    - **Verify:** **Content** lists nine tables.
+    - Double-click the `integration` tile.
+    - **Verify:** nine views open, each with rows.
+    - **Verify:** no error balloon appears.
+
+13. **Cleanup.**
+    - Right-click the left sidebar and select **Close All**.
+    - Right-click the `integration` tile and choose **Delete Project**.
+    - Click **DELETE**.
+    - Wait until the dialog closes.
+    - In **Browse > Spaces**, right-click `integration` and choose
+      **Delete Space**.
+    - Click **DELETE**.
+    - In **Browse > Platform > Functions > Scripts**, right-click
+      `integrationScript` and choose **Delete**.
+    - Click **YES**.
+
+## Expected results
+
+- Tables from all sources can live in one project.
+- The project saves with Data sync and reopens all tables, including
+  the derived ones and the clone.
+- Sources do not interfere with each other.

@@ -1,10 +1,8 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest, defer} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
 import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
-import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, withLatestFrom, tap, distinctUntilChanged, filter, defaultIfEmpty, last, take} from 'rxjs/operators';
+import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, tap, distinctUntilChanged, filter, defaultIfEmpty, last, take} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
@@ -46,10 +44,10 @@ export class Driver {
 
   constructor(private mockMode = false) {
     this.commands$.pipe(
-      withLatestFrom(this.states$),
       // defer keeps a synchronous executeCommand throw inside the inner observable, so
-      // catchError acks it instead of the throw erroring (and killing) the outer queue
-      concatMap(([{msg, cid}, state]) => defer(() => this.executeCommand(msg, state)).pipe(
+      // catchError acks it instead of the throw erroring (and killing) the outer queue;
+      // it also samples states$ at execution time, after prior queued commands have run
+      concatMap(({msg, cid}) => defer(() => this.executeCommand(msg, this.states$.value)).pipe(
         defaultIfEmpty(null as any),
         last(),
         tap((result) => this.commandAcks$.next({cid, result})),
@@ -83,6 +81,7 @@ export class Driver {
     combineLatest([this.globalROLocked$, this.treeMutationsLocked$, this.wasEdited$]).pipe(
       filter(([roLock, mutationLock]) => !roLock && !mutationLock),
       map(([, , wasEdited]) => wasEdited),
+      takeUntil(this.closed$),
     ).subscribe(this.hasNotSavedEdits$);
 
     stateUpdates$.pipe(
@@ -286,7 +285,7 @@ export class Driver {
         if (!stateLoaded.nqName)
           throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing nqName`);
         if (msg.config)
-          return of([stateLoaded, msg.config] as const);
+          return of([stateLoaded, msg.config, metaCall, isFavorite] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.nqName, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
           map((config) => [stateLoaded, config, metaCall, isFavorite] as const),

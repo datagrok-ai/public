@@ -34,7 +34,7 @@ export class MpoProfilesView {
     this.view = DG.View.fromRoot(this.root);
     this.view.name = this.name;
     grok.shell.windows.showHelp = false;
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showContextPanel = true;
     updateMpoPath(this.view, MpoPathMode.List);
     attachMpoProfilesAi(this);
   }

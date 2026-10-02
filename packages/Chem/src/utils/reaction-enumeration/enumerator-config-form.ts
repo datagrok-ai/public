@@ -4,17 +4,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PackageFunctions} from '../../package';
-import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
+import {
+  cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig, PropagatedColumns,
+} from './config';
 import {buildCombinationLimitFields, buildProductFilterFields, fixNullableIntStepper} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {tryGetRxn} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
 import {ChipEl, EnumeratorNav} from './enumerator-nav';
 import {
-  combinationLimitsChanged, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
-  productFiltersChangedCount, roundsLabel,
+  combinationLimitsChanged, estimateProductCount, MAX_CYCLES, MAX_ROUNDS, Mode, MODE_LABEL,
+  productFiltersChangedCount, cyclesLabel, roundsLabel,
 } from './shared';
 import {loadEnumerationDefaults} from './default-files';
+import {PropagatedColumnsPicker} from './propagation';
 
 function pickFile(accept: string): Promise<File | null> {
   return new Promise((resolve) => {
@@ -55,6 +58,9 @@ function makeColInput(
     opts.table = table;
     const c = table.col(preferredName);
     if (c && filter(c)) opts.value = c;
+  } else {
+    opts.table = grok.data.demo.molecules(1);
+    opts.value = null;
   }
   const inp = ui.input.column(label, opts);
   inp.setTooltip(tooltip);
@@ -136,6 +142,8 @@ export class EnumeratorConfigForm {
   readonly exclusionInput: DG.InputBase<DG.DataFrame | null>;
   readonly numRoundsInput: DG.InputBase<number | null>;
   readonly depthFirstInput: DG.InputBase<boolean>;
+  readonly applyUntilFailsInput: DG.InputBase<boolean>;
+  readonly maxCyclesInput: DG.InputBase<number | null>;
 
   private readonly smartsColInput: DG.InputBase<DG.Column | null>;
   private readonly blockingColInput: DG.InputBase<DG.Column | null>;
@@ -143,8 +151,9 @@ export class EnumeratorConfigForm {
   private readonly bbColInput: DG.InputBase<DG.Column | null>;
   private readonly reagentsColInput: DG.InputBase<DG.Column | null>;
   private readonly exclusionColInput: DG.InputBase<DG.Column | null>;
-  private readonly maxComponentsInput: DG.InputBase<number | null>;
-  private readonly maxRoutesInput: DG.InputBase<number | null>;
+  private readonly templatePropagation: PropagatedColumnsPicker;
+  private readonly bbPropagation: PropagatedColumnsPicker;
+  private readonly reagentPropagation: PropagatedColumnsPicker;
 
   private combinationLimitFields: ReturnType<typeof buildCombinationLimitFields>;
   private productFilterFields: ReturnType<typeof buildProductFilterFields>;
@@ -204,7 +213,7 @@ export class EnumeratorConfigForm {
     this.rxnNameColInput = makeColInput('Reaction name (optional)', templatesDf,
       this.config.enumeration.reaction_name_col, isStringCol,
       'Optional column with a friendly name for each reaction template. Surfaces in the output ' +
-      '"reaction_name" column.', true);
+      '"reaction_names" column, one line per step.', true);
 
     this.bbsInput = ui.input.table('Building blocks file', {
       value: bbsDf ?? undefined, nullable: false,
@@ -213,11 +222,31 @@ export class EnumeratorConfigForm {
     this.bbColInput = makeColInput('SMILES column', bbsDf, this.config.enumeration.bb_smiles_column, isStringCol,
       'Column in the building blocks file that contains SMILES.', false);
 
+    this.templatePropagation = new PropagatedColumnsPicker({
+      tableInput: this.templatesInput,
+      columnInputs: [this.smartsColInput, this.blockingColInput, this.rxnNameColInput],
+      initial: this.config.enumeration.template_propagated_columns,
+      tooltip: 'Columns of the reaction templates file to propagate into the result, one column per step ' +
+        '(e.g. yield → reaction_1_yield, reaction_2_yield). A numeric column can also be aggregated over ' +
+        'the route into one column to filter on (e.g. yields multiplied into reaction_yield_multiply, or the ' +
+        'worst step in reaction_yield_min).',
+      onChanged: () => this.deps.refreshValidation(), subs: this.deps.view.subs,
+    });
+    this.bbPropagation = new PropagatedColumnsPicker({
+      tableInput: this.bbsInput, columnInputs: [this.bbColInput],
+      initial: this.config.enumeration.bb_propagated_columns,
+      tooltip: 'Columns of the building blocks file to propagate into the result, one column per building ' +
+        'block of the route, numbered step by step in reactant order (e.g. price → bb_1_price, bb_2_price). ' +
+        'A numeric column can also be aggregated over the route into one column to filter on (e.g. prices ' +
+        'summed into bb_price_sum, or the most expensive building block in bb_price_max).',
+      onChanged: () => this.deps.refreshValidation(), subs: this.deps.view.subs,
+    });
+
     this.reagentsInput = ui.input.table('Reagents file (optional)', {
       value: reagentsDf ?? undefined, nullable: true,
       tooltipText: 'Optional table of reagent SMILES. When set, switches to reagents mode: every ' +
-        'round uses exactly one building block (or product of an earlier round) and fills every ' +
-        'remaining slot with reagents from this file — produces derivatives of each BB across rounds.',
+        'step uses exactly one building block (or product of an earlier step) and fills every ' +
+        'remaining slot with reagents from this file — produces derivatives of each BB across steps.',
     });
     const REAGENTS_COL_TOOLTIP = 'Column in the reagents file that contains the reagent SMILES.';
     this.reagentsColInput = makeColInput('Reagent SMILES column', reagentsDf,
@@ -239,6 +268,17 @@ export class EnumeratorConfigForm {
       this.config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol,
       'Column in the exclusion substructures file that contains the SMARTS strings.', true);
 
+    this.reagentPropagation = new PropagatedColumnsPicker({
+      tableInput: this.reagentsInput, columnInputs: [this.reagentsColInput],
+      trailingInputs: [this.exclusionInput, this.exclusionColInput],
+      initial: this.config.enumeration.reagent_propagated_columns,
+      tooltip: 'Columns of the reagents file to propagate into the result, one column per reagent of the ' +
+        'route, numbered step by step in reactant order (e.g. price → reagent_1_price, reagent_2_price). ' +
+        'A numeric column can also be aggregated over the route into one column to filter on (e.g. prices ' +
+        'summed into reagent_price_sum).',
+      onChanged: () => this.deps.refreshValidation(), subs: this.deps.view.subs,
+    });
+
     // Re-bind column inputs whenever the parent table changes.
     this.deps.view.subs.push(
       bindColToTable(this.smartsColInput, this.templatesInput, () => this.config.enumeration.smarts_col, isStringCol),
@@ -255,41 +295,55 @@ export class EnumeratorConfigForm {
 
     // nullable: true throughout — without it, clearing the box makes .value NaN rather than null,
     // and NaN slips past every `?? fallback` downstream uncaught.
-    this.numRoundsInput = ui.input.int('Number of rounds',
+    this.numRoundsInput = ui.input.int('Number of steps',
       {value: this.config.enumeration.num_rounds, nullable: true, min: 1, max: MAX_ROUNDS, showPlusMinus: true});
     this.numRoundsInput.setTooltip(
-      'Number of consecutive enumeration rounds. Round 1 reacts BBs only; round 2 takes round-1 ' +
+      'Number of consecutive enumeration steps. Step 1 reacts BBs only; step 2 takes step-1 ' +
       `products and (in depth-first mode) reacts each one with original BBs. Increase for deeper ` +
-      `libraries (capped at ${MAX_ROUNDS} — a round tab is built for every round, and product counts ` +
+      `libraries (capped at ${MAX_ROUNDS} — a step tab is built for every step, and product counts ` +
       `grow combinatorially with each one).`);
     fixNullableIntStepper(this.numRoundsInput, 1);
     // `min`/`max` above only affect the tooltip/spinner, not validation — add that separately.
     this.numRoundsInput.addValidator((v) => {
       const n = Number(v);
       if (!Number.isFinite(n) || n < 1) return 'Must be at least 1.';
-      if (n > MAX_ROUNDS) return `Must be at most ${MAX_ROUNDS} — the round strip shows the first ${MAX_ROUNDS} rounds only.`;
+      if (n > MAX_ROUNDS) return `Must be at most ${MAX_ROUNDS} — the step strip shows the first ${MAX_ROUNDS} steps only.`;
       return null;
     });
 
     this.depthFirstInput = ui.input.bool('Depth first', {value: this.config.enumeration.depth_first});
     this.depthFirstInput.setTooltip(
-      'When checked, each round r > 1 must combine EXACTLY ONE round-(r-1) product with original ' +
+      'When checked, each step r > 1 must combine EXACTLY ONE step-(r-1) product with original ' +
       'BBs (linear chain extension, no merging two complex products). Off (breadth-first) allows any ' +
-      'combination from rounds 0..r-1 — typically explodes the search space and produces convergent routes.');
+      'combination from steps 0..r-1 — typically explodes the search space and produces convergent routes.');
 
-    this.maxComponentsInput = ui.input.int('Max # components',
-      {value: this.config.max_num_components, nullable: true, min: 1, showPlusMinus: true});
-    this.maxComponentsInput.setTooltip('Max number of reactant components a template may have.');
-    fixNullableIntStepper(this.maxComponentsInput, 1);
-    // -1 is the config's "no cap" sentinel; blank means the same thing and reads better.
-    this.maxRoutesInput = ui.input.int('Max routes per compound', {
-      value: this.config.max_num_routes_per_compound < 0 ? undefined : this.config.max_num_routes_per_compound,
-      nullable: true, min: 1, showPlusMinus: true,
+    this.applyUntilFailsInput = ui.input.bool('Repeat until it stops',
+      {value: this.config.enumeration.apply_until_fails});
+    this.applyUntilFailsInput.setTooltip('Re-applies each single-reactant reaction to its own products within ' +
+      'one step and keeps only the end products. Reactions with two or more reactants run once.');
+
+    const MAX_CYCLES_TOOLTIP = `How many times one reaction may run within a step (1–${MAX_CYCLES}).`;
+    this.maxCyclesInput = ui.input.int('Max cycles', {
+      value: this.config.enumeration.max_cycles, nullable: true, min: 1, max: MAX_CYCLES,
+      showPlusMinus: true});
+    fixNullableIntStepper(this.maxCyclesInput, 1);
+    this.maxCyclesInput.addValidator((v) => {
+      if (!this.applyUntilFailsInput.value) return null;
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 1) return 'Must be at least 1.';
+      if (n > MAX_CYCLES) return `Must be at most ${MAX_CYCLES}.`;
+      return null;
     });
-    this.maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Leave blank for no cap.');
-    // A cap of 0 would blank every product's route/template/reaction_name with no error, so floor
-    // the stepper at 1; validate() rejects a typed or loaded 0.
-    fixNullableIntStepper(this.maxRoutesInput, 1);
+    // The number has no effect with the checkbox off.
+    const syncMaxCyclesEnabled = (): void => {
+      const on = !!this.applyUntilFailsInput.value;
+      this.maxCyclesInput.enabled = on;
+      this.maxCyclesInput.setTooltip(on ? MAX_CYCLES_TOOLTIP : 'Turn on "Repeat until it stops" first.');
+      // Disabling clears the red mark; the input's own min/max check ignores the checkbox.
+      if (on) this.maxCyclesInput.validate();
+    };
+    syncMaxCyclesEnabled();
+    this.deps.view.subs.push(this.applyUntilFailsInput.onChanged.subscribe(syncMaxCyclesEnabled));
 
     // Bound to live factories so hovering always reflects current state.
     const mkIcon = (): HTMLElement => {
@@ -309,7 +363,7 @@ export class EnumeratorConfigForm {
     // Re-validate on every input change so the Run button stays accurate.
     [this.smartsColInput, this.blockingColInput, this.rxnNameColInput, this.bbColInput, this.reagentsColInput,
       this.exclusionInput, this.exclusionColInput, this.numRoundsInput, this.depthFirstInput,
-      this.maxComponentsInput, this.maxRoutesInput,
+      this.applyUntilFailsInput, this.maxCyclesInput,
     ].forEach((inp) => this.deps.view.subs.push(this.wireValidationOne(inp)));
     [...this.combinationLimitFields.inputs, ...this.productFilterFields.inputs].forEach((inp) =>
       this.limitFieldSubs.push(this.wireValidationOne(inp)));
@@ -338,20 +392,17 @@ export class EnumeratorConfigForm {
       let msg = 'Saved settings only — the template/building-block/reagent files aren\'t included; ' +
         'select those again yourself when loading this config.';
       if (this.deps.hasAnyPerRoundOverride())
-        msg += ' Per-round subsets ("Subset by selection") aren\'t included either, for the same reason.';
+        msg += ' Per-step subsets ("Subset by selection") aren\'t included either, for the same reason.';
 
       grok.shell.info(msg);
     }, 'Download the current config as a YAML file.');
 
     this.nav = new EnumeratorNav({
       view: this.deps.view,
-      templatesInput: this.templatesInput, smartsColInput: this.smartsColInput,
-      blockingColInput: this.blockingColInput, rxnNameColInput: this.rxnNameColInput,
-      bbsInput: this.bbsInput, bbColInput: this.bbColInput,
-      reagentsInput: this.reagentsInput, reagentsColInput: this.reagentsColInput,
-      exclusionInput: this.exclusionInput, exclusionColInput: this.exclusionColInput,
-      numRoundsInput: this.numRoundsInput, maxComponentsInput: this.maxComponentsInput,
-      maxRoutesInput: this.maxRoutesInput, depthFirstInput: this.depthFirstInput,
+      templatePropagation: this.templatePropagation, bbPropagation: this.bbPropagation,
+      reagentPropagation: this.reagentPropagation, reagentsInput: this.reagentsInput,
+      numRoundsInput: this.numRoundsInput, depthFirstInput: this.depthFirstInput,
+      applyUntilFailsInput: this.applyUntilFailsInput, maxCyclesInput: this.maxCyclesInput,
       configInfoIcon: this.configInfoIcon,
       getCombinationLimitInputs: () => this.combinationLimitFields.inputs,
       getProductFilterInputs: () => this.productFilterFields.inputs,
@@ -398,8 +449,8 @@ export class EnumeratorConfigForm {
     const config = this.config;
     config.enumeration.num_rounds = this.numRoundsInput.value ?? config.enumeration.num_rounds;
     config.enumeration.depth_first = !!this.depthFirstInput.value;
-    config.max_num_components = this.maxComponentsInput.value ?? config.max_num_components;
-    config.max_num_routes_per_compound = this.maxRoutesInput.value ?? -1; // blank == no cap
+    config.enumeration.apply_until_fails = !!this.applyUntilFailsInput.value;
+    config.enumeration.max_cycles = this.maxCyclesInput.value ?? config.enumeration.max_cycles;
     // Column inputs hold a Column; persist its name, keeping the previous value if unselected.
     config.enumeration.smarts_col = this.smartsColInput.value?.name ?? config.enumeration.smarts_col;
     config.enumeration.reactant_blocking_groups_per_template_column =
@@ -411,6 +462,9 @@ export class EnumeratorConfigForm {
       this.reagentsColInput.value?.name ?? config.enumeration.reagent_smiles_column;
     config.products_specs.exclusion_smarts_products_file_smarts_col =
       this.exclusionColInput.value?.name ?? config.products_specs.exclusion_smarts_products_file_smarts_col;
+    config.enumeration.template_propagated_columns = this.templatePropagation.value;
+    config.enumeration.bb_propagated_columns = this.bbPropagation.value;
+    config.enumeration.reagent_propagated_columns = this.reagentPropagation.value;
     this.combinationLimitFields.syncToConfig(config);
     this.productFilterFields.syncToConfig(config);
   };
@@ -435,10 +489,11 @@ export class EnumeratorConfigForm {
       const config = this.config;
       // Clamp on load too — a hand-edited/older YAML could carry num_rounds above the UI's max.
       if (config.enumeration.num_rounds > MAX_ROUNDS) config.enumeration.num_rounds = MAX_ROUNDS;
+      if (config.enumeration.max_cycles > MAX_CYCLES) config.enumeration.max_cycles = MAX_CYCLES;
       this.setAndFire(this.numRoundsInput, config.enumeration.num_rounds);
       this.setAndFire(this.depthFirstInput, config.enumeration.depth_first);
-      this.setAndFire(this.maxComponentsInput, config.max_num_components);
-      this.setAndFire(this.maxRoutesInput, config.max_num_routes_per_compound < 0 ? null : config.max_num_routes_per_compound);
+      this.setAndFire(this.applyUntilFailsInput, config.enumeration.apply_until_fails);
+      this.setAndFire(this.maxCyclesInput, config.enumeration.max_cycles);
       const tDf = this.templatesInput.value;
       if (tDf) {
         const sc = tDf.col(config.enumeration.smarts_col);
@@ -463,6 +518,9 @@ export class EnumeratorConfigForm {
         const c = xDf.col(config.products_specs.exclusion_smarts_products_file_smarts_col);
         if (c) this.setAndFire(this.exclusionColInput, c);
       }
+      this.templatePropagation.value = config.enumeration.template_propagated_columns;
+      this.bbPropagation.value = config.enumeration.bb_propagated_columns;
+      this.reagentPropagation.value = config.enumeration.reagent_propagated_columns;
       // Neither field group has a "set value" hook, so rebuild from the loaded config; the fresh
       // inputs need their own revalidation wiring.
       this.limitFieldSubs.forEach((s) => s.unsubscribe());
@@ -512,16 +570,24 @@ export class EnumeratorConfigForm {
       return 'Select an exclusion substructures column or clear the exclusion file.';
 
     const rounds = this.numRoundsInput.value ?? 0;
-    if (rounds < 1) return 'Number of rounds must be at least 1.';
-    if (rounds > MAX_ROUNDS) return `Number of rounds must be at most ${MAX_ROUNDS}.`;
+    if (rounds < 1) return 'Number of steps must be at least 1.';
+    if (rounds > MAX_ROUNDS) return `Number of steps must be at most ${MAX_ROUNDS}.`;
 
-    // Reads the input, not this.config: the sync above falls back to the previous config value on a
-    // cleared box, so config alone can never observe "the user just cleared this".
-    if ((this.maxComponentsInput.value ?? 0) < 1) return 'Max # components must be at least 1.';
-    if (this.config.max_num_routes_per_compound === 0)
-      return 'Max routes per compound must be at least 1, or blank for no cap.';
-    if (this.config.max_num_combinations_per_template === 0)
-      return 'Max combinations per template must be at least 1, or blank for no cap.';
+    if (this.config.enumeration.apply_until_fails) {
+      const cycles = this.maxCyclesInput.value ?? 0;
+      if (cycles < 1) return 'Max cycles must be at least 1.';
+      if (cycles > MAX_CYCLES) return `Max cycles must be at most ${MAX_CYCLES}.`;
+    }
+
+    // Blank is -1 (no cap) in every limit below; only a typed or loaded 0 is rejected.
+    const caps: [number, string][] = [
+      [this.config.max_num_components, 'Max # components'],
+      [this.config.max_num_routes_per_compound, 'Max routes per compound'],
+      [this.config.max_num_combinations_per_template, 'Max combinations per template'],
+      [this.config.max_num_products_per_step, 'Max products per step'],
+    ];
+    for (const [cap, label] of caps)
+      if (cap === 0) return `${label} must be at least 1, or blank for no cap.`;
 
     // The only min+max pair in products_specs. Both active and inverted means every product fails
     // both checks: 0 rows, with nothing indicating the two thresholds contradict.
@@ -541,20 +607,22 @@ export class EnumeratorConfigForm {
     const card = ui.div([], {style: {fontSize: '12px', maxWidth: '520px', lineHeight: '1.5', padding: '4px 2px'}});
     card.innerHTML = `
       <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px;">Chemical library enumeration</div>
-      <p style="margin: 0 0 6px 0;">Generate a product library from reaction SMARTS templates and a set of starting materials. Each round can take products from the previous round and grow them further.</p>
+      <p style="margin: 0 0 6px 0;">Generate a product library from reaction SMARTS templates and a set of starting materials. Each step can take products from the previous step and grow them further.</p>
       <div style="font-weight: bold; margin-top: 8px; margin-bottom: 2px;">Inputs</div>
       <ul style="margin: 0 0 6px 16px; padding: 0;">
         <li><b>Reaction templates file</b> — reaction SMARTS (LHS&gt;&gt;RHS). Optional blocking SMARTS exclude unwanted matches per template; optional reaction names surface in the output.</li>
         <li><b>Building blocks file</b> — SMILES of starting materials.</li>
-        <li><b>Reagents file</b> (optional) — switches to <i>reagents mode</i>: every round uses exactly one BB or earlier-round product, with reagents in the remaining slots. Yields derivatives of each BB across rounds.</li>
+        <li><b>Reagents file</b> (optional) — switches to <i>reagents mode</i>: every step uses exactly one BB or earlier-step product, with reagents in the remaining slots. Yields derivatives of each BB across steps.</li>
         <li><b>Exclusion substructures</b> (optional) — SMARTS patterns; any product matching one is rejected.</li>
+        <li><b>Propagate columns</b> (optional, under Reactions, Building blocks and Extras) — copies columns such as yield or price into the result, one column per step, building block or reagent. For a numeric column, tick sum, multiply, avg, min or max to add one column per aggregate over the route, to filter on.</li>
       </ul>
       <div style="font-weight: bold; margin-top: 8px; margin-bottom: 2px;">Enumeration modes</div>
       <ul style="margin: 0 0 6px 16px; padding: 0;">
-        <li><b>Depth-first</b> — round 1 combines BBs; round R extends each round-(R-1) product with original BBs (linear chains, no merging of two complex products).</li>
-        <li><b>Breadth-first</b> — each round may combine any products from earlier rounds with BBs (convergent routes possible).</li>
+        <li><b>Depth-first</b> — step 1 combines BBs; step R extends each step-(R-1) product with original BBs (linear chains, no merging of two complex products).</li>
+        <li><b>Breadth-first</b> — each step may combine any products from earlier steps with BBs (convergent routes possible).</li>
         <li><b>Reagents</b> — active whenever a reagents file is selected; overrides depth/breadth-first.</li>
       </ul>
+      <p style="margin: 6px 0 0 0;"><b>Repeat until it stops</b> re-applies single-reactant templates to their own products within one step and keeps only the end products: a triene gives the fully reduced product in step 1. Leave it off where the separate mono-products are the point, e.g. a hydroxylation.</p>
       <div style="font-weight: bold; margin-top: 8px; margin-bottom: 2px;">Tips</div>
       <ul style="margin: 0 0 0 16px; padding: 0;">
         <li>Select rows on the right-pane grids and click <i>Subset by selection</i> to enumerate only a subset.</li>
@@ -588,19 +656,26 @@ export class EnumeratorConfigForm {
     ], {style: {justifyContent: 'space-between', padding: '1px 0', gap: '12px'}});
 
     card.appendChild(sectionTitle('Enumeration'));
-    card.appendChild(row('Rounds', String(en.num_rounds)));
+    card.appendChild(row('Steps', String(en.num_rounds)));
     card.appendChild(row('Mode', modeLabel));
-    card.appendChild(row('Max components', String(config.max_num_components)));
+    card.appendChild(row('Repeat until it stops', yn(en.apply_until_fails) + cyclesLabel(config)));
+    card.appendChild(row('Max components', fmtNum(config.max_num_components)));
     card.appendChild(row('Max combinations / template', fmtNum(config.max_num_combinations_per_template)));
     card.appendChild(row('Max routes / compound', fmtNum(config.max_num_routes_per_compound)));
+    card.appendChild(row('Max products / step', fmtNum(config.max_num_products_per_step)));
     card.appendChild(row('Keep BBs in final output', yn(config.keep_building_blocks_in_final_output)));
 
     card.appendChild(sectionTitle('Columns'));
     card.appendChild(row('Reaction SMARTS', en.smarts_col));
     card.appendChild(row('Blocking SMARTS', en.reactant_blocking_groups_per_template_column));
     card.appendChild(row('Reaction name', en.reaction_name_col));
+    const fmtPropagated = (picked: PropagatedColumns): string =>
+      Object.entries(picked).map(([c, aggs]) => aggs.length ? `${c} (${aggs.join(', ')})` : c).join('; ') || 'none';
+    card.appendChild(row('Propagated template columns', fmtPropagated(en.template_propagated_columns)));
     card.appendChild(row('Building block SMILES', en.bb_smiles_column));
+    card.appendChild(row('Propagated building-block columns', fmtPropagated(en.bb_propagated_columns)));
     card.appendChild(row('Reagent SMILES', en.reagent_smiles_column));
+    card.appendChild(row('Propagated reagent columns', fmtPropagated(en.reagent_propagated_columns)));
     card.appendChild(row('Exclusion SMARTS', ps.exclusion_smarts_products_file_smarts_col));
 
     card.appendChild(sectionTitle('Product filters'));
@@ -614,6 +689,7 @@ export class EnumeratorConfigForm {
     card.appendChild(row('Metals (max)', fmtNum(ps.max_num_metals, 'any')));
     card.appendChild(row('Halogens (max)', fmtNum(ps.max_num_halogens, 'any')));
     card.appendChild(row('Aromatic atoms (max)', fmtNum(ps.max_num_aromatic_atoms, 'any')));
+    card.appendChild(row('Aromatic rings (max)', fmtNum(ps.max_num_aromatic_rings, 'any')));
     card.appendChild(row('Unsat. non-arom. bonds (max)', fmtNum(ps.max_num_unsaturated_nonaromatic_bonds, 'any')));
     card.appendChild(row('Allowed atoms',
       ps.only_these_atoms_allowed.length ? ps.only_these_atoms_allowed.join(', ') : 'any'));
@@ -631,7 +707,7 @@ export class EnumeratorConfigForm {
     const tDf = this.templatesInput.value; const bDf = this.bbsInput.value; const rDf = this.reagentsInput.value;
     const mode = this.currentMode();
     const MODE_ABBR = {depth: 'DF', breadth: 'BF', reagents: 'RM'} as const;
-    const roundsText = roundsLabel(this.currentRounds());
+    const roundsText = roundsLabel(this.currentRounds()) + cyclesLabel(config);
     const n = estimateProductCount(tDf, bDf);
     const combChanged = combinationLimitsChanged(config);
     const prodChangedCount = productFiltersChangedCount(config);

@@ -74,7 +74,7 @@ category('Viewers: Network Diagram', () => {
     await uploadProject('Test project with Network Diagram', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with Network Diagram');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), 'Network diagram');
     const networkDiagram = findViewer('Network diagram', v);
 

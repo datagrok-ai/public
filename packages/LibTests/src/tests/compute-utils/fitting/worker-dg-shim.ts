@@ -8,7 +8,7 @@ import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/
 import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
   clearCompileCache, _getCompileStats, _setCompileCacheCap, FLOAT_NULL} from
   '@datagrok-libraries/compute-utils/webworkers';
-import {toFeather} from '@datagrok-libraries/arrow';
+import {toFeather} from '@datagrok-libraries/arrow/src/index';
 import {getErrors} from
   '@datagrok-libraries/compute-utils/function-views/src/fitting/fitting-utils';
 import {buildSetup, LOSS, WorkerPool, RunJob} from './imports';

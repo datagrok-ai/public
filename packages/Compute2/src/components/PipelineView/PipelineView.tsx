@@ -2,9 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DockManager, IconFA, ifOverlapping, MarkDown, RibbonMenu, RibbonPanel, tooltip} from '@datagrok-libraries/webcomponents-vue';
+import {
+  DockManager, IconFA, ifOverlapping, MarkDown, RibbonPanel, tooltip,
+} from '@datagrok-libraries/webcomponents-vue';
 import {History} from '../History/History';
-import {hasAddControls, PipelineWithAdd} from '../../utils';
+import {hasAddControls, PipelineWithAdd, STICKY_BAR_BACKGROUND} from '../../utils';
 import {isFuncCallState, isStaticPipelineState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {useHelp} from '../../composables/use-help';
 import {hasContextHelp} from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -33,10 +35,6 @@ export const PipelineView = Vue.defineComponent({
     },
     body: {
       type: String,
-    },
-    view: {
-      type: DG.ViewBase,
-      required: true,
     },
   },
   emits: {
@@ -68,7 +66,6 @@ export const PipelineView = Vue.defineComponent({
     const currentCall = Vue.computed(() => props.funcCall ? Vue.markRaw(props.funcCall) : undefined);
 
     const buttonActions = Vue.computed(() => props.buttonActions);
-    const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const isRoot = Vue.computed(() => props.isRoot);
 
     const handlePanelClose = async (el: HTMLElement) => {
@@ -106,18 +103,16 @@ export const PipelineView = Vue.defineComponent({
 
     return () => (
       <div class='w-full h-full flex'>
-        <RibbonPanel view={currentView.value}>
-          { <IconFA
-              name='question'
-              tooltip={helpHidden.value ? 'Open help panel' : 'Close help panel'}
-              onClick={() => {
-                helpHidden.value = !helpHidden.value;
-                if (helpHidden.value)
-                  changeHelpFunc(currentCall.value?.func);
-              }}
-              style={{ 'background-color': !helpHidden.value ? 'var(--grey-1)' : null }}
-          /> }
-        </RibbonPanel>
+        <RibbonPanel items={[{
+          icon: 'question',
+          tooltip: helpHidden.value ? 'Open help panel' : 'Close help panel',
+          active: !helpHidden.value,
+          onClick: () => {
+            helpHidden.value = !helpHidden.value;
+            if (helpHidden.value)
+              changeHelpFunc(currentCall.value?.func);
+          },
+        }]}/>
         <DockManager
           onPanelClosed={handlePanelClose}
           key={props.uuid}
@@ -182,7 +177,7 @@ export const PipelineView = Vue.defineComponent({
                 </div>
               </div>
               { slots.navigation &&
-                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>
                   {slots.navigation()}
                 </div>
               }

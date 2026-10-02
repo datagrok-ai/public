@@ -13,15 +13,15 @@ export namespace scripts {
   }
 
   /**
-  Identify the beats in an ECG signal and compute the IBIs
-  */
+   * Identify the beats in an ECG signal and compute the IBIs
+   */
   export async function intervalsFromECG(samplingFrequency: number , bpmMax: number , delta: number , k: number ): Promise<any> {
     return await grok.functions.call('Compute:IntervalsFromECG', { samplingFrequency, bpmMax, delta, k });
   }
 
   /**
-  Predict the minimum filter size required for the separation of effluent from bioreactors, given the constraints of batch size and total batch time based on a training dataset of time vs filtrate volume for a given filter type, filter area and pressure
-  */
+   * Predict the minimum filter size required for the separation of effluent from bioreactors, given the constraints of batch size and total batch time based on a training dataset of time vs filtrate volume for a given filter type, filter area and pressure
+   */
   export async function vmax(test_data: DG.DataFrame , test_area: number , vbatch: number , tbatch: number , sf: number ): Promise<{processedData: DG.DataFrame, vmax: number, q0: number, slope_est: number, slope_err: number, icept_est: number, icept_err: number, rsq: number, f_stat: number, df: number, sigma: number, resid_ss: number, expl_ss: number, ss_tot: number, amin: number}> {
     return await grok.functions.call('Compute:Vmax', { test_data, test_area, vbatch, tbatch, sf });
   }
@@ -37,8 +37,8 @@ export namespace funcs {
   }
 
   /**
-  Creates an outliers selection viewer
-  */
+   * Creates an outliers selection viewer
+   */
   export async function outliersSelection(): Promise<any> {
     return await grok.functions.call('Compute:OutliersSelection', {});
   }

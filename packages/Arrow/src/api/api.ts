@@ -6,7 +6,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import {Compression, readParquet, Table, writeParquet, WriterPropertiesBuilder} from 'parquet-wasm';
-import {toFeather, fromFeather} from '@datagrok-libraries/arrow';
+import {toFeather, fromFeather} from '@datagrok-libraries/arrow/src/index';
 
 export {toFeather, fromFeather};
 

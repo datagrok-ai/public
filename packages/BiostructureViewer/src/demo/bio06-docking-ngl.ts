@@ -79,7 +79,7 @@ export async function demoBio06UI(): Promise<void> {
     )
       .step('Loading ligands', async () => {
         grok.shell.windows.showContextPanel = false;
-        grok.shell.windows.showProperties = false;
+        grok.shell.windows.showContextPanel = false;
 
         const sdfBytes: Uint8Array = await _package.files.readAsBytes(ligandsDataFn);
         df = (await grok.functions.call(

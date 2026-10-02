@@ -92,7 +92,7 @@ expected_results:
       pass.
 ---
 
-# Chem — Map Identifiers, Biochemical Properties, Generate Conformers
+# Chem — Map Identifiers, Chemical Properties, Generate Conformers
 
 ## Setup
 
@@ -133,12 +133,12 @@ Steps:
    row: at least one row must show different values between them, confirming that the two
    resolution passes targeted distinct external databases.
 
-### Scenario 2: Biochemical Properties — property columns from two independent calculators
+### Scenario 2: Chemical Properties calculators — property columns from two independent calculators
 
 Steps:
 
-1. **S2.1** — From the top menu, select Chem > Calculate > Biochemical Properties (the menu
-   label carries no "..." suffix). The Biochemical Properties dialog opens. It shows a table
+1. **S2.1** — From the top menu, select Chem > Calculate > Chemical Properties... (GROK-20277 renamed
+   this leaf from "Biochemical Properties"). The Chemical Properties calculator dialog opens. It shows a table
    selector, a molecule-column selector, a navigation list of available biochemical
    calculators on the left (Chemical Properties, logD, logP, pI, pKa), and an editor panel
    for the currently selected calculator on the right.
@@ -147,14 +147,14 @@ Steps:
    Properties** row. Confirm the editor panel shows the calculator's parameters with the
    molecule column referenced.
 3. **S2.3** — Click OK. Wait for the calculator to complete (a progress indicator may appear
-   briefly in the taskbar) and for the Biochemical Properties dialog to close.
+   briefly in the taskbar) and for the Chemical Properties dialog to close.
 4. **S2.4** — Observe the grid. Chemical Properties appends `MW` — the only one of its nine
    properties whose parameter is enabled by default — and appends nothing outside that set
    of nine (MW, HBA, HBD, LogP, LogS, PSA, Rotatable bonds, Stereo centers, Molecule
    charge). Each row shows a numeric value: not an error string, not a raw stack trace, and
    not the original SMILES string passed through unchanged. The baseline row count is
    unchanged.
-5. **S2.5** — Open Chem > Calculate > Biochemical Properties again. In the navigation list,
+5. **S2.5** — Open Chem > Calculate > Chemical Properties... again. In the navigation list,
    tick **logP** instead. Click OK and wait for completion. That calculator appends its own
    column, named `clogP`, and appends nothing else — a different property kind from the
    first pass's `MW`, which is what confirms two independent calculators ran rather than one
@@ -222,7 +222,7 @@ Steps:
   `select.value = …` assignment leaves the `ui.input.choice` model at its default and the
   run appends a wrongly-named column. After OK, poll for a new column named after the
   chosen toSource with a timeout of 90 seconds.
-- Biochemical Properties: the navigator list items are `.biochem-calc-nav-item` rows inside
+- Chemical Properties: the navigator list items are `.biochem-calc-nav-item` rows inside
   the `biochem-calc-nav-list` container, each an `input[type=checkbox]` plus a span label.
   Tick the checkbox of the calculator the scenario names — never "the first visible item",
   which does not pin which calculator ran. A real Playwright `check()` reaches the Dart

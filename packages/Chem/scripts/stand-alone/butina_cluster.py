@@ -4,6 +4,7 @@
 #language: python
 #sample: chem/smiles_coordinates.csv
 #meta.domain: chem
+#meta.vectorFunc: true
 #top-menu: Chem | Analyze | Butina Cluster...
 #input: dataframe data {nullable: false} [Input data table]
 #input: column molecules {semType: Molecule; nullable: false} [Molecules, in SMILES and MolBlock format]

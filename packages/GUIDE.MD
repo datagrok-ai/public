@@ -84,16 +84,20 @@ See also: [NPM package.json](https://docs.npmjs.com/cli/v8/configuring-npm/packa
 
 Dependencies section with `datagrok-api` dependency is mandatory.
 Refer to [Semantic Versioning](https://semver.org/) concept to properly set `datagrok-api` version constraint.
-All "compile-time" packages must be in `devDependencies` section.:
+Inside this repository a package has no toolchain dependencies at all: the bundler, TypeScript and eslint
+come from the workspace root (`@datagrok/build-config`), in-repo dependencies are `workspace:^`, and
+shared libraries are `catalog:` (versions in `pnpm-workspace.yaml`):
 
 ```json
-"devDependencies": {
-  "ts-loader": "^9.2.6",
-  "typescript": "^4.4.4",
-  "webpack": "^5.59.1",
-  "webpack-cli": "^4.9.1"
+"dependencies": {
+  "datagrok-api": "workspace:^",
+  "@datagrok-libraries/utils": "workspace:^",
+  "rxjs": "catalog:"
 },
 ```
+
+A "compile-time" package that only one plugin needs (say a Vue JSX babel plugin) goes to that plugin's
+`devDependencies`.
 
 ### Package Sources
 
@@ -122,8 +126,8 @@ Basic package structure should look like that:
   package.png
   .npmignore
   README.MD
-  tsconfig.json
-  webpack.config.js
+  tsconfig.json          (extends @datagrok/build-config/tsconfig.base.json, include: ["src"])
+  rspack.config.js       (optional: bundler({...}) overrides; absent for a standard package)
 ```
 
 ## Tests

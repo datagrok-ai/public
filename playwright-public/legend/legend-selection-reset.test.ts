@@ -50,7 +50,7 @@ test('Legend selection resets when the source changes, survives when it does not
     const root = document.querySelector('[name="legend"]') as HTMLElement;
     const items = Array.from(root?.querySelectorAll('[name="legend-item"]') ?? []) as HTMLElement[];
     return {labels: items.map((i) => (i.textContent || '').trim()),
-      selected: items.filter((i) => i.getAttribute('data-item-selected') === 'true')
+      selected: items.filter((i) => i.getAttribute('aria-selected') === 'true')
         .map((i) => (i.textContent || '').trim())};
   });
 

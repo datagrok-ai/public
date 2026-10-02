@@ -1,6 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, isActionVisible} from './link-matching';
@@ -10,7 +7,10 @@ import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debo
 import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
-import {calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps} from './links-dependencies';
+import {
+  calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps,
+  pruneLinkedTargets,
+} from './links-dependencies';
 
 export interface LinksData {
   uuid: string;
@@ -119,9 +119,9 @@ export class LinksState {
 
   public updateLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
     const newLinks = this.createStateLinks(state);
+    pruneLinkedTargets(state, newLinks);
     if (this.defaultValidators) {
-      const validators = createDefaultValidators(state, this.logger);
-      newLinks.push(...validators);
+      newLinks.push(...createDefaultValidators(state, this.logger));
     }
     return this.mergeLinks(oldLinks, newLinks, 'link');
   }
@@ -351,6 +351,10 @@ export class LinksState {
   }
 
   public close() {
+    for (const [, link] of this.links)
+      link.destroy();
+    for (const [, action] of this.actions)
+      action.destroy();
     this.closed$.next(true);
   }
 

@@ -2,6 +2,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {CHANGED_DOT_STYLE, Mode} from './shared';
+import {PropagatedColumnsPicker} from './propagation';
 
 export type ChipEl = {root: HTMLElement; textEl: HTMLElement; dot: HTMLElement};
 type StratCard = {root: HTMLElement; icon: HTMLElement};
@@ -19,20 +20,14 @@ export interface RibbonChipState {
 
 export interface EnumeratorNavDeps {
   view: DG.View;
-  templatesInput: DG.InputBase<DG.DataFrame | null>;
-  smartsColInput: DG.InputBase<DG.Column | null>;
-  blockingColInput: DG.InputBase<DG.Column | null>;
-  rxnNameColInput: DG.InputBase<DG.Column | null>;
-  bbsInput: DG.InputBase<DG.DataFrame | null>;
-  bbColInput: DG.InputBase<DG.Column | null>;
+  templatePropagation: PropagatedColumnsPicker;
+  bbPropagation: PropagatedColumnsPicker;
+  reagentPropagation: PropagatedColumnsPicker;
   reagentsInput: DG.InputBase<DG.DataFrame | null>;
-  reagentsColInput: DG.InputBase<DG.Column | null>;
-  exclusionInput: DG.InputBase<DG.DataFrame | null>;
-  exclusionColInput: DG.InputBase<DG.Column | null>;
   numRoundsInput: DG.InputBase<number | null>;
-  maxComponentsInput: DG.InputBase<number | null>;
-  maxRoutesInput: DG.InputBase<number | null>;
   depthFirstInput: DG.InputBase<boolean>;
+  applyUntilFailsInput: DG.InputBase<boolean>;
+  maxCyclesInput: DG.InputBase<number | null>;
   configInfoIcon: HTMLElement;
   // Getters, not snapshots: both field groups are rebuilt wholesale on every YAML load, so the
   // lazy form builder must re-read them rather than capture the arrays present at construction.
@@ -97,7 +92,7 @@ export class EnumeratorNav {
       ui.span([' Reagents mode active — set via a reagents file in Extras.'])],
     {style: {fontSize: '11px', color: 'var(--grey-6)', gap: '6px', alignItems: 'center',
       padding: '6px 10px', display: 'none'}});
-    ui.tooltip.bind(this.reagentsModeNote, 'Every round uses exactly one building block or earlier-round product, ' +
+    ui.tooltip.bind(this.reagentsModeNote, 'Every step uses exactly one building block or earlier-step product, ' +
       'with reagents filling the remaining slots. Automatically selected as soon as a reagents file is loaded ' +
       'in the Extras tab — to go back to Depth-first/Breadth-first, clear the reagents file there.');
 
@@ -129,18 +124,17 @@ export class EnumeratorNav {
       ui.divH([back ?? ui.div([]), next ?? ui.div([])], {classes: 'chem-enum-nav-row'});
 
     // Last addPane arg is allowDragOut, which defaults to true. One shared form per pane so the
-    // field labels align (separate forms size independently).
+    // field labels align (separate forms size independently); a propagation picker's root is one.
     this.accReactionsPane = accordion.addPane('Reactions', () =>
-      ui.divV([ui.form([this.deps.templatesInput, this.deps.smartsColInput, this.deps.blockingColInput, this.deps.rxnNameColInput]),
+      ui.divV([this.deps.templatePropagation.root,
         navRow(mkBackBtn(() => this.accCombinePane, 'How to combine'), mkNextBtn(() => this.accBbsPane, 'Building blocks'))]),
     true, null, false);
     this.accBbsPane = accordion.addPane('Building blocks', () =>
-      ui.divV([ui.form([this.deps.bbsInput, this.deps.bbColInput]),
+      ui.divV([this.deps.bbPropagation.root,
         navRow(mkBackBtn(() => this.accReactionsPane, 'Reactions'), mkNextBtn(() => this.accExtrasPane, 'Extras'))]),
     false, null, false);
-    const extrasForm = ui.form([this.deps.reagentsInput, this.deps.reagentsColInput, this.deps.exclusionInput, this.deps.exclusionColInput]);
     this.accExtrasPane = accordion.addPane('Extras', () =>
-      ui.divV([extrasForm,
+      ui.divV([this.deps.reagentPropagation.root,
         navRow(mkBackBtn(() => this.accBbsPane, 'Building blocks'), mkNextBtn(() => this.accPreviewPane, 'Preview'))]),
     false, null, false);
 
@@ -198,8 +192,9 @@ export class EnumeratorNav {
         this.deps.configInfoIcon,
       ], {style: {alignItems: 'center', gap: '4px'}}),
       ui.divV([this.stratDepthCard.root, this.stratBreadthCard.root, this.reagentsModeNote], {style: {gap: '6px'}}),
-      ui.div([ui.form([this.deps.numRoundsInput, this.deps.maxComponentsInput, this.deps.maxRoutesInput])],
-        {style: {marginLeft: `${CHEM_ENUM_NESTED_ACCORDION_INDENT}px`}}),
+      ui.div([ui.form([
+        this.deps.numRoundsInput, this.deps.applyUntilFailsInput, this.deps.maxCyclesInput,
+      ])], {style: {marginLeft: `${CHEM_ENUM_NESTED_ACCORDION_INDENT}px`}}),
       limitsAccordion.root,
       // First pane in the chain — no Back target.
       navRow(null, mkNextBtn(() => this.accReactionsPane, 'Reactions')),
@@ -253,9 +248,9 @@ export class EnumeratorNav {
       const root = ui.divH([dot, textEl], {classes: 'chem-enum-chip', style: {alignItems: 'center', gap: '4px'}});
       return {root, textEl, dot};
     };
-    this.chipReactionsC = cfgChipEl('One or more rounds use a custom subset of reaction templates.');
-    this.chipBbsC = cfgChipEl('One or more rounds use a custom subset of building blocks.');
-    this.chipExtrasC = cfgChipEl('One or more rounds use a custom subset of reagents.');
+    this.chipReactionsC = cfgChipEl('One or more steps use a custom subset of reaction templates.');
+    this.chipBbsC = cfgChipEl('One or more steps use a custom subset of building blocks.');
+    this.chipExtrasC = cfgChipEl('One or more steps use a custom subset of reagents.');
     this.chipCombineC = cfgChipEl('Changed from platform defaults.');
     this.cfgEstEl = ui.divText('');
     this.cfgEstEl.className = 'chem-enum-chip';

@@ -18,7 +18,7 @@ grok publish  # uploads plugin to a Datagrok server
 grok add      # add an object template
 grok api      # create a TS file with the client code to work with functions exposed by the plugin
 grok check    # check package content for validity (such as function signatures)
-grok link     # link `datagrok-api` and libraries for local development
+grok build    # build this package and its dependencies through Turborepo (cached)
 grok test     # run package test
 grok testall  # run tests in all packages (invoked from the folder containing all plugins)
 ```
@@ -36,29 +36,26 @@ grok s raw GET /api/users/current              # hit any API endpoint
 
 ## Build Commands
 
-Every package follows the same build pattern. Run from within a package directory:
+`public/` is one pnpm workspace with a Turborepo task graph (see `BUILD.MD`). Never run
+`npm install` in a package; never link anything.
 
 ```bash
-npm install                # Install dependencies
-npm run build              # Full build: grok api && grok check --soft && webpack
-npm run lint               # ESLint check: eslint "src/**/*.ts"
-npm run lint-fix           # ESLint auto-fix
-npm run test               # Run tests: grok test (requires running Datagrok instance)
-npm run test-dev           # Run tests against dev server
-npm run link-all           # Link local datagrok-api and @datagrok-libraries/*
+grok setup                 # once per checkout or worktree (corepack + pnpm install + npm-era clean-up); plain `pnpm install` works too
+grok build                 # this package + its dependencies, in order, cached; never prompts
+grok build --all           # every package and library
+grok build --affected      # everything the diff against origin/master touches
+grok build --typecheck     # bundle and type-check
+pnpm run build             # inside a package: grok build (rspack + swc + grok check)
+pnpm run typecheck         # inside a package: tsc --noEmit (TypeScript 7)
+pnpm run lint              # eslint --ext .ts,.tsx src (one config for the whole repo, at the root)
+pnpm run test              # grok test (requires a running Datagrok instance)
+grok publish [host]        # deploy to a server alias (builds first)
 ```
 
-Publishing:
-
-```
-grok publish
-```
-
-Build with all local dependencies (available in some packages):
-
-```bash
-npm run build-all          # Builds js-api → libraries → package in dependency order
-```
+A package declares only its runtime dependencies (`datagrok-api: workspace:^`, libraries as
+`workspace:^`, shared libraries as `catalog:`). The toolchain comes from `@datagrok/build-config`
+at the workspace root; `tsconfig.json` is `extends` + `include`; `rspack.config.js` exists only
+when a package deviates from the defaults (`bundler({externals, wasm, jsx, ...})`).
 
 Testing:
 
@@ -93,10 +90,9 @@ PackageName/
   tables/               # Demo/test CSV/Excel files distributed with package
   environments/         # Execution environment definitions for scripts
   css/                  # Custom stylesheets
-  webpack.config.js     # Two entry points: package.ts and package-test.ts
-  tsconfig.json         # ES2020 target, strict mode, decorators enabled
-  .eslintrc.json        # Google style, 120 char lines, 2-space indent
-  package.json
+  tsconfig.json         # extends @datagrok/build-config/tsconfig.base.json, include: ["src"]
+  rspack.config.js      # OPTIONAL: bundler({...}) overrides; absent for a standard package
+  package.json          # runtime deps only; scripts: build, typecheck, lint, test
 ```
 
 ### Scripts (`scripts/`)
@@ -232,7 +228,7 @@ export function myViewer(df: DG.DataFrame): DG.Viewer {
 
 The `grok api` command parses these comments and generates typed wrappers. The `grok check` command validates them.
 
-## Webpack Externals
+## Bundler externals
 
 These are provided by the platform at runtime and must NOT be bundled:
 
@@ -292,20 +288,12 @@ const json = await resp.json();
 
 See samples: `packages/ApiSamples/scripts/dapi/`
 
-## Linking for Local Development
+## Changing js-api or a library alongside a package
 
-When modifying `js-api` or `@datagrok-libraries/*` alongside a package:
-
-```bash
-# Recommended: from within the package directory
-grok link              # Auto-discovers and links all local dependencies
-grok link --unlink     # Revert to npm versioned dependencies
-
-# Or use the package script
-npm run link-all       # Links specific dependencies listed in package.json
-```
-
-Always link all dependencies in a single command. When linking to local js-api, also link all libraries to local js-api.
+Nothing to link: in-repo dependencies are `workspace:^`, so a package always resolves the checkout's
+js-api and libraries. Edit the library, run `grok build` in the package; Turborepo rebuilds the
+library first (libraries and js-api emit to `dist/` with declarations, consumers never compile their
+sources). `grok link` is a no-op in the workspace.
 
 ## Publishing to npm
 

@@ -431,3 +431,115 @@ category('Widgets: InputForm validation and events', () => {
     sub.unsubscribe();
   });
 }, {owner: 'dkovalyov@datagrok.ai'});
+
+category('Widgets: InputForm skipLogic', () => {
+  let script: DG.Script;
+  let choicesCalls = 0;
+  const tick = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+  const numTable = () => DG.DataFrame.fromColumns([DG.Column.fromList('double', 'num', [1, 2, 3])]);
+  const invalid = (input: DG.InputBase) => input.input.classList.contains('d4-invalid');
+  const shown = (input: DG.InputBase) => input.root.style.display !== 'none';
+
+  before(async () => {
+    if (DG.Func.find({name: 'ApiTestsSkipLogicChoices'}).length === 0) {
+      grok.functions.register({
+        signature: 'dataframe ApiTestsSkipLogicChoices()',
+        run: () => {
+          choicesCalls++;
+          return DG.DataFrame.fromColumns([DG.Column.fromStrings('v', ['p', 'q'])]);
+        },
+      });
+      grok.functions.register({
+        signature: 'dataframe ApiTestsSkipLogicHelper(int n)',
+        run: (n: number) => DG.DataFrame.fromColumns([DG.Column.fromList('int', 'x', [1, 2, 3].slice(0, n ?? 3))]),
+      });
+    }
+    script = DG.Script.create(`//name: ApiTestsSkipLogicForm
+//language: javascript
+//input: string mode = "A"
+//input: string note = "n"
+//input: double d = 3.14
+//input: int ranged = 5 {min: 0; max: 10}
+//input: string code = "12ab" {validator: startsWith(value, "12")}
+//input: int shown = 1 {visible: mode == "B"}
+//input: int locked = 1 {enabled: mode == "B"}
+//input: int open = 1 {enabled: mode == "A"}
+//input: string dyn {choices: ApiTestsSkipLogicChoices()}
+//input: dataframe table
+//input: column col
+//input: dataframe helped {editor: ApiTestsSkipLogicHelper}
+//output: int res
+res = 1;`);
+  });
+
+  const build = async (options: object, preset: {[name: string]: any}) => {
+    const fc = script.prepare();
+    for (const [name, value] of Object.entries(preset))
+      fc.setParamValue(name, value);
+    choicesCalls = 0;
+    const form = await DG.InputForm.forFuncCall(fc, options);
+    document.body.append(form.root);
+    await tick();
+    return {fc, form};
+  };
+
+  test('writes nothing into the call', async () => {
+    const view = grok.shell.addTableView(numTable());
+    try {
+      const {fc, form} = await build({skipLogic: true}, {});
+      form.root.remove();
+      expect(fc.getParamValue('d') == null);
+      expect(fc.getParamValue('table') == null);
+      expect(fc.getParamValue('col') == null);
+      expect(choicesCalls, 0);
+    }
+    finally {
+      view.close();
+    }
+  });
+
+  test('keeps a table the host set on an editor: input', async () => {
+    const helped = DG.DataFrame.fromColumns([DG.Column.fromList('int', 'x', [10, 20])]);
+    const {fc, form} = await build({skipLogic: true}, {helped});
+    form.root.remove();
+    const value = fc.getParamValue('helped');
+    expect(value instanceof DG.DataFrame && value.rowCount === 2);
+  });
+
+  test('does not validate', async () => {
+    const preset = {mode: 'A', note: 'n', ranged: 50, code: 'xyz'};
+    const plain = await build({twoWayBinding: true}, preset);
+    plain.form.root.remove();
+    expect(plain.form.validateInputs(), false);
+
+    const {form} = await build({twoWayBinding: true, skipLogic: true}, preset);
+    form.root.remove();
+    expect(form.validateInputs(), true);
+    expect(form.isValid, true);
+    expect(!invalid(form.getInput('ranged')));
+    expect(!invalid(form.getInput('code')));
+  });
+
+  test('leaves visibility, enabled state and marks to the host', async () => {
+    const {form} = await build({twoWayBinding: true, skipLogic: true}, {mode: 'A', note: 'n'});
+    try {
+      expect(shown(form.getInput('shown')));
+      expect(form.getInput('locked').enabled, true);
+      form.getInput('locked').enabled = true;
+      form.getInput('open').enabled = false;
+      form.getInput('shown').root.style.display = 'flex';
+      form.getInput('note').input.classList.add('d4-invalid');
+      form.getInput('mode').value = 'C';
+      await tick();
+      form.validateInputs();
+      await tick();
+      expect(form.getInput('locked').enabled, true);
+      expect(form.getInput('open').enabled, false);
+      expect(shown(form.getInput('shown')));
+      expect(invalid(form.getInput('note')));
+    }
+    finally {
+      form.root.remove();
+    }
+  });
+}, {owner: 'dkovalyov@datagrok.ai'});

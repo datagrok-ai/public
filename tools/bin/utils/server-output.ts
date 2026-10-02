@@ -157,3 +157,40 @@ function printErrorDetails(body: any): void {
   if (body.plan)
     process.stderr.write(JSON.stringify(body.plan, null, 2) + '\n');
 }
+
+/**
+ * Progress for the long migration walks. A whole-stand pull is minutes of network waiting with
+ * nothing to show for it, and silence is indistinguishable from a hang. Goes to stderr, so it
+ * shows even under `--output json` without disturbing the document, and rewrites a single line
+ * on a terminal.
+ */
+export function progressReporter(quiet: boolean = false): (stage: string, done?: number, total?: number) => void {
+  if (quiet) return () => {};
+  const tty = process.stderr.isTTY;
+  let last = '';
+  let drawn = 0;
+  return (stage: string, done?: number, total?: number) => {
+    const count = done === undefined ? '' : total === undefined ? ` ${done}` : ` ${done}/${total}`;
+    const line = `${stage}${count}`;
+    if (!tty) {
+      // A log cannot be rewritten in place, so it gets a line every so often rather than one per
+      // item — enough to show the run is alive, few enough to stay readable.
+      if (line !== last && (done === undefined || done === total || done % 250 === 0))
+        process.stderr.write(`${line}\n`);
+      last = line;
+      return;
+    }
+    // Redrawing on every item writes megabytes a minute into anything that is not really a
+    // terminal — a detached run produced a 7 GB file of carriage returns. The eye cannot
+    // follow faster than this anyway.
+    const finished = done !== undefined && done === total;
+    if (!finished && Date.now() - drawn < 100) return;
+    drawn = Date.now();
+    process.stderr.write(`\r${' '.repeat(last.length)}\r${line}`);
+    last = line;
+    if (finished) {
+      process.stderr.write('\n');
+      last = '';
+    }
+  };
+}

@@ -5,6 +5,8 @@ import {localTest as test, expect} from '../../shared-page';
 import {openDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 test.use(specTestOptions);
 
 // retry(1) absorbs transient dapi/FiltersGroup hangs causing ~3x runtime variance.
@@ -21,7 +23,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
   test.setTimeout(900_000);
   stepErrors.length = 0;
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Sc1 steps 2-4: Color=Series + Marker=Series → combined legend', async () => {
@@ -131,7 +133,7 @@ test('Legend scatterplot — axis change', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Sc2 steps 2-5: setup col1/col2 + scatter Color=Stereo Category, X=col1', async () => {
@@ -205,7 +207,7 @@ test('Legend scatterplot — in-viewer filter', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Sc3 steps 2-5: scatter + Marker=Stereo Category + filter to R_ONE/S_UNKN', async () => {
@@ -261,7 +263,7 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
   test.setTimeout(600_000);
   stepErrors.length = 0;
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Sc4 steps 2-4: scatter + Chemical Space X/Y, Color=Primary Scaffold Name, Marker=Stereo Category', async () => {
@@ -381,7 +383,7 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
   test.setTimeout(900_000);
   stepErrors.length = 0;
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
 
   await softStep('Sc5 steps 2-3: scatter + box + PC plots, scatter Color=Chemical Space X', async () => {

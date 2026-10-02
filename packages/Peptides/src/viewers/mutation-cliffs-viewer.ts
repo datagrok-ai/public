@@ -12,6 +12,7 @@ import {extractColInfo} from '../utils/misc';
 import {Subscription} from 'rxjs';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MONOMER_CANONICALIZER_FUNC_TAG} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {ViewerRenderState} from './viewer-render-state';
 export type MutationCliffsWithMonomers = {
   cliffs: MutationCliffs,
   monomers: string[]
@@ -24,6 +25,22 @@ export class MutationCliffsViewer extends DG.JsViewer {
   public position = 1;
   public currentRowMutationsOnly: boolean = false;
   public yAxisType: 'Linear' | 'Logarithmic' = 'Linear';
+  private readonly renderState = new ViewerRenderState();
+  private renderGeneration = 0;
+  private message = '';
+  private cliffRows = 0;
+  private renderedPosition: number | null = null;
+
+  get isRenderPending(): boolean { return this.renderState.isPending; }
+  get onRendered() { return this.renderState.rendered.asObservable(); }
+  get immediateRendering(): boolean { return this.renderState.immediateRendering; }
+  set immediateRendering(value: boolean) { this.renderState.immediateRendering = value; }
+
+  getWidgetStatus(): any {
+    const status = (this._lineChart as any)?.getWidgetStatus() ?? {};
+    return {...status, values: {...status.values, position: this.renderedPosition ?? '',
+      'cliff rows': this.cliffRows, message: this.message}};
+  }
   constructor() {
     super();
     this.sequenceColumnName = this.column('sequence', {semType: DG.SEMTYPE.MACROMOLECULE, nullable: false});
@@ -45,10 +62,10 @@ export class MutationCliffsViewer extends DG.JsViewer {
     if (seriesCol)
         this.getProperty('seriesColumnName')!.set(this, seriesCol.name);
 
-    this.subs.push(DG.debounce(this.dataFrame.onFilterChanged, 200).subscribe(() => {
+    this.subs.push(this.dataFrame.onFilterChanged.subscribe(() => this.renderState.defer('filter', () => {
       this.clearCache();
       this.debouncedRender();
-    }));
+    }, 200)));
     this.debouncedRender();
 
 
@@ -103,9 +120,12 @@ export class MutationCliffsViewer extends DG.JsViewer {
   private _dfSubs: Subscription[] = [];
 
   private async calculateDf() {
+    const generation = this.renderGeneration;
     if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName || !this.position)
       throw new Error('Activity column or Sequence column is not set, or position is invalid');
     const mutationCliffs = await this.mutationCliffsData;
+    if (generation !== this.renderGeneration)
+      return DG.DataFrame.create();
     const uniqueIndexes = new Set<number>();
     mutationCliffs.cliffs.forEach((positionMap) => {
       positionMap.forEach((mcData) => { // should be only one position
@@ -198,7 +218,7 @@ export class MutationCliffsViewer extends DG.JsViewer {
     let firedFromTable = false;
     // Handle selection
     this._dfSubs.push(
-      DG.debounce(df.onSelectionChanged, 100).subscribe((_) => {
+      df.onSelectionChanged.subscribe(() => this.renderState.defer('chart selection', () => {
         const selected = df.selection;
         if (firedFromViewer) {
           firedFromViewer = false;
@@ -215,11 +235,11 @@ export class MutationCliffsViewer extends DG.JsViewer {
           this.dataFrame.selection.set(originalIdx, true, false);
         }
         this.dataFrame.selection.fireChanged();
-      }),
+      }, 100)),
     );
 
     this._dfSubs.push(
-      DG.debounce(this.dataFrame.onSelectionChanged, 100).subscribe((_) => {
+      this.dataFrame.onSelectionChanged.subscribe(() => this.renderState.defer('table selection', () => {
         const selected = this.dataFrame.selection;
         if (firedFromTable) {
           firedFromTable = false;
@@ -237,7 +257,7 @@ export class MutationCliffsViewer extends DG.JsViewer {
             df.selection.set(viewerDfIdx, true, false);
         }
         df.selection.fireChanged();
-      }),
+      }, 100)),
     );
 
     // mouse over row GROUP handling one way
@@ -300,20 +320,19 @@ export class MutationCliffsViewer extends DG.JsViewer {
   private _lineChart: DG.LineChartViewer | null = null;
 
   private async render() {
+    const generation = this.renderGeneration;
     $(this.root).empty();
+    this.message = '';
+    this.cliffRows = 0;
+    this.renderedPosition = null;
+    if (this._lineChart) {
+      this.renderState.remove(this._lineChart);
+      this._lineChart = null;
+    }
     if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName || !this.position) {
       ui.setUpdateIndicator(this.root, false);
-      this.root.appendChild(noDataDiv('Please set Activity column, Sequence column and Position properties.'));
+      this.showMessage('Please set Activity column, Sequence column and Position properties.');
       return;
-    }
-
-    if (this._lineChart) {
-      try {
-        this._lineChart.detach();
-      } catch (e) {
-        console.error('Error detaching previous line chart:', e);
-      }
-      this._lineChart = null;
     }
 
     ui.setUpdateIndicator(this.root, true);
@@ -321,15 +340,19 @@ export class MutationCliffsViewer extends DG.JsViewer {
     this.root.style.flexDirection = 'column';
 
     const df = await this.innerDf;
+    if (generation !== this.renderGeneration)
+      return;
+    this.cliffRows = df.rowCount;
+    this.renderedPosition = this.position;
     ui.setUpdateIndicator(this.root, false);
     if (df.rowCount === 0) {
       if (this.currentRowMutationsOnly) {
         if (this.dataFrame.currentRowIdx >= 0)
-          this.root.appendChild(noDataDiv('No mutations cliffs found for the current peptide at the selected position.'));
+          this.showMessage('No mutations cliffs found for the current peptide at the selected position.');
         else
-          this.root.appendChild(noDataDiv('Please select a row in the main table to see mutation cliffs for the corresponding peptide at the selected position.'));
+          this.showMessage('Please select a row in the main table to see mutation cliffs for the corresponding peptide at the selected position.');
       } else
-        this.root.appendChild(noDataDiv('No mutation cliffs found for the selected position.'));
+        this.showMessage('No mutation cliffs found for the selected position.');
     } else {
       this._lineChart = df.plot.line({
         xColumnName: `Position ${this.position}`,
@@ -345,12 +368,12 @@ export class MutationCliffsViewer extends DG.JsViewer {
         axisFont: 'normal normal 14px "Roboto"',
         controlsFont: 'normal normal 14px "Roboto"',
       } as Partial<DG.ILineChartSettings>) as DG.LineChartViewer;
-
+      this.renderState.add(this._lineChart);
 
       this._lineChart.sub(this._lineChart.onPropertyValueChanged.subscribe((_e) => {
         if (this._lineChart?.props?.yColumnNames && this._lineChart?.props?.yColumnNames?.[0] !== this.activityColumnName) {
           const value = this._lineChart?.props?.yColumnNames?.[0];
-          setTimeout(() => this.getProperty('activityColumnName')!.set(this, value), 1);
+          this.renderState.defer('activity column', () => this.getProperty('activityColumnName')!.set(this, value), 1);
         }
       }));
 
@@ -384,15 +407,20 @@ export class MutationCliffsViewer extends DG.JsViewer {
     }
   }
 
-  private _debounceTimer: any = null;
+  private showMessage(message: string): void {
+    this.message = message;
+    this.root.appendChild(noDataDiv(message));
+  }
+
   public debouncedRender() {
     ui.setUpdateIndicator(this.root, true);
-    if (this._debounceTimer)
-      clearTimeout(this._debounceTimer);
-    this._debounceTimer = setTimeout(() => this.render(), 300);
+    this.renderState.defer('render', () => this.render(), 300);
   }
 
   private clearCache(clearMutationCliffsData: boolean = true) {
+    this.renderGeneration++;
+    this.renderState.cancel('chart selection');
+    this.renderState.cancel('table selection');
     // while following current row, makes no sense to clear mutation cliffs data.
     if (clearMutationCliffsData)
       this._mutationCliffsData = null;
@@ -402,10 +430,10 @@ export class MutationCliffsViewer extends DG.JsViewer {
   }
 
   detach(): void {
+    this.clearCache();
+    this.renderState.dispose();
+    this._lineChart = null;
     super.detach();
-    this._dfSubs.forEach((s) => s.unsubscribe());
-    this._dfSubs = [];
-    clearTimeout(this._debounceTimer);
   }
 
 

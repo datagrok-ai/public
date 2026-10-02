@@ -1,5 +1,18 @@
 # Diff Studio changelog
 
+## v.next
+
+* Save to Library: Fixed overwriting a library model on a file storage that ignores case — the unused name is now picked ignoring case (a saved PK-PD landed on the library's pk-pd.ivp)
+
+## 1.7.0 (2026-09-14)
+
+* Compute `#output` expressions inside the per-stage solver so they work in `#loop` / `#update` models
+* Update the PK model
+* Browse tree: show a context menu on Templates/Library/Recent items, consistent with the model cards
+* Tests: Fixed intermittent scripting failures by waiting for Save to finish and targeting Model Hub actions explicitly.
+* Tests: Identify saved scripts in Model Hub by their qualified entity link and clean up by ID, so models with the same display name stay distinct; reveal the Count buttons before each increment.
+* Tests: Added a BDD suite (bdd/features, 9 features / 42 scenarios) translating the TestTrack Diff Studio specs and the package's Playwright tests, including the app hub and the Open model menu, the three cases the old suite left to a human (chart redraw in the script view and in the Model Hub, read as the viewers they are), the real slider drag and the catalog Refresh
+
 ## 1.6.8 (2026-09-01)
 
 * Fixed demo tests failing when a corrupt/legacy recent-models `.d42` file surfaced a read error to the shell

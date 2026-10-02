@@ -237,6 +237,7 @@ export class DemoView extends DG.ViewBase {
         this._closePrevDemoViews();
         this.currentView = v;
         v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
+        grok.events.fireCustomEvent('demo-loaded', {path: viewPath, func: func.name});
       } finally {
         this._tagNewDemoViews(viewsBefore, func.name);
         ui.setUpdateIndicator(updateIndicatorRoot, false);
@@ -267,6 +268,7 @@ export class DemoView extends DG.ViewBase {
         grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
         this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
       }
+      grok.events.fireCustomEvent('demo-loaded', {path: viewPath, func: func.name});
     }
   }
 
@@ -671,7 +673,7 @@ export class DemoView extends DG.ViewBase {
     grok.shell.windows.showToolbox = false;
     grok.shell.windows.showRibbon = true;
     grok.shell.windows.showHelp = false;
-    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showContextPanel = false;
     grok.shell.windows.help.syncCurrentObject = false;
   }
 }

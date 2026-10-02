@@ -65,7 +65,7 @@ function openTables(): DG.DataFrame[] {
 /** Name → the open table (shell names are unique — `addTable` dedupes); one interop call,
  * where scanning `grok.shell.tables` wraps every open frame. */
 export function tableByName(name: string | null): DG.DataFrame | null {
-  return name == null ? null : (grok.shell.tableByName(name) as DG.DataFrame | null) ?? null;
+  return name == null ? null : (grok.shell.table(name) as DG.DataFrame | null) ?? null;
 }
 
 /** The auto-fill source (fpe:62-64): the current table, else the first open one. */

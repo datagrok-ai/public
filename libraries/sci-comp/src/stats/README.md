@@ -401,7 +401,7 @@ Each method has a Jest test suite in `__tests__/` that loads JSON fixtures
 from `__tests__/fixtures/`. The fixtures were generated out-of-band from
 the SENDEX Python validation suite (scipy) — and `clinfun` / `PMCMRplus` /
 `regressionpack` for the Jonckheere variants — and committed alongside
-the tests. A total of 179 cases across 14 fixtures — all pass with the
+the tests. A total of 517 cases across 18 fixtures — all pass with the
 same tolerances as the Python suite (1e-3 for p-values, 1e-2 for
 statistics, tighter for closed-form quantities).
 

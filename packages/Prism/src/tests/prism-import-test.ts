@@ -52,6 +52,7 @@ async function createAnalysisPrismFile(): Promise<Uint8Array> {
   const dsY = 'ds-y';
   const dsRes1 = 'ds-res1';
   const dsRes2 = 'ds-res2';
+  const dsRowTitles = 'ds-row-titles';
 
   zip.file('document.json', JSON.stringify({
     sheets: {
@@ -87,11 +88,12 @@ async function createAnalysisPrismFile(): Promise<Uint8Array> {
   // Result data sheet (at data/sheets/<id>/sheet.json)
   zip.file(`data/sheets/${resultDataSheetId}/sheet.json`, JSON.stringify({
     title: 'Fit Results',
-    table: {uid: resultTableId, dataFormat: 'text', dataSets: [dsRes1, dsRes2]},
+    table: {uid: resultTableId, dataFormat: 'text', dataSets: [dsRes1, dsRes2], rowTitlesDataSet: dsRowTitles},
   }));
-  zip.file(`data/tables/${resultTableId}/data.csv`, 'IC50,0.5\nHill Slope,1.2\nR squared,0.98\n');
-  zip.file(`data/sets/${dsRes1}.json`, JSON.stringify({uid: dsRes1, title: 'Parameter'}));
-  zip.file(`data/sets/${dsRes2}.json`, JSON.stringify({uid: dsRes2, title: 'Value'}));
+  zip.file(`data/tables/${resultTableId}/data.csv`, 'IC50,0.5,0.6\nHill Slope,1.2,1.3\nR squared,0.98,0.97\n');
+  zip.file(`data/sets/${dsRowTitles}.json`, JSON.stringify({uid: dsRowTitles, title: 'Parameter'}));
+  zip.file(`data/sets/${dsRes1}.json`, JSON.stringify({uid: dsRes1, title: 'Control'}));
+  zip.file(`data/sets/${dsRes2}.json`, JSON.stringify({uid: dsRes2, title: 'Treated'}));
 
   return await zip.generateAsync({type: 'uint8array'});
 }
@@ -122,7 +124,7 @@ category('Prism Import', () => {
 
     const df = prismAnalysisToDataFrame(prism.analyses[0]);
     expect(df.rowCount, 3);
-    expect(df.columns.length >= 2, true);
+    expect(df.columns.names().join(','), 'Parameter,Control,Treated');
   });
 
   test('full import: returns all DataFrames', async () => {

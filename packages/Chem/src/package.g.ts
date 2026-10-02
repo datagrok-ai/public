@@ -973,6 +973,15 @@ export function copyAsSmiles(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmiles(value);
 }
 
+//name: Copy as CXSMILES
+//description: Copies structure as smiles
+//input: semantic_value value { semType: Molecule }
+//meta.action: Copy as CXSMILES
+//meta.exclude-actions-panel: true
+export function copyAsCXSmiles(value: DG.SemanticValue) : void {
+  PackageFunctions.copyAsCXSmiles(value);
+}
+
 //name: Copy as MOLFILE V2000
 //description: Copies structure as molfile V2000
 //input: semantic_value value { semType: Molecule }
@@ -1168,6 +1177,14 @@ export function sarSeriesColumnChoices() : string[] {
   return PackageFunctions.sarSeriesColumnChoices();
 }
 
+//name: SarMatrixEditor
+//input: funccall call 
+//output: widget result
+//meta.role: editor
+export function sarMatrixEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.sarMatrixEditor(call);
+}
+
 //name: SAR Matrix
 //description: Groups related compound series into potency-colored matrices and predicts virtual analogs.
 //input: dataframe table 
@@ -1180,9 +1197,13 @@ export function sarSeriesColumnChoices() : string[] {
 //input: bool predictVirtual = true 
 //input: bool useMcsAnchors = false { caption: Group leftovers by MCS; description: Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets }
 //input: string seriesColumn { nullable: true; caption: Series column (Optional); choices: Chem:sarSeriesColumnChoices(); description: Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure }
+//input: column coreColumn { nullable: true; caption: Core; description: Optional. Column with the core of an existing R-group decomposition, used instead of fragmenting the molecules }
+//input: column_list rGroupColumns { nullable: true; caption: R-groups; description: Columns with the substituent at each attachment point of the core }
+//input: string matrixColumns { nullable: true; caption: Matrix columns; description: The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows }
 //top-menu: Chem | Analyze | SAR Matrix...
-export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean, useMcsAnchors: boolean, seriesColumn: string) : Promise<void> {
-  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn);
+//editor: Chem:SarMatrixEditor
+export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean, useMcsAnchors: boolean, seriesColumn: string, coreColumn: any, rGroupColumns: DG.Column[], matrixColumns: string) : Promise<void> {
+  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn, coreColumn, rGroupColumns, matrixColumns);
 }
 
 //name: Scaffold Tree Filter

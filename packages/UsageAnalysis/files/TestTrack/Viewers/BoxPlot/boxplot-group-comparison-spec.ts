@@ -14,24 +14,26 @@ test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/demog.csv';
 
 async function driveSelect(page: Page, which: string, value: string): Promise<void> {
-  await page.evaluate(({sel, which, value}) => {
-    const root = document.querySelector(sel)!;
-    let s: HTMLSelectElement | undefined;
-    if (which === 'adjust') {
-      s = Array.from(root.querySelectorAll('select')).find((el) =>
-        Array.from(el.options).some((o) => o.value === 'ratio' || o.value === 'regressOut'));
-    } else {
-      const controls = document.querySelector('.d4-box-plot-group-comparison-controls')!;
-      const selects = Array.from(controls.querySelectorAll('select'));
+  await page.evaluate(async ({sel, which, value}) => {
+    const find = (): HTMLSelectElement | undefined => {
+      const root = document.querySelector(sel)!;
+      if (which === 'adjust') {
+        return Array.from(root.querySelectorAll('select')).find((el) =>
+          Array.from(el.options).some((o) => o.value === 'ratio' || o.value === 'regressOut'));
+      }
+      const controls = document.querySelector('.d4-box-plot-group-comparison-controls');
+      const selects = Array.from(controls?.querySelectorAll('select') ?? []);
       // Address by the option offered, never by position: how many selects this
       // container renders depends on covariate, category count and adjust mode, so
       // selects[0]/[1] drift onto the wrong control and `value = ...` is then a
       // silent no-op (an unknown value leaves value === '').
       if (which === 'baseline')
-        s = selects.find((el) => Array.from(el.options).some((o) => o.value === 'pooled'));
-      else
-        s = selects.find((el) => Array.from(el.options).some((o) => o.value === value));
-    }
+        return selects.find((el) => Array.from(el.options).some((o) => o.value === 'pooled'));
+      return selects.find((el) => Array.from(el.options).some((o) => o.value === value));
+    };
+    // the strip's selects are rebuilt a pass after the render event: a new control group brings the
+    // control-comparison methods (ANCOVA among them) only then
+    const s = await (window as any).__poll(find, (el: any) => !!el, 3000, 50) as HTMLSelectElement | undefined;
     if (!s) {
       const offered = Array.from(document.querySelectorAll('.d4-box-plot-group-comparison-controls select'))
         .map((el) => Array.from((el as HTMLSelectElement).options).map((o) => o.value).join('|'));

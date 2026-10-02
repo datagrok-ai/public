@@ -37,8 +37,17 @@ export function reasonOf(e: unknown): string {
 /** Whether the error is Playwright giving up on an element — the case where what the page shows
  * instead is the missing half of the report. */
 export function isWaitFailure(e: unknown): boolean {
-  const text = e instanceof Error ? e.message : String(e);
-  return (e instanceof Error && e.name === 'TimeoutError') || /Timeout \d+ms exceeded|^expect\(/.test(text);
+  // Playwright colours its matcher output, and a check that names itself puts its message before
+  // the "expect(locator)… failed" line
+  const text = (e instanceof Error ? e.message : String(e)).replace(/\x1b\[[0-9;]*m/g, '');
+  return (e instanceof Error && e.name === 'TimeoutError') || /Timeout \d+ms exceeded|(^|\n)expect\(/.test(text);
+}
+
+/** A `test.skip()` a capability gate raised (the stand has not got Jupyter, an outside host): Playwright's
+ * own control flow, which must travel untouched or the run reports a failure where it should report a skip. */
+export function isSkip(e: unknown): boolean {
+  const err = e as {message?: string; constructor?: {name?: string}} | null;
+  return !!err && (err.constructor?.name === 'TestSkipError' || /Test is skipped/i.test(String(err.message ?? '')));
 }
 
 export function failure(at: string, step: string, e: unknown, shown = '', frame = ''): StepFailure {
@@ -48,11 +57,11 @@ export function failure(at: string, step: string, e: unknown, shown = '', frame 
   return new StepFailure(at, step, shown ? `${reason}\n${shown}` : reason, e, frame);
 }
 
-/** The journey's verdict: every failed scenario with its step report; the first failure's feature
- * line is the only frame. */
-export function journeyFailure(failed: {name: string; error: unknown}[], scenarios: number): Error {
+/** The journey's verdict: every failed scenario with its step report, and where a capability gate
+ * skipped the rest, if one did; the first failure's feature line is the only frame. */
+export function journeyFailure(failed: {name: string; error: unknown}[], scenarios: number, skipped = ''): Error {
   const list = failed.map((f) => `${f.name}\n${indent(f.error instanceof StepFailure ? f.error.message : reasonOf(f.error))}`);
-  const e = new Error(`${failed.length} of ${scenarios} scenarios failed\n\n${list.join('\n\n')}`);
+  const e = new Error(`${failed.length} of ${scenarios} scenarios failed\n\n${list.join('\n\n')}${skipped ? `\n\n${skipped}` : ''}`);
   const first = failed.map((f) => f.error).find((x): x is StepFailure => x instanceof StepFailure && x.frame !== '');
   e.stack = e.message + (first ? `\n    at ${first.frame}` : '');
   return e;

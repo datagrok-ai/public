@@ -277,7 +277,8 @@ test('Pivot Table — Configure cross-tab values', async ({page}) => {
   async function toggleFirstRow(row: string, col: string) {
     const dlg = page.locator(SELECT_DLG);
     const search = dlg.locator('input.d4-search-input');
-    await search.click();
+    // the visible/hidden select sits over the right half of the search box, so click its left edge
+    await search.click({position: {x: 10, y: 10}});
     await page.keyboard.press('Control+A');
     await page.keyboard.press('Delete');
     const stampBefore = await dialogGridStamp();

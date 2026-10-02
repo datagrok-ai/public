@@ -83,7 +83,7 @@ category('Viewers: Histogram', () => {
     await uploadProject('Test project with Histogram', demog.getTableInfo(), v, demog);
     grok.shell.closeAll();
     await grok.dapi.projects.open('Test project with Histogram');
-    v = grok.shell.getTableView('demog 1000');
+    v = grok.shell.tableView('demog 1000');
     isViewerPresent(Array.from(v.viewers), 'Histogram');
     const histogram = findViewer('Histogram', v);
 

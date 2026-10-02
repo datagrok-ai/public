@@ -8,18 +8,37 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  /**
+   * @param {string} molString
+   *   semType: Molecule
+   */
   export async function pubChemPanel(molString: string ): Promise<any> {
     return await grok.functions.call('PubChem:PubChemPanel', { molString });
   }
 
+  /**
+   * Finds PubChem compounds that contain the query structure as a substructure.
+   * @param {string} molString
+   *   semType: Molecule
+   */
   export async function pubChemSubstructureSearchPanel(molString: string ): Promise<any> {
     return await grok.functions.call('PubChem:PubChemSubstructureSearchPanel', { molString });
   }
 
+  /**
+   * Finds PubChem compounds most similar to the query structure.
+   * @param {string} molString
+   *   semType: Molecule
+   */
   export async function pubChemSimilaritySearchPanel(molString: string ): Promise<any> {
     return await grok.functions.call('PubChem:PubChemSimilaritySearchPanel', { molString });
   }
 
+  /**
+   * Finds the PubChem compound identical to the query structure.
+   * @param {string} molString
+   *   semType: Molecule
+   */
   export async function pubChemIdentitySearchPanel(molString: string ): Promise<any> {
     return await grok.functions.call('PubChem:PubChemIdentitySearchPanel', { molString });
   }

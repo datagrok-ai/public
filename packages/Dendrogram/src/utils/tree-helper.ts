@@ -14,8 +14,8 @@ import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {IntArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics/consts';
-import { _package } from '../package';
-import { getSeqHelper } from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {_package} from '../package';
+import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 type DataNodeDict = { [nodeName: string]: number };
 
@@ -52,9 +52,9 @@ export class TreeHelper implements ITreeHelper {
       if (!name) {
         name = obj.name = `${nodePrefixV}node-${i}`;
         ++i;
-      } else if (isRoot && obj.name == NO_NAME_ROOT) {
+      } else if (isRoot && obj.name == NO_NAME_ROOT)
         name = `${nodePrefixV}${NO_NAME_ROOT}`;
-      }
+
 
       if (!!obj.children) {
         const childrenCount = obj.children.length;
@@ -103,14 +103,14 @@ export class TreeHelper implements ITreeHelper {
       if (isLeaf) {
         return ([] as string[]).concat(
           node.name,
-          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : []
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : [],
         ).join('');
       } else {
         const childrenText = node.children!.map((childNode) => toNewickInt(childNode)).join(',');
         return ([] as string[]).concat(
           `(${childrenText})`,
           node.name,
-          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : []
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : [],
         ).join('');
       }
     }
@@ -168,9 +168,9 @@ export class TreeHelper implements ITreeHelper {
     if (!node) return null;
     const resNode = Object.assign({}, node); // shallow copy
 
-    if (isLeaf(resNode)) {
+    if (isLeaf(resNode))
       return resNode.name in leaves ? resNode : null;
-    } else {
+    else {
       resNode.children = [];
       for (const child of node.children!) {
         const resChild = this.filterTreeByLeaves(child, leaves);
@@ -186,9 +186,9 @@ export class TreeHelper implements ITreeHelper {
   getNodesByLeaves<TNode extends NodeType>(node: TNode | null, leaves: { [name: string]: any }): TNode[] {
     if (!node) return [];
 
-    if (isLeaf(node)) {
+    if (isLeaf(node))
       return node.name in leaves ? [node] : [];
-    } else {
+    else {
       const children: TNode[] = node.children as TNode[] ?? [];
       const childrenRes: TNode[] = [];
       for (const child of children) {
@@ -220,9 +220,9 @@ export class TreeHelper implements ITreeHelper {
       res = ([] as NodeType[]).concat(
         ...(node.children ?? [])
           .map((child) => this.treeCutAsLeaves(child, cutHeight, currentHeight + nodeBranchLength)));
-    } else {
+    } else
       res = [node];
-    }
+
 
     return res;
   }
@@ -234,7 +234,7 @@ export class TreeHelper implements ITreeHelper {
    * @param {number}currentHeight - current height of node
    * @return {NodeType} - cutted tree of clusters as lists of leafs*/
   treeCutAsTree(
-    node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number
+    node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number,
   ): NodeType | null {
     const nodeBranchHeight = node.branch_length ?? 0;
     const currentHeightV: number = currentHeight ?? 0;
@@ -248,9 +248,8 @@ export class TreeHelper implements ITreeHelper {
           })
           .filter((n) => n != null) as NodeType[];
         return res;
-      } else {
+      } else
         return keepShortsV ? node as NodeCuttedType : null;
-      }
     } else {
       const res: NodeCuttedType = Object.assign({}, node) as NodeCuttedType;
       res.branch_length = cutHeight - currentHeightV; // shorten branch_length of the node to cut_length remains
@@ -274,7 +273,7 @@ export class TreeHelper implements ITreeHelper {
    */
   setGridOrder(
     tree: NodeType | null, grid: DG.Grid, leafColName?: string,
-    removeMissingDataRows: boolean = false
+    removeMissingDataRows: boolean = false,
   ): [NodeType, string[]] {
     console.debug('Dendrogram.setGridOrder() start');
 
@@ -365,7 +364,7 @@ export class TreeHelper implements ITreeHelper {
   }
 
   markClusters(
-    tree: NodeCuttedType, dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any
+    tree: NodeCuttedType, dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any,
   ): void {
     const naValue = na ?? null;
     const clusterCol: DG.Column = dataDf.getCol(clusterColName);
@@ -412,7 +411,7 @@ export class TreeHelper implements ITreeHelper {
    * @param {any}na - Value of nulls*/
   cutTreeToGrid(
     node: NodeType, cutHeight: number, dataDf: DG.DataFrame,
-    leafColName: string, clusterColName: string, na?: any
+    leafColName: string, clusterColName: string, na?: any,
   ): void {
     const clusterList: NodeType[] = this.treeCutAsLeaves(node, cutHeight, 0);
 
@@ -450,9 +449,9 @@ export class TreeHelper implements ITreeHelper {
 
   generateTree(size: number): NodeType {
     function placeNode(currentNode: NodeType, newNode: NodeType): void {
-      if (currentNode.children!.length < 2) {
+      if (currentNode.children!.length < 2)
         currentNode.children!.push(newNode);
-      } else {
+      else {
         const rnd: number = Math.random();
         const tgtNodeI = Math.floor(rnd / (1 / currentNode.children!.length));
         const tgtNode = currentNode.children![tgtNodeI];
@@ -498,6 +497,13 @@ export class TreeHelper implements ITreeHelper {
     return treeRoot;
   }
 
+  async getSeqsDistanceFunction(seqCol: DG.Column) {
+    const seqHelper = await getSeqHelper();
+    const ncSh = seqHelper.getSeqHandler(seqCol);
+    const useHamming = ncSh.aligned || ncSh.maxLength > 40;
+    return useHamming ? MmDistanceFunctionsNames.HAMMING : MmDistanceFunctionsNames.LEVENSHTEIN;
+  }
+
   async encodeSequences(seqs: DG.Column): Promise<string[]> {
     const seqHelper = await getSeqHelper();
     const ncSh = seqHelper.getSeqHandler(seqs);
@@ -526,7 +532,7 @@ export class TreeHelper implements ITreeHelper {
   }
 
   async calcDistanceMatrix(
-    df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean
+    df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean,
   ) {
     // Output distance matrix. reusing it saves a lot of memory
     let out: DistanceMatrix | null = null;
@@ -535,11 +541,11 @@ export class TreeHelper implements ITreeHelper {
     const columns = colNames.map((name) => df.getCol(name));
     for (const col of columns) {
       let values: Float32Array;
-      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
+      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT)
         values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.Difference, false);
-      } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
+      else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
         // Use Hamming distance when sequences are aligned
-        const seqDistanceFunction: MmDistanceFunctionsNames = MmDistanceFunctionsNames.LEVENSHTEIN;
+        const seqDistanceFunction: MmDistanceFunctionsNames = await this.getSeqsDistanceFunction(col);
         const encodedSeqs = await this.encodeSequences(col);
         values = await distanceMatrixService.calc(encodedSeqs, seqDistanceFunction, false);
       } else if (col.semType === DG.SEMTYPE.MOLECULE) {
@@ -548,7 +554,7 @@ export class TreeHelper implements ITreeHelper {
         const fingerPrintBitArrayCol = fingerPrintCol.toList().map((bs: DG.BitSet | null) =>
           bs ? bs.getBuffer() : null);
         values = await distanceMatrixService.calc(fingerPrintBitArrayCol, IntArrayMetricsNames.TanimotoIntArray, false);
-      } else { throw new TypeError('Unsupported column type'); }
+      } else throw new TypeError('Unsupported column type');
 
       if (!out) {
         out = new DistanceMatrix(values);
@@ -561,13 +567,13 @@ export class TreeHelper implements ITreeHelper {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
         newMat.normalize();
         switch (method) {
-          case DistanceMetric.Manhattan: {
-            out.add(newMat);
-            break;
-          }
-          default:
-            newMat.square();
-            out.add(newMat);
+        case DistanceMetric.Manhattan: {
+          out.add(newMat);
+          break;
+        }
+        default:
+          newMat.square();
+          out.add(newMat);
         }
         // remove reference
         newMat = null;
@@ -596,7 +602,7 @@ export class TreeHelper implements ITreeHelper {
    *                  cluster members. Rows not present in any cluster stay `null`. */
   async calcMedoids(
     df: DG.DataFrame, colNames: string[], clusters: number[][],
-    method: DistanceMetric = DistanceMetric.Euclidean
+    method: DistanceMetric = DistanceMetric.Euclidean,
   ): Promise<{rankByRow: (number | null)[], avgDistByRow: (number | null)[]}> {
     if (colNames.length === 0)
       throw new Error('At least one feature column is required for medoid calculation.');
@@ -612,13 +618,13 @@ export class TreeHelper implements ITreeHelper {
         fnNames.push(NumberMetricsNames.Difference);
       } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
         values.push(await this.encodeSequences(col));
-        fnNames.push(MmDistanceFunctionsNames.LEVENSHTEIN);
+        fnNames.push(await this.getSeqsDistanceFunction(col));
       } else if (col.semType === DG.SEMTYPE.MOLECULE) {
         const fingerPrintCol: DG.Column<DG.BitSet | null> =
           await grok.functions.call('Chem:getMorganFingerprints', {molColumn: col});
         values.push(fingerPrintCol.toList().map((bs: DG.BitSet | null) => bs ? bs.getBuffer() : null));
         fnNames.push(IntArrayMetricsNames.TanimotoIntArray);
-      } else { throw new TypeError('Unsupported column type'); }
+      } else throw new TypeError('Unsupported column type');
       opts.push({});
       weights.push(1);
     }

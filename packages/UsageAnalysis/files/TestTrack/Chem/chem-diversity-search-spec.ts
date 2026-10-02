@@ -173,7 +173,7 @@ async function switchCardToCategorical(page: Page, column: string): Promise<void
     const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
       .find((c) => ((c.querySelector('.d4-filter-column-name') as HTMLElement | null)?.textContent ?? '')
         .trim() === col);
-    return !!card?.querySelector('[name="viewer-Grid"]');
+    return !!card?.querySelector('[name="filter-grid"]');
   }, column, {timeout: 20_000});
 }
 

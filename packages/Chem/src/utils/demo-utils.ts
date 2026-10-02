@@ -63,7 +63,7 @@ export function closeAllAccordionPanes(parent: Element) {
 
 export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   const table = DG.DataFrame.fromCsv(await _package.files.readAsText(name));
-  grok.shell.windows.showProperties = true;
+  grok.shell.windows.showContextPanel = true;
   return grok.shell.addTableView(table);
 }
 

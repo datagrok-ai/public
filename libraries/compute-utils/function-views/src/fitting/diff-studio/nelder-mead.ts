@@ -127,7 +127,7 @@ export async function getFittedParams(
     Math.max(MIN_WORKERS_COUNT, navigator.hardwareConcurrency - WORKERS_COUNT_DOWNSHIFT),
     samplesCount,
   );
-  const workers = new Array(nThreads).fill(null).map((_) => new Worker(new URL('workers/basic.ts', import.meta.url)));
+  const workers = new Array(nThreads).fill(null).map((_) => new Worker(new URL('./workers/basic', import.meta.url)));
 
   // Structs for optimization results
   let resultsArray: Extremum[] = [];

@@ -13,46 +13,22 @@
     "directory": "packages/ClinicalCase"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "^0.1.7",
-    "@datagrok-libraries/utils": "^4.7.0",
-    "@datagrok/charts": "^1.5.1",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.27.0",
+    "@datagrok-libraries/statistics": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
     "jstat": "^1.9.5",
     "moment": "^2.29.1",
-    "rxjs": "^6.5.5",
+    "rxjs": "catalog:",
     "x2js": "^3.4.4",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.32.0",
-    "@typescript-eslint/parser": "^5.32.0",
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.21.0",
-    "eslint-config-google": "^0.14.0",
-    "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.0.4",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^4.7.2"
+    "dayjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "link-api": "npm link datagrok-api",
-    "debug-clinicalcase": "webpack && grok publish",
-    "release-clinicalcase": "webpack && grok publish --release",
-    "build-clinicalcase": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-clinicalcase-dev": "grok publish dev",
-    "release-clinicalcase-dev": "grok publish dev --release",
-    "debug-clinicalcase-public": "grok publish public",
-    "release-clinicalcase-public": "grok publish public --release",
-    "test": "grok test",
-    "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -61,12 +37,9 @@
     "All users"
   ],
   "category": "Health",
-  "overrides": {
-    "datagrok-api": "$datagrok-api",
-    "d3-color": "^3.1.0",
-    "echarts": "^6.1.0",
-    "exceljs": {
-      "uuid": "^11.1.1"
-    }
+  "grok": {
+    "testDependencies": [
+      "@datagrok/charts"
+    ]
   }
 }

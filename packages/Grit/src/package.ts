@@ -1,12 +1,17 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {domains} from '@datagrok-libraries/domain-ui';
-import {GritIssueHandler} from './grit-issue-handler';
-import {gritDb} from './generated/db';
-import {gritUiDb, GritUiDb} from './generated/db-ui';
+import {badge, div, divV, span} from '@datagrok-libraries/u2';
+import type {BadgeVariant, RowView} from '@datagrok-libraries/u2';
+import {DomainApp} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {DomainRibbon, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import {GritIssueHandler, lookupName, warmLookups} from './grit-issue-handler';
+import {gritDb, IssueRow} from './generated/db';
+import {getGritDb, GritDb} from './generated/db-ui';
 export * from './package.g';
+
+// the skins of everything the u2 domain stack renders
+import '@datagrok-libraries/u2/src/dg/domain/styles.js';
 
 export const _package = new DG.Package();
 
@@ -47,73 +52,64 @@ export function gritIssueHandler(): DG.ObjectHandler<DG.DomainRow> {
   return new GritIssueHandler();
 }
 
+const priorityVariants: {[name: string]: BadgeVariant} = {critical: 'error', high: 'warning', medium: 'accent'};
+
+/** The id of the `closed` status; null where the lookup table has no such row, so nothing closes. */
+let closedId: string | null = null;
+
+let _grit: Promise<GritDb> | undefined;
+
+/** The typed schema handles (one await, cached per page) with what Grit declares on `issue`:
+ * the two actions, the closing rule and the card — made once, shared by every view and test. */
+export function openGrit(): Promise<GritDb> {
+  return _grit ??= Promise.all([getGritDb(), gritDb.statuses.getByKey({name: 'closed'}), warmLookups()])
+    .then(([db, closed]) => {
+      closedId = closed?.id ?? null;
+      declareIssues(db.tables.issues);
+      return db;
+    });
+}
+
+function declareIssues(issues: DomainTable<IssueRow>): void {
+  const me = () => grok.shell.user.id;
+  issues.actions.add({name: 'Assign to me', icon: 'user', requires: 'edit',
+    when: (r) => r.assignee !== me(), run: (r) => { r.assignee = me(); }});
+  issues.actions.add({name: 'Close', icon: 'check', requires: 'edit',
+    when: (r) => closedId !== null && r.status_id !== closedId, run: (r) => { r.status_id = closedId!; }});
+  issues.validators.add('status_id', (v, r) =>
+    closedId !== null && v === closedId && !r.assignee ? 'Assign before closing' : null);
+  issues.renderer = {...issues.renderer, card: (r) => divV([
+    div([span(`#${r.number} ${r.title}`, 'u2-domain-card-title'), ...priorityBadge(r)]),
+    ...(r.description ? [span(r.description, 'u2-domain-card-description')] : []),
+  ], 'u2-domain-card')};
+}
+
+function priorityBadge(r: RowView<IssueRow>): HTMLElement[] {
+  const name = lookupName(r.priority_id);
+  return name === null ? [] : [badge(name, {variant: priorityVariants[name] ?? 'default'})];
+}
+
+/** The Issues app: the platform ribbon plus the Mine / Open presets, and a key for each action. */
+export class IssuesApp extends DomainApp {
+  shortcuts = {'m': 'Assign to me', 'c': 'Close'};
+  private _full: DomainRibbon | undefined;
+
+  ribbon(): DomainRibbon {
+    return this._full ??= {...super.ribbon(),
+      presets: [this.presets(['Mine', 'assignee = $me'], ['Open', 'status_id.name != "closed"'])]};
+  }
+}
+
 //name: Issues
-//description: Issue tracker over entity-mapped domain schemas — the platform's Domain View with the filter panel
+//description: Issue tracker over entity-mapped domain schemas — the u2 app over grit.issue with Grit's actions, presets and shortcuts
 //tags: app
 //meta.icon: images/bug.svg
 //input: string path {meta.url: true; optional: true}
 //output: view result
 export async function issuesApp(path?: string): Promise<DG.ViewBase> {
-  const route = (path ?? '').split('?')[0].replace(/^\/+|\/+$/g, '').toLowerCase();
-  if (route === 'create-issue')
-    return await createIssueView();
-  if (route === 'projects')
-    return await projectsView();
-  const view = DG.DomainView.create({schema: 'grit', table: 'issue'});
-  whenDocked(view, () => view.showFilters());
-  return view;
-}
-
-/** Runs [action] once [view] is in the DOM: `DomainView.showFilters` and the ribbon
- * name slot need the view docked, and an app function returns its view BEFORE the
- * shell docks it. */
-function whenDocked(view: DG.ViewBase, action: () => void, tries: number = 100): void {
-  view.root.isConnected ? action() : tries > 0 ? void setTimeout(() => whenDocked(view, action, tries - 1), 100) : null;
-}
-
-//name: issuesTreeBrowser
-//input: dynamic treeNode
-//meta.role: appTreeBrowser
-//meta.app: Issues
-export function issuesTreeBrowser(treeNode: DG.TreeViewGroup): void {
-  issuesNode = treeNode;
-  treeNode.item('Create Issue').onSelected.subscribe(async () =>
-    grok.shell.preview = await createIssueView());
-  treeNode.item('Projects').onSelected.subscribe(async () =>
-    grok.shell.preview = await projectsView());
-}
-
-/** The 'Issues' app group node, once the browse tree has expanded it. */
-let issuesNode: DG.TreeViewGroup | null = null;
-
-/** The typed schema handle — every grit table prefetched ONCE per session. */
-let _db: Promise<GritUiDb> | null = null;
-function db(): Promise<GritUiDb> { return _db ??= gritUiDb(); }
-
-async function createIssueView(): Promise<DG.ViewBase> {
-  return childView(domains.formView((await db()).issues.form(), {name: 'Create Issue'}), 'create-issue');
-}
-
-async function projectsView(): Promise<DG.ViewBase> {
-  return childView((await db()).projects.app({name: 'Projects'}), 'projects');
-}
-
-/** Decorates a child view of the Issues app: the `/apps/Grit/<route>` address (the
- * platform strips the duplicated app prefix when it is already implied) and
- * `Issues / <name>` breadcrumbs; clicking 'Issues' goes back to the main view. */
-function childView(view: DG.ViewBase, route: string): DG.ViewBase {
-  view.basePath = `/apps/Grit/${route}`;
-  whenDocked(view, () => {
-    const crumbs = ui.breadcrumbs(['Issues', view.name]);
-    crumbs.onPathClick.subscribe((path) => {
-      if (path[path.length - 1] === 'Issues')
-        issuesNode != null ? issuesNode.currentItem = issuesNode : issuesApp().then((v) => grok.shell.addPreview(v));
-    });
-    const nameRoot = view.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
-    if (nameRoot != null) {
-      nameRoot.textContent = '';
-      nameRoot.appendChild(crumbs.root);
-    }
-  });
+  const {issues} = (await openGrit()).tables;
+  const view = issues.app({name: 'Issues', path: '/apps/Grit/Issues', app: IssuesApp, mode: 'cards',
+    children: {tables: ['comment']}});
+  void DomainApp.of(view)!.open(path || undefined);
   return view;
 }

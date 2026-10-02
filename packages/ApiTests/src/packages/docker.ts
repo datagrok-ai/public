@@ -27,7 +27,7 @@ category('Packages: Docker', () => {
     const logs = await grok.dapi.docker.dockerContainers.getContainerLogs(container.id);
     expect(!logs || logs.length === 0, false);
   }, {timeout: 300000 /* may cold-start the container */});
-}, { owner: 'ppolovyi@datagrok.ai', timeout: 5000});
+}, { owner: 'oserhiienko@datagrok.ai', timeout: 5000});
 
 async function testResponse(containerId: string): Promise<void> {
   const path = '/square?number=4';

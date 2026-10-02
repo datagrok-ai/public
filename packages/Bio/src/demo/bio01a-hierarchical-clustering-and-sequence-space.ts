@@ -46,7 +46,7 @@ export async function demoBio01aUI() {
         view.grid.columns.byName('is_cliff')!.visible = false;
 
         grok.shell.windows.showContextPanel = false;
-        grok.shell.windows.showProperties = false;
+        grok.shell.windows.showContextPanel = false;
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
         delay: 2000,

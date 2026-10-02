@@ -513,14 +513,15 @@ category('PolyTool: ChemEnum: copy R-group list', () => {
     expect(bad.length, 0, `invalid template SMILES: ${bad.join(', ')}`);
     // The in-code fallback must be valid too (it's used when the file is unreadable).
     expect(invalidTemplateSmiles(BUILTIN_R_GROUP_TEMPLATES, rdkit).length, 0);
-    // Insert the first template (alkyl C1–C8) into R2 — each lands re-labeled to [*:2].
-    const smiles = templates[0].items.map((it) => it.smiles);
+    // Insert the first template into R2 — each lands re-labeled to [*:2].
+    const items = templates[0].items;
+    const smiles = items.map((it) => it.smiles);
     const m = new Map<number, ReturnType<typeof makeRGroup>[]>();
     const n = addRGroupsFromSmiles(m, smiles, 2, 'append', rdkit);
     expect(n, smiles.length);
     expect(m.get(2)!.length, smiles.length);
     expect(m.get(2)!.every((g) => g.rNumber === 2 && g.error == null), true);
-    expect(m.get(2)![0].smiles, 'C[*:2]'); // methyl, re-labeled
+    expect(m.get(2)![items.findIndex((it) => it.label === 'methyl')].smiles, 'C[*:2]');
   });
 
   test('addRGroupsFromSmiles: replace with an empty list clears the slot; append no-ops', async () => {

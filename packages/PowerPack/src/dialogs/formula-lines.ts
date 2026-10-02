@@ -14,18 +14,22 @@ const escapeColName = (name: string): string => grok.functions.handleOuterBracke
 /** Wrap a column name as a `${...}` reference, escaping nested braces. */
 const wrapCol = (name: string): string => `\${${escapeColName(name)}}`;
 
-/** True iff both columns share a non-empty `group` tag (GROK-19736). */
+/** True if `name` is the axis token `x`/`y` — "whatever is on that axis" rather than a column (GROK-17068). */
+const isAxisToken = (name: string | undefined | null): boolean => /^[xy]$/i.test((name ?? '').trim());
+
+/** True if both columns share a non-empty `group` tag (GROK-19736). */
 const sameGroup = (a: DG.Column | null, b: DG.Column | null): boolean => {
   const g = a?.getTag('group');
   return !!g && g === b?.getTag('group');
 };
 
 function validateBandFormula(value: string): string {
-  const bandFormulaHelp = 'Band formula should be in format: ${column} in(min, max)';
+  const bandFormulaHelp = 'Band formula should be in format: ${column} in(min, max), or X/Y in(min, max)';
   const v = value ?? '';
-  const pattern = /^\s*\$\{(?:\\.|[^}\\])*\}\s+in\s*\(\s*[^,()]+\s*,\s*[^,()]+\s*\)\s*$/;
+  // The left side is a ${...} column ref or a bare axis token; a token carries no ref, hence `<= 1`.
+  const pattern = /^\s*(?:\$\{(?:\\.|[^}\\])*\}|[xXyY])\s+in\s*\(\s*[^,()]+\s*,\s*[^,()]+\s*\)\s*$/;
   const refCount = v.match(COL_REF_REGEX)?.length ?? 0;
-  return refCount === 1 && pattern.test(v) ? '' : bandFormulaHelp;
+  return refCount <= 1 && pattern.test(v) ? '' : bandFormulaHelp;
 }
 
 /** Formula Line types */
@@ -230,7 +234,7 @@ class Host {
     else if (isViewer)
       throw new Error('Viewer not attached to table.');
   }
-  
+
   private initDfParams(src: DG.DataFrame | DG.Viewer) {
     this.dframeFormulaLinesHelper = src.meta.formulaLines;
     this.dfAnnotationRegionsHelper = src.meta.annotationRegions;
@@ -450,7 +454,7 @@ class Table {
         itemIdx = annotationRegionItems.findIndex((item: DG.AnnotationRegion) => item.type === ITEM_TYPE.AREA_REGION_ANNOTATION
           ? (item as DG.AreaAnnotationRegion).x === srcAxes.x! && (item as DG.AreaAnnotationRegion).y === srcAxes.y!
           : checkAxesInFormula((item as DG.FormulaAnnotationRegion).formula1 ?? '') || checkAxesInFormula((item as DG.FormulaAnnotationRegion).formula2 ?? ''));
-        
+
         if (itemIdx !== -1)
           itemIdx += formulaLineItems.length;
       }
@@ -536,6 +540,8 @@ class Preview {
 
   /** Source Scatter Plot axes */
   public srcAxes?: AxisNames;
+
+  private currentItem = '';
 
   public get root(): HTMLElement {return this.viewer.root;}
 
@@ -879,6 +885,8 @@ class Preview {
     if (this.srcAxes)
       this.axes = this.srcAxes;
 
+    this.viewer.addStatusProvider('formula-lines-preview', () => ({values: {'current item': this.currentItem}}));
+
     /**
      * Creates special context menu for preview Scatter Plot.
      * Before opening the menu, it calculates the world coordinates of the click point.
@@ -909,6 +917,7 @@ class Preview {
     const clearMeta = (): void => {
       this.viewer.meta.annotationRegions.clear();
       this.viewer.meta.formulaLines.clear();
+      this.currentItem = '';
     }
 
     // Render the other formula lines as ghosts so the user keeps context for the line being edited.
@@ -958,6 +967,7 @@ class Preview {
           addLineGhosts(itemIdx);
         this.viewer.meta.formulaLines.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
+        this.currentItem = previewItem.formula ?? '';
         return true;
       } catch {
         clearMeta();
@@ -974,6 +984,7 @@ class Preview {
         clearMeta();
         this.viewer.meta.annotationRegions.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
+        this.currentItem = formatAreaFormula(previewItem);
         return true;
       } catch {
         clearMeta();
@@ -1093,7 +1104,9 @@ class Editor {
     if (itemIdx >= 0) {
       this.columnInput = undefined;
       /** Preparing the "Main" panel */
-      mainPane.append(caption === ITEM_CAPTION.CONST_LINE ?
+      // An axis token has no column to put in the Column picker, and picking one there would
+      // rewrite `Y = 150` into `${someColumn} = 150`; edit those as text instead.
+      mainPane.append(caption === ITEM_CAPTION.CONST_LINE && !isAxisToken(itemY) ?
         this.inputConstant(itemIdx, itemY, expression) :
         this.inputFormula(itemIdx));
       if (caption === ITEM_CAPTION.BAND)
@@ -1369,21 +1382,23 @@ class Editor {
       if (skeleton.split('=').length !== 2)
         return 'Line formula should be in format: ${x or y column} = expression';
 
-      // LHS must be exactly one ${...}.
-      if (skeleton.split('=')[0].trim() !== sentinel)
-        return 'Left side must be a single column in format ${column}';
+      // LHS must be exactly one ${...}, or a bare axis token.
+      const lhsSkeleton = skeleton.split('=')[0].trim();
+      const lhsIsBareToken = isAxisToken(lhsSkeleton);
+      if (lhsSkeleton !== sentinel && !lhsIsBareToken)
+        return 'Left side must be a single column in format ${column}, or the axis token X or Y';
 
       // Extract column refs from the original value; unescape each to get real names.
       const refs = [...value.matchAll(COL_REF_REGEX)]
         .map(m => grok.functions.handleOuterBracketsInColName(m[1].trim(), false));
-      const lhsColumn = refs[0];
-      const rhsColumns = refs.slice(1);
+      const lhsColumn = lhsIsBareToken ? lhsSkeleton : refs[0];
+      const rhsColumns = lhsIsBareToken ? refs : refs.slice(1);
 
       // Single-axis viewers (box plot, histogram, bar chart) only support
       // `${valueColumn} = const` formulas — the LHS must reference the value column,
       // and the RHS must be a constant (no column references or operations between them).
       if (this.singleAxisColumnName) {
-        if (lhsColumn !== this.singleAxisColumnName)
+        if (!isAxisToken(lhsColumn) && lhsColumn !== this.singleAxisColumnName)
           return `Left side must reference the value column \${${this.singleAxisColumnName}}`;
         if (rhsColumns.length > 0)
           return 'Right side must be a constant value — column references are not allowed on single-axis viewers';
@@ -1397,7 +1412,7 @@ class Editor {
       // Expression syntax validation comes last
       return resultOk ? '' : 'Invalid formula syntax';
     };
-    
+
     const validationTooltip = validateValue();
     resultOk = resultOk && validationTooltip === '';
     ibHeader.setTooltip(validationTooltip);
@@ -1485,11 +1500,11 @@ class Editor {
     const validateValue = (): string => {
       if (resultOk)
         return '';
-      
+
       const parsed = JSON.parse(`[${value}]`);
       return Array.isArray(parsed) && parsed.length < 3 ? 'Area must have at least 3 points' : tooltipWarning;
     };
-    
+
     try {
       ibPoints.setTooltip(validateValue());
     } catch {
@@ -1535,7 +1550,7 @@ class Editor {
 
     return textArea.root;
   }
-  
+
 
   /** Creates textarea for item description */
   private inputDescription(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
@@ -1573,11 +1588,11 @@ class Editor {
         item[type] = item[mapKey] && value?.name ? `${value.name} ${item[mapKey]}` : value?.name;
         this.onItemChangedAction(itemIdx, false);
       }});
-      
+
     this.columnInput = ibColumn2;
     const elColumn2 = ibColumn2.input as HTMLInputElement;
     //elColumn2.setAttribute('style', 'width: 204px; max-width: none;');
-    
+
     return ui.divH([ibColumn2.root]);
   }
 
@@ -1600,11 +1615,11 @@ class Editor {
         this.onItemChangedAction(itemIdx, true);
         this.inputColumn2Changing = false;
       }});
-      
+
     this.columnInput = ibColumn2;
     const elColumn2 = ibColumn2.input as HTMLInputElement;
     //elColumn2.setAttribute('style', 'width: 204px; max-width: none;');
-    
+
     return ui.divH([ibColumn2.root]);
   }
 
@@ -2042,8 +2057,9 @@ export class FormulaLinesDialog {
         }
       } else if (currentItem.type === ITEM_TYPE.LINE) {
         // Constant line follows its own axis directly (keeps the value on the newly selected column).
+        // An axis token already does that on its own, so rebinding it would only pin it to one column.
         const meta = DG.FormulaLinesHelper.getMeta(item);
-        if (!meta.argName) {
+        if (!meta.argName && !isAxisToken(meta.funcName)) {
           const newCol = isHorz
             ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? axisCols.y?.name ?? null : null
             : property.name === 'xColumnName' ? axisCols.x?.name ?? null : null;
@@ -2141,7 +2157,7 @@ export class FormulaLinesDialog {
       }
     }));
   }
-    
+
   private initDefaultOnOpenState(): void {
       if (!this.showValueOnOpen)
         return;

@@ -29,8 +29,8 @@ category('Packages: migrations', () => {
   });
 
   async function publish(packageData: Uint8Array, name: string, debug: boolean) {
-    const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/${name}?debug=${debug}&rebuild=false`,
-      {method: 'POST', body: packageData as BodyInit});
+    const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${name}?debug=${debug}&rebuild=false`,
+      {method: 'POST', body: packageData as BodyInit, headers: {Authorization: `Dev ${key}`}});
     expect(uploadResponse.status, 200);
     let text = await uploadResponse.text();
     expect(text.indexOf('ApiError'), -1);
@@ -39,8 +39,8 @@ category('Packages: migrations', () => {
   }
 
   async function deletePackage(packageName: string) {
-    const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/${packageName}`,
-      {method: 'DELETE'});
+    const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${packageName}`,
+      {method: 'DELETE', headers: {Authorization: `Dev ${key}`}});
     let text = await uploadResponse.text();
     expect(text.indexOf('ApiError'), -1);
   }

@@ -1,7 +1,7 @@
 // A document attachment. Not every engine takes documents; those that cannot throw.
 
-const bytes = await grok.dapi.files.readAsBytes('System:DemoFiles/texts/pdf/research-paper.pdf');
-const pdf = new Blob([bytes], {type: 'application/pdf'});
-const {text} = await grok.ai.prompt('Summarize this paper in one sentence.',
-  {attachments: [{type: 'document', data: pdf, title: 'research-paper.pdf'}]});
-grok.shell.info(text);
+const text = await grok.dapi.files.readAsText('System:DemoFiles/texts/python.txt');
+const doc = new Blob([text], {type: 'text/plain'});
+const {text: summary} = await grok.ai.prompt('Summarize this document in one sentence.',
+  {engine: 'gemma', attachments: [{type: 'document', data: doc, title: 'python.txt'}]});
+grok.shell.info(summary);

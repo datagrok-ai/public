@@ -13,33 +13,16 @@
     "directory": "packages/ChemblAPI"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
+    "@datagrok-libraries/utils": "workspace:^",
     "@types/react-dom": "^17.0.9",
-    "datagrok-api": "^1.26.0",
-    "file-loader": "^6.2.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "@datagrok/chem": "^1.16.5",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.21.0",
-    "eslint-config-google": "^0.14.0",
-    "style-loader": "^4.0.0",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "datagrok-api": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "build": "grok api && grok check --soft && webpack",
-    "test": "grok test",
-    "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost"
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -48,7 +31,9 @@
     "All users"
   ],
   "category": "Cheminformatics",
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
+  "grok": {
+    "testDependencies": [
+      "@datagrok/chem"
+    ]
   }
 }

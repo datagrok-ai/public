@@ -442,7 +442,7 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: () => Mo
 function requestWebLogoAction(ev: MouseEvent, monomerPosition: type.SelectionItem, df: DG.DataFrame,
   activityCol: DG.Column<number>, options: WebLogoCellRendererOptions, tooltipOptions: TooltipOptions): void {
   if (ev.type === 'click' && !options.isSelectionTable && options.selectionCallback != null)
-    options.selectionCallback(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+    options.selectionCallback(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: (ev.ctrlKey || ev.metaKey)});
   else {
     const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
     if (options.cachedWebLogoTooltip()!.bar === bar)

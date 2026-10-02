@@ -154,7 +154,8 @@ let authToken;
 const httpAgent = new Agent({headersTimeout: 0, bodyTimeout: 0});
 
 async function loginQueue() {
-  const r = await ufetch(`${apiUrl}/users/login/dev/${apiKey}`, {method: 'POST', dispatcher: httpAgent});
+  const r = await ufetch(`${apiUrl}/users/login/dev`,
+    {method: 'POST', headers: {Authorization: `Dev ${apiKey}`}, dispatcher: httpAgent});
   const j = await r.json();
   if (!j.token) throw new Error(`dev-key login to ${apiUrl} failed`);
   authToken = j.token;

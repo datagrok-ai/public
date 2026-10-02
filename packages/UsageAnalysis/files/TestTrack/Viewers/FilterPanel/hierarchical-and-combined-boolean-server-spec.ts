@@ -310,6 +310,10 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters: layout and pro
             () => grok.shell.tv.dataFrame.filter.trueCount, countBeforeToggle, 700);
 
           stage = 'saving the layout';
+          // the layout references the table's columns, so the frame this view rebuilt after the
+          // clone round-trip has to exist on the server first — otherwise the save is refused with
+          // table_columns_table_id_fkey (seen on the CI stand, build 393)
+          await grok.dapi.tables.uploadDataFrame(grok.shell.tv.dataFrame);
           const layout = grok.shell.tv.saveLayout();
           await grok.dapi.layouts.save(layout);
           const id = layout.id;

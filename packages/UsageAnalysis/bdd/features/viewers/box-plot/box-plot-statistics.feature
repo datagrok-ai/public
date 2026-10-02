@@ -1,7 +1,9 @@
 @journey @viewers @realizes:viewers.box-plot
 Feature: Box plot statistics and coloring
   The box coloring baseline and an explicit whisker color, the statistics strip and its ladder,
-  the statistics format, the p-value toggle by key and by menu, the three-group test branch, the
+  the statistics format, the p-value toggle by key and by menu (the p-value area gone while Show P
+  Value is off and back when it is on) and a T typed into the plot's own column selector leaving it
+  alone (the shortcut used to take the T of "HEIGHT"), the three-group test branch, the
   violin style with its bins and line widths, column color coding driving the marker colors, and
   a datetime value. One journey on demog-1000 with a box plot of AGE by SEX.
 
@@ -51,15 +53,16 @@ Feature: Box plot statistics and coloring
       | Show Q3             | true |
     And no errors should have been logged
     When user sets "Statistics Format" property of box plot viewer to "#,##0.00"
-    Then "Statistics Format" property of box plot viewer should be "#,##0.00"
-    And "Show P Value" property of box plot viewer should be "true"
+    Then the "stats" area of box plot viewer should have repainted
+    And "Statistics Format" property of box plot viewer should be "#,##0.00"
     And no errors should have been logged
     When user sets "Statistics Format" property of box plot viewer to "auto"
     And user picks "Show Total Count" from the context menu of the "stats" area of box plot viewer
     Then "Show Total Count" property of box plot viewer should be "false"
     When user picks "Show Total Count" from the context menu of the "stats" area of box plot viewer
     Then "Show Total Count" property of box plot viewer should be "true"
-    When user sets properties of box plot viewer:
+    When user closes the context menu
+    And user sets properties of box plot viewer:
       | Show Total Count    | false |
       | Show Inliers Count  | false |
       | Show Outliers Count | false |
@@ -68,13 +71,23 @@ Feature: Box plot statistics and coloring
       | Show Q3             | false |
 
   Scenario: The T key toggles the p-value
+    Then box plot viewer should have a "p value" area
     When user sets "Show P Value" property of box plot viewer to "false"
-    And user clicks on empty plot space of box plot viewer
-    And user presses t
+    Then box plot viewer should not have a "p value" area
+    When user presses t in box plot viewer
     Then "Show P Value" property of box plot viewer should be "true"
-    When user presses t
+    And box plot viewer should have a "p value" area
+    When user presses t in box plot viewer
     Then "Show P Value" property of box plot viewer should be "false"
+    And box plot viewer should not have a "p value" area
     When user sets "Show P Value" property of box plot viewer to "true"
+
+  Scenario: A T typed into the plot's own column selector is a letter, not the shortcut
+    When user picks "HEIGHT" in the "Value" column selector of box plot viewer
+    Then "Show P Value" property of box plot viewer should be "true"
+    And box plot viewer should have a "p value" area
+    When user picks "AGE" in the "Value" column selector of box plot viewer
+    Then "Value" property of box plot viewer should be "AGE"
 
   Scenario: Three groups take the Alexander-Govern branch
     When user sets "Category 1" property of box plot viewer to "RACE"

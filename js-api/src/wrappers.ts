@@ -29,10 +29,9 @@ export function paramsToJs(params: any): any {
  * @param check - When true, throws if the type cannot be converted
  * @returns JavaScript wrapper or native JS value
  * @see wrappers_impl.ts for the actual implementation
- * @see {@link ./dart-interop.md} for type conversion rules
- */
+ * @see {@link ./dart-interop.md} for type conversion rules */
 export function toJs(dart: any, check: boolean = false): any {
-  return DG.toJs(dart);
+  return DG.toJs(dart, check);
 }
 
 /**
@@ -42,8 +41,7 @@ export function toJs(dart: any, check: boolean = false): any {
  * @param x - JavaScript object (may have a `.dart` property or `.toDart()` method)
  * @returns Dart object handle
  * @see wrappers_impl.ts for the actual implementation
- * @see {@link ./dart-interop.md} for type conversion rules
- */
+ * @see {@link ./dart-interop.md} for type conversion rules */
 export function toDart(x: any): any {
   return DG.toDart(x);
 }

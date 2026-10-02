@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {getMoleculeRenderer} from '../../package';
 import {SarMatrix} from './sar-matrix-types';
+import {attachmentNumbers} from './sar-matrix-link';
 import {MatrixGridState} from './sar-matrix-ui-common';
 
 /** Drawing molecules onto a grid canvas, aligned so a shared core points the same way in every cell.
@@ -130,20 +131,18 @@ export function coreDepictionBlock(smiles: string, columnOrdinal: number): strin
 
 /**
  * The scaffold a matrix varies, with the R at the position its columns enumerate and a `*` at
- * every position its rows differ at.
- *
- * Every row of a decomposed matrix shares one core, numbered to match {@link SarMatrix.positions},
- * and the first of those is the column axis. Read off the core rather than guessed from the site
- * key's isotopes: which mark is the axis is not fixed, and guessing puts the R where the matrix
- * holds constant. Rows keep a mark, not a hydrogen, which would claim they are unsubstituted.
+ * every position its rows differ at. The axis is read off the attachment points the column
+ * substituents carry, since position names need not be numbered.
  */
 export function matrixCore(matrix: SarMatrix): string {
   const core = matrix.rows[0]?.coreSmiles ?? '';
-  const columnNumber = Number.parseInt((matrix.positions[0] ?? '').replace(/^\D+/, ''), 10);
   // Rows of a single-position matrix are each their own core, so none of them is the matrix's; its
   // key is, and the one attachment it carries is where the columns hang.
-  if (!core || !Number.isFinite(columnNumber) || Object.keys(matrix.refValues).length === 0)
+  if (!core || Object.keys(matrix.refValues).length === 0)
     return coreDepictionBlock((matrix.siteKey || core).replace(/\[\d+\*\]|\[\*:\d+\]/g, '[*]'), 0);
+  const coreNumbers = attachmentNumbers(core);
+  const columnNumber = matrix.columns.flatMap((c) => [...attachmentNumbers(c.substSmiles)])
+    .find((n) => coreNumbers.has(n));
   let seen = 0;
   let ordinal = -1;
   const smiles = core.replace(/\[\*:(\d+)\]/g, (_match, number) => {

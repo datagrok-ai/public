@@ -13,38 +13,16 @@
     "directory": "packages/PubChemApi"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
-    "datagrok-api": "^1.26.1",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "@datagrok/chem": "^1.13.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "@datagrok-libraries/utils": "workspace:^",
+    "datagrok-api": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "link-api": "npm link datagrok-api",
-    "install-dependencies": "npm install",
-    "debug-pubchemapi": "grok publish",
-    "release-pubchemapi": "grok publish --release",
-    "build-pubchemapi": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-pubchemapi-dev": "grok publish dev",
-    "release-pubchemapi-dev": "grok publish dev --release",
-    "debug-pubchemapi-local": "grok publish local",
-    "release-pubchemapi-local": "grok publish local --release",
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test",
-    "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost"
+    "install-dependencies": "npm install"
   },
   "canEdit": [
     "Administrators"
@@ -53,7 +31,9 @@
     "All users"
   ],
   "category": "Cheminformatics",
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
+  "grok": {
+    "testDependencies": [
+      "@datagrok/chem"
+    ]
   }
 }

@@ -10,6 +10,9 @@ export interface RefInputOptions extends InputOptions<FilterRef | null> {
   schema: FilterSchema;
   placeholder?: string;
   debounceMs?: number;
+  /** The operator the value is for, passed to the schema's `values`: an `under` term picks from
+   * the hierarchy it walks, not from the values the column happens to hold. */
+  operator?: string;
 }
 
 /** A ref value picked by type-ahead over the schema's value items; the value is the
@@ -26,7 +29,7 @@ export class RefInput extends Input<FilterRef | null, RefInputOptions> {
     const item = (value: FilterRef | null): FilterValueItem | null =>
       value === null ? null : {value, label: value.name ?? value.id};
     const typeAhead = new TypeAhead<FilterValueItem>({
-      source: (query, signal) => schema.values!(prop, query, signal),
+      source: (query, signal) => schema.values!(prop, query, signal, {operator: this.options.operator}),
       itemText: (i) => i.label ?? renderer?.caption(i.value) ?? String(i.value),
       render: renderer?.listItem ? (i) => renderer.listItem!(i.value) : undefined,
       placeholder: this.options.placeholder,

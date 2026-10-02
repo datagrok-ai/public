@@ -77,15 +77,15 @@ export namespace funcs {
   }
 
   /**
-  Adds a sparkline column for the selected columns
-  */
+   * Adds a sparkline column for the selected columns
+   */
   export async function summarizeColumns(columns: any ): Promise<void> {
     return await grok.functions.call('PowerGrid:SummarizeColumns', { columns });
   }
 
   /**
-  Adds a 'form' column for the selected columns
-  */
+   * Adds a 'form' column for the selected columns
+   */
   export async function addFormColumn(columns: any ): Promise<void> {
     return await grok.functions.call('PowerGrid:AddFormColumn', { columns });
   }
@@ -111,15 +111,17 @@ export namespace funcs {
   }
 
   /**
-  Forms viewer
-  */
+   * Forms viewer
+   */
   export async function formsViewer(): Promise<any> {
     return await grok.functions.call('PowerGrid:FormsViewer', {});
   }
 
   /**
-  Image content
-  */
+   * Image content
+   * @param {string} imageUrl
+   *   semType: ImageUrl
+   */
   export async function imgContent(imageUrl: string ): Promise<any> {
     return await grok.functions.call('PowerGrid:ImgContent', { imageUrl });
   }

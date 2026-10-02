@@ -296,7 +296,7 @@ function emitUtilityStep(step: CompiledStep): string | null {
     const names = Array.from(new Set([raw, noSpaces, lowerFirst]));
     const expr = names.map((n) => {
       const q = JSON.stringify(n);
-      return `grok.shell.tableByName(${q}) ?? grok.shell.getVar(${q})`;
+      return `grok.shell.table(${q}) ?? grok.shell.getVar(${q})`;
     }).join(' ?? ');
     // Fail fast with the table name — a null table would surface as a cryptic
     // downstream error far from the node that caused it.

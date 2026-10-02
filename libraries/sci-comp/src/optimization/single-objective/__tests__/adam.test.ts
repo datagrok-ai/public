@@ -2,7 +2,7 @@ import {Adam, applyPenalty, applyPenaltyAsync, boxConstraints} from '..';
 import type {Constraint} from '..';
 import {
   rosenbrock, sphere, gaussian, quadratic3d,
-  productSurface, quadraticMixed, negQuadraticMixed,
+  productSurface, negQuadraticMixed,
   ellipseConstraint, gaussianBump, expectPointClose, toAsync,
 } from './helpers';
 

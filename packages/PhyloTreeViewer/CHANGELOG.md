@@ -1,6 +1,6 @@
 # PhyloTree Viewer changelog
 
-## v.next
+## 1.4.1 (2026-07-12)
 
 * GROK-18695: Dependency security updates (bumped deck.gl to ^8.9.36, added uuid and fast-xml-parser overrides to clear npm audit advisories)
 

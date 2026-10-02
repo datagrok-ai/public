@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Interactive 2D protein-ligand interaction diagram via ProLIF
-  */
+   * Interactive 2D protein-ligand interaction diagram via ProLIF
+   */
   export async function proteinLigandInteractionDiagram(protein: string , ligand: string , ligand_resname: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('BiostructureViewer:ProteinLigandInteractionDiagram', { protein, ligand, ligand_resname });
   }
@@ -46,29 +46,29 @@ export namespace funcs {
   }
 
   /**
-  Opens PDB file
-  */
+   * Opens PDB file
+   */
   export async function importPdb(fileContent: string ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:ImportPdb', { fileContent });
   }
 
   /**
-  Opens XYZ file
-  */
+   * Opens XYZ file
+   */
   export async function importXYZ(fileContent: string ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:ImportXYZ', { fileContent });
   }
 
   /**
-  Opens biostructure files supported with NGL
-  */
+   * Opens biostructure files supported with NGL
+   */
   export async function importWithNgl(fileContent: string ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:ImportWithNgl', { fileContent });
   }
 
   /**
-  Opens .pdbqt file with docking result ligand poses
-  */
+   * Opens .pdbqt file with docking result ligand poses
+   */
   export async function importPdbqt(fileContent: string , test?: boolean ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:ImportPdbqt', { fileContent, test });
   }
@@ -101,10 +101,18 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:OpenPdbResidues', { fi });
   }
 
+  /**
+   * @param {string} pdbId
+   *   semType: PDB_ID
+   */
   export async function pdbIdNglPanelWidget(pdbId: string ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:PdbIdNglPanelWidget', { pdbId });
   }
 
+  /**
+   * @param {string} pdbId
+   *   semType: PDB_ID
+   */
   export async function pdbInfoPanel(pdbId: string ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:PdbInfoPanel', { pdbId });
   }
@@ -113,6 +121,10 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:HasNonWaterHetatm', { molecule });
   }
 
+  /**
+   * @param {any} molecule
+   *   semType: Molecule3D
+   */
   export async function pdbInteractionsWidget(molecule: any ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:PdbInteractionsWidget', { molecule });
   }
@@ -121,45 +133,53 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:IsAutoDockPose', { molecule });
   }
 
+  /**
+   * @param {any} molecule
+   *   semType: Molecule3D
+   */
   export async function dockingInteractionsWidget(molecule: any ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:DockingInteractionsWidget', { molecule });
   }
 
+  /**
+   * @param {string} pdbId
+   *   semType: PDB_ID
+   */
   export async function pdbIdInteractionsWidget(pdbId: string ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:PdbIdInteractionsWidget', { pdbId });
   }
 
   /**
-  Example app for NGL drawing in grid cells
-  */
+   * Example app for NGL drawing in grid cells
+   */
   export async function nglForGridTestApp(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:NglForGridTestApp', {});
   }
 
   /**
-  Test app for NglViewer
-  */
+   * Test app for NglViewer
+   */
   export async function nglViewerApp(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:NglViewerApp', {});
   }
 
   /**
-  Test app for BiostructureViewer (molstar)
-  */
+   * Test app for BiostructureViewer (molstar)
+   */
   export async function biostructureViewerApp(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:BiostructureViewerApp', {});
   }
 
   /**
-  Test app for BiotrackViewer (saguaro)
-  */
+   * Test app for BiotrackViewer (saguaro)
+   */
   export async function biotrackViewerApp(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:BiotrackViewerApp', {});
   }
 
   /**
-  Test app for twin BiostructureViewer (molstar) and BiotrackViewer (saguaro)
-  */
+   * Test app for twin BiostructureViewer (molstar) and BiotrackViewer (saguaro)
+   */
   export async function biostructureAndTrackViewerApp(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:BiostructureAndTrackViewerApp', {});
   }
@@ -177,22 +197,22 @@ export namespace funcs {
   }
 
   /**
-  3D structure viewer for large biological molecules (proteins, DNA, and RNA)
-  */
+   * 3D structure viewer for large biological molecules (proteins, DNA, and RNA)
+   */
   export async function nglViewer(): Promise<any> {
     return await grok.functions.call('BiostructureViewer:NglViewer', {});
   }
 
   /**
-  3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)
-  */
+   * 3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)
+   */
   export async function molstarViewer(): Promise<any> {
     return await grok.functions.call('BiostructureViewer:MolstarViewer', {});
   }
 
   /**
-  structure polymer annotation tracks
-  */
+   * structure polymer annotation tracks
+   */
   export async function saguaroViewer(): Promise<any> {
     return await grok.functions.call('BiostructureViewer:SaguaroViewer', {});
   }
@@ -230,15 +250,15 @@ export namespace funcs {
   }
 
   /**
-  Display ligand poses along the structure
-  */
+   * Display ligand poses along the structure
+   */
   export async function demoBioDockingConformations(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:DemoBioDockingConformations', {});
   }
 
   /**
-  View structures PDB in grids
-  */
+   * View structures PDB in grids
+   */
   export async function demoBioProteins(): Promise<void> {
     return await grok.functions.call('BiostructureViewer:DemoBioProteins', {});
   }
@@ -264,48 +284,62 @@ export namespace funcs {
   }
 
   /**
-  Get biostructure by id as PDB
-  */
+   * Get biostructure by id as PDB
+   */
   export async function getBiostructureRcsbPdb(id: string ): Promise<string> {
     return await grok.functions.call('BiostructureViewer:GetBiostructureRcsbPdb', { id });
   }
 
   /**
-  Get biostructure by id as mmCIF
-  */
+   * Get biostructure by id as mmCIF
+   */
   export async function getBiostructureRcsbMmcif(id: string ): Promise<string> {
     return await grok.functions.call('BiostructureViewer:GetBiostructureRcsbMmcif', { id });
   }
 
   /**
-  Get biostructure by id as BinaryCIF
-  */
+   * Get biostructure by id as BinaryCIF
+   */
   export async function getBiostructureRcsbBcif(id: string ): Promise<string> {
     return await grok.functions.call('BiostructureViewer:GetBiostructureRcsbBcif', { id });
   }
 
   /**
-  Packs BiostructureData value into JSON string
-  */
+   * Packs BiostructureData value into JSON string
+   */
   export async function biostructureDataToJson(binary: boolean , data: any , ext: string , options?: any ): Promise<string> {
     return await grok.functions.call('BiostructureViewer:BiostructureDataToJson', { binary, data, ext, options });
   }
 
+  /**
+   * @param {any} molecule
+   *   semType: Molecule3D
+   */
   export async function structure3D(molecule: any ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:Structure3D', { molecule });
   }
 
+  /**
+   * @param {any} molecule
+   *   semType: Molecule3D
+   */
   export async function pdbFileInfoPanel(molecule: any ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:PdbFileInfoPanel', { molecule });
   }
 
+  /**
+   * @param {DG.Column} mol3DCol
+   *   semType: Molecule3D
+   */
   export async function mol3dAtomPickerLinkWidget(mol3DCol: DG.Column ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:Mol3dAtomPickerLinkWidget', { mol3DCol });
   }
 
   /**
-  For a user-selected table and PDB ID column, fetches protein sequences and adds them as new columns.
-  */
+   * For a user-selected table and PDB ID column, fetches protein sequences and adds them as new columns.
+   * @param {DG.Column} pdbColumn
+   *   semType: PDB_ID
+   */
   export async function fetchSequencesFromPdb(table: DG.DataFrame , pdbColumn: DG.Column ): Promise<void> {
     return await grok.functions.call('BiostructureViewer:FetchSequencesFromPdb', { table, pdbColumn });
   }

@@ -67,6 +67,7 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {SarMatrixEditor} from './analysis/sar-matrix/sar-matrix-editor';
 import {dockSarMatrixTabs, SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
@@ -200,7 +201,7 @@ let mpoTreeBrowserSub: Subscription | null = null;
 async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
   await chemCommonRdKit.initRdKitModuleLocal();
-  _properties = await _package.getProperties();
+  _properties = _package.settings;
   _rdRenderer = new RDKitCellRenderer(PackageFunctions.getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   let storedSketcherType = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '';
@@ -783,7 +784,9 @@ export class PackageFunctions {
       grok.shell.warning(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
       return;
     }
-    const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+    // a search leaves a hidden (~) canonical SMILES column that is detected as molecules too
+    const isMolecules = (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && !col.name.startsWith('~');
+    const molColumns = grok.shell.tv.dataFrame.columns.toList().filter(isMolecules);
     if (!molColumns.length) {
       grok.shell.warning(`Data doesn't contain molecule columns`);
       return;
@@ -791,7 +794,7 @@ export class PackageFunctions {
       call.func.prepare({molecules: molColumns[0]}).call(true);
     else {
       const colInput = ui.input.column('Molecules', {table: grok.shell.tv.dataFrame, value: molColumns[0],
-        filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+        filter: isMolecules});
       ui.dialog({title: 'Substructure search'})
         .add(colInput)
         .onOK(async () => {
@@ -2206,7 +2209,7 @@ export class PackageFunctions {
   })
   static copyAsAction(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
-    const formats = ['Smiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
+    const formats = ['Smiles', 'CXSmiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
     const menu = DG.Menu.popup();
 
     formats.forEach((format) => {
@@ -2229,6 +2232,19 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
     const smiles = !DG.chem.isMolBlock(value.value) && !_isSmarts(value.value) ? value.value :
       _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+    navigator.clipboard.writeText(smiles);
+    grok.shell.info('Smiles copied to clipboard');
+  }
+
+  @grok.decorators.func({
+    name: 'Copy as CXSMILES',
+    description: 'Copies structure as smiles',
+    meta: {'action': 'Copy as CXSMILES', 'exclude-actions-panel': 'true'},
+  })
+  static copyAsCXSmiles(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
+    const smiles =
+      _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.CxSmiles, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smiles);
     grok.shell.info('Smiles copied to clipboard');
   }
@@ -2584,10 +2600,21 @@ export class PackageFunctions {
     return ['', ...(grok.shell.t?.columns.names() ?? [])];
   }
 
+  @grok.decorators.editor({
+    name: 'SarMatrixEditor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static sarMatrixEditor(call: DG.FuncCall): DG.Widget {
+    if (!call.inputs['table'] && !grok.shell.tv?.dataFrame)
+      return new MessageFuncCallEditor('SAR Matrix requires an open table');
+    return new SarMatrixEditor(call);
+  }
+
   @grok.decorators.func({
     'name': 'SAR Matrix',
     'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
     'top-menu': 'Chem | Analyze | SAR Matrix...',
+    'editor': 'Chem:SarMatrixEditor',
   })
   static async sarMatrixAnalysis(
     table: DG.DataFrame,
@@ -2632,6 +2659,21 @@ export class PackageFunctions {
         choices: 'Chem:sarSeriesColumnChoices()',
         description: 'Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure'},
     }) seriesColumn: string = '',
+    @grok.decorators.param({
+      type: 'column',
+      options: {nullable: true, caption: 'Core',
+        description: 'Optional. Column with the core of an existing R-group decomposition, used instead of fragmenting the molecules'},
+    }) coreColumn: DG.Column | null = null,
+    @grok.decorators.param({
+      type: 'column_list',
+      options: {nullable: true, caption: 'R-groups',
+        description: 'Columns with the substituent at each attachment point of the core'},
+    }) rGroupColumns: DG.Column[] = [],
+    @grok.decorators.param({
+      type: 'string',
+      options: {nullable: true, caption: 'Matrix columns',
+        description: 'The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows'},
+    }) matrixColumns: string = '',
   ): Promise<void> {
     // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
     // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
@@ -2651,11 +2693,20 @@ export class PackageFunctions {
         'Pick a series column from that table, or leave it empty to group by structure.');
       return;
     }
+    const rgroups = rGroupColumns ?? [];
+    const axis = matrixColumns ?? '';
+    const named = coreColumn !== null || rgroups.length > 0;
+    if (named && (coreColumn === null || coreColumn.name === axis || !rgroups.some((c) => c.name === axis))) {
+      grok.shell.error('SAR Matrix: pick the core, the R-groups, and which R-group becomes the matrix columns.');
+      return;
+    }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
     const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
       seriesColumnName: seriesName,
+      coreColumnName: named ? coreColumn!.name : '', axisColumnName: named ? axis : '',
+      rGroupColumnNames: named ? rgroups.map((c) => c.name) : [],
       scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
     dockSarMatrixTabs(view, viewer);
   }
@@ -2791,6 +2842,7 @@ export class PackageFunctions {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
     const col = res.col('canonical_smiles');
+    col.name = data.columns.getUnusedName(col.name);
     col.meta.units = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
     data.columns.add(col);

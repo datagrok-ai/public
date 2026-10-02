@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
@@ -28,13 +29,20 @@ test('Chem: Scaffold Tree viewer smoke', async ({page}) => {
   await softStep('Scaffold Tree viewer launches from Chem menu', async () => {
     await page.evaluate(() => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
+      // Labels from a previously opened menu stay in the document, so only a node that was not
+      // already there is this menu's leaf; clicking a stale one actuates nothing.
+      (window as any).__staleMenuLabels = new Set(Array.from(document.querySelectorAll('.d4-menu-item-label')));
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
     await page.waitForFunction(() => Array.from(document.querySelectorAll('.d4-menu-item-label'))
       .some(m => m.textContent!.trim() === 'Scaffold Tree'), null, {timeout: 10_000});
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      .some(m => !(window as any).__staleMenuLabels.has(m) && m.textContent!.trim() === 'Scaffold Tree'),
+    null, {timeout: 2000}).catch(() => {});
     await page.evaluate(() => {
-      const st = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(m => m.textContent!.trim() === 'Scaffold Tree') as HTMLElement;
+      const labels = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .filter(m => m.textContent!.trim() === 'Scaffold Tree');
+      const st = (labels.find(m => !(window as any).__staleMenuLabels.has(m)) ?? labels[0]) as HTMLElement;
       (st.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
     await page.waitForFunction(() => Array.from((window as any).grok.shell.tv.viewers)

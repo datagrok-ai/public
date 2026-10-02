@@ -5,6 +5,10 @@
  */
 
 import {Page, expect} from '@playwright/test';
+import {loginToDatagrok, loginAsSecondUser} from './spec-login';
+
+const currentLogin = (page: Page): Promise<string | null> =>
+  page.evaluate(() => (window as any).grok?.shell?.user?.login ?? null);
 
 // ---------------------------------------------------------------------------
 // logoutAndLoginAs — UI logout + login-as-different-user (manual password).
@@ -42,6 +46,9 @@ import {Page, expect} from '@playwright/test';
  * with another browser instance attached to the same machine — ensure no
  * conflicting browser session is active before running.
  *
+ * `{as: 'primary' | 'second'}` switches headlessly instead, by injecting the primary or the
+ * second-user token (spec-login), and needs no operator.
+ *
  * @param page - Playwright Page (already logged in).
  * @param credentials.username - Target login (the password will be typed
  *   manually by the operator).
@@ -51,9 +58,23 @@ import {Page, expect} from '@playwright/test';
  */
 export async function logoutAndLoginAs(
   page: Page,
-  credentials: {username: string},
+  credentials: {username: string} | {as: 'primary' | 'second'},
   options?: {restoreOriginal?: boolean},
 ): Promise<void> {
+  if ('as' in credentials) {
+    const target = credentials;
+    const before = await currentLogin(page);
+    await (target.as === 'second' ? loginAsSecondUser : loginToDatagrok)(page);
+    await expect.poll(() => currentLogin(page),
+      {timeout: 30000, intervals: [1000, 2000, 3000]}).not.toBe(before);
+    if (options?.restoreOriginal) {
+      await (target.as === 'second' ? loginToDatagrok : loginAsSecondUser)(page);
+      await expect.poll(() => currentLogin(page),
+        {timeout: 30000, intervals: [1000, 2000, 3000]}).toBe(before);
+    }
+    return;
+  }
+
   // Step 1 — Click user avatar / icon to open the user menu, then click Logout.
   // The user avatar lives on the sidebar ([name="User"]); we locate the
   // "Logout" item by text as a defensive fallback.

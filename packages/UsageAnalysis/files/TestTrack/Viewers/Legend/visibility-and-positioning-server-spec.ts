@@ -7,6 +7,8 @@ import * as v from '../../helpers/viewers';
 import {addLegendViewers} from './legend-setup';
 import {deleteEntities, layoutRoundTrip, projectRoundTrip} from './persistence';
 
+const SPGI_100 = 'System:AppData/Chem/tests/spgi-100.csv';
+
 // The server lane of the visibility-and-positioning scenario: Sc7, Sc8 steps 5-6, Sc10 steps 7-8
 // and Sc11 — legend column, custom colour, visibility and position surviving layout and project
 // round-trips. The gestures are in visibility-and-positioning-spec.ts on the local lane.
@@ -29,7 +31,7 @@ test('Legend visibility and positioning — layout and project persistence', asy
   test.setTimeout(900_000);
 
   await openDatagrok(page);
-  await v.openTable(page);
+  await v.openTable(page, {path: SPGI_100});
   await v.installEventWaits(page);
   await addLegendViewers(page, {column: 'Stereo Category', viewers: ['Scatter plot', 'Histogram'], capMs: 500});
 

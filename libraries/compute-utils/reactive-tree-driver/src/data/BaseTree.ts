@@ -54,6 +54,8 @@ export class BaseTree<T> {
   public static compareAddresses(a1: Readonly<NodeAddress>, a2: Readonly<NodeAddress>): number {
     for (const [level, {idx}] of a1.entries()) {
       const idx2 = a2[level]?.idx;
+      if (idx2 == null)
+        break;
       if (idx === idx2)
         continue;
       return idx - idx2;

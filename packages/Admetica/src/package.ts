@@ -19,9 +19,6 @@ export * from './package.g';
 export const _package = new DG.Package();
 
 export class PackageFunctions {
-  // @grok.decorators.init()
-  // static async init() { }
-
   @grok.decorators.func()
   static info() {
     grok.shell.info(_package.webRoot);
@@ -64,11 +61,15 @@ export class PackageFunctions {
     @grok.decorators.param({options: {choices: 'Admetica:getModels(\'Excretion\')', nullable: true}}) excretion: string[],
   ): Promise<void> {
     const models: string[] = [
-      ...absorption,
-      ...distribution,
-      ...metabolism,
-      ...excretion,
+      ...(absorption ?? []),
+      ...(distribution ?? []),
+      ...(metabolism ?? []),
+      ...(excretion ?? []),
     ];
+    if (models.length === 0) {
+      grok.shell.warning('Admetica: no properties selected');
+      return;
+    }
     await performChemicalPropertyPredictions(molecules, table, models);
   }
 
@@ -127,19 +128,10 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule', description: 'Molecule column.'}}) molecules: DG.Column,
     @grok.decorators.param({type: 'list<string>', options: {optional: true, description: 'Properties to compute. All if omitted.'}}) props?: string[],
   ): Promise<DG.DataFrame> {
-    const isMolblock = molecules.meta.units === DG.UNITS.Molecule.MOLBLOCK ||
-      (!molecules.meta.units && DG.Detector.sampleCategories(molecules, (s) => s.includes('M  END'), 1));
-
-    const values = new Array(molecules.length + 1);
-    values[0] = molecules.name;
-    for (let i = 0; i < molecules.length; i++) {
-      const value = molecules.get(i);
-      values[i + 1] = isMolblock ? `"${value}"` : value;
-    }
-    const csv = values.join('\n');
+    const csv = table.toCsv({columns: [molecules.name]});
 
     // If no properties specified, use all available models
-    const models = (props ?? await this.getModels()).join(',');
+    const models = (props?.length ? props : await this.getModels()).join(',');
     const result = await grok.functions.call('Admetica:run_admetica', {csv, models, raiseException: false}) as DG.DataFrame;
     return await convertLD50(result, molecules);
   }

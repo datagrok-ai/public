@@ -16,6 +16,10 @@ export interface WizardStep {
   /** Gates NEXT/FINISH: `false` blocks silently, a string blocks and shows the reason next to the
    * buttons. A `ReadonlySignal<string | null>` (null = ok) composes directly with `Form.validity`. */
   canProceed?: ReadonlySignal<boolean> | ReadonlySignal<string | null> | (() => boolean | string | null);
+  /** A step reached only once the work is done — a report over what was written. There is
+   * nothing to go back to and nothing to cancel, so only the closing button stands, reading
+   * CLOSE. */
+  done?: boolean;
   onActivate?: (step: WizardStep) => void;
 }
 
@@ -50,6 +54,7 @@ export class Wizard extends Control {
   private readonly _reason = document.createElement('span');
   private readonly _back: HTMLButtonElement;
   private readonly _next: HTMLButtonElement;
+  private _cancel: HTMLButtonElement | undefined;
   private readonly _index = signal(0);
   private readonly _completed = signal(false);
   private readonly _recheck = signal(0);
@@ -122,7 +127,8 @@ export class Wizard extends Control {
     if (!this._dialog) {
       const dialog = this.runInScope(() => Dialog.create(title).add(this));
       this._dialog = dialog;
-      this._footer.insertBefore(this._button('CANCEL', () => dialog.close()), this._back);
+      this._cancel = this._button('CANCEL', () => dialog.close());
+      this._footer.insertBefore(this._cancel, this._back);
       let open = false;
       this.effect(() => {
         const closed = open && !dialog.isOpen.value;
@@ -189,8 +195,11 @@ export class Wizard extends Control {
       else
         step.marker.removeAttribute('aria-current');
     }
-    this._back.style.display = index === 0 ? 'none' : '';
-    this._next.textContent = index === this._steps.length - 1 ? 'FINISH' : 'NEXT';
+    const done = current.options.done === true;
+    this._back.style.display = index === 0 || done ? 'none' : '';
+    if (this._cancel !== undefined)
+      this._cancel.style.display = done ? 'none' : '';
+    this._next.textContent = index < this._steps.length - 1 ? 'NEXT' : done ? 'CLOSE' : 'FINISH';
 
     const builder = current.builder;
     if (builder) {

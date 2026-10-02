@@ -23,6 +23,7 @@ import './app/visual-db-query-editor-js-api';
 import './app/dock-manager-state';
 import './app/dock-manager-tree';
 import './app/functions-parse';
+import './app/multi-view';
 import './app/progress-indicator-js-api';
 import './app/shell-table-view-lookup';
 import './app/shell-view-events';

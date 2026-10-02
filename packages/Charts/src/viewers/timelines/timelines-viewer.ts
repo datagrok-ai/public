@@ -44,6 +44,7 @@ export class TimelinesViewer extends EChartViewer {
   zoomState: number[][];
   tooltipOffset: number;
   initialized: boolean;
+  typeMismatchWarned: boolean = false;
   titleDiv: HTMLDivElement = ui.div();
   legendHelper: LegendHelper = new LegendHelper();
   colorMap: Indexable | null = null;
@@ -490,7 +491,10 @@ export class TimelinesViewer extends EChartViewer {
       return x.getTime() === y.getTime();
     else if ((typeof x === typeof y && typeof x === 'number') || (x == null || y == null))
       return x === y;
-    grok.shell.warning('The columns of different types cannot be used for representing dates.');
+    if (!this.typeMismatchWarned) {
+      this.typeMismatchWarned = true;
+      grok.shell.warning('The columns of different types cannot be used for representing dates.');
+    }
     return false;
   }
 

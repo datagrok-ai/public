@@ -43,6 +43,31 @@
   padding: var(--dg-space-s) 0;
 }
 
+/* a readonly field (ObjectForm `access`): caption + value text in the compact style, never an
+   editor — the label joins the aligned column, the value sits where the editor would */
+.u2-form-readonly {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.u2-form-readonly-value {
+  display: flex;
+  align-items: center;
+  min-height: var(--dg-control-height);
+  padding: 0 var(--dg-space-s);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  white-space: pre-wrap;
+}
+
+/* a verdict is a line of its own under the editor, past the label column in the caption-left
+   layouts (the max-width it once had clamped its flex basis, so it fit beside the editor and
+   shrank it instead) */
+.u2-form:not(.u2-form-tall) .u2-input-error {
+  padding-left: var(--u2-form-label-width, 100px);
+}
+
 .u2-form input.u2-input-editor,
 .u2-form textarea.u2-input-editor,
 .u2-form .u2-input-editor.u2-input-search {

@@ -13,7 +13,7 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle'];
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token'];
 const VERBS = ['list', 'count', 'get', 'delete'];
 
 export async function server(argv: any): Promise<boolean> {
@@ -53,6 +53,9 @@ export async function server(argv: any): Promise<boolean> {
       return await handleMigrate(dapi, entity, [verb, ...rest].filter(Boolean), argv, output);
     if (entity === 'domains') return await handleDomains(dapi, verb, rest, argv, output);
     if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
+    // Shell scripts that used to curl /users/login/dev get a token the same way
+    // every other command does, whatever credential the config holds.
+    if (entity === 'token') { console.log(client.token); return true; }
     if (entity === 'raw') return await handleRaw(dapi, verb, rest, argv, output);
     if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);
@@ -477,11 +480,9 @@ async function handleRaw(dapi: NodeDapi, method: string | undefined, rest: strin
 }
 
 async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  // `grok s sync` subcommands. Mirrors the API surface in
-  // core/server/datlas/lib/src/routers/sync.dart — pairs / setups /
-  // runs are read-only here; `run` triggers an actual push and prints
-  // the per-item summary. Full reference in
-  // core/docs/plans/instance-sync.md (Phase 7 / operational polish).
+  // Read-only mirror of core/server/datlas/lib/src/routers/sync.dart. A setup is an
+  // EntitySyncFunc (/entity_sync_funcs); the server has no run route, runs come from
+  // the UI or the setup's schedule.
   const verb = rest[0];
   // a 1.27 server has no /sync routes at all: report that as "not found", not as a failure
   const callSync = async (method: string, path: string, body?: any): Promise<any> => {
@@ -501,36 +502,22 @@ async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: str
   if (subject === 'setups' && verb === 'list') {
     const pairId = argv.pair ?? rest[1];
     if (!pairId) { printError(new Error('Usage: grok s sync setups list --pair <pair-id>')); return false; }
-    const setups = await callSync('GET', `/sync/pairs/${encodeURIComponent(pairId)}/setups`);
+    const setups = await callSync('GET', `/entity_sync_funcs?pairId=${encodeURIComponent(pairId)}`);
     printOutput(setups, output);
     return true;
   }
   if (subject === 'setup' && verb === 'get') {
     const id = rest[1];
     if (!id) { printError(new Error('Usage: grok s sync setup get <setup-id>')); return false; }
-    const setup = await callSync('GET', `/sync/setups/${encodeURIComponent(id)}`);
+    const setup = await callSync('GET', `/entity_sync_funcs/${encodeURIComponent(id)}`);
     printOutput(setup, output);
     return true;
   }
-  if (subject === 'run') {
-    // grok s sync run <setup-id>
-    const id = rest[1] ?? verb;
-    if (!id) { printError(new Error('Usage: grok s sync run <setup-id>')); return false; }
-    const result = await callSync('POST', `/sync/setups/${encodeURIComponent(id)}/run`, {});
-    if (output === 'json' || output === 'csv') { printOutput(result, output); return true; }
-    if (output === 'quiet') { console.log(result?.runId ?? ''); return true; }
-    if (!result) { printError(new Error(`Sync setup ${id} not found, or server has no /sync routes.`)); return false; }
-    console.log(`Run ${result?.runId} → ${result?.remoteUrl} (${result?.status})`);
-    if (result?.counts) {
-      const cs = Object.keys(result.counts).filter(k => (result.counts[k] ?? 0) > 0)
-        .map(k => `${result.counts[k]} ${k}`).join(', ');
-      if (cs) console.log(`  ${cs}`);
-    }
-    const items = Array.isArray(result?.items) ? result.items : [];
-    if (items.length) {
-      console.log('\nItems:');
-      printOutput(items, 'table');
-    }
+  if (subject === 'setup' && verb === 'runs') {
+    const id = rest[1];
+    if (!id) { printError(new Error('Usage: grok s sync setup runs <setup-id>')); return false; }
+    const runs = await callSync('GET', `/entity_sync_funcs/${encodeURIComponent(id)}/runs`);
+    printOutput(runs, output);
     return true;
   }
   printError(new Error(
@@ -538,7 +525,7 @@ async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: str
     '  grok s sync pairs list [--status active|pending|revoked]\n' +
     '  grok s sync setups list --pair <pair-id>\n' +
     '  grok s sync setup get <setup-id>\n' +
-    '  grok s sync run <setup-id>'));
+    '  grok s sync setup runs <setup-id>'));
   return false;
 }
 
@@ -964,7 +951,7 @@ Special commands:
   grok s domains aggregate <schema.table> --measures 'count,sum(x) as t' [--group-by a,b] [--filter <expr>]
   grok s domains transaction <schema> --json ops.json  Ordered insert/update/delete ops, atomically
   grok s domains audit <schema>|<schema.table> [<id>] [--limit n]
-  grok s domains capabilities <schema.table>          What the current user may do on the table
+  grok s domains access <schema.table>                What the current user may do on the table, per field
   grok s domains grants <schema>|<schema.table>       Direct permission grants on a schema or table
   grok s domains grant <schema>|<schema.table> <group>[,...] [--access View|Edit|Delete|Share|Extend]
   grok s domains revoke <schema>|<schema.table> <group>[,...] [--access <permission>]
@@ -975,8 +962,8 @@ Special commands:
   grok s batch manifest.json                          Run a workflow manifest
   grok s sync pairs list [--status <s>]               List cross-instance sync pairs (status: active|pending|revoked)
   grok s sync setups list --pair <pair-id>            List the named sync setups under a pair
-  grok s sync setup get <setup-id>                    Inspect a setup (selections, direction, last run)
-  grok s sync run <setup-id>                          Trigger a push run; prints per-item outcome
+  grok s sync setup get <setup-id>                    Inspect a setup (entries, direction, last run)
+  grok s sync setup runs <setup-id>                   A setup's past runs (per-item outcome in options.syncResult)
 
 Pull / push / migrate options:
   --out <dir>           Bundle directory to write (pull; merges into an existing bundle)

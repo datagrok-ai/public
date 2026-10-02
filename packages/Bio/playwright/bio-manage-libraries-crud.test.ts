@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.manage.libraries-app, bio.manage.libraries-app.tree-browser, bio.manage.match-with-library, bio.manage.monomers-view, bio.manage.standardize-library]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -153,12 +151,12 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(balloonAfter.err - balloonBefore1.err,
         `error balloon count increased by ${balloonAfter.err - balloonBefore1.err} during Scenario 1`).toBe(0);
     });
-    // Scenario 2 — Bio | Manage | Monomers view open
+
     const balloonBefore2 = await page.evaluate(() => ({
       err: (window as any).__balloonErrors || 0,
       warn: (window as any).__balloonWarnings || 0,
     }));
-    // Bring the HELM TableView forward — the Bio top-menu vanishes while the app view holds focus.
+
     await page.evaluate(async () => {
       const tvs: any[] = Array.from((grok.shell as any).tableViews || []);
       const helm: any = tvs.find((tv: any) => {
@@ -168,7 +166,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         return cols.some((c: any) => c.semType === 'Macromolecule');
       });
       if (helm) {
-        try { (grok.shell as any).v = helm; } catch (_) { /* read-only on some builds */ }
+        try { (grok.shell as any).v = helm; } catch (_) {  }
         for (let i = 0; i < 25; i++) {
           if ((grok.shell as any).v === helm) break;
           await new Promise((r) => setTimeout(r, 100));
@@ -235,7 +233,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(result.hasChildElement,
         `expected the Manage Monomers monomer-list surface under the view root; firstChildTag=${result.firstChildTag}`).toBe(true);
     });
-    // Scenario 2 Expected: no error balloon raised.
+
     await softStep('S2.4: no error balloon raised during Scenario 2', async () => {
       const balloonAfter = await page.evaluate(() => ({
         err: (window as any).__balloonErrors || 0,
@@ -244,7 +242,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(balloonAfter.err - balloonBefore2.err,
         `error balloon count increased by ${balloonAfter.err - balloonBefore2.err} during Scenario 2`).toBe(0);
     });
-    // Scenario 3 — Match with Monomer Library dispatch + standardiseMonomerLibrary normalization
+
     const balloonBefore3 = await page.evaluate(() => ({
       err: (window as any).__balloonErrors || 0,
       warn: (window as any).__balloonWarnings || 0,
@@ -258,7 +256,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         return cols.some((c: any) => c.semType === 'Macromolecule');
       });
       if (helm) {
-        try { (grok.shell as any).v = helm; } catch (_) { /* read-only on some builds */ }
+        try { (grok.shell as any).v = helm; } catch (_) {  }
         for (let i = 0; i < 25; i++) {
           if ((grok.shell as any).v === helm) break;
           await new Promise((r) => setTimeout(r, 100));
@@ -284,9 +282,9 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         const leaf = await wait('[name="div-Bio---Manage---Match-with-Monomer-Library..."]');
         if (leaf) leaf.click();
       });
-      await page.locator('[name="dialog-matchWithMonomerLibrary"]').waitFor({state: 'visible', timeout: 30_000});
+      await page.locator('[name="dialog-Match-with-Monomer-Library"]').waitFor({state: 'visible', timeout: 30_000});
       const result = await page.evaluate(() => {
-        const dialog = document.querySelector('[name="dialog-matchWithMonomerLibrary"]');
+        const dialog = document.querySelector('[name="dialog-Match-with-Monomer-Library"]');
         const hostTable = dialog?.querySelector('[name="input-host-Table"]') ?? null;
         const hostMolecules = dialog?.querySelector('[name="input-host-Molecules"]') ?? null;
         const hostPolymer = dialog?.querySelector('[name="input-host-Polymer-Type"]') ?? null;
@@ -401,7 +399,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         `error balloon count increased by ${balloonAfter.err - balloonBefore3.err} during Scenario 3`).toBe(0);
     });
   } finally {
-    // Cleanup — close any open dialogs / manage views (best-effort).
+
     await page.evaluate(async () => {
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));
       for (const d of dialogs)
@@ -414,10 +412,10 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
           const lower = n.toLowerCase();
           if ((lower.includes('manage') && lower.includes('monomer')) ||
               lower === 'manage monomers') {
-            try { (v as any).close?.(); } catch (_) { /* best effort */ }
+            try { (v as any).close?.(); } catch (_) {  }
           }
         }
-      } catch (_) { /* best effort */ }
+      } catch (_) {  }
     }).catch(() => {});
   }
   finishSpec();

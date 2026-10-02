@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
+import { DEFAULT_TEMPLATE_FILE, Model, ModelColoring, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
 import { getTemplates } from './admetica-utils';
 import '../css/admetica.css';
 
@@ -68,13 +68,19 @@ export class AdmeticaBaseEditor {
   }
 
   private async dialogForTemplateSave(): Promise<void> {
-    const templateNameInput = ui.input.string('Name');
-    templateNameInput.addValidator(
-      (template: string) => this.templatesInput.items.includes(template) ? 'Template with this name already exists' : null);
+    const templateNameInput = ui.input.string('Name', {nullable: false});
+    templateNameInput.addValidator((value: string) => {
+      const name = value.trim();
+      if (!name)
+        return 'Enter a template name';
+      if (`${name}.json` === DEFAULT_TEMPLATE_FILE)
+        return 'The built-in default template cannot be overwritten';
+      return this.templatesInput.items.includes(name) ? 'Template with this name already exists' : null;
+    });
     ui.dialog({ title: 'Save template' })
       .add(templateNameInput)
       .onOK(async () => {
-        const templateName = templateNameInput.value;
+        const templateName = templateNameInput.value.trim();
         await grok.dapi.files.writeAsText(`${TEMPLATES_FOLDER}/${templateName}.json`, JSON.stringify(this.updatedProperties));
         grok.shell.info(`Template "${templateName}" has been successfully saved!`);
         await this.initTemplates(templateName);
@@ -199,12 +205,12 @@ export class AdmeticaBaseEditor {
   }
 
   private rgbToHex(rgb: string): string {
-    const result = rgb.match(/\d+/g);
-    if (!result || result.length < 3) return '#000000';
+    const result = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
+    if (!result) return '#000000';
 
-    const r = parseInt(result[0]).toString(16).padStart(2, '0');
-    const g = parseInt(result[1]).toString(16).padStart(2, '0');
-    const b = parseInt(result[2]).toString(16).padStart(2, '0');
+    const r = parseInt(result[1]).toString(16).padStart(2, '0');
+    const g = parseInt(result[2]).toString(16).padStart(2, '0');
+    const b = parseInt(result[3]).toString(16).padStart(2, '0');
 
     return `#${r}${g}${b}`;
   }

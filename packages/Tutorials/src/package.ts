@@ -11,6 +11,7 @@ import {scientificComputing} from './tracks/compute';
 import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {DemoView} from './demo-app/demo-app';
 import {northwindDemo} from './demo-app/northwind-demo';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
@@ -30,8 +31,8 @@ export class PackageFunctions {
     'name': 'Tutorials',
     'top-menu': 'Help | Tutorials @Toolbox Help | Tutorials'
   })
-  static trackOverview() : void {
-
+  static trackOverview(
+    @grok.decorators.param({options: {'meta.url': true, 'optional': true}}) path?: string) : void {
     const tutorialRunners = tracks.map((track) => new TutorialRunner(track));
     const root = ui.div([
       ...tutorialRunners.map((runner) => runner.root),
@@ -45,7 +46,10 @@ export class PackageFunctions {
         grok.shell.dockManager.close(existingDock);
     }
     grok.shell.dockManager.dock(root, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.22);
-    setPath(window.location.pathname, tutorialRunners);
+    if (path)
+      setPath(path, tutorialRunners);
+    else
+      window.history.replaceState(null, '', Tutorial.APP_PATH);
   }
 
 
@@ -521,7 +525,6 @@ export class PackageFunctions {
 
 
 function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
-  const pathParts = path.split('/');
   const removeSpaces = (s: string) => s.replaceAll(' ', '');
   const trackShortNames: {[key: string]: Track} = {
     'eda': eda,
@@ -532,28 +535,11 @@ function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
     'compute': scientificComputing,
   };
 
-  if (pathParts.length !== 6)
-    return;
-
-  const [trackName, tutorialName] = pathParts.slice(4);
-  let track: Track | null = null;
-  let trackIdx: number | null = null;
-  if (trackName in trackShortNames) {
-    track = trackShortNames[trackName];
-    const _idx = tracks.findIndex((t) => t === track);
-    trackIdx = _idx === -1 ? null : _idx;
-  } else {
-    track = tracks.find((t, idx) => {
-      if (removeSpaces(t.name) === trackName) {
-        trackIdx = idx;
-        return true;
-      }
-      return false;
-    }) ?? null;
-  }
-  const tutorial = track?.tutorials?.find((t) => removeSpaces(t.name) === tutorialName);
-  if (tutorial && trackIdx != null)
-    tutorialRunners[trackIdx].run(tutorial);
+  const [trackName, tutorialName] = path.split('/').filter((s) => s !== '');
+  const track = trackShortNames[trackName] ?? tracks.find((t) => removeSpaces(t.name) === trackName);
+  const tutorial = track?.tutorials.find((t) => removeSpaces(t.name) === tutorialName);
+  if (tutorial)
+    tutorialRunners.find((r) => r.track === track)?.run(tutorial);
 }
 
 

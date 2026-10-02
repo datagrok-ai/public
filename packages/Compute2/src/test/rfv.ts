@@ -249,3 +249,62 @@ category('Pipeline: MockPipeline2 sequential', () => {
     }, 'Should show Next button', 10000);
   });
 });
+
+// ---- Compact single-step workflow ----
+
+const hasButton = (root: HTMLElement, label: string) =>
+  Array.from(root.querySelectorAll('button')).some((b) => b.textContent?.trim() === label);
+
+// the editor view is not added to the shell here, so read the ribbon through the API
+const ribbonIcons = (view: DG.ViewBase, name: string) => view.getRibbonPanels().flat()
+  .flatMap((el) => [el, ...Array.from(el.querySelectorAll('*'))])
+  .filter((el) => el.classList.contains(`fa-${name}`));
+
+async function openCompact(nqName: string): Promise<DG.ViewBase> {
+  await awaitWebComponents();
+  const call = DG.Func.byName(nqName).prepare();
+  const view = await grok.functions.call('Compute2:TreeWizardEditor', {call}) as unknown as DG.ViewBase;
+  await awaitCheck(() => view.root.querySelector('dg-input-form') !== null, 'Step form not rendered', 20000);
+  await awaitCheck(() => hasButton(view.root, 'Run'), 'Run button not rendered', 10000);
+  return view;
+}
+
+for (const nqName of ['Compute2:MockSingleStepPipeline', 'Compute2:MockSingleStepNested']) {
+  category(`Pipeline: single step compact (${nqName.split(':')[1]})`, () => {
+    let view: DG.ViewBase | undefined;
+
+    after(async () => {
+      if (view) closeView(view);
+      view = undefined;
+    });
+
+    test('No tree, no navigation, one save and one share control', async () => {
+      view = await openCompact(nqName);
+      expect(view.root.querySelector('.mtl-tree'), null, 'Steps tree should be hidden');
+      expect(hasButton(view.root, 'Back'), false, 'Back should be hidden');
+      expect(hasButton(view.root, 'Next'), false, 'Next should be hidden');
+      expect(hasButton(view.root, 'Double initial temperature'), true, 'Step button action missing');
+      expect(view.root.querySelector('[dock-spawn-title="Inputs"]') !== null, true, 'Inputs panel missing');
+      expect(ribbonIcons(view, 'save').length, 1, 'Expected exactly one save icon');
+      expect(ribbonIcons(view, 'folder-tree').length, 0, 'Tree toggle should be hidden');
+      expect(ribbonIcons(view, 'share-alt').length <= 1, true, 'Expected at most one share icon');
+    });
+
+    test('Run, then save with id in the URL', async () => {
+      view = await openCompact(nqName);
+      expect(ribbonIcons(view, 'save').length, 1, 'Expected exactly one save icon before run');
+
+      await clickBigButton(view.root, 'Run');
+      await awaitRunComplete(view.root);
+      await awaitCheck(() => (view!.root.textContent ?? '').includes('80'), 'tempDiff (100 - 20) not rendered', 10000);
+
+      (ribbonIcons(view, 'save')[0] as HTMLElement).click();
+      await awaitCheck(() => document.querySelector('.d4-dialog') !== null, 'Save dialog not shown', 5000);
+      const saveBtn = Array.from(document.querySelectorAll('.d4-dialog button'))
+        .find((b) => b.textContent?.trim() === 'Save') as HTMLElement;
+      saveBtn.click();
+      await awaitCheck(() => (view!.path ?? '').includes('id='), 'URL should carry the saved run id', 20000);
+      expect((view.path ?? '').includes('currentStep='), false, 'currentStep must not be written in compact mode');
+    });
+  });
+}

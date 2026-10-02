@@ -364,7 +364,9 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       (target?.closest('.d4-menu-item') as HTMLElement | null)?.click();
     });
     const after = await v.pollValue(() => cellHashes(page, probes),
-      (h) => h[0] === baseline[0] && h[1] === baseline[1], 2000, 50);
+      // the reset repaints both cells from the range-slider handler, and cell 2 has been seen
+      // landing after the old 2 s window on a loaded agent
+      (h) => h[0] === baseline[0] && h[1] === baseline[1], 8000, 100);
     console.log(`[Scenario 2 Step 5] baseline=${JSON.stringify(baseline)} narrowed=${JSON.stringify(narrowed)} ` +
       `after=${JSON.stringify(after)}`);
     expect(after.every((h) => h !== null)).toBe(true);

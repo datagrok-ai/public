@@ -1,6 +1,6 @@
 # statistics changelog
 
-## v.next
+## 1.12.14 (2026-09-18)
 
 * Statistics: `tTest` uses the sample variance. Every branch was built from the population variance (jStat divides by n unless told otherwise), so every p-value the platform reported was too small - by 12% for n=5 - in Charts group analysis, Peptides, Proteomics differential expression and ClinicalCase
 * Statistics: `tTest`'s equal-variance branch divides by the pooled standard deviation, not the pooled variance. A missing square root made that t statistic wrong by a factor of s_p
@@ -9,6 +9,7 @@
 * Statistics: `calculateBoxPlotStatistics` sorts numerically on a copy. The default sort is lexicographic, so any series spanning a decade read its quartiles out of a string-ordered array - `[1, 2, 3, 4, 100]` returned q1 = 100 and q3 = 3, an inverted box - and the caller's array was reordered in place
 * Statistics: the box-plot whisker reaches the largest value inside q3 + 1.5*IQR. The binary search returned an insertion point one short, so the whisker stopped at the second largest value and the largest was drawn as an outlier; a stray comparison against 0 rather than the searched value could also match the wrong slot
 * Statistics: `fdrcorrection` marks the largest rejected hypothesis. The loop stopped one short, so it reported one fewer rejection than it found - and none at all when exactly one hypothesis passed the Benjamini-Hochberg line
+* GROK-20918: Chem: MPO profile editor keeps only the first typed character of a property name
 
 ## 1.12.12 (2026-08-28)
 

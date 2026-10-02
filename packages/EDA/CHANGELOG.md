@@ -1,5 +1,15 @@
 # EDA changelog
 
+## v.next
+
+* GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
+
+## 1.9.1 (WIP)
+
+* Tests: Added BDD features for PCA, PLS, multivariate analysis, ANOVA, control comparisons, model training, sharing a model and the Pareto front viewer
+* Tests: Check completed training, rendered charts and fixture cleanup; isolate shared models per run
+* Pareto front: Corrected the viewer help link
+
 ## 1.9.0 (2026-08-26)
 
 * Added SVM (classification and regression)

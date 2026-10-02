@@ -18,129 +18,161 @@ related_bugs:
   - GROK-19728
 ---
 
-# Projects — Script-source lifecycle
+# Projects — lifecycle of a script-based project
 
-Covers the lifecycle of a project sourced from a script that outputs
-a dataframe: save, share with a second user without also sharing the
-script, rename the script, and rename the project. Targets two bugs:
-GROK-19403 (a recipient can't open a shared project when its
-underlying script isn't also shared with them — they should see an
-explicit permission error, not a silent null table) and GROK-19728 (a
-view-and-use recipient should not be able to edit the creation
-script, even when it's broken — this sub-flow is currently deferred,
-see Notes).
+A project built from the output of your own script is saved and
+shared **without** sharing the script. Then the script is renamed and
+broken. Two bugs are checked:
 
-UI coverage delegated to `projects-ui-smoke.md`.
+- **GROK-19403.** A recipient of a project whose script was not
+  shared must never get an empty table without a message. Today the
+  project share also gives the recipient access to the script, so
+  the data loads.
+- **GROK-19728.** A recipient with **View and use** access must not be
+  able to edit the creation script, even when it fails.
 
 ## Setup
 
-1. Authenticate as test user.
-2. Project name: `lifecycle-script-${Date.now()}`.
-3. Recipient placeholder: `<RECIPIENT_USERNAME_TBD>`.
-4. Helper 3 dependency: `helpers.playwright.session.logoutAndLoginAs`
-   (NOT YET REGISTERED).
-5. Cleanup: delete project; revoke permissions; delete the
-   provisioned script (via `helpers/openers.ts:deleteProvisionedScript`).
+1. Two accounts: the **owner** (test user) and a **second user**.
+2. Names in this test: script `lifecycleScript`, project
+   `lifecycleScriptProj`.
 
-## Scenarios
+## Scenario
 
-### Main flow — script-source lifecycle (happy path + GROK-19403)
+1. **Create the script.**
+   - Go to **Browse > Platform > Functions > Scripts**.
+   - Click **NEW** and choose **JavaScript Script...**.
+   - **Verify:** the editor opens with a *Hello World* template.
+   - Replace the whole text with the text below.
+   - Click **SAVE** in the editor.
+   - **Verify:** the balloon *Script saved.* appears.
 
-0. **Provision JS script with `output: dataframe`.** Use
-   `helpers/openers.ts:provisionDataframeScript({name:
-   'lifecycleScript${stamp}', body: "df = await
-   grok.data.getDemoTable('demog.csv');"})`. The helper creates
-   the script via `DG.Script.create` + `grok.dapi.scripts.save`,
-   waits for `DG.Func` registration, and returns `{scriptId,
-   resolvedName, resolvedNqName}`. The script is namespaced
-   under the test user's login — full edit/rename/delete rights.
-   (This replaces the previous Samples:Cars env-dependency,
-   which was scalar-output and silently skipped.)
-1. **Open table from Script.** Use
-   `helpers/openers.ts:openTableFromScript(page,
-   provisioned.resolvedNqName, {idx: 0})`. Verify the resulting
-   table is loaded and `df.tags['.script']` matches
-   `<Var> = <resolvedName>(idx=0)`.
-2. **Save project with Data Sync ON.** Use
-   `helpers/projects.ts:saveProjectWithProvenance(page,
-   projectName)`.
-3. **Share project with second user (View-and-Use + Full) —
-   script NOT also shared (GROK-19403 setup).**
-   - The provisioned script is owned by the test user and not
-     shared with anyone else by default — precondition for
-     GROK-19403 reproduction holds automatically.
-   - Use `grok.dapi.permissions.grant(project, recipient, false)`
-     for project-level grants. Defensive skip if no second user
-     exists (Helper 3 deferred).
-   - **GROK-19403 invariant assertion:** when recipient opens
-     the shared project, they should see an **explicit
-     permission failure** ("Could not access script
-     <resolvedName> — you don't have permission"), NOT a silent
-     null table.
-   - **Recipient-side assertion (Helper 3 — deferred):** logout +
-     login as recipient; open shared project; verify the
-     **explicit error** is shown.
-4. **Rename external dependency — Script rename.** Via JS API:
-   ```js
-   const s = await grok.dapi.scripts.find(provisioned.scriptId);
-   s.name = `${provisioned.resolvedName}_renamed`;
-   await grok.dapi.scripts.save(s);
    ```
-   The test owns the script — rename always succeeds.
-   - Original-user assertion: project still opens; relation to
-     the renamed script either auto-resolves OR fails with
-     explicit error (mirrors github-3550 invariant for queries).
-5. **Rename project itself.** Via JS API.
-   - Original-user assertion: opens under new name.
-   - Recipient-side (Helper 3 — deferred): opens under new name
-     (still with the GROK-19403 explicit-error behavior).
-6. **GROK-19728 sub-flow — broken creation script + view-and-
-   use access (DEFERRED).**
-   - Setup: re-provision (or update) the script content to
-     introduce a runtime error (e.g. `throw new Error('intentional
-     break')`). With our provisioning helper this is now
-     trivially achievable — but the recipient-side assertion
-     still needs Helper 3.
-   - Recipient with View-and-Use access opens the project.
-   - **GROK-19728 invariant assertion:** recipient (view-and-
-     use level) should NOT be able to edit the creation
-     script — but the bug is that they CAN edit it under the
-     failure state. Test asserts the edit is rejected (script
-     editing UI is read-only for view-and-use users) OR is
-     gracefully blocked.
-   - Realized coverage: deferred until Helper 3 lands.
-7. **Cleanup.** Delete project. Revoke permissions. Delete the
-   provisioned script via `deleteProvisionedScript(page,
-   provisioned.scriptId)` (id is stable across rename).
+   //name: lifecycleScript
+   //language: javascript
+   //output: dataframe df
+   df = await grok.data.getDemoTable('demog.csv');
+   ```
 
-### Expected results
+2. **Run it into the workspace.**
+   - Go to **Browse > Platform > Functions > Scripts**.
+   - Click the refresh icon.
+   - Right-click `lifecycleScript` and choose **Run...**.
+   - **Verify:** the `demog` view opens with 5,850 rows.
 
-- Save / reopen works for Script-sourced projects.
-- **GROK-19403 invariant:** un-shared script causes explicit
-  permission failure on recipient side, NOT silent null.
-- **GROK-19728 invariant:** view-and-use users CANNOT edit the
-  creation script even under failure state.
-- Script rename + project rename stack correctly.
+3. **Save the project.**
+   - Click **SAVE** on the ribbon.
+   - **Verify:** the dialog lists `demog` with a **CREATION SCRIPT** and
+     the note *Some tables require this script for data sync.*
+   - Enter `lifecycleScriptProj` as the name.
+   - Leave **Data sync** ON.
+   - Click **OK**.
+   - In the **Share** dialog, click **CANCEL**.
+   - Right-click the left sidebar and select **Close All**.
 
-## Notes
+4. **Share the project only.**
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleScript` into the search box.
+   - Right-click the `lifecycleScriptProj` tile and choose **Share...**.
+   - Type the second user into **User, group, or email**.
+   - Pick the second user from the suggestion list.
+   - Leave **View and use** selected.
+   - Click **OK**.
 
-- **Self-contained source provisioning.** This spec creates and
-  deletes its own dataframe-output script — no Samples package, no
-  env-provisioned fixture. It wraps
-  `grok.data.getDemoTable('demog.csv')` so it always returns a real
-  dataframe (a prior version referenced a scalar-output Samples
-  script that the test would silently skip).
-- **GROK-19403 full reproduction.** Step 3 walks the exact bug path:
-  an un-shared script as a project dependency, then the recipient
-  shares and opens the project. The provisioned script is owned by
-  the test user and not auto-shared with anyone else, so the
-  GROK-19403 precondition holds without extra setup.
-- **UI coverage delegated.** All UI surfaces (right-click rename,
-  Save dialog, Sharing tab) are owned by `projects-ui-smoke.md`.
-  This scenario uses the JS API path.
-- **Deferred.** Recipient-side assertions (Step 3's share
-  verification, Step 5's rename verification, and the GROK-19728
-  sub-flow in Step 6) all require a login-as-another-user test
-  helper that isn't registered yet.
-- **Self-cleaning.** Step 7 deletes the project and the provisioned
-  script.
+5. **The recipient opens it (GROK-19403).**
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the second user's credentials.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleScriptProj` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleScriptProj` tile.
+   - **Verify:** the table opens with 5,850 rows.
+   - **Verify:** no error dialog appears.
+   - Right-click the left sidebar and select **Close All**.
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the owner's credentials.
+
+6. **Rename the script.**
+   - Go to **Browse > Platform > Functions > Scripts**.
+   - Right-click `lifecycleScript` and choose **Edit...**.
+   - Change the first line to `//name: lifecycleScriptRenamed`.
+   - Click **SAVE** in the editor.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleScriptProj` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleScriptProj` tile.
+   - **Verify:** `demog` opens with 5,850 rows.
+   - Right-click the left sidebar and select **Close All**.
+
+7. **Rename the project.**
+   - Go to **Browse > Dashboards**.
+   - Right-click the `lifecycleScriptProj` tile and choose
+     **Rename...**.
+   - Change the name to `lifecycleScriptProjRenamed`.
+   - Click **OK**.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleScriptProjRenamed` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleScriptProjRenamed` tile.
+   - **Verify:** `demog` opens with 5,850 rows.
+   - Right-click the left sidebar and select **Close All**.
+
+8. **Break the script (GROK-19728).**
+   - Go to **Browse > Platform > Functions > Scripts**.
+   - Right-click `lifecycleScriptRenamed` and choose **Edit...**.
+   - Add the line `throw new Error('intentional break');` before the
+     `df = …` line.
+   - Click **SAVE** in the editor.
+
+9. **The owner opens the broken project.**
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleScriptProjRenamed` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleScriptProjRenamed` tile.
+   - **Verify:** the **Data loading error** dialog says the project
+     *could not load some of its data* and shows `Error: intentional
+     break`.
+   - **Verify:** the dialog offers **OPEN ANYWAY**, **EDIT SCRIPT...**
+     and **CLOSE PROJECT**.
+   - Click **CLOSE PROJECT**.
+
+10. **The recipient opens the broken project.**
+    - Click your avatar at the bottom of the left sidebar.
+    - Click **Logout** in the profile view.
+    - Sign in with the second user's credentials.
+    - Reload the browser tab.
+    - Go to **Browse > Dashboards**.
+    - Type `lifecycleScriptProjRenamed` into the search box.
+    - Click the refresh icon.
+    - Double-click the `lifecycleScriptProjRenamed` tile.
+    - **Verify:** the **Data loading error** dialog says *Ask the
+      project owner to fix the script*.
+    - **Verify:** the dialog offers only **OPEN ANYWAY** and **CLOSE
+      PROJECT**.
+    - Click **CLOSE PROJECT**.
+    - Click your avatar at the bottom of the left sidebar.
+    - Click **Logout** in the profile view.
+    - Sign in with the owner's credentials.
+
+11. **Cleanup.**
+    - Go to **Browse > Dashboards**.
+    - Right-click the `lifecycleScriptProjRenamed` tile and choose
+      **Delete Project**.
+    - Click **DELETE**.
+    - Wait until the dialog closes (about 20 seconds).
+    - In **Scripts**, right-click `lifecycleScriptRenamed` and choose
+      **Delete**.
+    - **Verify:** the dialog asks *Delete script
+      "lifecycleScriptRenamed"?*.
+    - Click **YES**.
+
+## Expected results
+
+- A script-based project reopens and re-runs the script.
+- The recipient gets the data although the script is not shared.
+- A recipient with **View and use** access cannot edit the creation
+  script, even when it fails.
+- Renaming the script and then the project leaves the project
+  working.

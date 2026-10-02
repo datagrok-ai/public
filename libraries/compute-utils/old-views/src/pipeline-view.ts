@@ -17,7 +17,6 @@ import {deepCopy, isIncomplete} from '../../shared-utils/utils';
 import {ABILITY_STATE, VISIBILITY_STATE} from './shared-utils/consts';
 import {RunComparisonView} from '../../function-views';
 import {createPartialCopy, fcToSerializable, showHelpWithDelay} from './shared-utils/utils';
-import {testPipeline} from './shared-utils/function-views-testing';
 
 export type StepState = {
   func: DG.Func,
@@ -824,10 +823,6 @@ export class PipelineView extends FunctionView {
       const data = serialize(res);
       return data;
     }
-  }
-
-  public override async executeTest(spec: any, updateMode = false) {
-    await testPipeline(spec, this, {updateMode, interactive: true});
   }
 
   public getStepViewRuns<T extends FunctionView>(name: string): Observable<T> {

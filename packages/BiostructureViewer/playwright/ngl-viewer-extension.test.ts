@@ -566,7 +566,7 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         // Force the context panel visible and set the current object explicitly to the PDB_ID
         // cell: the baseline sets simpleMode=true (hides the context panel), and the semantic
         // panes only surface into a shown panel driven by grok.shell.o.
-        grok.shell.windows.showProperties = true;
+        grok.shell.windows.showContextPanel = true;
         try { grok.shell.o = DG.SemanticValue.fromTableCell(df.cell(0, 'pdb_id')); } catch (_) { /* fall back to currentCell */ }
         await pollUntil(() => df.currentRowIdx === 0);
         return {

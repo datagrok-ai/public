@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.api.get-monomer-lib-helper, bio.lifecycle.init, bio.manage.libraries-app, bio.manage.libraries-dialog, bio.manage.libraries-view]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {acquireMonomerLibLock, releaseMonomerLibLock} from './helpers';
@@ -65,7 +63,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
   let uploadedCopyWritten = false;
   let preColors: {sig: string; count: number} | null = null;
   await loginToDatagrok(page);
-  // Setup — open the HELM dataset so the renderer touches the library color-coding path.
+
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -94,12 +92,12 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       try {
         const helper = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
         if (helper != null) return;
-      } catch { /* retry */ }
+      } catch {  }
       await new Promise((r) => setTimeout(r, 1000));
     }
   });
   try {
-    // Scenario 1 — Load library via service surface
+
     await softStep('S1.1-1.2: getMonomerLibHelper returns singleton + canonical lib readable via FileShare', async () => {
       const result = await page.evaluate(async (candidates) => {
         const helper: any = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
@@ -109,9 +107,9 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         try {
           if (helper && typeof helper.awaitLoaded === 'function') {
             try { await helper.awaitLoaded(30_000); }
-            catch (_) { try { await helper.awaitLoaded(); } catch (__) { /* non-fatal */ } }
+            catch (_) { try { await helper.awaitLoaded(); } catch (__) {  } }
           }
-        } catch (_) { /* timeout is non-fatal here */ }
+        } catch (_) {  }
         let chosenPath: string | null = null;
         let sourceJson: string | null = null;
         let readErr: string | null = null;
@@ -198,7 +196,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
           if (v.name === 'Manage Monomer Libraries') v.close();
         await new Promise((r) => setTimeout(r, 500));
         try {
-          // Fire-and-forget — awaiting would deadlock (promise resolves on dialog close).
+
           (grok as any).functions.call('Bio:manageMonomerLibraries', {}).catch(() => {});
         } catch (e) {
           return {dispatchErr: String(e).slice(0, 200), viewLabels};
@@ -252,7 +250,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       await page.keyboard.press('Escape');
       await page.locator('[name="dialog-Manage-monomer-libraries"]').waitFor({state: 'detached', timeout: 15_000});
     });
-    // Scenario 2 — Save edited library back to FileShare
+
     await softStep('S2.1: working copy lands under System:AppData/Bio/monomer-libraries via writeAsText', async () => {
       const result = await page.evaluate(async ({src, dst}) => {
         const sourceJson = await grok.dapi.files.readAsText(src);
@@ -270,7 +268,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
             try {
               sourceJson = await grok.dapi.files.readAsText(p);
               break;
-            } catch (_) { /* try next */ }
+            } catch (_) {  }
           }
           if (!sourceJson) throw new Error('S2.1: no canonical library readable for working-copy seed');
           await grok.dapi.files.writeAsText(dst, sourceJson);
@@ -350,9 +348,9 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         try {
           if (typeof helper.awaitLoaded === 'function') {
             try { await helper.awaitLoaded(20_000); }
-            catch (_) { try { await helper.awaitLoaded(); } catch (__) { /* ignore */ } }
+            catch (_) { try { await helper.awaitLoaded(); } catch (__) {  } }
           }
-        } catch (_) { /* timeout non-fatal */ }
+        } catch (_) {  }
         let availableNames: string[] = [];
         try {
           try { availableNames = await helper.getAvaliableLibraryNames(true); }
@@ -457,7 +455,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       preColors = await captureMonomerColors(page);
       expect(preColors.count, 'expected peptide monomer colors captured before save').toBeGreaterThan(0);
     });
-    // Close the Manage view so the layout-save helper sees the HELM TableView.
+
     await page.evaluate(async () => {
       const views: any[] = Array.from(grok.shell.views || []);
       const manage: any = views.find((v: any) => v?.name === 'Manage Monomer Libraries');
@@ -473,7 +471,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         return cols.some((c: any) => c.semType === 'Macromolecule');
       });
       if (helm && typeof (grok.shell as any).v !== 'undefined') {
-        try { (grok.shell as any).v = helm; } catch (_) { /* setter may be read-only on some shell builds */ }
+        try { (grok.shell as any).v = helm; } catch (_) {  }
       }
       await new Promise((r) => setTimeout(r, 500));
     });
@@ -498,7 +496,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
             try { availableNames = await helper.getAvaliableLibraryNames(true); }
             catch (_) { availableNames = await helper.getAvaliableLibraryNames(); }
           }
-        } catch (_) { /* leave empty */ }
+        } catch (_) {  }
         const hasWorkingCopy = availableNames.some((n: string) =>
           n === fileName || n.includes(stem));
         return {
@@ -524,10 +522,10 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         .toBe(preColors!.sig);
     });
   } finally {
-    // Scenario 4 — Cleanup (runs regardless of earlier failures)
+
     if (workingCopyWritten) {
       await page.evaluate(async (p) => {
-        try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
+        try { await grok.dapi.files.delete(p); } catch (_) {  }
       }, workingCopyPath).catch(() => {});
     }
     if (uploadedCopyWritten) {
@@ -550,7 +548,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         const views = Array.from(grok.shell.views || []);
         const manageView: any = views.find((v: any) => v?.name === 'Manage Monomer Libraries');
         if (manageView && typeof manageView.close === 'function') manageView.close();
-      } catch (_) { /* best effort */ }
+      } catch (_) {  }
     }).catch(() => {});
   }
   finishSpec();

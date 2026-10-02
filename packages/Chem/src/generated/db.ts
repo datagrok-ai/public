@@ -20,7 +20,7 @@ export interface ProfileRow {
   description?: string;
   aggregation?: ProfileAggregation;
   format_version?: number;
-  properties: string;
+  properties: {[key: string]: any};
 }
 
 /** Insert payload for `mpo.profile`. */
@@ -29,7 +29,7 @@ export interface ProfileInsert {
   description?: string;
   aggregation?: ProfileAggregation;
   format_version?: number;
-  properties: string;
+  properties: {[key: string]: any};
 }
 
 export type ProfileColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description' |
@@ -38,7 +38,7 @@ export type ProfileColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'au
 export type ProfileExpand = {};
 
 export type MpoTransactionOp =
-  {op: 'insert'; table: 'profile'; ref?: string; values: DG.DomainTxValues<ProfileInsert>} |
+  {op: 'insert'; table: 'profile'; ref?: string; values: DG.DomainTxValues<ProfileInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'profile'; id: string; values: DG.DomainTxValues<Partial<ProfileRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'profile'; id: string};
 

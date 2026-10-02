@@ -13,7 +13,6 @@ declare global {
       historyInput: typeof UiUtils.historyInput,
       historyInputJSON: typeof UiUtils.historyInputJSON,
       historyPanel: typeof UiUtils.historyPanel,
-      testPipeline: typeof testPipeline,
 
       CompView: ConstructorTypeOf<ComputationView>,
       RFV: ConstructorTypeOf<RichFunctionView>,
@@ -29,9 +28,6 @@ declare global {
     },
   }
 }
-
-import {testPipeline} from './src/utils';
-export {testPipeline};
 
 import * as UiUtils from './src/ui-utils';
 export {UiUtils};

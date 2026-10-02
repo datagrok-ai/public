@@ -15,26 +15,25 @@
   "version": "1.2.12",
   "description": "RDKit JS API, utils for molfiles parsing",
   "dependencies": {
-    "wu": "^2.1.0"
+    "wu": "catalog:"
   },
   "devDependencies": {
-    "@types/wu": "^2.1.44",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.20",
-    "eslint": "^8.57.1",
-    "eslint-config-google": "^0.14.0",
-    "ts-loader": "^9.2.6",
-    "typescript": "^4.2.3"
+    "@types/wu": "catalog:"
   },
   "scripts": {
-    "link": "npm link",
-    "link-api": "npm link datagrok-api",
-    "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link",
-    "build": "grok check --soft && tsc",
-    "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "build-all": "npm run build"
+    "build": "grok tsc -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
   }
 }

@@ -101,7 +101,7 @@ test.describe.serial('Scripts: Edit', () => {
     const saveBtn = page.locator('button[name="button-Save"]');
     await expect(saveBtn).not.toHaveClass(/disabled/, { timeout: 8_000 });
     await saveBtn.click();
-    await expect(page.locator('.d4-balloon').first()).toContainText(/saved/i, { timeout: 10_000 });
+    await expect(page.locator('.d4-balloon', { hasText: /saved/i }).first()).toBeVisible({ timeout: 10_000 });
 
     // Step 5: Close all views via shell.closeAll
     await page.evaluate(() => (window as any).grok.shell.closeAll());

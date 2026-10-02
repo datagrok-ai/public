@@ -4,8 +4,8 @@
 import {readFileSync, writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import '../tests/dom-shim.js';
-import {registry} from '../src/spec/registry.js';
-import {registerAll} from '../src/spec/registrations.js';
+import {registry} from '../dist/src/spec/registry.js';
+import {registerAll} from '../dist/src/spec/registrations.js';
 
 registerAll();
 const manifest = registry.manifest();
