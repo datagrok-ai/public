@@ -87,3 +87,9 @@ app.element('hERG not measured count', {selector: u2('attention-rule-herg-unmeas
 app.element('lead without solubility count', {selector: u2('attention-rule-lead-no-solubility')});
 app.element('EXC-1006 attention item', {selector: u2('attention-item-exc-1006')});
 app.element('EXC-1006 attention link', {selector: u2('attention-open-exc-1006')});
+
+app.element('sync history button', {selector: u2('sync-history-button')});
+app.element('sync history dialog', {selector: u2('sync-history-dialog')});
+app.element('sync schedule', {selector: u2('sync-schedule')});
+app.element('sync owners', {selector: u2('sync-owners')});
+app.element('latest sync run', {selector: u2('sync-run-0')});

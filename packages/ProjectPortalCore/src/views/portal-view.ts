@@ -8,9 +8,9 @@ import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
 import {ContextCriterion, programContext, ProgramContext, programData, readinessFor, recordDecision, setCriterion, stagesOf,
-  summarizePlan, syncPortfolio, syncWorkUnits, verdictFor, enabledWorkUnits, workUnitsOf, compoundsOf, syncCompounds} from '../portal';
-import {COMPOUND_ROLES, summarizeCompoundPlan} from '../model/compounds';
-import {summarizeWorkUnitPlan, WORK_UNIT_LABELS, WorkUnitKind} from '../model/work-units';
+  verdictFor, enabledWorkUnits, workUnitsOf, compoundsOf} from '../portal';
+import {COMPOUND_ROLES} from '../model/compounds';
+import {WORK_UNIT_LABELS, WorkUnitKind} from '../model/work-units';
 import {CriterionReadiness, Readiness} from '../model/readiness';
 import {DataRow} from '../model/conditions';
 import {Decision, nextStage} from '../model/gates';
@@ -25,6 +25,8 @@ import {showModelCard} from './model-card';
 import {openSaveRunDialog} from './save-run-dialog';
 import {attentionFor, attentionRulesOf, openAttentionItem} from '../attention';
 import {AttentionSeverity, ProgramAttention} from '../model/attention';
+import {recordedSync} from '../sync-runs';
+import {openSyncHistory} from './sync-history';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -520,17 +522,23 @@ export class PortalView {
     await this.openProgram(programId, this.viewedStage);
   }
 
+  /** The open portfolio's schedule and sync runs. */
+  async syncHistory(): Promise<void> {
+    if (this.portfolio)
+      await openSyncHistory(this.portfolio).catch((e) => grok.shell.error(e?.message ?? String(e)));
+  }
+
   async sync(): Promise<void> {
     if (!this.portfolio)
       return;
     const code = this.portfolio.code;
     const pi = DG.TaskBarProgressIndicator.create(`Syncing ${this.portfolio.name}`);
     try {
-      const plans = await syncPortfolio(code);
-      const units = await syncWorkUnits(code);
-      const compounds = await syncCompounds(code);
-      grok.shell.info([...plans.map(summarizePlan), ...units.map(summarizeWorkUnitPlan),
-        ...(compounds ? [summarizeCompoundPlan(compounds)] : [])].join('\n'));
+      // recorded in the portfolio's sync history, like a scheduled run
+      const r = await recordedSync(code, 'manual');
+      if (r.error)
+        throw new Error(r.error);
+      grok.shell.info(r.report + (r.historyError ? `\n${r.historyError}` : ''));
       await this.load(code);
     } catch (e: any) {
       grok.shell.error(e?.message ?? String(e));
@@ -545,11 +553,13 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   const content = new Control(portal.root);
   const sync = named(button('Sync', () => void portal.sync()), 'sync-button');
   sync.title = 'Run this portfolio\'s registry feeds';
+  const history = named(button('Sync history', () => void portal.syncHistory()), 'sync-history-button');
+  history.title = 'This portfolio\'s schedule, and what each sync changed';
   const table = named(button('Table', () => void openPortfolioTable(portal.portfolioCode)), 'table-button');
   table.title = 'This portfolio as a table, with filters and analytics';
   const all = named(button('All portfolios', () => void openPortfolioTable(null)), 'all-portfolios-button');
   all.title = 'Every portfolio you can see as one table';
-  const view = appView({name: 'Project Portal', content, ribbon: [[sync], [table, all]], status: portal.status,
+  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history], [table, all]], status: portal.status,
     path: portal.path});
   await portal.load(portfolioCode);
   (view as any).portal = portal;

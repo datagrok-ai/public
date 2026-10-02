@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -85,6 +85,8 @@
         "program_data": {"type": "json", "description": "The program dataset query data conditions are evaluated over: connection, sql with @program, leadRoles"},
         "program_datasets": {"type": "json", "description": "Further datasets of every program, the program page opens each: {datasets: [{code, name, connection, sql with @program, viewers}]}"},
         "attention": {"type": "json", "description": "Rules over the program dataset that flag compounds or lots needing attention: {rules: [{code, name, severity, condition, message}]}"},
+        "schedule": {"type": "string", "description": "When syncDuePortfolios syncs it: an interval (every 6h) or a five-field cron line in UTC (0 6 * * 1-5); empty = only on call"},
+        "owners": {"type": "string", "description": "User logins told about a scheduled sync that changed something, '|'-separated"},
         "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
         "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
         "approvers": {"type": "group", "onDelete": "setnull", "description": "Records gate decisions"},
@@ -482,6 +484,28 @@
         {"column": "run_type_id.name", "label": "Run type"},
         {"column": "purpose"}
       ]
+    },
+    "sync_run": {
+      "securityMode": "table",
+      "friendlyName": "Sync runs",
+      "description": "One sync of one portfolio, by schedule or by hand: when, what it changed, what it could not resolve. Written by the sync; the portfolio's sync history.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Portfolio"},
+        "started_on": {"type": "datetime", "required": true, "immutable": true},
+        "finished_on": {"type": "datetime"},
+        "trigger": {"type": "string", "choices": ["schedule", "manual"], "required": true, "immutable": true},
+        "run_by": {"type": "user", "onDelete": "setnull", "immutable": true},
+        "created": {"type": "int", "default": 0, "description": "Programs, work units, compounds and compound links created"},
+        "updated": {"type": "int", "default": 0, "description": "Programs, work units, compounds and roles changed, and rows back in their feed"},
+        "flagged": {"type": "int", "default": 0, "description": "Programs, work units and compound links flagged in this run as no longer in their feed"},
+        "unresolved": {"type": "int", "default": 0, "description": "Stage spellings that resolved to no stage"},
+        "unresolved_spellings": {"type": "string", "description": "CODE=\"spelling\", '|'-separated"},
+        "error": {"type": "string", "editor": "textarea", "description": "Why the run stopped; empty when it finished"},
+        "summary": {"type": "string", "editor": "textarea", "description": "The run's report, as syncPortfolio returns it"},
+        "changes": {"type": "json", "description": "Per-program changes and standing overlaps: {programs: [{program, created, fields, stage, missing, units, compounds}], overlaps: [...]}"},
+        "notified": {"type": "string", "description": "Who was told about the run, or why nobody was"}
+      }
     },
     "criterion_artifact": {
       "securityMode": "master",

@@ -63,6 +63,8 @@ export type ModelCardApproval = 'draft' | 'in_review' | 'approved' | 'retired';
 
 export type ModelRunPurpose = 'screening' | 'characterization' | 'scale-up' | 'troubleshooting' | 'verification';
 
+export type SyncRunTrigger = 'schedule' | 'manual';
+
 export type CriterionArtifactRole = 'candidate' | 'selected' | 'superseded';
 
 /** Row of `portal.stage_model`. */
@@ -217,6 +219,8 @@ export interface PortfolioRow {
   program_data?: {[key: string]: any};
   program_datasets?: {[key: string]: any};
   attention?: {[key: string]: any};
+  schedule?: string;
+  owners?: string;
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -239,6 +243,8 @@ export interface PortfolioInsert {
   program_data?: {[key: string]: any};
   program_datasets?: {[key: string]: any};
   attention?: {[key: string]: any};
+  schedule?: string;
+  owners?: string;
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -247,8 +253,8 @@ export interface PortfolioInsert {
 
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
-  'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' | 'attention' | 'viewers' |
-  'contributors' | 'approvers' | 'description';
+  'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' | 'attention' | 'schedule' |
+  'owners' | 'viewers' | 'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -261,6 +267,7 @@ export type PortfolioExpand = {
   'approvers': {'approvers.friendlyName'?: string; 'approvers.description'?: string; 'approvers.author'?: string};
   'details:registry_feed': {registry_feed?: RegistryFeedRow[]};
   'details:program': {program?: ProgramRow[]};
+  'details:sync_run': {sync_run?: SyncRunRow[]};
 };
 
 /** Row of `portal.registry_feed`. */
@@ -305,8 +312,9 @@ export type RegistryFeedExpand = {
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
-    'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
+    'portfolio_id.owners'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
+    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -368,8 +376,9 @@ export type ProgramExpand = {
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
-    'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
+    'portfolio_id.owners'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
+    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -1201,6 +1210,67 @@ export type ModelRunExpand = {
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};
 };
 
+/** Row of `portal.sync_run`. */
+export interface SyncRunRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  portfolio_id: string;
+  started_on: Dayjs;
+  finished_on?: Dayjs;
+  trigger: SyncRunTrigger;
+  run_by?: string;
+  created?: number;
+  updated?: number;
+  flagged?: number;
+  unresolved?: number;
+  unresolved_spellings?: string;
+  error?: string;
+  summary?: string;
+  changes?: {[key: string]: any};
+  notified?: string;
+}
+
+/** Insert payload for `portal.sync_run`. */
+export interface SyncRunInsert {
+  portfolio_id: string;
+  started_on: Dayjs | string;
+  finished_on?: Dayjs | string;
+  trigger: SyncRunTrigger;
+  run_by?: string;
+  created?: number;
+  updated?: number;
+  flagged?: number;
+  unresolved?: number;
+  unresolved_spellings?: string;
+  error?: string;
+  summary?: string;
+  changes?: {[key: string]: any};
+  notified?: string;
+}
+
+export type SyncRunColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'portfolio_id' |
+  'started_on' | 'finished_on' | 'trigger' | 'run_by' | 'created' | 'updated' | 'flagged' | 'unresolved' |
+  'unresolved_spellings' | 'error' | 'summary' | 'changes' | 'notified';
+
+/** Expand keys of `portal.sync_run` → fields each adds to the row (consumed by query()/builder). */
+export type SyncRunExpand = {
+  'portfolio_id': {'portfolio_id.code'?: string; 'portfolio_id.name'?: string;
+    'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
+    'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
+    'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
+    'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
+    'portfolio_id.owners'?: string; 'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string;
+    'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+  'run_by': {'run_by.login'?: string; 'run_by.firstName'?: string; 'run_by.lastName'?: string;
+    'run_by.status'?: string; 'run_by.createdOn'?: Dayjs; 'run_by.picture'?: string; 'run_by.group'?: string;
+    'run_by.author'?: string};
+};
+
 /** Row of `portal.criterion_artifact`. */
 export interface CriterionArtifactRow {
   id: string;
@@ -1327,6 +1397,9 @@ export type PortalTransactionOp =
   {op: 'insert'; table: 'model_run'; ref?: string; values: DG.DomainTxValues<ModelRunInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'model_run'; id: string; values: DG.DomainTxValues<Partial<ModelRunRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'model_run'; id: string} |
+  {op: 'insert'; table: 'sync_run'; ref?: string; values: DG.DomainTxValues<SyncRunInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'sync_run'; id: string; values: DG.DomainTxValues<Partial<SyncRunRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'sync_run'; id: string} |
   {op: 'insert'; table: 'criterion_artifact'; ref?: string; values: DG.DomainTxValues<CriterionArtifactInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'criterion_artifact'; id: string; values: DG.DomainTxValues<Partial<CriterionArtifactRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'criterion_artifact'; id: string};
@@ -1404,6 +1477,9 @@ export const portalDb = {
   },
   get modelRuns() {
     return grok.dapi.domains.table<ModelRunRow, ModelRunInsert, ModelRunColumn, ModelRunExpand>('portal.model_run');
+  },
+  get syncRuns() {
+    return grok.dapi.domains.table<SyncRunRow, SyncRunInsert, SyncRunColumn, SyncRunExpand>('portal.sync_run');
   },
   get criterionArtifacts() {
     return grok.dapi.domains.table<CriterionArtifactRow, CriterionArtifactInsert, CriterionArtifactColumn, CriterionArtifactExpand>('portal.criterion_artifact');

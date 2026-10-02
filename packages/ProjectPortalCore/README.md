@@ -211,6 +211,24 @@ counting them:
 - `programAttention(portfolio, program)` returns one row per item and rule: item, rule, rule name, severity, message.
 - **Examples.** EX-SMD: potent but hERG not measured, a lead without solubility, hERG IC50 under 10 µM. EX-BIOC: a tox lot not released.
 
+### Scheduled sync
+
+A sync runs on call: the board's **Sync** button, `syncPortfolio`, `syncAllPortfolios`. A portfolio
+may also declare a `schedule` and `owners` (F-01):
+
+```json
+"schedule": "every 6h",
+"owners": ["admin"]
+```
+
+- **Schedule.** An interval (`every 6h`, `30m`, `1d`, at least 15 minutes) or a five-field cron line in UTC (`0 6 * * 1-5`, `@daily`). When both day fields are set, either matching is enough, as in cron.
+- **`syncDuePortfolios(codes)`** syncs the portfolios whose schedule is due, discovery first. A portfolio without a schedule is never touched; `codes` (comma-separated) narrows the check further. A sync is due when the portfolio has never synced, or the next slot after the last run's start has come. Any run counts, by hand or failed.
+- **Sync history.** Every sync, by schedule or by hand, is a `sync_run` row: started, finished, trigger, who, counts of created, updated and flagged rows, unresolved stage spellings, error, the report, and the per-program changes. A dry run is not recorded, and a sync never fails because its history could not be written. The board's **Sync history** shows the schedule, the next slot, the owners and the last 20 runs. `syncHistory(portfolio)` returns the runs as a table.
+- **Owners are notified** in the platform's notifications (the bell) after a scheduled run that changed or flagged something, failed, or found different unresolved spellings or overlaps than the run before. The server lets a user notify another user only with the Edit users permission; otherwise the run records who could not be reached.
+- **Per-program changes** (new, fields changed, stage moved, no longer in the feed, work units, compounds added, role changes) are on the result and in `sync_run.changes`. Data-driven stage advance and new-data notification will read them.
+- **Nothing runs by itself yet.** The platform schedules only server-side scripts and queries (`#schedule:`), not a package's JavaScript functions, so the package cannot register its own schedule. Something must call `syncDuePortfolios` (see Known platform issues).
+- The examples declare schedules: EX-SMD every 6 h, EX-BIOD daily at 06:00 UTC, EX-BIOC weekdays at 06:00 UTC. Owner: `admin`.
+
 ### Choosing the run a criterion rests on
 
 A criterion can rest on a model run (F-15). It says so in the portfolio file:
@@ -289,6 +307,8 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `programAttention(portfolio, program)` | The items of one program that trip the portfolio's attention rules, one row per item and rule |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
+| `syncDuePortfolios(codes)` | Syncs only the portfolios whose schedule is due, records each run, notifies owners of a run that changed something |
+| `syncHistory(portfolio)` | A portfolio's sync runs as a table, newest first |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
@@ -315,6 +335,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
   - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
+  - Scheduled sync: the rules (intervals and cron in UTC, when a sync is due, a run's counts and per-program changes, when owners hear of it), and on EX-SMD and EX-BIOD a recorded run, a due and a not-yet-due schedule, a platform notification, the function and the history panel.
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
@@ -322,7 +343,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 152 of the 155 package tests and all 18 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 162 of the 165 package tests and all 19 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.
@@ -352,3 +373,10 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
 8. **A panel that takes a function is not offered for one.** A `meta.role: panel` function whose input is a `func`
    (or an `object`), with a condition that holds, does not appear in the context panel of a model script. The
    model card is therefore reached from the program page and through `modelCard(model)`, not as an info panel.
+9. **A package cannot schedule its own functions.** The server's scheduler (`#schedule:` with an optional
+   `#schedule.runAs:` group) runs only server-side scripts and queries, and the JS API has no way to create a
+   schedule. A package's JavaScript function does not run headless either. So `syncDuePortfolios` exists but is not
+   registered; it runs when someone, or something with a browser session, calls it.
+10. **No JS API to send a notification.** `POST /users/notifications` creates one, but only for the caller unless they
+   hold Edit users, and the stand's `grok.dapi` has no notifications client at all. The portal calls the route with
+   `fetch`.

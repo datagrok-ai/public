@@ -233,3 +233,10 @@ export const openTableCurrent = Then('the open table\'s current row should have 
       return df && df.currentRowIdx >= 0 ? String(df.get(c, df.currentRowIdx)) : 'no current row';
     }, column), {message: `the current row's ${column}`}).toBe(value);
   }, {description: 'a cell of the current row of the current table view'});
+
+export const portfolioSynced = Given('a sync of the {string} portfolio has run', async (page: Page, code: string) => {
+  silent(page);
+  await page.evaluate(async (c) => {
+    await grok.functions.call('ProjectPortalCore:syncPortfolio', {code: c, dryRun: false});
+  }, code);
+}, {tier: 'api', description: 'syncs the portfolio by hand through syncPortfolio, which records the run'});

@@ -8,6 +8,7 @@ import {mergeCatalogues, ModelCatalogueConfig} from './catalogue';
 import {CriterionArtifactKind, RunFilter, validateRunCriterion} from './run-selection';
 import {ProgramDatasetConfig, validateProgramDatasets} from './program-data';
 import {AttentionRule, validateAttentionRules} from './attention';
+import {validateSchedule} from './sync-runs';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -103,6 +104,11 @@ export interface PortfolioConfig {
   /** Rules over the program dataset that flag compounds (or lots) needing attention: potent but
    * hERG not measured, a lead without solubility. Same condition language as the criteria. */
   attention?: AttentionRule[];
+  /** When syncDuePortfolios syncs this portfolio: `every 6h`, or a cron line in UTC (`0 6 * * 1-5`).
+   * Without it the portfolio syncs only on call. */
+  schedule?: string;
+  /** User logins told, in the platform's notifications, about a scheduled sync that changed something. */
+  owners?: string[];
   /** The portfolio's model catalogue: unit operations, run types, models and their cards. Checked
    * and loaded with the set, so a model may name a unit operation another portfolio declares. */
   catalogue?: ModelCatalogueConfig;
@@ -184,6 +190,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
   if (conditions.length > 0 && !c.programData)
     errors.push(`${conditions.length} criteria declare a condition but the portfolio has no programData to evaluate it over`);
   errors.push(...validateAttentionRules(c.attention));
+  errors.push(...validateSchedule(c.schedule, c.owners));
   if ((c.attention ?? []).length > 0 && !c.programData)
     errors.push(`${c.attention!.length} attention rules are declared but the portfolio has no programData to evaluate them over`);
   if (c.stageAuthority === 'feed' && (c.feeds ?? []).length === 0)

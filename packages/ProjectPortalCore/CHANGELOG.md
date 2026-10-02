@@ -2,6 +2,11 @@
 
 ## 0.3.0 (unreleased)
 
+- Scheduled sync (F-01): a portfolio may declare a `schedule` (an interval such as `every 6h`, or a cron line in UTC) and `owners` (user logins). `syncDuePortfolios(codes)` syncs only the portfolios whose schedule is due; a portfolio without one is never touched
+- Sync history: every sync, by schedule or by hand, is recorded (started, finished, trigger, who, counts of created, updated and flagged rows, unresolved spellings, error, report, per-program changes). The board's **Sync history** shows schedule, next slot, owners and runs; `syncHistory(portfolio)` returns them. `syncPortfolio` returns the same report as before
+- Owners are notified in the platform's notifications after a scheduled run that changed something, failed, or found new standing issues
+- `portal` schema 0.2.11: `portfolio.schedule`, `portfolio.owners`, table `sync_run`. Additive, no migration script
+- The example portfolios declare schedules and an owner. The package cannot register the schedule itself (the platform schedules only server-side scripts and queries)
 - Compounds needing attention (F-17, FR-104): a portfolio declares `attention` rules (code, name, severity, condition, message) in the criteria's condition language. A row trips a rule when the scope admits it, `where` holds and, if the rule names `measured` columns, it lacks one. The program page shows *Needs attention*: a count per rule and the flagged compounds (or lots); a click opens the program data at that row. The portfolio table has an `attention` column (a filter) and `attention rules`. `programAttention(portfolio, program)` returns the flags
 - `portal` schema 0.2.10: `portfolio.attention`. Additive, no migration script
 - EX-SMD flags potent compounds without hERG, leads without solubility and a hERG IC50 under 10 µM; EX-BIOC flags a tox lot not released

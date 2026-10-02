@@ -8,6 +8,8 @@
   "workspaceRoot": "Example Biologics Development",
   "workstreams": ["Drug Substance", "Drug Product", "Analytical", "Regulatory"],
   "description": "Example portfolio on synthetic data. The registry owns the stage; the portal mirrors it and records every change it observes as a sync transition.",
+  "schedule": "0 6 * * 1-5",
+  "owners": ["admin"],
   "groups": {
     "viewers": "Portal EX-BIOC Viewers",
     "contributors": "Portal EX-BIOC Contributors",

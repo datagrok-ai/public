@@ -106,6 +106,21 @@ export namespace funcs {
   }
 
   /**
+   * Syncs the portfolios whose schedule is due, and only those: a portfolio without a schedule is never touched. Each run is recorded in the portfolio's sync history; owners are notified of a run that changed something
+   * @param {string} codes - Comma-separated portfolio codes to limit the check to
+   */
+  export async function syncDuePortfolios(codes?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SyncDuePortfolios', { codes });
+  }
+
+  /**
+   * A portfolio's sync runs, newest first: when, by schedule or by hand, who, counts of created, updated and flagged rows, unresolved spellings, error
+   */
+  export async function syncHistory(portfolio: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:SyncHistory', { portfolio });
+  }
+
+  /**
    * Readiness of one program for a stage (default: its next stage): every criterion met, waived or open, data conditions evaluated over the program dataset, and the gap list
    */
   export async function programReadiness(portfolio: string , program: string , stage?: string ): Promise<string> {

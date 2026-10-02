@@ -19,6 +19,8 @@ import {openSaveRunDialog} from './views/save-run-dialog';
 import {trackModelRuns} from './save-run';
 import {openProgramTable, programTable} from './program-data';
 import {attentionFrame, attentionRulesOf, programAttentionOf} from './attention';
+import {recordedSync, summarizeDue, syncDue} from './sync-runs';
+import {syncHistoryFrame} from './views/sync-history';
 import {span} from '@datagrok-libraries/u2';
 export * from './package.g';
 
@@ -145,8 +147,15 @@ export async function modelCard(model: string): Promise<DG.Widget> {
   return modelCardWidget(model);
 }
 
-/** Programs first, so work units find the programs they hang under. */
+/** Programs first, so work units find the programs they hang under. A real sync is recorded in the
+ * portfolio's sync history; a dry run is not. The report is the same either way. */
 async function syncOne(code: string, dryRun = false): Promise<string> {
+  if (!dryRun) {
+    const r = await recordedSync(code, 'manual');
+    if (r.error)
+      throw new Error(r.error);
+    return r.report;
+  }
   const programs = (await syncPortfolioPlans(code, dryRun)).map(summarizePlan);
   const units = (await syncWorkUnits(code, dryRun)).map(summarizeWorkUnitPlan);
   const compounds = await syncCompounds(code, dryRun);
@@ -172,6 +181,23 @@ export async function syncAllPortfolios(): Promise<string> {
   for (const p of portfolios.sort((a, b) => order(a.setting) - order(b.setting)))
     out.push(await syncOne(p.code));
   return out.join('\n');
+}
+
+//name: syncDuePortfolios
+//description: Syncs the portfolios whose schedule is due, and only those: a portfolio without a schedule is never touched. Each run is recorded in the portfolio's sync history; owners are notified of a run that changed something
+//input: string codes {optional: true; description: Comma-separated portfolio codes to limit the check to}
+//output: string report
+export async function syncDuePortfolios(codes?: string): Promise<string> {
+  const list = (codes ?? '').split(',').map((c) => c.trim()).filter((c) => c.length > 0);
+  return summarizeDue(await syncDue(list.length ? list : undefined));
+}
+
+//name: syncHistory
+//description: A portfolio's sync runs, newest first: when, by schedule or by hand, who, counts of created, updated and flagged rows, unresolved spellings, error
+//input: string portfolio
+//output: dataframe result
+export async function syncHistory(portfolio: string): Promise<DG.DataFrame> {
+  return syncHistoryFrame(await portfolioByCode(portfolio));
 }
 
 //name: programReadiness
