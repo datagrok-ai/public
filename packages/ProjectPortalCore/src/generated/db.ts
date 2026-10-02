@@ -69,6 +69,8 @@ export type SyncRunTrigger = 'schedule' | 'manual';
 
 export type CriterionArtifactRole = 'candidate' | 'selected' | 'superseded';
 
+export type FollowWorkUnitKind = 'campaign' | 'series' | 'study' | 'process_stage';
+
 /** Row of `portal.stage_model`. */
 export interface StageModelRow {
   id: string;
@@ -415,6 +417,7 @@ export type ProgramExpand = {
   'details:program_flow': {program_flow?: ProgramFlowRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};
+  'details:follow': {follow?: FollowRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -1346,6 +1349,55 @@ export type CriterionArtifactExpand = {
     'selected_by.group'?: string; 'selected_by.author'?: string};
 };
 
+/** Row of `portal.follow`. */
+export interface FollowRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  user_id: string;
+  program_id: string;
+  work_unit_kind?: FollowWorkUnitKind;
+  work_unit_code?: string;
+  active?: boolean;
+  checked?: {[key: string]: any};
+  checked_on?: Dayjs;
+  last_news?: string;
+  seen?: {[key: string]: any};
+  seen_on?: Dayjs;
+}
+
+/** Insert payload for `portal.follow`. */
+export interface FollowInsert {
+  user_id: string;
+  program_id: string;
+  work_unit_kind?: FollowWorkUnitKind;
+  work_unit_code?: string;
+  active?: boolean;
+  checked?: {[key: string]: any};
+  checked_on?: Dayjs | string;
+  last_news?: string;
+  seen?: {[key: string]: any};
+  seen_on?: Dayjs | string;
+}
+
+export type FollowColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'user_id' | 'program_id' |
+  'work_unit_kind' | 'work_unit_code' | 'active' | 'checked' | 'checked_on' | 'last_news' | 'seen' | 'seen_on';
+
+/** Expand keys of `portal.follow` → fields each adds to the row (consumed by query()/builder). */
+export type FollowExpand = {
+  'user_id': {'user_id.login'?: string; 'user_id.firstName'?: string; 'user_id.lastName'?: string;
+    'user_id.status'?: string; 'user_id.createdOn'?: Dayjs; 'user_id.picture'?: string; 'user_id.group'?: string;
+    'user_id.author'?: string};
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -1424,7 +1476,10 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'sync_run'; id: string} |
   {op: 'insert'; table: 'criterion_artifact'; ref?: string; values: DG.DomainTxValues<CriterionArtifactInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'criterion_artifact'; id: string; values: DG.DomainTxValues<Partial<CriterionArtifactRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'criterion_artifact'; id: string};
+  {op: 'delete'; table: 'criterion_artifact'; id: string} |
+  {op: 'insert'; table: 'follow'; ref?: string; values: DG.DomainTxValues<FollowInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'follow'; id: string; values: DG.DomainTxValues<Partial<FollowRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'follow'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -1505,6 +1560,9 @@ export const portalDb = {
   },
   get criterionArtifacts() {
     return grok.dapi.domains.table<CriterionArtifactRow, CriterionArtifactInsert, CriterionArtifactColumn, CriterionArtifactExpand>('portal.criterion_artifact');
+  },
+  get follows() {
+    return grok.dapi.domains.table<FollowRow, FollowInsert, FollowColumn, FollowExpand>('portal.follow');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

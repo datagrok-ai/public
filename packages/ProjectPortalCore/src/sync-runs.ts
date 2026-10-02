@@ -13,6 +13,8 @@ import {
   standingIssues, summarizeRun, SyncRunCounts, withAdvances, worthNotifying,
 } from './model/sync-runs';
 import {autoAdvance, autoAdvanceOf} from './auto-advance';
+import {notifyUser} from './notify';
+import {checkNewDataOf} from './new-data';
 
 export type SyncTrigger = 'schedule' | 'manual';
 
@@ -93,6 +95,17 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
     }
   }
 
+  // followers of a program or series hear about results that landed since the last check
+  if (!result.error) {
+    try {
+      const n = await checkNewDataOf(portfolio);
+      if (n.follows > 0)
+        result.report += `\n${n.summary}`;
+    } catch (e: any) {
+      grok.log.warning(`Project Portal: new data of ${code} not checked: ${e?.message ?? e}`);
+    }
+  }
+
   if (runId) {
     try {
       await portalDb.syncRuns.update(runId, {finished_on: new Date().toISOString() as any,
@@ -131,12 +144,7 @@ export async function notifyOwners(portfolio: PortfolioRow, text: string): Promi
         out.push(`${login}: no such user`);
         continue;
       }
-      const response = await fetch(`${grok.dapi.root}/users/notifications`, {
-        method: 'POST', credentials: 'include',
-        headers: {'Content-Type': 'application/json', 'Authorization': grok.dapi.token},
-        body: JSON.stringify({user: {id: user.id}, text, data: '', sender: 'Project Portal'}),
-      });
-      out.push(response.ok ? `${login}: notified` : `${login}: not notified (${response.status} ${(await response.text()).slice(0, 120)})`);
+      out.push(`${login}: ${(await notifyUser(user.id, text)).detail}`);
     } catch (e: any) {
       out.push(`${login}: not notified (${e?.message ?? e})`);
     }

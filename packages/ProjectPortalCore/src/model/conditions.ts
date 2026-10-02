@@ -42,6 +42,9 @@ export interface ProgramDataConfig {
   name?: string;
   /** Viewers to open it with; default: by the portfolio's setting and the columns. */
   viewers?: DatasetViewer[];
+  /** A column that only grows as results land (a run date, an increasing id). With it, new-data
+   * notification counts rows past the last value seen; without it, it compares counts. */
+  watermark?: string;
 }
 
 export const DEFAULT_LEAD_ROLES = ['lead', 'backup', 'candidate'];

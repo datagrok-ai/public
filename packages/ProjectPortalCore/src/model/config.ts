@@ -188,6 +188,8 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
     need(c.programData.sql, 'programData: sql');
     if (c.programData.sql && !c.programData.sql.includes('@program'))
       errors.push('programData: sql must select one program\'s rows with @program');
+    if (c.programData.watermark !== undefined && (typeof c.programData.watermark !== 'string' || !c.programData.watermark.trim()))
+      errors.push('programData: watermark must name a column');
   }
   errors.push(...validateProgramDatasets(c.programDatasets, c.programData?.viewers));
   const conditions = (c.stageModel?.stages ?? []).flatMap((s) => (s.criteria ?? []).filter((cr) => cr.condition));

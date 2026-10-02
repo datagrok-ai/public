@@ -80,6 +80,30 @@ export namespace funcs {
   }
 
   /**
+   * New-data notification: reads the program dataset of each followed program of a portfolio once, compares it with each follow's last snapshot (rows, filled values, the watermark column when declared) and tells followers in the platform's notifications. Runs after every sync too
+   * @param {string} code - Portfolio code
+   */
+  export async function checkNewData(code: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:CheckNewData', { code });
+  }
+
+  /**
+   * Follow a program, or one of its series, to be notified when new results land in its program dataset. The data now is the baseline
+   * @param {string} series - Series code
+   */
+  export async function followProgram(portfolio: string , program: string , series?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:FollowProgram', { portfolio, program, series });
+  }
+
+  /**
+   * Stop following a program, or one of its series
+   * @param {string} series - Series code
+   */
+  export async function unfollowProgram(portfolio: string , program: string , series?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:UnfollowProgram', { portfolio, program, series });
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {

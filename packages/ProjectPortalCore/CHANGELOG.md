@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- New-data notification (F-11, FR-83): a user follows a program, or one of its series, from the program page (**Follow**, and Follow on each series row) or with `followProgram`/`unfollowProgram`. After every sync, and on `checkNewData(code)`, each followed program's dataset is read once and compared with each follow's snapshot (rows, filled values, and the largest value of `programData.watermark` when declared); followers with news get one notification per portfolio in the platform's notifications. Only growth is news; following takes a baseline. The program page shows *What's new since your last visit* to a follower
+- `programData.watermark` (optional): a column that only grows, so a replaced row counts as new
+- `portal` schema 0.2.15: table `follow`. Additive, no migration script
+
 - Model recommendation v1 (F-13, FR-51): a card may declare `appliesTo` (tasks, stages, modalities, work-unit kinds, the program-data columns it predicts, rank; a key left out matches any). The program page shows *Missing assays* for the gate it shows (the columns open data conditions need and rows lack, and which suggested model predicts each) and *Suggested models*, best first, each with **Run**, which opens the model's dialog filled in from the program (the program dataset, program and series codes). `recommendModels(portfolio, program, stage, series, task)` and `missingAssays(portfolio, program, stage, series)` return them
 - `portal` schema 0.2.14: `model_card.applies_to`. Additive, no migration script. `exportPortfolio` writes it back
 - EX-SMD declares two synthetic predictive models, `SolubilityEstimate` and `HergRisk` (tiny scripts, invented numbers)

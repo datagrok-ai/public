@@ -240,3 +240,26 @@ export const portfolioSynced = Given('a sync of the {string} portfolio has run',
     await grok.functions.call('ProjectPortalCore:syncPortfolio', {code: c, dryRun: false});
   }, code);
 }, {tier: 'api', description: 'syncs the portfolio by hand through syncPortfolio, which records the run'});
+
+/** Turns off every follow the user has on [program] of [portfolio]: the program's and its work units'. */
+async function unfollowAll(page: Page, program: string, portfolio: string): Promise<number> {
+  return page.evaluate(async ([c, p]) => {
+    const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+    const pr = (await grok.dapi.domains.table('portal.program').query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`}))[0];
+    const follows = grok.dapi.domains.table('portal.follow');
+    const mine = (await follows.query({filter: `program_id = "${pr.id}" and user_id = "${DG.User.current().id}"`}))
+      .filter((f: any) => f.active !== false);
+    for (const f of mine)
+      await follows.update(f.id, {active: false});
+    return mine.length;
+  }, [program, portfolio]);
+}
+
+export const notFollowed = Given('the user does not follow {string} in the {string} portfolio',
+  async (page: Page, program: string, portfolio: string) => {
+    silent(page);   // set-up a person does not do: kept out of guide videos
+    await unfollowAll(page, program, portfolio);
+    atFeatureEnd(page, async () => {
+      await unfollowAll(page, program, portfolio);
+    });
+  }, {tier: 'api', description: 'turns off the user\'s follows of the program and its series, now and at the end of the feature'});

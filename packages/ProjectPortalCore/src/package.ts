@@ -26,6 +26,7 @@ import {autoAdvance, autoAdvanceOf, summarizeAutoAdvanceResult} from './auto-adv
 import {diffPortfolioRefs, exportPortfolioConfig, exportProfileBundle, importProfileBundle} from './profile';
 import {summarizeDiff} from './model/profile';
 import {missingAssayFrame, recommendByCode, recommendationFrame} from './recommend';
+import {checkNewDataOf, followByCode} from './new-data';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -141,6 +142,34 @@ export async function recommendModels(portfolio: string, program: string, stage?
 //output: dataframe result
 export async function missingAssays(portfolio: string, program: string, stage?: string, series?: string): Promise<DG.DataFrame> {
   return missingAssayFrame(await recommendByCode(portfolio, program, {stage: stage || undefined, series: series || undefined}));
+}
+
+//name: checkNewData
+//description: New-data notification: reads the program dataset of each followed program of a portfolio once, compares it with each follow's last snapshot (rows, filled values, the watermark column when declared) and tells followers in the platform's notifications. Runs after every sync too
+//input: string code {description: Portfolio code}
+//output: string report
+export async function checkNewData(code: string): Promise<string> {
+  return (await checkNewDataOf(await portfolioByCode(code))).summary;
+}
+
+//name: followProgram
+//description: Follow a program, or one of its series, to be notified when new results land in its program dataset. The data now is the baseline
+//input: string portfolio
+//input: string program
+//input: string series {optional: true; description: Series code}
+//output: string report
+export async function followProgram(portfolio: string, program: string, series?: string): Promise<string> {
+  return followByCode(portfolio, program, series || null);
+}
+
+//name: unfollowProgram
+//description: Stop following a program, or one of its series
+//input: string portfolio
+//input: string program
+//input: string series {optional: true; description: Series code}
+//output: string report
+export async function unfollowProgram(portfolio: string, program: string, series?: string): Promise<string> {
+  return followByCode(portfolio, program, series || null, true);
 }
 
 //name: loadPortfolios

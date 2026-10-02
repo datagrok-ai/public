@@ -30,6 +30,8 @@ import {openSyncHistory} from './sync-history';
 import {openExportDialog} from './export-dialog';
 import {ProgramRecommendation, recommendFor, runModelFor} from '../recommend';
 import {describeMissing} from '../model/recommend';
+import {follow, myFollows, unfollow, whatsNew, WorkUnitRef} from '../new-data';
+import {FollowRow} from '../generated/db';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -65,6 +67,10 @@ export class PortalView {
   private viewedStage: string | null = null;
   /** Where the last run saved from this page went, by program id. */
   private savedLine = new Map<string, string>();
+  /** The current user's follows of the selected program and its work units. */
+  private follows: FollowRow[] = [];
+  /** What landed since the user's last visit, read once per open; undefined = not read yet. */
+  private news: {since: string | null, lines: string[]} | null | undefined;
   /** The selected program's dataset, read once per open; undefined = not read yet. */
   private data: {rows: DataRow[] | null, error?: string} | undefined;
 
@@ -189,8 +195,10 @@ export class PortalView {
   }
 
   async openProgram(id: string, viewedStage: string | null = null): Promise<void> {
-    if (id !== this.selected)
+    if (id !== this.selected) {
       this.data = undefined;
+      this.news = undefined;
+    }
     this.selected = id;
     this.viewedStage = viewedStage;
     for (const el of Array.from(this.board.querySelectorAll('.pp-card')))
@@ -224,8 +232,23 @@ export class PortalView {
         grok.log.warning(`Project Portal: no model recommendation for ${ctx.program.code}: ${e?.message ?? e}`);
         return null;
       });
+    // what landed since the last visit, for a user who follows the program or one of its series
+    const follows = await myFollows(id).catch(() => [] as FollowRow[]);
+    // read once per open of a program: a click on the stage track is not a new visit
+    if (this.news === undefined && follows.length) {
+      if (this.data === undefined) {
+        try {
+          this.data = {rows: await programData(ctx.portfolio, ctx.program.code)};
+        } catch (e: any) {
+          this.data = {rows: null, error: e?.message ?? String(e)};
+        }
+      }
+      this.news = await whatsNew(ctx.portfolio, ctx.program, this.data.rows, follows).catch(() => null);
+    }
+    const news = follows.length ? this.news ?? null : null;
+    this.follows = follows;
     this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs, choices, attention,
-      recommendation);
+      recommendation, news);
   }
 
   /** The portfolio's attention rules over the program's data, read once per open; null without rules. */
@@ -260,7 +283,7 @@ export class PortalView {
     readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = [],
     compounds: {link: any, compound: any}[] = [], spaceLive = false, runs: SavedRunItem[] = [],
     choices = new Map<string, CriterionRuns>(), attention: {result: ProgramAttention | null, error?: string} | null = null,
-    recommendation: ProgramRecommendation | null = null): void {
+    recommendation: ProgramRecommendation | null = null, news: {since: string | null, lines: string[]} | null = null): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -341,6 +364,17 @@ export class PortalView {
       return b;
     });
 
+    const followed = this.follows.some((f) => !f.work_unit_code);
+    const followButton = named(button(followed ? 'Unfollow' : 'Follow', () => void this.toggleFollow(ctx, null)),
+      'follow-button');
+    followButton.title = followed ? 'Stop being notified of new data in this program' :
+      'Be notified, in the platform\'s notifications, when new results land in this program\'s data';
+    const newsLine = news ? named(divV(news.lines.length ?
+      [span(`What's new since your last visit${news.since ? ` (${news.since.slice(0, 16).replace('T', ' ')} UTC)` : ''}`, 'pp-muted'),
+        ...news.lines.map((l) => span(l))] :
+      [span(`Nothing new since your last visit${news.since ? ` (${news.since.slice(0, 16).replace('T', ' ')} UTC)` : ''}`, 'pp-muted')],
+    'pp-units'), 'whats-new') : null;
+
     const saveRun = named(button('Save a run…', () => void openSaveRunDialog({
       context: {portfolio: ctx.portfolio.code, program: program.code},
       onSaved: async (_r, line) => {
@@ -355,7 +389,8 @@ export class PortalView {
       named(span(program.name, 'pp-title'), 'program-title'),
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
-      workspace,
+      named(divH([workspace, followButton], 'pp-actions'), 'program-actions'),
+      ...(newsLine ? [newsLine] : []),
       ...(data.length ? [named(divH(data, 'pp-actions pp-data-actions'), 'program-data-actions')] : []),
       ...(program.source_stage ? [span(`Registry stage: ${program.source_stage}`, 'pp-muted')] : []),
       ...lineage,
@@ -371,7 +406,7 @@ export class PortalView {
       divH([advance, hold, terminate], 'pp-actions'),
       ...(recommendation ? this.recommendation(recommendation) : []),
       ...(attention ? this.attention(ctx.portfolio.code, program.code, attention) : []),
-      ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units)] : []),
+      ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
       named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
       divH([saveRun], 'pp-actions'),
@@ -456,7 +491,17 @@ export class PortalView {
   }
 
   /** The program's campaigns, series, studies and process stages, as the portfolio enables them. */
-  private workUnits(units: {kind: WorkUnitKind, rows: Record<string, any>[]}[]): HTMLElement {
+  private workUnits(units: {kind: WorkUnitKind, rows: Record<string, any>[]}[], ctx?: ProgramContext): HTMLElement {
+    // a series has rows of its own in the program dataset, so it can be followed on its own
+    const followSeries = (code: string): HTMLElement[] => {
+      if (!ctx)
+        return [];
+      const on = this.follows.some((f) => f.work_unit_kind === 'series' && f.work_unit_code === code);
+      const b = named(span(on ? 'Unfollow' : 'Follow', 'pp-link'), `follow-series-${slug(code)}`);
+      b.title = on ? 'Stop being notified of new data in this series' : 'Be notified when new results land in this series';
+      b.onclick = () => void this.toggleFollow(ctx, {kind: 'series', code});
+      return [b];
+    };
     const unitVariant = (s?: string): BadgeVariant => ['active', 'running', 'in_development'].includes(s ?? '') ?
       'success' : ['closed', 'completed', 'locked', 'transferred'].includes(s ?? '') ? 'accent' :
         ['dropped', 'cancelled', 'paused', 'deprioritized'].includes(s ?? '') ? 'warning' : 'default';
@@ -473,6 +518,7 @@ export class PortalView {
           ...(u.type ? [span(String(u.type).replace('_', ' '), 'pp-muted')] : []),
           ...(u.process_type ? [span(u.process_type, 'pp-muted')] : []),
           ...(u.missing_from_feed ? [badge('missing from feed', {variant: 'error'})] : []),
+          ...(kind === 'series' ? followSeries(u.code) : []),
         ], 'pp-unit'), `unit-${slug(kind)}-${slug(u.code)}`))),
       ], 'pp-unit-group'), `units-${slug(kind)}`);
     }), 'pp-units'), 'work-units');
@@ -565,6 +611,23 @@ export class PortalView {
       ...(runs.superseded.length ? [named(divV(runs.superseded.map((e) =>
         span(`Superseded: ${describeSelection(e)}`, 'pp-gap'))), `run-history-${slug(c.code)}`)] : []),
     ]), `criterion-run-${slug(c.code)}`);
+  }
+
+  /** Follows or unfollows the program, or one of its series, then redraws the page. */
+  private async toggleFollow(ctx: ProgramContext, unit: WorkUnitRef | null): Promise<void> {
+    try {
+      const on = this.follows.some((f) => unit ? f.work_unit_kind === unit.kind && f.work_unit_code === unit.code : !f.work_unit_code);
+      if (on)
+        await unfollow(ctx.program, unit);
+      else
+        await follow(ctx.portfolio, ctx.program, unit);
+      this.news = undefined;
+      grok.shell.info(`${unit ? `${ctx.program.code} ${unit.code}` : ctx.program.name}: ${on ? 'no longer followed' :
+        'followed; new results will show in your notifications'}`);
+      await this.openProgram(ctx.program.id, this.viewedStage);
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? String(e));
+    }
   }
 
   /** Opens the program's folder the way the Browse tree does. A folder deleted by hand is reported,

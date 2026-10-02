@@ -106,3 +106,7 @@ app.element('missing solubility', {selector: u2('missing-assay-adme-panel-solubi
 app.element('suggested models heading', {selector: u2('suggested-models-heading')});
 app.element('suggested solubility estimate', {selector: u2('suggested-model-projectportalcore-solubilityestimate')});
 app.element('solubility estimate card link', {selector: u2('recommended-card-projectportalcore-solubilityestimate')});
+
+app.element('follow button', {selector: u2('follow-button')});
+app.element('what\'s new', {selector: u2('whats-new')});
+app.element('KIN-A follow link', {selector: u2('follow-series-kin-a')});

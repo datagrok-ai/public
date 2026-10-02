@@ -242,9 +242,21 @@ may also declare a `schedule` and `owners` (F-01):
 - **`syncDuePortfolios(codes)`** syncs the portfolios whose schedule is due, discovery first. A portfolio without a schedule is never touched; `codes` (comma-separated) narrows the check further. A sync is due when the portfolio has never synced, or the next slot after the last run's start has come. Any run counts, by hand or failed.
 - **Sync history.** Every sync, by schedule or by hand, is a `sync_run` row: started, finished, trigger, who, counts of created, updated and flagged rows, unresolved stage spellings, error, the report, and the per-program changes. A dry run is not recorded, and a sync never fails because its history could not be written. The board's **Sync history** shows the schedule, the next slot, the owners and the last 20 runs. `syncHistory(portfolio)` returns the runs as a table.
 - **Owners are notified** in the platform's notifications (the bell) after a scheduled run that changed or flagged something, failed, or found different unresolved spellings or overlaps than the run before. The server lets a user notify another user only with the Edit users permission; otherwise the run records who could not be reached.
-- **Per-program changes** (new, fields changed, stage moved, no longer in the feed, work units, compounds added, role changes, advanced by data) are on the result and in `sync_run.changes`. New-data notification will read them.
+- **Per-program changes** (new, fields changed, stage moved, no longer in the feed, work units, compounds added, role changes, advanced by data) are on the result and in `sync_run.changes`.
+- **New data for followers.** After the feeds, every sync checks the followed programs for new data (see below).
 - **Nothing runs by itself yet.** The platform schedules only server-side scripts and queries (`#schedule:`), not a package's JavaScript functions, so the package cannot register its own schedule. Something must call `syncDuePortfolios` (see Known platform issues).
 - The examples declare schedules: EX-SMD every 6 h, EX-BIOD daily at 06:00 UTC, EX-BIOC weekdays at 06:00 UTC. Owner: `admin`.
+
+### Following a program: new-data notification
+
+A user follows a program, or one of its series, and hears when new results land (F-11, FR-83).
+
+- **Follows** are rows of `follow`: user, program, optional work unit (kind and code), and two snapshots of the program dataset: as last checked for news, and as at the user's last visit. Each user writes their own. Unfollowing turns the row off (`active`); following again turns it back on with a fresh baseline.
+- **The snapshot** is cheap and conservative: rows, filled cells (so a value landing in a blank cell of a wide SAR table counts), and, when `programData.watermark` names a column that only grows (a run date, an increasing id), its largest value. With a watermark, rows past the last value are new, so a replaced row counts; without one, only growth in the counts is news. Rows or values that disappear, or a value overwritten by another, are never reported. A series follow looks only at rows whose `series` column is that series.
+- **When.** After every sync, by hand or by schedule, and on `checkNewData(code)`. Only followed programs are read, one query each. Following takes the data as it stands as the baseline, so what is already there is never news.
+- **Telling.** Each follower with news gets one notification per portfolio in the platform's notifications (the bell), the same route the sync uses for owners: `EXS-KIN1: 1 new row, 4 new values`. Nothing external. A sync run by a user without Edit users can notify only themselves.
+- **Program page.** **Follow**/**Unfollow** beside Open workspace, and Follow/Unfollow on each series row. A follower sees *What's new since your last visit* once per open of the program; the visit is then recorded.
+- `followProgram(portfolio, program, series)` and `unfollowProgram(...)` do the same by code.
 
 ### Stage advance driven by data
 
@@ -351,6 +363,9 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `openProgramData(portfolio, program, dataset)` | Opens that table as a table view with the portfolio's viewers |
 | `recommendModels(portfolio, program, stage, series, task)` | Catalogued models that fit the program, best first, a model predicting an assay the gate lacks first |
 | `missingAssays(portfolio, program, stage, series)` | The columns the gate's open data conditions need and rows lack, with the suggested models that predict each |
+| `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
+| `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |
+| `unfollowProgram(portfolio, program, series)` | Stops following |
 | `programAttention(portfolio, program)` | The items of one program that trip the portfolio's attention rules, one row per item and rule |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
@@ -391,6 +406,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Auto-advance: the rules (one stage, never past `through`, waivers, recorded criteria, held and unstaged programs, the setting), and on EX-SMD a dry run, a real pass with its gate-log entry and evidence, a sync that advances and its history, and the example put back.
   - Profiles: the rules (normal form, readable diff lines by kind, bundle checks, refusal, a handoff to a loaded portfolio), and on the examples the export of each EX file equal to the file, the functions on an edited EX-SMD, and a bundle dry-run, refused, imported and put back.
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
+  - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
@@ -398,7 +414,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 189 of the 192 package tests and all 22 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 199 of the 202 package tests and all 23 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.
@@ -435,3 +451,12 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
 10. **No JS API to send a notification.** `POST /users/notifications` creates one, but only for the caller unless they
    hold Edit users, and the stand's `grok.dapi` has no notifications client at all. The portal calls the route with
    `fetch`.
+11. **A column named `user` breaks the schema deploy.** The deployer does not quote column names in its DDL, so
+   `"user": {"type": "user"}` fails with `syntax error at or near "user"`. `follow` names it `user_id`.
+12. **A row of a table without soft delete cannot be deleted.** On a table declared `"softDelete": false`, both
+   `delete(id)` and a transaction's delete answer `not-found` for a row that `query` returns. Changing `softDelete`
+   afterwards is refused without a migration. `follow` keeps rows and turns them off instead.
+13. **`FuncCall.edit()` runs a call whose inputs are all set** instead of showing its dialog. The portal's Run builds
+   the dialog with `buildEditor`.
+14. **A package function registers under its TypeScript name.** A different `//name:` header is ignored, so the
+   function documented as `programData` is callable as `ProjectPortalCore:programDataTable`.

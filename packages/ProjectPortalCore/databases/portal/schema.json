@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -528,6 +528,26 @@
         "selected_by": {"type": "user", "onDelete": "setnull"},
         "selected_on": {"type": "datetime"},
         "rationale": {"type": "string", "editor": "textarea", "description": "Why this run over the others"}
+      }
+    },
+    "follow": {
+      "securityMode": "table",
+      "softDelete": false,
+      "friendlyName": "Follows",
+      "description": "A user following a program, or one of its work units, to be told when new results land in the program dataset. Each user writes their own; the sync updates the snapshots.",
+      "grants": {"All users": ["view", "edit", "delete"]},
+      "columns": {
+        "user_id": {"type": "user", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "User"},
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "work_unit_kind": {"type": "string", "choices": ["campaign", "series", "study", "process_stage"], "immutable": true,
+          "description": "Empty when the whole program is followed"},
+        "work_unit_code": {"type": "string", "immutable": true, "description": "The work unit's code, e.g. the series"},
+        "active": {"type": "bool", "default": true, "description": "False once unfollowed; following again turns it back on. Kept instead of deleted: the server refuses to delete a row of a table without soft delete"},
+        "checked": {"type": "json", "description": "The data as last checked for news: {rows, values, mark}"},
+        "checked_on": {"type": "datetime"},
+        "last_news": {"type": "string", "description": "What the last notification said"},
+        "seen": {"type": "json", "description": "The data at the user's last visit to the program page: {rows, values, mark}"},
+        "seen_on": {"type": "datetime"}
       }
     }
   }
