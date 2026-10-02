@@ -14,6 +14,7 @@ import {DataCondition, DataRow} from './model/conditions';
 import {Readiness, ReadinessState} from './model/readiness';
 import {COMPOUND_ROLES} from './model/compounds';
 import {WORK_UNIT_LABELS, WorkUnitKind} from './model/work-units';
+import {existingSpaces} from './workspace';
 
 /** The stage value of a program not placed in its model yet; the board's "Unstaged" column. */
 export const UNSTAGED = 'Unstaged';
@@ -66,6 +67,8 @@ export interface ProgramFacts {
   readiness: Readiness | null;
   roles: Record<string, number>;
   units: Partial<Record<WorkUnitKind, number>>;
+  /** The program's workspace folder exists; a recorded space_id alone does not say so. */
+  hasWorkspace?: boolean;
 }
 
 export interface PortfolioTables {
@@ -139,6 +142,10 @@ export async function portfolioFacts(portfolioCode?: string, now = Date.now()):
       units: Object.fromEntries(unitsOf.filter(([k]) => enabled.includes(k)).map(([k, m]) => [k, m.get(program.id)?.length ?? 0])),
     };
   });
+
+  const live = await existingSpaces(facts.map((f) => f.program.space_id)).catch(() => new Set<string>());
+  for (const f of facts)
+    f.hasWorkspace = !!f.program.space_id && live.has(f.program.space_id);
 
   // readiness for the next stage, exactly as the gate panel computes it (readinessFor)
   const criteriaOf = new Map<string, {modality: string | null, criterion: ContextCriterion}[]>();
@@ -217,7 +224,7 @@ export function buildTables(portfolios: PortfolioRow[], stages: Map<string, Stag
     col(I, COL.compounds, (x) => Object.values(x.roles).reduce((a, b) => a + b, 0)),
     ...COMPOUND_ROLES.map((r) => col(I, roleColumn(r), (x) => x.roles[r] ?? 0)),
     ...kinds.map((k) => col(I, unitColumn(k), (x) => x.units[k] ?? null)),
-    col(DG.COLUMN_TYPE.BOOL, COL.workspace, (x) => !!x.program.space_id),
+    col(DG.COLUMN_TYPE.BOOL, COL.workspace, (x) => x.hasWorkspace ?? false),
     col(DG.COLUMN_TYPE.BOOL, COL.continued, (x) => !!x.program.predecessor_id),
   ]);
   programs.name = name;

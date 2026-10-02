@@ -231,9 +231,8 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
 4. **`dapi.connections.filter('name = "X"')` matches the friendly name.** `findConnection` in `src/portal.ts` falls back to an exact match.
 5. **A range filter over an all-zero numeric column drops every row.** A column of `[0, 0, 0]` in the filter panel leaves 0 rows passing; `[5, 5, 5]` keeps all three. The portfolio table leaves a numeric column out of the filter panel until its values vary.
 6. **The bar chart sorts categories by name, not by the column's category order.** Sorting by category ignores `setCategoryOrder`, while the box plot respects it. The table's bar chart splits on a hidden `stage in order` column (`01 D1`, `02 D2`).
-7. **A space that links a FuncCall cannot list its linked children.** `GET /spaces/{id}/children?includeLinked=true`
-   fails with `Converting object to an encodable object failed` once the space links a run (`addEntity(id, true)`),
-   with or without a `types` filter that selects FuncCall, so `children.ofTypes('FuncCall', true)` fails too.
-   Browse asks for linked children the same way (`project_meta.dart`), so a folder holding a run probably cannot be
-   browsed until this is fixed; not checked in the UI. `grok.dapi.projects.find(id).links` does list the run, and the
-   tests use it.
+7. **Listing a space's linked runs failed once (GROK-21043, not reproduced).** In a test run on 2026-10-01,
+   `GET /spaces/{id}/children?includeLinked=true` failed with `Converting object to an encodable object failed` once
+   the space linked a run. A check the same evening did not reproduce it: program and stage folders holding linked runs
+   list them (with and without a `FuncCall` types filter), and the folder view shows them. The tests still read
+   `grok.dapi.projects.find(id).links`.

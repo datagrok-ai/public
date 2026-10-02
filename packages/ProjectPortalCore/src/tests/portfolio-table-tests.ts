@@ -119,6 +119,21 @@ category('Portal: portfolio table', () => {
     expect(dev.col(unitColumn('campaign')), null, 'EX-BIOC has no campaigns');
   });
 
+  test('a program whose workspace folder was deleted has no workspace', async () => {
+    const sm = await portfolioByCode('EX-SMD');
+    const code = `TEST-WS-${Date.now() % 1e9}`;
+    // a space_id recorded by the builder, whose folder was then deleted by hand
+    const [ins] = await portalDb.programs.insert({portfolio_id: sm.id, code, name: code,
+      stage_model_id: sm.stage_model_id, source: 'manual', space_id: crypto.randomUUID()});
+    try {
+      const df = await portfolioTable('EX-SMD');
+      expect(df.get(COL.workspace, rowOf(df, code)), false, 'a dangling space_id is not a workspace');
+      expect(df.get(COL.workspace, rowOf(df, 'EXS-KIN1')), true, 'EXS-KIN1\'s folder exists');
+    } finally {
+      await portalDb.programs.delete(ins.id);
+    }
+  });
+
   test('a filter reduces the rows', async () => {
     const df = await portfolioTable('EX-BIOC');
     const d4 = df.col(COL.stage)!.toList().filter((s) => s === 'D4').length;

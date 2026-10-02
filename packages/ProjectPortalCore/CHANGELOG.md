@@ -2,6 +2,7 @@
 
 ## 0.3.0 (unreleased)
 
+- A program has a workspace only when its folder still exists: the portfolio table's workspace flag and the program page's Open workspace button check the server, not the recorded `space_id`, so folders deleted by hand no longer show as present
 - Portfolio table: one row per program in a Datagrok table view with the filter panel (Table and All portfolios on the board; `/Portal/<code>/table`, `/Portal/table`). Stage in model order, days in stage, readiness for the next gate, compounds by role, work units, workspace. Default viewers: programs by stage and modality, days in stage, a readiness matrix and compounds by role, all driven by the filters. A row opens the program's page. `portfolioTable(portfolio)` returns the table
 - Model runs: `saveModelRun` annotates a call (portfolio, program, stage at run, unit operation, run type, purpose) in its options, saves it, links it into the program's workspace (the current stage's folder when there is one) and records a `model_run`; `selectRunForCriterion` selects a run for a gate criterion and supersedes the one selected before
 - Example model `FedBatchTiter` (JavaScript, `meta.role: model`): a synthetic fed-batch titer model for EX-BIOC

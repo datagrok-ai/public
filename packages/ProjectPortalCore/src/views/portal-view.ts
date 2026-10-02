@@ -15,6 +15,7 @@ import {CriterionReadiness, Readiness} from '../model/readiness';
 import {DataRow} from '../model/conditions';
 import {Decision, nextStage} from '../model/gates';
 import {openPortfolioTable} from './portfolio-table-view';
+import {existingSpaces} from '../workspace';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -189,7 +190,9 @@ export class PortalView {
     const units = await Promise.all(enabledWorkUnits(ctx.portfolio).map(async (kind) =>
       ({kind, rows: await workUnitsOf(kind, [id]).catch(() => [])})));
     const compounds = await compoundsOf(id).catch(() => []);
-    this.renderDetail(ctx, transitions, successors, readiness, units, compounds);
+    const spaceId = ctx.program.space_id;
+    const spaceLive = !!spaceId && (await existingSpaces([spaceId]).catch(() => new Set<string>())).has(spaceId);
+    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive);
   }
 
   /** Readiness for the viewed stage: the context already holds the next stage's. */
@@ -208,7 +211,7 @@ export class PortalView {
 
   private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
     readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = [],
-    compounds: {link: any, compound: any}[] = []): void {
+    compounds: {link: any, compound: any}[] = [], spaceLive = false): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -265,9 +268,10 @@ export class PortalView {
     for (const s of successors)
       lineage.push(named(span(`Continued as ${s.code} in another portfolio`, 'pp-lineage'), 'lineage-successor'));
 
-    const workspace = program.space_id ?
+    const workspace = spaceLive ?
       named(button('Open workspace', () => void this.openWorkspace(program.space_id!)), 'open-workspace-button') :
-      named(span('No workspace yet: build it with buildWorkspace', 'pp-muted'), 'no-workspace');
+      named(span(program.space_id ? 'The workspace folder is gone: rebuild it with buildWorkspace' :
+        'No workspace yet: build it with buildWorkspace', 'pp-muted'), 'no-workspace');
 
     this.detail.replaceChildren(
       named(span(program.name, 'pp-title'), 'program-title'),

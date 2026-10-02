@@ -40,6 +40,16 @@ const building = new Set<string>();
 
 const asRef = (e: DG.Entity): SpaceRef => ({id: e.id, name: e.name, friendlyName: (e as any).friendlyName ?? null});
 
+/** The ids among `ids` whose workspace folder still exists for the caller. A recorded space_id outlives a folder
+ *  deleted by hand, so whether a program has a workspace is a question for the server, not for the row. */
+export async function existingSpaces(ids: (string | null | undefined)[]): Promise<Set<string>> {
+  const unique = [...new Set(ids.filter((x): x is string => !!x))];
+  const found = new Set<string>();
+  for (let i = 0; i < unique.length; i += 200)
+    for (const e of await grok.dapi.getEntities(unique.slice(i, i + 200))) found.add(e.id);
+  return found;
+}
+
 async function subspaces(parentId: string): Promise<DG.Project[]> {
   return await grok.dapi.spaces.id(parentId).children.ofTypes('Project', false).list({pageSize: 1000}) as DG.Project[];
 }
