@@ -31,6 +31,7 @@ import {namedRolesOf, programRolesFrame, resolvePrincipal, setProgramRole as set
 import {ProgramRole} from './model/program-roles';
 import {addEvidenceTo, decisionEvidenceFrame, evidenceItemFor, summarizeAdded} from './evidence';
 import {EvidenceKind} from './model/evidence';
+import {describeSnapshotRow, snapshotsFrame, snapshotsOf, takeSnapshot} from './snapshots';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -245,6 +246,30 @@ export async function addEvidence(portfolio: string, program: string, kind: stri
   const p = await programByCode(portfolio, program);
   const item = await evidenceItemFor(p, kind as EvidenceKind, target, name || undefined);
   return summarizeAdded(p, await addEvidenceTo(p, [item], decision || null));
+}
+
+//name: snapshotProgram
+//description: Freezes a program now: stage, status, the state of each criterion, the runs selected, and the program dataset as a CSV file in the program's workspace folder, fingerprinted. Written once. Contributors and approvers
+//input: string portfolio
+//input: string program
+//input: string label {optional: true; description: Default: program code and time}
+//input: string note {optional: true}
+//output: string report
+export async function snapshotProgram(portfolio: string, program: string, label?: string, note?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const r = await takeSnapshot(p, {label: label || undefined, note: note || undefined});
+  return [`${p.code}: snapshot "${r.snapshot.label}" taken: ${describeSnapshotRow(r.snapshot)}` +
+    (r.snapshot.table_file ? `; table in ${r.snapshot.table_file}` : ''), ...r.notes.map((n) => `  ${n}`)].join('\n');
+}
+
+//name: programSnapshots
+//description: A program's snapshots, newest first: when, label, stage, status, summary, the table file
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function programSnapshots(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  return snapshotsFrame(await snapshotsOf(p.id), `${p.code} · Snapshots`);
 }
 
 //name: loadPortfolios

@@ -12,6 +12,9 @@ import {
   targetState, TargetState, uniqueEvidence, validateEvidence,
 } from './model/evidence';
 import {Readiness} from './model/readiness';
+// snapshots.ts imports from here too; the cycle is safe because neither uses the other at load
+import {summaryOf} from './snapshots';
+import {snapshotEvidence} from './model/snapshots';
 
 const inList = (ids: string[]) => ids.map((id) => `"${id}"`).join(', ');
 
@@ -92,6 +95,13 @@ export async function currentNames(rows: EvidenceRow[]): Promise<Map<string, str
       .catch(() => null);
     if (found)
       for (const r of criteria) out.set(r.id, found.find((x) => x.id === r.target)?.name ?? null);
+  }
+  const snapshots = of('snapshot');
+  if (snapshots.length) {
+    const found = await portalDb.programSnapshots.query({filter: `id in (${inList([...new Set(snapshots.map((r) => r.target))])})`})
+      .catch(() => null);
+    if (found)
+      for (const r of snapshots) out.set(r.id, found.find((x) => x.id === r.target)?.label ?? null);
   }
   for (const r of of('file')) {
     const exists = await grok.dapi.files.exists(r.target).catch(() => undefined);
@@ -207,6 +217,13 @@ export async function evidenceItemFor(program: ProgramRow, kind: EvidenceKind, t
     const stage = ctx.stages.find((s) => s.id === c.stageId);
     return {kind, target: c.id, name: name?.trim() || c.name, role: 'supporting',
       context: {code: c.code, stage: stage?.name ?? '', state: ctx.states[c.id] ?? 'not_started'}};
+  }
+  case 'snapshot': {
+    const s = (await portalDb.programSnapshots.query({filter: `id = "${t}"`}))[0];
+    if (!s || s.program_id !== program.id)
+      throw new Error(`${program.code} has no snapshot ${t}`);
+    const item = snapshotEvidence(s.id, summaryOf(s));
+    return {...item, name: name?.trim() || item.name};
   }
   default:
     return {kind, target: t, name: name?.trim() || t, role: 'supporting'};

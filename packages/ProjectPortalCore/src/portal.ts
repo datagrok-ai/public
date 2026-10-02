@@ -24,6 +24,9 @@ import {ProgramRole} from './model/program-roles';
 // evidence.ts imports from here too; the cycle is safe because neither uses the other at load
 import {suggestedEvidence, writeEvidence} from './evidence';
 import {EvidenceItem} from './model/evidence';
+// snapshots.ts imports from here too; the cycle is safe because neither uses the other at load
+import {summaryOf, takeSnapshot} from './snapshots';
+import {snapshotEvidence} from './model/snapshots';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -686,6 +689,8 @@ export interface DecisionSource {
   /** The evidence rows to write beside the decision (F-25). Left out: what the gate panel would
    * suggest, the gate's readiness and the runs selected for its criteria. An empty list writes none. */
   items?: EvidenceItem[];
+  /** Take a program snapshot now (F-32), before the decision changes anything, and attach it. */
+  snapshot?: boolean;
 }
 
 export type RecordedDecision = GateVerdict & {
@@ -707,8 +712,12 @@ export async function recordDecision(programId: string, decision: Decision, targ
   if (!verdict.allowed)
     throw new Error(verdict.reasons.join('; '));
   // what the decision rests on, read before anything changes
-  const items = by.items ?? await suggestedEvidence(programId, ctx.readiness,
+  let items = by.items ?? await suggestedEvidence(programId, ctx.readiness,
     ctx.stages.find((s) => s.id === ctx.readiness?.stageId)?.name ?? '').catch(() => []);
+  if (by.snapshot) {
+    const snap = await takeSnapshot(ctx.program, {reason: `at the ${decision} decision`});
+    items = [...items, snapshotEvidence(snap.snapshot.id, summaryOf(snap.snapshot))];
+  }
   const now = new Date().toISOString();
   // what the data said when the gate was passed, kept beside the decision
   if (decision === 'advance' && ctx.readiness) {

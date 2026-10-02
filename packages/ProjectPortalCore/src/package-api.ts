@@ -149,6 +149,21 @@ export namespace funcs {
   }
 
   /**
+   * Freezes a program now: stage, status, the state of each criterion, the runs selected, and the program dataset as a CSV file in the program's workspace folder, fingerprinted. Written once. Contributors and approvers
+   * @param {string} label - Default: program code and time
+   */
+  export async function snapshotProgram(portfolio: string , program: string , label?: string , note?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SnapshotProgram', { portfolio, program, label, note });
+  }
+
+  /**
+   * A program's snapshots, newest first: when, label, stage, status, summary, the table file
+   */
+  export async function programSnapshots(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ProgramSnapshots', { portfolio, program });
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {

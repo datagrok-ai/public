@@ -316,6 +316,16 @@ says what it rested on. There is no separate `decision` table.
 - **Afterwards.** The program's history lists each decision with its evidence, each piece clickable: a run shows its saved call in the context panel, a criterion shows its stage's gate, a URL opens, a CSV file opens as a table. `addEvidence(portfolio, program, kind, target, name, decision)` adds a piece to a recorded decision (default the latest), dated when added; the program's approvers only. `decisionEvidence(portfolio, program, decision)` lists decisions and evidence, with each target's state (`live`, `renamed`, `gone`, `unchecked`).
 - `evidence` is master-secured through the program, like the gate log.
 
+### Program snapshots
+
+A snapshot freezes a program at one time (F-32, FR-15), so a decision can point at what the team
+saw, not at what the data says today.
+
+- **What it holds.** `program_snapshot`: when and by whom, a label and note, the stage and status, every criterion that applies with its state (the next gate's data conditions as evaluated, with what the data said), the run selected for each criterion, and the program dataset. Every column is write-once; nothing in the package updates or deletes a snapshot.
+- **The table** is written as a CSV file to the program's workspace folder (`snapshot-<program>-<time>Z.csv`), and its SHA-256 is kept on the row. Opening the snapshot reads the file back and says whether it still holds what was frozen (intact, changed, missing). A program without a workspace folder keeps the table's size and fingerprint only, and the note says so. A failed write of the row removes the file it wrote.
+- **Taking one.** **Snapshot now** on the program page (*Snapshots*, behind More in Simple mode), `snapshotProgram(portfolio, program, label, note)`, or **Snapshot now** in the gate panel when deciding: taken before the decision changes anything and attached as evidence. Contributors and approvers of the portfolio or the program.
+- **Reading one.** Each snapshot on the program page, and each snapshot in a decision's evidence, opens read-only: stage, criteria, runs, the table's state, and **Open table**, a table view with editing off. `programSnapshots(portfolio, program)` lists them.
+
 ### Stage advance driven by data
 
 Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
@@ -424,6 +434,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `setProgramRole(portfolio, program, principal, role)` | Gives a group (by name) or a user (by login) a role on one program: viewer, contributor, approver, or none to remove it. Portfolio approvers only; shares the program's folder to match |
 | `programRoles(portfolio, program)` | The program's roles as a table |
 | `decisionEvidence(portfolio, program, decision)` | The program's gate decisions with their evidence, one row per piece, and whether each target is live, renamed or gone |
+| `snapshotProgram(portfolio, program, label, note)` | Freezes the program now: stage, criteria, selected runs, and the program dataset as a file in its workspace folder |
+| `programSnapshots(portfolio, program)` | The program's snapshots, newest first |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
 | `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |
@@ -470,6 +482,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
   - Modes and personas: the rules (the persona from groups, default and setting; cards from the defaults, the portfolio and functions; the config check; what Simple hides), and on EXS-KIN1 the settings remembered, the program page's cards for a chemist and a modeler, Simple with More and back, and a function card that opens a table.
   - Decisions with evidence: the rules (what an item needs, a typed link, readiness as evidence, the suggestion, renamed and gone targets), and on EX-SMD a scratch program advanced with its readiness, with an explicit list and a refused item, a run added later then renamed and deleted, the gate panel attaching a link, and an advance by data with its readiness evidence.
+  - Program snapshots: the rules (criteria frozen in stage order, recorded or evaluated; the file name; the table check; the summary), and on EX-SMD a snapshot of EXS-KIN1 with its SAR table in the program folder, read back intact and then noticed changed, the functions and the dialog, and a decision that takes a snapshot of a program without a workspace.
   - Program roles: the rules (the strongest role, roles only add, who may change them, grants and what changes), and on EXS-KIN1 a throwaway user made viewer, contributor and approver (access in the app, the folder's grant, the folder seen as that user), a downgrade, removal; a non-approver refused; the functions.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
@@ -479,7 +492,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 226 of the 229 package tests and all 26 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 231 of the 234 package tests and all 27 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

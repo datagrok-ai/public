@@ -2,7 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
-- Decisions with evidence (F-25, FR-71/74): a gate decision (the gate-log entry) carries evidence rows: a model run by `run_id`, a file path, a URL, a criterion's state at the gate, and (reserved) a program snapshot. Each points at its target by a soft reference and freezes the name and context when attached, so the history reads the same after the target is renamed or deleted, and says so (`now …`, `gone; as recorded`)
+- Dated program snapshot (F-32, FR-15): `snapshotProgram(portfolio, program, label, note)` freezes the program's stage and status, the state of every criterion that applies (the next gate's data conditions as evaluated), the runs selected, and the program dataset (the SAR table on EX-SMD) as a CSV file in the program's workspace folder, its SHA-256 on the record. Written once; a file changed afterwards shows as changed. Without a workspace folder the table's size and fingerprint are kept, not the table
+- The program page lists snapshots (*Snapshots*, behind More in Simple mode) with **Snapshot now**; each opens read-only: stage, criteria, runs, and the table in a view with editing off. `programSnapshots(portfolio, program)` lists them
+- A decision may take a snapshot now as evidence (**Snapshot now** in the gate panel, `snapshot` on `recordDecision`); the history's snapshot link opens it. `addEvidence` takes a snapshot by id
+- `portal` schema 0.2.19: table `program_snapshot`. Additive, no migration script
+
+- Decisions with evidence (F-25, FR-71/74): a gate decision (the gate-log entry) carries evidence rows: a model run by `run_id`, a file path, a URL, a criterion's state at the gate, and a program snapshot. Each points at its target by a soft reference and freezes the name and context when attached, so the history reads the same after the target is renamed or deleted, and says so (`now …`, `gone; as recorded`)
 - The gate panel suggests the gate's readiness and the runs selected for its criteria, all ticked; the approver may untick any and attach a link or file path. The program's history lists each decision with its evidence, each piece clickable (a run opens its call, a criterion its stage, a URL its page)
 - `recordDecision` writes the suggestion when no list is given, so an advance by data now records its readiness evidence the same way as an approver's. `stage_transition.evidence` is still written
 - `decisionEvidence(portfolio, program, decision)` lists decisions with their evidence and whether each target is live, renamed or gone; `addEvidence(portfolio, program, kind, target, name, decision)` adds a piece to a decision already recorded (default the latest), approvers only

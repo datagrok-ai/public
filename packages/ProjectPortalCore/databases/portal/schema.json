@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -585,6 +585,30 @@
         "context": {"type": "json", "immutable": true, "description": "What the target said when attached: a run's model and selection, a criterion's state and data summary"},
         "added_by": {"type": "user", "immutable": true},
         "added_on": {"type": "datetime", "immutable": true}
+      }
+    },
+    "program_snapshot": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "friendlyName": "Program snapshots",
+      "description": "A program frozen at one time (FR-15): stage, status, the state of each criterion, the runs selected, and the program dataset as a CSV file in the program's workspace folder, fingerprinted by its SHA-256. Written once; a decision may take one as evidence.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "taken_on": {"type": "datetime", "required": true, "immutable": true},
+        "taken_by": {"type": "user", "immutable": true},
+        "label": {"type": "string", "required": true, "isName": true, "immutable": true},
+        "note": {"type": "string", "editor": "textarea", "immutable": true, "description": "Why it was taken, or why its table was not kept"},
+        "stage_code": {"type": "string", "immutable": true, "description": "The program's stage then, frozen; empty when unstaged"},
+        "stage_name": {"type": "string", "immutable": true},
+        "status": {"type": "string", "immutable": true},
+        "criteria": {"type": "json", "immutable": true, "description": "Every criterion that applies: stage, code, name, required, state, basis, what the data said"},
+        "artifacts": {"type": "json", "immutable": true, "description": "The run selected for each criterion: run_id, title, model, who chose it and why"},
+        "dataset": {"type": "string", "immutable": true, "description": "The program dataset's name"},
+        "table_folder": {"type": "string", "immutable": true, "description": "The space holding the table file: the program's workspace folder"},
+        "table_file": {"type": "string", "immutable": true, "description": "The CSV file's name in that folder; empty when the table was not kept"},
+        "table_rows": {"type": "int", "immutable": true},
+        "table_columns": {"type": "json", "immutable": true},
+        "table_sha256": {"type": "string", "immutable": true, "description": "SHA-256 of the CSV as written, so a changed file is noticed"}
       }
     }
   }

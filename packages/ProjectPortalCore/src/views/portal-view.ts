@@ -42,6 +42,10 @@ import {namedRolesOf, resolvePrincipal, setProgramRole} from '../program-roles';
 import {PROGRAM_ROLE_LABELS, PROGRAM_ROLES, ProgramRole} from '../model/program-roles';
 import {ProgramRoleRow} from '../generated/db';
 import {EvidenceLine, evidenceOf, suggestedEvidence} from '../evidence';
+import {openSnapshotDialog} from './snapshot-dialog';
+import {snapshotsOf, summaryOf, takeSnapshot} from '../snapshots';
+import {describeSnapshot} from '../model/snapshots';
+import {ProgramSnapshotRow} from '../generated/db';
 import {EVIDENCE_LABELS, EvidenceItem, evidenceKey, linkEvidence, validateEvidence} from '../model/evidence';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
@@ -100,7 +104,7 @@ export class PortalView {
   private roleLine = new Map<string, string>();
   /** The evidence the next decision on [programId] carries: suggested items the decider unticked,
    * and links added by hand. Kept across redraws of the same program. */
-  private picked: {programId: string, off: Set<string>, links: EvidenceItem[]} = {programId: '', off: new Set(), links: []};
+  private picked: {programId: string, off: Set<string>, links: EvidenceItem[], snapshot?: boolean} = {programId: '', off: new Set(), links: []};
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
@@ -283,12 +287,13 @@ export class PortalView {
     const news = follows.length ? this.news ?? null : null;
     this.follows = follows;
     this.roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
+    const snapshots = await snapshotsOf(id).catch(() => [] as ProgramSnapshotRow[]);
     // the evidence behind each decision, and what the next one would rest on
     const evidence = await evidenceOf(id).catch(() => new Map<string, EvidenceLine[]>());
     const suggested = ctx.approver && ctx.portfolio.stage_authority === 'portal' ? await suggestedEvidence(id, ctx.readiness,
       ctx.stages.find((s) => s.id === ctx.readiness?.stageId)?.name ?? '').catch(() => []) : [];
     this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
-      choices, attention, recommendation, news, {lines: evidence, suggested});
+      choices, attention, recommendation, news, {lines: evidence, suggested}, snapshots);
     this.redraw();
   }
 
@@ -373,7 +378,8 @@ export class PortalView {
     compounds: {link: any, compound: any}[] = [], spaceLive = false, runs: SavedRunItem[] = [],
     choices = new Map<string, CriterionRuns>(), attention: {result: ProgramAttention | null, error?: string} | null = null,
     recommendation: ProgramRecommendation | null = null, news: {since: string | null, lines: string[]} | null = null,
-    evidence: {lines: Map<string, EvidenceLine[]>, suggested: EvidenceItem[]} = {lines: new Map(), suggested: []}): void {
+    evidence: {lines: Map<string, EvidenceLine[]>, suggested: EvidenceItem[]} = {lines: new Map(), suggested: []},
+    snapshots: ProgramSnapshotRow[] = []): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -407,7 +413,8 @@ export class PortalView {
     const decide = (d: Decision) => async () => {
       try {
         const items = [...evidence.suggested, ...this.picked.links].filter((e) => !this.picked.off.has(evidenceKey(e)));
-        const done = await recordDecision(program.id, d, null, rationale.value, {source: 'approver', items});
+        const done = await recordDecision(program.id, d, null, rationale.value, {source: 'approver', items,
+          snapshot: !!this.picked.snapshot});
         this.picked = {programId: program.id, off: new Set(), links: []};
         const ev = done.evidence;
         grok.shell.info(`${program.name}: ${d} recorded${ev?.written ? ` with ${ev.written} piece(s) of evidence` : ''}` +
@@ -501,7 +508,7 @@ export class PortalView {
       this.redraw?.();
     }), 'more-button') : null;
     if (more)
-      more.title = this.moreOpen ? 'Back to the simple page' : 'Missing assays and suggested models, attention, saved runs, history';
+      more.title = this.moreOpen ? 'Back to the simple page' : 'Missing assays and suggested models, attention, saved runs, roles, snapshots, history';
 
     this.detail.replaceChildren(
       named(span(program.name, 'pp-title'), 'program-title'),
@@ -535,6 +542,7 @@ export class PortalView {
         runs.length ? this.savedRuns(runs) : named(span('No runs saved to this program yet', 'pp-muted'), 'no-saved-runs'),
       ] : []),
       ...(shown('roles') ? this.programRoles(ctx) : []),
+      ...(shown('snapshots') ? this.snapshots(ctx, snapshots) : []),
       ...(shown('history') ? [
         span('History', 'pp-heading'),
         transitions.length ? history : span('No transitions yet', 'pp-muted'),
@@ -825,6 +833,30 @@ export class PortalView {
     ]), `criterion-run-${slug(c.code)}`);
   }
 
+  /** The program's snapshots, newest first, each opening read-only; Snapshot now takes one. */
+  private snapshots(ctx: ProgramContext, rows: ProgramSnapshotRow[]): HTMLElement[] {
+    const take = named(button('Snapshot now', async () => {
+      try {
+        const r = await takeSnapshot(ctx.program);
+        grok.shell.info([`${ctx.program.code}: snapshot taken`, ...r.notes].join('\n'));
+        await this.openProgram(ctx.program.id, this.viewedStage);
+      } catch (e: any) {
+        grok.shell.error(e?.message ?? String(e));
+      }
+    }), 'snapshot-button');
+    take.title = 'Freeze the stage, the criteria, the selected runs and the program dataset now; written once';
+    return [
+      named(span(`Snapshots (${rows.length})`, 'pp-heading'), 'snapshots-heading'),
+      divH([take], 'pp-actions'),
+      rows.length ? named(divV(rows.map((s, i) => {
+        const el = named(span(`${s.label} · ${describeSnapshot(summaryOf(s))}`, 'pp-link pp-history-row'), `snapshot-${i}`);
+        el.title = 'Open the snapshot, read-only';
+        el.onclick = () => void openSnapshotDialog(s.id).catch((e) => grok.shell.error(e?.message ?? String(e)));
+        return el;
+      })), 'program-snapshots') : named(span('No snapshots yet', 'pp-muted'), 'no-snapshots'),
+    ];
+  }
+
   /** What the next decision will rest on: the gate's readiness (one tick for its criteria), the run
    * selected for each criterion, and links added here. Everything is ticked; untick to leave it out. */
   private evidencePicker(programId: string, suggested: EvidenceItem[], stageName: string): HTMLElement {
@@ -849,6 +881,15 @@ export class PortalView {
     for (const e of suggested.filter((x) => x.kind === 'model_run'))
       rows.push(box(`evidence-run-${slug(String(e.context?.criterion ?? e.target))}`, `Run: ${e.name} (for ${e.context?.criterion ?? '?'})`, [evidenceKey(e)]));
     this.picked.links.forEach((e, i) => rows.push(box(`evidence-link-${i}`, `${EVIDENCE_LABELS[e.kind]}: ${e.name}`, [evidenceKey(e)], e.target)));
+    const snap = named(document.createElement('input'), 'evidence-snapshot');
+    snap.type = 'checkbox';
+    snap.checked = !!this.picked.snapshot;
+    snap.onchange = () => this.picked.snapshot = snap.checked;
+    const snapLabel = document.createElement('label');
+    snapLabel.className = 'pp-evidence-pick';
+    snapLabel.title = 'Freeze the stage, criteria, selected runs and the program dataset now, before the decision, and attach it';
+    snapLabel.append(snap, span('Snapshot now'));
+    rows.push(snapLabel);
     const link = named(document.createElement('input'), 'evidence-link-input');
     link.className = 'pp-text';
     link.placeholder = 'Link or file path to attach';
@@ -867,7 +908,7 @@ export class PortalView {
     add.title = 'Attach a document, report or page to the next decision';
     return named(divV([
       span('Evidence for the decision', 'pp-muted'),
-      ...(rows.length ? rows : [span('Nothing suggested for this gate', 'pp-muted')]),
+      ...rows,
       named(divH([link, add], 'pp-actions pp-role-form'), 'evidence-link'),
     ], 'pp-evidence-picker'), 'decision-evidence');
   }
@@ -898,6 +939,9 @@ export class PortalView {
           recorded();
         return;
       }
+      case 'snapshot':
+        await openSnapshotDialog(l.row.target);
+        return;
       case 'file':
         if (/\.(csv|tsv|txt)$/i.test(l.row.target))
           grok.shell.addTableView(await grok.dapi.files.readCsv(l.row.target));

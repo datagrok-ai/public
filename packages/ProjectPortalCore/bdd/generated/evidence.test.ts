@@ -11,8 +11,8 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {openApp, scratchProjectAtStage} from '../bindings/steps.js';
-import {clickOn, enterInto, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {openApp, scratchProjectAtStage, scratchWorkspace} from '../bindings/steps.js';
+import {check, clickOn, enterInto, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Decisions with evidence", () => {
@@ -33,5 +33,25 @@ test.describe("Decisions with evidence", () => {
     await session.step(20, "And user clicks on advance button", () => clickOn(page, el("advance button")));
     await session.step(21, "Then latest decision evidence should contain text \"Link: example.org/…/hf-gate\"", () => shouldContainText(page, el("latest decision evidence"), "Link: example.org/…/hf-gate"));
     await session.step(22, "And latest decision evidence should contain text \"Criterion: Primary assay validated\"", () => shouldContainText(page, el("latest decision evidence"), "Criterion: Primary assay validated"));
+  });
+  test("A decision takes a snapshot of the project now, which opens read-only from the history", {tag: ["@portal"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(8, "Given user opens the Project Portal app", () => openApp(page));
+    enter(page, "Project Portal app");
+    await session.step(25, "Given a scratch project \"BDD-EVIDENCE\" at stage \"TV\" in the \"EX-SMD\" portfolio", () => scratchProjectAtStage(page, "BDD-EVIDENCE", "TV", "EX-SMD"));
+    await session.step(26, "And the workspace of the scratch project \"BDD-EVIDENCE\" in the \"EX-SMD\" portfolio is built", () => scratchWorkspace(page, "BDD-EVIDENCE", "EX-SMD"));
+    await session.step(27, "When user clicks on small molecule discovery portfolio", () => clickOn(page, el("small molecule discovery portfolio")));
+    await session.step(28, "And user clicks on evidence project card", () => clickOn(page, el("evidence project card")));
+    await session.step(29, "And user clicks on assay criterion met button", () => clickOn(page, el("assay criterion met button")));
+    await session.step(30, "And user checks evidence snapshot checkbox", () => check(page, el("evidence snapshot checkbox")));
+    await session.step(31, "And user enters \"Assay validated\" into rationale input", () => enterInto(page, "Assay validated", el("rationale input")));
+    await session.step(32, "And user clicks on advance button", () => clickOn(page, el("advance button")));
+    await session.step(33, "Then latest decision evidence should contain text \"Snapshot: BDD-EVIDENCE\"", () => shouldContainText(page, el("latest decision evidence"), "Snapshot: BDD-EVIDENCE"));
+    await session.step(34, "And program snapshots should contain text \"Target Validation\"", () => shouldContainText(page, el("program snapshots"), "Target Validation"));
+    await session.step(35, "When user clicks on latest decision snapshot link", () => clickOn(page, el("latest decision snapshot link")));
+    await session.step(36, "Then snapshot dialog should be visible", () => shouldBe(page, el("snapshot dialog"), "visible"));
+    await session.step(37, "And snapshot stage should contain text \"Target Validation\"", () => shouldContainText(page, el("snapshot stage"), "Target Validation"));
+    await session.step(38, "And snapshot criteria should contain text \"Primary assay validated\"", () => shouldContainText(page, el("snapshot criteria"), "Primary assay validated"));
+    await session.step(39, "And snapshot table should contain text \"the file holds what was frozen\"", () => shouldContainText(page, el("snapshot table"), "the file holds what was frozen"));
   });
 });

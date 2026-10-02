@@ -20,3 +20,20 @@ Feature: Decisions with evidence
     And user clicks on advance button
     Then latest decision evidence should contain text "Link: example.org/…/hf-gate"
     And latest decision evidence should contain text "Criterion: Primary assay validated"
+
+  Scenario: A decision takes a snapshot of the project now, which opens read-only from the history
+    Given a scratch project "BDD-EVIDENCE" at stage "TV" in the "EX-SMD" portfolio
+    And the workspace of the scratch project "BDD-EVIDENCE" in the "EX-SMD" portfolio is built
+    When user clicks on small molecule discovery portfolio
+    And user clicks on evidence project card
+    And user clicks on assay criterion met button
+    And user checks evidence snapshot checkbox
+    And user enters "Assay validated" into rationale input
+    And user clicks on advance button
+    Then latest decision evidence should contain text "Snapshot: BDD-EVIDENCE"
+    And program snapshots should contain text "Target Validation"
+    When user clicks on latest decision snapshot link
+    Then snapshot dialog should be visible
+    And snapshot stage should contain text "Target Validation"
+    And snapshot criteria should contain text "Primary assay validated"
+    And snapshot table should contain text "the file holds what was frozen"

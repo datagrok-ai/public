@@ -114,7 +114,7 @@ export const matrixFollows = Then('the readiness matrix should show the programs
 }, {description: 'the readiness matrix is a linked table: its rows passing the filter are those of the programs'});
 
 /** Removes every live program with [code] in [portfolio], with what saving runs to it left: the
- * model_run rows, the saved calls and their uploaded tables, and its workspace folder. */
+ * model_run rows, the saved calls and their uploaded tables, its snapshot files and its workspace folder. */
 async function removeScratchWithRuns(page: Page, code: string, portfolio: string): Promise<number> {
   return page.evaluate(async ([c, p]) => {
     const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
@@ -139,6 +139,11 @@ async function removeScratchWithRuns(page: Page, code: string, portfolio: string
         if (call)
           await grok.dapi.functions.calls.delete(call);
         await runs.delete(run.id);
+      }
+      // snapshot tables are files in the program's folder
+      for (const sn of await grok.dapi.domains.table('portal.program_snapshot').query({filter: `program_id = "${r.id}"`})) {
+        if (sn.table_file && sn.table_folder)
+          await grok.dapi.spaces.id(sn.table_folder).files.delete(sn.table_file).catch(() => undefined);
       }
       if (r.space_id)
         await removeSpace(r.space_id);

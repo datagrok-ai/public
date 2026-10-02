@@ -430,6 +430,7 @@ export type ProgramExpand = {
   'details:follow': {follow?: FollowRow[]};
   'details:program_role': {program_role?: ProgramRoleRow[]};
   'details:evidence': {evidence?: EvidenceRow[]};
+  'details:program_snapshot': {program_snapshot?: ProgramSnapshotRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -1506,6 +1507,68 @@ export type EvidenceExpand = {
     'added_by.author'?: string};
 };
 
+/** Row of `portal.program_snapshot`. */
+export interface ProgramSnapshotRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  taken_on: Dayjs;
+  taken_by?: string;
+  label: string;
+  note?: string;
+  stage_code?: string;
+  stage_name?: string;
+  status?: string;
+  criteria?: {[key: string]: any};
+  artifacts?: {[key: string]: any};
+  dataset?: string;
+  table_folder?: string;
+  table_file?: string;
+  table_rows?: number;
+  table_columns?: {[key: string]: any};
+  table_sha256?: string;
+}
+
+/** Insert payload for `portal.program_snapshot`. */
+export interface ProgramSnapshotInsert {
+  program_id: string;
+  taken_on: Dayjs | string;
+  taken_by?: string;
+  label: string;
+  note?: string;
+  stage_code?: string;
+  stage_name?: string;
+  status?: string;
+  criteria?: {[key: string]: any};
+  artifacts?: {[key: string]: any};
+  dataset?: string;
+  table_folder?: string;
+  table_file?: string;
+  table_rows?: number;
+  table_columns?: {[key: string]: any};
+  table_sha256?: string;
+}
+
+export type ProgramSnapshotColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'taken_on' | 'taken_by' | 'label' | 'note' | 'stage_code' | 'stage_name' | 'status' | 'criteria' | 'artifacts' |
+  'dataset' | 'table_folder' | 'table_file' | 'table_rows' | 'table_columns' | 'table_sha256';
+
+/** Expand keys of `portal.program_snapshot` → fields each adds to the row (consumed by query()/builder). */
+export type ProgramSnapshotExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'taken_by': {'taken_by.login'?: string; 'taken_by.firstName'?: string; 'taken_by.lastName'?: string;
+    'taken_by.status'?: string; 'taken_by.createdOn'?: Dayjs; 'taken_by.picture'?: string; 'taken_by.group'?: string;
+    'taken_by.author'?: string};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -1593,7 +1656,10 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'program_role'; id: string} |
   {op: 'insert'; table: 'evidence'; ref?: string; values: DG.DomainTxValues<EvidenceInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'evidence'; id: string; values: DG.DomainTxValues<Partial<EvidenceRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'evidence'; id: string};
+  {op: 'delete'; table: 'evidence'; id: string} |
+  {op: 'insert'; table: 'program_snapshot'; ref?: string; values: DG.DomainTxValues<ProgramSnapshotInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'program_snapshot'; id: string; values: DG.DomainTxValues<Partial<ProgramSnapshotRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'program_snapshot'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -1683,6 +1749,9 @@ export const portalDb = {
   },
   get evidences() {
     return grok.dapi.domains.table<EvidenceRow, EvidenceInsert, EvidenceColumn, EvidenceExpand>('portal.evidence');
+  },
+  get programSnapshots() {
+    return grok.dapi.domains.table<ProgramSnapshotRow, ProgramSnapshotInsert, ProgramSnapshotColumn, ProgramSnapshotExpand>('portal.program_snapshot');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {
