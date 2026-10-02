@@ -1,31 +1,21 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {getProcessedConfig, PipelineConfigurationStaticProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {expandDeferredIOs, getProcessedConfig, PipelineConfigurationStaticProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {DriverLogger} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {parseLinkIO} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/LinkSpec';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {TestScheduler} from 'rxjs/testing';
+import {Subject} from 'rxjs';
+import {filter, take} from 'rxjs/operators';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler} from '../../../test-utils';
+import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
 
 function expectThrows(fn: () => unknown, match?: RegExp) {
   let threw = false;
   let err: unknown = undefined;
   try {
     fn();
-  } catch (e) {
-    threw = true;
-    err = e;
-  }
-  expectDeepEqual(threw, true);
-  if (match) expectDeepEqual(match.test(String((err as Error)?.message ?? err)), true);
-}
-
-async function expectThrowsAsync(fn: () => Promise<unknown>, match?: RegExp) {
-  let threw = false;
-  let err: unknown = undefined;
-  try {
-    await fn();
   } catch (e) {
     threw = true;
     err = e;
@@ -60,6 +50,18 @@ category('ComputeUtils: Driver template expansion grammar', async () => {
   test('No direction validation: outputs() on to and inputs() on from parse', async () => {
     parseLinkIO('out_(template):stepB/outputs(LibTests:TestAdd2)', 'output');
     parseLinkIO('in_(template):stepA/inputs(LibTests:TestAdd2)', 'input');
+  });
+
+  test('Exclusion kinds parse beside names', async () => {
+    const [parsed] = parseLinkIO('out_(template):stepB/inputs(LibTests:TestMul2, a|$nonscalar|$linked)', 'output');
+    const last = parsed.segments[parsed.segments.length - 1] as any;
+    expectDeepEqual([last.excludeIds, last.excludeKinds], [['a'], ['nonscalar', 'linked']]);
+  });
+
+  test('Reject unknown exclusion kinds and kinds outside io selectors', async () => {
+    expectThrows(() => parseLinkIO('out_(template):stepB/inputs(LibTests:TestMul2, $scalar)', 'output'),
+      /unknown exclusion \$scalar/);
+    expectThrows(() => parseLinkIO('out:stepB/$a', 'output'));
   });
 
   test('Reject IO selector without nqName arg', async () => {
@@ -151,6 +153,18 @@ category('ComputeUtils: Driver template expansion config-time', async () => {
     expectDeepEqual(links[0].to.map((io) => io.name), ['out_a', 'out_b']);
   });
 
+  test('Expansion drops non-scalar ios, keeps dates and marks linked entries optional', async () => {
+    const ios = expandDeferredIOs(
+      parseLinkIO('_(template):step/inputs(LibTests:TestAnnotatedInputs, a|$nonscalar|$linked)', 'output'), 'l');
+    expectDeepEqual(ios.map((io) => io.name), ['b', 'c', 'v', 'code', 'mode']);
+    expectDeepEqual(ios.map((io) => [io.unlinked, io.flags?.includes('optional')]), ios.map(() => [true, true]));
+    const plain = expandDeferredIOs(parseLinkIO('_(template):step/inputs(LibTests:TestMul2, $nonscalar)', 'output'), 'l');
+    expectDeepEqual(plain.map((io) => [io.name, io.unlinked]), [['a', undefined], ['b', undefined]]);
+    const dates = expandDeferredIOs(
+      parseLinkIO('_(template):step/inputs(LibTests:TestLookupAnnotations, $nonscalar)', 'output'), 'l');
+    expectDeepEqual(dates.map((io) => io.name), ['model', 'engine', 'cyl', 'mpg', 'name', 'flag', 'when', 'made']);
+  });
+
   test('Error: base with more than one entry', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',
@@ -219,6 +233,106 @@ category('ComputeUtils: Driver template expansion runtime', async () => {
       expectObservable(outNode.getItem().getStateStore().getStateChanges('x'), '^ 1000ms !')
         .toBe('a b', {a: undefined, b: 11});
     });
+  });
+
+  test('Linked exclusion leaves inputs another data link writes', async () => {
+    const config = (to: string): PipelineConfiguration => ({
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [{
+        id: 'feed', from: 'in:step1/a', to: 'out:step2/a',
+      }, {
+        id: 'fill', type: 'rule', from: 'm:step1/b', to,
+        sources: {row: {js: {args: ['m'], fn: (m: number) => ({a: m * 10, b: m * 10})}}},
+        effects: [{effect: 'assign', values: {var: 'row'}}],
+      }],
+    });
+    const results: any[] = [];
+    for (const to of ['_(template):step2/inputs(LibTests:TestMul2, $linked)', '_(template):step2/inputs(LibTests:TestMul2)']) {
+      const pconf = await getProcessedConfig(config(to));
+      const logger = new DriverLogger();
+      testScheduler.run((helpers) => {
+        const {cold} = helpers;
+        const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, logger});
+        tree.init().subscribe();
+        const inStore = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+        const outStore = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+        cold('-a').subscribe(() => inStore.setState('a', 1));
+        cold('--a').subscribe(() => inStore.setState('b', 2));
+        cold('---a').subscribe(() => results.push([outStore.getState('a'), outStore.getState('b'),
+          logger.errors.some((error) => error.context === 'ioDependencies')]));
+      });
+    }
+    expectDeepEqual(results, [[1, 20, false], [20, 20, true]]);
+  });
+
+  test('Linked exclusion follows links added by a tree mutation', async () => {
+    const pconf = await getProcessedConfig({
+      id: 'pipeline1',
+      type: 'sequential',
+      stepTypes: [
+        {id: 's1', nqName: 'LibTests:TestAdd2'},
+        {id: 's2', nqName: 'LibTests:TestMultiarg5'},
+      ],
+      initialSteps: [{id: 's2'}],
+      links: [{
+        id: 'feed',
+        base: 'base:expand(s1)',
+        from: 'from:same(@base, s1)/res',
+        to: 'to:after+(@base, s2)/a',
+      }, {
+        id: 'fill',
+        type: 'rule',
+        base: 'base:expand(s2)',
+        from: 'm:same(@base, s2)/b',
+        to: '_(template):same(@base, s2)/inputs(LibTests:TestMultiarg5, b|$linked)',
+        effects: [{effect: 'assign', values: {var: 'm'}}],
+      }],
+    });
+    const outputs: string[][] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const fillOutputs = () => [...tree.linksState.links.values()]
+        .filter((link) => link.matchInfo.spec.id === 'fill::data')
+        .map((link) => Object.keys(link.matchInfo.outputs).sort())[0];
+      outputs.push(fillOutputs());
+      const updated$ = new Subject<true>();
+      cold('-a').subscribe(() => {
+        tree.addSubTree(tree.nodeTree.root.getItem().uuid, 's1', 0).subscribe();
+        tree.globalROLocked$.pipe(filter((locked) => !locked), take(1)).subscribe(() => updated$.next(true));
+      });
+      updated$.pipe(take(1)).subscribe(() => outputs.push(fillOutputs()));
+    });
+    expectDeepEqual(outputs, [['a', 'c', 'd', 'e'], ['c', 'd', 'e']]);
+  });
+
+  test('Linked exclusions do not exclude each other', async () => {
+    const fill = (id: string) => ({
+      id, type: 'rule' as const, from: 'm:step1/b', to: '_(template):step2/inputs(LibTests:TestMul2, $linked)',
+      effects: [{effect: 'assign' as const, values: {var: 'm'}}],
+    });
+    const pconf = await getProcessedConfig({
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      links: [fill('one'), fill('two')],
+    });
+    let outputs: string[][] = [];
+    testScheduler.run(() => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      outputs = [...tree.linksState.links.values()].map((link) => Object.keys(link.matchInfo.outputs).sort());
+    });
+    expectDeepEqual(outputs, [['a', 'b'], ['a', 'b']]);
   });
 
   test('Marker: templateName is the prefix string for prefixed templates; absent on bare entries', async () => {

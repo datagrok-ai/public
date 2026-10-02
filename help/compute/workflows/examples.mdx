@@ -293,7 +293,8 @@ Inputs and outputs are described using the **Link Query Language**. The links
 system of the low-code workflow is very flexible and allows dynamic matching of
 step inputs and outputs for dynamically added steps, and even between different
 workflows. For the full grammar see the
-[LQL reference](./link-query-language-reference); for the catalog of link types
+[LQL reference](./link-query-language-reference) and the advanced examples in
+[LQL advanced](./link-query-language-advanced); for the catalog of link types
 and what each controller method does, see [Link types](./link-types).
 
 
@@ -572,3 +573,7 @@ cover, see the example files bundled with the `create-workflow` agent skill:
 Each file is a self-contained provider function you can adapt to a real
 workflow. They reference the same types described in this documentation
 (resolvable via `@datagrok-libraries/compute-api`).
+
+For form logic built from [rules](./link-types#rules), such as a computed
+default, a dynamic option list and a lookup table, see the
+[advanced examples](./link-query-language-advanced#advanced-examples).

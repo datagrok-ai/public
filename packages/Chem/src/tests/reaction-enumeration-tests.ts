@@ -1,14 +1,19 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
-import {cloneConfig, DEFAULT_CONFIG} from '../utils/reaction-enumeration/config';
+import {cloneConfig, DEFAULT_CONFIG, EnumeratorConfig} from '../utils/reaction-enumeration/config';
 import {
   enumerate, formatRoute, OutputRow, Route,
   splitSmartsByReactants, stripOuterParens, TemplateInput,
 } from '../utils/reaction-enumeration/enumerate';
+import {applyProductFilters, computeMolStats} from '../utils/reaction-enumeration/filters';
+import {addResultFilters, buildInputs, buildResultDataFrame} from '../utils/reaction-enumeration/shared';
+import {propagatedColumns, snapshotPropagation} from '../utils/reaction-enumeration/propagation';
+import {MountedViewerRegistry} from '../utils/reaction-enumeration/viewer-mount';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
@@ -195,10 +200,489 @@ category('Reaction Enumeration', () => {
     expect(stripOuterParens('[#6:1]'), '[#6:1]');
   });
 
+  // ── product filters ─────────────────────────────────────────────────────
+  test('filters: aromatic ring count matches RDKit (fused, heteroaromatic, quinone, Kekulé input)', async () => {
+    const rdkit = getRdKitModule();
+    const cases: [string, number][] = [
+      ['C1CCCCC1', 0], ['C1=CC=CC=C1', 1], ['c1ccccc1-c2ccncc2C', 2],
+      ['c1ccc2ccccc2c1', 2], ['c1ccc2[nH]ccc2c1', 2], ['O=C1C=CC(=O)C=C1', 0],
+      // Biphenylene pins the rule to bonds: counting its all-aromatic atoms would say 3.
+      ['c1ccc2c(c1)-c1ccccc1-2', 2],
+    ];
+    for (const [smiles, expected] of cases) {
+      const mol = rdkit.get_mol(smiles);
+      try {
+        const stats = computeMolStats(mol);
+        expect(stats.numAromaticRings, expected, `numAromaticRings for ${smiles}`);
+        expect(stats.numAromaticRings, Number(JSON.parse(mol.get_descriptors()).NumAromaticRings),
+          `RDKit NumAromaticRings parity for ${smiles}`);
+      } finally {mol.delete();}
+    }
+
+    const naphthalene = rdkit.get_mol('c1ccc2ccccc2c1');
+    try {
+      const stats = computeMolStats(naphthalene);
+      const specs = cloneConfig(DEFAULT_CONFIG).products_specs;
+      specs.only_these_atoms_allowed = [];
+      specs.min_num_carbon_atoms = -1;
+      expect(applyProductFilters(stats, specs, [], naphthalene).pass, true, 'blank cap must not filter');
+      specs.max_num_aromatic_rings = 1;
+      expect(applyProductFilters(stats, specs, [], naphthalene).reason, 'max_num_aromatic_rings',
+        'and two rings must fail a cap of one');
+    } finally {naphthalene.delete();}
+  });
+
+
+  // ── per-step product counts ─────────────────────────────────────────────
+  // Methylates any OH, so a polyol branches once per OH and each product keeps the remaining ones.
+  const O_METHYLATION: TemplateInput = {
+    smarts: '[C:1][OH:2]>>[C:1][O:2]C', blockingSmartsList: [], reactionName: 'O-methylation',
+  };
+  const polyolConfig = (rounds: number) => {
+    const c = cloneConfig(DEFAULT_CONFIG);
+    c.enumeration.num_rounds = rounds;
+    c.products_specs.min_num_carbon_atoms = -1;
+    return c;
+  };
+
+  test('result filters: one histogram per step, over columns hidden in the grid', async () => {
+    const rdkit = getRdKitModule();
+    // Butane-1,2,3-triol: three OH sites, so the branch count falls 3 -> 2 -> 1 along the route.
+    const {rows} = await enumerate({rdkit, config: polyolConfig(3), templates: [O_METHYLATION],
+      buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts: []});
+    const df = buildResultDataFrame(rows);
+
+    const visible = df.columns.names().filter((c) => !c.startsWith('~'));
+    expect(visible.join(','),
+      'product,route,reaction_names,product_counts,template_1,template_2,template_3,' +
+      'round,n_routes,n_products',
+      'no per-step column reaches any grid, including the preview\'s');
+    for (const c of ['reaction_names', 'product_counts'])
+      expect(df.col(c)!.meta.multiValueSeparator, '\n', `${c} splits into per-step filter categories`);
+
+    const nSteps = df.col('reaction_names')!.toList().map((v: string) => v.split('\n').length);
+    const row = nSteps.indexOf(3);
+    expect(df.col('product_counts')!.get(row),
+      'Step 1: 3 products\nStep 2: 2 products\nStep 3: 1 product');
+    expect(df.col('n_products')!.get(row), 6, '3 x 2 x 1 isomer paths');
+    expect(df.col('~step_products_2')!.get(row), 2, 'each step keeps its own count for its histogram');
+    // A later step's 0 is what a "step 2 at most N" range keeps, rather than dropping the route.
+    expect(df.col('~step_products_2')!.get(nSteps.indexOf(1)), 0, 'a step never taken reads 0');
+
+    const tv = grok.shell.addTableView(df);
+    try {
+      addResultFilters(tv);
+      // The panel's serialized order, top to bottom — the only view of what actually got added.
+      const read = () => (tv.getFiltersGroup().getOptions(true).look.filters ?? []) as
+        {type: string; column?: string; colNames?: string[]}[];
+      await awaitCheck(() => read().length >= 11, 'filters never reached the panel', 5000);
+      const states = read();
+      const keys = states.map((s) => s.column ?? s.colNames?.join('|') ?? s.type);
+      expect(keys.join(','), [
+        '~reaction_name_1|~reaction_name_2|~reaction_name_3', 'product',
+        '~step_products_1', '~step_products_2', '~step_products_3',
+        'template_1', 'template_2', 'template_3', 'round', 'n_routes', 'n_products',
+      ].join(','), 'tree, product, then the count histograms in the summary cell\'s slot');
+      expect(states[keys.indexOf('~step_products_2')].type, 'histogram',
+        'a step whose count varies across routes gets a range, not categories');
+      // A friendlyName tag makes the filter group drop the column silently; a description must not.
+      for (const c of ['product_counts', 'n_products', '~step_products_1']) {
+        expect((tv.dataFrame.col(c)!.getTag(DG.TAGS.DESCRIPTION) ?? '').length > 0, true,
+          `${c} explains itself on hover`);
+      }
+    } finally {
+      tv.close();
+    }
+  });
+
+  // ── propagated columns ──────────────────────────────────────────────────
+  // Amide coupling and O-acylation of an amino alcohol.
+  const acylationTemplates = () => DG.DataFrame.fromCsv('reaction_smarts\n' +
+    '"[NX3;H2:1].[C:2](=[O:3])[OH]>>[N:1][C:2]=[O:3]"\n"[CX4:1][OH:2].[C:3](=[O:4])[OH]>>[C:1][O:2][C:3]=[O:4]"');
+  const runPropagated = async (config: EnumeratorConfig, tDf: DG.DataFrame, bDf: DG.DataFrame,
+    rDf: DG.DataFrame | null = null) => {
+    const snapshot = snapshotPropagation(config, tDf, bDf, rDf);
+    const {rows} = await enumerate({rdkit: getRdKitModule(), config, ...buildInputs(config, tDf, bDf, null, rDf)});
+    return {rows, snapshot, df: buildResultDataFrame(rows, propagatedColumns(rows, snapshot))};
+  };
+
+  test('propagation: per-building-block columns keep the source type, or become text where it cannot be empty', async () => {
+    const bDf = DG.DataFrame.fromCsv('SMILES,received,supplier\nNCCO,2024-01-02,Acme\nCC(=O)O,2024-03-04,Beta');
+    bDf.col('SMILES')!.semType = DG.SEMTYPE.MOLECULE;
+    bDf.columns.addNewBool('in_stock').init((i) => i === 0);
+    bDf.columns.add(DG.Column.fromBigInt64Array('catalog', BigInt64Array.from([9007199254740993n, 9007199254740995n])));
+    const config = polyolConfig(2);
+    config.enumeration.bb_propagated_columns =
+      {SMILES: [], received: [], supplier: ['sum'], in_stock: [], catalog: [], absent: ['sum']};
+    const {rows, df, snapshot} = await runPropagated(config, acylationTemplates(), bDf);
+
+    for (const c of ['received', 'supplier'])
+      expect(df.col(`bb_1_${c}`)!.type, bDf.col(c)!.type, `${c} keeps its type`);
+    for (const c of ['in_stock', 'catalog'])
+      expect(df.col(`bb_1_${c}`)!.type, DG.COLUMN_TYPE.STRING, `${c} becomes text`);
+    expect(df.col('bb_1_SMILES')!.semType, DG.SEMTYPE.MOLECULE, 'a structure column still draws structures');
+    expect(df.col('bb_supplier_sum'), null, 'a text column is never aggregated');
+    expect(snapshot.missing.length === 1 && snapshot.missing[0].includes('"absent"'), true,
+      'a picked column the file lacks is reported, not dropped silently');
+
+    const cols = ['received', 'supplier', 'in_stock', 'catalog'];
+    const acetamide = canonicalizer(getRdKitModule())('CC(=O)NCCO');
+    const amide = rows.findIndex((r) => r.product === acetamide);
+    expect(cols.map((c) => df.col(`bb_2_${c}`)!.getString(amide)).join(),
+      cols.map((c) => bDf.col(c)!.getString(1)).join(), 'the acid is the second building block');
+    expect(df.col('bb_1_in_stock')!.get(amide), 'true');
+    for (const c of cols) {
+      expect(df.col(`bb_3_${c}`)!.isNone(amide), true,
+        `a one-step route has no third building block, so bb_3_${c} is empty (not "false" for in_stock)`);
+    }
+  });
+
+  test('propagation: template rows sharing a SMARTS stay apart when the result tells them apart', async () => {
+    const amide = '[C:1](=[O:2])[OH].[N;H2:3]>>[C:1](=[O:2])[N:3]';
+    const tDf = DG.DataFrame.fromCsv(`reaction_smarts,reaction_name,yield,cost\n"${amide}",Amide HATU,0.5,12\n` +
+      `"${amide}",Amide EDC,0.9,3\n"${amide}",Amide HATU,0.5,12`);
+    const bDf = DG.DataFrame.fromCsv('SMILES\nOC(=O)c1ccccc1\nNCc1ccccc1');
+    const config = polyolConfig(1);
+    config.enumeration.template_propagated_columns = {yield: ['multiply'], cost: []};
+    const {rows, df} = await runPropagated(config, tDf, bDf);
+
+    const product = canonicalizer(getRdKitModule())('O=C(NCc1ccccc1)c1ccccc1');
+    const found = rows.flatMap((r, i) => r.product === product ? [i] : []);
+    expect(found.length, 2, 'HATU and EDC each keep a route; the repeated HATU row adds none');
+    expect(found.map((i) => `${df.get('reaction_names', i)} ${df.get('reaction_1_yield', i).toFixed(1)} ` +
+      `${df.get('reaction_1_cost', i)}`).sort().join('; '), 'Step 1: Amide EDC 0.9 3; Step 1: Amide HATU 0.5 12');
+    expect(df.get('n_routes', found[0]), 2);
+  });
+
+  test('propagation: reagents get their own columns and never count as building blocks', async () => {
+    // Acetic acid is in both files; in reagents mode it can only reach a step through a reagent slot.
+    const bDf = DG.DataFrame.fromCsv('SMILES,price\nNCCO,10\nCC(=O)O,20');
+    const rDf = DG.DataFrame.fromCsv('SMILES,price\nCC(=O)O,1\nCCC(=O)O,3');
+    const config = polyolConfig(2);
+    config.enumeration.bb_propagated_columns = {price: ['sum']};
+    config.enumeration.reagent_propagated_columns = {price: ['sum']};
+    const {rows, df} = await runPropagated(config, acylationTemplates(), bDf, rDf);
+
+    expect(rows.some((r) => r.steps.length === 2), true, 'two-step routes exist');
+    const reagentPrices = [1, 3];
+    for (let i = 0; i < df.rowCount; i++) {
+      expect(df.get('bb_price_sum', i), 10, 'the ethanolamine is the only building block');
+      const expected = rows[i].steps.flatMap((s) => s.reagents).reduce<number>((a, p) => a + reagentPrices[p!], 0);
+      expect(df.get('reagent_price_sum', i), expected, 'each step\'s reagent, priced from the reagents file');
+    }
+  });
+
+  test('propagation: depth-first — a building block an earlier step also makes is still bought', async () => {
+    // N-acetylethanolamine is on the shelf and also what step 1 makes from ethanolamine and acetic acid.
+    // Step 3 can take it as the alcohol for a step-2 acid; it must count as bought, with no step-1 history.
+    const bDf = DG.DataFrame.fromCsv('SMILES,price\nNCCO,10\nOC(=O)CCC(=O)O,20\nCC(=O)O,5\nCC(=O)NCCO,30');
+    const config = polyolConfig(3);
+    config.products_specs.max_num_hetero_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.enumeration.bb_propagated_columns = {price: ['sum']};
+    const {rows, df} = await runPropagated(config, acylationTemplates(), bDf);
+
+    expect(Math.max(...rows.map((r) => r.steps.length)), 3, 'no route is longer than the steps run');
+    const bought = rows.findIndex((r) => r.steps.length === 3 && r.steps[2].buildingBlocks.includes(3));
+    expect(bought >= 0, true, 'some step 3 takes N-acetylethanolamine off the shelf');
+    const prices = [10, 20, 5, 30];
+    const expected = rows[bought].steps.flatMap((s) => s.buildingBlocks).reduce<number>((a, p) => a + prices[p!], 0);
+    expect(df.get('bb_price_sum', bought), expected, 'its sum covers the building blocks the route actually bought');
+  });
+
+  test('per-step limit: a step over the cap is dropped whole, not trimmed to the cap', async () => {
+    const rdkit = getRdKitModule();
+    const bb = ['CC(O)C(O)CO'];
+    const run = async (cap?: number) => {
+      const cfg = polyolConfig(1);
+      if (cap !== undefined) cfg.max_num_products_per_step = cap;
+      return enumerate({rdkit, config: cfg, templates: [O_METHYLATION],
+        buildingBlocks: bb, exclusionSmarts: []});
+    };
+
+    expect((await run()).rows.length, 3, 'all three mono-methyl isomers without a cap');
+    expect((await run(3)).rows.length, 3, 'a cap the step meets exactly keeps every product');
+
+    const under = await run(2);
+    expect(under.rows.length, 0, 'three products over a cap of two drops all three');
+    expect(under.warnings.some((w) => w.includes('2-product cap')), true,
+      'and says so, rather than silently');
+  });
+
+  test('per-step limit: the cap counts every product formed, including ones the filters reject', async () => {
+    const rdkit = getRdKitModule();
+    const run = async (cap: number, exclusionSmarts: string[]) => {
+      const cfg = polyolConfig(1);
+      cfg.max_num_products_per_step = cap;
+      return enumerate({rdkit, config: cfg, templates: [O_METHYLATION],
+        buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts});
+    };
+    // Rejects the triol's two secondary ethers: the flask still makes all three.
+    const secondaryEthers = ['[CX4H1][OX2][CH3]'];
+
+    const capped = await run(1, secondaryEthers);
+    expect(capped.rows.length, 0, 'a filter must not make a three-product reaction pass a cap of one');
+    expect(capped.warnings.some((w) => w.includes('1-product cap')), true, 'and the drop is reported');
+
+    const {rows} = await run(3, secondaryEthers);
+    expect(rows.length, 1, 'within the cap, the filters still decide what is kept');
+    expect(rows[0].product, 'COCC(O)C(C)O', 'the primary ether');
+    expect(rows[0].steps[0].nProducts, 3, 'the step reports what the reaction formed, not what was kept');
+
+    const allFiltered = await run(1, ['[CX4][OX2][CH3]']);
+    expect(allFiltered.warnings.some((w) => w.includes('product cap')), false,
+      'a reaction whose products the filters all reject lost nothing to the cap');
+  });
+
+
+  // ── grid column widths ──────────────────────────────────────────────────
+  test('grids: columns are sized once from constants, and resizing one leaves the rest alone', async () => {
+    const df = DG.DataFrame.fromCsv('reaction,smiles,name,mw\n' +
+      '"[C:1](=[O:2])[OH].[N;H2:3]>>[C:1](=[O:2])[N:3]",CC(=O)O,Acetic acid,60.05\n' +
+      '"[CX4:1][OH:2].[C:3](=[O:4])[OH]>>[C:1][O:2][C:3]=[O:4]",NCCO,Ethanolamine,61.08');
+    df.col('reaction')!.semType = DG.SEMTYPE.CHEMICAL_REACTION;
+    df.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
+    df.columns.addNewBool('in_stock');
+    // Wider than the columns, so a grid that fitted them to the available space would stretch one.
+    const host = ui.div([], {style: {width: '1600px', height: '300px'}});
+    document.body.appendChild(host);
+    const registry = new MountedViewerRegistry(DG.View.create());
+    try {
+      const grid = registry.mountDf(host, df, false);
+      const widths = () => df.columns.names().map((n) => grid.col(n)!.width).join();
+      const nextDraw = () => new Promise<void>((resolve) => {
+        const sub = grid.onAfterDrawContent.subscribe(() => {sub.unsubscribe(); resolve();});
+        grid.invalidate();
+      });
+      expect(widths(), '600,200,140,70,70', 'reaction, molecule, text, number and bool widths');
+      // The first paint resolves the reaction renderer, which used to swap in its own width.
+      await awaitCheck(() => grid.col('reaction')!.cellType === DG.SEMTYPE.CHEMICAL_REACTION,
+        'the reaction renderer never resolved', 15000);
+      await nextDraw();
+      expect(widths(), '600,200,140,70,70', 'the first paint leaves every width as it was');
+
+      for (const width of [250, 900]) {
+        grid.col('reaction')!.width = width;
+        await nextDraw();
+        expect(widths(), `${width},200,140,70,70`, `only the resized column moves (reaction at ${width}px)`);
+      }
+    } finally {
+      registry.close(host);
+      host.remove();
+    }
+  });
+
+  // ── repeat until it stops ───────────────────────────────────────────────
+  const ALKENE_REDUCTION: TemplateInput = {
+    smarts: '[C:1]=[C:2]>>[C:1][C:2]', blockingSmartsList: [], reactionName: 'Alkene reduction',
+  };
+  const TRIENE = 'C=CCC=CCC=CC';
+  const cyclesConfig = (rounds: number, cycles?: number) => {
+    const c = polyolConfig(rounds);
+    if (cycles !== undefined) {
+      c.enumeration.apply_until_fails = true;
+      c.enumeration.max_cycles = cycles;
+    }
+    return c;
+  };
+  const ALKENE_SHIFT: TemplateInput = {
+    smarts: '[C:1]=[C:2][C:3]>>[C:1][C:2]=[C:3]', blockingSmartsList: [], reactionName: 'Alkene shift',
+  };
+
+  test('repeat: Max cycles is how many times the template runs, and the step ends on the end product', async () => {
+    const rdkit = getRdKitModule();
+    const run = async (cycles?: number) => enumerate({rdkit, config: cyclesConfig(1, cycles),
+      templates: [ALKENE_REDUCTION], buildingBlocks: [TRIENE], exclusionSmarts: []});
+    const off = await run();
+
+    expect(off.rows.length, 3, 'off: one product per reducible double bond');
+    expectSameRows((await run(1)).rows, off.rows, 'one cycle is the setting off');
+    const two = await run(2);
+    expect(two.rows.map((r) => r.product).sort().join(' '), 'C=CCCCCCCC CC=CCCCCCC CCCC=CCCCC',
+      'two cycles reach the three di-reduced isomers');
+    expect(two.warnings.some((w) => w.includes('not fully reacted') && w.includes('2 cycle')), true,
+      'and say they stopped after 2 cycles rather than converged');
+    for (const cycles of [3, 5]) {
+      const {rows, warnings} = await run(cycles);
+      expect(rows.map((r) => r.product).join(), 'CCCCCCCCC', `${cycles} cycles end on nonane`);
+      expect(rows[0].round, 1, 'in step 1');
+      expect(rows[0].steps[0].nProducts, 1, 'one product left the step');
+      expect(parseMultiStepReaction(rows[0].route).flat().join(), `${TRIENE}>>CCCCCCCCC`,
+        'one reaction from the starting material');
+      expect(warnings.some((w) => w.includes('not fully reacted')), false, `${cycles} cycles: nothing left to react`);
+    }
+  });
+
+  const ESTERIFICATION: TemplateInput = {
+    smarts: '[C:1](=[O:2])[OH].[OH:3][C:4]>>[C:1](=[O:2])[O:3][C:4]',
+    blockingSmartsList: [], reactionName: 'Esterification',
+  };
+  const DIENE = 'C=CCC=CC';
+
+  test('repeat: a template that undoes itself gives the same row whatever the cycles', async () => {
+    const rdkit = getRdKitModule();
+    const run = async (cycles?: number) => enumerate({rdkit, config: cyclesConfig(1, cycles),
+      templates: [ALKENE_SHIFT], buildingBlocks: ['C=CCCCC'], exclusionSmarts: []});
+    const off = await run();
+
+    for (const cycles of [2, 3, 5]) {
+      const on = await run(cycles);
+      expectSameRows(on.rows, off.rows, `hex-1-ene at ${cycles} cycles`);
+      expect(on.warnings.some((w) => w.includes('not fully reacted')), false,
+        `hex-1-ene at ${cycles} cycles: shifting back is not reacting further`);
+    }
+    expect((await run(1)).warnings.some((w) => w.includes('not fully reacted')), true,
+      'hex-1-ene at 1 cycle: hex-2-ene could still shift on to hex-3-ene, so it is reported');
+  });
+
+  test('repeat: one cycle keeps every product, and warns that some could still react', async () => {
+    const rdkit = getRdKitModule();
+    const hydrolysis: TemplateInput = {
+      smarts: '[C:1](=[O:2])[O:3][#6]>>[C:1](=[O:2])[O:3]', blockingSmartsList: [], reactionName: 'Ester hydrolysis',
+    };
+    const args = {templates: [hydrolysis], buildingBlocks: ['CC(O)C(=O)OC(C)C(=O)OC(C)C(=O)O'], exclusionSmarts: []};
+    const off = await enumerate({rdkit, config: cyclesConfig(1), ...args});
+    const once = await enumerate({rdkit, config: cyclesConfig(1, 1), ...args});
+
+    expectSameRows(once.rows, off.rows, 'one run gives the rows the setting off gives');
+    expect(once.warnings.some((w) => w.includes('not fully reacted')), true,
+      'and warns, since the dimer could still react, although only into a molecule the run also made');
+  });
+
+  test('repeat: a product RDKit cannot read back ends the cascade, not the combination', async () => {
+    const rdkit = getRdKitModule();
+    const nMethylation: TemplateInput = {
+      smarts: '[NX3:1]>>[N:1]C', blockingSmartsList: [], reactionName: 'N-methylation',
+    };
+    const run = async (cycles?: number) => enumerate({rdkit, config: cyclesConfig(1, cycles),
+      templates: [nMethylation], buildingBlocks: ['C1CCNCC1'], exclusionSmarts: []});
+    const off = await run();
+
+    for (const cycles of [1, 2, 5]) {
+      const on = await run(cycles);
+      expectSameRows(on.rows, off.rows, `piperidine at ${cycles} cycle(s)`);
+      expect(on.warnings.some((w) => w.includes('not fully reacted')), false,
+        `piperidine at ${cycles} cycle(s): nothing readable is left to react`);
+    }
+    const enone = async (cycles?: number) => enumerate({rdkit, config: cyclesConfig(1, cycles),
+      templates: [ALKENE_SHIFT], buildingBlocks: ['CC=CC(C)=O'], exclusionSmarts: []});
+    expectSameRows((await enone(5)).rows, (await enone()).rows, 'pent-3-en-2-one keeps its readable first product');
+  });
+
+  test('repeat: a template writing explicit hydrogens still converges', async () => {
+    const rdkit = getRdKitModule();
+    const ketoneReduction: TemplateInput = {
+      smarts: '[C:1]=[O:2]>>[C:1]([H])[O:2][H]', blockingSmartsList: [],
+      reactionName: 'Ketone reduction',
+    };
+    const run = async (bb: string) => enumerate({rdkit, config: cyclesConfig(1, 5), templates: [ketoneReduction],
+      buildingBlocks: [bb], exclusionSmarts: []});
+    const {rows} = await run('CCC(=O)CCC(=O)C');
+
+    expect(rows.length, 1, 'one fully reduced product, not one per spelling of it');
+    expect(rows[0].product, 'CCC(O)CCC(C)O', 'the diol');
+    expect((await run('CCC(=O)CC')).rows.map((r) => r.product).join(), 'CCC(O)CC',
+      'a product the first run already finished is read back too');
+  });
+
+  test('repeat: a wide cascade ends on its last whole cycle under the product limit, and says so', async () => {
+    const rdkit = getRdKitModule();
+    const run = async (cycles: number, template = O_METHYLATION) => enumerate({rdkit,
+      config: cyclesConfig(1, cycles), templates: [template],
+      buildingBlocks: ['OCC(O)C(O)C(O)C(O)C(O)C(O)C(O)C(O)CO'], exclusionSmarts: []});
+    const {rows, warnings} = await run(5);
+
+    expect(rows.length, 60, 'the 60 tri-ethers of the third run, and none of the fourth');
+    expectSameRows(rows, (await run(3)).rows, 'the molecules three cycles end on');
+    const unfinished = warnings.filter((w) => w.includes('not fully reacted'));
+    expect(unfinished.length, 1, 'one warning, for the one combination');
+    expect(unfinished[0].includes('100'), true, 'naming the product limit, not the cycles');
+    expectSameRows((await run(10)).rows, rows, 'once the limit stops it, more cycles change nothing');
+    const blocked = await run(5, {...O_METHYLATION, blockingSmartsList: ['[CH2]O[CH3]']});
+    expect(blocked.rows.length, 65, 'the nine that finished early, beside the 56 tri-ethers of the third run');
+  });
+
+  test('repeat: the product limit counts every molecule a cycle would end on, and allows exactly 100', async () => {
+    const rdkit = getRdKitModule();
+    const run = async (smiles: string) => {
+      const cfg = cyclesConfig(1, 2);
+      cfg.products_specs.max_num_hetero_atoms = -1;
+      cfg.products_specs.max_num_carbon_atoms = -1;
+      return enumerate({rdkit, config: cfg, templates: [{...O_METHYLATION, blockingSmartsList: ['[CH2]O[CH3]']}],
+        buildingBlocks: [smiles], exclusionSmarts: []});
+    };
+    const primary = 'C(CO)'.repeat(10);
+    const secondary = 'C(O)'.repeat(7);
+    for (const polyol of [`C${primary}${secondary}CC`, `C${secondary}${primary}CC`]) {
+      const {rows, warnings} = await run(polyol);
+      expect(rows.length, 17, `${polyol}: the 17 mono-ethers of the first cycle, not the 101 molecules of the second`);
+      expect(warnings.some((w) => w.includes('not fully reacted') && w.includes('100')), true,
+        `${polyol}: and the product limit is named`);
+    }
+    const even = await run(`C${'C(CO)'.repeat(8)}${'C(O)'.repeat(8)}CC`);
+    expect(even.rows.length, 100, 'exactly 100 molecules are kept');
+  });
+
+  test('repeat: a multi-reactant template is left alone, without a warning on every run', async () => {
+    const rdkit = getRdKitModule();
+    const args = {templates: [ESTERIFICATION, ALKENE_REDUCTION],
+      buildingBlocks: [TRIENE, 'OC(=O)CCCCCCC', 'OCCCCCCCC'], exclusionSmarts: []};
+    const off = await enumerate({rdkit, config: cyclesConfig(1), ...args});
+    const {rows, warnings} = await enumerate({rdkit, config: cyclesConfig(1, 5), ...args});
+
+    expect(warnings.some((w) => w.includes('had no effect')), false,
+      'a library where only some templates take two reactants is the norm, and says nothing');
+    const reduced = rows.filter((r) => r.steps[0]?.reactionName === 'Alkene reduction');
+    expect(reduced.length, 1, 'the single-reactant template still cascades');
+    expect(reduced[0].product, 'CCCCCCCCC');
+    const esters = (list: OutputRow[]) => list.filter((r) => r.steps[0]?.reactionName === 'Esterification');
+    expect(esters(rows).length > 0, true, 'and the skipped template still produces its own products');
+    expectSameRows(esters(rows), esters(off.rows), 'the same ester rows as with the setting off');
+    const twoReactantOnly = await enumerate({rdkit, config: cyclesConfig(1, 5), ...args, templates: [ESTERIFICATION]});
+    expect(twoReactantOnly.warnings.some((w) => w.includes('had no effect')), true,
+      'but a library of two-reactant templates only is told the setting did nothing');
+  });
+
+  test('repeat: a collapsed cascade propagates the columns of the reactants it started from', async () => {
+    const tDf = DG.DataFrame.fromCsv(
+      `reaction_smarts,reaction_name,cost\n"${ALKENE_REDUCTION.smarts}",Alkene reduction,7`);
+    const bDf = DG.DataFrame.fromCsv(`SMILES,supplier\n${DIENE},Acme`);
+    const config = cyclesConfig(1, 5);
+    config.enumeration.bb_propagated_columns = {supplier: []};
+    config.enumeration.template_propagated_columns = {cost: ['sum']};
+    const {rows, df} = await runPropagated(config, tDf, bDf);
+
+    expect(rows.length, 1, 'the diene collapses to hexane in one step');
+    expect(df.col('bb_1_supplier')!.getString(0), 'Acme',
+      'the building block the cascade started from, not the intermediate it passed through');
+    expect(df.col('reaction_1_cost')!.getString(0), '7', 'the template that ran');
+    expect(df.col('reaction_cost_sum')!.get(0), 7,
+      'one step, so the repeated firings are charged once — not once per cycle');
+  });
+
+  test('repeat: filters apply to the product that leaves the step, not to intermediates', async () => {
+    const rdkit = getRdKitModule();
+    const cfg = cyclesConfig(1, 5);
+    cfg.products_specs.min_num_carbon_atoms = 7;
+    const {rows} = await enumerate({rdkit, config: cfg, templates: [O_METHYLATION],
+      buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts: []});
+
+    expect(rows.length, 1, 'the cascade reached a product the filter accepts');
+    expect(rows[0].product, 'COCC(OC)C(C)OC',
+      'filtering intermediates would have killed the chain at the first mono-ether');
+    const strict = cyclesConfig(1, 5);
+    strict.products_specs.max_num_carbon_atoms = 6;
+    const none = await enumerate({rdkit, config: strict, templates: [O_METHYLATION],
+      buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts: []});
+    expect(none.rows.length, 0,
+      'and the product that leaves the step is still filtered: its seven carbons are over six');
+  });
+
   // ── route formatting ────────────────────────────────────────────────────
   const tmpl = '';
   const step = (reactants: string[], product: string) =>
-    ({reactants, product, templateSmarts: tmpl, reactionName: ''});
+    ({reactants, product, templateSmarts: tmpl, templateIndex: 0, reactionName: '', nProducts: 1, buildingBlocks: [],
+      reagents: []});
 
   test('route formatting: single-step route', async () => {
     const route: Route = [step(['BB1', 'BB2'], 'P1')];

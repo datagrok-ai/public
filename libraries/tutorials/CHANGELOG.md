@@ -2,8 +2,15 @@
 
 ## v.next
 
+* A tutorial finished while the panel is open marks its card done in `data-status` too, not only visually
+* Tutorial: Step entries carry `role="checkbox"`, `aria-checked`, `aria-current="step"` and `data-step`, the progress bar `role="progressbar"` with `aria-valuenow`/`aria-valuemax`, and the `tutorial-step-completed` / `tutorial-completed` custom events fire, so tests read the tutorial's state instead of its CSS classes
+* Tutorial: A step whose event stream fails (a control that never appeared) is no longer shown as done: it keeps `aria-checked="false"`, gets `aria-invalid`, and the tutorial stops at the failure card instead of congratulating
+* Tutorial: Closing a tutorial on a step that waits for a promise no longer leaves the run pending, so restarting it from its card works; the step's view-change subscription is released as well
+* `openDialog`, `openViewByType` and `contextMenuAction` accept a `HintTarget`, so their hints can follow a control that is rebuilt; `choiceInputAction` waits for its input and reports a missing one like its siblings
 * GROK-20416: `Tutorial.action` accepts a `HintTarget` — an element or a function that resolves one — so a step can point at a control that is rebuilt while it is up
 * Steps that could not find the control they drive no longer return silently, which skipped the step and shifted every step number after it: `textInpAction`, `buttonClickAction`, `dlgInputAction` and the column inputs now wait for the control and report which one was missing
+* Tutorials: Fixed doubled steps when restarting a running tutorial
+* Tutorials: Show a failure card instead of freezing when a tutorial crashes
 
 ## 1.7.9 (2026-09-11)
 

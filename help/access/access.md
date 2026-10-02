@@ -34,7 +34,7 @@ queries, and securely share data with collaborators.
 
 A connector is a plugin that enables the integration of external data providers into the platform. It can work with a
 database, an Excel file, a CSV file, a web service, or any other source capable of providing the data. Most of our data
-connectors are [open-sourced and extendable](https://github.com/datagrok-ai/public/tree/master/connectors) (under MIT
+connectors are [open-sourced and extendable](https://github.com/datagrok-ai/grok-connect/tree/master/jdbc) (under MIT
 license).
 
 :::

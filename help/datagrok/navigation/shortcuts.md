@@ -57,6 +57,7 @@ different actions. For details, see the documentation for such tool or viewer.
   you are looking at. Multiple operations can be undone in turn.
 
 * <kbd>Ctrl + Shift + A</kbd>: <b>Viewers</b> | Deselect all
+* <kbd>Ctrl + Shift + C</kbd>: <b>Viewers | Grid</b> | Copy a rendered cell, such as a molecule, as an image
 * <kbd>Ctrl + Shift + R</kbd>: <b>Table View | Layouts</b> | Clear everything from a **Table View** except the grid
 * <kbd>Ctrl + Shift + V</kbd>: <b>Table View</b> | Open a new view that is attached to the same table
 * <kbd>Ctrl + Shift + Z</kbd>: <b>Edit</b> | [Redo](undo.md) (<kbd>Ctrl + Y</kbd> does the same)
@@ -132,6 +133,7 @@ TBD: Add Alt+ I +R/C to add new row or column
 * <kbd>Mouse wheel up or down</kbd>:
 
   * <b>Views, Grid</b> | Scroll
+  * <b>Grid</b> | Scroll horizontally, with <kbd>Shift</kbd> held down
   * <b>Viewers</b> | Zoom in/out for these viewers:
     
     * Scatterplot
@@ -159,6 +161,12 @@ TBD: Add Alt+ I +R/C to add new row or column
 
 * <kbd>Shift + Delete</kbd>: <b>Viewers | Grid</b> | Delete selected rows and/or columns
 * <kbd>Ctrl + Enter</kbd>: <b>Editors (e.g., scripts, queries)</b> | Run (requires an open editor)
+* <kbd>Ctrl + /</kbd> (<kbd>Cmd + /</kbd> on Mac): <b>Editors (e.g., scripts, queries)</b> | Comment or uncomment selected lines
+* <kbd>Alt + ↑↓</kbd>: <b>Editors (e.g., scripts, queries)</b> | Move selected lines up/down
+* <kbd>Shift + Alt + ↓</kbd>: <b>Editors (e.g., scripts, queries)</b> | Duplicate selected lines
+* <kbd>Ctrl + Shift + K</kbd> (<kbd>Cmd + Shift + K</kbd> on Mac): <b>Editors (e.g., scripts, queries)</b> | Delete selected lines
+* <kbd>Shift + Tab</kbd>: <b>Editors (e.g., scripts, queries)</b> | Outdent selected lines
+* <kbd>Ctrl + F</kbd> (<kbd>Cmd + F</kbd> on Mac): <b>Editors (e.g., scripts, queries)</b> | Find in the editor. <kbd>Ctrl + G</kbd> finds next, <kbd>Ctrl + Shift + F</kbd> replaces (<kbd>Cmd + G</kbd> and <kbd>Cmd + Option + F</kbd> on Mac)
 
 <br/>
 

@@ -23,6 +23,30 @@ Nothing in that scenario is a selector. Steps are the verbs, element phrases res
 contract (`data-u2`, `data-u2-name`, `data-u2-part`) and from a small registry of names, and the
 compiler reports every step, element or dataset it cannot resolve, with the line number.
 
+**What is not a feature.** A scenario that runs a server-side Python/R/Julia script, a Jupyter kernel
+or a Docker container, or reaches an outside web service, or that has nothing UI-specific (a
+function called and its result checked),
+is a package test or an `ApiTests` test, never a feature. The same goes for a TestTrack case marked
+`manual-only` or `apitest`. The rule and its reasons are in `CLAUDE.md`, "What never becomes a feature".
+
+**A stand that lacks a capability skips, it does not fail.** The suites run on CI, dev, local stands
+and public, which differ: `Given the stand runs the "Jupyter" service` and `Given the stand can reach
+the database of the "<name>" connection` are gates placed right before the first step that needs the
+capability — in the Background only when every scenario needs it from its first step — so the steps before
+them run everywhere and fail as usual,
+and the rest of the test is reported skipped with the reason when the stand has not got it. The service
+gate goes by the health the stand reports; a stand that reports none (a dev stack) lets the test go on.
+`Given the "Chem" package is installed` gates on a package the feature needs but does not test; it
+may stand in the Background when every scenario needs it, and never names the package under test.
+`Given the stand has a reachable "<name>" connection` is the connection gate for a connection a package
+brings rather than the feature (absent skips too), and `Given the stand serves the help pages` gates a
+claim on the help panel's content.
+
+**Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
+database rows, the layout or chat the UI makes on the side, a setting or configuration of something
+it does not own — is removed or restored at feature end and swept again at its start, and the
+cleanup proves it is gone. See `CLAUDE.md`, "Everything a feature puts on the server goes".
+
 ## Using it in a package
 
 The library is not on npm yet, so a package depends on it by path — what `grok-bdd init` writes
@@ -40,6 +64,11 @@ npx grok-bdd run --reporter=list                     # compile --check, then Pla
 Under the pnpm workspace the package and the library resolve to one `@playwright/test`, so
 `grok-bdd link` is only for a package installed outside the workspace with npm.
 
+A slow stand may need longer budgets: `BDD_EXPECT_TIMEOUT` raises what every check waits (15 s)
+and `BDD_COMMAND_TIMEOUT` how long a top-menu command has to add its columns (180 s).
+`BDD_FRESH_PAGE=1` reloads the shell before every feature instead of resetting it, which tells a
+feature that fails on what an earlier one left behind.
+
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
 `node_modules/.bdd-link-backup/` and links the library's in its place (`--undo` puts it back).
@@ -54,7 +83,10 @@ also trigger the error: they must resolve to the same physical copy. Repeat the 
 does not fix it.
 
 **What the stand needs**: a platform built from `core` at or after 2026-09-10 (the viewer
-features rely on signals the core gained for them); a login — global setup mints a token from the
+features rely on signals the core gained for them), and with `TableView.getSnapshot` skipping a
+hidden view (without it the Save project dialog logs "Unable to find element in cloned iframe" once
+per table view not shown, and a feature that saves a project with several views fails its error
+check); a login — global setup mints a token from the
 dev key of the `localhost` entry in `~/.grok/config.yaml` (or `DATAGROK_SERVER=<name>`), falls back
 to the login form with `DATAGROK_LOGIN`/`DATAGROK_PASSWORD`, and a CI runner passes
 `DATAGROK_AUTH_TOKEN`; another stand through `DATAGROK_URL=https://…`. The datasets the features
@@ -63,7 +95,10 @@ open are registered in `bindings/platform/datasets.ts`: `demog-1000` is
 `grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:DemoFiles/demog-1000.csv" --host localhost`;
 `spgi` comes with the published `Chem` package (`grok s packages install Chem`). A sharing feature
 shares with the account in `DATAGROK_SHARING_LOGIN`, or, unset, with the `bddsecond` user the
-setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays).
+setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays). A
+feature that signs in as that account or another does it on its own page, and the running account
+is back when the feature ends; a feature that empties the second account's notifications runs only
+against a `bdd…` fixture account.
 
 `grok-bdd init` runs in the package directory and creates what is missing, never overwriting:
 
@@ -105,7 +140,9 @@ beside them.
 One browser page per worker: the first scenario the worker runs opens it and boots the shell
 (about 4 s), every scenario ends with the shell reset (dialogs and popups closed,
 `grok.shell.closeAll()`, the Home view current), and every later feature starts on that reset
-shell. A dataset is read from the server once per page and every feature gets a clone, with the
+shell — until the page has run `BDD_PAGE_MAX_FEATURES` features (25) or its renderer holds more than
+`BDD_PAGE_MAX_MB` (3000): closed views stay in the renderer's memory, so the next feature then opens a
+new page in the same context. A dataset is read from the server once per page and every feature gets a clone, with the
 semantic types the first detection found. What a feature leaves on the server it puts back itself
 (`atFeatureEnd`). Playwright runs and reports one test per scenario (and per outline row), each
 with its own trace; a `Background` runs before every scenario, as Gherkin says.
@@ -160,6 +197,11 @@ Box plot has no "statsff" area right now; it has: view, x axis, y axis, stats, p
 A misspelled menu item gets the visible items, a phrase inside a menu that is not open gets
 `context menu: not open`, a misspelled property the nearest captions. A journey lists every failed
 scenario in that shape. A stack trace appears only for a programming error in a binding.
+
+Every run also leaves Playwright's JSON report in the project's `test-results/report.json`, with
+the stand and the machine it ran on: the failed step of a test is its deepest step with an `error`.
+The run history of UsageAnalysis (`packages/UsageAnalysis/bdd/history`) keeps such reports, when
+asked to, as dated records with a page to follow times, failures and flakes over them.
 
 ## Element phrases
 
@@ -232,7 +274,13 @@ list is the reference; this is the map:
   group or holds a role; the gallery's render mode and
   its counter against a remembered one (lower, not lower, higher — search, then clear). The membership editor behind Groups..., Roles..., Members
   and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
-  `remove button` and `checkbox` parts, typed into through `membership search`.
+  `remove button` and `checkbox` parts, typed into through `membership search`. Signing in as
+  another account on the feature's page (the sharing user or a named fixture account) and back,
+  the running account back first thing at feature end; the second account's notifications.
+- **The workspace** (`platform/workspace.ts`): what is open (no table left, the table views, a
+  table view opened with its rows, a project), a project's direct link, a file put into the user's
+  files or a space for the feature (deleted at feature end), a file dropped from disk, the file
+  chooser a menu opens.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
   filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
   equal row by row), calculated and renamed columns, colour coding,
@@ -301,7 +349,12 @@ The `viewers` tier drives viewers the way the platform sees them:
   shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
-  inner viewers, card readings, lassos, cross-widget drags.
+  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins.
+- **`formula-lines.ts`**: the Formula Lines dialog (a line added, its range, an edit), the lines a
+  viewer draws (the `formula line <title>` / `formula band <title>` areas it reports only for what
+  it drew), their ranges, and the formulas of the viewer and the table naming only existing columns.
+- **`filter-panel.ts`**: the cards of the filter panel, what every view's panel filters by across a
+  project round trip, and a wait for the Chem cards (searching, drawing, scaffold hits).
 
 Every property set, menu pick, area gesture, resize and data step snapshots the viewer first, and
 no check moves the snapshot, so `should have repainted` and every "than before" compare with the
@@ -346,25 +399,40 @@ features/guides/<name>.feature` compiles it, runs it on one worker in guide mode
 scenario into `guides/<feature slug>/<scenario slug>/`:
 
 - `guide.mp4` — the pointer travels to every element a step acts on, the element is lit (the rest
-  of the page dimmed) and rests under the pointer before the click lands; an icon-sized target
+  of the page dimmed) and rests under the pointer before the click lands; every press is marked
+  where the page received it, under the pointer's tip — a yellow dot and ring for the left button,
+  a green one for the right, twice for a double-click; the pointer never skips, each movement
+  starting where the previous action ended (the renderer refuses to make a video in which it
+  skips); an icon-sized target
   (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
   where it is; the page after the step is revealed, and a caption above the page (clear of a
   player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
-  toolbar"). A choice is shown being made: a native `<select>` opens its list, the option is typed
+  toolbar"); a caption too long for the strip is set smaller, then on two lines, and the lines of a
+  pasted text (`\n` in the step) read as values separated by commas. A choice is shown being made: a native `<select>` opens its list, the option is typed
   so the list highlights it, Enter takes it; a column selector opens its picker, the name is typed
   into the search short of its last letter (a complete unique name is taken on the spot) and the
   row it leaves is clicked. A `Then` step shows what it checked with a check mark —
   when a person could see it (a dialog, a column, a row count, a value, a legend item's color);
   the checks a test needs and a person does not (error and balloon floors, server state, viewer
   readings and pixels, "than before" claims, property bags, widget counts, task-bar and command
-  bookkeeping) are left out, by the `HIDDEN_CHECKS` patterns in `src/runtime/guide.ts`;
+  bookkeeping, values matched against a regular expression) are left out, by the `HIDDEN_CHECKS`
+  patterns in `src/runtime/guide.ts` — so a guide names a new column exactly, not by a pattern;
 - `step-NN.png` — the lit picture of every step, and `steps.md` — the numbered steps with those
-  pictures, ready to paste into a reply;
-- with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair.
+  pictures, ready to paste into a reply (a filming with fewer steps removes the pictures it no
+  longer has);
+- `audit.png` and `audit.json` — every press as the video shows it, beside the same picture with
+  ticks aimed at where it landed, and how far the mark's centre and the pointer's tip are from it
+  (the renderer prints a press more than 2 px off, or outside the element its stop lit);
+- with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair (the GIF's palette
+  always holds the press colours).
 
 Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
 it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
-element the step located, and where the page's own mouse went. A move with a button held is a
+element the step located, and what the pointer did — as the page saw it: capture listeners log
+every real press, release and move, whatever sent it (a locator's own click never goes through
+`page.mouse`), each press with its button, its place and the element under it, and a run of moves
+with no button held as the one point it came to rest. A step's presses and moves go to the stop
+they were made at (below). A move with a button held is a
 drag: the page is pictured along the way (`NN-dragK.png`, at most eight per step), so the video
 shows what the drag draws — a selection box, an annotation region — growing under the pointer,
 and the step's still shows it complete at the release point. Tests know nothing of it: without
@@ -373,7 +441,11 @@ for another) so the video reads without zooming every step — the video itself,
 mode off), as a person has it — filmed or in a plain run: every `@guide` scenario carries `And
 simple mode is off` right after the login (the compiler refuses one without it), and the step
 puts simple mode back at feature end. Every step is in the video except the login and that shell
-step (`guide.silent`) and a step that neither
+step (`guide.silent`), other set-up a person does not take (a pinned setting such as `the molecule
+sketcher is …`, a package's own readiness wait, which calls `silent` from
+`@datagrok-libraries/bdd/runtime`), a wait the `HIDDEN_CHECKS` list names (`the package autostarts
+have completed`, `… should have finished updating`), whether it is written as a `Given` or a
+`Then`, and a step that neither
 acted nor changed the page (its before and after pictures are the same file): a table opened
 through the API is shown under its caption. A path walked inside a step — the top menu's group,
 then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as it was
@@ -423,7 +495,10 @@ on Reload Window; `taskkill /F /IM rg.exe` (or `pkill rg`) clears the ones alrea
 
 ## Developing the library
 
-`npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`; `npm run
+`npm run build` compiles `src/`, `bindings/` and the Playwright config to `dist/`, which is what a
+package's `grok-bdd` loads: while any of those sources is newer than its build (a pull, an edit),
+every command but `init` and `link` stops and names the file, rather than failing a sound feature on
+a kind or a step only the sources have. `npm run
 test:unit` runs the engine tests (nouns, compile, project, init, failure) and the locator test,
 which drives the kinds and the platform names over a static page in the library's Chromium (and
 skips itself where none is installed); the library is a project itself (`features/platform`):

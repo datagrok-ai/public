@@ -75,11 +75,12 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
 
     icon.validationStatus = status;
 
-    $(t.input).removeClass('d4-invalid d4-partially-invalid');
+    const marked = $([t.input, t.captionLabel]);
+    marked.removeClass('d4-invalid d4-partially-invalid');
     if (validation?.errors && validation.errors.length)
-      $(t.input).addClass('d4-invalid');
+      marked.addClass('d4-invalid');
     else if (validation?.warnings && validation.warnings.length)
-      $(t.input).addClass('d4-partially-invalid');
+      marked.addClass('d4-partially-invalid');
   }
 
   (t as any).setStatus = setStatus;

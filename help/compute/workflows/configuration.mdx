@@ -172,7 +172,8 @@ array. Each `id` becomes addressable from
 [LQL queries](./link-query-language) at the same path level as a script IO — but it
 lives on the workflow itself, not on any script. Use states for:
 
-- values populated once by the [`onInit`](./link-types#init-hook) hook (for
+- values populated by the [`onInit`](./link-types#init-hook) hook each
+  time the workflow is created or loaded (for
   example, the current user, a server-loaded constant, the workflow start
   time);
 - derived values computed from one or more downstream scripts (a summary
@@ -236,6 +237,14 @@ _Optional_
 Disables the default export, custom exports if provided still can be
 used.
 
+#### `compactView`
+
+_Optional_
+
+Opens a workflow that resolves to a single script in a compact view, see
+[Single-step workflows](#single-step-workflows). Set it on the workflow
+that is opened. It is ignored for any other workflow.
+
 
 ## Workflow types
 
@@ -247,6 +256,33 @@ Is an array of nested `PipelineConfiguration` items or [script
 node](#script-nodes) . Each item must have a unique
 id. This array defines an immutable sequence of steps, but if nested
 workflows are dynamic, those could be internally mutated.
+
+#### Single-step workflows
+
+With `compactView: true`, a static workflow whose only step is a single
+[script node](#script-nodes) (directly, or through a chain of one-step
+static workflows such as a [reference](#reusing-workflows)) opens in a
+compact view: no step tree, no
+Back/Next navigation, and one ribbon with save, share, history, help and
+export. Links, validators, actions, restrictions and run history all work as
+in any workflow. Use it to attach workflow logic to a single script while
+keeping the look of a
+[Rich Function View](../scripting/advanced-scripting/rich-function-view.md).
+
+The workflow page is never shown in this view, so features that live on it
+are not available; use the script-level equivalents instead:
+
+| Not available (workflow level) | Use instead (script level) |
+|---|---|
+| Workflow `customExports` and the default zip report | `meta.customExports` and the default Excel export of the script |
+| Workflow `meta.help` / `readme` | `meta.help` / `readme` on the script |
+| `pipelineValidator` links | `validator` links on the script inputs |
+| Node descriptions from `nodemeta` links (`body`, `title`) | the script's `description`; the run title comes from the save dialog |
+| Workflow `actions` with `buttons` or `menu` position | `actions` on the script node (`globalmenu` actions stay visible) |
+
+[`disableDefaultExport`](#disabledefaultexport) on the opened workflow
+also hides the default Excel export of the script. The compact view always has
+run history: [`disableHistory`](#disablehistory) does not apply to it.
 
 ### Dynamic workflows
 

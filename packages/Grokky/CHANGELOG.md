@@ -2,6 +2,7 @@
 
 ## v.next
 
+* AI: Added Databricks-hosted Claude support
 * AI: Project saves now drive the platform's Save Project dialog through new dialog AI functions (`getProjectSaveInfo`, `setProjectName/Description/SaveMode/PresentationMode`, entity-list `listEntities`/`setEntityAction`/`setDataSync`; Share dialog: `getShareInfo`/`addShareGrantee`/`setShareAccess`/`setShareMessage`) — the datagrok-projects skill was rewritten around this flow, replacing hand-written `grok.dapi` saves
 
 * AI: Fixed duplicate action execution (e.g. the same viewers added twice). Root cause: verify assertions written as bare expressions evaluated to `undefined` inside the async wrapper, reading as a failed verify with no diagnostics, and the "action did NOT take effect" gate feedback then pushed the model to redo the (already applied) action. Single-expression assertions are now auto-wrapped in a `return`, an assertion returning `undefined` reports a self-explanatory error, and the verify-gate feedback plus the datagrok-exec skill now forbid redoing state-changing actions before re-reading live state

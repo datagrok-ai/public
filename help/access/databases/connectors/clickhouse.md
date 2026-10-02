@@ -13,6 +13,9 @@ keywords:
 
 Provides access to the [ClickHouse](https://clickhouse.com/clickhouse) database using SQL queries via a JDBC driver.
 
+If your Datagrok server also runs the ADBC connector, the connection has a **Connection type** parameter. Choose
+`JDBC` (default) or `ADBC`, a driver that transfers query results in the Apache Arrow format.
+
 ## Connection parameters
 
 ```json

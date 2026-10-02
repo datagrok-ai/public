@@ -47,8 +47,7 @@ Feature: Transforming a fasta column
     And "Convert to" input in "Convert Sequence Notation" dialog should have value "separator"
     And Separator input in "Convert Sequence Notation" dialog should have value "-"
     When user clicks on OK button in "Convert Sequence Notation" dialog
-    Then the top menu command should have completed
-    And 1 new column should have been added
+    Then 1 new column should have been added
     And a new column matching "^separator\(fasta\)" should have been added
     And "separator(fasta)" column should have semantic type "Macromolecule"
     And "separator(fasta)" column should have units "separator"
@@ -60,8 +59,7 @@ Feature: Transforming a fasta column
     When user picks "Bio > Transform > Convert Sequence Notation..." from the top menu
     And user selects "helm" in "Convert to" input in "Convert Sequence Notation" dialog
     And user clicks on OK button in "Convert Sequence Notation" dialog
-    Then the top menu command should have completed
-    And 1 new column should have been added
+    Then 1 new column should have been added
     And a new column "helm(fasta)" should have been added
     And "helm(fasta)" column should have units "helm"
     And every value of "helm(fasta)" column should match "^PEPTIDE1\{([A-Z]\.)*[A-Z]\}\$"

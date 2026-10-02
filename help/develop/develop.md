@@ -302,9 +302,10 @@ auto-updates on public, the libraries it uses must reference a published version
 
 Each package has a version number. All objects inside the package are being deployed according to the package version.
 When a package gets published, a "published package" entity gets created. It is associated with the package, and has
-additional metadata (such as publication date). Typically, only one version of a package is visible to a user.
-Administrators can manage published packages and decide which versions should be used. It is possible to roll back to an
-older version, or assign a particular version to a particular group of users.
+additional metadata (such as publication date). One published version is current, and it is the same for all users.
+Administrators decide which version is current, and can roll back to an older one. To switch the version, go to
+**Browse** > **Platform** > **Plugins**, click the **Choose version** icon on the package card, and select the version.
+From the command line, use `grok s packages set-version` (see [Server management](server-management.md#manage-packages)).
 
 Importantly, if the version changes, there will be an independent instance of each package asset. Multiple versions of a
 package can be deployed at one moment, and the administrator can switch between them. All users will only see objects
@@ -457,8 +458,9 @@ the package. To do that, you should specify the eligible user groups in the `pac
 }
 ```
 
-To see packages available to you, click on `Manage | Packages`, or
-follow [this link](https://public.datagrok.ai/packages) from outside the platform.
+The groups in `canView` and `canEdit` get access when a version of the package becomes current.
+
+To see packages available to you, go to **Browse** > **Platform** > **Plugins**.
 
 ### Connections
 

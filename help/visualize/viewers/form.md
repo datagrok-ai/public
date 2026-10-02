@@ -13,8 +13,12 @@ Form allows you to customize the appearance of the row by manually positioning t
 elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of
 the [Tile Viewer](tile-viewer.md).
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Form');`
+
+:::
 
 ## Editable forms
 

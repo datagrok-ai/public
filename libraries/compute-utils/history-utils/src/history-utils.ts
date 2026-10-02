@@ -130,10 +130,11 @@ export namespace historyUtils {
    * Saved given FuncCall.
    * FuncCall is only stores references to actual dataframes. Thus, we should upload them separately
    * @param callToSave FuncCall to save
-   * @param options audience: the group granted View on the uploaded dataframes (default: All users)
+   * @param options audience: the group granted View on the uploaded dataframes (default: All users);
+   * newId: assign the call a fresh id before saving, leaving an already saved run with the old id untouched
    * @returns Saved FuncCall
    */
-  export async function saveRun(callToSave: DG.FuncCall, options?: {audience?: DG.Group}) {
+  export async function saveRun(callToSave: DG.FuncCall, options?: {audience?: DG.Group, newId?: boolean}) {
     let allGroup = groupsCache.get('All users');
 
     if (!allGroup) {
@@ -142,6 +143,7 @@ export namespace historyUtils {
     }
     const audience = options?.audience ?? allGroup;
 
+    if (options?.newId) callToSave.newId();
     const callCopy = deepCopy(callToSave);
     if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
 

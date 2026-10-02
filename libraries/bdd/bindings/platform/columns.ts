@@ -54,16 +54,20 @@ function columnFacts(page: Page, column: string): Promise<ColumnFacts> {
 
 const filled = (f: ColumnFacts): number[] => f.values.map((_, i) => i).filter((i) => f.values[i] !== '');
 
+/** A fact a poll waits for: a column a computation is about to add is not there yet, and a throw
+ * would end the poll at once — the missing column is kept as the value the failure shows. */
+const factOrAbsence = (read: Promise<string>): Promise<string> => read.catch((e) => `(${e?.message ?? String(e)})`);
+
 export const columnSemType = Then('{string} column should have semantic type {string}', async (page: Page, column: string, semType: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).semType, {message: `semantic type of "${column}"`}).toBe(semType);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.semType)), {message: `semantic type of "${column}"`}).toBe(semType);
 }, {description: 'what the detectors set (Macromolecule, Molecule, Monomer); polled, since detection runs after the column appears'});
 
 export const columnUnits = Then('{string} column should have units {string}', async (page: Page, column: string, units: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).tags['units'] ?? '', {message: `units of "${column}"`}).toBe(units);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.tags['units'] ?? '')), {message: `units of "${column}"`}).toBe(units);
 }, {description: 'the `units` tag — a sequence column\'s notation (fasta, separator, helm), a molecule column\'s molblock'});
 
 export const columnTag = Then('{string} column should have tag {string} equal to {string}', async (page: Page, column: string, tag: string, value: string) => {
-  await expect.poll(async () => (await columnFacts(page, column)).tags[tag] ?? '', {message: `tag "${tag}" of "${column}"`}).toBe(value);
+  await expect.poll(() => factOrAbsence(columnFacts(page, column).then((f) => f.tags[tag] ?? '')), {message: `tag "${tag}" of "${column}"`}).toBe(value);
 });
 
 export const columnTagLists = Then('the {string} tag of {string} column should list at least {int} values', async (page: Page, tag: string, column: string, count: number) => {
@@ -90,6 +94,23 @@ export const everyValueMatches = Then('every value of {string} column should mat
   expect(bad.map((i) => `row ${i + 1}: ${f.values[i].slice(0, 60)}`), `values of "${column}" not matching /${pattern}/ (missing values skipped)`).toEqual([]);
   expect(filled(f).length, `filled values of "${column}"`).toBeGreaterThan(0);
 }, {description: 'a regular expression over every filled cell; a column with no filled cell fails'});
+
+export const fewerDistinctThanRows = Then('{string} column should have fewer distinct values than the table has rows', async (page: Page, column: string) => {
+  const f = await columnFacts(page, column);
+  const distinct = new Set(filled(f).map((i) => f.values[i])).size;
+  expect(distinct, `distinct values of "${column}" against the ${f.values.length} rows`).toBeLessThan(f.values.length);
+}, {description: 'a column that groups the rows rather than naming each of them'});
+
+export const someValueMatches = Then('some value of {string} column should match {string}', async (page: Page, column: string, pattern: string) => {
+  const f = await columnFacts(page, column);
+  const re = new RegExp(pattern);
+  expect(filled(f).filter((i) => re.test(f.values[i])).length, `values of "${column}" matching /${pattern}/`).toBeGreaterThan(0);
+}, {description: 'a regular expression that at least one filled cell matches'});
+
+export const someValueDiffers = Then('some value of {string} column should differ from {string} column in the same row', async (page: Page, x: string, y: string) => {
+  const [a, b] = [await columnFacts(page, x), await columnFacts(page, y)];
+  expect(a.values.filter((v, i) => v !== b.values[i]).length, `rows where "${x}" and "${y}" hold different text`).toBeGreaterThan(0);
+}, {description: 'the cells\' text, row by row'});
 
 export const everyValueContains = Then('every value of {string} column should contain {string}', async (page: Page, column: string, text: string) => {
   const f = await columnFacts(page, column);
@@ -162,6 +183,25 @@ export const valueInRow = Then('the value of {string} column in row {int} should
   expect(f.values[row - 1], `"${column}" in row ${row}`).toBe(value);
 }, {description: 'rows count from 1; a number reads as the platform prints it'});
 
+/** A table the current view does not show has no grid to read: the column's own format gives the text. */
+export const displayedInRowOfTable = Then('the {string} cell of row {int} of table {string} should be displayed as {string}',
+  async (page: Page, column: string, row: number, table: string, text: string) => {
+    await expect.poll(() => page.evaluate(([c, r, t]) => {
+      const df = (grok.shell.tables as any[]).find((x) => x.name === t);
+      if (!df)
+        return `no table ${t}`;
+      const col = df.col(c);
+      return col ? String(col.getString(r - 1)) : `no column ${c} in ${t}`;
+    }, [column, row, table] as [string, number, string]), {message: `${column} of row ${row} of ${table}`}).toBe(text);
+  }, {description: 'the value as the column formats it ("1200.00", "no"); rows count from 1'});
+
+export const columnTypeOfTable = Then('{string} column of table {string} should have type {string}', async (page: Page, column: string, table: string, type: string) => {
+  await expect.poll(() => page.evaluate(([c, t]) => {
+    const df = (grok.shell.tables as any[]).find((x) => x.name === t);
+    return df?.col(c)?.type ?? `no column ${c} in ${t}`;
+  }, [column, table] as [string, string]), {message: `the type of ${column} in ${table}`}).toBe(type);
+}, {description: 'the storage type of a column of an open table by name'});
+
 export const maxInRow = Then('{string} column should have its maximum in row {int}', async (page: Page, column: string, row: number) => {
   const f = await columnFacts(page, column);
   const max = Math.max(...f.numbers.filter((n): n is number => n !== null));
@@ -185,6 +225,52 @@ export const hasNoColumn = Then('the table should not have a column {string}', a
 export const columnCount = Then('the table should have {int} column(s)', async (page: Page, count: number) => {
   await expect.poll(async () => (await columnNames(page)).length, {message: 'columns of the current table'}).toBe(count);
 });
+
+export const columnsExactly = Then('the table should have the columns {string}', async (page: Page, list: string) => {
+  await expect.poll(() => page.evaluate(() => (grok.shell.t?.columns.names() ?? ['no current table']) as string[]),
+    {message: 'the columns of the current table', timeout: pollMs(30000)}).toEqual(list.split(',').map((n) => n.trim()).filter(Boolean));
+}, {description: 'exactly these columns, in this order — what a join or an enrichment left, polled as long as it takes to arrive'});
+
+/* Two columns row by row: a calculated column against the one it was computed from. The columns are
+   32-bit floats, so a value is compared to a tolerance; an empty source cell gives an empty value. */
+async function expectRowByRow(page: Page, column: string, source: string, op: 'plus' | 'log10minus', delta: number, tolerance: number): Promise<void> {
+  const bad = await page.evaluate(([c, s, o, d, tol]) => {
+    const df = grok.shell.t;
+    const a = df.col(c); const b = df.col(s);
+    if (!a || !b)
+      return `no "${a ? s : c}" column; the table has ${df.columns.names().join(', ')}`;
+    for (let i = 0; i < df.rowCount; i++) {
+      const x = a.get(i); const y = b.get(i);
+      if (b.isNone(i)) {
+        if (!a.isNone(i))
+          return `row ${i + 1}: ${s} is empty and ${c} is ${x}`;
+      }
+      else if (!(Math.abs(x - (o === 'plus' ? y + d : Math.log10(y) - d)) <= tol))
+        return `row ${i + 1}: ${c} is ${x}, ${s} is ${y}`;
+    }
+    return df.rowCount > 0 ? '' : 'the table has no rows';
+  }, [column, source, op, delta, tolerance] as [string, string, string, number, number]);
+  expect(bad, `${column} against ${op === 'plus' ? `${source} + ${delta}` : `log10(${source}) - ${delta}`}`).toBe('');
+}
+
+export const everyValuePlus = Then('every value of {string} column should equal {string} column plus {float}',
+  (page: Page, column: string, source: string, delta: number) => expectRowByRow(page, column, source, 'plus', delta, 1e-3),
+  {description: 'row by row to a thousandth, an empty source cell giving an empty value'});
+
+export const everyValueLog = Then('every value of {string} column should be the decimal log of {string} column minus {float}',
+  (page: Page, column: string, source: string, delta: number) => expectRowByRow(page, column, source, 'log10minus', delta, 1e-4),
+  {description: 'row by row to four decimals, an empty source cell giving an empty value'});
+
+export const formulaColumnsExist = Then('every column the formula of {string} column refers to should exist', async (page: Page, column: string) => {
+  const missing = await page.evaluate((c) => {
+    const df = grok.shell.t;
+    const formula = String(df?.col(c)?.getTag('formula') ?? '');
+    if (!formula)
+      return [`"${c}" has no formula`];
+    return Array.from(formula.matchAll(/\$\{([^}]+)\}/g), (m) => m[1]).filter((n) => !df.col(n));
+  }, column);
+  expect(missing, `columns the formula of "${column}" names that the table does not have`).toEqual([]);
+}, {description: 'every ${name} of the column\'s formula tag is a column of the current table'});
 
 // --- the current row ---------------------------------------------------------------------------------
 

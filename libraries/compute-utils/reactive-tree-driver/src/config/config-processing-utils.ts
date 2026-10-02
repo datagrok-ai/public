@@ -4,6 +4,8 @@ import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-type
 import {callHandler, indexFromEnd} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
+import {annotationRules, expandLinks} from './rule-expansion';
+import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
 import {DriverLogger, reportError} from '../data/Logger';
@@ -17,6 +19,10 @@ export type FuncCallIODescription = {
   type: string;
   nullable: boolean;
   direction: 'input' | 'output';
+  /** Annotation options the driver validates, present only when the parameter declares any. */
+  checks?: CheckOptions;
+  /** Choices the platform evaluates (a function, query or file); `propagate` for `propagateChoice: all`. */
+  dynamicChoices?: {propagate: boolean};
 }
 
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<never>;
@@ -123,7 +129,7 @@ function processUIFlags<T extends PipelineDynamicItem<never>>(item: T): T {
 }
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
-  const links = conf.links?.map((link) => processLinkData(link));
+  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
@@ -132,7 +138,7 @@ function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: 
 }
 
 function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
-  const links = conf.links?.map((link) => processLinkData(link));
+  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
@@ -142,9 +148,10 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 }
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
-  const links = conf.links?.map((link) => processLinkData(link));
-  const actions = processStepActions(conf.actions ?? [], logger);
   const io = getFuncCallIO(conf.nqName);
+  const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io, logger)];
+  const links = allLinks.length ? expandLinks(allLinks).map((link) => processLinkData(link)) : undefined;
+  const actions = processStepActions(conf.actions ?? [], logger);
   const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
   let viewersHook = conf.viewersHook;
@@ -180,17 +187,28 @@ function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
   if (!func)
     throw new Error(`Function '${nqName}' not found`);
   const fc = func.prepare();
-  const inputs = wu(fc.inputParams.values()).map((p) => (
-    {id: p.property.name, type: p.property.propertyType as any, direction: 'input' as const, nullable: isOptional(p.property)}
-  ));
+  const params = [...fc.inputParams.values()];
+  const defaultTable = params.find((p) => p.property.propertyType === DG.TYPE.DATA_FRAME)?.property.name;
+  const inputs = params.map((p) => {
+    const io: FuncCallIODescription = {
+      id: p.property.name, type: p.property.propertyType as any, direction: 'input' as const,
+      nullable: isOptionalAnnotation(p.property),
+    };
+    const checks = parseAnnotationChecks(p.property);
+    if (p.property.propertyType === DG.TYPE.COLUMN && checks.table == null && defaultTable)
+      checks.table = defaultTable;
+    if (Object.keys(checks).length)
+      io.checks = checks;
+    const choices = p.property.options?.choices;
+    const scalar = DG.TYPES_SCALAR.has(p.property.propertyType);
+    if (typeof choices === 'string' && choices && !parseChoices(choices) && scalar)
+      io.dynamicChoices = {propagate: p.property.options.propagateChoice === 'all'};
+    return io;
+  });
   const outputs = wu(fc.outputParams.values()).map((p) => (
     {id: p.property.name, type: p.property.propertyType as any, direction: 'output' as const, nullable: false}
   ));
   return [...inputs, ...outputs];
-}
-
-function isOptional(prop: DG.Property) {
-  return prop.options.optional === 'true';
 }
 
 function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
@@ -261,13 +279,14 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   return {...link, from, to, base, not, actions};
 }
 
-function processLink(io: LinkSpecString, ioType: IOType) {
+export function normalizeLinkSpec(io?: LinkSpecString): string[] {
   if (Array.isArray(io))
-    return io.flatMap((item) => parseLinkIO(item, ioType));
-  else if (io)
-    return parseLinkIO(io, ioType);
-  else
-    return [];
+    return io;
+  return io ? [io] : [];
+}
+
+function processLink(io: LinkSpecString, ioType: IOType) {
+  return normalizeLinkSpec(io).flatMap((item) => parseLinkIO(item, ioType));
 }
 
 function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
@@ -283,7 +302,10 @@ function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
 // Deferred IO selector expansion
 // ---------------------------------------------------------------------------
 
-function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed[] {
+// `$nonscalar` keeps dates, which the platform's scalar list leaves out
+const templateScalarTypes = new Set<string>([...DG.TYPES_SCALAR, DG.TYPE.DATE_TIME]);
+
+export function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed[] {
   const seenTemplateNames = new Set<string | number>();
   let anonIdx = 0;
   return ioList.flatMap((io) => {
@@ -296,6 +318,8 @@ function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed
     seenTemplateNames.add(templateName);
     const direction: 'input' | 'output' = lastSeg.ioExpand === 'inputs' ? 'input' : 'output';
     const excludeSet = new Set(lastSeg.excludeIds ?? []);
+    const kinds = new Set(lastSeg.excludeKinds ?? []);
+    const unlinked = kinds.has('linked');
     let targetIO: FuncCallIODescription[];
     try {
       targetIO = getFuncCallIO(lastSeg.nqName!);
@@ -303,11 +327,16 @@ function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed
       throw new Error(`Link ${linkId}: ${(e as Error).message}`);
     }
     return targetIO
-      .filter((d) => d.direction === direction && !excludeSet.has(d.id))
+      .filter((d) => d.direction === direction && !excludeSet.has(d.id) &&
+        !(kinds.has('nonscalar') && !templateScalarTypes.has(d.type)))
       .map((d) => {
         const nname = isAnonymous ? d.id : io.name + d.id;
         const nlastSegment: LinkSelectorSegment = {type: 'selector', selector: 'first', ids: [d.id], stopIds: []};
-        return {name: nname, segments: [...io.segments.slice(0, -1), nlastSegment], flags: io.flags, templateName};
+        const segments = [...io.segments.slice(0, -1), nlastSegment];
+        // a dropped io must not fail the match, so `$linked` entries are optional
+        if (unlinked)
+          return {name: nname, segments, flags: [...(io.flags ?? []), 'optional' as const], templateName, unlinked};
+        return {name: nname, segments, flags: io.flags, templateName};
       });
   });
 }

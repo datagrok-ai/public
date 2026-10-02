@@ -1,7 +1,9 @@
 Feature: Launch SAR at different similarity thresholds
   Several MCL similarity thresholds keep the WebLogo headers and monomer selections usable.
-  Each threshold launches a fresh analysis of the first 200 peptides; threshold 90, the value of
-  GROK-19145, also runs on all 647.
+  Each threshold launches a fresh analysis of the first 200 peptides and is claimed by the clusters
+  it leaves in the Logo Summary Table — 1 at 10, 2 at 75 and 6 at 96 (measured 2026-09-23; 50, 90
+  and 93 gave 1, 6 and 8 and were dropped as launches that claimed nothing the others do not);
+  threshold 90, the value of GROK-19145, runs on all 647.
 
   Not translated: the manual case's "turn the optional viewers off in the SAR dialog" — the dialog
   has no viewer toggles any more, only Generate clusters. Its "Activity" column is IC50 here.
@@ -34,6 +36,7 @@ Feature: Launch SAR at different similarity thresholds
     And the "A at 2" area of grid should be painted
     And scatter plot viewer in MCL viewer should be painted
     And the "completed threshold" reading of MCL viewer should be <threshold>
+    And the "clusters" reading of Logo Summary Table viewer should be between <fewest clusters> and <most clusters>
     And no rows should be selected
     When user clicks on the "A at 2" area of grid
     Then 59 rows should be selected
@@ -48,14 +51,13 @@ Feature: Launch SAR at different similarity thresholds
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+    # 96 splits the peptides into five clusters on some stands and six on others with the same code
+    # (dev and one local master stand five, another six, 2026-09-23/24); the lower thresholds agree
     Examples:
-      | threshold |
-      | 10        |
-      | 50        |
-      | 75        |
-      | 90        |
-      | 93        |
-      | 96        |
+      | threshold | fewest clusters | most clusters |
+      | 10        | 1               | 1             |
+      | 75        | 2               | 2             |
+      | 96        | 5               | 6             |
 
   Scenario: Similarity threshold 90 on all peptides preserves the analysis and its selection behavior
     When user closes all views

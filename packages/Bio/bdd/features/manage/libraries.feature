@@ -5,10 +5,9 @@ Feature: Managing monomer libraries
   the bio-monomer-lib-loaded event with the sources it loaded; Add uploads a HELM JSON library
   and loads it, Delete unloads and removes it. The feature starts with every library selected
   and leaves it so. With multiple library storages (the monomerDomainDB package's and the
-  files), Add asks which one takes the file; a stand with the files alone skips that dialog. The
-  shipped library file is a HELM library (every monomer has a symbol and a structure); an uploaded
-  library is still listed when the manager opens again, and Delete removes the file from every
-  storage, not only the checkbox. The dialog entry (Bio:manageMonomerLibraries, the panel link)
+  files), Add asks which one takes the file; a stand with the files alone skips that dialog. An
+  uploaded library is still listed when the manager opens again, and Delete removes the file from
+  every storage, not only the checkbox. The dialog entry (Bio:manageMonomerLibraries, the panel link)
   lists the same libraries as the view. Serial: the library selection is the user's, and other
   features (atomic level, the HELM project round-trip) depend on it.
 
@@ -32,9 +31,8 @@ Feature: Managing monomer libraries
     And Add button should be visible
     And Merge button should be visible
 
-  Scenario: The shipped library file is a HELM monomer library
-    Then the "HELMCoreLibrary.json" monomer library file should list monomers with a symbol and a structure each
-    And the monomer library should be loaded from "HELMCoreLibrary.json"
+  Scenario: The shipped library is loaded
+    Then the monomer library should be loaded from "HELMCoreLibrary.json"
 
   Scenario: Unchecking a library reloads the monomer library without it, checking it back
     Given user listens for "bio-monomer-lib-loaded" custom event

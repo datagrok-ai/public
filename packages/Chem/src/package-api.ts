@@ -54,6 +54,15 @@ export namespace scripts {
   }
 
   /**
+   * Generates IUPAC names for molecules deterministically using openclatura (Blue Book 2013 rules).
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
+  export async function iupacName(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:IUPACName', { table, molecules });
+  }
+
+  /**
    * Standardizes the dataset
    * @param {DG.Column} molecules
    *   semType: Molecule
@@ -1061,6 +1070,15 @@ export namespace funcs {
   }
 
   /**
+   * Copies structure as smiles
+   * @param {any} value
+   *   semType: Molecule
+   */
+  export async function copyAsCXSmiles(value: any ): Promise<void> {
+    return await grok.functions.call('Chem:CopyAsCXSmiles', { value });
+  }
+
+  /**
    * Copies structure as molfile V2000
    * @param {any} value
    *   semType: Molecule
@@ -1218,6 +1236,10 @@ export namespace funcs {
     return await grok.functions.call('Chem:SarSeriesColumnChoices', {});
   }
 
+  export async function sarMatrixEditor(call: any ): Promise<any> {
+    return await grok.functions.call('Chem:SarMatrixEditor', { call });
+  }
+
   /**
    * Groups related compound series into potency-colored matrices and predicts virtual analogs.
    * @param {DG.Column} molecules
@@ -1231,9 +1253,12 @@ export namespace funcs {
    * @param {boolean} useMcsAnchors - Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets
    * @param {string} seriesColumn - Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure
    *   choices: Chem:sarSeriesColumnChoices()
+   * @param {DG.Column} coreColumn - Optional. Column with the core of an existing R-group decomposition, used instead of fragmenting the molecules
+   * @param {string[]} rGroupColumns - Columns with the substituent at each attachment point of the core
+   * @param {string} matrixColumns - The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows
    */
-  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , fragmentationLevels: number , predictVirtual: boolean , useMcsAnchors: boolean , seriesColumn: string | null): Promise<void> {
-    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn });
+  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , fragmentationLevels: number , predictVirtual: boolean , useMcsAnchors: boolean , seriesColumn: string | null, coreColumn: DG.Column | null, rGroupColumns: string[] | null, matrixColumns: string | null): Promise<void> {
+    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn, coreColumn, rGroupColumns, matrixColumns });
   }
 
   /**

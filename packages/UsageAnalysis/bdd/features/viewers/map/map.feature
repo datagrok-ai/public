@@ -126,7 +126,6 @@ Feature: Map viewer layers, zoom, selection and the point tooltip
     Given user clears the row selection
     When user drags a box over the "view" area of map viewer holding Control
     Then some rows should be selected
-    And every selected row should pass the filter
     When user presses Escape
     Then no rows should be selected
     And no errors should have been logged

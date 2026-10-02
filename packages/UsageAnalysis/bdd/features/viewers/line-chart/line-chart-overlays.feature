@@ -10,6 +10,8 @@ Feature: Line chart regression, moving average and formula lines
   `moving average lines`), says whether the deviation band is on, counts the formula items that are
   active, and gives each drawn formula line and band a hit area named after its title — so an item
   that parsed but never rendered has no area.
+  The R shortcut ignores an R typed into the chart's own column selector (it used to take the R of
+  "NIBR logP" and toggle the regression line).
   Fixture: spgi-100 on `CAST Idea ID` × `Chemical Space X`; `Stereo Category` has 5 categories, so
   a split turns one fit into five.
 
@@ -46,6 +48,13 @@ Feature: Line chart regression, moving average and formula lines
     When user presses R in line chart viewer
     Then the "regression lines" reading of line chart viewer should be 0
     And no errors should have been logged
+
+  Scenario: An R typed into the chart's own column selector is a letter, not the shortcut
+    When user picks "NIBR logP" in the "x" column selector of line chart viewer
+    Then "showRegressionLine" property of line chart viewer should be "false"
+    And the "regression lines" reading of line chart viewer should be 0
+    When user picks "CAST Idea ID" in the "x" column selector of line chart viewer
+    Then the "x column" reading of line chart viewer should be "CAST Idea ID"
 
   Scenario: The moving average is a series of its own, and the deviation band widens it
     When user sets "showMovingAverageLine" property of line chart viewer to "true"

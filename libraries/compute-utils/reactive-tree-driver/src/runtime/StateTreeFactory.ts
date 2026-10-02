@@ -192,7 +192,7 @@ export function loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
           return [...acc, obs$];
         } else if (item.instancesWrapper.id == null && item.pendingId == null) {
           const obs$ = defer(() => {
-            return from(makeFuncCall(item.config.nqName, false)).pipe(
+            return from(makeFuncCall(item.config.nqName, false, item.instancesWrapper.initialValues)).pipe(
               map((data) => item.initAdapter(data, true)),
             );
           });

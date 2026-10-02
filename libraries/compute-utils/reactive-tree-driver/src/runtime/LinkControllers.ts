@@ -22,6 +22,8 @@ export interface ControllerBaseArgs {
   matchedInputs?: Record<string, MatchedNodePaths>;
   matchedOutputs?: Record<string, MatchedNodePaths>;
   basePath?: MatchedIO['path'];
+  params?: Record<string, any>;
+  sourceCache?: Map<string, any>;
 }
 
 export interface ValidatorControllerArgs extends ControllerBaseArgs {
@@ -57,6 +59,8 @@ export class ControllerBase<T> {
   private matchedInputs: Record<string, MatchedNodePaths>;
   private matchedOutputs: Record<string, MatchedNodePaths>;
   private basePath?: MatchedIO['path'];
+  private params: Record<string, any>;
+  public sourceCache?: Map<string, any>;
 
   constructor(args: ControllerBaseArgs) {
     this.inputs = args.inputs;
@@ -68,6 +72,8 @@ export class ControllerBase<T> {
     this.matchedInputs = args.matchedInputs ?? {};
     this.matchedOutputs = args.matchedOutputs ?? {};
     this.basePath = args.basePath;
+    this.sourceCache = args.sourceCache;
+    this.params = args.params ?? {};
   }
 
   getAll<T = any>(name: string): T[] {
@@ -104,6 +110,10 @@ export class ControllerBase<T> {
 
   getAdditionalParam(name: string) {
     return this.scopeInfo?.additionalParams?.[name];
+  }
+
+  getParam(name: string) {
+    return this.params[name];
   }
 
   getMatchedInputs() {

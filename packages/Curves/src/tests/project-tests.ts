@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {createDefaultChartData} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {changeCurvesOptions} from '../fit/fit-options';
 import {getColumnChartOptions, getOrCreateParsedChartData} from '../fit/fit-chart-data';
 
@@ -89,6 +91,28 @@ category('projects', () => {
     await runSaveAndOpenProjectTest();
     await delay(100);
   }, {timeout: 120000});
+
+  test('painting a table leaves its dataframe tags alone, so its layout saves', async () => {
+    // platforms up to 1.27.x fail to encode a layout whose table carries a dataframe '.%' tag
+    const df = await grok.dapi.files.readCsv(`System:AppData/Curves/${DEMO_FILE}`);
+    df.name = 'curvesPaintedLayout';
+    // what Curves before 1.13 left on every table it painted
+    df.setTag(FitConstants.TAG_FIT_LEGACY, JSON.stringify(createDefaultChartData()));
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    let layout: DG.ViewLayout | null = null;
+    try {
+      for (const col of df.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE))
+        getOrCreateParsedChartData(df.cell(0, col.name), false);
+      await delay(500);
+      expect(df.getTag(FitConstants.TAG_FIT) == null, true, 'reading the options tagged the dataframe');
+      layout = await grok.dapi.layouts.save(tv.saveLayout());
+    } finally {
+      if (layout)
+        await grok.dapi.layouts.delete(layout);
+      tv.close();
+    }
+  }, {timeout: 60000});
 
   test('column-level option survives a datasync project', async () => {
     // the table is rebuilt from its creation script, so the cells come back declaring the interval

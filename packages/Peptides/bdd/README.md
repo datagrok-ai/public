@@ -44,11 +44,11 @@ publish the WebLogo glyphs it draws in the native grid's headers as hit areas.
 | `sar/tooltips` | Cell statistics, cliff glyphs, highlight cleanup, cluster statistics and selection |
 | `sar/mutation-cliffs` | Independent pair counts, p-values, a cliff cell drawn and a cliff-free cell left blank, position chart, full export contents |
 | `sar/sequence-space` | Sequence space added, removed and re-added from the settings dialog: viewer, embedding and cluster columns |
-| `sar/similarity-threshold` | Fresh analyses at thresholds 10, 50, 75, 90, 93 and 96 on 200 peptides and at 90 on all 647; header and map selection after each |
+| `sar/similarity-threshold` | Fresh analyses at thresholds 10, 75 and 96 on 200 peptides (with the cluster count each leaves) and at 90 on all 647; header and map selection after each |
 | `sar/export` | Every invariant-map cell, every mutation pair/activity/delta, both source IDs |
 | `sar/manual-alignment` | Apply, adjacent/end positions, recomputed statistics, Reset, selection and panes against edited data |
 | `sar/project-round-trip` | Non-default scaling/data/layout/selection persistence and restored interactions and panes |
-| `sar/default-launch` | The dialog defaults (threshold 70, inflation 1.4, no scaling) run once end to end |
+| `sar/default-launch` | The dialog defaults (inflation 1.4, no scaling; the threshold raised from 70 to 90) run once end to end |
 | `entry/demo-dashboard` | Registered dashboard function, transformed activities, WebLogo headers and rendered viewers |
 | `entry/landing` | Exactly three demo buttons, their exact datasets/notations and side-panel state |
 
@@ -75,10 +75,11 @@ GROK-20965); the sequence space parameters pane itself is not covered.
 
 ## Run record
 
-Every launch but one sets the MCL similarity threshold to 93 (the demo uses 94): MCL dominates the
-run time and the default 70 spends a long time on this fixture, while 93 clusters it in seconds.
-`sar/default-launch` runs the defaults once. The from-panel journey re-clusters at 90 and back at
-93; the threshold outline runs 10, 50, 75, 90, 93 and 96 on 200 peptides, plus 90 on all 647.
+The launches set the MCL similarity threshold to 93 (the demo uses 94): MCL dominates the run time
+and the default 70 spends a long time on this fixture, while 93 clusters it in seconds. The
+exceptions: `sar/default-launch` keeps the dialog's other defaults at threshold 90, `sar/tooltips`
+launches at 94 on the first 100 peptides, the from-panel journey re-clusters at 90 and back at 93,
+and the threshold outline runs 10, 75 and 96 on 200 peptides, plus 90 on all 647.
 
 Known failures, each with its ticket above the scenario: the settings reopen with Dendrogram
 unchecked while the tree is shown, and unchecking Dendrogram leaves the tree (both GROK-20640).

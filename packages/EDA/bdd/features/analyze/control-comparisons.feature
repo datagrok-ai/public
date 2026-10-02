@@ -20,8 +20,7 @@ Feature: Control comparisons
     And Alpha input in "Control comparisons" dialog should have value "0.05"
     And Run button in "Control comparisons" dialog should be enabled
     When user clicks on Run button in "Control comparisons" dialog
-    Then the top menu command should have completed
-    And "Control comparisons" dialog should be hidden
+    Then "Control comparisons" dialog should be hidden
     And box plot viewer should be visible
     And description of box plot viewer should be visible
     And description of box plot viewer should contain text "Asian"

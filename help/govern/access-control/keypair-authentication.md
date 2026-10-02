@@ -101,6 +101,8 @@ To create a key for CI without enrolling an interactive machine:
 2. **Public keys... > Add a public key**, paste the public JWK, set an expiration.
 3. Store the matching private JWK as the secret your pipeline exposes as `GROK_PRIVATE_KEY`.
 
+To manage a service user's keys, go to **Browse** > **Platform** > **Users**, right-click the service user, and select **Public keys...**. You need the **Edit User** [global permission](access-control.md#global-permissions).
+
 Generate the pair with any tool that emits JWK; for example, with Node:
 
 ```js

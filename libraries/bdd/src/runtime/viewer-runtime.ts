@@ -141,9 +141,12 @@ function install(): void {
   const forced = new WeakMap<HTMLElement, MutationObserver>();
   const listeners = new WeakMap<Element, Record<string, {count: number; sub: any}>>();
   const armed: Record<string, Promise<unknown>> = {};
-  const balloons: Balloon[] = [];
+  // a document loaded after the first install has recorded its balloons from its boot on (installViewerRuntime)
+  const early: Balloon[] | undefined = w.__bddBalloons;
+  const balloons: Balloon[] = early ?? [];
   const remembered: Record<string, Range | undefined> = {};
-  let layout: any;
+  // by name; '' is the one "saves the layout of the current table view" keeps
+  const layouts = new Map<string, any>();
   let tokens = 0;
   const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
   // the platform's selected-rows orange, as the pixels of a marker or a box drawn in it
@@ -362,10 +365,11 @@ function install(): void {
     return parts.canvas ?? parts.root ?? v.root;
   };
   // a WebGL canvas (the 3D scatter plot) has no 2D context and no pixels to read: its picture is
-  // the viewer's own `scene signature` reading
+  // the viewer's own `scene signature` reading; a canvas not laid out yet (a filter card's, the
+  // moment its panel opens) has no size, and getImageData throws on it
   const pixels = (cv: HTMLCanvasElement): ImageData => {
     const ctx = cv.getContext('2d');
-    return ctx ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
+    return ctx && cv.width > 0 && cv.height > 0 ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
   };
   /** The viewer's picture: its canvas with its `overlay` part composited on top when there is one
    * of the same size (the scatter plot draws regression lines, labels and stats on the overlay,
@@ -679,6 +683,8 @@ function install(): void {
   };
   /** The painted pixels now, without moving the snapshot. */
   const ink = (el: Element): number => histogram(pixelsOf(viewerOf(el))).ink;
+  /** The pixels in the selection color now, without a snapshot. */
+  const hue = (el: Element): number => histogram(pixelsOf(viewerOf(el))).hue;
   const baseline = (el: Element): void => {
     try {
       snapshot(el);
@@ -791,10 +797,14 @@ function install(): void {
     return result;
   };
   /** Painted pixels inside a hit area (the canvas may be scaled to the device). */
-  const areaInk = (el: Element, name: string): number => {
+  /** `inset` device pixels come off every side first: a grid cell's rectangle holds the row and
+   * column gridlines on its edges, which would make an empty cell "painted". */
+  const areaInk = (el: Element, name: string, inset = 0): number => {
     const v = viewerOf(el);
     const cv = canvasOf(v);
-    return inkIn(pixelsOf(v), deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv)));
+    const r = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv));
+    const i = r.w > 4 * inset && r.h > 4 * inset ? inset : 0;
+    return inkIn(pixelsOf(v), {x: r.x + i, y: r.y + i, w: r.w - 2 * i, h: r.h - 2 * i});
   };
   /** A hit area's ink now against the snapshot's (the area must have been reported then too). */
   const areaChange = (el: Element, name: string): AreaChange => {
@@ -1028,9 +1038,9 @@ function install(): void {
     return armEvent('onContextMenuShown', capMs);
   };
   /** Where to right-click an element for its context menu — a named hit area, else the viewer's
-   * `view` area, else the element's centre — with the canvas baseline taken and the menu armed. A
-   * tree node, a card or a list row has no render to wait through and no areas: its own centre
-   * (`settle` and `stableArea` throw for a non-viewer). */
+   * `view` area, else a point of the element's visible part that the page hit-tests to it — with
+   * the canvas baseline taken and the menu armed. A tree node, a card or a list row has no render to
+   * wait through and no areas (`settle` and `stableArea` throw for a non-viewer). */
   const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string}> => {
     const v = findViewer(el);
     if (!v && area !== null)
@@ -1046,9 +1056,52 @@ function install(): void {
           throw e;
       }
     }
+    // a tree row wider than the panel that clips it, a gallery link half under a docked panel: the
+    // right-click aims at a point of the element a person can see and the page hit-tests to it.
+    // Only an element with no part in sight is scrolled to — scrollIntoView moves overflow-hidden
+    // ancestors too, and the page with them.
     if (!box) {
-      const r = el.getBoundingClientRect();
-      box = {x: r.x, y: r.y, width: r.width, height: r.height};
+      const reachable = (b: Box): Box | undefined => {
+        for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.5], [0.75, 0.5], [0.5, 0.25], [0.5, 0.75], [0.1, 0.5], [0.9, 0.5]]) {
+          const [x, y] = [b.x + b.width * fx, b.y + b.height * fy];
+          const hit = document.elementFromPoint(x, y);
+          if (hit && (hit === el || el.contains(hit)))
+            return {x: x - 0.5, y: y - 0.5, width: 1, height: 1};
+        }
+        return undefined;
+      };
+      const visible = (): Box | undefined => {
+        const r = el.getBoundingClientRect();
+        let [left, top, right, bottom] = [r.left, r.top, r.right, r.bottom];
+        for (let p = el.parentElement; p; p = p.parentElement) {
+          const s = getComputedStyle(p);
+          const q = p.getBoundingClientRect();
+          if (s.overflowX !== 'visible')
+            [left, right] = [Math.max(left, q.left), Math.min(right, q.right)];
+          if (s.overflowY !== 'visible')
+            [top, bottom] = [Math.max(top, q.top), Math.min(bottom, q.bottom)];
+        }
+        [left, top, right, bottom] = [Math.max(left, 0), Math.max(top, 0), Math.min(right, innerWidth), Math.min(bottom, innerHeight)];
+        return right > left && bottom > top ? {x: left, y: top, width: right - left, height: bottom - top} : undefined;
+      };
+      // a panel docked a moment ago (the console) is still resizing what it pushed aside
+      let last = '';
+      for (let frame = 0; frame < 30; frame++) {
+        const r = el.getBoundingClientRect();
+        const now = `${r.x},${r.y},${r.width},${r.height}`;
+        if (now === last)
+          break;
+        last = now;
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+      const seen = visible();
+      box = seen && reachable(seen);
+      if (!box) {
+        el.scrollIntoView({block: 'nearest'});
+        const r = el.getBoundingClientRect();
+        const now = visible();
+        box = (now && reachable(now)) ?? now ?? {x: r.x, y: r.y, width: r.width, height: r.height};
+      }
     }
     return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
   };
@@ -1070,18 +1123,28 @@ function install(): void {
   };
   /** The balloons shown since the last read, and clears them. */
   const takeBalloons = (): Balloon[] => balloons.splice(0, balloons.length);
-  const saveLayout = (): void => { layout = grok.shell.tv.saveLayout(); };
+  /** Puts back what a typed claim read but did not want, so the floor after it still sees them. */
+  const putBalloons = (back: Balloon[]): void => { balloons.unshift(...back); };
+  const saveLayout = (name = ''): void => { layouts.set(name, grok.shell.tv.saveLayout()); };
   /** Saves through the server and keeps only the id: "loads the saved layout" then fetches what
    * the server stored, so the round-trip covers the serialization too. */
-  const saveLayoutToServer = async (): Promise<string> => {
+  const saveLayoutToServer = async (): Promise<{id: string; family: string}> => {
     const l = grok.shell.tv.saveLayout();
+    // named as a fixture of its run (<view>-<ms>), so the next run sweeps what a killed one left
+    const family = String(l.name || 'layout');
+    l.name = `${family}-${Date.now()}`;
     await grok.dapi.layouts.save(l);
-    layout = {serverId: l.id};
-    return l.id;
+    layouts.set('', {serverId: l.id});
+    return {id: l.id, family};
   };
-  const loadLayout = async (): Promise<void> => {
+  // find() resolves nothing for an id the server does not hold: a rejection is a failed request, not a deletion
+  const layoutOnServer = async (id: string): Promise<boolean> => (await grok.dapi.layouts.find(id)) != null;
+  const forgetLayouts = (): void => layouts.clear();
+  const loadLayout = async (name = ''): Promise<void> => {
+    const layout = layouts.get(name);
     if (!layout)
-      throw new Error('no layout saved in this feature');
+      throw new Error(name === '' ? 'no layout saved in this feature' :
+        `no layout "${name}" was saved; saved: ${[...layouts.keys()].filter(Boolean).join(', ') || 'none'}`);
     const saved = layout.serverId ? await grok.dapi.layouts.find(layout.serverId) : layout;
     if (!saved)
       throw new Error(`the server has no layout ${layout.serverId}`);
@@ -1102,9 +1165,15 @@ function install(): void {
    * platform announces every call (`onBeforeRunAction` / `onAfterRunAction`), and the one whose
    * function is registered under the picked menu path is the command — its end is when the
    * command is done, whatever dialog it showed in between. */
-  let command: {name: string; done: Promise<void>; started: number} | undefined;
+  let command: {name: string; done: Promise<void>; started: number; ended?: number} | undefined;
   let columnsBefore: {table: any; names: string[]} | undefined;
   let commandArm: any;
+  // the last OK or RUN click in a dialog: a command that had ended before it only opened the dialog
+  let dialogOkAt = 0;
+  document.addEventListener('click', (e) => {
+    if ((e.target as Element | null)?.closest?.('.d4-dialog [name="button-OK"], .d4-dialog [name="button-RUN"]'))
+      dialogOkAt = Date.now();
+  }, true);
   const armCommand = (path: string): void => {
     const t = grok.shell.t;
     columnsBefore = t ? {table: t.dart, names: t.columns.names()} : undefined;
@@ -1120,15 +1189,17 @@ function install(): void {
         commandArm = undefined;
       let resolve!: () => void;
       const done = new Promise<void>((r) => { resolve = r; });
+      const started = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()} as NonNullable<typeof command>;
       // an unsaved call has no id: two undefined ids are not the same call (a transform the
       // command runs inside itself ended the wait before the command had docked its result)
       const after = grok.functions.onAfterRunAction.subscribe((ended: any) => {
         if (ended?.dart === fc.dart || (fc.id != null && ended?.id === fc.id)) {
           after.unsubscribe();
+          started.ended = Date.now();
           resolve();
         }
       });
-      command = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()};
+      command = started;
     });
     commandArm = sub;
     // a pick that started no call is disarmed after a minute — this arm only, never a later pick's;
@@ -1147,6 +1218,8 @@ function install(): void {
     if (!command)
       throw new Error('no menu command has started a function call in this scenario (a Dart command, or the menu item ran nothing)');
     const c = command;
+    if (c.ended !== undefined && dialogOkAt > c.ended)
+      throw new Error(`${c.name} ended when its dialog opened, before its OK was clicked, so its end says nothing about the work the OK started: claim what that work leaves (a column, a balloon, a viewer, a dialog that finished updating)`);
     const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), capMs));
     if (await Promise.race([c.done.then(() => 'done'), timeout]) === 'timeout')
       throw new Error(`${c.name} has been running for ${Math.round((Date.now() - c.started) / 1000)} s`);
@@ -1172,12 +1245,17 @@ function install(): void {
     return {before: columnsBefore?.names ?? null, now: t ? t.columns.names() : [], same: !!t && columnsBefore?.table === t.dart};
   };
 
-  /** Custom platform events (`grok.events.fireCustomEvent`) by id, counted from "listens for"
-   * until the page resets; a read takes the count and the last arguments and zeroes them. */
+  /** Custom platform events (`grok.events.fireCustomEvent`) by id, counted from the last "listens
+   * for" (an event an earlier scenario or feature left unread must not satisfy this one's claim);
+   * a read takes the count and the last arguments and zeroes them. */
   const customEvents = new Map<string, {count: number; last: unknown; sub: any}>();
   const listenCustom = (id: string): void => {
-    if (customEvents.has(id))
+    const known = customEvents.get(id);
+    if (known) {
+      known.count = 0;
+      known.last = undefined;
       return;
+    }
     const entry = {count: 0, last: undefined as unknown, sub: undefined as any};
     entry.sub = grok.events.onCustomEvent(id).subscribe((args: unknown) => { entry.count++; entry.last = args; });
     customEvents.set(id, entry);
@@ -1206,11 +1284,36 @@ function install(): void {
     areaRectChange, legendState: (el: Element) => legendState(viewerOf(el)), legendChange, rememberValue, rememberedValue,
     snapshot, baselineAll, settleAll, changeAll, change, rangeChange, quietRangeChange, scaleChange, valueChange, quietValueChange, rememberRange, rememberedRange, stillness,
     palette, tableOf, listen, unlisten, firedCount, resize, restoreSize, armEvent, waitArmed, closeMenu, openMenu, menuPoint, stableArea, addViewer, writePropertiesOfAdded,
-    takeBalloons, saveLayout, saveLayoutToServer, loadLayout, deleteLayout, ink, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
+    takeBalloons, putBalloons, saveLayout, saveLayoutToServer, layoutOnServer, loadLayout, forgetLayouts, deleteLayout, ink, hue, armCommand, waitCommand, settleCommand, columnsSince, listenCustom, customFired};
   stampAll();
   grok.events.onViewerAdded.subscribe((a: any) => arm(a?.args?.viewer));
   grok.events.onViewerClosed.subscribe((a: any) => a?.args?.viewer && forget(a.args.viewer));
-  grok.events.onEvent('d4-balloon-shown').subscribe((a: any) => balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+  if (!early) {
+    grok.events.onEvent('d4-balloon-shown').subscribe((a: any) =>
+      balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+  }
+}
+
+/** Runs in every document the page loads after the first install, before the platform's scripts: the
+ * balloons a reload or a navigation shows while the shell boots are recorded, not only the ones shown
+ * after the runtime is installed again. It subscribes as soon as the platform's event bus exists. */
+function recordBalloonsFromBoot(): void {
+  if (window !== window.top)
+    return;
+  const w = window as any;
+  const giveUp = Date.now() + 180_000;
+  const timer = setInterval(() => {
+    if (Date.now() > giveUp)
+      clearInterval(timer);
+    // the JS API is there before the platform's side of it (grok_OnEvent) is
+    if (!w.grok?.events?.onEvent || typeof w.grok_OnEvent !== 'function')
+      return;
+    clearInterval(timer);
+    // set only once subscribed: a shell that booted after this gave up is subscribed by install()
+    const balloons: unknown[] = w.__bddBalloons = [];
+    w.grok.events.onEvent('d4-balloon-shown').subscribe((a: any) =>
+      balloons.push({type: String(a?.args?.type ?? ''), message: String(a?.args?.message ?? '')}));
+  }, 10);
 }
 
 const installed = new WeakSet<Page>();
@@ -1225,6 +1328,7 @@ export async function installViewerRuntime(page: Page): Promise<void> {
   installed.add(page);
   if (!watched.has(page)) {
     watched.add(page);
+    await page.addInitScript(recordBalloonsFromBoot);
     page.on('framenavigated', (frame) => {
       if (frame === page.mainFrame())
         installed.delete(page);

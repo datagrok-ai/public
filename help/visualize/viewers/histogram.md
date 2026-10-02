@@ -11,8 +11,12 @@ keywords:
 
 A histogram is a graphical representation of the distribution of numerical data.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Histogram');`
+
+:::
 
 General:
 
@@ -32,6 +36,19 @@ General:
 Enable **Show Values** to display the bin count on top of each bar. The value shown reflects the current row source configuration (filtered, selected, or all rows), making it easy to see bin sizes at a glance.
 
 ![](img/histogram-bin-values.gif)
+
+## Axes
+
+To spread the bins evenly on a logarithmic scale, set **X Axis Type** to `logarithmic`. To show
+the bin counts on a logarithmic scale, set **Y Axis Type** to `logarithmic`. On this scale, bins
+with zero or one row are drawn at the baseline.
+
+To put several histograms on the same scale, set the same **Y Min** and **Y Max** for them. Bins
+that don't fit into the range are clipped and marked with wavy breaks and arrows. To hide the
+marks, clear **Show Clipped Bin Indicators**.
+
+To mark a threshold or a range on the X axis, add a
+[formula line](scatter-plot.md#formula-lines) or an [annotation region](scatter-plot.md#annotation-regions).
 
 ## Distribution lines
 
@@ -129,19 +146,19 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Selected Bins Color | number |  |
 | Values Color | number |  |
 | Filtered Out Color | number |  |
-| Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
-| **Legend** | | |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
-| **Description** | | |
-| Show Title | boolean |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| **Description** | | |
+| Show Title | boolean |  |
 
 See also:
 

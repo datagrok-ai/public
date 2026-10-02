@@ -4,8 +4,23 @@ import * as DG from 'datagrok-api/dg';
 
 import {renderMolecule} from '../../rendering/render-molecule';
 import {fitAdditiveEffects} from './sar-matrix-assemble';
+import {standardizeFragment} from './sar-matrix-columns';
 import {closeGridQuietly, SarMatrix, SarMatrixCell} from './sar-matrix-types';
 import {ANALOG_W, CELL_H, CELL_W, CORE_W, MatrixCellRef} from './sar-matrix-ui-common';
+
+const structureCache = new Map<string, boolean>();
+const STRUCTURE_CACHE_MAX = 2000;
+
+/** Whether a fragment is a structure rather than a name such as "VHL". */
+function isStructure(value: string): boolean {
+  let known = structureCache.get(value);
+  if (known === undefined) {
+    if (structureCache.size >= STRUCTURE_CACHE_MAX)
+      structureCache.clear();
+    structureCache.set(value, known = standardizeFragment(value).structure);
+  }
+  return known;
+}
 
 /** Spelled out in the Context Panel, where there is room to say what produced the number. */
 const FREE_WILSON_METHOD = 'local Free-Wilson (row + column effects)';
@@ -84,7 +99,8 @@ export class MakeListPanel {
   private buildAnalogTable(cells: MatrixCellRef[]): DG.DataFrame {
     const molCol = (name: string, values: string[]): DG.Column => {
       const col = DG.Column.fromStrings(name, values);
-      col.semType = DG.SEMTYPE.MOLECULE;
+      if (values.every((value) => !value || isStructure(value)))
+        col.semType = DG.SEMTYPE.MOLECULE;
       return col;
     };
     const cell = (c: MatrixCellRef): SarMatrixCell => c.matrix.cells[c.ri][c.ci];
@@ -384,6 +400,7 @@ export class MakeListPanel {
       if (all.length === 0)
         return;
       block.appendChild(this.cpSection(title, `${all.length}`));
+      block.appendChild(this.cpStrip(all.map((e) => e.cell.value ?? 0), self.value, matrix));
       block.appendChild(ui.divH(all.map((e) => this.cpFragment(e.cell.smiles, e.cell.value ?? 0)),
         'chem-sar-cp-decomp'));
     };
@@ -391,12 +408,33 @@ export class MakeListPanel {
     section('Measured with this substituent', collect((_ri, ci) => ci === colIdx));
     return block;
   }
-  /** A framed fragment tile: the structure with the compound's value beneath; structure omitted for
-   *  an empty SMILES. */
-  private cpFragment(smiles: string | null, value?: number): HTMLElement {
+  /** A section's values as ticks on the matrix's activity range, the selected compound highlighted. */
+  private cpStrip(values: number[], self: number | null, matrix: SarMatrix): HTMLElement {
+    const lo = matrix.minActivity;
+    const hi = matrix.maxActivity;
+    const span = hi - lo;
+    const track = ui.div([], 'chem-sar-cp-strip-track');
+    const tick = (value: number, cls: string): void => {
+      const mark = ui.div([], cls);
+      mark.style.left = `${span > 0 ? Math.min(100, Math.max(0, ((value - lo) / span) * 100)) : 50}%`;
+      track.appendChild(mark);
+    };
+    for (const value of values)
+      tick(value, 'chem-sar-cp-tick');
+    if (self !== null)
+      tick(self, 'chem-sar-cp-tick chem-sar-cp-tick-self');
+    return ui.divV([track, ui.divH([ui.divText(this.host.formatActivity(lo)),
+      ui.divText(this.host.formatActivity(hi))], 'chem-sar-cp-strip-scale')], 'chem-sar-cp-strip');
+  }
+  /** A framed fragment tile: the structure, or a name as text, with the compound's value beneath. */
+  private cpFragment(smiles: string | null, value?: number, caption?: string): HTMLElement {
     const parts: HTMLElement[] = [];
-    if (smiles)
-      parts.push(ui.div([renderMolecule(smiles, {width: 78, height: 52, popupMenu: false})], 'chem-sar-cp-frag-box'));
+    if (caption !== undefined)
+      parts.push(ui.divText(caption, 'chem-sar-cp-frag-role'));
+    if (smiles) {
+      parts.push(ui.div([isStructure(smiles) ? renderMolecule(smiles, {width: 78, height: 52, popupMenu: false}) :
+        ui.divText(smiles, 'chem-sar-cp-frag-name')], 'chem-sar-cp-frag-box'));
+    }
     if (value !== undefined)
       parts.push(ui.divText(this.host.formatActivity(value), 'chem-sar-cp-rv'));
     return ui.divV(parts, 'chem-sar-cp-frag');
@@ -442,12 +480,13 @@ export class MakeListPanel {
       panel.appendChild(this.cpReferences(matrix, rowIdx, colIdx));
 
     panel.appendChild(this.cpSection('Decomposition', 'R-group'));
-    const parts = [this.cpFragment(row.keySmiles)];
-    matrix.positions.forEach((position) => {
-      const v = position === column.position ? column.substSmiles : matrix.refValues[position];
-      if (v)
-        parts.push(this.cpFragment(v));
-    });
+    const parts = [this.cpFragment(row.coreSmiles, undefined, 'Core')];
+    for (const [position, fragment] of Object.entries(row.foldedValues)) {
+      if (fragment)
+        parts.push(this.cpFragment(fragment, undefined, position));
+    }
+    if (column.substSmiles)
+      parts.push(this.cpFragment(column.substSmiles, undefined, column.position));
     panel.appendChild(ui.divH(parts, 'chem-sar-cp-decomp'));
 
     if (cell.smiles) {

@@ -59,8 +59,7 @@ Feature: Pareto front objectives
     And user clicks on OK button in "Select columns..." dialog
     Then "Maximize" property in context panel should contain text "16 / 16"
     And "Maximize" property of pareto front viewer should contain "price"
-    And pareto front viewer should contain text "Cannot minimize and maximize features at the same time"
-    And pareto front viewer should contain text "highway.mpg"
+    And pareto front viewer should contain text "Cannot minimize and maximize features at the same time: \"highway.mpg\", \"price\""
     When user clicks on "..." button in "Maximize" property in context panel
     And user clicks on None label in "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
@@ -84,17 +83,14 @@ Feature: Pareto front objectives
     And the "labels shown" reading of scatter plot viewer in pareto front viewer should be 0
     And no errors should have been logged
 
-  Scenario: An empty numeric column reaches the objective picker
+  Scenario: An empty numeric column is not offered as an objective
     When user adds a calculated column "empty" with formula "If(true, null, 0)"
     Then "empty" column should have type "int"
     And "empty" column should have missing values
     When user clicks on "..." button in "Maximize" property in context panel
     Then "Select columns..." dialog should be visible
-    And the "text of cell 1 of __name" reading of grid viewer in "Select columns..." dialog should be "diesel"
+    And the "rows" reading of grid viewer in "Select columns..." dialog should be 16
     And no errors should have been logged
-
-  Scenario: An empty column is not offered as an objective
-    Then the "rows" reading of grid viewer in "Select columns..." dialog should be 16
 
   Scenario: Cancelling the objective picker preserves the viewer's objectives
     When user clicks on CANCEL button in "Select columns..." dialog

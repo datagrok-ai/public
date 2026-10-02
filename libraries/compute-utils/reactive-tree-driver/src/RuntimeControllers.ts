@@ -23,6 +23,10 @@ export interface IControllerBase {
   /** Position of the base node for base-instantiated links. */
   getBasePosition(): MatchedNodeInfo | undefined;
   getAdditionalParam(name: string): any | undefined;
+  /** Static per-link parameter from the link `params` config. */
+  getParam(name: string): any | undefined;
+  /** Per-link store for sources that read no input. */
+  sourceCache?: Map<string, any>;
   hasCall(name: string): boolean;
 }
 

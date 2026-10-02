@@ -690,6 +690,10 @@ jobs:
         id: publish
         working-directory: packages/${{ matrix.package }}
         run: |
+          # Servers before 1.28.0 install an npm package as bundled only when it ships webpack.config.js (see BUNDLE_MARKER in grok publish)
+          if [ -f dist/package.js ] && [ ! -f webpack.config.js ]; then
+            printf '%s\n' '// Generated at npm publish for servers before 1.28.0, which detect a bundled' '// package by this file. The bundle itself is built by @datagrok/build-config.' 'module.exports = {};' > webpack.config.js
+          fi
           tgz="$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)"
           for dep in $(tar xzf "$tgz" -O package/package.json | jq -r '(.dependencies // {}) + (.peerDependencies // {}) | to_entries[] | select(.key | test("^(datagrok-api|datagrok-tools|@datagrok-libraries/)")) | "\(.key)@\(.value | ltrimstr("^"))"'); do
             if [ "$(npm view "$dep" version 2>/dev/null)" != "${dep##*@}" ]; then

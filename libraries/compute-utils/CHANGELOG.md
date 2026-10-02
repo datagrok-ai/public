@@ -2,6 +2,17 @@
 
 ## v.next
 
+* RTD: Added declarative `rule` links: JSON Logic conditions with per-effect `when`; `hide`/`show`/`items`/`meta`, `error`/`warning`/`notification`/`verdicts` and `set`/`clear`/`assign` effects; `(template)` queries; `validators`, `choices`, `js`, `func`, `query`, `file` and `table` sources; the `literal`, `columns`, `columnsMissing`, `columnIs`, `nulls`, `column`, `row`, `len`, `regex`, `script` and `scriptVerdict` operations; array messages; driver-added names use a `$` prefix, as in `$all.<alias>`
+* RTD: Added `check` links and annotation-derived default validators sharing one expansion (`nullable`/`optional`, `min`/`max`, regex and GrokScript `validator`, `visible` (also read from `enabled`, which hides the input), `validators`, static `choices`, column `type`/`semType`/`table`/`allowNulls`); `nullable: true` annotations now make an input optional; GrokScript checks and annotation validators need platform 1.28+ and are skipped on older clients
+* RTD: Added annotation-derived rules for choices the platform evaluates: the items, a warning for values outside the list, and the `propagateChoice: all` lookup (the first such key of a step; cells converted to the input types)
+* RTD: Added `$nonscalar` and `$linked` exclusions to the `inputs()`/`outputs()` io wildcards
+* RTD: Added `params`/`getParam` controller support, and `isClientAtLeast` in utils
+* RTD: Fixed computed annotation defaults (`= 2 + 2`, `= Pkg:f()`) being written as text, which failed step creation for numeric inputs; new steps evaluate defaults through the platform
+* RTD: Fixed inputs hidden via meta blocking the run with validation errors the user could not see; their validation is now suppressed
+
+## 1.47.0 (2026-09-23)
+
+* historyUtils.saveRun: Added the `newId` option to save a run under a fresh id
 * Old views: Removed `testFunctionView`/`testPipeline` and the Test runner ribbon group; their module-level import of the view classes formed a cycle that threw `Cannot access 'FunctionView' before initialization` in consumers
 * RTD: Added `getMatchedPositions`/`getBasePosition` controller methods exposing matched node positions to link handlers
 * HistoricalRunsDelete.awaitDelete: dialog helper resolving null on dismissal (mirrors awaitMetadata)

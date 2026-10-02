@@ -134,10 +134,25 @@ export async function expectBoundTable(page: Page, target: ElementRef, name: str
 /** A reading of the viewer as it is now; a name the viewer does not report fails naming the
  * readings it does. */
 export async function readValue(page: Page, target: ElementRef, name: string): Promise<unknown> {
+  const r = await readingOf(page, target, name);
+  if (r instanceof MissingReading)
+    throw new Error(String(r));
+  return r;
+}
+
+/** What a poll reads instead of a throw, which would end it: a package registers its provider
+ * after its own async work (Activity Cliffs after the embedding), so a reading can arrive after
+ * the viewer. No claim is satisfied by it; its text is what the failure shows. */
+export class MissingReading {
+  constructor(readonly text: string) {}
+  toString(): string { return this.text; }
+}
+
+export async function readingOf(page: Page, target: ElementRef, name: string): Promise<unknown> {
   const r: Reading = await onViewer(page, target, (el, n) => (window as any).__bdd.valueChange(el, n), name);
-  if (r.now === undefined || r.now === null)
-    throw new Error(`${target.phrase} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`);
-  return r.now;
+  return r.now === undefined || r.now === null
+    ? new MissingReading(`${target.phrase} has no "${name}" reading; it reports: ${r.has.join(', ') || 'no readings'}`)
+    : r.now;
 }
 
 export type ReadingCompare = 'equal' | 'lower' | 'higher' | 'differ' | 'same';
@@ -183,7 +198,15 @@ export async function expectReading(page: Page, target: ElementRef, name: string
   }
 }
 
-export function rememberReading(page: Page, target: ElementRef, name: string): Promise<void> {
+/** A reading a viewer adds once it has drawn (a trellis cell's signature after its inner viewer is
+ * rebuilt) is waited for like a hit area, up to 5 s, before it is remembered. */
+export async function rememberReading(page: Page, target: ElementRef, name: string): Promise<void> {
+  let last = '';
+  await expect.poll(async () => {
+    const r = await readingOf(page, target, name);
+    last = r instanceof MissingReading ? String(r) : '';
+    return last === '';
+  }, {timeout: pollMs(5000)}).toBe(true).catch((e) => { throw last ? new Error(last) : e; });
   return onViewer(page, target, (el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
 }
 
@@ -292,6 +315,10 @@ export function takeBalloons(page: Page): Promise<Balloon[]> {
   return evaluate(page, () => (window as any).__bdd.takeBalloons(), undefined);
 }
 
+export function putBalloons(page: Page, back: Balloon[]): Promise<void> {
+  return evaluate(page, (b) => { (window as any).__bdd.putBalloons(b); }, back);
+}
+
 // --- size and layout -----------------------------------------------------------------------------------
 
 export async function resize(page: Page, target: ElementRef, width: number | null, height: number | null): Promise<void> {
@@ -302,21 +329,31 @@ export async function restoreSize(page: Page, target: ElementRef): Promise<void>
   await onViewer(page, target, (el) => (window as any).__bdd.restoreSize(el, 500), undefined);
 }
 
-export function saveLayout(page: Page): Promise<void> {
-  return evaluate(page, () => { (window as any).__bdd.saveLayout(); }, undefined);
+/** Keeps the layout of the current table view in the page, under a name ('' for the unnamed one). */
+export function saveLayout(page: Page, name = ''): Promise<void> {
+  return evaluate(page, (n) => { (window as any).__bdd.saveLayout(n); }, name);
 }
 
-/** Saves the layout through the server and returns its id; the caller registers the deletion. */
-export function saveLayoutToServer(page: Page): Promise<string> {
+/** The named layouts kept in the page go: the runtime outlives a feature on the page. */
+export function forgetLayouts(page: Page): Promise<void> {
+  return evaluate(page, () => { (window as any).__bdd.forgetLayouts(); }, undefined);
+}
+
+/** Saves the layout through the server under a name of its run's family; the caller registers the deletion. */
+export function saveLayoutToServer(page: Page): Promise<{id: string; family: string}> {
   return evaluate(page, () => (window as any).__bdd.saveLayoutToServer(), undefined);
+}
+
+export function layoutOnServer(page: Page, id: string): Promise<boolean> {
+  return page.evaluate((i) => (window as any).__bdd.layoutOnServer(i), id);
 }
 
 export function deleteLayout(page: Page, id: string): Promise<void> {
   return page.evaluate((i) => (window as any).__bdd.deleteLayout(i), id);
 }
 
-export function loadLayout(page: Page): Promise<void> {
-  return evaluate(page, () => (window as any).__bdd.loadLayout(), undefined);
+export function loadLayout(page: Page, name = ''): Promise<void> {
+  return evaluate(page, (n) => (window as any).__bdd.loadLayout(n), name);
 }
 
 // --- area gestures ------------------------------------------------------------------------------------

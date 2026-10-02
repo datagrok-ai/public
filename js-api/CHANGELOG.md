@@ -2,6 +2,12 @@
 
 ## v.next
 
+* Added the `skipLogic` option to `InputForm.forFuncCall`: the form renders inputs and binds them to the call, nothing else (no default or auto-filled values, no choice or default functions, no validation, no `visible`/`enabled` expressions); implies `skipDefaultInit` and `skipTableAutoFill`
+* GROK-21019: Added `ColumnList.addNewCalculated(name, expression, options)` with `onError`: leave the rows the formula fails on empty, fill them with a value, or reject on the first one; `errorColumn` adds a column of per-row messages
+* Added `grok.userSettings.flush()`, which sends pending user settings to the server now instead of waiting for the periodic sync; it resolves once the attempt finishes, and a failed save is queued again for the next periodic sync
+* GROK-20864: Added `DataFrame.appendAsync`, `DataFrame.appendMergeAsync`, `DataFrame.recalculateFormulaColumns` and `grok.data.appendTables`, which calculate formula columns for the appended rows; `append` and `appendMerge` still move rows only
+* GROK-20924: `ObjectHandler.getCaption` defaults to the value for a `SemanticValue` or a `GridCell` instead of `[object Object]`, so a handler that does not override it captions cells readably (the ribbon's current object dropdown, tooltips)
+* Sketcher: Fixed the "Malformed molfile" error the compact sketcher's tooltip logged on hover when the molecule had been typed as SMILES (a filter card's, a molecule input's): the tooltip converts it to a molblock first
 * GROK-20931: Added `Stats.cumSum(options?)` and `Stats.movingAvg(window, options?)` — a running total and a trailing average as a new column; `WindowOptions` = `{orderBy, ascending, by, order}` (walk along other columns, restart per group, or follow an explicit row order such as `grid.getRowOrder()`), plus `minPeriods` for `movingAvg`; the mask is the one the stats were created with (`Stats.fromColumn(col, mask)`)
 * GROK-20931: Added `DG.FuncOptions.Accessor` (a function that returns a table or a column for use inside a formula) and `DG.FuncParamOptions.Table`
 * GROK-20931: Added `DG.SEMTYPE.COLUMN_NAME` and `DG.SEMTYPE.TABLE_NAME` — semantic types for string parameters that name a column or a table; a column-name parameter's `options.table` names the parameter that supplies its table

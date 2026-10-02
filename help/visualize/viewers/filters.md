@@ -42,11 +42,13 @@ Categorical filter displays a list of unique column values with checkboxes, allo
 Each categorical filter group has a search field for filtered values. Click the Search icon to the right of the filter
 caption to open it. This icon appears when you hover the mouse over the filter.
 
-If you start typing text in the field, the filter shows all values that partially contain this text. If you
-type words separated by commas, the filter shows only values that exactly match each word.
+As you type, the filter shows the values that contain the text. To search for several values at
+once, separate them with commas. The filter then shows the values that contain any of them. Use
+`*` as a wildcard.
 
-You can also paste multi-line text from the clipboard into the search field. The filter then
-displays only values that exactly match each line. The checkbox on the left of the search field controls whether to select
+You can also paste a list of values, for example a column copied from Excel. Each line becomes a
+separate search term, and a term can be a part of the value, such as a fragment of a compound ID.
+The checkbox on the left of the search field controls whether to select
 filtered values only. When enabled, the filter automatically selects
 only values that match the search criteria. When disabled, the search filters values
 without selecting them.
@@ -178,7 +180,37 @@ Expression filter lets you create custom search terms for any column. These term
 In the filter, you can choose the column, choose available operation and value. To add expressions you can click the `+` button, or press enter.
 Similarly to the text filter, you can control the logical operation between the expressions by using the `and/or` switch. In case of string columns, exact matches to the query will be highlighted in the column values.
 
+Each expression has its own checkbox and a row count. Clear the checkbox to switch the expression off
+without removing it. Click the count to select the rows that match the expression.
+
+<Tabs>
+<TabItem value="expressions" label="Expressions" default>
+
 ![Expression Filter](../../uploads/gifs/expression-filter.gif)
+
+</TabItem>
+<TabItem value="exact-match" label="Exact match">
+
+For exact search or filtering, use the `in` operation. Copy a list of values
+from any table or an Excel file, and paste it directly into **Value**. Datagrok automatically
+treats each line as a separate value, no manual formatting is required.
+
+![Filtering by a pasted list of values](img/expression-filter-exact-match.gif)
+
+</TabItem>
+<TabItem value="partial-match" label="Partial match">
+
+For partial search or filtering, use the `regex` operation. Copy a list of values from any
+table or Excel file and paste it directly into **Value**. Datagrok automatically converts the list
+into a regular expression, no manual formatting is required.
+
+The `contains` operation also accepts a comma-separated list and matches the values that
+contain any item of the list.
+
+![Filtering by a pasted list of partial values](img/expression-filter-partial-match.gif)
+
+</TabItem>
+</Tabs>
 
 ### Free-text filter mode
 
@@ -200,6 +232,7 @@ Hierarchical filter organizes column values in a tree-like structure. Use this f
 The hierarchical filter can be added from the filters hamburger menu. After the filter is added, it detects existing hierarchies based on the values (for example `Country`, `City`, `Street`). 
 
 * To rearrange, add or remove columns, click on the 'tree' icon in the filter, enable needed columns and arrange them in the desired order.
+* To find a category at any level, click the **Search** icon and type a part of its name. The filter shows the matching categories with their parents expanded.
 * To navigate around the categories/subcategories, you can use your mouse or up/down arrows.
 * To expand/collapse the categories, click on the `>` icon on the left of the category name or use the right/left arrow buttons.
 * To toggle the category, click on the checkbox on the left of the category name or use the space bar.

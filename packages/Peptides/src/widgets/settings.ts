@@ -9,7 +9,6 @@ import {PeptidesModel} from '../model';
 import {VIEWER_TYPE} from '../utils/constants';
 
 import $ from 'cash-dom';
-import wu from 'wu';
 import {getTreeHelperInstance} from '../package';
 import {
   MmDistanceFunctionsNames,
@@ -114,8 +113,8 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     onValueChanged: (value) => result.showLogoSummaryTable = value});
   logoSummaryTable.enabled = typeof settings.clustersColumnName !== 'undefined';
   */
-  const isDendrogramEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.DENDROGRAM);
-  const dendrogram = ui.input.bool(VIEWER_TYPE.DENDROGRAM, {value: isDendrogramEnabled ?? false,
+  const isDendrogramEnabled = model.dendrogramCloseButton !== null;
+  const dendrogram = ui.input.bool(VIEWER_TYPE.DENDROGRAM, {value: isDendrogramEnabled,
     onValueChanged: (value) => result.showDendrogram = value}) as DG.InputBase<boolean>;
   const clusterMaxActivity = ui.input.bool(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY, {value: !!settings?.showClusterMaxActivity,
     onValueChanged: (value) => {result.showClusterMaxActivity = value ?? undefined;}});

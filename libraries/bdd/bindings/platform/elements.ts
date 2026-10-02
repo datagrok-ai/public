@@ -3,7 +3,7 @@
    context instead, and "toolbox" keeps meaning the platform's. Selector sources: toolbox.dart
    (.d4-toolbox[caption]), console.dart, the shell's `name=` annotations (Browse, Toolbox), the selectors.ts
    files under playwright-public. */
-import {element} from '../../src/registry.js';
+import {element, kind} from '../../src/registry.js';
 
 // simple_mode.dart also uses d4-toolbox on an empty sliding host. Only Toolbox.root has caption.
 element('toolbox', {selector: '.d4-toolbox[caption]', aliases: ['toolbox pane'],
@@ -17,6 +17,10 @@ element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases:
 element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
   description: 'the tree inside the browse panel — the scope for a node phrase ("Files tree node inside browse tree")'});
 element('context panel', {selector: '.grok-prop-panel', aliases: ['property panel']});
+element('favorite star', {selector: '.d4-star', aliases: ['favorites star'],
+  description: 'the star beside an entity\'s name in the context panel that adds it to favorites and takes it out; it carries no aria state, only `fas` (a favorite) or `fal`, so claim the favorites on the server'});
+element('browse panel close icon', {selector: '.grok-browse-header .panel-titlebar-button-close',
+  description: 'the close button of the title bar of the Browse panel (aria-label "Close Browse")'});
 element('console', {selector: '.d4-console-wrapper'});
 element('status bar', {selector: '.layout-status-bar', aliases: ['statusbar'],
   parts: {'view panel': '.d4-view-status-panel'}});
@@ -24,6 +28,8 @@ element('column manager', {selector: '.panel-content > .d4-column-grid', aliases
   description: 'the Columns pane a click on "Columns: N" in the status bar docks: a search, a type filter and a grid of the current table\'s columns (`column_grid.dart`)'});
 element('open tableview', {selector: '.d4-table-view, .grok-table-view', aliases: ['current table view', 'table view']});
 element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestures: {click: 'mouse'}});
+element('viewer selector', {selector: '[name="viewer selector"]', aliases: ['inner viewer selector'],
+  description: 'the viewer-type combo of a viewer that hosts others (the control panel of a Trellis plot); scope it: "viewer selector in trellis plot viewer"'});
 element('gallery', {selector: '.grok-gallery-grid', aliases: ['item gallery'],
   parts: {card: '.grok-gallery-grid-item-wrapper'},
   description: 'the card gallery of the platform — the contents of a Files folder, a space, the Apps list; '
@@ -35,6 +41,8 @@ element('gallery toolbar', {selector: '.grok-gallery-search-bar',
   description: 'the bar above a gallery: New, Refresh, the search, the view modes and the counter — the scope for its icons, which the Browse toolbar repeats'});
 element('gallery counter', {selector: '.grok-items-view-counts',
   description: 'how many items the gallery lists: "N", "shown / total" under a filter, "N of M" while only the first N are rendered'});
+element('chat input', {selector: '.grok-comments-post-input', aliases: ['chat post input'],
+  description: 'the message box of an entity\'s Chats pane: a bare textarea no input kind reaches'});
 element('chat header', {selector: '.grok-chat-header',
   description: 'the title line of the open chat thread: "Chats > <thread>"'});
 element('membership search', {selector: '.d4-user-selector-input', aliases: ['membership search input'],
@@ -48,6 +56,8 @@ element('model preview', {selector: '.d4-pm-view-preview',
   description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('grid overlay', {selector: '[name="viewer-Grid"] canvas[name="overlay"]',
   description: 'the canvas the grid draws its selection and its cursor on, and the element its keyboard handling sits on: a key pressed while the focus is on the grid\'s root instead reaches only part of it (Escape then clears the selection but not the current row)'});
+element('table search', {selector: '.d4-toolbox[caption] .d4-search input',
+  description: 'the Search box of the table view\'s toolbox: Ctrl+F on the grid shows and focuses it; Enter filters the rows it matches, Shift+Enter selects them; a number or a numeric pattern (">= 0.83") is applied to every numeric column, text to the string columns'});
 element('context menu', {selector: '.d4-menu-popup', aliases: ['popup menu'],
   description: 'the open Dart popup menu (the last one when a submenu is open)'});
 element('cell editor', {selector: '[name="cell-editor"]', aliases: ['grid cell editor'],
@@ -60,6 +70,12 @@ element('filter panel', {selector: '[name="viewer-Filters"]', aliases: ['filters
     // the "?" of the Filters title bar, not of the group header: its tooltip is the panel's summary
     'help icon': 'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " panel-base ")][1]' +
       '//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-help"]'}});
+element('sketcher dialog', {selector: '.d4-dialog:has(input[placeholder^="SMILES"])', aliases: ['molecule sketcher dialog'],
+  description: 'the dialog a molecule sketcher opens in (a filter card, a molecule input); untitled, told by its SMILES field',
+  parts: {'molecule input': 'input[placeholder^="SMILES"]'}});
+element('column popup', {selector: '.d4-popup-host [aria-label="column popup"]',
+  description: 'the popup a grid header\'s Column options icon opens: the column\'s own Filter, Actions and Colors panes; a molecule column\'s filter carries its sketcher inline',
+  parts: {title: '.d4-accordion-title', 'molecule input': 'input[placeholder^="SMILES"]'}});
 element('color picker icon', {selector: '[name="legend-icon-color-picker"]',
   description: 'the palette icon a hovered legend item shows to its left (the platform appends it to the page body)'});
 element('marker picker icon', {selector: '[name="legend-icon-marker-picker"]',
@@ -68,3 +84,35 @@ element('column picker popup', {selector: '.d4-column-grid', aliases: ['column g
   description: 'the column grid a Dart column selector or a + icon opens (the platform appends it to the page body); absent once a column is taken or the picker is dismissed'});
 element('help panel', {selector: '.grok-help', aliases: ['help pane'],
   description: 'the help the shell shows for the current object (a viewer\'s "?" icon opens its page)'});
+
+/* The Add viewer gallery (PowerPack's `viewers-gallery.ts`, opened by the ribbon's "Add viewer" icon):
+   the recently used cards are a copy of the others under `viewer-card-recent-<name>`, left out here. */
+element('viewer gallery', {selector: '[name="viewer-gallery-root"]', aliases: ['add viewer gallery']});
+element('viewer gallery search', {selector: '[name="viewer-gallery-search"]', aliases: ['viewer gallery search box']});
+kind('viewer card', {aliases: ['viewer cards'], selector: '[name^="viewer-card-"]:not([name^="viewer-card-recent-"])', match: ['label'],
+  labelSelector: '.card-label', description: 'a card of the Add viewer gallery, by the viewer name it shows ("Radar" viewer card)'});
+kind('viewer tag', {aliases: ['viewer tags'], selector: '[name^="viewer-tag-"]', match: ['text'],
+  description: 'a tag of the Add viewer gallery that filters its cards ("Charts" viewer tag)'});
+
+/* The model cards of the Diff Studio hub (templates and the library), by the label in the card's header. A
+   model run before has a second card in the account's Recent section, which is left out. */
+kind('model card', {aliases: ['model cards', 'hub card', 'hub cards'],
+  selector: '.diff-studio-hub-card:not([name="section-Recent"] > .diff-studio-hub-card)',
+  match: ['label'], labelSelector: '.diff-studio-hub-card-header'});
+
+element('hint popup', {selector: '.ui-hint-popup', aliases: ['hint balloon'],
+  description: 'a popup ui.hints.addHint shows beside an element (the tour of the viewers a tutorial added)'});
+element('column name input', {selector: '[name="input-Add-New-Column---Name"]',
+  description: 'the Name field of the Add New Column dialog (Edit > Add New Column), which has neither a label nor a placeholder of its own; while it is empty its placeholder follows the formula'});
+element('input history menu', {selector: '[name="input-history"]',
+  description: 'the menu the history icon of a dialog opens: one entry per earlier run, the latest first'});
+element('layouts pane', {selector: '.d4-toolbox .d4-pane-layouts',
+  description: 'the Layouts section of the toolbox: its Save button and the cards of the layouts that fit the table'});
+element('file drop overlay', {selector: 'xpath=//div[./*[local-name()="svg"]//*[local-name()="text" and normalize-space()="Incoming!"]]',
+  description: 'the "Incoming! Drop your CSV files to open them locally" layer the platform lays over the window while files are dragged over it'});
+kind('layout card', {
+  selector: '.d4-pane-layouts .grok-suggestions-chart-card',
+  match: ['label'],
+  labelSelector: '.grok-gallery-grid-item-title',
+  description: 'a saved layout in the Layouts section of the toolbox, by its name (the view it was saved from); a click applies it',
+});

@@ -14,6 +14,8 @@ import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {keysOf, withKeys} from '../../../src/runtime/gestures.js';
 import {atFeatureEnd, takeErrors} from '../../../src/runtime/harness.js';
+import {escapeRegExp} from '../../../src/runtime/locate.js';
+import {RUN_SUFFIX, deleteLayoutsAtEnd} from '../../../src/runtime/server.js';
 import * as v from '../../../src/runtime/viewers.js';
 
 declare const grok: any;
@@ -74,12 +76,42 @@ export const propertiesShouldBe = Then('properties of {widget} should be:', asyn
 export const saveLayout = When('user saves the layout of the current table view', (page: Page) => v.saveLayout(page),
   {tier: 'api', description: 'tv.saveLayout(), kept for "loads the saved layout" later in the feature'});
 
+// the layout families this worker has swept of a killed run's leftovers: one listing per family is enough
+const sweptLayoutFamilies = new Set<string>();
+
 export const saveLayoutToServer = When('user saves the layout of the current table view to the server', async (page: Page) => {
-  const id = await v.saveLayoutToServer(page);
-  atFeatureEnd(page, () => v.deleteLayout(page, id));
-}, {tier: 'api', description: 'dapi.layouts.save; "loads the saved layout" then fetches what the server stored, so the round-trip covers its serialization; deleted when the feature ends'});
+  const {id, family} = await v.saveLayoutToServer(page);
+  atFeatureEnd(page, async () => {
+    await v.deleteLayout(page, id);
+    await expect.poll(() => v.layoutOnServer(page, id), {message: `the layout ${id} the feature saved, still on the server`,
+      timeout: pollMs(15000)}).toBe(false);
+  });
+  if (sweptLayoutFamilies.has(family))
+    return;
+  sweptLayoutFamilies.add(family);
+  // what a killed run of the feature left: the same family, over an hour old
+  await deleteLayoutsAtEnd(page, null, `^${escapeRegExp(family)}${RUN_SUFFIX.source}`);
+}, {tier: 'api', description: 'dapi.layouts.save under a name of the run (<view>-<ms>); "loads the saved layout" then fetches what the server stored, so the round-trip covers its serialization; deleted when the feature ends and read back gone, and a killed run\'s of the family swept once per worker'});
 
 export const loadLayout = When('user loads the saved layout', (page: Page) => v.loadLayout(page), {tier: 'api'});
+
+// the pages whose feature forgets the layouts it kept by name when it ends: the in-page runtime outlives it
+const namedLayoutsKept = new WeakSet<Page>();
+
+export const saveNamedLayout = When('user saves the layout of the current table view as {string}', async (page: Page, name: string) => {
+  await v.settleAll(page);
+  await v.saveLayout(page, name);
+  if (namedLayoutsKept.has(page))
+    return;
+  namedLayoutsKept.add(page);
+  atFeatureEnd(page, async () => {
+    namedLayoutsKept.delete(page);
+    await v.forgetLayouts(page);
+  });
+}, {tier: 'api', description: 'tv.saveLayout() kept in the page under a name, for "applies the layout" in this or a later scenario of the feature, on this view or another'});
+
+export const applyNamedLayout = When('user applies the layout {string} to the current table view', (page: Page, name: string) => v.loadLayout(page, name),
+  {tier: 'api', description: 'tv.loadLayout of the layout kept under that name; done when every viewer it restores has settled'});
 
 // --- context menus and hit areas ------------------------------------------------------------------
 
@@ -136,6 +168,51 @@ export const hoverArea = When('user hovers over the {string} area of {widget}', 
   await page.mouse.move(c.x, c.y);
   await v.settle(page, target);
 }, {tier: 'ui', description: 'snapshots the canvas first, so "should not have repainted" can follow'});
+
+/* An area of a kind whose names depend on the run — the Nth line an activity-cliffs plot drew, a marker
+   whose row a zoom decides. "the first "line" area" is the first area named "line …" the viewer
+   reports now, in its own order; the step remembers which it took, so a later step can act on it. */
+const firstAreaTaken = new WeakMap<Page, string>();
+
+/* "free" skips an area whose box another kind of area overlaps: a label drawn over a line takes the
+   pointer, so hovering that line raises the label's tooltip instead. */
+async function firstAreaOf(page: Page, target: ElementRef, kind: string, free = false): Promise<string> {
+  let name: string | undefined;
+  const overlaps = (a: {x: number; y: number; width: number; height: number}, b: typeof a) =>
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  // the names are read off a finished frame, as every other area step reads its area
+  await v.settle(page, target);
+  await expect.poll(async () => {
+    const areas = await v.hitAreas(page, target);
+    const names = Object.keys(areas);
+    const others = names.filter((n) => !n.startsWith(`${kind} `) && n !== 'view' && areas[n].width * areas[n].height < 40000);
+    name = names.find((n) => n.startsWith(`${kind} `) && (!free || !others.some((o) => overlaps(areas[n], areas[o]))));
+    return name != null ? 'found' : `${target.phrase} reports no "${kind} …" area; it has: ${names.slice(0, 20).join(', ')}`;
+  }, {message: `the first "${kind}" area of ${target.phrase}`}).toBe('found');
+  if (!firstAreaTaken.has(page))
+    atFeatureEnd(page, async () => { firstAreaTaken.delete(page); });
+  firstAreaTaken.set(page, name!);
+  return name!;
+}
+
+export const hoverFirstArea = When('user hovers over the first {string} area of {widget}', async (page: Page, kind: string, target: ElementRef) =>
+  hoverArea(page, await firstAreaOf(page, target, kind), target),
+{tier: 'ui', description: 'the first area named "<kind> …" the viewer reports, whatever its number'});
+
+export const hoverFirstFreeArea = When('user hovers over the first free {string} area of {widget}', async (page: Page, kind: string, target: ElementRef) =>
+  hoverArea(page, await firstAreaOf(page, target, kind, true), target),
+{tier: 'ui', description: 'the first area named "<kind> …" that no other kind of area (a label, a marker) overlaps'});
+
+export const clickFirstArea = When('user clicks on the first {string} area of {widget}', async (page: Page, kind: string, target: ElementRef) =>
+  clickArea(page, await firstAreaOf(page, target, kind), target),
+{tier: 'ui', description: 'the first area named "<kind> …" the viewer reports — for a grid, the first row it shows, whatever the table row'});
+
+export const clickTakenArea = When('user clicks on that area of {widget}', async (page: Page, target: ElementRef) => {
+  const name = firstAreaTaken.get(page);
+  if (name == null)
+    throw new Error('no area was taken by an earlier "the first … area" step');
+  await clickArea(page, name, target);
+}, {tier: 'ui', description: 'the area the last "the first … area" step took'});
 
 export const clickAreaHolding = When('user clicks on the {string} area of {widget} holding {key}', async (page: Page, area: string, target: ElementRef, key: string) => {
   const c = v.centerOf(await v.hitArea(page, target, area, true));
@@ -287,32 +364,151 @@ export const showsFewerRows = Then('{widget} should show fewer rows than before'
 export const showsMoreRows = Then('{widget} should show more rows than before', (page: Page, target: ElementRef) =>
   v.expectReading(page, target, 'rows shown', 'higher'));
 
+export const showsFilteredRows = Then('{widget} should show every row that passes the filter of its table', async (page: Page, target: ElementRef) => {
+  let got: {shown: number; passing: number; table: string} = {shown: -1, passing: -1, table: ''};
+  await expect.poll(async () => {
+    got = await v.onViewer(page, target, (el) => {
+      const w = (window as any).__bdd.viewerOf(el);
+      const df = w.dataFrame;
+      // a scatter plot counts the markers it drew: a row with no value on an axis, or none above
+      // zero on a logarithmic one, has no place on the plot
+      const axes = ['x', 'y'].filter((a) => w.type === 'Scatter plot' && df.col(w.props[`${a}ColumnName`]))
+        .map((a) => ({col: df.col(w.props[`${a}ColumnName`]), log: w.props[`${a}AxisType`] === 'logarithmic'}));
+      let passing = 0;
+      for (let i = 0; i < df.rowCount; i++)
+        if (df.filter.get(i) && axes.every((a) => !a.col.isNone(i) && (!a.log || a.col.get(i) > 0)))
+          passing++;
+      return {shown: Number(w.getWidgetStatus()?.values?.['rows shown'] ?? -1), passing, table: String(df.name)};
+    });
+    return got.shown === got.passing;
+  }, {message: `the "rows shown" reading of ${target.phrase} against the rows its table lets through`}).toBe(true).catch(() => {
+    throw new Error(`${target.phrase} shows ${got.shown} rows; ${got.passing} rows of "${got.table}" pass its filter`);
+  });
+}, {description: 'the viewer\'s "rows shown" equals the filter count of the table it is bound to (what the links left); a scatter plot counts only rows it can place on its axes'});
+
+export const showsSelectedRows = Then('{widget} should show the selected rows of its table', async (page: Page, target: ElementRef) => {
+  let got: {shown: number; selected: number; table: string} = {shown: -1, selected: -1, table: ''};
+  await expect.poll(async () => {
+    got = await v.onViewer(page, target, (el) => {
+      const w = (window as any).__bdd.viewerOf(el);
+      return {shown: Number(w.getWidgetStatus()?.values?.['rows shown'] ?? -1), selected: w.dataFrame.selection.trueCount, table: String(w.dataFrame.name)};
+    });
+    return got.shown === got.selected && got.selected > 0;
+  }, {message: `the "rows shown" reading of ${target.phrase} against the selected rows of its table`}).toBe(true).catch(() => {
+    throw new Error(`${target.phrase} shows ${got.shown} rows; "${got.table}" has ${got.selected} selected`);
+  });
+}, {description: 'a viewer whose Row Source is Selected: "rows shown" equals the table\'s selection, which must not be empty'});
+
+/** Pack and zoom by filter: the axes hug the rows that pass the filter. */
+export const zoomedToFilter = Then('{widget} should be zoomed to the rows that pass the filter', async (page: Page, target: ElementRef) => {
+  let why = '';
+  await expect.poll(async () => (why = await v.onViewer(page, target, (el) => {
+    const w = (window as any).__bdd.viewerOf(el);
+    const df = w.dataFrame;
+    const values = w.getWidgetStatus()?.values ?? {};
+    const problems: string[] = [];
+    const wide: string[] = [];
+    for (const axis of ['x', 'y']) {
+      const col = df.col(w.props[`${axis}ColumnName`]);
+      const log = w.props[`${axis}AxisType`] === 'logarithmic';
+      let fmin = Infinity; let fmax = -Infinity; let amin = Infinity; let amax = -Infinity;
+      for (let i = 0; i < df.rowCount; i++) {
+        if (col.isNone(i) || (log && col.get(i) <= 0))
+          continue;
+        const x = col.get(i);
+        amin = Math.min(amin, x); amax = Math.max(amax, x);
+        if (df.filter.get(i)) {
+          fmin = Math.min(fmin, x); fmax = Math.max(fmax, x);
+        }
+      }
+      const lo = Number(values[`${axis} axis min`]); const hi = Number(values[`${axis} axis max`]);
+      const eps = (amax - amin) * 1e-6;
+      if (!(lo <= fmin + eps && hi >= fmax - eps))
+        problems.push(`${axis} axis ${lo}..${hi} leaves out the filtered ${fmin}..${fmax}`);
+      if (fmax - fmin >= (amax - amin) * 0.9)
+        wide.push(`${axis}: the filtered ${fmin}..${fmax} spans most of ${amin}..${amax}`);
+      else if (!(hi - lo < amax - amin))
+        problems.push(`${axis} axis ${lo}..${hi} spans the whole column ${amin}..${amax}, not the filtered ${fmin}..${fmax}`);
+    }
+    if (wide.length === 2)
+      problems.push(`the data do not tell a zoom from none (${wide.join('; ')})`);
+    return problems.join('; ');
+  })) === '', {message: `the axes of ${target.phrase} against its filtered rows`}).toBe(true).catch(() => {
+    throw new Error(`${target.phrase} is not zoomed to its filtered rows: ${why}`);
+  });
+}, {description: 'on each axis the range covers every value of the filtered rows (those above zero on a logarithmic axis), and where those span less than 90% of the column it is narrower than the whole column; filtered rows spanning most of the column on both axes fail, since they cannot tell a zoom from none'});
+
 export const readingIs = Then('the {string} reading of {widget} should be {float}', (page: Page, name: string, target: ElementRef, value: number) =>
   v.expectReading(page, target, name, 'equal', value),
   {description: 'a reading the viewer reports (getWidgetStatus().values): "rows shown", the bar chart\'s "bars" / "stack segments" / "clipped bars", the 3D scatter plot\'s "camera distance"'});
 
 export const readingReads = Then('the {string} reading of {widget} should be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
-  await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).toBe(value);
+  await expect.poll(async () => String(await v.readingOf(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).toBe(value);
 }, {description: 'a reading as text (a source column, a signature, a true/false flag) by exact value'});
 
-/** Two readings of one viewer, compared as text: 'same', or what each holds when they disagree. */
-async function compareReadings(page: Page, target: ElementRef, a: string, b: string): Promise<string> {
-  const x = String(await v.readValue(page, target, a));
-  const y = String(await v.readValue(page, target, b));
-  return x === y ? 'same' : `${a} is ${x}, ${b} is ${y}`;
+/** Two readings of one viewer, compared as text: 'same', 'differ', or the reading that is missing. */
+async function compareReadings(page: Page, target: ElementRef, a: string, b: string): Promise<{state: string; text: string}> {
+  const x = await v.readingOf(page, target, a);
+  const y = await v.readingOf(page, target, b);
+  const missing = [x, y].find((r) => r instanceof v.MissingReading);
+  if (missing)
+    return {state: 'missing', text: String(missing)};
+  return {state: String(x) === String(y) ? 'same' : 'differ', text: `${a} is ${String(x)}, ${b} is ${String(y)}`};
 }
 
-export const readingsEqual = Then('the {string} and {string} readings of {widget} should be the same', async (page: Page, a: string, b: string, target: ElementRef) => {
-  await expect.poll(() => compareReadings(page, target, a, b), {message: `${target.phrase}`}).toBe('same');
-}, {description: 'two readings of the same viewer, as text — the colour of a linked column\'s cell against its source\'s'});
+async function expectComparison(page: Page, target: ElementRef, a: string, b: string, want: 'same' | 'differ'): Promise<void> {
+  let last = {state: '', text: ''};
+  try {
+    await expect.poll(async () => (last = await compareReadings(page, target, a, b)).state, {timeout: pollMs(5000)}).toBe(want);
+  }
+  catch {
+    throw new Error(`the "${a}" and "${b}" readings of ${target.phrase} should be ${want === 'same' ? 'the same' : 'different'}: ${last.text}`);
+  }
+}
 
-export const readingsDiffer = Then('the {string} and {string} readings of {widget} should differ', async (page: Page, a: string, b: string, target: ElementRef) => {
-  await expect.poll(() => compareReadings(page, target, a, b), {message: `${target.phrase}`}).not.toBe('same');
-});
+export const readingsEqual = Then('the {string} and {string} readings of {widget} should be the same', (page: Page, a: string, b: string, target: ElementRef) =>
+  expectComparison(page, target, a, b, 'same'),
+{description: 'two readings of the same viewer, as text — the colour of a linked column\'s cell against its source\'s'});
+
+export const readingsDiffer = Then('the {string} and {string} readings of {widget} should differ', (page: Page, a: string, b: string, target: ElementRef) =>
+  expectComparison(page, target, a, b, 'differ'));
+
+/** One reading of two viewers, compared as text. */
+async function expectAcross(page: Page, name: string, a: ElementRef, b: ElementRef, same: boolean): Promise<void> {
+  let shown = '';
+  const holds = async (): Promise<boolean> => {
+    try {
+      const x = String(await v.readValue(page, a, name));
+      const y = String(await v.readValue(page, b, name));
+      shown = `${a.phrase} reads ${x}, ${b.phrase} reads ${y}`;
+      return (x === y) === same;
+    }
+    catch (e) {
+      shown = (e as Error).message;
+      return false;
+    }
+  };
+  try {
+    await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+  }
+  catch {
+    throw new Error(`the "${name}" readings should ${same ? 'be the same' : 'differ'}: ${shown}`);
+  }
+}
+
+export const readingSameAcross = Then('the {string} reading of {widget} should be the same as on {widget}',
+  (page: Page, name: string, a: ElementRef, b: ElementRef) => expectAcross(page, name, a, b, true),
+  {description: 'one reading of two viewers, as text — an axis range a preview must share with the viewer it was opened from'});
+
+export const readingDiffersAcross = Then('the {string} reading of {widget} should differ from the one on {widget}',
+  (page: Page, name: string, a: ElementRef, b: ElementRef) => expectAcross(page, name, a, b, false));
 
 export const readingDoesNotRead = Then('the {string} reading of {widget} should not be {string}', async (page: Page, name: string, target: ElementRef, value: string) => {
-  await expect.poll(async () => String(await v.readValue(page, target, name)), {message: `"${name}" reading of ${target.phrase}`}).not.toBe(value);
-});
+  await expect.poll(async () => {
+    const r = await v.readingOf(page, target, name);
+    return !(r instanceof v.MissingReading) && String(r) !== value ? true : String(r);
+  }, {message: `"${name}" reading of ${target.phrase} should not be "${value}"`}).toBe(true);
+}, {description: 'a missing reading is no pass: the reading must be there and hold something else'});
 
 /** `getWidgetStatus().error` as the last validate left it; '' when the viewer reports none. This
  * is what retires the old specs' "a <canvas> element still exists under the viewer root" probe: a
@@ -334,9 +530,34 @@ export const reportsNoError = Then('{widget} should report no error', async (pag
     message: `${target.phrase} reports "${last}"`}).toBe(true);
 }, {description: 'the viewer validated its state and drew'});
 
+/** "Not freezing, cannot be broken": every viewer of the view in front has finished its render and
+ * reports no error of its own. */
+export const noViewerError = Then('no viewer of the current view should report an error', async (page: Page) => {
+  await v.settleAll(page);
+  let seen: string[] = [];
+  await expect.poll(async () => (seen = await page.evaluate(() => {
+    const root = (window as any).grok.shell.v?.root as HTMLElement | undefined;
+    const out: string[] = [];
+    for (const el of Array.from(root?.querySelectorAll('[name^="viewer-"]') ?? [])) {
+      if ((el as HTMLElement).getBoundingClientRect().width === 0 || el.parentElement?.closest('[name^="viewer-"]'))
+        continue;
+      let status: any;
+      try {
+        status = (window as any).__bdd.viewerOf(el)?.getWidgetStatus?.();
+      }
+      catch {
+        status = undefined;
+      }
+      out.push(`${el.getAttribute('name')}: ${status ? String(status.error ?? '') : 'reports no status'}`);
+    }
+    return out;
+  })).filter((s) => !s.endsWith(': ')), {timeout: pollMs(5000), message: 'viewers of the current view reporting an error'}).toEqual([]);
+  expect(seen.length, 'the viewers of the current view').toBeGreaterThan(0);
+}, {description: 'settles every viewer, then reads the error of each top-level viewer drawn in the current view; a viewer that reports no status fails, and at least one viewer must be there'});
+
 export const readingFinite = Then('the {string} reading of {widget} should be a finite number', async (page: Page, name: string, target: ElementRef) => {
   await expect.poll(async () => {
-    const value = await v.readValue(page, target, name);
+    const value = await v.readingOf(page, target, name);
     return typeof value === 'number' && isFinite(value) ? 'finite' : String(value);
   }, {message: `"${name}" reading of ${target.phrase}`}).toBe('finite');
 }, {description: 'not null, NaN or Infinity — a viewer that let a NaN or an Infinity of the data into its axis reports no number there'});
@@ -344,8 +565,9 @@ export const readingFinite = Then('the {string} reading of {widget} should be a 
 export const readingBetween = Then('the {string} reading of {widget} should be between {float} and {float}',
   async (page: Page, name: string, target: ElementRef, lo: number, hi: number) => {
     await expect.poll(async () => {
-      const value = Number(await v.readValue(page, target, name));
-      return value >= lo && value <= hi ? true : value;
+      const r = await v.readingOf(page, target, name);
+      const value = Number(r);
+      return value >= lo && value <= hi ? true : String(r);
     }, {message: `"${name}" reading of ${target.phrase} should be between ${lo} and ${hi}`}).toBe(true);
   }, {description: 'a reading that carries float noise or depends on the layout, bounded on both sides'});
 
@@ -356,7 +578,10 @@ export const pickColorSwatch = When('user picks the color {string} in the color 
 }, {tier: 'ui', description: 'a swatch of the open colour picker by its #rrggbb — the dialog a categorical legend opens, or the popup the editor of a colour property opens ("user clicks on editor of \\"Back Color\\" property in context panel")'});
 
 export const readingAtLeast = Then('the {string} reading of {widget} should be at least {float}', async (page: Page, name: string, target: ElementRef, value: number) => {
-  await expect.poll(() => v.readValue(page, target, name), {message: `"${name}" reading of ${target.phrase}`}).toBeGreaterThanOrEqual(value);
+  await expect.poll(async () => {
+    const r = await v.readingOf(page, target, name);
+    return typeof r === 'number' && r >= value ? true : String(r);
+  }, {message: `"${name}" reading of ${target.phrase} should be at least ${value}`}).toBe(true);
 });
 
 export const readingLower = Then('the {string} reading of {widget} should be lower than before', (page: Page, name: string, target: ElementRef) =>
@@ -529,11 +754,22 @@ export const noBalloons = Then('no error or warning balloon should have been sho
  * after the gesture. */
 async function expectBalloon(page: Page, types: string[], text: string | RegExp, capMs = 5000): Promise<void> {
   const what = typeof text === 'string' ? `containing "${text}"` : `matching /${text.source}/`;
+  const matches = (b: {type: string; message: string}) => types.includes(b.type) &&
+    (typeof text === 'string' ? b.message.includes(text) : text.test(b.message));
   let shown: Awaited<ReturnType<typeof v.takeBalloons>> = [];
-  await expect.poll(async () => {
-    shown = shown.concat(await v.takeBalloons(page));
-    return shown.some((b) => types.includes(b.type) && (typeof text === 'string' ? b.message.includes(text) : text.test(b.message)));
-  }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}; balloons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`}).toBe(true);
+  try {
+    await expect.poll(async () => {
+      shown = shown.concat(await v.takeBalloons(page));
+      return shown.some(matches);
+    }, {timeout: pollMs(capMs), message: `an ${types.join(' or ')} balloon ${what}; balloons since the last check: ${shown.map((b) => `${b.type}: ${b.message}`).join(' | ') || 'none'}`}).toBe(true);
+  }
+  finally {
+    // the read is destructive, so a balloon this claim did not want goes back on the floor: a
+    // "no error or warning balloon" after a positive check must still see what landed before it
+    const others = shown.filter((b) => !matches(b));
+    if (others.length > 0)
+      await v.putBalloons(page, others);
+  }
 }
 
 export const errorBalloonText = Then('an error balloon containing {string} should have been shown', (page: Page, text: string) => expectBalloon(page, ['error'], text),

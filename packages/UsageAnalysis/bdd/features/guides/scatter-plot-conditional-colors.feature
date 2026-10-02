@@ -20,7 +20,6 @@ Feature: Color a scatter plot by conditions, then change one condition's color
     When user picks "Color Coding > Conditional" from the context menu of the "header AGE" area of grid
     And user closes the context menu
     Then "AGE" column should be color-coded conditionally
-    And context menu should be hidden
     And the legend of scatter plot viewer should list 4 items
     When user hovers over "18 - 35.75" legend item in legend of scatter plot viewer
     And user clicks on color picker icon

@@ -89,8 +89,13 @@ async function walkTopMenu(page: Page, segments: string[], names: string[], pick
   }
   for (let i = 1; i < segments.length; i++) {
     const item = page.locator(`[name="${names[i]}"]`).first();
+    // a group a package is still filling shows nothing at all: that is the bar rebuilding, not a
+    // missing command, and on a loaded stand it takes longer than an item that is merely late
     await item.waitFor({state: 'visible', timeout: 5000}).catch(async () => {
-      throw new Error(`no "${segments[i]}" in the ${segments.slice(0, i).join(' > ')} menu; it shows: ${await visibleLabels(page, names[i - 1]) || 'nothing'}`);
+      if (await visibleLabels(page, names[i - 1]) === '')
+        await item.waitFor({state: 'visible', timeout: 15000}).catch(() => undefined);
+      if (!await item.isVisible())
+        throw new Error(`no "${segments[i]}" in the ${segments.slice(0, i).join(' > ')} menu; it shows: ${await visibleLabels(page, names[i - 1]) || 'nothing'}`);
     });
     await guide.hop(page, item);
     if (i < segments.length - 1 || !pick)
@@ -117,10 +122,11 @@ export async function pickTopMenu(page: Page, path: string): Promise<void> {
   }
   catch (e) {
     const message = String((e as Error).message);
-    // a leaf the click waited on because it vanished or kept moving went with its group; one that
-    // is disabled or covered is a state of the product and is reported
+    // a leaf the click waited on because it vanished or kept moving went with its group — a viewer's
+    // overlay canvas can take the first click and the menu close under it; a leaf that stays and is
+    // disabled is a state of the product and is reported
     const leafGone = /locator\.click: Timeout/.test(message) && /not visible|not stable|detached/.test(message) &&
-      !/not enabled|intercepts pointer events/.test(message);
+      !/not enabled/.test(message);
     if (!REBUILT.test(message) && !leafGone)
       throw e;
     await page.mouse.move(2, 2);

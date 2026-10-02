@@ -5,8 +5,12 @@ title: "Box plot"
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the
 five number summary: minimum, first quartile, median, third quartile, and maximum.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Box plot');`
+
+:::
 
 General:
 
@@ -17,11 +21,31 @@ General:
 
 ![Box Plot](../../uploads/viewers/box-plot.png "Box Plot")
 
-## T-test
+## Group comparison
 
-When the "category" column contains exactly two categories, press "T" to perform
-[Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test). The resulting p-value will then be shown on top of the
-box plot.
+With a category column set, the box plot tests whether the groups differ and shows the p-value on top
+of the plot: [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test) for two categories,
+Alexander and Govern's test for three or more. Neither test assumes equal variances. Hover over the
+p-value to see which test was used, and press T to hide or show it.
+
+To find out which groups differ:
+
+1. Hover over the p-value and click the chart icon next to it. This turns on **Show Group Comparison**,
+   which runs the test that fits the data and puts its controls on the chart.
+2. To compare every group with one of them, hover over the plot and pick that group in the control
+   selector. Each other group gets its own p-value against it, and a band marks the control group.
+3. To get the results as a table, right-click the comparison and select **Add Control Comparisons
+   Table**. The table lists each group's mean difference, its confidence interval, the raw and
+   adjusted p-values, and a conclusion.
+
+The same analyses are available as dialogs under **ML** > **Analyze** > **Group Comparison**. See
+[Group comparison](../../explore/group-comparison.md).
+
+## Formula lines
+
+To mark a threshold or a range on the value axis, right-click the box plot and select
+**Tools** > **Formula Lines...**. To learn more, see
+[formula lines](scatter-plot.md#formula-lines) and [annotation regions](scatter-plot.md#annotation-regions).
 
 ## Inverted whiskers
 
@@ -100,7 +124,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Show Values Limit | number | Points are not shown if the number of rows is greater than *Show Values Limit*. |
 | Show Inside Values | boolean | Show points inside the interquartile range (Q3 - Q1). |
 | Show Outside Values | boolean | Show points outside the interquartile range (Q3 - Q1). |
-| Show P Value | boolean | Show p-value. Press T to toggle. Currently works only when there are two categories. Welch's t-test is used for calculating the p-value. |
+| Show P Value | boolean | Show p-value. Press T to toggle. Welch's t-test for two categories, Alexander and Govern's test for three or more. |
 | Show Mouse Over Point | boolean |  |
 | Show Mouse Over Row Group | boolean |  |
 | Statistics | list |  |
@@ -157,23 +181,23 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Control Band Color | number | Color of the band highlighting the control group in control comparisons mode. |
 | Linear Color Scheme | list |  |
 | Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column's color coding is used. |
-| Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls box plot tooltip visibility |
 | Show Labels | visibilitymode |  |
 | Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
-| **Legend** | | |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
-| **Description** | | |
-| Show Title | boolean |  |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| **Description** | | |
+| Show Title | boolean |  |
 
 See also:
 

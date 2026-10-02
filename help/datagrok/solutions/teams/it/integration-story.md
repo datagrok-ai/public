@@ -49,8 +49,8 @@ on, when client makes a request to query a database, this request gets accepted 
 corresponding database connector.
 
 All Datagrok connectors are open-sourced under the MIT license and reside in the
-[Datagrok public repository](https://github.com/datagrok-ai/public/tree/master/connectors). A
-command-line ["GrokConnectTest"](https://github.com/datagrok-ai/public/tree/master/connectors/grok_connect/src/test/java/grok_connect)
+[grok-connect repository](https://github.com/datagrok-ai/grok-connect/tree/master/jdbc). A
+command-line ["GrokConnectTest"](https://github.com/datagrok-ai/grok-connect/tree/master/jdbc/server/src/test/java/grok_connect)
 application could be useful for testing and debug purposes.
 
 ## Openapi

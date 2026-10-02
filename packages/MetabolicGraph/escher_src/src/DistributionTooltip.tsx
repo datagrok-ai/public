@@ -5,7 +5,7 @@ import {Range} from 'rc-slider-preact';
 import 'rc-slider-preact/lib/index.css';
 import './css/DistributionTooltipComponent.css';
 import * as utils from './ts/utils';
-import { CobraModelData } from './ts/types';
+import { CobraModelData, FluxHistogram, ReactionSamplingDistribution } from './ts/types';
 
 // const utils = require('escher/src/utils.js')
 const WIDTH = 320;
@@ -47,47 +47,27 @@ const indicatorStyle = {
   visibility: 'visible'
 };
 
-export class HistogramComponent extends Component<{
-  data: number[];
-  upper_bound: number;
-  lower_bound: number;
-}> {
-  state: {
-    upper_bound: number;
-    lower_bound: number;
-    data: number[];
-  };
+/** Axis label with just enough decimals to tell values `span` apart (6 for a single value). */
+function formatFlux(value: number, span: number): string {
+  const decimals = span > 0 ? Math.min(8, Math.max(0, Math.ceil(-Math.log10(span)) + 2)) : 6;
+  return String(parseFloat(value.toFixed(decimals)));
+}
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      upper_bound: 25,
-      lower_bound: -25,
-      data: [],
-      ...props
-    };
-  }
-
-  componentWillReceiveProps(nextProps) {
-    this.setState({
-      ...this.state,
-      ...nextProps
-    });
-  }
-
+/** Histogram of one reaction's sampled fluxes, over that reaction's own [min, max]. */
+export class HistogramComponent extends Component<{histogram: FluxHistogram}> {
   render() {
-    const {data, upper_bound, lower_bound} = this.state;
-    const width = 100; // Width percentage
+    const {min, max, counts} = this.props.histogram;
     const height = 150; // Height in pixels
     const padding = 20; // Padding for the axis labels
-    const barWidth = data.length > 0 ? (width / data.length) : 0;
+    const span = max - min;
+    // every sample had the same flux: one centered bar, labeled with that value
+    const flat = !(span > 0);
+    const barWidth = flat ? 6 : 100 / counts.length;
+    const binWidth = flat ? 0 : span / counts.length;
+    const ticks = flat ? [min] : [min, (min + max) / 2, max];
 
-    // Find max value in data for scaling
-    const maxValue = data.length > 0 ? Math.max(...data) : 0;
-    const scale = maxValue > 0 ? (height - padding * 2) / maxValue : 0;
-
-    // Calculate midpoint
-    const midPoint = (upper_bound + lower_bound) / 2;
+    const maxCount = counts.reduce((m, c) => Math.max(m, c), 0);
+    const scale = maxCount > 0 ? (height - padding * 2) / maxCount : 0;
 
     return (
       <div className='escher-distribution-histogram' style={{
@@ -98,36 +78,33 @@ export class HistogramComponent extends Component<{
 
       }}>
         {/* Render bars */}
-        <div style={{display: 'flex', height: `${height - padding * 2}px`, alignItems: 'flex-end', width: '100%'}}>
-          {data.map((value, index) => {
-            const barHeight = value * scale;
-
-            return (
-              <div
-                key={`bar-${index}-${Math.random()}`}
-                style={{
-                  width: `${barWidth}%`,
-                  height: `${barHeight}px`,
-                  backgroundColor: '#2083D590',
-                  marginRight: index === data.length - 1 ? '0' : '1px',
-                  borderBottom: '1px solid black'
-                }}
-              />
-            );
-          })}
+        <div style={{display: 'flex', justifyContent: 'center', height: `${height - padding * 2}px`, alignItems: 'flex-end', width: '100%'}}>
+          {counts.map((count, index) => (
+            <div
+              key={index}
+              title={(flat ? formatFlux(min, 0) :
+                `${formatFlux(min + index * binWidth, binWidth)} to ${formatFlux(min + (index + 1) * binWidth, binWidth)}`) +
+                `: ${count} sample${count === 1 ? '' : 's'}`}
+              style={{
+                width: `${barWidth}%`,
+                height: `${count * scale}px`,
+                backgroundColor: '#2083D590',
+                marginRight: index === counts.length - 1 ? '0' : '1px',
+                borderBottom: '1px solid black'
+              }}
+            />
+          ))}
         </div>
 
         {/* X-axis labels */}
         <div style={{
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: flat ? 'center' : 'space-between',
           width: '100%',
           position: 'absolute',
           left: '0'
         }}>
-          <div style={{textAlign: 'left'}}>{lower_bound}</div>
-          <div>{midPoint}</div>
-          <div style={{textAlign: 'right'}}>{upper_bound}</div>
+          {ticks.map((t) => <div>{formatFlux(t, span)}</div>)}
         </div>
       </div>
     );
@@ -144,11 +121,7 @@ export type DistributionTooltipProps = {
   upperRange: number;
   lowerRange: number;
   step: number;
-  fluxDistributions: {
-    upper_bound: number;
-    lower_bound: number;
-    data: Map<string, number[]>;
-  };
+  fluxDistributions: ReactionSamplingDistribution;
   samplingFunction: () => void;
   objectives: { [key: string]: number };
   sliderChange: (bounds: number[], biggId: string) => void;
@@ -171,11 +144,7 @@ class DistributionTooltipComponent extends Component<DistributionTooltipProps> {
     fluxDisplayStyle: { [key: string]: string };
     tooltipStyle: { [key: string]: string };
     objectives: { [key: string]: number };
-    fluxDistributions: {
-      upper_bound: number;
-      lower_bound: number;
-      data: Map<string, number[]>;
-    };
+    fluxDistributions: ReactionSamplingDistribution;
   };
 
   constructor(props: DistributionTooltipProps) {
@@ -428,9 +397,8 @@ class DistributionTooltipComponent extends Component<DistributionTooltipProps> {
       const minimizeDisabled = Object.keys(this.props.objectives).length === 1 && minimizeActive;
       const maximizeActive = this.props.objectives[this.props.biggId] === 1;
       const maximizeDisabled = Object.keys(this.props.objectives).length === 1 && maximizeActive;
-      const hasFluxDistribution = this.props.fluxDistributions && this.props.fluxDistributions.upper_bound != null && this.props.fluxDistributions.lower_bound != null &&
-        this.props.fluxDistributions.data && !!this.props.fluxDistributions.data.get(this.props.biggId);
-      
+      const fluxHistogram = this.props.fluxDistributions?.data?.get(this.props.biggId);
+
       // create a reaction string from the model
       const reaction = this.props.model?.reactions.find((r) => r.id === this.props.biggId);
       let reactionString: string | null = null;
@@ -584,9 +552,9 @@ class DistributionTooltipComponent extends Component<DistributionTooltipProps> {
               </button> */}
             </div>
           </div>
-          { hasFluxDistribution && (
+          { fluxHistogram && (
             <div className="histogramPanel">
-              <HistogramComponent data ={this.props.fluxDistributions.data.get(this.props.biggId)} upper_bound={this.props.fluxDistributions.upper_bound} lower_bound={this.props.fluxDistributions.lower_bound} />
+              <HistogramComponent histogram={fluxHistogram} />
             </div>
           )}
         </div>

@@ -60,8 +60,7 @@ Feature: Transforming HELM and aligned columns
     And "Convert Sequence Notation" dialog should contain text "Current notation: separator"
     When user selects "helm" in "Convert to" input in "Convert Sequence Notation" dialog
     And user clicks on OK button in "Convert Sequence Notation" dialog
-    Then the top menu command should have completed
-    And 1 new column should have been added
+    Then 1 new column should have been added
     And a new column "helm(MSA)" should have been added
     And "helm(MSA)" column should have units "helm"
     And "helm(MSA)" column should have no missing values

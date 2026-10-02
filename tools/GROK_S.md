@@ -533,7 +533,7 @@ Actions the server accepts: `create | get | delete` for `users`, `groups`, `conn
 `functions`, `queries`, `scripts` (`get | delete` for `reports`), `functions.run`
 (`{name, params}`), and `files.list | get | put | delete`. For `files.put`, add
 `"source": "<local-path>"` and the CLI base64-encodes the file into `content` before sending.
-`users.delete` removes the entity record only (see "List / count / get / delete").
+`users.delete` is refused, as is `DELETE /entities/{id}` on a user or its personal group: users are blocked, never deleted (see "List / count / get / delete").
 
 ## Scripting pattern
 
@@ -905,6 +905,9 @@ only ever read from.
   URL, the key, and basic connectivity, and returns per-module status if the server is
   reachable. Fall back to `grok s raw GET /users/current` to isolate auth issues. A `--host`
   URL that is not the API base fails at login with the reason (`should end with /api`).
-- Cross-instance sync (1.28 servers): `grok s sync pairs list`, `sync setups list --pair <id>`,
-  `sync setup get <id>`, `sync run <id>`; on 1.27 the routes do not exist and the commands
-  answer "not found".
+- Cross-instance sync (1.28 servers): `grok s sync pairs list` (`/sync/pairs`),
+  `sync setups list --pair <id>`, `sync setup get <id>` and `sync setup runs <id>`
+  (`/entity_sync_funcs`; a setup is an `EntitySyncFunc`, each run a `FuncCall` whose
+  `options.syncResult` holds the per-item outcome). The server has no run route: runs start
+  from the setup's **Run** button or its schedule. On 1.27 the routes do not exist and the
+  commands answer "not found".

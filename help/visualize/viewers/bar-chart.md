@@ -14,8 +14,12 @@ A bar chart presents grouped data as rectangular bars with lengths proportional 
 Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed
 for categorical values.
 
-> Developers: To add the viewer from the console, use:
- `grok.shell.tv.addViewer('Bar chart');`
+:::note developers
+
+To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Bar chart');`
+
+:::
 
 |                |                                   |
 |----------------|-----------------------------------|
@@ -34,6 +38,20 @@ values:
 
 ![Relative values in a bar chart](img/bar-chart-relative-values.gif "Relative values in a bar chart")
 
+
+### Value axis range
+
+To set the range of the value axis, use **Min** and **Max** in the **Y Axis** section of the
+**Context Panel**. To change the range on the fly, hover over the value axis and drag the ends of
+the range slider. Bars that don't fit into the range are clipped and marked with a wavy break and
+an arrow. To hide the marks, clear **Show Clipped Bar Indicators**.
+
+To mark a value or range of values, right-click the value axis and select **Annotations**, then
+choose **Add Line**, **Add Band**, or **Add Region**.
+For details, see [Formula lines](scatter-plot.md#formula-lines) and
+[Annotation regions](scatter-plot.md#annotation-regions).
+
+![Setting the value axis range and adding a band](img/bar-chart-value-axis-range.gif)
 
 ### Dates and years, quarters, months
 
@@ -126,19 +144,19 @@ Year - Month' and 'Year - Quarter':
 | Axis Font | string |  |
 | Min Text Height | number |  |
 | Show Clipped Bar Indicators | boolean | When enabled, shows hatched areas and arrows on bars that are clipped by the value axis range. |
-| Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
-| **Legend** | | |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
-| **Description** | | |
-| Show Title | boolean |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| **Description** | | |
+| Show Title | boolean |  |
 
 See also:
 

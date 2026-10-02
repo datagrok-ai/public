@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable} from 'rxjs';
+import {BehaviorSubject, Observable, interval} from 'rxjs';
 import $ from 'cash-dom';
 import { _package } from '../../../package';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
@@ -55,7 +55,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     Let's launch the Activity Cliffs tool.`);
 
     const d = await this.openDialog('On the Top Menu, click Chem > Analyze > Activity Cliffs...',
-    'Activity Cliffs', this.getMenuItem('Chem', true));
+    'Activity Cliffs', () => this.getMenuItem('Chem', true));
 
     // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">
     //Learn more about exploring chemical data</a><br>
@@ -64,28 +64,20 @@ export class ActivityCliffsTutorial extends Tutorial {
     this.describe(`In the <b>Activity Cliffs</b> dialog, you can specify parameters like the similarity
     cutoff or the dimensionality reduction algorithm. For this tutorial, let's continue with the default settings.`);
 
-    await this.action('Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
-
+    // the analysis can finish before the next step starts, so the plot is captured from the moment OK is clicked
     let v: DG.ScatterPlotViewer;
-    await this.action('Wait for analysis to complete', new Observable((subscriber: any) => {
-      // the analysis adds the plot while the previous step is still resolving, and onViewerAdded is
-      // a hot stream — so a plot that is already there has to be checked for, not waited for
-      const existing = Array.from(grok.shell.tv?.viewers ?? [])
-        .find((x) => x.type === DG.VIEWER.SCATTER_PLOT) as DG.ScatterPlotViewer | undefined;
-      if (existing != null) {
-        v = existing;
-        subscriber.next(true);
-        return;
-      }
-      const sub = grok.events.onViewerAdded
-        .pipe(filter((data: DG.EventData) => data.args.viewer.type === DG.VIEWER.SCATTER_PLOT))
-        .subscribe((data: DG.EventData) => {
-          v = data.args.viewer;
-          sub.unsubscribe();
-          subscriber.next(true);
-        });
-      return () => sub.unsubscribe();
-    }));
+    const plotAdded = new BehaviorSubject<boolean>(false);
+    const plotSub = grok.events.onViewerAdded
+      .pipe(filter((data: DG.EventData) => data.args.viewer.type === DG.VIEWER.SCATTER_PLOT))
+      .subscribe((data: DG.EventData) => {
+        v = data.args.viewer;
+        plotSub.unsubscribe();
+        plotAdded.next(true);
+      });
+
+    await this.action('Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
+    await this.action('Wait for analysis to complete', plotAdded.pipe(filter((added) => added)));
+    plotSub.unsubscribe();
 
     this.title('Start analyzing the results', true);
     this.describe(`Activity cliffs are visualized on an interactive scatterplot,
@@ -96,9 +88,10 @@ export class ActivityCliffsTutorial extends Tutorial {
     await this.action('Hover over data points for molecule information',
       grok.events.onTooltipShown.pipe(filter(() => v.root.matches(':hover'))));
 
-    await this.action('To view only the cliffs, toggle Show only cliffs.', new Observable((subscriber: any) => {
-      $('.ui-input-switch').one('click', () => subscriber.next(true));
-    }), $('.ui-input-switch').get(0));
+    // the switch filters the table to the cliffs and says so in a tag; any other switch on the page does not
+    await this.action('To view only the cliffs, toggle Show only cliffs.',
+      interval(200).pipe(filter(() => !!v.dataFrame.getTag('filterCliffs'))),
+      () => v.root.querySelector('.cliffs_div .ui-input-switch') as HTMLElement ?? null);
 
     this.title('Zoom in on the area of interest', true);
     this.describe(`On the scatterplot, the marker color corresponds to the activity level, and the size represents

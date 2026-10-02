@@ -218,13 +218,16 @@ function strategies(page: Page, base: Base, kind: KindEntry, q: string): Locator
       case 'placeholder':
         out.push(base.locator(kind.selector).filter({has: page.locator(`[placeholder="${cssString(q)}" i]`)}));
         break;
-      case 'dart':
+      case 'dart': {
+        // Dart's `annotate` turns these into dashes as well (html_utils.dart): molecule_dictionary
+        // is div-table-molecule-dictionary
+        const annotated = dashed.replace(/[:_;*\\[\]{}|]/g, '-');
         for (const template of kind.dartNames ?? []) {
-          out.push(base.locator(withAttr(kind.selector, `[name="${cssString(template.replace('{q}', dashed))}" i]`)));
-          if (dashed !== q)
-            out.push(base.locator(withAttr(kind.selector, `[name="${cssString(template.replace('{q}', q))}" i]`)));
+          for (const name of new Set([annotated, dashed, q]))
+            out.push(base.locator(withAttr(kind.selector, `[name="${cssString(template.replace('{q}', name))}" i]`)));
         }
         break;
+      }
     }
   }
   return out;
