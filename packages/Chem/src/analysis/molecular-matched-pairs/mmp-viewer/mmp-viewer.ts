@@ -21,7 +21,7 @@ import {getMmpScatterPlot, runMmpChemSpace, fillPairInfo} from './mmp-cliffs';
 import {getGenerations} from './mmp-generations';
 
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {getEmbeddingColsNames} from
+import {getEmbeddingColsNames, releaseEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import {getMmpFilters, MmpFilters} from './mmp-filters';
 import {getSigFigs} from '../../../utils/chem-common';
@@ -598,7 +598,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const {linesIdxs, lines, linesActivityCorrespondance} = createLines(this.mmpa!, this.colorPalette!);
     this.linesIdxs = linesIdxs;
     this.lines = lines;
-    this.spAxesNames = getEmbeddingColsNames(this.parentTable!).map((it) => `~${it}`);
+    const embedColsNames = getEmbeddingColsNames(this.parentTable!);
+    // only the number is used, for the '~' columns added below, so the pair must not stay reserved
+    releaseEmbeddingColsNames(this.parentTable!, embedColsNames);
+    this.spAxesNames = embedColsNames.map((it) => `~${it}`);
     this.linesActivityCorrespondance = linesActivityCorrespondance;
     this.linesMask = new BitArray(linesIdxs.length);
 

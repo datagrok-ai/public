@@ -13,6 +13,7 @@ import {SparseMatrixResult, SparseMatrixService} from '../distance-matrix/sparse
 import {ILineSeries, MouseOverLineEvent, ScatterPlotCurrentLineStyle, ScatterPlotLinesRenderer} from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-reduction-editor';
 import {getNormalizedEmbeddings} from '../multi-column-dimensionality-reduction/embeddings-space';
+import {releaseEmbeddingColsNames} from '../multi-column-dimensionality-reduction/reduce-dimensionality';
 import {DimReductionMethods} from '../multi-column-dimensionality-reduction/types';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {MCLMethodName, createMCLWorker} from '../MCL';
@@ -354,28 +355,32 @@ export async function getActivityCliffsEmbeddings(df: DG.DataFrame, seqCol: DG.C
   methodName: DimReductionMethods, seqSpaceOptions: any, encodingFunc: DG.Func) : Promise<void> {
   // eslint-disable-next-line prefer-const
 
-  const encodingFuncInputs = encodingFunc.inputs;
-  const encodedColWithOptions: PreprocessFunctionReturnType =
-    await encodingFunc.apply({[encodingFuncInputs[0].name]: seqCol,
-      [encodingFuncInputs[1].name]: similarityMetric, ...(seqSpaceOptions.preprocessingFuncArgs ?? {})});
+  try {
+    const encodingFuncInputs = encodingFunc.inputs;
+    const encodedColWithOptions: PreprocessFunctionReturnType =
+      await encodingFunc.apply({[encodingFuncInputs[0].name]: seqCol,
+        [encodingFuncInputs[1].name]: similarityMetric, ...(seqSpaceOptions.preprocessingFuncArgs ?? {})});
 
-  let embeddingsMatrix: Matrix = [];
-  if ((methodName as any) === MCLMethodName) {
-    const mclRes = await createMCLWorker([encodedColWithOptions.entries], similarity, [1], 'MANHATTAN',
-      [similarityMetric], [encodedColWithOptions.options??{}],
-      seqSpaceOptions?.maxIterations ?? 5, seqSpaceOptions.useWebGPU ?? false).promise;
-    df.columns.addNewInt(df.columns.getUnusedName('MCL Cluster')).init((i) => mclRes.clusters[i]);
-    // Vector adds nothing to Float32Array, but reaches this compile via utils' emitted .d.ts
-    // and the two Float32Array declarations do not unify.
-    embeddingsMatrix = [mclRes.embedX, mclRes.embedY] as Matrix;
-  } else {
-    embeddingsMatrix = await getNormalizedEmbeddings([encodedColWithOptions.entries], methodName,
-      [similarityMetric], [1], 'MANHATTAN', {...seqSpaceOptions, distanceFnArgs: [encodedColWithOptions.options??{}]});
+    let embeddingsMatrix: Matrix = [];
+    if ((methodName as any) === MCLMethodName) {
+      const mclRes = await createMCLWorker([encodedColWithOptions.entries], similarity, [1], 'MANHATTAN',
+        [similarityMetric], [encodedColWithOptions.options??{}],
+        seqSpaceOptions?.maxIterations ?? 5, seqSpaceOptions.useWebGPU ?? false).promise;
+      df.columns.addNewInt(df.columns.getUnusedName('MCL Cluster')).init((i) => mclRes.clusters[i]);
+      // Vector adds nothing to Float32Array, but reaches this compile via utils' emitted .d.ts
+      // and the two Float32Array declarations do not unify.
+      embeddingsMatrix = [mclRes.embedX, mclRes.embedY] as Matrix;
+    } else {
+      embeddingsMatrix = await getNormalizedEmbeddings([encodedColWithOptions.entries], methodName,
+        [similarityMetric], [1], 'MANHATTAN', {...seqSpaceOptions, distanceFnArgs: [encodedColWithOptions.options??{}]});
+    }
+    if (embeddingsMatrix.length !== axesNames.length)
+      throw new Error('Number of axes names should be equal to number of embedding dimensions');
+    for (let i = 0; i < embeddingsMatrix.length; ++i)
+      df.columns.addNewFloat(axesNames[i]).init((idx) => embeddingsMatrix[i][idx]);
+  } finally {
+    releaseEmbeddingColsNames(df, axesNames);
   }
-  if (embeddingsMatrix.length !== axesNames.length)
-    throw new Error('Number of axes names should be equal to number of embedding dimensions');
-  for (let i = 0; i < embeddingsMatrix.length; ++i)
-    df.columns.addNewFloat(axesNames[i]).init((idx) => embeddingsMatrix[i][idx]);
 }
 
 
