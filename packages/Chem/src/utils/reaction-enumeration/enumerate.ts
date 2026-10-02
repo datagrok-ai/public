@@ -757,6 +757,11 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             try {mol.delete();} catch {/* ignore */}
           }
         };
+        // Canonical SMILES, or an explicit [H] would hide molecules already reached; unreadable
+        // products are dropped. Only the cascade does this, so the setting off is unchanged.
+        const canon = (s: string): string | null => canonCache.getOrCreate(s, (k) => canonicalize(rdkit, k));
+        const fireCanonical = (reactants: string[]): string[] | null =>
+          fireTemplateOn(rdkit, config, t, reactants, warnings)?.flatMap((s) => canon(s) ?? []) ?? null;
         let executed = 0;
         let truncated = false;
         let productCapped = 0;
@@ -798,11 +803,6 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               let stepProducts: Iterable<string> = fired;
 
               if (cascade) {
-                // Canonical SMILES, or an explicit [H] would hide molecules already reached; unreadable
-                // products are dropped. Only the cascade does this, so the setting off is unchanged.
-                const canon = (s: string): string | null => canonCache.getOrCreate(s, (k) => canonicalize(rdkit, k));
-                const fireCanonical = (reactants: string[]): string[] | null =>
-                  fireTemplateOn(rdkit, config, t, reactants, warnings)?.flatMap((s) => canon(s) ?? []) ?? null;
                 const run = await runCascade(fireCanonical, blockedInCascade, combo.map((s) => canon(s) ?? s),
                   fired.flatMap((s) => canon(s) ?? []), maxCycles, yieldIfNeeded, isCancelled);
                 if (!run) break configLoop;

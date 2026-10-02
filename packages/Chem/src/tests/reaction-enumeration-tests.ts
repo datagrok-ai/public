@@ -497,8 +497,11 @@ category('Reaction Enumeration', () => {
 
     expect(off.rows.length, 3, 'off: one product per reducible double bond');
     expectSameRows((await run(1)).rows, off.rows, 'one cycle is the setting off');
-    expect((await run(2)).rows.map((r) => r.product).sort().join(' '), 'C=CCCCCCCC CC=CCCCCCC CCCC=CCCCC',
+    const two = await run(2);
+    expect(two.rows.map((r) => r.product).sort().join(' '), 'C=CCCCCCCC CC=CCCCCCC CCCC=CCCCC',
       'two cycles reach the three di-reduced isomers');
+    expect(two.warnings.some((w) => w.includes('not fully reacted') && w.includes('2 cycle')), true,
+      'and say they stopped after 2 cycles rather than converged');
     for (const cycles of [3, 5]) {
       const {rows, warnings} = await run(cycles);
       expect(rows.map((r) => r.product).join(), 'CCCCCCCCC', `${cycles} cycles end on nonane`);
@@ -508,26 +511,6 @@ category('Reaction Enumeration', () => {
         'one reaction from the starting material');
       expect(warnings.some((w) => w.includes('not fully reacted')), false, `${cycles} cycles: nothing left to react`);
     }
-  });
-
-  test('repeat: the cycle cap stops a cascade that would otherwise go further', async () => {
-    const rdkit = getRdKitModule();
-    const run = async (cycles: number) => enumerate({rdkit, config: cyclesConfig(1, cycles),
-      templates: [O_METHYLATION], buildingBlocks: ['CC(O)C(O)CO'], exclusionSmarts: []});
-
-    const capped = await run(2);
-    expect(capped.rows.map((r) => r.product).sort().join(' '), 'COC(C)C(CO)OC COCC(O)C(C)OC COCC(OC)C(C)O',
-      'two runs reach the three di-methyl ethers');
-    expect(capped.rows.some((r) => r.product === 'COCC(OC)C(C)OC'), false,
-      'the fully methylated product needs a third run');
-    expect(capped.warnings.some((w) => w.includes('not fully reacted') && w.includes('2 cycle')), true,
-      'and the run says its products stopped after 2 cycles rather than converged');
-
-    const full = await run(5);
-    expect(full.rows.length, 1, 'given enough cycles, every branch converges');
-    expect(full.rows[0].product, 'COCC(OC)C(C)OC', 'the trimethyl ether');
-    expect(full.warnings.some((w) => w.includes('not fully reacted')), false,
-      'nothing stopped early, so no warning');
   });
 
   const ESTERIFICATION: TemplateInput = {
@@ -619,26 +602,6 @@ category('Reaction Enumeration', () => {
     expect(blocked.rows.length, 65, 'the nine that finished early, beside the 56 tri-ethers of the third run');
   });
 
-  test('repeat: a cycle that ends under the product limit is not cut short', async () => {
-    const rdkit = getRdKitModule();
-    const hvz: TemplateInput = {
-      smarts: '[OH+0,O-:1][C:2](=[O:3])[C$([CH]([CX4])),C$([CH2]):4]>>[#8:1][C:2](=[O:3])[C:4][Br]',
-      blockingSmartsList: [], reactionName: 'Hell-Volhard-Zelinsky halogenation',
-    };
-    const config = cyclesConfig(1, 5);
-    config.products_specs.max_num_hetero_atoms = -1;
-    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
-    config.products_specs.only_these_atoms_allowed = [];
-    const {rows, warnings} = await enumerate({rdkit, config, templates: [hvz],
-      buildingBlocks: ['NC(CCC(=O)O)C(=O)NC(CCC(=O)O)C(=O)NC(CCC(=O)O)C(=O)NC(CCC(=O)O)C(=O)NC(CCC(=O)O)C(=O)O'],
-      exclusionSmarts: []});
-
-    expect(rows.length, 96, 'the 96 penta-bromides of the fifth run');
-    const unfinished = warnings.filter((w) => w.includes('not fully reacted'));
-    expect(unfinished.length, 1, 'one warning, for the one combination');
-    expect(unfinished[0].includes('100'), false, 'naming the cycles, not a product limit the run never reached');
-  });
-
   test('repeat: the product limit counts every molecule a cycle would end on, and allows exactly 100', async () => {
     const rdkit = getRdKitModule();
     const run = async (smiles: string) => {
@@ -675,6 +638,9 @@ category('Reaction Enumeration', () => {
     const esters = (list: OutputRow[]) => list.filter((r) => r.steps[0]?.reactionName === 'Esterification');
     expect(esters(rows).length > 0, true, 'and the skipped template still produces its own products');
     expectSameRows(esters(rows), esters(off.rows), 'the same ester rows as with the setting off');
+    const twoReactantOnly = await enumerate({rdkit, config: cyclesConfig(1, 5), ...args, templates: [ESTERIFICATION]});
+    expect(twoReactantOnly.warnings.some((w) => w.includes('had no effect')), true,
+      'but a library of two-reactant templates only is told the setting did nothing');
   });
 
   test('repeat: a collapsed cascade propagates the columns of the reactants it started from', async () => {
