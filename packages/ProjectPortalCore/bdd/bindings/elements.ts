@@ -150,3 +150,12 @@ app.element('document title input', {selector: u2('document-title-input')});
 app.element('document version input', {selector: u2('document-version-input')});
 app.element('link document button', {selector: u2('link-document-button')});
 app.element('approve process description document link', {selector: u2('approve-document-process-description-0')});
+
+app.element('provenance project card', {selector: u2('program-bdd-prov')});
+app.element('program title', {selector: u2('program-title')});
+app.element('latest decision provenance link', {selector: u2('provenance-decision-0')});
+app.element('provenance dialog', {selector: u2('provenance-dialog')});
+app.element('provenance start', {selector: u2('provenance-start')});
+app.element('provenance rests on', {selector: u2('provenance-up')});
+app.element('provenance used by', {selector: u2('provenance-down')});
+app.element('first used-by record', {selector: u2('provenance-down-0-open')});

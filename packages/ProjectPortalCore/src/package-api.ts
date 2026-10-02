@@ -183,6 +183,25 @@ export namespace funcs {
   }
 
   /**
+   * What a portal object rests on and what rests on it, depth steps each way: data, runs, models, documents, criteria, decisions, the program. Returns {start, nodes, edges}; an edge runs from what a node rests on to the node
+   * @param {string} kind
+   *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]
+   * @param {string} id - The record's id, or a run's run_id, or a compound's code
+   */
+  export async function provenance(kind: string , id: string , depth?: number ): Promise<any> {
+    return await grok.functions.call('ProjectPortalCore:Provenance', { kind, id, depth });
+  }
+
+  /**
+   * Opens the provenance of a portal object in a dialog: two indented trees, each node clickable
+   * @param {string} kind
+   *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]
+   */
+  export async function showProvenance(kind: string , id: string ): Promise<void> {
+    return await grok.functions.call('ProjectPortalCore:ShowProvenance', { kind, id });
+  }
+
+  /**
    * Links the example documents the package ships to the EX-BIOC programs they name. EX-* portfolios only; idempotent
    */
   export async function loadExampleDocuments(): Promise<string> {

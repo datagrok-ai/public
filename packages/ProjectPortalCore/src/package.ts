@@ -34,6 +34,8 @@ import {EvidenceKind} from './model/evidence';
 import {describeSnapshotRow, snapshotsFrame, snapshotsOf, takeSnapshot} from './snapshots';
 import {documentsFrame, documentsOf, linkDocumentTo, loadExampleDocuments as loadExamples} from './documents';
 import {describeDocument} from './model/documents';
+import {provenanceOf} from './provenance';
+import {openProvenanceDialog} from './views/provenance-dialog';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -304,6 +306,26 @@ export async function linkDocument(portfolio: string, program: string, path: str
   return [`${p.code}: ${describeDocument({title: r.document.title, version: r.document.doc_version, status: r.document.status as any})} ` +
     `${r.created ? 'linked' : 'changed'}` + (r.criterion ? `; ${r.criterion.code} ${r.criterion.state}` : '') +
     (r.superseded ? `; ${r.superseded} older version(s) superseded` : ''), ...r.notes.map((n) => `  ${n}`)].join('\n');
+}
+
+//name: provenance
+//description: What a portal object rests on and what rests on it, depth steps each way: data, runs, models, documents, criteria, decisions, the program. Returns {start, nodes, edges}; an edge runs from what a node rests on to the node
+//input: string kind {choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]}
+//input: string id {description: The record's id, or a run's run_id, or a compound's code}
+//input: int depth {optional: true; default: 4}
+//output: object result
+export async function provenance(kind: string, id: string, depth?: number): Promise<object> {
+  const p = await provenanceOf(kind, id, depth || 4);
+  return {start: p.start, nodes: p.nodes, edges: p.edges};
+}
+
+//name: showProvenance
+//description: Opens the provenance of a portal object in a dialog: two indented trees, each node clickable
+//input: string kind {choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]}
+//input: string id
+export async function showProvenance(kind: string, id: string): Promise<void> {
+  installStyles();
+  await openProvenanceDialog(kind, id);
 }
 
 //name: loadExampleDocuments

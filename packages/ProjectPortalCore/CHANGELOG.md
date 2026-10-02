@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- Provenance (F-28, FR-75): from a program, decision, piece of evidence, model run, snapshot, document or compound, the portal's records as a graph walked both ways: what it rests on (the program data and the compound in it, a snapshot of the data, a run's input tables and model, the run selected for a criterion, the document answering it, the criterion, every piece of a decision's evidence) and what rests on it (a run's output tables, documents, decisions, the program a decision moved). Pure graph and walk in `src/model/provenance.ts`
+- The provenance dialog: *Rests on* and *Used by* as indented trees; each record opens (a run's call, a snapshot, a document's file, the program data, a model card, a table, a program on its page) and **Trace** starts again from it. **Provenance** on the program page, on each decision and piece of evidence in the history, and on each saved run, document and snapshot
+- `provenance(kind, id, depth)` returns `{start, nodes, edges}`; `showProvenance(kind, id)` opens the dialog
+
 - Documents over files (F-27, FR-70): a `document` record over one file, in the program's workspace folder or at any file path the platform reads, with its kind, title, version, status (draft, approved, superseded), author, and the gate criterion of kind document it answers. Approving one meets that criterion unless it was waived; linking a draft puts a criterion not started in progress; a newer approved version of the same kind and criterion supersedes the older
 - Document cards on the program page (*Documents*): one per document criterion of the current and the next gate, with its state, the documents over it (each opens; a draft has **Approve** for approvers), what is missing, the run selected for it and the decisions that cite it. **Link document…** links a file of the program folder, a path, or an upload into the folder (no overwrite). Documents no card shows are listed below
 - Documents are evidence of kind `file` with the record in the context: the gate panel suggests the approved documents of its criteria, `addEvidence` takes a document by id or path, and the history looks a document up by its record

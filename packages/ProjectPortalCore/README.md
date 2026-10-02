@@ -339,6 +339,17 @@ files with a version and a status, not at a tick.
 - **Functions.** `programDocuments(portfolio, program)` lists a program's documents; `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` links a file or changes the document over it. `loadExampleDocuments()` links the synthetic EX-BIOC documents in `files/documents/` (EX-* portfolios only).
 - `document` is master-secured through the program, like the gate log.
 
+### Provenance
+
+From any portal record, what it rests on and what rests on it (F-28, FR-75): data → model run →
+document → decision, and back. The graph is the portal's own records; nothing new is stored.
+
+- **Nodes.** The program, its decisions (gate-log entries), model runs, the tables their saved calls read and wrote, the catalogued model a run used, documents, snapshots, gate criteria, the program dataset, a compound, and the files and links a decision cites.
+- **Edges** run from what something rests on to what rests on it: a compound is in the program dataset; the dataset is frozen in a snapshot; a run reads its input tables and its model and writes its output tables; the run selected for a criterion feeds the documents answering it (or the criterion when none does); a document answers its criterion; each piece of a decision's evidence points at the decision; a decision moves the program. Evidence is an edge, not a node: starting from a piece of evidence starts from its target. A cited record deleted since is still a node, named as the evidence froze it.
+- **The walk** goes `depth` steps (default 4) each way, breadth first. A compound's programs (up to 10) are read when the walk starts from a compound; otherwise one program's records. Saved calls are read for their tables for the 40 newest runs.
+- **In the app.** **Provenance** on the program page, beside each decision and each piece of evidence in the history, and beside each saved run, document and snapshot. The dialog shows *Rests on* and *Used by* as indented trees; a click opens the record (a run's call in the context panel, a snapshot, a document's file, the program data, a model card, a table, another program on its page), and **Trace** starts the walk again from it.
+- **Functions.** `provenance(kind, id, depth)` returns `{start, nodes, edges}` (kind: program, decision, evidence, model_run, snapshot, document, compound; a run's `run_id` and a compound's code work as ids). `showProvenance(kind, id)` opens the dialog.
+
 ### Stage advance driven by data
 
 Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
@@ -451,6 +462,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `programSnapshots(portfolio, program)` | The program's snapshots, newest first |
 | `programDocuments(portfolio, program)` | The program's documents: criterion, kind, title, version, status, path |
 | `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` | Links a file as a document of the program, or changes the document over it; approving meets its criterion unless waived |
+| `provenance(kind, id, depth)` | What a portal record rests on and what rests on it, `depth` steps each way, as `{start, nodes, edges}` |
+| `showProvenance(kind, id)` | The same in a dialog, each record clickable |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
@@ -500,6 +513,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Decisions with evidence: the rules (what an item needs, a typed link, readiness as evidence, the suggestion, renamed and gone targets), and on EX-SMD a scratch program advanced with its readiness, with an explicit list and a refused item, a run added later then renamed and deleted, the gate panel attaching a link, and an advance by data with its readiness evidence.
   - Program snapshots: the rules (criteria frozen in stage order, recorded or evaluated; the file name; the table check; the summary), and on EX-SMD a snapshot of EXS-KIN1 with its SAR table in the program folder, read back intact and then noticed changed, the functions and the dialog, and a decision that takes a snapshot of a program without a workspace.
   - Documents: the rules (the vocabulary, what a document needs, who may link and approve, what a status does to the criterion, superseding, order, the cards, a document as evidence, the config check), and on EX-BIOC the example documents and EXB-201's card, a scratch project's draft, approval, a newer version, a waived criterion, the refusals and the functions, and a file uploaded into EXB-201's folder.
+  - Provenance: the rules (the graph's edges, a cited record deleted since, a walk from a decision up to the data and down to the program, depth, the tree, starts from evidence, a run id and a compound code, the text), and on EX-BIOC a document resting on the run selected for its criterion and its model, the run's output table, and on EX-SMD a decision's readiness and snapshot up to the program data, a start from evidence, the function, the dialog and the program page's links.
   - Program roles: the rules (the strongest role, roles only add, who may change them, grants and what changes), and on EXS-KIN1 a throwaway user made viewer, contributor and approver (access in the app, the folder's grant, the folder seen as that user), a downgrade, removal; a non-approver refused; the functions.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
@@ -509,7 +523,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 240 of the 243 package tests and all 28 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 245 of the 248 package tests and all 29 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

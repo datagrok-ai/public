@@ -89,6 +89,9 @@ const CSS = `
 .pp-evidence-picker { gap: 2px; font-size: 12px; }
 .pp-evidence-pick { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .pp-evidence { padding-left: 12px; gap: 1px; }
+.pp-provenance { gap: 4px; min-width: 520px; max-height: 70vh; overflow-y: auto; }
+.pp-provenance > * { flex-shrink: 0; }
+.pp-provenance-tree { gap: 2px; }
 .pp-document-card { gap: 2px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--u2-border, #eee); }
 `;
 

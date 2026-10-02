@@ -52,6 +52,7 @@ import {describeDocument, DocumentCard, DocumentStatus} from '../model/documents
 import {DocumentRow} from '../generated/db';
 import {openDocumentFile, openLinkDocumentDialog} from './document-dialog';
 import {programAccess} from '../program-roles';
+import {openProvenanceDialog} from './provenance-dialog';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -451,9 +452,11 @@ export class PortalView {
       if (t.evidence)
         row.title = t.evidence;
       const lines = evidence.lines.get(t.id) ?? [];
+      const head = divH([row, this.provenanceLink('decision', t.id, `provenance-decision-${i}`)], 'pp-unit');
       if (!lines.length)
-        return named(row, `decision-${i}`);
-      return named(divV([row, named(divV(lines.map((l, j) => this.evidenceLink(ctx, l, `evidence-${i}-${slug(l.row.kind)}-${j}`)),
+        return named(head, `decision-${i}`);
+      return named(divV([head, named(divV(lines.map((l, j) => divH([this.evidenceLink(ctx, l, `evidence-${i}-${slug(l.row.kind)}-${j}`),
+        this.provenanceLink('evidence', l.row.id, `provenance-evidence-${i}-${j}`)], 'pp-unit')),
         'pp-evidence'), `decision-evidence-${i}`)]), `decision-${i}`);
     })), 'transition-history');
     const picker = evidence.suggested.length || (ctx.approver && ctx.portfolio.stage_authority === 'portal') ?
@@ -524,7 +527,8 @@ export class PortalView {
       named(span(program.name, 'pp-title'), 'program-title'),
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
-      named(divH([workspace, followButton], 'pp-actions'), 'program-actions'),
+      named(divH([workspace, followButton, named(button('Provenance', () => this.provenance('program', program.id)),
+        'program-provenance-button')], 'pp-actions'), 'program-actions'),
       ...(newsLine ? [newsLine] : []),
       ...quick,
       ...(data.length ? [named(divH(data, 'pp-actions pp-data-actions'), 'program-data-actions')] : []),
@@ -793,6 +797,7 @@ export class PortalView {
           ...(run.purpose ? [badge(run.purpose)] : []),
           ...(run.is_reference ? [badge('reference', {variant: 'success'})] : []),
           span((run.run_started ?? run.created_on)?.format?.('YYYY-MM-DD') ?? '', 'pp-muted'),
+          this.provenanceLink('model_run', run.id, `provenance-run-${slug(run.title ?? run.run_id ?? run.id)}`),
         ], 'pp-run-meta'),
       ], 'pp-run'), `saved-run-${slug(run.title ?? run.run_id ?? run.id)}`);
     }), 'pp-runs'), 'saved-runs');
@@ -866,7 +871,7 @@ export class PortalView {
         row.status === 'superseded' ? 'pp-link pp-gap' : 'pp-link'), `${name}-open`);
       open.title = row.path;
       open.onclick = () => void openDocumentFile(row).catch(failed);
-      const items: HTMLElement[] = [open];
+      const items: HTMLElement[] = [open, this.provenanceLink('document', row.id, `provenance-${name}`)];
       if (row.status === 'draft' && ctx.approver) {
         const approve = named(span('Approve', 'pp-link'), `approve-${name}`);
         approve.title = 'Approve this version: meets the criterion unless waived, supersedes the older approved one';
@@ -920,7 +925,7 @@ export class PortalView {
         const el = named(span(`${s.label} · ${describeSnapshot(summaryOf(s))}`, 'pp-link pp-history-row'), `snapshot-${i}`);
         el.title = 'Open the snapshot, read-only';
         el.onclick = () => void openSnapshotDialog(s.id).catch((e) => grok.shell.error(e?.message ?? String(e)));
-        return el;
+        return divH([el, this.provenanceLink('snapshot', s.id, `provenance-snapshot-${i}`)], 'pp-unit');
       })), 'program-snapshots') : named(span('No snapshots yet', 'pp-muted'), 'no-snapshots'),
     ];
   }
@@ -982,6 +987,26 @@ export class PortalView {
       ...rows,
       named(divH([link, add], 'pp-actions pp-role-form'), 'evidence-link'),
     ], 'pp-evidence-picker'), 'decision-evidence');
+  }
+
+  /** Opens the provenance of a portal object; a program node in it opens on this page. */
+  provenance(kind: string, id: string): void {
+    void openProvenanceDialog(kind, id, {openProgram: async (programId) => {
+      const p = await portalDb.programs.get(programId);
+      await this.showProgram((await portalDb.portfolios.get(p.portfolio_id)).code, programId);
+    }})
+      .catch((e) => grok.shell.error(e?.message ?? String(e)));
+  }
+
+  /** A small Provenance link beside a row. */
+  private provenanceLink(kind: string, id: string, name: string): HTMLElement {
+    const el = named(span('Provenance', 'pp-link pp-gap'), name);
+    el.title = 'What this rests on, and what rests on it';
+    el.onclick = (e) => {
+      e.stopPropagation();
+      this.provenance(kind, id);
+    };
+    return el;
   }
 
   /** One piece of a decision's evidence: what it is, and a click to open it. A target that is gone

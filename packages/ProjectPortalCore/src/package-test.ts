@@ -25,6 +25,7 @@ import './tests/program-role-tests';
 import './tests/evidence-tests';
 import './tests/snapshot-tests';
 import './tests/document-tests';
+import './tests/provenance-tests';
 
 export let _package = new DG.Package();
 export { tests };
