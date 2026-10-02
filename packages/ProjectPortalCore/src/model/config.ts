@@ -11,6 +11,7 @@ import {AttentionRule, validateAttentionRules} from './attention';
 import {validateSchedule} from './sync-runs';
 import {AutoAdvanceConfig, validateAutoAdvance} from './auto-advance';
 import {PersonaConfig, validatePersonas} from './personas';
+import {DocumentKindConfig, validateDocumentKinds} from './documents';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -120,6 +121,9 @@ export interface PortfolioConfig {
   /** Quick actions per persona (F-08): groups mapped to personas, a default persona, and the cards
    * each persona gets. Optional: without it every persona gets the core's cards. */
   personas?: PersonaConfig;
+  /** The kinds of document the portfolio's programs hold (F-27). Optional: without it, one kind per
+   * document criterion of the stage model, and `other`. */
+  documentKinds?: DocumentKindConfig[];
   stageModel: StageModelConfig;
   feeds: FeedConfig[];
 }
@@ -202,6 +206,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
   errors.push(...validateAttentionRules(c.attention));
   errors.push(...validateSchedule(c.schedule, c.owners));
   errors.push(...validatePersonas(c.personas));
+  errors.push(...validateDocumentKinds(c.documentKinds));
   errors.push(...validateAutoAdvance(c.autoAdvance, c.stageAuthority, (c.stageModel?.stages ?? []).map((s) => s.code)));
   if ((c.attention ?? []).length > 0 && !c.programData)
     errors.push(`${c.attention!.length} attention rules are declared but the portfolio has no programData to evaluate them over`);

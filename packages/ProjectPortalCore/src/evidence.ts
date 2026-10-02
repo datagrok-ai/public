@@ -15,6 +15,9 @@ import {Readiness} from './model/readiness';
 // snapshots.ts imports from here too; the cycle is safe because neither uses the other at load
 import {summaryOf} from './snapshots';
 import {snapshotEvidence} from './model/snapshots';
+// documents.ts imports from here too; the cycle is safe because neither uses the other at load
+import {documentsOf, toRef} from './documents';
+import {documentEvidence} from './model/documents';
 
 const inList = (ids: string[]) => ids.map((id) => `"${id}"`).join(', ');
 
@@ -52,7 +55,17 @@ export async function selectedRunsOf(programId: string): Promise<SelectedRun[]> 
  * for its criteria. */
 export async function suggestedEvidence(programId: string, readiness: Readiness | null, stageName: string):
   Promise<EvidenceItem[]> {
-  return suggestEvidence(readiness, stageName, await selectedRunsOf(programId).catch(() => []));
+  return [...suggestEvidence(readiness, stageName, await selectedRunsOf(programId).catch(() => [])),
+    ...await approvedDocuments(programId, readiness).catch(() => [])];
+}
+
+/** The approved documents that answer the gate's criteria (F-27), as evidence. */
+async function approvedDocuments(programId: string, readiness: Readiness | null): Promise<EvidenceItem[]> {
+  const criteria = new Map((readiness?.criteria ?? []).map((c) => [c.id, c.code]));
+  if (!criteria.size)
+    return [];
+  return (await documentsOf(programId)).filter((d) => d.status === 'approved' && criteria.has(d.gate_criterion_id ?? ''))
+    .map((d) => documentEvidence(toRef(d), criteria.get(d.gate_criterion_id!)));
 }
 
 /** Writes [items] beside the gate-log entry [transitionId]. Every item is checked first; one that
@@ -103,7 +116,15 @@ export async function currentNames(rows: EvidenceRow[]): Promise<Map<string, str
     if (found)
       for (const r of snapshots) out.set(r.id, found.find((x) => x.id === r.target)?.label ?? null);
   }
-  for (const r of of('file')) {
+  // a document is looked up by its record: its title now, or gone
+  const docs = of('file').filter((r) => (r.context as any)?.document);
+  if (docs.length) {
+    const found = await portalDb.documents.query({filter: `id in (${inList([...new Set(docs.map((r) => String((r.context as any).document)))])})`})
+      .catch(() => null);
+    if (found)
+      for (const r of docs) out.set(r.id, found.find((x) => x.id === (r.context as any).document)?.title ?? null);
+  }
+  for (const r of of('file').filter((x) => !(x.context as any)?.document)) {
     const exists = await grok.dapi.files.exists(r.target).catch(() => undefined);
     if (exists !== undefined)
       out.set(r.id, exists ? r.name : null);
@@ -194,6 +215,12 @@ export async function evidenceItemFor(program: ProgramRow, kind: EvidenceKind, t
   switch (kind) {
   case 'url':
   case 'file': {
+    // a document of the program, by its id or its file
+    const doc = kind === 'file' ? (await documentsOf(program.id)).find((d) => d.id === t || d.path === t) : undefined;
+    if (doc) {
+      const item = documentEvidence(toRef(doc));
+      return {...item, name: name?.trim() || item.name};
+    }
     const item = linkEvidence(t);
     if (item.kind !== kind)
       throw new Error(kind === 'url' ? `"${t}" is not an http(s) address` : `"${t}" is an address; add it as url`);

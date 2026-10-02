@@ -77,6 +77,8 @@ export type EvidenceKind = 'model_run' | 'snapshot' | 'file' | 'url' | 'criterio
 
 export type EvidenceRole = 'readiness' | 'supporting';
 
+export type DocumentStatus = 'draft' | 'approved' | 'superseded';
+
 /** Row of `portal.stage_model`. */
 export interface StageModelRow {
   id: string;
@@ -206,6 +208,7 @@ export type GateCriterionExpand = {
     'stage_id.is_terminal'?: boolean; 'stage_id.governance'?: string; 'stage_id.aliases'?: string[];
     'stage_id.spellings'?: string; 'stage_id.folders'?: string; 'stage_id.description'?: string};
   'details:criterion_status': {criterion_status?: CriterionStatusRow[]};
+  'details:document': {document?: DocumentRow[]};
 };
 
 /** Row of `portal.portfolio`. */
@@ -234,6 +237,7 @@ export interface PortfolioRow {
   handoff?: {[key: string]: any};
   auto_advance?: {[key: string]: any};
   personas?: {[key: string]: any};
+  document_kinds?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -261,6 +265,7 @@ export interface PortfolioInsert {
   handoff?: {[key: string]: any};
   auto_advance?: {[key: string]: any};
   personas?: {[key: string]: any};
+  document_kinds?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -270,7 +275,8 @@ export interface PortfolioInsert {
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
   'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' | 'attention' | 'schedule' |
-  'owners' | 'handoff' | 'auto_advance' | 'personas' | 'viewers' | 'contributors' | 'approvers' | 'description';
+  'owners' | 'handoff' | 'auto_advance' | 'personas' | 'document_kinds' | 'viewers' | 'contributors' | 'approvers' |
+  'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -331,8 +337,8 @@ export type RegistryFeedExpand = {
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
     'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -397,8 +403,8 @@ export type ProgramExpand = {
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
     'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -431,6 +437,7 @@ export type ProgramExpand = {
   'details:program_role': {program_role?: ProgramRoleRow[]};
   'details:evidence': {evidence?: EvidenceRow[]};
   'details:program_snapshot': {program_snapshot?: ProgramSnapshotRow[]};
+  'details:document': {document?: DocumentRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -1304,8 +1311,8 @@ export type SyncRunExpand = {
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
     'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'run_by': {'run_by.login'?: string; 'run_by.firstName'?: string; 'run_by.lastName'?: string;
     'run_by.status'?: string; 'run_by.createdOn'?: Dayjs; 'run_by.picture'?: string; 'run_by.group'?: string;
     'run_by.author'?: string};
@@ -1569,6 +1576,75 @@ export type ProgramSnapshotExpand = {
     'taken_by.author'?: string};
 };
 
+/** Row of `portal.document`. */
+export interface DocumentRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  gate_criterion_id?: string;
+  kind: string;
+  title: string;
+  doc_version?: string;
+  status: DocumentStatus;
+  path: string;
+  folder?: string;
+  written_by?: string;
+  linked_by?: string;
+  linked_on?: Dayjs;
+  approved_by?: string;
+  approved_on?: Dayjs;
+  note?: string;
+}
+
+/** Insert payload for `portal.document`. */
+export interface DocumentInsert {
+  program_id: string;
+  gate_criterion_id?: string;
+  kind: string;
+  title: string;
+  doc_version?: string;
+  status: DocumentStatus;
+  path: string;
+  folder?: string;
+  written_by?: string;
+  linked_by?: string;
+  linked_on?: Dayjs | string;
+  approved_by?: string;
+  approved_on?: Dayjs | string;
+  note?: string;
+}
+
+export type DocumentColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'gate_criterion_id' | 'kind' | 'title' | 'doc_version' | 'status' | 'path' | 'folder' | 'written_by' |
+  'linked_by' | 'linked_on' | 'approved_by' | 'approved_on' | 'note';
+
+/** Expand keys of `portal.document` → fields each adds to the row (consumed by query()/builder). */
+export type DocumentExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'gate_criterion_id': {'gate_criterion_id.stage_id'?: string; 'gate_criterion_id.code'?: string;
+    'gate_criterion_id.name'?: string; 'gate_criterion_id.kind'?: GateCriterionKind;
+    'gate_criterion_id.rule'?: string; 'gate_criterion_id.condition'?: {[key: string]: any};
+    'gate_criterion_id.required'?: boolean; 'gate_criterion_id.modality'?: string;
+    'gate_criterion_id.artifact'?: GateCriterionArtifact; 'gate_criterion_id.run_filter'?: {[key: string]: any}};
+  'written_by': {'written_by.login'?: string; 'written_by.firstName'?: string; 'written_by.lastName'?: string;
+    'written_by.status'?: string; 'written_by.createdOn'?: Dayjs; 'written_by.picture'?: string;
+    'written_by.group'?: string; 'written_by.author'?: string};
+  'linked_by': {'linked_by.login'?: string; 'linked_by.firstName'?: string; 'linked_by.lastName'?: string;
+    'linked_by.status'?: string; 'linked_by.createdOn'?: Dayjs; 'linked_by.picture'?: string;
+    'linked_by.group'?: string; 'linked_by.author'?: string};
+  'approved_by': {'approved_by.login'?: string; 'approved_by.firstName'?: string; 'approved_by.lastName'?: string;
+    'approved_by.status'?: string; 'approved_by.createdOn'?: Dayjs; 'approved_by.picture'?: string;
+    'approved_by.group'?: string; 'approved_by.author'?: string};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -1659,7 +1735,10 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'evidence'; id: string} |
   {op: 'insert'; table: 'program_snapshot'; ref?: string; values: DG.DomainTxValues<ProgramSnapshotInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'program_snapshot'; id: string; values: DG.DomainTxValues<Partial<ProgramSnapshotRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'program_snapshot'; id: string};
+  {op: 'delete'; table: 'program_snapshot'; id: string} |
+  {op: 'insert'; table: 'document'; ref?: string; values: DG.DomainTxValues<DocumentInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'document'; id: string; values: DG.DomainTxValues<Partial<DocumentRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'document'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -1752,6 +1831,9 @@ export const portalDb = {
   },
   get programSnapshots() {
     return grok.dapi.domains.table<ProgramSnapshotRow, ProgramSnapshotInsert, ProgramSnapshotColumn, ProgramSnapshotExpand>('portal.program_snapshot');
+  },
+  get documents() {
+    return grok.dapi.domains.table<DocumentRow, DocumentInsert, DocumentColumn, DocumentExpand>('portal.document');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

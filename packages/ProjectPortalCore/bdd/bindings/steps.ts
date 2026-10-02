@@ -304,3 +304,15 @@ export const noProgramRole = Given('{string} has no role on {string} in the {str
       await noRole(page, login, program, portfolio);
     });
   }, {tier: 'api', description: 'removes the user\'s program role through setProgramRole, now and at the end of the feature'});
+
+export const scratchFolderFile = Given('a file {string} in the folder of the scratch project {string} in the {string} portfolio',
+  async (page: Page, name: string, code: string, portfolio: string) => {
+    silent(page);
+    await page.evaluate(async ([n, c, p]) => {
+      const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+      const pr = (await grok.dapi.domains.table('portal.program').query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`}))[0];
+      if (!pr?.space_id)
+        throw new Error(`${c} has no workspace folder`);
+      await grok.dapi.spaces.id(pr.space_id).files.writeString(n, `# ${n}\n\nWritten by a BDD scenario; removed with the scratch project.\n`);
+    }, [name, code, portfolio]);
+  }, {tier: 'api', description: 'a small text file in the scratch program\'s workspace folder; the scratch cleanup removes the folder'});

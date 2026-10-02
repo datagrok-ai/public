@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, portfolioByCode} from './portal';
+import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, portfolioByCode, programContext} from './portal';
 import {portalDb} from './generated/db';
 import {buildPortfolioWorkspace, summarizeWorkspace, workspaceOrphans as orphansOf} from './workspace';
 import {summarizeReadiness} from './model/readiness';
@@ -32,6 +32,8 @@ import {ProgramRole} from './model/program-roles';
 import {addEvidenceTo, decisionEvidenceFrame, evidenceItemFor, summarizeAdded} from './evidence';
 import {EvidenceKind} from './model/evidence';
 import {describeSnapshotRow, snapshotsFrame, snapshotsOf, takeSnapshot} from './snapshots';
+import {documentsFrame, documentsOf, linkDocumentTo, loadExampleDocuments as loadExamples} from './documents';
+import {describeDocument} from './model/documents';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -270,6 +272,45 @@ export async function snapshotProgram(portfolio: string, program: string, label?
 export async function programSnapshots(portfolio: string, program: string): Promise<DG.DataFrame> {
   const p = await programByCode(portfolio, program);
   return snapshotsFrame(await snapshotsOf(p.id), `${p.code} · Snapshots`);
+}
+
+//name: programDocuments
+//description: A program's documents: the criterion each answers, kind, title, version, status, the file's path
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function programDocuments(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  const ctx = await programContext(p.id);
+  return documentsFrame(await documentsOf(p.id), ctx.criteria, `${p.code} · Documents`);
+}
+
+//name: linkDocument
+//description: Links a file to a program as a document, or changes the document over that file. Approving meets the document criterion it answers, unless waived, and supersedes the older approved version. Contributors link drafts; approvers approve
+//input: string portfolio
+//input: string program
+//input: string path {description: The file's full path: System:AppData/..., or a file in the program's folder}
+//input: string criterion {optional: true; description: The document criterion it answers, by code}
+//input: string kind {optional: true; description: From the portfolio's document kinds; default: the criterion's}
+//input: string title {optional: true}
+//input: string version {optional: true}
+//input: string status {optional: true; choices: ["draft", "approved", "superseded"]; description: Default: draft, or the document's status now}
+//output: string report
+export async function linkDocument(portfolio: string, program: string, path: string, criterion?: string, kind?: string,
+  title?: string, version?: string, status?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const r = await linkDocumentTo(p, {path, criterion: criterion || null, kind: kind || undefined, title: title || undefined,
+    version: version || undefined, status: (status || undefined) as any});
+  return [`${p.code}: ${describeDocument({title: r.document.title, version: r.document.doc_version, status: r.document.status as any})} ` +
+    `${r.created ? 'linked' : 'changed'}` + (r.criterion ? `; ${r.criterion.code} ${r.criterion.state}` : '') +
+    (r.superseded ? `; ${r.superseded} older version(s) superseded` : ''), ...r.notes.map((n) => `  ${n}`)].join('\n');
+}
+
+//name: loadExampleDocuments
+//description: Links the example documents the package ships to the EX-BIOC programs they name. EX-* portfolios only; idempotent
+//output: string report
+export async function loadExampleDocuments(): Promise<string> {
+  return loadExamples(_package);
 }
 
 //name: loadPortfolios

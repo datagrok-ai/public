@@ -326,6 +326,19 @@ saw, not at what the data says today.
 - **Taking one.** **Snapshot now** on the program page (*Snapshots*, behind More in Simple mode), `snapshotProgram(portfolio, program, label, note)`, or **Snapshot now** in the gate panel when deciding: taken before the decision changes anything and attached as evidence. Contributors and approvers of the portfolio or the program.
 - **Reading one.** Each snapshot on the program page, and each snapshot in a decision's evidence, opens read-only: stage, criteria, runs, the table's state, and **Open table**, a table view with editing off. `programSnapshots(portfolio, program)` lists them.
 
+### Documents
+
+A document is a record over one file (F-27, FR-70), so a gate's document criteria point at real
+files with a version and a status, not at a tick.
+
+- **What it holds.** `document`: the file's full path as the platform reads it (`System:AppData/...`, or a file of the program's workspace folder, `Space:Program:Files/name`), the folder when it is the program's, its kind, title, version, status (`draft`, `approved`, `superseded`), who wrote and linked it and when, who approved it and when, and the document criterion it answers.
+- **Kinds** come from the portfolio's optional `documentKinds` (`[{code, name, description}]`). Without it, each document criterion's code is a kind. `other` is always there.
+- **Approval meets the criterion.** Approving a document meets the criterion it answers unless the criterion was waived, the same way selecting a run does. A draft puts a criterion that was not started in progress. Approving a newer version supersedes the older approved document of the same kind and criterion. A superseded or withdrawn document never un-meets a criterion. Contributors and approvers link drafts; only approvers approve.
+- **Document cards** on the program page (*Documents*): one per document criterion of the current gate (the program's stage) and the next, each with its state, its documents (approved first, newest version first; each opens: text in a dialog, CSV as a table, anything else downloads), what is missing, the run selected for the criterion, and the decisions that cite one of its documents. **Link document…** picks a file of the program folder, takes a path, or uploads a file into the folder; a file of the same name is never overwritten. Documents no card shows (no criterion, or another stage's) follow the cards.
+- **As evidence.** A document is evidence of kind `file`, its path the target and its record in the context. The gate panel suggests the approved documents of the gate's criteria, ticked; `addEvidence` takes a document by id or path; the history finds a document by its record (renamed, gone).
+- **Functions.** `programDocuments(portfolio, program)` lists a program's documents; `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` links a file or changes the document over it. `loadExampleDocuments()` links the synthetic EX-BIOC documents in `files/documents/` (EX-* portfolios only).
+- `document` is master-secured through the program, like the gate log.
+
 ### Stage advance driven by data
 
 Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
@@ -436,6 +449,9 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `decisionEvidence(portfolio, program, decision)` | The program's gate decisions with their evidence, one row per piece, and whether each target is live, renamed or gone |
 | `snapshotProgram(portfolio, program, label, note)` | Freezes the program now: stage, criteria, selected runs, and the program dataset as a file in its workspace folder |
 | `programSnapshots(portfolio, program)` | The program's snapshots, newest first |
+| `programDocuments(portfolio, program)` | The program's documents: criterion, kind, title, version, status, path |
+| `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` | Links a file as a document of the program, or changes the document over it; approving meets its criterion unless waived |
+| `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
 | `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |
@@ -483,6 +499,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Modes and personas: the rules (the persona from groups, default and setting; cards from the defaults, the portfolio and functions; the config check; what Simple hides), and on EXS-KIN1 the settings remembered, the program page's cards for a chemist and a modeler, Simple with More and back, and a function card that opens a table.
   - Decisions with evidence: the rules (what an item needs, a typed link, readiness as evidence, the suggestion, renamed and gone targets), and on EX-SMD a scratch program advanced with its readiness, with an explicit list and a refused item, a run added later then renamed and deleted, the gate panel attaching a link, and an advance by data with its readiness evidence.
   - Program snapshots: the rules (criteria frozen in stage order, recorded or evaluated; the file name; the table check; the summary), and on EX-SMD a snapshot of EXS-KIN1 with its SAR table in the program folder, read back intact and then noticed changed, the functions and the dialog, and a decision that takes a snapshot of a program without a workspace.
+  - Documents: the rules (the vocabulary, what a document needs, who may link and approve, what a status does to the criterion, superseding, order, the cards, a document as evidence, the config check), and on EX-BIOC the example documents and EXB-201's card, a scratch project's draft, approval, a newer version, a waived criterion, the refusals and the functions, and a file uploaded into EXB-201's folder.
   - Program roles: the rules (the strongest role, roles only add, who may change them, grants and what changes), and on EXS-KIN1 a throwaway user made viewer, contributor and approver (access in the app, the folder's grant, the folder seen as that user), a downgrade, removal; a non-approver refused; the functions.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
@@ -492,7 +509,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 231 of the 234 package tests and all 27 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 240 of the 243 package tests and all 28 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

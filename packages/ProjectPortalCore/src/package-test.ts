@@ -24,6 +24,7 @@ import './tests/persona-tests';
 import './tests/program-role-tests';
 import './tests/evidence-tests';
 import './tests/snapshot-tests';
+import './tests/document-tests';
 
 export let _package = new DG.Package();
 export { tests };

@@ -19,6 +19,12 @@
     "default": "process_scientist",
     "groups": [{"group": "Portal EX-BIOC Approvers", "persona": "lead"}]
   },
+  "documentKinds": [
+    {"code": "transfer_package", "name": "Technology transfer package"},
+    {"code": "ind_quality", "name": "IND quality module", "description": "Example: the quality part of a first-in-human filing"},
+    {"code": "process_description", "name": "Process description"},
+    {"code": "development_report", "name": "Development report"}
+  ],
   "workUnits": ["study", "process_stage"],
   "workUnitFeeds": [
     {

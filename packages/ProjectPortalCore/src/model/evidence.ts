@@ -121,13 +121,15 @@ export function targetState(kind: EvidenceKind, frozenName: string, current: str
   return current === frozenName ? 'live' : 'renamed';
 }
 
-/** One line for the history: `Run: Titer at 3% feed (renamed: Titer v2)`, `Criterion: Assay ready, met`. */
+/** One line for the history: `Run: Titer at 3% feed (renamed: Titer v2)`, `Criterion: Assay ready, met`,
+ * `File: Process description · v1.0 approved` for a document. */
 export function describeEvidence(e: {kind: EvidenceKind, name: string, context?: Record<string, any> | null},
   state: TargetState = 'live', current?: string | null): string {
   const c = e.context ?? {};
   const detail = e.kind === 'criterion' ? [String(c.state ?? '').replace(/_/g, ' '), c.summary].filter((x) => x).join(': ') :
     e.kind === 'model_run' ? [c.criterion ? `for ${c.criterion}` : '', c.model].filter((x) => x).join(', ') :
-      e.kind === 'snapshot' ? String(c.takenOn ?? '').slice(0, 16).replace('T', ' ') : '';
+      e.kind === 'snapshot' ? String(c.takenOn ?? '').slice(0, 16).replace('T', ' ') :
+        e.kind === 'file' && c.document ? [c.version ? `v${c.version}` : '', c.status].filter((x) => x).join(' ') : '';
   const tail = state === 'gone' ? ' (gone; as recorded)' : state === 'renamed' ? ` (now ${current})` : '';
   return `${EVIDENCE_LABELS[e.kind]}: ${e.name}${detail ? ` · ${detail}` : ''}${tail}`;
 }

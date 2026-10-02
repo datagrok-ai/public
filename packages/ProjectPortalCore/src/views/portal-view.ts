@@ -47,6 +47,11 @@ import {snapshotsOf, summaryOf, takeSnapshot} from '../snapshots';
 import {describeSnapshot} from '../model/snapshots';
 import {ProgramSnapshotRow} from '../generated/db';
 import {EVIDENCE_LABELS, EvidenceItem, evidenceKey, linkEvidence, validateEvidence} from '../model/evidence';
+import {documentCardsOf, documentsOf, setDocumentStatus, vocabularyOf} from '../documents';
+import {describeDocument, DocumentCard, DocumentStatus} from '../model/documents';
+import {DocumentRow} from '../generated/db';
+import {openDocumentFile, openLinkDocumentDialog} from './document-dialog';
+import {programAccess} from '../program-roles';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -288,12 +293,16 @@ export class PortalView {
     this.follows = follows;
     this.roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
     const snapshots = await snapshotsOf(id).catch(() => [] as ProgramSnapshotRow[]);
+    // documents: the cards of the current and next gate's document criteria, and the rest
+    const docRows = await documentsOf(id).catch(() => [] as DocumentRow[]);
+    const documents = {rows: docRows, cards: await documentCardsOf(ctx, docRows).catch(() => [] as DocumentCard[]),
+      contributor: (await programAccess(ctx.portfolio, id).catch(() => null))?.contributor ?? false};
     // the evidence behind each decision, and what the next one would rest on
     const evidence = await evidenceOf(id).catch(() => new Map<string, EvidenceLine[]>());
     const suggested = ctx.approver && ctx.portfolio.stage_authority === 'portal' ? await suggestedEvidence(id, ctx.readiness,
       ctx.stages.find((s) => s.id === ctx.readiness?.stageId)?.name ?? '').catch(() => []) : [];
     this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
-      choices, attention, recommendation, news, {lines: evidence, suggested}, snapshots);
+      choices, attention, recommendation, news, {lines: evidence, suggested}, snapshots, documents);
     this.redraw();
   }
 
@@ -379,7 +388,8 @@ export class PortalView {
     choices = new Map<string, CriterionRuns>(), attention: {result: ProgramAttention | null, error?: string} | null = null,
     recommendation: ProgramRecommendation | null = null, news: {since: string | null, lines: string[]} | null = null,
     evidence: {lines: Map<string, EvidenceLine[]>, suggested: EvidenceItem[]} = {lines: new Map(), suggested: []},
-    snapshots: ProgramSnapshotRow[] = []): void {
+    snapshots: ProgramSnapshotRow[] = [],
+    documents: {rows: DocumentRow[], cards: DocumentCard[], contributor: boolean} = {rows: [], cards: [], contributor: false}): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -530,6 +540,7 @@ export class PortalView {
       rationale,
       ...(picker ? [picker] : []),
       divH([advance, hold, terminate], 'pp-actions'),
+      ...(documents.cards.length || documents.rows.length ? this.documents(ctx, documents) : []),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
       ...(more ? [divH([more], 'pp-actions')] : []),
@@ -833,6 +844,63 @@ export class PortalView {
     ]), `criterion-run-${slug(c.code)}`);
   }
 
+  /** One card per document criterion of the current and the next gate: its state, the documents
+   * over it (each opens; a draft has Approve for approvers), what is missing, the run selected for
+   * it and the decisions that cite it; Link document adds one. Documents no card shows follow. */
+  private documents(ctx: ProgramContext, d: {rows: DocumentRow[], cards: DocumentCard[], contributor: boolean}): HTMLElement[] {
+    const {program} = ctx;
+    const canLink = ctx.approver || d.contributor;
+    const vocabulary = vocabularyOf(ctx);
+    const failed = (e: any) => grok.shell.error(e?.message ?? String(e));
+    const reopen = () => this.openProgram(program.id, this.viewedStage);
+    const linkButton = (criterion: {id: string, code: string, name: string} | null, name: string) => {
+      const b = named(button(criterion ? 'Link document…' : 'Link a document…', () => void openLinkDocumentDialog({program,
+        criterion, vocabulary, approver: ctx.approver, onLinked: reopen}).catch(failed)), name);
+      b.disabled = !canLink;
+      b.title = canLink ? 'Link a file of the program folder or a path, or upload one, as a document' :
+        'Only contributors and approvers link documents';
+      return b;
+    };
+    const line = (row: DocumentRow, name: string) => {
+      const open = named(span(describeDocument({title: row.title, version: row.doc_version, status: row.status as DocumentStatus}),
+        row.status === 'superseded' ? 'pp-link pp-gap' : 'pp-link'), `${name}-open`);
+      open.title = row.path;
+      open.onclick = () => void openDocumentFile(row).catch(failed);
+      const items: HTMLElement[] = [open];
+      if (row.status === 'draft' && ctx.approver) {
+        const approve = named(span('Approve', 'pp-link'), `approve-${name}`);
+        approve.title = 'Approve this version: meets the criterion unless waived, supersedes the older approved one';
+        approve.onclick = () => void setDocumentStatus(program, row.id, 'approved').then(reopen).catch(failed);
+        items.push(approve);
+      }
+      return named(divH(items, 'pp-unit'), name);
+    };
+    const byId = new Map(d.rows.map((r) => [r.id, r]));
+    const variant = (s: string): BadgeVariant => s === 'met' ? 'success' : s === 'waived' ? 'accent' :
+      s === 'in_progress' ? 'warning' : s === 'not_met' ? 'error' : 'default';
+    const cards = d.cards.map((c) => {
+      const key = slug(c.code);
+      return named(divV([
+        divH([badge(c.state.replace('_', ' '), {variant: variant(c.state)}), span(`${c.name}${c.required ? '' : ' (optional)'}`),
+          span(`${c.gate === 'current' ? 'current gate' : 'next gate'} · ${c.stage}`, 'pp-muted')], 'pp-criterion'),
+        ...c.documents.map((x, i) => line(byId.get(x.id)!, `document-${key}-${i}`)),
+        ...(c.missing ? [named(span(c.missing, 'pp-gap'), `document-missing-${key}`)] : []),
+        ...(c.run ? [named(span(`Run: ${c.run}`, 'pp-gap'), `document-run-${key}`)] : []),
+        ...(c.citedBy.length ? [named(span(`Cited by: ${c.citedBy.join(', ')}`, 'pp-gap'), `document-cited-${key}`)] : []),
+        divH([linkButton({id: c.criterionId, code: c.code, name: c.name}, `link-document-${key}`)], 'pp-actions'),
+      ], 'pp-document-card'), `document-card-${key}`);
+    });
+    const shown = new Set(d.cards.flatMap((c) => c.documents.map((x) => x.id)));
+    const others = d.rows.filter((r) => !shown.has(r.id));
+    return [
+      named(span(`Documents (${d.rows.length})`, 'pp-heading'), 'documents-heading'),
+      ...(cards.length ? [named(divV(cards, 'pp-units'), 'document-cards')] : []),
+      ...(others.length ? [named(divV([span('Other documents', 'pp-muted'), ...others.map((r, i) => line(r, `other-document-${i}`))],
+        'pp-units'), 'other-documents')] : []),
+      divH([linkButton(null, 'link-other-document')], 'pp-actions'),
+    ];
+  }
+
   /** The program's snapshots, newest first, each opening read-only; Snapshot now takes one. */
   private snapshots(ctx: ProgramContext, rows: ProgramSnapshotRow[]): HTMLElement[] {
     const take = named(button('Snapshot now', async () => {
@@ -880,6 +948,9 @@ export class PortalView {
     }
     for (const e of suggested.filter((x) => x.kind === 'model_run'))
       rows.push(box(`evidence-run-${slug(String(e.context?.criterion ?? e.target))}`, `Run: ${e.name} (for ${e.context?.criterion ?? '?'})`, [evidenceKey(e)]));
+    for (const e of suggested.filter((x) => x.kind === 'file' && x.context?.document))
+      rows.push(box(`evidence-document-${slug(String(e.context?.criterion ?? e.target))}`, `Document: ${e.name}` +
+        ` (v${e.context?.version ?? '?'}, for ${e.context?.criterion ?? '?'})`, [evidenceKey(e)], e.target));
     this.picked.links.forEach((e, i) => rows.push(box(`evidence-link-${i}`, `${EVIDENCE_LABELS[e.kind]}: ${e.name}`, [evidenceKey(e)], e.target)));
     const snap = named(document.createElement('input'), 'evidence-snapshot');
     snap.type = 'checkbox';
@@ -943,7 +1014,10 @@ export class PortalView {
         await openSnapshotDialog(l.row.target);
         return;
       case 'file':
-        if (/\.(csv|tsv|txt)$/i.test(l.row.target))
+        if ((l.row.context as any)?.document)
+          await openDocumentFile({title: l.row.name, path: l.row.target, doc_version: (l.row.context as any).version,
+            status: (l.row.context as any).status});
+        else if (/\.(csv|tsv|txt)$/i.test(l.row.target))
           grok.shell.addTableView(await grok.dapi.files.readCsv(l.row.target));
         else
           recorded();

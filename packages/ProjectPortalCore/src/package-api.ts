@@ -164,6 +164,32 @@ export namespace funcs {
   }
 
   /**
+   * A program's documents: the criterion each answers, kind, title, version, status, the file's path
+   */
+  export async function programDocuments(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ProgramDocuments', { portfolio, program });
+  }
+
+  /**
+   * Links a file to a program as a document, or changes the document over that file. Approving meets the document criterion it answers, unless waived, and supersedes the older approved version. Contributors link drafts; approvers approve
+   * @param {string} path - The file's full path: System:AppData/..., or a file in the program's folder
+   * @param {string} criterion - The document criterion it answers, by code
+   * @param {string} kind - From the portfolio's document kinds
+   * @param {string} status - Default: draft, or the document's status now
+   *   choices: ["draft", "approved", "superseded"]
+   */
+  export async function linkDocument(portfolio: string , program: string , path: string , criterion?: string , kind?: string , title?: string , version?: string , status?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:LinkDocument', { portfolio, program, path, criterion, kind, title, version, status });
+  }
+
+  /**
+   * Links the example documents the package ships to the EX-BIOC programs they name. EX-* portfolios only; idempotent
+   */
+  export async function loadExampleDocuments(): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:LoadExampleDocuments', {});
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {

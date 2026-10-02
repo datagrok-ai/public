@@ -139,3 +139,14 @@ app.element('snapshot dialog', {selector: u2('snapshot-dialog')});
 app.element('snapshot stage', {selector: u2('snapshot-stage')});
 app.element('snapshot criteria', {selector: u2('snapshot-criteria')});
 app.element('snapshot table', {selector: u2('snapshot-table')});
+
+app.element('scratch docs project card', {selector: u2('program-bdd-docs')});
+app.element('documents heading', {selector: u2('documents-heading')});
+app.element('process description document card', {selector: u2('document-card-process-description')});
+app.element('link process description document button', {selector: u2('link-document-process-description')});
+app.element('link document dialog', {selector: u2('link-document-dialog')});
+app.element('document file input', {selector: u2('document-file-input')});
+app.element('document title input', {selector: u2('document-title-input')});
+app.element('document version input', {selector: u2('document-version-input')});
+app.element('link document button', {selector: u2('link-document-button')});
+app.element('approve process description document link', {selector: u2('approve-document-process-description-0')});

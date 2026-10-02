@@ -1,0 +1,14 @@
+[
+  {"portfolio": "EX-BIOC", "program": "EXB-201", "criterion": "process_description", "kind": "process_description",
+    "title": "Process description, Antibody Alpha", "version": "0.3", "status": "draft",
+    "file": "documents/ex-bioc/exb-201-process-description-v0.3.md"},
+  {"portfolio": "EX-BIOC", "program": "EXB-201", "kind": "development_report",
+    "title": "Upstream development report, Antibody Alpha", "version": "1.0", "status": "approved",
+    "file": "documents/ex-bioc/exb-201-upstream-development-report-v1.0.md"},
+  {"portfolio": "EX-BIOC", "program": "EXB-202", "criterion": "ind_quality", "kind": "ind_quality",
+    "title": "IND quality module, Bispecific Beta", "version": "0.1", "status": "draft",
+    "file": "documents/ex-bioc/exb-202-ind-quality-v0.1.md"},
+  {"portfolio": "EX-BIOC", "program": "EXB-104", "criterion": "transfer_package", "kind": "transfer_package",
+    "title": "Technology transfer package, Anti-TS antibody", "version": "1.0", "status": "approved",
+    "file": "documents/ex-bioc/exb-104-transfer-package-v1.0.md"}
+]

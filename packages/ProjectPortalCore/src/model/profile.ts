@@ -202,11 +202,12 @@ export function diffPortfolios(a: PortfolioConfig, b: PortfolioConfig): Portfoli
   deepDiff(ca.unitOperations ?? [], cb.unitOperations ?? [], 'unit operation', vocabulary);
   deepDiff(ca.runTypes ?? [], cb.runTypes ?? [], 'run type', vocabulary);
   deepDiff(ca.models ?? [], cb.models ?? [], 'model', vocabulary);
+  deepDiff(x.documentKinds ?? [], y.documentKinds ?? [], 'document kind', vocabulary);
 
   deepDiff(x.workspaceRoot, y.workspaceRoot, 'workspace root', workspace);
   deepDiff(x.workstreams ?? [], y.workstreams ?? [], 'workstreams', workspace);
 
-  const handled = ['stageModel', 'workUnits', 'seriesMaturity', 'catalogue', 'workspaceRoot', 'workstreams'];
+  const handled = ['stageModel', 'workUnits', 'seriesMaturity', 'catalogue', 'documentKinds', 'workspaceRoot', 'workstreams'];
   deepDiff(omit(x, handled), omit(y, handled), '', fields);
   // `criterion H2L/ potency` reads better as `criterion H2L/potency`
   const tidy = (ls: string[]) => ls.map((l) => l.replace(/\/ /g, '/'));

@@ -2,6 +2,13 @@
 
 ## 0.3.0 (unreleased)
 
+- Documents over files (F-27, FR-70): a `document` record over one file, in the program's workspace folder or at any file path the platform reads, with its kind, title, version, status (draft, approved, superseded), author, and the gate criterion of kind document it answers. Approving one meets that criterion unless it was waived; linking a draft puts a criterion not started in progress; a newer approved version of the same kind and criterion supersedes the older
+- Document cards on the program page (*Documents*): one per document criterion of the current and the next gate, with its state, the documents over it (each opens; a draft has **Approve** for approvers), what is missing, the run selected for it and the decisions that cite it. **Link document…** links a file of the program folder, a path, or an upload into the folder (no overwrite). Documents no card shows are listed below
+- Documents are evidence of kind `file` with the record in the context: the gate panel suggests the approved documents of its criteria, `addEvidence` takes a document by id or path, and the history looks a document up by its record
+- `programDocuments(portfolio, program)`, `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` and `loadExampleDocuments()`. Optional portfolio field `documentKinds`; without it, one kind per document criterion, and `other`. `exportPortfolio` writes it back; `diffPortfolios` reports it as vocabulary
+- EX-BIOC declares four document kinds and ships four synthetic documents (process description draft for EXB-201, an approved development report, an IND quality draft for EXB-202, an approved transfer package for EXB-104)
+- `portal` schema 0.2.20: table `document`, `portfolio.document_kinds`. Additive, no migration script
+
 - Dated program snapshot (F-32, FR-15): `snapshotProgram(portfolio, program, label, note)` freezes the program's stage and status, the state of every criterion that applies (the next gate's data conditions as evaluated), the runs selected, and the program dataset (the SAR table on EX-SMD) as a CSV file in the program's workspace folder, its SHA-256 on the record. Written once; a file changed afterwards shows as changed. Without a workspace folder the table's size and fingerprint are kept, not the table
 - The program page lists snapshots (*Snapshots*, behind More in Simple mode) with **Snapshot now**; each opens read-only: stage, criteria, runs, and the table in a view with editing off. `programSnapshots(portfolio, program)` lists them
 - A decision may take a snapshot now as evidence (**Snapshot now** in the gate panel, `snapshot` on `recordDecision`); the history's snapshot link opens it. `addEvidence` takes a snapshot by id

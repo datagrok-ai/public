@@ -102,6 +102,7 @@ export async function exportPortfolioConfig(code: string): Promise<PortfolioConf
     description: p.description, schedule: p.schedule, owners: orNull(split(p.owners)),
     autoAdvance: p.auto_advance as any,
     personas: p.personas as any,
+    documentKinds: (p.document_kinds as any)?.kinds,
     groups: Object.keys(groups).length ? groups : undefined,
     handoff: p.handoff as any,
     workUnits: orNull(split(p.work_units)) as WorkUnitKind[] | undefined,
