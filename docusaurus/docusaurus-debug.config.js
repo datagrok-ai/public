@@ -113,7 +113,7 @@ const config = {
             ({
                 docs: {
                     sidebarPath: require.resolve('./sidebars.js'),
-                    editUrl: 'https://github.com/datagrok-ai/public/tree/master/help',
+                    editUrl: 'https://github.com/datagrok-ai/help/tree/master',
                     path: '../help',
                     routeBasePath: 'help',
                     exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
