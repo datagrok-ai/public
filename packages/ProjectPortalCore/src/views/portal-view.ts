@@ -19,6 +19,8 @@ import {existingSpaces} from '../workspace';
 import {CriterionRuns, criterionRuns, SavedRunItem, savedRunsOf} from '../model-runs';
 import {describeSelection} from '../model/run-selection';
 import {openChooseRunDialog} from './choose-run-dialog';
+import {datasetsOf, openProgramTable} from '../program-data';
+import {MAIN_DATASET} from '../model/program-data';
 import {showModelCard} from './model-card';
 import {openSaveRunDialog} from './save-run-dialog';
 
@@ -292,6 +294,17 @@ export class PortalView {
       named(span(program.space_id ? 'The workspace folder is gone: rebuild it with buildWorkspace' :
         'No workspace yet: build it with buildWorkspace', 'pp-muted'), 'no-workspace');
 
+    // the program's governed data, one button per dataset the portfolio declares
+    const data = datasetsOf(ctx.portfolio).map((d) => {
+      const b = named(button(d.code === MAIN_DATASET ? 'Open data' : `Open ${d.name}`, () =>
+        void openProgramTable(ctx.portfolio.code, program.code, d.code)
+          .catch((e) => grok.shell.error(e?.message ?? String(e)))),
+      d.code === MAIN_DATASET ? 'open-data-button' : `open-dataset-${slug(d.code)}`);
+      b.title = d.code === MAIN_DATASET ? `${d.name}: this ${(ctx.portfolio.program_noun ?? 'program').toLowerCase()}'s rows as a table` :
+        d.description ?? `${d.name} of this ${(ctx.portfolio.program_noun ?? 'program').toLowerCase()} as a table`;
+      return b;
+    });
+
     const saveRun = named(button('Save a run…', () => void openSaveRunDialog({
       context: {portfolio: ctx.portfolio.code, program: program.code},
       onSaved: async (_r, line) => {
@@ -307,6 +320,7 @@ export class PortalView {
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
       workspace,
+      ...(data.length ? [named(divH(data, 'pp-actions pp-data-actions'), 'program-data-actions')] : []),
       ...(program.source_stage ? [span(`Registry stage: ${program.source_stage}`, 'pp-muted')] : []),
       ...lineage,
       track,

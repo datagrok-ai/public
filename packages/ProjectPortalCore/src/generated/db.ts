@@ -215,6 +215,7 @@ export interface PortfolioRow {
   work_units?: string;
   series_maturity?: string;
   program_data?: {[key: string]: any};
+  program_datasets?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -235,6 +236,7 @@ export interface PortfolioInsert {
   work_units?: string;
   series_maturity?: string;
   program_data?: {[key: string]: any};
+  program_datasets?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
   approvers?: string;
@@ -243,8 +245,8 @@ export interface PortfolioInsert {
 
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
-  'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'viewers' | 'contributors' | 'approvers' |
-  'description';
+  'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' | 'viewers' |
+  'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -300,8 +302,9 @@ export type RegistryFeedExpand = {
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
-    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -362,8 +365,9 @@ export type ProgramExpand = {
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
-    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
-    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};

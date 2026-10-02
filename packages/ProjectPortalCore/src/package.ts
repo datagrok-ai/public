@@ -17,6 +17,7 @@ import {loadCatalogues} from './catalogue';
 import {modelCardWidget} from './views/model-card';
 import {openSaveRunDialog} from './views/save-run-dialog';
 import {trackModelRuns} from './save-run';
+import {openProgramTable, programTable} from './program-data';
 import {span} from '@datagrok-libraries/u2';
 export * from './package.g';
 
@@ -79,6 +80,25 @@ export async function projectPortalApp(path?: string): Promise<DG.ViewBase> {
 //output: dataframe result
 export async function portfolioTable(portfolio?: string): Promise<DG.DataFrame> {
   return (await portfolioTables(portfolio || undefined)).programs;
+}
+
+//name: programData
+//description: One program's governed data as a table named after it: the portfolio's program dataset, or with dataset one of the further datasets it declares. The query runs as you, on a connection shared with you
+//input: string portfolio
+//input: string program
+//input: string dataset {optional: true; description: Dataset code; default: the program dataset}
+//output: dataframe result
+export async function programDataTable(portfolio: string, program: string, dataset?: string): Promise<DG.DataFrame> {
+  return (await programTable(portfolio, program, dataset || undefined)).df;
+}
+
+//name: openProgramData
+//description: Opens one program's governed data as a table view named after the program, with the viewers the portfolio declares or the defaults for its setting
+//input: string portfolio
+//input: string program
+//input: string dataset {optional: true; description: Dataset code; default: the program dataset}
+export async function openProgramData(portfolio: string, program: string, dataset?: string): Promise<void> {
+  await openProgramTable(portfolio, program, dataset || undefined);
 }
 
 //name: loadPortfolios

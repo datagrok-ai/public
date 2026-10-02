@@ -4,6 +4,7 @@
  * them qualify, which columns must be measured, and how many must qualify. Pure: the caller runs
  * the program dataset query and hands the rows in, so the same rule is checked in a test, in the
  * gate panel and before a decision is recorded. */
+import type {DatasetViewer} from './program-data';
 
 export type ConditionScope = 'program' | 'lead_set' | 'series';
 export type ConditionOp = '<' | '<=' | '>' | '>=' | '=' | '!=' | 'in' | 'not_in' | 'present' | 'absent';
@@ -37,6 +38,10 @@ export interface ProgramDataConfig {
   sql: string;
   /** Values of the `role` column that make a row part of the lead set. */
   leadRoles?: string[];
+  /** What the program page calls it ("SAR table"); default "Program data". */
+  name?: string;
+  /** Viewers to open it with; default: by the portfolio's setting and the columns. */
+  viewers?: DatasetViewer[];
 }
 
 export const DEFAULT_LEAD_ROLES = ['lead', 'backup', 'candidate'];

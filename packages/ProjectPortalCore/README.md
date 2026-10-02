@@ -168,6 +168,25 @@ A portfolio file declares its model catalogue under `catalogue` (F-12, FR-50):
 The example catalogue (EX-BIOC) declares five unit operations, three run types and `FedBatchTiter`
 with a draft card. The codes carry the `EX-` prefix because unit operations and run types are global.
 
+### Program data
+
+Each portfolio declares its program dataset, `programData`: one SQL on a named connection, with
+`@program` for the program's code (F-09). Data conditions are evaluated over it, and the program
+page opens it with **Open data** as a table view named after the program (`EXS-KIN1 · Kinase
+inhibitor`). A portfolio may name it and further datasets beside it:
+
+```json
+"programData": {"name": "SAR table", "connection": "System:Datagrok", "sql": "... WHERE program = @program"},
+"programDatasets": [{"code": "assays", "name": "Assay results", "connection": "System:Datagrok",
+  "sql": "... WHERE program = @program",
+  "viewers": [{"type": "Box plot", "options": {"categoryColumnNames": ["assay"], "valueColumnName": "value"}}]}]
+```
+
+- **One button per dataset:** *Open data* for the program dataset, *Open Assay results* for a further one.
+- **Viewers** are the platform's, with its property names. Without any, the defaults follow the portfolio's setting. Discovery: a scatter plot of the first two numeric columns, coloured by the first category, and a histogram. Development: a bar chart over the first category, and a histogram. The program column is never used. A viewer naming a column the table lacks is skipped.
+- **Governed:** the query runs as the user on a connection shared with them, and the program is read under row security first.
+- `programData(portfolio, program, dataset)` returns the table; `openProgramData(portfolio, program, dataset)` opens it.
+
 ### Choosing the run a criterion rests on
 
 A criterion can rest on a model run (F-15). It says so in the portfolio file:
@@ -241,6 +260,8 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `loadPortfolios` | Loads this package's portfolio files: groups, stage models, portfolios, feeds. Idempotent. |
 | `loadPortfolioConfigs(configs)` | Loads portfolios handed over by another package, as a JSON array, checked as a set |
 | `portfolioTable(portfolio)` | The programs of a portfolio, or without one of every portfolio you can see, as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace |
+| `programData(portfolio, program, dataset)` | One program's rows of the program dataset, or of a further dataset by code, as a table named after the program |
+| `openProgramData(portfolio, program, dataset)` | Opens that table as a table view with the portfolio's viewers |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
@@ -269,12 +290,13 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
   - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
+  - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, and a run saved with the catalogue's codes.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 134 of the 137 package tests and all 15 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 142 of the 145 package tests and all 17 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- Program data one click away (F-09): the program page's **Open data** opens the portfolio's program dataset for the program as a table view named after it, with the viewers the portfolio declares or the defaults for its setting (discovery: two measures plotted against each other, coloured by the first category, and a histogram; development: a bar chart over the first category, and a histogram). `programData(portfolio, program, dataset)` returns the table; `openProgramData(...)` opens it. The query runs as the user, on a connection shared with them
+- `programData` takes an optional `name` and `viewers`; a portfolio may declare further datasets per program (`programDatasets`: code, name, connection, SQL with `@program`, viewers), each with its own button
+- `portal` schema 0.2.9: `portfolio.program_datasets`. Additive, no migration script
+- EX-SMD calls its program dataset the SAR table and declares Assay results beside it
 - Choose the run a criterion rests on (F-15): a criterion may declare `artifact: "model_run"` and a `runFilter` (unit operations, run types, models by code). The gate panel shows the run selected for it and the ones it superseded, and **Choose run…** opens a dialog over the program's runs the filter admits: tick two or more to see their inputs and outputs side by side (what differs in bold), pick one, say why. `selectRunForCriterion` keeps its behaviour (a later run supersedes; the criterion is met unless waived) and now refuses a user who is neither contributor nor approver, a program that has ended, and a blank rationale. `criterionRuns` and `runComparison` return what the panel and the dialog show
 - `portal` schema 0.2.8: `gate_criterion.artifact`, `gate_criterion.run_filter`. Additive, no migration script
 - EX-BIOC: D5 `process_description` rests on a production bioreactor run (`EX-PROD`)

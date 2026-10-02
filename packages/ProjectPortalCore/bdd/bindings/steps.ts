@@ -200,3 +200,28 @@ export const titledRunSaved = Given('a run of the example model at feed rate {in
         unitOperation: 'EX-PROD', runType: 'EX-SIM', purpose: 'characterization', title: t});
     }, [feedRate, title, code, portfolio] as const);
   }, {tier: 'api', description: 'runs Fed-batch titer (example) at that feed rate and saves it to the program under that title'});
+
+/** The current table view's table: its row count and name. */
+const openTable = (page: Page) => page.evaluate(() => {
+  const df = grok.shell.tv?.dataFrame;
+  return df ? {rows: df.rowCount as number, name: df.name as string} : null;
+});
+
+export const openTableStarting = Then('the open table should have {int} rows and a name starting with {string}',
+  async (page: Page, rows: number, head: string) => {
+    await expect.poll(() => openTable(page).then((t) => t && t.name.startsWith(head) ? t.rows : t?.name ?? 'no table view'),
+      {message: `a table view of ${rows} rows named ${head}…`}).toBe(rows);
+  }, {description: 'the table of the current table view'});
+
+export const openTableEnding = Then('the open table should have {int} rows and a name ending with {string}',
+  async (page: Page, rows: number, tail: string) => {
+    await expect.poll(() => openTable(page).then((t) => t && t.name.endsWith(tail) ? t.rows : t?.name ?? 'no table view'),
+      {message: `a table view of ${rows} rows named …${tail}`}).toBe(rows);
+  }, {description: 'the table of the current table view'});
+
+export const openTableViewers = Then('the open table should show the viewer types {string}', async (page: Page, types: string) => {
+  const expected = types.split(',').map((s) => s.trim());
+  await expect.poll(() => page.evaluate(() => Array.from(grok.shell.tv?.viewers ?? []).map((v: any) => v.type))
+    .then((shown: string[]) => expected.filter((t) => !shown.includes(t))),
+  {message: 'viewer types not in the current table view'}).toEqual([]);
+}, {description: 'every viewer type is in the current table view, besides its grid'});

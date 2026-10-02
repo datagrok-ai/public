@@ -42,6 +42,7 @@ const CSS = `
 .pp-criterion { gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; }
 .pp-reason { color: var(--u2-error, #c0392b); font-size: 12px; }
 .pp-actions { gap: 6px; }
+.pp-data-actions { flex-wrap: wrap; }
 .pp-history-row, .pp-lineage { font-size: 12px; }
 .pp-detail textarea { width: 100%; box-sizing: border-box; }
 /* a long gate panel scrolls; its rows must not shrink (the rationale box collapsed to a line) */

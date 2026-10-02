@@ -77,3 +77,6 @@ app.element('run comparison', {selector: u2('run-comparison')});
 app.element('selected run input', {selector: u2('selected-run-input')});
 app.element('selection rationale input', {selector: u2('selection-rationale-input')});
 app.element('select run button', {selector: u2('select-run-button')});
+
+app.element('open data button', {selector: u2('open-data-button')});
+app.element('open assay results button', {selector: u2('open-dataset-assays')});

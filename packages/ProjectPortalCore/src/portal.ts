@@ -168,6 +168,8 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     stage_authority: c.stageAuthority, program_noun: c.programNoun ?? 'Program',
     workspace_root: c.workspaceRoot ?? null, workstreams: (c.workstreams ?? []).join('|') || null,
     program_data: c.programData ?? null,
+    // a json column holds an object, not a list
+    program_datasets: c.programDatasets ? {datasets: c.programDatasets} : null,
     work_units: (c.workUnits ?? []).join('|') || null, series_maturity: (c.seriesMaturity ?? []).join('|') || null,
     description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,
@@ -243,11 +245,16 @@ async function findConnection(ref: string): Promise<DG.DataConnection | null> {
   return exact(all) ?? all.find((c) => c.name.toLowerCase() === ref.toLowerCase()) ?? null;
 }
 
-async function runSql(connectionName: string, sql: string): Promise<FeedRow[]> {
+/** Runs [sql] on a connection as the current user, as a dataframe. */
+export async function queryFrame(connectionName: string, sql: string): Promise<DG.DataFrame> {
   const conn = await findConnection(connectionName);
   if (!conn)
     throw new Error(`data connection "${connectionName}" is not found or not shared with you`);
-  const df: DG.DataFrame = await conn.query('portal-feed', sql).apply();
+  return await conn.query('portal-feed', sql).apply();
+}
+
+async function runSql(connectionName: string, sql: string): Promise<FeedRow[]> {
+  const df = await queryFrame(connectionName, sql);
   const rows: FeedRow[] = [];
   const cols = df.columns.toList();
   for (let i = 0; i < df.rowCount; i++) {
@@ -531,7 +538,7 @@ export async function compoundsOf(programId: string): Promise<{link: any, compou
 // Program data and readiness
 
 /** A SQL string literal: the program code goes into the portfolio's query as a quoted value. */
-const sqlLiteral = (v: string) => `'${v.replace(/'/g, '\'\'')}'`;
+export const sqlLiteral = (v: string) => `'${v.replace(/'/g, '\'\'')}'`;
 
 /** One program's rows of its portfolio's program dataset; null when the portfolio declares none. */
 export async function programData(portfolio: PortfolioRow, programCode: string): Promise<DataRow[] | null> {
