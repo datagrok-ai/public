@@ -79,6 +79,8 @@ function createWidgetHost(title: string, titleAttr?: string): HTMLDivElement {
   const host = ui.box(null, 'power-pack-widget-host');
   if (titleAttr)
     host.setAttribute('widget-title', titleAttr);
+  if (titleAttr || title)
+    host.setAttribute('name', `widget-${titleAttr || title}`);
   host.appendChild(header);
   host.appendChild(ui.box(null, 'power-pack-widget-content'));
   return host;

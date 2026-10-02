@@ -16,7 +16,6 @@ public/
 ├── tools/           # CLI tool "grok" (datagrok-tools)
 ├── python-api/      # Python API bindings
 ├── help/            # Documentation (Docusaurus)
-├── connectors/      # GrokConnect Java/Maven JDBC connectors
 ├── docker/          # Docker deployment configs
 ├── environments/    # Environment configurations
 └── misc/            # ESLint config, utilities

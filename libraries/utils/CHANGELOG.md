@@ -1,5 +1,9 @@
 # utils changelog
 
+## v.next
+
+* format-version-utils: Added `isClientAtLeast(version)`
+
 ## 4.7.10 (WIP)
 
 * `ScatterPlotLinesRenderer`: Added the automation surface — a `lines-on-scatter-plot` status provider on the scatter plot the lines are drawn onto, reporting a `line <i>` / `line <from>-<to>` hit area per line the frame actually stroked plus `lines`, `lines drawn`, `current line` and `hovered line`

@@ -282,6 +282,11 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: true,
     },
+    // the host (the workflow driver) owns values, choices, validation, visibility and enabled state
+    skipLogic: {
+      type: Boolean,
+      default: false,
+    },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
     },
@@ -822,6 +827,7 @@ export const RichFunctionView = Vue.defineComponent({
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
                     skipTableAutoFill={true}
+                    skipLogic={props.skipLogic}
                     isReadonly={isReadonly.value}
                   /> }
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>

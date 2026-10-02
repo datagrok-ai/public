@@ -1,5 +1,12 @@
 # webcomponents-vue changelog
 
+## v.next
+
+* InputForm: Added the `skipLogic` prop; literal `choices` fill the items under it, as under `skipInit`
+* RibbonPanel: an icon item carries its tooltip as `aria-label` (and drops it when an update removes the tooltip), so assistive tools and tests can name it
+* InputForm: In driver forms, choice inputs offer an empty option when annotated `nullable` or `optional`, or as the `emptyChoice` meta says
+* InputForm: Driver validation marks the caption label as well as the editor, matching the platform's own invalid styling
+
 ## 0.4.0 (2026-09-23)
 
 * Introduced an injectable per-view service (`provideDgViewService`/`useViewService`/`useDgView`) that owns ribbon rendering and diffing

@@ -5,6 +5,7 @@ import {cloneConfig, EnumeratorConfig} from './config';
 import {enumerate, EnumerationProgress, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {addResultFilters, buildInputs, buildResultDataFrame} from './shared';
+import {propagatedColumns, snapshotPropagation} from './propagation';
 
 export interface RunControlsDeps {
   getConfig: () => EnumeratorConfig;
@@ -117,6 +118,7 @@ export class RunControls {
     const xDf = this.deps.exclusionInput.value;
     const rDf = this.deps.reagentsInput.value;
     const inputs = buildInputs(config, tDf, bDf, xDf, rDf);
+    const propagation = snapshotPropagation(config, tDf, bDf, rDf);
 
     const reagentsPart = inputs.reagents.length > 0 ? ` × ${inputs.reagents.length} reagents` : '';
     this.progressLabel.textContent =
@@ -138,6 +140,7 @@ export class RunControls {
       rdkit, config, ...inputs, perRoundOverrides, onProgress, isCancelled: () => this.cancelled,
     });
     const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+    warnings.push(...propagation.missing);
 
     if (this.cancelled)
       grok.shell.warning(`Enumeration cancelled. Partial results: ${rows.length} rows.`);
@@ -151,6 +154,7 @@ export class RunControls {
       const more = warnings.length > 3 ? ` (+${warnings.length - 3} more; see console)` : '';
       grok.shell.warning(`${preview}${more}`);
     }
-    if (rows.length > 0) addResultFilters(grok.shell.addTableView(buildResultDataFrame(rows)));
+    if (rows.length > 0)
+      addResultFilters(grok.shell.addTableView(buildResultDataFrame(rows, propagatedColumns(rows, propagation))));
   }
 }

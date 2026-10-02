@@ -82,6 +82,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         console.log('Sketcher error', message);
       },
       onInit: (ketcher: Ketcher) => {
+        // the Editor calls it again for the same Ketcher once the macromolecules editor it still mounts has loaded
+        if (ketcher === this._sketcher)
+          return;
         this._sketcher = ketcher;
         // workaround for sketcher not to be truncated when showed in a popup menu
         // in the end of the screen (on last dataframe column)
@@ -96,25 +99,36 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         //     this._sketcher?.editor.setOptions(opts);
         //   }
         // });
-        this._restoreMolecule();
-        (this._sketcher.editor as any).subscribe('change', () => {
+        (ketcher.editor as any).subscribe('change', () => {
           if (this._detached || this._suspended)
             return;
           this.updatingMolecule = false;
-          // we do not reset explicit mol in case this is the first change event called after ketcher was created
-          // since change event is fired not only when user changes the molecule but also when the molecule is
-          // initially set into ketcher
+          // a molecule loaded into Ketcher answers with a change event of its own, which is not the user's edit
           if (this.importedMoleculesCounter > 0)
             this.importedMoleculesCounter --;
           else
             this.explicitMol = null;
           this._exportChange(this._sketcher!);
         });
+        // Ketcher takes strokes before it reports ready: a drawing by then is the user's, and restoring the host's
+        // molecule would load over it
+        if (!KetcherSketcher._hasDrawing(ketcher))
+          this._restoreMolecule();
+        else {
+          this.explicitMol = null;
+          this._exportChange(ketcher);
+        }
       },
     };
 
     this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
     this.reactRoot.render(React.createElement(Editor, props, null));
+  }
+
+  /** The template tool's floating preview sits in the structure as atoms too, and is not a drawing. */
+  private static _hasDrawing(ketcher: Ketcher): boolean {
+    const struct = ketcher.editor.struct();
+    return [...struct.atoms.values()].some((a) => !a.isPreview) || struct.rxnArrows.size > 0 || struct.texts.size > 0;
   }
 
   /** Runs an Indigo conversion once the ones before it have ended: the standalone struct service hands a
@@ -232,7 +246,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV2000 = null;
     this._molV3000 = null;
     this._smarts = null;
-    this.importedMoleculesCounter++;
     this._setNotation('smiles', smiles);
   }
 
@@ -258,7 +271,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._smiles = null;
     this._molV3000 = null;
     this._smarts = null;
-    this.importedMoleculesCounter++;
     this._setNotation('molblock', molfile);
   }
 
@@ -281,7 +293,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV2000 = null;
     this._smiles = null;
     this._smarts = null;
-    this.importedMoleculesCounter++;
     this._setNotation('molblockV3000', molfile);
   }
 
@@ -297,7 +308,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV3000 = null;
     this._molV2000 = null;
     this._smiles = null;
-    this.importedMoleculesCounter++;
     this._setNotation('smarts', smarts);
   }
 
@@ -339,10 +349,18 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   private _setNotation(notation: NotationKey, value: string): void {
     this._exportId++;
-    this.updatingMolecule = true;
-    this.setKetcherMolecule(value);
     //@ts-ignore
     this.explicitMol = {notation, value};
+    const ketcher = this._sketcher;
+    // An empty molecule changes nothing on an empty canvas, but its load is asynchronous: a stroke made meanwhile
+    // was taken for the load's change event, and the load then wiped it.
+    if (ketcher !== null && (!value?.trim() || grok.chem.Sketcher.isEmptyMolfile(value)) && !KetcherSketcher._hasDrawing(ketcher))
+      return;
+    this.updatingMolecule = true;
+    if (ketcher === null)
+      return;
+    this.importedMoleculesCounter++;
+    this.setKetcherMolecule(value);
   }
 
   detach() {

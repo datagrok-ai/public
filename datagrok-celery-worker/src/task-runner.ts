@@ -95,7 +95,7 @@ export class TaskRunner {
         call.status = FuncCallStatus.ERROR;
         call.errorMessage = e?.message ?? String(e);
         call.errorStackTrace = typeof e?.stack === 'string' ? e.stack : String(e);
-        logError(`Task failed: ${call.errorMessage}`, call.id);
+        logError(`Task failed: ${call.errorStackTrace}`, call.id);
       }
     }
     finally {

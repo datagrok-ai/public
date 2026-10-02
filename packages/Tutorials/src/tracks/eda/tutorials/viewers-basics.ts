@@ -5,7 +5,7 @@ import { filter, map } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { fromEvent, interval, merge } from 'rxjs';
 import $ from 'cash-dom';
-import { elementClick } from './utils';
+import { elementClick, selectionMade } from './utils';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 export class ViewersTutorial extends Tutorial {
@@ -59,9 +59,11 @@ export class ViewersTutorial extends Tutorial {
       '<b>Sunburst</b> shows hierarchical data as nested rings.';
     await this.action('Open the viewer gallery again', elementClick(addViewerIcon), addViewerIcon, sunburstInfo);
 
-    const searchInput = document.querySelector('[name="viewer-gallery-search"]') as HTMLInputElement;
+    // the gallery may be rebuilt while the step is up, so the box is found by the event, not captured
+    const searchInput = (): HTMLInputElement | null => document.querySelector('[name="viewer-gallery-search"]');
     await this.action('Type "Sunburst" in the search box',
-      fromEvent(searchInput, 'input').pipe(filter(() => searchInput.value.toLowerCase().includes('sunburst'))),
+      fromEvent<InputEvent>(document, 'input').pipe(filter((e) => (e.target as HTMLElement)?.getAttribute('name') === 'viewer-gallery-search' &&
+        (e.target as HTMLInputElement).value.toLowerCase().includes('sunburst'))),
       searchInput);
 
     // the card appears only once the search has filtered the gallery, so it is resolved per tick
@@ -80,7 +82,7 @@ export class ViewersTutorial extends Tutorial {
       merge(this.t!.onMouseOverRowGroupChanged, this.t!.onMouseOverRowChanged), null, hover);
 
     const selection = 'Select points by dragging a rectangle on a viewer while holding <b>Shift</b>.';
-    await this.action('Select points on the scatter plot', this.t!.onSelectionChanged, null, selection);
+    await this.action('Select points on the scatter plot', selectionMade(this.t!), null, selection);
 
     const selectionSync = 'Note that the selection is synchronized between ' +
       'all viewers. When you select one of the bins on the histogram by clicking on it, ' +
@@ -88,10 +90,10 @@ export class ViewersTutorial extends Tutorial {
       'and grid. The same concept applies to the rest of the viewers, such as a pie chart ' +
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
       `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
-    await this.action('Select one of the bins on the histogram', this.t!.onSelectionChanged, null, selectionSync);
+    await this.action('Select one of the bins on the histogram', selectionMade(this.t!), null, selectionSync);
 
     const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected and synced to the other viewers.';
-    await this.action('Click a Sunburst segment to select its rows', this.t!.onSelectionChanged, null, sunburstSelect);
+    await this.action('Click a Sunburst segment to select its rows', selectionMade(this.t!), null, sunburstSelect);
 
     const currentRecord = 'Move the mouse over records on the scatter plot and grid, ' +
       'and note that the corresponding records are being highlighted in other viewers. ' +

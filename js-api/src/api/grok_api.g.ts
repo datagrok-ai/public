@@ -52,6 +52,7 @@ export interface IDartApi {
   grok_UserSettings_Get(name: String, isPrivate: Bool): any;
   grok_UserSettings_GetValue(name: String, key: String, isPrivate: Bool): any;
   grok_UserSettings_Delete(name: String, key: String, isPrivate: Bool): any;
+  grok_UserSettings_Flush(): Promise<any>;
   grok_DockView(addToWorkspace: Bool): any;
   grok_DockView_InitDock(v: any): any;
   grok_DockView_HandleResize(v: any): any;
@@ -705,7 +706,7 @@ export interface IDartApi {
   grok_CodeEditor_Set_Value(editor: any, x: String): any;
   grok_CodeEditor_OnValueChanged(editor: any): any;
   grok_InputForm_ForInputs(inputs: any): any;
-  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool, skipTableAutoFill: Bool): Promise<any>;
+  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool, skipTableAutoFill: Bool, skipLogic: Bool): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
   grok_InputForm_GetInputs(form: any): any;
@@ -1391,7 +1392,11 @@ export interface IDartApi {
   grok_DataFrame_FireValuesChanged(t: any): any;
   grok_DataFrame_ChangeColumnsType(t: any, columns: any, newType: String, format: String): any;
   grok_DataFrame_Append(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): any;
+  grok_DataFrame_AppendAsync(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): Promise<any>;
   grok_DataFrame_Append_Merge(parent: any, t: any): any;
+  grok_DataFrame_AppendMergeAsync(parent: any, t: any): Promise<any>;
+  grok_DataFrame_RecalculateFormulaColumns(t: any): Promise<any>;
+  grok_AppendTables(tables: any): Promise<any>;
   grok_DataFrame_Get_Temp(t: any): any;
   grok_DataFrame_Get_Tags(t: any): any;
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
@@ -1440,7 +1445,7 @@ export interface IDartApi {
   grok_ColumnList_Insert(cols: any, col: any, index: Num, notify: Bool): any;
   grok_ColumnList_AddNew(cols: any, name: String, type: String): any;
   grok_Column_InitQnumFromColumns(qnum: any, qualifier: any, value: any): any;
-  grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool): Promise<any>;
+  grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool, errorBehavior: any): Promise<any>;
   grok_ColumnList_GetNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
   grok_ColumnList_Remove(cols: any, name: String, notify: Bool): any;

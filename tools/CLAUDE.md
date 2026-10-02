@@ -208,7 +208,7 @@ Based on `node:22-bookworm-slim`. Pre-installed:
 #### Entrypoint (`entrypoint.sh`)
 
 1. **Repo detection:** checks if `/workspace/repo` is the public repo (has `.git` + `js-api/`) or monorepo (`public/js-api/`)
-2. **Auto-clone:** if workspace is not the public repo, sparse-clones it to `$DG_PUBLIC_DIR` (default `/workspace/datagrok`) — excludes `connectors/`, `docker/`, `environments/`, `python-api/`, etc. for speed. Branch resolved as: `DG_PUBLIC_BRANCH` > `DG_VERSION` mapped to branch > `master` fallback
+2. **Auto-clone:** if workspace is not the public repo, sparse-clones it to `$DG_PUBLIC_DIR` (default `/workspace/datagrok`) — excludes `docker/`, `environments/`, `python-api/`, etc. for speed. Branch resolved as: `DG_PUBLIC_BRANCH` > `DG_VERSION` mapped to branch > `master` fallback
 3. **Workspace linking:** for non-public repos, symlinks `/workspace/repo` into the cloned repo's `packages/` dir and links `.claude`/`CLAUDE.md` at `/workspace/` for context discovery
 4. **Grok config:** auto-creates `~/.grok/config.yaml` pointing to `http://datagrok:8080/api` with key `admin` (only if config doesn't already exist)
 

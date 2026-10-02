@@ -28,7 +28,7 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: SCALING_M
   const scaledCol: DG.Column<number> = DG.Column.float(`${scaling} ${activityCol.name}`, activityCol.length)
     .init((i) => {
       const val = activityColData[i];
-      return val === DG.FLOAT_NULL || val === DG.INT_NULL ? val : formula(val);
+      return val === DG.FLOAT_NULL || val === DG.INT_NULL ? DG.FLOAT_NULL : formula(val);
     });
   scaledCol.setTag(DG.TAGS.FORMULA, scaling);
   return scaledCol;

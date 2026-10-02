@@ -2,7 +2,10 @@
 import {dataset} from '../../src/registry.js';
 
 dataset('spgi', {path: 'System:AppData/Chem/tests/spgi-100.csv', aliases: ['spgi-100'],
-  description: 'SMILES + numeric activity, 100 rows'});
+  description: 'the first 100 rows of the SPGI demo table, its 88 columns in the same order (some assay values rounded, ' +
+    'booleans in lower case) — the SPGI a feature opens unless it needs the whole table'});
+dataset('spgi-full', {path: 'System:DemoFiles/chem/SPGI.csv',
+  description: 'the whole SPGI demo table: 3624 molecules, 88 columns, 11 MB — only for a feature that needs its rows (a decomposition, the NX links); every open and render is slow'});
 dataset('mol1K', {path: 'System:AppData/Chem/mol1K.csv', aliases: ['mol1k'],
   description: '1000 molecules with pIC50_HIV_Integrase and Q (comes with the published Chem package)'});
 dataset('FASTA_PT_activity', {path: 'System:AppData/Bio/samples/FASTA_PT_activity.csv', aliases: ['fasta-pt-activity', 'peptides with activity'],
@@ -18,7 +21,7 @@ dataset('beer', {path: 'System:DemoFiles/beer.csv', description: '118 beers, 33 
 dataset('curves', {path: 'System:DemoFiles/curves.csv', description: 'fit curves ("multiple prefit" carries the fit semantic type) next to a smiles column'});
 dataset('smiles', {path: 'System:DemoFiles/chem/smiles.csv',
   description: '1000 ChEMBL molecules: molregno, canonical_smiles (a Molecule column the Chem package renders and offers its Current Value actions on) and RDKit descriptors'});
-dataset('helm-peptides', {path: 'System:DemoFiles/chem/peptides/HELM.csv', aliases: ['helm'],
+dataset('helm-peptides', {path: 'System:DemoFiles/chem/peptides/HELM.csv',
   description: '540 peptides in HELM notation with Activity — a Macromolecule column the Helm package renders and edits'});
 dataset('spgi-linked1', {path: 'System:AppData/ApiTests/datasets/SPGI-linked1.csv',
   description: 'the table linked to spgi-100 by Id / Concept Id (the ApiTests package must be published)'});

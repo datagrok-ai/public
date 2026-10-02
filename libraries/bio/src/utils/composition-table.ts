@@ -55,7 +55,9 @@ export function buildCompositionTable(
   const table = ui.tableFromMap(elMap);
   Array.from(table.rows).forEach((row) => {
     const barCol = (row.getElementsByClassName('macromolecule-cell-comp-analysis-bar')[0] as HTMLDivElement)
-      .style.backgroundColor;
+      ?.style?.backgroundColor;
+    if (barCol == null)
+      return;
     row.cells[0].style.color = barCol;
   });
   return table;

@@ -21,7 +21,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {hasColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeAllViews, currentViewType, noQueryOnServer, queriesOnServer, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeAllViews, currentViewType, noQueryOnServer, queriesOnServer, refreshBrowse, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -66,7 +66,7 @@ test.describe("A visual query built on a table", () => {
       await session.step(54, "Given the toolbox pane is hidden", () => toolboxPaneHidden(page));
       await session.step(55, "And the browse panel is open", () => browsePanelOpen(page));
       await session.step(56, "And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres---NorthwindTest tree node inside browse tree")));
-      await session.step(57, "When user clicks on \"Refresh\" icon inside browse toolbar", () => clickOn(page, el("\"Refresh\" icon inside browse toolbar")));
+      await session.step(57, "When user refreshes the browse tree", () => refreshBrowse(page));
       await session.step(58, "And user picks \"Edit...\" from the context menu of Databases---Postgres---NorthwindTest---BDD-Q-vq-{time} tree node inside browse tree", () => pickFromContextMenu(page, "Edit...", el(session.text("Databases---Postgres---NorthwindTest---BDD-Q-vq-{time} tree node inside browse tree"))));
       await session.step(59, "Then the current view should be a DataQueryView view", () => currentViewType(page, "DataQueryView"));
       await session.step(60, "And the \"Group-by\" row of the visual query should hold \"companyname\"", () => builderRowHolds(page, "Group-by", "companyname"));

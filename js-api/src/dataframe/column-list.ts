@@ -11,9 +11,64 @@ import {IDartApi} from "../api/grok_api.g";
 import type {Column, DateTimeColumn} from "./column";
 import type {DataFrame} from "./data-frame";
 import type {IndexSetter} from "./types";
+import {Qnum} from "./qnum";
+import dayjs from "dayjs";
 
 declare let DG: any;
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
+
+/** The value a calculated column of type `T` holds; `'auto'` takes whatever the formula returns.
+ * A qnum takes a {@link Qnum} value or text such as `'<5'`; `byte_array`, `dataframe` and `object` columns take none. */
+export type CalculatedColumnValue<T extends ColumnType | 'auto'> =
+  T extends 'int' | 'double' ? number :
+  T extends 'qnum' | 'bigint' ? number | string :
+  T extends 'string' ? string :
+  T extends 'bool' ? boolean :
+  T extends 'datetime' ? dayjs.Dayjs | Date | string :
+  T extends 'auto' ? number | string | boolean | dayjs.Dayjs | Date :
+  never;
+
+/** What a calculated column does with the rows its formula fails on.
+ * - `'empty'` (the default): the cell stays empty.
+ * - `'value'`: the cell gets `value`, converted to the column's type; a value that does not fit leaves it empty.
+ * - `'stop'`: the first such row rejects the call, and no column is added.
+ *
+ * `errorColumn` also adds a string column with each failed row's message, next to the result:
+ * a name, or `true` for "&lt;column&gt; errors". It is recalculated with the result and kept in layouts. */
+export type CalculatedColumnOnError<TValue = CalculatedColumnValue<'auto'>> =
+  {mode?: 'empty', errorColumn?: string | boolean} |
+  {mode: 'value', value: TValue, errorColumn?: string | boolean} |
+  {mode: 'stop'};
+
+/** Options for {@link ColumnList.addNewCalculated}. */
+export interface IAddNewCalculatedOptions<T extends ColumnType | 'auto' = 'auto'> {
+  /** Type of the result column; `'auto'` (the default) takes it from what the formula returns. */
+  type?: T;
+  /** Stores the expression as a string value instead of evaluating it; false by default. */
+  treatAsString?: boolean;
+  /** Recalculates the column when its source columns change; true by default. */
+  subscribeOnChanges?: boolean;
+  /** What to do with the rows the formula fails on; they stay empty by default. */
+  onError?: CalculatedColumnOnError<CalculatedColumnValue<T>>;
+}
+
+/** The map the platform takes the error behavior in (`CalcColErrorBehavior` on the Dart side). */
+type ErrorBehaviorMap = {suppressExceptions: boolean, valueOnError?: number | string | boolean | null, errorColName?: string | null};
+
+function toErrorBehavior(name: string, type: ColumnType | 'auto', onError?: CalculatedColumnOnError): ErrorBehaviorMap | null {
+  if (!onError)
+    return null;
+  if (onError.mode === 'stop')
+    return {suppressExceptions: false};
+  const value = onError.mode === 'value' ? onError.value : null;
+  return {
+    suppressExceptions: true,
+    // the platform parses the value as text, where a qnum keeps its qualifier only as '<5'
+    valueOnError: value instanceof Date || dayjs.isDayjs(value) ? value.toISOString() :
+      type === 'qnum' && typeof value === 'number' ? Qnum.toString(value) : value,
+    errorColName: onError.errorColumn === true ? `${name} errors` : (onError.errorColumn || null),
+  };
+}
 
 /** Options for {@link ColumnList.addNewQnum}. */
 export interface QnumColumnCreationOptions {
@@ -173,11 +228,26 @@ export class ColumnList {
     return toJs(api.grok_ColumnList_AddNew(this.dart, name, type));
   }
 
-  /** Adds calculated column.
+  /** Adds a column calculated by the formula `expression`, and resolves with it.
+   * Rows the formula fails on stay empty unless `options.onError` says otherwise; `{mode: 'stop'}` rejects instead.
+   * The error behavior is kept with the column, so layouts and recalculations reuse it.
+   * @param name  Name of the new column; a unique one is derived from it if the table already has it.
+   * @param expression  Formula, such as `${AGE} * 2` or `InDays(DateDiff(${END}, ${START}))`.
+   * @example
+   * const days = await df.columns.addNewCalculated('Days', 'InDays(DateDiff(${END}, ${START}))',
+   *   {type: 'int', onError: {mode: 'value', value: -1, errorColumn: true}});
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/modification/calculated-columns/error-handling} */
+  addNewCalculated<T extends ColumnType | 'auto' = 'auto'>(name: string, expression: string, options?: IAddNewCalculatedOptions<T>): Promise<Column>;
+  /** Adds a column calculated by the formula `expression`, and resolves with it.
    * @param treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
    * @param subscribeOnChanges - if true, the column will be recalculated when the source columns change */
-  addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false, subscribeOnChanges: boolean = true): Promise<Column> {
-    return api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, subscribeOnChanges);
+  addNewCalculated(name: string, expression: string, type?: ColumnType | 'auto', treatAsString?: boolean, subscribeOnChanges?: boolean): Promise<Column>;
+  addNewCalculated(name: string, expression: string, typeOrOptions: ColumnType | 'auto' | IAddNewCalculatedOptions<ColumnType | 'auto'> = 'auto',
+    treatAsString: boolean = false, subscribeOnChanges: boolean = true): Promise<Column> {
+    const options: IAddNewCalculatedOptions<ColumnType | 'auto'> = typeof typeOrOptions === 'object' && typeOrOptions !== null ?
+      typeOrOptions : {type: typeOrOptions, treatAsString, subscribeOnChanges};
+    return api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, options.type ?? 'auto',
+      options.treatAsString ?? false, options.subscribeOnChanges ?? true, toErrorBehavior(name, options.type ?? 'auto', options.onError));
   }
 
   _getNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
