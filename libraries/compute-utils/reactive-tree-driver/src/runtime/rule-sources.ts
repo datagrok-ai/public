@@ -162,22 +162,30 @@ function resolveChoices(
     return undefined;
   }
   const value = controller.getFirst(spec.input);
+  const choices = evalChoices(call, io);
+  return choices instanceof Promise ?
+    choices.then((r) => choicesVerdict(call, r, value)) :
+    choicesVerdict(call, choices, value);
+}
+
+// a pending evaluation does not know its dependencies yet, so a run waits for it and checks them then
+function evalChoices(call: DG.FuncCall, io: string): ChoicesResult | Promise<ChoicesResult> {
   const byIo = choicesCache.get(call) ?? new Map<string, ChoicesEntry>();
   choicesCache.set(call, byIo);
-  let entry = byIo.get(io);
-  if (!entry || entry.deps.some((dep, idx) => call.inputs[dep] !== entry!.values[idx])) {
-    const snapshot = Object.fromEntries(call.func.inputs.map((prop) => [prop.name, call.inputs[prop.name]]));
-    const created: ChoicesEntry = {deps: [], values: [], result: call.evalParamChoices(io)};
-    created.result.then((r) => {
-      created.deps = r.dependsOn;
-      created.values = r.dependsOn.map((dep) => snapshot[dep]);
-      created.landed = r;
-    }, () => byIo.delete(io));
-    byIo.set(io, created);
-    entry = created;
-  }
-  return entry.landed ? choicesVerdict(call, entry.landed, value) :
-    entry.result.then((r) => choicesVerdict(call, r, value));
+  const entry = byIo.get(io);
+  if (entry && !entry.landed)
+    return entry.result.then(() => evalChoices(call, io));
+  if (entry?.landed && entry.deps.every((dep, idx) => call.inputs[dep] === entry.values[idx]))
+    return entry.landed;
+  const snapshot = Object.fromEntries(call.func.inputs.map((prop) => [prop.name, call.inputs[prop.name]]));
+  const created: ChoicesEntry = {deps: [], values: [], result: call.evalParamChoices(io)};
+  created.result.then((r) => {
+    created.deps = r.dependsOn;
+    created.values = r.dependsOn.map((dep) => snapshot[dep]);
+    created.landed = r;
+  }, () => byIo.delete(io));
+  byIo.set(io, created);
+  return created.result;
 }
 
 type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];
@@ -201,8 +209,10 @@ function resolveFile(path: string) {
 function isConstant(source: RuleSource) {
   if ('file' in source || 'table' in source)
     return true;
-  const args = 'func' in source ? source.func.args : 'query' in source ? source.query.args : undefined;
-  return args !== undefined && Object.values(args).every((expr) => !usedAliases(expr).length);
+  if (!('func' in source) && !('query' in source))
+    return false;
+  const args = 'func' in source ? source.func.args : source.query.args;
+  return Object.values(args ?? {}).every((expr) => !usedAliases(expr).length);
 }
 
 function resolveJs(controller: IControllerBase, spec: JsSource) {

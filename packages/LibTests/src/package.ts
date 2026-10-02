@@ -472,6 +472,23 @@ export function MockCities(region: string): string[] {
   return region ? [`${region}-1`, `${region}-2`] : [];
 }
 
+let countingCitiesRuns = 0;
+
+// the run number in the items tells evaluations apart
+//input: string region
+//output: list<string> res
+export function MockCountingCities(region: string): string[] {
+  return [`${region}-${++countingCitiesRuns}`];
+}
+
+//input: string region
+//input: string city {choices: LibTests:MockCountingCities}
+//input: int n
+//output: string res
+export function TestCountingChoices(region: string, city: string, n: number): string {
+  return city;
+}
+
 //output: dataframe res
 export function MockCars(): DG.DataFrame {
   return DG.DataFrame.fromColumns([

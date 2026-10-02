@@ -130,6 +130,18 @@ export namespace funcs {
     return await grok.functions.call('LibTests:MockCities', { region });
   }
 
+  export async function mockCountingCities(region: string ): Promise<any> {
+    return await grok.functions.call('LibTests:MockCountingCities', { region });
+  }
+
+  /**
+   * @param {string} city
+   *   choices: LibTests:MockCountingCities
+   */
+  export async function testCountingChoices(region: string , city: string , n: number ): Promise<string> {
+    return await grok.functions.call('LibTests:TestCountingChoices', { region, city, n });
+  }
+
   export async function mockCars(): Promise<DG.DataFrame> {
     return await grok.functions.call('LibTests:MockCars', {});
   }
