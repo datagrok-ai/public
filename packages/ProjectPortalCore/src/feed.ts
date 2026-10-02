@@ -30,7 +30,7 @@ async function syncRunsOf(portfolioId: string): Promise<SyncRunRow[]> {
 /** Everything one program's feed is made of. [syncRuns] spares a second read of the portfolio's history. */
 export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow, syncRuns?: SyncRunRow[]): Promise<FeedRecords> {
   const by = `program_id = "${program.id}"`;
-  const [stages, decisions, evidence, runs, artifacts, documents, snapshots, roleChanges, follows, syncs] = await Promise.all([
+  const [stages, decisions, evidence, runs, artifacts, documents, snapshots, roleChanges, follows, predictions, syncs] = await Promise.all([
     stagesOf(program.stage_model_id),
     portalDb.stageTransitions.query({filter: by}),
     portalDb.evidences.query({filter: by}).catch(() => []),
@@ -40,6 +40,7 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
     portalDb.programSnapshots.query({filter: by}).catch(() => []),
     portalDb.compoundRoleChanges.query({filter: by}).catch(() => []),
     portalDb.follows.query({filter: by}).catch(() => []),
+    portalDb.predictions.query({filter: by}).catch(() => []),
     syncRuns ? Promise.resolve(syncRuns) : syncRunsOf(portfolio.id),
   ]);
   const statusIds = [...new Set(artifacts.map((a) => a.criterion_status_id))];
@@ -67,6 +68,11 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
       const c = criteria.find((x) => x.id === s?.gate_criterion_id);
       return {id: a.id, run: runTitle(a.model_run_id), criterion: c?.name ?? 'a criterion', by: a.selected_by ?? null,
         on: iso(a.selected_on), rationale: a.rationale ?? null};
+    }),
+    predictions: [...new Set(predictions.map((p) => p.model_run_id).filter((x): x is string => !!x))].map((runId) => {
+      const mine = predictions.filter((p) => p.model_run_id === runId);
+      return {runId, model: mine[0].model_code.split(':').pop()!, version: mine[0].model_version,
+        count: mine.length, by: mine[0].predicted_by ?? mine[0].author_id, on: iso(mine[0].predicted_on ?? mine[0].created_on)};
     }),
     documents: documents.map((d) => ({id: d.id, title: d.title, version: d.doc_version ?? null, status: d.status,
       linkedBy: d.linked_by ?? d.author_id, linkedOn: iso(d.linked_on ?? d.created_on), approvedBy: d.approved_by ?? null,

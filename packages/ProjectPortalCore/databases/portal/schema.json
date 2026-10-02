@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.21",
+  "version": "0.2.22",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -633,6 +633,29 @@
         "approved_by": {"type": "user", "onDelete": "setnull"},
         "approved_on": {"type": "datetime"},
         "note": {"type": "string", "editor": "textarea"}
+      }
+    },
+    "prediction": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "model_code", "model_version", "compound_code", "predicts"],
+      "friendlyName": "Predictions",
+      "description": "What a version of a catalogued predictive model said about one compound of a program (F-22, FR-58): one value per compound and predicted program-data column, from a batch scoring that is saved as a model run. Written once per model version; scoring the same version again keeps what is stored.",
+      "filters": [{"column": "model_code"}, {"column": "predicts"}],
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "compound_id": {"type": "ref", "ref": "compound", "onDelete": "setnull", "friendlyName": "Compound", "description": "The registry compound, when the code is one"},
+        "compound_code": {"type": "string", "required": true, "immutable": true, "searchable": true, "description": "The compound as the program dataset names it"},
+        "model_id": {"type": "ref", "ref": "model", "onDelete": "setnull", "friendlyName": "Model"},
+        "model_code": {"type": "string", "required": true, "immutable": true, "description": "The model's catalogue code (func nqName), kept because a prediction is a historical record"},
+        "model_version": {"type": "string", "required": true, "immutable": true, "description": "The card version the model ran as"},
+        "predicts": {"type": "string", "required": true, "immutable": true, "description": "The program-data column the value stands in for, from the card's appliesTo.predicts"},
+        "predicted_value": {"type": "float", "immutable": true},
+        "units": {"type": "string", "immutable": true},
+        "model_run_id": {"type": "ref", "ref": "model_run", "onDelete": "cascade", "immutable": true, "friendlyName": "Run", "description": "The scoring run; removing the run removes its predictions"},
+        "run_id": {"type": "string", "immutable": true, "description": "The saved call's id, as on model_run"},
+        "predicted_on": {"type": "datetime", "immutable": true},
+        "predicted_by": {"type": "user", "immutable": true}
       }
     }
   }

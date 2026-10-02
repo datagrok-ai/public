@@ -56,6 +56,8 @@ import {openProvenanceDialog} from './provenance-dialog';
 import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
 import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
 import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
+import {openPredictedVsMeasured, predictionsOf, scoreCompounds} from '../predictions';
+import {describeFit, describePrediction, Prediction, predictedVsMeasured, withPredictions} from '../model/predictions';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -119,6 +121,10 @@ export class PortalView {
   private feed: {programId: string, entries: FeedEntry[], names: Map<string, string>, error?: string, kind: string,
     series: string, page: number, compounds: Map<string, string[]>} =
     {programId: '', entries: [], names: new Map(), kind: '', series: '', page: 0, compounds: new Map()};
+  /** The selected program's stored predictions, the latest per compound, column and model. */
+  private predictions: Prediction[] = [];
+  /** What the last scoring on this page did, by program id. */
+  private scoreLine = new Map<string, string>();
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
@@ -310,6 +316,15 @@ export class PortalView {
     const evidence = await evidenceOf(id).catch(() => new Map<string, EvidenceLine[]>());
     const suggested = ctx.approver && ctx.portfolio.stage_authority === 'portal' ? await suggestedEvidence(id, ctx.readiness,
       ctx.stages.find((s) => s.id === ctx.readiness?.stageId)?.name ?? '').catch(() => []) : [];
+    // stored predictions, and the program data to set them against
+    this.predictions = await predictionsOf(id).then((p) => p.latest).catch(() => [] as Prediction[]);
+    if (this.predictions.length && this.data === undefined) {
+      try {
+        this.data = {rows: await programData(ctx.portfolio, ctx.program.code)};
+      } catch (e: any) {
+        this.data = {rows: null, error: e?.message ?? String(e)};
+      }
+    }
     // the program's activity, from its own records
     if (this.feed.programId !== id)
       this.feed = {programId: id, entries: [], names: new Map(), kind: '', series: '', page: 0, compounds: new Map()};
@@ -567,6 +582,7 @@ export class PortalView {
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
       ...(more ? [divH([more], 'pp-actions')] : []),
       ...(recommendation && shown('recommendation') ? this.recommendation(recommendation) : []),
+      ...(shown('predictions') && (ctx.portfolio.setting === 'discovery' || this.predictions.length) ? this.predictionsSection(ctx) : []),
       ...(attention && shown('attention') ? this.attention(ctx.portfolio.code, program.code, attention) : []),
       ...(shown('saved_runs') ? [
         named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
@@ -685,10 +701,15 @@ export class PortalView {
     if (r.missing.length) {
       out.push(named(span(`Missing assays${r.stage ? ` for ${r.stage.name}` : ''} (${r.missing.length})`, 'pp-heading'),
         'missing-assays-heading'));
-      out.push(named(divV(r.missing.map((m) => {
+      const stored = withPredictions(r.missing, this.predictions);
+      out.push(named(divV(r.missing.map((m, mi) => {
         const by = m.column ? r.predictors.get(m.column) ?? [] : [];
+        const predicted = stored[mi].predicted;
         return named(divV([
           span(describeMissing(m)),
+          ...(predicted.length ? [named(span(`Predicted: ${predicted.slice(0, 5).map((p) => `${p.compound} ${describePrediction(p)}`).join('; ')}` +
+            (predicted.length > 5 ? `; ${predicted.length - 5} more` : ''), 'pp-muted'),
+          `missing-assay-${slug(m.criterion)}-${slug(m.column!)}-predicted`)] : []),
           ...(by.length ? [divH([span('Predicted meanwhile by', 'pp-muted'), ...by.map((x) => modelLink(x.code, x.name, 'predictor-card'))],
             'pp-run-meta')] : []),
         ], 'pp-run'), `missing-assay-${slug(m.criterion)}${m.column ? `-${slug(m.column)}` : ''}`);
@@ -705,12 +726,75 @@ export class PortalView {
         series: r.series}).catch((e) => grok.shell.error(e?.message ?? String(e)))), `run-model-${slug(m.code)}`);
       run.disabled = !m.installed;
       run.title = m.installed ? 'Open the model\'s dialog, filled in from this program' : 'The model\'s function is not installed here';
+      const scores = m.scores ?? [];
+      const score = scores.length && r.portfolio.setting === 'discovery' ? named(button('Score', () => void this.score(r, m.code)),
+        `score-model-${slug(m.code)}`) : null;
+      if (score) {
+        score.disabled = !m.installed;
+        score.title = `Run once over the program's compounds and store the predictions of ${scores.join(', ')}`;
+      }
       return named(divV([
         divH([modelLink(m.code, m.name), ...(m.approval ? [badge(m.approval.replace('_', ' '),
-          {variant: m.approval === 'approved' ? 'success' : 'default'})] : []), run], 'pp-run-meta'),
+          {variant: m.approval === 'approved' ? 'success' : 'default'})] : []), run, ...(score ? [score] : [])], 'pp-run-meta'),
         ...(m.reasons.length ? [span(m.reasons.join(' · '), 'pp-muted')] : []),
       ], 'pp-run'), `suggested-model-${slug(m.code)}`);
     }), 'pp-runs'), 'suggested-models'));
+    return out;
+  }
+
+  /** Scores the program's compounds with a model, then reads the page again. */
+  private async score(r: ProgramRecommendation, model: string): Promise<void> {
+    const pi = DG.TaskBarProgressIndicator.create(`Scoring ${r.program.code}`);
+    try {
+      const done = await scoreCompounds(r.portfolio.code, r.program.code, model);
+      this.scoreLine.set(r.program.id, done.summary.split('\n')[0]);
+    } catch (e: any) {
+      this.scoreLine.set(r.program.id, e?.message ?? String(e));
+    } finally {
+      pi.close();
+    }
+    if (this.mode === 'simple')
+      this.moreOpen = true;
+    await this.openProgram(r.program.id, this.viewedStage);
+  }
+
+  /** Predictions: per model and predicted column, how they compare with what was measured, the
+   * compounds side by side, and predicted against measured as a scatter plot. */
+  private predictionsSection(ctx: ProgramContext): HTMLElement[] {
+    const {program, portfolio} = ctx;
+    const fits = predictedVsMeasured(this.predictions, this.data?.rows ?? []);
+    const out: HTMLElement[] = [named(span(`Predictions (${this.predictions.length})`, 'pp-heading'), 'predictions-heading')];
+    if (this.scoreLine.has(program.id))
+      out.push(named(span(this.scoreLine.get(program.id)!, 'pp-muted'), 'score-result'));
+    if (!fits.length) {
+      out.push(named(span('No predictions stored: Score a suggested model that predicts a column of the program data', 'pp-muted'),
+        'no-predictions'));
+      return out;
+    }
+    const fmt = (v: number | null) => v === null ? '—' : Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(1);
+    for (const f of fits) {
+      const key = `${slug(f.model)}-${slug(f.predicts)}`;
+      const scatter = named(button('Predicted vs measured', () => void openPredictedVsMeasured(portfolio.code, program.code, f.model, f.predicts)
+        .catch((e) => grok.shell.error(e?.message ?? String(e)))), `predicted-vs-measured-${key}`);
+      scatter.title = 'The predictions and the measured values as a table, with a scatter plot';
+      const runId = this.predictions.find((p) => p.model === f.model && p.predicts === f.predicts && p.modelRunId)?.modelRunId;
+      const t = named(document.createElement('table'), `predictions-table-${key}`);
+      t.className = 'pp-card-table';
+      const h = t.insertRow();
+      for (const x of ['Compound', `Predicted${f.units ? ` (${f.units})` : ''}`, 'Measured'])
+        h.append(Object.assign(document.createElement('th'), {textContent: x}));
+      for (const pr of f.pairs.slice(0, 12)) {
+        const tr = t.insertRow();
+        for (const x of [pr.compound, fmt(pr.predicted), fmt(pr.measured)])
+          tr.insertCell().textContent = x;
+      }
+      out.push(named(divV([
+        divH([span(`${f.modelName} ${f.version} · ${f.predicts}`), scatter,
+          ...(runId ? [this.provenanceLink('model_run', runId, `provenance-predictions-${key}`)] : [])], 'pp-run-meta'),
+        named(span(describeFit(f) + (f.pairs.length > 12 ? `; first 12 of ${f.pairs.length} shown` : ''), 'pp-muted'), `prediction-fit-${key}`),
+        t,
+      ], 'pp-run'), `predictions-${key}`));
+    }
     return out;
   }
 
@@ -795,6 +879,8 @@ export class PortalView {
       ...shown.map((x) => named(divH([span(x.compound.code), badge(x.link.role, {variant: 'accent'}),
         ...(x.compound.name && x.compound.name !== x.compound.code ? [span(x.compound.name, 'pp-muted')] : []),
         ...(x.link.missing_from_feed ? [badge('missing from feed', {variant: 'error'})] : []),
+        ...this.predictions.filter((p) => p.compound === x.compound.code).map((p) =>
+          named(span(`${p.predicts} ≈ ${describePrediction(p)}`, 'pp-muted'), `compound-prediction-${slug(x.compound.code)}-${slug(p.predicts)}`)),
       ], 'pp-unit'), `compound-${slug(x.compound.code)}`)),
     ], 'pp-units'), 'program-compounds');
   }

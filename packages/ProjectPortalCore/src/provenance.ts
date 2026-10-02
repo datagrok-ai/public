@@ -77,6 +77,7 @@ export async function provenanceRecords(programIds: string[], compound?: string)
     portalDb.criterionStatuses.query({filter: by}), portalDb.documents.query({filter: by}),
     portalDb.programSnapshots.query({filter: by}),
   ]);
+  const predictions = await portalDb.predictions.query({filter: by}).catch(() => []);
   const stages = (await Promise.all([...new Set(programs.map((p) => p.stage_model_id))].map((m) => stagesOf(m)))).flat();
   const stageCode = (id?: string | null) => stages.find((s) => s.id === id)?.code ?? null;
   const criteria = stages.length ? await portalDb.gateCriterions.query({filter: `stage_id in (${inList(stages.map((s) => s.id))})`}) : [];
@@ -107,6 +108,12 @@ export async function provenanceRecords(programIds: string[], compound?: string)
   });
   r.documents = documents.map((d) => ({id: d.id, programId: d.program_id, title: d.title, version: d.doc_version ?? null,
     status: d.status, criterionId: d.gate_criterion_id ?? null, path: d.path}));
+  const scored = new Map<string, {runId: string, predicts: string, count: number}>();
+  for (const p of predictions.filter((x) => x.model_run_id)) {
+    const k = `${p.model_run_id}|${p.predicts}`;
+    scored.set(k, {runId: p.model_run_id!, predicts: p.predicts, count: (scored.get(k)?.count ?? 0) + 1});
+  }
+  r.predictions = [...scored.values()];
   r.snapshots = snapshots.map((s) => ({id: s.id, programId: s.program_id, label: s.label, takenOn: iso(s.taken_on)}));
   if (compound) {
     const c = (await portalDb.compounds.query({filter: `id = "${compound}" or code = "${compound}"`}).catch(() => []))[0];

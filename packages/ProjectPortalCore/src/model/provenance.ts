@@ -14,7 +14,7 @@
  * Pure: the caller reads the records. */
 
 export type ProvenanceKind = 'program' | 'decision' | 'model_run' | 'snapshot' | 'document' | 'compound' | 'criterion' |
-  'dataset' | 'table' | 'model' | 'file' | 'url';
+  'dataset' | 'table' | 'model' | 'file' | 'url' | 'prediction';
 /** What a caller may start from: a record of the portal, or a piece of evidence. */
 export type ProvenanceStart = 'program' | 'decision' | 'evidence' | 'model_run' | 'snapshot' | 'document' | 'compound';
 export const PROVENANCE_STARTS: ProvenanceStart[] = ['program', 'decision', 'evidence', 'model_run', 'snapshot', 'document',
@@ -22,7 +22,7 @@ export const PROVENANCE_STARTS: ProvenanceStart[] = ['program', 'decision', 'evi
 
 export const PROVENANCE_LABELS: Record<ProvenanceKind, string> = {
   program: 'Program', decision: 'Decision', model_run: 'Run', snapshot: 'Snapshot', document: 'Document', compound: 'Compound',
-  criterion: 'Criterion', dataset: 'Data', table: 'Table', model: 'Model', file: 'File', url: 'Link',
+  criterion: 'Criterion', dataset: 'Data', table: 'Table', model: 'Model', file: 'File', url: 'Link', prediction: 'Predictions',
 };
 
 export interface ProvenanceNode {
@@ -62,6 +62,8 @@ export interface ProvenanceRecords {
   datasets: {programId: string, name: string}[];
   /** Compounds held by the programs, with the program and role; only those asked about. */
   compounds: {id: string, code: string, programId: string, role?: string | null}[];
+  /** Predictions a scoring run stored (F-22), one per run and predicted column. */
+  predictions?: {runId: string, predicts: string, count: number}[];
 }
 
 export interface ProvenanceGraph {
@@ -131,6 +133,13 @@ export function provenanceGraph(r: ProvenanceRecords): ProvenanceGraph {
       link(add({kind: 'table', id: t.id, name: t.name}), k, 'input of');
     for (const t of run.outputs ?? [])
       link(k, add({kind: 'table', id: t.id, name: t.name}), 'output');
+  }
+  // a scoring run's predictions rest on it, and through it on the model
+  for (const p of r.predictions ?? []) {
+    if (nodes.has(nodeKey('model_run', p.runId))) {
+      link(nodeKey('model_run', p.runId), add({kind: 'prediction', id: `${p.runId}|${p.predicts}`,
+        name: `${p.predicts} on ${p.count} compound${p.count === 1 ? '' : 's'}`}), 'predicted');
+    }
   }
   for (const d of r.documents) {
     const k = add({kind: 'document', id: d.id, name: d.title,

@@ -112,9 +112,25 @@ export namespace funcs {
   }
 
   /**
+   * Batch scoring: runs a catalogued predictive model once over a program's dataset, saves the run to the program, and stores one prediction per compound and column the card's appliesTo.predicts names. Idempotent per model version
+   * @param {string} model - The model's catalogue code, e.g. ProjectPortalCore:SolubilityEstimate
+   */
+  export async function scoreCompounds(portfolio: string , program: string , model: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ScoreCompounds', { portfolio, program, model });
+  }
+
+  /**
+   * A program's stored predictions, the latest per compound, column and model, with the measured value where the program dataset has one
+   * @param {string} model - Only this model
+   */
+  export async function programPredictions(portfolio: string , program: string , model?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ProgramPredictions', { portfolio, program, model });
+  }
+
+  /**
    * A program's activity, newest first, from the portal's own records: gate decisions, evidence, runs saved and selected, documents, snapshots, compound role changes, registry and work-unit changes seen by the sync, new data. Kinds are comma-separated; a series narrows it to what is about that series
    * @param {string} series - Series code
-   * @param {string} kinds - Comma-separated: decision, evidence, run, selection, document, snapshot, compound, work_unit, registry, new_data
+   * @param {string} kinds - Comma-separated: decision, evidence, run, selection, prediction, document, snapshot, compound, work_unit, registry, new_data
    */
   export async function programFeed(portfolio: string , program: string , series?: string , kinds?: string , limit?: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('ProjectPortalCore:ProgramFeed', { portfolio, program, series, kinds, limit });

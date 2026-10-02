@@ -14,6 +14,8 @@ import {
 import {DataRow, DEFAULT_LEAD_ROLES, ProgramDataConfig} from './model/conditions';
 import {Readiness} from './model/readiness';
 import {programTable} from './program-data';
+import {describePrediction, Prediction, withPredictions} from './model/predictions';
+import {predictionsOf} from './predictions';
 
 /** Every catalogued model with its current card's approval and applicability. */
 export async function candidateModels(): Promise<CandidateModel[]> {
@@ -37,6 +39,8 @@ export interface ProgramRecommendation {
   models: Recommendation[];
   /** Per missing column, the suggested models that predict it. */
   predictors: Map<string, Recommendation[]>;
+  /** The program's stored predictions, the latest per compound, column and model: shown first. */
+  predictions?: Prediction[];
   dataError?: string;
 }
 
@@ -71,8 +75,9 @@ export async function recommendFor(ctx: ProgramContext, opts: {stageId?: string 
     workUnits: opts.series ? ['series'] : enabledWorkUnits(portfolio),
     task: opts.task, missingColumns: missing.map((m) => m.column).filter((c): c is string => !!c),
   });
+  const predictions = await predictionsOf(program.id).then((p) => p.latest).catch(() => [] as Prediction[]);
   return {portfolio, program, stage, series: opts.series ?? null, missing, models,
-    predictors: predictorsOf(missing, models), dataError};
+    predictors: predictorsOf(missing, models), predictions, dataError};
 }
 
 /** The same, by codes, for the package function. */
@@ -120,6 +125,8 @@ export function missingAssayFrame(r: ProgramRecommendation): DG.DataFrame {
     DG.Column.fromStrings('items', r.missing.map((m) => m.items.join(', '))),
     DG.Column.fromStrings('predicted by', r.missing.map((m) => m.column ?
       (r.predictors.get(m.column) ?? []).map((x) => x.code).join(', ') : '')),
+    DG.Column.fromStrings('predicted', r.missing.map((m) => withPredictions([m], r.predictions ?? [])[0].predicted
+      .map((p) => `${p.compound} ${describePrediction(p)}`).join('; '))),
   ]);
   df.name = `${r.program.code} · Missing assays`;
   return df;

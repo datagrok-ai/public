@@ -152,8 +152,8 @@ export function quickCards(persona: Persona, config: PersonaConfig | null | unde
 
 /** Program-page sections Simple mode keeps behind More: the analytics (missing assays, suggested
  * models, attention), the run list behind comparisons, the program's roles, and the gate log. */
-export type PageSection = 'recommendation' | 'attention' | 'saved_runs' | 'roles' | 'snapshots' | 'feed' | 'history';
-export const MORE_SECTIONS: PageSection[] = ['recommendation', 'attention', 'saved_runs', 'roles', 'snapshots', 'feed', 'history'];
+export type PageSection = 'recommendation' | 'attention' | 'saved_runs' | 'roles' | 'snapshots' | 'feed' | 'history' | 'predictions';
+export const MORE_SECTIONS: PageSection[] = ['recommendation', 'predictions', 'attention', 'saved_runs', 'roles', 'snapshots', 'feed', 'history'];
 
 /** Board buttons Simple mode leaves out: the ones for the portfolio's keepers. */
 export type BoardButton = 'sync_history' | 'export' | 'all_portfolios';

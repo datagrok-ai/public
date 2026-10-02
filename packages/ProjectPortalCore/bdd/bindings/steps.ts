@@ -316,3 +316,36 @@ export const scratchFolderFile = Given('a file {string} in the folder of the scr
       await grok.dapi.spaces.id(pr.space_id).files.writeString(n, `# ${n}\n\nWritten by a BDD scenario; removed with the scratch project.\n`);
     }, [name, code, portfolio]);
   }, {tier: 'api', description: 'a small text file in the scratch program\'s workspace folder; the scratch cleanup removes the folder'});
+
+/** Removes [model]'s predictions on [program] of [portfolio], with the scoring runs, calls and tables behind them. */
+async function removePredictions(page: Page, model: string, program: string, portfolio: string): Promise<void> {
+  await page.evaluate(async ([m, c, p]) => {
+    const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+    const pr = (await grok.dapi.domains.table('portal.program').query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`}))[0];
+    const predictions = grok.dapi.domains.table('portal.prediction');
+    const runs = grok.dapi.domains.table('portal.model_run');
+    const rows = await predictions.query({filter: `program_id = "${pr.id}" and model_code = "${m}"`});
+    for (const r of rows)
+      await predictions.delete(r.id).catch(() => undefined);
+    for (const id of [...new Set(rows.map((r: any) => r.model_run_id).filter((x: any) => !!x))]) {
+      const run = await runs.get(id).catch(() => null);
+      const call = run?.run_id ? await grok.dapi.functions.calls.find(run.run_id).catch(() => null) : null;
+      for (const t of call?.options?.['portalTables'] ?? [])
+        await grok.dapi.tables.find(t).then((x: any) => grok.dapi.tables.delete(x)).catch(() => undefined);
+      if (call)
+        await grok.dapi.functions.calls.delete(call).catch(() => undefined);
+      if (run)
+        await runs.delete(id).catch(() => undefined);
+    }
+  }, [model, program, portfolio]);
+}
+
+export const notScored = Given('the example solubility model has not scored {string} in the {string} portfolio',
+  async (page: Page, program: string, portfolio: string) => {
+    silent(page);   // set-up a person does not do: kept out of guide videos
+    const model = 'ProjectPortalCore:SolubilityEstimate';
+    await removePredictions(page, model, program, portfolio);
+    atFeatureEnd(page, async () => {
+      await removePredictions(page, model, program, portfolio);
+    });
+  }, {tier: 'api', description: 'removes the model\'s predictions on the program and the scoring runs behind them, now and at the end of the feature'});

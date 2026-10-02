@@ -27,6 +27,7 @@ import './tests/snapshot-tests';
 import './tests/document-tests';
 import './tests/provenance-tests';
 import './tests/feed-tests';
+import './tests/prediction-tests';
 
 export let _package = new DG.Package();
 export { tests };

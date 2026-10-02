@@ -156,6 +156,8 @@ export interface Recommendation {
   reasons: string[];
   approval: string | null;
   installed: boolean;
+  /** Every column the card says the model predicts: what a scoring stores (F-22). */
+  scores?: string[];
 }
 
 const norm = (s: string | null | undefined) => (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -210,7 +212,7 @@ export function recommend(models: CandidateModel[], ctx: RecommendContext): Reco
     if (m.portfolios.includes(ctx.portfolio) && !matched.length)
       reasons.push(`in the ${ctx.portfolio} catalogue`);
     out.push({code: m.code, name: m.name, predicts, matched, reasons, approval: m.approval ?? null,
-      installed: m.installed !== false, rank: a.rank ?? Number.MAX_SAFE_INTEGER});
+      installed: m.installed !== false, scores: a.predicts ?? [], rank: a.rank ?? Number.MAX_SAFE_INTEGER});
   }
   out.sort((x, y) => y.predicts.length - x.predicts.length || y.matched.length - x.matched.length ||
     (APPROVAL_ORDER[x.approval ?? ''] ?? 3) - (APPROVAL_ORDER[y.approval ?? ''] ?? 3) || x.rank - y.rank ||

@@ -185,6 +185,19 @@ A card may say where its model applies (F-13, FR-51). Every key is optional; a k
 EX-SMD declares two synthetic models, `SolubilityEstimate` and `HergRisk`: tiny scripts that compute an
 invented number from potency. They exist to show the flow; their cards say so.
 
+### Predictions
+
+What a catalogued predictive model said about each compound of a discovery program, kept per model
+version (F-22, FR-58/103).
+
+- **The record.** A `prediction` row: program, compound (code, and the registry compound when the code is one), model (catalogue code), model version (the card's version), the program-data column it stands in for (`predicts`), the value, units (read off the column name: `_um` is uM), and the scoring run (`model_run_id`, and its `run_id`). Master-secured through the program. Removing the run removes its predictions.
+- **Batch scoring.** `scoreCompounds(portfolio, program, model)` runs the model once over the program dataset, its dialog's own prefill (the table, the program's codes). The card's `appliesTo.predicts` names the columns; the output column holding each is `predicted_<col>`, `estimated_<col>`, `<col>_predicted`, `<col>_pred`, `<col>_estimate` or `pred_<col>`, never the measured copy. The call is saved with `saveModelRun` (purpose screening, title `Scoring · <model> <version> · <program>`), so provenance reads prediction → run → model.
+- **Idempotent per version.** When every compound already has a prediction from this model version, nothing runs. Otherwise one run, and only the compounds not yet scored are stored; what is stored is never rewritten. A new card version scores again.
+- **Predicted vs measured.** Per model and column, the latest prediction per compound joined with the program dataset's measured value of the same column: how many were measured, the mean absolute error, Pearson's r.
+- **Program page** (discovery portfolios, or wherever predictions exist; behind More in Simple mode). **Score** beside **Run** on a suggested model whose card names what it predicts. *Predictions (n)*: per model and column the fit, the first 12 compounds predicted and measured, **Predicted vs measured** (a table view with a scatter plot), and Provenance of the scoring run. Each compound listed shows its predictions. A missing assay shows the stored predictions of the compounds lacking it ("Predicted: EXC-1006 34.1 uM (...)") before the models that could predict it; `missingAssays` has a `predicted` column.
+- **Elsewhere.** The activity feed has a `prediction` entry per scoring run; provenance has a *Predictions* node under the scoring run.
+- **Functions.** `scoreCompounds(portfolio, program, model)` and `programPredictions(portfolio, program, model)` (compound, predicts, model, version, predicted, measured, units, model run).
+
 ### Program data
 
 Each portfolio declares its program dataset, `programData`: one SQL on a named connection, with
@@ -481,6 +494,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
 | `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |
 | `unfollowProgram(portfolio, program, series)` | Stops following |
+| `scoreCompounds(portfolio, program, model)` | Runs a catalogued predictive model once over the program's compounds, saves the run, stores one prediction per compound and predicted column; idempotent per model version |
+| `programPredictions(portfolio, program, model)` | The program's latest predictions with the measured value beside each |
 | `programFeed(portfolio, program, series, kinds, limit)` | The program's activity, newest first, as a table; a series narrows it to that series, `kinds` (comma-separated) to those kinds |
 | `myFeed(kinds, limit)` | The activity of everything you follow, newest first |
 | `programAttention(portfolio, program)` | The items of one program that trip the portfolio's attention rules, one row per item and rule |
@@ -530,6 +545,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Provenance: the rules (the graph's edges, a cited record deleted since, a walk from a decision up to the data and down to the program, depth, the tree, starts from evidence, a run id and a compound code, the text), and on EX-BIOC a document resting on the run selected for its criterion and its model, the run's output table, and on EX-SMD a decision's readiness and snapshot up to the program data, a start from evidence, the function, the dialog and the program page's links.
   - Program roles: the rules (the strongest role, roles only add, who may change them, grants and what changes), and on EXS-KIN1 a throwaway user made viewer, contributor and approver (access in the app, the folder's grant, the folder seen as that user), a downgrade, removal; a non-approver refused; the functions.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
+  - Predictions: the rules (output columns, units, what a scoring stores and keeps, the latest version, predicted against measured, missing assays), and on EXS-KIN1 a solubility scoring stored against its saved run, the same version again running nothing, predicted vs measured and the missing assay's stored prediction, the functions, and the provenance from the run to the model and the predictions.
   - Activity feed: the rules (entries from each kind of record, evidence folded into its decision, news told twice counted once, newest first, a series' part, kinds, pages), and on EXS-KIN1 new data a check found in the program's feed and the follower's, a series follow that sees only its series, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
@@ -538,7 +554,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 251 of the 254 package tests and all 30 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 259 of the 262 package tests and all 31 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

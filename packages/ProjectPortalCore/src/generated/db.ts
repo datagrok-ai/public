@@ -438,6 +438,7 @@ export type ProgramExpand = {
   'details:evidence': {evidence?: EvidenceRow[]};
   'details:program_snapshot': {program_snapshot?: ProgramSnapshotRow[]};
   'details:document': {document?: DocumentRow[]};
+  'details:prediction': {prediction?: PredictionRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -781,6 +782,7 @@ export type CompoundColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'a
 export type CompoundExpand = {
   'details:program_compound': {program_compound?: ProgramCompoundRow[]};
   'details:compound_role_change': {compound_role_change?: CompoundRoleChangeRow[]};
+  'details:prediction': {prediction?: PredictionRow[]};
 };
 
 /** Row of `portal.program_compound`. */
@@ -1121,6 +1123,7 @@ export type ModelExpand = {
     'default_run_type_id.portfolios'?: string; 'default_run_type_id.is_execution_mode'?: boolean};
   'details:model_card': {model_card?: ModelCardRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
+  'details:prediction': {prediction?: PredictionRow[]};
 };
 
 /** Row of `portal.model_card`. */
@@ -1253,6 +1256,7 @@ export type ModelRunExpand = {
     'run_author.status'?: string; 'run_author.createdOn'?: Dayjs; 'run_author.picture'?: string;
     'run_author.group'?: string; 'run_author.author'?: string};
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};
+  'details:prediction': {prediction?: PredictionRow[]};
 };
 
 /** Row of `portal.sync_run`. */
@@ -1648,6 +1652,75 @@ export type DocumentExpand = {
     'approved_by.group'?: string; 'approved_by.author'?: string};
 };
 
+/** Row of `portal.prediction`. */
+export interface PredictionRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  compound_id?: string;
+  compound_code: string;
+  model_id?: string;
+  model_code: string;
+  model_version: string;
+  predicts: string;
+  predicted_value?: number;
+  units?: string;
+  model_run_id?: string;
+  run_id?: string;
+  predicted_on?: Dayjs;
+  predicted_by?: string;
+}
+
+/** Insert payload for `portal.prediction`. */
+export interface PredictionInsert {
+  program_id: string;
+  compound_id?: string;
+  compound_code: string;
+  model_id?: string;
+  model_code: string;
+  model_version: string;
+  predicts: string;
+  predicted_value?: number;
+  units?: string;
+  model_run_id?: string;
+  run_id?: string;
+  predicted_on?: Dayjs | string;
+  predicted_by?: string;
+}
+
+export type PredictionColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'compound_id' | 'compound_code' | 'model_id' | 'model_code' | 'model_version' | 'predicts' | 'predicted_value' |
+  'units' | 'model_run_id' | 'run_id' | 'predicted_on' | 'predicted_by';
+
+/** Expand keys of `portal.prediction` → fields each adds to the row (consumed by query()/builder). */
+export type PredictionExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'compound_id': {'compound_id.system'?: string; 'compound_id.code'?: string; 'compound_id.name'?: string;
+    'compound_id.smiles'?: string; 'compound_id.aliases'?: string; 'compound_id.batches'?: string;
+    'compound_id.last_synced_on'?: Dayjs; 'compound_id.details'?: {[key: string]: any}};
+  'model_id': {'model_id.code'?: string; 'model_id.name'?: string; 'model_id.package'?: string;
+    'model_id.category'?: string; 'model_id.description'?: string; 'model_id.status'?: ModelStatus;
+    'model_id.owner'?: string; 'model_id.current_version'?: string; 'model_id.portfolios'?: string;
+    'model_id.unit_operations'?: string; 'model_id.default_run_type_id'?: string};
+  'model_run_id': {'model_run_id.func_call'?: string; 'model_run_id.run_id'?: string;
+    'model_run_id.program_id'?: string; 'model_run_id.model_id'?: string; 'model_run_id.model_name'?: string;
+    'model_run_id.model_version'?: string; 'model_run_id.title'?: string; 'model_run_id.stage_id'?: string;
+    'model_run_id.unit_operation_id'?: string; 'model_run_id.run_type_id'?: string;
+    'model_run_id.purpose'?: ModelRunPurpose; 'model_run_id.is_reference'?: boolean;
+    'model_run_id.run_author'?: string; 'model_run_id.run_started'?: Dayjs; 'model_run_id.description'?: string};
+  'predicted_by': {'predicted_by.login'?: string; 'predicted_by.firstName'?: string;
+    'predicted_by.lastName'?: string; 'predicted_by.status'?: string; 'predicted_by.createdOn'?: Dayjs;
+    'predicted_by.picture'?: string; 'predicted_by.group'?: string; 'predicted_by.author'?: string};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -1741,7 +1814,10 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'program_snapshot'; id: string} |
   {op: 'insert'; table: 'document'; ref?: string; values: DG.DomainTxValues<DocumentInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'document'; id: string; values: DG.DomainTxValues<Partial<DocumentRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'document'; id: string};
+  {op: 'delete'; table: 'document'; id: string} |
+  {op: 'insert'; table: 'prediction'; ref?: string; values: DG.DomainTxValues<PredictionInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'prediction'; id: string; values: DG.DomainTxValues<Partial<PredictionRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'prediction'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -1837,6 +1913,9 @@ export const portalDb = {
   },
   get documents() {
     return grok.dapi.domains.table<DocumentRow, DocumentInsert, DocumentColumn, DocumentExpand>('portal.document');
+  },
+  get predictions() {
+    return grok.dapi.domains.table<PredictionRow, PredictionInsert, PredictionColumn, PredictionExpand>('portal.prediction');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

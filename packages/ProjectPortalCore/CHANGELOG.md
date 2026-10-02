@@ -2,6 +2,11 @@
 
 ## 0.3.0 (unreleased)
 
+- Predictions (F-22, FR-58/103), discovery: a `prediction` record (model × model version × compound → value, units, the scoring run). `scoreCompounds(portfolio, program, model)` runs a catalogued model whose card names what it predicts (`appliesTo.predicts`) once over the program dataset, saves the call as a model run, and stores one prediction per compound, idempotently per model version. Pure rules in `src/model/predictions.ts`
+- Program page: **Score** on a suggested model; *Predictions* with predicted against measured per model and column (count, mean absolute error, r), the compounds side by side, a scatter plot, the run's provenance; predictions beside each compound listed; a missing assay shows the stored predictions first. `programPredictions(...)` returns them as a table; `missingAssays` gains a `predicted` column
+- Provenance: a scoring run's predictions as a node under the run. Activity feed: a `prediction` entry per scoring run
+- `portal` schema 0.2.22: table `prediction`. Additive, no migration script
+
 - Activity feed (F-21, FR-80/81/83): a program's activity, newest first, read from the portal's own records: gate decisions (by an approver, the registry or the data) with their evidence, evidence added later, runs saved and selected, documents linked and approved, snapshots, compound role changes, registry and work-unit changes the sync saw, and new data. No event store. Pure entries, merge, filter and pages in `src/model/feed.ts`
 - The program page's *Activity*: a kind filter, a series filter (the series' "what is new": its work units, its news, its compounds), pages of eight, Provenance on an entry over a record; **Activity** on each series row. The ribbon's **My feed**: everything the user follows, a followed series narrowing its program to the series
 - `programFeed(portfolio, program, series, kinds, limit)` and `myFeed(kinds, limit)` return it as a table

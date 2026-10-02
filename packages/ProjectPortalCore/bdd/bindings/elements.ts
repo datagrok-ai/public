@@ -168,3 +168,10 @@ app.element('my feed button', {selector: u2('my-feed-button')});
 app.element('my feed dialog', {selector: u2('my-feed-dialog')});
 app.element('my feed entries', {selector: u2('my-feed-entries')});
 app.element('first my feed program link', {selector: u2('my-feed-program-0')});
+
+app.element('score solubility estimate button', {selector: u2('score-model-projectportalcore-solubilityestimate')});
+app.element('score result', {selector: u2('score-result')});
+app.element('predictions heading', {selector: u2('predictions-heading')});
+app.element('solubility predictions fit', {selector: u2('prediction-fit-projectportalcore-solubilityestimate-solubility-um')});
+app.element('missing solubility prediction', {selector: u2('missing-assay-adme-panel-solubility-um-predicted')});
+app.element('solubility predicted vs measured button', {selector: u2('predicted-vs-measured-projectportalcore-solubilityestimate-solubility-um')});

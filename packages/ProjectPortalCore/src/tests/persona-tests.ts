@@ -51,7 +51,7 @@ category('Portal: persona rules', () => {
   });
 
   test('Simple keeps analytics, runs, snapshots and history behind More; Advanced shows everything', async () => {
-    expect(MORE_SECTIONS.join(), 'recommendation,attention,saved_runs,roles,snapshots,feed,history');
+    expect(MORE_SECTIONS.join(), 'recommendation,predictions,attention,saved_runs,roles,snapshots,feed,history');
     expect(MORE_SECTIONS.every((s) => sectionShown('advanced', s, false)), true);
     expect(MORE_SECTIONS.some((s) => sectionShown('simple', s, false)), false);
     expect(MORE_SECTIONS.every((s) => sectionShown('simple', s, true)), true);

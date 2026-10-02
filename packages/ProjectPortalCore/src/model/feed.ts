@@ -5,15 +5,15 @@
  * reads the records; this turns them into entries, merges, filters and pages them. */
 import type {ProgramChange} from './sync-runs';
 
-export type FeedKind = 'decision' | 'evidence' | 'run' | 'selection' | 'document' | 'snapshot' |
+export type FeedKind = 'decision' | 'evidence' | 'run' | 'selection' | 'prediction' | 'document' | 'snapshot' |
   'compound' | 'work_unit' | 'registry' | 'new_data';
 
-export const FEED_KINDS: FeedKind[] = ['decision', 'evidence', 'run', 'selection', 'document', 'snapshot', 'compound',
+export const FEED_KINDS: FeedKind[] = ['decision', 'evidence', 'run', 'selection', 'prediction', 'document', 'snapshot', 'compound',
   'work_unit', 'registry', 'new_data'];
 
 export const FEED_KIND_LABELS: Record<FeedKind, string> = {
   decision: 'Gate decisions', evidence: 'Evidence', run: 'Runs saved', selection: 'Runs selected',
-  document: 'Documents', snapshot: 'Snapshots', compound: 'Compound roles',
+  prediction: 'Predictions', document: 'Documents', snapshot: 'Snapshots', compound: 'Compound roles',
   work_unit: 'Work units', registry: 'Registry', new_data: 'New data',
 };
 
@@ -53,6 +53,8 @@ export interface FeedRecords {
   evidence: {id: string, decisionId: string | null, kind: string, name: string, by: string | null, on: When}[];
   runs: {id: string, title: string, model: string, by: string | null, on: When}[];
   selections: {id: string, run: string, criterion: string, by: string | null, on: When, rationale?: string | null}[];
+  /** Batch scorings (F-22): one per scoring run. */
+  predictions?: {runId: string, model: string, version: string, count: number, by: string | null, on: When}[];
   documents: {id: string, title: string, version?: string | null, status: string, linkedBy: string | null, linkedOn: When,
     approvedBy?: string | null, approvedOn?: When}[];
   snapshots: {id: string, label: string, by: string | null, on: When}[];
@@ -111,6 +113,10 @@ export function programFeedEntries(r: FeedRecords): FeedEntry[] {
   for (const s of r.selections) {
     push({key: `selection:${s.id}`, at: s.on, kind: 'selection', who: s.by,
       text: `Run selected for ${s.criterion}: ${s.run}${s.rationale ? ` — ${s.rationale}` : ''}`});
+  }
+  for (const p of r.predictions ?? []) {
+    push({key: `prediction:${p.runId}`, at: p.on, kind: 'prediction', who: p.by,
+      text: `${plural(p.count, 'prediction')} stored by ${p.model} ${p.version}`, ref: {kind: 'model_run', id: p.runId}});
   }
   for (const d of r.documents) {
     const title = `${d.title}${d.version ? ` v${d.version}` : ''}`;

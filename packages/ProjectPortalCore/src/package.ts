@@ -36,6 +36,7 @@ import {documentsFrame, documentsOf, linkDocumentTo, loadExampleDocuments as loa
 import {describeDocument} from './model/documents';
 import {provenanceOf} from './provenance';
 import {openProvenanceDialog} from './views/provenance-dialog';
+import {predictionsFrame, scoreCompounds as scoreProgram} from './predictions';
 import {feedFrame, feedUserNames, myFeedOf, programFeedOf, programOf} from './feed';
 import {parseKinds} from './model/feed';
 export * from './package.g';
@@ -195,12 +196,32 @@ export async function unfollowProgram(portfolio: string, program: string, series
   return followByCode(portfolio, program, series || null, true);
 }
 
+//name: scoreCompounds
+//description: Batch scoring: runs a catalogued predictive model once over a program's dataset, saves the run to the program, and stores one prediction per compound and column the card's appliesTo.predicts names. Idempotent per model version
+//input: string portfolio
+//input: string program
+//input: string model {description: The model's catalogue code, e.g. ProjectPortalCore:SolubilityEstimate}
+//output: string report
+export async function scoreCompounds(portfolio: string, program: string, model: string): Promise<string> {
+  return (await scoreProgram(portfolio, program, model)).summary;
+}
+
+//name: programPredictions
+//description: A program's stored predictions, the latest per compound, column and model, with the measured value where the program dataset has one
+//input: string portfolio
+//input: string program
+//input: string model {optional: true; description: Only this model}
+//output: dataframe result
+export async function programPredictions(portfolio: string, program: string, model?: string): Promise<DG.DataFrame> {
+  return predictionsFrame(portfolio, program, model || null);
+}
+
 //name: programFeed
 //description: A program's activity, newest first, from the portal's own records: gate decisions, evidence, runs saved and selected, documents, snapshots, compound role changes, registry and work-unit changes seen by the sync, new data. Kinds are comma-separated; a series narrows it to what is about that series
 //input: string portfolio
 //input: string program
 //input: string series {optional: true; description: Series code}
-//input: string kinds {optional: true; description: Comma-separated: decision, evidence, run, selection, document, snapshot, compound, work_unit, registry, new_data}
+//input: string kinds {optional: true; description: Comma-separated: decision, evidence, run, selection, prediction, document, snapshot, compound, work_unit, registry, new_data}
 //input: int limit {optional: true; default: 100}
 //output: dataframe result
 export async function programFeed(portfolio: string, program: string, series?: string, kinds?: string,
