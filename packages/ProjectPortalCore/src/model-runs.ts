@@ -11,7 +11,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {CriterionArtifactRow, ModelRow, ModelRunInsert, ModelRunRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
-import {isApprover, isContributor, portfolioByCode} from './portal';
+import {portfolioByCode} from './portal';
+import {programAccess} from './program-roles';
 import {checkRunSelection, compareRuns, ComparisonRow, matchesRunFilter, ParamLabel, RunFilter, RunValues,
   SelectionEntry, selectionHistory} from './model/run-selection';
 import {ProgramStatus} from './model/config';
@@ -242,7 +243,8 @@ export async function selectRunForCriterion(programId: string, criterionId: stri
   // asked again here, not only by the gate panel
   const program = await portalDb.programs.get(programId);
   const portfolio = await portalDb.portfolios.get(program.portfolio_id);
-  const refused = checkRunSelection({isApprover: await isApprover(portfolio), isContributor: await isContributor(portfolio),
+  const access = await programAccess(portfolio, programId);
+  const refused = checkRunSelection({isApprover: access.approver, isContributor: access.contributor,
     programStatus: (program.status ?? 'active') as ProgramStatus, rationale});
   if (refused.length)
     throw new Error(refused.join('; '));
@@ -305,9 +307,10 @@ export async function criterionRuns(programId: string, criterionId: string): Pro
     role: a.role, selectedOn: a.selected_on ? dayjs(a.selected_on as any).toISOString() : null,
     selectedBy: a.selected_by ? users.get(a.selected_by) || null : null, rationale: a.rationale ?? null}));
   const history = selectionHistory(entries);
+  const access = await programAccess(portfolio, programId);
   return {candidates, excluded: items.length - candidates.length,
     selectedRunId: artifacts.find((a) => a.role === 'selected')?.model_run_id ?? null, ...history,
-    refused: checkRunSelection({isApprover: await isApprover(portfolio), isContributor: await isContributor(portfolio),
+    refused: checkRunSelection({isApprover: access.approver, isContributor: access.contributor,
       programStatus: (program.status ?? 'active') as ProgramStatus})};
 }
 

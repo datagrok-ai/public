@@ -18,6 +18,9 @@ import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
 import {loadCatalogue} from './catalogue';
 import {mergeCatalogues} from './model/catalogue';
 import {CriterionArtifactKind, RunFilter} from './model/run-selection';
+// program-roles.ts imports from here too; the cycle is safe because neither uses the other at load
+import {programAccess} from './program-roles';
+import {ProgramRole} from './model/program-roles';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -583,7 +586,10 @@ export interface ProgramContext {
   recorded: Record<string, CriterionState>;
   /** Readiness for the next stage, or null at the end of the model. */
   readiness: Readiness | null;
+  /** Records gate decisions: a portfolio approver, or an approver of this program. */
   approver: boolean;
+  /** The program role that adds to the portfolio's groups for the current user, if any. */
+  programRole: ProgramRole | null;
 }
 
 export function readinessFor(ctx: Pick<ProgramContext, 'portfolio' | 'criteria' | 'recorded'>, stageId: string | null,
@@ -604,13 +610,14 @@ export async function programContext(programId: string): Promise<ProgramContext>
   const criteria = stageIds === '' ? [] :
     await portalDb.gateCriterions.query({filter: `stage_id in (${stageIds})`});
   const recorded = Object.fromEntries(states.map((s) => [s.gate_criterion_id, s.status as CriterionState]));
+  const access = await programAccess(portfolio, programId);
   const ctx: ProgramContext = {
     program, portfolio, stages, recorded, states: recorded, readiness: null,
     criteria: criteria.filter((c) => appliesTo(c.modality, program.modality)).map((c) => ({
       id: c.id, stageId: c.stage_id, code: c.code, name: c.name, kind: c.kind, required: c.required !== false,
       rule: c.rule ?? null, condition: (c.condition as DataCondition | undefined) ?? null,
       artifact: c.artifact ?? null, runFilter: (c.run_filter as RunFilter | undefined) ?? null})),
-    approver: await isApprover(portfolio),
+    approver: access.approver, programRole: access.programRole,
   };
   const next = nextStage(stages.map((s) => ({id: s.id, code: s.code, name: s.name, ordinal: s.ordinal})),
     program.stage_id ?? null);

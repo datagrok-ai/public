@@ -283,3 +283,19 @@ export const preferencesCleared = Given('the user\'s portal mode and persona are
     await clearPreferences(page);
   });
 }, {tier: 'api', description: 'clears the remembered mode and persona from the user\'s settings, now and at the end of the feature'});
+
+/** Removes [login]'s own role on [program] of [portfolio], if it has one. */
+async function noRole(page: Page, login: string, program: string, portfolio: string): Promise<void> {
+  await page.evaluate(async ([l, c, p]) => {
+    await grok.functions.call('ProjectPortalCore:setProgramRole', {portfolio: p, program: c, principal: l, role: 'none'});
+  }, [login, program, portfolio]);
+}
+
+export const noProgramRole = Given('{string} has no role on {string} in the {string} portfolio',
+  async (page: Page, login: string, program: string, portfolio: string) => {
+    silent(page);   // set-up a person does not do: kept out of guide videos
+    await noRole(page, login, program, portfolio);
+    atFeatureEnd(page, async () => {
+      await noRole(page, login, program, portfolio);
+    });
+  }, {tier: 'api', description: 'removes the user\'s program role through setProgramRole, now and at the end of the feature'});

@@ -71,6 +71,8 @@ export type CriterionArtifactRole = 'candidate' | 'selected' | 'superseded';
 
 export type FollowWorkUnitKind = 'campaign' | 'series' | 'study' | 'process_stage';
 
+export type ProgramRoleRole = 'viewer' | 'contributor' | 'approver';
+
 /** Row of `portal.stage_model`. */
 export interface StageModelRow {
   id: string;
@@ -422,6 +424,7 @@ export type ProgramExpand = {
   'details:model_run': {model_run?: ModelRunRow[]};
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};
   'details:follow': {follow?: FollowRow[]};
+  'details:program_role': {program_role?: ProgramRoleRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -1403,6 +1406,48 @@ export type FollowExpand = {
     'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
 };
 
+/** Row of `portal.program_role`. */
+export interface ProgramRoleRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  group_id: string;
+  role: ProgramRoleRole;
+  active?: boolean;
+  granted_by?: string;
+  granted_on?: Dayjs;
+}
+
+/** Insert payload for `portal.program_role`. */
+export interface ProgramRoleInsert {
+  program_id: string;
+  group_id: string;
+  role: ProgramRoleRole;
+  active?: boolean;
+  granted_by?: string;
+  granted_on?: Dayjs | string;
+}
+
+export type ProgramRoleColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'group_id' | 'role' | 'active' | 'granted_by' | 'granted_on';
+
+/** Expand keys of `portal.program_role` → fields each adds to the row (consumed by query()/builder). */
+export type ProgramRoleExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'group_id': {'group_id.friendlyName'?: string; 'group_id.description'?: string; 'group_id.author'?: string};
+  'granted_by': {'granted_by.login'?: string; 'granted_by.firstName'?: string; 'granted_by.lastName'?: string;
+    'granted_by.status'?: string; 'granted_by.createdOn'?: Dayjs; 'granted_by.picture'?: string;
+    'granted_by.group'?: string; 'granted_by.author'?: string};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -1484,7 +1529,10 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'criterion_artifact'; id: string} |
   {op: 'insert'; table: 'follow'; ref?: string; values: DG.DomainTxValues<FollowInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'follow'; id: string; values: DG.DomainTxValues<Partial<FollowRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'follow'; id: string};
+  {op: 'delete'; table: 'follow'; id: string} |
+  {op: 'insert'; table: 'program_role'; ref?: string; values: DG.DomainTxValues<ProgramRoleInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'program_role'; id: string; values: DG.DomainTxValues<Partial<ProgramRoleRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'program_role'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -1568,6 +1616,9 @@ export const portalDb = {
   },
   get follows() {
     return grok.dapi.domains.table<FollowRow, FollowInsert, FollowColumn, FollowExpand>('portal.follow');
+  },
+  get programRoles() {
+    return grok.dapi.domains.table<ProgramRoleRow, ProgramRoleInsert, ProgramRoleColumn, ProgramRoleExpand>('portal.program_role');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

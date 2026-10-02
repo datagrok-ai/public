@@ -37,6 +37,10 @@ import {ADVANCED_BOARD_BUTTONS, BoardButton, MORE_SECTIONS, PageSection, Persona
 import {personaIn, runFunctionCard, savedMode, saveMode, savePersona} from '../personas';
 import {missingAssayFrame, recommendationFrame} from '../recommend';
 import {attentionFrame} from '../attention';
+import {isApprover} from '../portal';
+import {namedRolesOf, resolvePrincipal, setProgramRole} from '../program-roles';
+import {PROGRAM_ROLE_LABELS, PROGRAM_ROLES, ProgramRole} from '../model/program-roles';
+import {ProgramRoleRow} from '../generated/db';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -86,6 +90,10 @@ export class PortalView {
   private moreOpen = false;
   /** Draws the program page again from what was last read: a change of mode or persona reads nothing. */
   private redraw: (() => void) | null = null;
+  /** The selected program's roles, and whether the user may change them (a portfolio approver). */
+  private roles: {rows: (ProgramRoleRow & {name: string})[], manage: boolean} = {rows: [], manage: false};
+  /** What the last role change on this page did, by program id. */
+  private roleLine = new Map<string, string>();
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
@@ -265,6 +273,7 @@ export class PortalView {
     }
     const news = follows.length ? this.news ?? null : null;
     this.follows = follows;
+    this.roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
     this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
       choices, attention, recommendation, news);
     this.redraw();
@@ -500,6 +509,7 @@ export class PortalView {
         ...(this.savedLine.has(program.id) ? [named(span(this.savedLine.get(program.id)!, 'pp-muted'), 'save-run-result')] : []),
         runs.length ? this.savedRuns(runs) : named(span('No runs saved to this program yet', 'pp-muted'), 'no-saved-runs'),
       ] : []),
+      ...(shown('roles') ? this.programRoles(ctx) : []),
       ...(shown('history') ? [
         span('History', 'pp-heading'),
         transitions.length ? history : span('No transitions yet', 'pp-muted'),
@@ -788,6 +798,57 @@ export class PortalView {
       ...(runs.superseded.length ? [named(divV(runs.superseded.map((e) =>
         span(`Superseded: ${describeSelection(e)}`, 'pp-gap'))), `run-history-${slug(c.code)}`)] : []),
     ]), `criterion-run-${slug(c.code)}`);
+  }
+
+  /** The program's own viewers, contributors and approvers, on top of the portfolio's groups. The
+   * portfolio's approvers add and remove them; everyone sees them and their own access. */
+  private programRoles(ctx: ProgramContext): HTMLElement[] {
+    const {program} = ctx;
+    const access = ctx.approver ? 'approver' : ctx.programRole ?? null;
+    const out: HTMLElement[] = [
+      named(span('Program roles', 'pp-heading'), 'program-roles-heading'),
+      named(span(`You: ${access ? `${access}${ctx.programRole && ctx.programRole === access ? ' (program role)' : ' (portfolio)'}` :
+        'no role beyond the portfolio\'s groups'}`, 'pp-muted'), 'my-access'),
+    ];
+    const change = async (groupId: string, role: ProgramRole | null) => {
+      try {
+        const r = await setProgramRole(program, groupId, role);
+        this.roleLine.set(program.id, [r.line, ...r.notes].join('; '));
+      } catch (e: any) {
+        this.roleLine.set(program.id, e?.message ?? String(e));
+      }
+      await this.openProgram(program.id, this.viewedStage);
+    };
+    out.push(named(divV(this.roles.rows.length ? this.roles.rows.map((r) => named(divH([
+      span(r.name),
+      badge(PROGRAM_ROLE_LABELS[r.role as ProgramRole] ?? r.role, {variant: r.role === 'approver' ? 'success' : 'accent'}),
+      ...(this.roles.manage ? [(() => {
+        const remove = named(span('Remove', 'pp-link'), `remove-role-${slug(r.name)}`);
+        remove.onclick = () => void change(r.group_id, null);
+        return remove;
+      })()] : []),
+    ], 'pp-unit'), `program-role-${slug(r.name)}`)) :
+      [span('None: the portfolio\'s groups decide', 'pp-muted')], 'pp-units'), 'program-roles'));
+    if (this.roles.manage) {
+      const who = named(document.createElement('input'), 'role-principal-input');
+      who.className = 'pp-text';
+      who.placeholder = 'Group or user login';
+      const role = this.select('role', 'as', PROGRAM_ROLES.map((r) => ({code: r, name: PROGRAM_ROLE_LABELS[r]})), 'viewer');
+      const add = named(button('Add', async () => {
+        try {
+          const g = await resolvePrincipal(who.value);
+          await change(g.id, role.value as ProgramRole);
+        } catch (e: any) {
+          this.roleLine.set(program.id, e?.message ?? String(e));
+          this.redraw?.();
+        }
+      }), 'add-role-button');
+      add.title = 'Give this group or user the role on this program, and share its workspace folder to match';
+      out.push(named(divH([who, role.parentElement!, add], 'pp-actions pp-role-form'), 'add-role'));
+    }
+    if (this.roleLine.has(program.id))
+      out.push(named(span(this.roleLine.get(program.id)!, 'pp-muted'), 'role-result'));
+    return out;
   }
 
   /** Follows or unfollows the program, or one of its series, then redraws the page. */

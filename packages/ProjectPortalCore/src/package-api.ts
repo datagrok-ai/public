@@ -112,6 +112,23 @@ export namespace funcs {
   }
 
   /**
+   * Gives a group, or a user by login, a role on one program (viewer, contributor, approver), on top of the portfolio's groups; none removes it. Only the portfolio's approvers may. The program's workspace folder is shared to match
+   * @param {string} principal - Group name or user login
+   * @param {string} role
+   *   choices: ["viewer", "contributor", "approver", "none"]
+   */
+  export async function setProgramRole(portfolio: string , program: string , principal: string , role: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SetProgramRole', { portfolio, program, principal, role });
+  }
+
+  /**
+   * The roles of one program: each group or user with its role (viewer, contributor, approver), on top of the portfolio's groups
+   */
+  export async function programRoles(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ProgramRoles', { portfolio, program });
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {

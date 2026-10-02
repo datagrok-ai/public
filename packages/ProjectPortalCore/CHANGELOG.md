@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- Program roles (F-16, app side): viewers, contributors and approvers per program, on top of the portfolio's groups, held by a group or a user. Managed by the portfolio's approvers on the program page (*Program roles*) and with `setProgramRole`; listed by `programRoles`. A program approver records gate decisions and a program contributor selects runs, checked where the portfolio's groups are checked. The program's workspace folder is shared to match (View to viewers, Edit to contributors and approvers), also by the builder. Row grants wait on GROK-21041; `ROW_GRANTS` in `src/program-roles.ts` turns them on
+- `portal` schema 0.2.17: table `program_role`. Additive, no migration script
+- Simple mode keeps Program roles behind More
+
 - Simple and Advanced mode, quick actions per persona (F-08, FR-30–32): the board's Mode and Persona selects, remembered per user in the platform's user settings. Simple keeps missing assays, suggested models, attention, saved runs and history behind More, and drops Sync history, Export and All portfolios from the ribbon; Advanced (the default) shows everything. Quick-action cards for chemist, biologist, modeler, process scientist and lead head the program page, each opening an existing action (open data, needs attention, missing assays, suggested models, save a run, choose a run, follow, open workspace, gate decision, portfolio table); one that cannot be used says why
 - `personas` (optional) in a portfolio file: groups mapped to personas, a default persona, and cards per persona, including function cards (`{name, function}`) that get the program's portfolio, program and stage. Without it the persona comes from the user's choice, else the setting
 - `portal` schema 0.2.16: `portfolio.personas`. Additive, no migration script

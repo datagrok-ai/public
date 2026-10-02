@@ -84,6 +84,8 @@ const CSS = `
 .pp-quick-label { font-weight: 600; color: var(--u2-accent, #2083d5); }
 .pp-quick-off { cursor: default; opacity: .5; }
 .pp-quick-off:hover { background: none; }
+.pp-role-form { align-items: center; flex-wrap: wrap; }
+.pp-role-form .pp-text { flex: 1 1 120px; height: 22px; font-size: 12px; }
 `;
 
 let installed = false;

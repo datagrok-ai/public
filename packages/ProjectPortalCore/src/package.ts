@@ -27,6 +27,8 @@ import {diffPortfolioRefs, exportPortfolioConfig, exportProfileBundle, importPro
 import {summarizeDiff} from './model/profile';
 import {missingAssayFrame, recommendByCode, recommendationFrame} from './recommend';
 import {checkNewDataOf, followByCode} from './new-data';
+import {namedRolesOf, programRolesFrame, resolvePrincipal, setProgramRole as setRoleOf} from './program-roles';
+import {ProgramRole} from './model/program-roles';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -182,6 +184,39 @@ export async function followProgram(portfolio: string, program: string, series?:
 //output: string report
 export async function unfollowProgram(portfolio: string, program: string, series?: string): Promise<string> {
   return followByCode(portfolio, program, series || null, true);
+}
+
+/** A program of a portfolio by code, under row security. */
+async function programByCode(portfolio: string, program: string) {
+  const pf = await portfolioByCode(portfolio);
+  const p = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "${program}"`}))[0];
+  if (!p)
+    throw new Error(`${portfolio} has no program ${program}, or it is not shared with you`);
+  return p;
+}
+
+//name: setProgramRole
+//description: Gives a group, or a user by login, a role on one program (viewer, contributor, approver), on top of the portfolio's groups; none removes it. Only the portfolio's approvers may. The program's workspace folder is shared to match
+//input: string portfolio
+//input: string program
+//input: string principal {description: Group name or user login}
+//input: string role {choices: ["viewer", "contributor", "approver", "none"]}
+//output: string report
+export async function setProgramRole(portfolio: string, program: string, principal: string, role: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const group = await resolvePrincipal(principal);
+  const r = await setRoleOf(p, group.id, role === 'none' || !role ? null : role as ProgramRole);
+  return [r.line, ...r.notes.map((n) => `  ${n}`)].join('\n');
+}
+
+//name: programRoles
+//description: The roles of one program: each group or user with its role (viewer, contributor, approver), on top of the portfolio's groups
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function programRoles(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  return programRolesFrame(await namedRolesOf(p.id), `${p.code} · Program roles`);
 }
 
 //name: loadPortfolios

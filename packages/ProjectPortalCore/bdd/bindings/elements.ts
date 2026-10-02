@@ -117,3 +117,10 @@ app.element('quick actions', {selector: u2('quick-actions')});
 app.element('quick actions heading', {selector: u2('quick-actions-heading')});
 app.element('more button', {selector: u2('more-button')});
 app.element('saved runs heading', {selector: u2('saved-runs-heading')});
+
+app.element('program roles', {selector: u2('program-roles')});
+app.element('role principal input', {selector: u2('role-principal-input')});
+app.element('program role input', {selector: u2('role-input')});
+app.element('add role button', {selector: u2('add-role-button')});
+app.element('role result', {selector: u2('role-result')});
+app.element('remove admin role link', {selector: u2('remove-role-admin')});

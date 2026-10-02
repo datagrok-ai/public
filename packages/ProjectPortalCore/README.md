@@ -289,6 +289,20 @@ follow the user to another browser.
   A card is an action code (`open_data`, `open_other_data`, `needs_attention`, `missing_assays`, `suggested_models`, `save_run`, `choose_run`, `follow`, `open_workspace`, `gate_decision`, `portfolio_table`) or a function. A function gets `portfolio`, `program` and `stage` when it has inputs by those names; a view it returns opens, a table opens as a table view. A persona the file leaves out keeps the core's cards.
 - EX-SMD and EX-BIOC map their approvers to the lead persona; their defaults are chemist and process scientist.
 
+### Program roles
+
+A program may have its own viewers, contributors and approvers, on top of the portfolio's three
+groups (F-16, FR-90). A role is held by a group or by a user (the user's personal group). Roles nest:
+an approver may do what a contributor may. A program role only adds; it never takes away what the
+portfolio's groups give.
+
+- **Stored** in `program_role`: program, group, role, who granted it and when. One row per program and group; removing a role turns the row off (`active`).
+- **Managed** on the program page (*Program roles*, behind More in Simple mode) and with `setProgramRole(portfolio, program, principal, role)`, by the portfolio's approvers only. A program approver cannot change roles. `programRoles(portfolio, program)` lists them.
+- **Enforced in the app** where the portfolio's groups are: a program approver records gate decisions (and Met / Waive), a program contributor or approver selects runs. `recordDecision` and `selectRunForCriterion` check again before they write. Letting data advance a whole portfolio stays with the portfolio's approvers.
+- **The workspace folder** of the program is shared to match: View to viewers, Edit to contributors and approvers. Removing a role removes the grant. The portfolio's own groups are never touched. A folder built later gets the roles from the builder.
+- **The program row is not shared yet.** Program rows refuse grants (GROK-21041, see Tests), so a role does not make the row visible to someone outside the portfolio's groups. `syncRowGrants` in `src/program-roles.ts` applies the same grants to the row; it runs when `ROW_GRANTS` is set to true. Once GROK-21041 is fixed, set it, and the same table drives the row grants. The two isolation tests stay unchanged as the acceptance check.
+- `program_role` is table-secured with View and Edit for all users, like `follow`: the app enforces who may change it, the server does not.
+
 ### Stage advance driven by data
 
 Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
@@ -394,6 +408,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `openProgramData(portfolio, program, dataset)` | Opens that table as a table view with the portfolio's viewers |
 | `recommendModels(portfolio, program, stage, series, task)` | Catalogued models that fit the program, best first, a model predicting an assay the gate lacks first |
 | `missingAssays(portfolio, program, stage, series)` | The columns the gate's open data conditions need and rows lack, with the suggested models that predict each |
+| `setProgramRole(portfolio, program, principal, role)` | Gives a group (by name) or a user (by login) a role on one program: viewer, contributor, approver, or none to remove it. Portfolio approvers only; shares the program's folder to match |
+| `programRoles(portfolio, program)` | The program's roles as a table |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
 | `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |
 | `unfollowProgram(portfolio, program, series)` | Stops following |
@@ -438,6 +454,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Profiles: the rules (normal form, readable diff lines by kind, bundle checks, refusal, a handoff to a loaded portfolio), and on the examples the export of each EX file equal to the file, the functions on an edited EX-SMD, and a bundle dry-run, refused, imported and put back.
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
   - Modes and personas: the rules (the persona from groups, default and setting; cards from the defaults, the portfolio and functions; the config check; what Simple hides), and on EXS-KIN1 the settings remembered, the program page's cards for a chemist and a modeler, Simple with More and back, and a function card that opens a table.
+  - Program roles: the rules (the strongest role, roles only add, who may change them, grants and what changes), and on EXS-KIN1 a throwaway user made viewer, contributor and approver (access in the app, the folder's grant, the folder seen as that user), a downgrade, removal; a non-approver refused; the functions.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
@@ -446,11 +463,12 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 208 of the 211 package tests and all 24 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 216 of the 219 package tests and all 25 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.
 - Programs therefore stay private to their author, which fails closed. The tests stay in place as the acceptance check for the fix.
+- Program roles wait on the same fix for row grants; the hook is `ROW_GRANTS` in `src/program-roles.ts` (see Program roles).
 
 The third, saving a model run, fails on a second platform gap: the server's existence check for a
 soft reference to `Core.func_calls` aliases its target `p`, and the permission subquery it embeds
@@ -493,3 +511,5 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
 14. **A package function registers under its TypeScript name.** A different `//name:` header is ignored. The
    function documented as `programData` was therefore registered as `programDataTable`; since 0.3.0 the TypeScript
    function is named `programData`, and `programDataTable` stays as a second function for scripts that use it.
+15. **Deleting a user setting that is not there throws.** `grok.userSettings.delete(name, key)` fails with
+   `Cannot read properties of null` when the key is absent. The portal deletes only a key it has read.

@@ -15,6 +15,7 @@ import {findOrphans, findProgramFolder, isSpaceNamed, Orphan, parseWorkstreams, 
   SpaceRef, stageFolderPaths, StageFolders, WorkspaceProgram} from './model/workspace-plan';
 import {portalDb, PortfolioRow} from './generated/db';
 import {portfolioByCode} from './portal';
+import {syncFolderGrants} from './program-roles';
 
 export interface WorkspaceEntry {
   path: string;
@@ -140,6 +141,9 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
       ordinal: p.stage_id ? ordinals.get(p.stage_id) ?? null : null}))
     .sort((a, b) => a.code.localeCompare(b.code));
   const programs = onlyProgramId ? all.filter((p) => p.id === onlyProgramId) : all;
+  // programs with roles of their own get their folder shared to match
+  const withRoles = dryRun ? new Set<string>() : new Set((await portalDb.programRoles.query({}).catch(() => []))
+    .map((r) => r.program_id));
 
   let attributesWritten = 0;
   for (const p of programs) {
@@ -173,6 +177,11 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
         await portalDb.programs.update(p.id, {space_id: folder.id});
       if (await writeAttributes(folder, programAttributes(portfolio.code, p)))
         attributesWritten++;
+      if (withRoles.has(p.id)) {
+        const row = rows.find((r) => r.id === p.id)!;
+        for (const n of await syncFolderGrants(row, portfolio, folder).catch((e) => [`roles not applied: ${e?.message ?? e}`]))
+          report.notes.push(`${p.code}: ${n}`);
+      }
       const existing = workstreams.length > 0 ? await subspaces(folder.id) : [];
       for (const w of workstreams) {
         const there = existing.some((c) => isSpaceNamed(asRef(c), w));
