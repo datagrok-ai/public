@@ -120,4 +120,5 @@ prints any press more than 2 px off or outside the lit element). What to fix and
 
 For help pages: `npx grok-bdd guide --help-pages` re-films every `@help:` tagged feature of the
 package and copies the GIFs into `public/help/<page dir>/img/`; the page embeds them as
-`![…](img/<scenario slug>.gif)`.
+`![…](img/<scenario slug>.gif)`. `public/help` is the datagrok-ai/help submodule, so the GIFs are
+committed there.

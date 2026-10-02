@@ -21,7 +21,7 @@ The Biostructure Viewer package enables detection and handling of the Molecule3D
 Grid cells of columns with the Molecule3D semantic type are drawn using a designated NGL-based cell renderer. Clicking
 on a cell opens a Biostructure Viewer to explore the structure details.
 
-![pdb_data](../../help/uploads/gifs/biostructure-viewer-pdb-data.gif)
+![pdb_data](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/biostructure-viewer-pdb-data.gif)
 
 ## Viewers
 
@@ -38,7 +38,7 @@ properties of the 'Data' category:
 [NGL Viewer](./src/viewers/ngl-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
 component based on the NGL Viewer [nglviewer.org](https://nglviewer.org/) library developed by Alexander Rose.
 
-![ngl-viewer](../../help/uploads/gifs/ngl-viewer-open-PDB.gif)
+![ngl-viewer](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/ngl-viewer-open-PDB.gif)
 
 ### Biostructure Viewer
 
@@ -63,7 +63,7 @@ Files with handled extensions are previewed and opened with the [Biostructure Vi
 
 This package implements file viewers for supported file types. This is how it looks in action:
 
-![preview-view](../../help/uploads/gifs/biostructure-viewer-preview-view-PDB-mmcif.gif)
+![preview-view](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/biostructure-viewer-preview-view-PDB-mmcif.gif)
 
 See also:
 
