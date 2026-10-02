@@ -215,6 +215,14 @@ export namespace funcs {
   }
 
   /**
+   * Generates the evidence table of a program's document criterion (the run selected for it with its inputs and outputs, the newest snapshot, the gate's data conditions, the decisions citing it) as a CSV and a Markdown file in the program's workspace folder, linked as a new draft version of a document over the criterion. Contributors and approvers
+   * @param {string} criterion - The document criterion, by code
+   */
+  export async function generateEvidenceTable(portfolio: string , program: string , criterion: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:GenerateEvidenceTable', { portfolio, program, criterion });
+  }
+
+  /**
    * What a portal object rests on and what rests on it, depth steps each way: data, runs, models, documents, criteria, decisions, the program. Returns {start, nodes, edges}; an edge runs from what a node rests on to the node
    * @param {string} kind
    *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]

@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- Evidence tables generated into documents (F-40, FR-72): for a document criterion, the run selected for it (inputs and outputs with units), the newest snapshot (the criterion as frozen, its rows), the gate's data conditions as evaluated now and the decisions citing it, as one table. Written as a CSV and a Markdown file into the program's workspace folder and linked as a new draft version of a document over the criterion; the document records each source with a content hash (`document.generated`). Generating again supersedes older generated drafts. Pure assembly in `src/model/evidence-tables.ts`
+- Document cards: **Generate evidence table**; **Table** on a generated document opens it as a table view. `generateEvidenceTable(portfolio, program, criterion)` returns the table
+- `portal` schema 0.2.25: `document.generated`. Additive, no migration script
+
 - Parking orphan folders (FR-22, the action half): `parkOrphans(code, dryRun, folders)` moves the folders the orphan report lists into `_Parked/<date>` under the portfolio's root and records each move; `unparkFolder(id)` moves one back; `parkedFolders(code, all)` lists them. Dry run by default; approvers apply. Never deletes a folder (an emptied `_Parked` is removed on unpark). Pure rules in `src/model/parking.ts`
 - The builder leaves a parked program folder parked; `_Parked` is never an orphan. The orphan report carries each folder's id
 - Ribbon: **Workspace** (Advanced mode): the orphan report with Preview park, Park per folder and Park all, the parked folders with Unpark

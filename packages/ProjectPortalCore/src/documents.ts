@@ -52,7 +52,9 @@ export interface LinkedDocument {
  * Contributors and approvers link drafts; approvers approve. Approving meets the criterion unless
  * it was waived, and supersedes the older approved document of the same kind and criterion. */
 export async function linkDocumentTo(program: ProgramRow, input: Partial<DocumentInput> & {path: string,
-  folder?: string | null, note?: string | null, criterion?: string | null},
+  folder?: string | null, note?: string | null, criterion?: string | null,
+  /** What a generated evidence table was made from (F-40); written on a new document only. */
+  generated?: Record<string, unknown> | null},
   opts: {approvedRequest?: string} = {}): Promise<LinkedDocument> {
   const ctx = await programContext(program.id);
   const access = await programAccess(ctx.portfolio, program.id);
@@ -102,7 +104,7 @@ export async function linkDocumentTo(program: ProgramRow, input: Partial<Documen
     row = await portalDb.documents.get(existing.id);
   } else {
     const [r] = await portalDb.documents.insert({program_id: program.id, path, written_by: me, linked_by: me,
-      linked_on: now as any, ...values} as any);
+      linked_on: now as any, ...values, ...(input.generated ? {generated: input.generated} : {})} as any);
     row = await portalDb.documents.get(r.id);
   }
   // a newer approved version supersedes the older

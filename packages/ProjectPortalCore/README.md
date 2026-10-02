@@ -367,6 +367,18 @@ files with a version and a status, not at a tick.
 - **Functions.** `programDocuments(portfolio, program)` lists a program's documents; `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` links a file or changes the document over it. `loadExampleDocuments()` links the synthetic EX-BIOC documents in `files/documents/` (EX-* portfolios only).
 - `document` is master-secured through the program, like the gate log.
 
+### Evidence tables
+
+The evidence behind a document criterion, generated into a document (F-40, FR-72), so a written
+document can say which runs, data and decisions it rests on.
+
+- **What goes in.** For one document criterion of a program: the run selected for it, with the saved call's inputs and outputs and their units; the program's newest snapshot, with the criterion's state as frozen and up to 25 rows of its table; the data conditions of the criterion's gate, as readiness evaluates them now; the decisions whose evidence cites the criterion, its run, or a document over it that a person wrote. A part with nothing in it says so in one row.
+- **What comes out.** One table (`section, source, ref, item, value, units, state, on`), written twice into the program's workspace folder: a CSV and a Markdown file with a table per section (`evidence-<criterion>-<program>-v<n>-<time>Z.md`). The Markdown file is linked as a new draft document over the criterion, kind `evidence_table` when the portfolio declares it, else `other`, version 1, 2, 3 per criterion. It goes on like any document: approved directly, or submitted where the portfolio asks for approval.
+- **What it records.** `document.generated`: the criterion, when and by whom, each source (`run`, `snapshot`, `condition:<code>`, `decision:<id>`) with its soft reference and a content hash, one hash over all of them, and the CSV's path and SHA-256.
+- **Again.** Generating again makes the next version. Older generated drafts of the criterion are superseded at once; an approved one stays approved until the new version is approved, which supersedes it the usual way.
+- **In the app.** **Generate evidence table** on each document card (contributors and approvers); **Table** on a generated document opens its CSV as a table view. `generateEvidenceTable(portfolio, program, criterion)` does the same and returns the table.
+- Pure assembly in `src/model/evidence-tables.ts`; the platform side in `src/evidence-tables.ts`. Needs the program's workspace folder.
+
 ### Approval workflow
 
 A portfolio may ask for a second person (F-30, FR-57). It is the ArtifactAlignment pattern
@@ -513,6 +525,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `approvalRequests(portfolio, program, status)` | A portfolio's or program's requests: what, status, progress, proposer, reviews, result |
 | `waitingForMe()` | The pending requests the current user may review, oldest first |
 | `linkDocument(portfolio, program, path, criterion, kind, title, version, status)` | Links a file as a document of the program, or changes the document over it; approving meets its criterion unless waived |
+| `generateEvidenceTable(portfolio, program, criterion)` | Generates the evidence table of a document criterion into a new draft document version in the program folder (CSV and Markdown) and returns the table |
 | `provenance(kind, id, depth)` | What a portal record rests on and what rests on it, `depth` steps each way, as `{start, nodes, edges}` |
 | `showProvenance(kind, id)` | The same in a dialog, each record clickable |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |

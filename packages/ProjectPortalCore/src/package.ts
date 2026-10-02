@@ -35,6 +35,7 @@ import {describeSnapshotRow, snapshotsFrame, snapshotsOf, takeSnapshot} from './
 import {documentsFrame, documentsOf, linkDocumentTo, loadExampleDocuments as loadExamples} from './documents';
 import {describeDocument} from './model/documents';
 import {provenanceOf} from './provenance';
+import {generateEvidenceTableFor, summarizeGenerated} from './evidence-tables';
 import {openProvenanceDialog} from './views/provenance-dialog';
 import {predictionsFrame, scoreCompounds as scoreProgram} from './predictions';
 import {feedFrame, feedUserNames, myFeedOf, programFeedOf, programOf} from './feed';
@@ -360,6 +361,19 @@ export async function linkDocument(portfolio: string, program: string, path: str
   return [`${p.code}: ${describeDocument({title: r.document.title, version: r.document.doc_version, status: r.document.status as any})} ` +
     `${r.created ? 'linked' : 'changed'}` + (r.criterion ? `; ${r.criterion.code} ${r.criterion.state}` : '') +
     (r.superseded ? `; ${r.superseded} older version(s) superseded` : ''), ...r.notes.map((n) => `  ${n}`)].join('\n');
+}
+
+//name: generateEvidenceTable
+//description: Generates the evidence table of a program's document criterion (the run selected for it with its inputs and outputs, the newest snapshot, the gate's data conditions, the decisions citing it) as a CSV and a Markdown file in the program's workspace folder, linked as a new draft version of a document over the criterion. Contributors and approvers
+//input: string portfolio
+//input: string program
+//input: string criterion {description: The document criterion, by code}
+//output: dataframe result
+export async function generateEvidenceTable(portfolio: string, program: string, criterion: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  const r = await generateEvidenceTableFor(p, criterion);
+  r.df.setTag('portal.report', summarizeGenerated(p, r));
+  return r.df;
 }
 
 //name: provenance

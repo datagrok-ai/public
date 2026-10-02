@@ -51,6 +51,7 @@ import {documentCardsOf, documentsOf, setDocumentStatus, vocabularyOf} from '../
 import {describeDocument, DocumentCard, DocumentStatus} from '../model/documents';
 import {DocumentRow} from '../generated/db';
 import {openDocumentFile, openLinkDocumentDialog} from './document-dialog';
+import {evidenceTableOf, generatedOf, generateEvidenceTableFor, summarizeGenerated} from '../evidence-tables';
 import {programAccess} from '../program-roles';
 import {openProvenanceDialog} from './provenance-dialog';
 import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
@@ -1042,12 +1043,36 @@ export class PortalView {
         'Only contributors and approvers link documents';
       return b;
     };
+    // the evidence behind a criterion, generated into a new draft version of a document (F-40)
+    const generateButton = (c: DocumentCard, name: string) => {
+      const b = named(button('Generate evidence table', () => {
+        b.disabled = true;
+        void generateEvidenceTableFor(program, c.criterionId).then((r) => {
+          grok.shell.info(summarizeGenerated(program, r));
+          return reopen();
+        }).catch((e) => {
+          b.disabled = false;
+          failed(e);
+        });
+      }), name);
+      b.disabled = !canLink;
+      b.title = canLink ? 'The run selected for it, the newest snapshot, the gate\'s data conditions and the decisions citing it, ' +
+        'as a table in the program folder, linked as a new draft version' : 'Only contributors and approvers generate documents';
+      return b;
+    };
     const line = (row: DocumentRow, name: string) => {
       const open = named(span(describeDocument({title: row.title, version: row.doc_version, status: row.status as DocumentStatus}),
         row.status === 'superseded' ? 'pp-link pp-gap' : 'pp-link'), `${name}-open`);
       open.title = row.path;
       open.onclick = () => void openDocumentFile(row).catch(failed);
       const items: HTMLElement[] = [open, this.provenanceLink('document', row.id, `provenance-${name}`)];
+      // a generated evidence table (F-40) opens as a table too
+      if (generatedOf(row)) {
+        const table = named(span('Table', 'pp-link'), `table-${name}`);
+        table.title = 'Open the evidence table this document was generated with';
+        table.onclick = () => void evidenceTableOf(row).then((df) => grok.shell.addTableView(df)).catch(failed);
+        items.push(table);
+      }
       if ((row.status === 'draft' || row.status === 'rejected') && submits && canLink) {
         const submit = named(span('Submit for approval', 'pp-link'), `submit-${name}`);
         submit.title = `${ctx.portfolio.code} asks for approval of documents: another approver approves it`;
@@ -1076,7 +1101,8 @@ export class PortalView {
         ...(c.missing ? [named(span(c.missing, 'pp-gap'), `document-missing-${key}`)] : []),
         ...(c.run ? [named(span(`Run: ${c.run}`, 'pp-gap'), `document-run-${key}`)] : []),
         ...(c.citedBy.length ? [named(span(`Cited by: ${c.citedBy.join(', ')}`, 'pp-gap'), `document-cited-${key}`)] : []),
-        divH([linkButton({id: c.criterionId, code: c.code, name: c.name}, `link-document-${key}`)], 'pp-actions'),
+        divH([linkButton({id: c.criterionId, code: c.code, name: c.name}, `link-document-${key}`),
+          generateButton(c, `generate-evidence-${key}`)], 'pp-actions'),
       ], 'pp-document-card'), `document-card-${key}`);
     });
     const shown = new Set(d.cards.flatMap((c) => c.documents.map((x) => x.id)));

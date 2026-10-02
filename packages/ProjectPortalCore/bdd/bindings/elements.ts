@@ -198,3 +198,6 @@ app.element('park scratch folder link', {selector: u2('park-orphan-bddparkscratc
 app.element('parked folders', {selector: u2('parked-folders')});
 app.element('no parked folders', {selector: u2('no-parked')});
 app.element('unpark scratch folder button', {selector: u2('unpark-bddparkscratch')});
+
+app.element('scratch evidence project card', {selector: u2('program-bdd-et')});
+app.element('generate process description evidence button', {selector: u2('generate-evidence-process-description')});
