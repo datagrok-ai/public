@@ -11,8 +11,8 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {exampleRunSaved, openApp, runExampleModel, scratchProjectAtStage, scratchWorkspace} from '../bindings/steps.js';
-import {clickOn, selectIn, shouldBe, shouldContainText, shouldHaveValue, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {exampleRunSaved, openApp, runExampleModel, scratchProjectAtStage, scratchWorkspace, titledRunSaved} from '../bindings/steps.js';
+import {check, clickOn, enterInto, selectIn, shouldBe, shouldContainText, shouldHaveValue, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Saved runs on the program page, and the model card", () => {
@@ -51,5 +51,35 @@ test.describe("Saved runs on the program page, and the model card", () => {
     await session.step(36, "And user clicks on scratch save project card", () => clickOn(page, el("scratch save project card")));
     await session.step(37, "Then saved runs should contain text \"Fed-batch titer (example) · BDD-SAVE\"", () => shouldContainText(page, el("saved runs"), "Fed-batch titer (example) · BDD-SAVE"));
     await session.step(38, "And saved runs should contain text \"characterization\"", () => shouldContainText(page, el("saved runs"), "characterization"));
+  });
+  test("Two runs are compared and one is selected for the process description", {tag: ["@portal"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(9, "Given user opens the Project Portal app", () => openApp(page));
+    enter(page, "Project Portal app");
+    await session.step(41, "Given a scratch project \"BDD-PICK\" at stage \"D4\" in the \"EX-BIOC\" portfolio", () => scratchProjectAtStage(page, "BDD-PICK", "D4", "EX-BIOC"));
+    await session.step(42, "And a run of the example model at feed rate 2 titled \"Feed 2\" saved to the scratch project \"BDD-PICK\" in the \"EX-BIOC\" portfolio", () => titledRunSaved(page, 2, "Feed 2", "BDD-PICK", "EX-BIOC"));
+    await session.step(43, "And a run of the example model at feed rate 4 titled \"Feed 4\" saved to the scratch project \"BDD-PICK\" in the \"EX-BIOC\" portfolio", () => titledRunSaved(page, 4, "Feed 4", "BDD-PICK", "EX-BIOC"));
+    await session.step(44, "When user clicks on biologics development portfolio", () => clickOn(page, el("biologics development portfolio")));
+    await session.step(45, "And user clicks on scratch pick project card", () => clickOn(page, el("scratch pick project card")));
+    await session.step(46, "Then process description run should contain text \"No run selected · 2 candidates\"", () => shouldContainText(page, el("process description run"), "No run selected · 2 candidates"));
+    await session.step(47, "When user clicks on choose process description run button", () => clickOn(page, el("choose process description run button")));
+    await session.step(48, "Then choose run dialog should be visible", () => shouldBe(page, el("choose run dialog"), "visible"));
+    await session.step(49, "And run filter should contain text \"Production bioreactor\"", () => shouldContainText(page, el("run filter"), "Production bioreactor"));
+    await session.step(50, "When user checks feed 2 candidate", () => check(page, el("feed 2 candidate")));
+    await session.step(51, "And user checks feed 4 candidate", () => check(page, el("feed 4 candidate")));
+    await session.step(52, "Then run comparison should contain text \"Feed rate (% v/v per day)\"", () => shouldContainText(page, el("run comparison"), "Feed rate (% v/v per day)"));
+    await session.step(53, "And run comparison should contain text \"Final titer\"", () => shouldContainText(page, el("run comparison"), "Final titer"));
+    await session.step(54, "When user selects \"Feed 4\" in selected run input", () => selectIn(page, "Feed 4", el("selected run input")));
+    await session.step(55, "And user enters \"Higher titer at the same temperature\" into selection rationale input", () => enterInto(page, "Higher titer at the same temperature", el("selection rationale input")));
+    await session.step(56, "And user clicks on select run button", () => clickOn(page, el("select run button")));
+    await session.step(57, "Then choose run dialog should not be visible", () => shouldNotBe(page, el("choose run dialog"), "visible"));
+    await session.step(58, "And process description run should contain text \"Feed 4 · \"", () => shouldContainText(page, el("process description run"), "Feed 4 · "));
+    await session.step(59, "And process description criterion should contain text \"met\"", () => shouldContainText(page, el("process description criterion"), "met"));
+    await session.step(60, "When user clicks on choose process description run button", () => clickOn(page, el("choose process description run button")));
+    await session.step(61, "And user selects \"Feed 2\" in selected run input", () => selectIn(page, "Feed 2", el("selected run input")));
+    await session.step(62, "And user enters \"Lower feed holds the titer\" into selection rationale input", () => enterInto(page, "Lower feed holds the titer", el("selection rationale input")));
+    await session.step(63, "And user clicks on select run button", () => clickOn(page, el("select run button")));
+    await session.step(64, "Then process description run should contain text \"Run: Feed 2\"", () => shouldContainText(page, el("process description run"), "Run: Feed 2"));
+    await session.step(65, "And process description run history should contain text \"Superseded: Feed 4\"", () => shouldContainText(page, el("process description run history"), "Superseded: Feed 4"));
   });
 });

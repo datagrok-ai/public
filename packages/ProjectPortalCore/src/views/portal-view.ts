@@ -7,7 +7,7 @@ import {badge, button, Control, divV, divH, signal, span} from '@datagrok-librar
 import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
-import {programContext, ProgramContext, programData, readinessFor, recordDecision, setCriterion, stagesOf,
+import {ContextCriterion, programContext, ProgramContext, programData, readinessFor, recordDecision, setCriterion, stagesOf,
   summarizePlan, syncPortfolio, syncWorkUnits, verdictFor, enabledWorkUnits, workUnitsOf, compoundsOf, syncCompounds} from '../portal';
 import {COMPOUND_ROLES, summarizeCompoundPlan} from '../model/compounds';
 import {summarizeWorkUnitPlan, WORK_UNIT_LABELS, WorkUnitKind} from '../model/work-units';
@@ -16,7 +16,9 @@ import {DataRow} from '../model/conditions';
 import {Decision, nextStage} from '../model/gates';
 import {openPortfolioTable} from './portfolio-table-view';
 import {existingSpaces} from '../workspace';
-import {SavedRunItem, savedRunsOf} from '../model-runs';
+import {CriterionRuns, criterionRuns, SavedRunItem, savedRunsOf} from '../model-runs';
+import {describeSelection} from '../model/run-selection';
+import {openChooseRunDialog} from './choose-run-dialog';
 import {showModelCard} from './model-card';
 import {openSaveRunDialog} from './save-run-dialog';
 
@@ -198,7 +200,16 @@ export class PortalView {
     const spaceId = ctx.program.space_id;
     const spaceLive = !!spaceId && (await existingSpaces([spaceId]).catch(() => new Set<string>())).has(spaceId);
     const runs = await savedRunsOf(id).catch(() => []);
-    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs);
+    // criteria of the shown stage that rest on a run: their candidates and choices
+    const choices = new Map<string, CriterionRuns>();
+    for (const c of readiness?.criteria ?? []) {
+      if (ctx.criteria.find((x) => x.id === c.id)?.artifact === 'model_run') {
+        const r = await criterionRuns(id, c.id).catch(() => null);
+        if (r)
+          choices.set(c.id, r);
+      }
+    }
+    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs, choices);
   }
 
   /** Readiness for the viewed stage: the context already holds the next stage's. */
@@ -217,7 +228,8 @@ export class PortalView {
 
   private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
     readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = [],
-    compounds: {link: any, compound: any}[] = [], spaceLive = false, runs: SavedRunItem[] = []): void {
+    compounds: {link: any, compound: any}[] = [], spaceLive = false, runs: SavedRunItem[] = [],
+    choices = new Map<string, CriterionRuns>()): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -234,8 +246,9 @@ export class PortalView {
     }), 'pp-track'), 'stage-track');
 
     const editable = ctx.approver && ctx.portfolio.stage_authority === 'portal';
-    const criteriaList = named(divV((readiness?.criteria ?? []).map((c) => this.criterionRow(program.id, c, editable)),
-      'pp-criteria'), 'gate-criteria');
+    const criteriaList = named(divV((readiness?.criteria ?? []).map((c) => this.criterionRow(program.id, c, editable,
+      choices.get(c.id) ? {runs: choices.get(c.id)!, criterion: ctx.criteria.find((x) => x.id === c.id)!} : null)),
+    'pp-criteria'), 'gate-criteria');
     const score = readiness ? named(divH([
       span(`${readiness.requiredMet} of ${readiness.requiredTotal} required met or waived`),
       badge(`${Math.round(readiness.score * 100)}%`,
@@ -385,7 +398,8 @@ export class PortalView {
 
   /** One criterion of the gate: its state, and for a data condition what the data says. A computed
    * condition can only be waived; "Met" is for what a person records. */
-  private criterionRow(programId: string, c: CriterionReadiness, editable: boolean): HTMLElement {
+  private criterionRow(programId: string, c: CriterionReadiness, editable: boolean,
+    run: {runs: CriterionRuns, criterion: ContextCriterion} | null = null): HTMLElement {
     const variant: BadgeVariant = c.state === 'met' ? 'success' : c.state === 'waived' ? 'accent' :
       c.state === 'not_met' ? 'error' : c.state === 'in_progress' ? 'warning' : 'default';
     const row = named(divH([
@@ -399,12 +413,33 @@ export class PortalView {
       if (c.state !== 'waived' && c.state !== 'met')
         row.append(named(button('Waive', () => void this.mark(programId, c.id, 'waived')), `mark-waived-${slug(c.code)}`));
     }
-    if (!c.result && !c.gap)
+    const runLines = run ? [this.criterionRun(programId, c, run.runs, run.criterion)] : [];
+    if (!c.result && !c.gap && !runLines.length)
       return row;
-    const lines = [c.result ? span(c.result.summary, 'pp-muted') : span(c.gap, 'pp-muted')];
+    const lines = c.result ? [span(c.result.summary, 'pp-muted')] : c.gap ? [span(c.gap, 'pp-muted')] : [];
     if (c.result && !c.result.met && c.result.gaps.length)
       lines.push(span(c.gap.slice(c.result.summary.length + 2), 'pp-gap'));
-    return divV([row, named(divV(lines, 'pp-criterion-detail'), `criterion-detail-${slug(c.code)}`)], 'pp-criterion-block');
+    return divV([row, named(divV([...lines, ...runLines], 'pp-criterion-detail'), `criterion-detail-${slug(c.code)}`)],
+      'pp-criterion-block');
+  }
+
+  /** A criterion that rests on a run: the run chosen, the ones it superseded, and Choose run. */
+  private criterionRun(programId: string, c: CriterionReadiness, runs: CriterionRuns, criterion: ContextCriterion): HTMLElement {
+    const choose = named(button('Choose run…', () => void openChooseRunDialog({programId,
+      criterion: {id: c.id, code: c.code, name: c.name, runFilter: criterion.runFilter}, runs,
+      onSelected: () => this.openProgram(programId, this.viewedStage)})
+      .catch((e) => grok.shell.error(e?.message ?? String(e)))), `choose-run-${slug(c.code)}`);
+    choose.disabled = runs.refused.length > 0;
+    choose.title = runs.refused.join('; ') || 'Compare the program\'s runs for this criterion and select one';
+    return named(divV([
+      named(divH([
+        runs.selected ? span(`Run: ${describeSelection(runs.selected)}`) :
+          span(`No run selected · ${runs.candidates.length} candidate${runs.candidates.length === 1 ? '' : 's'}`, 'pp-muted'),
+        choose,
+      ], 'pp-criterion-run'), `selected-run-${slug(c.code)}`),
+      ...(runs.superseded.length ? [named(divV(runs.superseded.map((e) =>
+        span(`Superseded: ${describeSelection(e)}`, 'pp-gap'))), `run-history-${slug(c.code)}`)] : []),
+    ]), `criterion-run-${slug(c.code)}`);
   }
 
   /** Opens the program's folder the way the Browse tree does. A folder deleted by hand is reported,

@@ -11,6 +11,8 @@ export type StageModelSetting = 'discovery' | 'development' | 'rollout';
 
 export type GateCriterionKind = 'document' | 'data_condition' | 'decision';
 
+export type GateCriterionArtifact = 'model_run';
+
 export type PortfolioSetting = 'discovery' | 'development' | 'rollout';
 
 export type PortfolioModalityClass = 'small_molecule' | 'biologic' | 'any';
@@ -164,6 +166,8 @@ export interface GateCriterionRow {
   condition?: {[key: string]: any};
   required?: boolean;
   modality?: string;
+  artifact?: GateCriterionArtifact;
+  run_filter?: {[key: string]: any};
 }
 
 /** Insert payload for `portal.gate_criterion`. */
@@ -176,10 +180,12 @@ export interface GateCriterionInsert {
   condition?: {[key: string]: any};
   required?: boolean;
   modality?: string;
+  artifact?: GateCriterionArtifact;
+  run_filter?: {[key: string]: any};
 }
 
 export type GateCriterionColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'stage_id' |
-  'code' | 'name' | 'kind' | 'rule' | 'condition' | 'required' | 'modality';
+  'code' | 'name' | 'kind' | 'rule' | 'condition' | 'required' | 'modality' | 'artifact' | 'run_filter';
 
 /** Expand keys of `portal.gate_criterion` → fields each adds to the row (consumed by query()/builder). */
 export type GateCriterionExpand = {
@@ -481,7 +487,8 @@ export type CriterionStatusExpand = {
   'gate_criterion_id': {'gate_criterion_id.stage_id'?: string; 'gate_criterion_id.code'?: string;
     'gate_criterion_id.name'?: string; 'gate_criterion_id.kind'?: GateCriterionKind;
     'gate_criterion_id.rule'?: string; 'gate_criterion_id.condition'?: {[key: string]: any};
-    'gate_criterion_id.required'?: boolean; 'gate_criterion_id.modality'?: string};
+    'gate_criterion_id.required'?: boolean; 'gate_criterion_id.modality'?: string;
+    'gate_criterion_id.artifact'?: GateCriterionArtifact; 'gate_criterion_id.run_filter'?: {[key: string]: any}};
   'owner': {'owner.login'?: string; 'owner.firstName'?: string; 'owner.lastName'?: string; 'owner.status'?: string;
     'owner.createdOn'?: Dayjs; 'owner.picture'?: string; 'owner.group'?: string; 'owner.author'?: string};
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};

@@ -63,3 +63,17 @@ app.element('run type input', {selector: u2('run-type-input')});
 app.element('run purpose input', {selector: u2('purpose-input')});
 app.element('save run button', {selector: u2('save-run-button')});
 app.element('save a run button', {selector: u2('save-a-run-button')});
+
+app.element('scratch pick project card', {selector: u2('program-bdd-pick')});
+app.element('process description criterion', {selector: u2('criterion-process-description')});
+app.element('process description run', {selector: u2('selected-run-process-description')});
+app.element('process description run history', {selector: u2('run-history-process-description')});
+app.element('choose process description run button', {selector: u2('choose-run-process-description')});
+app.element('choose run dialog', {selector: u2('choose-run-dialog')});
+app.element('run filter', {selector: u2('run-filter')});
+app.element('feed 2 candidate', {selector: u2('candidate-feed-2')});
+app.element('feed 4 candidate', {selector: u2('candidate-feed-4')});
+app.element('run comparison', {selector: u2('run-comparison')});
+app.element('selected run input', {selector: u2('selected-run-input')});
+app.element('selection rationale input', {selector: u2('selection-rationale-input')});
+app.element('select run button', {selector: u2('select-run-button')});

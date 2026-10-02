@@ -36,3 +36,30 @@ Feature: Saved runs on the program page, and the model card
     And user clicks on scratch save project card
     Then saved runs should contain text "Fed-batch titer (example) · BDD-SAVE"
     And saved runs should contain text "characterization"
+
+  Scenario: Two runs are compared and one is selected for the process description
+    Given a scratch project "BDD-PICK" at stage "D4" in the "EX-BIOC" portfolio
+    And a run of the example model at feed rate 2 titled "Feed 2" saved to the scratch project "BDD-PICK" in the "EX-BIOC" portfolio
+    And a run of the example model at feed rate 4 titled "Feed 4" saved to the scratch project "BDD-PICK" in the "EX-BIOC" portfolio
+    When user clicks on biologics development portfolio
+    And user clicks on scratch pick project card
+    Then process description run should contain text "No run selected · 2 candidates"
+    When user clicks on choose process description run button
+    Then choose run dialog should be visible
+    And run filter should contain text "Production bioreactor"
+    When user checks feed 2 candidate
+    And user checks feed 4 candidate
+    Then run comparison should contain text "Feed rate (% v/v per day)"
+    And run comparison should contain text "Final titer"
+    When user selects "Feed 4" in selected run input
+    And user enters "Higher titer at the same temperature" into selection rationale input
+    And user clicks on select run button
+    Then choose run dialog should not be visible
+    And process description run should contain text "Feed 4 · "
+    And process description criterion should contain text "met"
+    When user clicks on choose process description run button
+    And user selects "Feed 2" in selected run input
+    And user enters "Lower feed holds the titer" into selection rationale input
+    And user clicks on select run button
+    Then process description run should contain text "Run: Feed 2"
+    And process description run history should contain text "Superseded: Feed 4"

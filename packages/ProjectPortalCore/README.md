@@ -168,6 +168,22 @@ A portfolio file declares its model catalogue under `catalogue` (F-12, FR-50):
 The example catalogue (EX-BIOC) declares five unit operations, three run types and `FedBatchTiter`
 with a draft card. The codes carry the `EX-` prefix because unit operations and run types are global.
 
+### Choosing the run a criterion rests on
+
+A criterion can rest on a model run (F-15). It says so in the portfolio file:
+
+```json
+{"code": "process_description", "name": "Locked process description", "kind": "document",
+ "artifact": "model_run", "runFilter": {"unitOperations": ["EX-PROD"]}}
+```
+
+- **The filter** narrows the program's runs by `unitOperations`, `runTypes` and `models` (catalogue codes; a model by its nqName). Every list it has must match; a run without the code does not pass. No filter offers every run.
+- **The gate panel** shows the run selected for the criterion (who, when, why) and the runs it superseded. **Choose run…** opens the dialog.
+- **The dialog** lists the runs the filter admits and says how many it leaves out. Tick two or more to compare them: inputs, then outputs, labelled from the function with units, what differs in bold, a table output by its row count. Pick one and give a rationale.
+- **Who may choose:** the portfolio's contributors and approvers, also where the registry owns the stage. Choosing a run is evidence, not a stage decision. Not on a program that has ended. `selectRunForCriterion` asks again before it writes.
+- **What a choice does** is unchanged: the run becomes `selected`, the one before `superseded` (kept, shown as history), and the criterion is met unless it was waived.
+- `criterionRuns(programId, criterionId)` and `runComparison(items)` return what the panel and the dialog show.
+
 ### Saving a run from the app
 
 The **Save to program** dialog (F-14, FR-53) asks for portfolio, program, unit operation, run type,
@@ -253,11 +269,12 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
   - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
+  - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, and a run saved with the catalogue's codes.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 124 of the 127 package tests and all 14 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 134 of the 137 package tests and all 15 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

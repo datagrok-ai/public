@@ -11,7 +11,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {CriterionArtifactRow, ModelRow, ModelRunInsert, ModelRunRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
-import {portfolioByCode} from './portal';
+import {isApprover, isContributor, portfolioByCode} from './portal';
+import {checkRunSelection, compareRuns, ComparisonRow, matchesRunFilter, ParamLabel, RunFilter, RunValues,
+  SelectionEntry, selectionHistory} from './model/run-selection';
+import {ProgramStatus} from './model/config';
 import {findSubfolder} from './workspace';
 import {RUN_OPTIONS, RunPurpose, runFolderPath, runOptions} from './model/model-runs';
 import {programFolderName} from './model/workspace-plan';
@@ -202,6 +205,9 @@ export interface SavedRunItem {
   stage: string | null;
   unitOperation: string | null;
   runType: string | null;
+  /** The catalogue codes, which a criterion's run filter names. */
+  unitOperationCode?: string | null;
+  runTypeCode?: string | null;
 }
 
 /** The program's runs, newest first, with the model, stage, unit operation and run type by name.
@@ -220,7 +226,9 @@ export async function savedRunsOf(programId: string): Promise<SavedRunItem[]> {
   return runs.map((run) => ({run, model: run.model_id ? models.get(run.model_id) ?? null : null,
     stage: run.stage_id ? stages.get(run.stage_id)?.code ?? null : null,
     unitOperation: run.unit_operation_id ? ops.get(run.unit_operation_id)?.name ?? null : null,
-    runType: run.run_type_id ? types.get(run.run_type_id)?.name ?? null : null}));
+    runType: run.run_type_id ? types.get(run.run_type_id)?.name ?? null : null,
+    unitOperationCode: run.unit_operation_id ? ops.get(run.unit_operation_id)?.code ?? null : null,
+    runTypeCode: run.run_type_id ? types.get(run.run_type_id)?.code ?? null : null}));
 }
 
 /** Selects a run for a program's criterion: the run becomes the `selected` artifact, a run
@@ -231,6 +239,13 @@ export async function selectRunForCriterion(programId: string, criterionId: stri
   const run = await portalDb.modelRuns.get(modelRunId);
   if (run.program_id !== programId)
     throw new Error('the run belongs to another program');
+  // asked again here, not only by the gate panel
+  const program = await portalDb.programs.get(programId);
+  const portfolio = await portalDb.portfolios.get(program.portfolio_id);
+  const refused = checkRunSelection({isApprover: await isApprover(portfolio), isContributor: await isContributor(portfolio),
+    programStatus: (program.status ?? 'active') as ProgramStatus, rationale});
+  if (refused.length)
+    throw new Error(refused.join('; '));
   let status = (await portalDb.criterionStatuses.query(
     {filter: `program_id = "${programId}" and gate_criterion_id = "${criterionId}"`}))[0];
   if (!status)
@@ -253,6 +268,65 @@ export async function selectRunForCriterion(programId: string, criterionId: stri
       evidence: `run "${run.title ?? run.run_id}" (${run.run_id ?? run.func_call}) selected: ${rationale}`});
   }
   return await portalDb.criterionArtifacts.get(id);
+}
+
+/** What the gate panel and the choose-run dialog show for a criterion that takes a run. */
+export interface CriterionRuns {
+  /** The program's runs the criterion's filter admits, newest first. */
+  candidates: SavedRunItem[];
+  /** Runs of the program the filter leaves out. */
+  excluded: number;
+  /** The model_run id of the run selected now, if any. */
+  selectedRunId: string | null;
+  selected: SelectionEntry | null;
+  superseded: SelectionEntry[];
+  /** Why the current user may not select (rationale aside); empty when they may. */
+  refused: string[];
+}
+
+const itemCodes = (i: SavedRunItem) => ({model: i.run.model_name, unitOperation: i.unitOperationCode ?? null,
+  runType: i.runTypeCode ?? null});
+
+/** The candidates, the current choice and the history of choices of one criterion of a program. */
+export async function criterionRuns(programId: string, criterionId: string): Promise<CriterionRuns> {
+  const [program, criterion, items] = await Promise.all([portalDb.programs.get(programId),
+    portalDb.gateCriterions.get(criterionId), savedRunsOf(programId)]);
+  const portfolio = await portalDb.portfolios.get(program.portfolio_id);
+  const filter = (criterion.run_filter as RunFilter | undefined) ?? null;
+  const candidates = items.filter((i) => matchesRunFilter(itemCodes(i), filter));
+  const status = (await portalDb.criterionStatuses.query(
+    {filter: `program_id = "${programId}" and gate_criterion_id = "${criterionId}"`}))[0];
+  const artifacts = status ? await portalDb.criterionArtifacts.query({filter: `criterion_status_id = "${status.id}"`}) : [];
+  const titles = new Map(items.map((i) => [i.run.id, i.run.title ?? i.run.run_id ?? i.run.model_name]));
+  const users = new Map<string, string>();
+  for (const id of new Set(artifacts.map((a) => a.selected_by).filter((x): x is string => !!x)))
+    users.set(id, (await grok.dapi.users.find(id).catch(() => null))?.friendlyName ?? '');
+  const entries: SelectionEntry[] = artifacts.map((a) => ({runTitle: titles.get(a.model_run_id) ?? a.model_run_id,
+    role: a.role, selectedOn: a.selected_on ? dayjs(a.selected_on as any).toISOString() : null,
+    selectedBy: a.selected_by ? users.get(a.selected_by) || null : null, rationale: a.rationale ?? null}));
+  const history = selectionHistory(entries);
+  return {candidates, excluded: items.length - candidates.length,
+    selectedRunId: artifacts.find((a) => a.role === 'selected')?.model_run_id ?? null, ...history,
+    refused: checkRunSelection({isApprover: await isApprover(portfolio), isContributor: await isContributor(portfolio),
+      programStatus: (program.status ?? 'active') as ProgramStatus})};
+}
+
+/** The runs side by side: their inputs and outputs, read back from the saved calls, labelled from
+ * the function's parameters. A run whose call cannot be loaded shows empty values. */
+export async function runComparison(items: SavedRunItem[]): Promise<ComparisonRow[]> {
+  const calls = await Promise.all(items.map((i) => i.run.run_id ?
+    grok.dapi.functions.calls.include('inputs, outputs').find(i.run.run_id).catch(() => null) : Promise.resolve(null)));
+  // a saved call holds a dataframe parameter as the uploaded table's id, not the table
+  const value = (p: DG.Property, v: unknown) => p.propertyType === DG.TYPE.DATA_FRAME && !(v instanceof DG.DataFrame) ?
+    (v ? 'saved table' : null) : v;
+  const read = (c: DG.FuncCall | null, which: 'inputs' | 'outputs') => !c ? {} :
+    Object.fromEntries(c.func[which].map((p) => [p.name, value(p, c[which][p.name])]));
+  const values: RunValues[] = items.map((i, k) => ({title: i.run.title ?? i.run.run_id ?? '',
+    inputs: read(calls[k], 'inputs'), outputs: read(calls[k], 'outputs')}));
+  const func = calls.find((c) => c)?.func ?? null;
+  const label = (p: DG.Property): ParamLabel => ({name: p.name, caption: p.caption || null,
+    units: p.units || p.options?.['units'] || null});
+  return compareRuns(values, func ? {inputs: func.inputs.map(label), outputs: func.outputs.map(label)} : {});
 }
 
 export function summarizeSavedRun(r: SavedModelRun): string {

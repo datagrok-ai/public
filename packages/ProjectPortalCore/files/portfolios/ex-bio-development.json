@@ -174,7 +174,9 @@
           {
             "code": "process_description",
             "name": "Locked process description",
-            "kind": "document"
+            "kind": "document",
+            "artifact": "model_run",
+            "runFilter": {"unitOperations": ["EX-PROD"]}
           }
         ],
         "folders": ["Drug Substance/Process Lock"]

@@ -65,6 +65,14 @@ const CSS = `
 .pp-field-label { flex: 0 0 110px; font-size: 12px; color: var(--u2-text-muted, #666); }
 .pp-select, .pp-text { flex: 1 1 auto; min-width: 0; height: 26px; font-size: 13px; }
 .pp-warnings { gap: 2px; }
+.pp-choose-run { gap: 8px; min-width: 560px; max-height: 70vh; overflow-y: auto; }
+.pp-choose-run > * { flex-shrink: 0; }
+.pp-choose-run textarea { width: 100%; box-sizing: border-box; }
+.pp-candidate { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.pp-candidate input { margin-top: 6px; }
+.pp-compare-box { overflow-x: auto; }
+.pp-compare tr.pp-differs td { font-weight: 600; }
+.pp-criterion-run { gap: 4px; align-items: center; flex-wrap: wrap; font-size: 12px; }
 `;
 
 let installed = false;

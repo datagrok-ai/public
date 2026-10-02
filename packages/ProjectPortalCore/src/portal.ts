@@ -17,6 +17,7 @@ import {planWorkUnits, WorkUnitKind, WorkUnitPlan, WorkUnitRef, WORK_UNIT_FIELDS
 import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
 import {loadCatalogue} from './catalogue';
 import {mergeCatalogues} from './model/catalogue';
+import {CriterionArtifactKind, RunFilter} from './model/run-selection';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -73,6 +74,15 @@ export async function isApprover(portfolio: PortfolioRow): Promise<boolean> {
   if (mine.some((g) => g.name === 'Administrators' || g.friendlyName === 'Administrators'))
     return true;
   return portfolio.approvers !== undefined && portfolio.approvers !== null && ids.has(portfolio.approvers);
+}
+
+/** Whether the current user is in the portfolio's contributors group. Approvers are nested in it
+ * by ensureGroups, so an approver usually is too; isApprover is asked separately anyway. */
+export async function isContributor(portfolio: PortfolioRow): Promise<boolean> {
+  if (!portfolio.contributors)
+    return false;
+  const mine = await grok.dapi.groups.currentUserGroups();
+  return mine.some((g) => g.id === portfolio.contributors);
 }
 
 /** Shares a program row with its portfolio: View to viewers, Edit to contributors.
@@ -137,7 +147,8 @@ export async function loadStageModel(m: StageModelConfig, report: string[]): Pro
     for (const c of s.criteria ?? []) {
       await upsertByKey(portalDb.gateCriterions, {stage_id: stageId, code: c.code},
         {name: c.name, kind: c.kind, rule: c.rule ?? null, condition: c.condition ?? null,
-          required: c.required ?? true, modality: c.modality ?? null});
+          required: c.required ?? true, modality: c.modality ?? null, artifact: c.artifact ?? null,
+          run_filter: c.runFilter ?? null});
     }
   }
   report.push(`stage model ${m.code}: ${m.stages.length} stages`);
@@ -539,6 +550,9 @@ export interface ContextCriterion {
   required: boolean;
   rule: string | null;
   condition: DataCondition | null;
+  /** `model_run`: a run is chosen for it from the gate panel. */
+  artifact?: CriterionArtifactKind | null;
+  runFilter?: RunFilter | null;
 }
 
 /** Whether a criterion declared for [modality] applies to a program of [programModality]. */
@@ -583,7 +597,8 @@ export async function programContext(programId: string): Promise<ProgramContext>
     program, portfolio, stages, recorded, states: recorded, readiness: null,
     criteria: criteria.filter((c) => appliesTo(c.modality, program.modality)).map((c) => ({
       id: c.id, stageId: c.stage_id, code: c.code, name: c.name, kind: c.kind, required: c.required !== false,
-      rule: c.rule ?? null, condition: (c.condition as DataCondition | undefined) ?? null})),
+      rule: c.rule ?? null, condition: (c.condition as DataCondition | undefined) ?? null,
+      artifact: c.artifact ?? null, runFilter: (c.run_filter as RunFilter | undefined) ?? null})),
     approver: await isApprover(portfolio),
   };
   const next = nextStage(stages.map((s) => ({id: s.id, code: s.code, name: s.name, ordinal: s.ordinal})),

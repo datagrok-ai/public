@@ -189,3 +189,14 @@ export const runExampleModel = When('user runs the example model', async (page: 
     await f.prepare({feedRate: 3, temperature: 36.5, days: 14, seedingDensity: 0.5}).call();
   });
 }, {tier: 'api', description: 'runs Fed-batch titer (example) on its default inputs, as its run view would'});
+
+export const titledRunSaved = Given('a run of the example model at feed rate {int} titled {string} saved to the scratch project {string} in the {string} portfolio',
+  async (page: Page, feedRate: number, title: string, code: string, portfolio: string) => {
+    silent(page);
+    await page.evaluate(async ([rate, t, c, p]) => {
+      const f = DG.Func.find({package: 'ProjectPortalCore', name: 'FedBatchTiter'})[0];
+      const call = await f.prepare({feedRate: rate, temperature: 36.5, days: 14, seedingDensity: 0.5}).call();
+      await grok.functions.call('ProjectPortalCore:saveModelRun', {call, portfolio: p, program: c,
+        unitOperation: 'EX-PROD', runType: 'EX-SIM', purpose: 'characterization', title: t});
+    }, [feedRate, title, code, portfolio] as const);
+  }, {tier: 'api', description: 'runs Fed-batch titer (example) at that feed rate and saves it to the program under that title'});

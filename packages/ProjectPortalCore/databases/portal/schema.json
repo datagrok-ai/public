@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -58,7 +58,9 @@
         "rule": {"type": "string", "description": "For data conditions: the rule as a person reads it"},
         "condition": {"type": "json", "description": "For data conditions: the rule as the portal evaluates it over the program dataset (scope, where, measured, minCount). Without it the criterion is recorded by hand"},
         "required": {"type": "bool", "default": true},
-        "modality": {"type": "string", "description": "Applies only to programs of this modality (matches program.modality); empty = every modality"}
+        "modality": {"type": "string", "description": "Applies only to programs of this modality (matches program.modality); empty = every modality"},
+        "artifact": {"type": "string", "choices": ["model_run"], "description": "What the criterion rests on: model_run = a run saved to the program is chosen for it from the gate panel"},
+        "run_filter": {"type": "json", "description": "Which of the program's runs the criterion offers: unitOperations, runTypes, models (catalogue codes); empty = every run"}
       }
     },
     "portfolio": {

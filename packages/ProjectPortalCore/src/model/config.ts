@@ -5,6 +5,7 @@ import {validateWorkUnits, WorkUnitFeedConfig, WorkUnitKind} from './work-units'
 import {validateStageFolders} from './workspace-plan';
 import {CompoundFeedConfig, validateCompoundFeed} from './compounds';
 import {mergeCatalogues, ModelCatalogueConfig} from './catalogue';
+import {CriterionArtifactKind, RunFilter, validateRunCriterion} from './run-selection';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -26,6 +27,11 @@ export interface CriterionConfig {
   required?: boolean;
   /** Applies only to programs of this modality; empty means every modality. */
   modality?: string;
+  /** What the criterion rests on: `model_run` means a run saved to the program is chosen for it
+   * from the gate panel. */
+  artifact?: CriterionArtifactKind;
+  /** Which of the program's runs it offers, by unit operation, run type or model code. */
+  runFilter?: RunFilter;
 }
 
 export interface StageConfig {
@@ -227,6 +233,7 @@ export function validateStageModel(m: StageModelConfig): string[] {
         errors.push(`${where}: criterion ${s.code}/${cr.code} is a ${cr.kind}; only data conditions take a condition`);
       else if (cr.condition)
         errors.push(...validateCondition(cr.condition).map((e) => `${where}: condition ${s.code}/${cr.code}: ${e}`));
+      errors.push(...validateRunCriterion(cr.artifact, cr.runFilter).map((e) => `${where}: criterion ${s.code}/${cr.code}: ${e}`));
     }
   }
   return errors;

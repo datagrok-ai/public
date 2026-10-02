@@ -12,6 +12,7 @@ import './tests/portfolio-table-tests';
 import './tests/model-run-tests';
 import './tests/catalogue-tests';
 import './tests/save-run-tests';
+import './tests/run-selection-tests';
 
 export let _package = new DG.Package();
 export { tests };
