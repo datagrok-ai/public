@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.11.6 (2026-10-02)
+
+* Activity Cliffs: Fixed "Wait for analysis to complete" never completing
+
 ## 1.11.5 (2026-09-23)
 
 * Tutorials: Dashboards tutorial now opens the dashboard you just saved, not another user's dashboard with the same name
