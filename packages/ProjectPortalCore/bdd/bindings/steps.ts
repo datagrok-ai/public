@@ -1,7 +1,7 @@
 /* The steps only this package can define: how to reach the app, a scratch program to take
    through a gate, and reading a board's stage columns in order. */
 import type {Page} from '@playwright/test';
-import {Given, Then} from '@datagrok-libraries/bdd';
+import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, expect, silent} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
@@ -175,3 +175,17 @@ export const exampleRunSaved = Given('a run of the example model saved to the sc
         unitOperation: 'EX-PROD', runType: 'EX-SIM', purpose: 'characterization'});
     }, [code, portfolio]);
   }, {tier: 'api', description: 'runs Fed-batch titer (example) and saves the run to the program with saveModelRun'});
+
+export const scratchWorkspace = Given('the workspace of the scratch project {string} in the {string} portfolio is built',
+  async (page: Page, code: string, portfolio: string) => {
+    silent(page);
+    await page.evaluate(async ([c, p]) => grok.functions.call('ProjectPortalCore:buildWorkspace',
+      {code: p, dryRun: false, program: c}), [code, portfolio]);
+  }, {tier: 'api', description: 'builds the folders of that one program; the scratch cleanup removes them'});
+
+export const runExampleModel = When('user runs the example model', async (page: Page) => {
+  await page.evaluate(async () => {
+    const f = DG.Func.find({package: 'ProjectPortalCore', name: 'FedBatchTiter'})[0];
+    await f.prepare({feedRate: 3, temperature: 36.5, days: 14, seedingDensity: 0.5}).call();
+  });
+}, {tier: 'api', description: 'runs Fed-batch titer (example) on its default inputs, as its run view would'});

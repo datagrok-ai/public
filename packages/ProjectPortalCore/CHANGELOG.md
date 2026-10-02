@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Save to program from the app (F-14, FR-53): a dialog asks for portfolio, program (the ones you can see in that portfolio), unit operation, run type, purpose and title, fills in what it can (the program page's portfolio and program, the call's earlier annotations, the model's catalogue portfolio, unit operation and run type), warns when an input is outside the card's validity range, then calls `saveModelRun` and says where the run was linked. It opens from the balloon that follows each run of a catalogued model, from a run's context menu, from the program page's Save a run button (this session's runs), and as `saveRunToProgram(call)`
+- `buildWorkspace` takes an optional `program`, to build one program's folders
 - Model catalogue and model cards (F-12, FR-50): a portfolio file declares its `catalogue` (unit operations, run types, models with their cards), checked with the set and loaded with the portfolios, idempotently; `loadModelCatalogue` loads one handed over without a portfolio file. Runs saved before their model was catalogued are linked to it on load
 - Model card: the question the model answers, intended use, inputs with their validity range, outputs, applicability, performance, lineage, limitations, owner, approval state. Inputs and outputs the card does not list come from the function's signature. `modelCard(model)` returns it; the program page opens it from a saved run
 - Program page: the program's saved runs, newest first, with model, stage at run, unit operation, run type and purpose

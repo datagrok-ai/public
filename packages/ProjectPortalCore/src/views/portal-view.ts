@@ -18,6 +18,7 @@ import {openPortfolioTable} from './portfolio-table-view';
 import {existingSpaces} from '../workspace';
 import {SavedRunItem, savedRunsOf} from '../model-runs';
 import {showModelCard} from './model-card';
+import {openSaveRunDialog} from './save-run-dialog';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -51,6 +52,8 @@ export class PortalView {
   private selected: string | null = null;
   /** The stage whose criteria the gate panel shows; null = the program's next stage. */
   private viewedStage: string | null = null;
+  /** Where the last run saved from this page went, by program id. */
+  private savedLine = new Map<string, string>();
   /** The selected program's dataset, read once per open; undefined = not read yet. */
   private data: {rows: DataRow[] | null, error?: string} | undefined;
 
@@ -276,6 +279,16 @@ export class PortalView {
       named(span(program.space_id ? 'The workspace folder is gone: rebuild it with buildWorkspace' :
         'No workspace yet: build it with buildWorkspace', 'pp-muted'), 'no-workspace');
 
+    const saveRun = named(button('Save a run…', () => void openSaveRunDialog({
+      context: {portfolio: ctx.portfolio.code, program: program.code},
+      onSaved: async (_r, line) => {
+        this.savedLine.set(program.id, line);
+        if (this.selected === program.id)
+          await this.openProgram(program.id, this.viewedStage);
+      },
+    }).catch((e) => grok.shell.error(e?.message ?? String(e)))), 'save-a-run-button');
+    saveRun.title = 'Save a run of a catalogued model, made in this session, to this program';
+
     this.detail.replaceChildren(
       named(span(program.name, 'pp-title'), 'program-title'),
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
@@ -296,6 +309,8 @@ export class PortalView {
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
       named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
+      divH([saveRun], 'pp-actions'),
+      ...(this.savedLine.has(program.id) ? [named(span(this.savedLine.get(program.id)!, 'pp-muted'), 'save-run-result')] : []),
       runs.length ? this.savedRuns(runs) : named(span('No runs saved to this program yet', 'pp-muted'), 'no-saved-runs'),
       span('History', 'pp-heading'),
       transitions.length ? history : span('No transitions yet', 'pp-muted'),

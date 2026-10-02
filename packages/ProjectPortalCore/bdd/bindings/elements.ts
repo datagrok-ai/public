@@ -52,3 +52,14 @@ app.element('example model link', {selector: u2('model-link-projectportalcore-fe
 app.element('model card', {selector: u2('model-card')});
 app.element('model card question', {selector: u2('model-card-question')});
 app.element('model card inputs', {selector: u2('model-card-inputs')});
+
+app.element('scratch save project card', {selector: u2('program-bdd-save')});
+app.element('save run link', {selector: u2('save-run-link')});
+app.element('save run dialog', {selector: u2('save-run-dialog')});
+app.element('run portfolio input', {selector: u2('portfolio-input')});
+app.element('run program input', {selector: u2('program-input')});
+app.element('run unit operation input', {selector: u2('unit-operation-input')});
+app.element('run type input', {selector: u2('run-type-input')});
+app.element('run purpose input', {selector: u2('purpose-input')});
+app.element('save run button', {selector: u2('save-run-button')});
+app.element('save a run button', {selector: u2('save-a-run-button')});

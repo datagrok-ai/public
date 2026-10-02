@@ -11,6 +11,7 @@ import './tests/compound-tests';
 import './tests/portfolio-table-tests';
 import './tests/model-run-tests';
 import './tests/catalogue-tests';
+import './tests/save-run-tests';
 
 export let _package = new DG.Package();
 export { tests };

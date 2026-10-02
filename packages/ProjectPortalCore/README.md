@@ -168,6 +168,21 @@ A portfolio file declares its model catalogue under `catalogue` (F-12, FR-50):
 The example catalogue (EX-BIOC) declares five unit operations, three run types and `FedBatchTiter`
 with a draft card. The codes carry the `EX-` prefix because unit operations and run types are global.
 
+### Saving a run from the app
+
+The **Save to program** dialog (F-14, FR-53) asks for portfolio, program, unit operation, run type,
+purpose and an optional title, then calls `saveModelRun` and says where the run was linked
+(`Saved to EXB-203 at D5, linked into …/Drug Substance/Process Lock`).
+- **Filled in before you touch it.** From the program page: its portfolio and program. Otherwise from the call's own annotations when it was saved before, else from the model's catalogue: its first portfolio you can see, its first unit operation, its default run type. A code the lists do not hold is left blank.
+- **Programs you can see.** The program list is the portfolio's programs under row security, running ones first.
+- **Validity.** An input outside the card's validity range is a warning, not a refusal.
+- **Where it opens.**
+  - After every run of a catalogued model, a balloon offers *Save to program…* (for 20 s). It follows runs from any run view, the function dialog and Compute's included, once the package has loaded in the session (opening the app loads it).
+  - A run's context menu (`Save to program…`), wherever the platform shows one for a FuncCall.
+  - The program page's **Save a run…** button, over this session's runs of catalogued models.
+  - `saveRunToProgram(call)` from a script.
+- Compute2's RichFunctionView has no extension point for a third-party action, so the dialog is not a button in its ribbon.
+
 `model_run.func_call`, the soft reference to the saved call, cannot be written today (platform
 gap, see Tests). Every row also holds `run_id`, the call's id as plain text. The insert tries the
 soft reference first and writes the row without it when the server refuses, so the reference is
@@ -215,10 +230,11 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
-| `buildWorkspace(code, dryRun)` | Builds one portfolio's workspace. With `dryRun` it lists what it would create. Refused while another build of the same root runs. |
+| `buildWorkspace(code, dryRun, program)` | Builds one portfolio's workspace, or with `program` one program's folders. With `dryRun` it lists what it would create. Refused while another build of the same root runs. |
 | `workspaceOrphans(code)` | The folders a prune-or-park pass would look at; a report, nothing is changed |
 | `setCompoundRole(portfolio, program, compound, role, rationale)` | Changes a compound's role in a program by hand, logged |
 | `saveModelRun(call, portfolio, program, unitOperation, runType, purpose, title, folder)` | Annotates, saves and links a run into the program's workspace, and records it as a `model_run` |
+| `saveRunToProgram(call)` | Opens the save-to-program dialog for a run |
 | `modelCard(model)` | The card of a catalogued model (by function nqName), as a widget |
 | `loadModelCatalogue(catalogue, portfolio)` | Loads a catalogue handed over without a portfolio file, checked first. Idempotent |
 | `buildAllWorkspaces` | Builds the workspace of every portfolio that declares a `workspaceRoot` |
@@ -236,11 +252,12 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds, stage folders from the builder and on advance, the orphan report.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
+  - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, and a run saved with the catalogue's codes.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 118 of the 121 package tests and all 13 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 124 of the 127 package tests and all 14 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

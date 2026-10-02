@@ -60,6 +60,11 @@ const CSS = `
 .pp-card-facts { gap: 2px; margin-top: 6px; }
 .pp-card-fact { gap: 6px; }
 .pp-card-fact > .pp-muted { flex: 0 0 110px; }
+.pp-save-run { gap: 8px; min-width: 400px; }
+.pp-field { gap: 8px; align-items: center; }
+.pp-field-label { flex: 0 0 110px; font-size: 12px; color: var(--u2-text-muted, #666); }
+.pp-select, .pp-text { flex: 1 1 auto; min-width: 0; height: 26px; font-size: 13px; }
+.pp-warnings { gap: 2px; }
 `;
 
 let installed = false;

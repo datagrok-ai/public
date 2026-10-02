@@ -9,6 +9,21 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
+   * Once the package loads: offers to save each run of a catalogued model to a program, and adds Save to program to a run's context menu
+   */
+  export async function portalInit(): Promise<void> {
+    return await grok.functions.call('ProjectPortalCore:PortalInit', {});
+  }
+
+  /**
+   * Opens the save-to-program dialog for a run: portfolio, program, unit operation, run type and purpose, filled in from the model's catalogue
+   * @param {any} call - A call that has run
+   */
+  export async function saveRunToProgram(call: any ): Promise<void> {
+    return await grok.functions.call('ProjectPortalCore:SaveRunToProgram', { call });
+  }
+
+  /**
    * Several portfolios on one instance, each on its own stage-gate model and registry
    */
   export async function projectPortalApp(path?: string ): Promise<DG.View> {
@@ -98,9 +113,10 @@ export namespace funcs {
 
   /**
    * Creates the portfolio's Spaces tree (root, a folder per program, its workstreams) and shares the root with the portfolio's groups. Additive and idempotent; dryRun previews what would be created
+   * @param {string} program - Build only this program's folders (its code)
    */
-  export async function buildWorkspace(code: string , dryRun: boolean ): Promise<string> {
-    return await grok.functions.call('ProjectPortalCore:BuildWorkspace', { code, dryRun });
+  export async function buildWorkspace(code: string , dryRun: boolean , program?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:BuildWorkspace', { code, dryRun, program });
   }
 
   /**

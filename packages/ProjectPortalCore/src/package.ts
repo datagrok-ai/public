@@ -15,12 +15,46 @@ import {saveModelRun as saveRun, summarizeSavedRun} from './model-runs';
 import {RunPurpose} from './model/model-runs';
 import {loadCatalogues} from './catalogue';
 import {modelCardWidget} from './views/model-card';
+import {openSaveRunDialog} from './views/save-run-dialog';
+import {trackModelRuns} from './save-run';
+import {span} from '@datagrok-libraries/u2';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
 import '@datagrok-libraries/u2/src/dg/domain/styles.js';
 
 export const _package = new DG.Package();
+
+/** After a run of a catalogued model: a balloon that opens the save-to-program dialog for it. */
+function offerSave(call: DG.FuncCall): void {
+  installStyles();
+  const link = span('Save to program…', 'pp-link');
+  link.dataset.u2Name = 'save-run-link';
+  link.onclick = () => void openSaveRunDialog({call}).catch((e) => grok.shell.error(e?.message ?? String(e)));
+  const box = document.createElement('div');
+  box.append(span(`${call.func.friendlyName ?? call.func.name} ran. `), link);
+  grok.shell.info(box, {timeout: 20});
+}
+
+//name: portalInit
+//tags: init
+//description: Once the package loads: offers to save each run of a catalogued model to a program, and adds Save to program to a run's context menu
+export async function portalInit(): Promise<void> {
+  trackModelRuns(offerSave);
+  grok.events.onContextMenu.subscribe((e: any) => {
+    const item = e?.args?.item;
+    if (item instanceof DG.FuncCall && e.args.menu)
+      e.args.menu.item('Save to program…', () => void openSaveRunDialog({call: item}));
+  });
+}
+
+//name: saveRunToProgram
+//description: Opens the save-to-program dialog for a run: portfolio, program, unit operation, run type and purpose, filled in from the model's catalogue
+//input: funccall call {description: A call that has run}
+export async function saveRunToProgram(call: DG.FuncCall): Promise<void> {
+  installStyles();
+  await openSaveRunDialog({call});
+}
 
 //name: Project Portal
 //description: Several portfolios on one instance, each on its own stage-gate model and registry
@@ -160,9 +194,18 @@ export async function routingAuditOf(sources: string): Promise<string> {
 //description: Creates the portfolio's Spaces tree (root, a folder per program, its workstreams) and shares the root with the portfolio's groups. Additive and idempotent; dryRun previews what would be created
 //input: string code
 //input: bool dryRun = false
+//input: string program {optional: true; description: Build only this program's folders (its code)}
 //output: string report
-export async function buildWorkspace(code: string, dryRun: boolean = false): Promise<string> {
-  return summarizeWorkspace(await buildPortfolioWorkspace(code, dryRun));
+export async function buildWorkspace(code: string, dryRun: boolean = false, program?: string): Promise<string> {
+  let only: string | undefined;
+  if (program) {
+    const pf = await portfolioByCode(code);
+    const p = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "${program}"`}))[0];
+    if (!p)
+      throw new Error(`${code} has no program ${program}, or it is not shared with you`);
+    only = p.id;
+  }
+  return summarizeWorkspace(await buildPortfolioWorkspace(code, dryRun, only));
 }
 
 //name: workspaceOrphans
