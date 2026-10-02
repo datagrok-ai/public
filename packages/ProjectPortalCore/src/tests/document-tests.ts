@@ -121,7 +121,8 @@ category('Portal: documents', () => {
     const ctx = await programContext(exb201.id);
     const card = (await documentCardsOf(ctx)).find((c) => c.code === 'process_description')!;
     expect(card.gate, 'next');
-    expect(card.documents.map((d) => `${d.title} ${d.version} ${d.status}`).join(), 'Process description, Antibody Alpha 0.3 draft');
+    // other tests and generated evidence tables may add documents to the same criterion
+    expect(card.documents.map((d) => `${d.title} ${d.version} ${d.status}`).includes('Process description, Antibody Alpha 0.3 draft'), true);
     const df: DG.DataFrame = await grok.functions.call('ProjectPortalCore:programDocuments', {portfolio: 'EX-BIOC', program: 'EXB-201'});
     expect(df.rowCount >= 2, true);
     expect(df.col('kind')!.toList().includes('development_report'), true);
