@@ -1,5 +1,9 @@
 # Proteomics changelog
 
+## v.next
+
+* GROK-21039: PCA plot: Confidence ellipses drawn with ARGB colors (15% fill), no longer passed as HTML strings with a near-zero opacity
+
 ## 1.3.0 (2026-07-13)
 
 - **Rank–Abundance (dynamic-range) viewer** — visualize the abundance dynamic range across the

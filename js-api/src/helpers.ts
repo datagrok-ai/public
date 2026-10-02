@@ -40,8 +40,10 @@ export interface AnnotationRegion {
   id?: string;
   type?: string;
   header?: string;
-  headerColor?: string;
-  fillColor?: string;
+  /** ARGB integer. */
+  headerColor?: number;
+  /** ARGB integer; the alpha is the region's opacity. */
+  fillColor?: number;
   outlineWidth?: number;
   outlineColor?: number;
   xMap?: string;

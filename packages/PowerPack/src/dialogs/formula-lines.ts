@@ -159,11 +159,6 @@ function htmlWithAlpha(c: number): string {
   return DG.Color.toHtml(DG.Color.setAlpha(c, 255)) + (a === 255 ? '' : a.toString(16).padStart(2, '0'));
 }
 
-/** Region colors come as ARGB numbers or as HTML strings. */
-function toColor(c: number | string | undefined | null): number | undefined {
-  return c == null ? undefined : typeof c === 'string' ? DG.Color.fromHtml(c) : c;
-}
-
 /** A region color written as 0xRRGGBB carries no alpha and means opaque, as the renderers read it. */
 function opaqueIfNoAlpha(c: number): number {
   return DG.Color.a(c) === 0 ? DG.Color.setAlpha(c, 255) : c;
@@ -1174,7 +1169,7 @@ class Editor {
   private inputColor(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
     const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
     const defaultColor = isFormulaLine ? '#000000' : DG.Color.toHtml(DG.Color.gray);
-    const fill = toColor((item as DG.AnnotationRegion).fillColor);
+    const fill = (item as DG.AnnotationRegion).fillColor;
     let c = isFormulaLine ? DG.Color.fromHtml((item as DG.FormulaLine).color ?? defaultColor) : fill ?? DG.Color.gray;
     if (isFormulaLine && item.opacity != null)
       c = DG.Color.setAlpha(c, Math.round(DG.Color.a(c) * item.opacity / 100));
@@ -1187,19 +1182,20 @@ class Editor {
         if (isFormulaLine)
           (item as DG.FormulaLine).color = value;
         else
-          (item as any).fillColor = DG.Color.fromHtml(value);
+          (item as DG.AnnotationRegion).fillColor = DG.Color.fromHtml(value);
         this.onItemChangedAction(itemIdx, isFormulaLine);
       }});
     (ibColor.input as HTMLInputElement).placeholder = defaultColor;
     return ibColor.root;
   }
 
-  private areaInputColor(itemIdx: number, header: string = 'Color', key: keyof DG.AnnotationRegion, defaultColor: string = '#000000'): HTMLElement {
+  private areaInputColor(itemIdx: number, header: string, key: 'outlineColor' | 'headerColor', defaultColor: string = '#000000'): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
+    const color = item[key];
     const ibColor = ui.input.color(header, {
-      value: item[key] ? htmlWithAlpha(opaqueIfNoAlpha(toColor(item[key] as number | string)!)) : defaultColor, useAlphaChannel: true,
+      value: color ? htmlWithAlpha(opaqueIfNoAlpha(color)) : defaultColor, useAlphaChannel: true,
       onValueChanged: (value) => {
-        (item as any)[key] = DG.Color.fromHtml(value);
+        item[key] = DG.Color.fromHtml(value);
         this.onItemChangedAction(itemIdx, false);
       }});
     const elColor = ibColor.input as HTMLInputElement;
