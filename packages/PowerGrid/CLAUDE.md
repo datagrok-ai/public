@@ -77,6 +77,7 @@ The `addPinnedColumn()` function is exposed as a package function.
 ### Tests (`src/tests/`)
 
 - `webgpu-tests.ts` — WebGPU rendering benchmarks
+- `forms-viewer-tests.ts` — Forms viewer property changes while it has no table
 
 ## Key Patterns
 

@@ -564,6 +564,9 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   render() {
+    if (!this.dataFrame)
+      return;
+
     const grid = this.getGrid();
 
     if (this.pinnedRowIndexes.some((i) => i >= this.dataFrame.rowCount))
