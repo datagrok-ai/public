@@ -66,7 +66,7 @@ export interface ConditionResult {
   summary: string;
 }
 
-const isBlank = (v: unknown) => v === null || v === undefined || v === '' ||
+export const isBlank = (v: unknown) => v === null || v === undefined || v === '' ||
   (typeof v === 'number' && Number.isNaN(v));
 
 const num = (v: unknown): number | null => {
@@ -88,7 +88,7 @@ const same = (a: unknown, b: unknown): boolean => {
 };
 
 /** Column names are matched case-insensitively: query engines differ in what case they return. */
-function get(row: DataRow, column: string): unknown {
+export function columnValue(row: DataRow, column: string): unknown {
   if (column in row)
     return row[column];
   const key = Object.keys(row).find((k) => k.toLowerCase() === column.toLowerCase());
@@ -96,7 +96,7 @@ function get(row: DataRow, column: string): unknown {
 }
 
 export function holds(row: DataRow, p: Predicate): boolean {
-  const v = get(row, p.column);
+  const v = columnValue(row, p.column);
   switch (p.op) {
   case 'present': return !isBlank(v);
   case 'absent': return isBlank(v);
@@ -152,9 +152,10 @@ export function validateCondition(c: DataCondition): string[] {
   return errors;
 }
 
-const rowId = (row: DataRow, i: number): string => {
+/** What a row is called in a gap list or a flag: its compound, id, code, lot or name column. */
+export const rowId = (row: DataRow, i: number): string => {
   for (const k of ['compound', 'id', 'code', 'lot', 'name']) {
-    const v = get(row, k);
+    const v = columnValue(row, k);
     if (!isBlank(v))
       return String(v);
   }
@@ -163,23 +164,28 @@ const rowId = (row: DataRow, i: number): string => {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** The rows a scope admits, with their index: every row, the lead set's, or those in a series. */
+export function rowsInScope(scope: ConditionScope, rows: DataRow[], leadRoles = DEFAULT_LEAD_ROLES): {row: DataRow, i: number}[] {
+  const roles = leadRoles.map((r) => r.toLowerCase());
+  const indexed = rows.map((row, i) => ({row, i}));
+  return scope === 'lead_set' ?
+    indexed.filter(({row}) => roles.includes(String(columnValue(row, 'role') ?? '').toLowerCase())) :
+    scope === 'series' ? indexed.filter(({row}) => !isBlank(columnValue(row, 'series'))) : indexed;
+}
+
 /** Evaluates [c] over [rows], the program's dataset. */
 export function evaluateCondition(c: DataCondition, rows: DataRow[], leadRoles = DEFAULT_LEAD_ROLES): ConditionResult {
   const scope = c.scope ?? 'program';
   const required = c.minCount ?? 1;
-  const roles = leadRoles.map((r) => r.toLowerCase());
-  const indexed = rows.map((row, i) => ({row, i}));
-  const scoped = scope === 'lead_set' ?
-    indexed.filter(({row}) => roles.includes(String(get(row, 'role') ?? '').toLowerCase())) :
-    scope === 'series' ? indexed.filter(({row}) => !isBlank(get(row, 'series'))) : indexed;
+  const scoped = rowsInScope(scope, rows, leadRoles);
   const passing = scoped.filter(({row}) => (c.where ?? []).every((p) => holds(row, p)));
   const measured = c.measured ?? [];
   const coverage: Record<string, number> = {};
   for (const m of measured)
-    coverage[m] = passing.filter(({row}) => !isBlank(get(row, m))).length;
+    coverage[m] = passing.filter(({row}) => !isBlank(columnValue(row, m))).length;
   const gaps: {id: string, missing: string[]}[] = [];
   const qualifying = passing.filter(({row, i}) => {
-    const missing = measured.filter((m) => isBlank(get(row, m)));
+    const missing = measured.filter((m) => isBlank(columnValue(row, m)));
     if (missing.length > 0)
       gaps.push({id: rowId(row, i), missing});
     return missing.length === 0;
@@ -190,7 +196,7 @@ export function evaluateCondition(c: DataCondition, rows: DataRow[], leadRoles =
   if (scope === 'series') {
     const series: Record<string, number> = {};
     for (const {row} of qualifying) {
-      const s = String(get(row, 'series'));
+      const s = String(columnValue(row, 'series'));
       series[s] = (series[s] ?? 0) + 1;
     }
     const minSeries = c.minSeries ?? 1;

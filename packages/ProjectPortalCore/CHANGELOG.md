@@ -2,6 +2,9 @@
 
 ## 0.3.0 (unreleased)
 
+- Compounds needing attention (F-17, FR-104): a portfolio declares `attention` rules (code, name, severity, condition, message) in the criteria's condition language. A row trips a rule when the scope admits it, `where` holds and, if the rule names `measured` columns, it lacks one. The program page shows *Needs attention*: a count per rule and the flagged compounds (or lots); a click opens the program data at that row. The portfolio table has an `attention` column (a filter) and `attention rules`. `programAttention(portfolio, program)` returns the flags
+- `portal` schema 0.2.10: `portfolio.attention`. Additive, no migration script
+- EX-SMD flags potent compounds without hERG, leads without solubility and a hERG IC50 under 10 µM; EX-BIOC flags a tox lot not released
 - Program data one click away (F-09): the program page's **Open data** opens the portfolio's program dataset for the program as a table view named after it, with the viewers the portfolio declares or the defaults for its setting (discovery: two measures plotted against each other, coloured by the first category, and a histogram; development: a bar chart over the first category, and a histogram). `programData(portfolio, program, dataset)` returns the table; `openProgramData(...)` opens it. The query runs as the user, on a connection shared with them
 - `programData` takes an optional `name` and `viewers`; a portfolio may declare further datasets per program (`programDatasets`: code, name, connection, SQL with `@program`, viewers), each with its own button
 - `portal` schema 0.2.9: `portfolio.program_datasets`. Additive, no migration script

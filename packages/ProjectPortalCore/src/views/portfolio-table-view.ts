@@ -29,7 +29,7 @@ export const VIEWER_TITLES = {
 } as const;
 
 const FILTER_COLUMNS = [COL.portfolio, COL.stage, COL.status, COL.modality, COL.ready, COL.readiness,
-  COL.daysInStage, COL.workspace, COL.source];
+  COL.daysInStage, COL.attention, COL.workspace, COL.source];
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -66,6 +66,11 @@ export function layOut(tv: DG.TableView, t: PortfolioTables): void {
   for (const hidden of [COL.id, COL.stageOrdinal, COL.stageInOrder, COL.gaps, ...(several ? [] : [COL.portfolio, COL.setting])])
     tv.grid.columns.byName(hidden)!.visible = false;
   tv.grid.columns.byName(COL.ready)!.cellType = 'bool';
+  // a portfolio without attention rules has no attention to show
+  if (df.col(COL.attention)!.stats.missingValueCount === df.rowCount) {
+    for (const hidden of [COL.attention, COL.attentionRules])
+      tv.grid.columns.byName(hidden)!.visible = false;
+  }
 
   // a range filter over a numeric column whose values are all zero drops every row (platform,
   // 2026-10-01): leave such a column out until it varies

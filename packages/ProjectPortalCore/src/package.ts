@@ -18,6 +18,7 @@ import {modelCardWidget} from './views/model-card';
 import {openSaveRunDialog} from './views/save-run-dialog';
 import {trackModelRuns} from './save-run';
 import {openProgramTable, programTable} from './program-data';
+import {attentionFrame, attentionRulesOf, programAttentionOf} from './attention';
 import {span} from '@datagrok-libraries/u2';
 export * from './package.g';
 
@@ -99,6 +100,16 @@ export async function programDataTable(portfolio: string, program: string, datas
 //input: string dataset {optional: true; description: Dataset code; default: the program dataset}
 export async function openProgramData(portfolio: string, program: string, dataset?: string): Promise<void> {
   await openProgramTable(portfolio, program, dataset || undefined);
+}
+
+//name: programAttention
+//description: The compounds (or lots) of one program that trip the portfolio's attention rules: one row per item and rule, with severity and message. The program dataset is read as you
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function programAttention(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const r = await programAttentionOf(portfolio, program);
+  return attentionFrame(r.attention, attentionRulesOf(r.portfolio), `${r.program.code} · Needs attention`);
 }
 
 //name: loadPortfolios

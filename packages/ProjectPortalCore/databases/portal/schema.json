@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -84,6 +84,7 @@
         "series_maturity": {"type": "string", "description": "The ordered series maturity vocabulary, '|'-separated (hit|validated|lead|optimized|candidate)"},
         "program_data": {"type": "json", "description": "The program dataset query data conditions are evaluated over: connection, sql with @program, leadRoles"},
         "program_datasets": {"type": "json", "description": "Further datasets of every program, the program page opens each: {datasets: [{code, name, connection, sql with @program, viewers}]}"},
+        "attention": {"type": "json", "description": "Rules over the program dataset that flag compounds or lots needing attention: {rules: [{code, name, severity, condition, message}]}"},
         "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
         "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
         "approvers": {"type": "group", "onDelete": "setnull", "description": "Records gate decisions"},

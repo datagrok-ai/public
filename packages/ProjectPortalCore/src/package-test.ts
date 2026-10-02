@@ -14,6 +14,7 @@ import './tests/catalogue-tests';
 import './tests/save-run-tests';
 import './tests/run-selection-tests';
 import './tests/program-data-tests';
+import './tests/attention-tests';
 
 export let _package = new DG.Package();
 export { tests };

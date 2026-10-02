@@ -15,6 +15,8 @@ import {Readiness, ReadinessState} from './model/readiness';
 import {COMPOUND_ROLES} from './model/compounds';
 import {WORK_UNIT_LABELS, WorkUnitKind} from './model/work-units';
 import {existingSpaces} from './workspace';
+import {attentionFor, attentionRulesOf} from './attention';
+import {ProgramAttention} from './model/attention';
 
 /** The stage value of a program not placed in its model yet; the board's "Unstaged" column. */
 export const UNSTAGED = 'Unstaged';
@@ -51,6 +53,7 @@ export const COL = {
   source: 'source', sourceStage: 'source stage', enteredStage: 'entered stage', daysInStage: 'days in stage',
   requiredMet: 'required met', requiredTotal: 'required total', readiness: 'readiness', ready: 'ready',
   gaps: 'gaps', compounds: 'compounds', workspace: 'workspace', continued: 'continued',
+  attention: 'attention', attentionRules: 'attention rules',
 } as const;
 
 export const roleColumn = (role: string) => `${role} compounds`;
@@ -69,6 +72,8 @@ export interface ProgramFacts {
   units: Partial<Record<WorkUnitKind, number>>;
   /** The program's workspace folder exists; a recorded space_id alone does not say so. */
   hasWorkspace?: boolean;
+  /** What trips the portfolio's attention rules; null when it declares none. */
+  attention?: ProgramAttention | null;
 }
 
 export interface PortfolioTables {
@@ -154,21 +159,26 @@ export async function portfolioFacts(portfolioCode?: string, now = Date.now()):
       id: c.id, stageId: c.stage_id, code: c.code, name: c.name, kind: c.kind, required: c.required !== false,
       rule: c.rule ?? null, condition: (c.condition as DataCondition | undefined) ?? null}}]);
   }
-  const work = facts.filter((f) => f.next).map((f) => async () => {
-    const mine = (criteriaOf.get(f.next!.id) ?? [])
+  // and the attention rules over the same rows: the program dataset is read once per program
+  const work = facts.filter((f) => f.next || attentionRulesOf(f.portfolio).length).map((f) => async () => {
+    const mine = !f.next ? [] : (criteriaOf.get(f.next.id) ?? [])
       .filter((c) => appliesTo(c.modality, f.program.modality)).map((c) => c.criterion);
     const recorded = Object.fromEntries((statusesOf.get(f.program.id) ?? [])
       .map((s) => [s.gate_criterion_id, s.status as CriterionState]));
+    const rules = attentionRulesOf(f.portfolio).length > 0;
     let rows: DataRow[] | null = null;
     let dataError: string | undefined;
-    if (mine.some((c) => c.condition)) {
+    if (mine.some((c) => c.condition) || rules) {
       try {
         rows = await programData(f.portfolio, f.program.code);
       } catch (e: any) {
         dataError = e?.message ?? String(e);
       }
     }
-    f.readiness = readinessFor({portfolio: f.portfolio, criteria: mine, recorded}, f.next!.id, rows, dataError);
+    if (f.next)
+      f.readiness = readinessFor({portfolio: f.portfolio, criteria: mine, recorded}, f.next.id, rows, dataError);
+    // a program whose data could not be read has no count, rather than a count of 0
+    f.attention = rules && !dataError ? attentionFor(f.portfolio, rows) : null;
   });
   // the program datasets: a few at a time, not one round trip after another
   for (let i = 0; i < work.length; i += 8)
@@ -224,6 +234,9 @@ export function buildTables(portfolios: PortfolioRow[], stages: Map<string, Stag
     col(I, COL.compounds, (x) => Object.values(x.roles).reduce((a, b) => a + b, 0)),
     ...COMPOUND_ROLES.map((r) => col(I, roleColumn(r), (x) => x.roles[r] ?? 0)),
     ...kinds.map((k) => col(I, unitColumn(k), (x) => x.units[k] ?? null)),
+    col(I, COL.attention, (x) => x.attention?.count ?? null),
+    col(S, COL.attentionRules, (x) => x.attention?.rules.filter((r) => r.items.length)
+      .map((r) => `${r.name} ${r.items.length}`).join('; ') || null),
     col(DG.COLUMN_TYPE.BOOL, COL.workspace, (x) => x.hasWorkspace ?? false),
     col(DG.COLUMN_TYPE.BOOL, COL.continued, (x) => !!x.program.predecessor_id),
   ]);

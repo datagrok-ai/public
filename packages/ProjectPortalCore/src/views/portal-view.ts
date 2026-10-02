@@ -23,6 +23,8 @@ import {datasetsOf, openProgramTable} from '../program-data';
 import {MAIN_DATASET} from '../model/program-data';
 import {showModelCard} from './model-card';
 import {openSaveRunDialog} from './save-run-dialog';
+import {attentionFor, attentionRulesOf, openAttentionItem} from '../attention';
+import {AttentionSeverity, ProgramAttention} from '../model/attention';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -211,7 +213,22 @@ export class PortalView {
           choices.set(c.id, r);
       }
     }
-    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs, choices);
+    const attention = await this.attentionOf(ctx);
+    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs, choices, attention);
+  }
+
+  /** The portfolio's attention rules over the program's data, read once per open; null without rules. */
+  private async attentionOf(ctx: ProgramContext): Promise<{result: ProgramAttention | null, error?: string} | null> {
+    if (attentionRulesOf(ctx.portfolio).length === 0)
+      return null;
+    if (this.data === undefined) {
+      try {
+        this.data = {rows: await programData(ctx.portfolio, ctx.program.code)};
+      } catch (e: any) {
+        this.data = {rows: null, error: e?.message ?? String(e)};
+      }
+    }
+    return this.data.error ? {result: null, error: this.data.error} : {result: attentionFor(ctx.portfolio, this.data.rows)};
   }
 
   /** Readiness for the viewed stage: the context already holds the next stage's. */
@@ -231,7 +248,7 @@ export class PortalView {
   private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
     readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = [],
     compounds: {link: any, compound: any}[] = [], spaceLive = false, runs: SavedRunItem[] = [],
-    choices = new Map<string, CriterionRuns>()): void {
+    choices = new Map<string, CriterionRuns>(), attention: {result: ProgramAttention | null, error?: string} | null = null): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -333,6 +350,7 @@ export class PortalView {
       reasons,
       rationale,
       divH([advance, hold, terminate], 'pp-actions'),
+      ...(attention ? this.attention(ctx.portfolio.code, program.code, attention) : []),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
       named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
@@ -342,6 +360,36 @@ export class PortalView {
       span('History', 'pp-heading'),
       transitions.length ? history : span('No transitions yet', 'pp-muted'),
     );
+  }
+
+  /** Needs attention: a count per rule that trips, then each flagged compound (or lot) with the
+   * rules it trips and why. A click opens the program's data with that row current. */
+  private attention(portfolioCode: string, programCode: string,
+    a: {result: ProgramAttention | null, error?: string}): HTMLElement[] {
+    const heading = named(span(`Needs attention${a.result ? ` (${a.result.count})` : ''}`, 'pp-heading'), 'attention-heading');
+    if (!a.result)
+      return [heading, named(span(`Program data could not be read: ${a.error}`, 'pp-reason'), 'attention-error')];
+    const r = a.result;
+    if (r.count === 0)
+      return [heading, named(span('Nothing needs attention', 'pp-muted'), 'attention-none')];
+    const variant = (s: AttentionSeverity): BadgeVariant => s === 'critical' ? 'error' : s === 'warning' ? 'warning' : 'default';
+    const nameOf = new Map(r.rules.map((x) => [x.code, x.name]));
+    const flagged = r.items.map((x) => x.item);
+    const counts = named(divH(r.rules.filter((x) => x.items.length).map((x) =>
+      named(badge(`${x.items.length} ${x.name}`, {variant: variant(x.severity)}), `attention-rule-${slug(x.code)}`)),
+    'pp-card-meta'), 'attention-rules');
+    const items = r.items.map((it) => {
+      const link = named(span(it.item, 'pp-link'), `attention-open-${slug(it.item)}`);
+      link.title = 'Open the program data at this row';
+      link.onclick = () => void openAttentionItem(portfolioCode, programCode, it.item, flagged)
+        .catch((e) => grok.shell.error(e?.message ?? String(e)));
+      return named(divV([
+        divH([link, ...it.rules.map((code) => badge(nameOf.get(code) ?? code,
+          {variant: variant(r.rules.find((x) => x.code === code)!.severity)}))], 'pp-unit'),
+        ...it.messages.map((m) => span(m, 'pp-muted')),
+      ], 'pp-attention-item'), `attention-item-${slug(it.item)}`);
+    });
+    return [heading, named(divV([counts, ...items], 'pp-units'), 'attention')];
   }
 
   /** The program's campaigns, series, studies and process stages, as the portfolio enables them. */

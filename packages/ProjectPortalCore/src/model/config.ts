@@ -7,6 +7,7 @@ import {CompoundFeedConfig, validateCompoundFeed} from './compounds';
 import {mergeCatalogues, ModelCatalogueConfig} from './catalogue';
 import {CriterionArtifactKind, RunFilter, validateRunCriterion} from './run-selection';
 import {ProgramDatasetConfig, validateProgramDatasets} from './program-data';
+import {AttentionRule, validateAttentionRules} from './attention';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -99,6 +100,9 @@ export interface PortfolioConfig {
   /** Further datasets of every program, each a query with @program: a SAR table beside the
    * process dataset, assay results beside the compound table. The program page opens each. */
   programDatasets?: ProgramDatasetConfig[];
+  /** Rules over the program dataset that flag compounds (or lots) needing attention: potent but
+   * hERG not measured, a lead without solubility. Same condition language as the criteria. */
+  attention?: AttentionRule[];
   /** The portfolio's model catalogue: unit operations, run types, models and their cards. Checked
    * and loaded with the set, so a model may name a unit operation another portfolio declares. */
   catalogue?: ModelCatalogueConfig;
@@ -179,6 +183,9 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
   const conditions = (c.stageModel?.stages ?? []).flatMap((s) => (s.criteria ?? []).filter((cr) => cr.condition));
   if (conditions.length > 0 && !c.programData)
     errors.push(`${conditions.length} criteria declare a condition but the portfolio has no programData to evaluate it over`);
+  errors.push(...validateAttentionRules(c.attention));
+  if ((c.attention ?? []).length > 0 && !c.programData)
+    errors.push(`${c.attention!.length} attention rules are declared but the portfolio has no programData to evaluate them over`);
   if (c.stageAuthority === 'feed' && (c.feeds ?? []).length === 0)
     errors.push('stageAuthority "feed" needs at least one feed');
   if (c.handoff) {

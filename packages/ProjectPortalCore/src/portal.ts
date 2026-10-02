@@ -170,6 +170,7 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     program_data: c.programData ?? null,
     // a json column holds an object, not a list
     program_datasets: c.programDatasets ? {datasets: c.programDatasets} : null,
+    attention: c.attention?.length ? {rules: c.attention} : null,
     work_units: (c.workUnits ?? []).join('|') || null, series_maturity: (c.seriesMaturity ?? []).join('|') || null,
     description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,

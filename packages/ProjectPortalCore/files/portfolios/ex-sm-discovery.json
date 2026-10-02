@@ -50,6 +50,29 @@
       "viewers": [{"type": "Box plot", "options": {"categoryColumnNames": ["assay"], "valueColumnName": "value"}}]
     }
   ],
+  "attention": [
+    {
+      "code": "herg_unmeasured",
+      "name": "Potent, hERG not measured",
+      "severity": "warning",
+      "condition": {"where": [{"column": "ic50_um", "op": "<", "value": 0.5}], "measured": ["herg_ic50_um"]},
+      "message": "{compound}: IC50 {ic50_um} uM, no hERG IC50"
+    },
+    {
+      "code": "lead_no_solubility",
+      "name": "Lead without solubility",
+      "severity": "warning",
+      "condition": {"scope": "lead_set", "measured": ["solubility_um"]},
+      "message": "{compound} ({role}): no solubility"
+    },
+    {
+      "code": "herg_liability",
+      "name": "hERG IC50 under 10 uM",
+      "severity": "critical",
+      "condition": {"where": [{"column": "herg_ic50_um", "op": "<", "value": 10}]},
+      "message": "{compound}: hERG IC50 {herg_ic50_um} uM"
+    }
+  ],
   "stageModel": {
     "code": "EX-SMD-V1",
     "name": "Example Small Molecule Discovery",

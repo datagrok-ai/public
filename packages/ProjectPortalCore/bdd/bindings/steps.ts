@@ -225,3 +225,11 @@ export const openTableViewers = Then('the open table should show the viewer type
     .then((shown: string[]) => expected.filter((t) => !shown.includes(t))),
   {message: 'viewer types not in the current table view'}).toEqual([]);
 }, {description: 'every viewer type is in the current table view, besides its grid'});
+
+export const openTableCurrent = Then('the open table\'s current row should have {string} in {string}',
+  async (page: Page, value: string, column: string) => {
+    await expect.poll(() => page.evaluate((c) => {
+      const df = grok.shell.tv?.dataFrame;
+      return df && df.currentRowIdx >= 0 ? String(df.get(c, df.currentRowIdx)) : 'no current row';
+    }, column), {message: `the current row's ${column}`}).toBe(value);
+  }, {description: 'a cell of the current row of the current table view'});

@@ -74,6 +74,15 @@
       }
     ]
   },
+  "attention": [
+    {
+      "code": "tox_lot_unreleased",
+      "name": "Tox lot not released",
+      "severity": "warning",
+      "condition": {"where": [{"column": "purpose", "op": "=", "value": "tox"}, {"column": "released", "op": "=", "value": false}]},
+      "message": "{lot}: tox lot not released"
+    }
+  ],
   "stageModel": {
     "code": "EX-BIOC-V1",
     "name": "Example Biologics Development",

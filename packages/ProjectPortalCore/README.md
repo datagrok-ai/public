@@ -187,6 +187,30 @@ inhibitor`). A portfolio may name it and further datasets beside it:
 - **Governed:** the query runs as the user on a connection shared with them, and the program is read under row security first.
 - `programData(portfolio, program, dataset)` returns the table; `openProgramData(portfolio, program, dataset)` opens it.
 
+### Compounds needing attention
+
+A portfolio may declare `attention` rules over its program dataset (F-17). A rule uses the
+condition language of the criteria (scope, `where`, `measured`), but it flags rows instead of
+counting them:
+
+```json
+"attention": [
+  {"code": "herg_unmeasured", "name": "Potent, hERG not measured", "severity": "warning",
+   "condition": {"where": [{"column": "ic50_um", "op": "<", "value": 0.5}], "measured": ["herg_ic50_um"]},
+   "message": "{compound}: IC50 {ic50_um} uM, no hERG IC50"},
+  {"code": "lead_no_solubility", "name": "Lead without solubility",
+   "condition": {"scope": "lead_set", "measured": ["solubility_um"]}}
+]
+```
+
+- **What trips a rule.** A row trips it when the scope admits it and every `where` predicate holds. If the rule names `measured` columns, the row must also lack at least one of them. `minCount` and `minSeries` do not apply.
+- **Severity** is `critical`, `warning` (the default) or `info`. **Message** fills `{column}` with the row's value and `{missing}` with what it lacks. Without a message, a line names the rule, the values it tested and what is missing.
+- **An item** is the row's `compound`, `id`, `code`, `lot` or `name`. It counts once, however many rules it trips.
+- **Program page.** *Needs attention (n)* shows a count per rule that trips, then each flagged item with its rules and messages. A click opens the program dataset with that row current and every flagged row selected.
+- **Portfolio table.** An `attention` column (flagged items, a filter) and `attention rules` (the count per rule). Both are hidden for a portfolio without rules. A program whose data cannot be read has no count.
+- `programAttention(portfolio, program)` returns one row per item and rule: item, rule, rule name, severity, message.
+- **Examples.** EX-SMD: potent but hERG not measured, a lead without solubility, hERG IC50 under 10 µM. EX-BIOC: a tox lot not released.
+
 ### Choosing the run a criterion rests on
 
 A criterion can rest on a model run (F-15). It says so in the portfolio file:
@@ -262,6 +286,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `portfolioTable(portfolio)` | The programs of a portfolio, or without one of every portfolio you can see, as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace |
 | `programData(portfolio, program, dataset)` | One program's rows of the program dataset, or of a further dataset by code, as a table named after the program |
 | `openProgramData(portfolio, program, dataset)` | Opens that table as a table view with the portfolio's viewers |
+| `programAttention(portfolio, program)` | The items of one program that trip the portfolio's attention rules, one row per item and rule |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
@@ -290,13 +315,14 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
   - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
+  - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, and a run saved with the catalogue's codes.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 142 of the 145 package tests and all 17 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 152 of the 155 package tests and all 18 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

@@ -39,6 +39,7 @@ const CSS = `
 .pp-unit-group { gap: 2px; }
 .pp-unit-kind { font-size: 12px; font-weight: 600; }
 .pp-unit { gap: 4px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+.pp-attention-item { gap: 1px; font-size: 12px; }
 .pp-criterion { gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; }
 .pp-reason { color: var(--u2-error, #c0392b); font-size: 12px; }
 .pp-actions { gap: 6px; }

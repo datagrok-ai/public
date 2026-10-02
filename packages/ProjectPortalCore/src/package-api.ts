@@ -54,6 +54,13 @@ export namespace funcs {
   }
 
   /**
+   * The compounds (or lots) of one program that trip the portfolio's attention rules: one row per item and rule, with severity and message. The program dataset is read as you
+   */
+  export async function programAttention(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ProgramAttention', { portfolio, program });
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {

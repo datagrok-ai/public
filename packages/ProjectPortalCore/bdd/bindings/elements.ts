@@ -80,3 +80,10 @@ app.element('select run button', {selector: u2('select-run-button')});
 
 app.element('open data button', {selector: u2('open-data-button')});
 app.element('open assay results button', {selector: u2('open-dataset-assays')});
+
+app.element('needs attention', {selector: u2('attention')});
+app.element('needs attention heading', {selector: u2('attention-heading')});
+app.element('hERG not measured count', {selector: u2('attention-rule-herg-unmeasured')});
+app.element('lead without solubility count', {selector: u2('attention-rule-lead-no-solubility')});
+app.element('EXC-1006 attention item', {selector: u2('attention-item-exc-1006')});
+app.element('EXC-1006 attention link', {selector: u2('attention-open-exc-1006')});
