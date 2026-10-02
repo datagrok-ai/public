@@ -35,6 +35,10 @@ export const InputForm = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    skipLogic: {
+      type: Boolean,
+      default: false,
+    },
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
     },
@@ -69,6 +73,7 @@ export const InputForm = Vue.defineComponent({
     const isReadonly = Vue.computed(() => props.isReadonly);
     const skipInit = Vue.computed(() => props.skipInit);
     const skipTableAutoFill = Vue.computed(() => props.skipTableAutoFill);
+    const skipLogic = Vue.computed(() => props.skipLogic);
     const formRef = Vue.shallowRef<InputFormT | undefined>(undefined);
 
     const callMetaValues = useUnwrappedCallMeta(() => props.callMeta);
@@ -114,7 +119,7 @@ export const InputForm = Vue.defineComponent({
                 input.nullable = isOptionalParam(param.property);
               if (paramItems)
                 (input as DG.ChoiceInput<any>).items = paramItems;
-              else if (param.property.options.choices && skipInit.value) {
+              else if (param.property.options.choices && (skipInit.value || skipLogic.value)) {
                 let items = undefined;
                 let isParsed = false;
                 try {
@@ -157,6 +162,7 @@ export const InputForm = Vue.defineComponent({
       <dg-input-form
         skipInit={skipInit.value}
         skipTableAutoFill={skipTableAutoFill.value}
+        skipLogic={skipLogic.value}
         funcCall={currentCall.value}
         onFormReplaced={formReplacedCb}
         onInputChanged={(ev: CustomEvent<DG.EventData<DG.InputArgs>>) => emit('inputChanged', ev.detail)}
