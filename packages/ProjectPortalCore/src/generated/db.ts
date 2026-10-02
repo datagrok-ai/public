@@ -87,6 +87,10 @@ export type ApprovalRequestSource = 'person' | 'data';
 
 export type ApprovalRequestStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
 
+export type ParkedFolderKind = 'unclaimed' | 'park';
+
+export type ParkedFolderStatus = 'parked' | 'restored';
+
 /** Row of `portal.stage_model`. */
 export interface StageModelRow {
   id: string;
@@ -302,6 +306,7 @@ export type PortfolioExpand = {
   'details:program': {program?: ProgramRow[]};
   'details:sync_run': {sync_run?: SyncRunRow[]};
   'details:approval_request': {approval_request?: ApprovalRequestRow[]};
+  'details:parked_folder': {parked_folder?: ParkedFolderRow[]};
 };
 
 /** Row of `portal.registry_feed`. */
@@ -1826,6 +1831,73 @@ export type ApprovalRequestExpand = {
     'stage_transition_id.evidence'?: string};
 };
 
+/** Row of `portal.parked_folder`. */
+export interface ParkedFolderRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  portfolio_id: string;
+  space_id: string;
+  name: string;
+  kind?: ParkedFolderKind;
+  reason?: string;
+  from_parent_id: string;
+  from_path: string;
+  parked_in_id: string;
+  parked_path: string;
+  parked_by?: string;
+  parked_on?: Dayjs;
+  status: ParkedFolderStatus;
+  restored_by?: string;
+  restored_on?: Dayjs;
+}
+
+/** Insert payload for `portal.parked_folder`. */
+export interface ParkedFolderInsert {
+  portfolio_id: string;
+  space_id: string;
+  name: string;
+  kind?: ParkedFolderKind;
+  reason?: string;
+  from_parent_id: string;
+  from_path: string;
+  parked_in_id: string;
+  parked_path: string;
+  parked_by?: string;
+  parked_on?: Dayjs | string;
+  status: ParkedFolderStatus;
+  restored_by?: string;
+  restored_on?: Dayjs | string;
+}
+
+export type ParkedFolderColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'portfolio_id' |
+  'space_id' | 'name' | 'kind' | 'reason' | 'from_parent_id' | 'from_path' | 'parked_in_id' | 'parked_path' |
+  'parked_by' | 'parked_on' | 'status' | 'restored_by' | 'restored_on';
+
+/** Expand keys of `portal.parked_folder` → fields each adds to the row (consumed by query()/builder). */
+export type ParkedFolderExpand = {
+  'portfolio_id': {'portfolio_id.code'?: string; 'portfolio_id.name'?: string;
+    'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
+    'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
+    'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
+    'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
+    'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
+    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.approval'?: {[key: string]: any};
+    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
+    'portfolio_id.description'?: string};
+  'parked_by': {'parked_by.login'?: string; 'parked_by.firstName'?: string; 'parked_by.lastName'?: string;
+    'parked_by.status'?: string; 'parked_by.createdOn'?: Dayjs; 'parked_by.picture'?: string;
+    'parked_by.group'?: string; 'parked_by.author'?: string};
+  'restored_by': {'restored_by.login'?: string; 'restored_by.firstName'?: string; 'restored_by.lastName'?: string;
+    'restored_by.status'?: string; 'restored_by.createdOn'?: Dayjs; 'restored_by.picture'?: string;
+    'restored_by.group'?: string; 'restored_by.author'?: string};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -1925,7 +1997,10 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'prediction'; id: string} |
   {op: 'insert'; table: 'approval_request'; ref?: string; values: DG.DomainTxValues<ApprovalRequestInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'approval_request'; id: string; values: DG.DomainTxValues<Partial<ApprovalRequestRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'approval_request'; id: string};
+  {op: 'delete'; table: 'approval_request'; id: string} |
+  {op: 'insert'; table: 'parked_folder'; ref?: string; values: DG.DomainTxValues<ParkedFolderInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'parked_folder'; id: string; values: DG.DomainTxValues<Partial<ParkedFolderRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'parked_folder'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -2027,6 +2102,9 @@ export const portalDb = {
   },
   get approvalRequests() {
     return grok.dapi.domains.table<ApprovalRequestRow, ApprovalRequestInsert, ApprovalRequestColumn, ApprovalRequestExpand>('portal.approval_request');
+  },
+  get parkedFolders() {
+    return grok.dapi.domains.table<ParkedFolderRow, ParkedFolderInsert, ParkedFolderColumn, ParkedFolderExpand>('portal.parked_folder');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

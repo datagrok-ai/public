@@ -349,3 +349,41 @@ export const notScored = Given('the example solubility model has not scored {str
       await removePredictions(page, model, program, portfolio);
     });
   }, {tier: 'api', description: 'removes the model\'s predictions on the program and the scoring runs behind them, now and at the end of the feature'});
+
+/** Removes the folder [name] under [portfolio]'s workspace root, wherever parking put it: unparked
+ * first through unparkFolder (which removes an empty _Parked), then deleted with its records. */
+async function removeRootFolder(page: Page, name: string, portfolio: string): Promise<void> {
+  await page.evaluate(async ([n, p]) => {
+    const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+    const parked = grok.dapi.domains.table('portal.parked_folder');
+    for (const r of await parked.query({filter: `portfolio_id = "${pf.id}" and name = "${n}"`})) {
+      if (r.status === 'parked')
+        await grok.functions.call('ProjectPortalCore:unparkFolder', {id: r.id}).catch(() => undefined);
+      await parked.delete(r.id).catch(() => undefined);
+    }
+    const key = (s: string) => String(s ?? '').replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+    const root = (await grok.dapi.spaces.filter(`name = "${pf.workspace_root}"`).list({pageSize: 100}))
+      .find((s: any) => key(s.friendlyName || s.name) === key(pf.workspace_root));
+    if (!root)
+      return;
+    const kids = await grok.dapi.spaces.id(root.id).children.ofTypes('Project', false).list({pageSize: 1000});
+    for (const k of kids.filter((s: any) => key(s.friendlyName || s.name) === key(n)))
+      await grok.dapi.spaces.delete(k);
+  }, [name, portfolio]);
+}
+
+export const rootFolder = Given('a folder {string} no program claims under the workspace root of the {string} portfolio',
+  async (page: Page, name: string, portfolio: string) => {
+    silent(page);
+    await removeRootFolder(page, name, portfolio);
+    atFeatureEnd(page, () => removeRootFolder(page, name, portfolio));
+    await page.evaluate(async ([n, p]) => {
+      const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+      const key = (s: string) => String(s ?? '').replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+      const root = (await grok.dapi.spaces.filter(`name = "${pf.workspace_root}"`).list({pageSize: 100}))
+        .find((s: any) => key(s.friendlyName || s.name) === key(pf.workspace_root));
+      if (!root)
+        throw new Error(`the workspace of ${p} is not built`);
+      await grok.dapi.spaces.id(root.id).addSubspace(n);
+    }, [name, portfolio]);
+  }, {tier: 'api', description: 'an empty folder at the top of the portfolio\'s workspace; unparked if parked and deleted at the end of the feature'});

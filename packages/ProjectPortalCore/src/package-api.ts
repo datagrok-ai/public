@@ -445,6 +445,29 @@ export namespace funcs {
   }
 
   /**
+   * Moves the folders workspaceOrphans lists (or those named) into _Parked/<date> under the portfolio's root and records each move; never deletes. Dry run by default. Applying needs one of the portfolio's approvers
+   * @param {string} folders - Comma-separated paths or space ids of the orphans to park
+   */
+  export async function parkOrphans(code: string , dryRun: boolean , folders?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ParkOrphans', { code, dryRun, folders });
+  }
+
+  /**
+   * Moves a parked folder back to where it was, by its parked-folder record id or its space id. Approvers only
+   */
+  export async function unparkFolder(id: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:UnparkFolder', { id });
+  }
+
+  /**
+   * A portfolio's parked folders: what, why, from where, to where, when, and whether it was restored
+   * @param {boolean} all - Also the folders restored since
+   */
+  export async function parkedFolders(code: string , all: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ParkedFolders', { code, all });
+  }
+
+  /**
    * Saves a model run to a program: annotates the call (portfolio, program, stage at run, unit operation, run type, purpose), saves it, links it into the program's workspace (the current stage's folder when there is one) and records it as a model run a gate criterion can select
    * @param {any} call - A call that has run
    * @param {string} unitOperation - Unit operation code

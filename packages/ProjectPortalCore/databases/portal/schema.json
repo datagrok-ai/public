@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.23",
+  "version": "0.2.24",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -684,6 +684,29 @@
         "closed_on": {"type": "datetime"},
         "result": {"type": "string", "editor": "textarea", "description": "What approving did (the decision recorded, the document approved), or why it could not"},
         "stage_transition_id": {"type": "ref", "ref": "stage_transition", "onDelete": "setnull", "friendlyName": "Decision", "description": "The gate-log entry the approved decision wrote"}
+      }
+    },
+    "parked_folder": {
+      "securityMode": "table",
+      "friendlyName": "Parked folders",
+      "description": "A workspace folder moved out of the way (FR-22): a root folder no program claims, or the folder of a program that ended, moved into _Parked/<date> under the portfolio's root. Never deleted; unparking moves it back. Written by parkOrphans and unparkFolder, which check that the user is one of the portfolio's approvers.",
+      "grants": {"All users": ["view", "edit"]},
+      "filters": [{"column": "status"}, {"column": "kind"}],
+      "columns": {
+        "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Portfolio"},
+        "space_id": {"type": "string", "required": true, "immutable": true, "description": "The folder's space id; a move keeps it"},
+        "name": {"type": "string", "required": true, "isName": true, "immutable": true, "searchable": true},
+        "kind": {"type": "string", "choices": ["unclaimed", "park"], "immutable": true, "description": "unclaimed: no program claims it; park: its program ended or left its feed"},
+        "reason": {"type": "string", "immutable": true},
+        "from_parent_id": {"type": "string", "required": true, "immutable": true, "description": "The space it was moved out of: the portfolio's root"},
+        "from_path": {"type": "string", "required": true, "immutable": true},
+        "parked_in_id": {"type": "string", "required": true, "immutable": true, "description": "The _Parked/<date> space it was moved into"},
+        "parked_path": {"type": "string", "required": true, "immutable": true},
+        "parked_by": {"type": "user", "immutable": true},
+        "parked_on": {"type": "datetime", "immutable": true},
+        "status": {"type": "string", "choices": ["parked", "restored"], "required": true, "default": "parked"},
+        "restored_by": {"type": "user"},
+        "restored_on": {"type": "datetime"}
       }
     }
   }

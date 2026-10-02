@@ -188,3 +188,13 @@ app.element('first approval withdraw button', {selector: u2('approval-0-withdraw
 app.element('waiting for me button', {selector: u2('waiting-button')});
 app.element('waiting dialog', {selector: u2('waiting-dialog')});
 app.element('waiting list', {selector: u2('waiting-list')});
+
+app.element('workspace button', {selector: u2('workspace-button')});
+app.element('workspace dialog', {selector: u2('workspace-dialog')});
+app.element('orphans', {selector: u2('orphans')});
+app.element('park preview button', {selector: u2('park-preview-button')});
+app.element('park result', {selector: u2('park-result')});
+app.element('park scratch folder link', {selector: u2('park-orphan-bddparkscratch')});
+app.element('parked folders', {selector: u2('parked-folders')});
+app.element('no parked folders', {selector: u2('no-parked')});
+app.element('unpark scratch folder button', {selector: u2('unpark-bddparkscratch')});

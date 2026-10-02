@@ -42,6 +42,7 @@ import {parseKinds} from './model/feed';
 import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as review, submitDocument as submitDoc,
   submitModelCard as submitCard, userNames, waitingForMe as waitingOf, withdrawRequest as withdraw} from './approvals';
 import {reviewsOf} from './model/approvals';
+import {parkedFoldersOf, parkedFrame, parkOrphans as park, summarizeParkResult, unparkFolder as unpark} from './parking';
 import {ApprovalRequestRow} from './generated/db';
 export * from './package.g';
 
@@ -679,6 +680,35 @@ export async function buildWorkspace(code: string, dryRun: boolean = false, prog
 //output: string report
 export async function workspaceOrphans(code: string): Promise<string> {
   return summarizeWorkspace(await orphansOf(code));
+}
+
+//name: parkOrphans
+//description: Moves the folders workspaceOrphans lists (or those named) into _Parked/<date> under the portfolio's root and records each move; never deletes. Dry run by default. Applying needs one of the portfolio's approvers
+//input: string code
+//input: bool dryRun = true
+//input: string folders {optional: true; description: Comma-separated paths or space ids of the orphans to park; default: all}
+//output: string report
+export async function parkOrphans(code: string, dryRun: boolean = true, folders?: string): Promise<string> {
+  const only = (folders ?? '').split(',').map((f) => f.trim()).filter((f) => f.length > 0);
+  return summarizeParkResult(await park(code, dryRun, only.length ? only : undefined));
+}
+
+//name: unparkFolder
+//description: Moves a parked folder back to where it was, by its parked-folder record id or its space id. Approvers only
+//input: string id
+//output: string report
+export async function unparkFolder(id: string): Promise<string> {
+  const r = await unpark(id);
+  return [r.line, ...r.notes.map((n) => `  ${n}`)].join('\n');
+}
+
+//name: parkedFolders
+//description: A portfolio's parked folders: what, why, from where, to where, when, and whether it was restored
+//input: string code
+//input: bool all = false {description: Also the folders restored since}
+//output: dataframe result
+export async function parkedFolders(code: string, all: boolean = false): Promise<DG.DataFrame> {
+  return parkedFrame(await parkedFoldersOf(await portfolioByCode(code), all), `${code} · Parked folders`);
 }
 
 //name: saveModelRun

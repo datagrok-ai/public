@@ -29,6 +29,7 @@ import './tests/provenance-tests';
 import './tests/feed-tests';
 import './tests/prediction-tests';
 import './tests/approval-tests';
+import './tests/parking-tests';
 
 export let _package = new DG.Package();
 export { tests };

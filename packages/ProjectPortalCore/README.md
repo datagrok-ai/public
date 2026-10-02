@@ -48,7 +48,10 @@ one customer runs discovery and CMC together.
   - It is additive: it creates what is missing and never renames, moves or deletes. It records each program's folder on the program row (`space_id`), so a program renamed in its registry keeps its folder, and the report names the difference.
   - The root is shared View to viewers and Edit to contributors, and its folders inherit that. Unlike program rows, spaces accept the grant, so the workspace is isolated per portfolio today.
   - **It grows with the stage (PORT-35).** A stage declares `folders`, paths under the program's folder (`Candidate Package`, `DMPK/In vivo PK`). A program has the folders of every stage it has reached: the builder adds them, and a gate decision that advances a program adds the new stage's folders at once when its workspace exists. A program that recycles keeps them.
-  - **Orphans are reported, never touched (FR-22).** Every full build, and `workspaceOrphans`, lists root folders no program claims and the folders of programs that are terminated, transitioned, completed or missing from their feed. Pruning or parking them is a separate, explicit step this package does not take.
+  - **Orphans are reported; the builder never touches them (FR-22).** Every full build, and `workspaceOrphans`, lists root folders no program claims and the folders of programs that are terminated, transitioned, completed or missing from their feed.
+  - **Parking is a separate, explicit step.** `parkOrphans(code, dryRun, folders)` moves the listed folders (or the ones named, by path or space id) into `_Parked/<date>` under the root. A dry run is the default. Applying needs one of the portfolio's approvers. A move keeps the folder's id, files, subfolders and grants. Each move is recorded in `parked_folder` (from where, to where, why, who, when). `unparkFolder(id)` moves one back, by the record's id or the folder's, unless a folder of the same name took its place; an emptied `_Parked/<date>`, then `_Parked`, is removed. `parkedFolders(code, all)` lists them. `_Parked` is never itself an orphan, and the builder neither rebuilds a parked program folder nor makes a new one ("folder parked; not rebuilt").
+  - **Deleting is out of scope.** Nothing here deletes a workspace folder; removing a parked folder is a person's call, by hand.
+  - **In the app.** The ribbon's **Workspace** (Advanced mode) shows the orphan report with **Preview park**, **Park** on each folder and **Park all** for approvers, and the parked folders with **Unpark**.
 
 ### Work units
 
@@ -536,6 +539,9 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
 | `buildWorkspace(code, dryRun, program)` | Builds one portfolio's workspace, or with `program` one program's folders. With `dryRun` it lists what it would create. Refused while another build of the same root runs. |
 | `workspaceOrphans(code)` | The folders a prune-or-park pass would look at; a report, nothing is changed |
+| `parkOrphans(code, dryRun, folders)` | Moves those folders (or the ones named) into `_Parked/<date>` under the root and records each move; never deletes. Dry run by default; approvers apply |
+| `unparkFolder(id)` | Moves a parked folder back where it was; approvers only |
+| `parkedFolders(code, all)` | The portfolio's parked folders, and with `all` those restored since |
 | `setCompoundRole(portfolio, program, compound, role, rationale)` | Changes a compound's role in a program by hand, logged |
 | `saveModelRun(call, portfolio, program, unitOperation, runType, purpose, title, folder)` | Annotates, saves and links a run into the program's workspace, and records it as a `model_run` |
 | `saveRunToProgram(call)` | Opens the save-to-program dialog for a run |
@@ -554,6 +560,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
   - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds, stage folders from the builder and on advance, the orphan report.
+  - Parking: the rules (where each orphan goes, already parked, only some, who may, unparking over a folder of the same name, the parking folder never an orphan, the summary), and on EX-SMD a throwaway folder previewed, parked, left out of the report and the build, unparked with `_Parked` removed and the tree as before; a terminated scratch program's folder parked and not rebuilt; a non-approver refused.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
   - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
@@ -578,7 +585,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 272 of the 275 package tests and all 32 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 280 of the 283 package tests and all 33 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

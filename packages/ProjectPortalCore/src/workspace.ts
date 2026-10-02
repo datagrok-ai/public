@@ -11,7 +11,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {normalizeSpaceName} from './model/config';
-import {findOrphans, findProgramFolder, isSpaceNamed, Orphan, parseWorkstreams, programAttributes, programFolderName,
+import {findOrphans, findProgramFolder, isSpaceNamed, Orphan, PARKED_FOLDER, parseWorkstreams, programAttributes, programFolderName,
   SpaceRef, stageFolderPaths, StageFolders, WorkspaceProgram} from './model/workspace-plan';
 import {portalDb, PortfolioRow} from './generated/db';
 import {portfolioByCode} from './portal';
@@ -33,11 +33,25 @@ export interface WorkspaceReport {
   failed: number;
   /** Things the builder saw but, being additive, did not change. */
   notes: string[];
-  /** Folders a prune-or-park pass would look at; reported, never touched. Full builds only. */
+  /** Folders a prune-or-park pass would look at; the builder never touches them (parkOrphans
+   * moves them, on request). Full builds only. */
   orphans: Orphan[];
 }
 
 const building = new Set<string>();
+
+/** Runs [fn] while no build, park or unpark under the same root runs in this session. */
+export async function withRootLock<T>(rootName: string, fn: () => Promise<T>): Promise<T> {
+  const lock = normalizeSpaceName(rootName).toLowerCase();
+  if (building.has(lock))
+    throw new Error(`a workspace build or park under "${rootName}" is already running; wait for it to finish`);
+  building.add(lock);
+  try {
+    return await fn();
+  } finally {
+    building.delete(lock);
+  }
+}
 
 const asRef = (e: DG.Entity): SpaceRef => ({id: e.id, name: e.name, friendlyName: (e as any).friendlyName ?? null});
 
@@ -51,11 +65,11 @@ export async function existingSpaces(ids: (string | null | undefined)[]): Promis
   return found;
 }
 
-async function subspaces(parentId: string): Promise<DG.Project[]> {
+export async function subspaces(parentId: string): Promise<DG.Project[]> {
   return await grok.dapi.spaces.id(parentId).children.ofTypes('Project', false).list({pageSize: 1000}) as DG.Project[];
 }
 
-async function findRoot(name: string): Promise<DG.Project | null> {
+export async function findRoot(name: string): Promise<DG.Project | null> {
   const found = await grok.dapi.spaces.filter(`name = "${name}"`).list({pageSize: 100});
   return found.find((s) => isSpaceNamed(asRef(s), name)) ?? null;
 }
@@ -95,15 +109,7 @@ export async function buildPortfolioWorkspace(code: string, dryRun = false, only
   const rootName = portfolio.workspace_root;
   if (!rootName)
     throw new Error(`portfolio ${code} has no workspaceRoot`);
-  const lock = normalizeSpaceName(rootName).toLowerCase();
-  if (building.has(lock))
-    throw new Error(`a workspace build under "${rootName}" is already running; wait for it to finish`);
-  building.add(lock);
-  try {
-    return await build(portfolio, rootName, dryRun, onlyProgramId);
-  } finally {
-    building.delete(lock);
-  }
+  return withRootLock(rootName, () => build(portfolio, rootName, dryRun, onlyProgramId));
 }
 
 async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean, onlyProgramId?: string):
@@ -144,11 +150,18 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
   // programs with roles of their own get their folder shared to match
   const withRoles = dryRun ? new Set<string>() : new Set((await portalDb.programRoles.query({}).catch(() => []))
     .map((r) => r.program_id));
+  // a parked program folder stays parked: the builder neither rebuilds it nor makes a new one
+  const parked = new Set((await portalDb.parkedFolders.query({filter: `portfolio_id = "${portfolio.id}"`}).catch(() => []))
+    .filter((r) => r.status === 'parked').map((r) => r.space_id));
 
   let attributesWritten = 0;
   for (const p of programs) {
     const folderName = programFolderName(p);
     const path = `${rootName}/${folderName}`;
+    if (p.spaceId && parked.has(p.spaceId)) {
+      report.notes.push(`${p.code}: folder parked under ${PARKED_FOLDER}; not rebuilt (unpark it to use it)`);
+      continue;
+    }
     try {
       const found = findProgramFolder(p, children.map(asRef));
       let folder = found ? children.find((c) => c.id === found.space.id)! : null;
@@ -243,7 +256,8 @@ export async function workspaceOrphans(code: string): Promise<WorkspaceReport> {
 
 export function summarizeWorkspace(r: WorkspaceReport): string {
   if (r.entries.length === 0 && r.created + r.reused + r.failed === 0) {
-    const lines = [`${r.portfolio} workspace "${r.root}": ${r.orphans.length} folder(s) for prune-or-park to look at; none touched`,
+    const lines = [`${r.portfolio} workspace "${r.root}": ${r.orphans.length} folder(s) for prune-or-park to look at; none touched` +
+      (r.orphans.length ? ' (parkOrphans moves them)' : ''),
       ...r.notes.map((n) => `  ${n}`)];
     lines.push(...r.orphans.map((o) => `  ? ${o.path}: ${o.kind === 'park' ? 'park candidate, ' : ''}${o.reason}`));
     return lines.join('\n');
@@ -255,7 +269,7 @@ export function summarizeWorkspace(r: WorkspaceReport): string {
     lines.push(...r.entries.filter((e) => e.action === 'create').map((e) => `  + ${e.path}`));
   lines.push(...r.entries.filter((e) => e.status !== 'ok').map((e) => `  ! ${e.path}: ${e.status}`));
   if (r.orphans.length) {
-    lines.push(`  Not touched (prune or park is a separate, explicit step):`);
+    lines.push(`  Not touched (parking is a separate, explicit step: parkOrphans):`);
     lines.push(...r.orphans.map((o) => `  ? ${o.path}: ${o.kind === 'park' ? 'park candidate, ' : ''}${o.reason}`));
   }
   return lines.join('\n');

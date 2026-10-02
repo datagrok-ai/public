@@ -62,6 +62,7 @@ import {ApprovalRequestRow} from '../generated/db';
 import {decideOrPropose, requestsOf, submitDocument, userNames} from '../approvals';
 import {approvalOf, describeApproval, needsApproval, reviewsOf} from '../model/approvals';
 import {openWaitingDialog, requestItem} from './approvals-dialog';
+import {openWorkspaceDialog} from './workspace-dialog';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -1385,6 +1386,12 @@ export class PortalView {
       await openExportDialog(this.portfolio.code).catch((e) => grok.shell.error(e?.message ?? String(e)));
   }
 
+  /** The open portfolio's workspace: the orphan report, parking and the parked folders. */
+  async workspace(): Promise<void> {
+    if (this.portfolio)
+      await openWorkspaceDialog(this.portfolio).catch((e) => grok.shell.error(e?.message ?? String(e)));
+  }
+
   /** The open portfolio's schedule and sync runs. */
   async syncHistory(): Promise<void> {
     if (this.portfolio)
@@ -1418,6 +1425,8 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   sync.title = 'Run this portfolio\'s registry feeds';
   const history = named(button('Sync history', () => void portal.syncHistory()), 'sync-history-button');
   history.title = 'This portfolio\'s schedule, and what each sync changed';
+  const workspaceButton = named(button('Workspace', () => void portal.workspace()), 'workspace-button');
+  workspaceButton.title = 'This portfolio\'s workspace: folders no program claims or whose program ended, and parking them';
   const exportButton = named(button('Export', () => void portal.exportPortfolio()), 'export-button');
   exportButton.title = 'This portfolio as a portfolio file, to diff or load on another instance';
   const table = named(button('Table', () => void openPortfolioTable(portal.portfolioCode)), 'table-button');
@@ -1428,11 +1437,12 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   feed.title = 'What happened in the programs and series you follow, newest first';
   const waiting = named(button('Waiting for me', () => portal.waitingForMe()), 'waiting-button');
   waiting.title = 'Proposed decisions and submitted documents and model cards you may approve';
-  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, exportButton], [table, all], [feed, waiting]],
+  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, workspaceButton, exportButton], [table, all], [feed, waiting]],
     status: portal.status,
     path: portal.path});
   portal.boardButtons.set('sync_history', history);
   portal.boardButtons.set('export', exportButton);
+  portal.boardButtons.set('workspace', workspaceButton);
   portal.boardButtons.set('all_portfolios', all);
   portal.applyBoardButtons();
   await portal.load(portfolioCode);

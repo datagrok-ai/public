@@ -2,6 +2,11 @@
 
 ## 0.3.0 (unreleased)
 
+- Parking orphan folders (FR-22, the action half): `parkOrphans(code, dryRun, folders)` moves the folders the orphan report lists into `_Parked/<date>` under the portfolio's root and records each move; `unparkFolder(id)` moves one back; `parkedFolders(code, all)` lists them. Dry run by default; approvers apply. Never deletes a folder (an emptied `_Parked` is removed on unpark). Pure rules in `src/model/parking.ts`
+- The builder leaves a parked program folder parked; `_Parked` is never an orphan. The orphan report carries each folder's id
+- Ribbon: **Workspace** (Advanced mode): the orphan report with Preview park, Park per folder and Park all, the parked folders with Unpark
+- `portal` schema 0.2.24: table `parked_folder`. Additive, no migration script
+
 - Approval workflow (F-30, FR-57), optional per portfolio: `approval: {decisions, artifacts, approvers}`. A gate decision of a listed kind is proposed instead of taking effect, with its evidence frozen; another approver (portfolio or program) approves or rejects it with a rationale, never the proposer, who may withdraw it. On the last approval it goes through `recordDecision` (gate log, evidence, workspace folders); the proposer is told. Pure rules in `src/model/approvals.ts`
 - Advance by data in a portfolio that asks for approval of advance proposes the move (source `data`) once; any approver may approve it
 - Documents: draft → submitted → approved or rejected where the portfolio asks; model cards: draft → in review → approved or rejected (`submitModelCard`). Reloading the catalogue keeps an approval the workflow set

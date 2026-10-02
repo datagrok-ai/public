@@ -119,6 +119,8 @@ export function stageFolderPaths(stages: StageFolders[], ordinal: number | null)
 }
 
 export interface Orphan {
+  /** The folder's space id: what parking moves. */
+  id: string;
   path: string;
   kind: 'unclaimed' | 'park';
   reason: string;
@@ -126,9 +128,15 @@ export interface Orphan {
 
 const PARK_STATUSES = ['terminated', 'transitioned', 'missing_from_feed', 'completed'];
 
-/** What a prune-or-park pass would look at (FR-22), as a report only: root folders no program of
- * the portfolio claims, and folders of programs that have ended or left their feed. Nothing below
- * a program folder is judged: people put their own folders there. */
+/** The folder under a portfolio's root that parked folders go into (FR-22), one subfolder per day. */
+export const PARKED_FOLDER = '_Parked';
+
+/** Whether [space] is the parking folder. The server may hold it as `Parked`. */
+export const isParkingFolder = (space: SpaceRef): boolean => isSpaceNamed(space, PARKED_FOLDER);
+
+/** What a prune-or-park pass would look at (FR-22): root folders no program of the portfolio
+ * claims, and folders of programs that have ended or left their feed. Nothing below a program
+ * folder is judged: people put their own folders there. The parking folder is never listed. */
 export function findOrphans(root: string, children: SpaceRef[], programs: WorkspaceProgram[]): Orphan[] {
   const claimed = new Map<string, WorkspaceProgram>();
   for (const p of programs) {
@@ -138,12 +146,15 @@ export function findOrphans(root: string, children: SpaceRef[], programs: Worksp
   }
   const out: Orphan[] = [];
   for (const c of [...children].sort((a, b) => (a.friendlyName ?? a.name).localeCompare(b.friendlyName ?? b.name))) {
+    // parked folders are already dealt with
+    if (isParkingFolder(c))
+      continue;
     const label = `${root}/${c.friendlyName ?? c.name}`;
     const p = claimed.get(c.id);
     if (!p)
-      out.push({path: label, kind: 'unclaimed', reason: 'no program of the portfolio claims it'});
+      out.push({id: c.id, path: label, kind: 'unclaimed', reason: 'no program of the portfolio claims it'});
     else if (PARK_STATUSES.includes(p.status ?? ''))
-      out.push({path: label, kind: 'park', reason: `${p.code} is ${p.status}`});
+      out.push({id: c.id, path: label, kind: 'park', reason: `${p.code} is ${p.status}`});
   }
   return out;
 }
